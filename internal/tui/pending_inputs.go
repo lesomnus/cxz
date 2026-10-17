@@ -52,12 +52,15 @@ func (m *model) removePendingInput(id, request string) {
 
 // Local echoes never enter the journal or mutate its sequence cursor. Reconcile
 // by request ID, not text, so repeated identical messages remain distinct.
-func (m *model) transcriptEvents(id string) []*api.Event {
+//
+// Over rows, because this is the display list: a message the reader just typed
+// sits among the rows until the runtime's own input row arrives and replaces it.
+func (m *model) transcriptRows(id string) []*api.Event {
 	if len(m.pendingInputs[id]) == 0 {
-		return m.events[id]
+		return m.rows[id]
 	}
 	confirmed := map[string]bool{}
-	for _, e := range m.events[id] {
+	for _, e := range m.rows[id] {
 		if e.Kind == "input" {
 			confirmed[e.RunId+"/"+e.RequestId] = true
 		}
@@ -70,9 +73,9 @@ func (m *model) transcriptEvents(id string) []*api.Event {
 	}
 	m.pendingInputs[id] = pending
 	if len(pending) == 0 {
-		return m.events[id]
+		return m.rows[id]
 	}
-	out := append([]*api.Event{}, m.events[id]...)
+	out := append([]*api.Event{}, m.rows[id]...)
 	for _, e := range pending {
 		at := len(out)
 		for at > 0 && out[at-1].TimeMs > e.TimeMs {

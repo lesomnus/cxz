@@ -1,6 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { describe, expect, it, vi } from "vitest";
+import { STREAM_STALL_MS } from "#src/shared/api/stream-deadline.ts";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
 import {
   SessionHistory,
@@ -12,7 +13,7 @@ const event = (seq: bigint, kind = "input") =>
   create(SessionEventSchema, { seq, kind });
 const signal = () => new AbortController().signal;
 function source(methods: Record<string, unknown>) {
-  return new SessionHistory(methods as Connection["sessions"], "s");
+  return new SessionHistory(methods as Connection["sessions"], "s", "c1");
 }
 describe("historical transcript transport", () => {
   it("uses display rows and a native stream fence, with details fetched separately", async () => {
@@ -42,61 +43,101 @@ describe("historical transcript transport", () => {
     await s.page({ beforeSeq: 20n, snapshotSeq: 1000n }, signal());
     expect(transcript.mock.calls[1][0]).toMatchObject({ beforeSeq: 20n });
   });
-  it("uses legacy pages only when this runtime lacks the new API", async () => {
-    const transcript = vi
-      .fn()
-      .mockRejectedValue(new ConnectError("old runtime", Code.Unimplemented));
-    const history = vi.fn(async ({ afterSeq }: { afterSeq: bigint }) => ({
-      events: Array.from({ length: 128 }, (_, i) =>
-        event(afterSeq + BigInt(i + 1)),
-      ),
-    }));
-    const s = source({ transcript, history });
-    const p = await s.page({ snapshotSeq: 10000n }, signal());
-    expect(p.events).toHaveLength(NATIVE_HISTORY_PAGE_SIZE);
-    expect(p.events[0].seq).toBe(8977n);
-    expect(p.events.at(-1)?.seq).toBe(10000n);
-    expect(p.hasNewer).toBe(false);
-    expect(history).toHaveBeenCalledTimes(8);
-    const older = await s.page(
-      { beforeSeq: 8977n, snapshotSeq: 10000n },
-      signal(),
-    );
-    expect(older.events.at(-1)?.seq).toBe(8976n);
-    expect(transcript).toHaveBeenCalledTimes(1);
-  });
-  it("fetches a larger native window in one round trip when the server honors the limit", async () => {
-    const history = vi.fn(async ({ afterSeq, limit }) => ({
-      events: Array.from({ length: limit }, (_, i) =>
-        event(afterSeq + BigInt(i + 1)),
-      ),
-    }));
+  // A runtime that cannot serve the projection is reported rather than paged
+  // natively and reduced here. That fallback is why this client used to carry a
+  // second copy of the server's reduction; see cxz#155.
+  it("says which side is behind when a runtime lacks the projection", async () => {
+    const history = vi.fn();
     const s = source({
       transcript: vi
         .fn()
-        .mockRejectedValue(
-          new ConnectError("old projection", Code.Unimplemented),
-        ),
+        .mockRejectedValue(new ConnectError("old runtime", Code.Unimplemented)),
       history,
     });
-    const p = await s.page({ snapshotSeq: 10000n }, signal());
-    expect(history).toHaveBeenCalledTimes(1);
-    expect(p.events).toHaveLength(NATIVE_HISTORY_PAGE_SIZE);
-    expect(p.events.at(-1)?.seq).toBe(10000n);
-    const newer = await s.page(
-      { afterSeq: 10000n, snapshotSeq: 10500n },
-      signal(),
+    await expect(s.page({}, signal())).rejects.toThrow(
+      "project's runtime is older than the manager",
     );
-    expect(newer.snapshotSeq).toBe(10500n);
-    expect(newer.events).toHaveLength(500);
-    expect(newer.hasNewer).toBe(false);
-    const older = await s.page(
-      { beforeSeq: 100n, snapshotSeq: 10000n },
-      signal(),
+    expect(history).not.toHaveBeenCalled();
+  });
+  // Rows resume from a version cursor, and a row arrives again when a later
+  // record corrects it. The caller replaces by seq; nothing is folded here.
+  it("streams row versions and carries the cursor, not the sequence", async () => {
+    const answer = create(SessionEventSchema, { seq: 4n, kind: "assistant" });
+    const rows = vi.fn(async function* () {
+      yield { event: answer, updated: 4n };
+      yield { event: answer, updated: 5n };
+      yield { updated: 6n };
+    });
+    const s = source({ rows });
+    const seen: bigint[] = [];
+    for await (const row of s.rows(3n, signal())) seen.push(row.updated);
+    expect(seen).toEqual([4n, 5n]);
+    expect(rows).toHaveBeenCalledWith(
+      expect.objectContaining({ afterUpdated: 3n, clientId: "c1" }),
+      expect.anything(),
     );
-    expect(older.events[0].seq).toBe(1n);
-    expect(older.events.at(-1)?.seq).toBe(99n);
-    expect(older.hasOlder).toBe(false);
+  });
+  // The hole in cxz#188: a stream that stays open and says nothing ends no
+  // race and throws nothing, so the conversation stopped growing while the
+  // client still read as live. The runtime's heartbeat is what makes silence
+  // reportable, and reporting it is what reconnects.
+  it("reports a row stream that goes quiet after telling it would speak up", async () => {
+    vi.useFakeTimers();
+    try {
+      const s = source({
+        rows: vi.fn(async function* () {
+          yield { event: event(4n), updated: 4n };
+          yield { updated: 4n };
+          await new Promise(() => {});
+        }),
+      });
+      const seen: bigint[] = [];
+      const read = (async () => {
+        for await (const row of s.rows(0n, signal())) seen.push(row.updated);
+      })();
+      const reported = expect(read).rejects.toThrow("stopped responding");
+      await vi.advanceTimersByTimeAsync(STREAM_STALL_MS);
+      await reported;
+      expect(seen).toEqual([4n]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  // A runtime that predates heartbeats is legitimately silent. Timing it out
+  // would reconnect a healthy conversation forever, so the deadline is armed by
+  // a heartbeat rather than by opening the stream.
+  it("waits indefinitely on a runtime that never says it is alive", async () => {
+    vi.useFakeTimers();
+    try {
+      const s = source({
+        rows: vi.fn(async function* () {
+          yield { event: event(4n), updated: 4n };
+          await new Promise(() => {});
+        }),
+      });
+      let settled = false;
+      const read = (async () => {
+        for await (const _ of s.rows(0n, signal())) void _;
+      })().then(
+        () => (settled = true),
+        () => (settled = true),
+      );
+      await vi.advanceTimersByTimeAsync(STREAM_STALL_MS * 10);
+      await Promise.race([read, Promise.resolve()]);
+      expect(settled).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it("says which side is behind when a runtime cannot stream rows", async () => {
+    const s = source({
+      rows: vi.fn(async function* () {
+        throw new ConnectError("no rows", Code.Unimplemented);
+      }),
+    });
+    await expect(async () => {
+      for await (const _ of s.rows(0n, signal())) void _;
+    }).rejects.toThrow("project's runtime is older than the manager");
   });
   it("never hides authorization, cancellation or network errors behind a history scan", async () => {
     const history = vi.fn();
@@ -107,7 +148,6 @@ describe("historical transcript transport", () => {
       history,
     });
     await expect(s.page({}, signal())).rejects.toThrow("denied");
-    expect(s.mode).toBe("unknown");
     expect(history).not.toHaveBeenCalled();
   });
 });

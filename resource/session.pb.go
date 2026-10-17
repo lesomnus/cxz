@@ -527,6 +527,7 @@ type SessionEvent struct {
 	xxx_hidden_Payload     []byte                 `protobuf:"bytes,7,opt,name=payload"`
 	xxx_hidden_Response    *ResponseMetadata      `protobuf:"bytes,8,opt,name=response"`
 	xxx_hidden_ToolSummary *ToolSummary           `protobuf:"bytes,9,opt,name=tool_summary,json=toolSummary"`
+	xxx_hidden_Heartbeat   bool                   `protobuf:"varint,10,opt,name=heartbeat"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -619,6 +620,13 @@ func (x *SessionEvent) GetToolSummary() *ToolSummary {
 	return nil
 }
 
+func (x *SessionEvent) GetHeartbeat() bool {
+	if x != nil {
+		return x.xxx_hidden_Heartbeat
+	}
+	return false
+}
+
 func (x *SessionEvent) SetRunId(v string) {
 	x.xxx_hidden_RunId = v
 }
@@ -658,6 +666,10 @@ func (x *SessionEvent) SetToolSummary(v *ToolSummary) {
 	x.xxx_hidden_ToolSummary = v
 }
 
+func (x *SessionEvent) SetHeartbeat(v bool) {
+	x.xxx_hidden_Heartbeat = v
+}
+
 func (x *SessionEvent) HasResponse() bool {
 	if x == nil {
 		return false
@@ -693,6 +705,16 @@ type SessionEvent_builder struct {
 	Response  *ResponseMetadata
 	// Present only on a derived transcript row, never in the native live journal.
 	ToolSummary *ToolSummary
+	// A frame that is not a record. A reader cannot tell an open stream with
+	// nothing to send from one that has stalled -- both are silence -- and only
+	// the sending side knows which it is, so it says so on an interval. Nothing
+	// else on such a frame is set: it carries no sequence, so a reader that
+	// advances its cursor by what it receives must skip it rather than rewind.
+	//
+	// The row stream says this by sending a row with no event, which needs no
+	// field of its own. A record stream's frame *is* the record, so saying it
+	// here is the only place it can be said. See cxz#191.
+	Heartbeat bool
 }
 
 func (b0 SessionEvent_builder) Build() *SessionEvent {
@@ -708,6 +730,7 @@ func (b0 SessionEvent_builder) Build() *SessionEvent {
 	x.xxx_hidden_Payload = b.Payload
 	x.xxx_hidden_Response = b.Response
 	x.xxx_hidden_ToolSummary = b.ToolSummary
+	x.xxx_hidden_Heartbeat = b.Heartbeat
 	return m0
 }
 
@@ -719,6 +742,8 @@ type ToolSummary struct {
 	xxx_hidden_State        string                 `protobuf:"bytes,4,opt,name=state"`
 	xxx_hidden_Files        *[]*ToolFileSummary    `protobuf:"bytes,5,rep,name=files"`
 	xxx_hidden_OmittedFiles uint32                 `protobuf:"varint,6,opt,name=omitted_files,json=omittedFiles"`
+	xxx_hidden_Kind         string                 `protobuf:"bytes,7,opt,name=kind"`
+	xxx_hidden_Description  string                 `protobuf:"bytes,8,opt,name=description"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -792,6 +817,20 @@ func (x *ToolSummary) GetOmittedFiles() uint32 {
 	return 0
 }
 
+func (x *ToolSummary) GetKind() string {
+	if x != nil {
+		return x.xxx_hidden_Kind
+	}
+	return ""
+}
+
+func (x *ToolSummary) GetDescription() string {
+	if x != nil {
+		return x.xxx_hidden_Description
+	}
+	return ""
+}
+
 func (x *ToolSummary) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
@@ -816,6 +855,14 @@ func (x *ToolSummary) SetOmittedFiles(v uint32) {
 	x.xxx_hidden_OmittedFiles = v
 }
 
+func (x *ToolSummary) SetKind(v string) {
+	x.xxx_hidden_Kind = v
+}
+
+func (x *ToolSummary) SetDescription(v string) {
+	x.xxx_hidden_Description = v
+}
+
 type ToolSummary_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -825,6 +872,15 @@ type ToolSummary_builder struct {
 	State        string
 	Files        []*ToolFileSummary
 	OmittedFiles uint32
+	// What shape this call is, which is what a reader lays out: command, files,
+	// read, or tool for one whose name is all that is known. Not inferable from
+	// the other fields -- a Read carries the path it read in `command` as well as
+	// in `files`, so a reader guessing from `command` would draw it as a shell.
+	Kind string
+	// What the provider said this call is, when it said anything: Bash's own
+	// description, or a Skill with its arguments. Empty otherwise, and a reader
+	// falls back to `name` rather than this repeating it.
+	Description string
 }
 
 func (b0 ToolSummary_builder) Build() *ToolSummary {
@@ -837,6 +893,8 @@ func (b0 ToolSummary_builder) Build() *ToolSummary {
 	x.xxx_hidden_State = b.State
 	x.xxx_hidden_Files = &b.Files
 	x.xxx_hidden_OmittedFiles = b.OmittedFiles
+	x.xxx_hidden_Kind = b.Kind
+	x.xxx_hidden_Description = b.Description
 	return m0
 }
 
@@ -1188,7 +1246,7 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\blast_seq\x18\x04 \x01(\x04R\alastSeq\x12+\n" +
 	"\apending\x18\x05 \x03(\v2\x11.cxz.SessionEventR\apending\x12'\n" +
 	"\x0fpermission_mode\x18\x06 \x01(\tR\x0epermissionMode\x12\x16\n" +
-	"\x06queued\x18\a \x01(\tR\x06queued\"\x99\x02\n" +
+	"\x06queued\x18\a \x01(\tR\x06queued\"\xb7\x02\n" +
 	"\fSessionEvent\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x10\n" +
 	"\x03seq\x18\x02 \x01(\x04R\x03seq\x12\x17\n" +
@@ -1199,14 +1257,18 @@ const file_cxz_session_proto_rawDesc = "" +
 	"request_id\x18\x06 \x01(\tR\trequestId\x12\x18\n" +
 	"\apayload\x18\a \x01(\fR\apayload\x121\n" +
 	"\bresponse\x18\b \x01(\v2\x15.cxz.ResponseMetadataR\bresponse\x123\n" +
-	"\ftool_summary\x18\t \x01(\v2\x10.cxz.ToolSummaryR\vtoolSummary\"\xb8\x01\n" +
+	"\ftool_summary\x18\t \x01(\v2\x10.cxz.ToolSummaryR\vtoolSummary\x12\x1c\n" +
+	"\theartbeat\x18\n" +
+	" \x01(\bR\theartbeat\"\xee\x01\n" +
 	"\vToolSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05shell\x18\x02 \x01(\tR\x05shell\x12\x18\n" +
 	"\acommand\x18\x03 \x01(\tR\acommand\x12\x14\n" +
 	"\x05state\x18\x04 \x01(\tR\x05state\x12*\n" +
 	"\x05files\x18\x05 \x03(\v2\x14.cxz.ToolFileSummaryR\x05files\x12#\n" +
-	"\romitted_files\x18\x06 \x01(\rR\fomittedFiles\"\xd7\x01\n" +
+	"\romitted_files\x18\x06 \x01(\rR\fomittedFiles\x12\x12\n" +
+	"\x04kind\x18\a \x01(\tR\x04kind\x12 \n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\"\xd7\x01\n" +
 	"\x0fToolFileSummary\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x1b\n" +
 	"\tmove_path\x18\x02 \x01(\tR\bmovePath\x12\x16\n" +

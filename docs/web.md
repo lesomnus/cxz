@@ -200,9 +200,8 @@ and terminal WebSockets are proxied to the installed gateway. This uses real
 projects and sessions, including real sends and decisions.
 
 File bodies pass through the authenticated attachment proxy to the Manager's
-private raw HTTP handler when supported, with an Upload RPC adapter for older
-Managers. [Attachment data path](attachment-data-path.md) documents the rollout
-and measured CPU/allocation improvements.
+private raw HTTP handler. [Attachment data path](attachment-data-path.md)
+documents the path and the measured CPU/allocation improvements.
 
 Vite terminates `/rpc-stream/` locally and forwards the Connect HTTP stream to
 the installed gateway, so this development path also works with older gateways.

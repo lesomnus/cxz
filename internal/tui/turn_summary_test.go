@@ -65,10 +65,11 @@ func TestConversationAlignmentAndSummaryPlacement(t *testing.T) {
 	m.projectView = false
 	m.sessions = []*api.Session{{Id: "s", Agent: "claude"}}
 	m.events["s"] = []*api.Event{
-		{Kind: "input", Text: "prompt", TimeMs: 1000},
-		{Kind: "assistant", Text: "reply"},
-		{Kind: "turn_end", Text: "completed", TimeMs: 2500, Payload: []byte(`{"costUSD":0.1}`)},
+		{Seq: 1, Kind: "input", Text: "prompt", TimeMs: 1000},
+		{Seq: 2, Kind: "assistant", Text: "reply"},
+		{Seq: 3, Kind: "turn_end", Text: "completed", TimeMs: 2500, Payload: []byte(`{"total_cost_usd":0.1}`)},
 	}
+	setRows(m, "s", m.events["s"])
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	text := ansi.Strip(m.sessionScreen())
 	// One column of the fill stays left of the cursor; the reply keeps two.

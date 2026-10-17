@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/shellview"
@@ -20,6 +21,36 @@ import (
 
 const DefaultPage = 256
 const MaxPage = 1024
+
+// Heartbeat is how often a row stream with nothing to send says so, by sending
+// a row with no event. A reader cannot tell an open stream that is idle from
+// one that has stalled -- both are silence -- and only the sending side knows
+// which it is; see cxz#188. It lives beside the projection that every row
+// stream serves, so a runtime and the sandbox cannot drift on what silence
+// means. A reader arms its own deadline at some multiple of this.
+const Heartbeat = 10 * time.Second
+
+// metadataKinds are the records a page carries beside its rows. They are not
+// rows -- nobody reads a usage record -- but a reader derives from them: what
+// quota is left, which models the provider offered, where the context was
+// compacted, how much of the window a turn used. Every one of those is a scan
+// backwards for the latest record of its kind, so a page that omits a kind
+// leaves the thing derived from it blank until the agent speaks again.
+//
+// `usage_status` is here because quota's state -- polling, unsupported, error
+// -- is only in those records, and a client that has usage without them cannot
+// tell "no limits reported" from "limits not asked for yet".
+//
+// `models_status` is deliberately absent: the supervisor writes it, and no
+// reader derives anything from the journal copy. The Models RPC answers with
+// its own status field.
+var metadataKinds = []string{"models", "usage", "usage_status", "compact", "turn_end"}
+
+// metadataPerKind is kept per kind rather than across them. A single budget
+// spent in arrival order is spent by whatever is chattiest -- usage and
+// turn_end, every turn -- which evicts the one `models` record a long session
+// ever wrote, and the compact boundary with it.
+const metadataPerKind = 32
 
 type Decode func([]byte) (*api.Event, error)
 type Version struct {
@@ -119,7 +150,15 @@ func summary(e *api.Event) *api.Event {
 	if text(item, "type") != "" {
 		provider = "codex"
 	}
+	// A reader lays a call out by its shape, and the shape is not recoverable
+	// from the rest of the row: a Read puts the path it read in Command as well
+	// as in Files, so Command being set does not mean a shell ran. Kind says it
+	// instead. Description carries the provider's own words when it supplied
+	// any -- Bash's description, a Skill's arguments -- and stays empty rather
+	// than repeating Name, which a reader already has.
+	label.Kind = "tool"
 	if activity, ok := toolview.ToolView(provider, e.Text, e.Payload); ok {
+		label.Kind, label.Description = activity.Kind, clip(activity.Description, 1024)
 		const maxFiles = 256
 		for _, f := range activity.Files[:min(len(activity.Files), maxFiles)] {
 			label.Files = append(label.Files, &api.ToolFileSummary{Path: clip(f.Path, 1024), MovePath: clip(f.MovePath, 1024), Action: f.Action, Added: uint32(f.Added), Removed: uint32(f.Removed), Lines: uint32(f.Lines), Measure: f.Measure, PerMatch: f.PerMatch})
@@ -194,9 +233,11 @@ func (p *Projection) Apply(e *api.Event) {
 			return
 		}
 	case "approval":
-		if isQuestion(e) {
-			p.questions[key] = e
-		}
+		// Every approval row keeps its own request, so a resolution has
+		// somewhere to be folded. A question always needed that; so does an
+		// approval whose tool never produced a row -- its decision used to be
+		// dropped, leaving the row reading "requested" after it was answered.
+		p.questions[key] = e
 		if id := related(e); id != "" {
 			toolKey := identity(e.RunId, id)
 			p.approvals[key] = toolKey
@@ -211,7 +252,7 @@ func (p *Projection) Apply(e *api.Event) {
 			}
 		}
 	case "approval_resolved":
-		if request := p.questions[key]; request != nil {
+		if request := p.questions[key]; request != nil && p.Rows[request.Seq] != nil {
 			v := proto.Clone(request).(*api.Event)
 			data := object(request.Payload)
 			resolution := object(e.Payload)
@@ -297,8 +338,14 @@ func (p *Projection) Apply(e *api.Event) {
 		return
 	}
 	v := proto.Clone(e).(*api.Event)
-	// Questions retain their options; other native bodies are loaded on demand.
-	if e.Kind != "approval" {
+	// A payload is dropped because it is a native body, loaded on demand by a
+	// reader that wants it. Two kinds are exceptions, because their payload is
+	// not a body but the whole of what the row says: a question's options, and
+	// the floor a trim leaves behind -- without it a client cannot tell that
+	// display history below it is gone while the agent's context is not.
+	// The kind is spelled out rather than taken from internal/core: that package
+	// locks files, which the WASM sandbox cannot build. See core.HistoryTrimmedKind.
+	if e.Kind != "approval" && e.Kind != "history_trimmed" {
 		v.Payload = nil
 	}
 	if slices.Contains([]string{"diagnostic", "stderr", "error"}, e.Kind) || e.Kind == "turn_end" && e.Text == "failed" {
@@ -589,7 +636,17 @@ func Page(ctx context.Context, db *sql.DB, r *api.TranscriptRequest, decode Deco
 			return nil, err
 		}
 	}
-	rows, err = db.QueryContext(ctx, `SELECT e.data FROM transcript_records r JOIN events e ON e.session_id=r.session_id AND e.seq=r.seq WHERE r.session_id=? AND r.seq<=? AND r.kind IN ('models','usage','compact','turn_end') ORDER BY r.seq DESC LIMIT 64`, r.SessionId, out.SnapshotSeq)
+	// Ranked within each kind, so the newest of a rare kind survives a session
+	// that wrote thousands of a common one. Ordered ascending on the way out,
+	// which is how a reader merges them.
+	meta := []any{r.SessionId, out.SnapshotSeq}
+	for _, kind := range metadataKinds {
+		meta = append(meta, kind)
+	}
+	meta = append(meta, metadataPerKind)
+	rows, err = db.QueryContext(ctx, `SELECT data FROM (SELECT e.data AS data, r.seq AS seq, ROW_NUMBER() OVER (PARTITION BY r.kind ORDER BY r.seq DESC) AS rank`+
+		` FROM transcript_records r JOIN events e ON e.session_id=r.session_id AND e.seq=r.seq`+
+		` WHERE r.session_id=? AND r.seq<=? AND r.kind IN (`+placeholders(len(metadataKinds))+`)) WHERE rank<=? ORDER BY seq`, meta...)
 	if err != nil {
 		return nil, err
 	}
@@ -613,8 +670,39 @@ func Page(ctx context.Context, db *sql.DB, r *api.TranscriptRequest, decode Deco
 	if err != nil {
 		return nil, err
 	}
-	slices.Reverse(out.Metadata)
 	return out, nil
+}
+
+func placeholders(n int) string {
+	return strings.TrimSuffix(strings.Repeat("?,", n), ",")
+}
+
+// keepPerKind is what the SQL above does with a window function, for the
+// in-memory path that has no SQL. Order is preserved, so the result is still
+// ascending by seq.
+func keepPerKind(all []*api.Event) []*api.Event {
+	seen := map[string]int{}
+	for _, e := range all {
+		seen[e.Kind]++
+	}
+	drop := map[string]int{}
+	for kind, n := range seen {
+		if n > metadataPerKind {
+			drop[kind] = n - metadataPerKind
+		}
+	}
+	if len(drop) == 0 {
+		return all
+	}
+	out := make([]*api.Event, 0, len(all))
+	for _, e := range all {
+		if drop[e.Kind] > 0 {
+			drop[e.Kind]--
+			continue
+		}
+		out = append(out, e)
+	}
+	return out
 }
 func Details(ctx context.Context, db *sql.DB, r *api.EventDetailsRequest, decode Decode) (*api.EventBatch, error) {
 	var b []byte
@@ -674,4 +762,43 @@ func pageLimit(limit uint32) int {
 		return DefaultPage
 	}
 	return int(min(limit, uint32(MaxPage)))
+}
+
+// Tail is the projection as it arrives, for a client that is reading rather
+// than deriving. It answers with every row version published after a cursor,
+// in publication order.
+//
+// A cursor over `updated` rather than over `seq` is what makes a stream of rows
+// possible at all: folding a turn's metrics onto its response publishes that
+// response again, at the sequence of the record that completed it. Ordering by
+// updated therefore delivers the correction after the row it corrects, and a
+// reader replaces by seq. Page asks the same table for one version per seq as
+// of a snapshot; this asks it for the versions themselves.
+//
+// The data column holds the row as Page returns it, so a row from here and the
+// same row from a page are the same bytes. That is the property the clients
+// depend on, and history_test.go pins it.
+func Tail(ctx context.Context, db *sql.DB, id string, afterUpdated uint64, limit int, decode Decode) ([]*api.Row, error) {
+	if limit <= 0 {
+		limit = 256
+	}
+	rows, err := db.QueryContext(ctx, `SELECT seq,updated,data FROM transcript_rows WHERE session_id=? AND updated>? ORDER BY updated ASC,seq ASC LIMIT ?`, id, afterUpdated, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*api.Row
+	for rows.Next() {
+		var seq, updated uint64
+		var b []byte
+		if err = rows.Scan(&seq, &updated, &b); err != nil {
+			return nil, err
+		}
+		var e api.Event
+		if err = json.Unmarshal(b, &e); err != nil {
+			return nil, err
+		}
+		out = append(out, &api.Row{Event: &e, Updated: updated})
+	}
+	return out, rows.Err()
 }

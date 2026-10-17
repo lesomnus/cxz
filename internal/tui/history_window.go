@@ -10,6 +10,18 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// historyTurnClosed says a turn has ended, in what a row can show. A turn that
+// completed leaves no turn_end row at all -- the projection folds that record
+// away once its metrics are on the response -- so the response carrying them is
+// the signal. A turn that ended any other way keeps its turn_end row, because
+// there was no completion to fold.
+//
+// Between them every finished turn is visible, which is what the bound needs:
+// a window with no boundaries in sight would never evict anything.
+func historyTurnClosed(e *api.Event) bool {
+	return e.Kind == "turn_end" || e.Kind == "assistant" && len(e.GetResponse().GetCompletionJson()) > 0
+}
+
 type historyWindow struct {
 	floor         uint64
 	tail          uint64
@@ -18,9 +30,9 @@ type historyWindow struct {
 	generation    uint64
 	direction     int
 	measured      int
+	boundaryReady bool
 	measuredBytes int
 	measuredTurns int
-	boundaryReady bool
 	first         *api.Event
 	last          *api.Event
 }
@@ -55,25 +67,37 @@ func pruneCache[K comparable, V any](cache map[K]V, loaded func(K) bool) {
 // so keep what is still loaded and drop only the rest.
 func (m *model) dropUnloadedRenderCaches() {
 	loaded := make(map[*api.Event]bool, m.loadedEvents())
-	for _, events := range m.events {
+	for _, events := range m.rows {
 		for _, e := range events {
 			loaded[e] = true
+		}
+	}
+	// Two stores, two sets: a drawing is keyed by the row it drew, and a parsed
+	// record by the record it parsed. Keeping a drawing alive because the
+	// record behind it is still held would keep the window's worth of rendered
+	// text after the rows left.
+	records := map[*api.Event]bool{}
+	for _, events := range m.events {
+		for _, e := range events {
+			records[e] = true
 		}
 	}
 	keep := func(e *api.Event) bool { return e == nil || loaded[e] }
 	pruneCache(m.renderedResponses, keep)
 	pruneCache(m.renderedInputs, func(k inputRenderKey) bool { return keep(k.event) })
-	pruneCache(m.renderedSummaries, func(k summaryRenderKey) bool { return keep(k.event) && keep(k.usage) })
-	pruneCache(m.toolActivities, func(k toolActivityKey) bool { return keep(k.event) })
-	pruneCache(m.renderedTools, func(k toolRenderKey) bool { return keep(k.event) && keep(k.result) })
-	pruneCache(m.quotaParses, func(k quotaParseKey) bool { return keep(k.event) })
+	pruneCache(m.renderedSummaries, func(k summaryRenderKey) bool { return keep(k.event) })
+	pruneCache(m.renderedTools, func(k toolRenderKey) bool { return keep(k.event) })
+	pruneCache(m.quotaParses, func(k quotaParseKey) bool { return k.event == nil || records[k.event] })
 	pruneCache(m.hiddenEvents, keep)
 	// A single entry whose key carries the window edges: it revalidates itself.
 	m.contextStatusCache = nil
 }
+
+// loadedEvents counts the display list, which is what the window bounds and
+// what the render caches are keyed by.
 func (m *model) loadedEvents() int {
 	n := 0
-	for _, events := range m.events {
+	for _, events := range m.rows {
 		n += len(events)
 	}
 	return n
@@ -88,12 +112,15 @@ func (m *model) applyHistoryFloor(id string, floor uint64) {
 	w.first = nil
 	w.last = nil
 	var keep []*api.Event
-	for _, e := range m.events[id] {
+	for _, e := range m.rows[id] {
 		if e.Seq > floor {
 			keep = append(keep, e)
 		}
 	}
-	m.events[id] = keep
+	if m.rows == nil {
+		m.rows = map[string][]*api.Event{}
+	}
+	m.rows[id] = keep
 	if m.historyStart == nil {
 		m.historyStart = map[string]uint64{}
 	}
@@ -106,8 +133,13 @@ func (m *model) applyHistoryFloor(id string, floor uint64) {
 // journal coordinate the reader is looking at, or zero when nobody is: the turn
 // holding it is never evicted, so a page fetched on their behalf cannot take
 // the ground they are standing on.
+//
+// A turn begins at an input row that follows a turn which ended, and both parts
+// matter. Taking every input as a boundary was tried: it splits a turn the
+// reader steered -- typing while the agent works is an input mid-turn -- and
+// evicting at that point takes away the half they were reading.
 func (m *model) limitHistory(id string, older bool, keep float64) bool {
-	events := m.events[id]
+	events := m.rows[id]
 	p := m.windowPreference()
 	maxBytes, maxTurns := p.Limits()
 	w := m.historyWindow(id)
@@ -209,12 +241,12 @@ shrink:
 		w.detached = true
 		w.tail = events[to-1].Seq
 	}
-	m.events[id] = append([]*api.Event(nil), events[from:to]...)
+	m.rows[id] = append([]*api.Event(nil), events[from:to]...)
 	if m.historyStart == nil {
 		m.historyStart = map[string]uint64{}
 	}
 	if from > 0 {
-		m.historyStart[id] = max(w.floor, m.events[id][0].Seq-1)
+		m.historyStart[id] = max(w.floor, m.rows[id][0].Seq-1)
 	}
 	started := time.Now()
 	m.dropUnloadedRenderCaches()
@@ -274,18 +306,16 @@ func (m *model) requestNewerHistory(latest bool) tea.Cmd {
 	if !latest && m.view.TotalLineCount()-m.view.YOffset > m.view.Height*7 {
 		return nil
 	}
-	events := m.events[s.Id]
+	events := m.rows[s.Id]
 	after := w.tail
 	if after == 0 && len(events) > 0 {
 		after = events[len(events)-1].Seq
 	}
 	if latest {
-		after = max(s.LastSeq, m.cursor[s.Id])
-		if after > historyPageSize {
-			after -= historyPageSize
-		} else {
-			after = 0
-		}
+		// The tail, counted in rows: ask for the newest page and let the
+		// snapshot fence it, rather than guessing a journal coordinate a
+		// readable page might start at.
+		after = 0
 		w.generation++
 		w.direction = 1
 		delete(m.historyLoading, s.Id)
@@ -295,10 +325,18 @@ func (m *model) requestNewerHistory(latest bool) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
 		defer cancel()
-		batch, err := m.fetchHistory(ctx, id, after, "newer")
+		r := &api.TranscriptRequest{AfterSeq: after}
+		if latest {
+			r = &api.TranscriptRequest{}
+		}
+		reply, err := m.fetchTranscript(ctx, id, r, "newer")
 		page := historyPage{id: id, start: after, err: err}
-		if batch != nil {
-			page.events = batch.Events
+		if reply != nil {
+			page.rows, page.events = reply.Events, reply.Metadata
+			page.snapshotSeq, page.hasOlder = reply.SnapshotSeq, reply.HasOlder
+			if latest && len(reply.Events) > 0 && reply.HasOlder {
+				page.start = reply.Events[0].Seq - 1
+			}
 		}
 		return historyWindowPage{m.prepareHistoryPage(ctx, page, agent, width), generation, after, latest}
 	}
@@ -318,25 +356,29 @@ func (m *model) applyWindowPage(result historyWindowPage) tea.Cmd {
 		return nil
 	}
 	anchor := m.historyAnchor()
-	m.applyHistoryFloor(p.id, historyBatchFloor(p.events))
+	m.applyHistoryFloor(p.id, historyBatchFloor(p.rows))
 	if result.latest {
-		m.events[p.id] = nil
-		m.historyStart[p.id] = max(result.after, w.floor)
+		m.rows[p.id] = nil
+		m.historyStart[p.id] = max(p.start, w.floor)
 	}
-	events := m.events[p.id]
+	events := m.rows[p.id]
 	last := result.after
 	if len(events) > 0 {
 		last = events[len(events)-1].Seq
 	}
-	for _, e := range p.events {
+	for _, e := range p.rows {
 		if e.Seq > last && e.Seq > w.floor {
 			last = e.Seq
-			m.events[p.id] = append(m.events[p.id], e)
+			m.rows[p.id] = append(m.rows[p.id], e)
 		}
+	}
+	if p.snapshotSeq > last {
+		last = p.snapshotSeq
 	}
 	w.tail = last
 	w.detached = last < m.cursor[p.id]
 	m.mergePreparedHistory(p)
+	m.mergeRecords(p.id, p.events)
 	// Latest takes the reader to the tail on purpose, and has already dropped
 	// the rows their old coordinate pointed at.
 	keep := 0.0
@@ -355,6 +397,17 @@ func (m *model) applyWindowPage(result historyWindowPage) tea.Cmd {
 	return nil
 }
 
-func historyTurnClosed(e *api.Event) bool {
-	return e.Kind == "turn_end" || e.Kind == "state" && (e.Text == "idle" || e.Text == "stopped" || e.Text == "failed" || e.Text == "interrupted")
+// limitRecords bounds the record store, which is not the display list and is
+// not bounded like one: nothing scrolls through records, and what reads them
+// wants the latest of a kind. So this keeps a flat tail rather than whole
+// turns, and never evicts on a reader's behalf.
+func (m *model) limitRecords(id string) bool {
+	const keep = 4096
+	events := m.events[id]
+	if len(events) <= keep {
+		return false
+	}
+	m.events[id] = append([]*api.Event(nil), events[len(events)-keep:]...)
+	m.dropUnloadedRenderCaches()
+	return true
 }

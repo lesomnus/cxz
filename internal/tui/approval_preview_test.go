@@ -20,6 +20,7 @@ func TestMCPApprovalLabelAndDoubleClick(t *testing.T) {
 			{Seq: 2, RunId: "run", RequestId: "mcp-1", Kind: "approval_resolved", Text: state},
 			{Seq: 3, RunId: "other-run", RequestId: "mcp-1", Kind: "approval_resolved", Text: "wrong-run"},
 		}
+		setRows(m, "s", m.events["s"])
 		m.render()
 		m.view.GotoTop()
 		view := ansi.Strip(m.view.View())
@@ -42,7 +43,7 @@ func TestMCPApprovalLabelAndDoubleClick(t *testing.T) {
 			t.Fatal("single click opened approval")
 		}
 		m.Update(tea.MouseMsg{X: click.X, Y: click.Y, Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
-		m.Update(click)
+		update(t, m, click)
 		p := m.filePreview
 		if p == nil || !strings.Contains(p.title, "cxz_memory") || !strings.Contains(p.source, "Approval status: "+state) || !strings.Contains(p.source, `"future": "retained"`) || !strings.Contains(p.source, "Save project decisions.") {
 			t.Fatalf("incomplete approval preview: %+v", p)
@@ -58,11 +59,12 @@ func TestMCPApprovalMissingNameAndResolution(t *testing.T) {
 	m.current().Agent = "codex"
 	e := &api.Event{Seq: 1, Kind: "approval", Text: agentview.CodexElicitation, Payload: []byte(`{"params":{"mode":"form"}}`)}
 	m.events["s"] = []*api.Event{e}
+	setRows(m, "s", m.events["s"])
 	if got := ansi.Strip(approvalLine(m.current(), e, "allowed", 80)); strings.Contains(got, "·") || !strings.Contains(got, "✓ MCP") {
 		t.Fatal(got)
 	}
-	p := m.previewForSequence(1)
-	if p == nil || !strings.Contains(p.source, "No resolution recorded in loaded history.") {
+	p := preview(m, 1)
+	if p == nil || !strings.Contains(p.source, "No resolution recorded for this request.") {
 		t.Fatal(p)
 	}
 }

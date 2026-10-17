@@ -1,11 +1,13 @@
 package tui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
@@ -64,20 +66,18 @@ func eventView(s *api.Session, e *api.Event, width int) (out string) {
 		return strings.TrimPrefix(approvalLine(s, e, "requested", width+2), "  ")
 	case "approval_resolved":
 		return ""
-	case "tool_call":
+	case "tool_call", "tool_result":
 		if question(e) {
 			return lavender.Render("? Question · open /answer to choose")
 		}
-		if activity, ok := agentview.ToolView(s.Agent, e.Text, e.Payload); ok {
+		// A row says what its tool is; a bare record does not, and this is the
+		// only thing left that can be handed one -- a tool whose row the
+		// projection never built, which is a tool only by its kind.
+		if label := e.GetToolSummary(); label != nil {
 			// This branch is already indented by eventView's deferred wrapper.
-			return toolActivityStateBody(activity, nil, width+2, toolInitialState(s.Agent, e))
+			return toolSummaryBody(label, width+2, label.GetState())
 		}
 		return lavender.Render(wrap("tool › " + e.Text + " · /details"))
-	case "tool_result":
-		if activity, ok := agentview.ToolView(s.Agent, e.Text, e.Payload); ok && activity.Kind == "files" {
-			return toolActivityBody(activity, e, width+2)
-		}
-		return muted.Render(clip(toolResultSummary(e), width))
 	case "compact":
 		return accent.Render(wrap("◇ Context compacted · journal retained"))
 	case "turn_end":
@@ -159,41 +159,92 @@ func toolResultSummary(e *api.Event) string {
 	return result
 }
 
-func (m *model) toolDetails() {
-	if s := m.current(); s != nil {
-		events := m.events[s.Id]
-		for i := len(events) - 1; i >= 0; i-- {
-			e := events[i]
-			if e.Kind != "tool_result" && e.Kind != "tool_call" {
-				continue
+// toolDetails answers /details with the newest tool's own records. Which record
+// is newest is answered from what is loaded -- a row carries its kind -- and the
+// bytes come from the runtime, because a row does not carry them.
+func (m *model) toolDetails() tea.Cmd {
+	s := m.current()
+	if s == nil {
+		m.recordLocal("/details", "Select a session first.")
+		return nil
+	}
+	events := m.rows[s.Id]
+	for i := len(events) - 1; i >= 0; i-- {
+		e := events[i]
+		if e.GetToolSummary() == nil {
+			continue
+		}
+		id, seq := s.Id, e.Seq
+		client := m.client
+		return func() tea.Msg {
+			ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
+			defer cancel()
+			batch, err := client.EventDetails(ctx, &api.EventDetailsRequest{SessionId: id, Seq: seq})
+			out := toolDetailsLoaded{session: id, seq: seq, subject: e, err: err}
+			if batch != nil {
+				out.events = batch.Events
 			}
-			var value any
-			text := string(e.Payload)
-			if json.Unmarshal(e.Payload, &value) == nil {
-				b, _ := json.MarshalIndent(value, "", "  ")
-				text = string(b)
-			}
-			callDetail := ""
-			for j := i - 1; e.Kind == "tool_result" && j >= 0; j-- {
-				call := events[j]
-				if call.Kind == "tool_call" && call.RequestId != "" && call.RequestId == e.RequestId && call.RunId == e.RunId {
-					payload := string(call.Payload)
-					var input any
-					if json.Unmarshal(call.Payload, &input) == nil {
-						b, _ := json.MarshalIndent(input, "", "  ")
-						payload = string(b)
-					}
-					callDetail = fmt.Sprintf("Tool input · event %d · %s\n%s\n\n", call.Seq, call.Text, payload)
-					break
-				}
-			}
-			kind := "Tool result"
-			if e.Kind == "tool_call" {
-				kind = "Tool input"
-			}
-			m.recordLocal("/details", callDetail+fmt.Sprintf("%s · event %d\n%s\n%s", kind, e.Seq, e.Text, text))
-			return
+			return out
 		}
 	}
 	m.recordLocal("/details", "No tool activity in the received history yet.")
+	return nil
+}
+
+type toolDetailsLoaded struct {
+	session string
+	seq     uint64
+	subject *api.Event
+	events  []*api.Event
+	err     error
+}
+
+func (m *model) acceptToolDetails(v toolDetailsLoaded) {
+	if s := m.current(); s == nil || s.Id != v.session {
+		return
+	}
+	if v.err != nil {
+		m.recordLocal("/details", "Tool details are unavailable: "+v.err.Error())
+		return
+	}
+	m.recordLocal("/details", toolDetailsReport(v.subject, v.events))
+}
+
+// toolDetailsReport writes out a tool's own records. A row is one tool, so both
+// halves belong to it: what was submitted, and what came back. Which record
+// opened the row does not decide what is shown, which it used to -- picking a
+// result reported its call, and picking a call reported no result at all.
+func toolDetailsReport(subject *api.Event, events []*api.Event) string {
+	var call, result *api.Event
+	for _, e := range events {
+		if e.RunId != subject.RunId || e.RequestId != subject.RequestId {
+			continue
+		}
+		switch e.Kind {
+		case "tool_call":
+			call = e
+		case "tool_result":
+			result = e
+		}
+	}
+	var out []string
+	if call != nil {
+		out = append(out, fmt.Sprintf("Tool input · event %d · %s\n%s", call.Seq, call.Text, indented(call.Payload)))
+	}
+	if result != nil {
+		out = append(out, fmt.Sprintf("Tool result · event %d\n%s\n%s", result.Seq, result.Text, indented(result.Payload)))
+	}
+	if len(out) == 0 {
+		return fmt.Sprintf("Tool · event %d\n%s\n%s", subject.Seq, subject.Text, indented(subject.Payload))
+	}
+	return strings.Join(out, "\n\n")
+}
+
+func indented(payload []byte) string {
+	var value any
+	if json.Unmarshal(payload, &value) == nil {
+		b, _ := json.MarshalIndent(value, "", "  ")
+		return string(b)
+	}
+	return string(payload)
 }

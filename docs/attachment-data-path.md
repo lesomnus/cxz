@@ -1,27 +1,29 @@
 # Attachment data path
 
-The browser and eligible TUI connections upload a raw HTTP request body to the
-Manager that owns the attachment store. No protobuf content messages are created
-on this path. Session discovery, aliases and every other control operation stay
-on the existing RPC API. `SessionService.Upload` remains the compatibility API;
-the in-process WASM sandbox continues to use it.
+Every client uploads a raw HTTP request body to the Manager that owns the
+attachment store. No protobuf content messages are created anywhere: there is
+one upload path and `SessionService.Upload` no longer exists. Session discovery,
+aliases and every other control operation stay on the RPC API.
 
 ```mermaid
 flowchart LR
   Browser -->|raw body, browser cookie| Gateway
   Gateway -->|raw HTTP, private web.sock| Manager
   TUI -->|raw HTTP, local or SSH bridge| Manager
+  TUI -->|raw HTTP, token or client certificate| Relay[TCP / mTLS relay]
+  Relay -->|raw HTTP, private web.sock| Manager
   Manager -->|lifecycle checks, io.Reader| CAS[flob CAS and immutable export]
-  Compatibility[Older Manager / TCP / mTLS / WASM] -->|Session.Upload| Manager
+  Sandbox[WASM sandbox] -->|raw HTTP, worker message channel| Fake[in-page handler]
 ```
 
 `HEAD /attachments/` on the private Manager listener advertises
 `Cxz-Attachment-Protocol: 1`. `POST /attachments/{runtime-id}` uses `run`, `name`
-and `size` query parameters and returns `{"path":"/cxz/assets/..."}`. Metadata
-and actual EOF are checked independently. TUI requests use chunked HTTP so an
+and `size` query parameters and returns `{"path":"/cxz/assets/..."}`. A relay
+serves the same two on its own listener, beside the calls, and forwards them to
+the Manager's socket. Metadata and actual EOF are checked independently. TUI requests use chunked HTTP so an
 excess source byte cannot be silently omitted by a fixed Content-Length before
 storage decides whether to publish. Browser File bodies retain their native
-Content-Length. Limits and filename rules live in `internal/assets/store.go`.
+Content-Length. Limits and filename rules live in `internal/assets/assets.go`.
 
 Storage consumes the same reader in both implementations. The lifecycle layer
 resolves the session while holding the existing transition lock; the runtime
@@ -44,15 +46,27 @@ keep their existing semantics.
 | Host-local TUI / installed Manager | Private socket, or the existing authenticated Docker exec bridge |
 | Explicit conventional Unix daemon socket | Neighboring private Connect socket |
 | SSH TUI | Same SSH identity, binary and state, through `_connect-http` |
-| TCP or mTLS relay, including enrolled SSH using mTLS | Existing authenticated gRPC Upload |
-| Manager without raw endpoint | Existing gRPC Upload |
-| In-process WASM sandbox | Existing in-process Upload |
+| TCP relay | The relay's own listener, with the `Authorization: Bearer` its calls carry |
+| mTLS relay, including enrolled SSH using mTLS | The relay's own listener, authorized by the same handshake |
+| In-process WASM sandbox | The same handler, over the worker's message channel |
 
-Relays currently forward native gRPC and do not advertise raw HTTP. The client
-does not infer another port, obtain a new credential or unexpectedly open SSH
-after choosing an enrolled mTLS connection. Adding authenticated raw relay
-multiplexing is a separate transport change; preserving the RPC adapter is the
-rollout decision here.
+A relay carries bodies on the one address and with the one credential its calls
+use. Both are HTTP/2, so the route is the only addition: `/attachments/` is
+forwarded to the Manager's socket and everything else remains the transparent
+gRPC proxy, which still passes through methods the relay does not know. There is
+no second port, and no tunnel RPC -- wrapping a body in protobuf messages again
+is the cost this exists to remove. The client does not infer another port,
+obtain a new credential or unexpectedly open SSH after choosing an enrolled mTLS
+connection; without the connection's credential there is no raw client at all,
+and the connection falls back to RPC.
+
+On the plaintext surface the token travels as the header its calls already
+travel in, so there is no second credential to manage and nothing new is
+exposed. On mTLS there is nothing for the route to check that the handshake has
+not already refused: a request that reaches a handler presented a certificate
+this installation signed, has not revoked, and issued for a client rather than
+for the relay. Either way authorization happens before the body is read, so a
+refused upload does not first cost the transfer.
 
 Capability discovery happens before consuming upload bytes. A missing endpoint
 or absent private socket can select compatibility; authentication failures and
@@ -65,7 +79,12 @@ source ownership with the caller.
 
 Updating the UI alone does not update the Manager storage endpoint. Update both
 Manager and web gateway to use the raw browser path; newer clients and gateways
-retain compatibility with a Manager that still exposes only Upload.
+cannot upload to a Manager that does not serve the route, and a relay that has
+not been updated serves `/` and not `/attachments/`. Both report that rather
+than falling back, because there is nothing left to fall back to. A connection
+with no data path at all -- a unix address that is not a Manager's
+`daemon.sock`, a relay whose credential this client does not hold -- says so
+when an upload is attempted.
 
 ## Measurement
 
@@ -122,20 +141,23 @@ it excludes baseline memory, stacks, kernel buffers and OS page cache, and may
 miss peaks between samples. It is not peak RSS or a memory limit. Raw HTTP still
 copies buffers, hashes data and encrypts TLS records; it is not zero-copy.
 
-These results support the raw path for eligible uploads while retaining RPC for
-transport compatibility. More extensive production/relay and cold-storage
-measurements should precede any decision to remove Upload.
+These results are what retiring the RPC rests on. More extensive
+production/relay and cold-storage measurement would still be worth having, but
+the gap measured here is not close enough to argue about.
 
 ## Validation
 
 - Raw HTTP storage tests cover binary/Unicode names, empty files, short and
   excessive streams, stale runs, cancellation, immutable publication and purge.
 - Lifecycle/resource-client tests cover runtime IDs, aliases, unknown sessions,
-  transaction restrictions, missing endpoint fallback and no replay after a
-  dropped POST receipt.
+  transaction restrictions, a Manager without the endpoint, a connection with no
+  data path, and a dropped POST receipt reported rather than retried.
 - The private-socket transport test verifies local installation and conventional
   Unix selection, and refuses invented TCP/mTLS endpoints.
-- Web tests cover cookie/origin authentication, large raw bodies without invoking
-  Upload RPC, legacy RPC compatibility and logout during a stalled upload.
+- Web tests cover cookie/origin authentication, large raw bodies, declared sizes
+  that disagree with the body, and logout during a stalled upload.
+- Relay tests cover a body carried beside the calls on one listener, a foreign
+  certificate refused at the handshake, and a wrong token refused before the
+  body is read.
 - The browser file-drop test uses the real private HTTP proxy and storage reader;
   it checks returned paths and the attachment reference sent to the conversation.

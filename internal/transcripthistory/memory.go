@@ -25,16 +25,14 @@ func FromEvents(events []*api.Event, r *api.TranscriptRequest) (*api.TranscriptR
 	for _, e := range events {
 		if e.Seq <= out.SnapshotSeq {
 			projection.Apply(e)
-			if slices.Contains([]string{"models", "usage", "compact", "turn_end"}, e.Kind) {
+			if slices.Contains(metadataKinds, e.Kind) {
 				if v := metadata(e); v != nil {
 					out.Metadata = append(out.Metadata, v)
 				}
 			}
 		}
 	}
-	if len(out.Metadata) > 64 {
-		out.Metadata = out.Metadata[len(out.Metadata)-64:]
-	}
+	out.Metadata = keepPerKind(out.Metadata)
 	all := make([]*api.Event, 0, len(projection.Rows))
 	for _, e := range projection.Rows {
 		all = append(all, e)
@@ -104,4 +102,23 @@ func DetailsFromEvents(events []*api.Event, seq uint64) (*api.EventBatch, error)
 		}
 	}
 	return out, nil
+}
+
+// VersionsFromEvents is Tail without a database, for an in-memory conversation.
+// The sandbox has one, and it has to answer the same rows the index would: a
+// page the sandbox serves and a row the sandbox streams come from this same
+// projection, which is the property that makes the sandbox worth designing
+// against.
+func VersionsFromEvents(events []*api.Event, afterUpdated uint64) []Version {
+	p := New()
+	for _, e := range events {
+		p.Apply(e)
+	}
+	var out []Version
+	for _, v := range p.Versions {
+		if v.Updated > afterUpdated {
+			out = append(out, v)
+		}
+	}
+	return out
 }

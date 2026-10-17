@@ -29,5 +29,8 @@ func main() {
 	gateway := jsport.NewGateway()
 	server := drpc.NewServer(gateway)
 	fake.Register(server)
+	// File bodies do not arrive as calls. They reach the same raw HTTP handler
+	// the Manager serves, over the message channel the calls share.
+	defer websandbox.ServeAttachments(fake.Sessions())()
 	log.Fatal(gateway.Serve(context.Background(), server))
 }

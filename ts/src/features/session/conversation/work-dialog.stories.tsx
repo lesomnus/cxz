@@ -5,6 +5,7 @@ import {
   activityStackEvents,
   storyEvent,
   toolEvents,
+  loadToolRecords,
   responseEvent,
 } from "#src/storybook/fixtures.ts";
 
@@ -77,30 +78,32 @@ export const LongTurn: Story = {
     ],
   },
 };
-const result = { ...toolEvents()[1], seq: 5n };
+// One tool row for the turn being read, and an earlier one that paging in
+// brings back. A row per tool, so neither needs a result record beside it.
+const current = { ...toolEvents()[0], seq: 5n, requestId: "current-task" };
+// Stable across renders: paging in an earlier task must not look like the
+// selected card being replaced, which is what this story is about.
+const earlierTask = { ...toolEvents()[0], seq: 2n, requestId: "earlier-task" };
+// Stable too: a fresh loader identity makes useEventDetails refetch, which
+// remounts the detail panel and loses the tab the reader had open.
+const loadRecords = loadToolRecords();
 const final = responseEvent(8, "codex", "The check is complete.");
 export const PagedTurn: Story = {
   render: function PagedTurn() {
     const [loaded, setLoaded] = useState(false);
-    const earlier = toolEvents().map((event, offset) => ({
-      ...event,
-      seq: BigInt(2 + offset),
-      requestId: "earlier-task",
-    }));
-    const call = { ...toolEvents()[0], seq: 4n };
     return (
       <ComponentPreview
         events={
           loaded
             ? [
                 storyEvent(1, "input", "Read all work in the turn."),
-                ...earlier,
-                call,
-                result,
+                earlierTask,
+                current,
                 final,
               ]
-            : [result, final]
+            : [current, final]
         }
+        loadDetails={loadRecords}
         workHistory={{
           hasOlder: !loaded,
           loadOlder: async () => setLoaded(true),

@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
@@ -12,8 +11,6 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type modelCatalog struct {
@@ -52,13 +49,11 @@ func (c *modelCatalog) currentEffort() string {
 type modelPicker struct {
 	id, run, kind, query, requested, message string
 	epoch                                    uint64
-	// lastSeq anchors the fallback scan, which reads backwards.
-	lastSeq    uint64
-	selected   int
-	loading    bool
-	refreshing bool
-	catalog    *modelCatalog
-	cancel     context.CancelFunc
+	selected                                 int
+	loading                                  bool
+	refreshing                               bool
+	catalog                                  *modelCatalog
+	cancel                                   context.CancelFunc
 }
 type modelCatalogLoaded struct {
 	epoch      uint64
@@ -79,7 +74,7 @@ func (m *model) openModelPicker(command string) tea.Cmd {
 		m.modelPicker.cancel()
 	}
 	f := strings.Fields(command)
-	p := &modelPicker{id: s.Id, run: s.RunId, kind: f[0], epoch: m.modelPickerEpoch, loading: true, lastSeq: max(s.LastSeq, m.cursor[s.Id])}
+	p := &modelPicker{id: s.Id, run: s.RunId, kind: f[0], epoch: m.modelPickerEpoch, loading: true}
 	if len(f) > 1 {
 		p.requested = command
 	}
@@ -110,9 +105,6 @@ func (m *model) loadModelCatalog(p *modelPicker, refresh bool) tea.Cmd {
 	return func() tea.Msg {
 		defer cancel()
 		reply, err := client.Models(ctx, &api.ModelsRequest{SessionId: p.id, Refresh: refresh, RunId: p.run, ClientId: core.ID()})
-		if status.Code(err) == codes.Unimplemented {
-			return scanModelCatalog(ctx, client, p)
-		}
 		if err != nil {
 			return modelCatalogLoaded{epoch: p.epoch, err: err}
 		}
@@ -126,70 +118,6 @@ func (m *model) loadModelCatalog(p *modelPicker, refresh bool) tea.Cmd {
 		}
 		return out
 	}
-}
-
-// scanModelCatalog is the fallback for a manager that predates the capability
-// RPC. It reads backwards from the end, because the record it wants belongs to
-// the current run and a run's events are the newest in the journal -- the
-// forward scan this replaced read the whole history to reach them.
-//
-// An unknown end leaves nothing to read backwards from, so that case reads
-// forward and keeps the last match.
-func scanModelCatalog(ctx context.Context, client api.SessionsClient, p *modelPicker) tea.Msg {
-	latest := func(batch *api.EventBatch, limit uint64) *modelCatalog {
-		var out *modelCatalog
-		for _, e := range batch.GetEvents() {
-			if e.Kind != "models" || p.run == "" || e.RunId != p.run || (limit > 0 && e.Seq > limit) {
-				continue
-			}
-			var v modelCatalog
-			if json.Unmarshal(e.Payload, &v) == nil {
-				v.seq, v.ms = e.Seq, e.TimeMs
-				out = &v
-			}
-		}
-		return out
-	}
-	if p.lastSeq == 0 {
-		var catalog *modelCatalog
-		for after := uint64(0); ; {
-			batch, err := client.History(ctx, &api.WatchRequest{SessionId: p.id, AfterSeq: after})
-			if err != nil {
-				return modelCatalogLoaded{epoch: p.epoch, err: err}
-			}
-			if len(batch.GetEvents()) == 0 {
-				return modelCatalogLoaded{epoch: p.epoch, catalog: catalog}
-			}
-			if v := latest(batch, 0); v != nil {
-				catalog = v
-			}
-			previous := after
-			for _, e := range batch.GetEvents() {
-				after = max(after, e.Seq)
-			}
-			if after == previous {
-				return modelCatalogLoaded{epoch: p.epoch, err: fmt.Errorf("history cursor did not advance")}
-			}
-		}
-	}
-	for end := p.lastSeq; end > 0; {
-		after := uint64(0)
-		if end > historyPageSize {
-			after = end - historyPageSize
-		}
-		batch, err := client.History(ctx, &api.WatchRequest{SessionId: p.id, AfterSeq: after})
-		if err != nil {
-			return modelCatalogLoaded{epoch: p.epoch, err: err}
-		}
-		if v := latest(batch, end); v != nil {
-			return modelCatalogLoaded{epoch: p.epoch, catalog: v}
-		}
-		if after == 0 {
-			break
-		}
-		end = after
-	}
-	return modelCatalogLoaded{epoch: p.epoch}
 }
 
 func (m *model) acceptModelCatalog(v modelCatalogLoaded) tea.Cmd {

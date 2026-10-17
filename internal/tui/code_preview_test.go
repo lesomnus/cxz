@@ -33,6 +33,7 @@ func TestFilePreviewLayoutAndScrolling(t *testing.T) {
 	m.current().Agent = "claude"
 	source := strings.Repeat("line\n", 20)
 	m.events["s"] = []*api.Event{{Seq: 1, RunId: "run", Kind: "tool_call", Text: "Write", RequestId: "w", Payload: []byte(fmt.Sprintf(`{"file_path":"main.go","content":%q}`, source))}}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	m.view.GotoTop()
 	row := -1
@@ -42,9 +43,11 @@ func TestFilePreviewLayoutAndScrolling(t *testing.T) {
 			break
 		}
 	}
-	if row < 0 || !m.openFilePreview(row) {
+	opened, fetch := m.openFilePreview(row)
+	if row < 0 || !opened {
 		t.Fatal("click did not open preview")
 	}
+	fill(t, m, fetch)
 	m.terminalWidth = 80
 	m.height = 32
 	m.width = 80
@@ -90,12 +93,14 @@ func TestCommandOutputTailAndCompletion(t *testing.T) {
 	m.current().Agent = "codex"
 	m.current().State = "working"
 	m.events["s"] = []*api.Event{{Seq: 1, RunId: "run", Kind: "tool_call", RequestId: "c", Payload: []byte(`{"item":{"type":"commandExecution","command":"echo test","status":"inProgress"}}`)}, {Seq: 2, RunId: "run", Kind: "tool_output", RequestId: "c", Text: "1\n2\n3\n4\n5\n6\n7\n8\n"}}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	view := ansi.Strip(m.view.View())
 	if strings.Contains(view, "│ 2") || !strings.Contains(view, "│ 8") {
 		t.Fatal(view)
 	}
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 3, RunId: "run", Kind: "tool_result", RequestId: "c", Payload: []byte(`{"item":{"type":"commandExecution","command":"echo test","status":"completed"}}`)})
+	setRows(m, "s", m.events["s"])
 	m.render()
 	if strings.Contains(ansi.Strip(m.view.View()), "│ 8") {
 		t.Fatal("completed command retained live output")
@@ -115,6 +120,7 @@ func TestCommandOutputTailAndCompletion(t *testing.T) {
 			{Seq: 1, RunId: tc.run, Kind: "tool_call", RequestId: "c", Payload: running},
 			{Seq: 2, RunId: tc.run, Kind: "tool_output", RequestId: "c", Text: tc.text + "\n"},
 		}
+		setRows(m, "s", m.events["s"])
 		m.render()
 		if strings.Contains(ansi.Strip(m.view.View()), tc.text) {
 			t.Fatal("streamed output shown outside a live command", tc.run, tc.state)
@@ -143,8 +149,11 @@ func TestQuotaRetainsNumericSnapshotAndSharesAccount(t *testing.T) {
 	m.current().Account = "same"
 	m.sessions = append(m.sessions, &api.Session{Id: "peer", Agent: "claude", Account: "same", RunId: "r2"}, &api.Session{Id: "other", Agent: "claude", Account: "different", RunId: "r3"})
 	m.events["peer"] = []*api.Event{{Kind: "usage", Text: "get_usage", RunId: "r2", TimeMs: now, Payload: []byte(`{"rate_limits":{"five_hour":{"utilization":30}}}`)}}
+	setRows(m, "peer", m.events["peer"])
 	m.events["s"] = []*api.Event{{Kind: "usage", Text: "get_usage", RunId: "run", TimeMs: now + 1, Payload: []byte(`{"rate_limits":null}`)}, {Kind: "usage", Text: "rate_limit_event", RunId: "run", TimeMs: now + 2, Payload: []byte(`{"rate_limit_info":{"rateLimitType":"five_hour","status":"allowed"}}`)}}
+	setRows(m, "s", m.events["s"])
 	m.events["other"] = []*api.Event{{Kind: "usage", Text: "get_usage", RunId: "r3", TimeMs: now + 3, Payload: []byte(`{"rate_limits":{"five_hour":{"utilization":90}}}`)}}
+	setRows(m, "other", m.events["other"])
 	m.updateQuota()
 	if len(m.quotaWindows) != 1 || m.quotaWindows[0].Remaining == nil || *m.quotaWindows[0].Remaining != 70 {
 		t.Fatalf("quota lost or crossed accounts: %+v", m.quotaWindows)
@@ -197,9 +206,11 @@ func TestQuotaCacheSurvivesTailHistoryGap(t *testing.T) {
 	m.current().Agent = "claude"
 	m.current().Account = "shared"
 	m.events["s"] = []*api.Event{{Kind: "usage", Text: "get_usage", RunId: "run", TimeMs: 1000, Payload: []byte(`{"rate_limits":{"five_hour":{"utilization":20}}}`)}}
+	setRows(m, "s", m.events["s"])
 	m.updateQuota()
 	m.current().RunId = "new-run"
 	m.events["s"] = nil
+	setRows(m, "s", m.events["s"])
 	m.updateQuota()
 	if len(m.quotaWindows) != 1 || *m.quotaWindows[0].Remaining != 80 || m.quotaWindows[0].Observed.UnixMilli() != 1000 {
 		t.Fatal("last known account quota lost or timestamp refreshed")

@@ -21,7 +21,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/session.proto.
  */
 export const file_cxz_session: GenFile = /*@__PURE__*/
-  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6Iq8FCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIbCgZsaXN0ZWQYESABKAhCC+qCFgeCAQR0cnVlEiUKB2FjY291bnQYEiABKAsyDC5jeHouQWNjb3VudEIG8oIWAkABEi4KDGF1dGhfYmluZGluZxgTIAEoCzIQLmN4ei5BdXRoQmluZGluZ0IG8oIWAkABOnzK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZOCAgyRgoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoJCgdwcm9qZWN0GgkKB2FjY291bnQaCAoGbGlzdGVkIDIoyAE6ACoAIqABCg1TZXNzaW9uU3RhdHVzEg0KBXN0YXRlGAEgASgJEg4KBnJ1bl9pZBgCIAEoCRIRCgl2ZW5kb3JfaWQYAyABKAkSEAoIbGFzdF9zZXEYBCABKAQSIgoHcGVuZGluZxgFIAMoCzIRLmN4ei5TZXNzaW9uRXZlbnQSFwoPcGVybWlzc2lvbl9tb2RlGAYgASgJEg4KBnF1ZXVlZBgHIAEoCSLOAQoMU2Vzc2lvbkV2ZW50Eg4KBnJ1bl9pZBgBIAEoCRILCgNzZXEYAiABKAQSDwoHdGltZV9tcxgDIAEoAxIMCgRraW5kGAQgASgJEgwKBHRleHQYBSABKAkSEgoKcmVxdWVzdF9pZBgGIAEoCRIPCgdwYXlsb2FkGAcgASgMEicKCHJlc3BvbnNlGAggASgLMhUuY3h6LlJlc3BvbnNlTWV0YWRhdGESJgoMdG9vbF9zdW1tYXJ5GAkgASgLMhAuY3h6LlRvb2xTdW1tYXJ5IoYBCgtUb29sU3VtbWFyeRIMCgRuYW1lGAEgASgJEg0KBXNoZWxsGAIgASgJEg8KB2NvbW1hbmQYAyABKAkSDQoFc3RhdGUYBCABKAkSIwoFZmlsZXMYBSADKAsyFC5jeHouVG9vbEZpbGVTdW1tYXJ5EhUKDW9taXR0ZWRfZmlsZXMYBiABKA0ilQEKD1Rvb2xGaWxlU3VtbWFyeRIMCgRwYXRoGAEgASgJEhEKCW1vdmVfcGF0aBgCIAEoCRIOCgZhY3Rpb24YAyABKAkSDQoFYWRkZWQYBCABKA0SDwoHcmVtb3ZlZBgFIAEoDRINCgVsaW5lcxgGIAEoDRIPCgdtZWFzdXJlGAcgASgJEhEKCXBlcl9tYXRjaBgIIAEoCCKXAQoQUmVzcG9uc2VNZXRhZGF0YRINCgVtb2RlbBgBIAEoCRIOCgZlZmZvcnQYAiABKAkSFAoMbW9kZWxfc291cmNlGAMgASgJEhUKDWVmZm9ydF9zb3VyY2UYBCABKAkSDwoHdHVybl9pZBgFIAEoCRINCgVwaGFzZRgGIAEoCRIXCg9jb21wbGV0aW9uX2pzb24YByABKAxCJ1ogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2WSAwIIAmIIZWRpdGlvbnNw6Ac", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6Iq8FCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIbCgZsaXN0ZWQYESABKAhCC+qCFgeCAQR0cnVlEiUKB2FjY291bnQYEiABKAsyDC5jeHouQWNjb3VudEIG8oIWAkABEi4KDGF1dGhfYmluZGluZxgTIAEoCzIQLmN4ei5BdXRoQmluZGluZ0IG8oIWAkABOnzK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZOCAgyRgoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoJCgdwcm9qZWN0GgkKB2FjY291bnQaCAoGbGlzdGVkIDIoyAE6ACoAIqABCg1TZXNzaW9uU3RhdHVzEg0KBXN0YXRlGAEgASgJEg4KBnJ1bl9pZBgCIAEoCRIRCgl2ZW5kb3JfaWQYAyABKAkSEAoIbGFzdF9zZXEYBCABKAQSIgoHcGVuZGluZxgFIAMoCzIRLmN4ei5TZXNzaW9uRXZlbnQSFwoPcGVybWlzc2lvbl9tb2RlGAYgASgJEg4KBnF1ZXVlZBgHIAEoCSLhAQoMU2Vzc2lvbkV2ZW50Eg4KBnJ1bl9pZBgBIAEoCRILCgNzZXEYAiABKAQSDwoHdGltZV9tcxgDIAEoAxIMCgRraW5kGAQgASgJEgwKBHRleHQYBSABKAkSEgoKcmVxdWVzdF9pZBgGIAEoCRIPCgdwYXlsb2FkGAcgASgMEicKCHJlc3BvbnNlGAggASgLMhUuY3h6LlJlc3BvbnNlTWV0YWRhdGESJgoMdG9vbF9zdW1tYXJ5GAkgASgLMhAuY3h6LlRvb2xTdW1tYXJ5EhEKCWhlYXJ0YmVhdBgKIAEoCCKpAQoLVG9vbFN1bW1hcnkSDAoEbmFtZRgBIAEoCRINCgVzaGVsbBgCIAEoCRIPCgdjb21tYW5kGAMgASgJEg0KBXN0YXRlGAQgASgJEiMKBWZpbGVzGAUgAygLMhQuY3h6LlRvb2xGaWxlU3VtbWFyeRIVCg1vbWl0dGVkX2ZpbGVzGAYgASgNEgwKBGtpbmQYByABKAkSEwoLZGVzY3JpcHRpb24YCCABKAkilQEKD1Rvb2xGaWxlU3VtbWFyeRIMCgRwYXRoGAEgASgJEhEKCW1vdmVfcGF0aBgCIAEoCRIOCgZhY3Rpb24YAyABKAkSDQoFYWRkZWQYBCABKA0SDwoHcmVtb3ZlZBgFIAEoDRINCgVsaW5lcxgGIAEoDRIPCgdtZWFzdXJlGAcgASgJEhEKCXBlcl9tYXRjaBgIIAEoCCKXAQoQUmVzcG9uc2VNZXRhZGF0YRINCgVtb2RlbBgBIAEoCRIOCgZlZmZvcnQYAiABKAkSFAoMbW9kZWxfc291cmNlGAMgASgJEhUKDWVmZm9ydF9zb3VyY2UYBCABKAkSDwoHdHVybl9pZBgFIAEoCRINCgVwaGFzZRgGIAEoCRIXCg9jb21wbGV0aW9uX2pzb24YByABKAxCJ1ogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2WSAwIIAmIIZWRpdGlvbnNw6Ac", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * The durable conversation identity. Runtime/run IDs and journal cursors are
@@ -217,6 +217,21 @@ export type SessionEvent = Message<"cxz.SessionEvent"> & {
    * @generated from field: cxz.ToolSummary tool_summary = 9;
    */
   toolSummary?: ToolSummary | undefined;
+
+  /**
+   * A frame that is not a record. A reader cannot tell an open stream with
+   * nothing to send from one that has stalled -- both are silence -- and only
+   * the sending side knows which it is, so it says so on an interval. Nothing
+   * else on such a frame is set: it carries no sequence, so a reader that
+   * advances its cursor by what it receives must skip it rather than rewind.
+   *
+   * The row stream says this by sending a row with no event, which needs no
+   * field of its own. A record stream's frame *is* the record, so saying it
+   * here is the only place it can be said. See cxz#191.
+   *
+   * @generated from field: bool heartbeat = 10;
+   */
+  heartbeat: boolean;
 };
 
 /**
@@ -259,6 +274,25 @@ export type ToolSummary = Message<"cxz.ToolSummary"> & {
    * @generated from field: uint32 omitted_files = 6;
    */
   omittedFiles: number;
+
+  /**
+   * What shape this call is, which is what a reader lays out: command, files,
+   * read, or tool for one whose name is all that is known. Not inferable from
+   * the other fields -- a Read carries the path it read in `command` as well as
+   * in `files`, so a reader guessing from `command` would draw it as a shell.
+   *
+   * @generated from field: string kind = 7;
+   */
+  kind: string;
+
+  /**
+   * What the provider said this call is, when it said anything: Bash's own
+   * description, or a Skill with its arguments. Empty otherwise, and a reader
+   * falls back to `name` rather than this repeating it.
+   *
+   * @generated from field: string description = 8;
+   */
+  description: string;
 };
 
 /**

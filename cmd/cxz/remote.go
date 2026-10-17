@@ -77,7 +77,7 @@ func runRemote(ctx context.Context, state string, o remoteOptions) error {
 		return err
 	}
 	defer conn.Close()
-	client := resourceclient.New(conn, transport.AttachmentClient(state, e))
+	client := resourceclient.New(conn, transport.AttachmentClient(state, e, transport.Credential{Token: token}))
 	defer client.Close()
 	check, cancel := context.WithTimeout(ctx, 15*time.Second)
 	_, err = client.List(check, &api.Empty{})
@@ -115,18 +115,15 @@ func configuredSources(ctx context.Context, state string, cfg settings.Config, o
 		name, entry := name, cfg.Connections.Entries[name]
 		endpoint, _ := transport.ParseEndpoint(entry.Resolve(state).Target)
 		open := func() (api.SessionsClient, io.Closer, error) {
-			scheme, conn, err := openConnection(ctx, state, name, entry, !o.noEnroll, out)
+			v, err := openConnection(ctx, state, name, entry, !o.noEnroll, out)
 			if err != nil {
 				return nil, nil, err
 			}
-			// An enrolled SSH entry uses mTLS for RPC; do not open an unexpected
-			// SSH data connection behind that choice. Such relays use compatibility.
-			dataEndpoint := endpoint
-			if scheme == "mtls" {
-				dataEndpoint.Scheme = "mtls"
-			}
-			client := resourceclient.New(conn, transport.AttachmentClient(state, dataEndpoint))
-			return client, uploadConnection{ClientConn: conn, client: client}, nil
+			// File bodies go where the calls went, with the credential the calls
+			// used. An enrolled SSH entry reaches a relay rather than ssh, and
+			// the address it reached is the one openConnection resolved.
+			client := resourceclient.New(v.Conn, transport.AttachmentClient(state, v.Data, v.Cred))
+			return client, uploadConnection{ClientConn: v.Conn, client: client}, nil
 		}
 		// The scheme is what this client will use, decided from what it holds
 		// rather than from the target alone, so an enrolled ssh connection is

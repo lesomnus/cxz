@@ -58,6 +58,7 @@ func BenchmarkConversationFrame(b *testing.B) {
 				{Seq: 3, RunId: "run", Kind: "assistant", Text: "Here is the explanation.\n\n- First point\n- Second point"},
 				{Seq: 4, RunId: "run", Kind: "turn_end", Payload: payload},
 			}
+			setRows(m, "s", m.events["s"])
 			m.render()
 			b.ReportAllocs()
 			b.ResetTimer()
@@ -82,6 +83,7 @@ func BenchmarkLiveTranscriptRender(b *testing.B) {
 					&api.Event{Seq: uint64(i*3 + 1), RunId: "run", Kind: "input", Text: "Explain this code", TimeMs: int64(i*2000 + 1)},
 					&api.Event{Seq: uint64(i*3 + 2), RunId: "run", Kind: "assistant", Text: "Here is the explanation.\n\n- First point\n- Second point"},
 					&api.Event{Seq: uint64(i*3 + 3), RunId: "run", Kind: "turn_end", Text: "completed", Payload: payload, TimeMs: int64(i*2000 + 1235)})
+				setRows(m, "s", m.events["s"])
 			}
 			m.render()
 			b.ReportAllocs()
@@ -113,6 +115,7 @@ func BenchmarkStreamedOutputHistory(b *testing.B) {
 			m.events["s"] = append(events,
 				&api.Event{Seq: uint64(chunks + 3), RunId: "previous", Kind: "tool_result", RequestId: "t", Payload: []byte(`{"content":"done"}`)},
 				&api.Event{Seq: uint64(chunks + 4), RunId: "previous", Kind: "turn_end", Text: "completed"})
+			setRows(m, "s", m.events["s"])
 			m.render()
 			b.ReportAllocs()
 			b.ResetTimer()

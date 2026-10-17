@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/historypolicy"
+	"github.com/lesomnus/cxz/internal/transcripthistory"
 	"google.golang.org/grpc"
 )
 
@@ -18,6 +19,20 @@ import (
 type journalClient struct {
 	api.SessionsClient
 	total, heavy uint64
+}
+
+// Transcript pages the fake journal the way a runtime does: through the real
+// projection, fenced by a snapshot. Paging rows rather than records is what the
+// window under test now holds, so a fake that answered records would be testing
+// a shape nothing sends.
+func (c *journalClient) Transcript(_ context.Context, r *api.TranscriptRequest, _ ...grpc.CallOption) (*api.TranscriptReply, error) {
+	all := trimFixture(0, int(c.total))
+	for _, e := range all {
+		if e.Seq > c.heavy && e.Kind == "assistant" {
+			e.Text = strings.Repeat(e.Text, 12)
+		}
+	}
+	return transcripthistory.FromEvents(all, r)
 }
 
 func (c *journalClient) History(_ context.Context, r *api.WatchRequest, _ ...grpc.CallOption) (*api.EventBatch, error) {
@@ -44,7 +59,7 @@ func TestScrollingDownKeepsTheReaderInPlace(t *testing.T) {
 	m := conversationModel()
 	m.windowPolicy = &historypolicy.Window{MiB: 1}
 	m.client = &journalClient{total: 20000, heavy: 16600}
-	m.applyHistoryPage(historyPage{id: "s", start: 19872, initial: true, events: trimFixture(19872, 128)})
+	m.applyHistoryPage(historyPage{id: "s", start: 19872, initial: true, rows: rowsOf(trimFixture(19872, 128))})
 	// Only page back until the byte limit detaches the window. Additional
 	// heavy pages repeat expensive Markdown rendering without changing the
 	// boundary condition exercised by the forward scroll below.
@@ -62,14 +77,14 @@ func TestScrollingDownKeepsTheReaderInPlace(t *testing.T) {
 	}
 	m.view.GotoBottom()
 	before := ansi.Strip(m.view.View())
-	anchor, loaded := m.historyAnchor(), m.events["s"]
+	anchor, loaded := m.historyAnchor(), m.rows["s"]
 	first, tail := loaded[0].Seq, loaded[len(loaded)-1].Seq
 	_, cmd := m.Update(tea.MouseMsg{Button: tea.MouseButtonWheelDown, Action: tea.MouseActionPress, X: m.contentOffset() + 5, Y: 3})
 	if cmd == nil {
 		t.Fatal("scrolling down at the loaded tail did not fetch newer history")
 	}
 	m.Update(cmd())
-	loaded = m.events["s"]
+	loaded = m.rows["s"]
 	if loaded[0].Seq <= first {
 		t.Fatal("newer history did not evict older events; byte-limit boundary was not exercised")
 	}

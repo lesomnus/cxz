@@ -15,6 +15,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/historypage"
 	"github.com/lesomnus/cxz/internal/taskapi"
+	"github.com/lesomnus/cxz/internal/transcripthistory"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -66,13 +67,13 @@ func New(seed uint64, delay time.Duration) *Server {
 		id := fmt.Sprintf("project-%d", i+1)
 		s.projects = append(s.projects, resource.Project_builder{Id: []byte(fmt.Sprintf("project-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, Workspace: "/workspace", Listed: true, Status: resource.ProjectStatus_builder{State: "running", RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
 	}
-	for i, name := range []string{"Project checklist", "Conversation", "Long history", "Approval question", "Simulated error", "Seeded random work", "Stopped session", "Other project"} {
+	for i, name := range []string{"Project checklist", "Conversation", "Long history", "Approval question", "Simulated error", "Seeded random work", "Stopped session", "Other project", "Tool activity"} {
 		id := fmt.Sprintf("session-%d", i+1)
 		agent := "claude"
 		if i%2 == 1 {
 			agent = "codex"
 		}
-		st := &session{effort: "high", scenario: []string{"checklist", "conversation", "long", "approval", "error", "random", "stopped", "conversation"}[i], seen: map[string]bool{}}
+		st := &session{effort: "high", scenario: []string{"checklist", "conversation", "long", "approval", "error", "random", "stopped", "conversation", "tools"}[i], seen: map[string]bool{}}
 		project := s.projects[0]
 		if i == 7 {
 			project = s.projects[1]
@@ -101,6 +102,10 @@ func New(seed uint64, delay time.Duration) *Server {
 		}
 		if st.scenario == "stopped" {
 			st.value.GetStatus().SetState("stopped")
+		}
+		if st.scenario == "tools" {
+			s.toolActivity(st, "seeded", true)
+			s.skillActivity(st, "seeded-skill")
 		}
 	}
 	return s
@@ -146,9 +151,12 @@ func (s *Server) models(st *session) {
 func (s *Server) Close() { s.cancel() }
 func (s *Server) Register(r grpc.ServiceRegistrar) {
 	resource.RegisterProjectServiceServer(r, &Projects{S: s})
-	resource.RegisterSessionServiceServer(r, &Sessions{S: s})
+	resource.RegisterSessionServiceServer(r, s.Sessions())
 	resource.RegisterTaskServiceServer(r, s.Tasks())
 }
+
+// Sessions is also what receives file bodies, which do not arrive as calls.
+func (s *Server) Sessions() *Sessions { return &Sessions{S: s} }
 func (s *Server) event(st *session, kind, text, request string, payload []byte) {
 	seq := st.value.GetStatus().GetLastSeq() + 1
 	e := resource.SessionEvent_builder{RunId: st.value.GetStatus().GetRunId(), Seq: seq, TimeMs: time.Now().UnixMilli(), Kind: kind, Text: text, RequestId: request, Payload: payload}.Build()
@@ -368,6 +376,10 @@ func (x *Sessions) Events(r *resource.SessionEventsRequest, stream grpc.ServerSt
 	query := proto.Clone(r).(*resource.SessionEventsRequest)
 	tick := time.NewTicker(60 * time.Millisecond)
 	defer tick.Stop()
+	// Heartbeats, like the runtime's and due immediately for the same reason:
+	// the reader arms its stall deadline on the first one, and a fake that
+	// never sent them would be the one place that path is never exercised.
+	last := time.Now().Add(-transcripthistory.Heartbeat)
 	for {
 		batch, err := x.History(stream.Context(), query)
 		if err != nil {
@@ -378,6 +390,13 @@ func (x *Sessions) Events(r *resource.SessionEventsRequest, stream grpc.ServerSt
 				return err
 			}
 			query.SetAfterSeq(e.GetSeq())
+			last = time.Now()
+		}
+		if time.Since(last) >= transcripthistory.Heartbeat {
+			if err = stream.Send(resource.SessionEvent_builder{Heartbeat: true}.Build()); err != nil {
+				return err
+			}
+			last = time.Now()
 		}
 		select {
 		case <-stream.Context().Done():
@@ -497,6 +516,11 @@ func (s *Server) respond(st *session, generation uint64) {
 		}
 		text := fmt.Sprintf("%s · %d/%d", name, i+1, count)
 		s.event(st, "tool", text, "", []byte(`{"simulated":true,"status":"running"}`))
+		// A call that has not finished, which is the state live output belongs
+		// to and the one state nothing here could reach before.
+		if scenario == "tools" && i == 0 {
+			s.toolActivity(st, fmt.Sprintf("turn-%d-running", turn), false)
+		}
 		s.mu.Unlock()
 	}
 	select {
@@ -518,7 +542,14 @@ func (s *Server) respond(st *session, generation uint64) {
 		s.state(st, "idle")
 		return
 	}
-	s.event(st, "tool_result", "Sample tasks completed", "", []byte(`{"simulated":true,"status":"completed","output":"All fixture checks passed"}`))
+	// A request identity, because a real tool has one and the reading projection
+	// summarises a tool record only when it can say which tool the record
+	// belongs to. Without it this row is not a tool at all, and a client that
+	// made one out of a bare record was deciding something the runtime had not.
+	s.event(st, "tool_result", "Sample tasks completed", fmt.Sprintf("%s/checks-%d", st.value.GetStatus().GetRunId(), turn), []byte(`{"simulated":true,"item":{"type":"commandExecution","command":"cxz fixture checks","status":"completed","exitCode":0,"aggregatedOutput":"All fixture checks passed"}}`))
+	if scenario == "tools" {
+		s.toolActivity(st, fmt.Sprintf("turn-%d", turn), true)
+	}
 	s.event(st, "assistant", answer(scenario), "", nil)
 	s.complete(st, st.value.GetStatus().GetLastSeq())
 	s.state(st, "idle")

@@ -1,9 +1,11 @@
 package tui
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
@@ -35,8 +37,8 @@ func (m *model) toolTargets() []toolTarget {
 		return nil
 	}
 	eligible := map[uint64]bool{}
-	for _, e := range m.events[s.Id] {
-		if e.Kind == "tool_call" || e.Kind == "tool_result" {
+	for _, e := range m.rows[s.Id] {
+		if e.GetToolSummary() != nil {
 			eligible[e.Seq] = true
 		}
 	}
@@ -128,8 +130,8 @@ func (m *model) toolSelectorKey(k tea.KeyMsg) tea.Cmd {
 	case "end", "ctrl+end":
 		index = len(targets) - 1
 	case "enter":
-		m.openPreviewSequence(targets[index].seq)
-		return nil
+		_, cmd := m.openPreviewSequence(targets[index].seq)
+		return cmd
 	default:
 		return nil
 	}
@@ -154,25 +156,41 @@ func (m *model) toolSelectorView(rows []string) {
 	}
 }
 
-func (m *model) previewForSequence(seq uint64) *filePreview {
+// previewSubject answers whether a journal coordinate is inspectable at all,
+// from what is loaded. It has to be synchronous: a click on a row that is not a
+// tool must fall through to text selection in the same frame, which cannot wait
+// for a round trip.
+func (m *model) previewSubject(seq uint64) *api.Event {
 	s := m.current()
 	if s == nil {
 		return nil
 	}
-	var selected, call, result *api.Event
-	for _, e := range m.events[s.Id] {
-		if e.Seq == seq {
-			selected = e
-			break
+	for _, e := range m.rows[s.Id] {
+		if e.Seq != seq {
+			continue
 		}
-	}
-	if selected == nil {
+		if e.Kind == "approval" || e.GetToolSummary() != nil {
+			return e
+		}
 		return nil
 	}
+	return nil
+}
+
+// previewFromRecords builds the detail panel from the records EventDetails
+// returned. They are the subject's own -- the server answers with everything
+// sharing its request identity, including the approval it waited on -- so there
+// is no searching here for which records belong together.
+//
+// Reading them from the server rather than from the loaded list is what lets
+// the display list stop being a list of records. A row carries a tool's name,
+// shape and state; the bytes it ran and produced were never on it. See cxz#155.
+func previewFromRecords(agent string, selected *api.Event, events []*api.Event) *filePreview {
+	var call, result *api.Event
 	if selected.Kind == "approval" {
-		approval := agentview.ApprovalView(s.Agent, selected.Text, selected.Payload)
-		state := "No resolution recorded in loaded history."
-		for _, e := range m.events[s.Id] {
+		approval := agentview.ApprovalView(agent, selected.Text, selected.Payload)
+		state := "No resolution recorded for this request."
+		for _, e := range events {
 			if selected.RequestId != "" && e.Kind == "approval_resolved" && e.RequestId == selected.RequestId && e.RunId == selected.RunId && e.Seq > selected.Seq {
 				state = e.Text
 			}
@@ -188,7 +206,7 @@ func (m *model) previewForSequence(seq uint64) *filePreview {
 		result = selected
 	}
 	if selected.RequestId != "" {
-		for _, e := range m.events[s.Id] {
+		for _, e := range events {
 			if e.RequestId != selected.RequestId || e.RunId != selected.RunId {
 				continue
 			}
@@ -200,17 +218,17 @@ func (m *model) previewForSequence(seq uint64) *filePreview {
 			}
 		}
 	}
-	input := &filePreview{source: "Input is not available in the loaded history.", language: "text"}
+	input := &filePreview{source: "Input was not retained for this call.", language: "text"}
 	if call != nil {
-		input = toolInputPreview(s.Agent, call)
+		input = toolInputPreview(agent, call)
 	}
-	output := toolOutputPreview(s.Agent, call, result)
+	output := toolOutputPreview(agent, call, result)
 	title := input.title
 	if output.title != "" {
 		title = output.title
 	}
 	if call != nil {
-		if submitted := previewFor(s.Agent, call); submitted != nil {
+		if submitted := previewFor(agent, call); submitted != nil {
 			title = submitted.title
 		}
 	}
@@ -223,7 +241,7 @@ func (m *model) previewForSequence(seq uint64) *filePreview {
 	}}
 	// Preserve the useful default: submitted edits, otherwise the recorded output.
 	tab := 1
-	if result == nil || (call != nil && s.Agent == "claude" && (call.Text == "Write" || call.Text == "Edit")) {
+	if result == nil || (call != nil && agent == "claude" && (call.Text == "Write" || call.Text == "Edit")) {
 		tab = 0
 	}
 	p.selectTab(tab)
@@ -301,12 +319,75 @@ func toolOutputPreview(provider string, call, result *api.Event) *filePreview {
 	return &filePreview{source: "No output available yet.", language: "text"}
 }
 
-func (m *model) openPreviewSequence(seq uint64) bool {
-	p := m.previewForSequence(seq)
-	if p == nil {
-		return false
+// toolPreviewLoaded carries a tool's own records back to the panel that asked
+// for them. It is matched by session and sequence, so a reader who moved on
+// before the answer arrived is not shown the wrong tool.
+type toolPreviewLoaded struct {
+	session, agent string
+	seq            uint64
+	subject        *api.Event
+	events         []*api.Event
+	err            error
+}
+
+func (m *model) loadToolPreview(id, agent string, seq uint64, subject *api.Event) tea.Cmd {
+	client := m.client
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
+		defer cancel()
+		batch, err := client.EventDetails(ctx, &api.EventDetailsRequest{SessionId: id, Seq: seq})
+		out := toolPreviewLoaded{session: id, agent: agent, seq: seq, subject: subject, err: err}
+		if batch != nil {
+			out.events = batch.Events
+		}
+		return out
 	}
-	p.session = m.current().Id
+}
+
+func (m *model) acceptToolPreview(v toolPreviewLoaded) {
+	p := m.filePreview
+	if p == nil || p.session != v.session || p.seq != v.seq {
+		return
+	}
+	if v.err != nil {
+		p.tabs, p.source, p.language = nil, "Tool details are unavailable: "+v.err.Error(), "text"
+		p.rendered = ""
+		m.resize()
+		m.render()
+		return
+	}
+	// The subject itself may be the newest record of the three, so keep it in
+	// the set rather than trusting the reply to contain it.
+	subject := v.subject
+	for _, e := range v.events {
+		if e.Seq == v.seq {
+			subject = e
+		}
+	}
+	next := previewFromRecords(v.agent, subject, v.events)
+	if next == nil {
+		return
+	}
+	next.session, next.seq, next.focused, next.width = p.session, p.seq, p.focused, 0
+	m.filePreview = next
+	m.resize()
+	m.render()
+}
+
+func (m *model) openPreviewSequence(seq uint64) (bool, tea.Cmd) {
+	s := m.current()
+	if s == nil {
+		return false, nil
+	}
+	subject := m.previewSubject(seq)
+	if subject == nil {
+		return false, nil
+	}
+	// Opened now and filled when the records arrive. The panel has to open in
+	// this frame: whether the click was consumed is answered here, and a reader
+	// who waited for a round trip to find out would see the click do nothing.
+	p := &filePreview{title: "Tool details", source: "Loading…", language: "text", seq: seq}
+	p.session = s.Id
 	p.focused = true
 	m.filePreview = p
 	m.textSelection = nil
@@ -323,7 +404,7 @@ func (m *model) openPreviewSequence(seq uint64) bool {
 			}
 		}
 	}
-	return true
+	return true, m.loadToolPreview(s.Id, s.Agent, seq, subject)
 }
 func (m *model) closeFilePreview() {
 	m.filePreview = nil

@@ -11,17 +11,14 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
-// catalogClient stands in for a manager. legacy makes it answer the capability
-// RPC the way a manager that predates it does, so the same fixtures exercise
-// both the current path and the fallback.
+// catalogClient stands in for a manager. It counts history pages as well as
+// catalog requests, because the picker asking the journal instead of the RPC is
+// the regression worth noticing rather than a mode to support.
 type catalogClient struct {
 	recordingClient
 	events     []*api.Event
-	legacy     bool
 	refreshed  int
 	modelCalls int
 	pages      int
@@ -29,9 +26,6 @@ type catalogClient struct {
 
 func (c *catalogClient) Models(_ context.Context, r *api.ModelsRequest, _ ...grpc.CallOption) (*api.ModelsReply, error) {
 	c.modelCalls++
-	if c.legacy {
-		return nil, status.Error(codes.Unimplemented, "unknown method Models")
-	}
 	if r.Refresh {
 		c.refreshed++
 	}

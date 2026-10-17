@@ -25,17 +25,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Use the real lifecycle and resource client, with native RPC Upload forbidden:
-// success proves the TUI data path stayed raw while aliases use normal Get.
-type noRPCUpload struct {
-	resource.SessionServiceServer
-	calls int
-}
-
-func (s *noRPCUpload) Upload(grpc.ClientStreamingServer[resource.SessionUploadRequest, resource.SessionAttachment]) error {
-	s.calls++
-	return status.Error(codes.Internal, "unexpected RPC upload")
-}
+// Use the real lifecycle and resource client. There is no longer an RPC upload
+// to forbid -- the method does not exist -- so what this holds is the rest: the
+// raw path keeps the lifecycle checks, resolves an alias through a normal Get,
+// and reports a failure as a failure rather than finding another way.
 
 func TestResourceClientRawUploadRetainsLifecycleAndAliasChecks(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
@@ -57,8 +50,7 @@ func TestResourceClientRawUploadRetainsLifecycleAndAliasChecks(t *testing.T) {
 	defer httpServer.Close()
 	raw := &attachmenthttp.Client{Origin: httpServer.URL, HTTP: httpServer.Client()}
 	g := grpc.NewServer()
-	native := &noRPCUpload{SessionServiceServer: stack.Session()}
-	resource.RegisterSessionServiceServer(g, native)
+	resource.RegisterSessionServiceServer(g, stack.Session())
 	defer g.Stop()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -96,18 +88,22 @@ func TestResourceClientRawUploadRetainsLifecycleAndAliasChecks(t *testing.T) {
 	if status.Code(err) != codes.NotFound {
 		t.Fatal("unknown session accepted", err)
 	}
-	if native.calls != 0 {
-		t.Fatal("raw path invoked protobuf Upload")
-	}
-	// A missing endpoint can choose RPC before bytes are sent. A failed POST
-	// cannot, even when the HTTP connection drops before its receipt arrives.
+	// A Manager that does not serve the endpoint is an error rather than a
+	// different path, and an upload that cannot happen must not read as one
+	// that did.
 	missing := httptest.NewServer(http.NotFoundHandler())
 	defer missing.Close()
-	legacy := resourceclient.New(conn, &attachmenthttp.Client{Origin: missing.URL, HTTP: missing.Client()})
-	defer legacy.Close()
-	_, err = legacy.UploadAttachment(ctx, assets.Upload{SessionID: f.s.Id, RunID: "run", Name: "file", Size: 4}, bytes.NewReader([]byte("data")))
-	if status.Code(err) != codes.Internal || native.calls != 1 {
-		t.Fatal("RPC compatibility not selected", err, native.calls)
+	absent := resourceclient.New(conn, &attachmenthttp.Client{Origin: missing.URL, HTTP: missing.Client()})
+	defer absent.Close()
+	if path, err := absent.UploadAttachment(ctx, assets.Upload{SessionID: f.s.Id, RunID: "run", Name: "file", Size: 4}, bytes.NewReader([]byte("data"))); err == nil || path != "" {
+		t.Fatal("a missing endpoint reported an upload", path, err)
+	}
+	// A connection with no attachment endpoint at all says so, rather than
+	// reaching for a method that no longer exists.
+	none := resourceclient.New(conn)
+	defer none.Close()
+	if _, err := none.UploadAttachment(ctx, assets.Upload{SessionID: f.s.Id, RunID: "run", Name: "file", Size: 4}, bytes.NewReader([]byte("data"))); status.Code(err) != codes.Unimplemented {
+		t.Fatal("a connection without a data path did not say so", err)
 	}
 	dropped := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodHead {
@@ -124,9 +120,11 @@ func TestResourceClientRawUploadRetainsLifecycleAndAliasChecks(t *testing.T) {
 	defer dropped.Close()
 	uncertain := resourceclient.New(conn, &attachmenthttp.Client{Origin: dropped.URL, HTTP: dropped.Client()})
 	defer uncertain.Close()
+	// A receipt lost after the body was accepted is uncertain, and publication
+	// may already have happened. It is reported, never retried.
 	_, err = uncertain.UploadAttachment(ctx, assets.Upload{SessionID: f.s.Id, RunID: "run", Name: "file", Size: 4}, bytes.NewReader([]byte("data")))
-	if err == nil || native.calls != 1 {
-		t.Fatal("uncertain POST replayed through RPC", err, native.calls)
+	if err == nil {
+		t.Fatal("a lost receipt read as success")
 	}
 	// A bound database layer rejects runtime effects before it reads a body.
 	bound := layer

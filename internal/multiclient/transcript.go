@@ -45,3 +45,31 @@ func (c *Client) EventDetails(ctx context.Context, in *api.EventDetailsRequest, 
 	}
 	return out, err
 }
+
+type rowStream struct {
+	grpc.ServerStreamingClient[api.Row]
+	name string
+}
+
+func (s rowStream) Recv() (*api.Row, error) {
+	v, err := s.ServerStreamingClient.Recv()
+	if v != nil && v.Event != nil {
+		v = proto.Clone(v).(*api.Row)
+		v.Event.SessionId = Scope(s.name, v.Event.SessionId)
+	}
+	return v, err
+}
+
+func (c *Client) Rows(ctx context.Context, in *api.RowsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[api.Row], error) {
+	name, id, client, err := c.route(ctx, in.SessionId)
+	if err != nil {
+		return nil, err
+	}
+	r := proto.Clone(in).(*api.RowsRequest)
+	r.SessionId = id
+	stream, err := client.Rows(ctx, r, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return rowStream{ServerStreamingClient: stream, name: name}, nil
+}

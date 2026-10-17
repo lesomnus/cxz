@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 
 	"github.com/lesomnus/cxz/internal/pki"
 	"google.golang.org/grpc"
@@ -43,8 +44,12 @@ func DialMutual(address string, id Identity) (*grpc.ClientConn, error) {
 // handshake has already proven it holds a certificate this installation signed
 // and has not revoked, so every method is reached with no second credential to
 // manage.
+// The handshake is also what authorizes a file body. There is nothing for the
+// raw route to check that TLS has not already refused: a request that reached a
+// handler presented a certificate this installation signed, has not revoked,
+// and issued for a client rather than for the relay.
 func ExposeMutual(ctx context.Context, root, listen, serverDir string, ready io.Writer) error {
-	creds, err := pki.ServerCredentials(serverDir)
+	identity, err := pki.ServerTLS(serverDir)
 	if err != nil {
 		return err
 	}
@@ -58,12 +63,15 @@ func ExposeMutual(ctx context.Context, root, listen, serverDir string, ready io.
 		return err
 	}
 	defer ln.Close()
-	g := proxyServer(conn, nil, grpc.Creds(creds))
+	g := proxyServer(conn, nil)
+	server := relayServer(relayHandler(g, root, func(*http.Request) error { return nil }), false)
+	server.TLSConfig = identity
 	done := make(chan struct{})
 	defer close(done)
 	go func() {
 		select {
 		case <-ctx.Done():
+			_ = server.Close()
 			g.Stop()
 		case <-done:
 		}
@@ -71,8 +79,8 @@ func ExposeMutual(ctx context.Context, root, listen, serverDir string, ready io.
 	if ready != nil {
 		fmt.Fprintf(ready, "cxz relay: mtls://%s (client certificate required)\n", ln.Addr())
 	}
-	err = g.Serve(ln)
-	if ctx.Err() != nil {
+	err = server.ServeTLS(ln, "", "")
+	if ctx.Err() != nil || err == http.ErrServerClosed {
 		return nil
 	}
 	return err

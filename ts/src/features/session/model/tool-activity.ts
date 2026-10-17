@@ -2,7 +2,7 @@ import type { SessionEvent, ToolFileSummary } from "#gen/cxz/session_pb";
 import { isTranscriptEvent, isQuestionEvent, payload } from "./journal";
 import { clone } from "@bufbuild/protobuf";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
-import { responseCompletionIndex } from "./response-completion";
+import { responseCompletions } from "./response-completion";
 
 export type ToolActivity = {
   call?: SessionEvent;
@@ -126,93 +126,56 @@ const toolKinds = new Set(["tool_call", "tool_output", "tool_result"]);
 
 // Group by native execution identity, never by command text: concurrent tools
 // can run the same command, and a new run can reuse an old request ID.
-export function transcriptEvents(events: SessionEvent[]) {
-  const { completions, representedEnds } = responseCompletionIndex(events);
-  const groups = new Map<string, ToolActivity>();
-  const resolutions = new Map<string, SessionEvent>();
-  for (const e of events) {
-    if (e.kind === "approval_resolved") resolutions.set(key(e), e);
-    if (!toolKinds.has(e.kind) || !e.requestId) continue;
-    const group: ToolActivity = groups.get(key(e)) ?? {
-      output: [],
-      approvals: [],
-    };
-    if (e.kind === "tool_call") group.call = e;
-    else if (e.kind === "tool_result") group.result = e;
-    else group.output.push(e);
-    groups.set(key(e), group);
-  }
-  const pairedApprovals = new Set<SessionEvent>();
-  const questionTools = new Set<string>();
-  for (const e of events) {
-    if (e.kind !== "approval") continue;
-    if (isQuestionEvent(e)) {
-      const p = payload(e);
-      const id = p.tool_use_id || p.params?.itemId;
-      if (typeof id === "string" && id) {
-        const call = groups.get(key(e, id))?.call;
-        if (
-          call?.text === "AskUserQuestion" ||
-          call?.toolSummary?.name === "AskUserQuestion"
-        )
-          questionTools.add(key(e, id));
-      }
-      continue;
-    }
-    const p = payload(e);
-    const id = p.tool_use_id || p.params?.itemId;
-    const group =
-      typeof id === "string" && id ? groups.get(key(e, id)) : undefined;
-    if (!group) continue;
-    const resolution = resolutions.get(key(e));
-    group.approvals.push({
-      request: e,
-      resolution: resolution && resolution.seq > e.seq ? resolution : undefined,
-    });
-    pairedApprovals.add(e);
-  }
+/**
+ * transcriptRows indexes what the runtime already decided. A row is a row: the
+ * projection excluded internal records, merged a tool's records into one row,
+ * folded an approval into that row's state, folded a question's resolution
+ * into the question, and attached a completed turn's metrics to the response
+ * it belongs to.
+ *
+ * So there is nothing to pair and nothing to filter -- only to find, for a
+ * renderer that wants a tool's activity by sequence. This replaced ninety
+ * lines that decided all of the above a second time, over records, in a path
+ * that had to agree with the Go that wrote them. See cxz#155.
+ */
+export function transcriptRows(rows: SessionEvent[]) {
   const activities = new Map<bigint, ToolActivity>();
-  const rows = events.filter((e) => {
-    if (
-      !isTranscriptEvent(e) ||
-      pairedApprovals.has(e) ||
-      representedEnds.has(e.seq)
-    )
-      return false;
-    if (toolKinds.has(e.kind) && questionTools.has(key(e))) return false;
-    const group =
-      toolKinds.has(e.kind) && e.requestId ? groups.get(key(e)) : undefined;
-    if (!group) {
-      if (toolKinds.has(e.kind))
-        activities.set(e.seq, {
-          call: e.kind === "tool_call" ? e : undefined,
-          result: e.kind === "tool_result" ? e : undefined,
-          output: e.kind === "tool_output" ? [e] : [],
-          approvals: [],
-        });
-      return true;
+  for (const e of rows) {
+    // A tool row carries its summary; the records it was merged from are
+    // fetched on demand, which is why `output` and `result` are empty here.
+    if (e.toolSummary)
+      activities.set(e.seq, { call: e, output: [], approvals: [] });
+  }
+  return { events: rows, activities, completions: responseCompletions(rows) };
+}
+
+/**
+ * activityFromRecords is the other direction: one tool's records, as
+ * EventDetails returns them, assembled into the activity a card reads for its
+ * output and its approvals. The records are what carry those -- a row carries
+ * neither -- so this grouping stays, and it is the only thing that still
+ * groups anything.
+ */
+export function activityFromRecords(records: SessionEvent[]) {
+  const activity: ToolActivity = { output: [], approvals: [] };
+  const resolutions = new Map<string, SessionEvent>();
+  for (const e of records) {
+    if (e.kind === "approval_resolved") resolutions.set(key(e), e);
+  }
+  for (const e of records) {
+    if (e.kind === "tool_call") activity.call = e;
+    else if (e.kind === "tool_result") activity.result = e;
+    else if (e.kind === "tool_output") activity.output.push(e);
+    else if (e.kind === "approval" && !isQuestionEvent(e)) {
+      const resolution = resolutions.get(key(e));
+      activity.approvals.push({
+        request: e,
+        resolution:
+          resolution && resolution.seq > e.seq ? resolution : undefined,
+      });
     }
-    // Retain orphan results/output at a loaded-history edge rather than dropping
-    // them. Once the call is loaded, its original row owns the whole activity.
-    const anchor = group.call ?? group.output[0] ?? group.result;
-    if (e !== anchor) return false;
-    activities.set(e.seq, group);
-    return true;
-  });
-  const projected = rows.map((e) => {
-    if (!isQuestionEvent(e)) return e;
-    const resolution = resolutions.get(key(e));
-    if (!resolution || resolution.seq <= e.seq) return e;
-    const updated = clone(SessionEventSchema, e);
-    updated.payload = new TextEncoder().encode(
-      JSON.stringify({
-        ...payload(e),
-        cxz_resolution: { ...payload(resolution), state: resolution.text },
-      }),
-    );
-    return updated;
-  });
-  return { events: projected, activities, completions };
+  }
+  return activity;
 }
 
 export function toolState(activity: ToolActivity, agent: string) {
@@ -318,9 +281,20 @@ export function shellCommand(command: string) {
   return carries && script.trim() ? { shell, command: script } : original;
 }
 
+/**
+ * toolLabel answers what a row says about itself. A row that carries a summary
+ * is read as it is; the branches below are for an activity assembled from
+ * records, which is what the details panel works with.
+ *
+ * `kind` and `description` are empty on those branches rather than derived a
+ * second time here. An empty kind means "shape unknown", and a reader falls
+ * back to exactly what it drew before the row carried one.
+ */
 export function toolLabel(activity: ToolActivity, agent: string) {
+  const unknown = { kind: "", description: "" };
   const event = activity.call ?? activity.result ?? activity.output[0];
-  if (!event) return { name: "Tool output", shell: "", command: "" };
+  if (!event)
+    return { name: "Tool output", shell: "", command: "", ...unknown };
   if (event.toolSummary) return event.toolSummary;
   const p = payload(event);
   if (
@@ -333,6 +307,7 @@ export function toolLabel(activity: ToolActivity, agent: string) {
       ...shellCommand(
         typeof command === "string" ? command : (activity.call?.text ?? ""),
       ),
+      ...unknown,
     };
   }
   if (agent === "codex" && p.item?.type === "fileChange") {
@@ -343,12 +318,14 @@ export function toolLabel(activity: ToolActivity, agent: string) {
         .map((v: { path?: string }) => v.path)
         .filter(Boolean)
         .join(", "),
+      ...unknown,
     };
   }
   return {
     name: activity.call?.text || "Tool result",
     shell: "",
     command: typeof p.file_path === "string" ? p.file_path : "",
+    ...unknown,
   };
 }
 

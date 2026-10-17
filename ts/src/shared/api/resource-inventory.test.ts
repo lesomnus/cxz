@@ -11,7 +11,7 @@ import {
   SessionListResponseSchema,
   SessionWatchResponseSchema,
 } from "#gen/cxz/session_svc_pb";
-import { ResourceInventory } from "./resource-inventory";
+import { ResourceInventory, SNAPSHOT_DEADLINE_MS } from "./resource-inventory";
 
 class Feed<T> {
   private values: T[] = [];
@@ -240,6 +240,73 @@ describe("shared resource inventory", () => {
         expect(f.inventory.snapshot().sessions).toHaveLength(1),
       );
       expect(f.inventory.snapshot().projects).toHaveLength(1);
+    } finally {
+      off();
+    }
+  });
+
+  // cxz#189: the bounded List is a probe for whether the catalog is empty, not
+  // an inventory. Published as a settled one it produced a session list with a
+  // single row, no spinner, no error and no retry -- for as long as the page
+  // stayed open, because a Watch that never sends its snapshot neither ends nor
+  // throws.
+  it("does not let one listed row stand in for a catalog whose snapshot never arrives", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.sessions.list.mockResolvedValue(
+      create(SessionListResponseSchema, { items: [session(0)], next: "more" }),
+    );
+    const off = f.inventory.subscribe(() => {});
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.inventory.snapshot().sessions.map((s) => s.runtimeId)).toEqual([
+        "session-0",
+      ]);
+      // Shown, because it is a row the server sent, and still loading, because
+      // the list said there was more and the snapshot owes it.
+      expect(f.inventory.snapshot().loading.sessions).toBe(true);
+      await vi.advanceTimersByTimeAsync(SNAPSHOT_DEADLINE_MS - 1);
+      expect(f.inventory.snapshot().errors.sessions).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(String(f.inventory.snapshot().errors.sessions)).toContain(
+        "stopped loading",
+      );
+      expect(f.sessions.watch).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(500);
+      expect(f.sessions.watch).toHaveBeenCalledTimes(2);
+      f.s.push(
+        create(SessionWatchResponseSchema, {
+          items: [session(0), session(1)].map((value) => ({
+            id: value.id,
+            value,
+          })),
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.inventory.snapshot().loading.sessions).toBe(false);
+      expect(f.inventory.snapshot().sessions).toHaveLength(2);
+      expect(f.inventory.snapshot().errors.sessions).toBeUndefined();
+    } finally {
+      off();
+    }
+  });
+  // The other half of the same probe: a catalog the List already answered in
+  // full owes nothing, and an old server sends no snapshot frame for one. That
+  // silence is the expected answer, so waiting on it would report a stall on
+  // every empty account.
+  it("never reports a stall on a catalog the list already settled", async () => {
+    vi.useFakeTimers();
+    const f = fixture(true);
+    const off = f.inventory.subscribe(() => {});
+    try {
+      await vi.advanceTimersByTimeAsync(SNAPSHOT_DEADLINE_MS * 2);
+      expect(f.inventory.snapshot().loading).toEqual({
+        projects: false,
+        sessions: false,
+      });
+      expect(f.inventory.snapshot().errors).toEqual({});
+      expect(f.sessions.watch).toHaveBeenCalledTimes(1);
+      expect(f.projects.watch).toHaveBeenCalledTimes(1);
     } finally {
       off();
     }

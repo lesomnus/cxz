@@ -612,18 +612,23 @@ func auxiliaryDots(step int) string {
 func auxiliaryLoading(j *auxiliary.Job) bool {
 	return j != nil && (j.Status == "queued" || j.Status == "running")
 }
+
+// inlineSummary belongs to the response a turn ended on, not to the turn_end
+// record: a reading projection folds that record away once it has put the
+// turn's metrics on the response, so the response is the row a client can
+// point at. auxiliary.Turn.Response is recorded for exactly this.
 func (m *model) inlineSummary(e *api.Event) (string, bool) {
 	j := m.auxiliaryJob()
 	text := ""
 	if s := m.current(); s != nil {
 		for _, summary := range m.auxiliarySummaries[m.connectionRef()+"/"+s.Id] {
-			if summary.Run == e.RunId && summary.Turn == e.Seq {
+			if summary.Run == e.RunId && auxiliaryTurnRow(summary.Response, summary.Turn) == e.Seq {
 				text = summary.Text
 				break
 			}
 		}
 	}
-	if j == nil || j.Run != e.RunId || j.Turn != e.Seq {
+	if j == nil || j.Run != e.RunId || auxiliaryTurnRow(j.Response, j.Turn) != e.Seq {
 		j = &auxiliary.Job{}
 	}
 	if j.Summary != "" {
@@ -706,15 +711,19 @@ func (m *model) auxiliaryCommand(text string) tea.Cmd {
 				m.auxiliaryJobs[key] = &queued
 				m.render()
 			} else {
-				// Immediate presentation while the server validates/fetches the source.
-				for i := len(m.events[s.Id]) - 1; i >= 0; i-- {
-					e := m.events[s.Id][i]
+				// Immediate presentation while the server validates/fetches the
+				// source. The turn to attach to is the newest response that
+				// carries its turn's metrics: that is what completion means in
+				// rows, and it is the row the summary will hang under.
+				rows := m.rows[s.Id]
+				for i := len(rows) - 1; i >= 0; i-- {
+					e := rows[i]
 					if e.Kind == "input" {
 						break
 					}
-					if e.Kind == "turn_end" && e.Text == "completed" && e.RunId == s.RunId {
-						j := &auxiliary.Job{ID: "pending", Run: e.RunId, Turn: e.Seq, Status: "queued", SummaryRequested: task == "summary", SuggestionRequested: task == "suggestion"}
-						if old := m.auxiliaryJob(); old != nil && old.Turn == e.Seq && old.Run == e.RunId {
+					if e.Kind == "assistant" && e.RunId == s.RunId && len(e.GetResponse().GetCompletionJson()) > 0 {
+						j := &auxiliary.Job{ID: "pending", Run: e.RunId, Turn: e.Seq, Response: e.Seq, Status: "queued", SummaryRequested: task == "summary", SuggestionRequested: task == "suggestion"}
+						if old := m.auxiliaryJob(); old != nil && auxiliaryTurnRow(old.Response, old.Turn) == e.Seq && old.Run == e.RunId {
 							if task != "summary" {
 								j.Summary = old.Summary
 							}
@@ -762,4 +771,14 @@ func (m *model) titleCommand(text string) tea.Cmd {
 	m.input.Reset()
 	m.resize()
 	return m.auxiliaryRequest(r, nil)
+}
+
+// auxiliaryTurnRow is the row a turn's auxiliary output hangs under: its final
+// answer when one was recorded, and otherwise the turn itself -- which only
+// still appears for work recorded before responses were named.
+func auxiliaryTurnRow(response, turn uint64) uint64 {
+	if response > 0 {
+		return response
+	}
+	return turn
 }

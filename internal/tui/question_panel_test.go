@@ -129,6 +129,7 @@ func TestQuestionDockAndIndependentScrolling(t *testing.T) {
 		m := questionModel()
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 36})
 		m.events["s"] = []*api.Event{{Seq: 1, Kind: "assistant", Text: strings.Repeat("history line\n", 100) + "LAST_REPLY"}}
+		setRows(m, "s", m.events["s"])
 		m.render()
 		m.view.GotoBottom()
 		before := m.view.Height

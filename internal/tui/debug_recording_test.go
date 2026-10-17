@@ -153,6 +153,7 @@ func TestTranscriptRenderRecordsWhatItWalked(t *testing.T) {
 		{Seq: 2, RunId: "run", Kind: "tool_output", RequestId: "t", Text: "0123456789"},
 		{Seq: 3, RunId: "run", Kind: "assistant", Text: "hi"},
 	}
+	setRows(m, "s", m.events["s"])
 	m.debugRecorder = &debugRecorder{}
 	m.debugRecorder.Start()
 	m.limitHistory("s", false, 0)

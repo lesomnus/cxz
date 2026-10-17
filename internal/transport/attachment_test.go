@@ -35,7 +35,7 @@ func TestAttachmentClientUsesPrivateManagerSocketAndPreservesRemoteSchemes(t *te
 	}
 	defer stop()
 	for _, endpoint := range []Endpoint{{}, {Scheme: "local", Address: root}, {Scheme: "unix", Address: Socket(root)}} {
-		client := AttachmentClient(root, endpoint)
+		client := AttachmentClient(root, endpoint, Credential{})
 		defer client.Close()
 		if ok, err := client.Supported(t.Context()); err != nil || !ok {
 			t.Fatal(ok, err)
@@ -49,13 +49,22 @@ func TestAttachmentClientUsesPrivateManagerSocketAndPreservesRemoteSchemes(t *te
 			t.Fatal("private raw transport changed bytes or identity", err)
 		}
 	}
-	for _, endpoint := range []Endpoint{{Scheme: "tcp", Address: "host:1"}, {Scheme: "mtls", Address: "host:1"}, {Scheme: "unix", Address: "/different/socket"}} {
-		if AttachmentClient(root, endpoint) != nil {
+	// A relay is reached as itself, on its own address and with the credential
+	// its calls use. Without that credential there is nothing to reach it with,
+	// and a socket this client did not place is never guessed at.
+	for _, endpoint := range []Endpoint{{Scheme: "tcp", Address: "host:1"}, {Scheme: "mtls", Address: "host:1"}, {Scheme: "unix", Address: "/different/socket"}, {Scheme: "tcp", Address: "no-port"}} {
+		if AttachmentClient(root, endpoint, Credential{}) != nil {
 			t.Fatal("invented raw remote endpoint", endpoint)
 		}
 	}
+	if got := AttachmentClient(root, Endpoint{Scheme: "tcp", Address: "host:1"}, Credential{Token: "t"}); got == nil || got.Origin != "http://host:1" {
+		t.Fatal("plaintext relay origin", got)
+	}
+	if got := AttachmentClient(root, Endpoint{Scheme: "mtls", Address: "host:1"}, Credential{Identity: &Identity{}}); got != nil {
+		t.Fatal("unusable client identity accepted", got)
+	}
 	stop()
-	client := AttachmentClient(root, Endpoint{})
+	client := AttachmentClient(root, Endpoint{}, Credential{})
 	defer client.Close()
 	if ok, err := client.Supported(t.Context()); ok || err != nil {
 		t.Fatal("absent HTTP socket broke compatibility negotiation", ok, err)

@@ -117,7 +117,7 @@ func TestPreparedLiveBatchKeepsDraftAndRendersOnce(t *testing.T) {
 	go func() {
 		close(entered)
 		<-release // Model a slow syntax highlighter on the watch worker.
-		prepared <- m.prepareHistoryPage(ctx, historyPage{events: events}, "claude", m.view.Width)
+		prepared <- m.prepareHistoryPage(ctx, historyPage{rows: rowsOf(events)}, "claude", m.view.Width)
 	}()
 	<-entered
 	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("draft while preparing")})
@@ -129,11 +129,15 @@ func TestPreparedLiveBatchKeepsDraftAndRendersOnce(t *testing.T) {
 	if len(page.prepared) != 1 || len(page.inputBodies) != 1 || len(page.summaries) != 1 {
 		t.Fatal("live rows not prepared")
 	}
-	m.Update(caughtUp{id: "s", events: events, epoch: 2, prepared: &page})
+	// Records settle the replay cursor; rows carry the conversation. Both come
+	// from the same batch of journal writes, on the two streams.
+	m.Update(caughtUp{id: "s", events: events, epoch: 2})
+	m.Update(liveRows{id: "s", rows: page.rows, updated: 3, epoch: 2, prepared: &page})
 	if m.cursor["s"] != 3 || len(m.events["s"]) != 3 || m.input.Value() != "draft while preparing" {
 		t.Fatal("live batch lost data or draft")
 	}
-	if m.renderedResponses[events[1]].body != page.prepared[events[1]].body || !strings.Contains(m.view.View(), "CLAUDE") {
+	answer := page.rows[1]
+	if m.renderedResponses[answer].body != page.prepared[answer].body || !strings.Contains(m.view.View(), "CLAUDE") {
 		t.Fatal("prepared response not displayed")
 	}
 	m.Update(caughtUp{id: "s", events: []*api.Event{{Seq: 4, Kind: "raw"}}, epoch: 2})
@@ -155,7 +159,31 @@ func TestPreparedLiveBatchKeepsDraftAndRendersOnce(t *testing.T) {
 type liveWatchClient struct {
 	api.SessionsClient
 	events chan streamEvent
+	rows   chan streamRow
 }
+
+type liveRowStream struct {
+	api.Sessions_RowsClient
+	ctx  context.Context
+	rows chan streamRow
+}
+
+func (s *liveRowStream) Recv() (*api.Row, error) {
+	select {
+	case <-s.ctx.Done():
+		return nil, s.ctx.Err()
+	case next, ok := <-s.rows:
+		if !ok {
+			return nil, io.EOF
+		}
+		return next.row, next.err
+	}
+}
+
+func (c liveWatchClient) Rows(ctx context.Context, _ *api.RowsRequest, _ ...grpc.CallOption) (api.Sessions_RowsClient, error) {
+	return &liveRowStream{ctx: ctx, rows: c.rows}, nil
+}
+
 type liveWatchStream struct {
 	api.Sessions_WatchClient
 	channelEvents
@@ -166,12 +194,12 @@ func (c liveWatchClient) Watch(ctx context.Context, _ *api.WatchRequest, _ ...gr
 }
 func (s *liveWatchStream) Recv() (*api.Event, error) { return s.channelEvents.Recv() }
 
-type liveWatchProbe struct{ messages chan caughtUp }
+type liveWatchProbe struct{ messages chan liveRows }
 
 func (*liveWatchProbe) Init() tea.Cmd { return nil }
 func (*liveWatchProbe) View() string  { return "" }
 func (p *liveWatchProbe) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if batch, ok := msg.(caughtUp); ok {
+	if batch, ok := msg.(liveRows); ok {
 		p.messages <- batch
 	}
 	return p, nil
@@ -182,9 +210,9 @@ func TestWatchPreparesLiveResponseAtCurrentWidth(t *testing.T) {
 	defer cancel()
 	m := conversationModel()
 	m.ctx = ctx
-	client := liveWatchClient{events: make(chan streamEvent, 1)}
+	client := liveWatchClient{events: make(chan streamEvent, 1), rows: make(chan streamRow, 1)}
 	m.client = client
-	probe := &liveWatchProbe{messages: make(chan caughtUp, 1)}
+	probe := &liveWatchProbe{messages: make(chan liveRows, 1)}
 	program := tea.NewProgram(probe, tea.WithContext(ctx), tea.WithInput(nil), tea.WithOutput(io.Discard), tea.WithoutRenderer(), tea.WithoutSignalHandler())
 	m.program = program
 	done := make(chan struct{})
@@ -192,14 +220,74 @@ func TestWatchPreparesLiveResponseAtCurrentWidth(t *testing.T) {
 	defer func() { cancel(); <-done }()
 	m.watch()
 	m.Update(tea.WindowSizeMsg{Width: 130, Height: 30})
+	// The published row, which is what the transcript draws. Preparing it is
+	// the expensive part and belongs off the UI goroutine at the live width.
 	e := &api.Event{Seq: 1, RunId: "run", Kind: "assistant", Text: "```go\npackage main\n```"}
-	client.events <- streamEvent{event: e}
+	client.rows <- streamRow{row: &api.Row{Event: e, Updated: 1}}
 	select {
 	case batch := <-probe.messages:
-		if batch.id != "s" || batch.epoch != m.watchEpoch || len(batch.events) != 1 || batch.prepared == nil || batch.prepared.prepared[e].width != m.view.Width {
-			t.Fatal("watch did not prepare a batch at the resized width", batch)
+		if batch.id != "s" || batch.epoch != m.watchEpoch || len(batch.rows) != 1 || batch.prepared == nil || batch.prepared.prepared[e].width != m.view.Width {
+			t.Fatal("the row stream did not prepare a batch at the resized width", batch)
 		}
 	case <-ctx.Done():
 		t.Fatal("watch failed to publish live response")
+	}
+}
+
+// A record stream that stops saying it is alive is reported, so the watcher
+// reconnects. The TUI depends on this stream for everything the transcript
+// cannot show -- execution state, quota, pending approvals -- so a stall that
+// went unnoticed would freeze all of it while the conversation kept arriving
+// on the row stream. See cxz#191.
+func TestQuietRecordStreamIsReportedOnceItHasSaidItIsAlive(t *testing.T) {
+	was := liveStallInterval
+	liveStallInterval = 40 * time.Millisecond
+	t.Cleanup(func() { liveStallInterval = was })
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	in := make(chan streamEvent, 1)
+	out := make(chan []*api.Event, 1)
+	done := make(chan error, 1)
+	go func() {
+		done <- collectLiveEvents(ctx, channelEvents{ctx, in}, func(events []*api.Event) { out <- events })
+	}()
+	// A heartbeat is not a batch: it carries no record, and a reader that
+	// rendered it would rebuild the transcript for nothing.
+	in <- streamEvent{event: &api.Event{Heartbeat: true}}
+	select {
+	case batch := <-out:
+		t.Fatal("a heartbeat was delivered as records", batch)
+	case err := <-done:
+		if !errors.Is(err, errStreamStalled) {
+			t.Fatal("the quiet stream ended for another reason", err)
+		}
+	case <-ctx.Done():
+		t.Fatal("the quiet stream was never reported")
+	}
+}
+
+// A stream that never says it is alive is waited on indefinitely: that is an
+// older runtime being legitimately silent, and restarting it every interval
+// would be this client fighting a healthy session.
+func TestRecordStreamWithoutHeartbeatsIsNotTimedOut(t *testing.T) {
+	was := liveStallInterval
+	liveStallInterval = 30 * time.Millisecond
+	t.Cleanup(func() { liveStallInterval = was })
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	in := make(chan streamEvent, 1)
+	done := make(chan error, 1)
+	go func() {
+		done <- collectLiveEvents(ctx, channelEvents{ctx, in}, func([]*api.Event) {})
+	}()
+	in <- streamEvent{event: &api.Event{Seq: 1, Kind: "assistant", Text: "the only thing it will ever say"}}
+	select {
+	case err := <-done:
+		t.Fatal("a silent stream with no heartbeats was ended", err)
+	case <-time.After(200 * time.Millisecond):
+	}
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
 	}
 }

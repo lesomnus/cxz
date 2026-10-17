@@ -37,6 +37,10 @@ service Sessions {
   rpc Watch(WatchRequest) returns (stream Event);
   rpc History(WatchRequest) returns (EventBatch);
   rpc Transcript(TranscriptRequest) returns (TranscriptReply);
+  // Rows is Transcript arriving rather than Transcript paged: the same reading
+  // projection, streamed. Watch carries records as the journal has them, which
+  // is what derives from a conversation; this carries the rows a person reads.
+  rpc Rows(RowsRequest) returns (stream Row);
   rpc EventDetails(EventDetailsRequest) returns (EventBatch);
   rpc Background(SessionRef) returns (BackgroundReply);
   rpc Models(ModelsRequest) returns (ModelsReply);
@@ -166,11 +170,18 @@ message Event {
   string kind = 5; string text = 6; string request_id = 7; bytes payload = 8;
   ResponseMetadata response = 9;
   ToolSummary tool_summary = 10;
+  // A frame that is not a record: the stream saying it is alive with nothing
+  // to send. Nothing else on it is set, and a reader that advances its cursor
+  // by what it receives must skip it. See proto/cxz/session.proto.
+  bool heartbeat = 11;
 }
 message ToolSummary {
   string name = 1; string shell = 2; string command = 3; string state = 4;
   repeated ToolFileSummary files = 5;
   uint32 omitted_files = 6;
+  // The shape a reader lays out, and the provider's own words for the call when
+  // it supplied any. See proto/cxz/session.proto for why neither is inferred.
+  string kind = 7; string description = 8;
 }
 // Counts describe recorded diff hunks or submitted content/replacement spans.
 // An unknown measure never implies zero changes.
@@ -184,6 +195,13 @@ message TranscriptReply {
   repeated Event events = 1; uint64 snapshot_seq = 2;
   bool has_older = 3; bool has_newer = 4; Event preceding_input = 5; repeated Event metadata = 6;
 }
+// after_updated is a cursor over row *versions*, not over records: a response
+// row is published again when its turn completes and the metrics fold onto it,
+// so the same seq arrives twice with a higher updated. Zero replays the whole
+// projection.
+message RowsRequest { string session_id = 1; uint64 after_updated = 2; string client_id = 3; }
+// updated is what a client resumes from; seq is what it replaces by.
+message Row { Event event = 1; uint64 updated = 2; }
 message EventDetailsRequest { string session_id = 1; uint64 seq = 2; }
 message ResponseMetadata {
   string model = 1; string effort = 2;

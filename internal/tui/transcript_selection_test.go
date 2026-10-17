@@ -29,6 +29,7 @@ func TestTranscriptWord(t *testing.T) {
 func TestTranscriptDoubleClickKeepsWordOnRelease(t *testing.T) {
 	m := conversationModel()
 	m.events["s"] = []*api.Event{{Kind: "assistant", Seq: 1, Text: "hello 한글 world"}}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	m.view.GotoTop()
 	for i := 0; i < 2; i++ {
@@ -44,6 +45,7 @@ func TestTranscriptDragExcludesOnlyResponseIndent(t *testing.T) {
 	for _, reverse := range []bool{false, true} {
 		m := conversationModel()
 		m.events["s"] = []*api.Event{{Kind: "assistant", Seq: 1, Text: "alpha\n  indented"}}
+		setRows(m, "s", m.events["s"])
 		m.render()
 		m.view.GotoTop()
 		x1, y1, x2, y2 := 0, 1, 100, 2

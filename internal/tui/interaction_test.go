@@ -137,6 +137,7 @@ func TestScrollableApprovalAndResolvedRow(t *testing.T) {
 	request := &api.Event{Seq: 1, RunId: "run", Kind: "approval", RequestId: "r", Text: "Bash", Payload: []byte(`{"input":{"command":"echo start"},"zdata":"` + strings.Repeat("한글 ", 150) + `TAIL"}`)}
 	m.current().Pending = []*api.Event{request}
 	m.events["s"] = []*api.Event{request}
+	setRows(m, "s", m.events["s"])
 	m.resize()
 	m.render()
 	m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
@@ -148,7 +149,11 @@ func TestScrollableApprovalAndResolvedRow(t *testing.T) {
 	if !strings.Contains(box, "TAIL") || m.approvalOffset == 0 {
 		t.Fatal("payload tail inaccessible", box)
 	}
-	m.Update(received{id: "s", event: &api.Event{Seq: 2, RunId: "run", Kind: "approval_resolved", RequestId: "r", Text: "allowed"}})
+	resolved := &api.Event{Seq: 2, RunId: "run", Kind: "approval_resolved", RequestId: "r", Text: "allowed"}
+	m.Update(received{id: "s", event: resolved})
+	// The runtime folds a resolution into the row it answers and publishes that
+	// row again; there is no separate resolved row to pair with.
+	m.Update(liveRows{id: "s", rows: rowsOf([]*api.Event{request, resolved}), updated: 2, epoch: m.watchEpoch})
 	m.view.GotoTop()
 	text := ansi.Strip(m.view.View())
 	if !strings.Contains(text, "✓ Bash") || strings.Contains(text, "approval requested") || strings.Contains(text, "approval: allowed") {
@@ -161,13 +166,14 @@ func TestScrollableApprovalAndResolvedRow(t *testing.T) {
 
 func TestToolResultCompactAndDetails(t *testing.T) {
 	m := conversationModel()
-	e := &api.Event{Seq: 1, Kind: "tool_result", Payload: []byte(`"first\n` + strings.Repeat(`line\n`, 100) + `TAIL"`)}
+	e := &api.Event{Seq: 1, RunId: "run", RequestId: "r", Kind: "tool_result", Payload: []byte(`"first\n` + strings.Repeat(`line\n`, 100) + `TAIL"`)}
 	m.events["s"] = []*api.Event{e}
+	setRows(m, "s", m.events["s"])
 	text := ansi.Strip(eventView(m.current(), e, 80))
 	if strings.Contains(text, "TAIL") || strings.Contains(text, "\n") || !strings.Contains(text, "/details") {
 		t.Fatal(text)
 	}
-	m.toolDetails()
+	details(t, m)
 	if !strings.Contains(m.localReports["s"], "TAIL") {
 		t.Fatal("details lost")
 	}
@@ -179,6 +185,7 @@ func TestContextAndCompactCommands(t *testing.T) {
 		m.current().Agent = agent
 		c := m.client.(*recordingClient)
 		m.events["s"] = []*api.Event{{RunId: m.current().RunId, Kind: "usage", Text: "thread/tokenUsage/updated", Payload: []byte(`{"tokenUsage":{"last":{"totalTokens":2000,"inputTokens":1800},"modelContextWindow":10000}}`)}}
+		setRows(m, "s", m.events["s"])
 		cmd := m.contextCommand()
 		if agent == "claude" {
 			if cmd == nil {
@@ -211,6 +218,7 @@ func TestQuotaFooterAndStaleness(t *testing.T) {
 	m.current().Agent = "codex"
 	now := time.Unix(1900000000, 0)
 	m.events["s"] = []*api.Event{{Kind: "usage", Text: "account/rateLimits/updated", TimeMs: now.UnixMilli(), Payload: []byte(`{"rateLimits":{"primary":{"usedPercent":60,"windowDurationMins":300,"resetsAt":1900010320},"secondary":{"usedPercent":54,"windowDurationMins":10080,"resetsAt":1900536400}}}`)}}
+	setRows(m, "s", m.events["s"])
 	m.updateQuota()
 	text := ansi.Strip(m.quotaStatus(now, 100))
 	if !strings.Contains(text, "40%") || !strings.Contains(text, "46%") || !strings.Contains(text, "5h 2h52m") || !strings.Contains(text, "wk") {
@@ -248,6 +256,7 @@ func TestQuotaAvailabilityDiagnostics(t *testing.T) {
 	} {
 		m := conversationModel()
 		m.events["s"] = tc.events
+		setRows(m, "s", m.events["s"])
 		m.updateQuota()
 		if m.quotaState != tc.state || !strings.Contains(ansi.Strip(m.quotaStatus(time.Now(), 40)), tc.state) {
 			t.Fatal("wrong quota state", m.quotaState)

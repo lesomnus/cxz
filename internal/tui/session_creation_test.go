@@ -38,6 +38,7 @@ func TestNavigatorNewSessionWithoutLocalCreator(t *testing.T) {
 			m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 			m.input.SetValue("keep my draft")
 			m.events["s"] = []*api.Event{{Kind: "assistant", Text: "old conversation must stay hidden"}}
+			setRows(m, "s", m.events["s"])
 			client := &sessionCreationClient{err: errors.New("session preparation failed")}
 			m.client = client
 			m.accountService = &accountViewService{items: []*resource.Account{

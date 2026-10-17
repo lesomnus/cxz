@@ -28,7 +28,7 @@ func TestHistoryRecordingMeasuresPayloadAndFirstRenderWithoutContent(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	prepared := m.prepareHistoryPage(context.Background(), historyPage{id: "s", initial: true, events: page.Events, started: started}, "claude", m.view.Width)
+	prepared := m.prepareHistoryPage(context.Background(), historyPage{id: "s", initial: true, rows: page.Events, started: started}, "claude", m.view.Width)
 	m.applyHistoryPage(prepared)
 	archive := m.debugRecorder.Stop()
 	var rpc, render, preparation bool

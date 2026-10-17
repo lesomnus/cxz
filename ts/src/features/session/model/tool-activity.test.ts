@@ -4,7 +4,7 @@ import {
   ResponseMetadataSchema,
   SessionEventSchema,
 } from "#gen/cxz/session_pb";
-import { pendingAfter, payload } from "./journal";
+import { payload } from "./journal";
 import {
   shellCommand,
   toolLabel,
@@ -13,7 +13,8 @@ import {
   toolFiles,
   fileAction,
   fileMeasure,
-  transcriptEvents,
+  transcriptRows,
+  activityFromRecords,
 } from "./tool-activity";
 
 const event = (
@@ -64,246 +65,104 @@ const result = event(
   "## branch\n",
 );
 
-describe("tool transcript projection", () => {
-  it("attaches structured question answers once without losing the original request or joining another run", () => {
-    const question = event(
-      2,
-      "approval",
-      "q",
-      { params: { questions: [{ id: "choice", question: "Choose?" }] } },
-      "item/tool/requestUserInput",
-    );
-    const resolved = event(
-      3,
-      "approval_resolved",
-      "q",
-      { answers: { choice: { selected: ["A, B"], other: "notes" } } },
-      "allowed",
-    );
-    const projected = transcriptEvents([question, resolved]);
-    expect(projected.events).toHaveLength(1);
-    expect(payload(projected.events[0])).toMatchObject({
-      params: payload(question).params,
-      cxz_resolution: {
-        state: "allowed",
-        answers: { choice: { selected: ["A, B"], other: "notes" } },
-      },
+// Records into rows is Go's now, and its tests moved with it. What is left
+// here is this side of the line: indexing the rows a runtime sends, assembling
+// one tool's records into the activity a card reads, and what a card displays
+// for a given agent. See cxz#155.
+describe("row indexing", () => {
+  const summarized = (seq: number, state: string, name = "Bash") =>
+    create(SessionEventSchema, {
+      seq: BigInt(seq),
+      kind: "tool_call",
+      runId: "run",
+      requestId: "exec-1",
+      toolSummary: { name, state, command },
     });
-    expect(payload(question).cxz_resolution).toBeUndefined();
-    expect(transcriptEvents([projected.events[0]]).events[0]).toBe(
-      projected.events[0],
-    );
-    resolved.runId = "another";
-    expect(transcriptEvents([question, resolved]).events).toEqual([question]);
+
+  it("finds a tool's activity by the row's own sequence", () => {
+    const rows = [summarized(1, "completed"), event(2, "assistant", "")];
+    const indexed = transcriptRows(rows);
+    expect(indexed.events).toBe(rows);
+    expect([...indexed.activities.keys()]).toEqual([1n]);
+    expect(indexed.activities.get(1n)!.call).toBe(rows[0]);
+    // The records a card needs for output are fetched, not carried.
+    expect(indexed.activities.get(1n)!.output).toEqual([]);
+    expect(indexed.activities.get(1n)!.result).toBeUndefined();
   });
-  it("replaces a Claude question's tool call/result with its question and answer card", () => {
-    const call = event(1, "tool_call", "tool-q", {}, "AskUserQuestion");
+});
+
+describe("one tool's records", () => {
+  it("assembles the call, its output and its result", () => {
+    const first = event(2, "tool_output", "exec-1", {}, "first\n");
+    const second = event(4, "tool_output", "exec-1", {}, "second\n");
+    const activity = activityFromRecords([call, first, second]);
+    expect(activity.call).toBe(call);
+    expect(toolOutput(activity)).toBe("first\nsecond\n");
+    // A result supersedes the chunks it summarizes.
+    expect(toolOutput(activityFromRecords([call, first, second, result]))).toBe(
+      "## branch\n",
+    );
+  });
+
+  it("pairs an approval with its resolution and ignores a question", () => {
     const question = event(
-      2,
+      4,
       "approval",
-      "q",
-      {
-        tool_use_id: "tool-q",
-        input: { questions: [{ question: "Choose?" }] },
-      },
+      "question",
+      { tool_use_id: "exec-1" },
       "AskUserQuestion",
     );
-    const result = event(3, "tool_result", "tool-q", {}, "done");
-    expect(transcriptEvents([call, question, result]).events).toEqual([
-      question,
+    const activity = activityFromRecords([call, approval, decision, question]);
+    expect(activity.approvals).toEqual([
+      { request: approval, resolution: decision },
     ]);
-    expect(transcriptEvents([result]).events).toEqual([result]);
-  });
-  it("shows a completed response once while retaining its completion metrics", () => {
-    const response = event(1, "assistant", "", {}, "Done");
-    const end = event(2, "turn_end", "", {}, "completed");
-    end.response = create(ResponseMetadataSchema, {
-      completionJson: new TextEncoder().encode(
-        JSON.stringify({
-          response_seq: "1",
-          duration_ms: 500,
-          metrics: { output_tokens: 20 },
-        }),
-      ),
-    });
-    const history = [response, end];
-    const projected = transcriptEvents(history);
-    expect(projected.events).toEqual([response]);
-    expect(projected.completions.get("1")).toMatchObject({
-      durationMs: 500,
-      metrics: { output_tokens: 20 },
-    });
-    expect(history).toEqual([response, end]);
-    // A history window lacking the referenced response must keep the notice.
-    expect(transcriptEvents([end]).events).toEqual([end]);
-    end.runId = "other-run";
-    expect(transcriptEvents(history).events).toEqual(history);
   });
 
-  it("keeps failed, interrupted and unmatched completions even after an earlier completed turn in the same run", () => {
-    const response = event(1, "assistant", "", {}, "Done");
-    const completed = event(2, "turn_end", "", {}, "completed");
-    const failed = event(3, "turn_end", "", {}, "failed");
-    const interrupted = event(4, "turn_end", "", {}, "interrupted");
-    const unmatched = event(5, "turn_end", "", {}, "completed");
-    const projected = transcriptEvents([
-      response,
-      completed,
-      failed,
-      interrupted,
-      unmatched,
+  it("does not pair a resolution that precedes its request", () => {
+    const early = event(1, "approval_resolved", "214", {}, "allowed");
+    const late = event(2, "approval", "214", { params: { itemId: "exec-1" } });
+    expect(activityFromRecords([early, late]).approvals).toEqual([
+      { request: late, resolution: undefined },
     ]);
-    expect(projected.events).toEqual([
-      response,
-      failed,
-      interrupted,
-      unmatched,
-    ]);
-    expect(projected.completions.has("1")).toBe(true);
   });
+});
 
-  it("does not hide a completion for commentary or a malformed response snapshot", () => {
-    const response = event(1, "assistant", "", {}, "Working");
-    response.response = create(ResponseMetadataSchema, { phase: "commentary" });
-    const end = event(2, "turn_end", "", {}, "completed");
-    expect(transcriptEvents([response, end]).events).toEqual([response, end]);
-    response.response.phase = "final_answer";
-    end.response = create(ResponseMetadataSchema, {
-      completionJson: new TextEncoder().encode("invalid"),
-    });
-    expect(transcriptEvents([response, end]).events).toEqual([response, end]);
-  });
-
-  it("updates one original row from running through approval to completed, retaining the native records", () => {
-    const started = transcriptEvents([call]);
-    expect(toolState(started.activities.get(1n)!, "codex")).toBe("working");
-    const waiting = transcriptEvents([call, approval]);
-    expect(waiting.events).toEqual([call]);
-    expect(toolState(waiting.activities.get(1n)!, "codex")).toBe("pending");
-    expect(pendingAfter([], [call, approval])).toEqual([approval]);
-    const allowed = transcriptEvents([call, approval, decision]);
-    expect(allowed.events).toEqual([call]);
-    expect(toolState(allowed.activities.get(1n)!, "codex")).toBe("working");
-    const history = [call, approval, decision, result];
-    const finished = transcriptEvents(history);
-    expect(finished.events).toEqual([call]);
-    const activity = finished.activities.get(1n)!;
-    expect(toolState(activity, "codex")).toBe("completed");
-    expect(toolLabel(activity, "codex")).toEqual({
+describe("what a card displays", () => {
+  it("names the tool and the shell it ran under", () => {
+    expect(toolLabel(activityFromRecords([call, result]), "codex")).toEqual({
       name: "Bash",
       shell: "zsh",
       command: "git status --short --branch",
+      // Derived from records rather than read from a row, so the shape and the
+      // provider's own words are not known here. An empty kind says that; it is
+      // not a claim that this is a tool of no shape.
+      kind: "",
+      description: "",
     });
-    expect(activity.approvals[0]).toEqual({
-      request: approval,
-      resolution: decision,
-    });
-    expect(activity.result).toBe(result);
-    expect(history).toHaveLength(4);
   });
 
-  it("folds interleaved streamed chunks and final output without changing message order or duplicating output", () => {
-    const first = event(2, "tool_output", "exec-1", {}, "first\n");
-    const second = event(4, "tool_output", "exec-1", {}, "second\n");
-    const message = event(3, "assistant", "", {}, "Still working");
-    const live = transcriptEvents([call, first, message, second]);
-    expect(live.events).toEqual([call, message]);
-    expect(toolOutput(live.activities.get(1n)!)).toBe("first\nsecond\n");
-    const done = transcriptEvents([call, first, message, second, result]);
-    expect(done.events).toEqual([call, message]);
-    expect(toolOutput(done.activities.get(1n)!)).toBe("## branch\n");
-  });
-
-  it("does not merge identical commands or reused IDs in different runs", () => {
-    const sameCommand = event(
-      2,
-      "tool_call",
-      "exec-2",
-      { item: { type: "commandExecution", command } },
-      command,
-    );
-    const nextRun = event(
-      3,
-      "tool_result",
-      "exec-1",
-      { item: { status: "failed" } },
-      "",
-      "other-run",
-    );
-    const projected = transcriptEvents([call, sameCommand, nextRun]);
-    expect(projected.events).toEqual([call, sameCommand, nextRun]);
-    expect(projected.activities.get(1n)!.result).toBeUndefined();
-    expect(toolState(projected.activities.get(3n)!, "codex")).toBe("failed");
-  });
-
-  it("keeps orphan output/results at the history edge and pairs them when their call is loaded", () => {
-    const chunk = event(4, "tool_output", "exec-1", {}, "## branch\n");
-    const edge = transcriptEvents([chunk, result]);
-    expect(edge.events).toEqual([chunk]);
-    expect(toolState(edge.activities.get(4n)!, "codex")).toBe("completed");
-    expect(toolLabel(edge.activities.get(4n)!, "codex").shell).toBe("zsh");
-    const expanded = transcriptEvents([call, chunk, result]);
-    expect(expanded.events).toEqual([call]);
-    expect(transcriptEvents([result]).events).toEqual([result]);
-  });
-
-  it("pairs Claude execution approvals and preserves questions and unrelated approval requests", () => {
-    const bash = event(1, "tool_call", "bash", { command }, "Bash");
-    const permission = event(
-      2,
-      "approval",
-      "request",
-      { tool_use_id: "bash" },
-      "Bash",
-    );
-    const question = event(
-      3,
-      "approval",
-      "question",
-      { tool_use_id: "bash" },
-      "AskUserQuestion",
-    );
-    const unrelated = event(
-      4,
-      "approval",
-      "unrelated",
-      {},
-      "Unknown permission",
-    );
-    const projected = transcriptEvents([bash, permission, question, unrelated]);
-    expect(projected.events).toEqual([bash, question, unrelated]);
-    expect(toolLabel(projected.activities.get(1n)!, "claude").command).toBe(
-      "git status --short --branch",
-    );
-    expect(
-      toolState(transcriptEvents([bash]).activities.get(1n)!, "claude"),
-    ).toBe("pending");
-    expect(
-      pendingAfter([], [bash, permission, question, unrelated]),
-    ).toHaveLength(3);
-  });
-
-  it("reports nonzero exit codes, declined approvals and Claude error results as failures", () => {
+  it("reads a nonzero exit, a denial and a Claude error as failures", () => {
     const failed = event(5, "tool_result", "exec-1", {
       item: { status: "completed", exitCode: 1 },
     });
-    expect(
-      toolState(transcriptEvents([call, failed]).activities.get(1n)!, "codex"),
-    ).toBe("failed");
+    expect(toolState(activityFromRecords([call, failed]), "codex")).toBe(
+      "failed",
+    );
     const denied = event(3, "approval_resolved", "214", {}, "denied");
     expect(
-      toolState(
-        transcriptEvents([call, approval, denied]).activities.get(1n)!,
-        "codex",
-      ),
+      toolState(activityFromRecords([call, approval, denied]), "codex"),
     ).toBe("failed");
     const claudeError = event(5, "tool_result", "exec-1", {
       is_error: true,
       content: [{ text: "failed to run" }],
     });
-    const activity = transcriptEvents([call, claudeError]).activities.get(1n)!;
+    const activity = activityFromRecords([call, claudeError]);
     expect(toolState(activity, "claude")).toBe("failed");
     expect(toolOutput(activity)).toBe("failed to run");
+  });
+
+  it("holds a call that has reported nothing as pending", () => {
+    expect(toolState(activityFromRecords([call]), "claude")).toBe("pending");
   });
 });
 
@@ -355,18 +214,19 @@ it("preserves a historical task anchor and applies native live results to it", (
       state: "working",
     },
   });
-  const projected = transcriptEvents([summary]);
-  expect(toolState(projected.activities.get(1n)!, "codex")).toBe("working");
-  expect(toolLabel(projected.activities.get(1n)!, "codex").command).toBe(
+  // A row that already carries a summary is read from the summary, not from
+  // the payload it was reduced from.
+  const indexed = transcriptRows([summary]);
+  expect([...indexed.activities.keys()]).toEqual([1n]);
+  expect(toolState(activityFromRecords([summary]), "codex")).toBe("working");
+  expect(toolLabel(activityFromRecords([summary]), "codex").command).toBe(
     "git status",
   );
-  const updated = transcriptEvents([summary, result]);
-  expect(updated.events.map((e) => e.seq)).toEqual([1n]);
-  expect(toolState(updated.activities.get(1n)!, "codex")).toBe("completed");
+  expect(toolState(activityFromRecords([summary, result]), "codex")).toBe(
+    "completed",
+  );
   summary.toolSummary!.state = "failed";
-  expect(
-    toolState(transcriptEvents([summary]).activities.get(1n)!, "codex"),
-  ).toBe("failed");
+  expect(toolState(activityFromRecords([summary]), "codex")).toBe("failed");
 });
 
 it("uses completed Codex file changes at the original anchor, including unknown counts and renames", () => {
@@ -392,9 +252,7 @@ it("uses completed Codex file changes at the original anchor, including unknown 
       ],
     },
   });
-  const projected = transcriptEvents([start, end]);
-  expect(projected.events.map((e) => e.seq)).toEqual([1n]);
-  const activity = projected.activities.get(1n)!;
+  const activity = activityFromRecords([start, end]);
   expect(toolState(activity, "codex")).toBe("completed");
   const { files } = toolFiles(activity);
   expect(
@@ -404,14 +262,12 @@ it("uses completed Codex file changes at the original anchor, including unknown 
     ["Write", "/workspace/ts/src/send-motion.ts", "Δ?", ""],
     ["Edit", "old.ts", "+1 -1", "new.ts"],
   ]);
-  expect(toolFiles(transcriptEvents([end]).activities.get(2n)!)).toEqual({
+  expect(toolFiles(activityFromRecords([end]))).toEqual({
     files,
     omitted: 0,
   });
   end.requestId = "";
-  expect(toolFiles(transcriptEvents([end]).activities.get(2n)!).files).toEqual(
-    files,
-  );
+  expect(toolFiles(activityFromRecords([end])).files).toEqual(files);
 });
 
 it("distinguishes submitted content/replacement counts from actual diff hunks and preserves unknowns", () => {
@@ -456,7 +312,7 @@ it("renders structured summary files and enriches old summaries from native live
       omittedFiles: 3,
     },
   });
-  const activity = transcriptEvents([call]).activities.get(1n)!;
+  const activity = activityFromRecords([call]);
   expect(fileMeasure(toolFiles(activity).files[0])).toBe("+2 -1");
   expect(toolFiles(activity).omitted).toBe(3);
   call.toolSummary!.files = [];
@@ -467,11 +323,9 @@ it("renders structured summary files and enriches old summaries from native live
       changes: [{ path: "a", kind: "delete" }],
     },
   });
-  expect(
-    fileAction(
-      toolFiles(transcriptEvents([call, end]).activities.get(1n)!).files[0],
-    ),
-  ).toBe("Delete");
+  expect(fileAction(toolFiles(activityFromRecords([call, end])).files[0])).toBe(
+    "Delete",
+  );
 });
 
 it("does not interpret result text matching a file tool name as another file request", () => {
@@ -483,8 +337,7 @@ it("does not interpret result text matching a file tool name as another file req
     "Write",
   );
   const result = event(2, "tool_result", "file", { content: "Write" }, "Write");
-  const file = toolFiles(transcriptEvents([call, result]).activities.get(1n)!)
-    .files[0];
+  const file = toolFiles(activityFromRecords([call, result])).files[0];
   expect(file.path).toBe("a");
   expect(fileMeasure(file)).toBe("+2 content");
 });

@@ -29,6 +29,7 @@ import (
 	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
+	"github.com/lesomnus/cxz/internal/transcripthistory"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/cxz/internal/workspace"
@@ -757,6 +758,18 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 	var lastJournalRefresh time.Time
 	ticker := time.NewTicker(150 * time.Millisecond)
 	defer ticker.Stop()
+	// Due immediately, so a reader learns within one round trip that silence
+	// will be reported to it rather than after the first idle interval. A
+	// reader that has not seen a heartbeat does not arm its deadline at all,
+	// which is what keeps an older runtime readable. See cxz#191.
+	lastFrame := time.Now().Add(-transcripthistory.Heartbeat)
+	beat := func() error {
+		if time.Since(lastFrame) < transcripthistory.Heartbeat {
+			return nil
+		}
+		lastFrame = time.Now()
+		return stream.Send(&api.Event{Heartbeat: true})
+	}
 	for {
 		// Legacy watchers cannot report input activity. Treat them as busy
 		// until disconnected rather than restarting underneath an old TUI.
@@ -773,6 +786,9 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 		}
 		info, statErr := os.Stat(filepath.Join(core.Dir(s.root, m.ID), "events.jsonl"))
 		if statErr == nil && lastJournalInfo != nil && os.SameFile(info, lastJournalInfo) && info.Size() == lastJournalInfo.Size() && info.ModTime() == lastJournalInfo.ModTime() && time.Since(lastJournalRefresh) < 30*time.Second {
+			if e = beat(); e != nil {
+				return e
+			}
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -812,10 +828,14 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 				return e
 			}
 			cursor = v.Seq
+			lastFrame = time.Now()
 		}
 		if len(batch) == 256 {
 			lastJournalInfo = nil // Drain a backlog without waiting for another write.
 			continue
+		}
+		if e = beat(); e != nil {
+			return e
 		}
 		select {
 		case <-ctx.Done():

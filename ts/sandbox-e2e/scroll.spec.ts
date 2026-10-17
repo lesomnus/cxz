@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { SANDBOX_SESSIONS } from "./fixture-shape";
 test.use({
   viewport: { width: 1440, height: 1000 },
   isMobile: false,
@@ -16,7 +17,9 @@ test("grouped sessions, shortcut, stable fields and elastic local scrollbar", as
   ).toBeVisible({ timeout: 45000 });
   const groups = page.locator(".session-tree-group");
   await expect(groups).toHaveCount(2);
-  await expect(groups.first().locator(".tree-session")).toHaveCount(7);
+  await expect(groups.first().locator(".tree-session")).toHaveCount(
+    SANDBOX_SESSIONS - 1,
+  );
   await expect(groups.last().locator(".tree-session")).toHaveCount(1);
   await expect(page.locator(".conversation > header")).toHaveCount(0);
   await expect(page.locator(".tree-session").first()).toContainText(

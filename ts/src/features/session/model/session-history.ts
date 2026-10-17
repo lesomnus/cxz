@@ -1,8 +1,8 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
+import { alive, STREAM_STALL_MS } from "#src/shared/api/stream-deadline.ts";
 import type { SessionEvent } from "#gen/cxz/session_pb";
-import { mergeEvents } from "./journal";
 
 export type HistoryPage = {
   events: SessionEvent[];
@@ -19,14 +19,27 @@ export type LoadEventDetails = (
 export const HISTORY_PAGE_SIZE = 1024;
 export const NATIVE_HISTORY_PAGE_SIZE = 1024;
 export const HISTORY_PREFETCH_SCREENS = 6;
+const stalled = "The conversation stream stopped responding.";
 
-// Capability belongs to this session's runtime: a gateway can route to projects
-// running different versions. Only Unimplemented enables the legacy fallback.
+/**
+ * Reading a conversation is reading rows, and rows come from the session's
+ * runtime: Transcript pages them and Rows streams them.
+ *
+ * Neither has a fallback. There used to be one -- a runtime without Transcript
+ * was paged natively and the records were reduced into rows here -- and that
+ * fallback is why this client carried a second copy of the server's projection,
+ * in a path that only ran against runtimes nobody was testing. It is also how
+ * the two clients drifted: see cxz#155.
+ *
+ * The cost is that a project runtime older than the Manager cannot show its
+ * conversation until it is updated. It says so rather than rendering something
+ * reduced by a different set of rules.
+ */
 export class SessionHistory {
-  mode: "unknown" | "summary" | "legacy" = "unknown";
   constructor(
     private sessions: Connection["sessions"],
     private id: string,
+    private clientId: string,
   ) {}
   nativePage(afterSeq: bigint, signal: AbortSignal) {
     return this.sessions.history(
@@ -38,60 +51,61 @@ export class SessionHistory {
     query: { beforeSeq?: bigint; afterSeq?: bigint; snapshotSeq?: bigint },
     signal: AbortSignal,
   ): Promise<HistoryPage> {
-    if (this.mode !== "legacy") {
-      try {
-        const page = await this.sessions.transcript(
-          { ref: ref(this.id), ...query, limit: HISTORY_PAGE_SIZE },
-          { signal },
-        );
-        this.mode = "summary";
-        return page;
-      } catch (error) {
-        if (ConnectError.from(error).code !== Code.Unimplemented) throw error;
-        this.mode = "legacy";
-      }
-    }
-    const snapshotSeq = query.snapshotSeq ?? 0n;
-    const span = BigInt(NATIVE_HISTORY_PAGE_SIZE);
-    let cursor =
-      query.afterSeq ??
-      (query.beforeSeq !== undefined
-        ? query.beforeSeq > span + 1n
-          ? query.beforeSeq - span - 1n
-          : 0n
-        : snapshotSeq > span
-          ? snapshotSeq - span
-          : 0n);
-    let events: SessionEvent[] = [];
-    let advanced = cursor;
-    do {
-      const page = await this.nativePage(cursor, signal);
-      const rows = page.events.filter(
-        (e) =>
-          (query.beforeSeq === undefined || e.seq < query.beforeSeq) &&
-          (snapshotSeq === 0n || e.seq <= snapshotSeq),
+    try {
+      return await this.sessions.transcript(
+        { ref: ref(this.id), ...query, limit: HISTORY_PAGE_SIZE },
+        { signal },
       );
-      events = mergeEvents(events, rows);
-      advanced = page.events.at(-1)?.seq ?? cursor;
-      if (
-        advanced <= cursor ||
-        !page.events.length ||
-        (query.beforeSeq !== undefined && advanced >= query.beforeSeq - 1n) ||
-        (snapshotSeq > 0n && advanced >= snapshotSeq) ||
-        (query.afterSeq !== undefined && query.beforeSeq === undefined)
-      )
-        break;
-      cursor = advanced;
-    } while (!signal.aborted);
-    const first = events[0]?.seq ?? 0n;
-    const last = events.at(-1)?.seq ?? advanced;
-    return {
-      events,
-      metadata: events,
-      snapshotSeq: last,
-      hasOlder: first > 1n,
-      hasNewer: snapshotSeq > last,
-    };
+    } catch (error) {
+      throw outdated(error);
+    }
+  }
+  /**
+   * snapshot is the journal's own fence, asked for as cheaply as the projection
+   * can answer it: one row, for its snapshotSeq. A catalog's LastSeq can trail
+   * the journal, so only this proves a conversation was reset.
+   */
+  async snapshot(signal: AbortSignal) {
+    try {
+      const page = await this.sessions.transcript(
+        { ref: ref(this.id), limit: 1 },
+        { signal },
+      );
+      return page.snapshotSeq;
+    } catch (error) {
+      throw outdated(error);
+    }
+  }
+  /**
+   * rows is the same projection arriving. afterUpdated is a cursor over row
+   * versions rather than over records: a response row is published again when
+   * its turn completes, so the same seq arrives twice and the second one is the
+   * correction. Callers replace by seq.
+   *
+   * A row with no event is the runtime's heartbeat, not a row. It is what makes
+   * silence legible: without it an open stream that has stalled looks exactly
+   * like one with nothing to send, and the conversation stops growing while the
+   * reader still believes it is live (cxz#188). Seeing one arms a deadline, and
+   * missing the next two throws -- which is what the caller already handles,
+   * because it reconnects on a stream that fails.
+   */
+  async *rows(afterUpdated: bigint, signal: AbortSignal) {
+    const published = alive(
+      this.sessions.rows(
+        { ref: ref(this.id), afterUpdated, clientId: this.clientId },
+        { signal },
+      ),
+      (row) => !row.event,
+      STREAM_STALL_MS,
+      stalled,
+    );
+    try {
+      for await (const row of published) {
+        yield { event: row.event!, updated: row.updated };
+      }
+    } catch (error) {
+      throw outdated(error);
+    }
   }
   readonly details: LoadEventDetails = async (seq, signal) => {
     const page = await this.sessions.eventDetails(
@@ -100,4 +114,16 @@ export class SessionHistory {
     );
     return page.events;
   };
+}
+
+// Unimplemented from a session's runtime means that runtime predates the
+// reading projection. Say which thing is behind, because the Manager being
+// current is what makes this confusing: a project container keeps running its
+// old binary until it is recreated.
+function outdated(error: unknown) {
+  if (ConnectError.from(error).code !== Code.Unimplemented) return error;
+  return new ConnectError(
+    "This project's runtime is older than the manager and cannot serve a conversation. Update the project runtime.",
+    Code.Unimplemented,
+  );
 }

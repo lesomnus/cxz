@@ -55,9 +55,13 @@ func TestPendingInputImmediateAndReconciled(t *testing.T) {
 		t.Fatal("not marked pending")
 	}
 	before := m.view.View()
+	// The runtime answers a send twice, on the two streams: the record says the
+	// journal took it, and the row says how it reads. The echo stands in for
+	// the row until that row arrives, so it is the row that retires it.
 	confirmed := proto.Clone(pending).(*api.Event)
 	confirmed.Seq = 1
 	m.Update(received{id: "s", event: confirmed})
+	m.Update(liveRows{id: "s", rows: []*api.Event{confirmed}, updated: 1, epoch: m.watchEpoch})
 	after := m.view.View()
 	if len(m.pendingInputs["s"]) != 0 || strings.Count(ansi.Strip(after), "❯ hello immediately") != 1 {
 		t.Fatal("duplicate echo")
@@ -72,7 +76,7 @@ func TestPendingInputFailureAndIdenticalMessages(t *testing.T) {
 	s := m.current()
 	m.queueInput(s.Id, s.RunId, "one", "same")
 	m.queueInput(s.Id, s.RunId, "two", "same")
-	if len(m.transcriptEvents(s.Id)) != 2 {
+	if len(m.transcriptRows(s.Id)) != 2 {
 		t.Fatal("identical texts merged")
 	}
 	first := proto.Clone(m.pendingInputs[s.Id][0]).(*api.Event)
@@ -91,6 +95,7 @@ func TestPinPromptImmediatelyBeforeViewport(t *testing.T) {
 	m := conversationModel()
 	for i, text := range []string{"prompt one", "prompt two", "prompt three"} {
 		m.events["s"] = append(m.events["s"], &api.Event{Seq: uint64(i*2 + 1), Kind: "input", Text: text}, &api.Event{Seq: uint64(i*2 + 2), Kind: "assistant", Text: strings.Repeat("answer\n", 20)})
+		setRows(m, "s", m.events["s"])
 	}
 	m.render()
 	m.view.Height = 12

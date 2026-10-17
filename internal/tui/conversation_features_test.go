@@ -19,7 +19,7 @@ func conversationModel() *model {
 	m.projectView = false
 	m.input = newComposer()
 	m.sessions = []*api.Session{{Id: "s", ProjectId: "p", RunId: "run", Agent: "claude", State: "idle"}}
-	m.client = &recordingClient{}
+	m.client = &recordingClient{journal: func() []*api.Event { return m.events["s"] }}
 	// Keep an 80-column conversation beside the compact project panel.
 	m.Update(tea.WindowSizeMsg{Width: 110, Height: 24})
 	return m
@@ -142,6 +142,7 @@ func TestPermissionCommandOnlyConfiguresSupervisor(t *testing.T) {
 func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	m := conversationModel()
 	m.events["s"] = []*api.Event{{Seq: 1, Kind: "input", Text: "First prompt\nsecond line\nthird line", TimeMs: 1000}, {Seq: 2, Kind: "assistant", Text: strings.Repeat("A response line\n", 60), TimeMs: 2000}}
+	setRows(m, "s", m.events["s"])
 	m.current().State = "working"
 	m.render()
 	m.view.GotoBottom()
@@ -159,7 +160,7 @@ func TestHistoryStickyPromptAndWorkingIndicator(t *testing.T) {
 	if m.view.AtBottom() || !strings.Contains(m.View(), "2/2 · ") || !strings.Contains(m.View(), "01-01") {
 		t.Fatal("missing scroll position/time", m.View())
 	}
-	m.Update(received{id: "s", event: &api.Event{Seq: 3, Kind: "assistant", Text: "Later response", TimeMs: 3000}})
+	live(m, "s", append(append([]*api.Event{}, m.events["s"]...), &api.Event{Seq: 3, Kind: "assistant", Text: "Later response", TimeMs: 3000})...)
 	if m.view.YOffset != offset {
 		t.Fatal("new output displaced reading position")
 	}
@@ -198,6 +199,7 @@ func TestPinnedPromptFullRowBackground(t *testing.T) {
 			{Seq: 1, Kind: "input", Text: "한글 prompt\nsecond line\nthird line"},
 			{Seq: 2, Kind: "assistant", Text: strings.Repeat("Response\n", 60)},
 		}
+		setRows(m, "s", m.events["s"])
 		m.render()
 		m.view.GotoBottom()
 		rows := strings.Split(m.View(), "\n")
@@ -331,6 +333,7 @@ func TestApprovalConversationPreview(t *testing.T) {
 	m.current().State = "waiting_input"
 	m.current().Pending = []*api.Event{{RequestId: "one", Text: "Bash", Payload: []byte(`{"input":{"command":"go test ./..."}}`)}, {RequestId: "two", Text: "Write", Payload: []byte(`{"file_path":"README.md"}`)}}
 	m.events["s"] = []*api.Event{{Seq: 1, Kind: "input", Text: "승인 화면을 확인해줘.", TimeMs: 1}, {Seq: 2, Kind: "assistant", Text: "## 검증\n\n- 입력 포커스 확인\n- `go test ./...` 실행 전 승인 요청", TimeMs: 2}}
+	setRows(m, "s", m.events["s"])
 	m.input.SetValue("한글 입력 ㄱ")
 	m.resize()
 	m.render()
@@ -351,6 +354,7 @@ func TestPinnedPromptClickReturnsToTheInput(t *testing.T) {
 		{Seq: 1, Kind: "input", Text: "the question", TimeMs: 1000},
 		{Seq: 2, Kind: "assistant", Text: strings.Repeat("an answer line\n", 80), TimeMs: 2000},
 	}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	m.view.GotoBottom()
 	if len(m.promptSpans) == 0 || m.view.YOffset == 0 {

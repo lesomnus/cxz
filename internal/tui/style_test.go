@@ -83,6 +83,7 @@ func TestScreenPreview(t *testing.T) {
 	t.Log("\n" + m.View())
 	m.projectView = false
 	m.events["a1b2c3d4"] = []*api.Event{{Kind: "input", Text: "프로젝트 화면을 정리해줘."}, {Kind: "assistant", Text: "프로젝트 정보와 대화 목록을 분리하겠습니다.\n\n- 선택한 세션을 강조합니다.\n- 입력창은 하단에 고정합니다."}}
+	setRows(m, "a1b2c3d4", m.events["a1b2c3d4"])
 	m.render()
 	t.Log("\n" + m.View())
 }

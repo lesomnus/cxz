@@ -10,6 +10,7 @@ import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
 import { TaskCatalog } from "#src/features/tasks/task-catalog.ts";
 import type { ComposerPaste } from "#src/features/session/composer/composer-pastes.ts";
+import type { Transfer } from "#src/features/session/composer/composer-upload.ts";
 import type { EditorState } from "#src/features/workspace/editor/workspace-editor.tsx";
 import { ResourceInventory } from "./resource-inventory";
 import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
@@ -41,6 +42,10 @@ export class Connection {
   constructor(
     readonly baseUrl = location.origin,
     transport?: Transport,
+    // How a file body reaches this connection's server, for a connection whose
+    // server is not at the end of a socket. Absent means the request goes out
+    // as itself; see composer-upload's Transfer.
+    readonly transfer?: Transfer,
   ) {
     this.inProcess = !!transport;
     this.drafts = new SessionDrafts(baseUrl, this.pastes);

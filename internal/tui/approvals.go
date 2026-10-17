@@ -19,7 +19,15 @@ type approvalResult struct {
 	err              error
 }
 
-func question(p *api.Event) bool          { return agentview.QuestionRequest(p.Text, p.Payload) }
+func question(p *api.Event) bool { return agentview.QuestionRequest(p.Text, p.Payload) }
+
+// resolutionState reads what became of a question, from the question's own row.
+// The projection folds the resolution into the request it answers -- there is no
+// separate resolved row to go looking for, which is what made this a search over
+// the loaded list before. Empty means still waiting.
+func resolutionState(e *api.Event) string {
+	return fields(e.Payload).object("cxz_resolution").text("state")
+}
 func automaticApproval(p *api.Event) bool { return agentview.AutomaticApproval(p.Text, p.Payload) }
 func permissionState(state string) bool {
 	return state == "idle" || state == "working" || state == "waiting_input"

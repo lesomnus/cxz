@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/muesli/termenv"
 )
 
@@ -24,6 +23,7 @@ func TestWorkingToolDotBlinksWithoutRebuildingTranscript(t *testing.T) {
 		{Seq: 4, RunId: "run", Kind: "approval_resolved", RequestId: "permission", Text: "allowed"},
 		{Seq: 5, RunId: "run", Kind: "tool_call", RequestId: "queued", Text: "Read", Payload: []byte(`{"file_path":"queued.txt"}`)},
 	}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	baseline, tools := m.view.View(), len(m.renderedTools)
 	on := ansi.Strip(m.conversationView())
@@ -43,6 +43,7 @@ func TestWorkingToolDotBlinksWithoutRebuildingTranscript(t *testing.T) {
 		t.Fatal("blink rebuilt or resized the cached transcript")
 	}
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 6, RunId: "run", Kind: "tool_result", RequestId: "running"})
+	setRows(m, "s", m.events["s"])
 	m.render()
 	if len(m.workingToolRows) != 0 || !strings.Contains(ansi.Strip(m.conversationView()), "✓ Bash") {
 		t.Fatal("completed tool kept blinking")
@@ -63,7 +64,7 @@ func TestCommandSummaryStaysWithinTwoRows(t *testing.T) {
 		lipgloss.SetColorProfile(profile)
 		for width := 38; width <= 133; width++ {
 			for _, command := range commands {
-				body := toolActivityBody(agentview.ToolActivity{Kind: "command", Command: command}, &api.Event{}, width)
+				body := toolSummaryBody(&api.ToolSummary{Kind: "command", Command: command}, width, "pending")
 				rows := strings.Split(ansi.Strip(body), "\n")
 				if len(rows) > 2 {
 					t.Fatalf("command rewrapped at width %d (%s): %q", width, profile.Name(), rows)
@@ -74,7 +75,8 @@ func TestCommandSummaryStaysWithinTwoRows(t *testing.T) {
 					}
 				}
 				m := &model{}
-				body = m.cachedToolBody("claude", &api.Event{}, agentview.ToolActivity{Kind: "command", Command: command}, nil, width, "working", true)
+				row := &api.Event{ToolSummary: &api.ToolSummary{Kind: "command", Command: command, State: "working"}}
+				body = m.cachedToolBody("claude", row, width, "working", true)
 				rows = strings.Split(ansi.Strip(body), "\n")
 				if len(rows) > 2 || !strings.HasSuffix(body, " · background") {
 					t.Fatalf("background command lost its row limit or badge: %q", rows)
@@ -105,6 +107,7 @@ func TestLongCommandsKeepTranscriptAlignmentAfterResize(t *testing.T) {
 		{Seq: 3, RunId: "run", RequestId: "two", Kind: "tool_call", Text: "Bash", Payload: payload},
 		{Seq: 4, RunId: "run", RequestId: "two", Kind: "tool_result"},
 	}
+	setRows(m, "s", m.events["s"])
 	for _, width := range []int{69, 80, 110, 133, 170, 200, 80} {
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 		if m.view.TotalLineCount() != 5 || len(m.historyPositions) != 5 {
@@ -133,6 +136,7 @@ func TestFileSummaryCorrelatesInterleavedResults(t *testing.T) {
 		{Seq: 3, RunId: "run", RequestId: "a", Kind: "tool_result", Payload: []byte(`{"content":"VERBOSE_RESULT","is_error":false}`)},
 		{Seq: 4, RunId: "run", RequestId: "b", Kind: "tool_result", Payload: []byte(`{"content":"ERROR_CONTENT","is_error":true}`)},
 	}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	text := ansi.Strip(m.view.View())
 	for _, want := range []string{"✓ Write /tmp/one.go", "+1 content", "× Edit /tmp/two.go", "+1 -1 /match"} {
@@ -148,20 +152,22 @@ func TestFileSummaryCorrelatesInterleavedResults(t *testing.T) {
 			t.Fatal("raw file payload visible", text)
 		}
 	}
-	m.toolDetails()
+	details(t, m)
 	if !strings.Contains(m.localReports["s"], "NEW_CONTENT") || !strings.Contains(m.localReports["s"], "ERROR_CONTENT") {
 		t.Fatal("details lost raw input/result")
 	}
 }
 
+// A result whose call was trimmed away still reads: the projection builds it a
+// row of its own rather than dropping it for having no anchor.
 func TestFileSummaryWithoutLoadedCallAndCommands(t *testing.T) {
 	s := &api.Session{Agent: "codex"}
-	e := &api.Event{Kind: "tool_result", Payload: []byte(`{"item":{"type":"fileChange","status":"completed","changes":[{"path":"main.go","kind":{"type":"add"},"diff":"@@ -0,0 +1 @@\n+HIDDEN_CONTENT\n"}]}}`)}
+	e := rowsOf([]*api.Event{{Seq: 1, RunId: "run", RequestId: "orphan", Kind: "tool_result", Payload: []byte(`{"item":{"type":"fileChange","status":"completed","changes":[{"path":"main.go","kind":{"type":"add"},"diff":"@@ -0,0 +1 @@\n+HIDDEN_CONTENT\n"}]}}`)}})[0]
 	text := ansi.Strip(eventView(s, e, 80))
 	if !strings.Contains(text, "main.go") || !strings.Contains(text, "+1") || strings.Contains(text, "HIDDEN_CONTENT") {
 		t.Fatal(text)
 	}
-	e = &api.Event{Kind: "tool_call", Text: "Bash", Payload: []byte(`{"command":"echo ok\necho second\nHIDDEN_BODY"}`)}
+	e = rowsOf([]*api.Event{{Seq: 1, RunId: "run", RequestId: "cmd", Kind: "tool_call", Text: "Bash", Payload: []byte(`{"command":"echo ok\necho second\nHIDDEN_BODY"}`)}})[0]
 	text = ansi.Strip(eventView(&api.Session{Agent: "claude"}, e, 40))
 	if !strings.Contains(text, "Bash · echo ok") || !strings.Contains(text, "echo second") || strings.Contains(text, "HIDDEN_BODY") {
 		t.Fatal(text)
@@ -198,8 +204,7 @@ func TestCommandRowNamesTheShellSeparately(t *testing.T) {
 	old := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	defer lipgloss.SetColorProfile(old)
-	activity := agentview.ToolActivity{Kind: "command", Shell: "zsh", Command: "rg -n 'x' a.go | head -2"}
-	body := toolActivityBody(activity, &api.Event{}, 76)
+	body := toolSummaryBody(&api.ToolSummary{Kind: "command", Shell: "zsh", Command: "rg -n 'x' a.go | head -2"}, 76, "pending")
 	plain := ansi.Strip(body)
 	if !strings.Contains(plain, "Bash · zsh · rg -n 'x' a.go | head -2") {
 		t.Fatalf("shell not named beside the script: %q", plain)
@@ -212,7 +217,7 @@ func TestCommandRowNamesTheShellSeparately(t *testing.T) {
 	if !strings.Contains(body, highlightCode("rg -n 'x' a.go | head -2", "bash")) {
 		t.Fatalf("script was not highlighted as commands: %q", body)
 	}
-	if bare := ansi.Strip(toolActivityBody(agentview.ToolActivity{Kind: "command", Command: "go build ./..."}, &api.Event{}, 76)); !strings.Contains(bare, "Bash · go build ./...") {
+	if bare := ansi.Strip(toolSummaryBody(&api.ToolSummary{Kind: "command", Command: "go build ./..."}, 76, "pending")); !strings.Contains(bare, "Bash · go build ./...") {
 		t.Fatalf("unwrapped command grew a shell label: %q", bare)
 	}
 }
