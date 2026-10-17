@@ -133,6 +133,15 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	if !s.RetryAllowed() {
 		return
 	}
+	// A refusal is an answer: the server said it was not ready, and asking
+	// again every tick re-runs the readiness sweep across every session for a
+	// rollout that is about to be refused again. See cxz#210.
+	if a, refused := cxzupdate.Refused(m.Root, time.Now()); refused {
+		s.State = "waiting"
+		s.Reason = a.Reason
+		_ = cxzupdate.Save(m.Root, s)
+		return
+	}
 	r := *s.Release
 	if !r.CanReplace(cxzupdate.Current()) {
 		s.State = "waiting"

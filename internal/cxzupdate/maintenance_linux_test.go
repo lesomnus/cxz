@@ -88,6 +88,33 @@ func TestGateBusyCheckDoesNotAdmitLease(t *testing.T) {
 		t.Fatal("busy session acquired lease")
 	}
 }
+
+// The gate is where a rollout is refused, so it is where the reason exists.
+func TestGateRecordsWhyItRefusedAndWhyItDidNot(t *testing.T) {
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, "run"), 0700)
+	g := NewGate(root)
+	if e := g.hold(core.ID(), func() error { return fmt.Errorf("session s: mid-turn") }); e == nil {
+		t.Fatal("busy session acquired the lease")
+	}
+	a, ok := LastAttempt(root)
+	if !ok || a.Outcome != "refused" || a.Reason != "session s: mid-turn" {
+		t.Fatal("refusal not recorded", a)
+	}
+	if _, refused := Refused(root, time.Now()); !refused {
+		t.Fatal("a fresh refusal does not hold the rollout off")
+	}
+	id := core.ID()
+	if e := g.hold(id, func() error { return nil }); e != nil {
+		t.Fatal(e)
+	}
+	if a, _ = LastAttempt(root); a.Outcome != "granted" || a.Lease != id {
+		t.Fatal("granted attempt not recorded", a)
+	}
+	if _, refused := Refused(root, time.Now()); refused {
+		t.Fatal("a granted attempt still holds the rollout off")
+	}
+}
 func TestValidSessionBinaryDoesNotCollideWithToolsExecutable(t *testing.T) {
 	r := testRelease(nil)
 	path := Path("/cxz/tools/cxz-builds", r, "linux/amd64")
