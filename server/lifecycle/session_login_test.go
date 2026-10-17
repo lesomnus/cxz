@@ -67,7 +67,7 @@ func TestSessionLoginRPCInputExitCancellationAndPrivacy(t *testing.T) {
 	}
 	defer db.Close()
 	f := &loginRuntime{fixture: &fixture{p: &api.Project{Id: "project", Name: "workspace", Workspace: "/workspace", State: "running"}}, cancelled: make(chan struct{})}
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

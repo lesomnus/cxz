@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/observe"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -79,6 +80,9 @@ func mutating(method string) bool {
 		"Paths", "Memory", "Logs", "McpLogs", "McpSessions", "GetMcpServers",
 		"GetSkills", "FileMappings", "Devcontainer", "RenderDevcontainer",
 		"EngineStatus", "GetEngineInfo", "GetInstallationVersion",
+		// Reading what the manager has been doing: asking why an update is
+		// stuck must not be refused by the update that is stuck.
+		"Diagnostics",
 		// Reading auxiliary state, which is a model task's own status.
 		"AuxStatus", "AuxEvents", "AuxConfig", "AuxModels", "AuxLoginInfo":
 		return false
@@ -89,7 +93,9 @@ func (g *Gate) Unary(ctx context.Context, req any, info *grpc.UnaryServerInfo, n
 	if !mutating(info.FullMethod) {
 		return next(ctx, req)
 	}
-	g.mu.RLock()
+	// Named, because a call that is slow and a call that is waiting for an
+	// update look the same from the outside. See cxz#211.
+	observe.Wait(ctx, "update gate", g.mu.RLock)
 	defer g.mu.RUnlock()
 	if g.blocked() {
 		return nil, status.Error(codes.Unavailable, "cxz update in progress; input was not accepted")
@@ -100,7 +106,7 @@ func (g *Gate) Stream(srv any, stream grpc.ServerStream, info *grpc.StreamServer
 	if !mutating(info.FullMethod) {
 		return next(srv, stream)
 	}
-	g.mu.RLock()
+	observe.Wait(stream.Context(), "update gate", g.mu.RLock)
 	defer g.mu.RUnlock()
 	if g.blocked() {
 		return status.Error(codes.Unavailable, "cxz update in progress")

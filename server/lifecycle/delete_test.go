@@ -48,7 +48,7 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 			defer db.Close()
 			f := &deletionFixture{fixture: fixture{p: &api.Project{Id: "project", Workspace: "/work", Name: "work"}, s: &api.Session{Id: "session", ProjectId: "project", Workspace: "/work", Agent: "claude", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, State: "idle", RunId: "run", CreateId: "create"}}}
 			f.s.AuthBinding = accounts.BindingID("project", "work", accounts.ProjectLocalOAuth)
-			stack, err := Build(ctx, db, f)
+			stack, err := Build(ctx, db, f, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -81,7 +81,7 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 				}
 			}
 			for i := 0; i < 2; i++ {
-				stack, err = Build(ctx, db, f)
+				stack, err = Build(ctx, db, f, nil)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -135,7 +135,7 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 			if err != nil || again.GetAlias() != restored.GetAlias() {
 				t.Fatal("restore not idempotent", err)
 			}
-			stack, err = Build(ctx, db, f)
+			stack, err = Build(ctx, db, f, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

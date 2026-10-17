@@ -40,7 +40,7 @@ func skillStack(t *testing.T) (*skillFixture, resource.Server, func()) {
 		p: &api.Project{Id: "project", Workspace: "/work", Name: "work", State: "running"},
 		s: &api.Session{Id: "session", ProjectId: "project", Workspace: "/work"},
 	}}
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		db.Close()
 		t.Fatal(err)

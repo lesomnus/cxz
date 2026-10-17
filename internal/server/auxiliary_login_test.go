@@ -43,7 +43,7 @@ func TestAuxiliaryLoginRPCUsesManagerRuntime(t *testing.T) {
 				// to verify dispatch without launching Docker or authenticating.
 				s.manager = &workspace.Manager{Root: t.TempDir()}
 			}
-			stack, err := lifecycle.Build(ctx, db, s)
+			stack, err := lifecycle.Build(ctx, db, s, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -41,7 +41,7 @@ func TestAuxiliaryUsesRegisteredAccountNotClientProvider(t *testing.T) {
 	}
 	defer db.Close()
 	f := &auxiliaryFixture{}
-	stack, e := Build(ctx, db, f)
+	stack, e := Build(ctx, db, f, nil)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -80,7 +80,7 @@ func TestAuxEventsRelayRecordsTheTitle(t *testing.T) {
 	defer db.Close()
 	f := &auxiliaryFixture{fixture: fixture{p: &api.Project{Id: "project", Workspace: "/work", Name: "test"}, s: &api.Session{Id: "session", ProjectId: "project", Agent: "codex", Title: "Old title", LastSeq: 7, Account: "work", AuthBackend: accounts.ProjectLocalOAuth}}}
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestAuxRefusesAnUnknownKindAtTheEdge(t *testing.T) {
 	defer db.Close()
 	f := &auxiliaryFixture{fixture: fixture{p: &api.Project{Id: "project", Workspace: "/work", Name: "test"}, s: &api.Session{Id: "session", ProjectId: "project", Agent: "codex", LastSeq: 1, Account: "work", AuthBackend: accounts.ProjectLocalOAuth}}}
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestAuxiliaryTitleUpdatesResourceWithoutChangingIdentity(t *testing.T) {
 	defer db.Close()
 	f := &auxiliaryFixture{fixture: fixture{p: &api.Project{Id: "project", Workspace: "/work", Name: "test"}, s: &api.Session{Id: "session", ProjectId: "project", Agent: "codex", Title: "Old title", LastSeq: 7, Account: "work", AuthBackend: accounts.ProjectLocalOAuth}}}
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

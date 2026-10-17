@@ -41,7 +41,7 @@ func TestResourceClientRawUploadRetainsLifecycleAndAliasChecks(t *testing.T) {
 	f := &uploadRuntime{fixture: &fixture{p: &api.Project{Id: "project", Workspace: "/workspace", State: "running"}, s: &api.Session{Id: "0123456789abcdef01234567", Alias: "oak", ProjectId: "project", Agent: "codex", Account: "work", CreateId: "create", RunId: "run", State: "idle"}}, root: t.TempDir(), finished: make(chan error, 8)}
 	f.s.AuthBackend = accounts.ProjectLocalOAuth
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -60,7 +60,7 @@ func TestProjectPathsRPCStreamsAndCancels(t *testing.T) {
 	}
 	defer db.Close()
 	f := &pathsRuntime{countedRuntime: &countedRuntime{fixture: &fixture{p: &api.Project{Id: "project", Name: "workspace", Workspace: "/workspace", State: "running"}}}, release: make(chan struct{}), cancelled: make(chan struct{})}
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -37,7 +37,7 @@ func TestLibraryRPCUsesResolvedSession(t *testing.T) {
 	p := &api.Project{Id: core.ID(), Workspace: "/workspace", Name: "project", State: "running"}
 	s := &api.Session{Id: core.ID(), ProjectId: p.Id, CreateId: "create", Agent: "codex", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, AuthBinding: accounts.BindingID(p.Id, "work", accounts.ProjectLocalOAuth), State: "idle"}
 	f := &libraryRuntime{fixture: &fixture{p: p, s: s}, root: t.TempDir()}
-	stack, e := Build(ctx, db, f)
+	stack, e := Build(ctx, db, f, nil)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -82,7 +82,7 @@ func libraryStack(t *testing.T) (resource.SessionServiceClient, *api.Session, fu
 	p := &api.Project{Id: core.ID(), Workspace: "/workspace", Name: "project", State: "running"}
 	s := &api.Session{Id: core.ID(), ProjectId: p.Id, CreateId: "create", Agent: "codex", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, AuthBinding: accounts.BindingID(p.Id, "work", accounts.ProjectLocalOAuth), State: "idle"}
 	f := &libraryRuntime{fixture: &fixture{p: p, s: s}, root: t.TempDir()}
-	stack, e := Build(ctx, db, f)
+	stack, e := Build(ctx, db, f, nil)
 	if e != nil {
 		db.Close()
 		t.Fatal(e)

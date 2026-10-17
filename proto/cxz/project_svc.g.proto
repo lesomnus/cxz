@@ -73,6 +73,18 @@ service ProjectService {
   // whether it is pinned. It travelled inside the engine's info reply, which is
   // how a question about Docker came to answer a question about cxz.
   rpc GetInstallationVersion(EngineRequest) returns (InstallationVersion);
+  // What the manager has been doing: per-method aggregates, and the calls it
+  // kept -- which method, which status, how long, and how much of that was
+  // spent waiting rather than working. Metadata only: no request or reply ever
+  // enters it, because the answer is read over the plaintext surface.
+  //
+  // It was only ever on the manager's stdout, so every question about a stalled
+  // installation needed `docker logs` on the host. See cxz#211.
+  rpc Diagnostics(DiagnosticsRequest) returns (DiagnosticsReply);
+  // Keep every call for a while, not only the failed and the slow ones. The
+  // window expires on its own: a verbose setting that has to be turned off is
+  // one that is left on.
+  rpc CaptureDiagnostics(CaptureDiagnosticsRequest) returns (DiagnosticsReply);
   // Aux is a model task done beside a session: run once, with the context cxz
   // assembles, never accumulating into a conversation. These four are the part
   // that belongs to the installation rather than to one session -- which
@@ -492,6 +504,54 @@ message InstallationVersion {
   string channel = 3;
   string pin = 4;
   string error = 5;
+}
+
+message DiagnosticsRequest {
+  // Narrow to one method, and to what happened since a point in time. Limit
+  // takes the newest; zero means everything kept.
+  string method = 1;
+  google.protobuf.Timestamp since = 2;
+  int32 limit = 3;
+  // Aggregates alone, for the common question of what is slow.
+  bool stats_only = 4;
+}
+
+message DiagnosticsReply {
+  repeated RpcStat stats = 1;
+  repeated RpcRecord records = 2;
+  // Set while a capture window is open.
+  google.protobuf.Timestamp capturing_until = 3;
+  // Where the failed and the slow are appended, on the manager's filesystem.
+  string path = 4;
+}
+
+message RpcStat {
+  string method = 1;
+  int64 calls = 2;
+  int64 failed = 3;
+  int64 in_flight = 4;
+  // Histogram bucket bounds, so they read as "at or under": what a bucketed
+  // histogram can honestly say without keeping every sample.
+  int64 p50_ms = 5;
+  int64 p99_ms = 6;
+  int64 max_ms = 7;
+}
+
+message RpcRecord {
+  google.protobuf.Timestamp at = 1;
+  string method = 2;
+  // A gRPC status name, as the status renders it: OK, DeadlineExceeded.
+  string code = 3;
+  int64 elapsed_ms = 4;
+  // Of the elapsed time, how much was spent waiting, and on what.
+  int64 waited_ms = 5;
+  string waited_on = 6;
+  bool stream = 7;
+}
+
+message CaptureDiagnosticsRequest {
+  // Seconds to keep every call for; zero stops an active window.
+  int32 seconds = 1;
 }
 
 message AuxConfigRequest {}

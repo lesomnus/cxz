@@ -41,7 +41,7 @@ func purgeStack(t *testing.T) (*purgeFixture, resource.Server, *sql.DB, func()) 
 		s: &api.Session{Id: "session", ProjectId: "project", Workspace: "/work", Title: "secrets in the title", Agent: "claude", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, State: "idle", RunId: "run", CreateId: "create"},
 	}}}
 	f.s.AuthBinding = accounts.BindingID("project", "work", accounts.ProjectLocalOAuth)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

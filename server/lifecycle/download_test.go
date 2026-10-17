@@ -58,7 +58,7 @@ func TestDownloadRPCStreamsBinaryAndCancels(t *testing.T) {
 	}
 	defer db.Close()
 	f := &downloadRuntime{countedRuntime: &countedRuntime{fixture: &fixture{p: &api.Project{Id: "project", Name: "workspace", Workspace: "/workspace", State: "running"}}}, data: bytes.Repeat([]byte{0, 255, 13, 10}, 40000), cancelled: make(chan struct{})}
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
