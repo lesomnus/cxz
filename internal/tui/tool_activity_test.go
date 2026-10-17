@@ -148,7 +148,7 @@ func TestFileSummaryCorrelatesInterleavedResults(t *testing.T) {
 			t.Fatal("raw file payload visible", text)
 		}
 	}
-	m.toolDetails()
+	details(t, m)
 	if !strings.Contains(m.localReports["s"], "NEW_CONTENT") || !strings.Contains(m.localReports["s"], "ERROR_CONTENT") {
 		t.Fatal("details lost raw input/result")
 	}

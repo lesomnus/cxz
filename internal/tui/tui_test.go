@@ -8,6 +8,8 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strings"
 	"testing"
 )
@@ -22,6 +24,41 @@ type recordingClient struct {
 	// message, or an error when it is already holding one.
 	status  string
 	sendErr error
+	// journal is what EventDetails answers from, the way a runtime does. A
+	// session's loaded records and the journal behind them are the same data,
+	// so the fixture points this at the model rather than copying it.
+	journal    func() []*api.Event
+	detailsErr error
+}
+
+// EventDetails answers with the records sharing the subject's request
+// identity, which is what the runtime returns: a tool's call, its output and
+// its result, plus the approval it waited on. A row does not carry payloads,
+// so this is where a detail panel gets them.
+func (c *recordingClient) EventDetails(_ context.Context, r *api.EventDetailsRequest, _ ...grpc.CallOption) (*api.EventBatch, error) {
+	if c.detailsErr != nil {
+		return nil, c.detailsErr
+	}
+	var journal []*api.Event
+	if c.journal != nil {
+		journal = c.journal()
+	}
+	var subject *api.Event
+	for _, e := range journal {
+		if e.Seq == r.Seq {
+			subject = e
+		}
+	}
+	if subject == nil {
+		return nil, status.Error(codes.NotFound, "event is no longer retained")
+	}
+	out := &api.EventBatch{Events: []*api.Event{subject}}
+	for _, e := range journal {
+		if e.Seq != subject.Seq && e.RunId == subject.RunId && e.RequestId != "" && e.RequestId == subject.RequestId {
+			out.Events = append(out.Events, e)
+		}
+	}
+	return out, nil
 }
 
 func TestDiagnosticAndAuthenticationHint(t *testing.T) {

@@ -42,14 +42,14 @@ func (m *model) pinnedPromptMouse(v tea.MouseMsg) bool {
 	m.view.SetYOffset(max(0, span.start))
 	return true
 }
-func (m *model) toolMouse(v tea.MouseMsg, now time.Time) bool {
+func (m *model) toolMouse(v tea.MouseMsg, now time.Time) (bool, tea.Cmd) {
 	seq := m.toolAtRow(v.Y)
 	if v.Action != tea.MouseActionPress || v.Button != tea.MouseButtonLeft {
-		return false
+		return false, nil
 	}
 	if seq == 0 {
 		m.toolClick = nil
-		return false
+		return false, nil
 	}
 	s := m.current().Id
 	if last := m.toolClick; last != nil && last.session == s && last.seq == seq && last.x == v.X && last.y == v.Y && last.offset == m.view.YOffset && now.Sub(last.at) >= 0 && now.Sub(last.at) <= toolDoubleClickInterval {
@@ -59,7 +59,7 @@ func (m *model) toolMouse(v tea.MouseMsg, now time.Time) bool {
 	}
 	m.toolClick = &toolClick{session: s, seq: seq, x: v.X, y: v.Y, offset: m.view.YOffset, at: now}
 	// Let the first click start the existing drag-to-select interaction.
-	return false
+	return false, nil
 }
 func (m *model) toolHoverView(rows []string, obscured map[int]bool) {
 	h := m.toolHover

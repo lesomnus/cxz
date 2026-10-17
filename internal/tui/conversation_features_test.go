@@ -19,7 +19,7 @@ func conversationModel() *model {
 	m.projectView = false
 	m.input = newComposer()
 	m.sessions = []*api.Session{{Id: "s", ProjectId: "p", RunId: "run", Agent: "claude", State: "idle"}}
-	m.client = &recordingClient{}
+	m.client = &recordingClient{journal: func() []*api.Event { return m.events["s"] }}
 	// Keep an 80-column conversation beside the compact project panel.
 	m.Update(tea.WindowSizeMsg{Width: 110, Height: 24})
 	return m

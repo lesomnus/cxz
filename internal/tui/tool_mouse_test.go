@@ -34,7 +34,7 @@ func TestToolDoubleClickAndHover(t *testing.T) {
 		t.Fatal("single click changed transcript")
 	}
 	m.Update(tea.MouseMsg{X: click.X, Y: y, Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
-	m.Update(click)
+	update(t, m, click)
 	if m.filePreview == nil || m.filePreview.tabs == nil || m.textSelection != nil {
 		t.Fatal("double click did not open details")
 	}
@@ -47,7 +47,7 @@ func TestToolDoubleClickRejectsSlowDifferentAndDraggedClicks(t *testing.T) {
 		y := targets[0].row
 		click := tea.MouseMsg{X: 6, Y: y, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress}
 		now := time.Unix(100, 0)
-		m.toolMouse(click, now)
+		_, _ = m.toolMouse(click, now)
 		switch scenario {
 		case "slow":
 			now = now.Add(time.Second)
@@ -59,7 +59,7 @@ func TestToolDoubleClickRejectsSlowDifferentAndDraggedClicks(t *testing.T) {
 		case "scroll":
 			m.Update(tea.MouseMsg{X: m.contentOffset() + 6, Y: y, Button: tea.MouseButtonWheelDown, Action: tea.MouseActionPress})
 		}
-		if m.toolMouse(click, now.Add(time.Millisecond)) || m.filePreview != nil {
+		if opened, _ := m.toolMouse(click, now.Add(time.Millisecond)); opened || m.filePreview != nil {
 			t.Fatal("unintended preview", scenario)
 		}
 	}
