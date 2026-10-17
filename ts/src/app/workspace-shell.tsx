@@ -307,27 +307,32 @@ export function Workspace({
                 className="session-tree"
                 aria-label={t("Projects and sessions")}
               >
-                {projects.map((p) => (
-                  <SessionTreeGroup
-                    key={p.runtimeId}
-                    project={p}
-                    items={sessionsByProject.get(key(p.id)) ?? []}
-                    loading={inventory.loading.sessions}
-                    selected={session}
-                    unread={unread}
-                    errors={errors}
-                    background={background}
-                    open={!collapsed.has(p.runtimeId)}
-                    toggle={() =>
-                      setCollapsed((old) => {
-                        const next = new Set(old);
-                        if (next.has(p.runtimeId)) next.delete(p.runtimeId);
-                        else next.add(p.runtimeId);
-                        return next;
-                      })
-                    }
-                  />
-                ))}
+                {projects
+                  .filter((p) => sessionsByProject.has(key(p.id)))
+                  .map((p) => (
+                    <SessionTreeGroup
+                      key={p.runtimeId}
+                      project={p}
+                      items={sessionsByProject.get(key(p.id)) ?? []}
+                      loading={inventory.loading.sessions}
+                      selected={session}
+                      unread={unread}
+                      errors={errors}
+                      background={background}
+                      open={!collapsed.has(p.runtimeId)}
+                      toggle={() =>
+                        setCollapsed((old) => {
+                          const next = new Set(old);
+                          if (next.has(p.runtimeId)) next.delete(p.runtimeId);
+                          else next.add(p.runtimeId);
+                          return next;
+                        })
+                      }
+                    />
+                  ))}
+                {inventory.loading.sessions && !sessionsByProject.size && (
+                  <small className="tree-message">{t("Loading…")}</small>
+                )}
               </div>
             ) : resource === "projects" ? (
               projects.map((p) => (

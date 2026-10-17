@@ -64,6 +64,9 @@ panel's inactive styling. Session state updates immediately change visibility;
 the underlying session inventory, conversations, notifications and direct links
 remain available. Choose **Show stopped sessions** to show these rows again. The preference
 survives reload and follows the usual cross-tab settings synchronization.
+Projects with no visible sessions are omitted from the session panel, including
+projects whose sessions are all hidden by this filter. They remain available in
+the Projects view and session creation dialog.
 
 ## Display language and lazy language packs
 
