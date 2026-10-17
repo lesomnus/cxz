@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/lesomnus/cxz/api"
@@ -22,35 +23,77 @@ func (m *Manager) projectHealth(ctx context.Context, p *Project, action, tx stri
 	}
 	return cxzupdate.ContainerHealth(ctx, p.ContainerID, p.RemoteUser, "/cxz/state/data", action, tx)
 }
+
+// quietSweep bounds the whole sweep, and quietSweepProjects how many projects
+// are asked at once. Each answer costs a container inspect and a round trip
+// into that project's runtime, which asks every session it holds -- so asking
+// them one after another made this grow with the installation. An owner with
+// twenty-five sessions could not finish inside the helper's thirty seconds,
+// which is cxz#204: the rollout retried forever and never updated anything.
+const quietSweep = 20 * time.Second
+const quietSweepProjects = 4
+
 func (m *Manager) QuietForUpdate(ctx context.Context) (map[string]string, error) {
 	ps, e := m.all(ctx)
 	if e != nil {
 		return nil, e
 	}
-	runs := map[string]string{}
-	for _, p := range ps {
+	ctx, cancel := context.WithTimeout(ctx, quietSweep)
+	defer cancel()
+	type answer struct {
+		sessions map[string]string
+		blocked  error
+	}
+	out := make([]answer, len(ps))
+	gate := make(chan struct{}, quietSweepProjects)
+	var wait sync.WaitGroup
+	for i, p := range ps {
 		if p.ContainerID == "" {
 			continue
 		}
-		v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
-		if e != nil {
-			return runs, e
-		}
-		if !v.State.Running {
-			continue
-		}
-		h, e := m.projectHealth(ctx, p, "status", "")
-		if e != nil {
-			return runs, fmt.Errorf("project %s: bootstrap/readiness unavailable", p.ID)
-		}
-		if !h.Ready {
-			return runs, fmt.Errorf("project %s: %s", p.ID, h.Reason)
-		}
-		for id, run := range h.Sessions {
+		wait.Add(1)
+		go func(i int, p *Project) {
+			defer wait.Done()
+			gate <- struct{}{}
+			defer func() { <-gate }()
+			if ctx.Err() != nil {
+				out[i] = answer{blocked: fmt.Errorf("project %s: not asked before the sweep ran out of time", p.ID)}
+				return
+			}
+			// One inspect, not two: projectHealth makes the same call, and it
+			// is the call that says whether the container is still ours.
+			v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+			if e != nil {
+				out[i] = answer{blocked: e}
+				return
+			}
+			if !v.State.Running {
+				return
+			}
+			h, e := cxzupdate.ContainerHealth(ctx, p.ContainerID, p.RemoteUser, "/cxz/state/data", "status", "")
+			if e != nil {
+				out[i] = answer{blocked: fmt.Errorf("project %s: bootstrap/readiness unavailable: %w", p.ID, e)}
+				return
+			}
+			if !h.Ready {
+				out[i] = answer{sessions: h.Sessions, blocked: fmt.Errorf("project %s: %s", p.ID, h.Reason)}
+				return
+			}
+			out[i] = answer{sessions: h.Sessions}
+		}(i, p)
+	}
+	wait.Wait()
+	runs := map[string]string{}
+	var blocked error
+	for _, a := range out {
+		for id, run := range a.sessions {
 			runs[id] = run
 		}
+		if a.blocked != nil && blocked == nil {
+			blocked = a.blocked
+		}
 	}
-	return runs, nil
+	return runs, blocked
 }
 
 // RunCxzUpdates serializes with provider updates and external manager helpers.
