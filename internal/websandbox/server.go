@@ -15,6 +15,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/historypage"
 	"github.com/lesomnus/cxz/internal/taskapi"
+	"github.com/lesomnus/cxz/internal/transcripthistory"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -375,6 +376,10 @@ func (x *Sessions) Events(r *resource.SessionEventsRequest, stream grpc.ServerSt
 	query := proto.Clone(r).(*resource.SessionEventsRequest)
 	tick := time.NewTicker(60 * time.Millisecond)
 	defer tick.Stop()
+	// Heartbeats, like the runtime's and due immediately for the same reason:
+	// the reader arms its stall deadline on the first one, and a fake that
+	// never sent them would be the one place that path is never exercised.
+	last := time.Now().Add(-transcripthistory.Heartbeat)
 	for {
 		batch, err := x.History(stream.Context(), query)
 		if err != nil {
@@ -385,6 +390,13 @@ func (x *Sessions) Events(r *resource.SessionEventsRequest, stream grpc.ServerSt
 				return err
 			}
 			query.SetAfterSeq(e.GetSeq())
+			last = time.Now()
+		}
+		if time.Since(last) >= transcripthistory.Heartbeat {
+			if err = stream.Send(resource.SessionEvent_builder{Heartbeat: true}.Build()); err != nil {
+				return err
+			}
+			last = time.Now()
 		}
 		select {
 		case <-stream.Context().Done():

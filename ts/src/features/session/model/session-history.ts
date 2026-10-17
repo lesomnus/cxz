@@ -1,7 +1,7 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
-import { readBy, release } from "#src/shared/api/stream-deadline.ts";
+import { alive, STREAM_STALL_MS } from "#src/shared/api/stream-deadline.ts";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 
 export type HistoryPage = {
@@ -19,11 +19,6 @@ export type LoadEventDetails = (
 export const HISTORY_PAGE_SIZE = 1024;
 export const NATIVE_HISTORY_PAGE_SIZE = 1024;
 export const HISTORY_PREFETCH_SCREENS = 6;
-/**
- * How long a row stream may say nothing before it is reported as stalled. The
- * runtime heartbeats an idle stream every 10s, so this is two missed beats.
- */
-export const ROW_STALL_MS = 30_000;
 const stalled = "The conversation stream stopped responding.";
 
 /**
@@ -95,32 +90,21 @@ export class SessionHistory {
    * because it reconnects on a stream that fails.
    */
   async *rows(afterUpdated: bigint, signal: AbortSignal) {
-    const stream = this.sessions
-      .rows(
+    const published = alive(
+      this.sessions.rows(
         { ref: ref(this.id), afterUpdated, clientId: this.clientId },
         { signal },
-      )
-      [Symbol.asyncIterator]();
-    // Armed by the first heartbeat rather than on open, because a runtime that
-    // predates them is legitimately silent: timing it out would reconnect a
-    // healthy conversation every ROW_STALL_MS forever.
-    let armed = false;
+      ),
+      (row) => !row.event,
+      STREAM_STALL_MS,
+      stalled,
+    );
     try {
-      for (;;) {
-        const next = await (armed
-          ? readBy(stream.next(), ROW_STALL_MS, stalled)
-          : stream.next());
-        if (next.done) return;
-        if (!next.value.event) {
-          armed = true;
-          continue;
-        }
-        yield { event: next.value.event, updated: next.value.updated };
+      for await (const row of published) {
+        yield { event: row.event!, updated: row.updated };
       }
     } catch (error) {
       throw outdated(error);
-    } finally {
-      release(stream);
     }
   }
   readonly details: LoadEventDetails = async (seq, signal) => {

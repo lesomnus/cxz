@@ -62,6 +62,16 @@ message SessionEvent {
   ResponseMetadata response = 8;
   // Present only on a derived transcript row, never in the native live journal.
   ToolSummary tool_summary = 9;
+  // A frame that is not a record. A reader cannot tell an open stream with
+  // nothing to send from one that has stalled -- both are silence -- and only
+  // the sending side knows which it is, so it says so on an interval. Nothing
+  // else on such a frame is set: it carries no sequence, so a reader that
+  // advances its cursor by what it receives must skip it rather than rewind.
+  //
+  // The row stream says this by sending a row with no event, which needs no
+  // field of its own. A record stream's frame *is* the record, so saying it
+  // here is the only place it can be said. See cxz#191.
+  bool heartbeat = 10;
 }
 
 message ToolSummary {

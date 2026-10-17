@@ -326,6 +326,11 @@ func sessionCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 				}
 				return e
 			}
+			// A heartbeat is the stream saying it is alive, not a record. It is
+			// not printed: this command's output is the journal.
+			if v.GetHeartbeat() {
+				continue
+			}
 			if e = writeOutput(c, v); e != nil {
 				return e
 			}

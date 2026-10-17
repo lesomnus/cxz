@@ -527,6 +527,7 @@ type SessionEvent struct {
 	xxx_hidden_Payload     []byte                 `protobuf:"bytes,7,opt,name=payload"`
 	xxx_hidden_Response    *ResponseMetadata      `protobuf:"bytes,8,opt,name=response"`
 	xxx_hidden_ToolSummary *ToolSummary           `protobuf:"bytes,9,opt,name=tool_summary,json=toolSummary"`
+	xxx_hidden_Heartbeat   bool                   `protobuf:"varint,10,opt,name=heartbeat"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -619,6 +620,13 @@ func (x *SessionEvent) GetToolSummary() *ToolSummary {
 	return nil
 }
 
+func (x *SessionEvent) GetHeartbeat() bool {
+	if x != nil {
+		return x.xxx_hidden_Heartbeat
+	}
+	return false
+}
+
 func (x *SessionEvent) SetRunId(v string) {
 	x.xxx_hidden_RunId = v
 }
@@ -658,6 +666,10 @@ func (x *SessionEvent) SetToolSummary(v *ToolSummary) {
 	x.xxx_hidden_ToolSummary = v
 }
 
+func (x *SessionEvent) SetHeartbeat(v bool) {
+	x.xxx_hidden_Heartbeat = v
+}
+
 func (x *SessionEvent) HasResponse() bool {
 	if x == nil {
 		return false
@@ -693,6 +705,16 @@ type SessionEvent_builder struct {
 	Response  *ResponseMetadata
 	// Present only on a derived transcript row, never in the native live journal.
 	ToolSummary *ToolSummary
+	// A frame that is not a record. A reader cannot tell an open stream with
+	// nothing to send from one that has stalled -- both are silence -- and only
+	// the sending side knows which it is, so it says so on an interval. Nothing
+	// else on such a frame is set: it carries no sequence, so a reader that
+	// advances its cursor by what it receives must skip it rather than rewind.
+	//
+	// The row stream says this by sending a row with no event, which needs no
+	// field of its own. A record stream's frame *is* the record, so saying it
+	// here is the only place it can be said. See cxz#191.
+	Heartbeat bool
 }
 
 func (b0 SessionEvent_builder) Build() *SessionEvent {
@@ -708,6 +730,7 @@ func (b0 SessionEvent_builder) Build() *SessionEvent {
 	x.xxx_hidden_Payload = b.Payload
 	x.xxx_hidden_Response = b.Response
 	x.xxx_hidden_ToolSummary = b.ToolSummary
+	x.xxx_hidden_Heartbeat = b.Heartbeat
 	return m0
 }
 
@@ -1223,7 +1246,7 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\blast_seq\x18\x04 \x01(\x04R\alastSeq\x12+\n" +
 	"\apending\x18\x05 \x03(\v2\x11.cxz.SessionEventR\apending\x12'\n" +
 	"\x0fpermission_mode\x18\x06 \x01(\tR\x0epermissionMode\x12\x16\n" +
-	"\x06queued\x18\a \x01(\tR\x06queued\"\x99\x02\n" +
+	"\x06queued\x18\a \x01(\tR\x06queued\"\xb7\x02\n" +
 	"\fSessionEvent\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x10\n" +
 	"\x03seq\x18\x02 \x01(\x04R\x03seq\x12\x17\n" +
@@ -1234,7 +1257,9 @@ const file_cxz_session_proto_rawDesc = "" +
 	"request_id\x18\x06 \x01(\tR\trequestId\x12\x18\n" +
 	"\apayload\x18\a \x01(\fR\apayload\x121\n" +
 	"\bresponse\x18\b \x01(\v2\x15.cxz.ResponseMetadataR\bresponse\x123\n" +
-	"\ftool_summary\x18\t \x01(\v2\x10.cxz.ToolSummaryR\vtoolSummary\"\xee\x01\n" +
+	"\ftool_summary\x18\t \x01(\v2\x10.cxz.ToolSummaryR\vtoolSummary\x12\x1c\n" +
+	"\theartbeat\x18\n" +
+	" \x01(\bR\theartbeat\"\xee\x01\n" +
 	"\vToolSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05shell\x18\x02 \x01(\tR\x05shell\x12\x18\n" +

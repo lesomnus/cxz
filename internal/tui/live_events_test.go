@@ -233,3 +233,61 @@ func TestWatchPreparesLiveResponseAtCurrentWidth(t *testing.T) {
 		t.Fatal("watch failed to publish live response")
 	}
 }
+
+// A record stream that stops saying it is alive is reported, so the watcher
+// reconnects. The TUI depends on this stream for everything the transcript
+// cannot show -- execution state, quota, pending approvals -- so a stall that
+// went unnoticed would freeze all of it while the conversation kept arriving
+// on the row stream. See cxz#191.
+func TestQuietRecordStreamIsReportedOnceItHasSaidItIsAlive(t *testing.T) {
+	was := liveStallInterval
+	liveStallInterval = 40 * time.Millisecond
+	t.Cleanup(func() { liveStallInterval = was })
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	in := make(chan streamEvent, 1)
+	out := make(chan []*api.Event, 1)
+	done := make(chan error, 1)
+	go func() {
+		done <- collectLiveEvents(ctx, channelEvents{ctx, in}, func(events []*api.Event) { out <- events })
+	}()
+	// A heartbeat is not a batch: it carries no record, and a reader that
+	// rendered it would rebuild the transcript for nothing.
+	in <- streamEvent{event: &api.Event{Heartbeat: true}}
+	select {
+	case batch := <-out:
+		t.Fatal("a heartbeat was delivered as records", batch)
+	case err := <-done:
+		if !errors.Is(err, errStreamStalled) {
+			t.Fatal("the quiet stream ended for another reason", err)
+		}
+	case <-ctx.Done():
+		t.Fatal("the quiet stream was never reported")
+	}
+}
+
+// A stream that never says it is alive is waited on indefinitely: that is an
+// older runtime being legitimately silent, and restarting it every interval
+// would be this client fighting a healthy session.
+func TestRecordStreamWithoutHeartbeatsIsNotTimedOut(t *testing.T) {
+	was := liveStallInterval
+	liveStallInterval = 30 * time.Millisecond
+	t.Cleanup(func() { liveStallInterval = was })
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	in := make(chan streamEvent, 1)
+	done := make(chan error, 1)
+	go func() {
+		done <- collectLiveEvents(ctx, channelEvents{ctx, in}, func([]*api.Event) {})
+	}()
+	in <- streamEvent{event: &api.Event{Seq: 1, Kind: "assistant", Text: "the only thing it will ever say"}}
+	select {
+	case err := <-done:
+		t.Fatal("a silent stream with no heartbeats was ended", err)
+	case <-time.After(200 * time.Millisecond):
+	}
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+}

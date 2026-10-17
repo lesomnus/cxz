@@ -170,6 +170,10 @@ message Event {
   string kind = 5; string text = 6; string request_id = 7; bytes payload = 8;
   ResponseMetadata response = 9;
   ToolSummary tool_summary = 10;
+  // A frame that is not a record: the stream saying it is alive with nothing
+  // to send. Nothing else on it is set, and a reader that advances its cursor
+  // by what it receives must skip it. See proto/cxz/session.proto.
+  bool heartbeat = 11;
 }
 message ToolSummary {
   string name = 1; string shell = 2; string command = 3; string state = 4;

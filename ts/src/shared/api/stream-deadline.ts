@@ -37,3 +37,46 @@ export function readBy<T>(
 export function release(stream: { return?: () => Promise<unknown> }) {
   void stream.return?.().catch(() => {});
 }
+
+/**
+ * How long a heartbeated stream may say nothing before it is reported. Two
+ * missed beats of the runtime's own interval, and it lives here rather than
+ * beside either reader: both streams of a conversation are heartbeated by the
+ * same runtime, so a reader that chose its own number would be guessing.
+ */
+export const STREAM_STALL_MS = 30_000;
+
+/**
+ * alive reads a stream that says so. A sender heartbeats when it has nothing
+ * to send, because only it knows whether silence means idle or stalled; this
+ * yields the real frames, drops the heartbeats, and throws once two of them
+ * are missed.
+ *
+ * The deadline is armed by the first heartbeat rather than by opening the
+ * stream. A sender that predates them is legitimately silent, and timing it
+ * out would reconnect a healthy stream forever.
+ */
+export async function* alive<T>(
+  source: AsyncIterable<T>,
+  beat: (value: T) => boolean,
+  stall: number,
+  what: string,
+): AsyncGenerator<T> {
+  const stream = source[Symbol.asyncIterator]();
+  let armed = false;
+  try {
+    for (;;) {
+      const next = await (armed
+        ? readBy(stream.next(), stall, what)
+        : stream.next());
+      if (next.done) return;
+      if (beat(next.value)) {
+        armed = true;
+        continue;
+      }
+      yield next.value;
+    }
+  } finally {
+    release(stream);
+  }
+}
