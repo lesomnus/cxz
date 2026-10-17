@@ -175,6 +175,9 @@ message ToolSummary {
   string name = 1; string shell = 2; string command = 3; string state = 4;
   repeated ToolFileSummary files = 5;
   uint32 omitted_files = 6;
+  // The shape a reader lays out, and the provider's own words for the call when
+  // it supplied any. See proto/cxz/session.proto for why neither is inferred.
+  string kind = 7; string description = 8;
 }
 // Counts describe recorded diff hunks or submitted content/replacement spans.
 // An unknown measure never implies zero changes.

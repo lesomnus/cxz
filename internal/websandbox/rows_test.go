@@ -64,23 +64,29 @@ func TestToolRecordsBecomeOneAdvancingRow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var tools []transcripthistory.Version
+	// Grouped by row, because the scenario seeds two tools: the Bash call whose
+	// state advances, and a Skill whose name is not what it is.
+	byRow := map[uint64][]transcripthistory.Version{}
+	var order []uint64
 	for _, v := range versions {
-		if v.Event.GetToolSummary() != nil {
-			tools = append(tools, v)
+		if v.Event.GetToolSummary() == nil {
+			continue
 		}
+		if _, seen := byRow[v.Seq]; !seen {
+			order = append(order, v.Seq)
+		}
+		byRow[v.Seq] = append(byRow[v.Seq], v)
 	}
+	if len(order) != 2 {
+		t.Fatalf("the scenario published %d tool rows, want the command and the skill", len(order))
+	}
+	tools := byRow[order[0]]
 	// Two versions, not three: the call opens the row and the result closes it,
 	// while the output in between only moves the state to working and is then
 	// deduplicated. That bound is what keeps a chatty tool from republishing its
 	// row once per chunk.
 	if len(tools) != 2 {
 		t.Fatalf("the seeded tool published %d row versions, want 2", len(tools))
-	}
-	for _, v := range tools {
-		if v.Seq != tools[0].Seq {
-			t.Fatal("a tool's records produced more than one row", v.Seq, tools[0].Seq)
-		}
 	}
 	if got := tools[0].Event.GetToolSummary().GetState(); got == "completed" {
 		t.Fatal("the call already read as completed")
@@ -94,6 +100,15 @@ func TestToolRecordsBecomeOneAdvancingRow(t *testing.T) {
 	}
 	if last.GetCommand() == "" {
 		t.Fatal("the row lost the command it ran")
+	}
+	if last.GetKind() != "command" {
+		t.Fatal("the row did not say it ran a command:", last.GetKind())
+	}
+	// "Skill" names every skill. Which one, and with what arguments, is only in
+	// the description -- without it this row reads as the word "Skill".
+	skill := byRow[order[1]][0].Event.GetToolSummary()
+	if skill.GetKind() != "tool" || skill.GetDescription() != "Skill dataviz palette" {
+		t.Fatal("the skill row lost what it is:", skill.GetKind(), skill.GetDescription())
 	}
 	// Output records are not rows of their own, which is why a reader that wants
 	// the bytes reads the records rather than the projection.

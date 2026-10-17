@@ -104,6 +104,7 @@ func New(seed uint64, delay time.Duration) *Server {
 		}
 		if st.scenario == "tools" {
 			s.toolActivity(st, "seeded", true)
+			s.skillActivity(st, "seeded-skill")
 		}
 	}
 	return s

@@ -128,7 +128,15 @@ func summary(e *api.Event) *api.Event {
 	if text(item, "type") != "" {
 		provider = "codex"
 	}
+	// A reader lays a call out by its shape, and the shape is not recoverable
+	// from the rest of the row: a Read puts the path it read in Command as well
+	// as in Files, so Command being set does not mean a shell ran. Kind says it
+	// instead. Description carries the provider's own words when it supplied
+	// any -- Bash's description, a Skill's arguments -- and stays empty rather
+	// than repeating Name, which a reader already has.
+	label.Kind = "tool"
 	if activity, ok := toolview.ToolView(provider, e.Text, e.Payload); ok {
+		label.Kind, label.Description = activity.Kind, clip(activity.Description, 1024)
 		const maxFiles = 256
 		for _, f := range activity.Files[:min(len(activity.Files), maxFiles)] {
 			label.Files = append(label.Files, &api.ToolFileSummary{Path: clip(f.Path, 1024), MovePath: clip(f.MovePath, 1024), Action: f.Action, Added: uint32(f.Added), Removed: uint32(f.Removed), Lines: uint32(f.Lines), Measure: f.Measure, PerMatch: f.PerMatch})
