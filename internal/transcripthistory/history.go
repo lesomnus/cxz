@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/shellview"
@@ -20,6 +21,14 @@ import (
 
 const DefaultPage = 256
 const MaxPage = 1024
+
+// Heartbeat is how often a row stream with nothing to send says so, by sending
+// a row with no event. A reader cannot tell an open stream that is idle from
+// one that has stalled -- both are silence -- and only the sending side knows
+// which it is; see cxz#188. It lives beside the projection that every row
+// stream serves, so a runtime and the sandbox cannot drift on what silence
+// means. A reader arms its own deadline at some multiple of this.
+const Heartbeat = 10 * time.Second
 
 type Decode func([]byte) (*api.Event, error)
 type Version struct {

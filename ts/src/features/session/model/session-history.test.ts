@@ -6,6 +6,7 @@ import {
   SessionHistory,
   HISTORY_PAGE_SIZE,
   NATIVE_HISTORY_PAGE_SIZE,
+  ROW_STALL_MS,
 } from "./session-history";
 import type { Connection } from "#src/shared/api/connection.ts";
 const event = (seq: bigint, kind = "input") =>
@@ -75,6 +76,58 @@ describe("historical transcript transport", () => {
       expect.objectContaining({ afterUpdated: 3n, clientId: "c1" }),
       expect.anything(),
     );
+  });
+  // The hole in cxz#188: a stream that stays open and says nothing ends no
+  // race and throws nothing, so the conversation stopped growing while the
+  // client still read as live. The runtime's heartbeat is what makes silence
+  // reportable, and reporting it is what reconnects.
+  it("reports a row stream that goes quiet after telling it would speak up", async () => {
+    vi.useFakeTimers();
+    try {
+      const s = source({
+        rows: vi.fn(async function* () {
+          yield { event: event(4n), updated: 4n };
+          yield { updated: 4n };
+          await new Promise(() => {});
+        }),
+      });
+      const seen: bigint[] = [];
+      const read = (async () => {
+        for await (const row of s.rows(0n, signal())) seen.push(row.updated);
+      })();
+      const reported = expect(read).rejects.toThrow("stopped responding");
+      await vi.advanceTimersByTimeAsync(ROW_STALL_MS);
+      await reported;
+      expect(seen).toEqual([4n]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  // A runtime that predates heartbeats is legitimately silent. Timing it out
+  // would reconnect a healthy conversation forever, so the deadline is armed by
+  // a heartbeat rather than by opening the stream.
+  it("waits indefinitely on a runtime that never says it is alive", async () => {
+    vi.useFakeTimers();
+    try {
+      const s = source({
+        rows: vi.fn(async function* () {
+          yield { event: event(4n), updated: 4n };
+          await new Promise(() => {});
+        }),
+      });
+      let settled = false;
+      const read = (async () => {
+        for await (const _ of s.rows(0n, signal())) void _;
+      })().then(
+        () => (settled = true),
+        () => (settled = true),
+      );
+      await vi.advanceTimersByTimeAsync(ROW_STALL_MS * 10);
+      await Promise.race([read, Promise.resolve()]);
+      expect(settled).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
   it("says which side is behind when a runtime cannot stream rows", async () => {
     const s = source({

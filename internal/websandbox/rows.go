@@ -17,6 +17,10 @@ func (x *Sessions) Rows(r *resource.SessionRowsRequest, stream grpc.ServerStream
 	cursor := r.GetAfterUpdated()
 	tick := time.NewTicker(60 * time.Millisecond)
 	defer tick.Stop()
+	// Heartbeats too, and due immediately like the runtime's: the reader arms
+	// its stall deadline on the first one, so a fake that never sent them would
+	// be the one place that path is never exercised.
+	last := time.Now().Add(-transcripthistory.Heartbeat)
 	for {
 		versions, err := x.versions(r.GetRef(), cursor)
 		if err != nil {
@@ -29,6 +33,13 @@ func (x *Sessions) Rows(r *resource.SessionRowsRequest, stream grpc.ServerStream
 				return err
 			}
 			cursor = v.Updated
+			last = time.Now()
+		}
+		if time.Since(last) >= transcripthistory.Heartbeat {
+			if err = stream.Send(resource.SessionRow_builder{Updated: &cursor}.Build()); err != nil {
+				return err
+			}
+			last = time.Now()
 		}
 		select {
 		case <-stream.Context().Done():
