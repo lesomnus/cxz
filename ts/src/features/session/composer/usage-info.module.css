@@ -1,0 +1,122 @@
+.usage:global(.usage-info) {
+  gap: 18px;
+}
+.quota {
+  isolation: isolate;
+}
+.graph {
+  position: relative;
+  z-index: 5;
+  display: inline-grid;
+}
+/* Braille may use a fallback font wider than 1ch. Reserve its actual width,
+   including when quota is unreported, instead of letting it overflow the donut. */
+.graph::before {
+  content: "⣿⣿⣿⣿⣿⣿⣿⣿";
+  visibility: hidden;
+}
+.graph::before,
+.graph > span {
+  grid-area: 1 / 1;
+}
+.graph::after {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 3px;
+  height: 14px;
+  border-left: 1px solid var(--shade-65);
+  opacity: 0;
+}
+.quota[data-open="true"] .graph::after {
+  opacity: 1;
+}
+.details {
+  --agent-logo-size: 14px;
+  position: absolute;
+  z-index: 4;
+  right: -10px;
+  top: -6px;
+  bottom: -6px;
+  display: flex;
+  align-items: center;
+  width: max-content;
+  padding: 6px calc(100% + 30px) 6px 10px;
+
+  border-radius: 6px;
+  background: var(--shade-36);
+  color: var(--shade-237);
+  font-family: var(--ui-font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.content {
+  display: grid;
+  grid-template-columns: 14px calc(8ch + 11px) calc(14ch + 11px) calc(
+      4ch + 11px
+    );
+  align-items: center;
+  gap: 10px;
+}
+.period,
+.time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.percent {
+  text-align: right;
+}
+
+.period,
+.percent,
+.time {
+  border-left: 1px solid var(--shade-65);
+  padding-left: 10px;
+}
+
+.period {
+  text-align: center;
+}
+
+.context {
+  isolation: isolate;
+}
+.context[data-open="true"] {
+  /* The leftward popup covers the neighboring quota graph. */
+  z-index: 6;
+}
+.donut {
+  position: relative;
+  z-index: 5;
+}
+.contextContent {
+  display: flex;
+  align-items: center;
+}
+.separator {
+  padding-inline: 6px;
+  color: color-mix(in srgb, currentColor 78%, var(--ui-shade-0));
+}
+
+.contextContent > .percent {
+  flex: 0 0 calc(4ch + 11px);
+  margin-left: 10px;
+}
+
+.quota[data-quota-level="warning"] {
+  --quota-color: #9d8245;
+}
+.quota[data-quota-level="critical"] {
+  --quota-color: #b0485b;
+}
+.quota:is([data-quota-level="warning"], [data-quota-level="critical"])
+  :is(.graph, .percent) {
+  color: var(--quota-color);
+}
+:global(:root[data-theme="light"]) .quota[data-quota-level="warning"] {
+  --quota-color: #8a6200;
+}
+:global(:root[data-theme="light"]) .quota[data-quota-level="critical"] {
+  --quota-color: #c52e48;
+}
