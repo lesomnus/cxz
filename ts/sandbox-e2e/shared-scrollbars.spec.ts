@@ -25,6 +25,33 @@ async function ready(page: Page) {
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });
 }
+/**
+ * nearEdge hovers a point measured from the surface's own box and waits for the
+ * surface to agree that the pointer is near its scrollbar.
+ *
+ * Measuring and then moving is a race: the box is read before the pointer
+ * moves, and anything that reflows in between -- a font settling, a card
+ * resizing, a summary arriving -- leaves the pointer resting somewhere
+ * harmless. The attribute then never arrives, and waiting longer cannot help,
+ * because nothing is on its way. So the whole gesture retries rather than just
+ * the assertion. See cxz#184.
+ */
+async function nearEdge(
+  surface: Locator,
+  attribute: string,
+  at: (box: { width: number; height: number }) => { x: number; y: number },
+  want = "true",
+) {
+  await expect
+    .poll(async () => {
+      const box = await surface.boundingBox();
+      if (!box) return null;
+      const point = at(box);
+      await surface.page().mouse.move(box.x + point.x, box.y + point.y);
+      return surface.getAttribute(attribute);
+    })
+    .toBe(want);
+}
 async function skin(surface: Locator) {
   return surface.evaluate((el) => {
     const bar = getComputedStyle(el, "::-webkit-scrollbar");
@@ -58,13 +85,19 @@ test("composer and detail cards share handle-only hover styling without shifting
     .toBe("rgba(0, 0, 0, 0)");
   const before = await skin(input);
   const bounds = (await input.boundingBox())!;
-  await page.mouse.move(bounds.x + 40, bounds.y + 40);
+  await nearEdge(
+    input,
+    "data-scrollbar-near-y",
+    () => ({ x: 40, y: 40 }),
+    "false",
+  );
   await expect
     .poll(async () => (await skin(input)).color)
     .not.toBe("rgba(0, 0, 0, 0)");
-  await expect(input).toHaveAttribute("data-scrollbar-near-y", "false");
-  await page.mouse.move(bounds.x + bounds.width - 18, bounds.y + 40);
-  await expect(input).toHaveAttribute("data-scrollbar-near-y", "true");
+  await nearEdge(input, "data-scrollbar-near-y", (box) => ({
+    x: box.width - 18,
+    y: 40,
+  }));
   expect((await skin(input)).clientWidth).toBe(before.clientWidth);
   expect(before.width).toBe("12px");
   expect(
@@ -102,12 +135,10 @@ test("composer and detail cards share handle-only hover styling without shifting
   await expect
     .poll(() => body.evaluate((el) => el.scrollHeight - el.clientHeight))
     .toBeGreaterThan(0);
-  const bodyBounds = (await body.boundingBox())!;
-  await page.mouse.move(
-    bodyBounds.x + bodyBounds.width - 18,
-    bodyBounds.y + 40,
-  );
-  await expect(body).toHaveAttribute("data-scrollbar-near-y", "true");
+  await nearEdge(body, "data-scrollbar-near-y", (box) => ({
+    x: box.width - 18,
+    y: 40,
+  }));
   expect((await skin(body)).width).toBe(before.width);
   expect((await skin(body)).track).toBe(before.track);
   await page.mouse.wheel(0, 160);
@@ -137,12 +168,10 @@ test("horizontal code, dropdowns and Monaco reuse the panel handle styling", asy
     });
   const code = page.locator("pre[data-scroll-fixture]");
   await code.scrollIntoViewIfNeeded();
-  const codeBounds = (await code.boundingBox())!;
-  await page.mouse.move(
-    codeBounds.x + 40,
-    codeBounds.y + codeBounds.height - 5,
-  );
-  await expect(code).toHaveAttribute("data-scrollbar-near-x", "true");
+  await nearEdge(code, "data-scrollbar-near-x", (box) => ({
+    x: 40,
+    y: box.height - 5,
+  }));
   expect((await skin(code)).height).toBe("12px");
   await code.evaluate((el) => {
     el.scrollLeft = 100;
@@ -153,12 +182,10 @@ test("horizontal code, dropdowns and Monaco reuse the panel handle styling", asy
   await choices.evaluate((el: HTMLElement) => {
     el.style.maxHeight = "30px";
   });
-  const choicesBounds = (await choices.boundingBox())!;
-  await page.mouse.move(
-    choicesBounds.x + choicesBounds.width - 18,
-    choicesBounds.y + 5,
-  );
-  await expect(choices).toHaveAttribute("data-scrollbar-near-y", "true");
+  await nearEdge(choices, "data-scrollbar-near-y", (box) => ({
+    x: box.width - 18,
+    y: 5,
+  }));
   expect((await skin(choices)).width).toBe("12px");
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Profile", exact: true }).click();
@@ -180,12 +207,10 @@ test("horizontal code, dropdowns and Monaco reuse the panel handle styling", asy
   const slider = editor.locator(".scrollbar.vertical > .slider").first();
   await expect(slider).toBeVisible();
   await expect(slider).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  const editorBounds = (await editor.boundingBox())!;
-  await page.mouse.move(
-    editorBounds.x + editorBounds.width - 20,
-    editorBounds.y + 40,
-  );
-  await expect(editor).toHaveAttribute("data-scrollbar-near-y", "true");
+  await nearEdge(editor, "data-scrollbar-near-y", (box) => ({
+    x: box.width - 20,
+    y: 40,
+  }));
   await expect
     .poll(() =>
       slider.evaluate((el) => getComputedStyle(el, "::before").transform),
@@ -238,9 +263,10 @@ test("terminal scrollback uses the same handle and keeps its own wheel scrolling
     )
     .toBeLessThan(0.8);
   await expect(slider).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  const bounds = (await root.boundingBox())!;
-  await page.mouse.move(bounds.x + bounds.width - 20, bounds.y + 40);
-  await expect(root).toHaveAttribute("data-scrollbar-near-y", "true");
+  await nearEdge(root, "data-scrollbar-near-y", (box) => ({
+    x: box.width - 20,
+    y: 40,
+  }));
   await expect
     .poll(() =>
       slider.evaluate((el) => getComputedStyle(el, "::before").transform),
