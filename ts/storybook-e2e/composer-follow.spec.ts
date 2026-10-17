@@ -1,4 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+// settled answers the scroll position once the pane has stopped changing shape:
+// two consecutive reads of scrollHeight, clientHeight and scrollTop that agree.
+// A transcript of estimated rows reaches its real height over several frames,
+// and a baseline taken before it does is a baseline nothing will match.
+async function settled(pane: Locator) {
+  let previous = "";
+  for (let i = 0; i < 100; i++) {
+    const shape = await pane.evaluate((el) =>
+      [el.scrollHeight, el.clientHeight, el.scrollTop].join("/"),
+    );
+    if (shape === previous) return Number(shape.split("/")[2]);
+    previous = shape;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error("the transcript never stopped changing shape: " + previous);
+}
 
 test("growing and shrinking the draft keeps the latest response visible", async ({
   page,
@@ -40,7 +57,13 @@ for (const distance of [48, 500]) {
       el.scrollTop = el.scrollHeight - el.clientHeight - distance;
     }, distance);
     await expect.poll(gap).toBeGreaterThan(distance - 2);
-    const before = await pane.evaluate((el) => el.scrollTop);
+    // What this test pins is that a composer resize does not move the reader,
+    // which means comparing a position before it with the position after. Both
+    // have to be measured against the same layout: a virtual transcript settles
+    // its estimated row sizes asynchronously, and a position recorded while
+    // that is still happening is a number the layout then walks away from. CI
+    // caught this as a fixed 118px disagreement; see cxz#196.
+    const before = await settled(pane);
     const height = await input.evaluate((el) => el.clientHeight);
     await input.fill(
       Array.from({ length: 20 }, (_, i) => `Draft line ${i}`).join("\n"),
