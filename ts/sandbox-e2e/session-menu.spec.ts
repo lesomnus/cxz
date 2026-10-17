@@ -197,7 +197,11 @@ test("Purge previews without deleting, cancels, then removes only the confirmed 
   page,
 }) => {
   await ready(page);
-  await expect(page.locator(".resource-panel .tree-session")).toHaveCount(8);
+  // Counted rather than hardcoded: what this verifies is that exactly one
+  // session goes, not how many the fixture happens to seed.
+  const listed = page.locator(".resource-panel .tree-session");
+  const before = await listed.count();
+  expect(before).toBeGreaterThan(1);
   await choose(page, "Purge");
   const dialog = page.getByRole("dialog", { name: "Purge session" });
   await expect(dialog).toContainText("/sandbox/session-1/journal");
@@ -219,7 +223,7 @@ test("Purge previews without deleting, cancels, then removes only the confirmed 
       .locator(".resource-panel .tree-session")
       .filter({ hasText: "session-1" }),
   ).toHaveCount(0);
-  await expect(page.locator(".resource-panel .tree-session")).toHaveCount(7);
+  await expect(listed).toHaveCount(before - 1);
 });
 
 test("Details edits title and alias without changing the session route or conversation", async ({

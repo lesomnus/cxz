@@ -66,13 +66,13 @@ func New(seed uint64, delay time.Duration) *Server {
 		id := fmt.Sprintf("project-%d", i+1)
 		s.projects = append(s.projects, resource.Project_builder{Id: []byte(fmt.Sprintf("project-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, Workspace: "/workspace", Listed: true, Status: resource.ProjectStatus_builder{State: "running", RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
 	}
-	for i, name := range []string{"Project checklist", "Conversation", "Long history", "Approval question", "Simulated error", "Seeded random work", "Stopped session", "Other project"} {
+	for i, name := range []string{"Project checklist", "Conversation", "Long history", "Approval question", "Simulated error", "Seeded random work", "Stopped session", "Other project", "Tool activity"} {
 		id := fmt.Sprintf("session-%d", i+1)
 		agent := "claude"
 		if i%2 == 1 {
 			agent = "codex"
 		}
-		st := &session{effort: "high", scenario: []string{"checklist", "conversation", "long", "approval", "error", "random", "stopped", "conversation"}[i], seen: map[string]bool{}}
+		st := &session{effort: "high", scenario: []string{"checklist", "conversation", "long", "approval", "error", "random", "stopped", "conversation", "tools"}[i], seen: map[string]bool{}}
 		project := s.projects[0]
 		if i == 7 {
 			project = s.projects[1]
@@ -101,6 +101,9 @@ func New(seed uint64, delay time.Duration) *Server {
 		}
 		if st.scenario == "stopped" {
 			st.value.GetStatus().SetState("stopped")
+		}
+		if st.scenario == "tools" {
+			s.toolActivity(st, "seeded", true)
 		}
 	}
 	return s
@@ -500,6 +503,11 @@ func (s *Server) respond(st *session, generation uint64) {
 		}
 		text := fmt.Sprintf("%s · %d/%d", name, i+1, count)
 		s.event(st, "tool", text, "", []byte(`{"simulated":true,"status":"running"}`))
+		// A call that has not finished, which is the state live output belongs
+		// to and the one state nothing here could reach before.
+		if scenario == "tools" && i == 0 {
+			s.toolActivity(st, fmt.Sprintf("turn-%d-running", turn), false)
+		}
 		s.mu.Unlock()
 	}
 	select {
@@ -522,6 +530,9 @@ func (s *Server) respond(st *session, generation uint64) {
 		return
 	}
 	s.event(st, "tool_result", "Sample tasks completed", "", []byte(`{"simulated":true,"status":"completed","output":"All fixture checks passed"}`))
+	if scenario == "tools" {
+		s.toolActivity(st, fmt.Sprintf("turn-%d", turn), true)
+	}
 	s.event(st, "assistant", answer(scenario), "", nil)
 	s.complete(st, st.value.GetStatus().GetLastSeq())
 	s.state(st, "idle")
