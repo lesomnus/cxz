@@ -6,8 +6,35 @@ services:
 
     user: "1000"
     privileged: true
+
+    # cxz runs on the host's Docker, so developing it means debugging an
+    # installation that lives outside this container: a manager, a runtime per
+    # project, and the update helper whose only record of why it failed is its
+    # own stdout. None of that is visible from here, and every question about a
+    # live installation has to be relayed by hand.
+    #
+    # Bound at a path of its own, because cxz already points this container at
+    # a Docker: DOCKER_HOST names the project's own nested daemon. Shadowing
+    # /var/run/docker.sock would silently redirect anything that defaults to it
+    # -- builds, tests, the agent -- at the host instead. Reaching the host is
+    # explicit, and says so at the call site:
+    #
+    #   DOCKER_HOST=$CXZ_HOST_DOCKER docker logs cxz-<owner>-update
+    #
+    # group_add carries the host's docker group, because this service runs as
+    # uid 1000 and the socket is group-owned. Find it with
+    #   stat -c %g /var/run/docker.sock
+    # and set CXZ_DOCKER_GID in .devcontainer/.env if it is not 999.
+    #
+    # This is *this* repository's development environment. The devcontainer cxz
+    # generates for a project it runs must never have it: the socket is
+    # equivalent to root on the host, which is also why cxz does not let a
+    # project container drive purge.
+    group_add:
+      - "${CXZ_DOCKER_GID:-999}"
     environment:
       - SHELL=/bin/zsh
+      - CXZ_HOST_DOCKER=unix:///var/run/host-docker.sock
 
     volumes:
       - command.history:/commandhistory
@@ -16,6 +43,7 @@ services:
 
       - ..:/workspace
       - ${HOME}/workspaces:/workspaces
+      - /var/run/docker.sock:/var/run/host-docker.sock
 
     deploy:
       resources:
