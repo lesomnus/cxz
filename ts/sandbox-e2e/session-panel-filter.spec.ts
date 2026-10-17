@@ -18,12 +18,16 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
   await expect(stopped).toBeVisible({ timeout: 45000 });
   await expect(panel.locator(".tree-session")).toHaveCount(8);
   const menu = page.getByRole("button", { name: "Session panel options" });
-  const hide = page.getByRole("menuitemcheckbox", {
+  const hide = page.getByRole("menuitem", {
     name: "Hide stopped sessions",
     exact: true,
   });
+  const show = page.getByRole("menuitem", {
+    name: "Show stopped sessions",
+    exact: true,
+  });
   await menu.click();
-  await expect(hide).not.toBeChecked();
+  await expect(hide).toBeVisible();
   await hide.click();
   await expect(stopped).toHaveCount(0);
   await expect(panel.locator(".tree-session")).toHaveCount(7);
@@ -37,7 +41,7 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
   await page.reload();
   await expect(panel.locator(".tree-session")).toHaveCount(7);
   await menu.click();
-  await expect(hide).toBeChecked();
+  await expect(show).toBeVisible();
   await page.keyboard.press("Escape");
 
   // A direct link remains usable even when its row is hidden. Resume and Stop
@@ -64,7 +68,7 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
   await expect(page).toHaveURL(/#\/sessions\/session-7$/);
 
   await menu.click();
-  await hide.click();
+  await show.click();
   await expect(stopped).toBeVisible();
   await expect(panel.locator(".tree-session")).toHaveCount(8);
   expect(

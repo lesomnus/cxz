@@ -57,12 +57,12 @@ Editor defaults and validation ranges are defined in
 [editor-settings.ts](../ts/src/shared/settings/editor-settings.ts). The JSON above illustrates the
 file shape rather than specifying current defaults.
 
-The session panel's **More → Hide stopped sessions** checkbox saves
+The session panel's **More → Hide stopped sessions / Show stopped sessions** action saves
 `session.panel.hideStopped` in this same file. Missing values show all sessions.
 Enabled filtering hides stopped, interrupted and failed sessions, matching the
 panel's inactive styling. Session state updates immediately change visibility;
 the underlying session inventory, conversations, notifications and direct links
-remain available. Toggle the option off to show these rows again. The preference
+remain available. Choose **Show stopped sessions** to show these rows again. The preference
 survives reload and follows the usual cross-tab settings synchronization.
 
 ## Display language and lazy language packs
