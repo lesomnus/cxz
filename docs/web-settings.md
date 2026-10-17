@@ -43,6 +43,7 @@ editing known settings through the UI.
   "ui.language": "en",
   "ui.theme": "dark",
   "terminal.copyOnSelect": true,
+  "session.panel.hideStopped": false,
   "editor.indentSize": 2,
   "editor.insertSpaces": true,
   "editor.tabSize": 4,
@@ -55,6 +56,14 @@ Visual dimensions, palettes and breakpoints are defined in the shared CSS tokens
 Editor defaults and validation ranges are defined in
 [editor-settings.ts](../ts/src/shared/settings/editor-settings.ts). The JSON above illustrates the
 file shape rather than specifying current defaults.
+
+The session panel's **More → Hide stopped sessions** checkbox saves
+`session.panel.hideStopped` in this same file. Missing values show all sessions.
+Enabled filtering hides stopped, interrupted and failed sessions, matching the
+panel's inactive styling. Session state updates immediately change visibility;
+the underlying session inventory, conversations, notifications and direct links
+remain available. Toggle the option off to show these rows again. The preference
+survives reload and follows the usual cross-tab settings synchronization.
 
 ## Display language and lazy language packs
 

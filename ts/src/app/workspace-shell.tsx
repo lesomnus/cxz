@@ -25,6 +25,8 @@ import { useWorkspaceRoute } from "./router";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { WorkspaceContext } from "./workspace-context";
 import { useSessionAttention } from "#src/features/session/model/use-session-attention.ts";
+import { resumableStates } from "#src/features/session/model/session-actions.ts";
+import { useSettings } from "#src/shared/settings/settings.ts";
 export function Workspace({
   connection: c,
   logout,
@@ -48,6 +50,9 @@ export function Workspace({
   useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [addingSession, setAddingSession] = useState(false);
+  const { store: settings, snapshot } = useSettings();
+  const hideStopped = snapshot.document["session.panel.hideStopped"] === true;
+  const [panelError, setPanelError] = useState("");
   const sessionPanel = useRef<HTMLElement>(null);
   const positionSessionMenu = useCallback((trigger: DOMRect) => {
     const header = sessionPanel.current?.querySelector("header");
@@ -73,14 +78,18 @@ export function Workspace({
   const sessionsByProject = useMemo(() => {
     const grouped = new Map<string, Session[]>();
     for (const session of inventory.sessions) {
-      if (!session.project) continue;
+      if (
+        !session.project ||
+        (hideStopped && resumableStates.has(session.status?.state ?? ""))
+      )
+        continue;
       const id = key(session.project.id);
       const sessions = grouped.get(id) ?? [];
       sessions.push(session);
       grouped.set(id, sessions);
     }
     return grouped;
-  }, [inventory.sessions]);
+  }, [inventory.sessions, hideStopped]);
   function expandProject(id: string) {
     setCollapsed((old) => {
       const next = new Set(old);
@@ -218,6 +227,36 @@ export function Workspace({
                       ),
                       run: () => setAddingSession(true),
                     },
+                    {
+                      label: "Hide stopped sessions",
+                      checked: hideStopped,
+                      icon: (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A12 12 0 0 1 12 5c5.5 0 9 7 9 7a18 18 0 0 1-3.2 4.1M6.2 6.2A18 18 0 0 0 3 12s3.5 7 9 7a10 10 0 0 0 4.1-.9" />
+                        </svg>
+                      ),
+                      run: () => {
+                        try {
+                          settings.set(
+                            "session.panel.hideStopped",
+                            !hideStopped,
+                          );
+                          setPanelError("");
+                        } catch (error) {
+                          setPanelError(String(error));
+                        }
+                      },
+                    },
                   ]}
                 />
               )
@@ -307,6 +346,9 @@ export function Workspace({
               <p role="alert">
                 {String(inventory.errors.projects || inventory.errors.sessions)}
               </p>
+            )}
+            {resource === "sessions" && panelError && (
+              <p role="alert">{panelError}</p>
             )}
             {inventory.loading.projects && !projects.length && (
               <p className="muted">{t("Loading projects…")}</p>
