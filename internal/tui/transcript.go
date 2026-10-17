@@ -1,11 +1,13 @@
 package tui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
@@ -159,41 +161,85 @@ func toolResultSummary(e *api.Event) string {
 	return result
 }
 
-func (m *model) toolDetails() {
-	if s := m.current(); s != nil {
-		events := m.events[s.Id]
-		for i := len(events) - 1; i >= 0; i-- {
-			e := events[i]
-			if e.Kind != "tool_result" && e.Kind != "tool_call" {
-				continue
+// toolDetails answers /details with the newest tool's own records. Which record
+// is newest is answered from what is loaded -- a row carries its kind -- and the
+// bytes come from the runtime, because a row does not carry them.
+func (m *model) toolDetails() tea.Cmd {
+	s := m.current()
+	if s == nil {
+		m.recordLocal("/details", "Select a session first.")
+		return nil
+	}
+	events := m.events[s.Id]
+	for i := len(events) - 1; i >= 0; i-- {
+		e := events[i]
+		if e.Kind != "tool_result" && e.Kind != "tool_call" {
+			continue
+		}
+		id, seq := s.Id, e.Seq
+		client := m.client
+		return func() tea.Msg {
+			ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
+			defer cancel()
+			batch, err := client.EventDetails(ctx, &api.EventDetailsRequest{SessionId: id, Seq: seq})
+			out := toolDetailsLoaded{session: id, seq: seq, subject: e, err: err}
+			if batch != nil {
+				out.events = batch.Events
 			}
-			var value any
-			text := string(e.Payload)
-			if json.Unmarshal(e.Payload, &value) == nil {
-				b, _ := json.MarshalIndent(value, "", "  ")
-				text = string(b)
-			}
-			callDetail := ""
-			for j := i - 1; e.Kind == "tool_result" && j >= 0; j-- {
-				call := events[j]
-				if call.Kind == "tool_call" && call.RequestId != "" && call.RequestId == e.RequestId && call.RunId == e.RunId {
-					payload := string(call.Payload)
-					var input any
-					if json.Unmarshal(call.Payload, &input) == nil {
-						b, _ := json.MarshalIndent(input, "", "  ")
-						payload = string(b)
-					}
-					callDetail = fmt.Sprintf("Tool input · event %d · %s\n%s\n\n", call.Seq, call.Text, payload)
-					break
-				}
-			}
-			kind := "Tool result"
-			if e.Kind == "tool_call" {
-				kind = "Tool input"
-			}
-			m.recordLocal("/details", callDetail+fmt.Sprintf("%s · event %d\n%s\n%s", kind, e.Seq, e.Text, text))
-			return
+			return out
 		}
 	}
 	m.recordLocal("/details", "No tool activity in the received history yet.")
+	return nil
+}
+
+type toolDetailsLoaded struct {
+	session string
+	seq     uint64
+	subject *api.Event
+	events  []*api.Event
+	err     error
+}
+
+func (m *model) acceptToolDetails(v toolDetailsLoaded) {
+	if s := m.current(); s == nil || s.Id != v.session {
+		return
+	}
+	if v.err != nil {
+		m.recordLocal("/details", "Tool details are unavailable: "+v.err.Error())
+		return
+	}
+	m.recordLocal("/details", toolDetailsReport(v.subject, v.events))
+}
+
+func toolDetailsReport(subject *api.Event, events []*api.Event) string {
+	e := subject
+	for _, v := range events {
+		if v.Seq == subject.Seq {
+			e = v
+		}
+	}
+	callDetail := ""
+	if e.Kind == "tool_result" {
+		for _, call := range events {
+			if call.Kind == "tool_call" && call.RequestId != "" && call.RequestId == e.RequestId && call.RunId == e.RunId {
+				callDetail = fmt.Sprintf("Tool input · event %d · %s\n%s\n\n", call.Seq, call.Text, indented(call.Payload))
+				break
+			}
+		}
+	}
+	kind := "Tool result"
+	if e.Kind == "tool_call" {
+		kind = "Tool input"
+	}
+	return callDetail + fmt.Sprintf("%s · event %d\n%s\n%s", kind, e.Seq, e.Text, indented(e.Payload))
+}
+
+func indented(payload []byte) string {
+	var value any
+	if json.Unmarshal(payload, &value) == nil {
+		b, _ := json.MarshalIndent(value, "", "  ")
+		return string(b)
+	}
+	return string(payload)
 }

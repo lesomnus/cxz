@@ -1799,8 +1799,8 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.codeBlockMouse(v) {
 				return m, nil
 			}
-			if m.toolMouse(v, time.Now()) {
-				return m, nil
+			if opened, cmd := m.toolMouse(v, time.Now()); opened {
+				return m, cmd
 			}
 			m.beginSelection(v)
 			m.view, _ = m.view.Update(v)
@@ -2034,6 +2034,12 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(completion, m.refreshSessionBackground())
 	case received:
 		m.receiveEvent(v, true)
+	case toolPreviewLoaded:
+		m.acceptToolPreview(v)
+		return m, nil
+	case toolDetailsLoaded:
+		m.acceptToolDetails(v)
+		return m, nil
 	case caughtUp:
 		if !m.validSessionWatch(v.id, v.epoch) {
 			return m, nil
@@ -2439,8 +2445,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.loadUsage()
 			}
 			if localName == "/details" {
-				m.toolDetails()
-				return m, nil
+				return m, m.toolDetails()
 			}
 			if localName == "/context" {
 				return m, m.contextCommand()

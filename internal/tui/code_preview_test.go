@@ -42,9 +42,11 @@ func TestFilePreviewLayoutAndScrolling(t *testing.T) {
 			break
 		}
 	}
-	if row < 0 || !m.openFilePreview(row) {
+	opened, fetch := m.openFilePreview(row)
+	if row < 0 || !opened {
 		t.Fatal("click did not open preview")
 	}
+	fill(t, m, fetch)
 	m.terminalWidth = 80
 	m.height = 32
 	m.width = 80

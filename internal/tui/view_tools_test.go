@@ -9,7 +9,82 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+// preview is the detail panel as the pure builder makes it, over the records a
+// runtime would answer EventDetails with. The async path -- open, fetch, fill
+// -- is driven end to end in TestToolPreviewFetchesItsOwnRecords.
+func preview(m *model, seq uint64) *filePreview {
+	s := m.current()
+	subject := m.previewSubject(seq)
+	if subject == nil {
+		return nil
+	}
+	return previewFromRecords(s.Agent, subject, m.events[s.Id])
+}
+
+// update runs a message the way the program loop does, including the command it
+// answered with: a panel that opens by asking for its records is empty until
+// that command runs.
+func update(t *testing.T, m *model, msg tea.Msg) {
+	t.Helper()
+	_, cmd := m.Update(msg)
+	if cmd == nil {
+		return
+	}
+	switch v := cmd().(type) {
+	case toolPreviewLoaded:
+		m.acceptToolPreview(v)
+	case tea.BatchMsg:
+		for _, c := range v {
+			if loaded, ok := c().(toolPreviewLoaded); ok {
+				m.acceptToolPreview(loaded)
+			}
+		}
+	}
+}
+
+// fill runs the fetch a panel opened with and applies the answer, which is what
+// the program loop does with the command it was returned.
+func fill(t *testing.T, m *model, fetch tea.Cmd) {
+	t.Helper()
+	if fetch == nil {
+		t.Fatal("the panel opened without asking for its records")
+	}
+	msg, ok := fetch().(toolPreviewLoaded)
+	if !ok {
+		t.Fatal("the fetch did not answer with a tool's records")
+	}
+	m.acceptToolPreview(msg)
+}
+
+// details drives /details the way the program loop does: the newest tool is
+// chosen locally, its records are fetched, and the report is written when they
+// arrive.
+func details(t *testing.T, m *model) {
+	t.Helper()
+	cmd := m.toolDetails()
+	if cmd == nil {
+		return
+	}
+	loaded, ok := cmd().(toolDetailsLoaded)
+	if !ok {
+		t.Fatal("/details did not answer with a tool's records")
+	}
+	m.acceptToolDetails(loaded)
+}
+
+func openPreview(t *testing.T, m *model, seq uint64) *filePreview {
+	t.Helper()
+	opened, fetch := m.openPreviewSequence(seq)
+	if !opened {
+		t.Fatal("the panel did not open for", seq)
+	}
+	fill(t, m, fetch)
+	return m.filePreview
+}
 
 func toolViewModel() *model {
 	m := conversationModel()
@@ -41,7 +116,7 @@ func TestViewSelectsRenderedToolsAndFocusesPreview(t *testing.T) {
 	if m.toolSelector.seq != 5 {
 		t.Fatal("selected non-tool row")
 	}
-	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	update(t, m, tea.KeyMsg{Type: tea.KeyEnter})
 	if m.filePreview == nil || !m.filePreview.focused || m.filePreview.language != "main.go" || !strings.Contains(m.filePreview.source, "package main") {
 		t.Fatal("Read result not opened with focus")
 	}
@@ -64,9 +139,11 @@ func TestViewSelectsRenderedToolsAndFocusesPreview(t *testing.T) {
 }
 func TestPreviewMouseAndKeyboardSharePayloadAndBorders(t *testing.T) {
 	m := toolViewModel()
-	if !m.openPreviewSequence(2) {
+	opened, fetch := m.openPreviewSequence(2)
+	if !opened {
 		t.Fatal("open")
 	}
+	fill(t, m, fetch)
 	source := m.filePreview.source
 	if source != "package main" {
 		t.Fatal("Write should preview input")
@@ -98,7 +175,7 @@ func TestPreviewMouseAndKeyboardSharePayloadAndBorders(t *testing.T) {
 	}
 	m.viewCommand("/view")
 	m.Update(tea.KeyMsg{Type: tea.KeyHome})
-	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	update(t, m, tea.KeyMsg{Type: tea.KeyEnter})
 	if m.filePreview.source != source {
 		t.Fatal("keyboard preview differs")
 	}
@@ -115,7 +192,7 @@ func TestViewPreservesSelectionAsEventsArriveAndDoesNotCrossRuns(t *testing.T) {
 		t.Fatal("new events displaced selection")
 	}
 	m.events["s"] = append(m.events["s"], &api.Event{Seq: 100, RunId: "new-run", Kind: "tool_result", RequestId: "r", Payload: []byte(`{"content":"wrong run"}`)})
-	p := m.previewForSequence(5)
+	p := preview(m, 5)
 	if strings.Contains(p.source, "wrong run") {
 		t.Fatal("matched another run")
 	}
@@ -151,7 +228,7 @@ func TestViewCommandIsLocalAndResizeKeepsSelection(t *testing.T) {
 
 func TestToolPreviewInputOutputTabs(t *testing.T) {
 	m := toolViewModel()
-	m.openPreviewSequence(5)
+	openPreview(t, m, 5)
 	if m.filePreview.tab != 1 {
 		t.Fatal("Read should open output")
 	}
@@ -170,7 +247,7 @@ func TestToolPreviewInputOutputTabs(t *testing.T) {
 	if m.filePreview.tab != 1 || m.filePreview.offset != offset || !strings.Contains(m.filePreview.source, "package main") {
 		t.Fatal("output/scroll not restored")
 	}
-	m.openPreviewSequence(2)
+	openPreview(t, m, 2)
 	m.Update(tea.KeyMsg{Type: tea.KeyRight})
 	if m.filePreview.source != "written" {
 		t.Fatal("Write output hidden", m.filePreview.source)
@@ -185,7 +262,7 @@ func TestToolPreviewTabClicksInBothLayouts(t *testing.T) {
 	for _, width := range []int{80, 240} {
 		m := toolViewModel()
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 36})
-		m.openPreviewSequence(2)
+		openPreview(t, m, 2)
 		x, y := m.contentOffset()+2, m.view.Height+1+m.approvalHeight()+m.questionHeight()
 		w, h := max(1, m.width-4), m.previewHeight()
 		if side := m.previewSideWidth(); side > 0 {
@@ -225,7 +302,7 @@ func TestCodexPreviewTabsAndMissingPayloads(t *testing.T) {
 		{Seq: 2, RunId: "r", Kind: "tool_result", RequestId: "cmd", Payload: []byte(`{"item":{"type":"commandExecution","aggregatedOutput":"hello"}}`)},
 		{Seq: 3, RunId: "other", Kind: "tool_result", RequestId: "cmd", Payload: []byte(`{"item":{"type":"commandExecution","aggregatedOutput":"wrong run"}}`)},
 	}
-	p := m.previewForSequence(2)
+	p := preview(m, 2)
 	if p.source != "hello" {
 		t.Fatal(p.source)
 	}
@@ -234,7 +311,7 @@ func TestCodexPreviewTabsAndMissingPayloads(t *testing.T) {
 		t.Fatal(p)
 	}
 	m.events["s"] = m.events["s"][:1]
-	p = m.previewForSequence(1)
+	p = preview(m, 1)
 	if p.source != "echo hello" {
 		t.Fatal("pending input missing")
 	}
@@ -243,12 +320,74 @@ func TestCodexPreviewTabsAndMissingPayloads(t *testing.T) {
 		t.Fatal(p.source)
 	}
 	m.events["s"] = []*api.Event{{Seq: 4, Kind: "tool_result", Text: "orphan output"}}
-	p = m.previewForSequence(4)
+	p = preview(m, 4)
 	if p.source != "orphan output" {
 		t.Fatal(p.source)
 	}
 	p.selectTab(0)
-	if !strings.Contains(p.source, "not available") {
-		t.Fatal("missing input not explained")
+	if !strings.Contains(p.source, "not retained") {
+		t.Fatal("missing input not explained", p.source)
+	}
+}
+
+// A row carries a tool's name, shape and state; the bytes it ran and produced
+// were never on it. So the panel opens on the click -- which is what answers
+// whether the click was consumed -- and asks the runtime for the records.
+func TestToolPreviewFetchesItsOwnRecords(t *testing.T) {
+	m := toolViewModel()
+	c := m.client.(*recordingClient)
+	opened, fetch := m.openPreviewSequence(5)
+	if !opened || fetch == nil {
+		t.Fatal("the panel did not open and ask")
+	}
+	// Opened and visibly waiting, rather than opened empty or not at all.
+	if p := m.filePreview; p == nil || p.seq != 5 || !strings.Contains(p.source, "Loading") {
+		t.Fatalf("no waiting panel: %+v", p)
+	}
+	fill(t, m, fetch)
+	if !strings.Contains(m.filePreview.source, "package main") {
+		t.Fatal("the records did not reach the panel:", m.filePreview.source)
+	}
+	if !m.filePreview.focused {
+		t.Fatal("filling the panel took its focus")
+	}
+
+	// A reader who moved on before the answer arrived keeps the panel they are
+	// looking at: the reply names the tool it is about.
+	opened, fetch = m.openPreviewSequence(2)
+	if !opened {
+		t.Fatal("reopen")
+	}
+	stale := fetch()
+	m.filePreview.seq = 5
+	m.acceptToolPreview(stale.(toolPreviewLoaded))
+	if m.filePreview.source != "Loading…" {
+		t.Fatal("an answer for another tool was applied:", m.filePreview.source)
+	}
+
+	// A row that is not a tool is not inspectable, and saying so synchronously
+	// is what lets the click fall through to text selection.
+	if opened, cmd := m.openPreviewSequence(1); opened || cmd != nil {
+		t.Fatal("an input row opened a tool panel")
+	}
+
+	// The failure is reported in the panel that was opened for it.
+	c.detailsErr = status.Error(codes.Unavailable, "runtime is restarting")
+	_, fetch = m.openPreviewSequence(5)
+	fill(t, m, fetch)
+	if !strings.Contains(m.filePreview.source, "runtime is restarting") || m.filePreview.tabs != nil {
+		t.Fatal("the error did not reach the panel:", m.filePreview.source)
+	}
+
+	// /details reports the same way.
+	c.detailsErr = nil
+	details(t, m)
+	if !strings.Contains(m.localReports["s"], "package main") {
+		t.Fatal("/details lost the payload:", m.localReports["s"])
+	}
+	c.detailsErr = status.Error(codes.NotFound, "event is no longer retained")
+	details(t, m)
+	if !strings.Contains(m.localReports["s"], "no longer retained") {
+		t.Fatal("/details did not report the failure:", m.localReports["s"])
 	}
 }

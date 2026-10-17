@@ -107,11 +107,14 @@ type filePreview struct {
 	tabs                             *[2]previewTab
 	tab                              int
 	session, title, source, language string
-	offset                           int
-	focused                          bool
-	hover                            string
-	rendered                         string
-	width                            int
+	// The journal coordinate this panel is about, so a reply that arrives after
+	// the reader moved on is discarded rather than shown for the wrong tool.
+	seq      uint64
+	offset   int
+	focused  bool
+	hover    string
+	rendered string
+	width    int
 }
 
 func (p *filePreview) selectTab(tab int) {
@@ -255,10 +258,10 @@ func (m *model) previewRows(width, height int) string {
 	return screen(strings.Join(body, "\n"), width, height)
 }
 
-func (m *model) openFilePreview(y int) bool {
+func (m *model) openFilePreview(y int) (bool, tea.Cmd) {
 	index := m.view.YOffset + y
 	if index < 0 || index >= len(m.historyPositions) {
-		return false
+		return false, nil
 	}
 	return m.openPreviewSequence(uint64(math.Floor(m.historyPositions[index])))
 }

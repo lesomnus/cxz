@@ -167,7 +167,7 @@ func TestToolResultCompactAndDetails(t *testing.T) {
 	if strings.Contains(text, "TAIL") || strings.Contains(text, "\n") || !strings.Contains(text, "/details") {
 		t.Fatal(text)
 	}
-	m.toolDetails()
+	details(t, m)
 	if !strings.Contains(m.localReports["s"], "TAIL") {
 		t.Fatal("details lost")
 	}
