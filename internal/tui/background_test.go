@@ -230,3 +230,57 @@ func TestBackgroundSnapshotCancelsWithConversation(t *testing.T) {
 		t.Fatal("background request survived session switch")
 	}
 }
+
+// Reported from use: a finished background job kept a hollow marker for the
+// rest of the conversation. codex says a job is done by listing no tasks --
+// there is no notification to follow -- so the row sat in the state that means
+// "has not started yet" forever.
+//
+// A job that ended without saying how is neither pending nor judged, and gets
+// the marker that says exactly that.
+func TestFinishedCodexBackgroundJobStopsReadingAsPending(t *testing.T) {
+	m := conversationModel()
+	m.current().Agent = "codex"
+	launch := []*api.Event{
+		{Seq: 1, RunId: "run", Kind: "tool_call", RequestId: "tool", Text: "Bash", Payload: []byte(`{"item":{"type":"commandExecution","command":"/usr/bin/zsh -lc 'python3 build.py'"}}`)},
+		bgEvent(2, `{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[{"task_id":"bg","tool_use_id":"tool"}]}`),
+		{Seq: 3, RunId: "run", Kind: "tool_result", RequestId: "tool", Payload: []byte(`{"item":{"type":"commandExecution","status":"completed","exitCode":0}}`)},
+	}
+	seed(m, "s", launch...)
+	m.render()
+	if text := ansi.Strip(m.view.View()); !strings.Contains(text, "• Bash") || !strings.Contains(text, "· background") {
+		t.Fatal("a running job did not read as working", text)
+	}
+
+	// The job is gone from the list, which is all codex ever says about it.
+	ended := append(append([]*api.Event{}, launch...),
+		bgEvent(4, `{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[]}`))
+	seed(m, "s", ended...)
+	m.render()
+	text := ansi.Strip(m.view.View())
+	if strings.Contains(text, "○ Bash") {
+		t.Fatal("a finished job still reads as pending", text)
+	}
+	if strings.Contains(text, "✓ Bash") || strings.Contains(text, "× Bash") {
+		t.Fatal("an unreported outcome was invented", text)
+	}
+	if !strings.Contains(text, "▫ Bash") || !strings.Contains(text, "· background") {
+		t.Fatal("the ended job lost its marker or its badge", text)
+	}
+
+	// And it stays there: nothing further arrives, and a rebuild must not walk
+	// it back to pending.
+	m.render()
+	if again := ansi.Strip(m.view.View()); again != text {
+		t.Fatal("the row changed without anything arriving")
+	}
+
+	// A provider that does report an outcome is still believed.
+	failed := append(append([]*api.Event{}, ended...),
+		bgEvent(5, `{"type":"system","subtype":"task_notification","task_id":"bg","status":"failed","summary":"exit 1"}`))
+	seed(m, "s", failed...)
+	m.render()
+	if text := ansi.Strip(m.view.View()); !strings.Contains(text, "× Bash") {
+		t.Fatal("a reported failure was ignored", text)
+	}
+}

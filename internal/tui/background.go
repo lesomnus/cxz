@@ -229,3 +229,24 @@ func (m *model) backgroundReport() string {
 	}
 	return strings.Join(append(lines, "", "Output paths are metadata only; files are not fetched. Raw events remain in the journal."), "\n")
 }
+
+// A background job outlives the call that started it: the tool returned when
+// the job was launched, so the row's own state says only that the launch
+// worked. What the job then did is the provider's to report, and these two say
+// whether it did.
+//
+// A job that is merely no longer listed is neither: it ended, and nothing says
+// how. codex reports a finished job exactly that way -- by listing no tasks --
+// and never follows with an outcome, so that is a terminal state rather than a
+// step on the way to one.
+func backgroundFailed(status string) bool {
+	switch status {
+	case "failed", "stopped", "cancelled", "canceled", "error":
+		return true
+	}
+	return false
+}
+
+func backgroundSucceeded(status string) bool {
+	return status == "completed" || status == "done" || status == "succeeded"
+}

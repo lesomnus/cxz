@@ -89,6 +89,13 @@ func toolSummaryBody(label *api.ToolSummary, width int, status string) string {
 		marker, style = "✓", accent
 	case "failed", "denied", "declined", "canceled", "cancelled", "stopped", "interrupted":
 		marker, style = "×", failure
+	case "ended":
+		// A background job that is no longer running and never said how it
+		// went. Neither circle fits -- it is not waiting and not working -- and
+		// neither judgement is ours to make: codex reports a finished job by
+		// listing no tasks, which says it ended and nothing else. A square says
+		// that a different kind of thing finished, unjudged.
+		marker, style = "▫", muted
 	}
 	prefix := style.Render(marker)
 	positive := func(n int) string { return accent.Render(fmt.Sprintf("+%d", n)) }

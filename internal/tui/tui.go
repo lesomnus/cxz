@@ -794,12 +794,26 @@ func (m *model) render() {
 				background := false
 				if task, ok := backgroundTools[key]; ok {
 					background = true
-					state = task.Status
-					if task.Active {
+					// A background job outlives the call that started it: the
+					// tool returned when the job was launched, so the row is
+					// already settled and only the job's own fate can add to
+					// it. While it runs, say so; if it ended badly, say that.
+					//
+					// Otherwise the row stands. A job that is simply gone --
+					// codex reports that by listing no tasks, which leaves the
+					// ones it knew "inactive" -- ended, and cxz cannot tell
+					// whether it ended well. Drawing that as pending left a
+					// finished job showing a hollow marker for the rest of the
+					// conversation.
+					switch {
+					case task.Active:
 						state = "working"
-					}
-					if !task.Active && (state == "working" || state == "running") {
-						state = "pending"
+					case backgroundFailed(task.Status):
+						state = "failed"
+					case backgroundSucceeded(task.Status):
+						state = "completed"
+					default:
+						state = "ended"
 					}
 				}
 				text = indentBlock(m.cachedToolBody(s.Agent, e, max(1, m.view.Width), state, background))
