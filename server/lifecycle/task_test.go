@@ -59,7 +59,7 @@ func taskStack(t *testing.T) (*taskFixture, resource.Server, *sql.DB) {
 		f.sessions = append(f.sessions, &api.Session{Id: id, ProjectId: f.p.Id, Workspace: f.p.Workspace, Title: id, CreateId: id, Agent: "codex", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, AuthBinding: accounts.BindingID(f.p.Id, "work", accounts.ProjectLocalOAuth), State: "idle", RunId: id + "-run", CreatedAt: time.Now().UnixMilli()})
 	}
 	f.s = f.sessions[0]
-	stack, err := Build(t.Context(), db, f)
+	stack, err := Build(t.Context(), db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func TestTaskPersistenceAndPurgedSessionReference(t *testing.T) {
 	f.lock.Lock()
 	f.sessions = nil
 	f.lock.Unlock()
-	rebuilt, err := Build(ctx, db, f)
+	rebuilt, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func TestTaskManagerForwardsWithoutShadowStorage(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	manager, err := Build(ctx, db, managerFixture)
+	manager, err := Build(ctx, db, managerFixture, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

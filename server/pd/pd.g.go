@@ -3901,6 +3901,16 @@ func (s interceptProject) GetInstallationVersion(ctx context.Context, req *resou
 		resource.ProjectService_GetInstallationVersion_FullMethodName, req, s.ProjectServiceServer.GetInstallationVersion)
 }
 
+func (s interceptProject) Diagnostics(ctx context.Context, req *resource.DiagnosticsRequest) (*resource.DiagnosticsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Diagnostics_FullMethodName, req, s.ProjectServiceServer.Diagnostics)
+}
+
+func (s interceptProject) CaptureDiagnostics(ctx context.Context, req *resource.CaptureDiagnosticsRequest) (*resource.DiagnosticsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_CaptureDiagnostics_FullMethodName, req, s.ProjectServiceServer.CaptureDiagnostics)
+}
+
 func (s interceptProject) AuxConfig(ctx context.Context, req *resource.AuxConfigRequest) (*resource.AuxConfigReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_AuxConfig_FullMethodName, req, s.ProjectServiceServer.AuxConfig)
@@ -5390,6 +5400,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().GetInstallationVersion(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_Diagnostics_FullMethodName:
+		v := &resource.DiagnosticsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().Diagnostics(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_CaptureDiagnostics_FullMethodName:
+		v := &resource.CaptureDiagnosticsRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().CaptureDiagnostics(ctx, v)
 		if err != nil {
 			return nil, err
 		}

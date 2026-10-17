@@ -42,7 +42,7 @@ func TestAccountStatusAndLogoutResolveRegisteredAccount(t *testing.T) {
 	}
 	defer db.Close()
 	f := &accountStatusFixture{fixture: &fixture{p: &api.Project{Id: "p"}, s: &api.Session{Id: "s"}}}
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

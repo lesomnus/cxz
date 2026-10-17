@@ -48,7 +48,7 @@ func TestEditorLifecycleRPCRejectsDeletedProjectsAndInvalidFrames(t *testing.T) 
 	}
 	defer db.Close()
 	fixture := &editorRuntimeFixture{countedRuntime: &countedRuntime{fixture: &fixture{p: &api.Project{Id: "project", Name: "workspace", Workspace: "/workspace", State: "running"}}}, closed: make(chan struct{}, 4)}
-	stack, err := Build(ctx, db, fixture)
+	stack, err := Build(ctx, db, fixture, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
