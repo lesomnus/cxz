@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { SANDBOX_SESSIONS } from "./fixture-shape";
 
 test.use({
   viewport: { width: 1440, height: 1000 },
@@ -129,7 +130,7 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
     .filter({ hasText: "Secondary project" })
     .click();
   await expect(page.locator(".session-tree-group")).toHaveCount(2);
-  await expect(page.locator(".tree-session")).toHaveCount(8);
+  await expect(page.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS);
   await page.locator(".tree-session").filter({ hasText: "session-8" }).click();
   await expect(message).toBeVisible();
   await page.screenshot({

@@ -15,17 +15,20 @@ func TestPurgePlanAndExecutionStayInOneSandboxSession(t *testing.T) {
 	x := &Sessions{S: s}
 	before := len(history(t, x, "session-1"))
 	other := len(history(t, x, "session-2"))
+	// Relative to what the fixture seeds, so adding a scenario is not a failing
+	// test.
+	seeded := len(s.sessions)
 	request := resource.SessionPurgeRequest_builder{Ref: ref("session-1"), DryRun: proto.Bool(true)}.Build()
 	plan, err := x.Purge(t.Context(), request)
 	if err != nil || !plan.GetDryRun() || len(plan.GetTargets()) != 2 || plan.GetTargets()[0].GetBytes() <= 0 {
 		t.Fatalf("plan: %v %v", plan, err)
 	}
-	if len(history(t, x, "session-1")) != before || len(s.sessions) != 8 {
+	if len(history(t, x, "session-1")) != before || len(s.sessions) != seeded {
 		t.Fatal("dry run mutated sandbox")
 	}
 	request.SetDryRun(false)
 	deleted, err := x.Purge(t.Context(), request)
-	if err != nil || deleted.GetDryRun() || len(s.sessions) != 7 {
+	if err != nil || deleted.GetDryRun() || len(s.sessions) != seeded-1 {
 		t.Fatalf("purge: %v %v", deleted, err)
 	}
 	_, err = x.Get(t.Context(), resource.SessionGetRequest_builder{Ref: ref("session-1")}.Build())
