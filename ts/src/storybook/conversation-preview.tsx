@@ -16,7 +16,7 @@ import {
   type WorkHistory,
 } from "#src/features/session/conversation/transcript.tsx";
 import { EventView } from "#src/features/session/conversation/event-view.tsx";
-import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
+import { transcriptRows } from "#src/features/session/model/tool-activity.ts";
 import { attachSummaries } from "#src/features/session/model/session-aux.ts";
 import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
 import type { LookupPaths } from "#src/features/session/composer/composer-paths.ts";
@@ -134,7 +134,7 @@ export function PreviewTranscript({
   loadDetails?: LoadEventDetails;
   workHistory?: WorkHistory;
 }) {
-  const projected = transcriptEvents(events);
+  const projected = transcriptRows(events);
   const summaries = attachSummaries(projected.events, aux);
   const [jump, setJump] = useState<string>();
   return (

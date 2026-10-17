@@ -6,7 +6,6 @@ import { SessionHistory, type HistoryPage } from "./session-history";
 import { mergeEvents, pendingAfter } from "./journal";
 import { mergeMetadata } from "./session-metadata";
 import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
-import { transcriptEvents } from "./tool-activity";
 import type { ConversationLoad } from "../conversation/conversation-loading";
 import type { TranscriptViewport } from "../conversation/virtual-messages";
 import { CachedSessionAux } from "./session-aux-cache";
