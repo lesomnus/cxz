@@ -2,7 +2,20 @@ import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { SessionHistory, type HistoryPage } from "./session-history";
+import {
+  SessionHistory,
+  ROW_STALL_MS,
+  type HistoryPage,
+} from "./session-history";
+import { alive } from "#src/shared/api/stream-deadline.ts";
+
+/**
+ * How long the record stream may say nothing before it is reported as stalled.
+ * The same two missed beats the row stream allows: both are heartbeated by the
+ * same runtime on the same interval, so a reader that treated them differently
+ * would be guessing about one of them.
+ */
+const RECORD_STALL_MS = ROW_STALL_MS;
 import { mergeEvents, pendingAfter } from "./journal";
 import { mergeMetadata } from "./session-metadata";
 import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
@@ -518,18 +531,26 @@ export class CachedConversation {
       // next connect retires it -- because frames already in flight are worth
       // applying, and a reader that drops them shows less than it was sent.
       // A race only catches a stream that ends or throws, never one that goes
-      // quiet while open; that is why the row stream reports its own silence
-      // rather than leaving it to be noticed here. See cxz#188 and ROW_STALL_MS.
+      // quiet while open. So each stream reports its own silence: the runtime
+      // heartbeats an idle one, and reading it with a deadline turns that
+      // silence into the failure a reconnect already handles. See cxz#188 for
+      // the row stream and cxz#191 for this one.
       await Promise.race([
         (async () => {
-          for await (const e of this.client.sessions.events(
-            {
-              ref: ref(this.id),
-              afterSeq: this.cursor,
-              clientId: this.client.clientId,
-            },
-            { signal },
-          )) {
+          const records = alive(
+            this.client.sessions.events(
+              {
+                ref: ref(this.id),
+                afterSeq: this.cursor,
+                clientId: this.client.clientId,
+              },
+              { signal },
+            ),
+            (e) => e.heartbeat,
+            RECORD_STALL_MS,
+            "The session stream stopped responding.",
+          );
+          for await (const e of records) {
             if (signal.aborted) return;
             this.receive(e);
           }

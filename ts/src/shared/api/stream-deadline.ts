@@ -37,3 +37,38 @@ export function readBy<T>(
 export function release(stream: { return?: () => Promise<unknown> }) {
   void stream.return?.().catch(() => {});
 }
+
+/**
+ * alive reads a stream that says so. A sender heartbeats when it has nothing
+ * to send, because only it knows whether silence means idle or stalled; this
+ * yields the real frames, drops the heartbeats, and throws once two of them
+ * are missed.
+ *
+ * The deadline is armed by the first heartbeat rather than by opening the
+ * stream. A sender that predates them is legitimately silent, and timing it
+ * out would reconnect a healthy stream forever.
+ */
+export async function* alive<T>(
+  source: AsyncIterable<T>,
+  beat: (value: T) => boolean,
+  stall: number,
+  what: string,
+): AsyncGenerator<T> {
+  const stream = source[Symbol.asyncIterator]();
+  let armed = false;
+  try {
+    for (;;) {
+      const next = await (armed
+        ? readBy(stream.next(), stall, what)
+        : stream.next());
+      if (next.done) return;
+      if (beat(next.value)) {
+        armed = true;
+        continue;
+      }
+      yield next.value;
+    }
+  } finally {
+    release(stream);
+  }
+}

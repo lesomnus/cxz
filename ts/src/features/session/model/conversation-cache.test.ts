@@ -6,6 +6,7 @@ import {
   SessionEventSchema,
   type SessionEvent,
 } from "#gen/cxz/session_pb";
+import { ROW_STALL_MS } from "./session-history";
 import {
   ConversationCache,
   MAX_IDLE_CONVERSATIONS,
@@ -570,4 +571,34 @@ it("includes structured summary bodies in the cache byte budget", async () => {
   await vi.waitFor(() => expect(a.feed.snapshot().events.at(-1)!.seq).toBe(3n));
   expect(a.feed.snapshot().events).toHaveLength(1);
   expect(a.feed.snapshot().events[0].seq).toBe(3n);
+});
+
+// Both live streams report their own silence, because a race only catches one
+// that ends or throws. The record stream is the quieter of the two -- a session
+// doing nothing writes nothing -- and the one everything outside the transcript
+// is derived from, so a stall that went unnoticed would freeze execution state,
+// pending approvals and quota while rows kept arriving. See cxz#191.
+it("reconnects when the record stream stops saying it is alive", async () => {
+  vi.useFakeTimers();
+  const f = fixture();
+  const a = await f.open("a");
+  try {
+    expect(f.sessions.events).toHaveBeenCalledTimes(1);
+    const first = f.signals.get("a")!;
+    // Heartbeats are not records: nothing is delivered, and the deadline is
+    // armed only because one arrived.
+    f.record("a", create(SessionEventSchema, { heartbeat: true }));
+    await vi.advanceTimersByTimeAsync(ROW_STALL_MS - 1);
+    expect(a.feed.snapshot().status).toBe("Live");
+    expect(a.feed.snapshot().events.map((e) => e.seq)).toEqual([1n]);
+    // Past the deadline the stream is reported and reopened, which is the
+    // reconnect any stream failure gets -- there is nothing special to do with
+    // silence once it has been turned into an error.
+    await vi.advanceTimersByTimeAsync(1 + 2000);
+    await vi.waitFor(() => expect(f.sessions.events).toHaveBeenCalledTimes(2));
+    expect(first.aborted).toBe(true);
+    await vi.waitFor(() => expect(a.feed.snapshot().status).toBe("Live"));
+  } finally {
+    a.stop();
+  }
 });

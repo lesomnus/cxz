@@ -1201,6 +1201,7 @@ type Event struct {
 	Payload       []byte                 `protobuf:"bytes,8,opt,name=payload,proto3" json:"payload,omitempty"`
 	Response      *ResponseMetadata      `protobuf:"bytes,9,opt,name=response,proto3" json:"response,omitempty"`
 	ToolSummary   *ToolSummary           `protobuf:"bytes,10,opt,name=tool_summary,json=toolSummary,proto3" json:"tool_summary,omitempty"`
+	Heartbeat     bool                   `protobuf:"varint,11,opt,name=heartbeat,proto3" json:"heartbeat,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1303,6 +1304,13 @@ func (x *Event) GetToolSummary() *ToolSummary {
 		return x.ToolSummary
 	}
 	return nil
+}
+
+func (x *Event) GetHeartbeat() bool {
+	if x != nil {
+		return x.Heartbeat
+	}
+	return false
 }
 
 type ToolSummary struct {
@@ -7257,7 +7265,7 @@ const file_cxz_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1b\n" +
 	"\tafter_seq\x18\x02 \x01(\x04R\bafterSeq\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\rR\x05limit\"\xc1\x02\n" +
+	"\x05limit\x18\x04 \x01(\rR\x05limit\"\xdf\x02\n" +
 	"\x05Event\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
@@ -7271,7 +7279,8 @@ const file_cxz_proto_rawDesc = "" +
 	"\apayload\x18\b \x01(\fR\apayload\x129\n" +
 	"\bresponse\x18\t \x01(\v2\x1d.cxz.runtime.ResponseMetadataR\bresponse\x12;\n" +
 	"\ftool_summary\x18\n" +
-	" \x01(\v2\x18.cxz.runtime.ToolSummaryR\vtoolSummary\"\xf6\x01\n" +
+	" \x01(\v2\x18.cxz.runtime.ToolSummaryR\vtoolSummary\x12\x1c\n" +
+	"\theartbeat\x18\v \x01(\bR\theartbeat\"\xf6\x01\n" +
 	"\vToolSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05shell\x18\x02 \x01(\tR\x05shell\x12\x18\n" +
