@@ -52,6 +52,13 @@ export function parseSettings(raw: string): SettingsDocument {
     throw new Error(t("Settings must be a JSON object."));
   const value = document as SettingsDocument;
   if (
+    Object.hasOwn(value, "session.panel.hideStopped") &&
+    typeof value["session.panel.hideStopped"] !== "boolean"
+  )
+    throw new Error(
+      t("{name}: Enter true or false.", { name: "session.panel.hideStopped" }),
+    );
+  if (
     Object.hasOwn(value, "voice.processLocally") &&
     typeof value["voice.processLocally"] !== "boolean"
   )
