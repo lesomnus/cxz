@@ -2,20 +2,8 @@ import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { Code, ConnectError } from "@connectrpc/connect";
-import {
-  SessionHistory,
-  ROW_STALL_MS,
-  type HistoryPage,
-} from "./session-history";
-import { alive } from "#src/shared/api/stream-deadline.ts";
-
-/**
- * How long the record stream may say nothing before it is reported as stalled.
- * The same two missed beats the row stream allows: both are heartbeated by the
- * same runtime on the same interval, so a reader that treated them differently
- * would be guessing about one of them.
- */
-const RECORD_STALL_MS = ROW_STALL_MS;
+import { SessionHistory, type HistoryPage } from "./session-history";
+import { alive, STREAM_STALL_MS } from "#src/shared/api/stream-deadline.ts";
 import { mergeEvents, pendingAfter } from "./journal";
 import { mergeMetadata } from "./session-metadata";
 import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
@@ -547,7 +535,7 @@ export class CachedConversation {
               { signal },
             ),
             (e) => e.heartbeat,
-            RECORD_STALL_MS,
+            STREAM_STALL_MS,
             "The session stream stopped responding.",
           );
           for await (const e of records) {

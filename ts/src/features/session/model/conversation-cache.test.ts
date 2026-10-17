@@ -1,12 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { afterEach, expect, it, vi } from "vitest";
+import { STREAM_STALL_MS } from "#src/shared/api/stream-deadline.ts";
 import {
   SessionSchema,
   SessionEventSchema,
   type SessionEvent,
 } from "#gen/cxz/session_pb";
-import { ROW_STALL_MS } from "./session-history";
 import {
   ConversationCache,
   MAX_IDLE_CONVERSATIONS,
@@ -588,7 +588,7 @@ it("reconnects when the record stream stops saying it is alive", async () => {
     // Heartbeats are not records: nothing is delivered, and the deadline is
     // armed only because one arrived.
     f.record("a", create(SessionEventSchema, { heartbeat: true }));
-    await vi.advanceTimersByTimeAsync(ROW_STALL_MS - 1);
+    await vi.advanceTimersByTimeAsync(STREAM_STALL_MS - 1);
     expect(a.feed.snapshot().status).toBe("Live");
     expect(a.feed.snapshot().events.map((e) => e.seq)).toEqual([1n]);
     // Past the deadline the stream is reported and reopened, which is the

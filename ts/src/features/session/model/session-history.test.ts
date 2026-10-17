@@ -1,12 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { describe, expect, it, vi } from "vitest";
+import { STREAM_STALL_MS } from "#src/shared/api/stream-deadline.ts";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
 import {
   SessionHistory,
   HISTORY_PAGE_SIZE,
   NATIVE_HISTORY_PAGE_SIZE,
-  ROW_STALL_MS,
 } from "./session-history";
 import type { Connection } from "#src/shared/api/connection.ts";
 const event = (seq: bigint, kind = "input") =>
@@ -96,7 +96,7 @@ describe("historical transcript transport", () => {
         for await (const row of s.rows(0n, signal())) seen.push(row.updated);
       })();
       const reported = expect(read).rejects.toThrow("stopped responding");
-      await vi.advanceTimersByTimeAsync(ROW_STALL_MS);
+      await vi.advanceTimersByTimeAsync(STREAM_STALL_MS);
       await reported;
       expect(seen).toEqual([4n]);
     } finally {
@@ -122,7 +122,7 @@ describe("historical transcript transport", () => {
         () => (settled = true),
         () => (settled = true),
       );
-      await vi.advanceTimersByTimeAsync(ROW_STALL_MS * 10);
+      await vi.advanceTimersByTimeAsync(STREAM_STALL_MS * 10);
       await Promise.race([read, Promise.resolve()]);
       expect(settled).toBe(false);
     } finally {

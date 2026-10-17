@@ -39,6 +39,14 @@ export function release(stream: { return?: () => Promise<unknown> }) {
 }
 
 /**
+ * How long a heartbeated stream may say nothing before it is reported. Two
+ * missed beats of the runtime's own interval, and it lives here rather than
+ * beside either reader: both streams of a conversation are heartbeated by the
+ * same runtime, so a reader that chose its own number would be guessing.
+ */
+export const STREAM_STALL_MS = 30_000;
+
+/**
  * alive reads a stream that says so. A sender heartbeats when it has nothing
  * to send, because only it knows whether silence means idle or stalled; this
  * yields the real frames, drops the heartbeats, and throws once two of them
