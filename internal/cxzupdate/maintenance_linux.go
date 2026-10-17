@@ -55,10 +55,32 @@ func (g *Gate) blocked() bool {
 	return g.err != nil || g.held.ID != "" && time.Now().Before(g.held.Until)
 }
 func (g *Gate) Busy() bool { g.mu.RLock(); defer g.mu.RUnlock(); return g.blocked() }
+
+// mutating decides what an update may refuse. Reading is always allowed: a
+// conversation stays legible while its runtime is replaced, and the reader is
+// not the thing an update has to serialize with.
+//
+// Fail closed, so a method added later is refused until it is classified. The
+// cost of that mistake is an input rejected during an update; the cost of the
+// other mistake is a write racing the replacement.
+//
+// Before cxz#204 a refusal was a wait rather than an answer -- the readiness
+// sweep held the gate's lock while it ran -- so a read misfiled here only
+// looked slow. Now it would fail, which is why the reads are named.
 func mutating(method string) bool {
 	name := method[strings.LastIndex(method, "/")+1:]
 	switch name {
-	case "Get", "List", "Watch", "Events", "History", "Background", "Paths", "Memory", "Logs":
+	case // The catalog and what a session is doing.
+		"Get", "List", "Watch", "Events", "History", "Projects",
+		// Reading a conversation, and the records behind a row.
+		"Transcript", "Rows", "EventDetails", "Search", "Background",
+		"GetHistoryFloor", "GetHistoryPolicy", "Models",
+		// Reading what is configured or installed.
+		"Paths", "Memory", "Logs", "McpLogs", "McpSessions", "GetMcpServers",
+		"GetSkills", "FileMappings", "Devcontainer", "RenderDevcontainer",
+		"EngineStatus", "GetEngineInfo", "GetInstallationVersion",
+		// Reading auxiliary state, which is a model task's own status.
+		"AuxStatus", "AuxEvents", "AuxConfig", "AuxModels", "AuxLoginInfo":
 		return false
 	}
 	return true
@@ -85,26 +107,43 @@ func (g *Gate) Stream(srv any, stream grpc.ServerStream, info *grpc.StreamServer
 	}
 	return next(srv, stream)
 }
+
+// hold claims the server for an update, then checks that the server is quiet
+// enough to take it. That order matters: the check asks every project, and
+// every session within it, whether it is mid-turn, which takes as long as the
+// slowest of them.
+//
+// Holding the gate's own lock across that check made every mutating RPC wait
+// for it -- not refused, waited -- so a sweep that took ten seconds stopped the
+// server for ten seconds, every time the rollout ticked. The lease refuses
+// input by itself, and refusing is an answer a client can act on. See cxz#204.
 func (g *Gate) hold(id string, check func() error) error {
 	if len(id) != 24 || strings.ContainsAny(id, "/\\ \n") {
 		return fmt.Errorf("invalid update transaction")
 	}
 	g.mu.Lock()
-	defer g.mu.Unlock()
 	if g.err != nil {
+		g.mu.Unlock()
 		return fmt.Errorf("invalid maintenance lease: %w", g.err)
 	}
 	if g.blocked() && g.held.ID != id {
+		g.mu.Unlock()
 		return fmt.Errorf("another update owns this server")
-	}
-	if e := check(); e != nil {
-		return e
 	}
 	l := lease{ID: id, Until: time.Now().Add(10 * time.Minute)}
 	if e := core.WriteJSON(filepath.Join(g.root, "run", "update-lease.json"), l); e != nil {
+		g.mu.Unlock()
 		return e
 	}
 	g.held = l
+	g.mu.Unlock()
+	// From here input is refused, so nothing is waiting on this check.
+	if e := check(); e != nil {
+		if x := g.release(id); x != nil {
+			return fmt.Errorf("%w (and the lease could not be released: %v)", e, x)
+		}
+		return e
+	}
 	return nil
 }
 func (g *Gate) release(id string) error {

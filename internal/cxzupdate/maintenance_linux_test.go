@@ -100,3 +100,86 @@ func TestValidSessionBinaryDoesNotCollideWithToolsExecutable(t *testing.T) {
 		}
 	}
 }
+
+// An update refuses input, not reading. A conversation stays legible while its
+// runtime is replaced, and the sweep that decides whether an update may start
+// asks every session -- so anything misfiled as a mutation is refused for as
+// long as that takes. See cxz#204.
+func TestHeldGateRefusesInputAndStillAnswersReads(t *testing.T) {
+	root := t.TempDir()
+	if e := os.MkdirAll(filepath.Join(root, "run"), 0700); e != nil {
+		t.Fatal(e)
+	}
+	g := NewGate(root)
+	if e := g.hold(core.ID(), func() error { return nil }); e != nil {
+		t.Fatal(e)
+	}
+	reads := []string{
+		"Get", "List", "Watch", "Events", "History", "Projects",
+		"Transcript", "Rows", "EventDetails", "Search", "Background",
+		"GetHistoryFloor", "GetHistoryPolicy", "Models",
+		"AuxStatus", "AuxEvents",
+	}
+	for _, name := range reads {
+		served := false
+		_, e := g.Unary(context.Background(), nil, &grpc.UnaryServerInfo{FullMethod: "/cxz.SessionService/" + name}, func(context.Context, any) (any, error) {
+			served = true
+			return nil, nil
+		})
+		if e != nil || !served {
+			t.Fatalf("%s was refused during an update: %v", name, e)
+		}
+	}
+	for _, name := range []string{"Send", "Reply", "Resume", "Attach", "PutSecretFile"} {
+		if _, e := g.Unary(context.Background(), nil, &grpc.UnaryServerInfo{FullMethod: "/cxz.SessionService/" + name}, func(context.Context, any) (any, error) {
+			t.Fatalf("%s was accepted during an update", name)
+			return nil, nil
+		}); status.Code(e) != codes.Unavailable {
+			t.Fatalf("%s was not refused: %v", name, e)
+		}
+	}
+}
+
+// The lease is taken before the readiness sweep runs, so input is refused
+// while it runs rather than queued behind it. Holding the gate's lock across
+// the sweep stopped the server for as long as the slowest session took to
+// answer, every time the rollout ticked.
+func TestLeaseIsHeldWhileReadinessIsChecked(t *testing.T) {
+	root := t.TempDir()
+	if e := os.MkdirAll(filepath.Join(root, "run"), 0700); e != nil {
+		t.Fatal(e)
+	}
+	g := NewGate(root)
+	id := core.ID()
+	refused := make(chan error, 1)
+	if e := g.hold(id, func() error {
+		// Mid-sweep: an input must be answered, and the answer must be no.
+		_, e := g.Unary(context.Background(), nil, &grpc.UnaryServerInfo{FullMethod: "/cxz.SessionService/Send"}, func(context.Context, any) (any, error) {
+			return nil, fmt.Errorf("input was accepted during the sweep")
+		})
+		refused <- e
+		return nil
+	}); e != nil {
+		t.Fatal(e)
+	}
+	if e := <-refused; status.Code(e) != codes.Unavailable {
+		t.Fatal("input was not refused while the sweep ran:", e)
+	}
+
+	// A sweep that says no gives the lease back, so the next attempt is not
+	// told that another update owns the server.
+	if e := g.release(id); e != nil {
+		t.Fatal(e)
+	}
+	next := core.ID()
+	want := fmt.Errorf("session s: mid-turn")
+	if e := g.hold(next, func() error { return want }); e == nil || !strings.Contains(e.Error(), "mid-turn") {
+		t.Fatal("the sweep's reason was lost:", e)
+	}
+	if g.Busy() {
+		t.Fatal("a refused update kept the server held")
+	}
+	if _, e := os.Stat(filepath.Join(root, "run", "update-lease.json")); !os.IsNotExist(e) {
+		t.Fatal("the lease file outlived the refused update")
+	}
+}
