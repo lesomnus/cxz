@@ -25,16 +25,14 @@ func FromEvents(events []*api.Event, r *api.TranscriptRequest) (*api.TranscriptR
 	for _, e := range events {
 		if e.Seq <= out.SnapshotSeq {
 			projection.Apply(e)
-			if slices.Contains([]string{"models", "usage", "compact", "turn_end"}, e.Kind) {
+			if slices.Contains(metadataKinds, e.Kind) {
 				if v := metadata(e); v != nil {
 					out.Metadata = append(out.Metadata, v)
 				}
 			}
 		}
 	}
-	if len(out.Metadata) > 64 {
-		out.Metadata = out.Metadata[len(out.Metadata)-64:]
-	}
+	out.Metadata = keepPerKind(out.Metadata)
 	all := make([]*api.Event, 0, len(projection.Rows))
 	for _, e := range projection.Rows {
 		all = append(all, e)

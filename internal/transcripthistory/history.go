@@ -30,6 +30,28 @@ const MaxPage = 1024
 // means. A reader arms its own deadline at some multiple of this.
 const Heartbeat = 10 * time.Second
 
+// metadataKinds are the records a page carries beside its rows. They are not
+// rows -- nobody reads a usage record -- but a reader derives from them: what
+// quota is left, which models the provider offered, where the context was
+// compacted, how much of the window a turn used. Every one of those is a scan
+// backwards for the latest record of its kind, so a page that omits a kind
+// leaves the thing derived from it blank until the agent speaks again.
+//
+// `usage_status` is here because quota's state -- polling, unsupported, error
+// -- is only in those records, and a client that has usage without them cannot
+// tell "no limits reported" from "limits not asked for yet".
+//
+// `models_status` is deliberately absent: the supervisor writes it, and no
+// reader derives anything from the journal copy. The Models RPC answers with
+// its own status field.
+var metadataKinds = []string{"models", "usage", "usage_status", "compact", "turn_end"}
+
+// metadataPerKind is kept per kind rather than across them. A single budget
+// spent in arrival order is spent by whatever is chattiest -- usage and
+// turn_end, every turn -- which evicts the one `models` record a long session
+// ever wrote, and the compact boundary with it.
+const metadataPerKind = 32
+
 type Decode func([]byte) (*api.Event, error)
 type Version struct {
 	Seq, Updated uint64
@@ -606,7 +628,17 @@ func Page(ctx context.Context, db *sql.DB, r *api.TranscriptRequest, decode Deco
 			return nil, err
 		}
 	}
-	rows, err = db.QueryContext(ctx, `SELECT e.data FROM transcript_records r JOIN events e ON e.session_id=r.session_id AND e.seq=r.seq WHERE r.session_id=? AND r.seq<=? AND r.kind IN ('models','usage','compact','turn_end') ORDER BY r.seq DESC LIMIT 64`, r.SessionId, out.SnapshotSeq)
+	// Ranked within each kind, so the newest of a rare kind survives a session
+	// that wrote thousands of a common one. Ordered ascending on the way out,
+	// which is how a reader merges them.
+	meta := []any{r.SessionId, out.SnapshotSeq}
+	for _, kind := range metadataKinds {
+		meta = append(meta, kind)
+	}
+	meta = append(meta, metadataPerKind)
+	rows, err = db.QueryContext(ctx, `SELECT data FROM (SELECT e.data AS data, r.seq AS seq, ROW_NUMBER() OVER (PARTITION BY r.kind ORDER BY r.seq DESC) AS rank`+
+		` FROM transcript_records r JOIN events e ON e.session_id=r.session_id AND e.seq=r.seq`+
+		` WHERE r.session_id=? AND r.seq<=? AND r.kind IN (`+placeholders(len(metadataKinds))+`)) WHERE rank<=? ORDER BY seq`, meta...)
 	if err != nil {
 		return nil, err
 	}
@@ -630,8 +662,39 @@ func Page(ctx context.Context, db *sql.DB, r *api.TranscriptRequest, decode Deco
 	if err != nil {
 		return nil, err
 	}
-	slices.Reverse(out.Metadata)
 	return out, nil
+}
+
+func placeholders(n int) string {
+	return strings.TrimSuffix(strings.Repeat("?,", n), ",")
+}
+
+// keepPerKind is what the SQL above does with a window function, for the
+// in-memory path that has no SQL. Order is preserved, so the result is still
+// ascending by seq.
+func keepPerKind(all []*api.Event) []*api.Event {
+	seen := map[string]int{}
+	for _, e := range all {
+		seen[e.Kind]++
+	}
+	drop := map[string]int{}
+	for kind, n := range seen {
+		if n > metadataPerKind {
+			drop[kind] = n - metadataPerKind
+		}
+	}
+	if len(drop) == 0 {
+		return all
+	}
+	out := make([]*api.Event, 0, len(all))
+	for _, e := range all {
+		if drop[e.Kind] > 0 {
+			drop[e.Kind]--
+			continue
+		}
+		out = append(out, e)
+	}
+	return out
 }
 func Details(ctx context.Context, db *sql.DB, r *api.EventDetailsRequest, decode Decode) (*api.EventBatch, error) {
 	var b []byte

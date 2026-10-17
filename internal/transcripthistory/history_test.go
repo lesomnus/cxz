@@ -583,3 +583,77 @@ func TestRowSaysWhatShapeAToolIs(t *testing.T) {
 		t.Fatal("an unparsed call lost its name:", last.GetName())
 	}
 }
+
+// A page carries records beside its rows for the things a client derives rather
+// than reads: quota, the model catalog, the compact boundary. Each of those is a
+// scan backwards for the latest record of one kind, so the budget is per kind --
+// a session that writes a usage record every turn must not evict the single
+// `models` record it wrote at the start.
+func TestMetadataKeepsTheRareKindsAChattySessionWouldEvict(t *testing.T) {
+	db, add := fixture(t)
+	add(event(1, "models", "", `{"catalog":"first"}`))
+	add(event(2, "compact", "", `{}`))
+	status := event(3, "usage_status", "", `{}`)
+	status.Text = "polling"
+	add(status)
+	for i := 0; i < metadataPerKind*4; i++ {
+		add(event(uint64(10+i), "usage", "", `{"n":1}`))
+	}
+	p := syncPage(t, db, &api.TranscriptRequest{})
+	counts := map[string]int{}
+	for _, e := range p.Metadata {
+		counts[e.Kind]++
+	}
+	if counts["models"] != 1 || counts["compact"] != 1 {
+		t.Fatalf("a chatty kind evicted a rare one: %v", counts)
+	}
+	// Quota's state is only in these records: a client with usage but no status
+	// cannot tell "no limits reported" from "limits not asked for yet".
+	if counts["usage_status"] != 1 {
+		t.Fatalf("usage_status did not reach the page: %v", counts)
+	}
+	if counts["usage"] != metadataPerKind {
+		t.Fatalf("usage was kept %d deep, want %d", counts["usage"], metadataPerKind)
+	}
+	// Ascending by seq, which is how a reader merges them, and the newest of the
+	// chatty kind is the one that survived.
+	for i := 1; i < len(p.Metadata); i++ {
+		if p.Metadata[i-1].Seq >= p.Metadata[i].Seq {
+			t.Fatal("metadata is not in reading order", p.Metadata[i-1].Seq, p.Metadata[i].Seq)
+		}
+	}
+	if last := p.Metadata[len(p.Metadata)-1]; last.Seq != uint64(9+metadataPerKind*4) {
+		t.Fatal("the oldest records were kept instead of the newest:", last.Seq)
+	}
+	// The in-memory path answers the same page, because the sandbox and the
+	// browser fixture read it and a reader cannot tell which one served it.
+	var all []*api.Event
+	rows, err := db.Query(`SELECT data FROM events WHERE session_id='s' ORDER BY seq`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var b []byte
+		if err = rows.Scan(&b); err != nil {
+			t.Fatal(err)
+		}
+		e, x := decode(b)
+		if x != nil {
+			t.Fatal(x)
+		}
+		all = append(all, e)
+	}
+	rows.Close()
+	memory, err := FromEvents(all, &api.TranscriptRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(memory.Metadata) != len(p.Metadata) {
+		t.Fatalf("the in-memory page carried %d metadata records, the indexed one %d", len(memory.Metadata), len(p.Metadata))
+	}
+	for i := range memory.Metadata {
+		if memory.Metadata[i].Seq != p.Metadata[i].Seq {
+			t.Fatalf("the two paths kept different records at %d: %d and %d", i, memory.Metadata[i].Seq, p.Metadata[i].Seq)
+		}
+	}
+}
