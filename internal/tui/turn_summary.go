@@ -104,6 +104,76 @@ func (m metrics) text(key string) string {
 
 // Only display values the provider reports. Codex "last" usage is per-turn;
 // cumulative thread totals must never be presented as the current reply's usage.
+//
+// A finished turn's metrics are published on its response row, in the
+// vocabulary the runtime normalised them to -- input_tokens, output_tokens,
+// cache_read_tokens, cache_write_tokens, total_tokens, cost_usd, duration_ms --
+// rather than in each provider's own spelling. Reading the provider's spelling
+// here was half of why two clients could disagree about the same turn.
+func responseSummary(e *api.Event, width int) string {
+	completion := e.GetResponse().GetCompletionJson()
+	if len(completion) == 0 {
+		return ""
+	}
+	var c struct {
+		ResponseSeq    uint64             `json:"response_seq,string"`
+		DurationMS     *int64             `json:"duration_ms"`
+		DurationSource string             `json:"duration_source"`
+		TokenScope     string             `json:"token_scope"`
+		Metrics        map[string]float64 `json:"metrics"`
+	}
+	if json.Unmarshal(completion, &c) != nil || c.ResponseSeq != e.Seq {
+		return ""
+	}
+	width = max(1, width-2)
+	var parts []string
+	if c.DurationMS != nil {
+		parts = append(parts, clockMetric(float64(*c.DurationMS), c.DurationSource == "cxz"))
+	}
+	if n, ok := c.Metrics["cost_usd"]; ok {
+		parts = append(parts, costMetric(n))
+	}
+	for _, field := range []struct {
+		symbol, key string
+	}{
+		{"↑", "input_tokens"},
+		{"↓", "output_tokens"},
+		{"↺", "cache_read_tokens"},
+		{"⊕", "cache_write_tokens"},
+		{"∑", "total_tokens"},
+	} {
+		if n, ok := c.Metrics[field.key]; ok {
+			value, scale := compactMetric(n)
+			parts = append(parts, value+scale+field.symbol)
+		}
+	}
+	var lines []string
+	if e.TimeMs > 0 {
+		parts = append([]string{time.UnixMilli(e.TimeMs).Local().Format("01-02 15:04") + " /"}, parts...)
+	}
+	// Wrap at fixed-cell boundaries; never shift symbols with numeric magnitude.
+	row := ""
+	flush := func() {
+		if row != "" {
+			lines = append(lines, metricStyle.Render(strings.TrimRight(row, " ")))
+			row = ""
+		}
+	}
+	for _, part := range parts {
+		next := part
+		if row != "" {
+			next = row + " " + part
+		}
+		if ansi.StringWidth(next) > width {
+			flush()
+			next = part
+		}
+		row = clip(next, width)
+	}
+	flush()
+	return indentBlock(strings.Join(lines, "\n"))
+}
+
 func turnSummary(e, usageEvent *api.Event, started int64, width int) string {
 	width = max(1, width-2)
 	root := fields(e.Payload)

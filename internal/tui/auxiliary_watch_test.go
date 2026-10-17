@@ -59,6 +59,7 @@ func pushModel(t *testing.T, c *pushClient) *model {
 		{SessionId: "s", RunId: "run", Seq: 2, Kind: "assistant", Text: "final answer"},
 		{SessionId: "s", RunId: "run", Seq: 3, Kind: "turn_end", Text: "completed"},
 	}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	return m
 }
@@ -67,8 +68,8 @@ func pushModel(t *testing.T, c *pushClient) *model {
 // asks: the fixture's unary call refuses, so a poll would fail the test.
 func TestAuxiliaryStateIsPushedNotPolled(t *testing.T) {
 	c := &pushClient{states: []*api.AuxState{{
-		Summaries: []*api.AuxSummary{{RunId: "run", Turn: 3, Text: "what happened"}},
-		Current:   &api.Aux{Id: "j", RunId: "run", Turn: 3, State: "completed", Kinds: []string{"summary"}},
+		Summaries: []*api.AuxSummary{{RunId: "run", Turn: 3, ResponseSeq: 2, Text: "what happened"}},
+		Current:   &api.Aux{Id: "j", RunId: "run", Turn: 3, ResponseSeq: 2, State: "completed", Kinds: []string{"summary"}},
 	}}}
 	m := pushModel(t, c)
 	open := m.watchAuxiliary()

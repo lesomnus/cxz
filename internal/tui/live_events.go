@@ -74,3 +74,80 @@ func collectLiveEvents(ctx context.Context, stream eventReceiver, emit func([]*a
 		}
 	}
 }
+
+type rowReceiver interface{ Recv() (*api.Row, error) }
+type streamRow struct {
+	row *api.Row
+	err error
+}
+
+// collectLiveRows coalesces published rows the way collectLiveEvents does for
+// records, and for the same reason: a burst of rows is one change to what is on
+// screen, and rebuilding the transcript per row puts the whole window back on
+// the UI goroutine once per row.
+//
+// A row with no event is the runtime saying the stream is alive with nothing to
+// send. It carries the cursor forward and nothing else, so it does not open a
+// batch -- a heartbeat must not cost a rebuild.
+func collectLiveRows(ctx context.Context, stream rowReceiver, emit func([]*api.Row)) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	incoming := make(chan streamRow, 1)
+	go func() {
+		for {
+			r, err := stream.Recv()
+			select {
+			case incoming <- streamRow{r, err}:
+			case <-ctx.Done():
+				return
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+	timer := time.NewTimer(liveBatchInterval)
+	defer timer.Stop()
+	timer.Stop()
+	var due <-chan time.Time
+	var batch []*api.Row
+	bytes := 0
+	flush := func() {
+		if len(batch) > 0 && ctx.Err() == nil {
+			emit(batch)
+		}
+		batch, bytes = nil, 0
+		timer.Stop()
+		due = nil
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-due:
+			flush()
+		case next := <-incoming:
+			if next.err != nil {
+				flush()
+				return next.err
+			}
+			if next.row.Event == nil {
+				if len(batch) == 0 {
+					emit([]*api.Row{next.row})
+				} else {
+					batch = append(batch, next.row)
+				}
+				continue
+			}
+			if len(batch) == 0 {
+				timer.Reset(liveBatchInterval)
+				due = timer.C
+			}
+			batch = append(batch, next.row)
+			bytes += len(next.row.Event.Text) + len(next.row.Event.Payload)
+			if len(batch) >= liveBatchEvents || bytes >= liveBatchBytes {
+				flush()
+			}
+		}
+	}
+}

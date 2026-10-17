@@ -147,6 +147,7 @@ func TestUserMessageBackgroundReachesConversationEdges(t *testing.T) {
 		m := conversationModel()
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
 		m.events["s"] = []*api.Event{{Seq: 1, Kind: "input", Text: "한글 prompt\nsecond line"}, {Seq: 2, Kind: "assistant", Text: "answer"}}
+		setRows(m, "s", m.events["s"])
 		m.render()
 		m.view.GotoTop()
 		terminal := vt.NewEmulator(m.width, 24)
@@ -186,6 +187,7 @@ func TestPromptCursorKeepsAColumnOfFillToItsLeft(t *testing.T) {
 	m := conversationModel()
 	m.Update(tea.WindowSizeMsg{Width: 120, Height: 20})
 	m.events["s"] = []*api.Event{{Seq: 1, Kind: "input", Text: "hello"}, {Seq: 2, Kind: "assistant", Text: "world"}}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	m.view.GotoTop()
 	if m.contentOffset() == 0 {

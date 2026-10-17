@@ -16,8 +16,10 @@ func TestActivityRowStableAcrossAutoApprovalStates(t *testing.T) {
 	s.PermissionMode = "full"
 	started := time.Now().Add(-21 * time.Second).UnixMilli()
 	m.events[s.Id] = []*api.Event{{Seq: 1, RunId: s.RunId, Kind: "input", Text: "Edit files", TimeMs: started}}
+	setRows(m, s.Id, m.events[s.Id])
 	for i := 0; i < 30; i++ {
 		m.events[s.Id] = append(m.events[s.Id], &api.Event{Seq: uint64(i + 2), RunId: s.RunId, Kind: "assistant", Text: fmt.Sprintf("Response %d", i)})
+		setRows(m, s.Id, m.events[s.Id])
 	}
 	var height, total, offset, row int
 	for i, state := range []string{"working", "waiting_input", "working", "waiting_input", "working"} {

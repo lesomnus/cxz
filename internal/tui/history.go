@@ -4,6 +4,7 @@ import (
 	"context"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"slices"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,11 +21,17 @@ type caughtUp struct {
 }
 
 type historyPage struct {
-	floor          uint64
-	generation     uint64
-	started        time.Time
-	id             string
+	floor      uint64
+	generation uint64
+	started    time.Time
+	id         string
+	// rows are the conversation as the runtime reduced it; events are the
+	// records the page carried beside them, for what a reader derives rather
+	// than reads. See the two stores on model.
+	rows           []*api.Event
 	events         []*api.Event
+	snapshotSeq    uint64
+	hasOlder       bool
 	start          uint64
 	end            uint64
 	epoch          uint64
@@ -37,8 +44,10 @@ type historyPage struct {
 	summaries      map[summaryRenderKey]string
 }
 
-// Journal sequence numbers are contiguous. The existing ascending History API
-// returns at most 128 events, so a sequence window also provides reverse paging.
+// Transcript pages backwards on its own: before_seq with the session's snapshot
+// as the fence, and has_older says whether anything is behind it. The sequence
+// window this used to compute -- 128 journal coordinates at a time, because the
+// native API only counts forwards -- is not needed for rows.
 func (m *model) loadOlderHistory() tea.Cmd {
 	if cmd := m.requestNewerHistory(false); cmd != nil {
 		return cmd
@@ -70,17 +79,23 @@ func (m *model) requestOlderHistory(warm bool) tea.Cmd {
 		m.historyLoading = map[string]uint64{}
 	}
 	m.historyLoading[id] = end
+	snapshot := m.cursor[id]
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
 		defer cancel()
-		batch, err := m.fetchHistory(ctx, id, start, "older")
+		reply, err := m.fetchTranscript(ctx, id, &api.TranscriptRequest{BeforeSeq: end + 1, SnapshotSeq: snapshot}, "older")
 		page := historyPage{id: id, start: start, end: end, err: err, generation: generation}
-		if batch != nil {
-			page.floor = historyBatchFloor(batch.Events)
-			for _, e := range batch.Events {
-				if e.Seq > start && e.Seq <= end {
-					page.events = append(page.events, e)
-				}
+		if reply != nil {
+			page.rows, page.events = reply.Events, reply.Metadata
+			page.snapshotSeq, page.hasOlder = reply.SnapshotSeq, reply.HasOlder
+			page.floor = historyBatchFloor(reply.Events)
+			if len(reply.Events) > 0 {
+				page.start = reply.Events[0].Seq - 1
+			} else {
+				page.start = max(page.floor, 0)
+			}
+			if !reply.HasOlder {
+				page.start = page.floor
 			}
 		}
 		return m.prepareHistoryPage(ctx, page, agent, width)
@@ -96,49 +111,25 @@ func (m *model) prepareHistoryPage(ctx context.Context, page historyPage, agent 
 	started := time.Now()
 	page.prepared = map[*api.Event]renderedResponse{}
 	prepared := &model{}
-	results := map[string]*api.Event{}
-	for _, e := range page.events {
-		if e.Kind == "tool_result" && e.RequestId != "" {
-			results[e.RunId+"/"+e.RequestId] = e
-		}
-	}
-	var turnStarted int64
-	var usage *api.Event
-	for _, e := range page.events {
+	// Rows arrive reduced, so there is nothing to pair here any more: what this
+	// does is the expensive part -- Markdown, syntax highlighting, wrapping --
+	// off the UI goroutine, keyed by the row it drew.
+	for _, e := range page.rows {
 		if err := ctx.Err(); err != nil {
 			page.err = err
 			return page
 		}
-		switch e.Kind {
-		case "input":
-			turnStarted, usage = e.TimeMs, nil
+		switch {
+		case e.Kind == "input":
 			prepared.cachedInput(&api.Session{Agent: agent}, e, width)
-		case "usage":
-			if e.Text == "thread/tokenUsage/updated" {
-				usage = e
-			}
-		case "turn_end":
-			prepared.cachedSummary(e, usage, turnStarted, width)
-			turnStarted, usage = 0, nil
-		}
-		if e.Kind == "assistant" {
+		case e.Kind == "assistant":
 			page.prepared[e] = renderResponse(agent, e.Text, width)
-		}
-		if e.Kind == "tool_call" && !question(e) {
-			activity, ok := prepared.cachedToolView(agent, e)
-			if !ok {
-				continue
-			}
-			result := results[e.RunId+"/"+e.RequestId]
-			if result != nil && agent == "codex" {
-				if final, ok := prepared.cachedToolView(agent, result); ok {
-					activity = final
-				}
-			}
-			prepared.cachedToolBody(agent, e, activity, result, width, toolInitialState(agent, e), false)
+			prepared.cachedSummary(e, width)
+		case e.GetToolSummary() != nil:
+			prepared.cachedToolBody(agent, e, width, e.GetToolSummary().GetState(), false)
 		}
 	}
-	page.toolActivities, page.toolBodies = prepared.toolActivities, prepared.renderedTools
+	page.toolBodies = prepared.renderedTools
 	page.inputBodies, page.summaries = prepared.renderedInputs, prepared.renderedSummaries
 	m.debugRecorder.Add(debugEvent{Kind: "history_prepare", Duration: time.Since(started).Microseconds(), Count: len(page.prepared) + len(page.toolBodies)})
 	return page
@@ -167,16 +158,19 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 		return true
 	}
 	w := m.historyWindow(page.id)
-	m.applyHistoryFloor(page.id, max(page.floor, historyBatchFloor(page.events)))
+	m.applyHistoryFloor(page.id, max(page.floor, historyBatchFloor(page.rows)))
 	var visible []*api.Event
-	for _, e := range page.events {
+	for _, e := range page.rows {
 		if e.Seq > w.floor {
 			visible = append(visible, e)
 		}
 	}
-	// Keep the stream high-water mark even when raw bookkeeping is omitted.
+	// A page's snapshot is the journal's own fence, which reaches past the last
+	// row: the records between the two are bookkeeping, and the replay cursor
+	// has to clear them or the live stream replays what the page already settled.
 	if page.initial {
-		for _, e := range page.events {
+		m.cursor[page.id] = max(m.cursor[page.id], page.snapshotSeq)
+		for _, e := range page.rows {
 			m.cursor[page.id] = max(m.cursor[page.id], e.Seq)
 		}
 		w.detached = false
@@ -184,30 +178,34 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 		w.loading = false
 		w.tail = m.cursor[page.id]
 	}
-	page.events = visible
+	page.rows = visible
 	m.mergePreparedHistory(page)
+	// The records a page carries are not the conversation; they are the latest
+	// of the kinds a reader derives from. Merged by sequence so an older page
+	// cannot push out what a newer one already said.
+	m.mergeRecords(page.id, page.events)
 	if m.historyStart == nil {
 		m.historyStart = map[string]uint64{}
 	}
 	m.historyStart[page.id] = max(page.start, w.floor)
 	if page.initial {
 		last := page.start
-		for _, e := range page.events {
+		for _, e := range page.rows {
 			last = max(last, e.Seq)
 		}
-		// A final event from a canceled watcher may already be queued. Do not
+		// A final row from a canceled watcher may already be queued. Do not
 		// drop it while leaving its replay cursor ahead of the loaded tail.
-		for _, e := range m.events[page.id] {
+		for _, e := range m.rows[page.id] {
 			if e.Seq > last {
-				page.events = append(page.events, e)
+				page.rows = append(page.rows, e)
 			}
 		}
-		m.events[page.id] = page.events
-		for _, e := range page.events {
-			m.cursor[page.id] = max(m.cursor[page.id], e.Seq)
+		if m.rows == nil {
+			m.rows = map[string][]*api.Event{}
 		}
+		m.rows[page.id] = page.rows
 	} else {
-		m.events[page.id] = append(page.events, m.events[page.id]...)
+		m.rows[page.id] = append(page.rows, m.rows[page.id]...)
 	}
 	keep := 0.0
 	if !page.initial {
@@ -221,7 +219,7 @@ func (m *model) applyHistoryPage(page historyPage) bool {
 		if page.initial || opening {
 			m.view.GotoBottom()
 			if !page.started.IsZero() {
-				m.debugRecorder.Add(debugEvent{Kind: "history_first_render", Duration: time.Since(page.started).Microseconds(), Count: len(page.events)})
+				m.debugRecorder.Add(debugEvent{Kind: "history_first_render", Duration: time.Since(page.started).Microseconds(), Count: len(page.rows)})
 			}
 		} else {
 			// Preserve the previously visible line when older content is prepended.
@@ -246,6 +244,25 @@ func (m *model) fetchHistory(ctx context.Context, id string, after uint64, purpo
 	}
 	m.debugRecorder.Add(debugEvent{Kind: "history_rpc", Type: purpose, Duration: time.Since(started).Microseconds(), Count: count, Bytes: proto.Size(batch), ErrorCode: status.Code(err).String()})
 	return batch, err
+}
+
+// fetchTranscript asks for a page of the conversation: the rows a person reads,
+// and beside them the records a reader derives from -- quota, the model catalog,
+// the compact boundary. Paging rows rather than records is also what bounds a
+// page by what is readable: a native page of 1024 records may hold three
+// readable rows or three hundred, so a scrollback cannot be built on it.
+func (m *model) fetchTranscript(ctx context.Context, id string, r *api.TranscriptRequest, purpose string) (*api.TranscriptReply, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	started := time.Now()
+	r.SessionId = id
+	page, err := m.client.Transcript(ctx, r)
+	count := 0
+	if page != nil {
+		count = len(page.Events)
+	}
+	m.debugRecorder.Add(debugEvent{Kind: "transcript_rpc", Type: purpose, Duration: time.Since(started).Microseconds(), Count: count, Bytes: proto.Size(page), ErrorCode: status.Code(err).String()})
+	return page, err
 }
 
 // Merge only on the UI goroutine. A resize while work was in flight invalidates
@@ -288,4 +305,109 @@ func (m *model) mergePreparedHistory(page historyPage) {
 			m.renderedSummaries[key] = body
 		}
 	}
+}
+
+// mergeRecords keeps the latest record of each sequence a page carried beside
+// its rows. They are what quota, the model catalog and the context badge are
+// derived from, and a page answers with the most recent of each kind rather
+// than with everything -- see transcripthistory's metadata kinds.
+func (m *model) mergeRecords(id string, records []*api.Event) {
+	if len(records) == 0 {
+		return
+	}
+	if m.events == nil {
+		m.events = map[string][]*api.Event{}
+	}
+	at := map[uint64]int{}
+	merged := append([]*api.Event(nil), m.events[id]...)
+	for i, e := range merged {
+		at[e.Seq] = i
+	}
+	for _, e := range records {
+		if i, ok := at[e.Seq]; ok {
+			merged[i] = e
+			continue
+		}
+		at[e.Seq] = len(merged)
+		merged = append(merged, e)
+	}
+	slices.SortStableFunc(merged, func(a, b *api.Event) int {
+		switch {
+		case a.Seq < b.Seq:
+			return -1
+		case a.Seq > b.Seq:
+			return 1
+		}
+		return 0
+	})
+	m.events[id] = merged
+}
+
+// liveRow is one row of the conversation as it is published. A row arrives
+// again when a later record corrects it -- a response gains its turn's metrics,
+// a tool completes -- and replacing by sequence is the whole of handling that.
+type liveRow struct {
+	id       string
+	row      *api.Event
+	updated  uint64
+	epoch    uint64
+	prepared *historyPage
+}
+
+// receiveRow puts a published row into the display list, replacing the version
+// it corrects. A row's sequence is its identity: the runtime republishes the
+// same sequence when a later record changes what that row says, and the later
+// write wins.
+func (m *model) receiveRow(v liveRow) {
+	if m.rowCursor == nil {
+		m.rowCursor = map[string]uint64{}
+	}
+	if v.updated > m.rowCursor[v.id] {
+		m.rowCursor[v.id] = v.updated
+	}
+	w := m.historyWindow(v.id)
+	if v.row.Seq <= w.floor {
+		return
+	}
+	if m.rows == nil {
+		m.rows = map[string][]*api.Event{}
+	}
+	rows := m.rows[v.id]
+	for i := len(rows) - 1; i >= 0; i-- {
+		if rows[i].Seq == v.row.Seq {
+			rows[i] = v.row
+			return
+		}
+		if rows[i].Seq < v.row.Seq {
+			break
+		}
+	}
+	// A reader browsing older pages is not dragged to the tail, but the row is
+	// still theirs to scroll to: the window's own bookkeeping decides what is
+	// evicted, and appending past the loaded edge would leave a gap.
+	if w.detached {
+		return
+	}
+	at := len(rows)
+	for at > 0 && rows[at-1].Seq > v.row.Seq {
+		at--
+	}
+	rows = append(rows, nil)
+	copy(rows[at+1:], rows[at:])
+	rows[at] = v.row
+	m.rows[v.id] = rows
+	if !w.detached {
+		w.tail = max(w.tail, v.row.Seq)
+	}
+	m.limitHistory(v.id, false, 0)
+}
+
+// liveRows is a coalesced batch of published rows, which is one change to what
+// is on screen however many rows it carries.
+type liveRows struct {
+	id       string
+	rows     []*api.Event
+	updated  uint64
+	epoch    uint64
+	prepared *historyPage
 }

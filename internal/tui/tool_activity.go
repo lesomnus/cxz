@@ -23,37 +23,26 @@ type cachedToolActivity struct {
 }
 
 type toolRenderKey struct {
-	event, result *api.Event
-	agent, state  string
-	width         int
-	background    bool
+	event        *api.Event
+	agent, state string
+	width        int
+	background   bool
 }
 
-func (m *model) cachedToolView(agent string, e *api.Event) (agentview.ToolActivity, bool) {
-	key := toolActivityKey{e, agent}
-	if cached, ok := m.toolActivities[key]; ok {
-		return cached.activity, cached.ok
-	}
-	activity, ok := agentview.ToolView(agent, e.Text, e.Payload)
-	if m.toolActivities == nil {
-		m.toolActivities = map[toolActivityKey]cachedToolActivity{}
-	}
-	m.toolActivities[key] = cachedToolActivity{activity, ok}
-	return activity, ok
-}
-
-func (m *model) cachedToolBody(agent string, e *api.Event, activity agentview.ToolActivity, result *api.Event, width int, state string, background bool) string {
-	if result != nil && !background {
-		state = "" // A completed result determines its own status.
-	}
-	key := toolRenderKey{e, result, agent, state, width, background}
+// cachedToolBody draws a tool row. The row is the cache key: a row is published
+// again when its state moves, so a new version is a new pointer and the old
+// drawing is not reused for it.
+//
+// What used to be here was a pairing: a call, a result, and an approval decision
+// reduced into a state. The runtime has already done that -- see cxz#155 -- so
+// state arrives on the row, and the only thing still decided here is what a
+// background task overrides it with.
+func (m *model) cachedToolBody(agent string, e *api.Event, width int, state string, background bool) string {
+	key := toolRenderKey{e, agent, state, width, background}
 	if body, ok := m.renderedTools[key]; ok {
 		return body
 	}
-	if background {
-		result = nil
-	}
-	body := toolActivityStateBody(activity, result, width, state)
+	body := toolSummaryBody(e.GetToolSummary(), width, state)
 	if background {
 		const badge = " · background"
 		rows := strings.Split(body, "\n")
@@ -68,37 +57,27 @@ func (m *model) cachedToolBody(agent string, e *api.Event, activity agentview.To
 	return body
 }
 
-func toolActivityView(activity agentview.ToolActivity, result *api.Event, width int) string {
-	return indentBlock(toolActivityBody(activity, result, width))
-}
-
-func toolActivityBody(activity agentview.ToolActivity, result *api.Event, width int) string {
-	return toolActivityStateBody(activity, result, width, "pending")
-}
-
-// Claude tool_use announces an intention, not execution. In particular, other
-// tools in the same message may still be queued behind an approval. Only use
-// a native execution state (or a correlated approval decision in render).
-func toolInitialState(provider string, e *api.Event) string {
-	if provider == "codex" && fields(e.Payload).object("item").text("status") == "inProgress" {
-		return "working"
+// toolSummaryBody draws what a row says a tool is. The four states are the
+// projection's own -- pending, working, completed, failed -- and a background
+// task's status passes through the same switch.
+//
+// Nothing is derived here. The exit code, the is_error flag and the provider's
+// status strings used to be read in this function from a result record; the
+// runtime reads them now, and a reader that read them again could disagree
+// with the row it was drawing. See cxz#155.
+func toolSummaryBody(label *api.ToolSummary, width int, status string) string {
+	activity := agentview.ToolActivity{
+		Kind:        label.GetKind(),
+		Command:     label.GetCommand(),
+		Description: label.GetDescription(),
+		Shell:       label.GetShell(),
 	}
-	return "pending"
-}
-
-func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, width int, status string) string {
-	if result != nil {
-		status = "done"
-		root := fields(result.Payload)
-		if string(root["is_error"]) == "true" {
-			status = "failed"
-		}
-		if state := root.object("item").text("status"); state != "" {
-			status = state
-		}
-		if code, ok := root.object("item").number("exitCode"); ok && code != 0 {
-			status = "failed"
-		}
+	for _, f := range label.GetFiles() {
+		activity.Files = append(activity.Files, agentview.FileActivity{
+			Path: f.GetPath(), MovePath: f.GetMovePath(), Action: f.GetAction(),
+			Added: int(f.GetAdded()), Removed: int(f.GetRemoved()), Lines: int(f.GetLines()),
+			Measure: f.GetMeasure(), PerMatch: f.GetPerMatch(),
+		})
 	}
 	marker, style := "○", warning
 	switch status {
@@ -144,7 +123,11 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 			}
 		}
 	} else if activity.Kind == "tool" {
-		lines = append(lines, prefix+" "+safeText(activity.Description))
+		text := activity.Description
+		if text == "" {
+			text = label.GetName()
+		}
+		lines = append(lines, prefix+" "+safeText(text))
 	} else {
 		for _, f := range activity.Files {
 			path := f.Path
@@ -174,6 +157,9 @@ func toolActivityStateBody(activity agentview.ToolActivity, result *api.Event, w
 			}
 			lines = append(lines, line)
 		}
+	}
+	if omitted := label.GetOmittedFiles(); omitted > 0 {
+		lines = append(lines, muted.Render(fmt.Sprintf("  %d more files · /details", omitted)))
 	}
 	if len(lines) == 0 {
 		lines = append(lines, prefix+" Files · Δ?")

@@ -35,6 +35,7 @@ func TestAutomaticApprovalDoesNotFlashPending(t *testing.T) {
 	p := &api.Event{Kind: "approval", Text: "Bash", RequestId: "request", RunId: s.RunId, Seq: 1}
 	s.Pending = []*api.Event{p}
 	m.events[s.Id] = []*api.Event{p}
+	setRows(m, s.Id, m.events[s.Id])
 	m.render()
 	if m.selectedApproval() != nil || m.approvalBox() != "" || strings.Contains(ansi.Strip(m.view.View()), "○ Bash") {
 		t.Fatal("automatic pending flashed")
@@ -48,12 +49,14 @@ func TestAutomaticApprovalDoesNotFlashPending(t *testing.T) {
 		t.Fatal("question hidden")
 	}
 	m.events[s.Id] = append(m.events[s.Id], &api.Event{Kind: "approval_resolved", Text: "allowed", RequestId: p.RequestId, RunId: s.RunId, Seq: 2})
+	setRows(m, s.Id, m.events[s.Id])
 	m.render()
 	if !strings.Contains(ansi.Strip(m.view.View()), "✓ Bash") {
 		t.Fatal(m.view.View())
 	}
 	s.PermissionMode = "ask"
 	m.events[s.Id] = []*api.Event{p}
+	setRows(m, s.Id, m.events[s.Id])
 	m.render()
 	if m.selectedApproval() != p || !strings.Contains(ansi.Strip(m.view.View()), "○ Bash") {
 		t.Fatal("manual fallback hidden")

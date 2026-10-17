@@ -49,6 +49,7 @@ func inlineAIModel() (*model, *inlineAIClient) {
 	c := &inlineAIClient{}
 	m.client = c
 	m.events["s"] = []*api.Event{{SessionId: "s", RunId: "run", Seq: 1, Kind: "input", Text: "question"}, {SessionId: "s", RunId: "run", Seq: 2, Kind: "assistant", Text: "final answer"}, {SessionId: "s", RunId: "run", Seq: 3, Kind: "turn_end", Text: "completed"}}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	return m, c
 }
@@ -126,7 +127,7 @@ func TestAuxiliaryGhostHidesOnTypingAndIgnoresOldPoll(t *testing.T) {
 		t.Fatal("loading overlaps draft")
 	}
 	m.input.Reset()
-	m.receiveAuxiliary(auxiliaryResult{version: 1, connection: m.connectionRef(), session: "s", action: "session", reply: auxiliary.Reply{Job: &auxiliary.Job{ID: "done", Run: "run", Turn: 3, Status: "completed", Suggestion: "다음 작업을 진행해줘"}}})
+	m.receiveAuxiliary(auxiliaryResult{version: 1, connection: m.connectionRef(), session: "s", action: "session", reply: auxiliary.Reply{Job: &auxiliary.Job{ID: "done", Run: "run", Turn: 3, Response: 2, Status: "completed", Suggestion: "다음 작업을 진행해줘"}}})
 	if m.suggestionGhost() != "다음 작업을 진행해줘" {
 		t.Fatal(m.suggestionGhost())
 	}
@@ -136,6 +137,7 @@ func TestAuxiliaryGhostHidesOnTypingAndIgnoresOldPoll(t *testing.T) {
 	}
 	m.input.Reset()
 	m.events["s"] = append(m.events["s"], &api.Event{Kind: "input", Seq: 4})
+	setRows(m, "s", m.events["s"])
 	if m.suggestionGhost() != "" {
 		t.Fatal("stale suggestion")
 	}
@@ -166,7 +168,7 @@ func TestAuxiliarySummaryAnimationDoesNotRebuildOrScroll(t *testing.T) {
 	if first == second {
 		t.Fatal("loading not animated")
 	}
-	m.receiveAuxiliary(auxiliaryResult{version: 1, connection: m.connectionRef(), session: "s", action: "session", reply: auxiliary.Reply{Job: &auxiliary.Job{ID: "j", Run: "run", Turn: 3, Status: "running", SummaryRequested: true, SuggestionRequested: true, Summary: "요약 완료"}}})
+	m.receiveAuxiliary(auxiliaryResult{version: 1, connection: m.connectionRef(), session: "s", action: "session", reply: auxiliary.Reply{Job: &auxiliary.Job{ID: "j", Run: "run", Turn: 3, Response: 2, Status: "running", SummaryRequested: true, SuggestionRequested: true, Summary: "요약 완료"}}})
 	if len(m.auxiliaryLoadingRows) != 0 || !strings.Contains(ansi.Strip(m.conversationView()), "요약 완료") || !strings.HasPrefix(m.suggestionGhost(), "Suggestion ") {
 		t.Fatal("did not display summary while suggestion runs")
 	}
@@ -175,7 +177,7 @@ func TestAuxiliarySummaryAnimationDoesNotRebuildOrScroll(t *testing.T) {
 func TestSummaryRegenerationShowsLoadingOverSavedSummary(t *testing.T) {
 	m, _ := inlineAIModel()
 	key := m.connectionRef() + "/s"
-	m.auxiliarySummaries = map[string][]auxiliary.Summary{key: {{Run: "run", Turn: 3, Text: "previous summary"}}}
+	m.auxiliarySummaries = map[string][]auxiliary.Summary{key: {{Run: "run", Turn: 3, Response: 2, Text: "previous summary"}}}
 	if cmd := m.auxiliaryCommand("/summary"); cmd == nil {
 		t.Fatal("no generation")
 	}
@@ -187,7 +189,7 @@ func TestSummaryRegenerationShowsLoadingOverSavedSummary(t *testing.T) {
 func TestManualSuggestionLoadsAlongsideRunningSummary(t *testing.T) {
 	m, _ := inlineAIModel()
 	key := m.connectionRef() + "/s"
-	m.auxiliaryJobs = map[string]*auxiliary.Job{key: {ID: "running", Run: "run", Turn: 3, Status: "running", SummaryRequested: true}}
+	m.auxiliaryJobs = map[string]*auxiliary.Job{key: {ID: "running", Run: "run", Turn: 3, Response: 2, Status: "running", SummaryRequested: true}}
 	if cmd := m.auxiliaryCommand("/suggest"); cmd == nil {
 		t.Fatal("could not queue suggestion")
 	}

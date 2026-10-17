@@ -23,6 +23,7 @@ func TestBackgroundSessionIndicator(t *testing.T) {
 	m.observeSessions([]*api.Session{s})
 	m.sessionActivity[s.Id].done = 10
 	m.events[s.Id] = []*api.Event{bgEvent(1, `{"type":"system","subtype":"task_started","task_id":"bg","is_backgrounded":true}`)}
+	setRows(m, s.Id, m.events[s.Id])
 	first := ansi.Strip(m.sessionIndicator(s))
 	if first != workingSpinner(0) {
 		t.Fatal("idle foreground hid background work", first)
@@ -33,10 +34,12 @@ func TestBackgroundSessionIndicator(t *testing.T) {
 		t.Fatal("spinner did not animate or replayed background telemetry")
 	}
 	m.events[s.Id] = append(m.events[s.Id], bgEvent(2, `{"type":"system","subtype":"task_notification","task_id":"bg","status":"completed"}`))
+	setRows(m, s.Id, m.events[s.Id])
 	if ansi.Strip(m.sessionIndicator(s)) != "+" {
 		t.Fatal("completed background task left spinner or hid unread reply")
 	}
 	m.events[s.Id] = append(m.events[s.Id], bgEvent(3, `{"type":"system","subtype":"task_started","task_id":"another","is_backgrounded":true}`))
+	setRows(m, s.Id, m.events[s.Id])
 	if !m.hasActiveBackground(s) {
 		t.Fatal("new background task not detected")
 	}

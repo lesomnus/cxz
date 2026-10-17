@@ -9,9 +9,8 @@ type inputRenderKey struct {
 	width int
 }
 type summaryRenderKey struct {
-	event, usage *api.Event
-	started      int64
-	width        int
+	event *api.Event
+	width int
 }
 
 func (m *model) cachedInput(s *api.Session, e *api.Event, width int) string {
@@ -26,15 +25,18 @@ func (m *model) cachedInput(s *api.Session, e *api.Event, width int) string {
 	m.renderedInputs[key] = body
 	return body
 }
-func (m *model) cachedSummary(e, usage *api.Event, started int64, width int) string {
-	key := summaryRenderKey{e, usage, started, width}
+
+// cachedSummary draws the metrics a finished turn left on its response row. A
+// row that has not been completed yet carries none, and gets none drawn.
+func (m *model) cachedSummary(e *api.Event, width int) string {
+	key := summaryRenderKey{e, width}
 	if body, ok := m.renderedSummaries[key]; ok {
 		return body
 	}
 	if m.renderedSummaries == nil {
 		m.renderedSummaries = map[summaryRenderKey]string{}
 	}
-	body := turnSummary(e, usage, started, width)
+	body := responseSummary(e, width)
 	m.renderedSummaries[key] = body
 	return body
 }

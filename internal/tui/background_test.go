@@ -29,6 +29,7 @@ func TestBackgroundLaunchIsNotCompletion(t *testing.T) {
 		bgEvent(2, `{"type":"system","subtype":"task_started","task_id":"bg","tool_use_id":"tool","is_backgrounded":true}`),
 		{Seq: 3, RunId: "run", Kind: "tool_result", RequestId: "tool", Payload: []byte(`{"content":"Command running in background"}`)},
 	}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	if text := ansi.Strip(m.view.View()); strings.Count(text, "Bash") != 1 || !strings.Contains(text, "• Bash") {
 		t.Fatal(text)
@@ -52,11 +53,13 @@ func TestBackgroundLaunchIsNotCompletion(t *testing.T) {
 		t.Fatal("spinner did not turn with the pulse", seen)
 	}
 	m.events["s"] = append(m.events["s"], bgEvent(4, `{"type":"system","subtype":"background_tasks_changed","tasks":[]}`))
+	setRows(m, "s", m.events["s"])
 	m.render()
 	if m.backgroundStatus() != "" || strings.Contains(ansi.Strip(m.view.View()), "✓ Bash") {
 		t.Fatal("empty snapshot fabricated completion")
 	}
 	m.events["s"] = append(m.events["s"], bgEvent(5, `{"type":"system","subtype":"task_notification","task_id":"bg","status":"failed","summary":"exit 1","output_file":"/not/read"}`))
+	setRows(m, "s", m.events["s"])
 	m.render()
 	if text := ansi.Strip(m.view.View()); !strings.Contains(text, "× Bash") || strings.Count(text, "Bash") != 1 {
 		t.Fatal(text)
@@ -78,6 +81,7 @@ func TestBackgroundLaunchIsSilentUntilTasksEnd(t *testing.T) {
 		s.State, s.LastSeq = "working", 1
 		m.observeSessions([]*api.Session{s})
 		m.events[s.Id] = events
+		setRows(m, s.Id, m.events[s.Id])
 		s.State, s.LastSeq = "idle", 2
 		return m, s
 	}
@@ -93,6 +97,7 @@ func TestBackgroundLaunchIsSilentUntilTasksEnd(t *testing.T) {
 		t.Fatal("running background work marked the reply finished")
 	}
 	m.events[s.Id] = append(m.events[s.Id], bgEvent(3, `{"type":"system","subtype":"background_tasks_changed","tasks":[]}`))
+	setRows(m, s.Id, m.events[s.Id])
 	if ansi.Strip(m.sessionIndicator(s)) != "+" {
 		t.Fatal("finished background work left no unread marker")
 	}
@@ -115,6 +120,7 @@ func TestBackgroundOnlySpinnerTakesTheQuietStep(t *testing.T) {
 	s := m.current()
 	s.State = "idle"
 	m.events[s.Id] = []*api.Event{bgEvent(2, `{"type":"system","subtype":"task_started","task_id":"bg","tool_use_id":"tool","is_backgrounded":true}`)}
+	setRows(m, s.Id, m.events[s.Id])
 	row := m.sessionIndicator(s)
 	if got, want := ansi.Strip(row), workingSpinner(m.pulse+spinnerPhase(s.CreatedAt)); got != want {
 		t.Fatal("background work left the row without its spinner:", got)
@@ -160,6 +166,7 @@ func TestBackgroundBackfillDoesNotLoadTranscript(t *testing.T) {
 	client := &backgroundClient{}
 	m.client = client
 	m.events["s"] = []*api.Event{{Seq: 300, RunId: "run", Kind: "assistant", Text: "tail"}}
+	setRows(m, "s", m.events["s"])
 	cmd := m.loadBackgroundHistory(historyPage{id: "s", initial: true, start: 256})
 	m.Update(cmd())
 	if client.histories != 0 || client.snapshots != 1 {
@@ -169,6 +176,7 @@ func TestBackgroundBackfillDoesNotLoadTranscript(t *testing.T) {
 		t.Fatal("metadata snapshot failed")
 	}
 	m.events["s"] = append(m.events["s"], bgEvent(301, `{"type":"system","subtype":"background_tasks_changed","tasks":[]}`))
+	setRows(m, "s", m.events["s"])
 	if m.backgroundStatus() != "" {
 		t.Fatal("old metadata overrode latest snapshot")
 	}
@@ -184,11 +192,13 @@ func TestBackgroundSnapshotDoesNotRewindAndOlderServerDoesNotScan(t *testing.T) 
 	m.client = client
 	m.ctx = context.Background()
 	m.events["s"] = []*api.Event{bgEvent(20, `{"type":"system","subtype":"background_tasks_changed","tasks":[]}`)}
+	setRows(m, "s", m.events["s"])
 	m.Update(m.loadBackgroundHistory(historyPage{id: "s", initial: true, start: 100000})())
 	if !strings.Contains(m.backgroundStatus(), "background 1") {
 		t.Fatal("old page rewound snapshot")
 	}
 	m.events["s"] = append(m.events["s"], bgEvent(301, `{"type":"system","subtype":"task_notification","task_id":"bg","status":"completed"}`))
+	setRows(m, "s", m.events["s"])
 	if m.backgroundStatus() != "" {
 		t.Fatal("new live event did not advance snapshot")
 	}

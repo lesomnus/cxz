@@ -173,8 +173,20 @@ type model struct {
 	focusList, creating bool
 	notice              string
 	width, height       int
-	events              map[string][]*api.Event
-	cursor              map[string]uint64
+	// Two stores, because a conversation is two things. `rows` is what a person
+	// reads, reduced by the session's runtime and arriving already merged: a
+	// tool's call, output and result are one row whose state moves. `events` is
+	// what the session *is* -- the records state, quota, the model catalog and
+	// pending approvals are derived from, which no reduction can answer.
+	//
+	// Deciding which records make a row used to happen here, in render(), and
+	// in the web, over two shapes that had to agree. See cxz#155.
+	rows   map[string][]*api.Event
+	events map[string][]*api.Event
+	cursor map[string]uint64
+	// A cursor over row versions rather than records: a row is published again
+	// when a later record corrects it, at that record's sequence.
+	rowCursor           map[string]uint64
 	historyWindows      map[string]*historyWindow
 	windowPolicy        *historypolicy.Window
 	historyLoading      map[string]uint64 // End sequence of each in-flight older page.
@@ -504,6 +516,7 @@ func (m *model) startSessionWatch(s *api.Session) {
 	m.sessionWatches[id] = &sessionWatch{ctx: ctx, cancel: cancel, epoch: epoch, active: true}
 	activityID := m.activityID
 	after := m.cursor[id]
+	published := m.rowCursor[id]
 	last := s.LastSeq
 	agent, width := s.Agent, max(1, m.view.Width)
 	if m.liveRenderWidth == nil {
@@ -530,43 +543,32 @@ func (m *model) startSessionWatch(s *api.Session) {
 			}
 		}()
 		if after == 0 && last > 0 {
-			start := uint64(0)
-			if last > historyPageSize {
-				start = last - historyPageSize
-			}
 			started := time.Now()
-			batch, err := m.fetchHistory(ctx, id, start, "initial")
-			for err == nil && start > 0 && historyBatchFloor(batch.Events) == 0 && !hasConversationEvents(batch.Events) {
-				end := start
-				start = 0
-				if end > historyPageSize {
-					start = end - historyPageSize
-				}
-				var older *api.EventBatch
-				older, err = m.fetchHistory(ctx, id, start, "initial_older")
-				if err == nil {
-					var prefix []*api.Event
-					for _, event := range older.Events {
-						if event.Seq <= end {
-							prefix = append(prefix, event)
-						}
-					}
-					batch.Events = append(prefix, batch.Events...)
-				}
-			}
+			// One page of rows, fenced at the journal's own snapshot. The
+			// widening loop this replaces existed because a native page of 128
+			// records could be all bookkeeping and no conversation; a page of
+			// rows is counted in rows, so it cannot come back empty of them
+			// while there are rows behind it.
+			reply, err := m.fetchTranscript(ctx, id, &api.TranscriptRequest{SnapshotSeq: last}, "initial")
 			if err != nil {
 				if ctx.Err() == nil {
 					m.program.Send(sessionWatchEnded{id: id, epoch: epoch, err: err})
 				}
 				return
 			}
-			for _, e := range batch.Events {
-				after = max(after, e.Seq)
+			after = max(after, reply.SnapshotSeq)
+			start := uint64(0)
+			if len(reply.Events) > 0 && reply.HasOlder {
+				start = reply.Events[0].Seq - 1
 			}
 			if ctx.Err() != nil {
 				return
 			}
-			page := m.prepareHistoryPage(ctx, historyPage{id: id, events: batch.Events, start: start, initial: true, epoch: epoch, started: started}, agent, width)
+			page := m.prepareHistoryPage(ctx, historyPage{
+				id: id, rows: reply.Events, events: reply.Metadata,
+				snapshotSeq: reply.SnapshotSeq, hasOlder: reply.HasOlder,
+				start: start, initial: true, epoch: epoch, started: started,
+			}, agent, width)
 			if ctx.Err() != nil {
 				return
 			}
@@ -592,22 +594,56 @@ func (m *model) startSessionWatch(s *api.Session) {
 			if ctx.Err() != nil {
 				return
 			}
-			page := m.prepareHistoryPage(ctx, historyPage{events: batch.Events}, agent, int(renderWidth.Load()))
 			if ctx.Err() != nil {
 				return
 			}
-			m.program.Send(caughtUp{id: id, events: batch.Events, epoch: epoch, prepared: &page})
+			// Records only. What the catch-up settles is what the session is
+			// doing and what it is waiting for; the rows for the same range
+			// arrive on the row stream, from the page's fence.
+			m.program.Send(caughtUp{id: id, events: batch.Events, epoch: epoch})
 		}
 		<-m.watchBootstrap
 		bootstrapping = false
+		// Two streams, each with one job: records say what the session is doing,
+		// rows say what the conversation reads as. Neither derives the other's
+		// answer, which is the point -- this client used to reduce records into
+		// rows itself, and so did the web, over two shapes that had to agree.
+		// See cxz#155.
+		rows, e := m.client.Rows(ctx, &api.RowsRequest{SessionId: id, AfterUpdated: published, ClientId: activityID})
+		if e != nil {
+			if ctx.Err() == nil {
+				m.program.Send(sessionWatchEnded{id: id, epoch: epoch, err: e})
+			}
+			return
+		}
+		go func() {
+			err := collectLiveRows(ctx, rows, func(batch []*api.Row) {
+				start := time.Now()
+				var published []*api.Event
+				updated := uint64(0)
+				for _, row := range batch {
+					if row.Updated > updated {
+						updated = row.Updated
+					}
+					if row.Event != nil {
+						published = append(published, row.Event)
+					}
+				}
+				page := m.prepareHistoryPage(ctx, historyPage{rows: published}, agent, int(renderWidth.Load()))
+				m.debugRecorder.Add(debugEvent{Kind: "live_rows", Duration: time.Since(start).Microseconds(), Count: len(published)})
+				if ctx.Err() == nil {
+					m.program.Send(liveRows{id: id, rows: published, updated: updated, epoch: epoch, prepared: &page})
+				}
+			})
+			if ctx.Err() == nil {
+				m.program.Send(sessionWatchEnded{id: id, epoch: epoch, err: err})
+			}
+		}()
 		stream, e := m.client.Watch(ctx, &api.WatchRequest{SessionId: id, AfterSeq: after, ClientId: activityID})
 		if e == nil {
 			e = collectLiveEvents(ctx, stream, func(events []*api.Event) {
-				start := time.Now()
-				page := m.prepareHistoryPage(ctx, historyPage{events: events}, agent, int(renderWidth.Load()))
-				m.debugRecorder.Add(debugEvent{Kind: "live_batch", Duration: time.Since(start).Microseconds(), Count: len(events)})
 				if ctx.Err() == nil {
-					m.program.Send(caughtUp{id: id, events: events, epoch: epoch, prepared: &page})
+					m.program.Send(caughtUp{id: id, events: events, epoch: epoch})
 				}
 			})
 		}
@@ -625,7 +661,7 @@ func (m *model) render() {
 		// proportional to the events, so only do it while a recording runs.
 		e := debugEvent{Kind: "transcript_render", Duration: time.Since(start).Microseconds(), Count: len(m.historyPositions)}
 		if s := m.current(); s != nil && m.debugRecorder.recording() {
-			for _, loaded := range m.events[s.Id] {
+			for _, loaded := range m.rows[s.Id] {
 				e.Events++
 				e.Bytes += len(loaded.Text) + len(loaded.Payload)
 			}
@@ -678,16 +714,10 @@ func (m *model) render() {
 		sequence = w.floor
 		add(muted.Render("Earlier display history was removed by the size limit. Agent context is preserved."), 0)
 	}
-	var usage *api.Event
-	var started int64
 	replyIndex := -1
 	helpAfter, showHelp := m.localHelp[s.Id]
 	helped := false
 	contextTurns := map[string]bool{}
-	decisions := map[string]string{}
-	toolCalls := map[string]agentview.ToolActivity{}
-	toolResults := map[string]*api.Event{}
-	toolOutput := map[string]string{}
 	liveOutput := m.activeWork()
 	backgroundTools := map[string]agentview.BackgroundTask{}
 	for run, state := range m.backgroundStates() {
@@ -697,49 +727,39 @@ func (m *model) render() {
 			}
 		}
 	}
-	toolApprovals := map[string]*api.Event{}
-	pairedApprovals := map[*api.Event]bool{}
-	events := m.transcriptEvents(s.Id)
-	for _, e := range events {
-		if e.Kind == "tool_call" && e.RequestId != "" && !question(e) && !m.hiddenEvents[e] {
-			if activity, ok := m.cachedToolView(s.Agent, e); ok {
-				toolCalls[e.RunId+"/"+e.RequestId] = activity
-			} else {
-				toolCalls[e.RunId+"/"+e.RequestId] = agentview.ToolActivity{Kind: "tool", Description: e.Text}
+	// A tool's output bytes are not on its row. They arrive as records, and
+	// only the running tools of the current run can show them, so fold only
+	// what can be displayed: the rest costs a concatenation per chunk whose
+	// result is discarded, which is invisible until the history is large.
+	toolOutput := map[string]string{}
+	if liveOutput {
+		for _, e := range m.events[s.Id] {
+			if e.Kind == "tool_output" && e.RequestId != "" && e.RunId == s.RunId {
+				key := e.RunId + "/" + e.RequestId
+				toolOutput[key] = outputTail(toolOutput[key] + e.Text)
 			}
 		}
-		// Streamed output is only ever shown beneath a still-running tool of the
-		// current run, yet a long session keeps every chunk it ever received. Fold
-		// only what can be displayed: the rest costs a concatenation per chunk
-		// whose result is discarded, which is invisible until the history is large.
-		if e.Kind == "tool_output" && e.RequestId != "" && liveOutput && e.RunId == s.RunId {
-			key := e.RunId + "/" + e.RequestId
-			toolOutput[key] = outputTail(toolOutput[key] + e.Text)
-		}
-		if e.Kind == "tool_result" && e.RequestId != "" {
-			toolResults[e.RunId+"/"+e.RequestId] = e
-		}
-		if e.Kind == "approval_resolved" {
-			decisions[e.RunId+"/"+e.RequestId] = e.Text
-		}
 	}
-	for _, e := range events {
-		if e.Kind != "approval" || question(e) {
+	// What the session is doing comes from records, which is what they are for.
+	// A state record is not a row, and asking the display list what the agent
+	// is up to was always reading the wrong thing.
+	m.workingSince = 0
+	for _, e := range m.events[s.Id] {
+		if e.RunId != "" && e.RunId != s.RunId {
 			continue
 		}
-		root := fields(e.Payload)
-		id := root.text("tool_use_id")
-		if s.Agent == "codex" {
-			id = root.object("params").text("itemId")
-		}
-		if id != "" {
-			key := e.RunId + "/" + id
-			if _, ok := toolCalls[key]; ok {
-				toolApprovals[key] = e
-				pairedApprovals[e] = true
+		switch e.Kind {
+		case "input":
+			m.workingSince = e.TimeMs
+		case "turn_end":
+			m.workingSince = 0
+		case "state":
+			if m.workingSince == 0 && e.Text == "working" {
+				m.workingSince = e.TimeMs
 			}
 		}
 	}
+	events := m.transcriptRows(s.Id)
 	for _, e := range events {
 		if showHelp && !helped && e.Seq > helpAfter {
 			add(m.localCommandView(s.Id), 0)
@@ -749,107 +769,61 @@ func (m *model) render() {
 			sequence = e.Seq
 		}
 		if e.Kind == "input" {
+			// A /context turn's answer is a report, shown by the command rather
+			// than as conversation. The turn used to be closed by its turn_end
+			// record; rows have none, so the next input of that run closes it.
 			contextTurns[e.RunId] = strings.TrimSpace(e.Text) == "/context"
 		}
-		contextOutput := contextTurns[e.RunId] && (e.Kind == "input" || e.Kind == "assistant" || e.Kind == "turn_end")
-		if e.Kind == "turn_end" {
-			delete(contextTurns, e.RunId)
-		}
-		if contextOutput {
+		if contextTurns[e.RunId] && (e.Kind == "input" || e.Kind == "assistant") {
 			continue
 		}
 		if m.hiddenEvents[e] {
 			continue
 		}
-		if e.RunId == "" || e.RunId == s.RunId {
-			switch e.Kind {
-			case "input":
-				m.workingSince = e.TimeMs
-			case "turn_end":
-				m.workingSince = 0
-			case "state":
-				if m.workingSince == 0 && e.Text == "working" {
-					m.workingSince = e.TimeMs
-				}
-			}
-		}
 		if e.Kind == "input" {
-			started = e.TimeMs
-			usage = nil
 			replyIndex = -1
 		}
-		if e.Kind == "usage" && e.Text == "thread/tokenUsage/updated" {
-			usage = e
-		}
-		if e.Kind == "turn_end" {
-			if text := m.cachedSummary(e, usage, started, max(1, m.view.Width)); text != "" {
-				if replyIndex >= 0 {
-					lines[replyIndex] += "\n\n" + text
-				} else {
-					add(text, e.TimeMs)
-				}
-			}
-			if text, loading := m.inlineSummary(e); text != "" {
-				auxiliaryBlocks[len(lines)] = loading
-				add(text, e.TimeMs)
-			}
-			usage = nil
-			started = 0
-			replyIndex = -1
-		} else {
-			key := e.RunId + "/" + e.RequestId
-			_, pairedCall := toolCalls[key]
-			if e.Kind == "tool_result" && pairedCall || e.Kind == "approval" && pairedApprovals[e] {
-				continue
-			}
-			text := ""
-			if e.Kind != "tool_call" || !pairedCall {
-				text = eventViewCached(m, s, e, max(1, m.view.Width))
-			}
-			if e.Kind == "tool_call" {
-				if activity, ok := toolCalls[key]; ok {
-					state := toolInitialState(s.Agent, e)
-					if approval := toolApprovals[key]; approval != nil {
-						state = decisions[approval.RunId+"/"+approval.RequestId]
-						if state == "" {
-							state = "pending"
-						}
-						if state == "allowed" {
-							state = "working"
-						}
+		{
+			text := eventViewCached(m, s, e, max(1, m.view.Width))
+			// A tool is one row whose state the runtime already settled: the
+			// call opened it, output moved it to working, a result or a denied
+			// approval closed it. Nothing here pairs records to find that out.
+			if label := e.GetToolSummary(); label != nil {
+				key := e.RunId + "/" + e.RequestId
+				state := label.GetState()
+				background := false
+				if task, ok := backgroundTools[key]; ok {
+					background = true
+					state = task.Status
+					if task.Active {
+						state = "working"
 					}
-					result := toolResults[key]
-					if result != nil && s.Agent == "codex" {
-						if final, ok := m.cachedToolView(s.Agent, result); ok {
-							activity = final
-						}
-					}
-					background := false
-					if task, ok := backgroundTools[key]; ok {
-						background = true
-						state = task.Status
-						if task.Active {
-							state = "working"
-						}
-						if !task.Active && (state == "working" || state == "running") {
-							state = "pending"
-						}
-					}
-					text = indentBlock(m.cachedToolBody(s.Agent, e, activity, result, max(1, m.view.Width), state, background))
-					if !background && activity.Kind == "command" && result == nil && e.RunId == s.RunId && liveOutput && toolOutput[key] != "" {
-						text += "\n" + liveOutputView(toolOutput[key], m.view.Width)
+					if !task.Active && (state == "working" || state == "running") {
+						state = "pending"
 					}
 				}
+				text = indentBlock(m.cachedToolBody(s.Agent, e, max(1, m.view.Width), state, background))
+				if !background && label.GetKind() == "command" && state != "completed" && state != "failed" && e.RunId == s.RunId && liveOutput && toolOutput[key] != "" {
+					text += "\n" + liveOutputView(toolOutput[key], m.view.Width)
+				}
 			}
+			// A question's answer is folded into its own row, so the row says
+			// what became of it. A tool's approval is not a row at all -- it is
+			// the state its tool row is in.
 			if e.Kind == "approval" {
-				state := decisions[e.RunId+"/"+e.RequestId]
+				state := resolutionState(e)
 				if state == "" {
-					if m.hiddenAutoApproval(s, e) {
-						continue
-					}
 					state = "requested"
 				}
 				text = approvalLine(s, e, state, max(1, m.view.Width))
+				if resolutionState(e) == "" && m.hiddenAutoApproval(s, e) {
+					text = ""
+				}
+			}
+			// A completed turn's metrics are published on the response row
+			// itself, at the sequence of the record that completed it.
+			if summary := m.cachedSummary(e, max(1, m.view.Width)); summary != "" && text != "" {
+				text += "\n\n" + summary
 			}
 			if text != "" {
 				if e.Seq > 0 {
@@ -880,6 +854,14 @@ func (m *model) render() {
 					copyBlocks[replyIndex] = m.renderedResponses[e].buttons
 					responseBlocks[replyIndex] = true
 				}
+			}
+			// The auxiliary summary of a finished turn is its own block, after
+			// the response it is about. It hangs under that response rather
+			// than under the turn_end record, which has no row -- see
+			// auxiliary.Turn.Response.
+			if text, loading := m.inlineSummary(e); text != "" {
+				auxiliaryBlocks[len(lines)] = loading
+				add(text, e.TimeMs)
 			}
 		}
 		if hint := authHint(s, e); hint != "" {
@@ -2047,12 +2029,38 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if v.prepared != nil {
 			m.mergePreparedHistory(*v.prepared)
 		}
+		// A record changes the transcript only if the transcript shows it. Rows
+		// carry the conversation now, so that is a short list: the bytes a
+		// running tool is producing, and what the session is doing. Usage,
+		// catalogues and protocol traffic change other parts of the screen,
+		// which their own handlers draw.
 		changed := false
 		for _, e := range v.events {
-			changed = changed || (e.Seq > m.cursor[v.id] && e.Kind != "raw")
+			changed = changed || (e.Seq > m.cursor[v.id] && (e.Kind == "tool_output" || e.Kind == "state"))
 			m.receiveEvent(received{v.id, e}, false)
 		}
 		if current := m.current(); changed && current != nil && current.Id == v.id {
+			m.render()
+		}
+		return m, nil
+	case liveRows:
+		if !m.validSessionWatch(v.id, v.epoch) {
+			return m, nil
+		}
+		if v.prepared != nil {
+			m.mergePreparedHistory(*v.prepared)
+		}
+		for _, row := range v.rows {
+			m.receiveRow(liveRow{id: v.id, row: row, updated: v.updated, epoch: v.epoch})
+		}
+		if m.rowCursor == nil {
+			m.rowCursor = map[string]uint64{}
+		}
+		if v.updated > m.rowCursor[v.id] {
+			m.rowCursor[v.id] = v.updated
+		}
+		// Once per batch: a burst of rows is one change to what is on screen.
+		if current := m.current(); current != nil && current.Id == v.id && len(v.rows) > 0 {
 			m.render()
 		}
 		return m, nil
@@ -2577,10 +2585,15 @@ func (m *model) receiveEvent(v received, repaint bool) {
 		if !w.detached {
 			w.tail = v.event.Seq
 		}
+		// A record is kept because something is derived from it, not because it
+		// is shown: what the session is doing, what quota is left, which models
+		// were offered. The conversation itself arrives on the row stream, and
+		// appending records to the display list is what this client used to do
+		// instead of being told. See cxz#155.
 		trimmed := false
 		if !w.detached {
 			m.events[v.id] = append(m.events[v.id], v.event)
-			trimmed = m.limitHistory(v.id, false, 0)
+			trimmed = m.limitRecords(v.id)
 		}
 		// A catalog published while the picker is open replaces what it shows --
 		// including the one a refresh asked for, which arrives this way rather

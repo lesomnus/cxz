@@ -133,6 +133,7 @@ func TestErrorDialogFixedContentAndReceiptIsolation(t *testing.T) {
 	}
 	m.showError("another failure")
 	m.events["s"] = []*api.Event{{Seq: 1, Kind: "assistant", Text: strings.Repeat("history\n", 100)}}
+	setRows(m, "s", m.events["s"])
 	m.render()
 	m.view.GotoTop()
 	if !strings.Contains(m.View(), "another failure") {

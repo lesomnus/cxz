@@ -41,14 +41,14 @@ func trimFixture(start uint64, count int) []*api.Event {
 func windowAtLimit(t testing.TB, tail uint64) (*model, uint64) {
 	m := conversationModel()
 	m.windowPolicy = &historypolicy.Window{MiB: 1}
-	m.applyHistoryPage(historyPage{id: "s", start: tail, initial: true, events: trimFixture(tail, 128)})
+	m.applyHistoryPage(historyPage{id: "s", start: tail, initial: true, rows: rowsOf(trimFixture(tail, 128))})
 	start := tail
 	for range 40 {
 		if m.historyWindow("s").detached {
 			return m, start
 		}
 		m.view.SetYOffset(0)
-		m.applyHistoryPage(historyPage{id: "s", start: start - 128, end: start, events: trimFixture(start-128, 128)})
+		m.applyHistoryPage(historyPage{id: "s", start: start - 128, end: start, rows: rowsOf(trimFixture(start-128, 128))})
 		start -= 128
 	}
 	t.Fatal("window never reached its limit")
@@ -64,14 +64,14 @@ func TestTrimKeepsRowsOfEventsStillLoaded(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	defer lipgloss.SetColorProfile(profile)
 	m, start := windowAtLimit(t, 8192)
-	page := m.prepareHistoryPage(context.Background(), historyPage{id: "s", start: start - 128, end: start, events: trimFixture(start-128, 128)}, "claude", m.view.Width)
+	page := m.prepareHistoryPage(context.Background(), historyPage{id: "s", start: start - 128, end: start, rows: rowsOf(trimFixture(start-128, 128))}, "claude", m.view.Width)
 	if len(page.prepared) == 0 || len(page.toolBodies) == 0 {
 		t.Fatal("nothing was prepared off the UI goroutine")
 	}
 	// A row that survives the eviction, marked so a rebuild is visible: the
 	// cached body is returned verbatim while the cache entry stays valid.
 	var marked *api.Event
-	for _, e := range m.events["s"] {
+	for _, e := range m.rows["s"] {
 		if cached, ok := m.renderedResponses[e]; ok && e.Kind == "assistant" {
 			cached.body = "row reused, not rebuilt"
 			m.renderedResponses[e] = cached
@@ -82,14 +82,14 @@ func TestTrimKeepsRowsOfEventsStillLoaded(t *testing.T) {
 	if marked == nil {
 		t.Fatal("no rendered response to mark")
 	}
-	before := len(m.events["s"])
+	before := len(m.rows["s"])
 	m.view.SetYOffset(0)
 	m.applyHistoryPage(page)
-	if len(m.events["s"]) >= before+len(page.events) {
+	if len(m.rows["s"]) >= before+len(page.events) {
 		t.Fatal("the page was applied without evicting, so the window was not at its limit")
 	}
 	loaded := map[*api.Event]bool{}
-	for _, e := range m.events["s"] {
+	for _, e := range m.rows["s"] {
 		loaded[e] = true
 	}
 	if !loaded[marked] {
@@ -122,7 +122,7 @@ func TestScrollPositionSurvivesWindowEviction(t *testing.T) {
 	if !strings.HasSuffix(before, "/8,320") {
 		t.Fatal("position is not counted over the whole journal:", before)
 	}
-	m.applyHistoryPage(historyPage{id: "s", start: start - 128, end: start, events: trimFixture(start-128, 128)})
+	m.applyHistoryPage(historyPage{id: "s", start: start - 128, end: start, rows: rowsOf(trimFixture(start-128, 128))})
 	if m.view.TotalLineCount() == rows {
 		t.Fatal("the page was applied without evicting, so the window was not at its limit")
 	}
@@ -138,7 +138,7 @@ func BenchmarkOlderPageAtWindowLimit(b *testing.B) {
 	for b.Loop() {
 		b.StopTimer()
 		m, start := windowAtLimit(b, 8192)
-		page := m.prepareHistoryPage(context.Background(), historyPage{id: "s", start: start - 128, end: start, events: trimFixture(start-128, 128)}, "claude", m.view.Width)
+		page := m.prepareHistoryPage(context.Background(), historyPage{id: "s", start: start - 128, end: start, rows: rowsOf(trimFixture(start-128, 128))}, "claude", m.view.Width)
 		m.view.SetYOffset(0)
 		b.StartTimer()
 		m.applyHistoryPage(page)

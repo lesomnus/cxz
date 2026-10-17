@@ -74,11 +74,13 @@ func TestContextIgnoresOtherRunAndPreCompactSnapshots(t *testing.T) {
 	m.current().Agent = "codex"
 	payload := []byte(`{"tokenUsage":{"last":{"totalTokens":2000},"modelContextWindow":10000}}`)
 	m.events["s"] = []*api.Event{{RunId: "old", Kind: "usage", Text: "thread/tokenUsage/updated", Payload: payload}}
+	setRows(m, "s", m.events["s"])
 	m.contextCommand()
 	if m.report.context.snapshot.Used != nil {
 		t.Fatal("old run usage displayed")
 	}
 	m.events["s"] = []*api.Event{{RunId: m.current().RunId, Kind: "usage", Text: "thread/tokenUsage/updated", Payload: payload}, {RunId: m.current().RunId, Kind: "compact"}}
+	setRows(m, "s", m.events["s"])
 	m.contextCommand()
 	if m.report.context.snapshot.Used != nil || !strings.Contains(m.report.text, "compacted") {
 		t.Fatal("pre-compact usage displayed")
