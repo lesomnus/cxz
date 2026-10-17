@@ -3,10 +3,13 @@ import {
   ResponseMetadataSchema,
   SessionEventSchema,
   SessionSchema,
+  ToolSummarySchema,
 } from "#gen/cxz/session_pb";
 import { ProjectSchema } from "#gen/cxz/project_pb";
 
-// Synthetic data uses the same protobuf records and projection as the live UI.
+// Synthetic data is the rows a runtime sends, not the records it reduced them
+// from: the app reads rows, so a fixture that emitted records would exercise a
+// path it no longer has.
 export function storyEvent(
   seq: number,
   kind: string,
@@ -102,46 +105,84 @@ export function burstEvent(
   event.requestId = `${turn}/check-${batch}`;
   return event;
 }
+// Rows, as a runtime sends them: a tool's call, output and result are already
+// one row carrying the summary a card reads. A fixture that emitted the three
+// records would be exercising a reduction the app no longer has. See cxz#155.
+// Rows, as a runtime sends them: a tool's call, output and result are already
+// one row carrying the summary a card reads. A fixture that emitted the three
+// records would be exercising a reduction the app no longer has. See cxz#155.
 export function toolEvents(state = "completed") {
   const command = "/usr/bin/zsh -lc 'git status --short --branch'";
-  const call = storyEvent(3, "tool_call", command, {
-    item: { type: "commandExecution", command, status: "inProgress" },
+  const row = storyEvent(3, "tool_call", command, {
+    item: { type: "commandExecution", command, status: state },
   });
-  call.requestId = "exec-1";
-  if (state === "working") return [call];
-  const result = storyEvent(4, "tool_result", "## main\n M ts/src/app.tsx\n", {
-    item: {
-      type: "commandExecution",
-      command,
-      status: state,
-      exitCode: state === "completed" ? 0 : 1,
-      aggregatedOutput: "## main\n M ts/src/app.tsx\n",
-    },
+  row.requestId = "exec-1";
+  row.toolSummary = create(ToolSummarySchema, {
+    name: "Bash",
+    shell: "zsh",
+    command: "git status --short --branch",
+    state: state === "completed" ? "completed" : state,
   });
-  result.requestId = call.requestId;
-  return [call, result];
+  if (state !== "working") row.text = "## main\n M ts/src/app.tsx\n";
+  return [row];
+}
+
+/**
+ * toolRecords is what EventDetails answers with: the records a tool row was
+ * reduced from. A row carries no output -- the projection drops output records
+ * once the row says what state the tool reached -- so a card that wants the
+ * bytes asks for these, and a story that opens one has to be able to answer.
+ */
+export function toolRecords(state = "completed") {
+  const command = "/usr/bin/zsh -lc 'git status --short --branch'";
+  const output = "## main\n M ts/src/app.tsx\n";
+  const item = { type: "commandExecution", command, status: state };
+  const call = storyEvent(3, "tool_call", command, { item });
+  const records = [call];
+  if (state !== "working") {
+    records.push(
+      storyEvent(4, "tool_result", output, {
+        item: {
+          ...item,
+          exitCode: state === "completed" ? 0 : 1,
+          aggregatedOutput: output,
+        },
+      }),
+    );
+  }
+  for (const e of records) e.requestId = "exec-1";
+  return records;
+}
+
+/** loadToolRecords answers any sequence with this tool's records. */
+export function loadToolRecords(state = "completed") {
+  return async () => toolRecords(state);
 }
 export function fileEvents() {
-  const event = storyEvent(3, "tool_result", "Files updated", {
-    item: {
-      type: "fileChange",
-      status: "completed",
-      changes: [
-        {
-          path: "/workspace/ts/src/app.tsx",
-          kind: "update",
-          diff: "@@ -1,2 +1,3 @@\n-old\n+new\n+line",
-        },
-        {
-          path: "/workspace/ts/src/example.ts",
-          kind: "add",
-          diff: "@@ -0,0 +1 @@\n+export const ready = true;",
-        },
-      ],
-    },
+  const row = storyEvent(3, "tool_call", "Edit", {
+    item: { type: "fileChange", status: "completed" },
   });
-  event.requestId = "files-1";
-  return [event];
+  row.requestId = "files-1";
+  row.toolSummary = create(ToolSummarySchema, {
+    name: "Edit",
+    state: "completed",
+    files: [
+      {
+        path: "/workspace/ts/src/app.tsx",
+        action: "Edit",
+        added: 2,
+        removed: 1,
+        measure: "lines",
+      },
+      {
+        path: "/workspace/ts/src/example.ts",
+        action: "Write",
+        added: 1,
+        measure: "lines",
+      },
+    ],
+  });
+  return [row];
 }
 export function activityStackEvents() {
   const commands = [
@@ -149,15 +190,26 @@ export function activityStackEvents() {
     "rg -n 'ActivityCard|ToolActivityView' ts/src/event-view.tsx ts/src/tool-activity-view.tsx ts/src/activity-card.tsx",
     "npm run build && npm run test:storybook -- --grep 'folded activity cards'",
   ];
-  const tools = commands.flatMap((command, index) => {
-    const seq = 3 + index * 2;
-    const item = { type: "commandExecution", command, status: "completed" };
-    const call = storyEvent(seq, "tool_call", command, { item });
-    const result = storyEvent(seq + 1, "tool_result", "Check passed.", {
-      item: { ...item, exitCode: 0, aggregatedOutput: "Check passed." },
+  // One row per tool, as the projection sends them: its call and its result
+  // are the same row by the time a reader has it.
+  const tools = commands.map((command, index) => {
+    const row = storyEvent(3 + index * 2, "tool_call", "Check passed.", {
+      item: {
+        type: "commandExecution",
+        command,
+        status: "completed",
+        exitCode: 0,
+        aggregatedOutput: "Check passed.",
+      },
     });
-    call.requestId = result.requestId = `stack-${index}`;
-    return [call, result];
+    row.requestId = `stack-${index}`;
+    row.toolSummary = create(ToolSummarySchema, {
+      name: "Bash",
+      shell: "zsh",
+      command,
+      state: "completed",
+    });
+    return row;
   });
   const files = fileEvents()[0];
   files.seq = 9n;
