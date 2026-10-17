@@ -4,7 +4,7 @@ import {
   SessionEventSchema,
   ResponseMetadataSchema,
 } from "#gen/cxz/session_pb";
-import { transcriptEvents } from "./tool-activity";
+import { transcriptRows } from "./tool-activity";
 import { workGroups, selectedWorkGroup } from "./work-groups";
 
 const event = (seq: number, kind: string, requestId = "", runId = "run") =>
@@ -66,19 +66,20 @@ describe("work between conversation responses", () => {
   });
 
   it("counts executions once and keeps commentary, answers, questions and errors in the conversation", () => {
+    // Rows, not records: a tool's call, output and result are one row by the
+    // time a reader sees them, so grouping counts the execution once without
+    // having to work out which records belong together.
     const events = [
       event(1, "input"),
       event(2, "assistant"),
       event(3, "tool_call", "bash"),
-      event(4, "tool_output", "bash"),
-      event(5, "tool_result", "bash"),
       event(6, "assistant"),
       event(7, "tool_call", "edit"),
       event(8, "approval"),
       event(9, "diagnostic"),
       event(10, "assistant"),
     ];
-    const projected = workGroups(transcriptEvents(events).events);
+    const projected = workGroups(transcriptRows(events).events);
     expect(projected.events.map((e) => e.seq)).toEqual([
       1n,
       2n,
@@ -135,9 +136,9 @@ describe("work between conversation responses", () => {
   });
   it("keeps dialog selection when history prepends the missing call and input", () => {
     const result = event(5, "tool_result", "execution");
-    const before = workGroups(transcriptEvents([result]).events);
+    const before = workGroups(transcriptRows([result]).events);
     const after = workGroups(
-      transcriptEvents([
+      transcriptRows([
         event(1, "input"),
         event(2, "tool_call", "execution"),
         result,
@@ -175,7 +176,7 @@ describe("work between conversation responses", () => {
       event(10, "turn_end"),
     ];
     events[9].text = "failed";
-    const projected = workGroups(transcriptEvents(events).events);
+    const projected = workGroups(transcriptRows(events).events);
     expect(projected.events.map((e) => e.seq)).toEqual([
       1n,
       2n,

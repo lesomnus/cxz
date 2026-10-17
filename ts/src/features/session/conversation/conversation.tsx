@@ -66,7 +66,7 @@ import {
 } from "#src/features/session/cards/floating-card.tsx";
 import { composerPrompt } from "#src/features/session/composer/composer-code.ts";
 import { key } from "@lesomnus/payday/store";
-import { transcriptEvents } from "#src/features/session/model/tool-activity.ts";
+import { transcriptRows } from "#src/features/session/model/tool-activity.ts";
 import { Transcript } from "./transcript";
 import { ConversationLoading } from "./conversation-loading";
 import { atScrollBottom } from "./scroll-physics";
@@ -478,7 +478,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       if (historyRequest.current === controller) historyRequest.current = null;
     }
   }
-  const transcript = useMemo(() => transcriptEvents(events), [events]);
+  const transcript = useMemo(() => transcriptRows(events), [events]);
   const aux = useSessionAux(c, id);
   const s = current.data;
   const sessionProject =

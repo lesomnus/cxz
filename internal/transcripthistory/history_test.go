@@ -397,3 +397,144 @@ func tail(t *testing.T, db *sql.DB, after uint64) []Version {
 	}
 	return out
 }
+
+// These five behaviours had their only coverage in TypeScript, where this
+// reduction used to be duplicated. The implementation is here now, so the
+// assertions are too -- moving the code without moving its tests is how the
+// behaviour would quietly change. See cxz#155.
+
+// A tool's row moves through the states its records describe, and the records
+// stay available behind it rather than being consumed. These are the
+// projection's own states; what a card displays for a given agent is a
+// separate mapping, tested where that mapping lives.
+func TestToolRowAdvancesThroughApprovalToCompletion(t *testing.T) {
+	db, add := fixture(t)
+	call := event(1, "tool_call", "exec-1", `{"item":{"type":"commandExecution","command":"git status"}}`)
+	add(call)
+	state := func() string {
+		p := syncPage(t, db, &api.TranscriptRequest{})
+		if len(p.Events) != 1 || p.Events[0].Seq != 1 {
+			t.Fatalf("a tool's records produced %d rows, want its call", len(p.Events))
+		}
+		return p.Events[0].GetToolSummary().GetState()
+	}
+	// A call that has reported nothing yet is pending rather than working: no
+	// output has arrived and no approval has been asked for.
+	if got := state(); got != "pending" {
+		t.Fatal("a call alone did not read as pending:", got)
+	}
+	approval := event(2, "approval", "approve-1", `{"tool_use_id":"exec-1","item":{"type":"commandExecution"}}`)
+	add(approval)
+	if got := state(); got != "pending" {
+		t.Fatal("an approval request moved a pending row:", got)
+	}
+	allowed := event(3, "approval_resolved", "approve-1", `{}`)
+	allowed.Text = "allowed"
+	add(allowed)
+	if got := state(); got != "working" {
+		t.Fatal("an allowed approval did not release the row:", got)
+	}
+	result := event(4, "tool_result", "exec-1", `{"item":{"type":"commandExecution","status":"completed","exitCode":0}}`)
+	add(result)
+	if got := state(); got != "completed" {
+		t.Fatal("the result did not complete the row:", got)
+	}
+	// The records are still there for a card that wants the output.
+	batch, err := Details(context.Background(), db, &api.EventDetailsRequest{SessionId: "s", Seq: 1}, decode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(batch.Events) != 4 {
+		t.Fatalf("details returned %d records, want the call, approval, resolution and result", len(batch.Events))
+	}
+}
+
+// A refused approval fails the row rather than leaving it working.
+func TestDeclinedApprovalFailsTheToolRow(t *testing.T) {
+	db, add := fixture(t)
+	add(event(1, "tool_call", "exec-1", `{"item":{"type":"commandExecution","command":"rm -rf /"}}`))
+	add(event(2, "approval", "approve-1", `{"tool_use_id":"exec-1"}`))
+	denied := event(3, "approval_resolved", "approve-1", `{}`)
+	denied.Text = "denied"
+	add(denied)
+	p := syncPage(t, db, &api.TranscriptRequest{})
+	if len(p.Events) != 1 || p.Events[0].GetToolSummary().GetState() != "failed" {
+		t.Fatal("a denied approval did not fail the row", p.Events)
+	}
+}
+
+// A nonzero exit is a failure, which the row says rather than the reader
+// inferring it from a payload.
+func TestNonzeroExitFailsTheToolRow(t *testing.T) {
+	db, add := fixture(t)
+	add(event(1, "tool_call", "exec-1", `{"item":{"type":"commandExecution","command":"false"}}`))
+	add(event(2, "tool_result", "exec-1", `{"item":{"type":"commandExecution","status":"failed","exitCode":1}}`))
+	p := syncPage(t, db, &api.TranscriptRequest{})
+	if len(p.Events) != 1 || p.Events[0].GetToolSummary().GetState() != "failed" {
+		t.Fatal("a nonzero exit did not fail the row", p.Events)
+	}
+}
+
+// Request identity is per run. The same command in another run is another
+// tool, and a result from another run does not complete this one.
+func TestToolIdentityDoesNotCrossRuns(t *testing.T) {
+	db, add := fixture(t)
+	add(event(1, "tool_call", "exec-1", `{"item":{"type":"commandExecution","command":"git status"}}`))
+	same := event(2, "tool_call", "exec-1", `{"item":{"type":"commandExecution","command":"git status"}}`)
+	same.RunId = "other-run"
+	add(same)
+	elsewhere := event(3, "tool_result", "exec-1", `{"item":{"status":"completed"}}`)
+	elsewhere.RunId = "other-run"
+	add(elsewhere)
+	p := syncPage(t, db, &api.TranscriptRequest{})
+	if len(p.Events) != 2 {
+		t.Fatalf("two runs produced %d rows, want one each", len(p.Events))
+	}
+	if p.Events[0].GetToolSummary().GetState() == "completed" {
+		t.Fatal("another run's result completed this run's tool")
+	}
+	if p.Events[1].GetToolSummary().GetState() != "completed" {
+		t.Fatal("a run's own result did not complete its tool")
+	}
+}
+
+// Output records interleave with a response and are not rows; the row is
+// republished once to say the tool is working, not once per chunk.
+func TestInterleavedOutputDoesNotRepublishPerChunk(t *testing.T) {
+	db, add := fixture(t)
+	add(event(1, "tool_call", "exec-1", `{"item":{"type":"commandExecution","command":"git status"}}`))
+	add(event(2, "tool_output", "exec-1", `{}`))
+	add(event(3, "assistant", "", `{"item":{"phase":"commentary"}}`))
+	add(event(4, "tool_output", "exec-1", `{}`))
+	p := syncPage(t, db, &api.TranscriptRequest{})
+	if len(p.Events) != 2 || p.Events[0].Seq != 1 || p.Events[1].Seq != 3 {
+		t.Fatalf("output records became rows: %v", p.Events)
+	}
+	versions, err := Tail(context.Background(), db, "s", 0, 0, decode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	published := 0
+	for _, v := range versions {
+		if v.Event.Seq == 1 {
+			published++
+		}
+	}
+	if published != 2 {
+		t.Fatalf("the tool row was published %d times, want its call and one working update", published)
+	}
+}
+
+// A result whose call has been trimmed away still reads, rather than being
+// dropped for having no anchor.
+func TestOrphanToolRecordsStillRead(t *testing.T) {
+	db, add := fixture(t)
+	add(event(4, "tool_result", "exec-1", `{"item":{"type":"commandExecution","command":"git status","status":"completed"}}`))
+	p := syncPage(t, db, &api.TranscriptRequest{})
+	if len(p.Events) != 1 || p.Events[0].Seq != 4 {
+		t.Fatalf("an orphan result was dropped: %v", p.Events)
+	}
+	if got := p.Events[0].GetToolSummary().GetState(); got != "completed" {
+		t.Fatal("an orphan result lost its state:", got)
+	}
+}

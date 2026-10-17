@@ -1,16 +1,19 @@
-import { create } from "@bufbuild/protobuf";
+import { clone, create } from "@bufbuild/protobuf";
 import { useState } from "react";
 import { Button } from "@lesomnus/nox";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AuxKind } from "#gen/cxz/project_svc_pb";
 import { AuxStateSchema, AuxSchema } from "#gen/cxz/session_svc_pb";
+import { SessionEventSchema } from "#gen/cxz/session_pb";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
+import { payload } from "#src/features/session/model/journal.ts";
 import {
   fileEvents,
   activityStackEvents,
   responseEvent,
   storyEvent,
   toolEvents,
+  loadToolRecords,
   questionEvent,
 } from "#src/storybook/fixtures.ts";
 
@@ -104,30 +107,48 @@ const commentary = responseEvent(
 commentary.response!.phase = "commentary";
 commentary.response!.completionJson = new Uint8Array();
 export const Commentary: Story = { args: { events: [commentary] } };
-export const CompletedTool: Story = { args: { events: toolEvents() } };
+// A card's output comes from the records its row was reduced from, fetched
+// when the card opens. A story that cannot answer for them shows a card with
+// no output, which is a fixture gap rather than a product one.
+export const CompletedTool: Story = {
+  args: { events: toolEvents(), loadDetails: loadToolRecords() },
+};
 export const WorkingTool: Story = { args: { events: toolEvents("working") } };
 const question = questionEvent("steps");
 question.requestId = "question-history";
-const questionAnswer = storyEvent(6, "approval_resolved", "allowed", {
-  state: "allowed",
-  answers: {
-    layout: { selected: ["Compact"] },
-    notes: {
-      selected: [],
-      other:
-        "Keep the existing toolbar.\n\n```typescript\nconst compact = true;\n```",
-    },
-    timing: { selected: ["Now"] },
-  },
-});
-questionAnswer.requestId = question.requestId;
-export const AnsweredQuestion: Story = {
-  args: { events: [question, questionAnswer] },
+// A resolved question arrives as one row with its answer folded in. The
+// runtime does that folding -- the resolution record is never a row -- so a
+// fixture that emitted both would exercise a reduction the app no longer has.
+// See cxz#155.
+const resolved = (state: string, resolution: Record<string, unknown> = {}) => {
+  const row = clone(SessionEventSchema, question);
+  row.payload = new TextEncoder().encode(
+    JSON.stringify({
+      ...payload(question),
+      cxz_resolution: { ...resolution, state },
+    }),
+  );
+  return row;
 };
-const canceledQuestion = storyEvent(6, "approval_resolved", "denied");
-canceledQuestion.requestId = question.requestId;
+export const AnsweredQuestion: Story = {
+  args: {
+    events: [
+      resolved("allowed", {
+        answers: {
+          layout: { selected: ["Compact"] },
+          notes: {
+            selected: [],
+            other:
+              "Keep the existing toolbar.\n\n```typescript\nconst compact = true;\n```",
+          },
+          timing: { selected: ["Now"] },
+        },
+      }),
+    ],
+  },
+};
 export const CanceledQuestion: Story = {
-  args: { events: [question, canceledQuestion] },
+  args: { events: [resolved("denied")] },
 };
 export const FileChanges: Story = { args: { events: fileEvents() } };
 export const TurnTasks: Story = {
@@ -166,7 +187,12 @@ export const ModelAtCapacity: Story = {
     ],
   },
 };
-export const FailedTool: Story = { args: { events: toolEvents("failed") } };
+export const FailedTool: Story = {
+  args: {
+    events: toolEvents("failed"),
+    loadDetails: loadToolRecords("failed"),
+  },
+};
 
 export const EarlierError: Story = {
   args: {

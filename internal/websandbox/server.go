@@ -529,7 +529,11 @@ func (s *Server) respond(st *session, generation uint64) {
 		s.state(st, "idle")
 		return
 	}
-	s.event(st, "tool_result", "Sample tasks completed", "", []byte(`{"simulated":true,"status":"completed","output":"All fixture checks passed"}`))
+	// A request identity, because a real tool has one and the reading projection
+	// summarises a tool record only when it can say which tool the record
+	// belongs to. Without it this row is not a tool at all, and a client that
+	// made one out of a bare record was deciding something the runtime had not.
+	s.event(st, "tool_result", "Sample tasks completed", fmt.Sprintf("%s/checks-%d", st.value.GetStatus().GetRunId(), turn), []byte(`{"simulated":true,"item":{"type":"commandExecution","command":"cxz fixture checks","status":"completed","exitCode":0,"aggregatedOutput":"All fixture checks passed"}}`))
 	if scenario == "tools" {
 		s.toolActivity(st, fmt.Sprintf("turn-%d", turn), true)
 	}

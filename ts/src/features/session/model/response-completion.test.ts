@@ -1,116 +1,78 @@
 import { create } from "@bufbuild/protobuf";
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import {
   SessionEventSchema,
   ResponseMetadataSchema,
 } from "#gen/cxz/session_pb";
-import { responseCompletions } from "./response-completion";
+import { durationLabel, responseCompletions } from "./response-completion";
 
-const event = (seq: bigint, kind: string, text = "") =>
-  create(SessionEventSchema, {
+const answer = (seq: bigint, completion: unknown) => {
+  const e = create(SessionEventSchema, {
     seq,
-    kind,
-    text,
+    kind: "assistant",
     runId: "r",
     timeMs: seq * 1000n,
   });
-describe("final response summaries", () => {
-  it("attaches a durable summary only to its response in the same run", () => {
-    const a = event(1n, "assistant"),
-      b = event(2n, "assistant"),
-      end = event(3n, "turn_end", "completed");
-    end.response = create(ResponseMetadataSchema, {
-      completionJson: new TextEncoder().encode(
-        JSON.stringify({
-          response_seq: "2",
-          duration_ms: 500,
-          duration_source: "provider",
-          token_scope: "last_call",
-          metrics: { input_tokens: 100, reasoning_tokens: 20, bad: -1 },
-        }),
-      ),
-    });
-    const result = responseCompletions([a, b, end]);
-    expect(result.size).toBe(1);
-    expect(result.get("2")).toEqual({
-      durationMs: 500,
-      durationSource: "provider",
-      tokenScope: "last_call",
-      metrics: { input_tokens: 100, reasoning_tokens: 20 },
-    });
-    end.runId = "other";
-    expect(responseCompletions([a, b, end]).size).toBe(0);
-  });
-  it("legacy commentary, interrupted turns and malformed snapshots are not final", () => {
-    const a = event(1n, "assistant"),
-      end = event(2n, "turn_end", "completed");
-    a.response = create(ResponseMetadataSchema, { phase: "commentary" });
-    expect(responseCompletions([a, end]).size).toBe(0);
-    a.response.phase = "final_answer";
-    end.text = "interrupted";
-    expect(responseCompletions([a, end]).size).toBe(0);
-    end.text = "completed";
-    end.response = create(ResponseMetadataSchema, {
-      completionJson: new TextEncoder().encode("invalid"),
-    });
-    expect(responseCompletions([a, end]).size).toBe(0);
-  });
-  it("prefers reported legacy duration and never invents missing usage", () => {
-    const input = event(1n, "input"),
-      a = event(2n, "assistant"),
-      end = event(5n, "turn_end", "completed");
-    expect(responseCompletions([input, a, end]).get("2")?.durationMs).toBe(
-      4000,
-    );
-    end.payload = new TextEncoder().encode(
-      JSON.stringify({ duration_ms: 1234, usage: { output_tokens: 0 } }),
-    );
-    expect(responseCompletions([input, a, end]).get("2")).toMatchObject({
-      durationMs: 1234,
-      durationSource: "provider",
-      metrics: { output_tokens: 0 },
-    });
-    expect(
-      responseCompletions([a, end]).get("2")?.metrics.input_tokens,
-    ).toBeUndefined();
-  });
-});
-
-it("reads completion snapshots attached to historical responses", () => {
-  const answer = event(10n, "assistant");
-  answer.response = create(ResponseMetadataSchema, {
+  e.response = create(ResponseMetadataSchema, {
     phase: "final_answer",
     completionJson: new TextEncoder().encode(
-      JSON.stringify({
-        response_seq: "10",
-        duration_ms: 800,
-        metrics: { input_tokens: 120 },
-      }),
+      typeof completion === "string" ? completion : JSON.stringify(completion),
     ),
   });
-  expect(responseCompletions([answer]).get("10")).toMatchObject({
-    durationMs: 800,
+  return e;
+};
+
+// A completed turn's metrics arrive on the response row the runtime folded
+// them onto. Which response a turn belongs to, whether its phase makes it
+// eligible, and where the duration came from are all decided there -- see
+// internal/transcripthistory and cxz#155 -- so this reads rather than derives.
+// It used to fold a native turn_end record itself, because a live stream
+// carried records while a page carried rows.
+it("reads the completion from the row that names itself", () => {
+  const mine = answer(10n, {
+    response_seq: "10",
+    duration_ms: 800,
+    duration_source: "provider",
+    token_scope: "turn",
     metrics: { input_tokens: 120 },
   });
-  answer.response.phase = "commentary";
-  expect(responseCompletions([answer]).size).toBe(0);
-  answer.response.phase = "final_answer";
-  answer.seq = 11n;
-  expect(responseCompletions([answer]).size).toBe(0);
+  expect(responseCompletions([mine]).get("10")).toEqual({
+    durationMs: 800,
+    durationSource: "provider",
+    tokenScope: "turn",
+    metrics: { input_tokens: 120 },
+  });
 });
 
-it("does not reuse a historical final answer for a later empty legacy turn", () => {
-  const answer = event(10n, "assistant");
-  answer.response = create(ResponseMetadataSchema, {
-    completionJson: new TextEncoder().encode(
-      JSON.stringify({
-        response_seq: "10",
-        duration_ms: 800,
-        metrics: { input_tokens: 120 },
-      }),
-    ),
+it("ignores a completion that names another row", () => {
+  // The runtime republishes the response it completed, at the sequence of the
+  // completing record. A row carrying somebody else's sequence is not a
+  // completion of this row, whatever else it is.
+  expect(responseCompletions([answer(11n, { response_seq: "10" })]).size).toBe(
+    0,
+  );
+});
+
+it("drops metrics that are not usable numbers, and keeps the answer", () => {
+  const e = answer(1n, {
+    response_seq: "1",
+    duration_ms: -1,
+    metrics: { input_tokens: 5, negative: -1, missing: null },
   });
-  const end = event(12n, "turn_end", "completed");
-  end.payload = new TextEncoder().encode(JSON.stringify({ duration_ms: 1 }));
-  expect(responseCompletions([answer, end]).get("10")?.durationMs).toBe(800);
+  expect(responseCompletions([e]).get("1")).toMatchObject({
+    durationMs: undefined,
+    metrics: { input_tokens: 5 },
+  });
+});
+
+it("keeps an answer whose completion is malformed", () => {
+  const rows = [answer(1n, "{not json"), answer(2n, { response_seq: "2" })];
+  const found = responseCompletions(rows);
+  expect([...found.keys()]).toEqual(["2"]);
+});
+
+it("reads a duration as a person would", () => {
+  expect(durationLabel(420)).toBe("420ms");
+  expect(durationLabel(1500)).toBe("1.5s");
+  expect(durationLabel(95000)).toBe("1m 35s");
 });
