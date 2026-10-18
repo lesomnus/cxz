@@ -2176,8 +2176,7 @@ pre {
     transition: none;
   }
 }
-.send-control,
-.terminal-control {
+.send-control {
   position: relative;
   display: inline-flex;
 }
@@ -2227,9 +2226,7 @@ pre {
   pointer-events: none;
 }
 .send-control:hover .send-shortcut,
-.send-control:focus-within .send-shortcut,
-.terminal-control:hover .send-shortcut,
-.terminal-control:focus-within .send-shortcut {
+.send-control:focus-within .send-shortcut {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);

@@ -392,14 +392,14 @@ test("unsupported microphone is disabled but still shows its hover and keyboard 
   await microphone.locator("..").hover();
   await expect(hint).toBeVisible();
   const toolbar = page.locator(".composer-toolbar");
-  const terminalBox = await toolbar
-    .getByRole("button", { name: "Terminal", exact: true })
+  const menuBox = await toolbar
+    .getByRole("button", { name: "Session menu", exact: true })
     .boundingBox();
   const microphoneBox = await microphone.boundingBox();
   const sendBox = await toolbar
     .getByRole("button", { name: "Send", exact: true })
     .boundingBox();
-  expect(terminalBox!.x).toBeLessThan(microphoneBox!.x);
+  expect(menuBox!.x).toBeLessThan(microphoneBox!.x);
   expect(microphoneBox!.x).toBeLessThan(sendBox!.x);
   await microphone.locator("..").focus();
   await expect(hint).toBeVisible();
