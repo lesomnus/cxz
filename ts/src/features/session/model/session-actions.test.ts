@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { SessionSchema } from "#gen/cxz/session_pb";
 import { SessionRefSchema } from "#gen/cxz/session_svc_pb";
-import { manageSession } from "./session-actions";
+import { manageSession, prepareSessionLogin } from "./session-actions";
 
 const ref = create(SessionRefSchema, {
   key: { case: "runtimeId", value: "session" },
@@ -66,6 +66,48 @@ describe("session lifecycle controls", () => {
       "Session run changed",
     );
     expect(api.stop).not.toHaveBeenCalled();
+    expect(api.resume).not.toHaveBeenCalled();
+  });
+});
+
+describe("session-scoped OAuth login preparation", () => {
+  it("stops an idle run once, but never resumes before OAuth succeeds", async () => {
+    const api = client();
+    await prepareSessionLogin(api, ref, "run-1");
+    expect(api.stop).toHaveBeenCalledOnce();
+    expect(api.stop.mock.calls[0][0].runId).toBe("run-1");
+    expect(api.resume).not.toHaveBeenCalled();
+  });
+  it.each(["stopped", "failed", "interrupted"])(
+    "preserves a %s run during login",
+    async (state) => {
+      const api = client();
+      api.get.mockResolvedValue(session("run-1", state));
+      await prepareSessionLogin(api, ref, "run-1");
+      expect(api.stop).not.toHaveBeenCalled();
+      expect(api.resume).not.toHaveBeenCalled();
+    },
+  );
+  it("does not stop a running turn or a replacement run", async () => {
+    const api = client();
+    api.get.mockResolvedValue(session("run-1", "working"));
+    await expect(prepareSessionLogin(api, ref, "run-1")).rejects.toThrow(
+      "Stop the current turn",
+    );
+    api.get.mockResolvedValue(session("other-run", "idle"));
+    await expect(prepareSessionLogin(api, ref, "run-1")).rejects.toThrow(
+      "Session run changed",
+    );
+    expect(api.stop).not.toHaveBeenCalled();
+    expect(api.resume).not.toHaveBeenCalled();
+  });
+  it("rejects a replaced run after successful login instead of resuming it", async () => {
+    const api = client();
+    await prepareSessionLogin(api, ref, "run-1");
+    api.get.mockResolvedValue(session("other-run", "idle"));
+    await expect(manageSession(api, ref, "resume", "run-1")).rejects.toThrow(
+      "Session run changed",
+    );
     expect(api.resume).not.toHaveBeenCalled();
   });
 });

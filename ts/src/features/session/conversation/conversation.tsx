@@ -19,7 +19,14 @@ import {
   saveContainerDownload,
 } from "#src/features/session/composer/composer-download.ts";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
-import { manageSession } from "#src/features/session/model/session-actions.ts";
+import { Button } from "@lesomnus/nox";
+import { Code, ConnectError } from "@connectrpc/connect";
+import { authenticationRequired } from "#src/features/session/model/session-auth.ts";
+import {
+  manageSession,
+  prepareSessionLogin,
+  sessionLoginSnapshot,
+} from "#src/features/session/model/session-actions.ts";
 import { editSession } from "#src/features/session/model/session-edit.ts";
 import { useNavigate } from "@tanstack/react-router";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -91,7 +98,7 @@ type ConversationProps = { c: Connection; id: string; projects: Project[] };
 export function Conversation(props: ConversationProps) {
   useLocale();
   return (
-    <FloatingCardProvider>
+    <FloatingCardProvider key={props.id}>
       <ConversationContent {...props} />
     </FloatingCardProvider>
   );
@@ -628,6 +635,67 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       setBusy(false);
     }
   }
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  async function openSessionLogin(run: string) {
+    const stopped = await prepareSessionLogin(
+      c.sessions,
+      create(SessionRefSchema, ref(id)),
+      run,
+    );
+    c.store.apply("cxz.Session", [{ id: stopped.id, value: stopped }]);
+    const account = stopped.account?.alias ?? "";
+    const loginProject = stopped.project?.runtimeId || projectId;
+    if (
+      stopped.agent !== "claude" ||
+      !account ||
+      !loginProject ||
+      !stopped.clientId
+    )
+      throw new Error(t("Session login is unavailable."));
+    if (!mounted.current) return;
+    let canceled = false;
+    openCard({
+      title: () => t("Claude account login"),
+      onClose: () => {
+        canceled = true;
+      },
+      content: (close) => (
+        <LoginPanel
+          c={c}
+          target={{ account, project: loginProject, key: stopped.clientId }}
+          complete={() => {
+            if (canceled || !mounted.current) return;
+            canceled = true;
+            close();
+            void action(async () => {
+              const updated = await manageSession(
+                c.sessions,
+                create(SessionRefSchema, ref(id)),
+                "resume",
+                run,
+              );
+              c.store.apply("cxz.Session", [
+                { id: updated.id, value: updated },
+              ]);
+            });
+          }}
+          cancel={() => {
+            canceled = true;
+            close();
+          }}
+        />
+      ),
+    });
+  }
+  const needsLogin =
+    s?.agent === "claude" &&
+    authenticationRequired(metadata, s.status?.runId ?? "");
   const forkRequest = useRef<
     { source: string; run: string; clientId: string } | undefined
   >(undefined);
@@ -1025,6 +1093,32 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
           {error || String(current.error)}
         </p>
       )}
+      {needsLogin && (
+        <div
+          className={`${errorStyles.error} ${errorStyles.notice}`}
+          role="status"
+        >
+          {t(
+            "Claude account authentication expired. Log in again to resume this session.",
+          )}
+          <Button
+            type="button"
+            disabled={
+              busy ||
+              !["idle", "stopped", "failed", "interrupted"].includes(
+                s?.status?.state ?? "",
+              )
+            }
+            onClick={() =>
+              void action((session) =>
+                openSessionLogin(session.status?.runId ?? ""),
+              )
+            }
+          >
+            {t("Log in again")}
+          </Button>
+        </div>
+      )}
       <ConversationComposer
         autoFocus
         initialSelection={c.drafts.selection(id)}
@@ -1114,29 +1208,19 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               { label: "Auxiliary AI", run: () => localOpen("aux") },
               { label: "Conversation usage", run: () => localOpen("usage") },
               { label: "Background tasks", run: () => localOpen("background") },
-              ...(s?.account?.agent === "claude"
+              ...(s?.agent === "claude"
                 ? [
                     {
                       label: "Log in",
-                      disabled: !["stopped", "failed"].includes(
-                        s?.status?.state ?? "",
-                      ),
+                      disabled:
+                        busy ||
+                        !["idle", "stopped", "failed", "interrupted"].includes(
+                          s.status?.state ?? "",
+                        ),
                       run: () =>
-                        openCard({
-                          title: "Session login",
-                          content: (close) => (
-                            <LoginPanel
-                              c={c}
-                              target={{
-                                account: s.account!.alias,
-                                project: projectId,
-                                key: s.clientId,
-                              }}
-                              complete={close}
-                              cancel={close}
-                            />
-                          ),
-                        }),
+                        void action((session) =>
+                          openSessionLogin(session.status?.runId ?? ""),
+                        ),
                     },
                   ]
                 : []),
@@ -1150,16 +1234,40 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               return updated;
             }}
             manage={(operation, run) =>
-              action(async () => {
-                const updated = await manageSession(
-                  c.sessions,
-                  create(SessionRefSchema, ref(id)),
-                  operation,
-                  run,
-                );
-                c.store.apply("cxz.Session", [
-                  { id: updated.id, value: updated },
-                ]);
+              action(async (session) => {
+                try {
+                  const updated = await manageSession(
+                    c.sessions,
+                    create(SessionRefSchema, ref(id)),
+                    operation,
+                    run,
+                  );
+                  c.store.apply("cxz.Session", [
+                    { id: updated.id, value: updated },
+                  ]);
+                } catch (error) {
+                  if (
+                    operation === "stop" ||
+                    session.agent !== "claude" ||
+                    !(error instanceof ConnectError) ||
+                    error.code !== Code.FailedPrecondition
+                  )
+                    throw error;
+                  const bound = await sessionLoginSnapshot(
+                    c.sessions,
+                    create(SessionRefSchema, ref(id)),
+                    run,
+                  );
+                  if (
+                    !requiredSessionLogin(
+                      error,
+                      bound.account?.alias ?? "",
+                      bound.clientId,
+                    )
+                  )
+                    throw error;
+                  await openSessionLogin(run);
+                }
               })
             }
             previewPurge={async () => {
@@ -1195,7 +1303,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
           busy={busy}
           change={(kind, value) => void changeSetting(kind, value)}
         />
-        <UsageInfo info={info} />
+        <UsageInfo info={info} agent={s?.agent ?? ""} />
       </ConversationComposer>
       {terminalActivated && !!s?.project?.id.length && (
         <WorkspaceTerminal

@@ -1,4 +1,5 @@
 import type { SessionEvent } from "#gen/cxz/session_pb";
+import { authenticationState } from "./session-auth";
 import { payload } from "./journal";
 
 // Retain the latest capability/quota/context snapshots even after many token
@@ -8,11 +9,32 @@ export function mergeMetadata(
   previous: SessionEvent[],
   incoming: SessionEvent[],
 ) {
-  const rows = incoming.filter(
-    (e) =>
-      ["models", "usage", "compact"].includes(e.kind) ||
-      (e.kind === "turn_end" && payload(e).modelUsage),
-  );
+  const rows = incoming.flatMap((e) => {
+    if (["models", "usage", "usage_status", "compact"].includes(e.kind))
+      return [e];
+    const authentication = authenticationState(e);
+    if (authentication === undefined && e.kind !== "turn_end") return [];
+    const p = payload(e);
+    if (
+      authentication === undefined &&
+      !(e.kind === "turn_end" && p.modelUsage)
+    )
+      return [];
+    return [
+      {
+        ...e,
+        text: "",
+        payload: new TextEncoder().encode(
+          JSON.stringify({
+            ...(p.modelUsage ? { modelUsage: p.modelUsage } : {}),
+            ...(authentication !== undefined
+              ? { authentication_required: authentication }
+              : {}),
+          }),
+        ),
+      },
+    ];
+  });
   if (!rows.length) return previous;
   const sorted = [
     ...new Map([...previous, ...rows].map((e) => [e.seq, e])).values(),

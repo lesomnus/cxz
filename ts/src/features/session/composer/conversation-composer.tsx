@@ -162,108 +162,110 @@ export function ConversationComposer({
       )}
       {queued}
       <div className="composer-wrapper">
-        <ComposerAurora active={working} />
-        <div className="composer-toolbar">
-          <TurnControls
-            turn={turn}
-            busy={busy}
-            working={working}
-            interrupt={interrupt}
-          >
-            <BackgroundJobsIndicator
-              count={backgroundJobs}
-              open={onBackgroundJobs}
+        <div className="composer-toolbar-surface">
+          <ComposerAurora active={working} />
+          <div className="composer-toolbar">
+            <TurnControls
+              turn={turn}
+              busy={busy}
+              working={working}
+              interrupt={interrupt}
+            >
+              <BackgroundJobsIndicator
+                count={backgroundJobs}
+                open={onBackgroundJobs}
+              />
+            </TurnControls>
+            <span
+              className="latest-slot"
+              data-visible={latestVisible}
+              inert={!latestVisible}
+              aria-hidden={!latestVisible}
+            >
+              <Button
+                className="toolbar-button latest-button"
+                type="button"
+                aria-label={t("Latest")}
+                onClick={onLatest}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14m-6-6 6 6 6-6" />
+                </svg>
+              </Button>
+            </span>
+            {typeof menu === "function" ? menu(pick) : menu}
+            <span className="terminal-control">
+              <Button
+                className="toolbar-button terminal-toggle"
+                type="button"
+                aria-label={t("Terminal")}
+                aria-pressed={terminalVisible}
+                aria-keyshortcuts="Control+Backquote"
+                aria-describedby={terminalHint}
+                disabled={!terminalAvailable}
+                onClick={onTerminal}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 6 6 6-6 6m9 0h7" />
+                </svg>
+              </Button>
+              <span id={terminalHint} className="send-shortcut" role="tooltip">
+                {t("Terminal")} · ctrl+`
+              </span>
+            </span>
+            <MicrophoneControl
+              speech={speech}
+              disabled={sending}
+              meterUnavailable={meter.status === "unavailable"}
             />
-          </TurnControls>
-          <span
-            className="latest-slot"
-            data-visible={latestVisible}
-            inert={!latestVisible}
-            aria-hidden={!latestVisible}
-          >
-            <Button
-              className="toolbar-button latest-button"
-              type="button"
-              aria-label={t("Latest")}
-              onClick={onLatest}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+            <span className="send-control">
+              <Button
+                className="toolbar-button send"
+                type="submit"
+                aria-label={t("Send")}
+                aria-keyshortcuts="Control+Enter"
+                aria-describedby={sendHint}
+                disabled={!canSend || !ready}
               >
-                <path d="M12 5v14m-6-6 6 6 6-6" />
-              </svg>
-            </Button>
-          </span>
-          {typeof menu === "function" ? menu(pick) : menu}
-          <span className="terminal-control">
-            <Button
-              className="toolbar-button terminal-toggle"
-              type="button"
-              aria-label={t("Terminal")}
-              aria-pressed={terminalVisible}
-              aria-keyshortcuts="Control+Backquote"
-              aria-describedby={terminalHint}
-              disabled={!terminalAvailable}
-              onClick={onTerminal}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m4 6 6 6-6 6m9 0h7" />
-              </svg>
-            </Button>
-            <span id={terminalHint} className="send-shortcut" role="tooltip">
-              {t("Terminal")} · ctrl+`
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 19V5m-6 6 6-6 6 6" />
+                </svg>
+              </Button>
+              <span id={sendHint} className="send-shortcut" role="tooltip">
+                ctrl+enter
+              </span>
             </span>
-          </span>
-          <MicrophoneControl
-            speech={speech}
-            disabled={sending}
-            meterUnavailable={meter.status === "unavailable"}
-          />
-          <span className="send-control">
-            <Button
-              className="toolbar-button send"
-              type="submit"
-              aria-label={t("Send")}
-              aria-keyshortcuts="Control+Enter"
-              aria-describedby={sendHint}
-              disabled={!canSend || !ready}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M12 19V5m-6 6 6-6 6 6" />
-              </svg>
-            </Button>
-            <span id={sendHint} className="send-shortcut" role="tooltip">
-              ctrl+enter
-            </span>
-          </span>
+          </div>
         </div>
         <div
           className="composer-input"

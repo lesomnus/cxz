@@ -17,8 +17,8 @@ test("toolbar glow follows composer layout and contains oversized orbs without p
     await expect
       .poll(() =>
         field.evaluate((node) => {
-          const bar = document
-            .querySelector(".composer-toolbar")!
+          const surface = document
+            .querySelector(".composer-toolbar-surface")!
             .getBoundingClientRect();
           const wrapper = document
             .querySelector(".composer-wrapper")!
@@ -31,7 +31,7 @@ test("toolbar glow follows composer layout and contains oversized orbs without p
             Math.abs(clip.left - wrapper.left),
             Math.abs(clip.width - wrapper.width),
             Math.abs(clip.top - wrapper.top),
-            Math.abs(clip.bottom - bar.bottom),
+            Math.abs(clip.bottom - surface.bottom),
             Math.abs(clusters.left - clip.left),
             Math.abs(clusters.width - clip.width),
           );

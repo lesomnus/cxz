@@ -118,9 +118,7 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(timestamp).not.toContainText(/\d{4}/);
   const recorded = await timestamp.getAttribute("datetime");
   expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
-  await expect(input.locator(".input-relative-time")).toHaveText(
-    "- Just now",
-  );
+  await expect(input.locator(".input-relative-time")).toHaveText("- Just now");
   const timeBox = (await timestamp.boundingBox())!;
   const inputBox = (await input.locator(".input-box").boundingBox())!;
   expect(timeBox.y).toBeGreaterThan(inputBox.y);
@@ -145,12 +143,16 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   ).toBe("12px");
   await expect(page.getByText("Actions", { exact: true })).toHaveCount(0);
   await page.locator(".quota-dots").hover();
-  await expect(page.getByRole("tooltip")).toContainText("Reset");
-  await expect(page.getByRole("tooltip")).toContainText("70% remaining");
+  const quotaDetails = page.locator(".usage-info").getByRole("tooltip");
+  await expect(quotaDetails).toContainText("5h");
+  await expect(quotaDetails).toContainText(/left \d{2}d\d{2}h\d{2}m/);
+  await expect(
+    quotaDetails.locator('[data-enter-effect="reveal"] > span').last(),
+  ).toHaveText("70%");
   await page.locator(".context-popover").hover();
   await expect(
-    page.getByRole("tooltip", { name: "24K/200K", exact: true }),
-  ).toBeVisible();
+    page.locator(".context-popover").getByRole("tooltip"),
+  ).toHaveText("24.0K/0200K12%");
   const effortX = (await page.locator(".effort-field").boundingBox())!.x;
   const effort = page.getByRole("combobox", { name: "Effort", exact: true });
   const model = page.getByRole("combobox", { name: "Model", exact: true });
@@ -161,12 +163,15 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await page.locator(".model-field .meta-label").click();
   await expect(page.getByRole("listbox")).toHaveCount(0);
   const currentBefore = (await model.locator(".meta-value").boundingBox())!;
-  const baseline = (await page
+  const iconBox = (await page
     .locator(".model-field .meta-label")
     .boundingBox())!;
   expect(
     Math.abs(
-      currentBefore.y + currentBefore.height - baseline.y - baseline.height,
+      currentBefore.y +
+        currentBefore.height / 2 -
+        iconBox.y -
+        iconBox.height / 2,
     ),
   ).toBeLessThan(0.1);
   await expect(model).toHaveCSS("padding", "2px 6px");

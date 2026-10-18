@@ -23,11 +23,13 @@ export function MarkdownCodeBlock({
   code,
   text,
   language,
+  surface = "default",
 }: {
   container: HTMLElement;
   code: HTMLElement;
   text: string;
   language: string;
+  surface?: "default" | "input";
 }) {
   useLocale();
   const [selected, setSelected] = useState(codeSyntax(language));
@@ -43,6 +45,18 @@ export function MarkdownCodeBlock({
   const { snapshot } = useSettings();
   const theme = useTheme();
   const palette = resolveEditorSettings(snapshot.document).colorPalette;
+  const colors = paletteVariables(palette, theme);
+  // Lift contrast on the user's raised gray surface without discarding the
+  // chosen palette's hues. Theme foreground also gives darker ink in light mode.
+  const syntaxColors =
+    surface === "input"
+      ? Object.fromEntries(
+          Object.entries(colors).map(([key, value]) => [
+            key,
+            `color-mix(in srgb, ${value} 82%, var(--shade-237))`,
+          ]),
+        )
+      : colors;
   const choices = codeSyntaxes.includes(selected)
     ? codeSyntaxes
     : [selected, ...codeSyntaxes];
@@ -73,7 +87,7 @@ export function MarkdownCodeBlock({
       {createPortal(
         <span
           className={styles.syntax}
-          style={paletteVariables(palette, theme)}
+          style={syntaxColors}
           data-language={syntax}
         >
           {tokens.map((line, index) => (
