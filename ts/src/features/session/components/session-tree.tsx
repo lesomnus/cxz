@@ -34,11 +34,11 @@ export function SessionTreeGroup({
   useLocale();
   return (
     <section
-      className="session-tree-group"
+      className={`session-tree-group ${styles.group}`}
       aria-label={project.name || project.alias}
     >
       <PanelItem
-        className="tree-project"
+        className={`tree-project ${styles.project}`}
         aria-expanded={open}
         onClick={toggle}
         data-unread={

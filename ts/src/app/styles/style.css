@@ -2566,7 +2566,6 @@ summary:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 550;
 }
 .tree-sessions {
   padding: 0;

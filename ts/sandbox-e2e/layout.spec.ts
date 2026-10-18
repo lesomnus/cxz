@@ -38,7 +38,11 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await row.hover();
   await expect(row).toHaveCSS("border-top-width", "0px");
-  await expect(row).toHaveCSS("background-color", "rgb(40, 40, 40)");
+  await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(page.locator(".session-tree-group").first()).toHaveCSS(
+    "background-color",
+    "rgb(40, 40, 40)",
+  );
   await expect(page.locator(".composer-meta")).toContainText("sandbox-claude");
   await expect(page.locator(".effort-field .meta-value")).toHaveText("high");
   await expect(

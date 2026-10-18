@@ -1,5 +1,38 @@
 import { expect, test } from "@playwright/test";
 
+test("project heading is muted and hover highlights the whole project", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=sessions-panel--default&viewMode=story");
+  const group = page.locator(".session-tree-group").first();
+  const heading = group.locator(".tree-project");
+  await expect(heading).toBeVisible();
+  const tokens = await heading.evaluate((element) => {
+    const probe = document.createElement("span");
+    probe.style.color = "var(--ui-muted)";
+    probe.style.fontFamily = "var(--ui-font-mono)";
+    element.append(probe);
+    const style = getComputedStyle(probe);
+    const tokens = {
+      muted: style.color,
+      mono: style.fontFamily,
+    };
+    probe.remove();
+    return tokens;
+  });
+  await expect(heading).toHaveCSS("font-weight", "400");
+  await expect(heading).toHaveCSS("font-size", "11px");
+  await expect(heading).toHaveCSS("font-family", tokens.mono);
+  await expect(heading).toHaveCSS("color", tokens.muted);
+  await page.mouse.move(0, 0);
+  await expect(group).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await heading.hover();
+  await expect(heading).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(group).toHaveCSS("background-color", "rgb(40, 40, 40)");
+  await group.locator(".tree-session").last().hover();
+  await expect(group).toHaveCSS("background-color", "rgb(40, 40, 40)");
+});
+
 for (const [story, rows] of [
   ["default", 3],
   ["long-list", 24],
