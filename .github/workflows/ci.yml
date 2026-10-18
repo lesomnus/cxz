@@ -16,13 +16,17 @@ concurrency:
   # Cancel superseded PR checks; main validation runs independently.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  # Three jobs rather than one, because this was nineteen minutes of suites
+  # running one after another on a single runner. Each suite is wall-clock bound
+  # -- it waits for real motion, which is why `workers: 1` stays -- so the only
+  # way to spend less time is to wait in parallel. Measured: sandbox 523s,
+  # storybook 313s, everything else 88s, so the split is drawn there and the
+  # longest job sets the pace. Each job repeats checkout, npm ci and the browser
+  # download, about ninety seconds, which is cheaper than passing builds between
+  # them as artifacts.
   web:
     runs-on: ubuntu-24.04
-    # The sandbox suite is most of this job and it is wall-clock bound: it waits
-    # for real motion, which is why it is not parallelised. It lands around nine
-    # minutes and has been cancelled at fifteen, so the ceiling is where a job
-    # that is actually stuck gets stopped, not where a busy runner does.
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -54,19 +58,84 @@ jobs:
         working-directory: ts
       - run: npm run --prefix ts test:nox:live
       - run: npm run --prefix ts test:performance
+      - run: npm run --prefix ts test:browser
+      - run: npm run --prefix ts test:browser:plaintext
+      - name: Preserve failed browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-test-results
+          path: ts/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+  # Storybook serves its own static build, so this needs no Go.
+  web-storybook:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ts/package-lock.json
+      - run: npm ci --prefix ts
+      - run: npx playwright install --with-deps chromium
+        working-directory: ts
       - run: npm run --prefix ts build-storybook:ui
       - run: npm run --prefix ts test:ui
       - run: npm run --prefix ts build-storybook
       - run: npm run --prefix ts test:storybook
-      - run: npm run --prefix ts test:browser
-      - run: npm run --prefix ts test:browser:plaintext
+      - name: Preserve failed browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-storybook-test-results
+          path: ts/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+  # The sandbox is the UI against a WASM build of the server, so this one does
+  # need Go. It is the longest suite and sets this workflow's wall clock: it
+  # lands around nine minutes and has been cancelled at fifteen, so the ceiling
+  # is where a job that is actually stuck gets stopped, not where a busy runner
+  # does.
+  web-sandbox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+          key: go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-v2-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}-
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ts/package-lock.json
+      - run: npm ci --prefix ts
+      - run: npx playwright install --with-deps chromium
+        working-directory: ts
       - run: npm run --prefix ts sandbox:build
       - run: npm run --prefix ts test:sandbox
       - name: Preserve failed browser diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: web-test-results
+          name: web-sandbox-test-results
           path: ts/test-results/
           if-no-files-found: ignore
           retention-days: 7
@@ -262,7 +331,7 @@ jobs:
             app.cache-from=type=gha,scope=cxz-app
             app.cache-to=type=gha,scope=cxz-app,mode=max
   publish:
-    needs: [test, race, windows-frontend, web, image]
+    needs: [test, race, windows-frontend, web, web-storybook, web-sandbox, image]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
