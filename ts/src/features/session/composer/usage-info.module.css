@@ -3,6 +3,23 @@
 }
 .quota {
   isolation: isolate;
+  padding: 4px;
+  margin: -4px;
+  border-radius: 6px;
+}
+.quota[data-open="true"] {
+  z-index: 6;
+  outline: 1px solid var(--shade-65);
+  outline-offset: -1px;
+}
+/* Transparent bridge keeps hover while crossing the input border. */
+.quota[data-open="true"]::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  width: 100%;
+  height: var(--quota-panel-gap, 8px);
 }
 .graph {
   position: relative;
@@ -18,18 +35,6 @@
 .graph::before,
 .graph > span {
   grid-area: 1 / 1;
-}
-.graph::after {
-  content: "";
-  position: absolute;
-  left: -10px;
-  top: 3px;
-  height: 14px;
-  border-left: 1px solid var(--shade-65);
-  opacity: 0;
-}
-.quota[data-open="true"] .graph::after {
-  opacity: 1;
 }
 .details {
   --agent-logo-size: 14px;
@@ -50,6 +55,13 @@
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.quotaDetails {
+  right: 0;
+  top: auto;
+  bottom: calc(100% + var(--quota-panel-gap, 8px));
+  min-height: 32px;
+  padding: 6px 10px;
 }
 .content {
   display: grid;

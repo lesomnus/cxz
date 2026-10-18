@@ -1,5 +1,5 @@
 import { CompactNumber, DialogReveal, DurationDisplay } from "@lesomnus/nox";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import styles from "./usage-info.module.css";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -64,6 +64,32 @@ export function UsageInfo({
       window.removeEventListener("blur", blur);
     };
   }, [hovered, contextHovered]);
+  useLayoutEffect(() => {
+    if (!open || !quota.current) return;
+    const trigger = quota.current;
+    const composer = trigger.closest(".composer");
+    const input = composer?.querySelector(".composer-input");
+    const position = () => {
+      const box = trigger.getBoundingClientRect();
+      const edge = input?.getBoundingClientRect().bottom;
+      const border = input
+        ? parseFloat(getComputedStyle(input).borderBottomWidth) || 0
+        : 0;
+      // Mirror the empty space on either side of the input's bottom border.
+      const gap = edge === undefined ? 4 : Math.max(0, box.top - edge);
+      trigger.style.setProperty("--quota-panel-gap", `${gap * 2 + border}px`);
+    };
+    position();
+    const observer = new ResizeObserver(position);
+    observer.observe(trigger);
+    if (composer) observer.observe(composer);
+    if (input) observer.observe(input);
+    window.addEventListener("resize", position);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", position);
+    };
+  }, [open]);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (!open) return;
@@ -113,9 +139,9 @@ export function UsageInfo({
         {open && (
           <DialogReveal
             id={quotaId}
-            className={styles.details}
+            className={`${styles.details} ${styles.quotaDetails}`}
             contentClassName={styles.content}
-            from="right"
+            from="bottom-right"
             role="tooltip"
           >
             <AgentBrand agent={agent} />
