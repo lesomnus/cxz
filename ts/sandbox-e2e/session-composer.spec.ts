@@ -29,15 +29,19 @@ test("conversation starts at the transcript and Terminal lives in the menu on de
   });
   await menu.click();
   await expect(terminal).toHaveAttribute("aria-checked", "false");
-  await expect(terminal.locator("kbd")).toHaveText("Ctrl+`");
-  await expect(terminal.locator("kbd")).toHaveCSS("font-size", "11px");
-  await expect(terminal.locator("kbd")).toHaveCSS("font-family", /monospace/);
-  await expect(terminal.locator("kbd")).toHaveCSS("border-bottom-width", "2px");
+  await expect(terminal.locator("kbd")).toHaveText(["Ctrl", "`"]);
+  for (const key of await terminal.locator("kbd").all()) {
+    await expect(key).toHaveCSS("font-size", "11px");
+    await expect(key).toHaveCSS("font-family", /monospace/);
+    await expect(key).toHaveCSS("border-bottom-width", "2px");
+  }
   const labelBox = (await terminal
     .locator(".action-menu-item-label")
     .boundingBox())!;
-  const shortcutBox = (await terminal.locator("kbd").boundingBox())!;
+  const shortcutBox = (await terminal.locator("kbd").first().boundingBox())!;
   expect(shortcutBox.x).toBeGreaterThan(labelBox.x + labelBox.width);
+  const backtickBox = (await terminal.locator("kbd").last().boundingBox())!;
+  expect(backtickBox.x).toBeGreaterThan(shortcutBox.x + shortcutBox.width);
   await terminal.click();
   const panel = page.getByRole("region", {
     name: "Workspace terminal",

@@ -141,7 +141,7 @@ export function SessionMenu({
               {
                 label: t("Terminal"),
                 icon: <SessionActionIcon action="terminal" />,
-                shortcut: "Ctrl+`",
+                shortcut: ["Ctrl", "`"],
                 checked: terminal?.visible ?? false,
                 disabled: !terminal?.available,
                 run: () => terminal?.toggle(),
