@@ -1,4 +1,5 @@
 import { expect, test, devices } from "@playwright/test";
+import { SANDBOX_SESSIONS } from "./fixture-shape";
 
 test.use({
   ...devices["Desktop Chrome"],
@@ -16,7 +17,7 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
   const panel = page.getByRole("complementary", { name: "Session list" });
   const stopped = panel.locator('.tree-session[href$="/session-7"]');
   await expect(stopped).toBeVisible({ timeout: 45000 });
-  await expect(panel.locator(".tree-session")).toHaveCount(8);
+  await expect(panel.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS);
   const menu = page.getByRole("button", { name: "Session panel options" });
   const hide = page.getByRole("menuitem", {
     name: "Hide stopped sessions",
@@ -30,7 +31,7 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
   await expect(hide).toBeVisible();
   await hide.click();
   await expect(stopped).toHaveCount(0);
-  await expect(panel.locator(".tree-session")).toHaveCount(7);
+  await expect(panel.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS - 1);
   await expect(
     panel.locator('.tree-session[data-state="idle"]'),
   ).not.toHaveCount(0);
@@ -39,7 +40,7 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
   ).toBeVisible();
 
   await page.reload();
-  await expect(panel.locator(".tree-session")).toHaveCount(7);
+  await expect(panel.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS - 1);
   await menu.click();
   await expect(show).toBeVisible();
   await page.keyboard.press("Escape");
@@ -70,7 +71,7 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
   await menu.click();
   await show.click();
   await expect(stopped).toBeVisible();
-  await expect(panel.locator(".tree-session")).toHaveCount(8);
+  await expect(panel.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS);
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem("settings")!)),
   ).toMatchObject({ "editor.tabSize": 3, "session.panel.hideStopped": false });
