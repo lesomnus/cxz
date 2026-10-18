@@ -60,8 +60,16 @@ test("quota hover opens left, covers the stationary graph and has stable columns
       story === "low" ? "Claude" : "Codex",
     );
     await page.mouse.move(box.x + 15, box.y + box.height / 2);
+    await expect
+      .poll(() => tooltip.evaluate((node) => node.matches(":hover")))
+      .toBe(true);
     await expect(tooltip).toBeVisible();
-    await page.mouse.move(0, 0);
+    await page.mouse.move(16, 16);
+    await expect
+      .poll(() =>
+        graph.locator("..").evaluate((node) => node.matches(":hover")),
+      )
+      .toBe(false);
     await expect(tooltip).toBeHidden();
     await graph.locator("..").focus();
     await expect(tooltip).toBeVisible();
