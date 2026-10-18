@@ -65,6 +65,8 @@ test("quota hover opens left, covers the stationary graph and has stable columns
     await expect(tooltip).toBeHidden();
     await graph.locator("..").focus();
     await expect(tooltip).toBeVisible();
+    await graph.locator("..").blur();
+    await expect(tooltip).toBeHidden();
   }
 });
 
