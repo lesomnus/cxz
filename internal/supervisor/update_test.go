@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
@@ -139,17 +140,14 @@ func TestProcessesQuietWithLiveBridge(t *testing.T) {
 		}
 		pid := s.cmd.Process.Pid
 		t.Cleanup(func() { _ = syscall.Kill(-pid, syscall.SIGKILL); _ = s.cmd.Wait() })
-		children := fmt.Sprintf("/proc/%d/task/%d/children", pid, pid)
-		for i := 0; ; i++ {
-			b, err := os.ReadFile(children)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if len(strings.Fields(string(b))) > 0 {
-				break
-			}
-			if i == 100 {
-				t.Fatal("fixture child never started")
+		// Wait for the child to be running its own argv, not merely to exist:
+		// between fork and exec it still carries the parent's, which is this
+		// whole script as a single argument, and the bridge rule reads argv
+		// elements. Waiting only for the process made the test fail under
+		// -race, where that window is wide enough to lose.
+		for i := 0; !bridgeArgv(t, pid); i++ {
+			if i == 500 {
+				t.Fatal("fixture child never took its own argv")
 			}
 			time.Sleep(10 * time.Millisecond)
 		}
@@ -157,6 +155,28 @@ func TestProcessesQuietWithLiveBridge(t *testing.T) {
 			t.Fatal("bridge", bridge, "quiet", got)
 		}
 	}
+}
+
+// bridgeArgv reports whether a child of pid is running the argv cxz spawns a
+// bridge with, whichever session it names.
+func bridgeArgv(t *testing.T, pid int) bool {
+	t.Helper()
+	b, err := os.ReadFile(fmt.Sprintf("/proc/%d/task/%d/children", pid, pid))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range strings.Fields(string(b)) {
+		c, err := os.ReadFile(filepath.Join("/proc", f, "cmdline"))
+		if err != nil {
+			continue
+		}
+		for _, a := range strings.Split(strings.TrimSuffix(string(c), "\x00"), "\x00") {
+			if a == "_mcp-bridge" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func TestActivityDoesNotFloodJournal(t *testing.T) {
