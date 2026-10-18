@@ -12,14 +12,14 @@
   outline: 1px solid var(--shade-65);
   outline-offset: -1px;
 }
-/* Transparent bridge keeps hover while crossing the input border. */
+/* Transparent bridge keeps hover while crossing the gap. */
 .quota[data-open="true"]::before {
   content: "";
   position: absolute;
   bottom: 100%;
   right: 0;
   width: 100%;
-  height: var(--quota-panel-gap, 8px);
+  height: 2px;
 }
 .graph {
   position: relative;
@@ -37,7 +37,6 @@
   grid-area: 1 / 1;
 }
 .details {
-  --agent-logo-size: 14px;
   position: absolute;
   z-index: 4;
   right: -10px;
@@ -59,15 +58,15 @@
 .quotaDetails {
   right: 0;
   top: auto;
-  bottom: calc(100% + var(--quota-panel-gap, 8px));
+  bottom: calc(100% + 2px);
+  background: color-mix(in srgb, var(--shade-36) 75%, transparent);
+  backdrop-filter: blur(12px);
   min-height: 32px;
   padding: 6px 10px;
 }
 .content {
   display: grid;
-  grid-template-columns: 14px calc(8ch + 11px) calc(14ch + 11px) calc(
-      4ch + 11px
-    );
+  grid-template-columns: 8ch calc(14ch + 11px) calc(4ch + 11px);
   align-items: center;
   gap: 10px;
 }
@@ -80,7 +79,6 @@
   text-align: right;
 }
 
-.period,
 .percent,
 .time {
   border-left: 1px solid var(--shade-65);

@@ -59,10 +59,8 @@ test("quota hover opens above the stationary outlined graph with stable columns"
     expect(await graph.boundingBox()).toEqual(before);
     if (width !== undefined) expect(box.width).toBeCloseTo(width, 0);
     width = box.width;
-    await expect(tooltip.locator(".agent-brand")).toHaveAttribute(
-      "aria-label",
-      story === "low" ? "Claude" : "Codex",
-    );
+    await expect(tooltip.locator(".agent-brand")).toHaveCount(0);
+    await expect(tooltip).toHaveCSS("backdrop-filter", "blur(12px)");
     await page.mouse.move(box.x + 15, box.y + box.height / 2);
     await expect
       .poll(() => tooltip.evaluate((node) => node.matches(":hover")))
@@ -130,7 +128,7 @@ test("quota reveal respects reduced motion", async ({ page }) => {
   );
 });
 
-test("quota panel mirrors input spacing as composer height changes", async ({
+test("quota panel keeps a 2px graph gap as composer height changes", async ({
   page,
 }) => {
   await page.goto(
@@ -149,17 +147,8 @@ test("quota panel mirrors input spacing as composer height changes", async ({
     await expect
       .poll(async () => {
         const trigger = (await graph.locator("..").boundingBox())!;
-        const editor = (await input.boundingBox())!;
         const popup = (await panel.boundingBox())!;
-        const border = await input.evaluate((el) =>
-          parseFloat(getComputedStyle(el).borderBottomWidth),
-        );
-        return Math.abs(
-          trigger.y -
-            editor.y -
-            editor.height -
-            (editor.y + editor.height - border - popup.y - popup.height),
-        );
+        return Math.abs(trigger.y - popup.y - popup.height - 2);
       })
       .toBeLessThan(1);
   }
@@ -168,7 +157,7 @@ test("quota panel mirrors input spacing as composer height changes", async ({
   await expect(panel).toHaveCSS("opacity", "1");
   const trigger = (await graph.locator("..").boundingBox())!;
   const popup = (await panel.boundingBox())!;
-  await page.mouse.move(trigger.x + trigger.width / 2, trigger.y - 2);
+  await page.mouse.move(trigger.x + trigger.width / 2, trigger.y - 1);
   await expect(panel).toBeVisible();
   await page.mouse.move(
     trigger.x + trigger.width / 2,
