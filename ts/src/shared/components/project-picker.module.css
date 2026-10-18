@@ -2,7 +2,7 @@
   min-width: 0;
   max-width: 100%;
 }
-.picker::before {
+.picker.picker::before {
   opacity: 1;
 }
 .picker > :global(.value-menu) {
