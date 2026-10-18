@@ -15,7 +15,7 @@ coverage.out
 
 # Browser dependencies and generated production UI.
 /internal/webui/assets/
-/ts/node_modules/
+/ts/node_modules
 /ts/coverage/
 /ts/test-results/
 /ts/playwright-report/
