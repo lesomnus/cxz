@@ -151,6 +151,26 @@ func related(e *api.Event) string {
 
 var hidden = map[string]bool{"raw": true, "state": true, "vendor": true, "intent": true, "receipt": true, "approval_resolved": true, "models": true, "models_status": true, "usage": true, "usage_status": true, "history_checkpoint": true, "fork_boundary": true}
 
+// prune drops what a restore would no longer load, so that holding the reduced
+// state between syncs costs what rebuilding it would have read rather than the
+// whole conversation. A partner dropped from tools is looked up when missed.
+func (p *Projection) prune(floor uint64) {
+	for seq := range p.Rows {
+		if seq < floor {
+			delete(p.Rows, seq)
+		}
+	}
+	for k, v := range p.tools {
+		if v.Seq < floor {
+			delete(p.tools, k)
+		}
+	}
+	for k, v := range p.questions {
+		if v.Seq < floor {
+			delete(p.questions, k)
+		}
+	}
+}
 func (p *Projection) put(e *api.Event, updated uint64) {
 	p.Rows[e.Seq] = e
 	p.Versions = append(p.Versions, Version{e.Seq, updated, e})
@@ -766,6 +786,17 @@ func SyncWith(ctx context.Context, db *sql.DB, id string, decode Decode, cache *
 		projection.Apply(e)
 	}
 	projection.resolve = nil
+	if cache != nil {
+		// Hold what a restore would load, not everything that has been applied
+		// since this process started.
+		floor, e := openTurn(ctx, tx, id)
+		if e != nil {
+			return e
+		}
+		if floor > 0 {
+			projection.prune(floor)
+		}
+	}
 	for _, v := range projection.Versions {
 		b, e := json.Marshal(v.Event)
 		if e != nil {

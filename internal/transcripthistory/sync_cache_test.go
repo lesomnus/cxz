@@ -3,6 +3,8 @@ package transcripthistory
 import (
 	"context"
 	"testing"
+
+	"github.com/lesomnus/cxz/api"
 )
 
 // A caller that serializes a session keeps the reduced state, so a change costs
@@ -117,5 +119,40 @@ func TestSyncDropsACacheThatNoLongerMatchesTheTable(t *testing.T) {
 	}
 	if len(rows) != 2 {
 		t.Fatal("expected the surviving records", len(rows))
+	}
+}
+
+// Holding the reduced state must cost what rebuilding it would have read, not
+// everything applied since the process started.
+func TestACachedProjectionStaysTheSizeOfTheOpenTurn(t *testing.T) {
+	db, write := fixture(t)
+	ctx := context.Background()
+	var c Cache
+	seq := uint64(0)
+	for i := 0; i < 20; i++ {
+		input := event(seq+1, "input", "", "")
+		assistant := event(seq+2, "assistant", "", `{"item":{"phase":"final_answer"}}`)
+		assistant.Response = &api.ResponseMetadata{Model: "model", Phase: "final_answer"}
+		end := event(seq+3, "turn_end", "", `{"duration_ms":10}`)
+		end.Text = "completed"
+		write(input, assistant, end)
+		seq += 3
+		if err := SyncWith(ctx, db, "s", decode, &c); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if c.projection == nil {
+		t.Fatal("twenty appends dropped the cache")
+	}
+	if n := len(c.projection.Rows); n > 3 {
+		t.Fatal("the cache grew with the conversation:", n, "rows after 20 turns")
+	}
+	// And the conversation itself is all there.
+	rows, err := Tail(ctx, db, "s", 0, 4096, decode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) < 40 {
+		t.Fatal("pruning the cache lost rows from the table", len(rows))
 	}
 }
