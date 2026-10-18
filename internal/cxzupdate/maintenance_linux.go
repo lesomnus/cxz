@@ -139,11 +139,13 @@ func (g *Gate) hold(id string, check func() error) error {
 	g.mu.Unlock()
 	// From here input is refused, so nothing is waiting on this check.
 	if e := check(); e != nil {
+		_ = RecordAttempt(g.root, Attempt{At: time.Now(), Lease: id, Outcome: "refused", Reason: e.Error()})
 		if x := g.release(id); x != nil {
 			return fmt.Errorf("%w (and the lease could not be released: %v)", e, x)
 		}
 		return e
 	}
+	_ = RecordAttempt(g.root, Attempt{At: time.Now(), Lease: id, Outcome: "granted"})
 	return nil
 }
 func (g *Gate) release(id string) error {
