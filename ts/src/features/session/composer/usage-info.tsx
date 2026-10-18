@@ -1,5 +1,5 @@
 import { CompactNumber, DialogReveal, DurationDisplay } from "@lesomnus/nox";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import styles from "./usage-info.module.css";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -34,12 +34,36 @@ export function UsageInfo({
   useLocale();
   const quotaId = useId();
   const contextId = useId();
+  const quota = useRef<HTMLSpanElement>(null);
+  const context = useRef<HTMLSpanElement>(null);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const open = hovered || focused;
   const [contextHovered, setContextHovered] = useState(false);
   const [contextFocused, setContextFocused] = useState(false);
   const contextOpen = contextHovered || contextFocused;
+  useEffect(() => {
+    if (!hovered && !contextHovered) return;
+    // Revealing or replacing a child under the pointer can lose a delegated
+    // mouseleave. Keep hover in sync with the next native pointer movement.
+    const move = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (hovered && !quota.current?.contains(target)) setHovered(false);
+      if (contextHovered && !context.current?.contains(target))
+        setContextHovered(false);
+    };
+    const blur = () => {
+      setHovered(false);
+      setContextHovered(false);
+    };
+    document.addEventListener("pointermove", move, true);
+    window.addEventListener("blur", blur);
+    return () => {
+      document.removeEventListener("pointermove", move, true);
+      window.removeEventListener("blur", blur);
+    };
+  }, [hovered, contextHovered]);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (!open) return;
@@ -54,6 +78,7 @@ export function UsageInfo({
   return (
     <div className={`usage-info ${styles.usage}`}>
       <span
+        ref={quota}
         className={`meta-popover ${styles.quota}`}
         data-open={open}
         data-quota-level={
@@ -117,6 +142,7 @@ export function UsageInfo({
         )}
       </span>
       <span
+        ref={context}
         className={`meta-popover context-popover ${styles.context}`}
         data-open={contextOpen}
         onMouseEnter={() => setContextHovered(true)}
