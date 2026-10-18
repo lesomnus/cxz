@@ -20,6 +20,7 @@ export function WorkspaceView() {
     sessions,
     sessionsLoading,
     projectsLoading,
+    inventoryError,
     settingsFileOpen,
     setSettingsFileOpen,
     expandProject,
@@ -61,7 +62,10 @@ export function WorkspaceView() {
     return (
       <ProjectsPage
         projects={projects}
+        sessions={sessions}
+        sessionsLoading={sessionsLoading}
         projectsLoading={projectsLoading}
+        error={inventoryError}
         expandProject={expandProject}
       />
     );

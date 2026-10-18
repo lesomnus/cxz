@@ -85,6 +85,12 @@ const projectsRoute = createRoute({
   path: "projects",
   component: RouteView,
   staticData: { resource: "projects" },
+  validateSearch: (search: Record<string, unknown>): { project?: string } => ({
+    project:
+      typeof search.project === "string" && search.project.length <= 256
+        ? search.project
+        : undefined,
+  }),
 });
 const accountsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -212,6 +218,7 @@ export function useWorkspaceRoute() {
     session,
     seq: sessionRoute.useSearch({ shouldThrow: false })?.seq,
     account: accountsRoute.useSearch({ shouldThrow: false })?.account ?? "",
+    project: projectsRoute.useSearch({ shouldThrow: false })?.project,
     tasks: tasksRoute.useSearch({ shouldThrow: false }) ?? {},
   };
 }

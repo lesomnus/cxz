@@ -8,9 +8,7 @@ const meta = {
     (Story) => (
       <div
         style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          padding: 24,
+          padding: "80px 24px 24px",
           width: 520,
           maxWidth: "100vw",
         }}
@@ -70,4 +68,15 @@ export const WarningBoundary: Story = {
 };
 export const Exhausted: Story = {
   args: { info: { ...meta.args.info, remaining: 0 } },
+};
+
+export const InsideComposer: Story = {
+  render: (args) => (
+    <div className="composer" style={{ width: "100%" }}>
+      <div className="composer-input" style={{ height: 120 }} />
+      <div className="composer-meta">
+        <UsageInfo {...args} />
+      </div>
+    </div>
+  ),
 };

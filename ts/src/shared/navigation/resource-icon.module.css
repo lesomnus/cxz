@@ -1,8 +1,8 @@
 .icon {
   position: relative;
   display: block;
-  width: 20px;
-  height: 20px;
+  width: var(--ui-icon-size);
+  height: var(--ui-icon-size);
 }
 .icon > .badge {
   top: 10%;

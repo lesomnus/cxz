@@ -9,8 +9,8 @@ test("task board creates and edits work, and releases a stopped owner's task onl
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(board);
   await expect(
-    page.getByRole("heading", { name: "Workspace", exact: true }),
-  ).toBeVisible();
+    page.getByRole("combobox", { name: "Select project", exact: true }),
+  ).toHaveText("Workspace");
   await expect(
     page.getByText("Session stopped", { exact: true }),
   ).toBeVisible();
@@ -130,7 +130,10 @@ test("project selection isolates work and remains available in the narrow layout
   await page.goto(
     "/iframe.html?id=resources-tasks--empty-project&viewMode=story",
   );
-  const project = page.getByRole("combobox", { name: "Project", exact: true });
+  const project = page.getByRole("combobox", {
+    name: "Select project",
+    exact: true,
+  });
   await project.click();
   await page
     .getByRole("option", { name: "Documentation", exact: true })

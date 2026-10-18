@@ -1,5 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
+export async function toggleWorkspaceTerminal(page: Page) {
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  await page
+    .getByRole("menuitemcheckbox", { name: "Terminal", exact: true })
+    .click();
+}
+
 // Existing shell/scroll tests inspect DOM text. Keep those as explicit coverage
 // of machines without WebGL; renderer tests exercise the canvas separately.
 export async function disableTerminalWebGL(page: Page) {

@@ -24,6 +24,11 @@ export type SessionMenuProps = {
   edit: (field: SessionField, value: string) => Promise<Session>;
   fork?: () => void | Promise<unknown>;
   upload?: (directory?: boolean) => void;
+  terminal?: {
+    visible: boolean;
+    available: boolean;
+    toggle: () => void;
+  };
   tools?: { label: string; run: () => void; disabled?: boolean }[];
 };
 
@@ -46,6 +51,7 @@ export function SessionMenu({
   edit,
   fork,
   upload,
+  terminal,
   tools = [],
 }: SessionMenuProps) {
   useLocale();
@@ -132,6 +138,14 @@ export function SessionMenu({
           {
             label: "",
             items: [
+              {
+                label: t("Terminal"),
+                icon: <SessionActionIcon action="terminal" />,
+                shortcut: ["Ctrl", "`"],
+                checked: terminal?.visible ?? false,
+                disabled: !terminal?.available,
+                run: () => terminal?.toggle(),
+              },
               ...tools,
               ...(upload
                 ? [
@@ -258,6 +272,7 @@ function SessionActionIcon({
     | "fork"
     | "purge"
     | "details"
+    | "terminal"
     | "upload"
     | "folder";
 }) {
@@ -300,6 +315,7 @@ function SessionActionIcon({
         </>
       )}
       {action === "upload" && <path d="M8 11V2m-3 3 3-3 3 3M3 10v4h10v-4" />}
+      {action === "terminal" && <path d="m3 4 4 4-4 4m6 0h4" />}
       {action === "folder" && (
         <path d="M2 4h5l1.5 2H14v7H2ZM8 11V7m-2 2 2-2 2 2" />
       )}

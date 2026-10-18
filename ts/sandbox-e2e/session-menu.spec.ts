@@ -34,10 +34,9 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     name: "Session menu",
     exact: true,
   });
-  const terminal = page.getByRole("button", { name: "Terminal", exact: true });
-  expect((await trigger.boundingBox())!.x).toBeLessThan(
-    (await terminal.boundingBox())!.x,
-  );
+  await expect(
+    page.getByRole("button", { name: "Terminal", exact: true }),
+  ).toHaveCount(0);
   await trigger.focus();
   await trigger.press("ArrowDown");
   const menu = page.getByRole("menu", { name: "Session menu" });
@@ -60,7 +59,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     "Upload folder",
     "Details",
   ]);
-  await expect(menu.locator(".action-menu-item-label > svg")).toHaveCount(7);
+  await expect(menu.locator(".action-menu-item-label > svg")).toHaveCount(8);
   await expect(menu.getByText("Information", { exact: true })).toHaveCount(0);
   await expect(
     menu.getByRole("menuitem", { name: "Copy session link" }),

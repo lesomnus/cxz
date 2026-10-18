@@ -1,0 +1,13 @@
+.picker {
+  min-width: 0;
+  max-width: 100%;
+}
+.picker > :global(.value-menu) {
+  flex: 0 1 180px;
+  width: 180px;
+  min-width: 0;
+}
+.picker :global(.meta-value) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

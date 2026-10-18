@@ -1183,9 +1183,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }
         latestVisible={!follow && latestShown}
         onLatest={() => void loadHistory("newer", true)}
-        terminalVisible={terminalVisible}
-        terminalAvailable={!!s?.project?.id.length}
-        onTerminal={() => showTerminal(!terminalVisibleRef.current)}
         upload={
           s?.status?.runId
             ? (file, signal, progress) =>
@@ -1195,6 +1192,11 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         menu={(pick) => (
           <SessionMenu
             session={s && { ...s, project: sessionProject ?? s.project }}
+            terminal={{
+              visible: terminalVisible,
+              available: !!s?.project?.id.length,
+              toggle: () => showTerminal(!terminalVisibleRef.current),
+            }}
             info={info}
             busy={busy}
             fork={() => forkConversation()}

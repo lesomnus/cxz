@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("context reveals left with stable numeric slots and a stationary donut", async ({
+test("context reveals above with stable numeric slots and a stationary donut", async ({
   page,
 }) => {
   let width: number | undefined;
@@ -16,15 +16,20 @@ test("context reveals left with stable numeric slots and a stationary donut", as
     await expect(popup).toBeVisible();
     await expect(popup).toHaveAttribute("data-enter-effect", "reveal-frame");
     const content = popup.locator('[data-enter-effect="reveal"]');
-    await expect(content).toHaveAttribute("data-enter-from", "from-right");
+    await expect(content).toHaveAttribute(
+      "data-enter-from",
+      "from-bottom-right",
+    );
     await expect(content).toHaveCSS("filter", "blur(0px)");
     const box = (await popup.boundingBox())!;
     expect(box.x).toBeLessThan(before.x);
     expect(box.x + box.width).toBeGreaterThan(before.x + before.width);
     expect(await donut.boundingBox()).toEqual(before);
-    expect(
-      Math.abs(box.y + box.height / 2 - before.y - before.height / 2),
-    ).toBeLessThan(1);
+    const trigger = (await donut.locator("..").boundingBox())!;
+    expect(trigger.y - box.y - box.height).toBeCloseTo(2, 1);
+    expect(box.x + box.width).toBeCloseTo(trigger.x + trigger.width, 1);
+    await expect(donut.locator("..")).toHaveCSS("outline-width", "1px");
+    await expect(popup).toHaveCSS("backdrop-filter", "blur(12px)");
     if (width !== undefined) expect(box.width).toBeCloseTo(width, 0);
     width = box.width;
     if (story === "small-context")
@@ -47,6 +52,8 @@ test("context reveals left with stable numeric slots and a stationary donut", as
     expect(colors.unit).toBe(colors.slash);
     expect(colors.value).not.toBe(colors.unit);
     expect(parseFloat(colors.padding)).toBeGreaterThan(0);
+    await page.mouse.move(trigger.x + trigger.width / 2, trigger.y - 1);
+    await expect(popup).toBeVisible();
     await page.mouse.move(box.x + 10, box.y + box.height / 2);
     await expect(popup).toBeVisible();
     await page.mouse.move(0, 0);

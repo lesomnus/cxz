@@ -5,7 +5,7 @@ test.use({
   viewport: { width: 1440, height: 1000 },
 });
 
-test("conversation starts at the transcript and the terminal toggle sits beside Send on desktop and mobile", async ({
+test("conversation starts at the transcript and Terminal lives in the menu on desktop and mobile", async ({
   page,
 }) => {
   await page.goto("/sandbox.html");
@@ -15,37 +15,52 @@ test("conversation starts at the transcript and the terminal toggle sits beside 
   const area = (await page.locator(".transcript-area").boundingBox())!;
   const conversation = (await page.locator(".conversation").boundingBox())!;
   expect(area.y).toBe(conversation.y);
-  const terminal = page.getByRole("button", {
-    name: "Terminal",
-    exact: true,
-  });
   const toolbar = page.locator(".composer-toolbar");
   await expect(
     toolbar.getByRole("button", { name: "Terminal", exact: true }),
-  ).toBeVisible();
-  await expect(terminal).toHaveAttribute("aria-pressed", "false");
-  const send = page.getByRole("button", { name: "Send", exact: true });
-  const terminalBox = (await terminal.boundingBox())!;
-  const sendBox = (await send.boundingBox())!;
-  expect(terminalBox.x + terminalBox.width).toBeLessThan(sendBox.x);
-  expect(terminalBox.y).toBe(sendBox.y);
-  expect(terminalBox.height).toBe(sendBox.height);
-  expect(terminalBox.width).toBe(sendBox.width);
+  ).toHaveCount(0);
+  const menu = toolbar.getByRole("button", {
+    name: "Session menu",
+    exact: true,
+  });
+  const terminal = page.getByRole("menuitemcheckbox", {
+    name: "Terminal",
+    exact: true,
+  });
+  await menu.click();
+  await expect(terminal).toHaveAttribute("aria-checked", "false");
+  await expect(terminal.locator("kbd")).toHaveText(["Ctrl", "`"]);
+  for (const key of await terminal.locator("kbd").all()) {
+    await expect(key).toHaveCSS("font-size", "11px");
+    await expect(key).toHaveCSS("font-family", /monospace/);
+    await expect(key).toHaveCSS("border-bottom-width", "2px");
+  }
+  const labelBox = (await terminal
+    .locator(".action-menu-item-label")
+    .boundingBox())!;
+  const shortcutBox = (await terminal.locator("kbd").first().boundingBox())!;
+  expect(shortcutBox.x).toBeGreaterThan(labelBox.x + labelBox.width);
+  const backtickBox = (await terminal.locator("kbd").last().boundingBox())!;
+  expect(backtickBox.x).toBeGreaterThan(shortcutBox.x + shortcutBox.width);
   await terminal.click();
-  await expect(
-    page.getByRole("region", { name: "Workspace terminal", exact: true }),
-  ).toBeVisible();
-  await expect(terminal).toHaveAttribute("aria-pressed", "true");
+  const panel = page.getByRole("region", {
+    name: "Workspace terminal",
+    exact: true,
+  });
+  await expect(panel).toBeVisible();
+  await expect(panel.locator(".xterm-helper-textarea")).toBeFocused();
+  await menu.click();
+  await expect(terminal).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("Escape");
   await page.keyboard.press("Control+Backquote");
-  await expect(terminal).toHaveAttribute("aria-pressed", "false");
+  await expect(panel).toBeHidden();
   await expect(input).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator(".conversation > header")).toHaveCount(0);
+  await expect(menu).toBeVisible();
+  await menu.click();
   await expect(terminal).toBeVisible();
-  const mobileTerminal = (await terminal.boundingBox())!;
-  const mobileSend = (await send.boundingBox())!;
-  expect(mobileTerminal.x + mobileTerminal.width).toBeLessThan(mobileSend.x);
-  expect(mobileTerminal.y).toBe(mobileSend.y);
+  await terminal.click();
+  await expect(panel).toBeVisible();
   await expect(
     page.getByRole("complementary", { name: "Session list", exact: true }),
   ).toBeHidden();
