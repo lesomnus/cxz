@@ -21,7 +21,7 @@ func TestConversationRegistryUsesCanonicalAliasAndUUID(t *testing.T) {
 	defer db.Close()
 	f := &fixture{p: &api.Project{Id: "project", Workspace: "/workspaces/test", Name: "test"}, s: &api.Session{Id: "session", ProjectId: "project", Agent: "codex", Account: "work", CreateId: "create", CreatedAt: time.Now().UnixMilli(), AuthBackend: accounts.ProjectLocalOAuth}}
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
-	stack, err := Build(t.Context(), db, f)
+	stack, err := Build(t.Context(), db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

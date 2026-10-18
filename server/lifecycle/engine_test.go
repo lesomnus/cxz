@@ -60,7 +60,7 @@ func engineStack(t *testing.T) (*engineFixture, resource.Server, func()) {
 		},
 	}}
 	f.s.AuthBinding = accounts.BindingID("project", "work", accounts.ProjectLocalOAuth)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		db.Close()
 		t.Fatal(err)

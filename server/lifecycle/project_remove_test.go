@@ -47,7 +47,7 @@ func TestProjectRemovePreviewFailureRetryAndRegistry(t *testing.T) {
 	defer db.Close()
 	f := &removeFixture{fixture: fixture{p: &api.Project{Id: "project", Workspace: "/work", Name: "work"}, s: &api.Session{Id: "session", ProjectId: "project", Workspace: "/work", Agent: "claude", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, State: "stopped", CreateId: "create"}}}
 	f.s.AuthBinding = accounts.BindingID("project", "work", accounts.ProjectLocalOAuth)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestProjectRemovePreviewFailureRetryAndRegistry(t *testing.T) {
 		t.Fatal("shared account removed", count, err)
 	}
 	// A fresh registry projection cannot resurrect the project.
-	stack, err = Build(ctx, db, f)
+	stack, err = Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

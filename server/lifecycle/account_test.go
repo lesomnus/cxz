@@ -23,7 +23,7 @@ func TestAccountResources(t *testing.T) {
 	f := &fixture{p: &api.Project{Id: "project", Workspace: "/workspaces/test", Name: "test"}, s: &api.Session{Id: "session", ProjectId: "project", Agent: "codex", Account: "work", CreateId: "create", CreatedAt: time.Now().UnixMilli()}}
 	f.s.AuthBackend = accounts.ProjectLocalOAuth
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +101,7 @@ func TestAccountResources(t *testing.T) {
 	if status.Code(err) != codes.NotFound {
 		t.Fatal("unknown account accepted", err)
 	}
-	rebuilt, err := Build(ctx, db, f)
+	rebuilt, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

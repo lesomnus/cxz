@@ -58,7 +58,7 @@ func TestConversationStatsRPC(t *testing.T) {
 	f.s.Account = "work"
 	f.s.AuthBackend = accounts.ProjectLocalOAuth
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

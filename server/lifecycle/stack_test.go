@@ -74,7 +74,7 @@ func TestResourceStack(t *testing.T) {
 	}
 	defer db.Close()
 	f := &fixture{p: &api.Project{Id: "111111111111111111111111", Workspace: "/workspaces/test", Name: "test", State: "running"}, s: &api.Session{Id: "222222222222222222222222", ProjectId: "111111111111111111111111", Workspace: "/workspaces/test", Title: "conversation", CreateId: "create-1", CreatedAt: time.Now().UnixMilli(), Agent: "codex", RunId: "run-1", State: "idle", LastSeq: 1}}
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

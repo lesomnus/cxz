@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/historypolicy"
 	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/supervisor"
 )
 
@@ -47,7 +48,7 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 		s.projections[m.ID] = p
 	}
 	s.projectionMu.Unlock()
-	p.mu.Lock()
+	observe.Wait(ctx, "session projection", p.mu.Lock)
 	ok := false
 	defer func() {
 		if !ok {

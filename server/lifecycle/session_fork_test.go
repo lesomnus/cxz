@@ -40,7 +40,7 @@ func TestForkResolvesSourceAndPublishesChildWithSameResourceEdges(t *testing.T) 
 	}
 	defer db.Close()
 	f := &forkFixture{titleFixture: titleFixture{fixture: fixture{p: &api.Project{Id: "project", Workspace: "/workspace", Name: "Project"}}, sessions: []*api.Session{{Id: "parent", ProjectId: "project", Title: "Conversation", Agent: "codex", Model: "selected-model", Account: "work", AuthBackend: accounts.BrokeredAccessToken, AuthBinding: accounts.BindingID("project", "work", accounts.BrokeredAccessToken), CreateId: "parent-create", RunId: "parent-run", State: "idle", CreatedAt: time.Now().UnixMilli()}}}}
-	stack, err := Build(t.Context(), db, f)
+	stack, err := Build(t.Context(), db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -58,7 +58,7 @@ func TestSessionPatchManualTitleAndAlias(t *testing.T) {
 		v.AuthBackend = accounts.ProjectLocalOAuth
 		v.AuthBinding = accounts.BindingID(v.ProjectId, v.Account, v.AuthBackend)
 	}
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestSessionPatchManualTitleAndAlias(t *testing.T) {
 	if err := layer.Reconcile(ctx); err != nil {
 		t.Fatal(err)
 	}
-	stack, err = Build(ctx, db, f)
+	stack, err = Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

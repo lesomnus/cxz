@@ -26,6 +26,7 @@ import (
 	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
+	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
@@ -183,7 +184,10 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	if e = os.Chmod(filepath.Join(root, "resources.db"), 0600); e != nil {
 		return e
 	}
-	resources, e := lifecycle.Build(ctx, resourceDB, s)
+	// Every RPC this manager serves, kept where a client can read it back.
+	watching := observe.New(root)
+	defer watching.Close()
+	resources, e := lifecycle.Build(ctx, resourceDB, s, watching)
 	if e != nil {
 		return fmt.Errorf("build payday resource server: %w", e)
 	}
@@ -278,7 +282,9 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		return e
 	}
 	opts := grpcx.ServerOptions(ctx)
-	opts = append(opts, grpc.ChainUnaryInterceptor(versionpin.Unary(root), s.updateGate.Unary), grpc.ChainStreamInterceptor(versionpin.Stream(root), s.updateGate.Stream), grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
+	// observe wraps the gate, so a call that waited on an update shows the wait
+	// as part of what it took.
+	opts = append(opts, grpc.ChainUnaryInterceptor(watching.Unary(), versionpin.Unary(root), s.updateGate.Unary), grpc.ChainStreamInterceptor(watching.Stream(), versionpin.Stream(root), s.updateGate.Stream), grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
 	g := grpc.NewServer(opts...)
 	resource.RegisterServer(g, resources)
 	if os.Getenv("CXZ_PROJECT_ID") == "" {
@@ -301,7 +307,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		}
 		defer tcp.Close()
 		projectOptions := grpcx.ServerOptions(ctx)
-		projectOptions = append(projectOptions, grpc.ChainUnaryInterceptor(versionpin.Unary(root), s.updateGate.Unary), grpc.ChainStreamInterceptor(versionpin.Stream(root), s.updateGate.Stream), grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(24*1024*1024), grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		projectOptions = append(projectOptions, grpc.ChainUnaryInterceptor(watching.Unary(), versionpin.Unary(root), s.updateGate.Unary), grpc.ChainStreamInterceptor(watching.Stream(), versionpin.Stream(root), s.updateGate.Stream), grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(24*1024*1024), grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 			if e := transport.RequireToken(ctx, runtime.Token); e != nil {
 				return nil, status.Error(codes.Unauthenticated, e.Error())
 			}
