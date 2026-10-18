@@ -30,8 +30,10 @@ const Protocol = 1
 // Schema 2 journals may start with a retention checkpoint. Schema 1 binaries
 // cannot recover these sessions, so this requires an explicit upgrade path.
 const Schema = releasechannel.StateSchema
-const Interval = 24 * time.Hour
-const IdlePeriod = 5 * time.Minute
+
+var Interval = Tunable("CXZ_UPDATE_FAILURE_INTERVAL", 24*time.Hour)
+var IdlePeriod = Tunable("CXZ_UPDATE_IDLE", 5*time.Minute)
+
 const ReleaseURL = "https://github.com/lesomnus/cxz/releases/download/edge/cxz-update.json"
 
 var revisionPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)

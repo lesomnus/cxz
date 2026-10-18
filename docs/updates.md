@@ -59,6 +59,29 @@ What waits for what:
 | **Supervisor / agent** | That session has been safely idle for five minutes |
 | **TUI** | Five minutes without input, and no draft, modal, attachment or in-flight request |
 
+**`cxz self-update` does not wait for any of that**, and `cxz use` does not
+either: they replace what is installed and restart it. Automatic updating is for
+picking a build up when nobody is looking; when you want a particular build on
+now -- deploying a fix you just merged, for instance -- ask for it directly
+rather than waiting for the rollout to find a quiet moment.
+
+An attached TUI refuses an automatic update while someone is interacting with
+it, so a session being watched is updated after the watching stops rather than
+during it.
+
+The waits can be shortened where they are being tested, which is the only
+reason to:
+
+| | Default | |
+|---|---|---|
+| `CXZ_UPDATE_IDLE` | 5m | How long a session must be quiet |
+| `CXZ_UPDATE_REFUSED_INTERVAL` | 10m | How long the rollout waits after a refusal |
+| `CXZ_UPDATE_FAILURE_INTERVAL` | 24h | How long it waits after a failed release |
+
+They are read by the process that enforces them -- a session supervisor for the
+first, the manager for the other two -- so set them where that process will see
+them. A value that cannot be parsed, or is not positive, is ignored.
+
 Preserved across each: project containers, state volumes, session and run identity
 (a supervisor replacement makes a new run), account and model, and the journal. The
 TUI restores its connection, project, session and scroll position.

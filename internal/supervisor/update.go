@@ -15,7 +15,11 @@ import (
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 )
 
-const UpdateIdlePeriod = 5 * time.Minute
+// UpdateIdlePeriod is how long a session must be quiet before an update may
+// take it. A var, and overridable, because verifying a rollout end to end
+// otherwise costs five idle minutes per attempt -- which is most of why four
+// separate blockers took an hour to walk through. See cxz#224.
+var UpdateIdlePeriod = cxzupdate.Tunable("CXZ_UPDATE_IDLE", 5*time.Minute)
 
 type updateClient struct {
 	seen time.Time
@@ -66,7 +70,10 @@ func (s *Supervisor) observeUpdateRaw(raw []byte) {
 
 func (s *Supervisor) updateReason(now time.Time, quiet bool) (reason string) {
 	defer func() {
-		if reason != "" && reason != "waiting for 5 minutes of continuous idle" {
+		// A block earns another full idle period, because the agent did
+		// something. These two did not: one is the clock itself, and the other
+		// is a person looking at the screen. See cxz#224.
+		if reason != "" && reason != "waiting for 5 minutes of continuous idle" && reason != "attached client busy" {
 			s.updateBlocked = true
 		}
 	}()
@@ -107,7 +114,13 @@ func (s *Supervisor) updateReason(now time.Time, quiet bool) (reason string) {
 			continue
 		}
 		if c.busy {
-			s.lastActivity = now
+			// Refuse this attempt, but leave the clock alone. A TUI reports
+			// itself busy for ten seconds after any keypress -- scrolling a
+			// transcript counts -- so resetting the idle period here meant a
+			// person reading a conversation kept the installation from ever
+			// updating. "Someone is mid-interaction" and "nothing has been
+			// quiet for five minutes" are different answers, and only the
+			// second one needs a timer. See cxz#224.
 			return "attached client busy"
 		}
 	}
@@ -242,7 +255,9 @@ func (s *Supervisor) serveUpdate(w http.ResponseWriter, r *http.Request) bool {
 		if s.updateClients == nil {
 			s.updateClients = map[string]updateClient{}
 		}
-		if _, known := s.updateClients[c.ClientID]; !known || c.Busy {
+		// A client attaching is an interaction; a client reporting that it is
+		// busy is not, and it already refuses the attempt on its own.
+		if _, known := s.updateClients[c.ClientID]; !known {
 			s.lastActivity = time.Now()
 		}
 		s.updateClients[c.ClientID] = updateClient{time.Now(), c.Busy}

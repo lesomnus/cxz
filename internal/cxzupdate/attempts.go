@@ -23,13 +23,15 @@ type Attempt struct {
 	Reason  string    `json:"reason,omitempty"`
 }
 
-const (
+var (
 	// RefusedInterval is how long the rollout waits after being refused. A
 	// refusal is not a failure -- the server was busy, and will not be busy
 	// forever -- so it does not earn the failure backoff. But every attempt
 	// asks every session whether it is quiet, which is not free.
-	RefusedInterval = 10 * time.Minute
+	RefusedInterval = Tunable("CXZ_UPDATE_REFUSED_INTERVAL", 10*time.Minute)
+)
 
+const (
 	attemptHistory = 50
 	reasonLimit    = 500
 )

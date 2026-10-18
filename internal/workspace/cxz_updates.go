@@ -121,6 +121,15 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	}
 	lock, e := core.Lock(filepath.Join(m.Root, "rollout.lock"))
 	if e != nil {
+		// Say so. A rollout that could not even look is not the same as one
+		// that looked and found nothing, and this silence -- a status whose
+		// timestamp simply stops moving -- cost an hour of looking in the
+		// wrong places. See cxz#222.
+		if s, err := cxzupdate.Load(m.Root); err == nil && s.State != "holding" {
+			s.State = "holding"
+			s.Reason = "another rollout holds the lock: " + e.Error()
+			_ = cxzupdate.Save(m.Root, s)
+		}
 		return
 	}
 	defer lock.Close()

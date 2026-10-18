@@ -99,7 +99,13 @@ func (m *Manager) RunUpdates(ctx context.Context) {
 			}
 		}
 		if lock, err := core.Lock(filepath.Join(m.Root, "rollout.lock")); err == nil {
-			m.rolloutOne(ctx, &state)
+			// Bounded, because this probes containers: one project whose
+			// runtime did not answer used to hang here forever while holding
+			// the lock that cxz's own rollout needs, which stopped every
+			// update of the installation and said nothing at all. See cxz#222.
+			work, cancel := context.WithTimeout(ctx, rolloutBudget)
+			m.rolloutOne(work, &state)
+			cancel()
 			lock.Close()
 		}
 		if e := core.WriteJSON(path, state); e != nil {
@@ -112,6 +118,10 @@ func (m *Manager) RunUpdates(ctx context.Context) {
 		}
 	}
 }
+
+// rolloutBudget bounds one pass of provider updates. A probe is a round trip
+// into a container, and must not outlive the tick that started it.
+const rolloutBudget = 5 * time.Minute
 
 func (m *Manager) rolloutOne(ctx context.Context, state *updateState) {
 	if versionpin.Pending(m.Root) {

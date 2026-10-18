@@ -87,6 +87,16 @@ func (s *Server) sessionQuiet(ctx context.Context, m core.Session) (a struct {
 	a.run = snap.RunId
 	var p supervisor.UpdateStatus
 	if e = supervisor.Call(ctx, s.root, m.ID, "update-status", core.Command{RunID: snap.RunId}, &p); e != nil {
+		// Nothing listening means no agent is running, which is what quiet is.
+		// snapshot already calls that "interrupted" for the same reason, and
+		// counting it as busy let one dead session block every update of the
+		// installation -- with no way to stop it, because stopping goes through
+		// this socket too. A supervisor on its way up is the exception: it
+		// says "starting", and failing closed there is still right.
+		// See cxz#223.
+		if supervisor.Unreachable(e) && snap.State != "starting" {
+			return a
+		}
 		a.blocked = fmt.Errorf("session %s: %w", m.ID, e)
 		return a
 	}
