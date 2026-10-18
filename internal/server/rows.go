@@ -93,7 +93,7 @@ func (s *Server) syncedRows(ctx context.Context, m core.Session, cursor uint64) 
 		return nil, err
 	}
 	defer p.mu.Unlock()
-	if err = transcripthistory.Sync(ctx, s.db, m.ID, decodeTranscriptEvent); err != nil {
+	if err = transcripthistory.SyncWith(ctx, s.db, m.ID, decodeTranscriptEvent, &p.transcript); err != nil {
 		return nil, err
 	}
 	return transcripthistory.Tail(ctx, s.db, m.ID, cursor, rowsPage, decodeTranscriptEvent)

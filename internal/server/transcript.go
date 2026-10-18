@@ -29,7 +29,7 @@ func (s *Server) Transcript(ctx context.Context, r *api.TranscriptRequest) (*api
 		return nil, err
 	}
 	defer p.mu.Unlock()
-	if err = transcripthistory.Sync(ctx, s.db, r.SessionId, decodeTranscriptEvent); err != nil {
+	if err = transcripthistory.SyncWith(ctx, s.db, r.SessionId, decodeTranscriptEvent, &p.transcript); err != nil {
 		return nil, err
 	}
 	return transcripthistory.Page(ctx, s.db, r, decodeTranscriptEvent)
@@ -47,7 +47,7 @@ func (s *Server) EventDetails(ctx context.Context, r *api.EventDetailsRequest) (
 		return nil, err
 	}
 	defer p.mu.Unlock()
-	if err = transcripthistory.Sync(ctx, s.db, r.SessionId, decodeTranscriptEvent); err != nil {
+	if err = transcripthistory.SyncWith(ctx, s.db, r.SessionId, decodeTranscriptEvent, &p.transcript); err != nil {
 		return nil, err
 	}
 	return transcripthistory.Details(ctx, s.db, r, decodeTranscriptEvent)

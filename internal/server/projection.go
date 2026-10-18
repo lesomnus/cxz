@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/supervisor"
+	"github.com/lesomnus/cxz/internal/transcripthistory"
 )
 
 type sessionProjection struct {
@@ -26,6 +27,11 @@ type sessionProjection struct {
 	// event out of a journal, and reconstructing that by reading the journal from
 	// a client costs the whole conversation to find one record.
 	catalogs map[string]catalogRecord
+	// transcript is the reading projection's reduced state, kept here because
+	// this lock is what serializes a session: without it every sync rebuilds
+	// that state by reading every current row of the conversation. Only a
+	// caller holding mu may pass it on.
+	transcript transcripthistory.Cache
 }
 
 type catalogRecord struct {
