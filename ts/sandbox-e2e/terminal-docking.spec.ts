@@ -5,7 +5,10 @@ import {
   type Locator,
   type Page,
 } from "@playwright/test";
-import { disableTerminalWebGL } from "../test-support/terminal";
+import {
+  disableTerminalWebGL,
+  toggleWorkspaceTerminal,
+} from "../test-support/terminal";
 
 test.use({
   ...devices["Desktop Chrome"],
@@ -17,7 +20,7 @@ test.beforeEach(async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });
-  await page.getByRole("button", { name: "Terminal", exact: true }).click();
+  await toggleWorkspaceTerminal(page);
 });
 async function command(page: Page, pane: Locator, text: string) {
   await expect(pane.locator(".xterm-helper-textarea:visible")).toBeFocused();
@@ -117,7 +120,7 @@ test("tabs own independent shells; folding, reordering, moving and closing prese
 
   await panel.getByRole("button", { name: "Hide terminal" }).click();
   await expect(panel).toBeHidden();
-  await page.getByRole("button", { name: "Terminal", exact: true }).click();
+  await toggleWorkspaceTerminal(page);
   await expect(panel.locator("[data-terminal-group]")).toHaveCount(2);
   await right
     .getByRole("button", { name: "Close Terminal 3", exact: true })
@@ -137,7 +140,7 @@ test("tabs own independent shells; folding, reordering, moving and closing prese
     .getByRole("button", { name: "Close Terminal 1", exact: true })
     .click();
   await expect(panel).toBeHidden();
-  await page.getByRole("button", { name: "Terminal", exact: true }).click();
+  await toggleWorkspaceTerminal(page);
   await expect(panel.getByRole("tab")).toHaveText("Terminal 4");
   await expect(panel).toContainText("sandbox@project-1:/workspace$");
   await expect(panel).not.toContainText("first-shell-marker");

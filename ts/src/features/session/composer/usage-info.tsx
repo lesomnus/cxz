@@ -1,6 +1,5 @@
 import { CompactNumber, DialogReveal, DurationDisplay } from "@lesomnus/nox";
 import { useEffect, useId, useRef, useState } from "react";
-import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import styles from "./usage-info.module.css";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -24,13 +23,7 @@ function quotaPeriod(label: string | undefined) {
   );
 }
 
-export function UsageInfo({
-  info,
-  agent,
-}: {
-  info: SessionInfo;
-  agent: string;
-}) {
+export function UsageInfo({ info }: { info: SessionInfo; agent: string }) {
   useLocale();
   const quotaId = useId();
   const contextId = useId();
@@ -115,10 +108,9 @@ export function UsageInfo({
             id={quotaId}
             className={styles.details}
             contentClassName={styles.content}
-            from="right"
+            from="bottom-right"
             role="tooltip"
           >
-            <AgentBrand agent={agent} />
             <span className={styles.period}>
               {quotaPeriod(info.quotaLabel)}
             </span>
@@ -186,7 +178,7 @@ export function UsageInfo({
             id={contextId}
             className={styles.details}
             contentClassName={styles.contextContent}
-            from="right"
+            from="bottom-right"
             role="tooltip"
           >
             <CompactNumber value={info.contextUsed ?? NaN} />

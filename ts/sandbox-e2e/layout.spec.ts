@@ -38,7 +38,11 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await row.hover();
   await expect(row).toHaveCSS("border-top-width", "0px");
-  await expect(row).toHaveCSS("background-color", "rgb(40, 40, 40)");
+  await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(page.locator(".session-tree-group").first()).toHaveCSS(
+    "background-color",
+    "rgb(32, 32, 32)",
+  );
   await expect(page.locator(".composer-meta")).toContainText("sandbox-claude");
   await expect(page.locator(".effort-field .meta-value")).toHaveText("high");
   await expect(
@@ -129,11 +133,15 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
     "matrix(1, 0, 0, 1, 0, 0)",
   );
   await page.getByRole("link", { name: "Projects view" }).click();
-  await expect(page.locator(".resource-view")).toBeVisible();
+  const projects = page.getByRole("main", { name: "Project workspace" });
+  await expect(projects).toBeVisible();
   await page
-    .locator(".project-row")
-    .filter({ hasText: "Secondary project" })
+    .getByRole("combobox", { name: "Select project", exact: true })
     .click();
+  await page
+    .getByRole("option", { name: "Secondary project", exact: true })
+    .click();
+  await projects.getByRole("link").filter({ hasText: "session-8" }).click();
   await expect(page.locator(".session-tree-group")).toHaveCount(2);
   await expect(page.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS);
   await page.locator(".tree-session").filter({ hasText: "session-8" }).click();

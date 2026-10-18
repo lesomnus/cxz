@@ -1,5 +1,13 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Project workspace": "Project workspace",
+  "Project toolbar": "Project toolbar",
+  "Select project": "Select project",
+  "Project scroll": "Project scroll",
+  "Project sessions": "Project sessions",
+  "Project unavailable": "Project unavailable",
+  "Loading sessions…": "Loading sessions…",
+  Status: "Status",
   "Background tasks": "Background tasks",
   "Search current conversation": "Search current conversation",
   "This message is no longer available in retained history.":

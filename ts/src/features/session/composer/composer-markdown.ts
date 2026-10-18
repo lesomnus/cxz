@@ -67,6 +67,7 @@ export function inlineBacktickEdit(
   if (slashes % 2) return;
   if (value[position] === "`")
     return { text: "", caret: position + 1, skip: true };
+  if (value[position] && !/\s/.test(value[position])) return;
   const lineEnd = value.indexOf("\n", position);
   const line = value.slice(lineStart, lineEnd < 0 ? value.length : lineEnd);
   const offset = position - lineStart;
@@ -80,4 +81,19 @@ export function inlineBacktickEdit(
   )
     return;
   return { text: "``", caret: position + 1, skip: false };
+}
+
+export function backtickSelectionEdit(
+  value: string,
+  start: number,
+  end: number,
+) {
+  const selected = value.slice(start, end);
+  const content = selected.trimEnd();
+  if (!content) return;
+  return {
+    text: "`" + content + "`" + selected.slice(content.length),
+    caret: start + 1,
+    selectionEnd: start + 1 + content.length,
+  };
 }

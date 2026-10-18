@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import {
+  backtickSelectionEdit,
   inlineBacktickEdit,
   inlineCodeRanges,
   listNewlineEdit,
@@ -37,6 +38,38 @@ it("pairs inline ticks, skips the closer, and leaves fences/escapes/existing cod
     ["```\ncode\n```", 8],
   ] as const)
     expect(inlineBacktickEdit(value, pos)).toBeUndefined();
+});
+
+it("only pairs an opening inline backtick before whitespace or the end", () => {
+  for (const suffix of ["word", "한글", ".", "/tmp", "🙂"])
+    expect(inlineBacktickEdit("Use " + suffix, 4)).toBeUndefined();
+  for (const suffix of ["", " ", "\t", "\n", "\u00a0"])
+    expect(inlineBacktickEdit("Use " + suffix, 4)).toEqual({
+      text: "``",
+      caret: 5,
+      skip: false,
+    });
+});
+
+it("wraps selected text while leaving trailing whitespace outside the backticks", () => {
+  for (const trailing of ["", " ", "  \t\n", "\u00a0"]) {
+    const selected = " 한글 code";
+    const value = "Use " + selected + trailing + "next";
+    const edit = backtickSelectionEdit(
+      value,
+      4,
+      4 + selected.length + trailing.length,
+    )!;
+    expect(
+      value.slice(0, 4) +
+        edit.text +
+        value.slice(4 + selected.length + trailing.length),
+    ).toBe("Use `" + selected + "`" + trailing + "next");
+    expect(edit.caret).toBe(5);
+    expect(edit.selectionEnd).toBe(5 + selected.length);
+  }
+  expect(backtickSelectionEdit("word", 1, 1)).toBeUndefined();
+  expect(backtickSelectionEdit(" \t\n", 0, 3)).toBeUndefined();
 });
 
 it("continues bullet and task lists with their exact space/tab indentation", () => {

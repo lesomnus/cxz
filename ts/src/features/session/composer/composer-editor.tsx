@@ -23,6 +23,7 @@ import type { ComposerCommand } from "./composer-commands";
 import { usePathSuggestions } from "./path-suggestions";
 import type { LookupPaths } from "./composer-paths";
 import {
+  backtickSelectionEdit,
   inlineBacktickEdit,
   inlineCodeRanges,
   listNewlineEdit,
@@ -845,9 +846,30 @@ export function ComposerEditor({
                 event.key === "`" &&
                 !event.ctrlKey &&
                 !event.metaKey &&
-                !event.altKey &&
-                selection.start === selection.end
+                !event.altKey
               ) {
+                if (selection.start !== selection.end) {
+                  const from = projection.toSource(selection.start);
+                  const to = projection.toSource(selection.end);
+                  const edit = backtickSelectionEdit(source, from, to);
+                  if (edit) {
+                    event.preventDefault();
+                    const next = new PasteProjection(
+                      source.slice(0, from) + edit.text + source.slice(to),
+                      pastes,
+                      frozenPresentations.current,
+                    );
+                    replace(
+                      selection.start,
+                      selection.end,
+                      edit.text,
+                      next.toDisplay(edit.caret),
+                      next.toDisplay(edit.selectionEnd),
+                      el.selectionDirection,
+                    );
+                  }
+                  return;
+                }
                 const lineStart =
                   value.lastIndexOf("\n", selection.start - 1) + 1;
                 const prefix = value.slice(lineStart, selection.start);

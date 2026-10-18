@@ -43,6 +43,9 @@ export function Workspace({
   const route = useWorkspaceRoute();
   const resource = route.resource === "not-found" ? "sessions" : route.resource;
   const session = route.session;
+  const hasResourcePanel = !["accounts", "tasks", "projects"].includes(
+    resource,
+  );
   const settingsTopic = route.settingsTopic;
   const lastSession = useRef("");
   if (route.resource === "sessions") lastSession.current = session;
@@ -105,6 +108,10 @@ export function Workspace({
         sessions: inventory.sessions,
         sessionsLoading: inventory.loading.sessions,
         projectsLoading: inventory.loading.projects,
+        inventoryError:
+          inventory.errors.projects || inventory.errors.sessions
+            ? String(inventory.errors.projects || inventory.errors.sessions)
+            : "",
         settingsFileOpen,
         setSettingsFileOpen,
         expandProject,
@@ -183,7 +190,7 @@ export function Workspace({
             openSettings={() => setSettingsFileOpen(false)}
           />
         </nav>
-        {resource !== "accounts" && resource !== "tasks" && (
+        {hasResourcePanel && (
           <ResourcePanel
             ref={sessionPanel}
             unreadSelector={
@@ -195,11 +202,9 @@ export function Workspace({
                 ? t("Sessions")
                 : resource === "settings"
                   ? t("Settings")
-                  : resource === "projects"
-                    ? t("Projects")
-                    : resource === "auxiliary"
-                      ? "Auxiliary AI"
-                      : resource[0].toUpperCase() + resource.slice(1)
+                  : resource === "auxiliary"
+                    ? "Auxiliary AI"
+                    : resource[0].toUpperCase() + resource.slice(1)
             }
             actions={
               resource === "sessions" && (
@@ -274,9 +279,7 @@ export function Workspace({
                 ? t("Session list")
                 : resource === "settings"
                   ? t("Settings navigation")
-                  : resource === "projects"
-                    ? t("Project list")
-                    : `${resource} navigation`
+                  : `${resource} navigation`
             }
           >
             {resource === "settings" ? (
@@ -336,16 +339,6 @@ export function Workspace({
                   <small className="tree-message">{t("Loading…")}</small>
                 )}
               </div>
-            ) : resource === "projects" ? (
-              projects.map((p) => (
-                <PanelLink
-                  key={p.runtimeId}
-                  to="/sessions"
-                  onClick={() => expandProject(p.runtimeId)}
-                >
-                  {p.name || p.alias}
-                </PanelLink>
-              ))
             ) : (
               <nav className="settings-topics" aria-label="Resource navigation">
                 <PanelLink to={`/${resource}`} aria-current="page">

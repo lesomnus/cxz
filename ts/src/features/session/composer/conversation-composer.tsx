@@ -48,9 +48,6 @@ export function ConversationComposer({
   onBackgroundJobs,
   latestVisible = false,
   onLatest,
-  terminalVisible = false,
-  terminalAvailable = false,
-  onTerminal,
   menu,
   upload,
   onDraftAssetsChange,
@@ -80,9 +77,6 @@ export function ConversationComposer({
   onBackgroundJobs?: () => void;
   latestVisible?: boolean;
   onLatest?: () => void;
-  terminalVisible?: boolean;
-  terminalAvailable?: boolean;
-  onTerminal?: () => void;
   menu?: ReactNode | ((pick: (directory?: boolean) => void) => ReactNode);
   upload?: UploadFile;
   onDraftAssetsChange?: () => void;
@@ -93,7 +87,6 @@ export function ConversationComposer({
   onSelectionChange?: (selection: EditorSelection) => void;
 }) {
   useLocale();
-  const terminalHint = useId();
   const sendHint = useId();
   const editor = useRef<ComposerEditorHandle>(null);
   const { snapshot } = useSettings();
@@ -204,35 +197,6 @@ export function ConversationComposer({
               </Button>
             </span>
             {typeof menu === "function" ? menu(pick) : menu}
-            <span className="terminal-control">
-              <Button
-                className="toolbar-button terminal-toggle"
-                type="button"
-                aria-label={t("Terminal")}
-                aria-pressed={terminalVisible}
-                aria-keyshortcuts="Control+Backquote"
-                aria-describedby={terminalHint}
-                disabled={!terminalAvailable}
-                onClick={onTerminal}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="m4 6 6 6-6 6m9 0h7" />
-                </svg>
-              </Button>
-              <span id={terminalHint} className="send-shortcut" role="tooltip">
-                {t("Terminal")} · ctrl+`
-              </span>
-            </span>
             <MicrophoneControl
               speech={speech}
               disabled={sending}

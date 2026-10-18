@@ -216,6 +216,38 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
   useLayoutEffect(() => {
     const node = host.current!;
     const questions = persistent.current!;
+    const conversation = node.closest<HTMLElement>(".conversation")!;
+    const area = conversation.querySelector<HTMLElement>(".transcript-area")!;
+    const wrapper =
+      conversation.querySelector<HTMLElement>(".composer-wrapper")!;
+    let reserved = 0;
+    const measure = () => {
+      // Reserve the question's resting (half-tucked) footprint, even while it
+      // reveals on hover. Hover must not move the conversation under the reader.
+      const height = questions.querySelector(".approval")
+        ? questions.offsetHeight
+        : 0;
+      const gap = parseFloat(getComputedStyle(node).paddingBottom) || 0;
+      const restingTop = wrapper.getBoundingClientRect().top - gap - height / 2;
+      const bottom = area.getBoundingClientRect().bottom + reserved;
+      const next = height > 0 ? Math.max(0, bottom - restingTop) : 0;
+      if (Math.abs(next - reserved) < 0.5) return;
+      reserved = next;
+      area.style.setProperty("--question-clearance", `${next}px`);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(questions);
+    observer.observe(wrapper);
+    observer.observe(conversation);
+    return () => {
+      observer.disconnect();
+      area.style.removeProperty("--question-clearance");
+    };
+  }, [hasQuestions]);
+  useLayoutEffect(() => {
+    const node = host.current!;
+    const questions = persistent.current!;
     const preview = node.querySelector<HTMLElement>(":scope > .floating-card");
     const update = () => {
       const questionHeight = questions.offsetHeight;

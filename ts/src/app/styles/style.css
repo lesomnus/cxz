@@ -769,6 +769,7 @@ header strong {
   height: var(--agent-logo-size);
 }
 .transcript-area {
+  margin-bottom: var(--question-clearance, 0px);
   flex: 1;
   min-height: 0;
   position: relative;
@@ -2202,8 +2203,7 @@ pre {
     transition: none;
   }
 }
-.send-control,
-.terminal-control {
+.send-control {
   position: relative;
   display: inline-flex;
 }
@@ -2253,9 +2253,7 @@ pre {
   pointer-events: none;
 }
 .send-control:hover .send-shortcut,
-.send-control:focus-within .send-shortcut,
-.terminal-control:hover .send-shortcut,
-.terminal-control:focus-within .send-shortcut {
+.send-control:focus-within .send-shortcut {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -2428,28 +2426,6 @@ summary:hover {
 .resource-view {
   overflow: auto;
 }
-.resource-view-content {
-  max-width: 680px;
-  padding: 16px;
-  margin: 16px auto;
-}
-.project-row {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  text-align: left;
-}
-.project-row > .button-content {
-  justify-content: flex-start;
-  gap: 12px;
-}
-.project-row .button-content > span:last-child {
-  margin-left: auto;
-}
-.project-row small {
-  margin-bottom: 0;
-  font-weight: 400;
-}
 .login {
   max-width: 390px;
   margin: 15dvh auto;
@@ -2593,7 +2569,6 @@ summary:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 550;
 }
 .tree-sessions {
   padding: 0;

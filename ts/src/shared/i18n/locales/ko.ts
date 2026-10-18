@@ -1,5 +1,13 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Project workspace": "프로젝트 워크스페이스",
+  "Project toolbar": "프로젝트 툴바",
+  "Select project": "프로젝트 선택",
+  "Project scroll": "프로젝트 스크롤",
+  "Project sessions": "프로젝트 세션",
+  "Project unavailable": "프로젝트를 사용할 수 없습니다",
+  "Loading sessions…": "세션 불러오는 중…",
+  Status: "상태",
   "Background tasks": "백그라운드 작업",
   "Search current conversation": "현재 대화 검색",
   "This message is no longer available in retained history.":

@@ -1,5 +1,8 @@
 import { test, expect, devices } from "@playwright/test";
-import { disableTerminalWebGL } from "../test-support/terminal";
+import {
+  disableTerminalWebGL,
+  toggleWorkspaceTerminal,
+} from "../test-support/terminal";
 
 test.beforeEach(async ({ page }) => disableTerminalWebGL(page));
 
@@ -55,7 +58,7 @@ test.describe("desktop terminal", () => {
     await page
       .getByLabel("Scenario", { exact: true })
       .selectOption("session-8");
-    await page.getByRole("button", { name: "Terminal", exact: true }).click();
+    await toggleWorkspaceTerminal(page);
     await expect(panel).toContainText("sandbox@project-2:/workspace$");
     expect(errors).toEqual([]);
     await page.screenshot({
@@ -72,7 +75,7 @@ test("mobile terminal button fits the conversation and keeps composer accessible
   await expect(
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });
-  await page.getByRole("button", { name: "Terminal", exact: true }).click();
+  await toggleWorkspaceTerminal(page);
   const panel = page.getByRole("region", { name: "Workspace terminal" });
   await expect(panel).toContainText("sandbox@project-1:/workspace$");
   await expect(
