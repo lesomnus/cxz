@@ -106,7 +106,7 @@ export function UsageInfo({ info }: { info: SessionInfo; agent: string }) {
         {open && (
           <DialogReveal
             id={quotaId}
-            className={`${styles.details} ${styles.quotaDetails}`}
+            className={styles.details}
             contentClassName={styles.content}
             from="bottom-right"
             role="tooltip"
@@ -178,7 +178,7 @@ export function UsageInfo({ info }: { info: SessionInfo; agent: string }) {
             id={contextId}
             className={styles.details}
             contentClassName={styles.contextContent}
-            from="right"
+            from="bottom-right"
             role="tooltip"
           >
             <CompactNumber value={info.contextUsed ?? NaN} />

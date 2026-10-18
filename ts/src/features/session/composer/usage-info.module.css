@@ -1,19 +1,20 @@
 .usage:global(.usage-info) {
   gap: 18px;
 }
-.quota {
+.quota,
+.context {
   isolation: isolate;
   padding: 4px;
   margin: -4px;
   border-radius: 6px;
 }
-.quota[data-open="true"] {
+:is(.quota, .context)[data-open="true"] {
   z-index: 6;
   outline: 1px solid var(--shade-65);
   outline-offset: -1px;
 }
 /* Transparent bridge keeps hover while crossing the gap. */
-.quota[data-open="true"]::before {
+:is(.quota, .context)[data-open="true"]::before {
   content: "";
   position: absolute;
   bottom: 100%;
@@ -39,30 +40,22 @@
 .details {
   position: absolute;
   z-index: 4;
-  right: -10px;
-  top: -6px;
-  bottom: -6px;
+  right: 0;
+  bottom: calc(100% + 2px);
   display: flex;
   align-items: center;
   width: max-content;
-  padding: 6px calc(100% + 30px) 6px 10px;
+  min-height: 32px;
+  padding: 6px 10px;
 
   border-radius: 6px;
-  background: var(--shade-36);
+  background: color-mix(in srgb, var(--shade-36) 75%, transparent);
+  backdrop-filter: blur(12px);
   color: var(--shade-237);
   font-family: var(--ui-font-mono);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-.quotaDetails {
-  right: 0;
-  top: auto;
-  bottom: calc(100% + 2px);
-  background: color-mix(in srgb, var(--shade-36) 75%, transparent);
-  backdrop-filter: blur(12px);
-  min-height: 32px;
-  padding: 6px 10px;
 }
 .content {
   display: grid;
@@ -89,13 +82,6 @@
   text-align: center;
 }
 
-.context {
-  isolation: isolate;
-}
-.context[data-open="true"] {
-  /* The leftward popup covers the neighboring quota graph. */
-  z-index: 6;
-}
 .donut {
   position: relative;
   z-index: 5;
