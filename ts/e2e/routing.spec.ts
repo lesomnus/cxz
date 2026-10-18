@@ -115,3 +115,26 @@ test("profile sign out failures stay visible and can be retried", async ({
     page.getByRole("button", { name: "Connect", exact: true }),
   ).toBeVisible();
 });
+
+// A browser attached straight to one gateway has exactly one connection, and it
+// is the one that served the page: there is nothing to pick and nothing to
+// forget. See docs/plans/web-connections.md.
+test("a direct connection is listed once, read-only, and reaches this installation", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto("/settings/connections");
+  await expect(
+    page.getByRole("heading", { name: "Connections", exact: true }),
+  ).toBeVisible();
+  const rows = page.locator(".connection-list tbody tr");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toHaveAttribute("data-read-only", "true");
+  await expect(rows.first()).toContainText("default");
+  await expect(rows.first()).toContainText("served this page");
+  await expect(rows.first()).toContainText(new URL(page.url()).origin);
+  // Nothing in the page offers to remove or edit it.
+  await expect(
+    page.getByRole("button", { name: /forget|remove|delete/i }),
+  ).toHaveCount(0);
+});

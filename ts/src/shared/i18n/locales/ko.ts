@@ -582,4 +582,12 @@ export const messages = {
     "페이지를 클릭하거나 키를 누른 뒤 소리가 재생됩니다. 탭 표시는 알림 권한을 요청하지 않습니다.",
   "Upload interrupted. Remove this chip and select the file again.":
     "업로드가 중단됐습니다. 이 칩을 제거하고 파일을 다시 선택하세요.",
+  Name: "이름",
+  Connections: "연결",
+  "A connection reaches one installation and every project on it.":
+    "연결 하나는 설치본 하나와 그 안의 모든 프로젝트에 닿습니다.",
+  Target: "대상",
+  Transport: "전송",
+  default: "기본",
+  "served this page": "이 페이지를 제공",
 } satisfies LanguagePack;

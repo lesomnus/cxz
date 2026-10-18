@@ -284,21 +284,23 @@ export function Workspace({
                 className="settings-topics"
                 aria-label={t("Settings topics")}
               >
-                {(["general", "editor"] as const).map((topic) => (
+                {(
+                  [
+                    ["general", "/settings/general", t("General")],
+                    ["editor", "/settings/editor", t("Editor")],
+                    ["connections", "/settings/connections", t("Connections")],
+                  ] as const
+                ).map(([topic, to, label]) => (
                   <PanelLink
                     key={topic}
-                    to={
-                      topic === "general"
-                        ? "/settings/general"
-                        : "/settings/editor"
-                    }
+                    to={to}
                     aria-current={settingsTopic === topic ? "page" : undefined}
                     aria-controls="settings-editor"
                     onClick={() => {
                       setSettingsFileOpen(false);
                     }}
                   >
-                    {topic === "general" ? t("General") : t("Editor")}
+                    {label}
                   </PanelLink>
                 ))}
               </nav>
