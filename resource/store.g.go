@@ -29,6 +29,7 @@ type Server interface {
 	Account() AccountServiceServer
 	Project() ProjectServiceServer
 	AuthBinding() AuthBindingServiceServer
+	Connection() ConnectionServiceServer
 	Audit() AuditServiceServer
 	Tenant() TenantServiceServer
 	Holder() HolderServiceServer
@@ -45,6 +46,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterAccountServiceServer(g, s.Account())
 	RegisterProjectServiceServer(g, s.Project())
 	RegisterAuthBindingServiceServer(g, s.AuthBinding())
+	RegisterConnectionServiceServer(g, s.Connection())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterTenantServiceServer(g, s.Tenant())
 	RegisterHolderServiceServer(g, s.Holder())
@@ -57,6 +59,7 @@ type UnimplementedServer struct {
 	AccountServer     AccountServiceServer
 	ProjectServer     ProjectServiceServer
 	AuthBindingServer AuthBindingServiceServer
+	ConnectionServer  ConnectionServiceServer
 	AuditServer       AuditServiceServer
 	TenantServer      TenantServiceServer
 	HolderServer      HolderServiceServer
@@ -70,6 +73,9 @@ func (UnimplementedServer) Project() ProjectServiceServer { return Unimplemented
 func (UnimplementedServer) AuthBinding() AuthBindingServiceServer {
 	return UnimplementedAuthBindingServiceServer{}
 }
+func (UnimplementedServer) Connection() ConnectionServiceServer {
+	return UnimplementedConnectionServiceServer{}
+}
 func (UnimplementedServer) Audit() AuditServiceServer     { return UnimplementedAuditServiceServer{} }
 func (UnimplementedServer) Tenant() TenantServiceServer   { return UnimplementedTenantServiceServer{} }
 func (UnimplementedServer) Holder() HolderServiceServer   { return UnimplementedHolderServiceServer{} }
@@ -81,6 +87,7 @@ type StaticServer struct {
 	AccountServer     AccountServiceServer
 	ProjectServer     ProjectServiceServer
 	AuthBindingServer AuthBindingServiceServer
+	ConnectionServer  ConnectionServiceServer
 	AuditServer       AuditServiceServer
 	TenantServer      TenantServiceServer
 	HolderServer      HolderServiceServer
@@ -92,6 +99,7 @@ type StaticServer struct {
 func (s StaticServer) Account() AccountServiceServer         { return s.AccountServer }
 func (s StaticServer) Project() ProjectServiceServer         { return s.ProjectServer }
 func (s StaticServer) AuthBinding() AuthBindingServiceServer { return s.AuthBindingServer }
+func (s StaticServer) Connection() ConnectionServiceServer   { return s.ConnectionServer }
 func (s StaticServer) Audit() AuditServiceServer             { return s.AuditServer }
 func (s StaticServer) Tenant() TenantServiceServer           { return s.TenantServer }
 func (s StaticServer) Holder() HolderServiceServer           { return s.HolderServer }
@@ -103,6 +111,7 @@ type Client interface {
 	Account() AccountServiceClient
 	Project() ProjectServiceClient
 	AuthBinding() AuthBindingServiceClient
+	Connection() ConnectionServiceClient
 	Audit() AuditServiceClient
 	Tenant() TenantServiceClient
 	Holder() HolderServiceClient
@@ -116,6 +125,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Account:     NewAccountServiceClient(c),
 		_Project:     NewProjectServiceClient(c),
 		_AuthBinding: NewAuthBindingServiceClient(c),
+		_Connection:  NewConnectionServiceClient(c),
 		_Audit:       NewAuditServiceClient(c),
 		_Tenant:      NewTenantServiceClient(c),
 		_Holder:      NewHolderServiceClient(c),
@@ -129,6 +139,7 @@ type client struct {
 	_Account     AccountServiceClient
 	_Project     ProjectServiceClient
 	_AuthBinding AuthBindingServiceClient
+	_Connection  ConnectionServiceClient
 	_Audit       AuditServiceClient
 	_Tenant      TenantServiceClient
 	_Holder      HolderServiceClient
@@ -140,6 +151,7 @@ type client struct {
 func (c *client) Account() AccountServiceClient         { return c._Account }
 func (c *client) Project() ProjectServiceClient         { return c._Project }
 func (c *client) AuthBinding() AuthBindingServiceClient { return c._AuthBinding }
+func (c *client) Connection() ConnectionServiceClient   { return c._Connection }
 func (c *client) Audit() AuditServiceClient             { return c._Audit }
 func (c *client) Tenant() TenantServiceClient           { return c._Tenant }
 func (c *client) Holder() HolderServiceClient           { return c._Holder }

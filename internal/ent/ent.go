@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/account"
 	"github.com/lesomnus/cxz/internal/ent/audit"
 	"github.com/lesomnus/cxz/internal/ent/authbinding"
+	"github.com/lesomnus/cxz/internal/ent/connection"
 	"github.com/lesomnus/cxz/internal/ent/holder"
 	"github.com/lesomnus/cxz/internal/ent/outbox"
 	"github.com/lesomnus/cxz/internal/ent/project"
@@ -84,6 +85,7 @@ func checkColumn(t, c string) error {
 			account.Table:     account.ValidColumn,
 			audit.Table:       audit.ValidColumn,
 			authbinding.Table: authbinding.ValidColumn,
+			connection.Table:  connection.ValidColumn,
 			holder.Table:      holder.ValidColumn,
 			outbox.Table:      outbox.ValidColumn,
 			project.Table:     project.ValidColumn,

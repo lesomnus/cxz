@@ -18,6 +18,8 @@ type Tx struct {
 	Audit *AuditClient
 	// AuthBinding is the client for interacting with the AuthBinding builders.
 	AuthBinding *AuthBindingClient
+	// Connection is the client for interacting with the Connection builders.
+	Connection *ConnectionClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
 	// Outbox is the client for interacting with the Outbox builders.
@@ -164,6 +166,7 @@ func (tx *Tx) init() {
 	tx.Account = NewAccountClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
 	tx.AuthBinding = NewAuthBindingClient(tx.config)
+	tx.Connection = NewConnectionClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)

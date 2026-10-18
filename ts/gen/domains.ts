@@ -21,6 +21,9 @@ export const AuditDomain = 3
 /** The domain identifiers of cxz.AuthBinding carry. */
 export const AuthBindingDomain = 10
 
+/** The domain identifiers of cxz.Connection carry. */
+export const ConnectionDomain = 12
+
 /** The domain identifiers of cxz.Holder carry. */
 export const HolderDomain = 2
 
@@ -44,6 +47,7 @@ export const TenantDomain = 1
 pdid.register("cxz.Account", AccountDomain, "account")
 pdid.register("cxz.Audit", AuditDomain, "audit")
 pdid.register("cxz.AuthBinding", AuthBindingDomain, "auth-binding")
+pdid.register("cxz.Connection", ConnectionDomain, "connection")
 pdid.register("cxz.Holder", HolderDomain, "holder")
 pdid.register("cxz.Outbox", OutboxDomain, "outbox")
 pdid.register("cxz.Project", ProjectDomain, "project")

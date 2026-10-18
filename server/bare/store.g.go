@@ -10,6 +10,7 @@ import (
 	account "github.com/lesomnus/cxz/internal/ent/account"
 	audit "github.com/lesomnus/cxz/internal/ent/audit"
 	authbinding "github.com/lesomnus/cxz/internal/ent/authbinding"
+	connection "github.com/lesomnus/cxz/internal/ent/connection"
 	holder "github.com/lesomnus/cxz/internal/ent/holder"
 	outbox "github.com/lesomnus/cxz/internal/ent/outbox"
 	predicate "github.com/lesomnus/cxz/internal/ent/predicate"
@@ -319,6 +320,7 @@ type Scope interface {
 	AccountScope(ctx context.Context) (predicate.Account, error)
 	ProjectScope(ctx context.Context) (predicate.Project, error)
 	AuthBindingScope(ctx context.Context) (predicate.AuthBinding, error)
+	ConnectionScope(ctx context.Context) (predicate.Connection, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
@@ -346,6 +348,9 @@ func (Unscoped) ProjectScope(_ context.Context) (predicate.Project, error) {
 	return nil, nil
 }
 func (Unscoped) AuthBindingScope(_ context.Context) (predicate.AuthBinding, error) {
+	return nil, nil
+}
+func (Unscoped) ConnectionScope(_ context.Context) (predicate.Connection, error) {
 	return nil, nil
 }
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
@@ -444,6 +449,26 @@ func (ss Scopes) AuthBindingScope(ctx context.Context) (predicate.AuthBinding, e
 	}
 
 	return authbinding.And(ps...), nil
+}
+
+func (ss Scopes) ConnectionScope(ctx context.Context) (predicate.Connection, error) {
+	ps := make([]predicate.Connection, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.ConnectionScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return connection.And(ps...), nil
 }
 
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
@@ -646,7 +671,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. Account, AuthBinding, Holder, Project, Session and Task free the names they held when a row
+// check. Account, AuthBinding, Connection, Holder, Project, Session and Task free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -688,6 +713,9 @@ func (s Server) Account() resource.AccountServiceServer { return AccountServiceS
 func (s Server) Project() resource.ProjectServiceServer { return ProjectServiceServer{Store: s.Store} }
 func (s Server) AuthBinding() resource.AuthBindingServiceServer {
 	return AuthBindingServiceServer{Store: s.Store}
+}
+func (s Server) Connection() resource.ConnectionServiceServer {
+	return ConnectionServiceServer{Store: s.Store}
 }
 func (s Server) Audit() resource.AuditServiceServer     { return AuditServiceServer{Store: s.Store} }
 func (s Server) Tenant() resource.TenantServiceServer   { return TenantServiceServer{Store: s.Store} }
