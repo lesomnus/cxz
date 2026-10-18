@@ -215,6 +215,26 @@ for (const reduced of [false, true]) {
     const samples = await page.evaluate(async () => {
       const pane = document.querySelector(".transcript");
       const thumb = document.querySelector(".scroll-thumb");
+      // Wait for the rail to stop changing shape before recording anything
+      // from it. A transcript of 400 rows reaches its real height over several
+      // frames as estimated row sizes are replaced by measured ones, and the
+      // markers move with it -- so a marker position recorded mid-measure
+      // moves inside the sampling window below, which is the assertion. The
+      // thumb is already waited for; this is the same wait for the rail. See
+      // cxz#207.
+      const shape = () =>
+        `${pane.scrollHeight}|${[...document.querySelectorAll(".scroll-marker")]
+          .map((el) => el.style.top)
+          .join(",")}`;
+      for (let last = "", agreed = 0, i = 0; agreed < 2 && i < 180; i++) {
+        await new Promise(requestAnimationFrame);
+        const now = shape();
+        if (now === last) agreed++;
+        else {
+          last = now;
+          agreed = 0;
+        }
+      }
       const before = parseFloat(getComputedStyle(thumb).top);
       const start = thumb.dataset.start;
       const marker = [...document.querySelectorAll(".scroll-marker")].find(

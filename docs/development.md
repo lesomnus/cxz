@@ -162,7 +162,12 @@ go tool pd gen --ts .
 npm run --prefix ts build
 npm run --prefix ts test
 cd ts
-npx playwright install --with-deps chromium
+# The system libraries need root; the browser itself installs per user. Without
+# the first line Chromium exits 127 with
+# "libglib-2.0.so.0: cannot open shared object file", and every browser test
+# fails in milliseconds for a reason that is not the test.
+sudo npx playwright install-deps chromium
+npx playwright install chromium
 npm run test:browser
 npm run test:browser:plaintext
 ```
