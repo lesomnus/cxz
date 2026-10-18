@@ -5,7 +5,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
-	"github.com/lesomnus/cxz/internal/agentview"
+	"github.com/lesomnus/cxz/internal/authview"
 	"github.com/lesomnus/cxz/internal/multiclient"
 )
 
@@ -13,7 +13,7 @@ func authHint(s *api.Session, e *api.Event) string {
 	if s == nil || e == nil || s.ProjectId == "" || s.Account == "" {
 		return ""
 	}
-	if !agentview.AuthenticationFailed(e) {
+	if !authview.AuthenticationFailed(e) {
 		return ""
 	}
 	connection, id := multiclient.Split(s.Id)

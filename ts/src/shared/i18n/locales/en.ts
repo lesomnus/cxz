@@ -140,6 +140,13 @@ export const messages = {
   Context: "Context",
   Created: "Created",
   Updated: "Updated",
+  "Session login is unavailable.": "Session login is unavailable.",
+  "Stop the current turn before logging in again.":
+    "Stop the current turn before logging in again.",
+  "Claude account login": "Claude account login",
+  "Claude account authentication expired. Log in again to resume this session.":
+    "Claude account authentication expired. Log in again to resume this session.",
+  "Log in again": "Log in again",
   "Session run changed. Open the menu again.":
     "Session run changed. Open the menu again.",
   "Active work stops and pending approvals are cleared. Conversation history, login and permission policy are retained.":

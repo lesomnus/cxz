@@ -1,4 +1,4 @@
-package agentview
+package authview
 
 import (
 	"github.com/lesomnus/cxz/api"

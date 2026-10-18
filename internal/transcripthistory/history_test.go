@@ -683,3 +683,20 @@ func TestClaudeAuthenticationMetadataSurvivesHistoryProjection(t *testing.T) {
 		t.Fatal("native event mutated")
 	}
 }
+
+func TestFailedResultBodiesRemainLazy(t *testing.T) {
+	for _, auth := range []bool{false, true} {
+		code := 500
+		if auth {
+			code = 401
+		}
+		body, _ := json.Marshal(map[string]any{"type": "result", "is_error": true, "result": strings.Repeat("large native body", 10000), "code": code})
+		e := event(1, "turn_end", "", string(body))
+		e.Text = "failed"
+		p := New()
+		p.Apply(e)
+		if len(p.Rows[e.Seq].Payload) > 100 {
+			t.Fatal("failed result copied into the compact transcript")
+		}
+	}
+}
