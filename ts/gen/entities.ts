@@ -16,6 +16,7 @@ import type { EntityDesc } from '@lesomnus/payday/store'
 import { AccountSchema } from './cxz/account_pb.js'
 import { AuditSchema } from './cxz/payday/audit_pb.js'
 import { AuthBindingSchema } from './cxz/auth_binding_pb.js'
+import { ConnectionSchema } from './cxz/connection_pb.js'
 import { HolderSchema } from './cxz/payday/holder_pb.js'
 import { OutboxSchema } from './cxz/payday/outbox_pb.js'
 import { ProjectSchema } from './cxz/project_pb.js'
@@ -25,6 +26,7 @@ import { TenantSchema } from './cxz/payday/tenant_pb.js'
 import { AccountService } from './cxz/account_svc_pb.js'
 import { AuditService } from './cxz/payday/audit_svc_pb.js'
 import { AuthBindingService } from './cxz/auth_binding_svc_pb.js'
+import { ConnectionService } from './cxz/connection_svc_pb.js'
 import { HolderService } from './cxz/payday/holder_svc_pb.js'
 import { OutboxService } from './cxz/payday/outbox_svc_pb.js'
 import { ProjectService } from './cxz/project_svc_pb.js'
@@ -64,6 +66,17 @@ export const AuthBinding = {
 	key: "id",
 	ids: ["id"],
 	service: AuthBindingService,
+} as const satisfies EntityDesc
+
+/** cxz.Connection, as the store holds it. */
+export const Connection = {
+	typeName: "cxz.Connection",
+	schema: ConnectionSchema,
+	domain: 12,
+	version: "dateUpdated",
+	key: "id",
+	ids: ["id"],
+	service: ConnectionService,
 } as const satisfies EntityDesc
 
 /** cxz.Holder, as the store holds it. */
@@ -140,5 +153,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Account, Audit, AuthBinding, Holder, Outbox, Project, Session, Task, Tenant] as const
+export const entities = [Account, Audit, AuthBinding, Connection, Holder, Outbox, Project, Session, Task, Tenant] as const
 

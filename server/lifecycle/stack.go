@@ -116,6 +116,17 @@ func (s Layer) Outbox() resource.OutboxServiceServer {
 }
 func (s Layer) Audit() resource.AuditServiceServer { return resource.UnimplementedAuditServiceServer{} }
 
+// A connection is a fact about the client, not about this server: a manager does
+// not know what name it was dialled by, or what else the client could dial. The
+// contract is shared so that each client answers it from where it keeps that --
+// the TUI from settings.jsonc, a browser from its own origin -- and the manager
+// answers that it is not the one to ask. Left to the store it would serve an
+// empty table instead, which is a worse answer than a refusal.
+// See docs/plans/web-connections.md.
+func (s Layer) Connection() resource.ConnectionServiceServer {
+	return resource.UnimplementedConnectionServiceServer{}
+}
+
 func ptr[T any](v T) *T { return &v }
 func resourceID(domain byte, runtimeID string) []byte {
 	h := sha256.Sum256([]byte("cxz.resource:" + runtimeID))

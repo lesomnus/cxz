@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/account"
 	"github.com/lesomnus/cxz/internal/ent/audit"
 	"github.com/lesomnus/cxz/internal/ent/authbinding"
+	"github.com/lesomnus/cxz/internal/ent/connection"
 	"github.com/lesomnus/cxz/internal/ent/holder"
 	"github.com/lesomnus/cxz/internal/ent/outbox"
 	"github.com/lesomnus/cxz/internal/ent/project"
@@ -34,6 +35,8 @@ type Client struct {
 	Audit *AuditClient
 	// AuthBinding is the client for interacting with the AuthBinding builders.
 	AuthBinding *AuthBindingClient
+	// Connection is the client for interacting with the Connection builders.
+	Connection *ConnectionClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
 	// Outbox is the client for interacting with the Outbox builders.
@@ -59,6 +62,7 @@ func (c *Client) init() {
 	c.Account = NewAccountClient(c.config)
 	c.Audit = NewAuditClient(c.config)
 	c.AuthBinding = NewAuthBindingClient(c.config)
+	c.Connection = NewConnectionClient(c.config)
 	c.Holder = NewHolderClient(c.config)
 	c.Outbox = NewOutboxClient(c.config)
 	c.Project = NewProjectClient(c.config)
@@ -160,6 +164,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Account:     NewAccountClient(cfg),
 		Audit:       NewAuditClient(cfg),
 		AuthBinding: NewAuthBindingClient(cfg),
+		Connection:  NewConnectionClient(cfg),
 		Holder:      NewHolderClient(cfg),
 		Outbox:      NewOutboxClient(cfg),
 		Project:     NewProjectClient(cfg),
@@ -188,6 +193,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Account:     NewAccountClient(cfg),
 		Audit:       NewAuditClient(cfg),
 		AuthBinding: NewAuthBindingClient(cfg),
+		Connection:  NewConnectionClient(cfg),
 		Holder:      NewHolderClient(cfg),
 		Outbox:      NewOutboxClient(cfg),
 		Project:     NewProjectClient(cfg),
@@ -269,8 +275,8 @@ func (c *Client) InTx() bool {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Account, c.Audit, c.AuthBinding, c.Holder, c.Outbox, c.Project, c.Session,
-		c.Task, c.Tenant,
+		c.Account, c.Audit, c.AuthBinding, c.Connection, c.Holder, c.Outbox, c.Project,
+		c.Session, c.Task, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -280,8 +286,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Account, c.Audit, c.AuthBinding, c.Holder, c.Outbox, c.Project, c.Session,
-		c.Task, c.Tenant,
+		c.Account, c.Audit, c.AuthBinding, c.Connection, c.Holder, c.Outbox, c.Project,
+		c.Session, c.Task, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -296,6 +302,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Audit.mutate(ctx, m)
 	case *AuthBindingMutation:
 		return c.AuthBinding.mutate(ctx, m)
+	case *ConnectionMutation:
+		return c.Connection.mutate(ctx, m)
 	case *HolderMutation:
 		return c.Holder.mutate(ctx, m)
 	case *OutboxMutation:
@@ -741,6 +749,139 @@ func (c *AuthBindingClient) mutate(ctx context.Context, m *AuthBindingMutation) 
 		return (&AuthBindingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown AuthBinding mutation op: %q", m.Op())
+	}
+}
+
+// ConnectionClient is a client for the Connection schema.
+type ConnectionClient struct {
+	config
+}
+
+// NewConnectionClient returns a client for the Connection from the given config.
+func NewConnectionClient(c config) *ConnectionClient {
+	return &ConnectionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `connection.Hooks(f(g(h())))`.
+func (c *ConnectionClient) Use(hooks ...Hook) {
+	c.hooks.Connection = append(c.hooks.Connection, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `connection.Intercept(f(g(h())))`.
+func (c *ConnectionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Connection = append(c.inters.Connection, interceptors...)
+}
+
+// Create returns a builder for creating a Connection entity.
+func (c *ConnectionClient) Create() *ConnectionCreate {
+	mutation := newConnectionMutation(c.config, OpCreate)
+	return &ConnectionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Connection entities.
+func (c *ConnectionClient) CreateBulk(builders ...*ConnectionCreate) *ConnectionCreateBulk {
+	return &ConnectionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConnectionClient) MapCreateBulk(slice any, setFunc func(*ConnectionCreate, int)) *ConnectionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConnectionCreateBulk{err: fmt.Errorf("calling to ConnectionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConnectionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConnectionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Connection.
+func (c *ConnectionClient) Update() *ConnectionUpdate {
+	mutation := newConnectionMutation(c.config, OpUpdate)
+	return &ConnectionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConnectionClient) UpdateOne(_m *Connection) *ConnectionUpdateOne {
+	mutation := newConnectionMutation(c.config, OpUpdateOne, withConnection(_m))
+	return &ConnectionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *ConnectionClient) UpdateOneId(id uuid.UUID) *ConnectionUpdateOne {
+	mutation := newConnectionMutation(c.config, OpUpdateOne, withConnectionId(id))
+	return &ConnectionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Connection.
+func (c *ConnectionClient) Delete() *ConnectionDelete {
+	mutation := newConnectionMutation(c.config, OpDelete)
+	return &ConnectionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConnectionClient) DeleteOne(_m *Connection) *ConnectionDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *ConnectionClient) DeleteOneId(id uuid.UUID) *ConnectionDeleteOne {
+	builder := c.Delete().Where(connection.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &ConnectionDeleteOne{builder}
+}
+
+// Query returns a query builder for Connection.
+func (c *ConnectionClient) Query() *ConnectionQuery {
+	return &ConnectionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConnection},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Connection entity by its id.
+func (c *ConnectionClient) Get(ctx context.Context, id uuid.UUID) (*Connection, error) {
+	return c.Query().Where(connection.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConnectionClient) GetX(ctx context.Context, id uuid.UUID) *Connection {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ConnectionClient) Hooks() []Hook {
+	return c.hooks.Connection
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConnectionClient) Interceptors() []Interceptor {
+	return c.inters.Connection
+}
+
+func (c *ConnectionClient) mutate(ctx context.Context, m *ConnectionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConnectionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConnectionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConnectionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConnectionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Connection mutation op: %q", m.Op())
 	}
 }
 
@@ -1625,11 +1766,11 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Account, Audit, AuthBinding, Holder, Outbox, Project, Session, Task,
+		Account, Audit, AuthBinding, Connection, Holder, Outbox, Project, Session, Task,
 		Tenant []ent.Hook
 	}
 	inters struct {
-		Account, Audit, AuthBinding, Holder, Outbox, Project, Session, Task,
+		Account, Audit, AuthBinding, Connection, Holder, Outbox, Project, Session, Task,
 		Tenant []ent.Interceptor
 	}
 )

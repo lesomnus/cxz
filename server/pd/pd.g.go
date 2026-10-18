@@ -16,6 +16,7 @@ import (
 	account "github.com/lesomnus/cxz/internal/ent/account"
 	audit "github.com/lesomnus/cxz/internal/ent/audit"
 	authbinding "github.com/lesomnus/cxz/internal/ent/authbinding"
+	connection "github.com/lesomnus/cxz/internal/ent/connection"
 	holder "github.com/lesomnus/cxz/internal/ent/holder"
 	outbox "github.com/lesomnus/cxz/internal/ent/outbox"
 	predicate "github.com/lesomnus/cxz/internal/ent/predicate"
@@ -85,6 +86,7 @@ const (
 	AccountDomain     pdid.Domain = 9  // "account"
 	AuditDomain       pdid.Domain = 3  // "audit"
 	AuthBindingDomain pdid.Domain = 10 // "auth-binding"
+	ConnectionDomain  pdid.Domain = 12 // "connection"
 	HolderDomain      pdid.Domain = 2  // "holder"
 	OutboxDomain      pdid.Domain = 4  // "outbox"
 	ProjectDomain     pdid.Domain = 7  // "project"
@@ -97,6 +99,7 @@ func init() {
 	pdid.Register("cxz.Account", AccountDomain, "account")
 	pdid.Register("cxz.Audit", AuditDomain, "audit")
 	pdid.Register("cxz.AuthBinding", AuthBindingDomain, "auth-binding")
+	pdid.Register("cxz.Connection", ConnectionDomain, "connection")
 	pdid.Register("cxz.Holder", HolderDomain, "holder")
 	pdid.Register("cxz.Outbox", OutboxDomain, "outbox")
 	pdid.Register("cxz.Project", ProjectDomain, "project")
@@ -113,6 +116,7 @@ var Domains = map[string]pdid.Domain{
 	"cxz.Account":     AccountDomain,
 	"cxz.Audit":       AuditDomain,
 	"cxz.AuthBinding": AuthBindingDomain,
+	"cxz.Connection":  ConnectionDomain,
 	"cxz.Holder":      HolderDomain,
 	"cxz.Outbox":      OutboxDomain,
 	"cxz.Project":     ProjectDomain,
@@ -180,6 +184,11 @@ func (wall) AuditScope(ctx context.Context) (predicate.Audit, error) {
 
 // AuthBindingScope: declared `global`, so it is not behind the wall at all.
 func (wall) AuthBindingScope(ctx context.Context) (predicate.AuthBinding, error) {
+	return nil, nil
+}
+
+// ConnectionScope: declared `global`, so it is not behind the wall at all.
+func (wall) ConnectionScope(ctx context.Context) (predicate.Connection, error) {
 	return nil, nil
 }
 
@@ -1262,6 +1271,110 @@ func (s sinkAuthBinding) watchAuthBindingKeys(
 	}
 
 	return ks, nil
+}
+
+type sinkConnection struct {
+	resource.ConnectionServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Connection() resource.ConnectionServiceServer {
+	return sinkConnection{s.Server.Connection(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderConnection is how Connections come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderConnection = []sqlpage.Order{
+	{Column: connection.FieldName, Desc: false},
+	{Column: connection.FieldId, Desc: false},
+}
+
+const (
+	// ConnectionPageSize is what a request that did not say gets, and
+	// ConnectionPageLimit is the most it gets however loudly it asks.
+	ConnectionPageSize  = 100
+	ConnectionPageLimit = 500
+
+	// ConnectionFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	ConnectionFilterLimit = 32
+)
+
+// List answers with the Connections that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkConnection) List(ctx context.Context, req *resource.ConnectionListRequest) (*resource.ConnectionListResponse, error) {
+	q := s.store.Db.Connection.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.ConnectionNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 string
+			at1 uuid.UUID
+		)
+		if err := sqlpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := sqlpage.After(orderConnection, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), ConnectionPageSize, ConnectionPageLimit)
+	us, err := q.Order(connection.ByName(), connection.ById()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*resource.Connection, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := resource.ConnectionListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := sqlpage.Encode(last.Name, last.Id)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
 }
 
 type sinkHolder struct {
@@ -4100,6 +4213,20 @@ func (s interceptAuthBinding) Watch(req *resource.AuthBindingWatchRequest, out g
 		resource.AuthBindingService_Watch_FullMethodName, req, out, s.AuthBindingServiceServer.Watch)
 }
 
+func (s Intercept) Connection() resource.ConnectionServiceServer {
+	return interceptConnection{s, s.Next().Connection()}
+}
+
+type interceptConnection struct {
+	Intercept
+	resource.ConnectionServiceServer
+}
+
+func (s interceptConnection) List(ctx context.Context, req *resource.ConnectionListRequest) (*resource.ConnectionListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConnectionServiceServer,
+		resource.ConnectionService_List_FullMethodName, req, s.ConnectionServiceServer.List)
+}
+
 func (s Intercept) Audit() resource.AuditServiceServer {
 	return interceptAudit{s, s.Next().Audit()}
 }
@@ -5881,6 +6008,19 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.AuthBinding().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ConnectionService_List_FullMethodName:
+		v := &resource.ConnectionListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Connection().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

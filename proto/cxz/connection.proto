@@ -1,0 +1,53 @@
+edition = "2023";
+package cxz;
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// Where a client is attached, and where else it could attach.
+//
+// A connection is a fact about the client, not about the server: a manager does
+// not know what name it was dialled by, and `cxz connection ls` reads the local
+// settings.jsonc without contacting anything. So this is the one resource whose
+// authority is the caller -- the TUI answers it from settings.jsonc, the browser
+// from its own origin and what it has been told to remember, and an installed
+// manager answers Unimplemented, the way it does for the services it does not
+// own (server/lifecycle/stack.go). See docs/plans/web-connections.md.
+//
+// A connection reaches one installation whole: the relay is a method-agnostic
+// passthrough and any valid credential is the installation owner, so listing a
+// connection means listing somewhere every project and session can be reached.
+// That is why no credential appears here -- not a token, not a token path, not
+// a certificate path. This says where a client is attached, never how it proves
+// it.
+message Connection {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  // What the client calls it: a settings.jsonc key, or a name a person typed.
+  string name = 5 [(orm.field) = {unique: true}];
+  // Where it attaches. local://, ssh://, mtls://, tcp://, unix:///path, or a
+  // browser origin. local:// is this machine's installed manager, reached
+  // through its installation descriptor rather than an address, because that
+  // socket lives inside Docker.
+  string target = 8;
+  // What it is actually attached by, once attached: local, ssh, mtls, tcp or
+  // origin. Empty until a client knows.
+  string transport = 9;
+  // This client's default connection.
+  bool is_default = 16;
+  // A connection the client cannot edit or forget. The origin a browser is
+  // served from is one: it is how the page got here.
+  bool read_only = 17;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  option (orm.message) = {
+    indexes: [{name: "page", refs: [{name: "name", number: 5}, {name: "id", number: 1}]}]
+  };
+  option (payday.entity) = {
+    domain: 12
+    global: {}
+    list: {order: [{field: {name: "name"}}, {field: {name: "id"}}], size: 100, max: 500}
+  };
+}

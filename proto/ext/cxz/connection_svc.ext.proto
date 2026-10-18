@@ -1,0 +1,9 @@
+edition = "2023";
+package cxz;
+import "cxz/connection.proto";
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// No RPC of its own: the entity's own List is the whole contract, because a
+// connection is read and nothing else. This file exists to bring Connection
+// into the generated service's scope, the way every other service's extension
+// does. See docs/plans/web-connections.md.

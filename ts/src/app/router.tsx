@@ -20,7 +20,7 @@ export type ResourceView =
   | "activity"
   | "auxiliary"
   | "not-found";
-export type SettingsTopic = "general" | "editor";
+export type SettingsTopic = "general" | "editor" | "connections";
 
 type WorkspaceRouterContext = {
   shell: ComponentType<PropsWithChildren>;
@@ -171,6 +171,11 @@ const editorRoute = createRoute({
   path: "editor",
   staticData: { resource: "settings", settingsTopic: "editor" },
 });
+const connectionsRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: "connections",
+  staticData: { resource: "settings", settingsTopic: "connections" },
+});
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "$",
@@ -187,7 +192,12 @@ const routeTree = rootRoute.addChildren([
   memoryRoute,
   activityRoute,
   auxiliaryRoute,
-  settingsRoute.addChildren([settingsIndexRoute, generalRoute, editorRoute]),
+  settingsRoute.addChildren([
+    settingsIndexRoute,
+    generalRoute,
+    editorRoute,
+    connectionsRoute,
+  ]),
   notFoundRoute,
 ]);
 

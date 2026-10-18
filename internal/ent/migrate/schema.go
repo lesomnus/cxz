@@ -133,6 +133,39 @@ var (
 			},
 		},
 	}
+	// ConnectionColumns holds the columns for the "connection" table.
+	ConnectionColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "target", Type: field.TypeString},
+		{Name: "transport", Type: field.TypeString},
+		{Name: "is_default", Type: field.TypeBool},
+		{Name: "read_only", Type: field.TypeBool},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+	}
+	// ConnectionTable holds the schema information for the "connection" table.
+	ConnectionTable = &schema.Table{
+		Name:       "connection",
+		Columns:    ConnectionColumns,
+		PrimaryKey: []*schema.Column{ConnectionColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "connection_name_id",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[0]},
+			},
+			{
+				Name:    "connection_name",
+				Unique:  true,
+				Columns: []*schema.Column{ConnectionColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// HolderColumns holds the columns for the "holder" table.
 	HolderColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -399,6 +432,7 @@ var (
 		AccountTable,
 		AuditTable,
 		AuthbindingTable,
+		ConnectionTable,
 		HolderTable,
 		OutboxTable,
 		ProjectTable,
@@ -419,6 +453,9 @@ func init() {
 	AuthbindingTable.ForeignKeys[1].RefTable = ProjectTable
 	AuthbindingTable.Annotation = &entsql.Annotation{
 		Table: "authbinding",
+	}
+	ConnectionTable.Annotation = &entsql.Annotation{
+		Table: "connection",
 	}
 	HolderTable.ForeignKeys[0].RefTable = TenantTable
 	HolderTable.Annotation = &entsql.Annotation{

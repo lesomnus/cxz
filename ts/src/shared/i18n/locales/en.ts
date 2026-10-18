@@ -587,5 +587,13 @@ export const messages = {
     "Sounds become available after interacting with the page. Tab indicators do not request notification permission.",
   "Upload interrupted. Remove this chip and select the file again.":
     "Upload interrupted. Remove this chip and select the file again.",
+  Name: "Name",
+  Connections: "Connections",
+  "A connection reaches one installation and every project on it.":
+    "A connection reaches one installation and every project on it.",
+  Target: "Target",
+  Transport: "Transport",
+  default: "default",
+  "served this page": "served this page",
 } as const;
 export type Message = keyof typeof messages;

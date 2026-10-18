@@ -31,7 +31,11 @@ test("General is first, language menus preserve text position and segmented syst
   await ready(page);
   await general(page);
   const topics = page.getByRole("navigation", { name: "Settings topics" });
-  await expect(topics.getByRole("link")).toHaveText(["General", "Editor"]);
+  await expect(topics.getByRole("link")).toHaveText([
+    "General",
+    "Editor",
+    "Connections",
+  ]);
   await expect(
     page.getByRole("button", { name: "Language", exact: true }),
   ).toHaveCount(0);
