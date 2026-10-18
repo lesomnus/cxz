@@ -30,6 +30,9 @@ test("conversation starts at the transcript and Terminal lives in the menu on de
   await menu.click();
   await expect(terminal).toHaveAttribute("aria-checked", "false");
   await expect(terminal.locator("kbd")).toHaveText("Ctrl+`");
+  await expect(terminal.locator("kbd")).toHaveCSS("font-size", "11px");
+  await expect(terminal.locator("kbd")).toHaveCSS("font-family", /monospace/);
+  await expect(terminal.locator("kbd")).toHaveCSS("border-bottom-width", "2px");
   const labelBox = (await terminal
     .locator(".action-menu-item-label")
     .boundingBox())!;
@@ -41,6 +44,7 @@ test("conversation starts at the transcript and Terminal lives in the menu on de
     exact: true,
   });
   await expect(panel).toBeVisible();
+  await expect(panel.locator(".xterm-helper-textarea")).toBeFocused();
   await menu.click();
   await expect(terminal).toHaveAttribute("aria-checked", "true");
   await page.keyboard.press("Escape");
