@@ -10,6 +10,7 @@ export const WorkspaceContext = createContext<
       sessions: Session[];
       sessionsLoading?: boolean;
       projectsLoading: boolean;
+      inventoryError?: string;
       settingsFileOpen: boolean;
       setSettingsFileOpen: (open: boolean) => void;
       expandProject: (id: string) => void;

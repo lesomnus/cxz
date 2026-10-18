@@ -133,11 +133,15 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
     "matrix(1, 0, 0, 1, 0, 0)",
   );
   await page.getByRole("link", { name: "Projects view" }).click();
-  await expect(page.locator(".resource-view")).toBeVisible();
+  const projects = page.getByRole("main", { name: "Project workspace" });
+  await expect(projects).toBeVisible();
   await page
-    .locator(".project-row")
-    .filter({ hasText: "Secondary project" })
+    .getByRole("combobox", { name: "Select project", exact: true })
     .click();
+  await page
+    .getByRole("option", { name: "Secondary project", exact: true })
+    .click();
+  await projects.getByRole("link").filter({ hasText: "session-8" }).click();
   await expect(page.locator(".session-tree-group")).toHaveCount(2);
   await expect(page.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS);
   await page.locator(".tree-session").filter({ hasText: "session-8" }).click();

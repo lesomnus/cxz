@@ -2399,28 +2399,6 @@ summary:hover {
 .resource-view {
   overflow: auto;
 }
-.resource-view-content {
-  max-width: 680px;
-  padding: 16px;
-  margin: 16px auto;
-}
-.project-row {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  text-align: left;
-}
-.project-row > .button-content {
-  justify-content: flex-start;
-  gap: 12px;
-}
-.project-row .button-content > span:last-child {
-  margin-left: auto;
-}
-.project-row small {
-  margin-bottom: 0;
-  font-weight: 400;
-}
 .login {
   max-width: 390px;
   margin: 15dvh auto;

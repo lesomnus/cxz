@@ -7,6 +7,7 @@ const config: StorybookConfig = {
     "../src/**/*.stories.@(ts|tsx)",
     "../packages/nox/src/components/action-menu/*.stories.tsx",
     "../packages/nox/src/components/panel-item/*.stories.tsx",
+    "../packages/nox/src/components/page-toolbar/*.stories.tsx",
     "../packages/nox/src/components/dialog-card/*.stories.tsx",
     "../packages/nox/src/components/compact-number/*.stories.tsx",
     "../packages/nox/src/components/duration-display/*.stories.tsx",

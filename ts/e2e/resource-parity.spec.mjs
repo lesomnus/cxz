@@ -355,7 +355,7 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
     await page.getByRole("link", { name, exact: true }).click();
     await expect(
       name === "Projects view"
-        ? page.locator("main.resource-view header strong")
+        ? page.getByRole("combobox", { name: "Select project", exact: true })
         : name === "Accounts"
           ? page.getByLabel("Account list").locator("header strong")
           : page.getByRole("heading", { name: heading, exact: true }),
