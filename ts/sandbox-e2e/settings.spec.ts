@@ -171,7 +171,7 @@ test("settings topics keep compact columns centered and a live JSON pane unfolds
     exact: true,
   });
   await expect(editorTopic).toHaveAttribute("aria-current", "page");
-  await expect(topics.getByRole("link")).toHaveCount(2);
+  await expect(topics.getByRole("link")).toHaveCount(3);
   await expect(page.getByRole("tablist")).toHaveCount(0);
   const body = page.locator(".settings-editor-body");
   const form = page.getByRole("region", {
