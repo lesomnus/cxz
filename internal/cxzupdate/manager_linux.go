@@ -52,7 +52,20 @@ func ScheduleManager(ctx context.Context, root, name, owner string, r Release) e
 		return e
 	}
 	if tx.ID != "" && tx.State != "healthy" && tx.State != "rolled_back" && tx.Release.Revision != r.Revision {
-		return fmt.Errorf("previous manager update needs recovery")
+		// A transaction whose old manager is gone cannot be completed by
+		// anyone: ReplaceManager resolves tx.OldID, fails, and writes "staged"
+		// back, so every rollout afterwards answers "needs recovery" forever.
+		// A manual self-update is enough to get there -- it replaces the
+		// container a staged transaction points at. Nothing is owed by a
+		// transaction that cannot be finished, so roll it back and carry on.
+		// See cxz#221.
+		if _, e := dockerx.Inspect(ctx, tx.OldID); !dockerx.Missing(e) {
+			return fmt.Errorf("previous manager update needs recovery")
+		}
+		tx.State = "rolled_back"
+		if e = core.WriteJSON(ManagerTransactionPath(root), tx); e != nil {
+			return e
+		}
 	}
 	if tx.ID == "" || tx.State == "healthy" || tx.State == "rolled_back" {
 		tx = ManagerTransaction{ID: core.ID(), Owner: owner, Name: strings.TrimPrefix(old.Name, "/"), OldID: old.ID, Release: r, State: "staged"}

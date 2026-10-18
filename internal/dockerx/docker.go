@@ -75,6 +75,13 @@ type Container struct {
 	}
 }
 
+// Missing reports an inspect that failed because the container is not there,
+// as opposed to a Docker that could not be asked. The daemon says so in words
+// and nothing else does, which is why this reads the message.
+func Missing(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "no such object")
+}
+
 func Inspect(ctx context.Context, id string) (Container, error) {
 	var v []Container
 	b, e := Run(ctx, "inspect", id)
