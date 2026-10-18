@@ -743,6 +743,7 @@ header strong {
   height: var(--agent-logo-size);
 }
 .transcript-area {
+  margin-bottom: var(--question-clearance, 0px);
   flex: 1;
   min-height: 0;
   position: relative;
