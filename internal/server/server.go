@@ -723,7 +723,20 @@ func (s *Server) Stop(ctx context.Context, r *api.Control) (*api.Receipt, error)
 		defer c.Close()
 		return client.Stop(ctx, r)
 	}
-	return s.command(ctx, r.SessionId, "stop", core.Command{RunID: r.RunId, ClientID: r.ClientId})
+	v, err := s.command(ctx, r.SessionId, "stop", core.Command{RunID: r.RunId, ClientID: r.ClientId})
+	if err == nil {
+		return v, nil
+	}
+	// A session whose supervisor is gone is already stopped, and saying so is
+	// what every caller wants. It used to be the one thing that could not be
+	// stopped, because stopping asked the socket that was not there. The
+	// command's error is a status by then, so ask the socket itself rather than
+	// reading the message. See cxz#223.
+	var ignored core.Snapshot
+	if supervisor.Unreachable(supervisor.Call(ctx, s.root, r.SessionId, "status", nil, &ignored)) {
+		return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
+	}
+	return v, err
 }
 func (s *Server) Resume(ctx context.Context, r *api.Control) (*api.Session, error) {
 	if s.manager != nil {
