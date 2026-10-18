@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/lesomnus/cxz/api"
@@ -396,9 +397,16 @@ var schema = []string{
 	`CREATE INDEX IF NOT EXISTS transcript_metadata ON transcript_records(session_id,kind,seq)`,
 	`CREATE TABLE IF NOT EXISTS transcript_state(session_id TEXT PRIMARY KEY,count INTEGER,first INTEGER,last INTEGER)`,
 	`CREATE TABLE IF NOT EXISTS transcript_format(session_id TEXT PRIMARY KEY,version INTEGER)`,
+	// What the record table looked like the last time this session's projection
+	// was verified, so that a look which changes nothing can cost nothing.
+	`CREATE TABLE IF NOT EXISTS transcript_seen(session_id TEXT PRIMARY KEY,written INTEGER)`,
 }
 
 const projectionFormat = 5
+
+// counted is how many times Sync has had to walk a session's records. A test
+// watches it; nothing else does.
+var counted atomic.Uint64
 
 // Sync indexes only native non-raw records. A cache backfill or retention change
 // rebuilds this disposable session index; normal queries read only the new suffix.
@@ -413,12 +421,36 @@ func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
 			return err
 		}
 	}
-	var count, first, last uint64
-	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*),COALESCE(MIN(seq),0),COALESCE(MAX(seq),0) FROM events WHERE session_id=?`, id).Scan(&count, &first, &last); err != nil {
+	// Rows polls this every 150ms for each open stream, and what it asked in
+	// order to notice that nothing had happened was a walk of the whole
+	// conversation: counting a 134k-record session took 25ms, so a long
+	// conversation spent a third of a core on no news.
+	//
+	// Ask what is cheap instead. SQLite answers a lone MIN or MAX out of the
+	// index, and MAX(rowid) out of the table itself, and together those see
+	// everything that happens to a record set which is appended to, trimmed
+	// from the front, and backfilled in the middle: a filled hole is a new
+	// rowid even though both endpoints stand still. The walk still decides
+	// whether a change was an append -- it is simply paid once per change
+	// rather than once per look. See cxz#213.
+	var written uint64
+	if err = tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(rowid),0) FROM events`).Scan(&written); err != nil {
+		return err
+	}
+	var first, last uint64
+	if err = tx.QueryRowContext(ctx, `SELECT COALESCE(MIN(seq),0) FROM events WHERE session_id=?`, id).Scan(&first); err != nil {
+		return err
+	}
+	if err = tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(seq),0) FROM events WHERE session_id=?`, id).Scan(&last); err != nil {
 		return err
 	}
 	var oldCount, oldFirst, oldLast uint64
 	err = tx.QueryRowContext(ctx, `SELECT count,first,last FROM transcript_state WHERE session_id=?`, id).Scan(&oldCount, &oldFirst, &oldLast)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	var seen uint64
+	err = tx.QueryRowContext(ctx, `SELECT written FROM transcript_seen WHERE session_id=?`, id).Scan(&seen)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -427,7 +459,20 @@ func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
+	if format == projectionFormat && seen == written && oldFirst == first && oldLast == last {
+		return tx.Commit()
+	}
+	counted.Add(1)
+	var count uint64
+	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM events WHERE session_id=?`, id).Scan(&count); err != nil {
+		return err
+	}
 	if format == projectionFormat && oldCount == count && oldFirst == first && oldLast == last {
+		// The table moved, this session did not. Remember what it looked like,
+		// so the next look is the cheap one again.
+		if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_seen VALUES(?,?)`, id, written); err != nil {
+			return err
+		}
 		return tx.Commit()
 	}
 	var suffix uint64
@@ -562,6 +607,9 @@ func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
 		}
 	}
 	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_state VALUES(?,?,?,?)`, id, count, first, last); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_seen VALUES(?,?)`, id, written); err != nil {
 		return err
 	}
 	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_format VALUES(?,?)`, id, projectionFormat); err != nil {
