@@ -55,6 +55,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     "Auxiliary AI",
     "Conversation usage",
     "Background tasks",
+    "Log in",
     "Upload files",
     "Upload folder",
     "Details",
