@@ -3,7 +3,7 @@ package supervisor
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -126,7 +126,7 @@ func TestProcessesQuietWithLiveBridge(t *testing.T) {
 		}
 		// A child that blocks on a builtin read: one process, no children of
 		// its own, with the argv a bridge is spawned with.
-		s.cmd = exec.Command("sh", "-c", `sh -c "read x" --state /cxz/state/data _mcp-bridge `+id+` cxz_memory; :`)
+		s.cmd = exec.Command("sh", "-c", `sh -c "printf r; read x" --state /cxz/state/data _mcp-bridge `+id+` cxz_memory; :`)
 		s.cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 		r, w, err := os.Pipe()
 		if err != nil {
@@ -134,25 +134,27 @@ func TestProcessesQuietWithLiveBridge(t *testing.T) {
 		}
 		s.cmd.Stdin = r
 		t.Cleanup(func() { w.Close(); r.Close() })
+		ready, signal, err := os.Pipe()
+		if err != nil {
+			t.Fatal(err)
+		}
+		s.cmd.Stdout = signal
+		t.Cleanup(func() { ready.Close(); signal.Close() })
 		if err := s.cmd.Start(); err != nil {
 			t.Fatal(err)
 		}
 		pid := s.cmd.Process.Pid
 		t.Cleanup(func() { _ = syscall.Kill(-pid, syscall.SIGKILL); _ = s.cmd.Wait() })
-		children := fmt.Sprintf("/proc/%d/task/%d/children", pid, pid)
-		for i := 0; ; i++ {
-			b, err := os.ReadFile(children)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if len(strings.Fields(string(b))) > 0 {
-				break
-			}
-			if i == 100 {
-				t.Fatal("fixture child never started")
-			}
-			time.Sleep(10 * time.Millisecond)
+		_ = signal.Close()
+		if err := ready.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+			t.Fatal(err)
 		}
+		// A forked child exists before exec replaces its inherited command line.
+		// Wait for the fixture shell itself, not merely its PID, to be ready.
+		if _, err := io.ReadFull(ready, make([]byte, 1)); err != nil {
+			t.Fatal("fixture child never became ready:", err)
+		}
+
 		if got := s.processesQuiet(); got != bridge {
 			t.Fatal("bridge", bridge, "quiet", got)
 		}
