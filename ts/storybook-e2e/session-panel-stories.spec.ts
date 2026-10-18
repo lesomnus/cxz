@@ -28,9 +28,13 @@ test("project heading is muted and hover highlights the whole project", async ({
   await expect(group).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await heading.hover();
   await expect(heading).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect(group).toHaveCSS("background-color", "rgb(40, 40, 40)");
+  await expect(group).toHaveCSS("background-color", "rgb(32, 32, 32)");
   await group.locator(".tree-session").last().hover();
-  await expect(group).toHaveCSS("background-color", "rgb(40, 40, 40)");
+  await expect(group).toHaveCSS("background-color", "rgb(32, 32, 32)");
+  await expect(group.locator(".tree-session").last()).toHaveCSS(
+    "background-color",
+    "rgb(40, 40, 40)",
+  );
 });
 
 for (const [story, rows] of [

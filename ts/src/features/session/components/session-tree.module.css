@@ -3,7 +3,7 @@
 }
 
 .group:hover {
-  background: var(--ui-hover);
+  background: var(--ui-shade-32);
 }
 
 .project.project {
