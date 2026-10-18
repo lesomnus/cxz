@@ -1,7 +1,7 @@
 import styles from "./model-settings.module.css";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { ValueMenu } from "@lesomnus/nox";
+import { IconValueMenu } from "@lesomnus/nox";
 import type { Session, SessionEvent } from "#gen/cxz/session_pb";
 import { payload } from "#src/features/session/model/journal.ts";
 import type { SessionInfo } from "#src/features/session/model/session-info.ts";
@@ -88,11 +88,11 @@ export function ModelSettings({
         const disabled =
           busy || session?.status?.state !== "idle" || !values.length;
         return (
-          <div
+          <IconValueMenu
             key={kind}
             className={`${kind}-field setting-field ${styles.field}`}
-          >
-            <span className={`meta-label ${styles.icon}`} aria-hidden="true">
+            iconClassName={`meta-label ${styles.icon}`}
+            icon={
               <svg
                 width="14"
                 height="14"
@@ -116,28 +116,26 @@ export function ModelSettings({
                   </>
                 )}
               </svg>
-            </span>
-            <ValueMenu
-              variant="compact"
-              label={label}
-              display={info[kind] || "—"}
-              value={value}
-              options={values.map((value) => ({
-                value,
-                label: value,
-                muted: value === "default",
-              }))}
-              muted={value === "default"}
-              minMenuWidth={kind === "model" ? 180 : 140}
-              disabled={disabled}
-              disabledReason={
-                !values.length
-                  ? t("Provider choices not reported")
-                  : t("Settings require an idle session")
-              }
-              choose={(choice) => change(kind, choice)}
-            />
-          </div>
+            }
+            variant="compact"
+            label={label}
+            display={info[kind] || "—"}
+            value={value}
+            options={values.map((value) => ({
+              value,
+              label: value,
+              muted: value === "default",
+            }))}
+            muted={value === "default"}
+            minMenuWidth={kind === "model" ? 180 : 140}
+            disabled={disabled}
+            disabledReason={
+              !values.length
+                ? t("Provider choices not reported")
+                : t("Settings require an idle session")
+            }
+            choose={(choice) => change(kind, choice)}
+          />
         );
       })}
     </div>

@@ -17,6 +17,13 @@ test("projects use the full workspace with a persistent project picker and scope
   });
   await expect(main.locator("header svg")).toBeVisible();
   await expect(picker).toHaveText("Design playground");
+  await picker.hover();
+  expect(
+    await main.locator(".icon-value-menu").evaluate((el) => {
+      const style = getComputedStyle(el, "::before");
+      return { opacity: style.opacity, background: style.backgroundColor };
+    }),
+  ).toEqual({ opacity: "1", background: "rgb(32, 32, 32)" });
   await expect(page.getByRole("complementary")).toHaveCount(0);
   const sidebar = (await page
     .getByRole("navigation", { name: "Resources", exact: true })
