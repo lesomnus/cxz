@@ -281,3 +281,14 @@ export const TurnSummaryFailed: Story = {
     },
   },
 };
+
+const codeComparison =
+  'Inline `const message = "hello"` and a fenced code block:\n\n```typescript\n// Keep this comment readable.\nconst message = "hello";\nfunction repeat(count: number) {\n  return message.repeat(count + 1);\n}\n```';
+export const CodePaletteComparison: Story = {
+  args: {
+    events: [
+      storyEvent(1, "input", codeComparison),
+      responseEvent(2, "codex", codeComparison),
+    ],
+  },
+};

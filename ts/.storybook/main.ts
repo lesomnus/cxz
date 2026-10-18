@@ -9,6 +9,7 @@ const config: StorybookConfig = {
     "../packages/nox/src/components/panel-item/*.stories.tsx",
     "../packages/nox/src/components/dialog-card/*.stories.tsx",
     "../packages/nox/src/components/compact-number/*.stories.tsx",
+    "../packages/nox/src/components/duration-display/*.stories.tsx",
     "../packages/nox/src/components/suggestion-grid/*.stories.tsx",
     "../packages/nox/src/components/split-layout/*.stories.tsx",
     "../packages/nox/src/components/resize-handle/*.stories.tsx",

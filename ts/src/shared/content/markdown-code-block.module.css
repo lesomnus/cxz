@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   gap: var(--space);
-  background: var(--shade-16);
+  background: var(--markdown-block-background, var(--shade-16));
   border-radius: var(--space);
   font: 11px/20px var(--ui-font-mono);
   opacity: 0;

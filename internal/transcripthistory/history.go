@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/authview"
 	"github.com/lesomnus/cxz/internal/shellview"
 	"github.com/lesomnus/cxz/internal/toolview"
 	"google.golang.org/grpc/codes"
@@ -354,7 +355,14 @@ func (p *Projection) Apply(e *api.Event) {
 		data := object(e.Payload)
 		native := child(data, "error")
 		diagnostic := map[string]any{}
-		for _, message := range []string{text(native, "message"), text(data, "message"), text(data, "error")} {
+		messages := []string{text(native, "message"), text(data, "message"), text(data, "error")}
+		if authview.AuthenticationFailed(e) {
+			diagnostic["authentication_required"] = true
+			if result := text(data, "result"); len(result) <= 1024 {
+				messages = append(messages, result)
+			}
+		}
+		for _, message := range messages {
 			if strings.TrimSpace(message) != "" {
 				diagnostic["message"] = message
 				break
@@ -390,7 +398,7 @@ var schema = []string{
 	`CREATE TABLE IF NOT EXISTS transcript_format(session_id TEXT PRIMARY KEY,version INTEGER)`,
 }
 
-const projectionFormat = 4
+const projectionFormat = 5
 
 // Sync indexes only native non-raw records. A cache backfill or retention change
 // rebuilds this disposable session index; normal queries read only the new suffix.
@@ -748,12 +756,13 @@ func metadata(e *api.Event) *api.Event {
 		return e
 	}
 	p := object(e.Payload)
-	if len(child(p, "modelUsage")) == 0 {
-		return nil
+	data := map[string]any{"authentication_required": authview.AuthenticationFailed(e)}
+	if len(child(p, "modelUsage")) > 0 {
+		data["modelUsage"] = p["modelUsage"]
 	}
 	v := proto.Clone(e).(*api.Event)
 	v.Text = ""
-	v.Payload, _ = json.Marshal(map[string]any{"modelUsage": p["modelUsage"]})
+	v.Payload, _ = json.Marshal(data)
 	return v
 }
 

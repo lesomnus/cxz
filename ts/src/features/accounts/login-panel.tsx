@@ -16,6 +16,7 @@ export function LoginPanel({
   complete: () => void;
   cancel: () => void;
 }) {
+  const [attempt, setAttempt] = useState(0);
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
@@ -28,6 +29,10 @@ export function LoginPanel({
       setError("Provider login requires a real Manager.");
       return;
     }
+    setOutput("");
+    setError("");
+    setCode("");
+    setReady(false);
     const url = new URL(
       `/login/${target.project ? "session" : "auxiliary"}`,
       c.baseUrl,
@@ -43,19 +48,38 @@ export function LoginPanel({
     let ended = false;
     ws.onopen = () => setReady(true);
     ws.onmessage = (event) => {
-      const frame = JSON.parse(String(event.data));
+      if (ended) return;
+      let frame;
+      try {
+        frame = JSON.parse(String(event.data));
+      } catch {
+        ended = true;
+        setReady(false);
+        setError("Invalid login response.");
+        ws.close();
+        return;
+      }
       if (frame.output)
         setOutput((previous) => (previous + frame.output).slice(-65536));
       if (frame.error) {
         ended = true;
+        setReady(false);
         setError(frame.error);
+        ws.close();
+        return;
       }
       if (frame.done) {
         ended = true;
+        setReady(false);
+        ws.close();
         onComplete.current();
       }
     };
-    ws.onerror = () => setError("Login connection failed.");
+    ws.onerror = () => {
+      ended = true;
+      setReady(false);
+      setError("Login connection failed.");
+    };
     ws.onclose = () => {
       setReady(false);
       if (!ended) setError("Login connection closed before completion.");
@@ -67,7 +91,7 @@ export function LoginPanel({
       ws.onclose = null;
       ws.close();
     };
-  }, [c, target.account, target.project, target.key]);
+  }, [c, target.account, target.project, target.key, attempt]);
   return (
     <section className={styles.section} aria-label="Provider login">
       <strong>Log in · {target.account}</strong>
@@ -95,6 +119,14 @@ export function LoginPanel({
         >
           Submit code
         </Button>
+        {error && !c.inProcess && (
+          <Button
+            type="button"
+            onClick={() => setAttempt((value) => value + 1)}
+          >
+            Retry login
+          </Button>
+        )}
         <Button type="button" onClick={cancel}>
           Cancel
         </Button>

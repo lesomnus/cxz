@@ -1,3 +1,4 @@
+import styles from "./model-settings.module.css";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { ValueMenu } from "@lesomnus/nox";
@@ -87,8 +88,35 @@ export function ModelSettings({
         const disabled =
           busy || session?.status?.state !== "idle" || !values.length;
         return (
-          <div key={kind} className={`${kind}-field setting-field`}>
-            <span className="meta-label">{label}</span>
+          <div
+            key={kind}
+            className={`${kind}-field setting-field ${styles.field}`}
+          >
+            <span className={`meta-label ${styles.icon}`} aria-hidden="true">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {kind === "model" ? (
+                  <>
+                    <rect x="4" y="7" width="16" height="13" rx="3" />
+                    <path d="M12 7V3M2 12v4m20-4v4M9 17h6" />
+                    <circle cx="8.5" cy="12" r="1" />
+                    <circle cx="15.5" cy="12" r="1" />
+                  </>
+                ) : (
+                  <>
+                    <path d="M4 18a9 9 0 1 1 16 0M12 14l4-6" />
+                  </>
+                )}
+              </svg>
+            </span>
             <ValueMenu
               variant="compact"
               label={label}
@@ -100,7 +128,7 @@ export function ModelSettings({
                 muted: value === "default",
               }))}
               muted={value === "default"}
-              minMenuWidth={kind === "model" ? 240 : 140}
+              minMenuWidth={kind === "model" ? 180 : 140}
               disabled={disabled}
               disabledReason={
                 !values.length

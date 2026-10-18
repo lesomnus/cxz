@@ -43,3 +43,35 @@ export async function manageSession(
   }
   return client.resume(control(), options);
 }
+
+// Only an explicit login action may stop an idle run. A replacement run must
+// never be interrupted while preparing this session's private OAuth grant.
+export async function sessionLoginSnapshot(
+  client: LifecycleClient,
+  ref: SessionRef,
+  expectedRun: string,
+) {
+  const current = await client.get(
+    {
+      ref,
+      select: { all: true, account: { all: true }, project: { all: true } },
+    },
+    { timeoutMs: 20_000 },
+  );
+  if (current.status?.runId !== expectedRun)
+    throw new Error(t("Session run changed. Open the menu again."));
+  return current;
+}
+
+export async function prepareSessionLogin(
+  client: LifecycleClient,
+  ref: SessionRef,
+  expectedRun: string,
+) {
+  const current = await sessionLoginSnapshot(client, ref, expectedRun);
+  if (resumableStates.has(current.status?.state ?? "")) return current;
+  if (current.status?.state !== "idle")
+    throw new Error(t("Stop the current turn before logging in again."));
+  const stopped = await manageSession(client, ref, "stop", expectedRun);
+  return { ...current, status: stopped.status };
+}
