@@ -193,7 +193,7 @@ func TestCompletionAndMetadata(t *testing.T) {
 	end.Text = "completed"
 	add(input, assistant, end, event(4, "models", "", "{}"), event(5, "usage", "", "{}"))
 	p := syncPage(t, db, &api.TranscriptRequest{})
-	if len(p.Events) != 2 || len(p.Metadata) != 2 || p.Events[1].Response.Model != "model" {
+	if len(p.Events) != 2 || len(p.Metadata) != 3 || p.Events[1].Response.Model != "model" {
 		t.Fatal(p)
 	}
 	c := object(p.Events[1].Response.CompletionJson)
@@ -654,6 +654,49 @@ func TestMetadataKeepsTheRareKindsAChattySessionWouldEvict(t *testing.T) {
 	for i := range memory.Metadata {
 		if memory.Metadata[i].Seq != p.Metadata[i].Seq {
 			t.Fatalf("the two paths kept different records at %d: %d and %d", i, memory.Metadata[i].Seq, p.Metadata[i].Seq)
+		}
+	}
+}
+
+func TestClaudeAuthenticationMetadataSurvivesHistoryProjection(t *testing.T) {
+	failed := event(2, "turn_end", "failed", `{"type":"result","subtype":"success","is_error":true,"result":"Failed to authenticate: OAuth session expired and could not be refreshed","extra":"private-native-body"}`)
+	failed.Text = "failed"
+	p := New()
+	p.Apply(failed)
+	row := p.Rows[failed.Seq]
+	if row == nil || object(row.Payload)["authentication_required"] != true || text(object(row.Payload), "message") != "Failed to authenticate: OAuth session expired and could not be refreshed" {
+		t.Fatal("missing actionable authentication metadata", row)
+	}
+	if strings.Contains(string(row.Payload), "private-native-body") {
+		t.Fatal("native body retained")
+	}
+	snapshot := metadata(failed)
+	if object(snapshot.Payload)["authentication_required"] != true || strings.Contains(string(snapshot.Payload), "private-native-body") {
+		t.Fatal(snapshot)
+	}
+	completed := event(3, "turn_end", "completed", `{"type":"result","is_error":false}`)
+	completed.Text = "completed"
+	if object(metadata(completed).Payload)["authentication_required"] != false {
+		t.Fatal("success did not clear authentication state")
+	}
+	if !strings.Contains(string(failed.Payload), "private-native-body") {
+		t.Fatal("native event mutated")
+	}
+}
+
+func TestFailedResultBodiesRemainLazy(t *testing.T) {
+	for _, auth := range []bool{false, true} {
+		code := 500
+		if auth {
+			code = 401
+		}
+		body, _ := json.Marshal(map[string]any{"type": "result", "is_error": true, "result": strings.Repeat("large native body", 10000), "code": code})
+		e := event(1, "turn_end", "", string(body))
+		e.Text = "failed"
+		p := New()
+		p.Apply(e)
+		if len(p.Rows[e.Seq].Payload) > 100 {
+			t.Fatal("failed result copied into the compact transcript")
 		}
 	}
 }

@@ -842,6 +842,8 @@ header strong {
   padding: 0;
 }
 .input-box {
+  --markdown-inline-background: var(--shade-51);
+  --markdown-block-background: var(--shade-24);
   background-color: var(--shade-34);
   border-radius: 8px;
   padding: 10px 12px;
@@ -994,7 +996,7 @@ header strong {
 .markdown pre,
 pre {
   overflow: auto;
-  background: var(--shade-16);
+  background: var(--markdown-block-background, var(--shade-16));
   border-radius: 6px;
   padding: 12px;
   font-size: 0.85rem;
@@ -1002,7 +1004,7 @@ pre {
   margin: 8px 0;
 }
 .markdown code {
-  background: var(--shade-41);
+  background: var(--markdown-inline-background, var(--shade-41));
   padding: 2px 4px;
   border-radius: 4px;
   overflow-wrap: anywhere;
@@ -1118,6 +1120,7 @@ pre {
 }
 .composer-wrapper {
   --composer-border-width: 1px;
+  --composer-toolbar-overlap: var(--composer-radius);
   position: relative;
   width: calc(
     100% + 2 * (var(--composer-extension) - var(--composer-overhang))
@@ -1128,14 +1131,27 @@ pre {
   background: transparent;
   border-radius: var(--wrapper-radius);
 }
-.composer-toolbar {
+.composer-toolbar-surface {
   position: relative;
   z-index: 1;
+  isolation: isolate;
+  padding-bottom: var(--composer-toolbar-overlap);
+}
+.composer-toolbar-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
   background: var(--composer-toolbar-background);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: calc(var(--wrapper-radius) - var(--composer-border-width))
     calc(var(--wrapper-radius) - var(--composer-border-width)) 0 0;
+}
+.composer-toolbar {
+  position: relative;
+  z-index: 2;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -1149,7 +1165,8 @@ pre {
   top: calc(-1 * var(--composer-border-width));
   left: calc(-1 * var(--composer-border-width));
   right: calc(-1 * var(--composer-border-width));
-  height: calc(var(--composer-toolbar-height) + var(--composer-border-width));
+  /* The glow and glass share the entire surface, including editor overlap. */
+  bottom: 0;
   border-radius: var(--wrapper-radius) var(--wrapper-radius) 0 0;
   z-index: 0;
   overflow: clip;
@@ -1331,7 +1348,7 @@ pre {
     );
   }
 }
-:root[data-theme="light"] .composer-toolbar {
+:root[data-theme="light"] .composer-toolbar-surface::before {
   background: color-mix(in srgb, var(--shade-32) 78%, transparent);
 }
 :root[data-theme="light"] .composer-aurora {
@@ -1355,7 +1372,7 @@ pre {
   z-index: 2;
   border: 1px solid var(--shade-58);
   width: calc(100% + 2px + 2 * var(--composer-overhang));
-  margin: 0 calc(-1px - var(--composer-overhang)) -1px;
+  margin: calc(-1 * var(--composer-toolbar-overlap)) calc(-1px - var(--composer-overhang)) -1px;
   border-radius: var(--composer-radius);
   transition: background-color 150ms ease-out;
 }
@@ -2236,14 +2253,14 @@ pre {
 }
 .model-info {
   display: grid;
-  grid-template-columns: 160px 80px;
+  grid-template-columns: max-content max-content;
   gap: 8px;
-  flex: 0 0 248px;
+  flex: 0 0 auto;
   min-width: 0;
 }
 .model-info > .setting-field {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   white-space: nowrap;
 }

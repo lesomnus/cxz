@@ -38,7 +38,7 @@ export const InputMessage = memo(function InputMessage({
           &gt;
         </span>
         <div className="message-body">
-          <Markdown text={event.text} />
+          <Markdown text={event.text} surface="input" />
         </div>
       </div>
     </div>

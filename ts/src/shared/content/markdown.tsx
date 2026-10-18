@@ -39,7 +39,13 @@ function purifier(fileLinks: boolean) {
 }
 const markdownPurifiers = [purifier(false), purifier(true)];
 
-export function Markdown({ text }: { text: string }) {
+export function Markdown({
+  text,
+  surface = "default",
+}: {
+  text: string;
+  surface?: "default" | "input";
+}) {
   useLocale();
   const openFile = useContext(MarkdownFileLinks);
   const fileLinks = !!openFile;
@@ -115,7 +121,7 @@ export function Markdown({ text }: { text: string }) {
         }}
       />
       {blocks.map((block, index) => (
-        <MarkdownCodeBlock key={index} {...block} />
+        <MarkdownCodeBlock key={index} {...block} surface={surface} />
       ))}
     </>
   );

@@ -26,6 +26,7 @@ type Card = {
   kind?: "paste";
   content: (close: () => void) => ReactNode;
   origin: HTMLElement | null;
+  onClose?: () => void;
   anchor?: HTMLElement;
   surface?: HTMLElement;
   closing?: boolean;
@@ -33,7 +34,7 @@ type Card = {
 };
 type CardRequest = Pick<
   Card,
-  "title" | "label" | "content" | "kind" | "anchor" | "surface"
+  "title" | "label" | "content" | "kind" | "anchor" | "surface" | "onClose"
 >;
 const OpenCard = createContext<(card: CardRequest) => void>(() => {});
 const CardState = createContext<{
@@ -109,9 +110,16 @@ export function FloatingCardProvider({ children }: { children: ReactNode }) {
   current.current = card;
   const sequence = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      if (!current.current?.closing) current.current?.onClose?.();
+    },
+    [],
+  );
   const open = useCallback((request: CardRequest) => {
     clearTimeout(timer.current);
+    if (!current.current?.closing) current.current?.onClose?.();
     // A new action replaces the previous preview, with no retained back stack.
     setCard({
       ...request,
@@ -122,6 +130,7 @@ export function FloatingCardProvider({ children }: { children: ReactNode }) {
   const close = useCallback((id: number, restoreFocus = true) => {
     const active = current.current;
     if (!active || active.id !== id || active.closing) return;
+    active.onClose?.();
     setCard({ ...active, closing: true, restoreFocus });
     timer.current = setTimeout(() => {
       setCard((old) => (old?.id === id ? undefined : old));

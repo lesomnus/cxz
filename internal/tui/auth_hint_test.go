@@ -25,6 +25,8 @@ func TestAuthenticationHintsRequireFailureEvidence(t *testing.T) {
 		{"tool-result", "tool_result", "API Error: 401 unauthorized", `{"code":401}`, false},
 		{"assistant", "assistant", "Authentication failed", `{"code":401}`, false},
 		{"retrying", "diagnostic", "Codex error", `{"willRetry":true,"error":{"code":401}}`, false},
+		{"claude-expired", "turn_end", "failed", `{"type":"result","subtype":"success","is_error":true,"result":"Failed to authenticate: OAuth session expired and could not be refreshed"}`, true},
+		{"claude-auth-answer", "turn_end", "completed", `{"type":"result","is_error":false,"result":"Failed to authenticate: OAuth session expired and could not be refreshed"}`, false},
 		{"claude-status", "turn_end", "failed", `{"is_error":true,"api_error_status":401}`, true},
 		{"claude-errors", "turn_end", "failed", `{"errors":["API Error: 401 unauthorized"]}`, true},
 		{"typed-error", "diagnostic", "provider request failed", `{"error":{"type":"authentication_error","message":"token expired"}}`, true},

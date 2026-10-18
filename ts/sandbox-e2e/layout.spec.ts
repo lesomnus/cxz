@@ -46,8 +46,8 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   ).toHaveText("⣿⣿⣿⣿⣿⣤⣀⣀");
   await page.locator(".context-popover").hover();
   await expect(
-    page.getByRole("tooltip", { name: "24K/200K", exact: true }),
-  ).toBeVisible();
+    page.locator(".context-popover").getByRole("tooltip"),
+  ).toHaveText("24.0K/0200K12%");
   await expect(page.locator(".context-donut .context-fill")).toHaveAttribute(
     "stroke-dasharray",
     "0.12 1",
@@ -75,12 +75,14 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
     "background-color",
     "rgba(0, 0, 0, 0)",
   );
-  await expect(page.locator(".composer-toolbar")).toHaveCSS(
-    "backdrop-filter",
-    "blur(10px)",
-  );
+  const surface = page.locator(".composer-toolbar-surface");
+  expect(
+    await surface.evaluate(
+      (el) => getComputedStyle(el, "::before").backdropFilter,
+    ),
+  ).toBe("blur(10px)");
   const toolbarBackground = await page
-    .locator(".composer-toolbar")
+    .locator(".composer-toolbar-surface")
     .evaluate((el) => {
       const probe = document.createElement("div");
       probe.style.background =
@@ -88,7 +90,10 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
       el.append(probe);
       const expected = getComputedStyle(probe).backgroundColor;
       probe.remove();
-      return { actual: getComputedStyle(el).backgroundColor, expected };
+      return {
+        actual: getComputedStyle(el, "::before").backgroundColor,
+        expected,
+      };
     });
   expect(toolbarBackground.actual).toBe(toolbarBackground.expected);
   await expect(send).toHaveCSS("border-top-width", "0px");

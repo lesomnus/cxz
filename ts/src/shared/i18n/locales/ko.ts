@@ -142,6 +142,13 @@ export const messages = {
   Context: "컨텍스트",
   Created: "생성 시각",
   Updated: "수정 시각",
+  "Session login is unavailable.": "이 세션에서는 로그인할 수 없습니다.",
+  "Stop the current turn before logging in again.":
+    "재로그인하기 전에 진행 중인 대화를 정지하세요.",
+  "Claude account login": "Claude 계정 로그인",
+  "Claude account authentication expired. Log in again to resume this session.":
+    "Claude 계정 인증이 만료되었습니다. 재로그인하면 세션이 재개됩니다.",
+  "Log in again": "재로그인",
   "Session run changed. Open the menu again.":
     "세션 실행이 변경되었습니다. 메뉴를 다시 여세요.",
   "Active work stops and pending approvals are cleared. Conversation history, login and permission policy are retained.":

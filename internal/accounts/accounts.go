@@ -102,8 +102,11 @@ func validateCredential(alias, agent string, b []byte) error {
 		var oauth struct {
 			AccessToken string `json:"accessToken"`
 		}
-		if json.Unmarshal(v["claudeAiOauth"], &oauth) != nil || oauth.AccessToken == "" {
-			return fmt.Errorf("account %s needs Claude subscription login", alias)
+		if raw := v["claudeAiOauth"]; len(raw) > 0 && json.Unmarshal(raw, &oauth) != nil {
+			return fmt.Errorf("invalid credential file for account %s", alias)
+		}
+		if oauth.AccessToken == "" {
+			return &LoginRequired{Account: alias}
 		}
 	}
 	return nil
