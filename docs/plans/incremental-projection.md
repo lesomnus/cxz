@@ -1,7 +1,7 @@
 # 투영: 점진적으로 읽기
 
-상태: 계획. 1단계(싼 변화 감지)는 cxz#213에서 구현됐고, 이 문서는 남은 두 단계를
-적는다. 읽기 투영 자체의 설계는 `internal/transcripthistory/history.go`의 주석과
+상태: 구현됨. 싼 변화 감지는 cxz#213, 나머지 세 단계와 `count` 제거는 이 문서와 같은
+갈래에서 구현됐다. 읽기 투영 자체의 설계는 `internal/transcripthistory/history.go`의 주석과
 `internal/server/rows.go`를 참고한다.
 
 목표는 하나다. **투영의 비용이 대화 길이가 아니라 바뀐 양에 비례하게 만든다.**
@@ -128,10 +128,14 @@ walking old native bodies", 즉 원본 레코드를 다시 축약하는 것보�
 물으면 싸다.
 
 ```sql
-SELECT 1 FROM events WHERE rowid > ?seen AND session_id = ? AND seq <= ?cursor LIMIT 1
+SELECT EXISTS(SELECT 1 FROM events NOT INDEXED WHERE rowid>?seen AND session_id=? AND seq<=?cursor)
 ```
 
-새로 들어온 행만 훑으므로 O(새 행)이다. 앞쪽 트림은 `MIN(seq)`가 잡는다 — 삭제는
+새로 들어온 행만 훑으므로 O(새 행)이다. `NOT INDEXED`가 필요하다 — rowid 범위가
+여기서 원하는 인덱스인데, 없으면 SQLite가 `(session_id,seq)`를 골라 그것을 훑는다.
+134,495 레코드 세션에서 9.8ms 대 0.005ms로, 바로 이 질문이 없애려던 비용이다.
+워터마크가 없는 투영(이 변경 전에 만들어진 것)은 비교 대상이 없으므로 묻지 않고
+테이블의 표식을 채택한다. 세션마다 한 번씩 재구축하지 않기 위해서다. 앞쪽 트림은 `MIN(seq)`가 잡는다 — 삭제는
 rowid를 쓰지 않기 때문에 끝점을 함께 묻는다. 그러면 `transcript_state.count`는 쓰이지
 않게 되고, 옆 세션의 쓰기가 이 세션에 검증 한 번을 물리던 교차 비용도 사라진다.
 

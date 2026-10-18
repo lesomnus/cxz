@@ -59,7 +59,10 @@ type Version struct {
 	Event        *api.Event
 }
 type Projection struct {
-	Versions  []Version
+	Versions []Version
+	// resolve finds the row a record belongs to when the reduction does not
+	// carry it. Set for the length of one sync, because it reads the table.
+	resolve   func(run, request string) *api.Event
 	Rows      map[uint64]*api.Event
 	tools     map[string]*api.Event
 	approvals map[string]string
@@ -244,6 +247,12 @@ func (p *Projection) Apply(e *api.Event) {
 	case "tool_call", "tool_result", "tool_output":
 		if e.RequestId != "" {
 			v := p.tools[key]
+			if v == nil && e.Kind != "tool_call" && p.resolve != nil {
+				// A background task answers after its turn closed, so its call
+				// is behind what a reduction carries. One indexed look is
+				// cheaper than carrying every call in case of this one.
+				v = p.resolve(e.RunId, e.RequestId)
+			}
 			if v == nil || e.Kind == "tool_call" {
 				v = summary(e)
 			} else {
@@ -439,13 +448,68 @@ var schema = []string{
 
 const projectionFormat = 4
 
-// counted is how many times Sync has had to walk a session's records, and
-// restored how many times it has had to rebuild the reduced state from the
-// table. Tests watch them; nothing else does.
-var counted, restored atomic.Uint64
+// probed is how many times Sync has had to ask whether a record landed behind
+// the cursor, restored
+// how many times it has had to rebuild the reduced state from the table, and
+// restoredRows how many rows that cost. Tests watch them; nothing else does.
+var probed, restored, restoredRows, resolved atomic.Uint64
 
 // Sync indexes only native non-raw records. A cache backfill or retention change
 // rebuilds this disposable session index; normal queries read only the new suffix.
+// openTurn is where the records a reduction can still need begin: the earliest
+// input of a run that has not ended. Everything before it belongs to a turn
+// that closed, and the three things that read a row by sequence -- an open
+// question, and a turn_end folding its metrics onto the response it closes --
+// never reach outside their own turn.
+//
+// Both queries read the kind index and no row bodies, so this costs the turns
+// of the conversation rather than its rows. A session with no input at all has
+// no turn to be inside, and restores everything, which is nothing much.
+func openTurn(ctx context.Context, tx *sql.Tx, id string) (uint64, error) {
+	seqByRun := func(kind string) (map[string]uint64, uint64, error) {
+		out, top := map[string]uint64{}, uint64(0)
+		rows, err := tx.QueryContext(ctx, `SELECT run_id,MAX(seq) FROM transcript_records WHERE session_id=? AND kind=? GROUP BY run_id`, id, kind)
+		if err != nil {
+			return nil, 0, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var run string
+			var seq uint64
+			if err = rows.Scan(&run, &seq); err != nil {
+				return nil, 0, err
+			}
+			out[run] = seq
+			if seq > top {
+				top = seq
+			}
+		}
+		return out, top, rows.Err()
+	}
+	inputs, _, err := seqByRun("input")
+	if err != nil {
+		return 0, err
+	}
+	if len(inputs) == 0 {
+		return 0, nil
+	}
+	ends, lastEnd, err := seqByRun("turn_end")
+	if err != nil {
+		return 0, err
+	}
+	floor := uint64(0)
+	for run, seq := range inputs {
+		if seq > ends[run] && (floor == 0 || seq < floor) {
+			floor = seq
+		}
+	}
+	if floor == 0 {
+		// Every run has ended. Nothing before the last close can be needed.
+		floor = lastEnd
+	}
+	return floor, nil
+}
+
 func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
 	return SyncWith(ctx, db, id, decode, nil)
 }
@@ -487,13 +551,15 @@ func SyncWith(ctx context.Context, db *sql.DB, id string, decode Decode, cache *
 	if err = tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(seq),0) FROM events WHERE session_id=?`, id).Scan(&last); err != nil {
 		return err
 	}
-	var oldCount, oldFirst, oldLast uint64
-	err = tx.QueryRowContext(ctx, `SELECT count,first,last FROM transcript_state WHERE session_id=?`, id).Scan(&oldCount, &oldFirst, &oldLast)
+	var oldFirst, oldLast uint64
+	err = tx.QueryRowContext(ctx, `SELECT first,last FROM transcript_state WHERE session_id=?`, id).Scan(&oldFirst, &oldLast)
+	projected := err == nil
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
 	var seen uint64
 	err = tx.QueryRowContext(ctx, `SELECT written FROM transcript_seen WHERE session_id=?`, id).Scan(&seen)
+	watermarked := err == nil
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -502,27 +568,47 @@ func SyncWith(ctx context.Context, db *sql.DB, id string, decode Decode, cache *
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	if format == projectionFormat && seen == written && oldFirst == first && oldLast == last {
+	current := projected && format == projectionFormat
+	if current && seen == written && oldFirst == first && oldLast == last {
 		return tx.Commit()
 	}
-	counted.Add(1)
-	var count uint64
-	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM events WHERE session_id=?`, id).Scan(&count); err != nil {
-		return err
-	}
-	if format == projectionFormat && oldCount == count && oldFirst == first && oldLast == last {
-		// The table moved, this session did not. Remember what it looked like,
-		// so the next look is the cheap one again.
+	// What remains to decide is whether this is an append, and the question the
+	// count used to answer is "did anything land at or behind the cursor".
+	// Asking in insertion order reads only the records that are new, where
+	// counting the session read all of them. A delete writes no rowid, which is
+	// why the endpoints are asked too: a trim moves the first, a purge moves
+	// both, and there is no other deletion -- records go in behind the cursor
+	// only when the cache is backfilled.
+	rebuild := !current || oldFirst != first || last < oldLast
+	// A projection made before there was a watermark has nothing to compare
+	// against, and no reason to be doubted: the build that made it answered the
+	// same question by counting. Adopt the table's mark and carry on, rather
+	// than rebuilding every session once on the way past this change.
+	if !rebuild && watermarked {
+		probed.Add(1)
+		behind := false
+		// NOT INDEXED, because the rowid range is the index this wants and
+		// SQLite otherwise prefers the (session_id,seq) one and scans it --
+		// 9.8ms against 0.005ms on a 134k-record session, which is the cost
+		// this question exists to avoid.
+		if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM events NOT INDEXED WHERE rowid>? AND session_id=? AND seq<=?)`, seen, id, oldLast).Scan(&behind); err != nil {
+			return err
+		}
+		if !behind && oldFirst == first && oldLast == last {
+			// The table moved, this session did not. Remember what it looked
+			// like, so the next look is the cheap one again.
+			if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_seen VALUES(?,?)`, id, written); err != nil {
+				return err
+			}
+			return tx.Commit()
+		}
+		rebuild = behind
+	} else if !rebuild && oldFirst == first && oldLast == last {
 		if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_seen VALUES(?,?)`, id, written); err != nil {
 			return err
 		}
 		return tx.Commit()
 	}
-	var suffix uint64
-	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM events WHERE session_id=? AND seq>?`, id, oldLast).Scan(&suffix); err != nil {
-		return err
-	}
-	rebuild := format != projectionFormat || oldCount == 0 || oldFirst != first || count != oldCount+suffix || last < oldLast
 	if rebuild {
 		oldLast = 0
 		cache.Drop()
@@ -547,12 +633,21 @@ func SyncWith(ctx context.Context, db *sql.DB, id string, decode Decode, cache *
 	}
 	if !rebuild && !warm {
 		restored.Add(1)
-		// Restoring the reduced tools/last responses avoids walking old native bodies.
-		rows, e := tx.QueryContext(ctx, `SELECT data FROM transcript_rows r WHERE session_id=? AND updated=(SELECT MAX(updated) FROM transcript_rows x WHERE x.session_id=r.session_id AND x.seq=r.seq) ORDER BY seq`, id)
+		// Restoring the reduced tools/last responses avoids walking old native
+		// bodies, and restoring only the open turn avoids walking the whole
+		// conversation to find state that cannot be older than the turn it
+		// belongs to. A partner left behind -- a background result whose call
+		// closed with an earlier turn -- is fetched when it is missed.
+		floor, e := openTurn(ctx, tx, id)
+		if e != nil {
+			return e
+		}
+		rows, e := tx.QueryContext(ctx, `SELECT data FROM transcript_rows r WHERE session_id=? AND seq>=? AND updated=(SELECT MAX(updated) FROM transcript_rows x WHERE x.session_id=r.session_id AND x.seq=r.seq) ORDER BY seq`, id, floor)
 		if e != nil {
 			return e
 		}
 		for rows.Next() {
+			restoredRows.Add(1)
 			var b []byte
 			if e = rows.Scan(&b); e != nil {
 				rows.Close()
@@ -648,12 +743,29 @@ func SyncWith(ctx context.Context, db *sql.DB, id string, decode Decode, cache *
 	if err != nil {
 		return err
 	}
+	// For the length of the apply, a missed partner can be looked up. The
+	// closure reads this transaction, so it does not outlive it -- and must not
+	// be left on a projection that is about to be cached.
+	projection.resolve = func(run, request string) *api.Event {
+		var b []byte
+		e := tx.QueryRowContext(ctx, `SELECT data FROM transcript_rows WHERE session_id=? AND seq=(SELECT MIN(seq) FROM transcript_records WHERE session_id=? AND run_id=? AND request_id=?) ORDER BY updated DESC LIMIT 1`, id, id, run, request).Scan(&b)
+		if e != nil {
+			return nil
+		}
+		var v api.Event
+		if json.Unmarshal(b, &v) != nil || v.ToolSummary == nil {
+			return nil
+		}
+		resolved.Add(1)
+		return &v
+	}
 	for _, e := range native {
 		if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_records VALUES(?,?,?,?,?,?)`, id, e.Seq, e.RunId, e.RequestId, e.Kind, related(e)); err != nil {
 			return err
 		}
 		projection.Apply(e)
 	}
+	projection.resolve = nil
 	for _, v := range projection.Versions {
 		b, e := json.Marshal(v.Event)
 		if e != nil {
@@ -663,7 +775,10 @@ func SyncWith(ctx context.Context, db *sql.DB, id string, decode Decode, cache *
 			return err
 		}
 	}
-	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_state VALUES(?,?,?,?)`, id, count, first, last); err != nil {
+	// Named columns, and no count: the column stays so that a rollback to a
+	// build which reads it sees a zero and rebuilds once, rather than a NULL it
+	// cannot scan.
+	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_state(session_id,count,first,last) VALUES(?,0,?,?)`, id, first, last); err != nil {
 		return err
 	}
 	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_seen VALUES(?,?)`, id, written); err != nil {
