@@ -2,13 +2,14 @@ import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
-import { PageToolbar, ValueMenu } from "@lesomnus/nox";
+import { PageToolbar } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { PanelLink } from "#src/shared/navigation/route-link.tsx";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import styles from "./projects-page.module.css";
 
 export function ProjectsPage({
@@ -41,29 +42,14 @@ export function ProjectsPage({
   return (
     <main className={styles.page} aria-label={t("Project workspace")}>
       <PageToolbar aria-label={t("Project toolbar")}>
-        <div className={styles.selector}>
-          <ValueMenu
-            label={t("Select project")}
-            value={project?.runtimeId ?? ""}
-            display={
-              project
-                ? project.name || project.alias
-                : projectsLoading
-                  ? t("Loading projects…")
-                  : t("Select project")
-            }
-            options={projects.map((item) => ({
-              value: item.runtimeId,
-              label: item.name || item.alias,
-              searchText: `${item.alias} ${item.workspace}`,
-            }))}
-            searchable
-            disabled={!projects.length}
-            choose={(project) =>
-              void navigate({ to: "/projects", search: { project } })
-            }
-          />
-        </div>
+        <ProjectPicker
+          projects={projects}
+          value={project?.runtimeId ?? ""}
+          loading={projectsLoading}
+          choose={(project) =>
+            void navigate({ to: "/projects", search: { project } })
+          }
+        />
       </PageToolbar>
       <PanelScroll
         className={styles.scroll}

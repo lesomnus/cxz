@@ -15,6 +15,7 @@ test("projects use the full workspace with a persistent project picker and scope
     name: "Select project",
     exact: true,
   });
+  await expect(main.locator("header svg")).toBeVisible();
   await expect(picker).toHaveText("Design playground");
   await expect(page.getByRole("complementary")).toHaveCount(0);
   const sidebar = (await page

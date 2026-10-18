@@ -52,7 +52,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Project-scoped live Task board. Open a task to edit, follow its owner, or explicitly release abandoned work. The same connection shares one Watch between consumers. Simulate agent update while editing to preview conflict handling without losing the draft. Narrow boards stack status groups; real workspace navigation offers a compact project selector on mobile.",
+          "Project-scoped live Task board with a shared page toolbar, project icon and compact project selector on every screen size. Open a task to edit, follow its owner, or explicitly release abandoned work. The same connection shares one Watch between consumers. Simulate agent update while editing to preview conflict handling without losing the draft. Narrow boards stack status groups.",
       },
     },
   },

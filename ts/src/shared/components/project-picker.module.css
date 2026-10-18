@@ -1,0 +1,20 @@
+.picker {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-control-inline-inset);
+  min-width: 0;
+  max-width: 100%;
+}
+.icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--ui-muted);
+}
+.value {
+  width: 180px;
+  min-width: 0;
+}
+.value :global(.meta-value) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

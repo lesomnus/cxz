@@ -6,14 +6,6 @@
   min-height: 0;
   overflow: hidden;
 }
-.selector {
-  width: min(180px, 100%);
-  min-width: 0;
-}
-.selector :global(.meta-value) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
 }
