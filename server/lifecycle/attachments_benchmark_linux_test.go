@@ -94,7 +94,7 @@ func BenchmarkAttachmentDataPath(b *testing.B) {
 						f := &benchmarkUploadRuntime{fixture: &fixture{p: &api.Project{Id: "project", Workspace: "/workspace", State: "running"}, s: &api.Session{Id: "0123456789abcdef01234567", ProjectId: "project", Agent: "codex", Account: "work", CreateId: "create", RunId: "run", State: "idle"}}, root: filepath.Join(root, "assets"), store: store}
 						f.s.AuthBackend = accounts.ProjectLocalOAuth
 						f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
-						stack, err := Build(ctx, db, f)
+						stack, err := Build(ctx, db, f, nil)
 						if err != nil {
 							b.Fatal(err)
 						}

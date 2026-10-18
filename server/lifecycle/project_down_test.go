@@ -34,7 +34,7 @@ func TestProjectDownUpRetainsSessions(t *testing.T) {
 		s: &api.Session{Id: "session", ProjectId: "project", Workspace: "/work", Title: "Existing conversation", Agent: "claude", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, State: "idle", RunId: "run", CreateId: "create", VendorId: "vendor-conversation", LastSeq: 2},
 	}}}
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestProjectDownUpRetainsSessions(t *testing.T) {
 			}
 		}
 		// Rebuild the resource stack to verify persistence and fresh runtime snapshots.
-		stack, err = Build(ctx, db, f)
+		stack, err = Build(ctx, db, f, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

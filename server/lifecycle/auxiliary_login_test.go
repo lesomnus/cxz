@@ -69,7 +69,7 @@ func TestAuxiliaryLoginRPCInputExitCancellationAndPrivacy(t *testing.T) {
 	}
 	defer db.Close()
 	f := &auxLoginRuntime{fixture: &fixture{p: &api.Project{Id: "project", Name: "workspace", Workspace: "/workspace", State: "running"}}, cancelled: make(chan struct{})}
-	stack, err := Build(ctx, db, f)
+	stack, err := Build(ctx, db, f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -43,6 +43,8 @@ const (
 	ProjectService_EngineStatus_FullMethodName           = "/cxz.ProjectService/EngineStatus"
 	ProjectService_GetEngineInfo_FullMethodName          = "/cxz.ProjectService/GetEngineInfo"
 	ProjectService_GetInstallationVersion_FullMethodName = "/cxz.ProjectService/GetInstallationVersion"
+	ProjectService_Diagnostics_FullMethodName            = "/cxz.ProjectService/Diagnostics"
+	ProjectService_CaptureDiagnostics_FullMethodName     = "/cxz.ProjectService/CaptureDiagnostics"
 	ProjectService_AuxConfig_FullMethodName              = "/cxz.ProjectService/AuxConfig"
 	ProjectService_AuxSetConfig_FullMethodName           = "/cxz.ProjectService/AuxSetConfig"
 	ProjectService_AuxModels_FullMethodName              = "/cxz.ProjectService/AuxModels"
@@ -142,6 +144,18 @@ type ProjectServiceClient interface {
 	// whether it is pinned. It travelled inside the engine's info reply, which is
 	// how a question about Docker came to answer a question about cxz.
 	GetInstallationVersion(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*InstallationVersion, error)
+	// What the manager has been doing: per-method aggregates, and the calls it
+	// kept -- which method, which status, how long, and how much of that was
+	// spent waiting rather than working. Metadata only: no request or reply ever
+	// enters it, because the answer is read over the plaintext surface.
+	//
+	// It was only ever on the manager's stdout, so every question about a stalled
+	// installation needed `docker logs` on the host. See cxz#211.
+	Diagnostics(ctx context.Context, in *DiagnosticsRequest, opts ...grpc.CallOption) (*DiagnosticsReply, error)
+	// Keep every call for a while, not only the failed and the slow ones. The
+	// window expires on its own: a verbose setting that has to be turned off is
+	// one that is left on.
+	CaptureDiagnostics(ctx context.Context, in *CaptureDiagnosticsRequest, opts ...grpc.CallOption) (*DiagnosticsReply, error)
 	// Aux is a model task done beside a session: run once, with the context cxz
 	// assembles, never accumulating into a conversation. These four are the part
 	// that belongs to the installation rather than to one session -- which
@@ -491,6 +505,26 @@ func (c *projectServiceClient) GetInstallationVersion(ctx context.Context, in *E
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(InstallationVersion)
 	err := c.cc.Invoke(ctx, ProjectService_GetInstallationVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) Diagnostics(ctx context.Context, in *DiagnosticsRequest, opts ...grpc.CallOption) (*DiagnosticsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DiagnosticsReply)
+	err := c.cc.Invoke(ctx, ProjectService_Diagnostics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) CaptureDiagnostics(ctx context.Context, in *CaptureDiagnosticsRequest, opts ...grpc.CallOption) (*DiagnosticsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DiagnosticsReply)
+	err := c.cc.Invoke(ctx, ProjectService_CaptureDiagnostics_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -855,6 +889,18 @@ type ProjectServiceServer interface {
 	// whether it is pinned. It travelled inside the engine's info reply, which is
 	// how a question about Docker came to answer a question about cxz.
 	GetInstallationVersion(context.Context, *EngineRequest) (*InstallationVersion, error)
+	// What the manager has been doing: per-method aggregates, and the calls it
+	// kept -- which method, which status, how long, and how much of that was
+	// spent waiting rather than working. Metadata only: no request or reply ever
+	// enters it, because the answer is read over the plaintext surface.
+	//
+	// It was only ever on the manager's stdout, so every question about a stalled
+	// installation needed `docker logs` on the host. See cxz#211.
+	Diagnostics(context.Context, *DiagnosticsRequest) (*DiagnosticsReply, error)
+	// Keep every call for a while, not only the failed and the slow ones. The
+	// window expires on its own: a verbose setting that has to be turned off is
+	// one that is left on.
+	CaptureDiagnostics(context.Context, *CaptureDiagnosticsRequest) (*DiagnosticsReply, error)
 	// Aux is a model task done beside a session: run once, with the context cxz
 	// assembles, never accumulating into a conversation. These four are the part
 	// that belongs to the installation rather than to one session -- which
@@ -1002,6 +1048,12 @@ func (UnimplementedProjectServiceServer) GetEngineInfo(context.Context, *EngineR
 }
 func (UnimplementedProjectServiceServer) GetInstallationVersion(context.Context, *EngineRequest) (*InstallationVersion, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetInstallationVersion not implemented")
+}
+func (UnimplementedProjectServiceServer) Diagnostics(context.Context, *DiagnosticsRequest) (*DiagnosticsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Diagnostics not implemented")
+}
+func (UnimplementedProjectServiceServer) CaptureDiagnostics(context.Context, *CaptureDiagnosticsRequest) (*DiagnosticsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method CaptureDiagnostics not implemented")
 }
 func (UnimplementedProjectServiceServer) AuxConfig(context.Context, *AuxConfigRequest) (*AuxConfigReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxConfig not implemented")
@@ -1474,6 +1526,42 @@ func _ProjectService_GetInstallationVersion_Handler(srv interface{}, ctx context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).GetInstallationVersion(ctx, req.(*EngineRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_Diagnostics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DiagnosticsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).Diagnostics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_Diagnostics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).Diagnostics(ctx, req.(*DiagnosticsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_CaptureDiagnostics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CaptureDiagnosticsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).CaptureDiagnostics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_CaptureDiagnostics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).CaptureDiagnostics(ctx, req.(*CaptureDiagnosticsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2074,6 +2162,14 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetInstallationVersion",
 			Handler:    _ProjectService_GetInstallationVersion_Handler,
+		},
+		{
+			MethodName: "Diagnostics",
+			Handler:    _ProjectService_Diagnostics_Handler,
+		},
+		{
+			MethodName: "CaptureDiagnostics",
+			Handler:    _ProjectService_CaptureDiagnostics_Handler,
 		},
 		{
 			MethodName: "AuxConfig",

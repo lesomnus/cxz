@@ -78,6 +78,16 @@ func localUpdateCommand(ctx context.Context, root, action string) ([]byte, error
 	if e != nil {
 		return nil, e
 	}
-	b, e := json.MarshalIndent(map[string]any{"channel": channel, "enabled": policy.Active(), "running": cxzupdate.Current(), "update": state}, "", "  ")
+	// Why an installation is not updating is the question this command is
+	// asked, and the answer used to live in a container that had already been
+	// removed. Newest last, as the file keeps them.
+	attempts, e := cxzupdate.Attempts(root)
+	if e != nil {
+		return nil, e
+	}
+	if len(attempts) > 5 {
+		attempts = attempts[len(attempts)-5:]
+	}
+	b, e := json.MarshalIndent(map[string]any{"channel": channel, "enabled": policy.Active(), "running": cxzupdate.Current(), "update": state, "attempts": attempts}, "", "  ")
 	return append(b, '\n'), e
 }

@@ -121,14 +121,78 @@ func (s *Supervisor) updateReason(now time.Time, quiet bool) (reason string) {
 	return ""
 }
 
+// processQuiet reports whether a process found in the agent's tree is
+// something an update may ignore. A process cxz asked the agent to spawn lives
+// exactly as long as the session, so counting it means the session is never
+// quiet and the update never happens; a process that has already exited is not
+// doing work, and nothing guarantees it gets reaped -- PID 1 of a session
+// container is `sleep infinity`.
+func processQuiet(state string, cmdline []byte, id string) bool {
+	if state == "Z" {
+		return true
+	}
+	args := strings.Split(strings.TrimSuffix(string(cmdline), "\x00"), "\x00")
+	for i, a := range args {
+		if a == "_mcp-bridge" && i+1 < len(args) && args[i+1] == id {
+			return true
+		}
+	}
+	return false
+}
+
+// procState reports the state and process group of pid. A pid that is gone
+// between a listing and the read reports an exited state: it is not work.
+func procState(pid int) (state string, group int, err error) {
+	b, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(pid), "stat"))
+	if os.IsNotExist(err) {
+		return "Z", 0, nil
+	}
+	if err != nil {
+		return "", 0, err
+	}
+	end := strings.LastIndexByte(string(b), ')')
+	if end < 0 {
+		return "", 0, fmt.Errorf("unreadable stat of %d", pid)
+	}
+	fields := strings.Fields(string(b[end+1:]))
+	if len(fields) < 3 {
+		return "", 0, fmt.Errorf("unreadable stat of %d", pid)
+	}
+	if group, err = strconv.Atoi(fields[2]); err != nil {
+		return "", 0, err
+	}
+	return fields[0], group, nil
+}
+
+func (s *Supervisor) procQuiet(pid int, state string) bool {
+	cmdline, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(pid), "cmdline"))
+	if os.IsNotExist(err) {
+		return true
+	}
+	if err != nil {
+		return false
+	}
+	return processQuiet(state, cmdline, s.session.ID)
+}
+
 func (s *Supervisor) processesQuiet() bool {
 	if s.cmd == nil || s.cmd.Process == nil {
 		return false
 	}
 	pid := s.cmd.Process.Pid
 	b, err := os.ReadFile(fmt.Sprintf("/proc/%d/task/%d/children", pid, pid))
-	if err != nil || len(strings.Fields(string(b))) > 0 {
+	if err != nil {
 		return false
+	}
+	for _, f := range strings.Fields(string(b)) {
+		child, err := strconv.Atoi(f)
+		if err != nil {
+			return false
+		}
+		state, _, err := procState(child)
+		if err != nil || !s.procQuiet(child, state) {
+			return false
+		}
 	}
 	entries, err := os.ReadDir("/proc")
 	if err != nil {
@@ -139,26 +203,11 @@ func (s *Supervisor) processesQuiet() bool {
 		if err != nil || n == pid {
 			continue
 		}
-		b, err := os.ReadFile(filepath.Join("/proc", e.Name(), "stat"))
-		if os.IsNotExist(err) {
-			continue
-		}
+		state, group, err := procState(n)
 		if err != nil {
 			return false
 		}
-		end := strings.LastIndexByte(string(b), ')')
-		if end < 0 {
-			return false
-		}
-		fields := strings.Fields(string(b[end+1:]))
-		if len(fields) < 3 {
-			return false
-		}
-		group, err := strconv.Atoi(fields[2])
-		if err != nil {
-			return false
-		}
-		if group == pid {
+		if group == pid && !s.procQuiet(n, state) {
 			return false
 		}
 	}

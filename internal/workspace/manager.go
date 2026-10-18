@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/auxiliary"
@@ -616,41 +617,24 @@ func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {
 	}
 	return m.down(ctx, p)
 }
+// A session is stopped and drained within captureBudget, and the project as a
+// whole within captureTotal. One budget used to cover every session of the
+// project at once, which a project with many sessions or long histories does
+// not fit; a recreate that only had to replace a container then failed with
+// DeadlineExceeded after 30 seconds. See cxz#209.
+var (
+	captureBudget = 30 * time.Second
+	captureTotal  = 2 * time.Minute
+)
+
 func (m *Manager) down(ctx context.Context, p *Project) error {
-	// Capture the final conversation before removing containers. If the runtime
-	// is already gone, the project volume remains the authoritative recovery source.
+	// Capture the final conversation before removing containers. Best effort,
+	// as a project that cannot answer must still be removable: the project
+	// volume remains the authoritative recovery source.
 	if conn, client, err := m.client(ctx, p); err == nil {
 		defer conn.Close()
-		q, cancel := context.WithTimeout(ctx, 30*time.Second)
-		defer cancel()
-		if list, err := client.List(q, &api.Empty{}); err == nil {
-			for _, s := range list.Sessions {
-				if s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting" {
-					if _, err = client.Stop(q, &api.Control{SessionId: s.Id, RunId: s.RunId, ClientId: core.ID()}); err != nil {
-						return err
-					}
-				}
-				var cursor uint64
-				for {
-					batch, err := client.History(q, &api.WatchRequest{SessionId: s.Id, AfterSeq: cursor})
-					if err != nil {
-						return err
-					}
-					if err = m.cache(q, batch); err != nil {
-						return err
-					}
-					if len(batch.Events) == 0 {
-						break
-					}
-					cursor = batch.Events[len(batch.Events)-1].Seq
-				}
-			}
-			if list, err = client.List(q, &api.Empty{}); err == nil {
-				p.Sessions = list.Sessions
-				for _, s := range p.Sessions {
-					s.ProjectId = p.ID
-				}
-			}
+		if err := m.capture(ctx, p, client); err != nil {
+			fmt.Fprintln(os.Stderr, "final conversation:", err)
 		}
 	}
 	containers, e := dockerx.List(ctx, "label=cxz.owner="+m.Owner, "label=cxz.project="+p.ID)
@@ -670,6 +654,60 @@ func (m *Manager) down(ctx context.Context, p *Project) error {
 	p.Job.State, p.Job.Step = "complete", "down"
 	p.Job.UpdatedAt = time.Now().UnixMilli()
 	return m.save(ctx, p)
+}
+
+// capture stops every live session of the project and caches its conversation,
+// so that history survives the container. One session that cannot answer costs
+// its own budget and is reported; it does not consume another session's.
+func (m *Manager) capture(ctx context.Context, p *Project, client api.SessionsClient) error {
+	ctx, cancel := context.WithTimeout(ctx, captureTotal)
+	defer cancel()
+	list, err := m.sessions(ctx, client)
+	if err != nil {
+		return err
+	}
+	var errs []error
+	for _, s := range list.Sessions {
+		if err := m.captureSession(ctx, client, s); err != nil {
+			errs = append(errs, fmt.Errorf("session %s: %w", s.Id, err))
+		}
+	}
+	if list, err = m.sessions(ctx, client); err == nil {
+		p.Sessions = list.Sessions
+		for _, s := range p.Sessions {
+			s.ProjectId = p.ID
+		}
+	}
+	return errors.Join(errs...)
+}
+func (m *Manager) sessions(ctx context.Context, client api.SessionsClient) (*api.SessionList, error) {
+	q, cancel := context.WithTimeout(ctx, captureBudget)
+	defer cancel()
+	return client.List(q, &api.Empty{})
+}
+func (m *Manager) captureSession(ctx context.Context, client api.SessionsClient, s *api.Session) error {
+	q, cancel := context.WithTimeout(ctx, captureBudget)
+	defer cancel()
+	switch s.State {
+	case "idle", "working", "waiting_input", "starting":
+		if _, err := client.Stop(q, &api.Control{SessionId: s.Id, RunId: s.RunId, ClientId: core.ID()}); err != nil {
+			return err
+		}
+	}
+	var cursor uint64
+	for {
+		batch, err := client.History(q, &api.WatchRequest{SessionId: s.Id, AfterSeq: cursor})
+		if err != nil {
+			return err
+		}
+		if len(batch.Events) == 0 {
+			return nil
+		}
+		if err = m.cache(q, batch); err != nil {
+			return err
+		}
+		cursor = batch.Events[len(batch.Events)-1].Seq
+	}
 }
 func Discover(path string) []string {
 	var out []string

@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/internal/ent"
 	"github.com/lesomnus/cxz/internal/ent/migrate"
+	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/cxz/server/bare"
 	"github.com/lesomnus/cxz/server/pd"
@@ -44,6 +45,7 @@ type shared struct {
 	watchers    atomic.Int64
 	watch       *watch.Watch
 	runtime     Runtime
+	observe     *observe.Log
 }
 
 // Reconcile is a low-frequency safety net for changes made outside cxz.
@@ -64,7 +66,7 @@ func (b builder) Build(next resource.Server) (resource.Server, error) {
 
 // A separate database keeps the rc.1 registry/journal untouched. Resource
 // projections can be rebuilt from runtime manifests, without changing vendor IDs.
-func Build(ctx context.Context, db *sql.DB, r Runtime) (resource.Server, error) {
+func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log) (resource.Server, error) {
 	driver := entsql.OpenDB(dialect.SQLite, db)
 	client := ent.NewClient(ent.Driver(driver))
 	if err := migrate.NewSchema(driver).Create(ctx); err != nil {
@@ -80,7 +82,7 @@ func Build(ctx context.Context, db *sql.DB, r Runtime) (resource.Server, error) 
 		return nil, err
 	}
 	// Publish each committed Sink call, including background projection writes.
-	return resource.Build(sessionNamingSink{sink.WithWatch(w)}, pd.InterceptBuild([]grpc.UnaryServerInterceptor{taskWatchUnary(w)}, nil), builder{&shared{runtime: r, db: db, watch: w}}, pd.AuditBuild(), pd.GateBuild())
+	return resource.Build(sessionNamingSink{sink.WithWatch(w)}, pd.InterceptBuild([]grpc.UnaryServerInterceptor{taskWatchUnary(w)}, nil), builder{&shared{runtime: r, db: db, watch: w, observe: o}}, pd.AuditBuild(), pd.GateBuild())
 }
 func (s Layer) WithDriver(d dialect.Driver) (resource.Server, error) {
 	next, err := enttx.Rebind(s.Next(), d)
