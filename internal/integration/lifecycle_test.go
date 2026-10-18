@@ -393,9 +393,21 @@ func TestLifecycle(t *testing.T) {
 				break
 			}
 		}
-		child, err = client.Get(ctx, &api.SessionRef{Id: child.Id})
-		if err != nil || child.VendorId == source.VendorId || child.VendorId == "" {
-			t.Fatal("child reused provider identity", child, err)
+		// The resource API is a projection of the journal, caught up by the
+		// journal observer rather than by this read. The fork's provider
+		// identity is journaled before the reply waited for above
+		// (internal/supervisor/supervisor.go:568 emits vendor, then the
+		// message's own events), so it is on its way; asking for it in the
+		// same instant is asking a projection to be synchronous. See cxz#212.
+		for deadline := time.Now().Add(10 * time.Second); ; {
+			child, err = client.Get(ctx, &api.SessionRef{Id: child.Id})
+			if err == nil && child.VendorId != "" && child.VendorId != source.VendorId {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("child reused provider identity", child, err)
+			}
+			time.Sleep(50 * time.Millisecond)
 		}
 		parent, err := client.History(ctx, &api.WatchRequest{SessionId: source.Id, Limit: 1000})
 		if err != nil {
