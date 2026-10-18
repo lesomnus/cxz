@@ -47,3 +47,6 @@
 .session.session {
   padding: var(--ui-space) var(--ui-control-inline-inset);
 }
+.selection {
+  margin-top: calc(4 * var(--ui-space));
+}

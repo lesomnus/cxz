@@ -50,7 +50,6 @@ function Preview({ empty = false, loading = false }) {
             projects={projects}
             sessions={sessions}
             projectsLoading={loading}
-            expandProject={() => {}}
           />
         ),
       },

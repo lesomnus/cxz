@@ -1,5 +1,6 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  Account: "계정",
   "Project workspace": "프로젝트 워크스페이스",
   "Project toolbar": "프로젝트 툴바",
   "Select project": "프로젝트 선택",

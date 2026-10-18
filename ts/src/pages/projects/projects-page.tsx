@@ -1,11 +1,11 @@
-import { t } from "#src/shared/i18n/i18n.ts";
+import { t, currentLocale } from "#src/shared/i18n/i18n.ts";
+import { useId, useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
-import { PageToolbar } from "@lesomnus/nox";
+import { PageToolbar, PanelItem } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
-import { PanelLink } from "#src/shared/navigation/route-link.tsx";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -18,17 +18,17 @@ export function ProjectsPage({
   projectsLoading,
   sessionsLoading,
   error,
-  expandProject,
 }: {
   projects: Project[];
   sessions: Session[];
   projectsLoading: boolean;
   sessionsLoading?: boolean;
   error?: string;
-  expandProject: (id: string) => void;
 }) {
   useLocale();
   const navigate = useNavigate();
+  const [selectedSession, selectSession] = useState("");
+  const detailsId = useId();
   const { project: selected } = useWorkspaceRoute();
   const project =
     projects.find((item) => item.runtimeId === selected) ??
@@ -39,6 +39,13 @@ export function ProjectsPage({
           session.project && key(session.project.id) === key(project.id),
       )
     : [];
+  const session = items.find((item) => item.runtimeId === selectedSession);
+  const date = (value: Session["dateCreated"]) =>
+    value
+      ? new Date(
+          Number(value.seconds) * 1000 + value.nanos / 1e6,
+        ).toLocaleString(currentLocale())
+      : "—";
   return (
     <main className={styles.page} aria-label={t("Project workspace")}>
       <PageToolbar aria-label={t("Project toolbar")}>
@@ -46,9 +53,10 @@ export function ProjectsPage({
           projects={projects}
           value={project?.runtimeId ?? ""}
           loading={projectsLoading}
-          choose={(project) =>
-            void navigate({ to: "/projects", search: { project } })
-          }
+          choose={(project) => {
+            selectSession("");
+            void navigate({ to: "/projects", search: { project } });
+          }}
         />
       </PageToolbar>
       <PanelScroll
@@ -77,15 +85,20 @@ export function ProjectsPage({
                 <h2 className={styles.sectionTitle}>{t("Sessions")}</h2>
                 <div className={styles.sessions}>
                   {items.map((session) => (
-                    <PanelLink
-                      to="/sessions/$sessionId"
-                      params={{ sessionId: session.runtimeId }}
+                    <PanelItem
+                      type="button"
                       className={styles.session}
                       key={session.runtimeId}
-                      onClick={() => expandProject(project.runtimeId)}
+                      aria-pressed={selectedSession === session.runtimeId}
+                      aria-controls={
+                        selectedSession === session.runtimeId
+                          ? detailsId
+                          : undefined
+                      }
+                      onClick={() => selectSession(session.runtimeId)}
                     >
                       <SessionIdentity session={session} />
-                    </PanelLink>
+                    </PanelItem>
                   ))}
                 </div>
                 {sessionsLoading && !items.length && (
@@ -95,6 +108,34 @@ export function ProjectsPage({
                   <p className="muted">{t("No sessions")}</p>
                 )}
               </section>
+              {session && (
+                <section
+                  id={detailsId}
+                  aria-label={t("Session details")}
+                  className={styles.selection}
+                >
+                  <h2 className={styles.sectionTitle}>
+                    {t("Session details")}
+                  </h2>
+                  <dl className={styles.details}>
+                    {[
+                      [t("State"), session.status?.state],
+                      [t("Agent"), session.agent],
+                      [
+                        t("Account"),
+                        session.account?.name || session.account?.alias,
+                      ],
+                      [t("Created"), date(session.dateCreated)],
+                      [t("Updated"), date(session.dateUpdated)],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <dt>{label}</dt>
+                        <dd>{value || "—"}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
             </>
           ) : projectsLoading ? (
             <p className="muted">{t("Loading projects…")}</p>

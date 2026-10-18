@@ -93,13 +93,6 @@ export function Workspace({
     }
     return grouped;
   }, [inventory.sessions, hideStopped]);
-  function expandProject(id: string) {
-    setCollapsed((old) => {
-      const next = new Set(old);
-      next.delete(id);
-      return next;
-    });
-  }
   return (
     <WorkspaceContext.Provider
       value={{
@@ -114,7 +107,6 @@ export function Workspace({
             : "",
         settingsFileOpen,
         setSettingsFileOpen,
-        expandProject,
       }}
     >
       <div

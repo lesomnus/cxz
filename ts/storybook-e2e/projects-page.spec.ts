@@ -23,6 +23,15 @@ test("project page and shared toolbar stories render their selector and states",
     page.getByRole("main", { name: "Project workspace" }),
   ).toBeVisible();
   await expect(picker).toHaveText("Web workspace");
+  await page
+    .getByRole("region", { name: "Project sessions", exact: true })
+    .getByRole("button")
+    .first()
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Session details", exact: true }),
+  ).toBeVisible();
+  await expect(picker).toHaveText("Web workspace");
   await page.goto("/iframe.html?id=pages-projects--empty&viewMode=story");
   await expect(picker).toBeDisabled();
   await expect(

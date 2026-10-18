@@ -24,7 +24,6 @@ export function WorkspaceView() {
     inventoryError,
     settingsFileOpen,
     setSettingsFileOpen,
-    expandProject,
   } = useContext(WorkspaceContext)!;
   const { resource, session, settingsTopic } = useWorkspaceRoute();
   if (resource === "not-found") return <NotFoundPage />;
@@ -69,7 +68,6 @@ export function WorkspaceView() {
         sessionsLoading={sessionsLoading}
         projectsLoading={projectsLoading}
         error={inventoryError}
-        expandProject={expandProject}
       />
     );
   return <SessionsPage c={c} id={session} projects={projects} />;

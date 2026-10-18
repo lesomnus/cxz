@@ -1,5 +1,6 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Account: "Account",
   "Project workspace": "Project workspace",
   "Project toolbar": "Project toolbar",
   "Select project": "Select project",
