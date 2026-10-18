@@ -13,6 +13,7 @@ export function mergeMetadata(
     if (["models", "usage", "usage_status", "compact"].includes(e.kind))
       return [e];
     const authentication = authenticationState(e);
+    if (authentication === undefined && e.kind !== "turn_end") return [];
     const p = payload(e);
     if (
       authentication === undefined &&
