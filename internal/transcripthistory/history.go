@@ -72,6 +72,49 @@ type Projection struct {
 func New() *Projection {
 	return &Projection{Rows: map[uint64]*api.Event{}, tools: map[string]*api.Event{}, approvals: map[string]string{}, questions: map[string]*api.Event{}, last: map[string]*api.Event{}, input: map[string]int64{}, inputSeq: map[string]uint64{}}
 }
+
+// Cache keeps the reduced state between syncs, so that a change costs the
+// records that changed rather than the conversation in front of them. Without
+// one, every sync rebuilds that state by reading every current row of the
+// session: 2,745 rows and 16.4MB of JSON on a long conversation, 150ms apart
+// for each open Rows stream. See docs/plans/incremental-projection.md.
+//
+// A caller that already serializes a session owns one -- the per-session lock
+// is the cache's lock, which is why there is no mutex here. Everyone else
+// passes nil and gets the rebuild.
+type Cache struct {
+	projection  *Projection
+	first, last uint64
+	format      int
+}
+
+// use hands over the cached projection when it was built from exactly the state
+// the table is in now. Anything else -- a different format, a trim, a rebuild by
+// another process -- and the caller restores instead.
+func (c *Cache) use(first, last uint64, format int) *Projection {
+	if c == nil || c.projection == nil || c.format != format || c.first != first || c.last != last {
+		return nil
+	}
+	p := c.projection
+	p.Versions = p.Versions[:0]
+	return p
+}
+func (c *Cache) keep(p *Projection, first, last uint64, format int) {
+	if c == nil {
+		return
+	}
+	c.projection, c.first, c.last, c.format = p, first, last, format
+}
+
+// Drop forgets the reduced state. A sync that fails has already applied records
+// to it, so what it holds is no longer what the table holds.
+func (c *Cache) Drop() {
+	if c == nil {
+		return
+	}
+	c.projection = nil
+}
+
 func isQuestion(e *api.Event) bool {
 	return e.Kind == "approval" && slices.Contains([]string{"AskUserQuestion", "item/tool/requestUserInput", "agentMessage/questions"}, e.Text)
 }
@@ -396,13 +439,21 @@ var schema = []string{
 
 const projectionFormat = 4
 
-// counted is how many times Sync has had to walk a session's records. A test
-// watches it; nothing else does.
-var counted atomic.Uint64
+// counted is how many times Sync has had to walk a session's records, and
+// restored how many times it has had to rebuild the reduced state from the
+// table. Tests watch them; nothing else does.
+var counted, restored atomic.Uint64
 
 // Sync indexes only native non-raw records. A cache backfill or retention change
 // rebuilds this disposable session index; normal queries read only the new suffix.
 func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
+	return SyncWith(ctx, db, id, decode, nil)
+}
+
+// SyncWith is Sync with somewhere to leave the reduced state. The cache must be
+// owned by whatever serializes this session; passing one that is shared without
+// a lock is a data race on the projection it holds.
+func SyncWith(ctx context.Context, db *sql.DB, id string, decode Decode, cache *Cache) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -474,14 +525,28 @@ func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
 	rebuild := format != projectionFormat || oldCount == 0 || oldFirst != first || count != oldCount+suffix || last < oldLast
 	if rebuild {
 		oldLast = 0
+		cache.Drop()
 		for _, table := range []string{"transcript_rows", "transcript_records"} {
 			if _, err = tx.ExecContext(ctx, `DELETE FROM `+table+` WHERE session_id=?`, id); err != nil {
 				return err
 			}
 		}
 	}
-	projection := New()
-	if !rebuild {
+	// From here records are applied to the cached projection, so if this sync
+	// does not commit, what the cache holds is ahead of what the table does.
+	committed := false
+	defer func() {
+		if !committed {
+			cache.Drop()
+		}
+	}()
+	projection := cache.use(oldFirst, oldLast, format)
+	warm := projection != nil
+	if !warm {
+		projection = New()
+	}
+	if !rebuild && !warm {
+		restored.Add(1)
 		// Restoring the reduced tools/last responses avoids walking old native bodies.
 		rows, e := tx.QueryContext(ctx, `SELECT data FROM transcript_rows r WHERE session_id=? AND updated=(SELECT MAX(updated) FROM transcript_rows x WHERE x.session_id=r.session_id AND x.seq=r.seq) ORDER BY seq`, id)
 		if e != nil {
@@ -607,7 +672,12 @@ func Sync(ctx context.Context, db *sql.DB, id string, decode Decode) error {
 	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO transcript_format VALUES(?,?)`, id, projectionFormat); err != nil {
 		return err
 	}
-	return tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	cache.keep(projection, first, last, projectionFormat)
+	committed = true
+	return nil
 }
 
 const currentVersion = ` updated<=? AND updated=(SELECT MAX(updated) FROM transcript_rows x WHERE x.session_id=r.session_id AND x.seq=r.seq AND x.updated<=?) `
