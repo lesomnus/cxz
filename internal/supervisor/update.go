@@ -68,7 +68,7 @@ func (s *Supervisor) observeUpdateRaw(raw []byte) {
 	}
 }
 
-func (s *Supervisor) updateReason(now time.Time, quiet bool) (reason string) {
+func (s *Supervisor) updateReason(now time.Time, busy string) (reason string) {
 	defer func() {
 		// A block earns another full idle period, because the agent did
 		// something. These two did not: one is the clock itself, and the other
@@ -103,9 +103,13 @@ func (s *Supervisor) updateReason(now time.Time, quiet bool) (reason string) {
 			return "background tasks running"
 		}
 	}
-	if !quiet {
+	if busy != "" {
 		s.lastActivity = now
-		return "agent child processes running or unknown"
+		// Name it. The refusal used to say only that something was running,
+		// which is true of a session that will never be quiet again as well as
+		// of one mid-turn, and telling those apart meant reading /proc by hand
+		// on the installation. See cxz#235.
+		return "agent child process running or unknown: " + busy
 	}
 	for id, c := range s.updateClients {
 		if now.Sub(c.seen) > 30*time.Second {
@@ -150,8 +154,21 @@ func processQuiet(state string, cmdline []byte, id string) bool {
 			return true
 		}
 	}
+	// A provider's own long-lived helper is the same thing as a bridge: Codex
+	// starts `codex-code-mode-host` a moment after the agent and keeps it for
+	// the length of the session, so its existence says nothing about whether a
+	// turn is in flight -- what does is the agent's own report, which this
+	// check backs up rather than replaces. Counting it made every installation
+	// with an idle Codex session unupdatable: the readiness sweep refused, the
+	// manager helper exited non-zero, and ten minutes later another one did.
+	// Found on an installation 23 hours into a session. See cxz#235.
+	if len(args) > 0 && providerHelpers[filepath.Base(args[0])] {
+		return true
+	}
 	return false
 }
+
+var providerHelpers = map[string]bool{"codex-code-mode-host": true}
 
 // procState reports the state and process group of pid. A pid that is gone
 // between a listing and the read reports an exited state: it is not work.
@@ -188,28 +205,34 @@ func (s *Supervisor) procQuiet(pid int, state string) bool {
 	return processQuiet(state, cmdline, s.session.ID)
 }
 
-func (s *Supervisor) processesQuiet() bool {
+// busyProcess names a process in the agent's tree that an update may not take,
+// or is empty when the tree is quiet. A process it cannot read is named too:
+// unknown is not quiet.
+func (s *Supervisor) busyProcess() string {
 	if s.cmd == nil || s.cmd.Process == nil {
-		return false
+		return "no agent process"
 	}
 	pid := s.cmd.Process.Pid
 	b, err := os.ReadFile(fmt.Sprintf("/proc/%d/task/%d/children", pid, pid))
 	if err != nil {
-		return false
+		return "unreadable child list"
 	}
 	for _, f := range strings.Fields(string(b)) {
 		child, err := strconv.Atoi(f)
 		if err != nil {
-			return false
+			return "unreadable child list"
 		}
 		state, _, err := procState(child)
-		if err != nil || !s.procQuiet(child, state) {
-			return false
+		if err != nil {
+			return "unreadable process " + f
+		}
+		if !s.procQuiet(child, state) {
+			return s.describe(child)
 		}
 	}
 	entries, err := os.ReadDir("/proc")
 	if err != nil {
-		return false
+		return "unreadable process table"
 	}
 	for _, e := range entries {
 		n, err := strconv.Atoi(e.Name())
@@ -218,13 +241,27 @@ func (s *Supervisor) processesQuiet() bool {
 		}
 		state, group, err := procState(n)
 		if err != nil {
-			return false
+			return "unreadable process " + e.Name()
 		}
 		if group == pid && !s.procQuiet(n, state) {
-			return false
+			return s.describe(n)
 		}
 	}
-	return true
+	return ""
+}
+
+// describe names a process the way a person reading a refusal needs it: what it
+// is, and which pid to look at.
+func (s *Supervisor) describe(pid int) string {
+	b, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(pid), "cmdline"))
+	if err != nil {
+		return fmt.Sprintf("pid %d", pid)
+	}
+	args := strings.Split(strings.TrimSuffix(string(b), "\x00"), "\x00")
+	if len(args) == 0 || args[0] == "" {
+		return fmt.Sprintf("pid %d", pid)
+	}
+	return fmt.Sprintf("%s (pid %d)", filepath.Base(args[0]), pid)
 }
 
 func (s *Supervisor) serveUpdate(w http.ResponseWriter, r *http.Request) bool {
@@ -266,7 +303,7 @@ func (s *Supervisor) serveUpdate(w http.ResponseWriter, r *http.Request) bool {
 		s.event("update", c.Text, "", nil, nil)
 		json.NewEncoder(w).Encode(core.Receipt{Status: "accepted"})
 	case "/update-status":
-		reason := s.updateReason(time.Now(), s.processesQuiet())
+		reason := s.updateReason(time.Now(), s.busyProcess())
 		json.NewEncoder(w).Encode(UpdateStatus{Ready: reason == "", Reason: reason, Binary: s.session.Agent, State: s.snap.State, SupervisorBinary: s.session.Supervisor, Revision: cxzupdate.Current().Revision, Protocol: cxzupdate.Protocol})
 	}
 	return true

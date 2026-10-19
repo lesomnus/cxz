@@ -14,7 +14,7 @@ func TestABusyClientRefusesWithoutRestartingTheClock(t *testing.T) {
 	quiet := time.Now()
 	s.lastActivity = quiet.Add(-2 * UpdateIdlePeriod)
 	s.updateClients = map[string]updateClient{"tui": {seen: quiet, busy: true}}
-	if got := s.updateReason(quiet, true); got != "attached client busy" {
+	if got := s.updateReason(quiet, ""); got != "attached client busy" {
 		t.Fatal("a busy client did not refuse:", got)
 	}
 	if !s.lastActivity.Equal(quiet.Add(-2 * UpdateIdlePeriod)) {
@@ -23,7 +23,7 @@ func TestABusyClientRefusesWithoutRestartingTheClock(t *testing.T) {
 	// The moment it stops saying so, the session is already quiet: no further
 	// five minutes to serve.
 	s.updateClients["tui"] = updateClient{seen: quiet, busy: false}
-	if got := s.updateReason(quiet, true); got != "" {
+	if got := s.updateReason(quiet, ""); got != "" {
 		t.Fatal("a session that had been quiet all along was made to wait again:", got)
 	}
 }
@@ -35,7 +35,7 @@ func TestAVanishedClientRestartsTheClock(t *testing.T) {
 	now := time.Now()
 	s.lastActivity = now.Add(-2 * UpdateIdlePeriod)
 	s.updateClients = map[string]updateClient{"gone": {seen: now.Add(-time.Minute), busy: false}}
-	if got := s.updateReason(now, true); got == "" {
+	if got := s.updateReason(now, ""); got == "" {
 		t.Fatal("forgetting a client did not restart the idle period")
 	}
 	if _, still := s.updateClients["gone"]; still {

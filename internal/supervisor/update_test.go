@@ -21,25 +21,25 @@ func TestUpdateIdleGate(t *testing.T) {
 		s, _ := displaySupervisor(t, provider)
 		now := time.Now()
 		s.lastActivity = now.Add(-6 * time.Minute)
-		if got := s.updateReason(now, true); got != "" {
+		if got := s.updateReason(now, ""); got != "" {
 			t.Fatal(got)
 		}
 		s.pending["q"] = core.Event{Text: "Question"}
-		if got := s.updateReason(now, true); !strings.Contains(got, "pending") {
+		if got := s.updateReason(now, ""); !strings.Contains(got, "pending") {
 			t.Fatal(got)
 		}
 		delete(s.pending, "q")
-		if s.updateReason(now, true) == "" {
+		if s.updateReason(now, "") == "" {
 			t.Fatal("idle window not reset after pending question")
 		}
-		if s.updateReason(now.Add(5*time.Minute), true) != "" {
+		if s.updateReason(now.Add(5*time.Minute), "") != "" {
 			t.Fatal("continuous idle did not mature")
 		}
 		s.updateClients = map[string]updateClient{"client": {seen: now.Add(5 * time.Minute), busy: true}}
-		if s.updateReason(now.Add(5*time.Minute), true) != "attached client busy" {
+		if s.updateReason(now.Add(5*time.Minute), "") != "attached client busy" {
 			t.Fatal("busy client accepted")
 		}
-		if s.updateReason(now.Add(6*time.Minute), true) == "" {
+		if s.updateReason(now.Add(6*time.Minute), "") == "" {
 			t.Fatal("expired lease skipped fresh idle interval")
 		}
 	}
@@ -49,12 +49,12 @@ func TestUpdateBackgroundAndUnknownAreBlocked(t *testing.T) {
 	s, _ := displaySupervisor(t, "claude")
 	s.lastActivity = time.Now().Add(-time.Hour)
 	s.updateBackground.Tasks = map[string]agentview.BackgroundTask{"bg": {Active: true}}
-	if s.updateReason(time.Now(), true) != "background tasks running" {
+	if s.updateReason(time.Now(), "") != "background tasks running" {
 		t.Fatal("background accepted")
 	}
 	delete(s.updateBackground.Tasks, "bg")
 	s.updateUnknown = true
-	if s.updateReason(time.Now(), true) != "background telemetry unknown" {
+	if s.updateReason(time.Now(), "") != "background telemetry unknown" {
 		t.Fatal("unknown accepted")
 	}
 }
@@ -69,7 +69,7 @@ func TestUpdateStopFencesNewInput(t *testing.T) {
 		}
 		t.Cleanup(func() { _ = s.cmd.Process.Kill(); _ = s.cmd.Wait() })
 		s.lastActivity = time.Now().Add(-6 * time.Minute)
-		if !s.processesQuiet() {
+		if s.busyProcess() != "" {
 			t.Fatal("fixture process unexpectedly busy")
 		}
 		if inputFirst {
@@ -104,6 +104,13 @@ func TestProcessQuietIgnoresOwnBridgesAndExitedChildren(t *testing.T) {
 		{"Z", []string{"/bin/zsh", "-c", "go build ./..."}, true},
 		{"S", []string{"/bin/zsh", "-c", "go build ./..."}, false},
 		{"S", nil, false},
+		// Codex keeps this one for the length of the session, exactly as the
+		// bridges are kept. It was found blocking every update of an
+		// installation for as long as one idle session existed. See cxz#235.
+		{"S", []string{"/cxz/tools/codex/0.163.0/x86_64-unknown-linux-musl/bin/codex-code-mode-host"}, true},
+		// Named rather than matched anywhere in the arguments: a process of the
+		// person's own that merely mentions it is still work.
+		{"S", []string{"/bin/zsh", "-c", "codex-code-mode-host --help"}, false},
 	} {
 		var cmdline []byte
 		for _, a := range c.args {
@@ -155,8 +162,16 @@ func TestProcessesQuietWithLiveBridge(t *testing.T) {
 			t.Fatal("fixture child never became ready:", err)
 		}
 
-		if got := s.processesQuiet(); got != bridge {
+		busy := s.busyProcess()
+		if got := busy == ""; got != bridge {
 			t.Fatal("bridge", bridge, "quiet", got)
+		}
+		// A refusal has to say which process it is waiting for. Without that, a
+		// session that will never be quiet again reads exactly like one that is
+		// mid-turn, and telling them apart means reading /proc on the
+		// installation by hand. See cxz#235.
+		if !bridge && !strings.Contains(busy, "sh (pid ") {
+			t.Fatal("the refusal does not name what is running:", busy)
 		}
 	}
 }
