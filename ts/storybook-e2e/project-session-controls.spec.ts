@@ -29,11 +29,19 @@ test("row controls confirm stop/restart and resume the intended session", async 
   await expect(more).toBeInViewport();
   const button = (await more.boundingBox())!;
   const cell = (await rows(page).first().locator("td").last().boundingBox())!;
+  const account = (await rows(page).first().getByRole("link").boundingBox())!;
+  const accountCell = (await rows(page)
+    .first()
+    .locator("td")
+    .nth(4)
+    .boundingBox())!;
   expect(button.width).toBeCloseTo(button.height, 1);
-  expect(button.x).toBe(cell.x);
-  expect(button.y).toBe(cell.y);
-  expect(button.width).toBe(cell.width);
-  expect(Math.abs(button.height - cell.height)).toBeLessThanOrEqual(1);
+  expect(button.y).toBe(account.y);
+  expect(button.height).toBe(account.height);
+  expect(button.x - cell.x).toBe(account.x - accountCell.x);
+  expect(cell.x + cell.width - button.x - button.width).toBe(
+    accountCell.x + accountCell.width - account.x - account.width,
+  );
   await openRow(page, "Stop");
   const stop = page.getByRole("dialog", { name: "Stop session", exact: true });
   await expect(stop).toContainText("Plan the next release");

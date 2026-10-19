@@ -36,17 +36,16 @@
   width: 44px;
 }
 .nameColumn {
-  width: 136px;
+  width: 112px;
 }
 .aliasColumn {
   width: 76px;
 }
 .actionsColumn {
-  width: calc(var(--session-row-height) + var(--session-row-gap) - 1px);
+  width: var(--session-row-height);
 }
 .table td.actions {
   text-align: center;
-  padding: 0;
 }
 .actions :global(.action-menu) {
   display: flex;

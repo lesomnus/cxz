@@ -115,7 +115,7 @@ export function ProjectSessions({
                   }
                 />
               </th>
-              <th scope="col">{t("Agent")}</th>
+              <th scope="col" aria-label={t("Agent")} />
               <th scope="col">{t("Name")}</th>
               <th scope="col">{t("Alias")}</th>
               <th scope="col">{t("Account")}</th>
@@ -171,7 +171,7 @@ export function ProjectSessions({
                     )}
                   </td>
                   <td className={styles.state}>{stateLabel(s)}</td>
-                  <td className={styles.actions}>
+                  <td className={`${styles.cardCell} ${styles.actions}`}>
                     <ProjectSessionMenu
                       sessions={[s]}
                       controls={controls}

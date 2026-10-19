@@ -43,7 +43,7 @@ test("session table splits identity columns and supports individual and select-a
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
-    "Agent",
+    "",
     "Name",
     "Alias",
     "Account",
