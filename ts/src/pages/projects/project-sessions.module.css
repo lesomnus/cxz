@@ -20,7 +20,7 @@
 }
 .table {
   width: 100%;
-  min-width: 404px;
+  min-width: 456px;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -34,6 +34,13 @@
 }
 .sessionColumn {
   width: 160px;
+}
+.actionsColumn {
+  width: calc(var(--ui-toolbar-button-width) + 2 * var(--ui-control-inset));
+}
+.table td.actions {
+  text-align: center;
+  padding-inline: var(--ui-control-inset);
 }
 .table th {
   position: sticky;

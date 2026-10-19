@@ -645,5 +645,21 @@ export const messages = {
   "Session unavailable": "세션을 사용할 수 없음",
   "Previous run": "이전 실행",
   "Session stopped": "정지된 세션",
+  Close: "닫기",
+  Actions: "작업",
+  selected: "선택됨",
+  "{count} selected": "{count}개 선택됨",
+  "Selected session actions": "선택한 세션 작업",
+  "Controls for {name}": "{name} 제어",
+  "Purge sessions": "세션 영구 삭제",
+  "Restart sessions": "세션 재시작",
+  "Stop sessions": "세션 정지",
+  "{count} sessions will be affected.": "세션 {count}개에 적용됩니다.",
+  "Sessions already stopped are skipped.": "이미 정지된 세션은 제외됩니다.",
+  "Some actions failed. Successful actions will not be repeated. Check session status before retrying.":
+    "일부 작업이 실패했습니다. 성공한 작업은 반복하지 않습니다. 재시도 전에 세션 상태를 확인하세요.",
+  "This session will be affected.": "이 세션에 적용됩니다.",
+  "Permanently deletes these sessions and their stored data. This cannot be undone.":
+    "이 세션들과 저장된 데이터를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
   Refresh: "새로고침",
 } satisfies LanguagePack;

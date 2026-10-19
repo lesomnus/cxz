@@ -46,6 +46,7 @@ test("session table preserves the identity card and supports individual and sele
     "Session",
     "Account",
     "State",
+    "",
   ]);
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2);
@@ -76,7 +77,7 @@ test("session table preserves the identity card and supports individual and sele
   await expect(all).not.toBeChecked();
   await rows.first().getByRole("checkbox").check();
   await expect(all).toBeChecked({ indeterminate: true });
-  await expect(rows.first().getByRole("button")).toHaveAttribute(
+  await expect(rows.first().locator("button[aria-pressed]")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -86,7 +87,7 @@ test("session table preserves the identity card and supports individual and sele
     .click({ position: { x: 2, y: 2 } });
   for (const row of await rows.all())
     await expect(row.getByRole("checkbox")).toBeChecked();
-  await rows.first().getByRole("button").click();
+  await rows.first().locator("button[aria-pressed]").click();
   await expect(rows.first().getByRole("checkbox")).not.toBeChecked();
   await expect(rows.nth(1).getByRole("checkbox")).toBeChecked();
   await all.check();
@@ -107,7 +108,7 @@ test("session table reserves seven and a half rows with a sticky header and inde
   );
   const list = page.getByRole("region", { name: "Session list", exact: true });
   const viewport = list.locator(".panel-scroll-content");
-  const cards = list.getByRole("button");
+  const cards = list.locator("button[aria-pressed]");
   await expect(cards).toHaveCount(16);
   const frame = (await viewport.boundingBox())!;
   const eighth = (await cards.nth(7).boundingBox())!;
@@ -162,7 +163,7 @@ test("session states stay in their column without leading icons", async ({
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(9);
   await expect(table.locator(".session-indicator")).toHaveCount(0);
-  await expect(rows.locator("td:last-child")).toHaveText([
+  await expect(rows.locator("td:nth-child(4)")).toHaveText([
     "Waiting for input",
     "Working",
     "Idle",
@@ -230,7 +231,7 @@ test("dashboard scopes project data, resets selection on project change and keep
   await expect(environment).toContainText("api-main");
   await expect(tasks).toContainText("No outstanding tasks");
   await expect(all).not.toBeChecked();
-  await expect(sessions.getByRole("button")).toHaveCount(2);
+  await expect(sessions.locator("button[aria-pressed]")).toHaveCount(2);
   await expect(
     main.getByRole("region", { name: "Session details", exact: true }),
   ).toHaveCount(0);
@@ -258,7 +259,10 @@ test("stopped and unavailable runtimes retain the session table and account name
     main.locator("tbody tr").first().locator("td").nth(2),
   ).toHaveText("Work account");
   await expect(
-    main.getByRole("button", { name: /Plan the next release/ }),
+    main
+      .getByRole("table", { name: "Sessions", exact: true })
+      .locator("button[aria-pressed]")
+      .first(),
   ).toBeEnabled();
 });
 
@@ -272,7 +276,7 @@ test("narrow screens scroll the table without overflowing the page or moving the
   const before = await toolbar.boundingBox();
   const list = main.getByRole("region", { name: "Session list", exact: true });
   const viewport = list.locator(".panel-scroll-content");
-  await list.getByRole("button").first().click();
+  await list.locator("button[aria-pressed]").first().click();
   await expect(
     list.getByRole("checkbox", {
       name: "Select Plan the next release",

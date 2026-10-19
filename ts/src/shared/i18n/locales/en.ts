@@ -642,6 +642,23 @@ export const messages = {
   "Session unavailable": "Session unavailable",
   "Previous run": "Previous run",
   "Session stopped": "Session stopped",
+  Close: "Close",
+  Actions: "Actions",
+  selected: "selected",
+  "{count} selected": "{count} selected",
+  "Selected session actions": "Selected session actions",
+  "Controls for {name}": "Controls for {name}",
+  "Purge sessions": "Purge sessions",
+  "Restart sessions": "Restart sessions",
+  "Stop sessions": "Stop sessions",
+  "{count} sessions will be affected.": "{count} sessions will be affected.",
+  "Sessions already stopped are skipped.":
+    "Sessions already stopped are skipped.",
+  "Some actions failed. Successful actions will not be repeated. Check session status before retrying.":
+    "Some actions failed. Successful actions will not be repeated. Check session status before retrying.",
+  "This session will be affected.": "This session will be affected.",
+  "Permanently deletes these sessions and their stored data. This cannot be undone.":
+    "Permanently deletes these sessions and their stored data. This cannot be undone.",
   Refresh: "Refresh",
 } as const;
 export type Message = keyof typeof messages;

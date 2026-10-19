@@ -8,23 +8,42 @@ import { SessionIdentity } from "#src/features/session/components/session-identi
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
+import type { SessionControlConnection } from "#src/features/session/model/session-control-batch.ts";
+import { useSessionControls } from "./use-session-controls";
+import {
+  ProjectSessionMenu,
+  ProjectSessionConfirmation,
+  ProjectSessionFeedback,
+} from "./project-session-controls";
+import controlStyles from "./project-session-controls.module.css";
 import styles from "./project-sessions.module.css";
 
 export function ProjectSessions({
+  c,
   sessions,
   accounts,
   loading,
 }: {
+  c: SessionControlConnection;
   sessions: Session[];
   accounts: Account[];
   loading?: boolean;
 }) {
   const [selected, select] = useState<Set<string>>(() => new Set());
+  const controls = useSessionControls(c, (ids) =>
+    select((previous) => {
+      const next = new Set(previous);
+      for (const id of ids) next.delete(id);
+      return next;
+    }),
+  );
+  const chosen = sessions.filter((s) => selected.has(s.runtimeId));
+
   const accountsById = useMemo(
     () => new Map(accounts.map((a) => [key(a.id), a])),
     [accounts],
   );
-  const count = sessions.filter((s) => selected.has(s.runtimeId)).length;
+  const count = chosen.length;
   const all = sessions.length > 0 && count === sessions.length;
   function toggle(id: string) {
     select((previous) => {
@@ -35,105 +54,144 @@ export function ProjectSessions({
     });
   }
   return (
-    <PanelScroll
-      className={styles.scroll}
-      role="region"
-      aria-label={t("Session list")}
-      scrollbarLabel={t("Session list")}
-    >
-      <table
-        className={styles.table}
-        aria-label={t("Sessions")}
-        aria-busy={loading}
+    <>
+      <div className={controlStyles.toolbar}>
+        <h2>{t("Sessions")}</h2>
+        {controls.busy && (
+          <span className={controlStyles.progress} role="status">
+            {t("Working…")} {controls.progress.done}/{controls.progress.total}
+          </span>
+        )}
+        <span
+          className={controlStyles.selected}
+          role="status"
+          aria-label={t("{count} selected", { count })}
+        >
+          <span className={controlStyles.selectedNumber}>{count}</span>
+          <span>{t("selected")}</span>
+        </span>
+        <ProjectSessionMenu
+          sessions={chosen}
+          controls={controls}
+          bulk
+          disabled={loading}
+        />
+        <ProjectSessionFeedback controls={controls} />
+      </div>
+      <PanelScroll
+        className={styles.scroll}
+        role="region"
+        aria-label={t("Session list")}
+        scrollbarLabel={t("Session list")}
       >
-        <colgroup>
-          <col className={styles.selectionColumn} />
-          <col className={styles.sessionColumn} />
-          <col className={styles.accountColumn} />
-          <col />
-        </colgroup>
-        <thead>
-          <tr>
-            <th scope="col" className={styles.selectionCell}>
-              <Checkbox
-                className={styles.cellCheckbox}
-                aria-label={t("Select all sessions")}
-                checked={all}
-                disabled={!sessions.length}
-                indeterminate={count > 0 && !all}
-                onChange={() =>
-                  select(
-                    all ? new Set() : new Set(sessions.map((s) => s.runtimeId)),
-                  )
-                }
-              />
-            </th>
-            <th scope="col">{t("Session")}</th>
-            <th scope="col">{t("Account")}</th>
-            <th scope="col">{t("State")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sessions.map((s) => {
-            const name = s.name || s.alias || s.runtimeId;
-            const account = s.account && accountsById.get(key(s.account.id));
-            const accountAlias = account?.alias || s.account?.alias;
-            const accountName =
-              account?.name ||
-              s.account?.name ||
-              account?.alias ||
-              s.account?.alias ||
-              "—";
-            const checked = selected.has(s.runtimeId);
-            return (
-              <tr key={s.runtimeId} data-selected={checked || undefined}>
-                <td className={styles.selectionCell}>
-                  <Checkbox
-                    className={styles.cellCheckbox}
-                    aria-label={t("Select {name}", { name })}
-                    checked={checked}
-                    onChange={() => toggle(s.runtimeId)}
-                  />
-                </td>
-                <td className={styles.cardCell}>
-                  <PanelItem
-                    type="button"
-                    className={styles.session}
-                    pressTarget=".session-heading"
-                    aria-pressed={checked}
-                    onClick={() => toggle(s.runtimeId)}
-                  >
-                    <SessionIdentity session={s} />
-                    <OpenArrow />
-                  </PanelItem>
-                </td>
-                <td className={`${styles.cardCell} ${styles.account}`}>
-                  {accountAlias ? (
-                    <Link
-                      to="/accounts"
-                      search={{ account: accountAlias }}
-                      className={styles.accountCard}
-                      title={accountName}
+        <table
+          className={styles.table}
+          aria-label={t("Sessions")}
+          aria-busy={loading}
+        >
+          <colgroup>
+            <col className={styles.selectionColumn} />
+            <col className={styles.sessionColumn} />
+            <col className={styles.accountColumn} />
+            <col />
+            <col className={styles.actionsColumn} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col" className={styles.selectionCell}>
+                <Checkbox
+                  className={styles.cellCheckbox}
+                  aria-label={t("Select all sessions")}
+                  checked={all}
+                  disabled={!sessions.length || controls.busy || loading}
+                  indeterminate={count > 0 && !all}
+                  onChange={() =>
+                    select(
+                      all
+                        ? new Set()
+                        : new Set(sessions.map((s) => s.runtimeId)),
+                    )
+                  }
+                />
+              </th>
+              <th scope="col">{t("Session")}</th>
+              <th scope="col">{t("Account")}</th>
+              <th scope="col">{t("State")}</th>
+              <th scope="col" aria-label={t("Controls")} />
+            </tr>
+          </thead>
+          <tbody>
+            {sessions.map((s) => {
+              const name = s.name || s.alias || s.runtimeId;
+              const account = s.account && accountsById.get(key(s.account.id));
+              const accountAlias = account?.alias || s.account?.alias;
+              const accountName =
+                account?.name ||
+                s.account?.name ||
+                account?.alias ||
+                s.account?.alias ||
+                "—";
+              const checked = selected.has(s.runtimeId);
+              return (
+                <tr key={s.runtimeId} data-selected={checked || undefined}>
+                  <td className={styles.selectionCell}>
+                    <Checkbox
+                      className={styles.cellCheckbox}
+                      aria-label={t("Select {name}", { name })}
+                      checked={checked}
+                      disabled={controls.busy || loading}
+                      onChange={() => toggle(s.runtimeId)}
+                    />
+                  </td>
+                  <td className={styles.cardCell}>
+                    <PanelItem
+                      type="button"
+                      className={styles.session}
+                      pressTarget=".session-heading"
+                      aria-pressed={checked}
+                      disabled={controls.busy || loading}
+                      onClick={() => toggle(s.runtimeId)}
                     >
-                      <span>{accountName}</span>
+                      <SessionIdentity session={s} />
                       <OpenArrow />
-                    </Link>
-                  ) : (
-                    accountName
-                  )}
-                </td>
-                <td className={styles.state}>{stateLabel(s)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      {!sessions.length && (
-        <p className={styles.empty}>
-          {loading ? t("Loading sessions…") : t("No sessions")}
-        </p>
-      )}
-    </PanelScroll>
+                    </PanelItem>
+                  </td>
+                  <td className={`${styles.cardCell} ${styles.account}`}>
+                    {accountAlias ? (
+                      <Link
+                        to="/accounts"
+                        search={{ account: accountAlias }}
+                        className={styles.accountCard}
+                        title={accountName}
+                      >
+                        <span>{accountName}</span>
+                        <OpenArrow />
+                      </Link>
+                    ) : (
+                      accountName
+                    )}
+                  </td>
+                  <td className={styles.state}>{stateLabel(s)}</td>
+                  <td className={styles.actions}>
+                    <ProjectSessionMenu
+                      sessions={[s]}
+                      controls={controls}
+                      disabled={loading}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {!sessions.length && (
+          <p className={styles.empty}>
+            {loading ? t("Loading sessions…") : t("No sessions")}
+          </p>
+        )}
+      </PanelScroll>
+      <ProjectSessionConfirmation controls={controls} />
+    </>
   );
 }
 

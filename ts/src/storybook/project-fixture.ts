@@ -1,23 +1,20 @@
-import { create } from "@bufbuild/protobuf";
+import { clone, create } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
-import {
-  Code,
-  ConnectError,
-  createClient,
-  createRouterTransport,
-} from "@connectrpc/connect";
+import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { ProjectSchema } from "#gen/cxz/project_pb";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
 import { AccountService } from "#gen/cxz/account_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
 import { TaskSchema, TaskStatus } from "#gen/cxz/task_pb";
-import { TaskCatalog } from "#src/features/tasks/task-catalog.ts";
+import { Connection } from "#src/shared/api/connection.ts";
+import { SessionService } from "#gen/cxz/session_svc_pb";
 
 export function projectFixture(
   unavailable = false,
   stopped = false,
   sessionCount = 2,
+  failure: "" | "control" | "preview" = "",
 ) {
   const now = Date.now();
   const projects = ["Web workspace", "API workspace"].map((name, i) =>
@@ -59,6 +56,9 @@ export function projectFixture(
         `Session ${index + 1}`,
     ).map((name, index) =>
       create(SessionSchema, {
+        id: Uint8Array.from({ length: 16 }, (_, i) =>
+          i === 0 ? project.id[0]! : i === 15 ? index + 1 : 0,
+        ),
         runtimeId: `${project.alias}-${index}`,
         alias: index > 1 ? `session-${index + 1}` : index ? "elm" : "oak",
         name,
@@ -113,8 +113,13 @@ export function projectFixture(
   const calls: {
     method: string;
     project?: string;
+    session?: string;
+    dryRun?: boolean;
     signal: AbortSignal;
   }[] = [];
+  const listeners = new Set<() => void>();
+  const publish = () => listeners.forEach((listener) => listener());
+  let run = 0;
   const transport = createRouterTransport((router) => {
     router.service(AccountService, {
       list: (_request, context) => {
@@ -143,6 +148,87 @@ export function projectFixture(
         yield { data, totalSize: BigInt(data.length) };
       },
     });
+    router.service(SessionService, {
+      get: (request, context) => {
+        const id = String(request.ref?.key.value);
+        calls.push({ method: "get", session: id, signal: context.signal });
+        const session = sessions.find((s) => s.runtimeId === id);
+        if (!session)
+          throw new ConnectError("Session not found", Code.NotFound);
+        return clone(SessionSchema, session);
+      },
+      stop: (request, context) => control("stop", request, context.signal),
+      resume: (request, context) => control("resume", request, context.signal),
+      purge: (request, context) => {
+        const id = String(request.ref?.key.value);
+        calls.push({
+          method: "purge",
+          session: id,
+          dryRun: request.dryRun,
+          signal: context.signal,
+        });
+        const index = sessions.findIndex((s) => s.runtimeId === id);
+        if (index < 0)
+          throw new ConnectError("Session not found", Code.NotFound);
+        if (
+          unavailable ||
+          (failure === "preview" &&
+            request.dryRun &&
+            sessions[index]!.alias === "elm") ||
+          (failure === "control" &&
+            !request.dryRun &&
+            sessions[index]!.alias === "elm")
+        )
+          throw new ConnectError(
+            "Simulated session action failure",
+            Code.Unavailable,
+          );
+        if (!request.dryRun) {
+          sessions.splice(index, 1);
+          publish();
+        }
+        return {
+          ref: request.ref,
+          dryRun: request.dryRun,
+          targets: [
+            {
+              kind: "journal",
+              path: `/storybook/${id}/journal`,
+              files: 2,
+              bytes: 4096n,
+            },
+          ],
+          retained: ["Project workspace", "Account settings"],
+        };
+      },
+    });
+    function control(
+      kind: "stop" | "resume",
+      request: { ref?: { key: { value?: unknown } }; runId: string },
+      signal: AbortSignal,
+    ) {
+      const id = String(request.ref?.key.value);
+      calls.push({ method: kind, session: id, signal });
+      const index = sessions.findIndex((s) => s.runtimeId === id);
+      if (index < 0) throw new ConnectError("Session not found", Code.NotFound);
+      if (
+        unavailable ||
+        (failure === "control" && sessions[index]!.alias === "elm")
+      )
+        throw new ConnectError(
+          "Simulated session action failure",
+          Code.Unavailable,
+        );
+      const updated = clone(SessionSchema, sessions[index]!);
+      if (updated.status!.runId !== request.runId)
+        throw new ConnectError("Session run changed", Code.FailedPrecondition);
+      updated.status!.state = kind === "stop" ? "stopped" : "idle";
+      if (kind === "resume") updated.status!.runId = `resumed-${++run}`;
+      updated.status!.pending = [];
+      sessions[index] = updated;
+      publish();
+      return updated;
+    }
     router.service(TaskService, {
       async *watch(request, context) {
         calls.push({
@@ -168,10 +254,20 @@ export function projectFixture(
       },
     });
   });
-  const c = {
-    accounts: createClient(AccountService, transport),
-    projects: createClient(ProjectService, transport),
-    taskCatalog: new TaskCatalog(createClient(TaskService, transport)),
+  const c = new Connection(
+    `${location.origin}/storybook-projects/${crypto.randomUUID()}`,
+    transport,
+  );
+  return {
+    c,
+    projects,
+    sessions,
+    calls,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
   };
-  return { c, projects, sessions, calls };
 }

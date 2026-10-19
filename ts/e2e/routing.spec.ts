@@ -63,7 +63,7 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   ).toBeVisible();
   await workspace
     .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button")
+    .locator("button[aria-pressed]")
     .first()
     .click();
   await expect(page).toHaveURL(/\/projects$/);

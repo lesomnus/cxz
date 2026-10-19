@@ -154,8 +154,8 @@ function ProjectDashboard({
         className={`${styles.section} ${styles.sessionSection}`}
         aria-label={t("Project sessions")}
       >
-        <h2 className={styles.sectionTitle}>{t("Sessions")}</h2>
         <ProjectSessions
+          c={c}
           sessions={sessions}
           accounts={accounts}
           loading={sessionsLoading}
