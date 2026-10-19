@@ -137,11 +137,27 @@ test("profile sign out failures stay visible and can be retried", async ({
 test("a direct connection is listed once, read-only, and reaches this installation", async ({
   page,
 }) => {
+  // Count what listing costs, because the row rendering correctly is not the
+  // same as the page having finished: the connections tab used to rebuild its
+  // client on every render and re-list on every answer, so it rendered exactly
+  // this row -- and passed this test -- while spinning the tab into a freeze.
+  // Every list reads this key. See cxz#230.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __reads: number };
+    w.__reads = 0;
+    const read = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (key: string) {
+      if (key === "cxz.connections") w.__reads++;
+      return read.call(this, key);
+    };
+  });
   await signIn(page);
   await page.goto("/settings/connections");
   await expect(
     page.getByRole("heading", { name: "Connections", exact: true }),
   ).toBeVisible();
+  const reads = () =>
+    page.evaluate(() => (window as unknown as { __reads: number }).__reads);
   const rows = page.locator(".connection-list tbody tr");
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toHaveAttribute("data-read-only", "true");
@@ -152,4 +168,10 @@ test("a direct connection is listed once, read-only, and reaches this installati
   await expect(
     page.getByRole("button", { name: /forget|remove|delete/i }),
   ).toHaveCount(0);
+  // An open tab that has answered is done asking. A page that is looping reads
+  // this thousands of times in half a second, so the assertion is that the
+  // second sample equals the first rather than any particular budget.
+  const settled = await reads();
+  await page.waitForTimeout(500);
+  expect(await reads()).toBe(settled);
 });
