@@ -3,7 +3,6 @@ import { key } from "@lesomnus/payday/store";
 import { PanelItem } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
-import { SessionIndicator } from "#src/features/session/components/session-indicator.tsx";
 import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -103,7 +102,6 @@ export function ProjectSessions({
                     aria-pressed={checked}
                     onClick={() => toggle(s.runtimeId)}
                   >
-                    <SessionIndicator session={s} variant="status" />
                     <SessionIdentity session={s} />
                   </PanelItem>
                 </td>

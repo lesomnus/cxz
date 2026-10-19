@@ -136,18 +136,18 @@ test("session table reserves seven and a half rows with a sticky header and inde
   ).toBeDisabled();
 });
 
-test("project session states lead the identity and reuse the panel working dots", async ({
+test("session states stay in their column without leading icons", async ({
   page,
 }) => {
   await page.goto(
     "/iframe.html?id=pages-projects--session-states&viewMode=story",
   );
-  const rows = page
-    .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button");
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(9);
-  const labels = [
-    "Awaiting answer",
+  await expect(table.locator(".session-indicator")).toHaveCount(0);
+  await expect(rows.locator("td:last-child")).toHaveText([
+    "Waiting for input",
     "Working",
     "Idle",
     "Stopped",
@@ -156,27 +156,7 @@ test("project session states lead the identity and reuse the panel working dots"
     "Waiting for input",
     "Unknown",
     "Working",
-  ];
-  for (const [index, label] of labels.entries()) {
-    const row = rows.nth(index);
-    await row.scrollIntoViewIfNeeded();
-    const indicator = row.getByRole("img", { name: label, exact: true });
-    await expect(indicator).toBeVisible();
-    const stateBox = (await indicator.boundingBox())!;
-    const identity = (await row.locator(".session-heading").boundingBox())!;
-    expect(stateBox.x + stateBox.width).toBeLessThan(identity.x);
-    expect(stateBox.y + stateBox.height / 2).toBeCloseTo(
-      identity.y + identity.height / 2,
-      1,
-    );
-  }
-  for (const index of [1, 8]) {
-    const dots = rows.nth(index).locator(".session-activity-dot");
-    await expect(dots).toHaveCount(8);
-    await expect(dots.first()).toHaveCSS("animation-name", "session-dot-scale");
-  }
-  await expect(rows.nth(3).locator(".session-activity-dot")).toHaveCount(0);
-  await expect(rows.nth(3).locator(".session-indicator rect")).toHaveCount(1);
+  ]);
 });
 
 test("dashboard scopes project data, resets selection on project change and keeps diagnostics project-only", async ({

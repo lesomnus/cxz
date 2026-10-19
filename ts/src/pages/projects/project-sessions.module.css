@@ -46,8 +46,21 @@
 }
 .table td {
   height: calc(var(--session-row-height) + var(--session-row-gap));
-  padding: 0 var(--ui-space) var(--session-row-gap);
+  padding: 0 var(--ui-space) calc(var(--session-row-gap) - 1px);
+  border-bottom: 1px solid transparent;
   vertical-align: middle;
+}
+.table tbody tr:not(:last-child) td {
+  border-bottom-color: var(--ui-shade-36);
+}
+.table tbody tr[data-selected] {
+  background: var(--ui-selected);
+}
+.table tbody tr:hover {
+  background: var(--ui-hover);
+}
+.table tbody tr[data-selected]:hover {
+  background: var(--ui-shade-56);
 }
 .table th:first-child,
 .table td:first-child {
@@ -73,6 +86,9 @@
   height: var(--session-row-height);
   min-height: var(--session-row-height);
   padding: var(--ui-space) var(--ui-control-inline-inset);
+}
+.table .session.session:is(:hover, [aria-pressed="true"]) {
+  background: transparent;
 }
 .account {
   overflow: hidden;
