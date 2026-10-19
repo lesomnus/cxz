@@ -114,61 +114,16 @@
 .sectionHeading a:hover {
   color: var(--ui-shade-237);
 }
-.sessionDetailsScroll {
-  --session-details-height: 28rem;
-  --ui-scroll-area-background: var(--ui-shade-24);
-  flex: none;
-  height: var(--session-details-height);
-  margin-bottom: calc(3 * var(--ui-space));
-}
-.sessionDetailsScroll :global(.panel-scroll-content) {
-  overscroll-behavior: contain;
-}
-.sessionDetails {
-  min-width: 0;
-}
-.sessionScroll {
-  --session-row-height: 44px;
-  --session-row-gap: var(--ui-control-inset);
-  --session-visible-rows: 7.5;
-  --ui-scroll-area-background: var(--ui-shade-24);
-  flex: none;
-  height: calc(
-    var(--session-visible-rows) * var(--session-row-height) + 7 *
-      var(--session-row-gap)
-  );
-  overscroll-behavior: contain;
-}
-.sessionScroll :global(.panel-scroll-content) {
-  overscroll-behavior: contain;
-}
-.sessions {
-  display: grid;
-  gap: var(--session-row-gap);
-}
-.session.session {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--ui-space);
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-  height: var(--session-row-height);
-  min-height: var(--session-row-height);
-}
 .subheading {
   font-size: 11px;
   font-weight: 500;
   margin: calc(3 * var(--ui-space)) var(--ui-control-inline-inset)
     var(--ui-space);
 }
-.empty,
-.selectionPrompt {
+.empty {
   color: var(--ui-muted);
   font-size: 11px;
   margin: var(--ui-space) var(--ui-control-inline-inset);
-}
-.selectionPrompt {
-  padding: calc(2 * var(--ui-space));
 }
 .taskCounts {
   display: flex;
@@ -185,14 +140,12 @@
   font: inherit;
   font-family: var(--ui-font-mono);
 }
-.taskList,
-.activity {
+.taskList {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.taskList li,
-.activity li {
+.taskList li {
   padding: var(--ui-space) var(--ui-control-inline-inset);
   font-size: 12px;
   overflow-wrap: anywhere;
@@ -207,20 +160,9 @@
 .taskList a:hover {
   color: var(--ui-shade-255);
 }
-.taskList small,
-.activityMeta {
+.taskList small {
   color: var(--ui-muted);
   font: 10px var(--ui-font-mono);
-}
-.preview {
-  margin: var(--ui-space) 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 12px;
 }
 .errors {
   color: var(--ui-error, #db7979);

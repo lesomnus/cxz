@@ -15,12 +15,7 @@ function Preview({
   mixedStates = false,
 }) {
   const [router] = useState(() => {
-    const fixture = projectFixture(
-      unavailable,
-      stopped,
-      streaming ? 4000 : 0,
-      sessionCount,
-    );
+    const fixture = projectFixture(unavailable, stopped, sessionCount);
     if (mixedStates) {
       const states = [
         "waiting_input",
@@ -110,4 +105,4 @@ export const Loading: Story = { args: { empty: true, loading: true } };
 export const Unavailable: Story = { args: { unavailable: true } };
 export const Stopped: Story = { args: { stopped: true } };
 
-export const SlowActivity: Story = { args: { streaming: true } };
+export const LiveInventory: Story = { args: { streaming: true } };

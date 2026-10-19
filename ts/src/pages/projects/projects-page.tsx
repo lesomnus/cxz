@@ -1,16 +1,14 @@
 import { t } from "#src/shared/i18n/i18n.ts";
-import { useId, useState } from "react";
+import type { ReactNode } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
-import { PageToolbar, PanelItem, Button } from "@lesomnus/nox";
+import { PageToolbar, Button } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { IdentifierValue } from "#src/shared/components/identifier-value.tsx";
-import { SessionIndicator } from "#src/features/session/components/session-indicator.tsx";
-import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -28,7 +26,9 @@ import {
   sessionCounts,
   type DashboardConnection,
 } from "./project-dashboard";
-import { Fields, SessionDashboard } from "./session-dashboard";
+import { ProjectSessions } from "./project-sessions";
+import { listAccounts } from "#src/features/accounts/account-data.ts";
+import type { Account } from "#gen/cxz/account_pb";
 import styles from "./projects-page.module.css";
 
 export function ProjectsPage({
@@ -48,6 +48,7 @@ export function ProjectsPage({
 }) {
   useLocale();
   const navigate = useNavigate();
+  const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
   const { project: selected } = useWorkspaceRoute();
   const project =
     projects.find((item) => item.runtimeId === selected) ??
@@ -78,6 +79,9 @@ export function ProjectsPage({
               sessions={sessions.filter(
                 (s) => s.project && key(s.project.id) === key(project.id),
               )}
+              accounts={accounts.data ?? []}
+              accountsError={accounts.error}
+              reloadAccounts={accounts.reload}
               sessionsLoading={sessionsLoading}
             />
           ) : (
@@ -100,15 +104,18 @@ function ProjectDashboard({
   project: p,
   sessions,
   sessionsLoading,
+  accounts,
+  accountsError,
+  reloadAccounts,
 }: {
   c: DashboardConnection;
   project: Project;
+  accounts: Account[];
+  accountsError: string;
+  reloadAccounts: () => void;
   sessions: Session[];
   sessionsLoading?: boolean;
 }) {
-  const [selected, select] = useState("");
-  const detailsId = useId();
-  const session = sessions.find((s) => s.runtimeId === selected);
   const counts = sessionCounts(sessions);
   const tasks = useProjectTasks(c, p.runtimeId);
   const branch = useRemote(
@@ -147,53 +154,20 @@ function ProjectDashboard({
         className={`${styles.section} ${styles.sessionSection}`}
         aria-label={t("Project sessions")}
       >
-        <PanelScroll
-          key={selected}
-          className={styles.sessionDetailsScroll}
-          scrollbarLabel={t("Session details")}
-        >
-          {session ? (
-            <SessionDashboard
-              key={`${session.runtimeId}/${session.status?.runId}`}
-              c={c}
-              session={session}
-              id={detailsId}
-            />
-          ) : (
-            <p className={styles.selectionPrompt}>
-              {t("Select a session to inspect its activity and settings.")}
-            </p>
-          )}
-        </PanelScroll>
         <h2 className={styles.sectionTitle}>{t("Sessions")}</h2>
-        <PanelScroll
-          className={styles.sessionScroll}
-          role="region"
-          aria-label={t("Session list")}
-          scrollbarLabel={t("Session list")}
-        >
-          <div className={styles.sessions}>
-            {sessions.map((s) => (
-              <PanelItem
-                type="button"
-                className={styles.session}
-                key={s.runtimeId}
-                aria-pressed={selected === s.runtimeId}
-                aria-controls={selected === s.runtimeId ? detailsId : undefined}
-                onClick={() => select(s.runtimeId)}
-              >
-                <SessionIndicator session={s} variant="status" />
-                <SessionIdentity session={s} />
-              </PanelItem>
-            ))}
+        <ProjectSessions
+          sessions={sessions}
+          accounts={accounts}
+          loading={sessionsLoading}
+        />
+        {accountsError && (
+          <div className={styles.empty}>
+            <p role="alert">{accountsError}</p>
+            <Button type="button" onClick={reloadAccounts}>
+              {t("Retry")}
+            </Button>
           </div>
-          {sessionsLoading && !sessions.length && (
-            <p className={styles.empty}>{t("Loading sessions…")}</p>
-          )}
-          {!sessionsLoading && !sessions.length && (
-            <p className={styles.empty}>{t("No sessions")}</p>
-          )}
-        </PanelScroll>
+        )}
       </section>
       <div className={styles.information}>
         {p.desc && <p className={styles.description}>{p.desc}</p>}
@@ -357,21 +331,21 @@ function ProjectDashboard({
               [t("Updated"), <DateTime value={p.dateUpdated} />],
             ]}
           />
-          <h3 className={styles.subheading}>{t("Session")}</h3>
-          <Fields
-            rows={[
-              [t("Runtime ID"), <IdentifierValue value={session?.runtimeId} />],
-              [t("Run ID"), <IdentifierValue value={session?.status?.runId} />],
-              [
-                t("Provider session ID"),
-                <IdentifierValue value={session?.status?.vendorId} />,
-              ],
-              [t("Permission mode"), session?.status?.permissionMode],
-              [t("Last event"), session?.status?.lastSeq.toString()],
-            ]}
-          />
         </section>
       </div>
     </div>
+  );
+}
+
+function Fields({ rows }: { rows: [string, ReactNode][] }) {
+  return (
+    <dl className={styles.details}>
+      {rows.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value === undefined || value === "" ? "—" : value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

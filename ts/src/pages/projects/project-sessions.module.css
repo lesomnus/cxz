@@ -1,0 +1,90 @@
+.scroll {
+  --session-row-height: 44px;
+  --session-row-gap: var(--ui-control-inset);
+  --session-header-height: 28px;
+  --session-visible-rows: 7.5;
+  --ui-scroll-area-background: var(--ui-shade-24);
+  flex: none;
+  height: calc(
+    var(--session-header-height) + var(--session-visible-rows) *
+      var(--session-row-height) + 7 * var(--session-row-gap)
+  );
+}
+.scroll :global(.panel-scroll-content) {
+  overscroll-behavior: contain;
+}
+.scroll :global(.panel-scroll-fade-top) {
+  top: var(--session-header-height);
+}
+.table {
+  width: 100%;
+  min-width: 400px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 11px;
+}
+.selectionColumn {
+  width: 28px;
+}
+.accountColumn {
+  width: 96px;
+}
+.stateColumn {
+  width: 104px;
+}
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: var(--session-header-height);
+  padding: 0 var(--ui-space);
+  background: var(--ui-shade-24);
+  color: var(--ui-muted);
+  text-align: left;
+  font-weight: 400;
+}
+.table td {
+  height: calc(var(--session-row-height) + var(--session-row-gap));
+  padding: 0 var(--ui-space) var(--session-row-gap);
+  vertical-align: middle;
+}
+.table th:first-child,
+.table td:first-child {
+  text-align: center;
+}
+.table td:nth-child(2) {
+  padding-left: 0;
+  padding-right: 0;
+}
+.checkbox.checkbox {
+  margin: 0;
+  width: 12px;
+  height: 12px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.session.session {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--ui-space);
+  width: 100%;
+  height: var(--session-row-height);
+  min-height: var(--session-row-height);
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+}
+.account {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-muted);
+}
+.state {
+  color: var(--ui-muted);
+}
+.empty {
+  margin: var(--ui-space) var(--ui-control-inline-inset);
+  color: var(--ui-muted);
+  font-size: 11px;
+}
