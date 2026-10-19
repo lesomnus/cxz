@@ -319,12 +319,10 @@ async function expectAlignedText(trigger: Locator) {
       expanded: firstCharacters(hint),
     };
   });
-  for (const key of ["x", "width", "height"] as const)
+  for (const key of ["x", "y", "width", "height"] as const)
     expect(Math.abs(boxes.original[key] - boxes.expanded[key])).toBeLessThan(
       0.25,
     );
-  // The measured baseline stays stable; the visual correction moves ink down.
-  expect(boxes.expanded.y - boxes.original.y).toBeCloseTo(1, 1);
 }
 
 test("in-place ID overlays keep the text origin and baseline with inherited typography", async ({
@@ -352,3 +350,34 @@ test("in-place ID overlays keep the text origin and baseline with inherited typo
     true,
   );
 });
+
+for (const scale of [1, 1.25, 1.5, 2]) {
+  test.describe(`in-place text at device scale ${scale}`, () => {
+    test.use({ deviceScaleFactor: scale });
+    test("keeps the original glyph raster when the background is held constant", async ({
+      page,
+    }) => {
+      await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+      const row = page
+        .getByRole("region", { name: "Diagnostics", exact: true })
+        .locator("dl > div")
+        .filter({ has: page.locator("dt", { hasText: /^Container ID$/ }) });
+      const trigger = row.locator("[tabindex]");
+      await trigger.waitFor();
+      // Equal paint colors isolate position/raster changes from background contrast.
+      await page.addStyleTag({
+        content:
+          '[role="tooltip"][data-placement="in-place"] { background: var(--ui-shade-24); color: var(--ui-shade-237); }',
+      });
+      await page.mouse.move(0, 0);
+      const before = await trigger.screenshot();
+      await trigger.hover();
+      await expect(
+        page.getByRole("tooltip", { name: "container-1", exact: true }),
+      ).toBeVisible();
+      await expectAlignedText(trigger);
+      const after = await trigger.screenshot();
+      expect(after).toEqual(before);
+    });
+  });
+}
