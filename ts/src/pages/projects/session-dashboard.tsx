@@ -1,17 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@lesomnus/nox";
 import { key } from "@lesomnus/payday/store";
 import { Link } from "@tanstack/react-router";
 import type { Session } from "#gen/cxz/session_pb";
 import { ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { t, currentLocale } from "#src/shared/i18n/i18n.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
 import { eventDiagnostic } from "#src/features/session/model/event-diagnostic.ts";
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import { questions } from "#src/features/session/model/journal.ts";
-import {
-  formatTokens,
-  formatReset,
-} from "#src/features/session/model/session-info.ts";
+import { formatTokens } from "#src/features/session/model/session-info.ts";
 import {
   recentSession,
   RECENT_SESSION_ROWS,
@@ -19,18 +17,7 @@ import {
 } from "./project-dashboard";
 import styles from "./projects-page.module.css";
 
-export function date(value: Session["dateCreated"]) {
-  return value
-    ? new Date(Number(value.seconds) * 1000 + value.nanos / 1e6).toLocaleString(
-        currentLocale(),
-      )
-    : "—";
-}
-export function Fields({
-  rows,
-}: {
-  rows: [string, string | number | undefined][];
-}) {
+export function Fields({ rows }: { rows: [string, ReactNode][] }) {
   return (
     <dl className={styles.details}>
       {rows.map(([label, value]) => (
@@ -131,7 +118,10 @@ export function SessionDashboard({
           ],
           [
             t("Usage reset"),
-            info.reset === undefined ? undefined : formatReset(info.reset),
+            <DateTime
+              value={info.reset}
+              options={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+            />,
           ],
           [
             t("Context"),
@@ -139,8 +129,8 @@ export function SessionDashboard({
               ? undefined
               : `${formatTokens(info.contextUsed)} / ${formatTokens(info.contextWindow)}`,
           ],
-          [t("Created"), date(s.dateCreated)],
-          [t("Updated"), date(s.dateUpdated)],
+          [t("Created"), <DateTime value={s.dateCreated} />],
+          [t("Updated"), <DateTime value={s.dateUpdated} />],
         ]}
       />
       {history.loading && (
@@ -185,7 +175,7 @@ export function SessionDashboard({
           <li key={e.seq.toString()}>
             <span className={styles.activityMeta}>
               {e.kind === "input" ? t("You") : s.agent} ·{" "}
-              {new Date(Number(e.timeMs)).toLocaleString(currentLocale())}
+              <DateTime value={e.timeMs || undefined} />
             </span>
             <p className={styles.preview}>{e.text}</p>
           </li>
@@ -199,7 +189,7 @@ export function SessionDashboard({
         {snapshot.errors.map((e) => (
           <li key={e.seq.toString()}>
             <span className={styles.activityMeta}>
-              {new Date(Number(e.timeMs)).toLocaleString(currentLocale())}
+              <DateTime value={e.timeMs || undefined} />
             </span>
             <p className={styles.preview}>{eventDiagnostic(e)?.message}</p>
           </li>
@@ -213,18 +203,6 @@ export function SessionDashboard({
           "Activity and errors show only the latest records. Unreported metrics are shown as —.",
         )}
       </p>
-      <details className={styles.diagnostics}>
-        <summary>{t("Diagnostics")}</summary>
-        <Fields
-          rows={[
-            [t("Runtime ID"), s.runtimeId],
-            [t("Run ID"), s.status?.runId],
-            [t("Provider session ID"), s.status?.vendorId],
-            [t("Permission mode"), s.status?.permissionMode],
-            [t("Last event"), s.status?.lastSeq.toString()],
-          ]}
-        />
-      </details>
     </section>
   );
 }

@@ -17,6 +17,7 @@ const config: StorybookConfig = {
     "../packages/nox/src/components/resize-handle/*.stories.tsx",
     "../packages/nox/src/components/audio-waveform/*.stories.tsx",
     "../packages/nox/src/components/badged-icon/*.stories.tsx",
+    "../packages/nox/src/components/overflow-hint/*.stories.tsx",
     "../packages/nox/src/terminal/*.stories.tsx",
   ],
   viteFinal: (config) => mergeConfig(config, noxConfig("serve")),

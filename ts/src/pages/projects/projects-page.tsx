@@ -7,6 +7,8 @@ import { PageToolbar, PanelItem, Button } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
+import { DateTime } from "#src/shared/components/date-time.tsx";
+import { IdentifierValue } from "#src/shared/components/identifier-value.tsx";
 import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
@@ -25,7 +27,7 @@ import {
   sessionCounts,
   type DashboardConnection,
 } from "./project-dashboard";
-import { Fields, SessionDashboard, date } from "./session-dashboard";
+import { Fields, SessionDashboard } from "./session-dashboard";
 import styles from "./projects-page.module.css";
 
 export function ProjectsPage({
@@ -140,10 +142,6 @@ function ProjectDashboard({
               : t("Unavailable");
   return (
     <>
-      <div className={styles.heading}>
-        <h1>{p.name || p.alias}</h1>
-        <span className={styles.state}>{p.status?.state || t("Unknown")}</span>
-      </div>
       {p.desc && <p className={styles.description}>{p.desc}</p>}
       {p.status?.error && (
         <p className={styles.errors} role="alert">
@@ -184,6 +182,7 @@ function ProjectDashboard({
           </div>
           <Fields
             rows={[
+              [t("Status"), p.status?.state],
               [t("Workspace"), p.workspace],
               [t("Container workspace"), p.status?.remoteWorkspace],
               [t("Remote user"), p.status?.remoteUser],
@@ -202,21 +201,6 @@ function ProjectDashboard({
               {branch.error}
             </p>
           )}
-          <details className={styles.diagnostics}>
-            <summary>{t("Diagnostics")}</summary>
-            <Fields
-              rows={[
-                [t("Runtime ID"), p.runtimeId],
-                [t("Container ID"), p.status?.containerId],
-                [
-                  t("Provision attempts"),
-                  p.status?.provisionAttempt.toString(),
-                ],
-                [t("Created"), date(p.dateCreated)],
-                [t("Updated"), date(p.dateUpdated)],
-              ]}
-            />
-          </details>
         </section>
         <section className={styles.section} aria-label={t("Project tasks")}>
           <div className={styles.sectionHeading}>
@@ -339,6 +323,45 @@ function ProjectDashboard({
             {t("Select a session to inspect its activity and settings.")}
           </p>
         )}
+        <section className={styles.section} aria-label={t("Diagnostics")}>
+          <h2 className={styles.sectionTitle}>{t("Diagnostics")}</h2>
+          <h3 className={styles.subheading}>{t("Project")}</h3>
+          <Fields
+            rows={[
+              [t("Runtime ID"), <IdentifierValue value={p.runtimeId} />],
+              [
+                t("Container ID"),
+                <IdentifierValue value={p.status?.containerId} />,
+              ],
+              [t("Provision attempts"), p.status?.provisionAttempt.toString()],
+              [t("Created"), <DateTime value={p.dateCreated} />],
+              [t("Updated"), <DateTime value={p.dateUpdated} />],
+            ]}
+          />
+          {session && (
+            <>
+              <h3 className={styles.subheading}>{t("Session")}</h3>
+              <Fields
+                rows={[
+                  [
+                    t("Runtime ID"),
+                    <IdentifierValue value={session.runtimeId} />,
+                  ],
+                  [
+                    t("Run ID"),
+                    <IdentifierValue value={session.status?.runId} />,
+                  ],
+                  [
+                    t("Provider session ID"),
+                    <IdentifierValue value={session.status?.vendorId} />,
+                  ],
+                  [t("Permission mode"), session.status?.permissionMode],
+                  [t("Last event"), session.status?.lastSeq.toString()],
+                ]}
+              />
+            </>
+          )}
+        </section>
       </div>
     </>
   );

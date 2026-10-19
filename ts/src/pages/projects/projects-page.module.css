@@ -15,20 +15,6 @@
   margin: 0;
   padding: calc(3 * var(--ui-space));
 }
-.heading {
-  display: flex;
-  align-items: center;
-  gap: calc(2 * var(--ui-space));
-}
-.heading h1 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-}
-.state {
-  color: var(--ui-muted);
-  font: 11px var(--ui-font-mono);
-}
 .description {
   color: var(--ui-muted);
   font-size: 12px;
@@ -127,15 +113,6 @@
   font: 10px var(--ui-font-mono);
   color: var(--ui-muted);
   flex-shrink: 0;
-}
-.diagnostics {
-  color: var(--ui-muted);
-  font-size: 11px;
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-}
-.diagnostics summary {
-  cursor: pointer;
-  padding-block: var(--ui-space);
 }
 .subheading {
   font-size: 11px;

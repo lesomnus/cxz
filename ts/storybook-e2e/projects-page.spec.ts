@@ -58,12 +58,12 @@ test("dashboard scopes project data and shows the selected session's runtime sna
   await expect(environment).toContainText("ui/dashboard");
   await expect(environment).toContainText("/host/workspace");
   await expect(environment).toContainText("/workspace");
-  const heading = main.getByRole("heading", {
-    name: "Web workspace",
-    exact: true,
-  });
+  await expect(
+    main.getByRole("heading", { name: "Web workspace", exact: true }),
+  ).toHaveCount(0);
+  const overview = main.getByRole("region", { name: "Session overview" });
   expect(
-    (await heading.boundingBox())!.x - (await main.boundingBox())!.x,
+    (await overview.boundingBox())!.x - (await main.boundingBox())!.x,
   ).toBeLessThan(24);
   const tasks = main.getByRole("region", { name: "Project tasks" });
   await expect(tasks).toContainText("Review the release plan");
@@ -96,13 +96,13 @@ test("dashboard scopes project data and shows the selected session's runtime sna
   await expect(
     detail.getByRole("link", { name: "Open conversation" }),
   ).toHaveAttribute("href", /sessions\/web-0/);
-  await expect(
-    detail.getByText("provider-session", { exact: true }),
-  ).toBeHidden();
-  await detail.getByText("Diagnostics", { exact: true }).click();
-  await expect(
-    detail.getByText("provider-session", { exact: true }),
-  ).toBeVisible();
+  const diagnostics = main.getByRole("region", {
+    name: "Diagnostics",
+    exact: true,
+  });
+  await expect(diagnostics).toBeVisible();
+  await expect(diagnostics.locator("details, summary")).toHaveCount(0);
+  await expect(diagnostics.getByText("provide", { exact: true })).toBeVisible();
   await main
     .getByRole("combobox", { name: "Select project", exact: true })
     .click();
@@ -158,7 +158,7 @@ test("dashboard columns collapse on narrow screens and retain the fixed toolbar"
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const main = page.getByRole("main", { name: "Project workspace" });
   await expect(
-    main.getByRole("heading", { name: "Web workspace" }),
+    main.getByRole("combobox", { name: "Select project", exact: true }),
   ).toBeVisible();
   const toolbar = main.locator(":scope > header");
   const before = await toolbar.boundingBox();
@@ -207,4 +207,94 @@ test("live inventory revisions do not starve slow dashboard reads or clear their
     detail.getByText("current-model", { exact: true }),
   ).toBeVisible();
   await expect(detail.getByText("24K / 200K", { exact: true })).toBeVisible();
+});
+
+test("diagnostics show short IDs, copy complete values, and use machine-readable dates", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const main = page.getByRole("main", { name: "Project workspace" });
+  const diagnostic = main.getByRole("region", {
+    name: "Diagnostics",
+    exact: true,
+  });
+  await expect(diagnostic).toBeVisible();
+  await expect(main.locator("h1, details, summary")).toHaveCount(0);
+  const container = diagnostic
+    .locator("dl > div")
+    .filter({ has: page.locator("dt", { hasText: /^Container ID$/ }) });
+  await expect(container.getByText("contain", { exact: true })).toBeVisible();
+  const trigger = container.locator("[tabindex]");
+  await trigger.hover();
+  const full = page.getByRole("tooltip", { name: "container-1", exact: true });
+  await expect(full).toBeVisible();
+  expect(await full.evaluate((el) => el.parentElement === document.body)).toBe(
+    true,
+  );
+  await page.keyboard.press("Escape");
+  await expect(full).toHaveCount(0);
+  await trigger.focus();
+  await expect(full).toBeVisible();
+  await trigger.press("Escape");
+  await expect(full).toHaveCount(0);
+  await container.getByRole("button", { name: "Copy", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe("container-1");
+  const created = diagnostic
+    .locator("dl > div")
+    .filter({ has: page.locator("dt", { hasText: /^Created$/ }) })
+    .locator("time");
+  await expect(created).toHaveAttribute("datetime", /^\d{4}-\d\d-\d\dT.*Z$/);
+  await main
+    .getByRole("region", { name: "Project sessions", exact: true })
+    .getByRole("button")
+    .first()
+    .click();
+  const detail = main.getByRole("region", {
+    name: "Session details",
+    exact: true,
+  });
+  await expect(
+    detail.getByText("current-model", { exact: true }),
+  ).toBeVisible();
+  expect(await detail.locator("li time").count()).toBeGreaterThan(0);
+  expect(
+    await main
+      .locator("time")
+      .evaluateAll((nodes) =>
+        nodes.every(
+          (node) =>
+            !!node.textContent?.trim() &&
+            Number.isFinite(Date.parse(node.getAttribute("datetime") ?? "")),
+        ),
+      ),
+  ).toBe(true);
+  await expect(diagnostic.getByText("provide", { exact: true })).toBeVisible();
+});
+
+test("full ID hints escape clipped containers and remain inside the viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 600 });
+  await page.goto(
+    "/iframe.html?id=components-overflowhint--default&viewMode=story",
+  );
+  const trigger = page.locator("[tabindex='0']");
+  await trigger.hover();
+  const hint = page.getByRole("tooltip");
+  await expect(hint).toHaveText("1a2b3c4d-5e6f-7788-9900-aabbccddeeff");
+  const card = (await trigger.locator("..").boundingBox())!;
+  const bounds = (await hint.boundingBox())!;
+  expect(bounds.x + bounds.width).toBeGreaterThan(card.x + card.width);
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(600);
+  expect(await hint.evaluate((el) => el.parentElement === document.body)).toBe(
+    true,
+  );
+  await page.mouse.move(0, 0);
+  await expect(hint).toHaveCount(0);
 });
