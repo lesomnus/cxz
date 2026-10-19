@@ -3,8 +3,7 @@
   display: flex;
   align-items: center;
   gap: var(--ui-space);
-  height: 32px;
-  padding: var(--ui-space) var(--ui-control-inline-inset);
+  padding: var(--ui-control-inline-inset);
 }
 .toolbar h2 {
   flex: 1;
@@ -33,19 +32,18 @@
   color: var(--ui-muted);
   font: 11px var(--ui-font-mono);
 }
-.bulkTrigger.bulkTrigger {
-  height: 24px;
-  min-height: 24px;
-  min-width: 96px;
+.bulkTrigger.bulkTrigger,
+.addTrigger.addTrigger {
+  height: 28px;
+  min-height: 28px;
   padding: var(--ui-control-inset) var(--ui-control-inline-inset);
   font-size: 11px;
 }
+.bulkTrigger.bulkTrigger {
+  min-width: 96px;
+}
 .addTrigger.addTrigger {
   flex: none;
-  height: 24px;
-  min-height: 24px;
-  padding: var(--ui-control-inset) var(--ui-control-inline-inset);
-  font-size: 11px;
   background: var(--ui-shade-32);
 }
 .addTrigger svg {

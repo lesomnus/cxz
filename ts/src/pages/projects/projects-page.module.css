@@ -66,6 +66,7 @@
   border-radius: var(--ui-dialog-radius);
 }
 .section.sessionSection {
+  padding-top: 0;
   padding-inline: 0;
 }
 .details {
