@@ -65,6 +65,9 @@
   background: var(--ui-shade-24);
   border-radius: var(--ui-dialog-radius);
 }
+.section.sessionSection {
+  padding-inline: 0;
+}
 .details {
   display: grid;
   gap: var(--ui-space);

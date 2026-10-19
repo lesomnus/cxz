@@ -47,9 +47,9 @@ export function ProjectSessions({
       >
         <colgroup>
           <col className={styles.selectionColumn} />
-          <col />
+          <col className={styles.sessionColumn} />
           <col className={styles.accountColumn} />
-          <col className={styles.stateColumn} />
+          <col />
         </colgroup>
         <thead>
           <tr>
@@ -107,6 +107,7 @@ export function ProjectSessions({
                     onClick={() => toggle(s.runtimeId)}
                   >
                     <SessionIdentity session={s} />
+                    <OpenArrow />
                   </PanelItem>
                 </td>
                 <td className={`${styles.cardCell} ${styles.account}`}>
@@ -118,17 +119,7 @@ export function ProjectSessions({
                       title={accountName}
                     >
                       <span>{accountName}</span>
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M7 17 17 7M7 7h10v10" />
-                      </svg>
+                      <OpenArrow />
                     </Link>
                   ) : (
                     accountName
@@ -168,4 +159,21 @@ function stateLabel(s: Session) {
     default:
       return t("Unknown");
   }
+}
+
+function OpenArrow() {
+  return (
+    <svg
+      className={styles.openArrow}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M7 17 17 7M7 7h10v10" />
+    </svg>
+  );
 }
