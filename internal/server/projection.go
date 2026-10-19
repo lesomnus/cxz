@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -98,6 +99,21 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 			b, err := json.Marshal(e)
 			if err != nil {
 				return nil, err
+			}
+			// The checkpoint at the floor is written even though its sequence is
+			// behind the cache, because it replaces the record that compaction
+			// removed. Once it has, writing it again is writing the same bytes --
+			// and a replacement is a new rowid, which is how the reading
+			// projection tells a backfill from an append. So every restart of
+			// this process, whose first look at a journal is always a reset, used
+			// to put a record behind every reader's cursor and force a session to
+			// be projected from the beginning: 4s on a 103k-record conversation,
+			// 18s on a 146k one, paid by whoever opened it first. See cxz#227.
+			if e.Seq <= last {
+				var stored []byte
+				if err = tx.QueryRowContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq=?", m.ID, e.Seq).Scan(&stored); err == nil && bytes.Equal(stored, b) {
+					continue
+				}
 			}
 			if _, err = tx.ExecContext(ctx, "INSERT OR REPLACE INTO events VALUES(?,?,?)", m.ID, e.Seq, b); err != nil {
 				return nil, err
