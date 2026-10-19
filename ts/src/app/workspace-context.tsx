@@ -13,7 +13,6 @@ export const WorkspaceContext = createContext<
       inventoryError?: string;
       settingsFileOpen: boolean;
       setSettingsFileOpen: (open: boolean) => void;
-      expandProject: (id: string) => void;
     }
   | undefined
 >(undefined);

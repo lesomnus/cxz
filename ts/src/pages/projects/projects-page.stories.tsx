@@ -1,37 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { create } from "@bufbuild/protobuf";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
-import { ProjectSchema } from "#gen/cxz/project_pb";
-import { SessionSchema } from "#gen/cxz/session_pb";
 import { createWorkspaceRouter } from "#src/app/router.tsx";
+import { projectFixture } from "#src/storybook/project-fixture.ts";
 import { ProjectsPage } from "./projects-page";
 
-function Preview({ empty = false, loading = false }) {
+function Preview({
+  empty = false,
+  loading = false,
+  unavailable = false,
+  stopped = false,
+  streaming = false,
+  sessionCount = 2,
+}) {
   const [router] = useState(() => {
-    const projects = empty
-      ? []
-      : ["Web workspace", "API workspace"].map((name, index) =>
-          create(ProjectSchema, {
-            id: new Uint8Array([index + 1]),
-            runtimeId: `project-${index + 1}`,
-            alias: index ? "api" : "web",
-            name,
-            workspace: "/workspace",
-            status: { state: "running" },
-          }),
-        );
-    const sessions = projects.flatMap((project) =>
-      ["Plan the next release", "Review changes"].map((name, index) =>
-        create(SessionSchema, {
-          runtimeId: `${project.alias}-${index}`,
-          alias: index ? "elm" : "oak",
-          name,
-          project,
-          agent: index ? "claude" : "codex",
-        }),
-      ),
+    const fixture = projectFixture(
+      unavailable,
+      stopped,
+      streaming ? 4000 : 0,
+      sessionCount,
     );
+    const projects = empty ? [] : fixture.projects;
+    const sessions = empty ? [] : fixture.sessions;
     return createWorkspaceRouter(
       {
         shell: ({ children }) => (
@@ -45,14 +35,34 @@ function Preview({ empty = false, loading = false }) {
             {children}
           </div>
         ),
-        view: () => (
-          <ProjectsPage
-            projects={projects}
-            sessions={sessions}
-            projectsLoading={loading}
-            expandProject={() => {}}
-          />
-        ),
+        view: function DashboardPreview() {
+          const [liveSessions, setSessions] = useState(sessions);
+          useEffect(() => {
+            if (!streaming) return;
+            const timer = setInterval(
+              () =>
+                setSessions((rows) =>
+                  rows.map((s) => ({
+                    ...s,
+                    status: s.status && {
+                      ...s.status,
+                      lastSeq: s.status.lastSeq + 1n,
+                    },
+                  })),
+                ),
+              100,
+            );
+            return () => clearInterval(timer);
+          }, []);
+          return (
+            <ProjectsPage
+              c={fixture.c}
+              projects={projects}
+              sessions={liveSessions}
+              projectsLoading={loading}
+            />
+          );
+        },
       },
       createMemoryHistory({ initialEntries: ["/projects"] }),
     );
@@ -68,5 +78,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const LongSessions: Story = { args: { sessionCount: 16 } };
+export const EmptySessions: Story = { args: { sessionCount: 0 } };
 export const Empty: Story = { args: { empty: true } };
 export const Loading: Story = { args: { empty: true, loading: true } };
+
+export const Unavailable: Story = { args: { unavailable: true } };
+export const Stopped: Story = { args: { stopped: true } };
+
+export const SlowActivity: Story = { args: { streaming: true } };

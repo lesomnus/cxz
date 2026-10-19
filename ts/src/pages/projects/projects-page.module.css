@@ -1,4 +1,5 @@
 .page {
+  --project-section-gap: calc(3 * var(--ui-space));
   grid-column: 2 / -1;
   display: flex;
   flex-direction: column;
@@ -10,40 +11,234 @@
   --ui-scroll-area-background: var(--ui-shade-20);
 }
 .content {
-  width: min(100%, 600px);
-  margin-inline: auto;
-  padding: calc(3 * var(--ui-space));
+  width: 100%;
+  max-width: 1200px;
+  margin: 0;
+  padding: var(--project-section-gap);
+}
+.description {
+  color: var(--ui-muted);
+  font-size: 12px;
+  margin: 0;
+}
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space);
+  margin: 0;
+}
+.counts > div {
+  min-width: 100px;
+  padding: calc(2 * var(--ui-space));
+  border-radius: var(--ui-dialog-radius);
+  background: var(--ui-shade-24);
+  display: grid;
+  gap: var(--ui-space);
+}
+.counts span {
+  font-size: 11px;
+  color: var(--ui-muted);
+}
+.counts strong {
+  font: 20px var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-areas: "information sessions";
+  align-items: start;
+  gap: var(--project-section-gap);
+}
+.information {
+  grid-area: information;
+  display: grid;
+  min-width: 0;
+  gap: var(--project-section-gap);
+}
+.sessionSection {
+  grid-area: sessions;
+}
+.section {
+  min-width: 0;
+  padding: calc(2 * var(--ui-space));
+  background: var(--ui-shade-24);
+  border-radius: var(--ui-dialog-radius);
 }
 .details {
   display: grid;
   gap: var(--ui-space);
-  margin: 0 0 calc(4 * var(--ui-space));
+  margin: var(--ui-space) 0;
   font: 12px/1.5 var(--ui-font-mono);
 }
 .details > div {
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 125px) minmax(0, 1fr);
   gap: var(--ui-space);
   padding: var(--ui-control-inset) var(--ui-control-inline-inset);
 }
+.diagnostics dd {
+  display: flex;
+  align-items: center;
+  min-height: var(--ui-icon-size);
+}
 .details dt {
   color: var(--ui-muted);
+  overflow-wrap: anywhere;
 }
 .details dd {
   margin: 0;
   overflow-wrap: anywhere;
 }
-.sectionTitle {
+.sectionTitle,
+.sectionHeading h2 {
   margin: 0;
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-  color: var(--ui-muted);
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 500;
+}
+.sectionTitle {
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+}
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--ui-space);
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+}
+.sectionHeading a {
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+.sectionHeading a:hover {
+  color: var(--ui-shade-237);
+}
+.sessionDetailsScroll {
+  --session-details-height: 28rem;
+  --ui-scroll-area-background: var(--ui-shade-24);
+  flex: none;
+  height: var(--session-details-height);
+  margin-bottom: calc(3 * var(--ui-space));
+}
+.sessionDetailsScroll :global(.panel-scroll-content) {
+  overscroll-behavior: contain;
+}
+.sessionDetails {
+  min-width: 0;
+}
+.sessionScroll {
+  --session-row-height: 44px;
+  --session-row-gap: var(--ui-control-inset);
+  --session-visible-rows: 7.5;
+  --ui-scroll-area-background: var(--ui-shade-24);
+  flex: none;
+  height: calc(
+    var(--session-visible-rows) * var(--session-row-height) + 7 *
+      var(--session-row-gap)
+  );
+  overscroll-behavior: contain;
+}
+.sessionScroll :global(.panel-scroll-content) {
+  overscroll-behavior: contain;
 }
 .sessions {
   display: grid;
-  gap: var(--ui-control-inset);
+  gap: var(--session-row-gap);
 }
 .session.session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space);
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+  height: var(--session-row-height);
+  min-height: var(--session-row-height);
+}
+.sessionState {
+  font: 10px var(--ui-font-mono);
+  color: var(--ui-muted);
+  flex-shrink: 0;
+}
+.subheading {
+  font-size: 11px;
+  font-weight: 500;
+  margin: calc(3 * var(--ui-space)) var(--ui-control-inline-inset)
+    var(--ui-space);
+}
+.empty,
+.selectionPrompt {
+  color: var(--ui-muted);
+  font-size: 11px;
+  margin: var(--ui-space) var(--ui-control-inline-inset);
+}
+.selectionPrompt {
+  padding: calc(2 * var(--ui-space));
+}
+.taskCounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(3 * var(--ui-space));
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+.taskCounts b {
+  display: inline-block;
+  min-width: 3ch;
+  text-align: right;
+  font: inherit;
+  font-family: var(--ui-font-mono);
+}
+.taskList,
+.activity {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.taskList li,
+.activity li {
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.taskList a {
+  display: grid;
+  gap: var(--ui-space);
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--ui-dialog-radius);
+}
+.taskList a:hover {
+  color: var(--ui-shade-255);
+}
+.taskList small,
+.activityMeta {
+  color: var(--ui-muted);
+  font: 10px var(--ui-font-mono);
+}
+.preview {
+  margin: var(--ui-space) 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.errors {
+  color: var(--ui-error, #db7979);
+}
+@media (max-width: 760px) {
+  .dashboard {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "sessions" "information";
+  }
+}
+
+.refresh {
+  font-size: 11px;
+  color: var(--ui-muted);
   padding: var(--ui-space) var(--ui-control-inline-inset);
 }

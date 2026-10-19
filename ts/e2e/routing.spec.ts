@@ -55,17 +55,22 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   await popup.close();
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
   await expect(page).toHaveURL(/\/projects$/);
-  // The view is one project at a time now, picked from the toolbar, so what
-  // leads back out of it is a session of the project on screen.
+  // Selecting a project session keeps the dashboard open; only its explicit
+  // conversation link navigates to the session.
   const workspace = page.getByRole("main", { name: "Project workspace" });
   await expect(workspace).toBeVisible();
   await expect(
     workspace.getByRole("combobox", { name: "Select project", exact: true }),
   ).toBeVisible();
   await workspace
-    .getByRole("region", { name: "Project sessions", exact: true })
-    .getByRole("link")
+    .getByRole("region", { name: "Session list", exact: true })
+    .getByRole("button")
     .first()
+    .click();
+  await expect(page).toHaveURL(/\/projects$/);
+  await workspace
+    .getByRole("region", { name: "Session details", exact: true })
+    .getByRole("link", { name: "Open conversation", exact: true })
     .click();
   await expect(page).toHaveURL(/\/sessions\/session$/);
   expect(errors).toEqual([]);

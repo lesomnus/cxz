@@ -1,0 +1,22 @@
+.value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space);
+  vertical-align: middle;
+}
+.text {
+  display: inline-block;
+  min-width: 7ch;
+  font-family: var(--ui-font-mono);
+  white-space: nowrap;
+}
+.value :global(.copy) {
+  width: var(--ui-icon-size);
+  height: var(--ui-icon-size);
+  min-height: var(--ui-icon-size);
+  padding: var(--ui-control-inset);
+}
+.value :global(.copy) svg {
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+}

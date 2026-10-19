@@ -23,7 +23,7 @@ test("projects use the full workspace with a persistent project picker and scope
       .locator("svg"),
   ).toHaveCSS("width", "20px");
   await expect(picker).toHaveText("Design playground");
-  await picker.hover();
+  await page.mouse.move(0, 0);
   expect(
     await main.locator(".icon-value-menu").evaluate((el) => {
       const style = getComputedStyle(el, "::before");
@@ -35,7 +35,21 @@ test("projects use the full workspace with a persistent project picker and scope
     .getByRole("navigation", { name: "Resources", exact: true })
     .boundingBox())!;
   expect((await main.boundingBox())!.x).toBe(sidebar.x + sidebar.width);
-  await expect(main.getByRole("link")).toHaveCount(8);
+  const sessions = main.getByRole("region", {
+    name: "Project sessions",
+    exact: true,
+  });
+  const toolbar = (await main.locator(":scope > header").boundingBox())!;
+  const sectionGap = await sessions
+    .locator("..")
+    .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
+  expect((await sessions.boundingBox())!.y).toBe(
+    toolbar.y + toolbar.height + sectionGap,
+  );
+  const cards = main
+    .getByRole("region", { name: "Session list", exact: true })
+    .getByRole("button");
+  await expect(cards).toHaveCount(8);
   await picker.click();
   const popup = page.getByRole("group", {
     name: "Select project choices",
@@ -54,19 +68,31 @@ test("projects use the full workspace with a persistent project picker and scope
     .click();
   await expect(page).toHaveURL(/#\/projects\?project=project-2$/);
   await expect(picker).toHaveText("Secondary project");
-  await expect(main.getByRole("link")).toHaveCount(1);
-  await expect(main.getByRole("link")).toContainText("session-8");
+  await expect(cards).toHaveCount(1);
+  await expect(cards).toContainText("session-8");
   await page.goBack();
   await expect(picker).toHaveText("Design playground");
   await page.goForward();
   await expect(picker).toHaveText("Secondary project");
   await page.reload();
   await expect(picker).toHaveText("Secondary project", { timeout: 45000 });
-  await main.getByRole("link").click();
-  await expect(page).toHaveURL(/#\/sessions\/session-8$/);
+  await cards.focus();
+  await cards.press("Enter");
+  await expect(page).toHaveURL(/#\/projects\?project=project-2$/);
+  await expect(cards).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    main.getByRole("region", { name: "Session details", exact: true }),
+  ).toContainText("codex");
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Design playground", exact: true })
+    .click();
+  await expect(
+    main.getByRole("region", { name: "Session details", exact: true }),
+  ).toHaveCount(0);
 });
 
 test("project dropdown respects reduced motion", async ({ page }) => {
@@ -108,7 +134,9 @@ test("project toolbar stays above the scrolling body on narrow screens", async (
     page.getByRole("combobox", { name: "Select project", exact: true }),
   ).toHaveText("Design playground");
   const before = await header.boundingBox();
-  const viewport = page.locator("main .panel-scroll-content");
+  const viewport = page.locator(
+    "main > .panel-scroll-region > .panel-scroll-content",
+  );
   await viewport.evaluate((el) => (el.scrollTop = el.scrollHeight));
   expect(await viewport.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
   expect(await header.boundingBox()).toEqual(before);
