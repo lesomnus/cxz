@@ -8,7 +8,9 @@ export function IdentifierValue({ value }: { value?: string }) {
   return (
     <span className={styles.value}>
       {value.length > 7 ? (
-        <OverflowHint content={value}>{prefix}</OverflowHint>
+        <OverflowHint content={value} placement="in-place">
+          {prefix}
+        </OverflowHint>
       ) : (
         prefix
       )}

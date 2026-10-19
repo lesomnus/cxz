@@ -9,7 +9,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A stable-width identifier prefix with a full-value overlay on hover/focus and a copy button that copies the original value.",
+          "A stable-width identifier prefix with an in-place full-value overlay on hover/focus (same text origin and baseline) and a copy button that copies the original value.",
       },
     },
   },
