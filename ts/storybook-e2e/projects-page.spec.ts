@@ -64,13 +64,26 @@ test("session table preserves the identity card and supports individual and sele
     name: "Select all sessions",
     exact: true,
   });
+  await rows
+    .first()
+    .locator("td")
+    .first()
+    .click({ position: { x: 2, y: 2 } });
+  await expect(rows.first().getByRole("checkbox")).toBeChecked();
+  await expect(all).toBeChecked({ indeterminate: true });
+  await rows.first().getByRole("checkbox").press("Space");
+  await expect(rows.first().getByRole("checkbox")).not.toBeChecked();
+  await expect(all).not.toBeChecked();
   await rows.first().getByRole("checkbox").check();
   await expect(all).toBeChecked({ indeterminate: true });
   await expect(rows.first().getByRole("button")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  await all.check();
+  await table
+    .getByRole("columnheader")
+    .first()
+    .click({ position: { x: 2, y: 2 } });
   for (const row of await rows.all())
     await expect(row.getByRole("checkbox")).toBeChecked();
   await rows.first().getByRole("button").click();

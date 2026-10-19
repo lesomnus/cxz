@@ -6,6 +6,7 @@ import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import styles from "./project-sessions.module.css";
 
@@ -53,16 +54,13 @@ export function ProjectSessions({
         </colgroup>
         <thead>
           <tr>
-            <th scope="col">
-              <input
-                className={styles.checkbox}
-                type="checkbox"
+            <th scope="col" className={styles.selectionCell}>
+              <Checkbox
+                className={styles.cellCheckbox}
                 aria-label={t("Select all sessions")}
                 checked={all}
                 disabled={!sessions.length}
-                ref={(node) => {
-                  if (node) node.indeterminate = count > 0 && !all;
-                }}
+                indeterminate={count > 0 && !all}
                 onChange={() =>
                   select(
                     all ? new Set() : new Set(sessions.map((s) => s.runtimeId)),
@@ -89,10 +87,9 @@ export function ProjectSessions({
             const checked = selected.has(s.runtimeId);
             return (
               <tr key={s.runtimeId} data-selected={checked || undefined}>
-                <td>
-                  <input
-                    className={styles.checkbox}
-                    type="checkbox"
+                <td className={styles.selectionCell}>
+                  <Checkbox
+                    className={styles.cellCheckbox}
                     aria-label={t("Select {name}", { name })}
                     checked={checked}
                     onChange={() => toggle(s.runtimeId)}

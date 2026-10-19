@@ -20,7 +20,7 @@
 }
 .table {
   width: 100%;
-  min-width: 444px;
+  min-width: 404px;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -33,7 +33,7 @@
   width: 96px;
 }
 .sessionColumn {
-  width: 200px;
+  width: 160px;
 }
 .table th {
   position: sticky;
@@ -68,12 +68,17 @@
 .table td:first-child {
   text-align: center;
 }
-.checkbox.checkbox {
-  margin: 0;
-  width: 12px;
-  height: 12px;
-  vertical-align: middle;
-  cursor: pointer;
+.table .selectionCell {
+  padding: 0;
+}
+.table td.selectionCell {
+  position: relative;
+}
+.table .cellCheckbox {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
 }
 .table td.cardCell {
   padding: var(--ui-control-inset) var(--ui-control-inset)
