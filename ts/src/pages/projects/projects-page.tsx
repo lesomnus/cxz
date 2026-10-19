@@ -141,33 +141,62 @@ function ProjectDashboard({
               ? t("Project is not running")
               : t("Unavailable");
   return (
-    <>
-      {p.desc && <p className={styles.description}>{p.desc}</p>}
-      {p.status?.error && (
-        <p className={styles.errors} role="alert">
-          {p.status.error}
-        </p>
-      )}
+    <div className={styles.dashboard}>
       <section
-        aria-label={t("Session overview")}
-        className={styles.counts}
-        aria-busy={sessionsLoading}
+        className={`${styles.section} ${styles.sessionSection}`}
+        aria-label={t("Project sessions")}
       >
-        {[
-          [t("Sessions"), counts.total],
-          [t("Working"), counts.working],
-          [t("Waiting for input"), counts.waiting],
-          [t("Idle"), counts.idle],
-          [t("Stopped"), counts.stopped],
-          ...(counts.unknown ? [[t("Unknown"), counts.unknown]] : []),
-        ].map(([label, count]) => (
-          <div key={label}>
-            <span>{label}</span>
-            <strong>{sessionsLoading ? "—" : count}</strong>
-          </div>
-        ))}
+        <h2 className={styles.sectionTitle}>{t("Sessions")}</h2>
+        <div className={styles.sessions}>
+          {sessions.map((s) => (
+            <PanelItem
+              type="button"
+              className={styles.session}
+              key={s.runtimeId}
+              aria-pressed={selected === s.runtimeId}
+              aria-controls={selected === s.runtimeId ? detailsId : undefined}
+              onClick={() => select(s.runtimeId)}
+            >
+              <SessionIdentity session={s} />
+              <span className={styles.sessionState}>
+                {s.status?.state || t("Unknown")}
+              </span>
+            </PanelItem>
+          ))}
+        </div>
+        {sessionsLoading && !sessions.length && (
+          <p className={styles.empty}>{t("Loading sessions…")}</p>
+        )}
+        {!sessionsLoading && !sessions.length && (
+          <p className={styles.empty}>{t("No sessions")}</p>
+        )}
       </section>
-      <div className={styles.dashboard}>
+      <div className={styles.information}>
+        {p.desc && <p className={styles.description}>{p.desc}</p>}
+        {p.status?.error && (
+          <p className={styles.errors} role="alert">
+            {p.status.error}
+          </p>
+        )}
+        <section
+          aria-label={t("Session overview")}
+          className={styles.counts}
+          aria-busy={sessionsLoading}
+        >
+          {[
+            [t("Sessions"), counts.total],
+            [t("Working"), counts.working],
+            [t("Waiting for input"), counts.waiting],
+            [t("Idle"), counts.idle],
+            [t("Stopped"), counts.stopped],
+            ...(counts.unknown ? [[t("Unknown"), counts.unknown]] : []),
+          ].map(([label, count]) => (
+            <div key={label}>
+              <span>{label}</span>
+              <strong>{sessionsLoading ? "—" : count}</strong>
+            </div>
+          ))}
+        </section>
         <section className={styles.section} aria-label={t("Environment")}>
           <div className={styles.sectionHeading}>
             <h2>{t("Environment")}</h2>
@@ -285,32 +314,7 @@ function ProjectDashboard({
             </p>
           )}
         </section>
-        <section className={styles.section} aria-label={t("Project sessions")}>
-          <h2 className={styles.sectionTitle}>{t("Sessions")}</h2>
-          <div className={styles.sessions}>
-            {sessions.map((s) => (
-              <PanelItem
-                type="button"
-                className={styles.session}
-                key={s.runtimeId}
-                aria-pressed={selected === s.runtimeId}
-                aria-controls={selected === s.runtimeId ? detailsId : undefined}
-                onClick={() => select(s.runtimeId)}
-              >
-                <SessionIdentity session={s} />
-                <span className={styles.sessionState}>
-                  {s.status?.state || t("Unknown")}
-                </span>
-              </PanelItem>
-            ))}
-          </div>
-          {sessionsLoading && !sessions.length && (
-            <p className={styles.empty}>{t("Loading sessions…")}</p>
-          )}
-          {!sessionsLoading && !sessions.length && (
-            <p className={styles.empty}>{t("No sessions")}</p>
-          )}
-        </section>
+
         {session ? (
           <SessionDashboard
             key={`${session.runtimeId}/${session.status?.runId}`}
@@ -363,6 +367,6 @@ function ProjectDashboard({
           )}
         </section>
       </div>
-    </>
+    </div>
   );
 }

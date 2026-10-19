@@ -66,6 +66,23 @@ test("dashboard scopes project data and shows the selected session's runtime sna
     (await overview.boundingBox())!.x - (await main.boundingBox())!.x,
   ).toBeLessThan(24);
   const tasks = main.getByRole("region", { name: "Project tasks" });
+  const sessions = main.getByRole("region", {
+    name: "Project sessions",
+    exact: true,
+  });
+  const toolbar = (await main.locator(":scope > header").boundingBox())!;
+  const sessionsBox = (await sessions.boundingBox())!;
+  expect(sessionsBox.y).toBe(toolbar.y + toolbar.height);
+  expect((await environment.boundingBox())!.x).toBe(
+    (await tasks.boundingBox())!.x,
+  );
+  expect((await overview.boundingBox())!.x).toBe(
+    (await tasks.boundingBox())!.x,
+  );
+  expect(
+    (await environment.boundingBox())!.x +
+      (await environment.boundingBox())!.width,
+  ).toBeLessThan(sessionsBox.x);
   await expect(tasks).toContainText("Review the release plan");
   await expect(
     tasks.getByRole("link", { name: "Open task board" }),
@@ -101,6 +118,12 @@ test("dashboard scopes project data and shows the selected session's runtime sna
     exact: true,
   });
   await expect(diagnostics).toBeVisible();
+  expect((await detail.boundingBox())!.x).toBe(
+    (await environment.boundingBox())!.x,
+  );
+  expect((await diagnostics.boundingBox())!.x).toBe(
+    (await environment.boundingBox())!.x,
+  );
   await expect(diagnostics.locator("details, summary")).toHaveCount(0);
   await expect(diagnostics.getByText("provide", { exact: true })).toBeVisible();
   await main
@@ -356,7 +379,7 @@ for (const scale of [1, 1.25, 1.5, 2]) {
     test.use({ deviceScaleFactor: scale });
     test("keeps the original glyph raster when the background is held constant", async ({
       page,
-    }) => {
+    }, testInfo) => {
       await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
       const row = page
         .getByRole("region", { name: "Diagnostics", exact: true })
@@ -366,17 +389,30 @@ for (const scale of [1, 1.25, 1.5, 2]) {
       await trigger.waitFor();
       // Equal paint colors isolate position/raster changes from background contrast.
       await page.addStyleTag({
-        content:
-          '[role="tooltip"][data-placement="in-place"] { background: var(--ui-shade-24); color: var(--ui-shade-237); }',
+        content: ":root { --ui-overflow-hint-background: var(--ui-shade-24); }",
       });
       await page.mouse.move(0, 0);
-      const before = await trigger.screenshot();
+      const before = await trigger.screenshot({
+        path: testInfo.outputPath("original.png"),
+      });
       await trigger.hover();
       await expect(
         page.getByRole("tooltip", { name: "container-1", exact: true }),
       ).toBeVisible();
       await expectAlignedText(trigger);
-      const after = await trigger.screenshot();
+      const after = await trigger.screenshot({
+        path: testInfo.outputPath("overlay.png"),
+      });
+      if (!after.equals(before)) {
+        await testInfo.attach("original", {
+          body: before,
+          contentType: "image/png",
+        });
+        await testInfo.attach("overlay", {
+          body: after,
+          contentType: "image/png",
+        });
+      }
       expect(after).toEqual(before);
     });
   });

@@ -13,18 +13,18 @@
   width: 100%;
   max-width: 1200px;
   margin: 0;
-  padding: calc(3 * var(--ui-space));
+  padding: 0 calc(3 * var(--ui-space)) calc(3 * var(--ui-space));
 }
 .description {
   color: var(--ui-muted);
   font-size: 12px;
-  margin: var(--ui-space) 0;
+  margin: 0;
 }
 .counts {
   display: flex;
   flex-wrap: wrap;
   gap: var(--ui-space);
-  margin: calc(3 * var(--ui-space)) 0;
+  margin: 0;
 }
 .counts > div {
   min-width: 100px;
@@ -44,9 +44,19 @@
 }
 .dashboard {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-areas: "information sessions";
   align-items: start;
   gap: calc(3 * var(--ui-space));
+}
+.information {
+  grid-area: information;
+  display: grid;
+  min-width: 0;
+  gap: calc(3 * var(--ui-space));
+}
+.sessionSection {
+  grid-area: sessions;
 }
 .section {
   min-width: 0;
@@ -187,6 +197,7 @@
 @media (max-width: 760px) {
   .dashboard {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "sessions" "information";
   }
 }
 
