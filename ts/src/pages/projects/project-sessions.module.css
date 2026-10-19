@@ -167,7 +167,11 @@
   font: inherit;
 }
 .editable :global(.editable-value-trigger) {
-  padding: var(--ui-control-inset) var(--ui-control-inline-inset);
+  min-height: calc(
+    var(--session-row-height) - 2 * var(--ui-control-inline-inset)
+  );
+  padding: calc(2 * var(--ui-control-inset))
+    calc(2 * var(--ui-control-inline-inset));
   border-radius: var(--session-cell-radius);
 }
 .empty {
