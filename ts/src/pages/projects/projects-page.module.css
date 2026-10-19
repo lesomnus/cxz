@@ -1,4 +1,5 @@
 .page {
+  --project-section-gap: calc(3 * var(--ui-space));
   grid-column: 2 / -1;
   display: flex;
   flex-direction: column;
@@ -13,7 +14,7 @@
   width: 100%;
   max-width: 1200px;
   margin: 0;
-  padding: 0 calc(3 * var(--ui-space)) calc(3 * var(--ui-space));
+  padding: var(--project-section-gap);
 }
 .description {
   color: var(--ui-muted);
@@ -47,13 +48,13 @@
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   grid-template-areas: "information sessions";
   align-items: start;
-  gap: calc(3 * var(--ui-space));
+  gap: var(--project-section-gap);
 }
 .information {
   grid-area: information;
   display: grid;
   min-width: 0;
-  gap: calc(3 * var(--ui-space));
+  gap: var(--project-section-gap);
 }
 .sessionSection {
   grid-area: sessions;

@@ -35,6 +35,17 @@ test("projects use the full workspace with a persistent project picker and scope
     .getByRole("navigation", { name: "Resources", exact: true })
     .boundingBox())!;
   expect((await main.boundingBox())!.x).toBe(sidebar.x + sidebar.width);
+  const sessions = main.getByRole("region", {
+    name: "Project sessions",
+    exact: true,
+  });
+  const toolbar = (await main.locator(":scope > header").boundingBox())!;
+  const sectionGap = await sessions
+    .locator("..")
+    .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
+  expect((await sessions.boundingBox())!.y).toBe(
+    toolbar.y + toolbar.height + sectionGap,
+  );
   const cards = main
     .getByRole("region", { name: "Session list", exact: true })
     .getByRole("button");

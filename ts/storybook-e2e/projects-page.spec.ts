@@ -138,7 +138,10 @@ test("dashboard scopes project data and shows the selected session's runtime sna
   });
   const toolbar = (await main.locator(":scope > header").boundingBox())!;
   const sessionsBox = (await sessions.boundingBox())!;
-  expect(sessionsBox.y).toBe(toolbar.y + toolbar.height);
+  const sectionGap = await sessions
+    .locator("..")
+    .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
+  expect(sessionsBox.y).toBe(toolbar.y + toolbar.height + sectionGap);
   expect((await environment.boundingBox())!.x).toBe(
     (await tasks.boundingBox())!.x,
   );
