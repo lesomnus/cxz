@@ -63,6 +63,7 @@ export function WorkspaceView() {
   if (resource === "projects")
     return (
       <ProjectsPage
+        c={c}
         projects={projects}
         sessions={sessions}
         sessionsLoading={sessionsLoading}
