@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
-import { PanelItem } from "@lesomnus/nox";
 import { Link } from "@tanstack/react-router";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
-import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -91,7 +90,9 @@ export function ProjectSessions({
         >
           <colgroup>
             <col className={styles.selectionColumn} />
-            <col className={styles.sessionColumn} />
+            <col className={styles.agentColumn} />
+            <col className={styles.nameColumn} />
+            <col className={styles.aliasColumn} />
             <col className={styles.accountColumn} />
             <col />
             <col className={styles.actionsColumn} />
@@ -114,7 +115,9 @@ export function ProjectSessions({
                   }
                 />
               </th>
-              <th scope="col">{t("Session")}</th>
+              <th scope="col">{t("Agent")}</th>
+              <th scope="col">{t("Name")}</th>
+              <th scope="col">{t("Alias")}</th>
               <th scope="col">{t("Account")}</th>
               <th scope="col">{t("State")}</th>
               <th scope="col" aria-label={t("Controls")} />
@@ -143,18 +146,14 @@ export function ProjectSessions({
                       onChange={() => toggle(s.runtimeId)}
                     />
                   </td>
-                  <td className={styles.cardCell}>
-                    <PanelItem
-                      type="button"
-                      className={styles.session}
-                      pressTarget=".session-heading"
-                      aria-pressed={checked}
-                      disabled={controls.busy || loading}
-                      onClick={() => toggle(s.runtimeId)}
-                    >
-                      <SessionIdentity session={s} />
-                      <OpenArrow />
-                    </PanelItem>
+                  <td className={styles.agent}>
+                    <AgentBrand agent={s.agent} />
+                  </td>
+                  <td className={styles.name} title={name}>
+                    {name}
+                  </td>
+                  <td className={styles.alias} title={s.alias}>
+                    {s.alias || "—"}
                   </td>
                   <td className={`${styles.cardCell} ${styles.account}`}>
                     {accountAlias ? (

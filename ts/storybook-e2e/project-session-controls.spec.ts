@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const table = (page: Page) =>
   page.getByRole("table", { name: "Sessions", exact: true });
 const rows = (page: Page) => table(page).locator("tbody tr");
-const states = (page: Page) => rows(page).locator("td:nth-child(4)");
+const states = (page: Page) => rows(page).locator("td:nth-child(6)");
 async function openBulk(page: Page, action: string) {
   await page
     .getByRole("button", { name: "Selected session actions", exact: true })
@@ -22,6 +22,18 @@ test("row controls confirm stop/restart and resume the intended session", async 
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const more = rows(page)
+    .first()
+    .getByRole("button", { name: /Controls for/ });
+  await expect(more).toBeVisible();
+  await expect(more).toBeInViewport();
+  const button = (await more.boundingBox())!;
+  const cell = (await rows(page).first().locator("td").last().boundingBox())!;
+  expect(button.width).toBeCloseTo(button.height, 1);
+  expect(button.x).toBe(cell.x);
+  expect(button.y).toBe(cell.y);
+  expect(button.width).toBe(cell.width);
+  expect(Math.abs(button.height - cell.height)).toBeLessThanOrEqual(1);
   await openRow(page, "Stop");
   const stop = page.getByRole("dialog", { name: "Stop session", exact: true });
   await expect(stop).toContainText("Plan the next release");

@@ -48,7 +48,7 @@ test("projects use the full workspace with a persistent project picker and scope
   );
   const cards = main
     .getByRole("region", { name: "Session list", exact: true })
-    .locator("button[aria-pressed]");
+    .locator("tbody tr");
   await expect(cards).toHaveCount(8);
   await picker.click();
   const popup = page.getByRole("group", {
@@ -76,10 +76,10 @@ test("projects use the full workspace with a persistent project picker and scope
   await expect(picker).toHaveText("Secondary project");
   await page.reload();
   await expect(picker).toHaveText("Secondary project", { timeout: 45000 });
-  await cards.focus();
-  await cards.press("Enter");
+  await cards.getByRole("checkbox").focus();
+  await cards.getByRole("checkbox").press("Space");
   await expect(page).toHaveURL(/#\/projects\?project=project-2$/);
-  await expect(cards).toHaveAttribute("aria-pressed", "true");
+  await expect(cards).toHaveAttribute("data-selected", "true");
   await expect(
     main.getByRole("checkbox", { name: "Select all sessions", exact: true }),
   ).toBeChecked();
@@ -158,7 +158,7 @@ test("project row and bulk controls use the sandbox session lifecycle", async ({
   await expect(rows).toHaveCount(8);
   const first = rows.first(),
     second = rows.nth(1);
-  const state = first.locator("td:nth-child(4)");
+  const state = first.locator("td:nth-child(6)");
   await first.getByRole("button", { name: /Controls for/ }).click();
   await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
   await page
@@ -181,8 +181,8 @@ test("project row and bulk controls use the sandbox session lifecycle", async ({
   const stop = page.getByRole("dialog", { name: "Stop sessions", exact: true });
   await expect(stop).toContainText("2 sessions will be affected.");
   await stop.getByRole("button", { name: "Stop", exact: true }).click();
-  await expect(first.locator("td:nth-child(4)")).toHaveText("Stopped");
-  await expect(second.locator("td:nth-child(4)")).toHaveText("Stopped");
+  await expect(first.locator("td:nth-child(6)")).toHaveText("Stopped");
+  await expect(second.locator("td:nth-child(6)")).toHaveText("Stopped");
   await expect(actions).toBeDisabled();
 
   await first.getByRole("checkbox").check();

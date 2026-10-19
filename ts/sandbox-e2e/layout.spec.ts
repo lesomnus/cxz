@@ -141,10 +141,14 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   await page
     .getByRole("option", { name: "Secondary project", exact: true })
     .click();
-  await projects.getByRole("button").filter({ hasText: "session-8" }).click();
+  await projects
+    .locator("tbody tr")
+    .filter({ hasText: "session-8" })
+    .getByRole("checkbox")
+    .check();
   await expect(
-    projects.getByRole("button").filter({ hasText: "session-8" }),
-  ).toHaveAttribute("aria-pressed", "true");
+    projects.locator("tbody tr").filter({ hasText: "session-8" }),
+  ).toHaveAttribute("data-selected", "true");
   await expect(
     projects.getByRole("region", { name: "Session details", exact: true }),
   ).toHaveCount(0);
