@@ -90,11 +90,44 @@
 .table .session.session:is(:hover, [aria-pressed="true"]) {
   background: transparent;
 }
-.account {
+.table td.account {
+  padding: var(--ui-control-inset) var(--ui-control-inset)
+    calc(var(--session-row-gap) + var(--ui-control-inset) - 1px);
+  color: var(--ui-muted);
+}
+.accountCard {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+  width: 100%;
+  height: calc(var(--session-row-height) - 2 * var(--ui-control-inset));
+  padding: 0 var(--ui-control-inline-inset);
+  border: 1px solid var(--ui-shade-48);
+  border-radius: calc(2.5 * var(--ui-space));
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+}
+.accountCard span {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ui-muted);
+}
+.accountCard svg {
+  flex: none;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+}
+.accountCard:hover {
+  background: var(--ui-hover);
+  border-color: var(--ui-shade-72);
+  color: var(--ui-shade-237);
+}
+.accountCard:focus-visible {
+  outline: 1px solid var(--ui-muted);
+  outline-offset: 1px;
 }
 .state {
   color: var(--ui-muted);

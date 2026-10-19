@@ -54,6 +54,9 @@ test("session table preserves the identity card and supports individual and sele
   );
   await expect(rows.first().locator("td").nth(1)).toContainText("oak");
   await expect(rows.first().locator("td").nth(2)).toHaveText("Work account");
+  await expect(
+    rows.first().getByRole("link", { name: "Work account", exact: true }),
+  ).toHaveAttribute("href", "/accounts?account=work");
   await expect(rows.first().locator("td").nth(3)).toHaveText(
     "Waiting for input",
   );

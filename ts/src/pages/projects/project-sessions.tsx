@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
 import { PanelItem } from "@lesomnus/nox";
+import { Link } from "@tanstack/react-router";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
@@ -18,8 +19,8 @@ export function ProjectSessions({
   loading?: boolean;
 }) {
   const [selected, select] = useState<Set<string>>(() => new Set());
-  const accountNames = useMemo(
-    () => new Map(accounts.map((a) => [key(a.id), a.name || a.alias])),
+  const accountsById = useMemo(
+    () => new Map(accounts.map((a) => [key(a.id), a])),
     [accounts],
   );
   const count = sessions.filter((s) => selected.has(s.runtimeId)).length;
@@ -77,10 +78,13 @@ export function ProjectSessions({
         <tbody>
           {sessions.map((s) => {
             const name = s.name || s.alias || s.runtimeId;
-            const account =
+            const account = s.account && accountsById.get(key(s.account.id));
+            const accountAlias = account?.alias || s.account?.alias;
+            const accountName =
+              account?.name ||
               s.account?.name ||
+              account?.alias ||
               s.account?.alias ||
-              (s.account && accountNames.get(key(s.account.id))) ||
               "—";
             const checked = selected.has(s.runtimeId);
             return (
@@ -105,8 +109,30 @@ export function ProjectSessions({
                     <SessionIdentity session={s} />
                   </PanelItem>
                 </td>
-                <td className={styles.account} title={account}>
-                  {account}
+                <td className={styles.account}>
+                  {accountAlias ? (
+                    <Link
+                      to="/accounts"
+                      search={{ account: accountAlias }}
+                      className={styles.accountCard}
+                      title={accountName}
+                    >
+                      <span>{accountName}</span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M7 17 17 7M7 7h10v10" />
+                      </svg>
+                    </Link>
+                  ) : (
+                    accountName
+                  )}
                 </td>
                 <td className={styles.state}>{stateLabel(s)}</td>
               </tr>
