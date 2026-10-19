@@ -3,7 +3,10 @@ import type { Connection } from "#src/shared/api/connection.ts";
 export const accountRef = (alias: string) => ({
   key: { case: "alias" as const, value: alias },
 });
-export async function listAccounts(c: Connection, signal?: AbortSignal) {
+export async function listAccounts(
+  c: Pick<Connection, "accounts">,
+  signal?: AbortSignal,
+) {
   const items = [];
   let after = "";
   do {

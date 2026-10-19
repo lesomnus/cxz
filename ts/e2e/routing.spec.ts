@@ -55,8 +55,7 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   await popup.close();
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
   await expect(page).toHaveURL(/\/projects$/);
-  // Selecting a project session keeps the dashboard open; only its explicit
-  // conversation link navigates to the session.
+  // Row selection keeps the project dashboard open.
   const workspace = page.getByRole("main", { name: "Project workspace" });
   await expect(workspace).toBeVisible();
   await expect(
@@ -68,10 +67,13 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
     .first()
     .click();
   await expect(page).toHaveURL(/\/projects$/);
-  await workspace
-    .getByRole("region", { name: "Session details", exact: true })
-    .getByRole("link", { name: "Open conversation", exact: true })
-    .click();
+  await expect(
+    workspace.getByRole("checkbox", {
+      name: "Select all sessions",
+      exact: true,
+    }),
+  ).toBeChecked();
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(page).toHaveURL(/\/sessions\/session$/);
   expect(errors).toEqual([]);
 });

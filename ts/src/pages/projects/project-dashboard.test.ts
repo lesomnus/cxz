@@ -2,11 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { ProjectSchema } from "#gen/cxz/project_pb";
-import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
+import { SessionSchema } from "#gen/cxz/session_pb";
 import { ProjectDownloadReplySchema } from "#gen/cxz/project_svc_pb";
 import {
   projectBranch,
-  recentSession,
   sessionCounts,
   type DashboardConnection,
 } from "./project-dashboard";
@@ -137,54 +136,4 @@ it("counts stopped, interrupted and failed separately from ready and waiting ses
     stopped: 3,
     unknown: 1,
   });
-});
-it("does not label creation settings or an earlier run's catalog as current model", () => {
-  const s = create(SessionSchema, {
-    model: "creation-model",
-    status: { runId: "new-run" },
-  });
-  const event = (runId: string) =>
-    create(SessionEventSchema, {
-      runId,
-      seq: 1n,
-      kind: "models",
-      payload: new TextEncoder().encode(
-        JSON.stringify({
-          effective_model: "runtime-model",
-          effective_effort: "high",
-        }),
-      ),
-    });
-  expect(recentSession(s, [], []).info.model).toBe("");
-  expect(recentSession(s, [], [event("old-run")]).info.model).toBe("");
-  const unreported = event("new-run");
-  unreported.payload = new TextEncoder().encode(
-    JSON.stringify({ models: [{ id: "catalog-only" }] }),
-  );
-  expect(recentSession(s, [], [unreported]).info.model).toBe("");
-  expect(recentSession(s, [], [event("new-run")]).info).toMatchObject({
-    model: "runtime-model",
-    effort: "high",
-  });
-});
-it("keeps errors distinct from failed tasks and bounds activity previews", () => {
-  const events = Array.from({ length: 15 }, (_, i) =>
-    create(SessionEventSchema, {
-      seq: BigInt(i + 1),
-      kind: "assistant",
-      text: `Response ${i}`,
-    }),
-  );
-  events.push(
-    create(SessionEventSchema, { seq: 16n, kind: "tool", text: "Bash failed" }),
-    create(SessionEventSchema, {
-      seq: 17n,
-      kind: "error",
-      text: "Provider failed",
-    }),
-  );
-  const result = recentSession(create(SessionSchema), events, []);
-  expect(result.activity).toHaveLength(6);
-  expect(result.activity[0].text).toBe("Response 14");
-  expect(result.errors.map((e) => e.text)).toEqual(["Provider failed"]);
 });

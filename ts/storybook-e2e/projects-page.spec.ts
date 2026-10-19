@@ -20,16 +20,7 @@ test("project page and shared toolbar stories render their selector and states",
   await expect(picker).toHaveText("API workspace");
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   await expect(
-    page.getByRole("main", { name: "Project workspace" }),
-  ).toBeVisible();
-  await expect(picker).toHaveText("Web workspace");
-  await page
-    .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button")
-    .first()
-    .click();
-  await expect(
-    page.getByRole("region", { name: "Session details", exact: true }),
+    page.getByRole("table", { name: "Sessions", exact: true }),
   ).toBeVisible();
   await expect(picker).toHaveText("Web workspace");
   await page.goto("/iframe.html?id=pages-projects--empty&viewMode=story");
@@ -45,22 +36,86 @@ test("project page and shared toolbar stories render their selector and states",
   expect(errors).toEqual([]);
 });
 
-test("session list reserves seven and a half rows and scrolls independently", async ({
+test("session table preserves the identity card and supports individual and select-all checkboxes", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  await expect(table.getByRole("columnheader")).toHaveText([
+    "",
+    "Session",
+    "Account",
+    "State",
+  ]);
+  const rows = table.locator("tbody tr");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first().locator("td").nth(1)).toContainText(
+    "Plan the next release",
+  );
+  await expect(rows.first().locator("td").nth(1)).toContainText("oak");
+  await expect(rows.first().locator("td").nth(2)).toHaveText("Work account");
+  await expect(
+    rows.first().getByRole("link", { name: "Work account", exact: true }),
+  ).toHaveAttribute("href", "/accounts?account=work");
+  await expect(rows.first().locator("td").nth(3)).toHaveText(
+    "Waiting for input",
+  );
+  const all = table.getByRole("checkbox", {
+    name: "Select all sessions",
+    exact: true,
+  });
+  await rows
+    .first()
+    .locator("td")
+    .first()
+    .click({ position: { x: 2, y: 2 } });
+  await expect(rows.first().getByRole("checkbox")).toBeChecked();
+  await expect(all).toBeChecked({ indeterminate: true });
+  await rows.first().getByRole("checkbox").press("Space");
+  await expect(rows.first().getByRole("checkbox")).not.toBeChecked();
+  await expect(all).not.toBeChecked();
+  await rows.first().getByRole("checkbox").check();
+  await expect(all).toBeChecked({ indeterminate: true });
+  await expect(rows.first().getByRole("button")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await table
+    .getByRole("columnheader")
+    .first()
+    .click({ position: { x: 2, y: 2 } });
+  for (const row of await rows.all())
+    await expect(row.getByRole("checkbox")).toBeChecked();
+  await rows.first().getByRole("button").click();
+  await expect(rows.first().getByRole("checkbox")).not.toBeChecked();
+  await expect(rows.nth(1).getByRole("checkbox")).toBeChecked();
+  await all.check();
+  await all.uncheck();
+  for (const row of await rows.all())
+    await expect(row.getByRole("checkbox")).not.toBeChecked();
+  await expect(
+    page.getByRole("region", { name: "Session details", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("session table reserves seven and a half rows with a sticky header and independent scrolling", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto(
     "/iframe.html?id=pages-projects--long-sessions&viewMode=story",
   );
   const list = page.getByRole("region", { name: "Session list", exact: true });
   const viewport = list.locator(".panel-scroll-content");
-  const rows = list.getByRole("button");
-  await expect(rows).toHaveCount(16);
+  const cards = list.getByRole("button");
+  await expect(cards).toHaveCount(16);
   const frame = (await viewport.boundingBox())!;
-  const eighth = (await rows.nth(7).boundingBox())!;
+  const eighth = (await cards.nth(7).boundingBox())!;
   expect(
     Math.abs(frame.y + frame.height - eighth.y - eighth.height / 2),
   ).toBeLessThan(1);
+  const header = list.getByRole("columnheader").first();
+  const headerBefore = (await header.boundingBox())!;
   const outer = page.locator(
     "main > .panel-scroll-region > .panel-scroll-content",
   );
@@ -71,47 +126,56 @@ test("session list reserves seven and a half rows and scrolls independently", as
     .poll(() => viewport.evaluate((el) => el.scrollTop))
     .toBeGreaterThan(100);
   expect(await outer.evaluate((el) => el.scrollTop)).toBe(outerTop);
+  expect((await header.boundingBox())!.y).toBe(headerBefore.y);
   const scrolled = await viewport.evaluate((el) => el.scrollTop);
   const section = page.getByRole("region", {
     name: "Project sessions",
     exact: true,
   });
-  const sectionBefore = await section.boundingBox();
-  const diagnostics = page.getByRole("region", {
-    name: "Diagnostics",
-    exact: true,
-  });
-  const diagnosticsBefore = await diagnostics.boundingBox();
-  const listBefore = await viewport.boundingBox();
-  await rows.nth(10).click();
-  await expect(
-    page.getByRole("region", { name: "Session details", exact: true }),
-  ).toContainText("current-model");
+  const before = await section.boundingBox();
+  await cards.nth(10).click();
+  await expect(cards.nth(10)).toHaveAttribute("aria-pressed", "true");
   expect(await viewport.evaluate((el) => el.scrollTop)).toBe(scrolled);
-  expect(await viewport.boundingBox()).toEqual(listBefore);
-  expect(await section.boundingBox()).toEqual(sectionBefore);
-  expect(await diagnostics.boundingBox()).toEqual(diagnosticsBefore);
-  const detailsViewport = section
-    .locator(":scope > .panel-scroll-region")
-    .first()
-    .locator(".panel-scroll-content");
-  expect(
-    await detailsViewport.evaluate((el) => el.scrollHeight > el.clientHeight),
-  ).toBe(true);
-  await rows.nth(11).click();
-  expect(await viewport.boundingBox()).toEqual(listBefore);
-  expect(await section.boundingBox()).toEqual(sectionBefore);
-  await rows.nth(10).click();
-  await expect(rows.nth(10)).toHaveAttribute("aria-pressed", "true");
+  expect(await viewport.boundingBox()).toEqual(frame);
+  expect(await section.boundingBox()).toEqual(before);
+  await expect(cards.nth(10).locator(".session-heading")).toContainText(
+    "Session 11",
+  );
   for (const story of ["default", "empty-sessions"]) {
     await page.goto(`/iframe.html?id=pages-projects--${story}&viewMode=story`);
     await expect(list).toBeVisible();
     expect((await viewport.boundingBox())!.height).toBe(frame.height);
   }
   await expect(list).toContainText("No sessions");
+  await expect(
+    list.getByRole("checkbox", { name: "Select all sessions" }),
+  ).toBeDisabled();
 });
 
-test("dashboard scopes project data and shows the selected session's runtime snapshots", async ({
+test("session states stay in their column without leading icons", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--session-states&viewMode=story",
+  );
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  const rows = table.locator("tbody tr");
+  await expect(rows).toHaveCount(9);
+  await expect(table.locator(".session-indicator")).toHaveCount(0);
+  await expect(rows.locator("td:last-child")).toHaveText([
+    "Waiting for input",
+    "Working",
+    "Idle",
+    "Stopped",
+    "Interrupted",
+    "Failed",
+    "Waiting for input",
+    "Unknown",
+    "Working",
+  ]);
+});
+
+test("dashboard scopes project data, resets selection on project change and keeps diagnostics project-only", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -121,86 +185,42 @@ test("dashboard scopes project data and shows the selected session's runtime sna
     name: "Environment",
     exact: true,
   });
-  await expect(environment).toContainText("ui/dashboard");
-  await expect(environment).toContainText("/host/workspace");
-  await expect(environment).toContainText("/workspace");
-  await expect(
-    main.getByRole("heading", { name: "Web workspace", exact: true }),
-  ).toHaveCount(0);
-  const overview = main.getByRole("region", { name: "Session overview" });
-  expect(
-    (await overview.boundingBox())!.x - (await main.boundingBox())!.x,
-  ).toBeLessThan(24);
-  const tasks = main.getByRole("region", { name: "Project tasks" });
+  const tasks = main.getByRole("region", {
+    name: "Project tasks",
+    exact: true,
+  });
   const sessions = main.getByRole("region", {
     name: "Project sessions",
     exact: true,
   });
-  const toolbar = (await main.locator(":scope > header").boundingBox())!;
-  const sessionsBox = (await sessions.boundingBox())!;
-  const sectionGap = await sessions
-    .locator("..")
-    .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
-  expect(sessionsBox.y).toBe(toolbar.y + toolbar.height + sectionGap);
-  expect((await environment.boundingBox())!.x).toBe(
-    (await tasks.boundingBox())!.x,
-  );
-  expect((await overview.boundingBox())!.x).toBe(
-    (await tasks.boundingBox())!.x,
-  );
-  expect(
-    (await environment.boundingBox())!.x +
-      (await environment.boundingBox())!.width,
-  ).toBeLessThan(sessionsBox.x);
-  await expect(tasks).toContainText("Review the release plan");
-  await expect(
-    tasks.getByRole("link", { name: "Open task board" }),
-  ).toHaveAttribute("href", /project=project-1/);
-  await main
-    .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button")
-    .first()
-    .click();
-  const detail = main.getByRole("region", {
-    name: "Session details",
-    exact: true,
-  });
-  await expect(
-    detail
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Current model$/ }) })
-      .locator("dd"),
-  ).toHaveText("current-model");
-  await expect(detail).toContainText("creation-model");
-  await expect(detail).toContainText("high");
-  await expect(detail).toContainText("75%");
-  await expect(detail).toContainText("24K / 200K");
-  await expect(detail).toContainText("Which release should we prepare?");
-  await expect(detail).toContainText(
-    "Provider rate limit reached; retrying shortly.",
-  );
-  await expect(
-    detail.getByRole("link", { name: "Open conversation" }),
-  ).toHaveAttribute("href", /sessions\/web-0/);
   const diagnostics = main.getByRole("region", {
     name: "Diagnostics",
     exact: true,
   });
-  await expect(diagnostics).toBeVisible();
-  const detailBox = (await sessions
-    .locator(":scope > .panel-scroll-region")
-    .first()
-    .boundingBox())!;
-  const listBox = (await main
-    .getByRole("region", { name: "Session list", exact: true })
-    .boundingBox())!;
-  expect(detailBox.x).toBeGreaterThanOrEqual(sessionsBox.x);
-  expect(detailBox.y + detailBox.height).toBeLessThan(listBox.y);
-  expect((await diagnostics.boundingBox())!.x).toBe(
-    (await environment.boundingBox())!.x,
-  );
+  await expect(environment).toContainText("ui/dashboard");
+  await expect(environment).toContainText("/workspace");
+  await expect(tasks).toContainText("Review the release plan");
+  await expect(
+    tasks.getByRole("link", { name: "Open task board" }),
+  ).toHaveAttribute("href", /project=project-1/);
+  const toolbar = (await main.locator(":scope > header").boundingBox())!;
+  const sectionGap = await sessions
+    .locator("..")
+    .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
+  const sessionsBox = (await sessions.boundingBox())!;
+  expect(sessionsBox.y).toBe(toolbar.y + toolbar.height + sectionGap);
+  const environmentBox = (await environment.boundingBox())!;
+  expect(environmentBox.x + environmentBox.width).toBeLessThan(sessionsBox.x);
+  expect((await diagnostics.boundingBox())!.x).toBe(environmentBox.x);
   await expect(diagnostics.locator("details, summary")).toHaveCount(0);
-  await expect(diagnostics.getByText("provide", { exact: true })).toBeVisible();
+  await expect(
+    diagnostics.getByText("Provider session ID", { exact: true }),
+  ).toHaveCount(0);
+  const all = sessions.getByRole("checkbox", {
+    name: "Select all sessions",
+    exact: true,
+  });
+  await all.check();
   await main
     .getByRole("combobox", { name: "Select project", exact: true })
     .click();
@@ -208,12 +228,15 @@ test("dashboard scopes project data and shows the selected session's runtime sna
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
   await expect(environment).toContainText("api-main");
-  await expect(detail).toHaveCount(0);
   await expect(tasks).toContainText("No outstanding tasks");
-  await expect(tasks).not.toContainText("Review the release plan");
+  await expect(all).not.toBeChecked();
+  await expect(sessions.getByRole("button")).toHaveCount(2);
+  await expect(
+    main.getByRole("region", { name: "Session details", exact: true }),
+  ).toHaveCount(0);
 });
 
-test("dashboard handles stopped and unavailable runtimes without hiding inventory", async ({
+test("stopped and unavailable runtimes retain the session table and account names", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--stopped&viewMode=story");
@@ -224,87 +247,70 @@ test("dashboard handles stopped and unavailable runtimes without hiding inventor
   await expect(
     main.getByRole("region", { name: "Session overview" }),
   ).toContainText("Stopped2");
+  await expect(
+    main.locator("tbody tr").first().locator("td").nth(3),
+  ).toHaveText("Stopped");
   await page.goto("/iframe.html?id=pages-projects--unavailable&viewMode=story");
   await expect(
     main.getByRole("region", { name: "Environment", exact: true }),
   ).toContainText("Workspace is unavailable");
-  await main
-    .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button")
-    .first()
-    .click();
-  const details = main.getByRole("region", {
-    name: "Session details",
-    exact: true,
-  });
-  await expect(details.getByRole("alert")).toContainText(
-    "Session runtime is unavailable",
-  );
-  await expect(details).toContainText("Work account");
   await expect(
-    details
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Current model$/ }) })
-      .locator("dd"),
-  ).toHaveText("—");
+    main.locator("tbody tr").first().locator("td").nth(2),
+  ).toHaveText("Work account");
+  await expect(
+    main.getByRole("button", { name: /Plan the next release/ }),
+  ).toBeEnabled();
 });
 
-test("dashboard columns collapse on narrow screens and retain the fixed toolbar", async ({
+test("narrow screens scroll the table without overflowing the page or moving the toolbar", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 600 });
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const main = page.getByRole("main", { name: "Project workspace" });
-  await expect(
-    main.getByRole("combobox", { name: "Select project", exact: true }),
-  ).toBeVisible();
   const toolbar = main.locator(":scope > header");
   const before = await toolbar.boundingBox();
-  await main
-    .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button")
-    .first()
-    .click();
+  const list = main.getByRole("region", { name: "Session list", exact: true });
+  const viewport = list.locator(".panel-scroll-content");
+  await list.getByRole("button").first().click();
   await expect(
-    main.getByRole("region", { name: "Session details", exact: true }),
-  ).toBeVisible();
+    list.getByRole("checkbox", {
+      name: "Select Plan the next release",
+      exact: true,
+    }),
+  ).toBeChecked();
+  await viewport.evaluate((el) => (el.scrollLeft = el.scrollWidth));
+  await expect(
+    list.getByRole("columnheader", { name: "State", exact: true }),
+  ).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     390,
   );
   expect(await toolbar.boundingBox()).toEqual(before);
 });
 
-test("live inventory revisions do not starve slow dashboard reads or clear their last snapshot", async ({
+test("live inventory preserves row selection and account labels", async ({
   page,
 }) => {
   await page.goto(
-    "/iframe.html?id=pages-projects--slow-activity&viewMode=story",
+    "/iframe.html?id=pages-projects--live-inventory&viewMode=story",
   );
-  await page
-    .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button")
-    .first()
-    .click();
-  const detail = page.getByRole("region", {
-    name: "Session details",
-    exact: true,
-  });
-  await expect(detail.getByRole("status")).toHaveText(
-    "Loading recent activity…",
-  );
-  await expect(detail.getByText("current-model", { exact: true })).toBeVisible({
-    timeout: 8000,
-  });
-  await expect(detail.getByText("Work account", { exact: true })).toBeVisible();
-  // The next throttled read is slow too; keep the previous snapshot visible.
-  await expect(detail.getByRole("status")).toHaveText(
-    "Loading recent activity…",
-    { timeout: 5000 },
-  );
-  await expect(
-    detail.getByText("current-model", { exact: true }),
-  ).toBeVisible();
-  await expect(detail.getByText("24K / 200K", { exact: true })).toBeVisible();
+  const row = page
+    .getByRole("table", { name: "Sessions", exact: true })
+    .locator("tbody tr")
+    .first();
+  const check = row.getByRole("checkbox");
+  await check.check();
+  await expect(row.locator("td").nth(2)).toHaveText("Work account");
+  // Several inventory revisions occur while checking selection and card position.
+  const before = await row.boundingBox();
+  await expect
+    .poll(async () => {
+      await expect(check).toBeChecked();
+      return row.locator("td").nth(2).textContent();
+    })
+    .toBe("Work account");
+  expect(await row.boundingBox()).toEqual(before);
 });
 
 test("diagnostics show short IDs, copy complete values, and use machine-readable dates", async ({
@@ -347,19 +353,6 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
     .filter({ has: page.locator("dt", { hasText: /^Created$/ }) })
     .locator("time");
   await expect(created).toHaveAttribute("datetime", /^\d{4}-\d\d-\d\dT.*Z$/);
-  await main
-    .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button")
-    .first()
-    .click();
-  const detail = main.getByRole("region", {
-    name: "Session details",
-    exact: true,
-  });
-  await expect(
-    detail.getByText("current-model", { exact: true }),
-  ).toBeVisible();
-  expect(await detail.locator("li time").count()).toBeGreaterThan(0);
   expect(
     await main
       .locator("time")
@@ -371,7 +364,6 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
         ),
       ),
   ).toBe(true);
-  await expect(diagnostic.getByText("provide", { exact: true })).toBeVisible();
 });
 
 test("full ID hints escape clipped containers and remain inside the viewport", async ({

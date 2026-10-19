@@ -1,16 +1,11 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Project } from "#gen/cxz/project_pb";
-import type { Session, SessionEvent } from "#gen/cxz/session_pb";
+import type { Session } from "#gen/cxz/session_pb";
 import { ref, type Connection } from "#src/shared/api/connection.ts";
-import { sessionInfo } from "#src/features/session/model/session-info.ts";
-import { payload } from "#src/features/session/model/journal.ts";
-import { isDiagnosticEvent } from "#src/features/session/model/event-diagnostic.ts";
-
 export type DashboardConnection = Pick<
   Connection,
-  "projects" | "sessions" | "accounts" | "taskCatalog"
+  "projects" | "accounts" | "taskCatalog"
 >;
-export const RECENT_SESSION_ROWS = 32;
 
 export function sessionCounts(sessions: Session[]) {
   return {
@@ -38,41 +33,6 @@ export function sessionCounts(sessions: Session[]) {
           "failed",
         ].includes(s.status?.state ?? ""),
     ).length,
-  };
-}
-
-export function recentSession(
-  session: Session,
-  events: SessionEvent[],
-  metadata: SessionEvent[],
-) {
-  const ordered = [
-    ...new Map([...metadata, ...events].map((e) => [e.seq, e])).values(),
-  ].sort((a, b) => (a.seq < b.seq ? -1 : a.seq > b.seq ? 1 : 0));
-  const info = sessionInfo(session, ordered);
-  // Session.model is the creation setting; only the current run's catalog
-  // establishes what is selected now, including after a restart.
-  const catalog = [...ordered]
-    .reverse()
-    .find(
-      (e) =>
-        e.kind === "models" && (!e.runId || e.runId === session.status?.runId),
-    );
-  const selectedModel = catalog ? payload(catalog) : {};
-  const hasModel = [selectedModel.effective_model, selectedModel.model].some(
-    (value) => typeof value === "string" && value.length > 0,
-  );
-  return {
-    info: {
-      ...info,
-      model: hasModel ? info.model : "",
-      effort: hasModel ? info.effort : "",
-    },
-    activity: [...events]
-      .reverse()
-      .filter((e) => ["input", "assistant"].includes(e.kind))
-      .slice(0, 6),
-    errors: [...events].reverse().filter(isDiagnosticEvent).slice(0, 3),
   };
 }
 

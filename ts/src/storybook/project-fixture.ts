@@ -9,7 +9,6 @@ import {
 import { ProjectSchema } from "#gen/cxz/project_pb";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
-import { SessionService } from "#gen/cxz/session_svc_pb";
 import { AccountService } from "#gen/cxz/account_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
 import { TaskSchema, TaskStatus } from "#gen/cxz/task_pb";
@@ -18,7 +17,6 @@ import { TaskCatalog } from "#src/features/tasks/task-catalog.ts";
 export function projectFixture(
   unavailable = false,
   stopped = false,
-  latency = 0,
   sessionCount = 2,
 ) {
   const now = Date.now();
@@ -95,26 +93,6 @@ export function projectFixture(
       }),
     ),
   );
-  const rows = [
-    event(4, "input", "Prepare the release and check the tests."),
-    event(5, "assistant", "I will inspect the changes and verify the release."),
-    event(6, "error", "request failed", {
-      error: { message: "Provider rate limit reached; retrying shortly." },
-    }),
-    event(7, "assistant", "Tests passed. Which release should we prepare?"),
-  ];
-  const metadata = [
-    event(1, "models", "", {
-      effective_model: "current-model",
-      effective_effort: "high",
-    }),
-    event(2, "usage", "account/rateLimits/updated", {
-      rateLimits: { primary: { usedPercent: 25 } },
-    }),
-    event(3, "usage", "thread/tokenUsage/updated", {
-      tokenUsage: { last: { totalTokens: 24000 }, modelContextWindow: 200000 },
-    }),
-  ];
   const tasks = [
     "Review the release plan",
     "Verify browser tests",
@@ -135,13 +113,18 @@ export function projectFixture(
   const calls: {
     method: string;
     project?: string;
-    session?: string;
-    limit?: number;
     signal: AbortSignal;
   }[] = [];
   const transport = createRouterTransport((router) => {
     router.service(AccountService, {
-      get: () => ({ alias: "work", name: "Work account" }),
+      list: (_request, context) => {
+        calls.push({ method: "accounts", signal: context.signal });
+        return {
+          items: [
+            { id: new Uint8Array([11]), alias: "work", name: "Work account" },
+          ],
+        };
+      },
     });
     router.service(ProjectService, {
       async *download(request, context) {
@@ -158,36 +141,6 @@ export function projectFixture(
             : "ref: refs/heads/ui/dashboard\n",
         );
         yield { data, totalSize: BigInt(data.length) };
-      },
-    });
-    router.service(SessionService, {
-      async transcript(request, context) {
-        calls.push({
-          method: "transcript",
-          session: String(request.ref?.key.value),
-          limit: request.limit,
-          signal: context.signal,
-        });
-        if (unavailable)
-          throw new ConnectError(
-            "Session runtime is unavailable",
-            Code.Unavailable,
-          );
-        if (latency)
-          await new Promise<void>((resolve, reject) => {
-            const aborted = () => {
-              clearTimeout(timer);
-              context.signal.removeEventListener("abort", aborted);
-              reject(context.signal.reason);
-            };
-            const timer = setTimeout(() => {
-              context.signal.removeEventListener("abort", aborted);
-              resolve();
-            }, latency);
-            context.signal.addEventListener("abort", aborted, { once: true });
-            if (context.signal.aborted) aborted();
-          });
-        return { events: rows, metadata, snapshotSeq: 9n, hasOlder: true };
       },
     });
     router.service(TaskService, {
@@ -218,7 +171,6 @@ export function projectFixture(
   const c = {
     accounts: createClient(AccountService, transport),
     projects: createClient(ProjectService, transport),
-    sessions: createClient(SessionService, transport),
     taskCatalog: new TaskCatalog(createClient(TaskService, transport)),
   };
   return { c, projects, sessions, calls };

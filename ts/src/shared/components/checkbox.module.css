@@ -1,0 +1,62 @@
+.control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.input.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.box {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 1px solid var(--ui-shade-72);
+  border-radius: var(--ui-space);
+  background: transparent;
+  color: var(--ui-shade-16);
+  pointer-events: none;
+}
+.box svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.check,
+.mixed {
+  visibility: hidden;
+}
+.input:is(:checked, :indeterminate) + .box {
+  background: var(--ui-shade-237);
+  border-color: var(--ui-shade-237);
+}
+.input:checked:not(:indeterminate) + .box .check,
+.input:indeterminate + .box .mixed {
+  visibility: visible;
+}
+.control:hover .input:not(:disabled) + .box {
+  border-color: var(--ui-shade-160);
+}
+.input:focus-visible + .box {
+  outline: 1px solid var(--ui-shade-160);
+  outline-offset: 2px;
+}
+.input:disabled {
+  cursor: default;
+}
+.input:disabled + .box {
+  opacity: 0.35;
+}

@@ -81,8 +81,11 @@ test("projects use the full workspace with a persistent project picker and scope
   await expect(page).toHaveURL(/#\/projects\?project=project-2$/);
   await expect(cards).toHaveAttribute("aria-pressed", "true");
   await expect(
+    main.getByRole("checkbox", { name: "Select all sessions", exact: true }),
+  ).toBeChecked();
+  await expect(
     main.getByRole("region", { name: "Session details", exact: true }),
-  ).toContainText("codex");
+  ).toHaveCount(0);
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toHaveCount(0);
