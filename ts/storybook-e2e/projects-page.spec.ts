@@ -467,8 +467,19 @@ for (const scale of [1, 1.25, 1.5, 2]) {
         content: ":root { --ui-overflow-hint-background: var(--ui-shade-24); }",
       });
       await page.mouse.move(0, 0);
-      await trigger.scrollIntoViewIfNeeded();
       await page.evaluate(() => document.fonts.ready);
+      await expect(
+        page.getByRole("region", { name: "Project tasks", exact: true }),
+      ).toContainText("Review the release plan");
+      // Keep the source away from scroll-edge fades after async content settles:
+      // the portal escapes those fades, so a faded source would measure contrast.
+      await trigger.evaluate((element) =>
+        element.scrollIntoView({
+          block: "center",
+          inline: "nearest",
+          behavior: "instant",
+        }),
+      );
       // Compare the text, excluding the anchor's antialiased background corners.
       const clip = await trigger.evaluate((element) => {
         const range = document.createRange();
