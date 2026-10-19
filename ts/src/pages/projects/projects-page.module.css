@@ -149,16 +149,11 @@
 .session.session {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--ui-space);
   padding: var(--ui-space) var(--ui-control-inline-inset);
   height: var(--session-row-height);
   min-height: var(--session-row-height);
-}
-.sessionState {
-  font: 10px var(--ui-font-mono);
-  color: var(--ui-muted);
-  flex-shrink: 0;
 }
 .subheading {
   font-size: 11px;

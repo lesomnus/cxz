@@ -607,6 +607,7 @@ export const messages = {
   "Provision attempts": "Provision attempts",
   "Session overview": "Session overview",
   Idle: "Idle",
+  Interrupted: "Interrupted",
   Stopped: "Stopped",
   Unknown: "Unknown",
   "Waiting for input": "Waiting for input",

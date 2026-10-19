@@ -12,6 +12,7 @@ function Preview({
   stopped = false,
   streaming = false,
   sessionCount = 2,
+  mixedStates = false,
 }) {
   const [router] = useState(() => {
     const fixture = projectFixture(
@@ -20,6 +21,26 @@ function Preview({
       streaming ? 4000 : 0,
       sessionCount,
     );
+    if (mixedStates) {
+      const states = [
+        "waiting_input",
+        "working",
+        "idle",
+        "stopped",
+        "interrupted",
+        "failed",
+        "waiting",
+        "unknown",
+        "running",
+      ];
+      fixture.sessions.forEach((session, index) => {
+        if (session.status) {
+          session.status.state = states[index % states.length]!;
+          if (session.status.state !== "waiting_input")
+            session.status.pending = [];
+        }
+      });
+    }
     const projects = empty ? [] : fixture.projects;
     const sessions = empty ? [] : fixture.sessions;
     return createWorkspaceRouter(
@@ -78,6 +99,9 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const SessionStates: Story = {
+  args: { sessionCount: 9, mixedStates: true },
+};
 export const LongSessions: Story = { args: { sessionCount: 16 } };
 export const EmptySessions: Story = { args: { sessionCount: 0 } };
 export const Empty: Story = { args: { empty: true } };

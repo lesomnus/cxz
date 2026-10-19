@@ -20,7 +20,3 @@
 .session[data-inactive="true"] :global(.session-heading) {
   opacity: 0.25;
 }
-
-.backgroundActivity {
-  opacity: 0.4;
-}

@@ -610,6 +610,7 @@ export const messages = {
   "Provision attempts": "프로비저닝 시도",
   "Session overview": "세션 현황",
   Idle: "대기",
+  Interrupted: "중단됨",
   Stopped: "정지됨",
   Unknown: "알 수 없음",
   "Waiting for input": "입력 대기",

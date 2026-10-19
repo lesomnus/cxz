@@ -9,6 +9,7 @@ import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { IdentifierValue } from "#src/shared/components/identifier-value.tsx";
+import { SessionIndicator } from "#src/features/session/components/session-indicator.tsx";
 import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
@@ -181,10 +182,8 @@ function ProjectDashboard({
                 aria-controls={selected === s.runtimeId ? detailsId : undefined}
                 onClick={() => select(s.runtimeId)}
               >
+                <SessionIndicator session={s} variant="status" />
                 <SessionIdentity session={s} />
-                <span className={styles.sessionState}>
-                  {s.status?.state || t("Unknown")}
-                </span>
               </PanelItem>
             ))}
           </div>

@@ -1,0 +1,8 @@
+.backgroundActivity {
+  opacity: 0.4;
+}
+.stateIcon {
+  width: 100%;
+  height: auto;
+  color: var(--ui-muted);
+}
