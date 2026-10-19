@@ -13,6 +13,7 @@
     "test": "vitest run src scripts",
     "test:browser": "playwright test",
     "test:browser:plaintext": "playwright test --config playwright.plaintext.config.ts",
+    "test:browser:dev": "playwright test --config playwright.dev.config.ts",
     "format": "prettier --write src .storybook vite.config.ts vite.dev.config.mjs vite.sandbox.config.ts playwright.storybook.config.ts storybook-e2e playwright.config.ts playwright.sandbox.config.ts e2e sandbox-e2e test-support scripts .storybook-ui playwright.ui.config.ts ui-e2e playwright.nox.config.ts vite.nox-development.config.ts nox-e2e",
     "sandbox:prepare": "node scripts/build-sandbox.mjs",
     "sandbox": "npm run sandbox:prepare && vite --config vite.sandbox.config.ts --open /sandbox.html",
