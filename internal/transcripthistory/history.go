@@ -836,6 +836,21 @@ func SyncWith(ctx context.Context, db *sql.DB, id string, decode Decode, cache *
 
 const currentVersion = ` updated<=? AND updated=(SELECT MAX(updated) FROM transcript_rows x WHERE x.session_id=r.session_id AND x.seq=r.seq AND x.updated<=?) `
 
+// metadataQuery asks for the newest records of each metadata kind as of a
+// snapshot, and for their bodies. It is built here rather than written inline so
+// that a test can read its plan: what matters about it is not what it answers
+// but what it reads to answer, and only the plan says that.
+func metadataQuery(session string, snapshot uint64) (string, []any) {
+	tails := make([]string, 0, len(metadataKinds))
+	args := []any{session}
+	for _, kind := range metadataKinds {
+		tails = append(tails, `SELECT * FROM (SELECT seq FROM transcript_records WHERE session_id=? AND kind=? AND seq<=? ORDER BY seq DESC LIMIT ?)`)
+		args = append(args, session, kind, snapshot, metadataPerKind)
+	}
+	return `SELECT (SELECT data FROM events WHERE session_id=? AND seq=k.seq) FROM (` +
+		strings.Join(tails, ` UNION ALL `) + `) k ORDER BY k.seq`, args
+}
+
 func Page(ctx context.Context, db *sql.DB, r *api.TranscriptRequest, decode Decode) (*api.TranscriptReply, error) {
 	if r.AfterSeq > 0 && r.BeforeSeq > 0 {
 		return nil, status.Error(codes.InvalidArgument, "before_seq and after_seq are mutually exclusive")
@@ -908,17 +923,22 @@ func Page(ctx context.Context, db *sql.DB, r *api.TranscriptRequest, decode Deco
 			return nil, err
 		}
 	}
-	// Ranked within each kind, so the newest of a rare kind survives a session
+	// The newest of each kind, so the newest of a rare kind survives a session
 	// that wrote thousands of a common one. Ordered ascending on the way out,
 	// which is how a reader merges them.
-	meta := []any{r.SessionId, out.SnapshotSeq}
-	for _, kind := range metadataKinds {
-		meta = append(meta, kind)
-	}
-	meta = append(meta, metadataPerKind)
-	rows, err = db.QueryContext(ctx, `SELECT data FROM (SELECT e.data AS data, r.seq AS seq, ROW_NUMBER() OVER (PARTITION BY r.kind ORDER BY r.seq DESC) AS rank`+
-		` FROM transcript_records r JOIN events e ON e.session_id=r.session_id AND e.seq=r.seq`+
-		` WHERE r.session_id=? AND r.seq<=? AND r.kind IN (`+placeholders(len(metadataKinds))+`)) WHERE rank<=? ORDER BY seq`, meta...)
+	//
+	// A kind's newest records are the tail of the record index, so each is one
+	// short backwards walk of 32 entries and the bodies read are the 160-odd
+	// that are answered with. This used to rank a join of every metadata record
+	// to its body, which put `events.data` in the window function's input: a
+	// page carrying 0.2MB of metadata read the 18 to 28MB of native payloads
+	// behind 16k to 26k records and discarded all but 32 per kind, at 0.3 to
+	// 2.0s warm and worse cold. Every page paid it, and opening a conversation
+	// is two pages -- one of them a single row asked for only as a snapshot
+	// fence. Measured on a real installation: 1-2ms against 0.3-2.0s, for
+	// byte-identical rows. See cxz#227.
+	query, meta := metadataQuery(r.SessionId, out.SnapshotSeq)
+	rows, err = db.QueryContext(ctx, query, meta...)
 	if err != nil {
 		return nil, err
 	}
@@ -927,6 +947,11 @@ func Page(ctx context.Context, db *sql.DB, r *api.TranscriptRequest, decode Deco
 		if err = rows.Scan(&b); err != nil {
 			rows.Close()
 			return nil, err
+		}
+		if b == nil {
+			// A record whose body is gone. The join this replaced dropped it
+			// before it could take a slot; here it takes one and is skipped.
+			continue
 		}
 		e, x := decode(b)
 		if x != nil {
@@ -945,13 +970,8 @@ func Page(ctx context.Context, db *sql.DB, r *api.TranscriptRequest, decode Deco
 	return out, nil
 }
 
-func placeholders(n int) string {
-	return strings.TrimSuffix(strings.Repeat("?,", n), ",")
-}
-
-// keepPerKind is what the SQL above does with a window function, for the
-// in-memory path that has no SQL. Order is preserved, so the result is still
-// ascending by seq.
+// keepPerKind is what the SQL above does per kind, for the in-memory path that
+// has no SQL. Order is preserved, so the result is still ascending by seq.
 func keepPerKind(all []*api.Event) []*api.Event {
 	seen := map[string]int{}
 	for _, e := range all {
