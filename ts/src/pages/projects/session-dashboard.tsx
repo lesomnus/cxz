@@ -94,7 +94,7 @@ export function SessionDashboard({
     <section
       id={id}
       aria-label={t("Session details")}
-      className={styles.section}
+      className={styles.sessionDetails}
     >
       <div className={styles.sectionHeading}>
         <h2>{t("Session details")}</h2>

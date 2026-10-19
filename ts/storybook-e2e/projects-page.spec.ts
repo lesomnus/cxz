@@ -24,7 +24,7 @@ test("project page and shared toolbar stories render their selector and states",
   ).toBeVisible();
   await expect(picker).toHaveText("Web workspace");
   await page
-    .getByRole("region", { name: "Project sessions", exact: true })
+    .getByRole("region", { name: "Session list", exact: true })
     .getByRole("button")
     .first()
     .click();
@@ -39,10 +39,76 @@ test("project page and shared toolbar stories render their selector and states",
   ).toBeVisible();
   await page.goto("/iframe.html?id=pages-projects--loading&viewMode=story");
   await expect(picker).toBeDisabled();
-  await expect(page.locator("main .panel-scroll-content")).toContainText(
-    "Loading projects…",
-  );
+  await expect(
+    page.locator("main > .panel-scroll-region > .panel-scroll-content"),
+  ).toContainText("Loading projects…");
   expect(errors).toEqual([]);
+});
+
+test("session list reserves seven and a half rows and scrolls independently", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(
+    "/iframe.html?id=pages-projects--long-sessions&viewMode=story",
+  );
+  const list = page.getByRole("region", { name: "Session list", exact: true });
+  const viewport = list.locator(".panel-scroll-content");
+  const rows = list.getByRole("button");
+  await expect(rows).toHaveCount(16);
+  const frame = (await viewport.boundingBox())!;
+  const eighth = (await rows.nth(7).boundingBox())!;
+  expect(
+    Math.abs(frame.y + frame.height - eighth.y - eighth.height / 2),
+  ).toBeLessThan(1);
+  const outer = page.locator(
+    "main > .panel-scroll-region > .panel-scroll-content",
+  );
+  const outerTop = await outer.evaluate((el) => el.scrollTop);
+  await viewport.hover();
+  await page.mouse.wheel(0, 300);
+  await expect
+    .poll(() => viewport.evaluate((el) => el.scrollTop))
+    .toBeGreaterThan(100);
+  expect(await outer.evaluate((el) => el.scrollTop)).toBe(outerTop);
+  const scrolled = await viewport.evaluate((el) => el.scrollTop);
+  const section = page.getByRole("region", {
+    name: "Project sessions",
+    exact: true,
+  });
+  const sectionBefore = await section.boundingBox();
+  const diagnostics = page.getByRole("region", {
+    name: "Diagnostics",
+    exact: true,
+  });
+  const diagnosticsBefore = await diagnostics.boundingBox();
+  const listBefore = await viewport.boundingBox();
+  await rows.nth(10).click();
+  await expect(
+    page.getByRole("region", { name: "Session details", exact: true }),
+  ).toContainText("current-model");
+  expect(await viewport.evaluate((el) => el.scrollTop)).toBe(scrolled);
+  expect(await viewport.boundingBox()).toEqual(listBefore);
+  expect(await section.boundingBox()).toEqual(sectionBefore);
+  expect(await diagnostics.boundingBox()).toEqual(diagnosticsBefore);
+  const detailsViewport = section
+    .locator(":scope > .panel-scroll-region")
+    .first()
+    .locator(".panel-scroll-content");
+  expect(
+    await detailsViewport.evaluate((el) => el.scrollHeight > el.clientHeight),
+  ).toBe(true);
+  await rows.nth(11).click();
+  expect(await viewport.boundingBox()).toEqual(listBefore);
+  expect(await section.boundingBox()).toEqual(sectionBefore);
+  await rows.nth(10).click();
+  await expect(rows.nth(10)).toHaveAttribute("aria-pressed", "true");
+  for (const story of ["default", "empty-sessions"]) {
+    await page.goto(`/iframe.html?id=pages-projects--${story}&viewMode=story`);
+    await expect(list).toBeVisible();
+    expect((await viewport.boundingBox())!.height).toBe(frame.height);
+  }
+  await expect(list).toContainText("No sessions");
 });
 
 test("dashboard scopes project data and shows the selected session's runtime snapshots", async ({
@@ -88,7 +154,7 @@ test("dashboard scopes project data and shows the selected session's runtime sna
     tasks.getByRole("link", { name: "Open task board" }),
   ).toHaveAttribute("href", /project=project-1/);
   await main
-    .getByRole("region", { name: "Project sessions", exact: true })
+    .getByRole("region", { name: "Session list", exact: true })
     .getByRole("button")
     .first()
     .click();
@@ -118,9 +184,15 @@ test("dashboard scopes project data and shows the selected session's runtime sna
     exact: true,
   });
   await expect(diagnostics).toBeVisible();
-  expect((await detail.boundingBox())!.x).toBe(
-    (await environment.boundingBox())!.x,
-  );
+  const detailBox = (await sessions
+    .locator(":scope > .panel-scroll-region")
+    .first()
+    .boundingBox())!;
+  const listBox = (await main
+    .getByRole("region", { name: "Session list", exact: true })
+    .boundingBox())!;
+  expect(detailBox.x).toBeGreaterThanOrEqual(sessionsBox.x);
+  expect(detailBox.y + detailBox.height).toBeLessThan(listBox.y);
   expect((await diagnostics.boundingBox())!.x).toBe(
     (await environment.boundingBox())!.x,
   );
@@ -154,7 +226,7 @@ test("dashboard handles stopped and unavailable runtimes without hiding inventor
     main.getByRole("region", { name: "Environment", exact: true }),
   ).toContainText("Workspace is unavailable");
   await main
-    .getByRole("region", { name: "Project sessions", exact: true })
+    .getByRole("region", { name: "Session list", exact: true })
     .getByRole("button")
     .first()
     .click();
@@ -186,7 +258,7 @@ test("dashboard columns collapse on narrow screens and retain the fixed toolbar"
   const toolbar = main.locator(":scope > header");
   const before = await toolbar.boundingBox();
   await main
-    .getByRole("region", { name: "Project sessions", exact: true })
+    .getByRole("region", { name: "Session list", exact: true })
     .getByRole("button")
     .first()
     .click();
@@ -206,7 +278,7 @@ test("live inventory revisions do not starve slow dashboard reads or clear their
     "/iframe.html?id=pages-projects--slow-activity&viewMode=story",
   );
   await page
-    .getByRole("region", { name: "Project sessions", exact: true })
+    .getByRole("region", { name: "Session list", exact: true })
     .getByRole("button")
     .first()
     .click();
@@ -273,7 +345,7 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
     .locator("time");
   await expect(created).toHaveAttribute("datetime", /^\d{4}-\d\d-\d\dT.*Z$/);
   await main
-    .getByRole("region", { name: "Project sessions", exact: true })
+    .getByRole("region", { name: "Session list", exact: true })
     .getByRole("button")
     .first()
     .click();
@@ -392,7 +464,20 @@ for (const scale of [1, 1.25, 1.5, 2]) {
         content: ":root { --ui-overflow-hint-background: var(--ui-shade-24); }",
       });
       await page.mouse.move(0, 0);
-      const before = await trigger.screenshot({
+      await trigger.scrollIntoViewIfNeeded();
+      await page.evaluate(() => document.fonts.ready);
+      // Compare the text, excluding the anchor's antialiased background corners.
+      const clip = await trigger.evaluate((element) => {
+        const range = document.createRange();
+        const text = document
+          .createTreeWalker(element, NodeFilter.SHOW_TEXT)
+          .nextNode()!;
+        range.selectNodeContents(text);
+        const { x, y, width, height } = range.getBoundingClientRect();
+        return { x, y, width, height };
+      });
+      const before = await page.screenshot({
+        clip,
         path: testInfo.outputPath("original.png"),
       });
       await trigger.hover();
@@ -400,7 +485,8 @@ for (const scale of [1, 1.25, 1.5, 2]) {
         page.getByRole("tooltip", { name: "container-1", exact: true }),
       ).toBeVisible();
       await expectAlignedText(trigger);
-      const after = await trigger.screenshot({
+      const after = await page.screenshot({
+        clip,
         path: testInfo.outputPath("overlay.png"),
       });
       if (!after.equals(before)) {

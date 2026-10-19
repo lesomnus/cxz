@@ -19,6 +19,7 @@ export function projectFixture(
   unavailable = false,
   stopped = false,
   latency = 0,
+  sessionCount = 2,
 ) {
   const now = Date.now();
   const projects = ["Web workspace", "API workspace"].map((name, i) =>
@@ -53,10 +54,15 @@ export function projectFixture(
         : undefined,
     });
   const sessions = projects.flatMap((project) =>
-    ["Plan the next release", "Review changes"].map((name, index) =>
+    Array.from(
+      { length: sessionCount },
+      (_, index) =>
+        ["Plan the next release", "Review changes"][index] ??
+        `Session ${index + 1}`,
+    ).map((name, index) =>
       create(SessionSchema, {
         runtimeId: `${project.alias}-${index}`,
-        alias: index ? "elm" : "oak",
+        alias: index > 1 ? `session-${index + 1}` : index ? "elm" : "oak",
         name,
         project,
         agent: index ? "claude" : "codex",

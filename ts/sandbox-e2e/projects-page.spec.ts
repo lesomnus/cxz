@@ -36,7 +36,7 @@ test("projects use the full workspace with a persistent project picker and scope
     .boundingBox())!;
   expect((await main.boundingBox())!.x).toBe(sidebar.x + sidebar.width);
   const cards = main
-    .getByRole("region", { name: "Project sessions" })
+    .getByRole("region", { name: "Session list", exact: true })
     .getByRole("button");
   await expect(cards).toHaveCount(8);
   await picker.click();
@@ -123,7 +123,9 @@ test("project toolbar stays above the scrolling body on narrow screens", async (
     page.getByRole("combobox", { name: "Select project", exact: true }),
   ).toHaveText("Design playground");
   const before = await header.boundingBox();
-  const viewport = page.locator("main .panel-scroll-content");
+  const viewport = page.locator(
+    "main > .panel-scroll-region > .panel-scroll-content",
+  );
   await viewport.evaluate((el) => (el.scrollTop = el.scrollHeight));
   expect(await viewport.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
   expect(await header.boundingBox()).toEqual(before);

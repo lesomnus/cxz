@@ -11,9 +11,15 @@ function Preview({
   unavailable = false,
   stopped = false,
   streaming = false,
+  sessionCount = 2,
 }) {
   const [router] = useState(() => {
-    const fixture = projectFixture(unavailable, stopped, streaming ? 4000 : 0);
+    const fixture = projectFixture(
+      unavailable,
+      stopped,
+      streaming ? 4000 : 0,
+      sessionCount,
+    );
     const projects = empty ? [] : fixture.projects;
     const sessions = empty ? [] : fixture.sessions;
     return createWorkspaceRouter(
@@ -72,6 +78,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const LongSessions: Story = { args: { sessionCount: 16 } };
+export const EmptySessions: Story = { args: { sessionCount: 0 } };
 export const Empty: Story = { args: { empty: true } };
 export const Loading: Story = { args: { empty: true, loading: true } };
 

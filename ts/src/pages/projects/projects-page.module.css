@@ -76,6 +76,11 @@
   gap: var(--ui-space);
   padding: var(--ui-control-inset) var(--ui-control-inline-inset);
 }
+.diagnostics dd {
+  display: flex;
+  align-items: center;
+  min-height: var(--ui-icon-size);
+}
 .details dt {
   color: var(--ui-muted);
   overflow-wrap: anywhere;
@@ -108,9 +113,37 @@
 .sectionHeading a:hover {
   color: var(--ui-shade-237);
 }
+.sessionDetailsScroll {
+  --session-details-height: 28rem;
+  --ui-scroll-area-background: var(--ui-shade-24);
+  flex: none;
+  height: var(--session-details-height);
+  margin-bottom: calc(3 * var(--ui-space));
+}
+.sessionDetailsScroll :global(.panel-scroll-content) {
+  overscroll-behavior: contain;
+}
+.sessionDetails {
+  min-width: 0;
+}
+.sessionScroll {
+  --session-row-height: 44px;
+  --session-row-gap: var(--ui-control-inset);
+  --session-visible-rows: 7.5;
+  --ui-scroll-area-background: var(--ui-shade-24);
+  flex: none;
+  height: calc(
+    var(--session-visible-rows) * var(--session-row-height) + 7 *
+      var(--session-row-gap)
+  );
+  overscroll-behavior: contain;
+}
+.sessionScroll :global(.panel-scroll-content) {
+  overscroll-behavior: contain;
+}
 .sessions {
   display: grid;
-  gap: var(--ui-control-inset);
+  gap: var(--session-row-gap);
 }
 .session.session {
   display: flex;
@@ -118,6 +151,8 @@
   justify-content: space-between;
   gap: var(--ui-space);
   padding: var(--ui-space) var(--ui-control-inline-inset);
+  height: var(--session-row-height);
+  min-height: var(--session-row-height);
 }
 .sessionState {
   font: 10px var(--ui-font-mono);

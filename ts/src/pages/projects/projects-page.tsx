@@ -146,30 +146,55 @@ function ProjectDashboard({
         className={`${styles.section} ${styles.sessionSection}`}
         aria-label={t("Project sessions")}
       >
+        <PanelScroll
+          key={selected}
+          className={styles.sessionDetailsScroll}
+          scrollbarLabel={t("Session details")}
+        >
+          {session ? (
+            <SessionDashboard
+              key={`${session.runtimeId}/${session.status?.runId}`}
+              c={c}
+              session={session}
+              id={detailsId}
+            />
+          ) : (
+            <p className={styles.selectionPrompt}>
+              {t("Select a session to inspect its activity and settings.")}
+            </p>
+          )}
+        </PanelScroll>
         <h2 className={styles.sectionTitle}>{t("Sessions")}</h2>
-        <div className={styles.sessions}>
-          {sessions.map((s) => (
-            <PanelItem
-              type="button"
-              className={styles.session}
-              key={s.runtimeId}
-              aria-pressed={selected === s.runtimeId}
-              aria-controls={selected === s.runtimeId ? detailsId : undefined}
-              onClick={() => select(s.runtimeId)}
-            >
-              <SessionIdentity session={s} />
-              <span className={styles.sessionState}>
-                {s.status?.state || t("Unknown")}
-              </span>
-            </PanelItem>
-          ))}
-        </div>
-        {sessionsLoading && !sessions.length && (
-          <p className={styles.empty}>{t("Loading sessions…")}</p>
-        )}
-        {!sessionsLoading && !sessions.length && (
-          <p className={styles.empty}>{t("No sessions")}</p>
-        )}
+        <PanelScroll
+          className={styles.sessionScroll}
+          role="region"
+          aria-label={t("Session list")}
+          scrollbarLabel={t("Session list")}
+        >
+          <div className={styles.sessions}>
+            {sessions.map((s) => (
+              <PanelItem
+                type="button"
+                className={styles.session}
+                key={s.runtimeId}
+                aria-pressed={selected === s.runtimeId}
+                aria-controls={selected === s.runtimeId ? detailsId : undefined}
+                onClick={() => select(s.runtimeId)}
+              >
+                <SessionIdentity session={s} />
+                <span className={styles.sessionState}>
+                  {s.status?.state || t("Unknown")}
+                </span>
+              </PanelItem>
+            ))}
+          </div>
+          {sessionsLoading && !sessions.length && (
+            <p className={styles.empty}>{t("Loading sessions…")}</p>
+          )}
+          {!sessionsLoading && !sessions.length && (
+            <p className={styles.empty}>{t("No sessions")}</p>
+          )}
+        </PanelScroll>
       </section>
       <div className={styles.information}>
         {p.desc && <p className={styles.description}>{p.desc}</p>}
@@ -315,19 +340,10 @@ function ProjectDashboard({
           )}
         </section>
 
-        {session ? (
-          <SessionDashboard
-            key={`${session.runtimeId}/${session.status?.runId}`}
-            c={c}
-            session={session}
-            id={detailsId}
-          />
-        ) : (
-          <p className={styles.selectionPrompt}>
-            {t("Select a session to inspect its activity and settings.")}
-          </p>
-        )}
-        <section className={styles.section} aria-label={t("Diagnostics")}>
+        <section
+          className={`${styles.section} ${styles.diagnostics}`}
+          aria-label={t("Diagnostics")}
+        >
           <h2 className={styles.sectionTitle}>{t("Diagnostics")}</h2>
           <h3 className={styles.subheading}>{t("Project")}</h3>
           <Fields
@@ -342,29 +358,19 @@ function ProjectDashboard({
               [t("Updated"), <DateTime value={p.dateUpdated} />],
             ]}
           />
-          {session && (
-            <>
-              <h3 className={styles.subheading}>{t("Session")}</h3>
-              <Fields
-                rows={[
-                  [
-                    t("Runtime ID"),
-                    <IdentifierValue value={session.runtimeId} />,
-                  ],
-                  [
-                    t("Run ID"),
-                    <IdentifierValue value={session.status?.runId} />,
-                  ],
-                  [
-                    t("Provider session ID"),
-                    <IdentifierValue value={session.status?.vendorId} />,
-                  ],
-                  [t("Permission mode"), session.status?.permissionMode],
-                  [t("Last event"), session.status?.lastSeq.toString()],
-                ]}
-              />
-            </>
-          )}
+          <h3 className={styles.subheading}>{t("Session")}</h3>
+          <Fields
+            rows={[
+              [t("Runtime ID"), <IdentifierValue value={session?.runtimeId} />],
+              [t("Run ID"), <IdentifierValue value={session?.status?.runId} />],
+              [
+                t("Provider session ID"),
+                <IdentifierValue value={session?.status?.vendorId} />,
+              ],
+              [t("Permission mode"), session?.status?.permissionMode],
+              [t("Last event"), session?.status?.lastSeq.toString()],
+            ]}
+          />
         </section>
       </div>
     </div>
