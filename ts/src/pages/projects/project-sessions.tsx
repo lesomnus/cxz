@@ -98,7 +98,7 @@ export function ProjectSessions({
                     onChange={() => toggle(s.runtimeId)}
                   />
                 </td>
-                <td>
+                <td className={styles.cardCell}>
                   <PanelItem
                     type="button"
                     className={styles.session}
@@ -109,7 +109,7 @@ export function ProjectSessions({
                     <SessionIdentity session={s} />
                   </PanelItem>
                 </td>
-                <td className={styles.account}>
+                <td className={`${styles.cardCell} ${styles.account}`}>
                   {accountAlias ? (
                     <Link
                       to="/accounts"
