@@ -69,6 +69,17 @@ An attached TUI refuses an automatic update while someone is interacting with
 it, so a session being watched is updated after the watching stops rather than
 during it.
 
+Safely idle includes that nothing is running under the agent, which is read
+from the process tree rather than taken on trust. Two kinds of process are
+ignored, because they live exactly as long as the session does and so say
+nothing about whether a turn is in flight: cxz's own MCP bridges, and a
+provider's long-lived helper -- today that is `codex-code-mode-host`, named in
+`supervisor.providerHelpers`. A refusal says which process it is waiting for,
+so a helper that belongs on that list can be told apart from work that does
+not. One that is missing from the list blocks every update of the installation
+for as long as the session exists, and `cxz self-update` is the way past it
+until it is added.
+
 The waits can be shortened where they are being tested, which is the only
 reason to:
 

@@ -732,7 +732,7 @@ func (s *Supervisor) executeLocked(op string, c core.Command) (core.Receipt, err
 		return s.setPermission(c)
 	}
 	if op == "update-stop" {
-		if reason := s.updateReason(time.Now(), s.processesQuiet()); reason != "" {
+		if reason := s.updateReason(time.Now(), s.busyProcess()); reason != "" {
 			return receipt, errors.New(reason)
 		}
 		op = "stop"
