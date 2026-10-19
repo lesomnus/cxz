@@ -60,6 +60,10 @@ jobs:
       - run: npm run --prefix ts test:performance
       - run: npm run --prefix ts test:browser
       - run: npm run --prefix ts test:browser:plaintext
+      # The dev server, which until now nothing ran. The one thing it does
+      # differently is resolve the nox submodule as source, and that is the one
+      # thing that broke. See cxz#232.
+      - run: npm run --prefix ts test:browser:dev
       - name: Preserve failed browser diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

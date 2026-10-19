@@ -17,6 +17,21 @@ export function noxConfig(command) {
         "@lesomnus/nox/editor",
         "@lesomnus/nox/terminal",
       ],
+      // Crawl the editor's own source for dependencies at startup. Excluding
+      // the nox entries stops the scan at them, so monaco -- which only the
+      // editor's lazy `import("./code-editor")` reaches -- was discovered when
+      // a person opened a file. Discovering a dependency then re-optimizes,
+      // which changes every pre-bundled chunk's hash, and the imports already
+      // in flight answered 504 Outdated Optimize Dep: opening a file in the
+      // explorer failed with "Failed to fetch dynamically imported module" and
+      // recovered only on the reload vite asks for afterwards.
+      //
+      // Entries replace discovery rather than adding to it, so the html roots
+      // are named too. Reading the list from the editor's source means a new
+      // monaco language in nox needs nothing here. See cxz#232.
+      ...(command === "serve"
+        ? { entries: ["*.html", "packages/nox/src/editor/code-editor.ts"] }
+        : {}),
     },
     ...(command === "serve"
       ? {

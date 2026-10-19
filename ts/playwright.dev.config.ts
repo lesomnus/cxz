@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "e2e-plaintext",
-  testMatch: "multi-window.spec.ts",
+  testMatch: ["multi-window.spec.ts", "dev-editor.spec.ts"],
   workers: 1,
   use: { ...devices["Desktop Chrome"], baseURL: "http://127.0.0.1:5174" },
   webServer: [
