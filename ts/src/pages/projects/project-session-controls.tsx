@@ -35,12 +35,20 @@ export function ProjectSessionMenu({
     <ActionMenu
       label={
         bulk
-          ? t("Selected session actions")
+          ? t("{count} selected", { count: sessions.length })
           : t("Controls for {name}", {
               name: sessions[0]?.name || sessions[0]?.alias || "",
             })
       }
-      triggerContent={bulk ? t("Actions") : undefined}
+      triggerContent={
+        bulk ? (
+          <span className={styles.selected}>
+            <span className={styles.selectedNumber}>{sessions.length}</span>
+            <span>{t("selected")}</span>
+          </span>
+        ) : undefined
+      }
+      status={bulk ? t("Selected session actions") : undefined}
       triggerClassName={bulk ? styles.bulkTrigger : styles.rowTrigger}
       motion={{ from: "top-right", effect: "reveal" }}
       disabled={disabled || controls.busy || !sessions.length}

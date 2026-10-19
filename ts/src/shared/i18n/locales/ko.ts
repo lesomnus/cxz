@@ -647,6 +647,7 @@ export const messages = {
   "Session stopped": "정지된 세션",
   Close: "닫기",
   Actions: "작업",
+  "Add session": "세션 추가",
   selected: "선택됨",
   "{count} selected": "{count}개 선택됨",
   "Selected session actions": "선택한 세션 작업",

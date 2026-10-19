@@ -5,6 +5,7 @@ import { ProjectSchema } from "#gen/cxz/project_pb";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
 import { AccountService } from "#gen/cxz/account_svc_pb";
+import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
 import { TaskSchema, TaskStatus } from "#gen/cxz/task_pb";
 import { Connection } from "#src/shared/api/connection.ts";
@@ -129,7 +130,12 @@ export function projectFixture(
         calls.push({ method: "accounts", signal: context.signal });
         return {
           items: [
-            { id: new Uint8Array([11]), alias: "work", name: "Work account" },
+            {
+              id: new Uint8Array([11]),
+              alias: "work",
+              name: "Work account",
+              agent: "codex",
+            },
           ],
         };
       },
@@ -152,6 +158,44 @@ export function projectFixture(
       },
     });
     router.service(SessionService, {
+      add: (request, context) => {
+        const project = projects.find(
+          (p) => p.runtimeId === request.project?.key.value,
+        );
+        if (!project)
+          throw new ConnectError("Project not found", Code.NotFound);
+        if (unavailable)
+          throw new ConnectError(
+            "Session creation is unavailable",
+            Code.Unavailable,
+          );
+        const prior = sessions.find((s) => s.clientId === request.clientId);
+        if (prior) return clone(SessionSchema, prior);
+        const number = sessions.length + 1;
+        const session = create(SessionSchema, {
+          id: Uint8Array.from({ length: 16 }, (_, i) =>
+            i === 0 ? project.id[0]! : i === 15 ? number : 0,
+          ),
+          runtimeId: `${project.alias}-created-${number}`,
+          alias: `new-${number}`,
+          name: request.name,
+          clientId: request.clientId,
+          model: request.model,
+          project,
+          account: { id: new Uint8Array([11]) },
+          agent: "codex",
+          status: { state: "idle", runId: "created-run" },
+        });
+        calls.push({
+          method: "add",
+          session: session.runtimeId,
+          project: project.runtimeId,
+          signal: context.signal,
+        });
+        sessions.push(session);
+        publish();
+        return clone(SessionSchema, session);
+      },
       get: (request, context) => {
         const id = String(request.ref?.key.value);
         calls.push({ method: "get", session: id, signal: context.signal });
@@ -233,6 +277,16 @@ export function projectFixture(
           ],
           retained: ["Project workspace", "Account settings"],
         };
+      },
+    });
+    router.service(AuthBindingService, {
+      add: (request, context) => {
+        calls.push({
+          method: "binding",
+          project: String(request.project?.key.value),
+          signal: context.signal,
+        });
+        return { bindingId: "storybook-binding" };
       },
     });
     function control(

@@ -6,7 +6,7 @@ const rows = (page: Page) => table(page).locator("tbody tr");
 const states = (page: Page) => rows(page).locator("td:nth-child(6)");
 async function openBulk(page: Page, action: string) {
   await page
-    .getByRole("button", { name: "Selected session actions", exact: true })
+    .getByRole("button", { name: /^\d+ selected$/, exact: true })
     .click();
   await page.getByRole("menuitem", { name: action, exact: true }).click();
 }
@@ -76,15 +76,19 @@ test("bulk controls keep layout stable and apply only to the selected sessions",
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const bulk = page.getByRole("button", {
-    name: "Selected session actions",
+    name: /^\d+ selected$/,
     exact: true,
   });
   await expect(bulk).toBeDisabled();
   const before = await table(page).boundingBox();
+  const buttonBefore = await bulk.boundingBox();
+  await expect(bulk).toHaveAttribute("aria-label", "0 selected");
   await table(page)
     .getByRole("checkbox", { name: "Select all sessions", exact: true })
     .check();
   expect(await table(page).boundingBox()).toEqual(before);
+  expect(await bulk.boundingBox()).toEqual(buttonBefore);
+  await expect(bulk).toHaveAttribute("aria-label", "2 selected");
   await openBulk(page, "Stop");
   const stop = page.getByRole("dialog", { name: "Stop sessions", exact: true });
   await expect(stop).toContainText("2 sessions will be affected.");
@@ -117,10 +121,10 @@ test("mixed-state bulk stop skips sessions already stopped", async ({
   await dialog.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(
-    page.getByRole("status", { name: "3 selected", exact: true }),
+    page.getByRole("button", { name: "3 selected", exact: true }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Selected session actions", exact: true })
+    .getByRole("button", { name: /^\d+ selected$/, exact: true })
     .click();
   await expect(
     page.getByRole("menuitem", { name: "Stop", exact: true }),
@@ -178,7 +182,7 @@ test("partial failures keep only failed targets in the confirmation and selectio
   await expect(rows(page).first().getByRole("checkbox")).not.toBeChecked();
   await expect(rows(page).nth(1).getByRole("checkbox")).toBeChecked();
   await expect(
-    page.getByRole("status", { name: "1 selected", exact: true }),
+    page.getByRole("button", { name: "1 selected", exact: true }),
   ).toBeVisible();
 });
 
@@ -278,4 +282,65 @@ test("failed identity saves keep the draft and leave the row unchanged", async (
   await expect(input).toHaveValue("Keep this draft");
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(trigger).toHaveText("Plan the next release");
+});
+
+test("the rightmost Session button opens the existing create form for the current project", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const section = page.getByRole("region", {
+    name: "Project sessions",
+    exact: true,
+  });
+  const add = section.getByRole("button", { name: "Add session", exact: true });
+  const bulk = section.getByRole("button", { name: "0 selected", exact: true });
+  await expect(bulk).toBeDisabled();
+  await expect(add).toBeEnabled();
+  const addBox = (await add.boundingBox())!;
+  const bulkBox = (await bulk.boundingBox())!;
+  expect(addBox.x).toBeGreaterThan(bulkBox.x + bulkBox.width);
+  await expect(
+    section.getByRole("button", { name: "Actions", exact: true }),
+  ).toHaveCount(0);
+  const picker = page.getByRole("combobox", {
+    name: "Select project",
+    exact: true,
+  });
+  await picker.click();
+  await page
+    .getByRole("option", { name: "API workspace", exact: true })
+    .click();
+  await add.click();
+  const dialog = page.getByRole("dialog", { name: "Add session", exact: true });
+  await expect(
+    dialog.getByRole("combobox", { name: "Project", exact: true }),
+  ).toHaveText("API workspace");
+  await expect
+    .poll(() =>
+      dialog.evaluate((node) => node.contains(document.activeElement)),
+    )
+    .toBe(true);
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(add).toBeFocused();
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Web workspace", exact: true })
+    .click();
+  await add.click();
+  await dialog
+    .getByRole("textbox", { name: "Title", exact: true })
+    .fill("Created from projects");
+  await dialog.getByRole("combobox", { name: "Account", exact: true }).click();
+  await page
+    .getByRole("option", { name: "Work account · codex", exact: true })
+    .click();
+  await dialog
+    .getByRole("button", { name: "Create session", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await expect(rows(page)).toHaveCount(3);
+  await expect(
+    rows(page).last().getByRole("button", { name: "Edit Name", exact: true }),
+  ).toHaveText("Created from projects");
 });

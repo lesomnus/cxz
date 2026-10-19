@@ -644,6 +644,7 @@ export const messages = {
   "Session stopped": "Session stopped",
   Close: "Close",
   Actions: "Actions",
+  "Add session": "Add session",
   selected: "selected",
   "{count} selected": "{count} selected",
   "Selected session actions": "Selected session actions",

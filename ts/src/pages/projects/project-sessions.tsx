@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
 import { Link } from "@tanstack/react-router";
-import { EditableValue } from "@lesomnus/nox";
+import { Button, EditableValue } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
@@ -27,11 +27,13 @@ export function ProjectSessions({
   sessions,
   accounts,
   loading,
+  addSession,
 }: {
   c: SessionControlConnection;
   sessions: Session[];
   accounts: Account[];
   loading?: boolean;
+  addSession: () => void;
 }) {
   const [selected, select] = useState<Set<string>>(() => new Set());
   const controls = useSessionControls(c, (ids) =>
@@ -66,20 +68,31 @@ export function ProjectSessions({
             {t("Working…")} {controls.progress.done}/{controls.progress.total}
           </span>
         )}
-        <span
-          className={controlStyles.selected}
-          role="status"
-          aria-label={t("{count} selected", { count })}
-        >
-          <span className={controlStyles.selectedNumber}>{count}</span>
-          <span>{t("selected")}</span>
-        </span>
         <ProjectSessionMenu
           sessions={chosen}
           controls={controls}
           bulk
           disabled={loading}
         />
+        <Button
+          type="button"
+          className={controlStyles.addTrigger}
+          aria-label={t("Add session")}
+          disabled={loading || controls.busy}
+          onClick={addSession}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span>{t("Session")}</span>
+        </Button>
         <ProjectSessionFeedback controls={controls} />
       </div>
       <PanelScroll

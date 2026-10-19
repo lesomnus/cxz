@@ -2,9 +2,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { ref, type Connection } from "#src/shared/api/connection.ts";
-import type { SessionControlConnection } from "#src/features/session/model/session-control-batch.ts";
-export type DashboardConnection = SessionControlConnection &
-  Pick<Connection, "projects" | "accounts" | "taskCatalog">;
+export type DashboardConnection = Connection;
 
 export function sessionCounts(sessions: Session[]) {
   return {

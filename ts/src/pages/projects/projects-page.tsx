@@ -1,5 +1,5 @@
 import { t } from "#src/shared/i18n/i18n.ts";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
@@ -27,6 +27,7 @@ import {
   type DashboardConnection,
 } from "./project-dashboard";
 import { ProjectSessions } from "./project-sessions";
+import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
 import type { Account } from "#gen/cxz/account_pb";
 import styles from "./projects-page.module.css";
@@ -116,6 +117,7 @@ function ProjectDashboard({
   sessions: Session[];
   sessionsLoading?: boolean;
 }) {
+  const [addingSession, setAddingSession] = useState(false);
   const counts = sessionCounts(sessions);
   const tasks = useProjectTasks(c, p.runtimeId);
   const branch = useRemote(
@@ -159,7 +161,16 @@ function ProjectDashboard({
           sessions={sessions}
           accounts={accounts}
           loading={sessionsLoading}
+          addSession={() => setAddingSession(true)}
         />
+        {addingSession && (
+          <SessionCreate
+            c={c}
+            projects={[p]}
+            centered
+            close={() => setAddingSession(false)}
+          />
+        )}
         {accountsError && (
           <div className={styles.empty}>
             <p role="alert">{accountsError}</p>

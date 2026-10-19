@@ -173,7 +173,7 @@ test("project row and bulk controls use the sandbox session lifecycle", async ({
   await first.getByRole("checkbox").check();
   await second.getByRole("checkbox").check();
   const actions = page.getByRole("button", {
-    name: "Selected session actions",
+    name: /^\d+ selected$/,
     exact: true,
   });
   await actions.click();
@@ -247,4 +247,30 @@ test("project session identity edits use Session.Patch in the sandbox", async ({
   await expect(editName).toHaveText("Updated project session");
   await expect(row.getByRole("checkbox")).toBeChecked();
   expect(await row.boundingBox()).toEqual(before);
+});
+
+test("project Session add opens the shared creation dialog scoped to the selected project", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects?project=project-2");
+  const main = page.getByRole("main", { name: "Project workspace" });
+  const add = main.getByRole("button", { name: "Add session", exact: true });
+  await expect(add).toBeEnabled({ timeout: 45000 });
+  await expect(
+    main.getByRole("button", { name: "0 selected", exact: true }),
+  ).toBeDisabled();
+  await add.click();
+  const dialog = page.getByRole("dialog", { name: "Add session", exact: true });
+  await expect(
+    dialog.getByRole("combobox", { name: "Project", exact: true }),
+  ).toHaveText("Secondary project");
+  await expect
+    .poll(() =>
+      dialog.evaluate((node) => node.contains(document.activeElement)),
+    )
+    .toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(add).toBeFocused();
+  await expect(page).toHaveURL(/projects\?project=project-2$/);
 });
