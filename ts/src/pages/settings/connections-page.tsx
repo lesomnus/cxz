@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { Connection } from "#gen/cxz/connection_pb";
 import { client } from "#src/shared/api/connections.ts";
@@ -11,15 +11,22 @@ import { client } from "#src/shared/api/connections.ts";
 // truth: the origin the page came from cannot be edited or forgotten, and it
 // may well be the only entry. See docs/plans/web-connections.md.
 export function ConnectionsPage({
-  connections = client(),
+  connections,
 }: {
   connections?: { list: (request: object) => Promise<{ items: Connection[] }> };
 }) {
   const [items, setItems] = useState<Connection[]>([]);
   const [error, setError] = useState("");
+  // The client is made once per mount rather than per render. As a default
+  // parameter it was made again on every render, and the effect that reads it
+  // depends on its identity -- so answering the list re-rendered, which built
+  // another client, which re-ran the effect: 3,400 lists a second until the tab
+  // stopped responding. A caller that passes one in already has a stable one.
+  // See cxz#230.
+  const api = useMemo(() => connections ?? client(), [connections]);
   useEffect(() => {
     let live = true;
-    connections
+    api
       .list({})
       .then((reply) => {
         if (live) setItems(reply.items);
@@ -30,7 +37,7 @@ export function ConnectionsPage({
     return () => {
       live = false;
     };
-  }, [connections]);
+  }, [api]);
   return (
     <main className="settings-page">
       <div className="settings-split">
