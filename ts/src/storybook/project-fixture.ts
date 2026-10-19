@@ -1,4 +1,4 @@
-import { clone, create } from "@bufbuild/protobuf";
+import { clone, create, isFieldSet } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { ProjectSchema } from "#gen/cxz/project_pb";
@@ -8,7 +8,10 @@ import { AccountService } from "#gen/cxz/account_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
 import { TaskSchema, TaskStatus } from "#gen/cxz/task_pb";
 import { Connection } from "#src/shared/api/connection.ts";
-import { SessionService } from "#gen/cxz/session_svc_pb";
+import {
+  SessionService,
+  SessionPatchRequestSchema,
+} from "#gen/cxz/session_svc_pb";
 
 export function projectFixture(
   unavailable = false,
@@ -159,6 +162,36 @@ export function projectFixture(
       },
       stop: (request, context) => control("stop", request, context.signal),
       resume: (request, context) => control("resume", request, context.signal),
+      patch: (request, context) => {
+        const id = String(request.ref?.key.value);
+        calls.push({ method: "patch", session: id, signal: context.signal });
+        const index = sessions.findIndex((s) => s.runtimeId === id);
+        if (index < 0)
+          throw new ConnectError("Session not found", Code.NotFound);
+        if (unavailable)
+          throw new ConnectError("Session is unavailable", Code.Unavailable);
+        const updated = clone(SessionSchema, sessions[index]!);
+        if (isFieldSet(request, SessionPatchRequestSchema.field.alias)) {
+          if (
+            sessions.some(
+              (s) =>
+                s.runtimeId !== id &&
+                s.project?.runtimeId === updated.project?.runtimeId &&
+                s.alias === request.alias,
+            )
+          )
+            throw new ConnectError(
+              "Session alias is already in use",
+              Code.AlreadyExists,
+            );
+          updated.alias = request.alias;
+        }
+        if (isFieldSet(request, SessionPatchRequestSchema.field.name))
+          updated.name = request.name;
+        sessions[index] = updated;
+        publish();
+        return updated;
+      },
       purge: (request, context) => {
         const id = String(request.ref?.key.value);
         calls.push({

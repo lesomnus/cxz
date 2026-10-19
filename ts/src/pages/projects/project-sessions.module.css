@@ -42,10 +42,11 @@
   width: 76px;
 }
 .actionsColumn {
-  width: var(--session-row-height);
+  width: calc(var(--session-row-height) + var(--ui-control-inset));
 }
-.table td.actions {
+.table td.cardCell.actions {
   text-align: center;
+  padding-right: calc(2 * var(--ui-control-inset));
 }
 .actions :global(.action-menu) {
   display: flex;
@@ -157,6 +158,17 @@
 .alias {
   color: var(--ui-muted);
   font-family: var(--ui-font-mono);
+}
+.editable {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+}
+.editable :global(.editable-value-trigger) {
+  padding: var(--ui-control-inset) var(--ui-control-inline-inset);
+  border-radius: var(--session-cell-radius);
 }
 .empty {
   margin: var(--ui-space) var(--ui-control-inline-inset);

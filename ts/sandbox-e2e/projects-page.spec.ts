@@ -205,3 +205,46 @@ test("project row and bulk controls use the sandbox session lifecycle", async ({
   await expect(rows).toHaveCount(6);
   await expect(table).not.toContainText("Project checklist");
 });
+
+test("project session identity edits use Session.Patch in the sandbox", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  await expect(table).toBeVisible({ timeout: 45000 });
+  const row = table.locator("tbody tr").first();
+  await row.getByRole("checkbox").check();
+  const before = await row.boundingBox();
+  const editName = row.getByRole("button", { name: "Edit Name", exact: true });
+  const originalAlias = await row
+    .getByRole("button", { name: "Edit Alias", exact: true })
+    .textContent();
+  await editName.click();
+  const dialog = page.getByRole("dialog", { name: "Edit Name", exact: true });
+  const input = dialog.getByRole("textbox", { name: "Name", exact: true });
+  await input.fill("Updated project session");
+  await input.press("Enter");
+  await expect(dialog).toHaveCount(0);
+  await expect(editName).toHaveText("Updated project session");
+  const editAlias = row.getByRole("button", {
+    name: "Edit Alias",
+    exact: true,
+  });
+  await expect(editAlias).toHaveText(originalAlias!);
+  await editAlias.click();
+  const aliasDialog = page.getByRole("dialog", {
+    name: "Edit Alias",
+    exact: true,
+  });
+  await aliasDialog
+    .getByRole("textbox", { name: "Alias", exact: true })
+    .fill("project-edited");
+  await aliasDialog
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await expect(aliasDialog).toHaveCount(0);
+  await expect(editAlias).toHaveText("project-edited");
+  await expect(editName).toHaveText("Updated project session");
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  expect(await row.boundingBox()).toEqual(before);
+});

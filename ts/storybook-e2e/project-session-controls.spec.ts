@@ -40,7 +40,12 @@ test("row controls confirm stop/restart and resume the intended session", async 
   expect(button.height).toBe(account.height);
   expect(button.x - cell.x).toBe(account.x - accountCell.x);
   expect(cell.x + cell.width - button.x - button.width).toBe(
-    accountCell.x + accountCell.width - account.x - account.width,
+    accountCell.x +
+      accountCell.width -
+      account.x -
+      account.width +
+      button.x -
+      cell.x,
   );
   await openRow(page, "Stop");
   const stop = page.getByRole("dialog", { name: "Stop session", exact: true });
@@ -196,4 +201,81 @@ test("a failed purge preview prevents all deletion", async ({ page }) => {
       exact: true,
     }),
   ).toBeChecked();
+});
+
+test("session names and aliases edit in place without changing row selection or layout", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const row = rows(page).first();
+  await row.getByRole("checkbox").check();
+  const before = await table(page).boundingBox();
+  const editName = row.getByRole("button", { name: "Edit Name", exact: true });
+  const origin = (await editName.boundingBox())!;
+  await editName.click();
+  const dialog = page.getByRole("dialog", { name: "Edit Name", exact: true });
+  const input = dialog.getByRole("textbox", { name: "Name", exact: true });
+  await expect(input).toBeFocused();
+  const overlay = (await input.boundingBox())!;
+  for (const axis of ["x", "y", "width", "height"] as const)
+    expect(overlay[axis]).toBeCloseTo(origin[axis], 1);
+  await input.fill("Release plan updated");
+  await input.press("Enter");
+  await expect(dialog).toHaveCount(0);
+  await expect(editName).toHaveText("Release plan updated");
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  expect(await table(page).boundingBox()).toEqual(before);
+
+  const editAlias = row.getByRole("button", {
+    name: "Edit Alias",
+    exact: true,
+  });
+  await editAlias.click();
+  const aliasDialog = page.getByRole("dialog", {
+    name: "Edit Alias",
+    exact: true,
+  });
+  const alias = aliasDialog.getByRole("textbox", {
+    name: "Alias",
+    exact: true,
+  });
+  await alias.fill("pine");
+  await alias.press("Escape");
+  await expect(editAlias).toHaveText("oak");
+  await editAlias.click();
+  await alias.fill("Bad");
+  await alias.press("Enter");
+  await expect(aliasDialog.getByRole("alert")).toContainText("Alias must be");
+  await alias.fill("elm");
+  await alias.press("Enter");
+  await expect(aliasDialog.getByRole("alert")).toContainText("already in use");
+  await expect(alias).toHaveValue("elm");
+  await alias.fill("oak-tree");
+  await aliasDialog
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await expect(aliasDialog).toHaveCount(0);
+  await expect(editAlias).toHaveText("oak-tree");
+  await expect(editName).toHaveText("Release plan updated");
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  expect(await table(page).boundingBox()).toEqual(before);
+});
+
+test("failed identity saves keep the draft and leave the row unchanged", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--unavailable&viewMode=story");
+  const row = rows(page).first();
+  const trigger = row.getByRole("button", { name: "Edit Name", exact: true });
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "Edit Name", exact: true });
+  const input = dialog.getByRole("textbox", { name: "Name", exact: true });
+  await input.fill("Keep this draft");
+  await input.press("Enter");
+  await expect(dialog.getByRole("alert")).toContainText(
+    "Session is unavailable",
+  );
+  await expect(input).toHaveValue("Keep this draft");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(trigger).toHaveText("Plan the next release");
 });

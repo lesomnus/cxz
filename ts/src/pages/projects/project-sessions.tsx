@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
 import { Link } from "@tanstack/react-router";
+import { EditableValue } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
@@ -8,6 +9,10 @@ import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { SessionControlConnection } from "#src/features/session/model/session-control-batch.ts";
+import {
+  editSession,
+  validateSessionField,
+} from "#src/features/session/model/session-edit.ts";
 import { useSessionControls } from "./use-session-controls";
 import {
   ProjectSessionMenu,
@@ -149,12 +154,34 @@ export function ProjectSessions({
                   <td className={styles.agent}>
                     <AgentBrand agent={s.agent} />
                   </td>
-                  <td className={styles.name} title={name}>
-                    {name}
-                  </td>
-                  <td className={styles.alias} title={s.alias}>
-                    {s.alias || "—"}
-                  </td>
+                  {(["name", "alias"] as const).map((field) => (
+                    <td className={styles[field]} key={field}>
+                      <fieldset
+                        className={styles.editable}
+                        disabled={controls.busy || loading}
+                      >
+                        <EditableValue
+                          label={field === "name" ? t("Name") : t("Alias")}
+                          value={s[field]}
+                          monospace={field === "alias"}
+                          validate={(value) =>
+                            validateSessionField(field, value)
+                          }
+                          save={async (value) => {
+                            const updated = await editSession(
+                              c.sessions,
+                              s.runtimeId,
+                              field,
+                              value,
+                            );
+                            c.store.apply("cxz.Session", [
+                              { id: updated.id, value: updated },
+                            ]);
+                          }}
+                        />
+                      </fieldset>
+                    </td>
+                  ))}
                   <td className={`${styles.cardCell} ${styles.account}`}>
                     {accountAlias ? (
                       <Link

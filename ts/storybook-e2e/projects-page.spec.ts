@@ -64,8 +64,8 @@ test("session table splits identity columns and supports individual and select-a
       .getByRole("img", { name: "Codex", exact: true }),
   ).toBeVisible();
   await expect(
-    rows.first().locator("td").nth(2).getByRole("button"),
-  ).toHaveCount(0);
+    rows.first().getByRole("button", { name: "Edit Name", exact: true }),
+  ).toHaveText("Plan the next release");
   await expect(rows.first().locator("td").nth(4)).toHaveText("Work account");
   await expect(
     rows.first().getByRole("link", { name: "Work account", exact: true }),
