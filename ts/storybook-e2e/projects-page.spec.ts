@@ -319,10 +319,12 @@ async function expectAlignedText(trigger: Locator) {
       expanded: firstCharacters(hint),
     };
   });
-  for (const key of ["x", "y", "width", "height"] as const)
+  for (const key of ["x", "width", "height"] as const)
     expect(Math.abs(boxes.original[key] - boxes.expanded[key])).toBeLessThan(
       0.25,
     );
+  // The measured baseline stays stable; the visual correction moves ink down.
+  expect(boxes.expanded.y - boxes.original.y).toBeCloseTo(1, 1);
 }
 
 test("in-place ID overlays keep the text origin and baseline with inherited typography", async ({
