@@ -57,10 +57,10 @@
   background: var(--ui-selected);
 }
 .table tbody tr:hover {
-  background: var(--ui-hover);
+  background: var(--ui-shade-32);
 }
 .table tbody tr[data-selected]:hover {
-  background: var(--ui-shade-56);
+  background: var(--ui-shade-51);
 }
 .table th:first-child,
 .table td:first-child {
