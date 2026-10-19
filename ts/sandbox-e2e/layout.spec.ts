@@ -143,8 +143,11 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
     .click();
   await projects.getByRole("button").filter({ hasText: "session-8" }).click();
   await expect(
+    projects.getByRole("button").filter({ hasText: "session-8" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
     projects.getByRole("region", { name: "Session details", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(page.locator(".session-tree-group")).toHaveCount(2);
   await expect(page.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS);
