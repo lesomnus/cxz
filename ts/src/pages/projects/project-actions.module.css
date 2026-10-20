@@ -49,6 +49,10 @@
   width: var(--action-button-size);
   aspect-ratio: 1;
 }
+.icon svg {
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+}
 .label {
   min-width: 0;
   text-align: center;
