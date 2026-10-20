@@ -192,3 +192,41 @@ func TestActivityDoesNotFloodJournal(t *testing.T) {
 		t.Fatal("activity journaling or clock broken")
 	}
 }
+
+// A turn ending ends what the turn made uncertain. Neither of these was ever
+// cleared, so one ambiguous frame or one tool result that never arrived blocked
+// every update of the installation for as long as the session lived. The frame
+// that made it concrete is Claude's own subagent progress report. See cxz#244.
+func TestATurnEndingClearsWhatTheTurnMadeUncertain(t *testing.T) {
+	s, _ := displaySupervisor(t, "claude")
+	s.snap.State = "idle"
+	s.lastActivity = time.Now().Add(-time.Hour)
+
+	// Subagent progress: a system frame whose subtype has "task" in it.
+	s.observeUpdateRaw([]byte(`{"type":"system","subtype":"task_progress","task_id":"a4","subagent_type":"Explore","description":"Running something"}`))
+	if !s.updateUnknown {
+		t.Fatal("subagent progress no longer reads as uncertain; this test is watching the wrong thing")
+	}
+	if got := s.updateReason(time.Now(), ""); got != "background telemetry unknown" {
+		t.Fatal("expected the session to refuse while the turn runs, got", got)
+	}
+
+	// A tool call whose result never arrives is the same shape.
+	s.observeUpdateEvent("tool", "Bash", "t1")
+	if got := s.updateReason(time.Now(), ""); got == "" {
+		t.Fatal("a session with an unfinished tool call was ready")
+	}
+
+	s.observeUpdateEvent("turn_end", "completed", "")
+	if s.updateUnknown || len(s.updateTools) != 0 {
+		t.Fatal("the turn ended and the uncertainty did not", s.updateUnknown, s.updateTools)
+	}
+	// The idle clock is what remains, and it moved because the turn ended --
+	// which is the refusal that resolves on its own.
+	if got := s.updateReason(time.Now(), ""); got != "waiting for 5 minutes of continuous idle" {
+		t.Fatal("after the turn the session refuses for another reason:", got)
+	}
+	if got := s.updateReason(time.Now().Add(6*time.Minute), ""); got != "" {
+		t.Fatal("the session never becomes ready:", got)
+	}
+}
