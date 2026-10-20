@@ -357,7 +357,7 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
       name === "Projects view"
         ? page.getByRole("combobox", { name: "Select project", exact: true })
         : name === "Accounts"
-          ? page.getByLabel("Account list").locator("header strong")
+          ? page.getByRole("article", { name: "Work account", exact: true })
           : page.getByRole("heading", { name: heading, exact: true }),
     ).toBeVisible();
     if (name !== "Projects view")
