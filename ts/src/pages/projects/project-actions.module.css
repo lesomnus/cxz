@@ -2,7 +2,10 @@
   display: flex;
   align-items: center;
   gap: calc(2 * var(--ui-space));
-  padding: var(--ui-space) var(--ui-control-inline-inset);
+  margin: var(--ui-space) calc(-1 * var(--ui-space)) calc(-1 * var(--ui-space));
+  padding: calc(3 * var(--ui-space));
+  border: 1px solid var(--ui-shade-54);
+  border-radius: calc(var(--ui-dialog-radius) - var(--ui-space));
 }
 .row p {
   flex: 1;
