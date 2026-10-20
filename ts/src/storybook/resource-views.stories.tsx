@@ -59,8 +59,7 @@ function ResourcePreview({
         padding: "var(--space)",
         height: "95vh",
         overflow: view === "accounts" ? "hidden" : "auto",
-        display: view === "accounts" ? "grid" : "block",
-        gridTemplateColumns: "180px minmax(0, 1fr)",
+        display: view === "accounts" ? "flex" : "block",
       }}
     >
       {view === "accounts" ? (

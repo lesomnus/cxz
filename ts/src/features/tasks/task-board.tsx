@@ -1,3 +1,5 @@
+import { DateTime } from "#src/shared/components/date-time.tsx";
+import { formatOffsetDateTime } from "#src/shared/components/date-time-format.ts";
 import { useEffect, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
@@ -25,6 +27,7 @@ function TaskCard({
   const owner = sessions.find((session) => session.runtimeId === task.assignee);
   const issue = ownerIssue(task, sessions, sessionsLoading);
   const date = new Date(taskTime(task));
+  const relative = relativeMessageTime(date, new Date(now));
   return (
     <article className={styles.card} data-task-alias={task.alias}>
       <Button
@@ -52,13 +55,19 @@ function TaskCard({
             {task.assignee ? "Session unavailable" : "Unassigned"}
           </span>
         )}
-        <time
-          dateTime={date.toISOString()}
-          title={`Updated ${date.toLocaleString()}`}
-        >
-          {relativeMessageTime(date, new Date(now)) ||
-            date.toLocaleDateString()}
-        </time>
+        {relative ? (
+          <time
+            dateTime={date.toISOString()}
+            title={`Updated ${formatOffsetDateTime(date)}`}
+          >
+            {relative}
+          </time>
+        ) : (
+          <DateTime
+            value={date.getTime()}
+            title={`Updated ${formatOffsetDateTime(date)}`}
+          />
+        )}
       </div>
       {issue && <span className={styles.ownerIssue}>{issue}</span>}
       {task.priority < 2 && (

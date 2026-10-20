@@ -1,5 +1,34 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Stop the project container and its sessions.":
+    "프로젝트 컨테이너와 세션을 중지합니다.",
+  "Stop project": "프로젝트 중지",
+  "Stops the project container and all its sessions. Conversation history, files and accounts are retained.":
+    "프로젝트 컨테이너와 모든 세션을 중지합니다. 대화 기록, 파일 및 계정은 보존됩니다.",
+  "The project remains listed and can be started again.":
+    "프로젝트는 목록에 유지되며 다시 시작할 수 있습니다.",
+
+  "Permanently delete this project and its owned data.":
+    "이 프로젝트와 소유 데이터를 영구 삭제합니다.",
+  "Purge project": "프로젝트 영구 삭제",
+  "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
+    "이 프로젝트의 세션, 대화 기록, 공유 메모리 및 소유 리소스를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
+  "Workspace source files and shared accounts are preserved.":
+    "워크스페이스 원본 파일과 공용 계정은 보존됩니다.",
+  "Project changed. Close this dialog and try again.":
+    "프로젝트가 변경되었습니다. 이 대화상자를 닫고 다시 시도하세요.",
+  "Project removal was not confirmed by the server.":
+    "서버에서 프로젝트 삭제를 확인하지 못했습니다.",
+
+  "Project ID": "프로젝트 ID",
+  Listed: "목록 표시",
+  Deleted: "삭제 시각",
+
+  "Display name must be nonempty, at most 200 bytes and contain no control whitespace.":
+    "표시 이름은 비어 있지 않아야 하며, 제어 공백 없이 최대 200바이트까지 입력할 수 있습니다.",
+  "Project version is unavailable. Refresh and try again.":
+    "프로젝트 버전을 확인할 수 없습니다. 새로고침 후 다시 시도하세요.",
+
   Account: "계정",
   "Project workspace": "프로젝트 워크스페이스",
   "Project toolbar": "프로젝트 툴바",
@@ -645,5 +674,30 @@ export const messages = {
   "Session unavailable": "세션을 사용할 수 없음",
   "Previous run": "이전 실행",
   "Session stopped": "정지된 세션",
+  Close: "닫기",
+  Actions: "작업",
+  "Add session": "세션 추가",
+  Information: "정보",
+  "About {label}": "{label} 설명",
+  "Status and current step of preparing the project container and workspace.":
+    "프로젝트 컨테이너와 워크스페이스 준비 작업의 상태 및 현재 단계를 표시합니다.",
+  "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.":
+    "API 호출과 링크에서 사용하는 프로젝트 식별자입니다. DB의 runtime_id 컬럼에 저장되며 UUID 기본 키 및 컨테이너 ID와는 별개입니다.",
+  Description: "설명",
+  Configuration: "설정",
+  selected: "선택됨",
+  "{count} selected": "{count}개 선택됨",
+  "Selected session actions": "선택한 세션 작업",
+  "Controls for {name}": "{name} 제어",
+  "Purge sessions": "세션 영구 삭제",
+  "Restart sessions": "세션 재시작",
+  "Stop sessions": "세션 정지",
+  "{count} sessions will be affected.": "세션 {count}개에 적용됩니다.",
+  "Sessions already stopped are skipped.": "이미 정지된 세션은 제외됩니다.",
+  "Some actions failed. Successful actions will not be repeated. Check session status before retrying.":
+    "일부 작업이 실패했습니다. 성공한 작업은 반복하지 않습니다. 재시도 전에 세션 상태를 확인하세요.",
+  "This session will be affected.": "이 세션에 적용됩니다.",
+  "Permanently deletes these sessions and their stored data. This cannot be undone.":
+    "이 세션들과 저장된 데이터를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
   Refresh: "새로고침",
 } satisfies LanguagePack;

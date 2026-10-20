@@ -23,6 +23,25 @@ test("projects use the full workspace with a persistent project picker and scope
       .locator("svg"),
   ).toHaveCSS("width", "20px");
   await expect(picker).toHaveText("Design playground");
+  await expect(main.locator("section").first()).toHaveAttribute(
+    "aria-label",
+    "Information",
+  );
+  await expect(
+    main.getByRole("region", { name: "Session overview", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    main.getByRole("region", { name: "Project tasks", exact: true }),
+  ).toHaveCount(0);
+  const diagnostic = main
+    .getByRole("region", { name: "Diagnostics", exact: true })
+    .locator("dl > div");
+  const firstDiagnostic = (await diagnostic.first().boundingBox())!;
+  const secondDiagnostic = (await diagnostic.nth(1).boundingBox())!;
+  expect(secondDiagnostic.y).toBe(firstDiagnostic.y);
+  expect(secondDiagnostic.x).toBeGreaterThan(
+    firstDiagnostic.x + firstDiagnostic.width,
+  );
   await page.mouse.move(0, 0);
   expect(
     await main.locator(".icon-value-menu").evaluate((el) => {
@@ -48,7 +67,7 @@ test("projects use the full workspace with a persistent project picker and scope
   );
   const cards = main
     .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button");
+    .locator("tbody tr");
   await expect(cards).toHaveCount(8);
   await picker.click();
   const popup = page.getByRole("group", {
@@ -76,10 +95,10 @@ test("projects use the full workspace with a persistent project picker and scope
   await expect(picker).toHaveText("Secondary project");
   await page.reload();
   await expect(picker).toHaveText("Secondary project", { timeout: 45000 });
-  await cards.focus();
-  await cards.press("Enter");
+  await cards.getByRole("checkbox").focus();
+  await cards.getByRole("checkbox").press("Space");
   await expect(page).toHaveURL(/#\/projects\?project=project-2$/);
-  await expect(cards).toHaveAttribute("aria-pressed", "true");
+  await expect(cards).toHaveAttribute("data-selected", "true");
   await expect(
     main.getByRole("checkbox", { name: "Select all sessions", exact: true }),
   ).toBeChecked();
@@ -146,4 +165,267 @@ test("project toolbar stays above the scrolling body on narrow screens", async (
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     390,
   );
+});
+
+test("project row and bulk controls use the sandbox session lifecycle", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  await expect(table).toBeVisible({ timeout: 45000 });
+  const rows = table.locator("tbody tr");
+  await expect(rows).toHaveCount(8);
+  const first = rows.first(),
+    second = rows.nth(1);
+  const state = first.locator("td:nth-child(6)");
+  await first.getByRole("button", { name: /Controls for/ }).click();
+  await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Stop session", exact: true })
+    .getByRole("button", { name: "Stop", exact: true })
+    .click();
+  await expect(state).toHaveText("Stopped");
+  await first.getByRole("button", { name: /Controls for/ }).click();
+  await page.getByRole("menuitem", { name: "Resume", exact: true }).click();
+  await expect(state).toHaveText("Idle");
+
+  await first.getByRole("checkbox").check();
+  await second.getByRole("checkbox").check();
+  const actions = page.getByRole("button", {
+    name: /^\d+ selected$/,
+    exact: true,
+  });
+  await actions.click();
+  await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
+  const stop = page.getByRole("dialog", { name: "Stop sessions", exact: true });
+  await expect(stop).toContainText("2 sessions will be affected.");
+  await stop.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(first.locator("td:nth-child(6)")).toHaveText("Stopped");
+  await expect(second.locator("td:nth-child(6)")).toHaveText("Stopped");
+  await expect(actions).toBeDisabled();
+
+  await first.getByRole("checkbox").check();
+  await second.getByRole("checkbox").check();
+  await actions.click();
+  await page.getByRole("menuitem", { name: "Purge", exact: true }).click();
+  const purge = page.getByRole("dialog", {
+    name: "Purge sessions",
+    exact: true,
+  });
+  await expect(purge).toContainText("/sandbox/session-1/journal");
+  await purge.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(rows).toHaveCount(8);
+  await actions.click();
+  await page.getByRole("menuitem", { name: "Purge", exact: true }).click();
+  await purge
+    .getByRole("button", { name: "Purge permanently", exact: true })
+    .click();
+  await expect(purge).toHaveCount(0);
+  await expect(rows).toHaveCount(6);
+  await expect(table).not.toContainText("Project checklist");
+});
+
+test("project session identity edits use Session.Patch in the sandbox", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  await expect(table).toBeVisible({ timeout: 45000 });
+  const row = table.locator("tbody tr").first();
+  await row.getByRole("checkbox").check();
+  const before = await row.boundingBox();
+  const editName = row.getByRole("button", { name: "Edit Name", exact: true });
+  const originalAlias = await row
+    .getByRole("button", { name: "Edit Alias", exact: true })
+    .textContent();
+  await editName.click();
+  const dialog = page.getByRole("dialog", { name: "Edit Name", exact: true });
+  const input = dialog.getByRole("textbox", { name: "Name", exact: true });
+  await input.fill("Updated project session");
+  await input.press("Enter");
+  await expect(dialog).toHaveCount(0);
+  await expect(editName).toHaveText("Updated project session");
+  const editAlias = row.getByRole("button", {
+    name: "Edit Alias",
+    exact: true,
+  });
+  await expect(editAlias).toHaveText(originalAlias!);
+  await editAlias.click();
+  const aliasDialog = page.getByRole("dialog", {
+    name: "Edit Alias",
+    exact: true,
+  });
+  await aliasDialog
+    .getByRole("textbox", { name: "Alias", exact: true })
+    .fill("project-edited");
+  await aliasDialog
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await expect(aliasDialog).toHaveCount(0);
+  await expect(editAlias).toHaveText("project-edited");
+  await expect(editName).toHaveText("Updated project session");
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  expect(await row.boundingBox()).toEqual(before);
+});
+
+test("project Session add opens the shared creation dialog scoped to the selected project", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects?project=project-2");
+  const main = page.getByRole("main", { name: "Project workspace" });
+  const add = main.getByRole("button", { name: "Add session", exact: true });
+  await expect(add).toBeEnabled({ timeout: 45000 });
+  await expect(
+    main.getByRole("button", { name: "0 selected", exact: true }),
+  ).toBeDisabled();
+  await add.click();
+  const dialog = page.getByRole("dialog", { name: "Add session", exact: true });
+  await expect(
+    dialog.getByRole("combobox", { name: "Project", exact: true }),
+  ).toHaveText("Secondary project");
+  await expect
+    .poll(() =>
+      dialog.evaluate((node) => node.contains(document.activeElement)),
+    )
+    .toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(add).toBeFocused();
+  await expect(page).toHaveURL(/projects\?project=project-2$/);
+});
+
+test("project metadata persists through Project.Patch and inventory Watch", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const section = page.getByRole("region", {
+    name: "Information",
+    exact: true,
+  });
+  await expect(section).toBeVisible({ timeout: 45000 });
+  for (const [label, value] of [
+    ["Name", "Renamed sandbox"],
+    ["Alias", "sandbox-edited"],
+    ["Description", "Sandbox description"],
+  ] as const) {
+    await section
+      .getByRole("button", { name: `Edit ${label}`, exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: `Edit ${label}`,
+      exact: true,
+    });
+    await dialog.getByRole("textbox").fill(value);
+    await dialog.getByRole("textbox").press("Enter");
+    await expect(dialog).toHaveCount(0);
+    await expect(
+      section.getByRole("button", { name: `Edit ${label}`, exact: true }),
+    ).toHaveText(value);
+  }
+  const picker = page.getByRole("combobox", {
+    name: "Select project",
+    exact: true,
+  });
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Secondary project", exact: true })
+    .click();
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Renamed sandbox", exact: true })
+    .click();
+  await expect(
+    section.getByRole("button", { name: "Edit Alias", exact: true }),
+  ).toHaveText("sandbox-edited");
+  await expect(
+    section.getByRole("button", { name: "Edit Description", exact: true }),
+  ).toHaveText("Sandbox description");
+  await expect(
+    page
+      .getByRole("table", { name: "Sessions", exact: true })
+      .locator("tbody tr"),
+  ).toHaveCount(8);
+  await expect(page).toHaveURL(/projects\?project=project-1$/);
+});
+
+test("project Purge removes only the confirmed sandbox project", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  await expect(actions).toBeVisible({ timeout: 45000 });
+  await actions.getByRole("button", { name: "Purge", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Purge project",
+    exact: true,
+  });
+  await expect(dialog).toContainText("This cannot be undone.");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  await expect(table.locator("tbody tr")).toHaveCount(8);
+  await actions.getByRole("button", { name: "Purge", exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "Purge permanently", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const picker = page.getByRole("combobox", {
+    name: "Select project",
+    exact: true,
+  });
+  await expect(picker).toHaveText("Secondary project");
+  await expect(table.locator("tbody tr")).toHaveCount(1);
+  await expect(page).toHaveURL(/projects\?project=project-2$/);
+  await picker.click();
+  await expect(
+    page.getByRole("option", { name: "Design playground", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("project Stop retains the listed sandbox project and conversation records", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  const stop = actions.getByRole("button", { name: "Stop", exact: true });
+  await expect(stop).toBeEnabled({ timeout: 45000 });
+  await stop.click();
+  const dialog = page.getByRole("dialog", {
+    name: "Stop project",
+    exact: true,
+  });
+  await expect(dialog).toContainText("The project remains listed");
+  await dialog.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(stop).toBeDisabled();
+  const rows = page
+    .getByRole("table", { name: "Sessions", exact: true })
+    .locator("tbody tr");
+  await expect(rows).toHaveCount(8);
+  await expect(rows.locator("td:nth-child(6)")).toHaveText(
+    Array(8).fill("Stopped"),
+  );
+  await expect(
+    page
+      .getByRole("region", { name: "Information", exact: true })
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
+      .locator("dd"),
+  ).toHaveText("true");
+  const picker = page.getByRole("combobox", {
+    name: "Select project",
+    exact: true,
+  });
+  await expect(picker).toHaveText("Design playground");
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Secondary project", exact: true })
+    .click();
+  await expect(stop).toBeEnabled();
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Design playground", exact: true })
+    .click();
+  await expect(
+    actions.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeDisabled();
 });

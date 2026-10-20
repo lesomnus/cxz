@@ -1,13 +1,7 @@
-import { t, currentLocale } from "#src/shared/i18n/i18n.ts";
+import { formatOffsetDateTime } from "#src/shared/components/date-time-format.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
-const absoluteOptions: Intl.DateTimeFormatOptions = {
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-};
 
 export function messageDate(timeMs: bigint) {
   const value = Number(timeMs);
@@ -48,5 +42,5 @@ export function relativeMessageTime(date: Date, now = new Date()) {
 }
 
 export function absoluteMessageTime(date: Date) {
-  return new Intl.DateTimeFormat(currentLocale(), absoluteOptions).format(date);
+  return formatOffsetDateTime(date);
 }

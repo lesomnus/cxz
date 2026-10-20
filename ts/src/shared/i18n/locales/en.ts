@@ -1,5 +1,34 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Stop the project container and its sessions.":
+    "Stop the project container and its sessions.",
+  "Stop project": "Stop project",
+  "Stops the project container and all its sessions. Conversation history, files and accounts are retained.":
+    "Stops the project container and all its sessions. Conversation history, files and accounts are retained.",
+  "The project remains listed and can be started again.":
+    "The project remains listed and can be started again.",
+
+  "Permanently delete this project and its owned data.":
+    "Permanently delete this project and its owned data.",
+  "Purge project": "Purge project",
+  "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
+    "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.",
+  "Workspace source files and shared accounts are preserved.":
+    "Workspace source files and shared accounts are preserved.",
+  "Project changed. Close this dialog and try again.":
+    "Project changed. Close this dialog and try again.",
+  "Project removal was not confirmed by the server.":
+    "Project removal was not confirmed by the server.",
+
+  "Project ID": "Project ID",
+  Listed: "Listed",
+  Deleted: "Deleted",
+
+  "Display name must be nonempty, at most 200 bytes and contain no control whitespace.":
+    "Display name must be nonempty, at most 200 bytes and contain no control whitespace.",
+  "Project version is unavailable. Refresh and try again.":
+    "Project version is unavailable. Refresh and try again.",
+
   Account: "Account",
   "Project workspace": "Project workspace",
   "Project toolbar": "Project toolbar",
@@ -642,6 +671,32 @@ export const messages = {
   "Session unavailable": "Session unavailable",
   "Previous run": "Previous run",
   "Session stopped": "Session stopped",
+  Close: "Close",
+  Actions: "Actions",
+  "Add session": "Add session",
+  Information: "Information",
+  "About {label}": "About {label}",
+  "Status and current step of preparing the project container and workspace.":
+    "Status and current step of preparing the project container and workspace.",
+  "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.":
+    "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.",
+  Description: "Description",
+  Configuration: "Configuration",
+  selected: "selected",
+  "{count} selected": "{count} selected",
+  "Selected session actions": "Selected session actions",
+  "Controls for {name}": "Controls for {name}",
+  "Purge sessions": "Purge sessions",
+  "Restart sessions": "Restart sessions",
+  "Stop sessions": "Stop sessions",
+  "{count} sessions will be affected.": "{count} sessions will be affected.",
+  "Sessions already stopped are skipped.":
+    "Sessions already stopped are skipped.",
+  "Some actions failed. Successful actions will not be repeated. Check session status before retrying.":
+    "Some actions failed. Successful actions will not be repeated. Check session status before retrying.",
+  "This session will be affected.": "This session will be affected.",
+  "Permanently deletes these sessions and their stored data. This cannot be undone.":
+    "Permanently deletes these sessions and their stored data. This cannot be undone.",
   Refresh: "Refresh",
 } as const;
 export type Message = keyof typeof messages;

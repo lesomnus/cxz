@@ -1,3 +1,4 @@
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useState, type ReactNode } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import { EditableValue } from "@lesomnus/nox";
@@ -7,11 +8,10 @@ import {
 } from "#src/features/session/model/session-edit.ts";
 import { SessionIdentity } from "./session-identity";
 import {
-  formatReset,
   formatTokens,
   type SessionInfo,
 } from "#src/features/session/model/session-info.ts";
-import { t, currentLocale } from "#src/shared/i18n/i18n.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 
 export function SessionDetails({
@@ -29,12 +29,6 @@ export function SessionDetails({
     const updated = await edit(field, text);
     setValue(updated);
   }
-  const date = (value: Session["dateCreated"]) =>
-    value
-      ? new Date(
-          Number(value.seconds) * 1000 + value.nanos / 1e6,
-        ).toLocaleString(currentLocale())
-      : "—";
   const rows: [string, ReactNode][] = [
     [t("State"), value.status?.state],
     [
@@ -71,13 +65,13 @@ export function SessionDetails({
       t("Remaining usage"),
       info.remaining === undefined ? undefined : `${info.remaining}%`,
     ],
-    [t("Usage reset"), formatReset(info.reset)],
+    [t("Usage reset"), <DateTime value={info.reset} />],
     [
       t("Context"),
       `${formatTokens(info.contextUsed)} / ${formatTokens(info.contextWindow)}`,
     ],
-    [t("Created"), date(value.dateCreated)],
-    [t("Updated"), date(value.dateUpdated)],
+    [t("Created"), <DateTime value={value.dateCreated} />],
+    [t("Updated"), <DateTime value={value.dateUpdated} />],
   ];
   return (
     <>

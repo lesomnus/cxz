@@ -1,3 +1,4 @@
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import type { EventListSource } from "#src/features/session/model/event-source.ts";
 import {
   useEffect,
@@ -9,7 +10,7 @@ import {
 } from "react";
 import { Button, ScrollArea } from "@lesomnus/nox";
 import { searchLoadedMessages, type LoadedSearchHit } from "./loaded-search";
-import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./session-search.module.css";
 import { useSearchHighlights, type SearchLocation } from "./search-highlights";
@@ -277,21 +278,7 @@ export function SessionSearch({
                 >
                   <span className={styles.meta}>
                     {hit.kind === "input" ? ">" : "↳"}
-                    {hit.timeMs > 0n && (
-                      <time
-                        dateTime={new Date(Number(hit.timeMs)).toISOString()}
-                      >
-                        {new Date(Number(hit.timeMs)).toLocaleString(
-                          currentLocale(),
-                          {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        )}
-                      </time>
-                    )}
+                    {hit.timeMs > 0n && <DateTime value={hit.timeMs} />}
                   </span>
                   <span className={styles.snippet}>{hit.snippet}</span>
                 </Button>

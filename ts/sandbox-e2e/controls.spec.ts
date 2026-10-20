@@ -115,7 +115,9 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   expect(textTops.body).toBeCloseTo(textTops.prefix, 1);
   expect(bodyBox.x).toBeGreaterThan(prefixBox.x + prefixBox.width);
   const timestamp = input.locator(".input-box .input-time time");
-  await expect(timestamp).not.toContainText(/\d{4}/);
+  await expect(timestamp).toHaveText(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/,
+  );
   const recorded = await timestamp.getAttribute("datetime");
   expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
   await expect(input.locator(".input-relative-time")).toHaveText("- Just now");

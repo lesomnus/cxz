@@ -13,9 +13,16 @@ function Preview({
   streaming = false,
   sessionCount = 2,
   mixedStates = false,
+  failControls = false,
+  failPreview = false,
 }) {
   const [router] = useState(() => {
-    const fixture = projectFixture(unavailable, stopped, sessionCount);
+    const fixture = projectFixture(
+      unavailable,
+      stopped,
+      sessionCount,
+      failControls ? "control" : failPreview ? "preview" : "",
+    );
     if (mixedStates) {
       const states = [
         "waiting_input",
@@ -52,7 +59,19 @@ function Preview({
           </div>
         ),
         view: function DashboardPreview() {
+          const [liveProjects, setProjects] = useState(projects);
           const [liveSessions, setSessions] = useState(sessions);
+          useEffect(() => {
+            const stop = fixture.subscribe(() => {
+              setProjects([...fixture.projects]);
+              setSessions([...fixture.sessions]);
+            });
+            return () => {
+              stop();
+              fixture.c.dispose();
+            };
+          }, []);
+
           useEffect(() => {
             if (!streaming) return;
             const timer = setInterval(
@@ -73,7 +92,7 @@ function Preview({
           return (
             <ProjectsPage
               c={fixture.c}
-              projects={projects}
+              projects={liveProjects}
               sessions={liveSessions}
               projectsLoading={loading}
             />
@@ -106,3 +125,6 @@ export const Unavailable: Story = { args: { unavailable: true } };
 export const Stopped: Story = { args: { stopped: true } };
 
 export const LiveInventory: Story = { args: { streaming: true } };
+
+export const PartialFailure: Story = { args: { failControls: true } };
+export const PurgePreviewFailure: Story = { args: { failPreview: true } };

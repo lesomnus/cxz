@@ -1,4 +1,4 @@
-import { currentLocale } from "#src/shared/i18n/i18n.ts";
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { messageDate } from "./message-time";
 
@@ -20,16 +20,7 @@ export function EventTimePopover({
       role="tooltip"
       aria-hidden="true"
     >
-      <time dateTime={date.toISOString()}>
-        {date.toLocaleString(currentLocale(), {
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        })}
-      </time>
+      <DateTime value={timeMs} />
     </span>
   );
 }

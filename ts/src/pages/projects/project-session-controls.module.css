@@ -1,0 +1,119 @@
+.toolbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+  padding: var(--ui-control-inline-inset);
+}
+.toolbar h2 {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+.selected {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+  color: var(--ui-muted);
+  font: 11px var(--ui-font-mono);
+  white-space: nowrap;
+}
+.selectedNumber {
+  width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.progress {
+  color: var(--ui-muted);
+  font: 11px var(--ui-font-mono);
+}
+.bulkTrigger.bulkTrigger,
+.addTrigger.addTrigger {
+  height: 28px;
+  min-height: 28px;
+  padding: var(--ui-control-inset) var(--ui-control-inline-inset);
+  font-size: 11px;
+}
+.bulkTrigger.bulkTrigger {
+  min-width: 96px;
+}
+.addTrigger.addTrigger {
+  flex: none;
+  background: var(--ui-shade-32);
+}
+.addTrigger svg {
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+}
+.rowTrigger.rowTrigger {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: var(--ui-control-inset);
+}
+.targets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 32dvh;
+  overflow: auto;
+}
+.targets > li {
+  padding: var(--ui-space) 0;
+  overflow-wrap: anywhere;
+}
+.targets strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.purgeTarget {
+  display: grid;
+  grid-template-columns: 7ch minmax(0, 1fr);
+  gap: var(--ui-space);
+  padding-top: var(--ui-space);
+  font: 11px var(--ui-font-mono);
+}
+.purgeTarget code {
+  overflow-wrap: anywhere;
+}
+.purgeTarget small {
+  grid-column: 2;
+  margin: 0;
+}
+.failures {
+  color: var(--ui-error, #db7979);
+  font-size: 11px;
+  padding-left: 16px;
+  overflow-wrap: anywhere;
+}
+.feedback {
+  position: absolute;
+  z-index: 3;
+  top: 100%;
+  left: var(--ui-control-inset);
+  right: var(--ui-control-inset);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space);
+  padding: var(--ui-control-inline-inset);
+  border: 1px solid var(--ui-shade-54);
+  border-radius: var(--ui-dialog-radius);
+  background: var(--ui-shade-22);
+}
+.feedback ul {
+  flex: 1;
+  max-height: 12rem;
+  overflow: auto;
+  margin: 0;
+}
+.feedback button {
+  flex: none;
+  min-height: 24px;
+  padding: var(--ui-control-inset) var(--ui-control-inline-inset);
+}

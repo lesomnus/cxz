@@ -36,28 +36,41 @@ test("project page and shared toolbar stories render their selector and states",
   expect(errors).toEqual([]);
 });
 
-test("session table preserves the identity card and supports individual and select-all checkboxes", async ({
+test("session table splits identity columns and supports individual and select-all checkboxes", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
-    "Session",
+    "",
+    "Name",
+    "Alias",
     "Account",
     "State",
+    "",
   ]);
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2);
-  await expect(rows.first().locator("td").nth(1)).toContainText(
+  await expect(rows.first().locator("td").nth(2)).toContainText(
     "Plan the next release",
   );
-  await expect(rows.first().locator("td").nth(1)).toContainText("oak");
-  await expect(rows.first().locator("td").nth(2)).toHaveText("Work account");
+  await expect(rows.first().locator("td").nth(3)).toHaveText("oak");
+  await expect(
+    rows
+      .first()
+      .locator("td")
+      .nth(1)
+      .getByRole("img", { name: "Codex", exact: true }),
+  ).toBeVisible();
+  await expect(
+    rows.first().getByRole("button", { name: "Edit Name", exact: true }),
+  ).toHaveText("Plan the next release");
+  await expect(rows.first().locator("td").nth(4)).toHaveText("Work account");
   await expect(
     rows.first().getByRole("link", { name: "Work account", exact: true }),
   ).toHaveAttribute("href", "/accounts?account=work");
-  await expect(rows.first().locator("td").nth(3)).toHaveText(
+  await expect(rows.first().locator("td").nth(5)).toHaveText(
     "Waiting for input",
   );
   const all = table.getByRole("checkbox", {
@@ -76,17 +89,14 @@ test("session table preserves the identity card and supports individual and sele
   await expect(all).not.toBeChecked();
   await rows.first().getByRole("checkbox").check();
   await expect(all).toBeChecked({ indeterminate: true });
-  await expect(rows.first().getByRole("button")).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(rows.first()).toHaveAttribute("data-selected", "true");
   await table
     .getByRole("columnheader")
     .first()
     .click({ position: { x: 2, y: 2 } });
   for (const row of await rows.all())
     await expect(row.getByRole("checkbox")).toBeChecked();
-  await rows.first().getByRole("button").click();
+  await rows.first().getByRole("checkbox").uncheck();
   await expect(rows.first().getByRole("checkbox")).not.toBeChecked();
   await expect(rows.nth(1).getByRole("checkbox")).toBeChecked();
   await all.check();
@@ -107,13 +117,14 @@ test("session table reserves seven and a half rows with a sticky header and inde
   );
   const list = page.getByRole("region", { name: "Session list", exact: true });
   const viewport = list.locator(".panel-scroll-content");
-  const cards = list.getByRole("button");
+  const cards = list.locator("tbody tr");
   await expect(cards).toHaveCount(16);
   const frame = (await viewport.boundingBox())!;
   const eighth = (await cards.nth(7).boundingBox())!;
+  // Rows include their divider; the former inset cards did not.
   expect(
     Math.abs(frame.y + frame.height - eighth.y - eighth.height / 2),
-  ).toBeLessThan(1);
+  ).toBeLessThanOrEqual(1);
   const header = list.getByRole("columnheader").first();
   const headerBefore = (await header.boundingBox())!;
   const outer = page.locator(
@@ -133,14 +144,12 @@ test("session table reserves seven and a half rows with a sticky header and inde
     exact: true,
   });
   const before = await section.boundingBox();
-  await cards.nth(10).click();
-  await expect(cards.nth(10)).toHaveAttribute("aria-pressed", "true");
+  await cards.nth(10).getByRole("checkbox").check();
+  await expect(cards.nth(10)).toHaveAttribute("data-selected", "true");
   expect(await viewport.evaluate((el) => el.scrollTop)).toBe(scrolled);
   expect(await viewport.boundingBox()).toEqual(frame);
   expect(await section.boundingBox()).toEqual(before);
-  await expect(cards.nth(10).locator(".session-heading")).toContainText(
-    "Session 11",
-  );
+  await expect(cards.nth(10).locator("td").nth(2)).toContainText("Session 11");
   for (const story of ["default", "empty-sessions"]) {
     await page.goto(`/iframe.html?id=pages-projects--${story}&viewMode=story`);
     await expect(list).toBeVisible();
@@ -162,7 +171,7 @@ test("session states stay in their column without leading icons", async ({
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(9);
   await expect(table.locator(".session-indicator")).toHaveCount(0);
-  await expect(rows.locator("td:last-child")).toHaveText([
+  await expect(rows.locator("td:nth-child(6)")).toHaveText([
     "Waiting for input",
     "Working",
     "Idle",
@@ -185,8 +194,8 @@ test("dashboard scopes project data, resets selection on project change and keep
     name: "Environment",
     exact: true,
   });
-  const tasks = main.getByRole("region", {
-    name: "Project tasks",
+  const info = main.getByRole("region", {
+    name: "Information",
     exact: true,
   });
   const sessions = main.getByRole("region", {
@@ -199,16 +208,27 @@ test("dashboard scopes project data, resets selection on project change and keep
   });
   await expect(environment).toContainText("ui/dashboard");
   await expect(environment).toContainText("/workspace");
-  await expect(tasks).toContainText("Review the release plan");
+  await expect(info).toContainText("Web workspace");
+  await expect(info).toContainText("Frontend and design system");
+  await expect(info).toContainText("/host/workspace");
+  await expect(info).toContainText(".devcontainer/devcontainer.json");
   await expect(
-    tasks.getByRole("link", { name: "Open task board" }),
-  ).toHaveAttribute("href", /project=project-1/);
+    main.getByRole("region", { name: "Project tasks", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    main.getByRole("region", { name: "Session overview", exact: true }),
+  ).toHaveCount(0);
+  await expect(main.locator("section").first()).toHaveAttribute(
+    "aria-label",
+    "Information",
+  );
   const toolbar = (await main.locator(":scope > header").boundingBox())!;
   const sectionGap = await sessions
     .locator("..")
     .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
   const sessionsBox = (await sessions.boundingBox())!;
   expect(sessionsBox.y).toBe(toolbar.y + toolbar.height + sectionGap);
+  expect((await info.boundingBox())!.y).toBe(sessionsBox.y);
   const environmentBox = (await environment.boundingBox())!;
   expect(environmentBox.x + environmentBox.width).toBeLessThan(sessionsBox.x);
   expect((await diagnostics.boundingBox())!.x).toBe(environmentBox.x);
@@ -228,9 +248,11 @@ test("dashboard scopes project data, resets selection on project change and keep
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
   await expect(environment).toContainText("api-main");
-  await expect(tasks).toContainText("No outstanding tasks");
+  await expect(info).toContainText("API workspace");
+  await expect(info).toContainText("Backend services and API contracts");
+  await expect(info).not.toContainText("Frontend and design system");
   await expect(all).not.toBeChecked();
-  await expect(sessions.getByRole("button")).toHaveCount(2);
+  await expect(sessions.locator("tbody tr")).toHaveCount(2);
   await expect(
     main.getByRole("region", { name: "Session details", exact: true }),
   ).toHaveCount(0);
@@ -246,19 +268,23 @@ test("stopped and unavailable runtimes retain the session table and account name
   ).toContainText("Project is not running");
   await expect(
     main.getByRole("region", { name: "Session overview" }),
-  ).toContainText("Stopped2");
+  ).toHaveCount(0);
   await expect(
-    main.locator("tbody tr").first().locator("td").nth(3),
+    main.locator("tbody tr").first().locator("td").nth(5),
   ).toHaveText("Stopped");
   await page.goto("/iframe.html?id=pages-projects--unavailable&viewMode=story");
   await expect(
     main.getByRole("region", { name: "Environment", exact: true }),
   ).toContainText("Workspace is unavailable");
   await expect(
-    main.locator("tbody tr").first().locator("td").nth(2),
+    main.locator("tbody tr").first().locator("td").nth(4),
   ).toHaveText("Work account");
   await expect(
-    main.getByRole("button", { name: /Plan the next release/ }),
+    main
+      .getByRole("table", { name: "Sessions", exact: true })
+      .locator("tbody tr")
+      .first()
+      .getByRole("checkbox"),
   ).toBeEnabled();
 });
 
@@ -272,7 +298,7 @@ test("narrow screens scroll the table without overflowing the page or moving the
   const before = await toolbar.boundingBox();
   const list = main.getByRole("region", { name: "Session list", exact: true });
   const viewport = list.locator(".panel-scroll-content");
-  await list.getByRole("button").first().click();
+  await list.locator("tbody tr").first().getByRole("checkbox").check();
   await expect(
     list.getByRole("checkbox", {
       name: "Select Plan the next release",
@@ -301,19 +327,19 @@ test("live inventory preserves row selection and account labels", async ({
     .first();
   const check = row.getByRole("checkbox");
   await check.check();
-  await expect(row.locator("td").nth(2)).toHaveText("Work account");
+  await expect(row.locator("td").nth(4)).toHaveText("Work account");
   // Several inventory revisions occur while checking selection and card position.
   const before = await row.boundingBox();
   await expect
     .poll(async () => {
       await expect(check).toBeChecked();
-      return row.locator("td").nth(2).textContent();
+      return row.locator("td").nth(4).textContent();
     })
     .toBe("Work account");
   expect(await row.boundingBox()).toEqual(before);
 });
 
-test("diagnostics show short IDs, copy complete values, and use machine-readable dates", async ({
+test("project metadata and diagnostics show short IDs, copy complete values, and use machine-readable dates", async ({
   page,
   context,
 }) => {
@@ -325,6 +351,13 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
     exact: true,
   });
   await expect(diagnostic).toBeVisible();
+  const info = main.getByRole("region", { name: "Information", exact: true });
+  const entries = info.locator("dl > div");
+  const left = (await entries.nth(0).boundingBox())!;
+  const right = (await entries.nth(1).boundingBox())!;
+  expect(right.y).toBe(left.y);
+  expect(right.x).toBeGreaterThan(left.x + left.width);
+  expect((await entries.nth(2).boundingBox())!.y).toBeGreaterThan(left.y);
   await expect(main.locator("h1, details, summary")).toHaveCount(0);
   const container = diagnostic
     .locator("dl > div")
@@ -348,7 +381,48 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe("container-1");
-  const created = diagnostic
+  const projectId = info
+    .locator("dl > div")
+    .filter({ has: page.locator("dt", { hasText: /^Project ID$/ }) });
+  await expect(projectId.getByText("0100000", { exact: true })).toBeVisible();
+  await projectId.getByRole("button", { name: "Copy", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe("01000000-0000-0000-0000-000000000000");
+  await projectId.locator("[tabindex]").hover();
+  await expect(
+    page.getByRole("tooltip", {
+      name: "01000000-0000-0000-0000-000000000000",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(info.locator("dt")).toHaveText([
+    "Project ID",
+    "Name",
+    "Alias",
+    "Description",
+    "Workspace",
+    "Configuration",
+    "Runtime ID",
+    "Listed",
+    "Created",
+    "Updated",
+    "Deleted",
+  ]);
+  await expect(
+    info
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
+      .locator("dd"),
+  ).toHaveText("true");
+  await expect(
+    info
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Deleted$/ }) })
+      .locator("dd"),
+  ).toHaveText("—");
+  const created = info
     .locator("dl > div")
     .filter({ has: page.locator("dt", { hasText: /^Created$/ }) })
     .locator("time");
@@ -364,6 +438,24 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
         ),
       ),
   ).toBe(true);
+  await main
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "API workspace", exact: true })
+    .click();
+  await expect(
+    info
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
+      .locator("dd"),
+  ).toHaveText("false");
+  await expect(
+    info
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Deleted$/ }) })
+      .locator("time"),
+  ).toBeVisible();
 });
 
 test("full ID hints escape clipped containers and remain inside the viewport", async ({
@@ -455,8 +547,8 @@ for (const scale of [1, 1.25, 1.5, 2]) {
       const trigger = row.locator("[tabindex]");
       await page.evaluate(() => document.fonts.ready);
       await expect(
-        page.getByRole("region", { name: "Project tasks", exact: true }),
-      ).toContainText("Review the release plan");
+        page.getByRole("region", { name: "Information", exact: true }),
+      ).toContainText("Web workspace");
       await trigger.evaluate((element) =>
         element.scrollIntoView({
           block: "center",

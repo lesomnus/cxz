@@ -1,29 +1,27 @@
-.panel {
-  min-height: 0;
+.page {
+  grid-column: 2 / -1;
+}
+.cards {
+  width: min(100%, 600px);
+  margin-inline: auto;
+  display: grid;
+  gap: calc(8 * var(--space));
 }
 .header {
   display: flex;
-  align-items: center;
-  gap: var(--space);
+  justify-content: flex-end;
 }
 .add {
-  margin-left: auto;
   width: var(--toolbar-button-width);
 }
-.item > :global(.button-content) {
-  display: block;
+.card {
+  min-width: 0;
+  scroll-margin-top: calc(3 * var(--space));
 }
-.item[aria-pressed="true"] :global(.session-title) {
-  color: var(--shade-255);
-}
-.identity {
-  padding: calc(3 * var(--space));
-}
-.value {
-  overflow-wrap: anywhere;
-}
-.metrics .value {
-  font-size: 0.8rem;
+.agent {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
 }
 .form {
   border: 0;

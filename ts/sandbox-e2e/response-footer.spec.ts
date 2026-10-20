@@ -22,7 +22,9 @@ test("final response metrics and top-right rectangular icon copy work for both p
   await expect(metrics.locator('[data-metric="cost_usd"]')).toHaveText("12.3m");
   await expect(metrics.locator("time")).toHaveCount(0);
   const time = page.locator(".response-time time").first();
-  await expect(time).not.toContainText(/\d{4}/);
+  await expect(time).toHaveText(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/,
+  );
   const recorded = await time.getAttribute("datetime");
   expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
   for (const metric of await metrics.locator(".response-metric").all()) {

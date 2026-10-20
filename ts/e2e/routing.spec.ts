@@ -63,8 +63,9 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   ).toBeVisible();
   await workspace
     .getByRole("region", { name: "Session list", exact: true })
-    .getByRole("button")
+    .locator("tbody tr")
     .first()
+    .getByRole("checkbox")
     .click();
   await expect(page).toHaveURL(/\/projects$/);
   await expect(
