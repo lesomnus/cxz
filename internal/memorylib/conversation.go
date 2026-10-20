@@ -40,7 +40,10 @@ func conversationTools(server *mcp.Server, store *Store) {
 	}
 	mcp.AddTool(server, &mcp.Tool{Name: "session_lookup", Description: "Resolve a session alias or UUID in this project. Returns canonical UUID, current alias, state, activity and retained history bounds. Use UUID for subsequent calls. User mentions @seal or session seal mean alias seal, without @."}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
 		Session string `json:"session"`
-	}) (*mcp.CallToolResult, conversation.Reply, error) { r, e := c.Lookup(ctx, in.Session); return nil, r, e })
+	}) (*mcp.CallToolResult, conversation.Reply, error) {
+		r, e := c.Lookup(ctx, in.Session)
+		return nil, r, e
+	})
 	mcp.AddTool(server, &mcp.Tool{Name: "conversation_search", Description: "Search retained cxz conversation text (or raw vendor events) in a project session by substring/RE2 and time. Returns metadata only: event seq, UTC time and UTF-8 JSON byte size, never bodies. Follow next_cursor; use conversation_read with UUID, seqs and snapshot_seq. bytes are not token counts."}, func(ctx context.Context, _ *mcp.CallToolRequest, in conversation.Query) (*mcp.CallToolResult, conversation.Reply, error) {
 		r, e := c.Search(ctx, in)
 		return nil, r, e

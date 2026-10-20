@@ -69,6 +69,7 @@ func TestAuxiliaryHistoryIsBoundedAndRechecksSource(t *testing.T) {
 		t.Fatal("read a working session")
 	}
 }
+
 // A session preference persists, and asking for a kind that already runs
 // automatically does not spend a second call on it.
 func TestAuxPreferPersistsAndRunDoesNotRepeatAnAutomaticKind(t *testing.T) {
@@ -145,7 +146,7 @@ func TestAuxReportsResultsPerKind(t *testing.T) {
 	a := auxOf("s", &auxiliary.Job{
 		ID: "j", Run: "run", Turn: 7, Status: "running",
 		SummaryRequested: true, SuggestionRequested: true,
-		Summary:          "half of it\n[truncated]",
+		Summary: "half of it\n[truncated]",
 	})
 	if len(a.Kinds) != 2 || a.SessionId != "s" || a.State != "running" {
 		t.Fatal(a)

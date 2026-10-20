@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/lesomnus/cxz/internal/eventview"
 	"path/filepath"
 	"sync"
 
@@ -144,7 +145,7 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 				}
 			}
 		}
-		v := pbEvent(e)
+		v := eventview.FromCore(e)
 		if v.Kind == "models" {
 			if p.catalogs == nil {
 				p.catalogs = map[string]catalogRecord{}

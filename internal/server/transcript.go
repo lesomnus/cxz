@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"github.com/lesomnus/cxz/internal/eventview"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
@@ -14,7 +15,7 @@ func decodeTranscriptEvent(b []byte) (*api.Event, error) {
 	if err := json.Unmarshal(b, &e); err != nil {
 		return nil, err
 	}
-	return pbEvent(e), nil
+	return eventview.FromCore(e), nil
 }
 func (s *Server) Transcript(ctx context.Context, r *api.TranscriptRequest) (*api.TranscriptReply, error) {
 	if s.manager != nil {

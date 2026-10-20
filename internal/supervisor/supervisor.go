@@ -27,6 +27,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/filemap"
 	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/skillconfig"
 )
 
@@ -41,6 +42,9 @@ type Supervisor struct {
 	mu               sync.Mutex
 	session          core.Session
 	log              *journal.Log
+	// store is this session's own conversation file. Derived while the journal
+	// is still written, so a failure to write it never stops a recording.
+	store            *sessionstore.Store
 	snap             core.Snapshot
 	pending          map[string]core.Event
 	receipts         map[string]record
@@ -186,6 +190,8 @@ func Run(ctx context.Context, root, id string) error {
 			}
 		}
 	}
+	s.openStore(ctx, dir)
+	defer s.closeStore()
 	defer s.quotaWorkers.Wait()
 	s.quotaRoot = root
 	var runtime struct{ Token string }
@@ -425,6 +431,12 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, respo
 	if kind == "input" && id == s.snap.QueuedID {
 		s.snap.Queued, s.snap.QueuedID = "", ""
 	}
+	// Last, because what the store records beside the record is the state the
+	// record produced. Written before the reduction finished, it would describe
+	// the session as it was one record ago.
+	if !s.buffering {
+		s.record([]core.Event{e})
+	}
 	return e
 }
 func (s *Supervisor) write(v any) error {
@@ -515,13 +527,14 @@ func (s *Supervisor) consume(raw []byte) {
 		for _, e := range s.batch {
 			completed = completed || e.Kind == "turn_end"
 		}
-		_, err := s.log.AppendBatch(s.batch)
+		committed, err := s.log.AppendBatch(s.batch)
 		s.buffering = false
 		s.batch = nil
 		if err != nil {
 			s.kill()
 			panic(fmt.Sprintf("journal durability failure: %v", err))
 		}
+		s.record(committed)
 		s.approvePending()
 		s.deliverQueued()
 		if completed && s.quotaRoot != "" {
