@@ -109,10 +109,10 @@
 .editable {
   min-width: 0;
   flex: 1;
-  margin-inline-start: calc(-2 * var(--ui-control-inline-inset));
+  margin-inline-start: calc(-1 * var(--ui-control-inline-inset));
 }
 .editable :global(.editable-value-trigger) {
   min-height: var(--ui-icon-size);
-  padding: var(--ui-space) calc(2 * var(--ui-control-inline-inset));
+  padding: var(--ui-space) var(--ui-control-inline-inset);
   font: inherit;
 }
