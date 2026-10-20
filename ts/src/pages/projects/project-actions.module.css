@@ -20,12 +20,39 @@
   line-height: 1.5;
 }
 .action {
+  --action-button-size: calc(
+    var(--ui-icon-size) + 2 * var(--ui-control-inline-inset)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
+  align-self: center;
   flex: none;
+  height: var(--action-button-size);
+  min-height: var(--action-button-size);
   min-width: calc(var(--ui-toolbar-button-width) + 8 * var(--ui-space));
-  padding: var(--ui-space) calc(2 * var(--ui-control-inline-inset));
+  margin-inline-end: var(--ui-control-inline-inset);
+  padding: 0;
   border-radius: calc(var(--ui-dialog-radius) - 2 * var(--ui-space) - 1px);
   font-size: 12px;
+}
+.action > :global(.button-content) {
+  display: grid;
+  grid-template-columns: var(--action-button-size) minmax(0, 1fr);
+  gap: 0;
+  width: 100%;
+  height: 100%;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: var(--action-button-size);
+  aspect-ratio: 1;
+}
+.label {
+  min-width: 0;
+  text-align: center;
+}
+.row .action:not(:disabled):hover {
+  background: var(--ui-confirm-button-background);
 }

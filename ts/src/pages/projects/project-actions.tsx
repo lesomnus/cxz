@@ -3,6 +3,7 @@ import { Button, ConfirmationDialog } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
+import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { purgeProject } from "./project-purge";
 import styles from "./project-actions.module.css";
@@ -34,7 +35,10 @@ export function ProjectActions({
             setTarget(project);
           }}
         >
-          {t("Purge")}
+          <span className={styles.icon}>
+            <SessionActionIcon action="purge" />
+          </span>
+          <span className={styles.label}>{t("Purge")}</span>
         </Button>
       </div>
       {target && (
