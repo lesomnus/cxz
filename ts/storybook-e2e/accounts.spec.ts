@@ -25,15 +25,23 @@ for (const width of [1280, 390]) {
       .evaluate((el) => ({
         label: parseFloat(getComputedStyle(el.querySelector("dt")!).fontSize),
         value: parseFloat(getComputedStyle(el.querySelector("dd")!).fontSize),
-        normal: parseFloat(getComputedStyle(document.documentElement).fontSize),
+        gap: parseFloat(getComputedStyle(el).rowGap),
       }));
     expect(typography.label).toBeLessThan(typography.value);
-    expect(typography.value).toBe(typography.normal);
+    expect(typography.value).toBe(12);
+    expect(typography.label).toBe(10);
+    expect(typography.gap).toBeGreaterThan(0);
     const logo = (await details
       .getByRole("img", { name: "Codex", exact: true })
       .boundingBox())!;
-    const fields = (await details.locator("dl").boundingBox())!;
-    expect(logo.y + logo.height).toBeLessThanOrEqual(fields.y);
+    const agent = details
+      .locator("dl > div")
+      .filter({ has: page.getByText("Agent", { exact: true }) });
+    await expect(agent.locator("dd")).toContainText("codex");
+    const value = (await agent.locator("dd").boundingBox())!;
+    expect(logo.x).toBeGreaterThanOrEqual(value.x);
+    expect(logo.y).toBeGreaterThanOrEqual(value.y);
+    expect(logo.y + logo.height).toBeLessThanOrEqual(value.y + value.height);
     await expect(work.locator("header")).toHaveCount(0);
 
     await expect(personal).toBeAttached();

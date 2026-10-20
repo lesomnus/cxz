@@ -42,32 +42,6 @@
   padding-top: 0;
   padding-inline: 0;
 }
-.details {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--ui-space);
-  column-gap: calc(2 * var(--ui-space));
-  margin: var(--ui-space) 0;
-  font: 12px/1.5 var(--ui-font-mono);
-}
-.details > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--ui-control-inset);
-  padding: var(--ui-control-inset) var(--ui-control-inline-inset);
-}
-.details dt {
-  font-size: 10px;
-  color: var(--ui-muted);
-  overflow-wrap: anywhere;
-}
-.details dd {
-  display: flex;
-  align-items: center;
-  min-height: var(--ui-icon-size);
-  margin: 0;
-  overflow-wrap: anywhere;
-}
 .sectionTitle,
 .sectionHeading h2 {
   margin: 0;

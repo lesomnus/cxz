@@ -6,7 +6,7 @@ import { AccountAuthStatus_State as AuthState } from "#gen/cxz/account_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
-import { FieldLabel } from "#src/shared/components/field-label.tsx";
+import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
@@ -41,14 +41,17 @@ export function AccountDetails({
   return (
     <div className={styles.content}>
       <section className={styles.section} aria-label="Account details">
-        <div className={accountStyles.identity}>
-          <AgentBrand agent={account.agent} />
-        </div>
-        <dl className={styles.metrics}>
-          {[
+        <ResourceFields
+          rows={[
             ["Display name", account.name || account.alias],
             ["Alias", account.alias],
-            ["Agent", account.agent],
+            [
+              "Agent",
+              <span className={accountStyles.agent}>
+                <AgentBrand agent={account.agent} />
+                {account.agent}
+              </span>,
+            ],
             ["Authentication backend", account.authBackend],
             [
               "Created",
@@ -58,15 +61,8 @@ export function AccountDetails({
                   ).toLocaleString()
                 : "—",
             ],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <dt>
-                <FieldLabel label={label} />
-              </dt>
-              <dd className={accountStyles.value}>{value}</dd>
-            </div>
-          ))}
-        </dl>
+          ]}
+        />
         {account.desc && <p>{account.desc}</p>}
       </section>
       <section className={styles.section} aria-label="Authentication">

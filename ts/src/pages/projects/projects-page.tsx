@@ -1,5 +1,5 @@
 import { t } from "#src/shared/i18n/i18n.ts";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
@@ -9,7 +9,7 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime } from "#src/shared/components/date-time.tsx";
-import { FieldLabel } from "#src/shared/components/field-label.tsx";
+import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
 import { IdentifierValue } from "#src/shared/components/identifier-value.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
@@ -298,20 +298,5 @@ function ProjectDashboard({
         )}
       </section>
     </div>
-  );
-}
-
-function Fields({ rows }: { rows: [string, ReactNode, string?][] }) {
-  return (
-    <dl className={styles.details}>
-      {rows.map(([label, value, description]) => (
-        <div key={label}>
-          <dt>
-            <FieldLabel label={label} description={description} />
-          </dt>
-          <dd>{value === undefined || value === "" ? "—" : value}</dd>
-        </div>
-      ))}
-    </dl>
   );
 }

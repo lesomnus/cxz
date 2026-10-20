@@ -18,13 +18,10 @@
   min-width: 0;
   scroll-margin-top: calc(3 * var(--space));
 }
-.identity {
+.agent {
   display: flex;
   align-items: center;
-  min-height: var(--ui-icon-size);
-}
-.value {
-  overflow-wrap: anywhere;
+  gap: var(--space);
 }
 .form {
   border: 0;
