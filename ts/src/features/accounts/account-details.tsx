@@ -5,7 +5,8 @@ import type { Session } from "#gen/cxz/session_pb";
 import { AccountAuthStatus_State as AuthState } from "#gen/cxz/account_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { AgentIdentity } from "#src/shared/components/agent-identity.tsx";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { FieldLabel } from "#src/shared/components/field-label.tsx";
 import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
@@ -39,16 +40,11 @@ export function AccountDetails({
   };
   return (
     <div className={styles.content}>
-      <header className={accountStyles.identity}>
-        <AgentIdentity
-          agent={account.agent}
-          name={account.name || account.alias}
-          alias={account.alias}
-          heading
-        />
-      </header>
       <section className={styles.section} aria-label="Account details">
-        <dl className={`${styles.metrics} ${accountStyles.metrics}`}>
+        <div className={accountStyles.identity}>
+          <AgentBrand agent={account.agent} />
+        </div>
+        <dl className={styles.metrics}>
           {[
             ["Display name", account.name || account.alias],
             ["Alias", account.alias],
@@ -64,7 +60,9 @@ export function AccountDetails({
             ],
           ].map(([label, value]) => (
             <div key={label}>
-              <dt>{label}</dt>
+              <dt>
+                <FieldLabel label={label} />
+              </dt>
               <dd className={accountStyles.value}>{value}</dd>
             </div>
           ))}

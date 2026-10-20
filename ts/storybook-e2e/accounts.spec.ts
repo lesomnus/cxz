@@ -15,6 +15,27 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     await expect(work).toBeVisible();
+    const details = work.getByRole("region", { name: "Account details" });
+    await expect(
+      details.getByRole("img", { name: "Codex", exact: true }),
+    ).toBeVisible();
+    const typography = await details
+      .locator("dl > div")
+      .first()
+      .evaluate((el) => ({
+        label: parseFloat(getComputedStyle(el.querySelector("dt")!).fontSize),
+        value: parseFloat(getComputedStyle(el.querySelector("dd")!).fontSize),
+        normal: parseFloat(getComputedStyle(document.documentElement).fontSize),
+      }));
+    expect(typography.label).toBeLessThan(typography.value);
+    expect(typography.value).toBe(typography.normal);
+    const logo = (await details
+      .getByRole("img", { name: "Codex", exact: true })
+      .boundingBox())!;
+    const fields = (await details.locator("dl").boundingBox())!;
+    expect(logo.y + logo.height).toBeLessThanOrEqual(fields.y);
+    await expect(work.locator("header")).toHaveCount(0);
+
     await expect(personal).toBeAttached();
     await expect(
       work.getByRole("region", { name: "Sessions using this account" }),

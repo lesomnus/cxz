@@ -19,13 +19,12 @@
   scroll-margin-top: calc(3 * var(--space));
 }
 .identity {
-  padding: calc(3 * var(--space));
+  display: flex;
+  align-items: center;
+  min-height: var(--ui-icon-size);
 }
 .value {
   overflow-wrap: anywhere;
-}
-.metrics .value {
-  font-size: 0.8rem;
 }
 .form {
   border: 0;
