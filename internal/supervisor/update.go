@@ -133,8 +133,13 @@ func (s *Supervisor) updateReason(now time.Time, busy string) (reason string) {
 	}
 	for id, c := range s.updateClients {
 		if now.Sub(c.seen) > 30*time.Second {
+			// Forgetting a client is not something the agent did. Resetting the
+			// clock here was the other half of cxz#224: a browser tab reconnects
+			// every few minutes, and each stream left an attach reset and an
+			// expiry reset behind it, roughly six minutes apart against a five
+			// minute idle period. One session with one tab open refused the
+			// installation's rollout for fifty minutes. See cxz#249.
 			delete(s.updateClients, id)
-			s.lastActivity = now
 			continue
 		}
 		if c.busy {
@@ -312,11 +317,11 @@ func (s *Supervisor) serveUpdate(w http.ResponseWriter, r *http.Request) bool {
 		if s.updateClients == nil {
 			s.updateClients = map[string]updateClient{}
 		}
-		// A client attaching is an interaction; a client reporting that it is
-		// busy is not, and it already refuses the attempt on its own.
-		if _, known := s.updateClients[c.ClientID]; !known {
-			s.lastActivity = time.Now()
-		}
+		// Attaching is not an interaction either. A client ID is minted per
+		// stream, so a tab that reconnects looks like a new client every few
+		// minutes, and the clock never ran out while anyone was watching. What a
+		// person doing something looks like is `busy`, which refuses the attempt
+		// on its own for as long as it keeps being reported. See cxz#249.
 		s.updateClients[c.ClientID] = updateClient{time.Now(), c.Busy}
 		json.NewEncoder(w).Encode(core.Receipt{ClientID: c.ClientID, Status: "accepted"})
 	case "/update-notice":
