@@ -1,20 +1,22 @@
-.panel {
-  min-height: 0;
+.page {
+  grid-column: 2 / -1;
+}
+.cards {
+  width: min(100%, 600px);
+  margin-inline: auto;
+  display: grid;
+  gap: calc(4 * var(--space));
 }
 .header {
   display: flex;
-  align-items: center;
-  gap: var(--space);
+  justify-content: flex-end;
 }
 .add {
-  margin-left: auto;
   width: var(--toolbar-button-width);
 }
-.item > :global(.button-content) {
-  display: block;
-}
-.item[aria-pressed="true"] :global(.session-title) {
-  color: var(--shade-255);
+.card {
+  min-width: 0;
+  scroll-margin-top: calc(3 * var(--space));
 }
 .identity {
   padding: calc(3 * var(--space));

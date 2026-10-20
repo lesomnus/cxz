@@ -1,103 +1,63 @@
 import { expect, test } from "@playwright/test";
 
-test("account selection shows identity, scoped sessions, usage and actual login readiness", async ({
-  page,
-}) => {
-  await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
-  const panel = page.getByRole("complementary", { name: "Account list" });
-  await expect(
-    panel.getByRole("img", { name: "Codex", exact: true }),
-  ).toBeVisible();
-  await expect(
-    panel.getByRole("button", { name: /Work.*work/ }),
-  ).toHaveAttribute("aria-pressed", "true");
-  const work = panel.getByRole("button", { name: /Work.*work/ });
-  const personal = panel.getByRole("button", { name: /Personal.*personal/ });
-  const background = (element: HTMLElement) =>
-    getComputedStyle(element).backgroundColor;
-  const selectedBackground = await work.evaluate(background);
-  expect(selectedBackground).not.toBe(await personal.evaluate(background));
-  expect(selectedBackground).not.toBe("rgba(0, 0, 0, 0)");
-  await work.hover();
-  expect(await work.evaluate(background)).not.toBe(selectedBackground);
-  const sessions = page.getByRole("region", {
-    name: "Sessions using this account",
+for (const width of [1280, 390]) {
+  test(`account cards are centered without a sidebar at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
+    await expect(
+      page.getByRole("complementary", { name: "Account list" }),
+    ).toHaveCount(0);
+    const work = page.getByRole("article", { name: "Work", exact: true });
+    const personal = page.getByRole("article", {
+      name: "Personal",
+      exact: true,
+    });
+    await expect(work).toBeVisible();
+    await expect(personal).toBeAttached();
+    await expect(
+      work.getByRole("region", { name: "Sessions using this account" }),
+    ).toContainText("Web account layout");
+    await expect(work).not.toContainText("Claude project");
+    await expect(personal).toContainText("Claude project");
+    await expect(personal).toContainText("Session-scoped login");
+    await expect(
+      work.getByRole("button", { name: "Log in", exact: true }),
+    ).toBeDisabled();
+    await expect(
+      work.getByRole("button", { name: "Log out", exact: true }),
+    ).toBeEnabled();
+    const main = (await page.getByRole("main").boundingBox())!;
+    const card = (await work.boundingBox())!;
+    const add = (await page
+      .getByRole("button", { name: "Add account", exact: true })
+      .boundingBox())!;
+    expect(
+      Math.abs(card.x + card.width / 2 - main.x - main.width / 2),
+    ).toBeLessThan(1);
+    expect(add.x + add.width).toBeCloseTo(card.x + card.width, 0);
+    expect(add.y + add.height).toBeLessThan(card.y);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
   });
-  await expect(sessions).toContainText("Web account layout");
-  await expect(sessions).not.toContainText("Claude project");
-  await expect(
-    page.getByRole("button", { name: "Log in", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByRole("button", { name: "Log out", exact: true }),
-  ).toBeEnabled();
-  await expect(
-    page.getByText("Conversation usage", { exact: true }),
-  ).toBeVisible();
-  await panel.getByRole("button", { name: /Personal.*personal/ }).click();
-  await page.getByRole("region", { name: "Account details" }).hover();
-  expect(await personal.evaluate(background)).toBe(selectedBackground);
-  expect(await work.evaluate(background)).not.toBe(selectedBackground);
-  await expect(
-    page.getByText("Session-scoped login", { exact: true }),
-  ).toBeVisible();
-  await expect(sessions).toContainText("Claude project");
-  await expect(sessions).not.toContainText("Web account layout");
-  await expect(
-    page.getByRole("button", { name: "Log in", exact: true }),
-  ).toHaveCount(0);
-});
+}
 
-test("Add opens beside the panel and its language/provider dropdown works inside the modal", async ({
+test("the top add action opens a modal and creates an account card", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
-  const panel = page.getByRole("complementary", { name: "Account list" });
-  const addBounds = (await panel
-    .getByRole("button", { name: "Add account", exact: true })
-    .boundingBox())!;
-  await panel.getByRole("button", { name: "Add account", exact: true }).click();
+  await page.getByRole("button", { name: "Add account", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Add account", exact: true });
   await expect(dialog).toBeVisible();
-  const foreground = dialog.locator('[data-dialog-trigger="true"]');
-  const foregroundBounds = (await foreground.boundingBox())!;
-  for (const key of ["x", "y", "width", "height"] as const)
-    expect(foregroundBounds[key]).toBeCloseTo(addBounds[key], 1);
-  await expect(foreground.locator("button")).toBeDisabled();
-  await expect(foreground).toHaveAttribute("aria-hidden", "true");
-  expect(
-    await foreground.evaluate((node) => getComputedStyle(node).opacity),
-  ).not.toBe("1");
-  await page.mouse.click(
-    addBounds.x + addBounds.width / 2,
-    addBounds.y + addBounds.height / 2,
-  );
-  await expect(dialog).toBeVisible();
-  const entrance = await dialog
-    .locator("[data-anchored]")
-    .evaluate((surface) => {
-      const animation = surface.getAnimations()[0];
-      return animation?.effect instanceof KeyframeEffect
-        ? animation.effect.getKeyframes()
-        : [];
-    });
-  expect(entrance[0]?.opacity).toBe("0");
-  expect(entrance.at(-1)?.opacity).toBe("1");
-  expect(entrance.at(-1)?.transform).toBe("none");
-  // The top-layer dialog stays untransformed so fixed menus retain viewport coordinates.
-  expect(
-    await dialog.evaluate((node) => getComputedStyle(node).transform),
-  ).toBe("none");
-  const panelBox = (await panel.boundingBox())!,
-    dialogBox = (await dialog.boundingBox())!;
-  expect(dialogBox.x).toBeGreaterThanOrEqual(panelBox.x + panelBox.width - 1);
+  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
   await dialog.getByRole("combobox", { name: "Agent", exact: true }).click();
   await dialog.getByRole("option", { name: "Claude", exact: true }).click();
-  await expect(
-    dialog.getByRole("combobox", { name: "Agent", exact: true }),
-  ).toContainText("Claude");
   await dialog
     .getByRole("textbox", { name: "Alias", exact: true })
     .fill("new-account");
@@ -106,30 +66,15 @@ test("Add opens beside the panel and its language/provider dropdown works inside
     .fill("New team account");
   await dialog.getByRole("button", { name: "Add", exact: true }).click();
   await expect(dialog).toHaveCount(0);
+  const card = page.getByRole("article", {
+    name: "New team account",
+    exact: true,
+  });
+  await expect(card).toBeInViewport();
   await expect(
-    panel.getByRole("button", { name: /New team account.*new-account/ }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(
-    page.getByRole("region", { name: "Account details" }),
-  ).toContainText("New team account");
+    card.getByRole("region", { name: "Account details" }),
+  ).toContainText("new-account");
   expect(errors).toEqual([]);
-});
-
-test("foreground trigger appears only while the account dialog fits beside the panel", async ({
-  page,
-}) => {
-  await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
-  const panel = page.getByRole("complementary", { name: "Account list" });
-  await panel.getByRole("button", { name: "Add account", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "Add account", exact: true });
-  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(1);
-  await page.setViewportSize({ width: 390, height: 700 });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(1);
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(dialog).toHaveCount(0);
 });
 
 test("dialogs respect reduced motion", async ({ page }) => {
