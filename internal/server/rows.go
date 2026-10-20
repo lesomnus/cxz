@@ -93,10 +93,13 @@ func (s *Server) syncedRows(ctx context.Context, m core.Session, cursor uint64) 
 		return nil, err
 	}
 	defer p.mu.Unlock()
-	if err = transcripthistory.SyncWith(ctx, s.db, m.ID, decodeTranscriptEvent, &p.transcript); err != nil {
-		return nil, err
+	db := s.conversation(p)
+	if !p.owned {
+		if err = transcripthistory.SyncWith(ctx, db, m.ID, decodeTranscriptEvent, &p.transcript); err != nil {
+			return nil, err
+		}
 	}
-	return transcripthistory.Tail(ctx, s.db, m.ID, cursor, rowsPage, decodeTranscriptEvent)
+	return transcripthistory.Tail(ctx, db, m.ID, cursor, rowsPage, decodeTranscriptEvent)
 }
 
 func (s *Server) rowsRemote(r *api.RowsRequest, stream grpc.ServerStreamingServer[api.Row]) error {

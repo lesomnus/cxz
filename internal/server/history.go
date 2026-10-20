@@ -21,8 +21,9 @@ func (s *Server) History(ctx context.Context, r *api.WatchRequest) (*api.EventBa
 	if e != nil {
 		return nil, e
 	}
+	db := s.conversation(p)
 	p.mu.Unlock()
-	rows, e := s.db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT ?", r.SessionId, r.AfterSeq, historypage.PageSize(r.Limit))
+	rows, e := db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT ?", r.SessionId, r.AfterSeq, historypage.PageSize(r.Limit))
 	if e != nil {
 		return nil, e
 	}
