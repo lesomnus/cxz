@@ -1,3 +1,5 @@
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
+import type { Account } from "#gen/cxz/account_pb";
 import { createRouterTransport, ConnectError, Code } from "@connectrpc/connect";
 import {
   AccountService,
@@ -20,8 +22,12 @@ export function resourceFixture() {
     agent: "codex",
     snapshot: false,
   };
-  const accounts = [
+  const accounts: Pick<
+    Account,
+    "alias" | "name" | "agent" | "authBackend" | "dateCreated"
+  >[] = [
     {
+      dateCreated: timestampFromDate(new Date("2026-10-20T00:00:00Z")),
       alias: "work",
       name: "Work",
       agent: "codex",

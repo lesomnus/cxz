@@ -24,7 +24,9 @@ for (const story of [
       "Time cxz received and recorded the response",
     );
     await expect(time).toHaveAttribute("datetime", /^\d{4}-\d{2}-\d{2}T/);
-    await expect(time).not.toContainText(new Date().getFullYear().toString());
+    await expect(time).toHaveText(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/,
+    );
     await expect(response.locator(".response-footer time")).toHaveCount(0);
     for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: 900 });

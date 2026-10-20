@@ -1,5 +1,5 @@
 import type { EventSource } from "#src/features/session/model/event-source.ts";
-import { currentLocale } from "#src/shared/i18n/i18n.ts";
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { absoluteMessageTime } from "./message-time";
 import { useMessageTime } from "./use-message-time";
@@ -12,12 +12,7 @@ function InputTime({ timeMs }: { timeMs: bigint }) {
   if (!date) return null;
   return (
     <div className="input-time">
-      <time
-        dateTime={date.toISOString()}
-        title={date.toLocaleString(currentLocale())}
-      >
-        {absoluteMessageTime(date)}
-      </time>
+      <DateTime value={timeMs} title={absoluteMessageTime(date)} />
       {relative && <span className="input-relative-time">- {relative}</span>}
     </div>
   );

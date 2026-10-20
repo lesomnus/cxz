@@ -1,3 +1,4 @@
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   Button,
@@ -312,11 +313,7 @@ function TaskEditor({
               )}
               <small className={styles.quiet}>
                 {taskStatusName(task.status)} · Updated{" "}
-                {task.dateUpdated
-                  ? new Date(
-                      Number(task.dateUpdated.seconds) * 1000,
-                    ).toLocaleString()
-                  : "—"}
+                <DateTime value={task.dateUpdated} />
               </small>
             </div>
           )}

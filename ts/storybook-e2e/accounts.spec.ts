@@ -43,6 +43,11 @@ for (const width of [1280, 390]) {
     expect(logo.y).toBeGreaterThanOrEqual(value.y);
     expect(logo.y + logo.height).toBeLessThanOrEqual(value.y + value.height);
     await expect(work.locator("header")).toHaveCount(0);
+    const created = details.locator("time");
+    await expect(created).toHaveAttribute("datetime", /T.*Z$/);
+    await expect(created).toHaveText(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/,
+    );
 
     await expect(personal).toBeAttached();
     await expect(

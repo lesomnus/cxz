@@ -1,3 +1,4 @@
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useState } from "react";
 import { Button, ConfirmationDialog } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
@@ -53,14 +54,7 @@ export function AccountDetails({
               </span>,
             ],
             ["Authentication backend", account.authBackend],
-            [
-              "Created",
-              account.dateCreated
-                ? new Date(
-                    Number(account.dateCreated.seconds) * 1000,
-                  ).toLocaleString()
-                : "—",
-            ],
+            ["Created", <DateTime value={account.dateCreated} />],
           ]}
         />
         {account.desc && <p>{account.desc}</p>}

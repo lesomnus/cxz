@@ -1,3 +1,4 @@
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@lesomnus/nox";
@@ -266,7 +267,7 @@ export function ConversationSearch({
               <span>
                 {hit.snippet}
                 <small>
-                  {hit.kind} · {new Date(Number(hit.timeMs)).toLocaleString()}
+                  {hit.kind} · <DateTime value={hit.timeMs} />
                 </small>
               </span>
             </RouteLink>

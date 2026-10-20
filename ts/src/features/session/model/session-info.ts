@@ -1,4 +1,4 @@
-import { currentLocale } from "#src/shared/i18n/i18n.ts";
+import { formatOffsetDateTime } from "#src/shared/components/date-time-format.ts";
 import type { Session, SessionEvent } from "#gen/cxz/session_pb";
 import { payload } from "./journal";
 
@@ -182,13 +182,7 @@ export function formatTokens(n: number | undefined) {
   }).format(n);
 }
 export function formatReset(ms: number | undefined) {
-  return ms === undefined
-    ? "—"
-    : new Date(ms).toLocaleTimeString(currentLocale(), {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
+  return ms === undefined ? "—" : formatOffsetDateTime(new Date(ms));
 }
 
 export function quotaDots(percent: number | undefined, cells = 8) {
