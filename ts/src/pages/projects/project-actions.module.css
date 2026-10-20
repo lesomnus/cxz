@@ -1,22 +1,29 @@
 .row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: calc(2 * var(--ui-space));
   margin: var(--ui-space) calc(-1 * var(--ui-space)) calc(-1 * var(--ui-space));
-  padding: calc(3 * var(--ui-space));
+  padding: var(--ui-space) var(--ui-space) var(--ui-space)
+    calc(3 * var(--ui-space));
   border: 1px solid var(--ui-shade-54);
   border-radius: calc(var(--ui-dialog-radius) - var(--ui-space));
 }
 .row p {
   flex: 1;
   min-width: 0;
-  margin: 0;
+  min-height: 2lh;
+  margin: calc(2 * var(--ui-space)) 0;
   color: var(--ui-muted);
   font-size: 12px;
+  line-height: 1.5;
 }
 .action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
-  min-width: var(--ui-toolbar-button-width);
-  padding: var(--ui-space) var(--ui-control-inline-inset);
+  min-width: calc(var(--ui-toolbar-button-width) + 4 * var(--ui-space));
+  padding: var(--ui-space) calc(2 * var(--ui-control-inline-inset));
+  border-radius: calc(var(--ui-dialog-radius) - 2 * var(--ui-space) - 1px);
   font-size: 12px;
 }
