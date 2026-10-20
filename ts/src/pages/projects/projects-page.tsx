@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
+import { Id } from "@lesomnus/payday/pdid";
 import { PageToolbar, Button, EditableValue } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -166,11 +167,30 @@ function ProjectDashboard({
           <h2 className={styles.sectionTitle}>{t("Information")}</h2>
           <Fields
             rows={[
+              [
+                t("Project ID"),
+                <IdentifierValue
+                  value={
+                    p.id.length === 16 ? new Id(p.id).toString() : undefined
+                  }
+                />,
+              ],
               [t("Name"), editable("name", t("Name"))],
               [t("Alias"), editable("alias", t("Alias"))],
               [t("Description"), editable("desc", t("Description"))],
               [t("Workspace"), p.workspace],
               [t("Configuration"), p.config],
+              [
+                t("Runtime ID"),
+                <IdentifierValue value={p.runtimeId} />,
+                t(
+                  "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.",
+                ),
+              ],
+              [t("Listed"), String(p.listed)],
+              [t("Created"), <DateTime value={p.dateCreated} />],
+              [t("Updated"), <DateTime value={p.dateUpdated} />],
+              [t("Deleted"), <DateTime value={p.dateErased} />],
             ]}
           />
         </section>
@@ -219,19 +239,10 @@ function ProjectDashboard({
           <Fields
             rows={[
               [
-                t("Runtime ID"),
-                <IdentifierValue value={p.runtimeId} />,
-                t(
-                  "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.",
-                ),
-              ],
-              [
                 t("Container ID"),
                 <IdentifierValue value={p.status?.containerId} />,
               ],
               [t("Provision attempts"), p.status?.provisionAttempt.toString()],
-              [t("Created"), <DateTime value={p.dateCreated} />],
-              [t("Updated"), <DateTime value={p.dateUpdated} />],
             ]}
           />
         </section>

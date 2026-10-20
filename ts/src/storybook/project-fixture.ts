@@ -28,6 +28,8 @@ export function projectFixture(
       runtimeId: `project-${i + 1}`,
       alias: i ? "api" : "web",
       name,
+      listed: !i,
+      dateErased: i ? timestampFromDate(new Date(now - 1000)) : undefined,
       workspace: "/host/workspace",
       config: ".devcontainer/devcontainer.json",
       desc: i

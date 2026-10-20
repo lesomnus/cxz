@@ -339,7 +339,7 @@ test("live inventory preserves row selection and account labels", async ({
   expect(await row.boundingBox()).toEqual(before);
 });
 
-test("diagnostics show short IDs, copy complete values, and use machine-readable dates", async ({
+test("project metadata and diagnostics show short IDs, copy complete values, and use machine-readable dates", async ({
   page,
   context,
 }) => {
@@ -351,7 +351,8 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
     exact: true,
   });
   await expect(diagnostic).toBeVisible();
-  const entries = diagnostic.locator("dl > div");
+  const info = main.getByRole("region", { name: "Information", exact: true });
+  const entries = info.locator("dl > div");
   const left = (await entries.nth(0).boundingBox())!;
   const right = (await entries.nth(1).boundingBox())!;
   expect(right.y).toBe(left.y);
@@ -380,7 +381,48 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe("container-1");
-  const created = diagnostic
+  const projectId = info
+    .locator("dl > div")
+    .filter({ has: page.locator("dt", { hasText: /^Project ID$/ }) });
+  await expect(projectId.getByText("0100000", { exact: true })).toBeVisible();
+  await projectId.getByRole("button", { name: "Copy", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe("01000000-0000-0000-0000-000000000000");
+  await projectId.locator("[tabindex]").hover();
+  await expect(
+    page.getByRole("tooltip", {
+      name: "01000000-0000-0000-0000-000000000000",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(info.locator("dt")).toHaveText([
+    "Project ID",
+    "Name",
+    "Alias",
+    "Description",
+    "Workspace",
+    "Configuration",
+    "Runtime ID",
+    "Listed",
+    "Created",
+    "Updated",
+    "Deleted",
+  ]);
+  await expect(
+    info
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
+      .locator("dd"),
+  ).toHaveText("true");
+  await expect(
+    info
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Deleted$/ }) })
+      .locator("dd"),
+  ).toHaveText("—");
+  const created = info
     .locator("dl > div")
     .filter({ has: page.locator("dt", { hasText: /^Created$/ }) })
     .locator("time");
@@ -396,6 +438,24 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
         ),
       ),
   ).toBe(true);
+  await main
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "API workspace", exact: true })
+    .click();
+  await expect(
+    info
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
+      .locator("dd"),
+  ).toHaveText("false");
+  await expect(
+    info
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Deleted$/ }) })
+      .locator("time"),
+  ).toBeVisible();
 });
 
 test("full ID hints escape clipped containers and remain inside the viewport", async ({
