@@ -11,7 +11,31 @@ import (
 	"github.com/lesomnus/xli/flg"
 	"os"
 	"path/filepath"
+	"time"
 )
+
+// holdRollout takes the lock every writer of the update state holds, waiting a
+// little: a tick holds it for the length of one channel check, and refusing a
+// person's command because a timer fired a moment earlier is not an answer.
+var rolloutWait = 15 * time.Second
+
+func holdRollout(ctx context.Context, root string) (func(), error) {
+	deadline := time.Now().Add(rolloutWait)
+	for {
+		lock, e := core.Lock(filepath.Join(root, "rollout.lock"))
+		if e == nil {
+			return func() { _ = lock.Close() }, nil
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("a rollout has held the lock for %s; try again in a moment", rolloutWait)
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(250 * time.Millisecond):
+		}
+	}
+}
 
 func automaticUpdateCommands() xli.Commands {
 	var commands xli.Commands
@@ -70,6 +94,16 @@ func localUpdateCommand(ctx context.Context, root, action string) ([]byte, error
 			return nil, e
 		}
 	case "check":
+		// Under the rollout lock, because that is what every other writer of
+		// cxz-update.json holds: the rollout tick, the update helper, and
+		// applying. Without it a forced check raced the tick's own save and
+		// lost -- the release it had just discovered was simply gone, and the
+		// installation went on offering the old one. See cxz#247.
+		release, e := holdRollout(ctx, root)
+		if e != nil {
+			return nil, e
+		}
+		defer release()
 		if _, e = cxzupdate.Check(ctx, root, true); e != nil {
 			return nil, e
 		}
