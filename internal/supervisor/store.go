@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/sessionstore"
 )
 
@@ -54,6 +55,7 @@ func (s *Supervisor) openStore(ctx context.Context, dir string) {
 			s.session.ID, n, last, time.Since(start).Round(time.Millisecond))
 	}
 	s.store = store
+	s.recordState(ctx)
 }
 
 func (s *Supervisor) closeStore() {
@@ -77,6 +79,26 @@ func (s *Supervisor) record(events []core.Event) {
 	if err := s.store.Append(ctx, events); err != nil {
 		// Derived, so this is not a durability failure. Saying so is the whole
 		// response: the next append or the next start finishes what this did not.
+		fmt.Fprintln(os.Stderr, "conversation store:", err)
+		return
+	}
+	s.recordState(ctx)
+}
+
+// recordState writes the reduced state beside the records, fenced to the
+// journal it was reduced from. A reader that finds the fence still matching has
+// the state without replaying the journal; one that does not replays, which is
+// what every reader did before this.
+//
+// It is written after the records, never before: a fence that claims more than
+// the store holds would let a reader skip records that are there.
+func (s *Supervisor) recordState(ctx context.Context) {
+	size, mtime, err := journal.Fence(s.log.Path())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "conversation store:", err)
+		return
+	}
+	if err = s.store.SetState(ctx, s.snap, sessionstore.Fence{Size: size, ModTime: mtime, Seq: s.snap.LastSeq}); err != nil {
 		fmt.Fprintln(os.Stderr, "conversation store:", err)
 	}
 }

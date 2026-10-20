@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/sessionstore"
 )
 
@@ -143,5 +144,42 @@ func TestOpeningConvertsWhatTheStoreIsMissing(t *testing.T) {
 	last = s.log.All()[len(s.log.All())-1].Seq
 	if through != last {
 		t.Fatalf("after a restart the store is through %d, the journal ends at %d", through, last)
+	}
+}
+
+// The state a session records has to be fenced to the journal it was reduced
+// from, or a reader cannot tell a current state from a stale one.
+func TestRecordedStateIsFencedToTheJournal(t *testing.T) {
+	ctx := context.Background()
+	s, _ := withStore(t, "claude")
+	s.event("input", "one", "", nil, nil)
+
+	snap, fence, found, err := s.store.State(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !found {
+		t.Fatal("no state was recorded")
+	}
+	if snap.LastSeq != s.snap.LastSeq || fence.Seq != s.snap.LastSeq {
+		t.Fatalf("state is at %d, fence at %d, the session at %d", snap.LastSeq, fence.Seq, s.snap.LastSeq)
+	}
+	size, mtime, err := journal.Fence(s.log.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fence.Size != size || fence.ModTime != mtime {
+		t.Fatal("the fence does not describe the journal it was written beside")
+	}
+
+	// One more record, and the fence has to move with it: a fence left behind
+	// would let a reader skip what was recorded after it.
+	s.event("assistant", "two", "", nil, nil)
+	_, moved, _, err := s.store.State(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if moved.Seq != s.snap.LastSeq || moved.Size == fence.Size {
+		t.Fatalf("the fence stayed at %d/%d while the session moved to %d", moved.Seq, moved.Size, s.snap.LastSeq)
 	}
 }

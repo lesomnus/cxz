@@ -65,3 +65,13 @@ func ReadSince(ctx context.Context, path string, previous Cursor) (events []core
 		next.Seq = lastSeq(batch)
 	}
 }
+
+// Fence is what a store records beside a position so that CursorFrom can tell
+// whether the position still means anything.
+func Fence(path string) (size, mtimeNS int64, err error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return 0, 0, err
+	}
+	return info.Size(), info.ModTime().UnixNano(), nil
+}

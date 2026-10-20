@@ -407,9 +407,6 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, respo
 		s.kill()
 		panic(fmt.Sprintf("journal durability failure: %v", err))
 	}
-	if !s.buffering {
-		s.record([]core.Event{e})
-	}
 	s.snap.LastSeq = e.Seq
 	if kind == "assistant" && e.Response != nil && e.Response.Phase != "subagent" && (e.Response.TurnID == "" || e.Response.TurnID == s.responseContext.TurnID) {
 		s.responseTracking.last, s.responseTracking.phase = e.Seq, e.Response.Phase
@@ -433,6 +430,12 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, respo
 	}
 	if kind == "input" && id == s.snap.QueuedID {
 		s.snap.Queued, s.snap.QueuedID = "", ""
+	}
+	// Last, because what the store records beside the record is the state the
+	// record produced. Written before the reduction finished, it would describe
+	// the session as it was one record ago.
+	if !s.buffering {
+		s.record([]core.Event{e})
 	}
 	return e
 }

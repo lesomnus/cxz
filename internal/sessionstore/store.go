@@ -230,3 +230,48 @@ func (s *Store) Fill(ctx context.Context, events []core.Event, through uint64) (
 	}
 	return len(pending), nil
 }
+
+// Fence is what makes a recorded position trustworthy after a restart: the
+// journal the position belongs to, as it looked when the position was written.
+// Anything else and a reader goes back to reading the journal, which is what it
+// did before this existed.
+type Fence struct {
+	Size    int64  `json:"size"`
+	ModTime int64  `json:"mtime_ns"`
+	Seq     uint64 `json:"seq"`
+}
+
+type state struct {
+	Snapshot core.Snapshot `json:"snapshot"`
+	Fence    Fence         `json:"fence"`
+}
+
+// SetState records the reduced session state beside the records it was reduced
+// from, with the fence that says which journal it belongs to. A reader that
+// finds a matching fence has the state without replaying anything -- which is
+// the whole reason this store exists.
+func (s *Store) SetState(ctx context.Context, snap core.Snapshot, f Fence) error {
+	b, err := json.Marshal(state{Snapshot: snap, Fence: f})
+	if err != nil {
+		return err
+	}
+	_, err = s.db.ExecContext(ctx, `INSERT OR REPLACE INTO meta VALUES('state',?)`, string(b))
+	return err
+}
+
+// State answers the recorded state, and whether there is one.
+func (s *Store) State(ctx context.Context) (core.Snapshot, Fence, bool, error) {
+	var raw string
+	err := s.db.QueryRowContext(ctx, `SELECT value FROM meta WHERE key='state'`).Scan(&raw)
+	if err == sql.ErrNoRows {
+		return core.Snapshot{}, Fence{}, false, nil
+	}
+	if err != nil {
+		return core.Snapshot{}, Fence{}, false, err
+	}
+	var v state
+	if err = json.Unmarshal([]byte(raw), &v); err != nil {
+		return core.Snapshot{}, Fence{}, false, err
+	}
+	return v.Snapshot, v.Fence, true, nil
+}
