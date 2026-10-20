@@ -2,6 +2,8 @@ package workspace
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -159,5 +161,76 @@ func TestProjectStateIsOnePlace(t *testing.T) {
 	}
 	if !strings.HasPrefix(dir, m.Root) {
 		t.Fatal("the directory is not under the manager's root:", dir)
+	}
+}
+
+// Everything that used to mount a project's volume has to ask one place where
+// the state is, because for a migrated project there is no volume to mount. The
+// first version of this left seven callers asking for `p.Volume` and a
+// provision failed with "invalid volume name or ID: value is empty" -- after
+// the state had already moved, which left the project without a container.
+func TestNothingMountsAnEmptyVolume(t *testing.T) {
+	m, p := migrating(t)
+
+	// Still on its own volume: unchanged.
+	mount := m.stateMount(p, "/cxz/state", false)
+	if mount.volume != p.Volume || mount.subpath != "" || mount.project != p.ID {
+		t.Fatal("a project with its own volume was mounted as something else", mount)
+	}
+	if loc := m.stateLocation(p); loc != "volume:"+p.Volume {
+		t.Fatal(loc)
+	}
+
+	// Migrated: the manager's volume at this project's subpath, and never an
+	// empty source.
+	p.Volume = ""
+	mount = m.stateMount(p, "/cxz/state", true)
+	if mount.volume != m.StateVolume {
+		t.Fatal("the mount source is", mount.volume)
+	}
+	if mount.subpath != "projects/"+p.ID+"/state" {
+		t.Fatal("the subpath is", mount.subpath)
+	}
+	if !mount.write {
+		t.Fatal("write was dropped")
+	}
+	// The manager's volume carries no project label, and the ownership check
+	// compares against this field.
+	if mount.project != "" {
+		t.Fatal("the manager's volume was checked as a project's:", mount.project)
+	}
+	if loc := m.stateLocation(p); !strings.Contains(loc, m.StateVolume) || strings.HasSuffix(loc, ":") {
+		t.Fatal("the location says nothing useful:", loc)
+	}
+}
+
+// A migrated project's runtime.json is written and read by the manager itself,
+// because it owns that filesystem. The rename is still what makes it atomic.
+func TestRuntimeJSONRoundTripsWithoutAContainer(t *testing.T) {
+	ctx := context.Background()
+	m, p := migrating(t)
+	p.Volume = ""
+	dir, _ := m.projectState(p.ID)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	// Nothing written yet is not an error, it is nothing.
+	b, err := m.readRuntime(ctx, p)
+	if err != nil || len(b) != 0 {
+		t.Fatal("an absent runtime.json was not empty", err, string(b))
+	}
+	if err = m.writeRuntime(ctx, p, Runtime{Token: "t0ken"}); err != nil {
+		t.Fatal(err)
+	}
+	b, err = m.readRuntime(ctx, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), "t0ken") {
+		t.Fatal("read back", string(b))
+	}
+	if _, err = os.Stat(filepath.Join(dir, "runtime.next")); !os.IsNotExist(err) {
+		t.Fatal("the temporary file was left behind")
 	}
 }

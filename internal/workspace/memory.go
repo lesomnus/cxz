@@ -16,8 +16,8 @@ import (
 )
 
 type memoryMount struct {
-	volume, project, target string
-	write                   bool
+	volume, project, target, subpath string
+	write                            bool
 }
 
 func (m *Manager) memoryHelper(ctx context.Context, project, entry string, input any, mounts []memoryMount) ([]byte, error) {
@@ -38,6 +38,9 @@ func (m *Manager) memoryHelper(ctx context.Context, project, entry string, input
 			return nil, fmt.Errorf("refusing unowned retained storage")
 		}
 		mount := "type=volume,source=" + v.volume + ",target=" + v.target
+		if v.subpath != "" {
+			mount += ",volume-subpath=" + v.subpath
+		}
 		if !v.write {
 			mount += ",readonly"
 		}
@@ -93,7 +96,7 @@ func (m *Manager) Memory(ctx context.Context, r *api.MemoryRequest) (*api.Memory
 	if err = json.Unmarshal(out, &page); err != nil {
 		return nil, err
 	}
-	page.Location = "volume:" + p.Volume + strings.TrimPrefix(page.Location, "/cxz/state")
+	page.Location = m.stateLocation(p) + strings.TrimPrefix(page.Location, "/cxz/state")
 	out, err = json.Marshal(page)
 	return &api.MemoryReply{Data: out}, err
 }
@@ -114,7 +117,7 @@ func (m *Manager) CopyMemory(ctx context.Context, r *api.CopyMemoryRequest) (*ap
 	lock.Lock()
 	defer lock.Unlock()
 	out, err := m.memoryHelper(ctx, target.ID, "_memory-copy", memoryview.CopyQuery{Source: memorySession(s), Target: memorySession(t), Path: r.Path, TargetPath: r.TargetPath},
-		[]memoryMount{{volume: source.Volume, project: source.ID, target: "/cxz/state"}, {volume: target.Volume, project: target.ID, target: "/cxz/target", write: true}})
+		[]memoryMount{m.stateMount(source, "/cxz/state", false), m.stateMount(target, "/cxz/target", true)})
 	if err != nil {
 		return nil, err
 	}
