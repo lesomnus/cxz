@@ -139,13 +139,26 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 			return e
 		}
 	}
-	if e = dockerx.EnsureResource(ctx, "volume", p.Volume, m.Owner, p.ID); e != nil {
-		return e
-	}
 	// This directory contains only one project's runtime. The private data
 	// subdirectory is created by the devcontainer's remote user, not manager root.
-	if _, e = dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "chmod", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "1777", "/cxz/state"); e != nil {
-		return e
+	if p.Volume == "" {
+		// The manager owns this filesystem, so it does the two things a helper
+		// container used to do: make the directory, and make it writable by the
+		// remote user. No container for either.
+		dir, _ := m.projectState(p.ID)
+		if e = os.MkdirAll(dir, 0700); e != nil {
+			return e
+		}
+		if e = os.Chmod(dir, 0o777|os.ModeSticky); e != nil {
+			return e
+		}
+	} else {
+		if e = dockerx.EnsureResource(ctx, "volume", p.Volume, m.Owner, p.ID); e != nil {
+			return e
+		}
+		if _, e = dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "chmod", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "1777", "/cxz/state"); e != nil {
+			return e
+		}
 	}
 	dockerHost, err := m.ensureDocker(ctx, p)
 	if err != nil {
@@ -308,7 +321,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	// The bootstrap hook can run before the manager knows the remote workspace
 	// and selected binaries. It waits for this project-local runtime manifest.
 	runtime := Runtime{ProjectID: p.ID, Workspace: p.RemoteWorkspace, Token: p.Token}
-	prev, readErr := dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state,readonly", m.Image, "-c", "if test -f /cxz/state/runtime.json; then cat /cxz/state/runtime.json; fi")
+	prev, readErr := m.readRuntime(ctx, p)
 	if readErr != nil {
 		return readErr
 	}
@@ -434,6 +447,15 @@ func (m *Manager) writeRuntime(ctx context.Context, p *Project, r Runtime) error
 	b, e := json.Marshal(r)
 	if e != nil {
 		return e
+	}
+	if p.Volume == "" {
+		// The manager owns this filesystem. Same atomic rename, no container.
+		dir, _ := m.projectState(p.ID)
+		next := filepath.Join(dir, "runtime.next")
+		if err := os.WriteFile(next, b, 0644); err != nil {
+			return err
+		}
+		return os.Rename(next, filepath.Join(dir, "runtime.json"))
 	}
 	return dockerx.Input(ctx, bytes.NewReader(b), "run", "--rm", "-i", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "-c", "umask 022; cat > /cxz/state/runtime.next && mv /cxz/state/runtime.next /cxz/state/runtime.json")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -88,4 +89,47 @@ func (m *Manager) treeDigest(ctx context.Context, run removalDocker, image strin
 		return "", fmt.Errorf("inventory %s of project %s: %w", path, p.ID, err)
 	}
 	return string(b), nil
+}
+
+// stateMount is where a project's state is, for a helper container that needs
+// it mounted. One place knows the answer, because the answer differs per
+// project: a project registered before the move still has a volume, and one
+// after it is a subdirectory of the manager's.
+func (m *Manager) stateMount(p *Project, target string, write bool) memoryMount {
+	if p.Volume != "" {
+		return memoryMount{volume: p.Volume, project: p.ID, target: target, write: write}
+	}
+	_, subpath := m.projectState(p.ID)
+	// The manager's volume carries the owner label and no project label, which
+	// is what the ownership check compares against; the project is named by the
+	// subpath rather than by a label of its own.
+	return memoryMount{volume: m.StateVolume, target: target, subpath: subpath, write: write}
+}
+
+// stateLocation is how a project's state is named to a client. It stays a
+// volume either way, because it is one.
+func (m *Manager) stateLocation(p *Project) string {
+	if p.Volume != "" {
+		return "volume:" + p.Volume
+	}
+	_, subpath := m.projectState(p.ID)
+	return "volume:" + m.StateVolume + "/" + subpath
+}
+
+// readRuntime is the project's runtime.json as it stands, or empty when there
+// is none. A project whose state is a subdirectory of the manager's volume is
+// read directly; one that still has a volume is read through a container,
+// because only a container can see inside a volume.
+func (m *Manager) readRuntime(ctx context.Context, p *Project) ([]byte, error) {
+	if p.Volume == "" {
+		dir, _ := m.projectState(p.ID)
+		b, err := os.ReadFile(filepath.Join(dir, "runtime.json"))
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return b, err
+	}
+	return dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID,
+		"--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state,readonly", m.Image,
+		"-c", "if test -f /cxz/state/runtime.json; then cat /cxz/state/runtime.json; fi")
 }
