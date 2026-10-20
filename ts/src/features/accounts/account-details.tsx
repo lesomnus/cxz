@@ -40,7 +40,7 @@ export function AccountDetails({
     [AuthState.UNSPECIFIED]: "Unknown",
   };
   return (
-    <div className={styles.content}>
+    <div className={`${styles.content} ${styles.sectionGroup}`}>
       <section className={styles.section} aria-label="Account details">
         <ResourceFields
           rows={[
