@@ -1,5 +1,17 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Permanently delete this project and its owned data.":
+    "이 프로젝트와 소유 데이터를 영구 삭제합니다.",
+  "Purge project": "프로젝트 영구 삭제",
+  "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
+    "이 프로젝트의 세션, 대화 기록, 공유 메모리 및 소유 리소스를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
+  "Workspace source files and shared accounts are preserved.":
+    "워크스페이스 원본 파일과 공용 계정은 보존됩니다.",
+  "Project changed. Close this dialog and try again.":
+    "프로젝트가 변경되었습니다. 이 대화상자를 닫고 다시 시도하세요.",
+  "Project removal was not confirmed by the server.":
+    "서버에서 프로젝트 삭제를 확인하지 못했습니다.",
+
   "Project ID": "프로젝트 ID",
   Listed: "목록 표시",
   Deleted: "삭제 시각",

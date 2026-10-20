@@ -107,6 +107,7 @@ export function projectFixture(
     project?: string;
     session?: string;
     dryRun?: boolean;
+    confirmed?: boolean;
     signal: AbortSignal;
   }[] = [];
   const listeners = new Set<() => void>();
@@ -129,6 +130,31 @@ export function projectFixture(
       },
     });
     router.service(ProjectService, {
+      remove: (request, context) => {
+        const index = projects.findIndex((p) => p.runtimeId === request.target);
+        if (index < 0)
+          throw new ConnectError("Project not found", Code.NotFound);
+        const project = clone(ProjectSchema, projects[index]!);
+        calls.push({
+          method: "project.remove",
+          project: project.runtimeId,
+          confirmed: request.confirmed,
+          signal: context.signal,
+        });
+        if (unavailable)
+          throw new ConnectError(
+            "Project removal is unavailable",
+            Code.Unavailable,
+          );
+        if (request.confirmed) {
+          projects.splice(index, 1);
+          for (let i = sessions.length - 1; i >= 0; i--)
+            if (sessions[i]!.project?.runtimeId === project.runtimeId)
+              sessions.splice(i, 1);
+          publish();
+        }
+        return { project, removed: request.confirmed };
+      },
       get: (request) => {
         const project = projects.find((p) =>
           request.ref?.key.case === "id"

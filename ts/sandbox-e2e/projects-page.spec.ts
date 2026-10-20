@@ -347,3 +347,36 @@ test("project metadata persists through Project.Patch and inventory Watch", asyn
   ).toHaveCount(8);
   await expect(page).toHaveURL(/projects\?project=project-1$/);
 });
+
+test("project Purge removes only the confirmed sandbox project", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  await expect(actions).toBeVisible({ timeout: 45000 });
+  await actions.getByRole("button", { name: "Purge", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Purge project",
+    exact: true,
+  });
+  await expect(dialog).toContainText("This cannot be undone.");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  await expect(table.locator("tbody tr")).toHaveCount(8);
+  await actions.getByRole("button", { name: "Purge", exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "Purge permanently", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const picker = page.getByRole("combobox", {
+    name: "Select project",
+    exact: true,
+  });
+  await expect(picker).toHaveText("Secondary project");
+  await expect(table.locator("tbody tr")).toHaveCount(1);
+  await expect(page).toHaveURL(/projects\?project=project-2$/);
+  await picker.click();
+  await expect(
+    page.getByRole("option", { name: "Design playground", exact: true }),
+  ).toHaveCount(0);
+});

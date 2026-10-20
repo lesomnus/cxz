@@ -1,0 +1,19 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+}
+.row p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+.action {
+  flex: none;
+  min-width: var(--ui-toolbar-button-width);
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+  font-size: 12px;
+}

@@ -1,5 +1,17 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Permanently delete this project and its owned data.":
+    "Permanently delete this project and its owned data.",
+  "Purge project": "Purge project",
+  "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
+    "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.",
+  "Workspace source files and shared accounts are preserved.":
+    "Workspace source files and shared accounts are preserved.",
+  "Project changed. Close this dialog and try again.":
+    "Project changed. Close this dialog and try again.",
+  "Project removal was not confirmed by the server.":
+    "Project removal was not confirmed by the server.",
+
   "Project ID": "Project ID",
   Listed: "Listed",
   Deleted: "Deleted",

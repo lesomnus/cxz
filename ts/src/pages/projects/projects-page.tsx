@@ -20,6 +20,7 @@ import {
   validateProjectField,
   type ProjectField,
 } from "./project-edit";
+import { ProjectActions } from "./project-actions";
 import { ProjectSessions } from "./project-sessions";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
@@ -84,6 +85,16 @@ export function ProjectsPage({
               c={c}
               project={project}
               saved={setSaved}
+              purged={() => {
+                setSaved(undefined);
+                const next = visibleProjects.find(
+                  (p) => key(p.id) !== key(project.id),
+                );
+                void navigate({
+                  to: "/projects",
+                  search: { project: next?.runtimeId },
+                });
+              }}
               sessions={sessions.filter(
                 (s) => s.project && key(s.project.id) === key(project.id),
               )}
@@ -111,6 +122,7 @@ function ProjectDashboard({
   c,
   project: p,
   saved,
+  purged,
   sessions,
   sessionsLoading,
   accounts,
@@ -120,6 +132,7 @@ function ProjectDashboard({
   c: DashboardConnection;
   project: Project;
   saved: (project: Project) => void;
+  purged: () => void;
   accounts: Account[];
   accountsError: string;
   reloadAccounts: () => void;
@@ -244,6 +257,15 @@ function ProjectDashboard({
               ],
               [t("Provision attempts"), p.status?.provisionAttempt.toString()],
             ]}
+          />
+        </section>
+        <section className={styles.section} aria-label={t("Actions")}>
+          <h2 className={styles.sectionTitle}>{t("Actions")}</h2>
+          <ProjectActions
+            c={c}
+            project={p}
+            sessions={sessions}
+            purged={purged}
           />
         </section>
       </div>
