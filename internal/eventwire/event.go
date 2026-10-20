@@ -1,7 +1,11 @@
 package eventwire
 
 import (
+	"encoding/json"
+
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/agentview"
+	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/resource"
 )
 
@@ -30,6 +34,29 @@ func FromResource(id string, e *resource.SessionEvent) *api.Event {
 			files = append(files, &api.ToolFileSummary{Path: f.GetPath(), MovePath: f.GetMovePath(), Action: f.GetAction(), Added: f.GetAdded(), Removed: f.GetRemoved(), Lines: f.GetLines(), Measure: f.GetMeasure(), PerMatch: f.GetPerMatch()})
 		}
 		v.ToolSummary = &api.ToolSummary{Name: t.GetName(), Shell: t.GetShell(), Command: t.GetCommand(), State: t.GetState(), Files: files, OmittedFiles: t.GetOmittedFiles(), Kind: t.GetKind(), Description: t.GetDescription()}
+	}
+	return v
+}
+
+// FromCore is a journal record as a reader sees it. Two kinds are rewritten
+// rather than passed through, which is why this is a conversion and not a field
+// copy: a history checkpoint becomes the boundary a client can show, and a raw
+// background frame becomes the background event derived from it. It lives here
+// so that the store a session writes and the server that reads it apply the
+// same rules -- there is one view of a record, not one per caller.
+func FromCore(e core.Event) *api.Event {
+	if e.Kind == core.HistoryCheckpointKind {
+		e.Kind = core.HistoryTrimmedKind
+		e.Text = "Earlier display history was removed by the size limit."
+		e.Payload, _ = json.Marshal(core.HistoryBoundary{Through: e.Seq})
+	}
+
+	if e.Kind == "raw" && agentview.IsBackgroundEvent(e.Raw) {
+		e.Kind, e.Payload = "background", e.Raw
+	}
+	v := &api.Event{SessionId: e.SessionID, RunId: e.RunID, Seq: e.Seq, TimeMs: e.TimeMS, Kind: e.Kind, Text: e.Text, RequestId: e.RequestID, Payload: e.Payload}
+	if r := e.Response; r != nil {
+		v.Response = &api.ResponseMetadata{Model: r.Model, Effort: r.Effort, ModelSource: r.ModelSource, EffortSource: r.EffortSource, TurnId: r.TurnID, Phase: r.Phase, CompletionJson: []byte(r.CompletionJSON)}
 	}
 	return v
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/eventwire"
 	"github.com/lesomnus/cxz/internal/transcripthistory"
 )
 
@@ -14,7 +15,7 @@ func decodeTranscriptEvent(b []byte) (*api.Event, error) {
 	if err := json.Unmarshal(b, &e); err != nil {
 		return nil, err
 	}
-	return pbEvent(e), nil
+	return eventwire.FromCore(e), nil
 }
 func (s *Server) Transcript(ctx context.Context, r *api.TranscriptRequest) (*api.TranscriptReply, error) {
 	if s.manager != nil {

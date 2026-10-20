@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/accounts"
-	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/conversation"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/mcpruntime"
@@ -26,6 +25,7 @@ import (
 	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
+	"github.com/lesomnus/cxz/internal/eventwire"
 	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/settings"
@@ -355,22 +355,6 @@ func (s *Server) manifest(ctx context.Context, id string) (core.Session, error) 
 	}
 	return m, json.Unmarshal(b, &m)
 }
-func pbEvent(e core.Event) *api.Event {
-	if e.Kind == core.HistoryCheckpointKind {
-		e.Kind = core.HistoryTrimmedKind
-		e.Text = "Earlier display history was removed by the size limit."
-		e.Payload, _ = json.Marshal(core.HistoryBoundary{Through: e.Seq})
-	}
-
-	if e.Kind == "raw" && agentview.IsBackgroundEvent(e.Raw) {
-		e.Kind, e.Payload = "background", e.Raw
-	}
-	v := &api.Event{SessionId: e.SessionID, RunId: e.RunID, Seq: e.Seq, TimeMs: e.TimeMS, Kind: e.Kind, Text: e.Text, RequestId: e.RequestID, Payload: e.Payload}
-	if r := e.Response; r != nil {
-		v.Response = &api.ResponseMetadata{Model: r.Model, Effort: r.Effort, ModelSource: r.ModelSource, EffortSource: r.EffortSource, TurnId: r.TurnID, Phase: r.Phase, CompletionJson: []byte(r.CompletionJSON)}
-	}
-	return v
-}
 func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, error) {
 	p, err := s.lockProjection(ctx, m)
 	if err != nil {
@@ -392,7 +376,7 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 		v.Agent = "claude"
 	}
 	for _, p := range snap.Pending {
-		v.Pending = append(v.Pending, pbEvent(p))
+		v.Pending = append(v.Pending, eventwire.FromCore(p))
 	}
 	return v, nil
 }
@@ -843,7 +827,7 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 			return e
 		}
 		for _, v := range batch {
-			if e = stream.Send(pbEvent(v)); e != nil {
+			if e = stream.Send(eventwire.FromCore(v)); e != nil {
 				return e
 			}
 			cursor = v.Seq

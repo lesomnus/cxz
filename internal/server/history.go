@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/eventwire"
 	"github.com/lesomnus/cxz/internal/historypage"
 )
 
@@ -36,7 +37,7 @@ func (s *Server) History(ctx context.Context, r *api.WatchRequest) (*api.EventBa
 		if e = json.Unmarshal(b, &v); e != nil {
 			return nil, e
 		}
-		out.Events = append(out.Events, pbEvent(v))
+		out.Events = append(out.Events, eventwire.FromCore(v))
 	}
 	return out, rows.Err()
 }

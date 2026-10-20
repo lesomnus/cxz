@@ -10,6 +10,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/eventwire"
 	"github.com/lesomnus/cxz/internal/historypolicy"
 	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/observe"
@@ -144,7 +145,7 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 				}
 			}
 		}
-		v := pbEvent(e)
+		v := eventwire.FromCore(e)
 		if v.Kind == "models" {
 			if p.catalogs == nil {
 				p.catalogs = map[string]catalogRecord{}

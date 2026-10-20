@@ -476,6 +476,11 @@ var schema = []string{
 
 const projectionFormat = 5
 
+// Format is the interpretation version a store stamps beside the rows it holds,
+// so that a reader can tell rows built by these rules from rows built by older
+// ones. See docs/plans/session-conversation-store.md.
+func Format() int { return projectionFormat }
+
 // probed is how many times Sync has had to ask whether a record landed behind
 // the cursor, restored
 // how many times it has had to rebuild the reduced state from the table, and
