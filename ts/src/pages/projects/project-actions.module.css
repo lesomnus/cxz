@@ -1,3 +1,7 @@
+.rows {
+  display: grid;
+  gap: var(--ui-space);
+}
 .row {
   display: flex;
   align-items: stretch;

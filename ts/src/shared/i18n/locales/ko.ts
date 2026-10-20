@@ -1,5 +1,13 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Stop the project container and its sessions.":
+    "프로젝트 컨테이너와 세션을 중지합니다.",
+  "Stop project": "프로젝트 중지",
+  "Stops the project container and all its sessions. Conversation history, files and accounts are retained.":
+    "프로젝트 컨테이너와 모든 세션을 중지합니다. 대화 기록, 파일 및 계정은 보존됩니다.",
+  "The project remains listed and can be started again.":
+    "프로젝트는 목록에 유지되며 다시 시작할 수 있습니다.",
+
   "Permanently delete this project and its owned data.":
     "이 프로젝트와 소유 데이터를 영구 삭제합니다.",
   "Purge project": "프로젝트 영구 삭제",

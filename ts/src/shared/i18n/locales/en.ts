@@ -1,5 +1,13 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Stop the project container and its sessions.":
+    "Stop the project container and its sessions.",
+  "Stop project": "Stop project",
+  "Stops the project container and all its sessions. Conversation history, files and accounts are retained.":
+    "Stops the project container and all its sessions. Conversation history, files and accounts are retained.",
+  "The project remains listed and can be started again.":
+    "The project remains listed and can be started again.",
+
   "Permanently delete this project and its owned data.":
     "Permanently delete this project and its owned data.",
   "Purge project": "Purge project",

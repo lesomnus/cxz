@@ -130,6 +130,41 @@ export function projectFixture(
       },
     });
     router.service(ProjectService, {
+      down: (request, context) => {
+        const index = projects.findIndex(
+          (p) =>
+            request.ref?.key.case === "id" &&
+            p.id.every(
+              (b, i) => b === (request.ref!.key.value as Uint8Array)[i],
+            ),
+        );
+        if (index < 0)
+          throw new ConnectError("Project not found", Code.NotFound);
+        calls.push({
+          method: "project.down",
+          project: projects[index]!.runtimeId,
+          signal: context.signal,
+        });
+        if (unavailable)
+          throw new ConnectError(
+            "Project stop is unavailable",
+            Code.Unavailable,
+          );
+        const updated = clone(ProjectSchema, projects[index]!);
+        updated.status!.state = "stopped";
+        updated.dateUpdated = timestampFromDate(new Date());
+        projects[index] = updated;
+        for (let i = 0; i < sessions.length; i++) {
+          if (sessions[i]!.project?.runtimeId !== updated.runtimeId) continue;
+          const session = clone(SessionSchema, sessions[i]!);
+          session.status!.state = "stopped";
+          session.status!.pending = [];
+          session.project = updated;
+          sessions[i] = session;
+        }
+        publish();
+        return updated;
+      },
       remove: (request, context) => {
         const index = projects.findIndex((p) => p.runtimeId === request.target);
         if (index < 0)

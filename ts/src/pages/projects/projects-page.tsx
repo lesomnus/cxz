@@ -266,6 +266,7 @@ function ProjectDashboard({
             project={p}
             sessions={sessions}
             purged={purged}
+            updated={saved}
           />
         </section>
       </div>

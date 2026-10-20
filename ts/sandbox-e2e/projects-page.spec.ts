@@ -380,3 +380,52 @@ test("project Purge removes only the confirmed sandbox project", async ({
     page.getByRole("option", { name: "Design playground", exact: true }),
   ).toHaveCount(0);
 });
+
+test("project Stop retains the listed sandbox project and conversation records", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  const stop = actions.getByRole("button", { name: "Stop", exact: true });
+  await expect(stop).toBeEnabled({ timeout: 45000 });
+  await stop.click();
+  const dialog = page.getByRole("dialog", {
+    name: "Stop project",
+    exact: true,
+  });
+  await expect(dialog).toContainText("The project remains listed");
+  await dialog.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(stop).toBeDisabled();
+  const rows = page
+    .getByRole("table", { name: "Sessions", exact: true })
+    .locator("tbody tr");
+  await expect(rows).toHaveCount(8);
+  await expect(rows.locator("td:nth-child(6)")).toHaveText(
+    Array(8).fill("Stopped"),
+  );
+  await expect(
+    page
+      .getByRole("region", { name: "Information", exact: true })
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
+      .locator("dd"),
+  ).toHaveText("true");
+  const picker = page.getByRole("combobox", {
+    name: "Select project",
+    exact: true,
+  });
+  await expect(picker).toHaveText("Design playground");
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Secondary project", exact: true })
+    .click();
+  await expect(stop).toBeEnabled();
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Design playground", exact: true })
+    .click();
+  await expect(
+    actions.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeDisabled();
+});
