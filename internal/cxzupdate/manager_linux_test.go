@@ -333,3 +333,36 @@ func TestManagerRecoversAfterOldStopped(t *testing.T) {
 		t.Fatal(done.State)
 	}
 }
+
+// A transaction that never touched anything is a reservation, and the channel
+// moving on is enough to replace it. Treating "staged" as work in progress
+// wedged an installation on a superseded revision: the rollout of 401a467 was
+// refused four times by a session with a browser tab attached, two fixes were
+// merged, and from then on every rollout answered "previous manager update
+// needs recovery" because the old manager it names was still running. See
+// cxz#251.
+func TestASupersededStagedTransactionIsRestagedRatherThanRecovered(t *testing.T) {
+	old := Release{Revision: strings.Repeat("a", 40)}
+	next := Release{Revision: strings.Repeat("b", 40)}
+	staged := ManagerTransaction{ID: core.ID(), OldID: "old", Release: old, State: "staged"}
+	if !staged.restageable(next) {
+		t.Fatal("a staged rollout of a superseded release demanded recovery")
+	}
+	if staged.restageable(old) {
+		t.Fatal("the release being rolled out now had its own transaction replaced underneath it")
+	}
+	// Anything past staging has touched the old manager, and that is what the
+	// recovery path -- and cxz#221's rollback of an unfinishable one -- is for.
+	for _, state := range []string{"prepared", "starting", "rolling_back"} {
+		touched := ManagerTransaction{ID: core.ID(), OldID: "old", Release: old, State: state}
+		if touched.restageable(next) {
+			t.Fatal("a half-applied update was discarded:", state)
+		}
+	}
+	for _, state := range []string{"", "healthy", "rolled_back"} {
+		done := ManagerTransaction{ID: core.ID(), OldID: "old", Release: old, State: state}
+		if !done.restageable(next) || !done.restageable(old) {
+			t.Fatal("a finished transaction blocked the next rollout:", state)
+		}
+	}
+}
