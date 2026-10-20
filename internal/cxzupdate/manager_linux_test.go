@@ -88,6 +88,30 @@ func fixtureDocker(args []string) error {
 		}
 		delete(f.Containers, v.ID)
 		return save()
+	case "pull":
+		return nil
+	case "run":
+		// The update helper is recorded rather than run: what it does is call
+		// ReplaceManager, and a scenario would rather do that at a moment of
+		// its own choosing.
+		name := "helper"
+		labels := map[string]string{}
+		for i := 1; i < len(args)-1; i++ {
+			switch args[i] {
+			case "--name":
+				name = args[i+1]
+			case "--label":
+				if k, v, ok := strings.Cut(args[i+1], "="); ok {
+					labels[k] = v
+				}
+			}
+		}
+		v := dockerx.Container{ID: name, Name: "/" + name}
+		v.Config.Labels = labels
+		v.State.Running = true
+		f.Containers[name] = v
+		fmt.Println(name)
+		return save()
 	case "exec":
 		args = args[1:]
 		if args[0] == "--user" {
