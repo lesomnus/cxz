@@ -174,10 +174,7 @@ function ProjectDashboard({
             </p>
           )}
         </section>
-        <section
-          className={`${styles.section} ${styles.diagnostics}`}
-          aria-label={t("Diagnostics")}
-        >
+        <section className={styles.section} aria-label={t("Diagnostics")}>
           <h2 className={styles.sectionTitle}>{t("Diagnostics")}</h2>
           <Fields
             rows={[

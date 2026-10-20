@@ -56,19 +56,15 @@
   gap: var(--ui-space);
   padding: var(--ui-control-inset) var(--ui-control-inline-inset);
 }
-.diagnostics dt {
-  font-size: 10px;
-}
-.diagnostics dd {
-  display: flex;
-  align-items: center;
-  min-height: var(--ui-icon-size);
-}
 .details dt {
+  font-size: 10px;
   color: var(--ui-muted);
   overflow-wrap: anywhere;
 }
 .details dd {
+  display: flex;
+  align-items: center;
+  min-height: var(--ui-icon-size);
   margin: 0;
   overflow-wrap: anywhere;
 }
