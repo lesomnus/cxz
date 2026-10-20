@@ -3,6 +3,7 @@ package supervisor
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http/httptest"
 	"os"
@@ -39,8 +40,11 @@ func TestUpdateIdleGate(t *testing.T) {
 		if s.updateReason(now.Add(5*time.Minute), "") != "attached client busy" {
 			t.Fatal("busy client accepted")
 		}
-		if s.updateReason(now.Add(6*time.Minute), "") == "" {
-			t.Fatal("expired lease skipped fresh idle interval")
+		// The lease expires and the session is as quiet as it was before anyone
+		// attached. It used to serve another five minutes here, which a client
+		// that reattaches every few minutes made permanent. See cxz#249.
+		if got := s.updateReason(now.Add(6*time.Minute), ""); got != "" {
+			t.Fatal("an expired lease served a fresh idle interval:", got)
 		}
 	}
 }
@@ -176,11 +180,19 @@ func TestProcessesQuietWithLiveBridge(t *testing.T) {
 	}
 }
 
-func TestActivityDoesNotFloodJournal(t *testing.T) {
+// Reporting activity is how a client says it is there, and it neither writes to
+// the journal nor moves the idle clock -- not even the first report from a
+// client ID the supervisor has never seen. The web mints an ID per stream, so a
+// tab that reconnects is a new client every few minutes; counting that as an
+// interaction is what kept a session at "waiting for 5 minutes of continuous
+// idle" indefinitely. See cxz#249.
+func TestActivityNeitherFloodsTheJournalNorMovesTheClock(t *testing.T) {
 	s, _ := displaySupervisor(t, "claude")
 	start := s.snap.LastSeq
+	quiet := time.Now().Add(-time.Hour)
+	s.lastActivity = quiet
 	for i := 0; i < 10; i++ {
-		b, _ := json.Marshal(core.Command{RunID: "run", ClientID: "ui", Busy: i%2 == 0})
+		b, _ := json.Marshal(core.Command{RunID: "run", ClientID: fmt.Sprintf("tab-%d", i), Busy: i%2 == 0})
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("POST", "/activity", bytes.NewReader(b))
 		s.serve(w, r)
@@ -188,8 +200,11 @@ func TestActivityDoesNotFloodJournal(t *testing.T) {
 			t.Fatal(w.Body.String())
 		}
 	}
-	if s.snap.LastSeq != start || s.lastActivity.IsZero() {
-		t.Fatal("activity journaling or clock broken")
+	if s.snap.LastSeq != start {
+		t.Fatal("activity was journaled")
+	}
+	if !s.lastActivity.Equal(quiet) {
+		t.Fatal("ten clients attaching moved the idle clock")
 	}
 }
 

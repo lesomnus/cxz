@@ -29,14 +29,18 @@ func TestABusyClientRefusesWithoutRestartingTheClock(t *testing.T) {
 }
 
 // A client that has not been heard from for a while is forgotten, and that is
-// an interaction ending rather than one continuing -- so the clock does start.
-func TestAVanishedClientRestartsTheClock(t *testing.T) {
+// bookkeeping rather than an interaction: the session was quiet while the
+// client sat there, and it is quiet after. This used to restart the clock, which
+// with a per-stream client ID meant a browser tab reconnecting every few minutes
+// held an installation at "waiting for 5 minutes of continuous idle" for fifty.
+// See cxz#249.
+func TestAVanishedClientDoesNotRestartTheClock(t *testing.T) {
 	s, _ := displaySupervisor(t, "claude")
 	now := time.Now()
 	s.lastActivity = now.Add(-2 * UpdateIdlePeriod)
 	s.updateClients = map[string]updateClient{"gone": {seen: now.Add(-time.Minute), busy: false}}
-	if got := s.updateReason(now, ""); got == "" {
-		t.Fatal("forgetting a client did not restart the idle period")
+	if got := s.updateReason(now, ""); got != "" {
+		t.Fatal("forgetting a client made a quiet session wait again:", got)
 	}
 	if _, still := s.updateClients["gone"]; still {
 		t.Fatal("a client not seen for a minute was kept")
