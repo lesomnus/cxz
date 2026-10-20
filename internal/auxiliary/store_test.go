@@ -24,7 +24,7 @@ func TestTaskHistoryOutlivesTheTurn(t *testing.T) {
 			ID: fmt.Sprintf("job%d", turn), Run: "run", Turn: turn, Revision: "r1",
 			Status: "completed", SummaryRequested: true, SuggestionRequested: true,
 			Summary: fmt.Sprintf("summary %d", turn), Suggestion: "do the next thing",
-			Usage:   []Usage{{Account: "work", Model: "m", Task: "combined"}},
+			Usage: []Usage{{Account: "work", Model: "m", Task: "combined"}},
 		}
 		if err := s.putTask("a", j, int64(turn)); err != nil {
 			t.Fatal(err)

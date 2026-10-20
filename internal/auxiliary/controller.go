@@ -101,6 +101,7 @@ func (c *Controller) load(id string) (State, error) {
 	e = json.Unmarshal(b, &s)
 	return s, e
 }
+
 // save writes the working state and mirrors the task into the store, so that
 // what ran outlives the turn that was running it. Both happen under the
 // controller's lock, and the wake goes out once both are on disk.

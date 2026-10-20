@@ -16,13 +16,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/eventview"
 	"net/url"
 	"path/filepath"
 	"sync"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/eventwire"
 	"github.com/lesomnus/cxz/internal/transcripthistory"
 	"github.com/lesomnus/payday/config"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
@@ -153,7 +153,7 @@ func (s *Store) Compat(ctx context.Context) (int, error) { return s.number(ctx, 
 // pins and the later read switch depends on.
 //
 // The records are stored as the journal stores them, not as a reader sees them:
-// `eventwire.FromCore` rewrites two kinds, and a store that kept the rewritten
+// `eventview.FromCore` rewrites two kinds, and a store that kept the rewritten
 // form could not answer what the provider actually said. The rewrite happens on
 // the way out, here as everywhere.
 //
@@ -201,5 +201,5 @@ func Decode(b []byte) (*api.Event, error) {
 	if err := json.Unmarshal(b, &e); err != nil {
 		return nil, err
 	}
-	return eventwire.FromCore(e), nil
+	return eventview.FromCore(e), nil
 }

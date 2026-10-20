@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/conversation"
 	"github.com/lesomnus/cxz/internal/distribution"
+	"github.com/lesomnus/cxz/internal/eventview"
 	"github.com/lesomnus/cxz/internal/mcpruntime"
 	"net"
 	"net/url"
@@ -25,7 +26,6 @@ import (
 	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
-	"github.com/lesomnus/cxz/internal/eventwire"
 	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/settings"
@@ -376,7 +376,7 @@ func (s *Server) snapshot(ctx context.Context, m core.Session) (*api.Session, er
 		v.Agent = "claude"
 	}
 	for _, p := range snap.Pending {
-		v.Pending = append(v.Pending, eventwire.FromCore(p))
+		v.Pending = append(v.Pending, eventview.FromCore(p))
 	}
 	return v, nil
 }
@@ -827,7 +827,7 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 			return e
 		}
 		for _, v := range batch {
-			if e = stream.Send(eventwire.FromCore(v)); e != nil {
+			if e = stream.Send(eventview.FromCore(v)); e != nil {
 				return e
 			}
 			cursor = v.Seq

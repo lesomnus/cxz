@@ -617,6 +617,7 @@ func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {
 	}
 	return m.down(ctx, p)
 }
+
 // A session is stopped and drained within captureBudget, and the project as a
 // whole within captureTotal. One budget used to cover every session of the
 // project at once, which a project with many sessions or long histories does

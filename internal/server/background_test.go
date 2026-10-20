@@ -6,7 +6,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/eventwire"
+	"github.com/lesomnus/cxz/internal/eventview"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"testing"
 )
@@ -14,14 +14,14 @@ import (
 func TestBackgroundJournalProjection(t *testing.T) {
 	raw := []byte(`{"type":"system","subtype":"background_tasks_changed","tasks":[]}`)
 	e := core.Event{Kind: "raw", Raw: raw, Seq: 7, RunID: "run"}
-	v := eventwire.FromCore(e)
+	v := eventview.FromCore(e)
 	if v.Kind != "background" || string(v.Payload) != string(raw) || v.Seq != 7 || v.RunId != "run" {
 		t.Fatal(v)
 	}
 	if e.Kind != "raw" || e.Payload != nil {
 		t.Fatal("journal mutated")
 	}
-	if eventwire.FromCore(core.Event{Kind: "raw", Raw: []byte(`{"type":"system","subtype":"init"}`)}).Kind != "raw" {
+	if eventview.FromCore(core.Event{Kind: "raw", Raw: []byte(`{"type":"system","subtype":"init"}`)}).Kind != "raw" {
 		t.Fatal("init misclassified")
 	}
 }

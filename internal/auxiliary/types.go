@@ -106,13 +106,13 @@ type Summary struct {
 type State struct {
 	PendingTask string `json:"pending_task,omitempty"`
 	Deleted     bool   `json:"deleted,omitempty"`
-	Gap         bool      `json:"gap,omitempty"`
-	Seen        uint64    `json:"seen"`
-	Current     Turn      `json:"current"`
-	Checkpoint  string    `json:"checkpoint,omitempty"`
-	Through     uint64    `json:"through"`
-	Recent      []Turn    `json:"recent"`
-	Job         *Job      `json:"job,omitempty"`
+	Gap         bool   `json:"gap,omitempty"`
+	Seen        uint64 `json:"seen"`
+	Current     Turn   `json:"current"`
+	Checkpoint  string `json:"checkpoint,omitempty"`
+	Through     uint64 `json:"through"`
+	Recent      []Turn `json:"recent"`
+	Job         *Job   `json:"job,omitempty"`
 }
 type SessionConfig struct {
 	Summary    bool `json:"summary"`
