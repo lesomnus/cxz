@@ -125,11 +125,8 @@ function ProjectDashboard({
   return (
     <div className={styles.dashboard}>
       <div className={styles.information}>
-        <section
-          className={styles.section}
-          aria-label={t("Project information")}
-        >
-          <h2 className={styles.sectionTitle}>{t("Project information")}</h2>
+        <section className={styles.section} aria-label={t("Information")}>
+          <h2 className={styles.sectionTitle}>{t("Information")}</h2>
           <Fields
             rows={[
               [t("Name"), p.name],
@@ -155,7 +152,7 @@ function ProjectDashboard({
           <Fields
             rows={[
               [t("Status"), p.status?.state],
-              [t("Container workspace"), p.status?.remoteWorkspace],
+              [t("Workspace"), p.status?.remoteWorkspace],
               [t("Remote user"), p.status?.remoteUser],
               [t("Git branch"), git],
               [

@@ -645,7 +645,7 @@ export const messages = {
   Close: "Close",
   Actions: "Actions",
   "Add session": "Add session",
-  "Project information": "Project information",
+  Information: "Information",
   Description: "Description",
   Configuration: "Configuration",
   selected: "selected",

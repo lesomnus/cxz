@@ -195,7 +195,7 @@ test("dashboard scopes project data, resets selection on project change and keep
     exact: true,
   });
   const info = main.getByRole("region", {
-    name: "Project information",
+    name: "Information",
     exact: true,
   });
   const sessions = main.getByRole("region", {
@@ -220,7 +220,7 @@ test("dashboard scopes project data, resets selection on project change and keep
   ).toHaveCount(0);
   await expect(main.locator("section").first()).toHaveAttribute(
     "aria-label",
-    "Project information",
+    "Information",
   );
   const toolbar = (await main.locator(":scope > header").boundingBox())!;
   const sectionGap = await sessions
@@ -487,7 +487,7 @@ for (const scale of [1, 1.25, 1.5, 2]) {
       const trigger = row.locator("[tabindex]");
       await page.evaluate(() => document.fonts.ready);
       await expect(
-        page.getByRole("region", { name: "Project information", exact: true }),
+        page.getByRole("region", { name: "Information", exact: true }),
       ).toContainText("Web workspace");
       await trigger.evaluate((element) =>
         element.scrollIntoView({

@@ -25,7 +25,7 @@ test("projects use the full workspace with a persistent project picker and scope
   await expect(picker).toHaveText("Design playground");
   await expect(main.locator("section").first()).toHaveAttribute(
     "aria-label",
-    "Project information",
+    "Information",
   );
   await expect(
     main.getByRole("region", { name: "Session overview", exact: true }),

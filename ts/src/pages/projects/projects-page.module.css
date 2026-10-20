@@ -44,22 +44,20 @@
 }
 .details {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--ui-space);
+  column-gap: calc(2 * var(--ui-space));
   margin: var(--ui-space) 0;
   font: 12px/1.5 var(--ui-font-mono);
 }
 .details > div {
   display: grid;
-  grid-template-columns: minmax(0, 125px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--ui-space);
   padding: var(--ui-control-inset) var(--ui-control-inline-inset);
 }
-.diagnostics .details {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: calc(2 * var(--ui-space));
-}
-.diagnostics .details > div {
-  grid-template-columns: minmax(0, 1fr);
+.diagnostics dt {
+  font-size: 10px;
 }
 .diagnostics dd {
   display: flex;

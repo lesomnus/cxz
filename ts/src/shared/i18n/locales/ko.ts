@@ -648,7 +648,7 @@ export const messages = {
   Close: "닫기",
   Actions: "작업",
   "Add session": "세션 추가",
-  "Project information": "프로젝트 기본 정보",
+  Information: "정보",
   Description: "설명",
   Configuration: "설정",
   selected: "선택됨",
