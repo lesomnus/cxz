@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/cxz/internal/transport"
 	"google.golang.org/grpc"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -55,6 +56,29 @@ type Manager struct {
 	// where they are extracted; a nil index simply means nothing is indexed.
 	Conversations                                             *convindex.Index
 	Root, Owner, WorkspaceRoot, ToolsVolume, Image, Container string
+	// StateVolume is the manager's own state volume. A project's state is a
+	// subdirectory of it rather than a volume of its own, which is what lets the
+	// manager read a session's conversation instead of keeping a copy of it.
+	// Empty on an installation that predates that, where projects still carry
+	// their own volume.
+	StateVolume string
+}
+
+// newProjectVolume is empty when this manager keeps project state in its own
+// volume, which is the arrangement that lets it read a session's conversation.
+// It is a volume name only on an installation that predates that.
+func (m *Manager) newProjectVolume(id string) string {
+	if m.StateVolume != "" {
+		return ""
+	}
+	return "cxz-" + m.Owner[:12] + "-" + id + "-state"
+}
+
+// projectState is where a project's state lives under the manager's root, and
+// the subpath of the manager's volume that the project container sees as
+// /cxz/state. One directory, named by the project, mounted into one container.
+func (m *Manager) projectState(id string) (dir, subpath string) {
+	return filepath.Join(m.Root, "projects", id, "state"), path.Join("projects", id, "state")
 }
 
 // ConversationSessions lists every session the installation knows of, newest
@@ -89,7 +113,7 @@ func (m *Manager) projectLock(id string) *sync.Mutex {
 }
 
 func New(db *sql.DB, root string) (*Manager, error) {
-	m := &Manager{DB: db, Root: root, Owner: os.Getenv("CXZ_OWNER"), WorkspaceRoot: os.Getenv("CXZ_WORKSPACE_ROOT"), ToolsVolume: os.Getenv("CXZ_TOOLS_VOLUME"), Image: os.Getenv("CXZ_MANAGER_IMAGE"), Container: os.Getenv("CXZ_MANAGER_CONTAINER")}
+	m := &Manager{DB: db, Root: root, Owner: os.Getenv("CXZ_OWNER"), WorkspaceRoot: os.Getenv("CXZ_WORKSPACE_ROOT"), ToolsVolume: os.Getenv("CXZ_TOOLS_VOLUME"), StateVolume: os.Getenv("CXZ_STATE_VOLUME"), Image: os.Getenv("CXZ_MANAGER_IMAGE"), Container: os.Getenv("CXZ_MANAGER_CONTAINER")}
 	_, e := db.Exec(`CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,data BLOB NOT NULL)`)
 	if e != nil {
 		return nil, e
@@ -412,7 +436,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if p == nil {
 		h := sha256.Sum256([]byte(path))
 		id := hex.EncodeToString(h[:12])
-		p = &Project{ID: id, Workspace: path, Name: filepath.Base(path), Network: m.sharedNetwork(), Volume: "cxz-" + m.Owner[:12] + "-" + id + "-state", Token: core.ID() + core.ID()}
+		p = &Project{ID: id, Workspace: path, Name: filepath.Base(path), Network: m.sharedNetwork(), Volume: m.newProjectVolume(id), Token: core.ID() + core.ID()}
 	}
 	lock := m.projectLock(p.ID)
 	lock.Lock()
@@ -487,6 +511,11 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 			return nil, e
 		}
 		p.ContainerID = ""
+		// Nothing is writing the project's state now, which is the only moment
+		// it can be moved.
+		if e = m.migrateProjectState(ctx, p); e != nil {
+			return nil, e
+		}
 	}
 	if r.Recreate && r.Confirmed {
 		p.Network = m.sharedNetwork()
