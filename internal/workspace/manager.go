@@ -511,8 +511,8 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 			return nil, e
 		}
 		p.ContainerID = ""
-		// Nothing is writing the project's state now, which is the only moment
-		// it can be moved.
+	}
+	if stateMovable(r, p) {
 		if e = m.migrateProjectState(ctx, p); e != nil {
 			return nil, e
 		}

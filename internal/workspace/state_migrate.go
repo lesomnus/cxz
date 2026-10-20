@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
 )
 
@@ -19,6 +20,16 @@ import (
 // when they agree. A project whose migration fails keeps its volume and is
 // recreated exactly as it was -- the data has not moved, so there is nothing to
 // recover. See cxz#238.
+// stateMovable reports whether this is the occasion to move a project's state:
+// a recreate with no container of ours left, which is the only moment nothing
+// is writing it. The first version asked this inside the branch that takes a
+// container down, so a project whose container was already gone -- recreated
+// after a crash, or stopped on purpose -- had no down to hang the move on and
+// kept its own volume however many times it was recreated.
+func stateMovable(r *api.ProjectRequest, p *Project) bool {
+	return r.Recreate && p.ContainerID == ""
+}
+
 func (m *Manager) migrateProjectState(ctx context.Context, p *Project) error {
 	return m.migrateProjectStateWith(ctx, p, dockerx.Run)
 }
