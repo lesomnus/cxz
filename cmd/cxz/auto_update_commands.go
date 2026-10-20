@@ -15,9 +15,16 @@ import (
 
 func automaticUpdateCommands() xli.Commands {
 	var commands xli.Commands
-	for _, name := range []string{"status", "check", "enable", "disable"} {
+	for _, name := range []string{"status", "check", "enable", "disable", "apply"} {
 		server := false
-		commands = append(commands, &xli.Command{Name: name, Brief: map[string]string{"status": "Print cxz automatic update state", "check": "Check the selected release channel without restarting", "enable": "Enable cxz automatic updates", "disable": "Pause cxz automatic updates"}[name], Flags: flg.Flags{&flg.Switch{Name: "server", Brief: "Operate on the locally installed manager instead of this frontend", Default: &server}}, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+		force := false
+		flags := flg.Flags{&flg.Switch{Name: "server", Brief: "Operate on the locally installed manager instead of this frontend", Default: &server}}
+		if name == "apply" {
+			// Waiting for the next tick, and then for every session to look
+			// quiet, is what makes testing an update cost twenty minutes.
+			flags = append(flags, &flg.Switch{Name: "force", Brief: "Replace the manager without waiting for sessions to look idle", Default: &force})
+		}
+		commands = append(commands, &xli.Command{Name: name, Brief: map[string]string{"status": "Print cxz automatic update state", "check": "Check the selected release channel without restarting", "enable": "Enable cxz automatic updates", "disable": "Pause cxz automatic updates", "apply": "Roll the installed manager out now instead of on the next tick"}[name], Flags: flags, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 			root := c
 			for root.HasParent() {
 				root = root.Parent()
@@ -26,15 +33,19 @@ func automaticUpdateCommands() xli.Commands {
 			if e != nil {
 				return e
 			}
+			action := c.Name
+			if action == "apply" && flg.MustGet[bool](c, "force") {
+				action = "apply-force"
+			}
 			if flg.MustGet[bool](c, "server") {
-				b, e := serverUpdateCommand(ctx, state, c.Name)
+				b, e := serverUpdateCommand(ctx, state, action)
 				if e != nil {
 					return e
 				}
 				_, e = c.Writer.Write(b)
 				return e
 			}
-			b, e := localUpdateCommand(ctx, state, c.Name)
+			b, e := localUpdateCommand(ctx, state, action)
 			if e != nil {
 				return e
 			}
@@ -63,6 +74,10 @@ func localUpdateCommand(ctx context.Context, root, action string) ([]byte, error
 			return nil, e
 		}
 	case "status":
+	case "apply", "apply-force":
+		// There is nothing to roll out on a frontend: it carries no manager and
+		// no transaction. Say which flag is missing rather than nothing.
+		return nil, fmt.Errorf("apply operates on the installed manager; add --server")
 	default:
 		return nil, fmt.Errorf("invalid update action")
 	}
@@ -88,6 +103,10 @@ func localUpdateCommand(ctx context.Context, root, action string) ([]byte, error
 	if len(attempts) > 5 {
 		attempts = attempts[len(attempts)-5:]
 	}
-	b, e := json.MarshalIndent(map[string]any{"channel": channel, "enabled": policy.Active(), "running": cxzupdate.Current(), "update": state, "attempts": attempts}, "", "  ")
+	out := map[string]any{"channel": channel, "enabled": policy.Active(), "running": cxzupdate.Current(), "update": state, "attempts": attempts}
+	for k, v := range rolloutDetail(ctx, root) {
+		out[k] = v
+	}
+	b, e := json.MarshalIndent(out, "", "  ")
 	return append(b, '\n'), e
 }

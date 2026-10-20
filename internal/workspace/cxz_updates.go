@@ -113,10 +113,31 @@ func (m *Manager) RunCxzUpdates(ctx context.Context) {
 		}
 	}
 }
+// note records where this tick stopped, for the paths that used to return
+// without saying anything. A reason left over from an earlier tick is worse
+// than none: it sends whoever is asking to a condition that has already
+// cleared. Today that was an hour of chasing a lock nobody held, and it is the
+// same cost cxz#222 paid for the same silence. Written only when it changes, so
+// a paused installation does not rewrite the file every thirty seconds.
+// See cxz#253.
+func (m *Manager) noteUpdateStop(state, reason string) {
+	s, err := cxzupdate.Load(m.Root)
+	if err != nil || (s.State == state && s.Reason == reason) {
+		return
+	}
+	s.State, s.Reason = state, reason
+	_ = cxzupdate.Save(m.Root, s)
+}
+
 func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	// Policy belongs to this installation, not whichever frontend last connected.
 	cfg, err := cxzupdate.Policy(m.Root)
-	if err != nil || !cfg.Active() {
+	if err != nil {
+		m.noteUpdateStop("waiting", "update policy unreadable: "+err.Error())
+		return
+	}
+	if !cfg.Active() {
+		m.noteUpdateStop("waiting", "automatic updates are paused")
 		return
 	}
 	lock, e := core.Lock(filepath.Join(m.Root, "rollout.lock"))
@@ -136,10 +157,17 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	work, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	s, e := cxzupdate.Check(work, m.Root, false)
-	if e != nil || s.Release == nil {
+	if e != nil {
+		m.noteUpdateStop("waiting", "release channel unavailable: "+e.Error())
+		return
+	}
+	if s.Release == nil {
+		m.noteUpdateStop("waiting", "no release known for the selected channel")
 		return
 	}
 	if !s.RetryAllowed() {
+		m.noteUpdateStop("rolled_back", fmt.Sprintf("%s failed at %s; retrying after %s",
+			s.FailedRevision[:min(12, len(s.FailedRevision))], s.FailedAt.UTC().Format(time.RFC3339), s.FailedAt.Add(cxzupdate.Interval).UTC().Format(time.RFC3339)))
 		return
 	}
 	// A refusal is an answer: the server said it was not ready, and asking
@@ -160,7 +188,8 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	}
 	if r.Revision != cxzupdate.Current().Revision {
 		// The independent helper acquires rollout.lock after this step returns.
-		e = cxzupdate.ScheduleManager(work, m.Root, m.Container, m.Owner, r)
+		// Never forced on the tick: forcing is something a person asks for.
+		e = cxzupdate.ScheduleManager(work, m.Root, m.Container, m.Owner, r, false)
 		if e != nil {
 			s.State = "waiting"
 			s.Reason = e.Error()
@@ -175,6 +204,7 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	s.Reason = ""
 	ps, e := m.all(work)
 	if e != nil {
+		m.noteUpdateStop("waiting", "project inventory unavailable: "+e.Error())
 		return
 	}
 	for _, p := range ps {
@@ -236,6 +266,7 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			// Refresh before the next rollout tick. A newer manager must be scheduled
 			// before any project runtime can move to the new release.
 			_, _ = cxzupdate.Check(work, m.Root, true)
+			m.noteUpdateStop("waiting", "release assets are not published yet: "+p.ID)
 			return
 		}
 		if err == nil {

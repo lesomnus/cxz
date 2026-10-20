@@ -22,6 +22,11 @@ type ManagerTransaction struct {
 	ID, Owner, Name, OldID, NewID, State, Error string
 	Release                                     Release
 	Projects                                    []FrozenProject
+	// Force asks the old manager to hand over without the readiness sweep. An
+	// operator who is waiting for the rollout is a stronger signal than any
+	// session claiming to be busy, and without this the only lever was stopping
+	// sessions one at a time. See cxz#253.
+	Force bool
 }
 
 func ManagerTransactionPath(root string) string { return filepath.Join(root, "manager-update.json") }
@@ -35,6 +40,12 @@ func readManagerTransaction(root string) (ManagerTransaction, error) {
 	return tx, e
 }
 func ManagerHelperName(owner string) string { return "cxz-" + owner[:12] + "-update" }
+
+// ReadManagerTransaction is the staged or half-applied rollout on disk, for
+// whoever is asking why an installation is not updating.
+func ReadManagerTransaction(root string) (ManagerTransaction, error) {
+	return readManagerTransaction(root)
+}
 
 // restageable reports whether the transaction on disk can be thrown away and
 // written again for the release that is current now.
@@ -58,7 +69,7 @@ func (tx ManagerTransaction) restageable(r Release) bool {
 	}
 	return false
 }
-func ScheduleManager(ctx context.Context, root, name, owner string, r Release) error {
+func ScheduleManager(ctx context.Context, root, name, owner string, r Release, force bool) error {
 	if len(owner) < 12 {
 		return fmt.Errorf("invalid installation owner")
 	}
@@ -91,7 +102,7 @@ func ScheduleManager(ctx context.Context, root, name, owner string, r Release) e
 		}
 	}
 	if tx.ID == "" || tx.restageable(r) {
-		tx = ManagerTransaction{ID: core.ID(), Owner: owner, Name: strings.TrimPrefix(old.Name, "/"), OldID: old.ID, Release: r, State: "staged"}
+		tx = ManagerTransaction{ID: core.ID(), Owner: owner, Name: strings.TrimPrefix(old.Name, "/"), OldID: old.ID, Release: r, State: "staged", Force: force}
 		if e = core.WriteJSON(ManagerTransactionPath(root), tx); e != nil {
 			return e
 		}
@@ -270,7 +281,11 @@ func ReplaceManager(ctx context.Context, root string) (result error) {
 	// Refresh admission on every attempt, including recovery after a helper crash.
 	// With the old manager gone its persisted lease must still cover the gap.
 	if old.State.Running {
-		h, err := Call(ctx, root, "prepare", tx.ID)
+		action := "prepare"
+		if tx.Force {
+			action = "prepare-force"
+		}
+		h, err := Call(ctx, root, action, tx.ID)
 		if err != nil {
 			return err
 		}

@@ -16,6 +16,65 @@ concurrency:
   # Cancel superseded PR checks; main validation runs independently.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  # What this change can possibly break, so the suites that cannot see it do not
+  # set the pace. A Go change to the update machinery waited eleven minutes for
+  # the browser sandbox and for Storybook, twice -- once on the pull request and
+  # again on main before the release could be published -- which is most of the
+  # cost of testing whether an installation updates at all.
+  #
+  # Storybook never touches Go. The sandbox is the UI against a js/wasm build of
+  # `./cmd/cxz-sandbox`, so it is asked precisely: the dependency set of that
+  # build for that platform, against the packages this change touches. Guessing
+  # instead of asking would have skipped the suite that caught `internal/
+  # eventview` breaking the wasm build. See cxz#253.
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      storybook: ${{ steps.scope.outputs.storybook }}
+      sandbox: ${{ steps.scope.outputs.sandbox }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - id: scope
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          everything() {
+            printf 'storybook=true\nsandbox=true\n' >> "$GITHUB_OUTPUT"
+            echo "scope: everything ($1)"
+            exit 0
+          }
+          # Having no base to compare against is not an invitation to skip.
+          case "$BASE" in
+            "" | 0000000000000000000000000000000000000000) everything "no base revision" ;;
+          esac
+          git cat-file -e "$BASE^{commit}" 2>/dev/null || everything "base revision unavailable"
+          files=$(git diff --name-only "$BASE" HEAD)
+          printf '%s\n' "$files" | sed 's/^/changed: /'
+          if printf '%s\n' "$files" | grep -qE '^(ts/|packages/|proto/|\.github/|go\.mod$|go\.sum$)'; then
+            everything "web sources, protos, submodule or workflow"
+          fi
+          sandbox=false
+          GOOS=js GOARCH=wasm go list -deps ./cmd/cxz-sandbox \
+            | sed -n 's|^github.com/lesomnus/cxz/\{0,1\}||p' | sort -u > /tmp/wasm-packages
+          for f in $(printf '%s\n' "$files" | grep -E '\.go$' || true); do
+            d=$(dirname "$f")
+            [ "$d" = "." ] && d=""
+            if grep -qxF -- "$d" /tmp/wasm-packages; then
+              sandbox=true
+              echo "scope: $f is in the sandbox's wasm build"
+              break
+            fi
+          done
+          printf 'storybook=false\nsandbox=%s\n' "$sandbox" >> "$GITHUB_OUTPUT"
+          echo "scope: storybook=false sandbox=$sandbox"
   # Three jobs rather than one, because this was nineteen minutes of suites
   # running one after another on a single runner. Each suite is wall-clock bound
   # -- it waits for real motion, which is why `workers: 1` stays -- so the only
@@ -74,6 +133,8 @@ jobs:
           retention-days: 7
   # Storybook serves its own static build, so this needs no Go.
   web-storybook:
+    needs: changes
+    if: needs.changes.outputs.storybook == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -106,6 +167,8 @@ jobs:
   # is where a job that is actually stuck gets stopped, not where a busy runner
   # does.
   web-sandbox:
+    needs: changes
+    if: needs.changes.outputs.sandbox == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -336,7 +399,10 @@ jobs:
             app.cache-to=type=gha,scope=cxz-app,mode=max
   publish:
     needs: [test, race, windows-frontend, web, web-storybook, web-sandbox, image]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # A suite this change cannot reach is skipped, and a skipped dependency
+    # would otherwise skip the release with it -- so this asks that nothing
+    # failed rather than that everything succeeded.
+    if: ${{ !failure() && !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     permissions:
       contents: write
       packages: write
