@@ -33,6 +33,20 @@ func updateInternal(args []string) (bool, error) {
 		}
 		_, e = os.Stdout.Write(b)
 		return true, e
+	case "_rollout-apply":
+		// root, manager container, owner, forced. The caller is the frontend,
+		// which is the side that knows the container and owner.
+		if len(args) != 5 {
+			return true, fmt.Errorf("invalid rollout arguments")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		b, e := applyRollout(ctx, args[1], args[2], args[3], args[4] == "force")
+		if e != nil {
+			return true, e
+		}
+		_, e = os.Stdout.Write(b)
+		return true, e
 	case "_maintenance":
 		if len(args) != 4 {
 			return true, fmt.Errorf("invalid maintenance arguments")

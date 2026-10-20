@@ -223,7 +223,7 @@ func Maintenance(ctx context.Context, root string, g *Gate, check func(context.C
 		var e error
 		switch q.Action {
 		case "health":
-		case "status", "prepare":
+		case "status", "prepare", "prepare-force":
 			inspect := func() error {
 				var e error
 				h.Sessions, e = check(r.Context())
@@ -233,9 +233,21 @@ func Maintenance(ctx context.Context, root string, g *Gate, check func(context.C
 				}
 				return e
 			}
-			if q.Action == "prepare" {
+			switch q.Action {
+			case "prepare":
 				e = g.hold(q.Transaction, inspect)
-			} else {
+			case "prepare-force":
+				// Admission still closes -- a replacement must not run beside
+				// ordinary work -- but the readiness sweep stops being a veto.
+				// Somebody is waiting on this rollout, which outranks a session
+				// that says it is busy. See cxz#253.
+				e = g.hold(q.Transaction, func() error {
+					h.Sessions, _ = check(r.Context())
+					h.Ready = true
+					h.Reason = "forced"
+					return nil
+				})
+			default:
 				e = inspect()
 			}
 		case "release":
