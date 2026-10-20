@@ -35,6 +35,29 @@ func readManagerTransaction(root string) (ManagerTransaction, error) {
 	return tx, e
 }
 func ManagerHelperName(owner string) string { return "cxz-" + owner[:12] + "-update" }
+
+// restageable reports whether the transaction on disk can be thrown away and
+// written again for the release that is current now.
+//
+// "staged" is a reservation and nothing more: the helper has not touched the old
+// manager, and it is also what ReplaceManager writes back when an attempt is
+// refused by the quiet gate. Such a transaction owes nothing, so a channel that
+// moves on while one sits there does not need anybody to recover anything. It
+// used to count as work in progress, which meant merging while a rollout waited
+// on a busy session wedged the installation on the revision it was trying to
+// leave: every later rollout answered "previous manager update needs recovery",
+// because the old manager it names is of course still running. See cxz#251.
+func (tx ManagerTransaction) restageable(r Release) bool {
+	switch tx.State {
+	case "", "healthy", "rolled_back":
+		return true
+	case "staged":
+		// One for the release being rolled out now is left alone: a helper may
+		// still be retrying it, and it reads this file to find its own lease.
+		return tx.Release.Revision != r.Revision
+	}
+	return false
+}
 func ScheduleManager(ctx context.Context, root, name, owner string, r Release) error {
 	if len(owner) < 12 {
 		return fmt.Errorf("invalid installation owner")
@@ -51,7 +74,7 @@ func ScheduleManager(ctx context.Context, root, name, owner string, r Release) e
 	if e != nil && !os.IsNotExist(e) {
 		return e
 	}
-	if tx.ID != "" && tx.State != "healthy" && tx.State != "rolled_back" && tx.Release.Revision != r.Revision {
+	if tx.ID != "" && !tx.restageable(r) && tx.Release.Revision != r.Revision {
 		// A transaction whose old manager is gone cannot be completed by
 		// anyone: ReplaceManager resolves tx.OldID, fails, and writes "staged"
 		// back, so every rollout afterwards answers "needs recovery" forever.
@@ -67,7 +90,7 @@ func ScheduleManager(ctx context.Context, root, name, owner string, r Release) e
 			return e
 		}
 	}
-	if tx.ID == "" || tx.State == "healthy" || tx.State == "rolled_back" {
+	if tx.ID == "" || tx.restageable(r) {
 		tx = ManagerTransaction{ID: core.ID(), Owner: owner, Name: strings.TrimPrefix(old.Name, "/"), OldID: old.ID, Release: r, State: "staged"}
 		if e = core.WriteJSON(ManagerTransactionPath(root), tx); e != nil {
 			return e
