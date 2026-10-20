@@ -646,6 +646,11 @@ export const messages = {
   Actions: "Actions",
   "Add session": "Add session",
   Information: "Information",
+  "About {label}": "About {label}",
+  "Status and current step of preparing the project container and workspace.":
+    "Status and current step of preparing the project container and workspace.",
+  "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.":
+    "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.",
   Description: "Description",
   Configuration: "Configuration",
   selected: "selected",

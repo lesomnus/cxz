@@ -8,6 +8,7 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime } from "#src/shared/components/date-time.tsx";
+import { FieldLabel } from "#src/shared/components/field-label.tsx";
 import { IdentifierValue } from "#src/shared/components/identifier-value.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
@@ -160,6 +161,9 @@ function ProjectDashboard({
                 [p.status?.provisionState, p.status?.provisionStep]
                   .filter(Boolean)
                   .join(" · "),
+                t(
+                  "Status and current step of preparing the project container and workspace.",
+                ),
               ],
             ]}
           />
@@ -178,7 +182,13 @@ function ProjectDashboard({
           <h2 className={styles.sectionTitle}>{t("Diagnostics")}</h2>
           <Fields
             rows={[
-              [t("Runtime ID"), <IdentifierValue value={p.runtimeId} />],
+              [
+                t("Runtime ID"),
+                <IdentifierValue value={p.runtimeId} />,
+                t(
+                  "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.",
+                ),
+              ],
               [
                 t("Container ID"),
                 <IdentifierValue value={p.status?.containerId} />,
@@ -222,12 +232,14 @@ function ProjectDashboard({
   );
 }
 
-function Fields({ rows }: { rows: [string, ReactNode][] }) {
+function Fields({ rows }: { rows: [string, ReactNode, string?][] }) {
   return (
     <dl className={styles.details}>
-      {rows.map(([label, value]) => (
+      {rows.map(([label, value, description]) => (
         <div key={label}>
-          <dt>{label}</dt>
+          <dt>
+            <FieldLabel label={label} description={description} />
+          </dt>
           <dd>{value === undefined || value === "" ? "—" : value}</dd>
         </div>
       ))}

@@ -649,6 +649,11 @@ export const messages = {
   Actions: "작업",
   "Add session": "세션 추가",
   Information: "정보",
+  "About {label}": "{label} 설명",
+  "Status and current step of preparing the project container and workspace.":
+    "프로젝트 컨테이너와 워크스페이스 준비 작업의 상태 및 현재 단계를 표시합니다.",
+  "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.":
+    "API 호출과 링크에서 사용하는 프로젝트 식별자입니다. DB의 runtime_id 컬럼에 저장되며 UUID 기본 키 및 컨테이너 ID와는 별개입니다.",
   Description: "설명",
   Configuration: "설정",
   selected: "선택됨",

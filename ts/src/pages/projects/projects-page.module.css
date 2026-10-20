@@ -53,7 +53,7 @@
 .details > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--ui-space);
+  gap: var(--ui-control-inset);
   padding: var(--ui-control-inset) var(--ui-control-inline-inset);
 }
 .details dt {

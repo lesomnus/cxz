@@ -1,0 +1,20 @@
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-control-inset);
+  max-width: 100%;
+}
+.help {
+  display: inline-flex;
+  flex: none;
+  line-height: 0;
+  color: var(--ui-muted);
+}
+.help:is(:hover, :focus-within) {
+  color: var(--ui-shade-237);
+}
+.help svg {
+  display: block;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+}
