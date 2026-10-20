@@ -2,7 +2,10 @@ import { clone, create, isFieldSet } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { ProjectSchema } from "#gen/cxz/project_pb";
-import { ProjectService } from "#gen/cxz/project_svc_pb";
+import {
+  ProjectService,
+  ProjectPatchRequestSchema,
+} from "#gen/cxz/project_svc_pb";
 import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
 import { AccountService } from "#gen/cxz/account_svc_pb";
 import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
@@ -21,7 +24,7 @@ export function projectFixture(
   const now = Date.now();
   const projects = ["Web workspace", "API workspace"].map((name, i) =>
     create(ProjectSchema, {
-      id: new Uint8Array([i + 1]),
+      id: Uint8Array.from({ length: 16 }, (_, n) => (n === 0 ? i + 1 : 0)),
       runtimeId: `project-${i + 1}`,
       alias: i ? "api" : "web",
       name,
@@ -38,6 +41,7 @@ export function projectFixture(
         provisionState: "ready",
       },
       dateCreated: timestampFromDate(new Date(now - 86400000)),
+      dateUpdated: timestampFromDate(new Date(now - 60000)),
     }),
   );
   const event = (seq: number, kind: string, text: string, payload?: unknown) =>
@@ -123,6 +127,63 @@ export function projectFixture(
       },
     });
     router.service(ProjectService, {
+      get: (request) => {
+        const project = projects.find((p) =>
+          request.ref?.key.case === "id"
+            ? p.id.every(
+                (b, i) => b === (request.ref!.key.value as Uint8Array)[i],
+              )
+            : p.runtimeId === request.ref?.key.value,
+        );
+        if (!project)
+          throw new ConnectError("Project not found", Code.NotFound);
+        return clone(ProjectSchema, project);
+      },
+      patch: (request, context) => {
+        const index = projects.findIndex(
+          (p) =>
+            request.ref?.key.case === "id" &&
+            p.id.every(
+              (b, i) => b === (request.ref!.key.value as Uint8Array)[i],
+            ),
+        );
+        if (index < 0)
+          throw new ConnectError("Project not found", Code.NotFound);
+        if (unavailable)
+          throw new ConnectError("Project is unavailable", Code.Unavailable);
+        const project = projects[index]!;
+        if (
+          request.dateUpdated?.seconds !== project.dateUpdated?.seconds ||
+          request.dateUpdated?.nanos !== project.dateUpdated?.nanos
+        )
+          throw new ConnectError(
+            "Project changed. Refresh and try again.",
+            Code.FailedPrecondition,
+          );
+        const updated = clone(ProjectSchema, project);
+        for (const field of ["name", "alias", "desc"] as const) {
+          if (!isFieldSet(request, ProjectPatchRequestSchema.field[field]))
+            continue;
+          if (
+            field === "alias" &&
+            projects.some((p, n) => n !== index && p.alias === request.alias)
+          )
+            throw new ConnectError(
+              "Project alias is already in use",
+              Code.AlreadyExists,
+            );
+          updated[field] = request[field];
+        }
+        updated.dateUpdated = timestampFromDate(new Date());
+        projects[index] = updated;
+        calls.push({
+          method: "project.patch",
+          project: project.runtimeId,
+          signal: context.signal,
+        });
+        publish();
+        return clone(ProjectSchema, updated);
+      },
       async *download(request, context) {
         calls.push({
           method: "download",

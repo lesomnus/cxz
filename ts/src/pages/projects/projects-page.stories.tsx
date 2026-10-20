@@ -59,11 +59,13 @@ function Preview({
           </div>
         ),
         view: function DashboardPreview() {
+          const [liveProjects, setProjects] = useState(projects);
           const [liveSessions, setSessions] = useState(sessions);
           useEffect(() => {
-            const stop = fixture.subscribe(() =>
-              setSessions([...fixture.sessions]),
-            );
+            const stop = fixture.subscribe(() => {
+              setProjects([...fixture.projects]);
+              setSessions([...fixture.sessions]);
+            });
             return () => {
               stop();
               fixture.c.dispose();
@@ -90,7 +92,7 @@ function Preview({
           return (
             <ProjectsPage
               c={fixture.c}
-              projects={projects}
+              projects={liveProjects}
               sessions={liveSessions}
               projectsLoading={loading}
             />

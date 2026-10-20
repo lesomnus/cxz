@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
-import { PageToolbar, Button } from "@lesomnus/nox";
+import { PageToolbar, Button, EditableValue } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -14,6 +14,11 @@ import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { projectBranch, type DashboardConnection } from "./project-dashboard";
+import {
+  editProject,
+  validateProjectField,
+  type ProjectField,
+} from "./project-edit";
 import { ProjectSessions } from "./project-sessions";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
@@ -37,16 +42,28 @@ export function ProjectsPage({
 }) {
   useLocale();
   const navigate = useNavigate();
+  const [saved, setSaved] = useState<Project>();
+  const visibleProjects = projects.map((p) => {
+    if (!saved || key(p.id) !== key(saved.id)) return p;
+    const a = p.dateUpdated,
+      b = saved.dateUpdated;
+    return b &&
+      (!a ||
+        b.seconds > a.seconds ||
+        (b.seconds === a.seconds && b.nanos > a.nanos))
+      ? saved
+      : p;
+  });
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
   const { project: selected } = useWorkspaceRoute();
   const project =
-    projects.find((item) => item.runtimeId === selected) ??
-    (!selected ? projects[0] : undefined);
+    visibleProjects.find((item) => item.runtimeId === selected) ??
+    (!selected ? visibleProjects[0] : undefined);
   return (
     <main className={styles.page} aria-label={t("Project workspace")}>
       <PageToolbar aria-label={t("Project toolbar")}>
         <ProjectPicker
-          projects={projects}
+          projects={visibleProjects}
           value={project?.runtimeId ?? ""}
           loading={projectsLoading}
           choose={(project) =>
@@ -65,6 +82,7 @@ export function ProjectsPage({
               key={project.runtimeId}
               c={c}
               project={project}
+              saved={setSaved}
               sessions={sessions.filter(
                 (s) => s.project && key(s.project.id) === key(project.id),
               )}
@@ -91,6 +109,7 @@ export function ProjectsPage({
 function ProjectDashboard({
   c,
   project: p,
+  saved,
   sessions,
   sessionsLoading,
   accounts,
@@ -99,12 +118,29 @@ function ProjectDashboard({
 }: {
   c: DashboardConnection;
   project: Project;
+  saved: (project: Project) => void;
   accounts: Account[];
   accountsError: string;
   reloadAccounts: () => void;
   sessions: Session[];
   sessionsLoading?: boolean;
 }) {
+  async function save(field: ProjectField, value: string) {
+    const updated = await editProject(c.projects, p, field, value);
+    c.store.apply("cxz.Project", [{ id: updated.id, value: updated }]);
+    saved(updated);
+  }
+  const editable = (field: ProjectField, label: string) => (
+    <div className={styles.editable}>
+      <EditableValue
+        label={label}
+        value={p[field]}
+        save={(value) => save(field, value)}
+        validate={(value) => validateProjectField(field, value)}
+        monospace
+      />
+    </div>
+  );
   const [addingSession, setAddingSession] = useState(false);
   const branch = useRemote(
     (signal) => projectBranch(c, p, signal),
@@ -130,9 +166,9 @@ function ProjectDashboard({
           <h2 className={styles.sectionTitle}>{t("Information")}</h2>
           <Fields
             rows={[
-              [t("Name"), p.name],
-              [t("Alias"), p.alias],
-              [t("Description"), p.desc],
+              [t("Name"), editable("name", t("Name"))],
+              [t("Alias"), editable("alias", t("Alias"))],
+              [t("Description"), editable("desc", t("Description"))],
               [t("Workspace"), p.workspace],
               [t("Configuration"), p.config],
             ]}

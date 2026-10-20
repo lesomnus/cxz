@@ -293,3 +293,57 @@ test("project Session add opens the shared creation dialog scoped to the selecte
   await expect(add).toBeFocused();
   await expect(page).toHaveURL(/projects\?project=project-2$/);
 });
+
+test("project metadata persists through Project.Patch and inventory Watch", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const section = page.getByRole("region", {
+    name: "Information",
+    exact: true,
+  });
+  await expect(section).toBeVisible({ timeout: 45000 });
+  for (const [label, value] of [
+    ["Name", "Renamed sandbox"],
+    ["Alias", "sandbox-edited"],
+    ["Description", "Sandbox description"],
+  ] as const) {
+    await section
+      .getByRole("button", { name: `Edit ${label}`, exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: `Edit ${label}`,
+      exact: true,
+    });
+    await dialog.getByRole("textbox").fill(value);
+    await dialog.getByRole("textbox").press("Enter");
+    await expect(dialog).toHaveCount(0);
+    await expect(
+      section.getByRole("button", { name: `Edit ${label}`, exact: true }),
+    ).toHaveText(value);
+  }
+  const picker = page.getByRole("combobox", {
+    name: "Select project",
+    exact: true,
+  });
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Secondary project", exact: true })
+    .click();
+  await picker.click();
+  await page
+    .getByRole("option", { name: "Renamed sandbox", exact: true })
+    .click();
+  await expect(
+    section.getByRole("button", { name: "Edit Alias", exact: true }),
+  ).toHaveText("sandbox-edited");
+  await expect(
+    section.getByRole("button", { name: "Edit Description", exact: true }),
+  ).toHaveText("Sandbox description");
+  await expect(
+    page
+      .getByRole("table", { name: "Sessions", exact: true })
+      .locator("tbody tr"),
+  ).toHaveCount(8);
+  await expect(page).toHaveURL(/projects\?project=project-1$/);
+});

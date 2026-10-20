@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const maxEvents = 3000
@@ -32,6 +33,7 @@ type Server struct {
 	seed           uint64
 	delay          time.Duration
 	rev            uint64
+	projectRev     uint64
 	ctx            context.Context
 	tasks          *taskapi.Memory
 	cancel         context.CancelFunc
@@ -65,7 +67,7 @@ func New(seed uint64, delay time.Duration) *Server {
 	s := &Server{seed: seed, delay: delay, ctx: ctx, cancel: cancel, tasks: taskapi.NewMemory()}
 	for i, name := range []string{"Design playground", "Secondary project"} {
 		id := fmt.Sprintf("project-%d", i+1)
-		s.projects = append(s.projects, resource.Project_builder{Id: []byte(fmt.Sprintf("project-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, Workspace: "/workspace", Listed: true, Status: resource.ProjectStatus_builder{State: "running", RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
+		s.projects = append(s.projects, resource.Project_builder{Id: []byte(fmt.Sprintf("project-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, DateCreated: timestamppb.Now(), DateUpdated: timestamppb.Now(), Workspace: "/workspace", Listed: true, Status: resource.ProjectStatus_builder{State: "running", RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
 	}
 	for i, name := range []string{"Project checklist", "Conversation", "Long history", "Approval question", "Simulated error", "Seeded random work", "Stopped session", "Other project", "Tool activity"} {
 		id := fmt.Sprintf("session-%d", i+1)
@@ -251,32 +253,50 @@ func (p *Projects) List(_ context.Context, r *resource.ProjectListRequest) (*res
 	}
 	return resource.ProjectListResponse_builder{Items: items, Next: next}.Build(), nil
 }
-func (p *Projects) Watch(r *resource.ProjectWatchRequest, stream grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
-	if !r.GetSkipSnapshot() {
-		after := ""
-		for {
-			list, err := p.List(stream.Context(), resource.ProjectListRequest_builder{Filters: r.GetFilters(), After: after}.Build())
-			if err != nil {
-				return err
+func (x *Projects) Watch(r *resource.ProjectWatchRequest, stream grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
+	s := x.S
+	s.mu.Lock()
+	last := s.projectRev
+	s.mu.Unlock()
+	first := !r.GetSkipSnapshot()
+	known := map[string][]byte{}
+	tick := time.NewTicker(80 * time.Millisecond)
+	defer tick.Stop()
+	for {
+		s.mu.Lock()
+		rev := s.projectRev
+		var items []*resource.ProjectWatchItem
+		if first || rev != last {
+			next := map[string][]byte{}
+			for _, p := range s.projects {
+				if projectMatches(p, r.GetFilters()) {
+					v := proto.Clone(p).(*resource.Project)
+					items = append(items, resource.ProjectWatchItem_builder{Id: v.GetId(), Value: v}.Build())
+					next[string(v.GetId())] = v.GetId()
+				}
 			}
-			var items []*resource.ProjectWatchItem
-			for _, v := range list.GetItems() {
-				items = append(items, resource.ProjectWatchItem_builder{Id: v.GetId(), Value: v}.Build())
+			for id, value := range known {
+				if _, found := next[id]; !found {
+					items = append(items, resource.ProjectWatchItem_builder{Id: value}.Build())
+				}
 			}
+			known = next
+		}
+		s.mu.Unlock()
+		if first || rev != last {
 			if err := stream.Send(resource.ProjectWatchResponse_builder{Items: items}.Build()); err != nil {
 				return err
 			}
-			after = list.GetNext()
-			if after == "" {
-				break
-			}
+			last = rev
+			first = false
 		}
-	}
-	select {
-	case <-stream.Context().Done():
-		return stream.Context().Err()
-	case <-p.S.ctx.Done():
-		return p.S.ctx.Err()
+		select {
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case <-s.ctx.Done():
+			return s.ctx.Err()
+		case <-tick.C:
+		}
 	}
 }
 func (x *Sessions) Get(_ context.Context, r *resource.SessionGetRequest) (*resource.Session, error) {

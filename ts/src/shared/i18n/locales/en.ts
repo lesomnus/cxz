@@ -1,5 +1,10 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Display name must be nonempty, at most 200 bytes and contain no control whitespace.":
+    "Display name must be nonempty, at most 200 bytes and contain no control whitespace.",
+  "Project version is unavailable. Refresh and try again.":
+    "Project version is unavailable. Refresh and try again.",
+
   Account: "Account",
   "Project workspace": "Project workspace",
   "Project toolbar": "Project toolbar",

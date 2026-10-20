@@ -105,3 +105,14 @@
   color: var(--ui-muted);
   padding: var(--ui-space) var(--ui-control-inline-inset);
 }
+
+.editable {
+  min-width: 0;
+  width: 100%;
+  margin-inline: calc(-1 * var(--ui-control-inline-inset));
+}
+.editable :global(.editable-value-trigger) {
+  min-height: var(--ui-icon-size);
+  padding-block: 0;
+  font: inherit;
+}

@@ -1,5 +1,10 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Display name must be nonempty, at most 200 bytes and contain no control whitespace.":
+    "표시 이름은 비어 있지 않아야 하며, 제어 공백 없이 최대 200바이트까지 입력할 수 있습니다.",
+  "Project version is unavailable. Refresh and try again.":
+    "프로젝트 버전을 확인할 수 없습니다. 새로고침 후 다시 시도하세요.",
+
   Account: "계정",
   "Project workspace": "프로젝트 워크스페이스",
   "Project toolbar": "프로젝트 툴바",
