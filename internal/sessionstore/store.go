@@ -203,3 +203,30 @@ func Decode(b []byte) (*api.Event, error) {
 	}
 	return eventview.FromCore(e), nil
 }
+
+// Through is the highest sequence this store holds, or zero when it holds
+// nothing. It is what tells a conversion whether it has anything left to do.
+func (s *Store) Through(ctx context.Context) (uint64, error) {
+	var v uint64
+	err := s.db.QueryRowContext(ctx, `SELECT COALESCE(MAX(seq),0) FROM events WHERE session_id=?`, s.session).Scan(&v)
+	return v, err
+}
+
+// Fill records the part of a journal the store does not have yet, in batches so
+// that it never holds the write lock for the whole of a long conversation. It
+// answers how many records it wrote.
+func (s *Store) Fill(ctx context.Context, events []core.Event, through uint64) (int, error) {
+	pending := make([]core.Event, 0, len(events))
+	for _, e := range events {
+		if e.Seq > through {
+			pending = append(pending, e)
+		}
+	}
+	const batch = 2048
+	for i := 0; i < len(pending); i += batch {
+		if err := s.Append(ctx, pending[i:min(i+batch, len(pending))]); err != nil {
+			return i, err
+		}
+	}
+	return len(pending), nil
+}

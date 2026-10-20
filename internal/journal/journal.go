@@ -21,6 +21,10 @@ type Log struct {
 	events []core.Event
 }
 
+// Path is the file this log appends to. A session's store lives beside it, so
+// whoever holds the log knows where that is without being told twice.
+func (l *Log) Path() string { return l.path }
+
 func Open(path string) (*Log, error) {
 	f, e := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
 	if e != nil {

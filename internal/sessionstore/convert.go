@@ -32,16 +32,13 @@ func Convert(ctx context.Context, dir, session string) (int, error) {
 		return 0, err
 	}
 	defer s.Close()
-	// In batches, because one transaction over a 122k-record journal holds a
-	// write lock for as long as it takes and this runs while the session may be
-	// starting. The reduction after each batch is incremental, so the cost is
-	// the batch rather than the conversation.
-	const batch = 2048
-	for i := 0; i < len(events); i += batch {
-		end := min(i+batch, len(events))
-		if err = s.Append(ctx, events[i:end]); err != nil {
-			return i, fmt.Errorf("convert %s at %d: %w", session, i, err)
-		}
+	through, err := s.Through(ctx)
+	if err != nil {
+		return 0, err
+	}
+	n, err := s.Fill(ctx, events, through)
+	if err != nil {
+		return n, fmt.Errorf("convert %s at %d: %w", session, n, err)
 	}
 	return len(events), nil
 }
