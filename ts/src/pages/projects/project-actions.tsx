@@ -25,6 +25,9 @@ export function ProjectActions({
   return (
     <>
       <div className={styles.row}>
+        <span className={styles.icon}>
+          <SessionActionIcon action="purge" />
+        </span>
         <p>{t("Permanently delete this project and its owned data.")}</p>
         <Button
           ref={trigger}
@@ -35,10 +38,7 @@ export function ProjectActions({
             setTarget(project);
           }}
         >
-          <span className={styles.icon}>
-            <SessionActionIcon action="purge" />
-          </span>
-          <span className={styles.label}>{t("Purge")}</span>
+          {t("Purge")}
         </Button>
       </div>
       {target && (
