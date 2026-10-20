@@ -264,9 +264,33 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 			de["DOCKER_TLS_VERIFY"] = ""
 			de["DOCKER_CERT_PATH"] = ""
 		}
-		dev["volumes"] = []any{map[string]any{"type": "volume", "source": p.Volume, "target": "/cxz/state"}, map[string]any{"type": "volume", "source": m.ToolsVolume, "target": "/cxz/tools", "read_only": true}}
+		// A project's state is a subdirectory of the manager's volume, mounted in
+		// as /cxz/state. That is what lets the manager read a session's
+		// conversation out of the file the session wrote rather than keeping its
+		// own copy of every conversation -- and it is the same mechanism the web
+		// and relay containers already use for `run` and `pki/server`.
+		//
+		// A project registered before this still has a volume of its own, and
+		// keeps it until a recreate moves it. See cxz#238.
+		stateMount := map[string]any{"type": "volume", "source": p.Volume, "target": "/cxz/state"}
+		stateVolumes := map[string]any{p.Volume: map[string]any{"external": true, "name": p.Volume}}
+		if p.Volume == "" {
+			if m.StateVolume == "" {
+				return fmt.Errorf("project %s has no state volume and this manager was installed without one", p.ID)
+			}
+			dir, subpath := m.projectState(p.ID)
+			// A subpath mount requires the directory to be there already, and
+			// the manager's own root is that volume.
+			if e = os.MkdirAll(dir, 0700); e != nil {
+				return e
+			}
+			stateMount = map[string]any{"type": "volume", "source": m.StateVolume, "target": "/cxz/state", "volume": map[string]any{"subpath": subpath}}
+			stateVolumes = map[string]any{m.StateVolume: map[string]any{"external": true, "name": m.StateVolume}}
+		}
+		dev["volumes"] = []any{stateMount, map[string]any{"type": "volume", "source": m.ToolsVolume, "target": "/cxz/tools", "read_only": true}}
 		dev["volumes"] = append(dev["volumes"].([]any), map[string]any{"type": "bind", "source": secretSource, "target": "/cxz/secrets"}, map[string]any{"type": "bind", "source": assetSource, "target": "/cxz/assets", "read_only": true})
-		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.ID, "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": map[string]any{p.Volume: map[string]any{"external": true, "name": p.Volume}, m.ToolsVolume: map[string]any{"external": true, "name": m.ToolsVolume}}}
+		stateVolumes[m.ToolsVolume] = map[string]any{"external": true, "name": m.ToolsVolume}
+		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.ID, "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": stateVolumes}
 		cp := filepath.Join(m.Root, "projects", p.ID, "compose.json")
 		if e = core.WriteJSON(cp, override); e != nil {
 			return e
