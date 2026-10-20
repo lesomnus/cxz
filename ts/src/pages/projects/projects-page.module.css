@@ -16,33 +16,6 @@
   margin: 0;
   padding: var(--project-section-gap);
 }
-.description {
-  color: var(--ui-muted);
-  font-size: 12px;
-  margin: 0;
-}
-.counts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ui-space);
-  margin: 0;
-}
-.counts > div {
-  min-width: 100px;
-  padding: calc(2 * var(--ui-space));
-  border-radius: var(--ui-dialog-radius);
-  background: var(--ui-shade-24);
-  display: grid;
-  gap: var(--ui-space);
-}
-.counts span {
-  font-size: 11px;
-  color: var(--ui-muted);
-}
-.counts strong {
-  font: 20px var(--ui-font-mono);
-  font-variant-numeric: tabular-nums;
-}
 .dashboard {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -81,6 +54,13 @@
   gap: var(--ui-space);
   padding: var(--ui-control-inset) var(--ui-control-inline-inset);
 }
+.diagnostics .details {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: calc(2 * var(--ui-space));
+}
+.diagnostics .details > div {
+  grid-template-columns: minmax(0, 1fr);
+}
 .diagnostics dd {
   display: flex;
   align-items: center;
@@ -111,62 +91,10 @@
   gap: var(--ui-space);
   padding: var(--ui-space) var(--ui-control-inline-inset);
 }
-.sectionHeading a {
-  color: var(--ui-muted);
-  font-size: 11px;
-}
-.sectionHeading a:hover {
-  color: var(--ui-shade-237);
-}
-.subheading {
-  font-size: 11px;
-  font-weight: 500;
-  margin: calc(3 * var(--ui-space)) var(--ui-control-inline-inset)
-    var(--ui-space);
-}
 .empty {
   color: var(--ui-muted);
   font-size: 11px;
   margin: var(--ui-space) var(--ui-control-inline-inset);
-}
-.taskCounts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: calc(3 * var(--ui-space));
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-  color: var(--ui-muted);
-  font-size: 11px;
-}
-.taskCounts b {
-  display: inline-block;
-  min-width: 3ch;
-  text-align: right;
-  font: inherit;
-  font-family: var(--ui-font-mono);
-}
-.taskList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.taskList li {
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-.taskList a {
-  display: grid;
-  gap: var(--ui-space);
-  color: inherit;
-  text-decoration: none;
-  border-radius: var(--ui-dialog-radius);
-}
-.taskList a:hover {
-  color: var(--ui-shade-255);
-}
-.taskList small {
-  color: var(--ui-muted);
-  font: 10px var(--ui-font-mono);
 }
 .errors {
   color: var(--ui-error, #db7979);
@@ -174,7 +102,7 @@
 @media (max-width: 760px) {
   .dashboard {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "sessions" "information";
+    grid-template-areas: "information" "sessions";
   }
 }
 

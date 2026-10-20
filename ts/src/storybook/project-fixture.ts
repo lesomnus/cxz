@@ -6,8 +6,6 @@ import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
 import { AccountService } from "#gen/cxz/account_svc_pb";
 import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
-import { TaskService } from "#gen/cxz/task_svc_pb";
-import { TaskSchema, TaskStatus } from "#gen/cxz/task_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import {
   SessionService,
@@ -28,6 +26,7 @@ export function projectFixture(
       alias: i ? "api" : "web",
       name,
       workspace: "/host/workspace",
+      config: ".devcontainer/devcontainer.json",
       desc: i
         ? "Backend services and API contracts"
         : "Frontend and design system",
@@ -96,23 +95,6 @@ export function projectFixture(
         },
       }),
     ),
-  );
-  const tasks = [
-    "Review the release plan",
-    "Verify browser tests",
-    "Prepare release notes",
-  ].map((name, index) =>
-    create(TaskSchema, {
-      id: new Uint8Array([index + 1]),
-      name,
-      alias: `task-${index + 1}`,
-      project: projects[0],
-      status: [TaskStatus.IN_PROGRESS, TaskStatus.WAITING, TaskStatus.TODO][
-        index
-      ],
-      assignee: index ? "" : "web-0",
-      assigneeRun: "current-run",
-    }),
   );
   const calls: {
     method: string;
@@ -316,30 +298,6 @@ export function projectFixture(
       publish();
       return updated;
     }
-    router.service(TaskService, {
-      async *watch(request, context) {
-        calls.push({
-          method: "tasks",
-          project: String(request.project?.key.value),
-          signal: context.signal,
-        });
-        if (unavailable)
-          throw new ConnectError("Task API unavailable", Code.Unimplemented);
-        yield {
-          items: tasks
-            .filter(
-              (task) => task.project?.runtimeId === request.project?.key.value,
-            )
-            .map((value) => ({ id: value.id, value })),
-        };
-        await new Promise<void>((resolve) => {
-          context.signal.addEventListener("abort", () => resolve(), {
-            once: true,
-          });
-          if (context.signal.aborted) resolve();
-        });
-      },
-    });
   });
   const c = new Connection(
     `${location.origin}/storybook-projects/${crypto.randomUUID()}`,

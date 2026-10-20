@@ -23,6 +23,25 @@ test("projects use the full workspace with a persistent project picker and scope
       .locator("svg"),
   ).toHaveCSS("width", "20px");
   await expect(picker).toHaveText("Design playground");
+  await expect(main.locator("section").first()).toHaveAttribute(
+    "aria-label",
+    "Project information",
+  );
+  await expect(
+    main.getByRole("region", { name: "Session overview", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    main.getByRole("region", { name: "Project tasks", exact: true }),
+  ).toHaveCount(0);
+  const diagnostic = main
+    .getByRole("region", { name: "Diagnostics", exact: true })
+    .locator("dl > div");
+  const firstDiagnostic = (await diagnostic.first().boundingBox())!;
+  const secondDiagnostic = (await diagnostic.nth(1).boundingBox())!;
+  expect(secondDiagnostic.y).toBe(firstDiagnostic.y);
+  expect(secondDiagnostic.x).toBeGreaterThan(
+    firstDiagnostic.x + firstDiagnostic.width,
+  );
   await page.mouse.move(0, 0);
   expect(
     await main.locator(".icon-value-menu").evaluate((el) => {

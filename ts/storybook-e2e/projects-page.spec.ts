@@ -194,8 +194,8 @@ test("dashboard scopes project data, resets selection on project change and keep
     name: "Environment",
     exact: true,
   });
-  const tasks = main.getByRole("region", {
-    name: "Project tasks",
+  const info = main.getByRole("region", {
+    name: "Project information",
     exact: true,
   });
   const sessions = main.getByRole("region", {
@@ -208,16 +208,27 @@ test("dashboard scopes project data, resets selection on project change and keep
   });
   await expect(environment).toContainText("ui/dashboard");
   await expect(environment).toContainText("/workspace");
-  await expect(tasks).toContainText("Review the release plan");
+  await expect(info).toContainText("Web workspace");
+  await expect(info).toContainText("Frontend and design system");
+  await expect(info).toContainText("/host/workspace");
+  await expect(info).toContainText(".devcontainer/devcontainer.json");
   await expect(
-    tasks.getByRole("link", { name: "Open task board" }),
-  ).toHaveAttribute("href", /project=project-1/);
+    main.getByRole("region", { name: "Project tasks", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    main.getByRole("region", { name: "Session overview", exact: true }),
+  ).toHaveCount(0);
+  await expect(main.locator("section").first()).toHaveAttribute(
+    "aria-label",
+    "Project information",
+  );
   const toolbar = (await main.locator(":scope > header").boundingBox())!;
   const sectionGap = await sessions
     .locator("..")
     .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
   const sessionsBox = (await sessions.boundingBox())!;
   expect(sessionsBox.y).toBe(toolbar.y + toolbar.height + sectionGap);
+  expect((await info.boundingBox())!.y).toBe(sessionsBox.y);
   const environmentBox = (await environment.boundingBox())!;
   expect(environmentBox.x + environmentBox.width).toBeLessThan(sessionsBox.x);
   expect((await diagnostics.boundingBox())!.x).toBe(environmentBox.x);
@@ -237,7 +248,9 @@ test("dashboard scopes project data, resets selection on project change and keep
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
   await expect(environment).toContainText("api-main");
-  await expect(tasks).toContainText("No outstanding tasks");
+  await expect(info).toContainText("API workspace");
+  await expect(info).toContainText("Backend services and API contracts");
+  await expect(info).not.toContainText("Frontend and design system");
   await expect(all).not.toBeChecked();
   await expect(sessions.locator("tbody tr")).toHaveCount(2);
   await expect(
@@ -255,7 +268,7 @@ test("stopped and unavailable runtimes retain the session table and account name
   ).toContainText("Project is not running");
   await expect(
     main.getByRole("region", { name: "Session overview" }),
-  ).toContainText("Stopped2");
+  ).toHaveCount(0);
   await expect(
     main.locator("tbody tr").first().locator("td").nth(5),
   ).toHaveText("Stopped");
@@ -338,6 +351,12 @@ test("diagnostics show short IDs, copy complete values, and use machine-readable
     exact: true,
   });
   await expect(diagnostic).toBeVisible();
+  const entries = diagnostic.locator("dl > div");
+  const left = (await entries.nth(0).boundingBox())!;
+  const right = (await entries.nth(1).boundingBox())!;
+  expect(right.y).toBe(left.y);
+  expect(right.x).toBeGreaterThan(left.x + left.width);
+  expect((await entries.nth(2).boundingBox())!.y).toBeGreaterThan(left.y);
   await expect(main.locator("h1, details, summary")).toHaveCount(0);
   const container = diagnostic
     .locator("dl > div")
@@ -468,8 +487,8 @@ for (const scale of [1, 1.25, 1.5, 2]) {
       const trigger = row.locator("[tabindex]");
       await page.evaluate(() => document.fonts.ready);
       await expect(
-        page.getByRole("region", { name: "Project tasks", exact: true }),
-      ).toContainText("Review the release plan");
+        page.getByRole("region", { name: "Project information", exact: true }),
+      ).toContainText("Web workspace");
       await trigger.evaluate((element) =>
         element.scrollIntoView({
           block: "center",

@@ -1,37 +1,7 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Project } from "#gen/cxz/project_pb";
-import type { Session } from "#gen/cxz/session_pb";
 import { ref, type Connection } from "#src/shared/api/connection.ts";
 export type DashboardConnection = Connection;
-
-export function sessionCounts(sessions: Session[]) {
-  return {
-    total: sessions.length,
-    working: sessions.filter((s) =>
-      ["working", "running"].includes(s.status?.state ?? ""),
-    ).length,
-    waiting: sessions.filter((s) =>
-      ["waiting_input", "waiting"].includes(s.status?.state ?? ""),
-    ).length,
-    idle: sessions.filter((s) => s.status?.state === "idle").length,
-    stopped: sessions.filter((s) =>
-      ["stopped", "interrupted", "failed"].includes(s.status?.state ?? ""),
-    ).length,
-    unknown: sessions.filter(
-      (s) =>
-        ![
-          "working",
-          "running",
-          "waiting_input",
-          "waiting",
-          "idle",
-          "stopped",
-          "interrupted",
-          "failed",
-        ].includes(s.status?.state ?? ""),
-    ).length,
-  };
-}
 
 function resolvePath(base: string, value: string) {
   const segments: string[] = [];

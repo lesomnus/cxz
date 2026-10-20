@@ -2,13 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { ProjectSchema } from "#gen/cxz/project_pb";
-import { SessionSchema } from "#gen/cxz/session_pb";
 import { ProjectDownloadReplySchema } from "#gen/cxz/project_svc_pb";
-import {
-  projectBranch,
-  sessionCounts,
-  type DashboardConnection,
-} from "./project-dashboard";
+import { projectBranch, type DashboardConnection } from "./project-dashboard";
 
 const project = () =>
   create(ProjectSchema, {
@@ -113,27 +108,5 @@ describe("project Git metadata", () => {
         controller.signal,
       ),
     ).rejects.toThrow();
-  });
-});
-
-it("counts stopped, interrupted and failed separately from ready and waiting sessions", () => {
-  const sessions = [
-    "working",
-    "running",
-    "waiting_input",
-    "waiting",
-    "idle",
-    "stopped",
-    "interrupted",
-    "failed",
-    "",
-  ].map((state) => create(SessionSchema, { status: { state } }));
-  expect(sessionCounts(sessions)).toEqual({
-    total: 9,
-    working: 2,
-    waiting: 2,
-    idle: 1,
-    stopped: 3,
-    unknown: 1,
   });
 });
