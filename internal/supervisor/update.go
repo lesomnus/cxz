@@ -50,6 +50,26 @@ func (s *Supervisor) observeUpdateEvent(kind, text, id string) {
 	if kind == "tool_result" && id != "" {
 		delete(s.updateTools, id)
 	}
+	if kind == "turn_end" {
+		// A turn ending ends what the turn made uncertain. Both of these are
+		// per-turn by nature and neither was cleared, so one ambiguous frame or
+		// one tool call whose result never arrived blocked every update of the
+		// installation for as long as the session existed.
+		//
+		// What made this concrete: Claude reports subagent progress as
+		// `{"type":"system","subtype":"task_progress",…}`, the heuristic below
+		// reads any system frame with "task" in its subtype as an unknown
+		// background protocol, and so any session that had ever run a Task or
+		// Explore was permanently "background telemetry unknown". 1,107 such
+		// frames in the session that was blocking this installation. A subagent
+		// runs inside a turn; when the turn closes it is not running.
+		//
+		// Anything that outlives the turn is still caught, by the process tree:
+		// busyProcess reads the agent's children and does not take this on
+		// trust. See cxz#244.
+		s.updateUnknown = false
+		s.updateTools = nil
+	}
 }
 func (s *Supervisor) observeUpdateRaw(raw []byte) {
 	if agentview.IsBackgroundEvent(raw) {
