@@ -225,6 +225,18 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 		}
 		return err
 	}
+	// The store holds what the journal holds, so what compaction removed from one
+	// is removed from the other. Derived, so a failure here is reported and the
+	// conversation carries on: the next start converts the journal as it stands.
+	if s.store != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		if err = s.store.Trim(ctx, checkpoint); err != nil {
+			fmt.Fprintln(os.Stderr, "conversation store: trim:", err)
+		} else {
+			s.recordState(ctx)
+		}
+		cancel()
+	}
 	// Release large command bodies in memory without forgetting duplicate IDs.
 	for _, e := range resumeEvents([]core.Event{checkpoint}) {
 		if e.Kind == "receipt" {

@@ -803,10 +803,12 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 			return e
 		}
 		lastJournalInfo, lastJournalRefresh = info, time.Now()
-		rows, e := s.db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 256", m.ID, cursor)
+		db, release := s.conversationFor(ctx, m)
+		rows, e := db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 256", m.ID, cursor)
 		if e != nil {
 			return e
 		}
+		defer release()
 		var batch []core.Event
 		for rows.Next() {
 			var b []byte

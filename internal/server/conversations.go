@@ -153,8 +153,10 @@ func (s *Server) catchUp(ctx context.Context) []Pending {
 func (s *Server) ingestStored(ctx context.Context, m core.Session, cursor uint64) (int, uint64, error) {
 	read := 0
 	last := cursor
+	db, release := s.conversationFor(ctx, m)
+	defer release()
 	for {
-		rows, err := s.db.QueryContext(ctx, "SELECT seq, data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT ?", m.ID, last, ingestBatch)
+		rows, err := db.QueryContext(ctx, "SELECT seq, data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT ?", m.ID, last, ingestBatch)
 		if err != nil {
 			return read, last, err
 		}

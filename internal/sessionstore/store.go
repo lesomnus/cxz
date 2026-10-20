@@ -275,3 +275,79 @@ func (s *Store) State(ctx context.Context) (core.Snapshot, Fence, bool, error) {
 	}
 	return v.Snapshot, v.Fence, true, nil
 }
+
+// LatestPerRun answers the newest record of a kind for each run, which is how a
+// reduction that only cares about the last one -- a model catalog, republished
+// whenever a setting changes -- is found without replaying a conversation. The
+// record index is keyed by kind, so this reads the index and then the handful of
+// bodies that survive it.
+func (s *Store) LatestPerRun(ctx context.Context, kind string) ([]core.Event, error) {
+	return s.records(ctx, `SELECT (SELECT data FROM events WHERE session_id=? AND seq=k.seq) FROM`+
+		` (SELECT run_id, MAX(seq) AS seq FROM transcript_records WHERE session_id=? AND kind=? GROUP BY run_id) k`+
+		` ORDER BY k.seq`, s.session, s.session, kind)
+}
+
+// EachOfKind answers every record of a kind in order, for a reduction that is a
+// fold rather than a last-one-wins. It is bounded by how many records of that
+// kind a session wrote, not by how long the conversation is.
+func (s *Store) EachOfKind(ctx context.Context, kind string) ([]core.Event, error) {
+	return s.records(ctx, `SELECT (SELECT data FROM events WHERE session_id=? AND seq=k.seq) FROM`+
+		` (SELECT seq FROM transcript_records WHERE session_id=? AND kind=? ORDER BY seq) k`+
+		` ORDER BY k.seq`, s.session, s.session, kind)
+}
+
+func (s *Store) records(ctx context.Context, query string, args ...any) ([]core.Event, error) {
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []core.Event
+	for rows.Next() {
+		var b []byte
+		if err = rows.Scan(&b); err != nil {
+			return nil, err
+		}
+		if b == nil {
+			// A record whose body is gone, which a trim can leave behind until
+			// the rows are rebuilt. It is not a record any more.
+			continue
+		}
+		var e core.Event
+		if err = json.Unmarshal(b, &e); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
+// Trim makes the store hold what the journal holds after a compaction: the
+// records below the checkpoint are gone, and the checkpoint stands where they
+// were. The rows are rebuilt rather than edited, because the first sequence
+// moving is exactly what the reading projection treats as a rebuild -- a row
+// reduced from records that no longer exist is not a row anyone should read.
+func (s *Store) Trim(ctx context.Context, checkpoint core.Event) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	b, err := json.Marshal(checkpoint)
+	if err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err = tx.ExecContext(ctx, `DELETE FROM events WHERE session_id=? AND seq<?`, s.session, checkpoint.Seq); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO events VALUES(?,?,?)`, s.session, checkpoint.Seq, b); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	s.cache.Drop()
+	return transcripthistory.SyncWith(ctx, s.db, s.session, Decode, &s.cache)
+}

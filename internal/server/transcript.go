@@ -30,10 +30,15 @@ func (s *Server) Transcript(ctx context.Context, r *api.TranscriptRequest) (*api
 		return nil, err
 	}
 	defer p.mu.Unlock()
-	if err = transcripthistory.SyncWith(ctx, s.db, r.SessionId, decodeTranscriptEvent, &p.transcript); err != nil {
-		return nil, err
+	db := s.conversation(p)
+	// A session that maintains its own rows is not synced from here: this
+	// server reads that store, it does not write it.
+	if !p.owned {
+		if err = transcripthistory.SyncWith(ctx, db, r.SessionId, decodeTranscriptEvent, &p.transcript); err != nil {
+			return nil, err
+		}
 	}
-	return transcripthistory.Page(ctx, s.db, r, decodeTranscriptEvent)
+	return transcripthistory.Page(ctx, db, r, decodeTranscriptEvent)
 }
 func (s *Server) EventDetails(ctx context.Context, r *api.EventDetailsRequest) (*api.EventBatch, error) {
 	if s.manager != nil {
@@ -48,8 +53,11 @@ func (s *Server) EventDetails(ctx context.Context, r *api.EventDetailsRequest) (
 		return nil, err
 	}
 	defer p.mu.Unlock()
-	if err = transcripthistory.SyncWith(ctx, s.db, r.SessionId, decodeTranscriptEvent, &p.transcript); err != nil {
-		return nil, err
+	db := s.conversation(p)
+	if !p.owned {
+		if err = transcripthistory.SyncWith(ctx, db, r.SessionId, decodeTranscriptEvent, &p.transcript); err != nil {
+			return nil, err
+		}
 	}
-	return transcripthistory.Details(ctx, s.db, r, decodeTranscriptEvent)
+	return transcripthistory.Details(ctx, db, r, decodeTranscriptEvent)
 }
