@@ -3,14 +3,16 @@ package workspace
 import (
 	"context"
 	"database/sql"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/historypage"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -39,7 +41,13 @@ func (s *historySource) Background(context.Context, *api.SessionRef, ...grpc.Cal
 	return &api.BackgroundReply{LastSeq: 384, Data: []byte(`{}`)}, nil
 }
 
-func TestHistoryCacheCompletenessAndTransportReuse(t *testing.T) {
+// Raw history is the session's own store, read where its project keeps state
+// inside the manager's volume. The manager used to mirror every page into its
+// own table, ask the project runtime for anything the mirror could not
+// complete, and serve the mirror when the runtime did not answer; none of that
+// is left, so this holds with no Docker on PATH and no runtime at all.
+// See cxz#268.
+func TestHistoryReadsTheSessionsOwnStore(t *testing.T) {
 	ctx := context.Background()
 	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "db"))
 	if err != nil {
@@ -54,67 +62,56 @@ func TestHistoryCacheCompletenessAndTransportReuse(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	p := &Project{ID: "p", ContainerID: "container", Token: "token", Sessions: []*api.Session{{Id: "s"}}}
+	m.StateVolume = "cxz-owner-state"
+	p := &Project{ID: strings.Repeat("p", 24), Sessions: []*api.Session{{Id: strings.Repeat("s", 24)}}}
+	session := p.Sessions[0].Id
 	if err = m.save(ctx, p); err != nil {
 		t.Fatal(err)
 	}
-	conn, err := grpc.NewClient("passthrough:///unused", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Nothing written yet is an empty page, not an error: the supervisor
+	// creates the store when the session starts.
+	page, err := m.History(ctx, &api.WatchRequest{SessionId: session})
+	if err != nil || len(page.Events) != 0 {
+		t.Fatal("a session with no store was not empty", page, err)
+	}
+
+	dir, _ := m.projectState(p.ID)
+	sessionDir := core.Dir(filepath.Join(dir, "data"), session)
+	if err = os.MkdirAll(sessionDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	store, err := sessionstore.Open(ctx, sessionstore.Path(sessionDir), session, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	source := &historySource{}
-	c := &historyConnection{project: p.ID, container: p.ContainerID, token: p.Token, conn: conn, client: source}
-	m.historyClients = map[string]*historyConnection{p.ID: c}
-	// Any unexpected Docker invocation fails. Already connected readers and
-	// complete cached ranges must remain usable without spawning a subprocess.
-	t.Setenv("PATH", t.TempDir())
-	for _, after := range []uint64{0, 128, 0, 128} {
-		page, err := m.History(ctx, &api.WatchRequest{SessionId: "s", AfterSeq: after})
-		if err != nil || len(page.Events) != 128 || page.Events[0].Seq != after+1 {
-			t.Fatal(page, err)
-		}
+	var events []core.Event
+	for seq := uint64(1); seq <= 200; seq++ {
+		events = append(events, core.Event{SessionID: session, RunID: "run", Seq: seq, Kind: "assistant", Text: "said"})
 	}
-	if source.calls != 2 || m.historyClients[p.ID] != c {
-		t.Fatal("range re-fetched or connection replaced", source.calls)
-	}
-	// 128 cached rows with a missing sequence are not a complete cached page.
-	gap := &api.EventBatch{}
-	for seq := uint64(257); seq <= 385; seq++ {
-		if seq != 260 {
-			gap.Events = append(gap.Events, &api.Event{SessionId: "s", Seq: seq})
-		}
-	}
-	if err = m.cache(ctx, gap); err != nil {
+	if err = store.Append(ctx, events); err != nil {
 		t.Fatal(err)
 	}
-	page, err := m.History(ctx, &api.WatchRequest{SessionId: "s", AfterSeq: 256})
-	if err != nil || source.calls != 3 || len(page.Events) != 128 || page.Events[3].Seq != 260 {
-		t.Fatal("gap skipped", page, err)
+	if err = store.Close(); err != nil {
+		t.Fatal(err)
 	}
-	for range 2 {
-		if _, err = m.Background(ctx, &api.SessionRef{Id: "s"}); err != nil {
+
+	// No Docker, no runtime: any attempt to reach a project container fails.
+	t.Setenv("PATH", t.TempDir())
+	for _, after := range []uint64{0, 128} {
+		page, err := m.History(ctx, &api.WatchRequest{SessionId: session, AfterSeq: after})
+		if err != nil {
 			t.Fatal(err)
 		}
-	}
-	if source.backgrounds != 2 || m.historyClients[p.ID] != c {
-		t.Fatal("snapshot did not reuse transport")
-	}
-	for _, limit := range []uint32{1024, 1024, ^uint32(0), 0} {
-		page, err := m.History(ctx, &api.WatchRequest{SessionId: "s", Limit: limit})
-		if err != nil || len(page.Events) != historypage.PageSize(limit) || source.calls != 4 {
-			t.Fatal("larger page was treated as complete too early or re-fetched", len(page.Events), source.calls, err)
+		if len(page.Events) == 0 || page.Events[0].Seq != after+1 {
+			t.Fatal("the page does not start where it was asked to", len(page.Events), page.Events[0].Seq)
+		}
+		if page.Events[0].Kind != "assistant" || page.Events[0].Text != "said" {
+			t.Fatal("the event is not what the supervisor wrote", page.Events[0])
 		}
 	}
-	p.ContainerID = "replacement"
-	if err = m.save(ctx, p); err != nil {
-		t.Fatal(err)
-	}
-	if _, err = m.historyClient(ctx, "s"); err == nil || conn.GetState() != connectivity.Shutdown || m.historyClients[p.ID] != nil {
-		t.Fatal("replacement reused stale capability/endpoint", err)
-	}
-	// The immutable range remains readable even with the runtime unavailable.
-	if page, err = m.History(ctx, &api.WatchRequest{SessionId: "s"}); err != nil || len(page.Events) != 128 {
-		t.Fatal(page, err)
+	// A session the manager does not know is an error rather than silence.
+	if _, err = m.History(ctx, &api.WatchRequest{SessionId: strings.Repeat("x", 24)}); err == nil {
+		t.Fatal("an unknown session returned a conversation")
 	}
 }
 
@@ -140,9 +137,9 @@ func TestHistoryCacheTrimCannotResurrectOldRows(t *testing.T) {
 	if err = m.cache(t.Context(), initial); err != nil {
 		t.Fatal(err)
 	} // in-flight old response
-	b, err := m.cachedHistory(t.Context(), &api.WatchRequest{SessionId: "s"})
-	if err != nil || len(b.Events) != 7 || b.Events[0].Seq != 15 || b.Events[0].Kind != "history_trimmed" {
-		t.Fatal("deleted history resurrected or missing floor", b, err)
+	b := cachedPage(t, db, "s", 0)
+	if len(b) != 7 || b[0].Seq != 15 || b[0].Kind != "history_trimmed" {
+		t.Fatal("deleted history resurrected or missing floor", b)
 	}
 	// A stale checkpoint is also forbidden from restoring a lower floor.
 	old := &api.Event{SessionId: "s", Seq: 5, Kind: "history_trimmed", Payload: []byte(`{"through":5}`)}
@@ -197,14 +194,11 @@ func TestTheTrimFloorReachesTheCache(t *testing.T) {
 	}
 	// The floor is written to the cache as the marker a reader sees in place of
 	// what is gone.
-	cached, err := m.cachedHistory(ctx, &api.WatchRequest{SessionId: "s", AfterSeq: 199})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, v := range cached.Events {
+	cached := cachedPage(t, db, "s", 199)
+	for _, v := range cached {
 		if v.Kind == core.HistoryTrimmedKind && core.HistoryFloor(v.Kind, v.Payload) == 200 {
 			return
 		}
 	}
-	t.Fatal("the floor was never recorded", cached.Events)
+	t.Fatal("the floor was never recorded", cached)
 }
