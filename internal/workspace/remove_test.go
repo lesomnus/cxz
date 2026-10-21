@@ -9,9 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/assets"
+	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/mcpconfig"
 )
 
@@ -103,9 +105,34 @@ func TestRemoveProjectStateIsolationAndLateEvents(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// What removal has to clear is the searchable record; the manager keeps no
+	// copy of the events themselves any more. See cxz#268.
+	indexRoot := filepath.Join(root, "index")
+	if err := os.MkdirAll(indexRoot, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	index, err := convindex.Open(ctx, indexRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer index.Close()
+	m.Conversations = index
 	for _, id := range []string{"s", "archived", "other-session"} {
-		if err := m.cache(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: id, Seq: 1, Text: "history"}}}); err != nil {
+		if err := m.CacheEvents(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: id, Seq: 1, Kind: "input", Text: "history", TimeMs: time.Now().UnixMilli()}}}); err != nil {
 			t.Fatal(err)
+		}
+	}
+	indexed := func(session string) int {
+		t.Helper()
+		visits, _, err := index.Search(ctx, convindex.Query{Query: "history", Sessions: []string{session}}, time.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		return len(visits)
+	}
+	for _, id := range []string{"s", "archived", "other-session"} {
+		if indexed(id) == 0 {
+			t.Fatal("nothing was indexed for", id)
 		}
 	}
 	if _, err := mcpconfig.SetProject(root, "p", "cxz_memory", false); err != nil {
@@ -138,16 +165,16 @@ func TestRemoveProjectStateIsolationAndLateEvents(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, "projects", "p")); !os.IsNotExist(err) {
 		t.Fatal("manifest retained", err)
 	}
-	if err := m.CacheEvents(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: "s", Seq: 2, Text: "late"}}}); err != nil {
+	if err := m.CacheEvents(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: "s", Seq: 2, Kind: "input", Text: "history late", TimeMs: time.Now().UnixMilli()}}}); err != nil {
 		t.Fatal(err)
 	}
 	for _, id := range []string{"s", "archived"} {
-		if page := cachedPage(t, m.DB, id, 0); len(page) != 0 {
-			t.Fatal(id, page)
+		if n := indexed(id); n != 0 {
+			t.Fatal("a removed session is still searchable:", id, n)
 		}
 	}
-	if page := cachedPage(t, m.DB, "other-session", 0); len(page) != 1 {
-		t.Fatal(page)
+	if n := indexed("other-session"); n == 0 {
+		t.Fatal("another project's session lost its record")
 	}
 	cfg, err := mcpconfig.Load(root)
 	if err != nil || cfg.Projects["p"] != nil {
