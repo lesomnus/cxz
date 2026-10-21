@@ -106,6 +106,16 @@ func ScheduleManager(ctx context.Context, root, name, owner string, r Release, f
 		if e = core.WriteJSON(ManagerTransactionPath(root), tx); e != nil {
 			return e
 		}
+	} else if force && !tx.Force && tx.State == "staged" {
+		// Asking for force while an ordinary attempt is staged means force.
+		// The flag is patched in place rather than re-staged, because the
+		// transaction's ID is the lease a retrying helper already holds.
+		// Without this, `apply --force` after a refusal changed nothing and the
+		// rollout went on being refused. See cxz#261.
+		tx.Force = true
+		if e = core.WriteJSON(ManagerTransactionPath(root), tx); e != nil {
+			return e
+		}
 	}
 	helper := ManagerHelperName(owner)
 	if v, err := dockerx.Inspect(ctx, helper); err == nil {
@@ -143,6 +153,16 @@ func ScheduleManager(ctx context.Context, root, name, owner string, r Release, f
 	_, e = dockerx.Run(ctx, args...)
 	return e
 }
+// freezeAction is how a rollout asks a runtime to stand still: ordinarily by
+// consent, and when forced, regardless. One name for it, because the manager's
+// own gate and every project's have to agree about what forced means.
+func freezeAction(tx *ManagerTransaction) string {
+	if tx.Force {
+		return "prepare-force"
+	}
+	return "prepare"
+}
+
 func freezeProjects(ctx context.Context, root string, tx *ManagerTransaction) error {
 	containers, e := dockerx.List(ctx, "label=cxz.owner="+tx.Owner)
 	if e != nil {
@@ -168,7 +188,14 @@ func freezeProjects(ctx context.Context, root string, tx *ManagerTransaction) er
 			return fmt.Errorf("project %s requires bootstrap: %w", id, e)
 		}
 		user := strings.TrimSpace(string(b))
-		h, e := ContainerHealth(ctx, v.ID, user, "/cxz/state/data", "prepare", tx.ID)
+		// A forced rollout forces this too. Closing a project's admission is
+		// what the freeze is for; asking that project's sessions whether they
+		// feel like it is the part being overridden. The first version forced
+		// only the old manager's own sweep, so `--force` answered "session
+		// 4d683e9c: agent not idle" from a project runtime and the handover
+		// never happened -- a lever that does not work in the one case it was
+		// built for. See cxz#261.
+		h, e := ContainerHealth(ctx, v.ID, user, "/cxz/state/data", freezeAction(tx), tx.ID)
 		if e != nil {
 			return e
 		}
@@ -281,11 +308,7 @@ func ReplaceManager(ctx context.Context, root string) (result error) {
 	// Refresh admission on every attempt, including recovery after a helper crash.
 	// With the old manager gone its persisted lease must still cover the gap.
 	if old.State.Running {
-		action := "prepare"
-		if tx.Force {
-			action = "prepare-force"
-		}
-		h, err := Call(ctx, root, action, tx.ID)
+		h, err := Call(ctx, root, freezeAction(&tx), tx.ID)
 		if err != nil {
 			return err
 		}

@@ -108,6 +108,31 @@ func newRolloutLab(t *testing.T) *rolloutLab {
 	return l
 }
 
+// Project adds a running project runtime to the installation, optionally one
+// whose sessions refuse to stand still. The handover freezes every project
+// before it replaces anything, so this is where a rollout meets the sessions.
+func (l *rolloutLab) Project(id string, busy bool) {
+	l.t.Helper()
+	f, e := readDockerFixture(l.docker)
+	if e != nil {
+		l.t.Fatal(e)
+	}
+	v := dockerx.Container{ID: id, Name: "/" + id}
+	v.Config.Image = labImage("a")
+	v.Config.Labels = map[string]string{"cxz.owner": l.Owner, "cxz.project": id}
+	v.State.Running = true
+	v.Mounts = append(v.Mounts, struct {
+		Source, Destination, Type, Name string
+		RW                              bool
+	}{Type: "volume", Name: id + "-state", Destination: "/cxz/state", RW: true})
+	f.Containers[id] = v
+	if f.BusyProjects == nil {
+		f.BusyProjects = map[string]bool{}
+	}
+	f.BusyProjects[id] = busy
+	l.save(f)
+}
+
 // publish is a new release on the channel, named by one letter so a scenario
 // can be read.
 func (l *rolloutLab) publish(letter string) Release {
@@ -451,5 +476,52 @@ func TestAStagedTransactionForTheCurrentReleaseIsLeftAlone(t *testing.T) {
 	}
 	if got := l.Transaction(); got.ID != first.ID || got.Release.Revision != first.Release.Revision {
 		t.Fatalf("the helper's own transaction was rewritten underneath it: %+v", got)
+	}
+}
+
+// Forcing has to reach the project freeze, not only the old manager's own gate.
+// The first version forced the gate alone, so `--force` answered "session
+// 4d683e9c: agent not idle" from a project runtime and the handover never
+// happened -- a lever that did not work in the one case it was built for. And
+// asking for force while an ordinary attempt is already staged now means force,
+// because otherwise the second command changed nothing. See cxz#261.
+func TestAForcedRolloutDoesNotStopAtABusyProject(t *testing.T) {
+	l := newRolloutLab(t)
+	l.Project("project-busy", true)
+	r := l.current()
+
+	// Ordinarily the busy project stops it, and nothing is replaced.
+	if e := l.Schedule(false); e != nil {
+		t.Fatal(e)
+	}
+	e := l.Helper()
+	if e == nil {
+		t.Fatal("a project whose session was mid-turn did not stop an ordinary rollout")
+	}
+	if !strings.Contains(e.Error(), "not idle") {
+		t.Fatal("the refusal does not say which project refused:", e)
+	}
+	if l.Running() != labImage("a") {
+		t.Fatal("the manager was replaced while a project refused to freeze")
+	}
+
+	// Asking again, with force, lands it -- the same transaction, so a helper
+	// that is retrying keeps the lease it holds.
+	before := l.Transaction()
+	if e := l.Schedule(true); e != nil {
+		t.Fatal(e)
+	}
+	tx := l.Transaction()
+	if !tx.Force {
+		t.Fatal("asking for force while an attempt was staged changed nothing")
+	}
+	if tx.ID != before.ID {
+		t.Fatal("the staged transaction was replaced, invalidating a retrying helper's lease")
+	}
+	if e := l.Helper(); e != nil {
+		t.Fatal("a forced rollout stopped at a busy project:", e)
+	}
+	if l.Running() != r.Image || l.Transaction().State != "healthy" {
+		t.Fatalf("the forced rollout did not land: running %s, %+v", l.Running(), l.Transaction())
 	}
 }
