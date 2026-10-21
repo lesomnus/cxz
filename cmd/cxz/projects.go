@@ -217,6 +217,9 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if err := resources.CheckOpen(ctx, request); err != nil {
 		return err
 	}
+	// The preflight decides this for a project with no sessions, and the output
+	// has to follow: there is a project to report and no session. See cxz#263.
+	projectEntry = request.PrepareOnly
 
 	if _, err := syncDevcontainer(ctx, client, stateFrom(ctx), cfg); err != nil {
 		return err

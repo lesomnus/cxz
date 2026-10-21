@@ -60,6 +60,19 @@ func (c *Client) CheckOpen(ctx context.Context, r *api.ProjectRequest, opts ...g
 		return err
 	}
 	if chosen == nil {
+		// A project with no sessions at all is recreated as a project, the way
+		// `recreate @all` already does it: the container is replaced and
+		// nothing is resumed, because there is nothing to resume. Requiring an
+		// account here meant the only way to recreate such a project was to let
+		// it create a session nobody asked for -- and the one project in that
+		// state could not have its state migrated at all. A project that has
+		// sessions but none that match is a different question, and is still
+		// asked. See cxz#263.
+		if r.Recreate && !r.NewSession && !hasSessions(list.Sessions, p.Id) {
+			r.Agent = kind
+			r.PrepareOnly = true
+			return nil
+		}
 		if r.Account == "" {
 			return ErrAccountRequired
 		}
@@ -81,6 +94,18 @@ func (c *Client) CheckOpen(ctx context.Context, r *api.ProjectRequest, opts ...g
 	}
 	r.Agent = kind
 	return nil
+}
+
+// hasSessions reports whether the project has any session at all, live,
+// stopped or failed. Recreating is about the container; resuming is about
+// sessions, and a project with none has nothing to resume.
+func hasSessions(list []*api.Session, project string) bool {
+	for _, s := range list {
+		if s.ProjectId == project {
+			return true
+		}
+	}
+	return false
 }
 
 func isLive(s *api.Session) bool {
