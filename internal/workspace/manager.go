@@ -318,7 +318,6 @@ func (m *Manager) Sessions(ctx context.Context) (*api.SessionList, error) {
 		if e == nil {
 			for _, s := range list.Sessions {
 				s.ProjectId = p.ID
-				m.refreshHistoryFloor(ctx, s.Id)
 			}
 			before, _ := json.Marshal(p.Sessions)
 			after, _ := json.Marshal(list.Sessions)
@@ -647,24 +646,24 @@ func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {
 	return m.down(ctx, p)
 }
 
-// A session is stopped and drained within captureBudget, and the project as a
-// whole within captureTotal. One budget used to cover every session of the
-// project at once, which a project with many sessions or long histories does
-// not fit; a recreate that only had to replace a container then failed with
-// DeadlineExceeded after 30 seconds. See cxz#209.
+// A session is stopped within stopBudget and the project as a whole within
+// stopTotal. One budget used to cover every session of the project at once,
+// which a project with many sessions does not fit; a recreate that only had to
+// replace a container then failed with DeadlineExceeded after 30 seconds.
+// See cxz#209.
 var (
-	captureBudget = 30 * time.Second
-	captureTotal  = 2 * time.Minute
+	stopBudget = 30 * time.Second
+	stopTotal  = 2 * time.Minute
 )
 
 func (m *Manager) down(ctx context.Context, p *Project) error {
-	// Capture the final conversation before removing containers. Best effort,
-	// as a project that cannot answer must still be removable: the project
-	// volume remains the authoritative recovery source.
+	// Stop the sessions before removing the containers, so the agents exit
+	// rather than being killed with them. Best effort, as a project that cannot
+	// answer must still be removable.
 	if conn, client, err := m.client(ctx, p); err == nil {
 		defer conn.Close()
-		if err := m.capture(ctx, p, client); err != nil {
-			fmt.Fprintln(os.Stderr, "final conversation:", err)
+		if err := m.stopSessions(ctx, p, client); err != nil {
+			fmt.Fprintln(os.Stderr, "stopping sessions:", err)
 		}
 	}
 	containers, e := dockerx.List(ctx, "label=cxz.owner="+m.Owner, "label=cxz.project="+p.ID)
@@ -686,11 +685,17 @@ func (m *Manager) down(ctx context.Context, p *Project) error {
 	return m.save(ctx, p)
 }
 
-// capture stops every live session of the project and caches its conversation,
-// so that history survives the container. One session that cannot answer costs
-// its own budget and is reported; it does not consume another session's.
-func (m *Manager) capture(ctx context.Context, p *Project, client api.SessionsClient) error {
-	ctx, cancel := context.WithTimeout(ctx, captureTotal)
+// stopSessions stops every live session of the project and refreshes what the
+// manager knows about them. One session that cannot answer costs its own
+// budget and is reported; it does not consume another session's.
+//
+// It used to page every session's whole history into the manager's database
+// first, so that history would survive the container. The conversation is a
+// file in the manager's volume now, so there is nothing to carry out: a
+// recreate of a project with long conversations stopped paging gigabytes it
+// already had. See cxz#268.
+func (m *Manager) stopSessions(ctx context.Context, p *Project, client api.SessionsClient) error {
+	ctx, cancel := context.WithTimeout(ctx, stopTotal)
 	defer cancel()
 	list, err := m.sessions(ctx, client)
 	if err != nil {
@@ -698,7 +703,7 @@ func (m *Manager) capture(ctx context.Context, p *Project, client api.SessionsCl
 	}
 	var errs []error
 	for _, s := range list.Sessions {
-		if err := m.captureSession(ctx, client, s); err != nil {
+		if err := m.stopSession(ctx, client, s); err != nil {
 			errs = append(errs, fmt.Errorf("session %s: %w", s.Id, err))
 		}
 	}
@@ -711,34 +716,21 @@ func (m *Manager) capture(ctx context.Context, p *Project, client api.SessionsCl
 	return errors.Join(errs...)
 }
 func (m *Manager) sessions(ctx context.Context, client api.SessionsClient) (*api.SessionList, error) {
-	q, cancel := context.WithTimeout(ctx, captureBudget)
+	q, cancel := context.WithTimeout(ctx, stopBudget)
 	defer cancel()
 	return client.List(q, &api.Empty{})
 }
-func (m *Manager) captureSession(ctx context.Context, client api.SessionsClient, s *api.Session) error {
-	q, cancel := context.WithTimeout(ctx, captureBudget)
-	defer cancel()
+func (m *Manager) stopSession(ctx context.Context, client api.SessionsClient, s *api.Session) error {
 	switch s.State {
 	case "idle", "working", "waiting_input", "starting":
-		if _, err := client.Stop(q, &api.Control{SessionId: s.Id, RunId: s.RunId, ClientId: core.ID()}); err != nil {
-			return err
-		}
+		q, cancel := context.WithTimeout(ctx, stopBudget)
+		defer cancel()
+		_, err := client.Stop(q, &api.Control{SessionId: s.Id, RunId: s.RunId, ClientId: core.ID()})
+		return err
 	}
-	var cursor uint64
-	for {
-		batch, err := client.History(q, &api.WatchRequest{SessionId: s.Id, AfterSeq: cursor})
-		if err != nil {
-			return err
-		}
-		if len(batch.Events) == 0 {
-			return nil
-		}
-		if err = m.cache(q, batch); err != nil {
-			return err
-		}
-		cursor = batch.Events[len(batch.Events)-1].Seq
-	}
+	return nil
 }
+
 func Discover(path string) []string {
 	var out []string
 	for _, p := range []string{filepath.Join(path, ".devcontainer", "devcontainer.json"), filepath.Join(path, ".devcontainer.json")} {

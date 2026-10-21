@@ -3,67 +3,32 @@ package workspace
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/historypage"
 	"github.com/lesomnus/cxz/internal/historypolicy"
 	"time"
 )
 
+// History is a page of a session's conversation, read from the session's own
+// store. The manager used to keep a mirror of every page in its own database
+// and serve that when a project could not answer; the store is a file in the
+// manager's volume now, so there is nothing to mirror and nothing to fall back
+// to. See cxz#268.
 func (m *Manager) History(ctx context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
-	// Refresh the retention floor at most once a minute; old cached pages must
-	// not outlive a missed/offline trim notification.
-	m.refreshHistoryFloor(ctx, r.SessionId)
-	// Complete retained ranges still reuse their cached payload.
-	cached, err := m.cachedHistory(ctx, r)
+	store, err := m.conversationStore(ctx, r.SessionId)
+	if errors.Is(err, errNoConversation) {
+		return &api.EventBatch{}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	complete := len(cached.Events) == historypage.PageSize(r.Limit)
-	for i, e := range cached.Events {
-		complete = complete && e.Seq == r.AfterSeq+uint64(i)+1
-	}
-	if complete {
-		return cached, nil
-	}
-	c, e := m.historyClient(ctx, r.SessionId)
-	if e == nil {
-		q, cancel := context.WithTimeout(ctx, 2*time.Second)
-		batch, err := c.client.History(q, r)
-		cancel()
-		if err == nil {
-			return batch, m.cache(ctx, batch)
-		}
-		if ctx.Err() == nil {
-			m.dropHistoryClient(c)
-		}
-	}
-	return cached, nil
-}
-
-func (m *Manager) cachedHistory(ctx context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
-	rows, e := m.DB.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT ?", r.SessionId, r.AfterSeq, historypage.PageSize(r.Limit))
-	if e != nil {
-		return nil, e
-	}
-	defer rows.Close()
-	out := &api.EventBatch{}
-	for rows.Next() {
-		var b []byte
-		if e = rows.Scan(&b); e != nil {
-			return nil, e
-		}
-		var v api.Event
-		if e = json.Unmarshal(b, &v); e != nil {
-			return nil, e
-		}
-		out.Events = append(out.Events, &v)
-	}
-	return out, rows.Err()
+	defer store.Close()
+	return storedHistory(ctx, store.DB(), r)
 }
 
 func (m *Manager) cache(ctx context.Context, batch *api.EventBatch) error {
@@ -168,8 +133,11 @@ func (m *Manager) CacheEvents(ctx context.Context, batch *api.EventBatch) error 
 	return nil
 }
 
-// A small metadata RPC keeps caches consistent even when no TUI was attached at
-// the moment of compaction. Failure leaves offline cached history readable.
+// A small metadata RPC keeps the transcript cache consistent even when no TUI
+// was attached at the moment of compaction. Raw history no longer needs it --
+// it reads the session's own store -- but the transcript still falls back to
+// the cache, so the floor it records still has to be refreshed. Both go when
+// the transcript reads the store too. See cxz#268.
 func (m *Manager) refreshHistoryFloor(ctx context.Context, id string) {
 	c, err := m.historyClient(ctx, id)
 	if err != nil {

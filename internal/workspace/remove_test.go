@@ -142,14 +142,12 @@ func TestRemoveProjectStateIsolationAndLateEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, id := range []string{"s", "archived"} {
-		page, err := m.cachedHistory(ctx, &api.WatchRequest{SessionId: id})
-		if err != nil || len(page.Events) != 0 {
-			t.Fatal(id, page, err)
+		if page := cachedPage(t, m.DB, id, 0); len(page) != 0 {
+			t.Fatal(id, page)
 		}
 	}
-	page, err := m.cachedHistory(ctx, &api.WatchRequest{SessionId: "other-session"})
-	if err != nil || len(page.Events) != 1 {
-		t.Fatal(page, err)
+	if page := cachedPage(t, m.DB, "other-session", 0); len(page) != 1 {
+		t.Fatal(page)
 	}
 	cfg, err := mcpconfig.Load(root)
 	if err != nil || cfg.Projects["p"] != nil {
