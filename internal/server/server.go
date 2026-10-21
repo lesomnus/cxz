@@ -110,17 +110,52 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	if e = s.openConversations(ctx); e != nil {
 		return e
 	}
+	manager := os.Getenv("CXZ_OWNER") != ""
 	if s.conversations != nil {
 		defer s.conversations.Close()
-		go s.Seed(ctx)
+		// A runtime seeds its own sessions immediately. The manager's seeder
+		// waits until the manager is attached below, because it reads each
+		// session's store through it.
+		if !manager {
+			go s.Seed(ctx)
+		}
 	}
-	if os.Getenv("CXZ_OWNER") != "" {
+	if manager {
 		s.manager, e = workspace.New(db, root)
 		if e != nil {
 			return e
 		}
 		s.manager.Conversations = s.conversations
+		// The manager keeps no copy of conversations: it reads each session's
+		// own store. Dropping the table it used to mirror pages into also
+		// clears what purged projects left behind, since nothing ever deleted
+		// those rows. Once, and the space is given back in the same breath --
+		// SQLite only returns it on a VACUUM. See cxz#268.
+		var mirrored int
+		if e = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='events'`).Scan(&mirrored); e != nil {
+			return e
+		}
+		if mirrored > 0 {
+			// The reading projection the manager used to build over that mirror
+			// goes with it: a session's own store carries its own.
+			for _, q := range []string{
+				`DROP TABLE events`,
+				`DROP TABLE IF EXISTS transcript_rows`,
+				`DROP TABLE IF EXISTS transcript_records`,
+				`DROP TABLE IF EXISTS transcript_state`,
+				`DROP TABLE IF EXISTS transcript_format`,
+				`DROP TABLE IF EXISTS transcript_seen`,
+				`VACUUM`,
+			} {
+				if _, e = db.ExecContext(ctx, q); e != nil {
+					return e
+				}
+			}
+		}
 		defer s.manager.Close()
+		if s.conversations != nil {
+			go s.Seed(ctx)
+		}
 		broker, err := accounts.StartBroker(root, accounts.BrokerSocket, func(ctx context.Context, account string) error {
 			bin, err := distribution.Ensure(ctx, "/cxz/tools", "codex", "", true)
 			if err != nil {

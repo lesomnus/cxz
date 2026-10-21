@@ -25,12 +25,23 @@ func (m *Manager) RemoveProject(ctx context.Context, id string, sessions []strin
 // forgetConversations drops a removed project's searchable record. The index
 // is derived from storage that is going away, so leaving it would be a copy of
 // something that no longer exists.
-func (m *Manager) forgetConversations(ctx context.Context, project string) {
+//
+// By project and by session, because which of the two finds a row depends on
+// who indexed it: events streaming through the manager name only the session,
+// while the seed that walks stored events names the project as well. Forgetting
+// by project alone left a purged project's conversations searchable whenever the
+// seed had not reached them yet. See cxz#268.
+func (m *Manager) forgetConversations(ctx context.Context, project string, sessions []string) {
 	if m.Conversations == nil || project == "" {
 		return
 	}
 	if err := m.Conversations.ForgetProject(ctx, project); err != nil {
 		fmt.Fprintln(os.Stderr, "conversation index:", err)
+	}
+	for _, session := range sessions {
+		if err := m.Conversations.Forget(ctx, session); err != nil {
+			fmt.Fprintln(os.Stderr, "conversation index:", err)
+		}
 	}
 }
 
@@ -38,7 +49,10 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 	if !assets.ValidID(id) || m.Owner == "" {
 		return fmt.Errorf("invalid project removal scope")
 	}
-	defer m.forgetConversations(ctx, id)
+	// Collected as the removal goes, because the project's own sessions are
+	// read from its record below and the archived ones arrive as an argument.
+	forget := append([]string(nil), sessions...)
+	defer func() { m.forgetConversations(ctx, id, forget) }()
 	lock := m.projectLock(id)
 	lock.Lock()
 	defer lock.Unlock()
@@ -54,6 +68,9 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 	}
 	for _, p := range projects {
 		if p.ID == id {
+			for _, s := range p.Sessions {
+				forget = append(forget, s.Id)
+			}
 			if p.ContainerID != "" {
 				containers, err := run(ctx, "container", "ls", "-a", "-q", "--no-trunc")
 				if err != nil {
