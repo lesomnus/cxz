@@ -322,7 +322,9 @@ func (m *Manager) Sessions(ctx context.Context) (*api.SessionList, error) {
 			before, _ := json.Marshal(p.Sessions)
 			after, _ := json.Marshal(list.Sessions)
 			p.Sessions = list.Sessions
-			if string(before) != string(after) {
+			// The answer is also the proof that whatever the last attempt
+			// recorded as broken is not broken now.
+			if p.settle() || string(before) != string(after) {
 				if e = m.save(ctx, p); e != nil {
 					lock.Unlock()
 					return nil, e

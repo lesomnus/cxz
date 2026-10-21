@@ -61,3 +61,66 @@ func TestCheckpointRecoveryAndInventory(t *testing.T) {
 		t.Fatal("adopted foreign container")
 	}
 }
+
+func TestSettleRetiresAFailureTheRuntimeDisproved(t *testing.T) {
+	const outage = "project runtime not ready: ping: unable to open database file"
+	for _, tc := range []struct {
+		name    string
+		p       Project
+		settled bool
+		state   string
+		step    string
+		err     string
+	}{
+		{
+			// cxz#282: the project served every call for an hour while the
+			// page kept showing this.
+			name:    "failed before the runtime answered",
+			p:       Project{Error: outage, Job: ProvisionJob{State: "failed", Step: "runtime-ready", Attempt: 26}},
+			settled: true, state: "complete", step: "ready",
+		},
+		{
+			name:    "interrupted while the manager was down",
+			p:       Project{Error: "manager stopped during devcontainer-up", Job: ProvisionJob{State: "interrupted", Step: "devcontainer-up"}},
+			settled: true, state: "complete", step: "ready",
+		},
+		{
+			name:    "a session that was never created is still missing",
+			p:       Project{Error: "no account matched", Job: ProvisionJob{State: "failed", Step: "session"}},
+			state:   "failed", step: "session", err: "no account matched",
+		},
+		{
+			name:  "nothing to retire",
+			p:     Project{Job: ProvisionJob{State: "complete", Step: "ready"}},
+			state: "complete", step: "ready",
+		},
+		{
+			// Down records complete/down; an error left beside it is still
+			// stale, but the step it finished is not "ready".
+			name:    "an error beside a finished job",
+			p:       Project{Error: outage, Job: ProvisionJob{State: "complete", Step: "down"}},
+			settled: true, state: "complete", step: "down",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := tc.p
+			p.Job.UpdatedAt = 1
+			if got := p.settle(); got != tc.settled {
+				t.Fatalf("settle() = %v, want %v", got, tc.settled)
+			}
+			if p.Error != tc.err {
+				t.Fatalf("Error = %q, want %q", p.Error, tc.err)
+			}
+			if p.Job.State != tc.state || p.Job.Step != tc.step {
+				t.Fatalf("job = %s/%s, want %s/%s", p.Job.State, p.Job.Step, tc.state, tc.step)
+			}
+			if p.Job.Attempt != tc.p.Job.Attempt {
+				t.Fatalf("lost the attempt count: %d", p.Job.Attempt)
+			}
+			moved := p.Job.UpdatedAt != 1
+			if want := tc.settled && tc.step == "ready"; moved != want {
+				t.Fatalf("UpdatedAt moved = %v, want %v", moved, want)
+			}
+		})
+	}
+}

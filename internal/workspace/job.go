@@ -41,3 +41,31 @@ func (m *Manager) checkpoint(ctx context.Context, p *Project, step string) error
 	p.Error = ""
 	return m.save(ctx, p)
 }
+
+// settle retires a recorded provisioning failure the runtime has since
+// disproved, and reports whether anything changed.
+//
+// `Error` and a failed job describe one attempt, but the project page reports
+// them as the project's present state. After cxz#280 this repository's own
+// project showed `ping: unable to open database file` for an hour with every
+// call succeeding again, because nothing but another `up` ever clears the
+// record.
+//
+// A runtime that answers proves the container runs, the network is attached,
+// the token works and the runtime serves -- every step up to `runtime-ready`.
+// `session` is the only step after it, so a failure there is still true: the
+// session the caller asked for does not exist. That one stays.
+func (p *Project) settle() bool {
+	if p.Error == "" && p.Job.State != "failed" && p.Job.State != "interrupted" {
+		return false
+	}
+	if p.Job.Step == "session" {
+		return false
+	}
+	p.Error = ""
+	if p.Job.State != "complete" {
+		p.Job.State, p.Job.Step = "complete", "ready"
+		p.Job.UpdatedAt = time.Now().UnixMilli()
+	}
+	return true
+}
