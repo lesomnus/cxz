@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/assets"
@@ -91,8 +92,58 @@ func (m *Manager) conversationStore(ctx context.Context, session string) (*sessi
 			return nil, fmt.Errorf("convert session %s: %w", session, err)
 		}
 	}
-	return sessionstore.Open(ctx, path, session, false)
+	store, err := sessionstore.Open(ctx, path, session, false)
+	if err != nil {
+		return nil, err
+	}
+	// Opening is enough to create the `-wal` and `-shm` beside the file, and
+	// the conversion created the file itself.
+	if err = ownLikeDir(sessionDir, storeFiles(path)...); err != nil {
+		store.Close()
+		return nil, fmt.Errorf("hand session %s store back to its runtime: %w", session, err)
+	}
+	return store, nil
 }
+
+// Seams, so the thing that broke can be tested without being root.
+var (
+	effectiveUID = os.Geteuid
+	handOver     = os.Lchown
+)
+
+// ownLikeDir gives files the manager created in a project's state to whoever
+// owns the directory they are in.
+//
+// The manager runs as root and the project runtime does not, and SQLite opens
+// `-shm` for writing even for a read-only connection -- so a store left owned
+// by root is one the runtime cannot open at all. Every resume of a session the
+// manager had converted failed with `invalid _pragma: unable to open database
+// file`, 838 times in one runtime log, and the conversation was unreachable
+// until the files were handed back by hand. See cxz#280.
+func ownLikeDir(dir string, paths ...string) error {
+	if effectiveUID() != 0 {
+		return nil
+	}
+	info, err := os.Stat(dir)
+	if err != nil {
+		return err
+	}
+	owner, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return fmt.Errorf("cannot read the owner of %s", dir)
+	}
+	for _, p := range paths {
+		if err = handOver(p, int(owner.Uid), int(owner.Gid)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+// storeFiles is the file a conversation lives in and the two SQLite keeps
+// beside it. The `-shm` is the one that matters here: a reader needs to write
+// it.
+func storeFiles(path string) []string { return []string{path, path + "-wal", path + "-shm"} }
 
 // storedHistory is one page of a session's conversation, read the way the
 // project runtime reads its own: the rows are what the supervisor wrote.
