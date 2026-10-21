@@ -166,6 +166,11 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		if s.conversations != nil {
 			go s.Seed(ctx)
 		}
+		// Every session gets a store, so that the journal can stop being the
+		// record. Background, for the same reason the reclaim above is: this
+		// reads journals, and a manager that is busy when the rollout asks
+		// whether it is healthy is rolled back.
+		go s.manager.ConvertStores(ctx)
 		broker, err := accounts.StartBroker(root, accounts.BrokerSocket, func(ctx context.Context, account string) error {
 			bin, err := distribution.Ensure(ctx, "/cxz/tools", "codex", "", true)
 			if err != nil {
