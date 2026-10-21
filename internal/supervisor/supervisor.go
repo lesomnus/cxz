@@ -205,9 +205,12 @@ func Run(ctx context.Context, root, id string) error {
 	if old.Queued != "" {
 		s.event("diagnostic", fmt.Sprintf("the message waiting to be sent did not survive the restart: %q", old.Queued), "", nil, nil)
 	}
-	if events := l.All(); len(events) > 0 && events[0].Kind == core.HistoryCheckpointKind {
-		s.event(core.HistoryTrimmedKind, "Earlier display history was removed by the size limit.", "", core.HistoryBoundary{Through: events[0].Seq}, nil)
-	}
+	// A trimmed conversation does not announce its floor again here. It begins
+	// with its checkpoint and every reader turns that into the marker it shows
+	// (eventview.FromCore), so repeating it appended one more event to the
+	// conversation on every start: this session collected thirteen of them for
+	// one floor, stacked among the newest messages where they read as though
+	// history were being removed over and over. See cxz#286.
 	args := claudeSessionArgs(s.session, s.effort, old.VendorID)
 	if session.Kind == "codex" {
 		// Codex does not persist an empty thread until its first turn. Starting
