@@ -64,7 +64,7 @@ func TestMigrationMovesStateWhenTheCopyMatches(t *testing.T) {
 	}
 	var copied, removed bool
 	for _, c := range f.calls {
-		if strings.Contains(c, "cp -a /from/.") {
+		if strings.Contains(c, "tar -C /from") {
 			copied = true
 		}
 		if strings.HasPrefix(c, "volume rm ") {
@@ -73,6 +73,17 @@ func TestMigrationMovesStateWhenTheCopyMatches(t *testing.T) {
 	}
 	if !copied {
 		t.Fatal("nothing was copied:", f.calls)
+	}
+	// The caches are left behind on every side, or the migration either moves
+	// gigabytes it will never read or refuses itself for the difference.
+	// See cxz#259.
+	for _, c := range f.calls {
+		if !strings.HasPrefix(c, "run ") || strings.Contains(c, "volume rm") {
+			continue
+		}
+		if !strings.Contains(c, stateCache) {
+			t.Fatal("a migration step does not leave the caches behind:", c)
+		}
 	}
 	if !removed {
 		t.Fatal("the volume was not removed after the project let it go")
@@ -107,7 +118,7 @@ func TestMigrationKeepsTheVolumeWhenTheCopyDiffers(t *testing.T) {
 func TestMigrationLeavesTheVolumeWhenTheCopyFails(t *testing.T) {
 	m, p := migrating(t)
 	before := p.Volume
-	f := &migrationFake{fail: "cp -a /from/."}
+	f := &migrationFake{fail: "tar -C /from"}
 	if err := m.migrateProjectStateWith(context.Background(), p, f.run); err == nil {
 		t.Fatal("a failed copy was accepted")
 	}
