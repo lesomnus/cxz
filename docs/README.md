@@ -54,6 +54,10 @@ start. This is the map of everything else.
 
 ## Records
 
+[plans/where-we-are.md](plans/where-we-are.md) is where a new session starts: what
+is finished, what comes next, and the places that have cost days. Read it before
+the plan it points at.
+
 The [mobile web plan](plans/mobile-web.md) records the VPN/HTTPS direction,
 proposed delivery scope, open decisions and acceptance scenarios. It references
 feature IDs; current support is tracked separately in the matrix above.
