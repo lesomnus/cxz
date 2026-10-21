@@ -314,6 +314,17 @@ func (s *Server) conversation(p *sessionProjection) *sql.DB {
 //
 // The store it answers with is the caller's to close.
 func (s *Server) conversationFor(ctx context.Context, m core.Session) (*sql.DB, func()) {
+	if s.manager != nil {
+		// Running beside the manager, which has no journals of its own: every
+		// session's store is a file in the manager's volume, and the manager
+		// knows which. It used to read the manager's copy of the events, which
+		// stops existing in cxz#268.
+		store, err := s.manager.ConversationStore(ctx, m.ID)
+		if err != nil {
+			return s.db, func() {}
+		}
+		return store.DB(), func() { store.Close() }
+	}
 	path := filepath.Join(core.Dir(s.root, m.ID), "events.jsonl")
 	size, mtime, err := journal.Fence(path)
 	if err != nil {
