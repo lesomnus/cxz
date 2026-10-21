@@ -20,6 +20,9 @@ type dockerFixture struct {
 	ProjectLeases map[string]string
 	FailCreate    bool
 	Target        string
+	// BusyProjects refuse an ordinary freeze the way a project runtime does
+	// when one of its sessions is mid-turn.
+	BusyProjects map[string]bool
 }
 
 func readDockerFixture(path string) (dockerFixture, error) {
@@ -131,7 +134,10 @@ func fixtureDocker(args []string) error {
 		}
 		if len(args) > 1 && args[1] == "_maintenance" {
 			action, id := args[3], args[4]
-			if action == "prepare" {
+			if f.BusyProjects[v.ID] && action == "prepare" {
+				return fmt.Errorf("maintenance: session 4d683e9c: agent not idle (protocol 1)")
+			}
+			if action == "prepare" || action == "prepare-force" {
 				f.ProjectLeases[v.ID] = id
 			}
 			if action == "release" {
