@@ -62,6 +62,10 @@ The [mobile web plan](plans/mobile-web.md) records the VPN/HTTPS direction,
 proposed delivery scope, open decisions and acceptance scenarios. It references
 feature IDs; current support is tracked separately in the matrix above.
 
+The [Project lifecycle API plan](plans/project-lifecycle-api.md) proposes separate
+resource and container lifecycles, unfiltered registration visibility, and the
+data and client migration needed to replace Up/Down/Recreate and project Purge.
+
 `plans/` and `releases/` hold planning notes and release notes, some in Korean.
 They record what was intended at a point in time; the pages above are the
 reference, and the code wins over both.
