@@ -13,7 +13,6 @@ import (
 	"github.com/lesomnus/cxz/internal/historypage"
 	"github.com/lesomnus/cxz/internal/sessionstore"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type historySource struct {
@@ -151,54 +150,4 @@ func TestHistoryCacheTrimCannotResurrectOldRows(t *testing.T) {
 	if n != 0 {
 		t.Fatal("stale boundary inserted")
 	}
-}
-
-// A manager asks the project runtime how far it has trimmed, so that its cache
-// stops offering history the journal no longer has. The ask goes over the
-// resource API, because that is what the connection to a project container
-// speaks: #139 called the call runtime-only and left this caller addressing the
-// Docker envelope, which by then no longer carried it, so the read returned an
-// error that was swallowed and the floor was never recorded.
-func TestTheTrimFloorReachesTheCache(t *testing.T) {
-	ctx := context.Background()
-	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	if _, err = db.Exec("CREATE TABLE events(session_id TEXT, seq INTEGER, data BLOB, PRIMARY KEY(session_id,seq))"); err != nil {
-		t.Fatal(err)
-	}
-	m, err := New(db, t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer m.Close()
-	p := &Project{ID: "p", ContainerID: "container", Token: "token", Sessions: []*api.Session{{Id: "s"}}}
-	if err = m.save(ctx, p); err != nil {
-		t.Fatal(err)
-	}
-	conn, err := grpc.NewClient("passthrough:///unused", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Fatal(err)
-	}
-	source := &historySource{through: 200}
-	m.historyClients = map[string]*historyConnection{p.ID: {
-		project: p.ID, container: p.ContainerID, token: p.Token, conn: conn, client: source,
-	}}
-	t.Setenv("PATH", t.TempDir())
-
-	m.refreshHistoryFloor(ctx, "s")
-	if len(source.floors) != 1 || source.floors[0] != "s" {
-		t.Fatal("the runtime was not asked", source.floors)
-	}
-	// The floor is written to the cache as the marker a reader sees in place of
-	// what is gone.
-	cached := cachedPage(t, db, "s", 199)
-	for _, v := range cached {
-		if v.Kind == core.HistoryTrimmedKind && core.HistoryFloor(v.Kind, v.Payload) == 200 {
-			return
-		}
-	}
-	t.Fatal("the floor was never recorded", cached)
 }

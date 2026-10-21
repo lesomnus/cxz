@@ -11,7 +11,6 @@ import (
 	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/historypolicy"
-	"time"
 )
 
 // History is a page of a session's conversation, read from the session's own
@@ -131,35 +130,4 @@ func (m *Manager) CacheEvents(ctx context.Context, batch *api.EventBatch) error 
 		c.Observe(live)
 	}
 	return nil
-}
-
-// A small metadata RPC keeps the transcript cache consistent even when no TUI
-// was attached at the moment of compaction. Raw history no longer needs it --
-// it reads the session's own store -- but the transcript still falls back to
-// the cache, so the floor it records still has to be refreshed. Both go when
-// the transcript reads the store too. See cxz#268.
-func (m *Manager) refreshHistoryFloor(ctx context.Context, id string) {
-	c, err := m.historyClient(ctx, id)
-	if err != nil {
-		return
-	}
-	m.historyMu.Lock()
-	if c.checked == nil {
-		c.checked = map[string]time.Time{}
-	}
-	if time.Since(c.checked[id]) < time.Minute {
-		m.historyMu.Unlock()
-		return
-	}
-	c.checked[id] = time.Now()
-	m.historyMu.Unlock()
-	q, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-	reply, err := c.client.GetHistoryFloor(q, &api.SessionRef{Id: id})
-	if err != nil || reply == nil || reply.Through == 0 {
-		return
-	}
-	boundary := core.HistoryBoundary{Through: reply.Through}
-	payload, _ := json.Marshal(boundary)
-	_ = m.cache(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: id, Seq: boundary.Through, Kind: core.HistoryTrimmedKind, Payload: payload}}})
 }

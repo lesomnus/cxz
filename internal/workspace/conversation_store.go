@@ -49,6 +49,12 @@ func (m *Manager) sessionProject(ctx context.Context, session string) (*Project,
 // the manager's `events` table, a project's whole history was paged out before
 // its containers were removed, and that mirror was served whenever the project
 // could not answer. See cxz#268.
+// ConversationStore is conversationStore for the server that runs beside this
+// manager: it reads the same files to seed the searchable index.
+func (m *Manager) ConversationStore(ctx context.Context, session string) (*sessionstore.Store, error) {
+	return m.conversationStore(ctx, session)
+}
+
 func (m *Manager) conversationStore(ctx context.Context, session string) (*sessionstore.Store, error) {
 	if !assets.ValidID(session) {
 		return nil, fmt.Errorf("invalid session id")
