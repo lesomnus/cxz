@@ -70,12 +70,26 @@ func (m *Manager) conversationStore(ctx context.Context, session string) (*sessi
 		return nil, err
 	}
 	dir, _ := m.projectState(p.ID)
-	path := sessionstore.Path(core.Dir(filepath.Join(dir, "data"), session))
+	sessionDir := core.Dir(filepath.Join(dir, "data"), session)
+	path := sessionstore.Path(sessionDir)
 	if _, err = os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		// A session that has not run since stores existed has only its journal:
+		// conversion happens when a supervisor starts, and a stopped session's
+		// supervisor never will. Convert it here, once -- the manager is the
+		// only thing that will ever look at that conversation again, and a
+		// store for every session is also what lets the journal stop being
+		// written at all. Re-runnable, so a conversion that is interrupted is
+		// finished by the next read. See cxz#268.
+		if _, err = os.Stat(filepath.Join(sessionDir, "events.jsonl")); err != nil {
+			// No journal either: nothing was ever recorded for this session.
 			return nil, errNoConversation
 		}
-		return nil, err
+		if _, err = sessionstore.Convert(ctx, sessionDir, session); err != nil {
+			return nil, fmt.Errorf("convert session %s: %w", session, err)
+		}
 	}
 	return sessionstore.Open(ctx, path, session, false)
 }
