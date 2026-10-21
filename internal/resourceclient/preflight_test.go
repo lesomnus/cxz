@@ -100,7 +100,6 @@ func TestOpenFailsBeforeAnyProjectMutation(t *testing.T) {
 		{name: "first up", want: "--account", unregistered: true},
 		{name: "registered empty project", want: "--account"},
 		{name: "new", r: &api.ProjectRequest{NewSession: true}, want: "--account"},
-		{name: "recreate", r: &api.ProjectRequest{Recreate: true, Confirmed: true}, want: "--account"},
 		{name: "unknown account", account: "missing", want: "account not found"},
 		{name: "unsupported backend", account: "unsupported", want: "auth backend"},
 		{name: "agent mismatch", r: &api.ProjectRequest{Agent: "claude"}, account: "work", want: "agent does not match"},
@@ -164,6 +163,34 @@ func TestExistingSessionAndPrepareOnlyNeedNoAccountFlag(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+// Recreating is about the container, and a project with no sessions has
+// nothing to resume: it is recreated as a project rather than refused for an
+// account it does not need. Refusing it meant the one project in that state
+// could not have its state migrated at all. See cxz#263.
+func TestAProjectWithNoSessionsIsRecreatedWithoutAnAccount(t *testing.T) {
+	p := resource.Project_builder{RuntimeId: "project", Workspace: "/project", Alias: "alias"}.Build()
+	projects := &preflightProjects{items: []*resource.Project{p}}
+	c := &Client{projects: projects, sessions: preflightSessions{}, Accounts: preflightAccounts{}}
+	r := &api.ProjectRequest{Workspace: "/project", Recreate: true, Confirmed: true}
+	if err := c.CheckOpen(context.Background(), r); err != nil {
+		t.Fatal("a project with no sessions was refused its own recreate:", err)
+	}
+	if !r.PrepareOnly {
+		t.Fatal("the recreate was not turned into a project-only one, so it would go looking for a session")
+	}
+
+	// A project that does have sessions still asks which account, because then
+	// the question is real.
+	withSession := &Client{projects: &preflightProjects{items: []*resource.Project{p}}, sessions: preflightSessions{items: []*resource.Session{fixtureSession(p, "stopped")}}, Accounts: preflightAccounts{}}
+	q := &api.ProjectRequest{Workspace: "/project", Recreate: true, Confirmed: true, Agent: "claude"}
+	if err := withSession.CheckOpen(context.Background(), q); !errors.Is(err, ErrAccountRequired) {
+		t.Fatal("a project with sessions stopped asking which account:", err)
+	}
+	if q.PrepareOnly {
+		t.Fatal("a project with sessions was recreated without resuming any of them")
+	}
+}
+
 func TestPreflightFailsClosedOnSessionLookupFailure(t *testing.T) {
 	projects := &preflightProjects{items: []*resource.Project{resource.Project_builder{RuntimeId: "project", Workspace: "/project"}.Build()}}
 	c := &Client{projects: projects, sessions: preflightSessions{err: status.Error(codes.Unavailable, "offline")}}

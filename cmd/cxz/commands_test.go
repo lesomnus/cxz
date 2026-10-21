@@ -182,6 +182,16 @@ func (s projectStub) Add(context.Context, *resource.ProjectAddRequest) (*resourc
 	}
 	return testProject(), nil
 }
+func (s projectStub) Recreate(context.Context, *resource.ProjectRecreateRequest) (*resource.Project, error) {
+	// Not recorded on the shared request channel: the assertions that read it
+	// are about other calls, and the mutation counter is what says this one
+	// reached the server.
+	if s.mutations != nil {
+		s.mutations.Add(1)
+	}
+	return testProject(), nil
+}
+
 func (s projectStub) Up(context.Context, *resource.ProjectUpRequest) (*resource.Project, error) {
 	if s.mutations != nil {
 		s.mutations.Add(1)
@@ -248,7 +258,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	if table.Err != nil || !strings.Contains(table.Stdout, "ALIAS") || !strings.Contains(table.Stdout, "pn") {
 		t.Fatal("default API table", table)
 	}
-	for _, args := range [][]string{{"project", "up", "--trust-config", "project-name"}, {"project", "recreate", "--trust-config", "--yes", "project-name"}, {"session", "new", "project-name"}} {
+	for _, args := range [][]string{{"project", "up", "--trust-config", "project-name"}, {"session", "new", "project-name"}} {
 		got := xlitest.Run(t, newRoot(root), args...)
 		if got.Err == nil || !strings.Contains(got.Err.Error(), "--account") {
 			t.Fatalf("missing account guidance: %v", got.Err)
@@ -256,6 +266,17 @@ func TestCommandsReachAPI(t *testing.T) {
 		if strings.Contains(got.Stderr, "preparing workspace") || mutations.Load() != 0 {
 			t.Fatal("started preparation before validating account", got.Stderr)
 		}
+	}
+	// Recreating is about the container. A project with no sessions has nothing
+	// to resume, so it is recreated as a project rather than refused for an
+	// account it does not need -- which is what left the one project in that
+	// state unable to have its state migrated. See cxz#263.
+	recreated := xlitest.Run(t, newRoot(root), "project", "recreate", "--trust-config", "--yes", "project-name")
+	if recreated.Err != nil {
+		t.Fatal("a project with no sessions was not recreated:", recreated.Err)
+	}
+	if mutations.Load() == 0 {
+		t.Fatal("nothing was recreated")
 	}
 	for _, confirmed := range []bool{false, true} {
 		args := []string{"project", "purge"}
