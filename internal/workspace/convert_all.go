@@ -50,6 +50,12 @@ func (m *Manager) ConvertStores(ctx context.Context) {
 				continue // nothing was ever recorded for this session
 			}
 			n, err := sessionstore.Convert(ctx, sessionDir, s.Id)
+			if err == nil {
+				// This pass runs in the manager, which is root. A store it
+				// leaves owned by root is one the session's own runtime cannot
+				// open. See cxz#280.
+				err = ownLikeDir(sessionDir, storeFiles(sessionstore.Path(sessionDir))...)
+			}
 			if err != nil {
 				// One session that cannot be converted is reported and left
 				// alone: its journal is still there, and the next pass tries
