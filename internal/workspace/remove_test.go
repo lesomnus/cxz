@@ -117,14 +117,18 @@ func TestRemoveProjectStateIsolationAndLateEvents(t *testing.T) {
 	}
 	defer index.Close()
 	m.Conversations = index
-	for _, id := range []string{"s", "archived", "other-session"} {
-		if err := m.CacheEvents(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: id, Seq: 1, Kind: "input", Text: "history", TimeMs: time.Now().UnixMilli()}}}); err != nil {
+	// One term and one minute each: a search reads one window of time at a
+	// time, so events sharing a millisecond can share a window and hide each
+	// other.
+	for i, id := range []string{"s", "archived", "other-session"} {
+		when := time.Now().Add(-time.Duration(i) * time.Minute).UnixMilli()
+		if err := m.CacheEvents(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: id, Seq: 1, Kind: "input", Text: "said-" + id, TimeMs: when}}}); err != nil {
 			t.Fatal(err)
 		}
 	}
 	indexed := func(session string) int {
 		t.Helper()
-		visits, _, err := index.Search(ctx, convindex.Query{Query: "history", Sessions: []string{session}}, time.Now())
+		visits, _, err := index.Search(ctx, convindex.Query{Query: "said-" + session, Sessions: []string{session}}, time.Now())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -165,7 +169,7 @@ func TestRemoveProjectStateIsolationAndLateEvents(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, "projects", "p")); !os.IsNotExist(err) {
 		t.Fatal("manifest retained", err)
 	}
-	if err := m.CacheEvents(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: "s", Seq: 2, Kind: "input", Text: "history late", TimeMs: time.Now().UnixMilli()}}}); err != nil {
+	if err := m.CacheEvents(ctx, &api.EventBatch{Events: []*api.Event{{SessionId: "s", Seq: 2, Kind: "input", Text: "said-s again", TimeMs: time.Now().UnixMilli()}}}); err != nil {
 		t.Fatal(err)
 	}
 	for _, id := range []string{"s", "archived"} {
