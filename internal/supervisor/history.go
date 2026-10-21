@@ -5,9 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/lesomnus/cxz/internal/journal"
 	"os"
 	"sort"
 	"time"
@@ -217,24 +215,18 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 			return err
 		}
 	}
+	// Compact is the trim. The log it compacts is the store, so one call removes
+	// the events and rebuilds the projection of what is left; it used to be
+	// followed by a second Trim of the same store with the same checkpoint,
+	// which rebuilt that projection again for nothing. The commit error the
+	// journal could raise here, where a rewritten file had to replace the old
+	// one, has no equivalent in a transaction.
 	if err = s.log.Compact(checkpoint); err != nil {
-		var commit *journal.CompactionCommitError
-		if errors.As(err, &commit) {
-			s.kill()
-			panic(err)
-		}
 		return err
 	}
-	// The store holds what the journal holds, so what compaction removed from one
-	// is removed from the other. Derived, so a failure here is reported and the
-	// conversation carries on: the next start converts the journal as it stands.
 	if s.store != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		if err = s.store.Trim(ctx, checkpoint); err != nil {
-			fmt.Fprintln(os.Stderr, "conversation store: trim:", err)
-		} else {
-			s.recordState(ctx)
-		}
+		s.recordState(ctx)
 		cancel()
 	}
 	// Release large command bodies in memory without forgetting duplicate IDs.
@@ -289,11 +281,6 @@ func (s *Supervisor) shedRaw(limit int64) error {
 	}
 	freed, err := s.log.Shed(through)
 	if err != nil {
-		var commit *journal.CompactionCommitError
-		if errors.As(err, &commit) {
-			s.kill()
-			panic(err)
-		}
 		return err
 	}
 	if freed == 0 {

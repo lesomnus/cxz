@@ -108,14 +108,9 @@ func (l *Log) After(seq uint64, limit int) []core.Event {
 
 func (l *Log) All() []core.Event { return l.After(0, int(^uint(0)>>1)) }
 
-// Size is how much conversation is stored, counted as the pages the store is
-// using rather than the size of the file.
-//
-// SQLite does not return pages to the filesystem when rows are deleted: it
-// keeps them on a free list and writes the next events into them. The file
-// therefore stays at its high-water mark, and a retention policy measured
-// against it would trim, see no change, and trim again. What the policy is
-// about is how much conversation is kept, which is what this answers.
+// Size is how much conversation is stored, which is what the retention policy
+// bounds and all a trim can move. The file underneath is larger, and so are the
+// pages in use -- see Store.Bytes for why neither is the measure.
 func (l *Log) Size() (int64, error) {
 	return l.store.Bytes(context.Background())
 }

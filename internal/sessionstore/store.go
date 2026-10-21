@@ -457,23 +457,24 @@ func (s *Store) Events(ctx context.Context) ([]core.Event, error) {
 	return s.records(ctx, `SELECT data FROM events WHERE session_id=? ORDER BY seq`, s.session)
 }
 
-// Bytes is how much conversation is stored: the pages in use, not the size of
-// the file. SQLite keeps the pages a delete frees on a free list and writes the
-// next events into them, so the file stays at its high-water mark while what is
-// stored goes down. A retention policy measured against the file would trim,
-// see no change, and trim again.
+// Bytes is how much conversation is stored: the events of this session as
+// recorded, which is the same count the journal's file size used to give and
+// the same one a retention policy picks its cut against.
+//
+// It is deliberately not the file, and not the pages in use either. A delete
+// does not return pages to the filesystem, so the file stays at its high-water
+// mark -- but the pages in use do not come back down to the conversation
+// either: they carry the index, the derived transcript projection, and the
+// overflow pages of blobs that are still stored. On a 79MB conversation they
+// read 143MB, so a policy with a 100MiB budget trimmed, measured no
+// improvement, and trimmed again every turn. See cxz#286.
+//
+// SQLite answers length() on a blob out of the record header, so this does not
+// read the conversation to measure it.
 func (s *Store) Bytes(ctx context.Context) (int64, error) {
-	var pages, free, size int64
-	if err := s.db.QueryRowContext(ctx, `PRAGMA page_count`).Scan(&pages); err != nil {
-		return 0, err
-	}
-	if err := s.db.QueryRowContext(ctx, `PRAGMA freelist_count`).Scan(&free); err != nil {
-		return 0, err
-	}
-	if err := s.db.QueryRowContext(ctx, `PRAGMA page_size`).Scan(&size); err != nil {
-		return 0, err
-	}
-	return (pages - free) * size, nil
+	var total int64
+	err := s.db.QueryRowContext(ctx, `SELECT COALESCE(sum(length(data)),0) FROM events WHERE session_id=?`, s.session).Scan(&total)
+	return total, err
 }
 
 // Replace rewrites events that are already stored, keeping their sequence. It
