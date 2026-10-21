@@ -145,12 +145,22 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 				`DROP TABLE IF EXISTS transcript_state`,
 				`DROP TABLE IF EXISTS transcript_format`,
 				`DROP TABLE IF EXISTS transcript_seen`,
-				`VACUUM`,
 			} {
 				if _, e = db.ExecContext(ctx, q); e != nil {
 					return e
 				}
 			}
+			// Giving the space back is a rewrite of the whole file -- 2.3GB on
+			// this installation -- and doing it here cost the new manager its
+			// health check: the rollout timed out waiting for it to answer and
+			// rolled back. Dropping is instant; reclaiming can happen while the
+			// manager is already serving, once, and a failure costs nothing but
+			// the space.
+			go func() {
+				if _, err := db.ExecContext(context.WithoutCancel(ctx), `VACUUM`); err != nil {
+					fmt.Fprintln(os.Stderr, "reclaiming space after dropping the mirror:", err)
+				}
+			}()
 		}
 		defer s.manager.Close()
 		if s.conversations != nil {
