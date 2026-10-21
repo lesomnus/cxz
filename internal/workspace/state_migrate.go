@@ -11,15 +11,16 @@ import (
 	"github.com/lesomnus/cxz/internal/dockerx"
 )
 
-// migrateProjectState moves a project that still has a volume of its own into a
-// subdirectory of the manager's. It runs where a recreate has already removed
-// the container, which is the only moment nothing is writing that volume.
-//
-// The copy is verified before anything is removed: the two trees are compared
-// by the name and size of every file in them, and the volume is only let go
-// when they agree. A project whose migration fails keeps its volume and is
-// recreated exactly as it was -- the data has not moved, so there is nothing to
-// recover. See cxz#238.
+// stateCache is the one thing in a project's state that is not worth moving.
+// The agent's home lives in this volume, and most of what is in it is a build
+// cache: across eleven projects, 126 of 152 gigabytes, and xli's 26GB of
+// "project state" was 25GB of ~/.cache/go-build -- fifty thousand files at
+// twelve megabytes a second, which is an hour of a project being down to move
+// something that is regenerated on use by definition. It stays behind, and the
+// hour and the disk stay with it. The first build in a migrated session is
+// slower, once. See cxz#259.
+const stateCache = "*/home/.cache"
+
 // stateMovable reports whether this is the occasion to move a project's state:
 // a recreate with no container of ours left, which is the only moment nothing
 // is writing it. The first version asked this inside the branch that takes a
@@ -30,6 +31,15 @@ func stateMovable(r *api.ProjectRequest, p *Project) bool {
 	return r.Recreate && p.ContainerID == ""
 }
 
+// migrateProjectState moves a project that still has a volume of its own into a
+// subdirectory of the manager's. It runs where a recreate has already removed
+// the container, which is the only moment nothing is writing that volume.
+//
+// The copy is verified before anything is removed: the two trees are compared
+// by the name and size of every file in them, caches aside, and the volume is
+// only let go when they agree. A project whose migration fails keeps its volume
+// and is recreated exactly as it was -- the data has not moved, so there is
+// nothing to recover. See cxz#238.
 func (m *Manager) migrateProjectState(ctx context.Context, p *Project) error {
 	return m.migrateProjectStateWith(ctx, p, dockerx.Run)
 }
@@ -47,14 +57,20 @@ func (m *Manager) migrateProjectStateWith(ctx context.Context, p *Project, run r
 		return fmt.Errorf("project %s state migration needs the manager image", p.ID)
 	}
 	// One container, both trees: the project's volume read-only, and the
-	// manager's where this project's directory lives.
+	// manager's where this project's directory lives. tar rather than cp,
+	// because tar can leave the caches behind.
 	inside := "/to/projects/" + p.ID + "/state"
 	if _, err := run(ctx, "run", "--rm",
 		"--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID,
 		"-v", p.Volume+":/from:ro",
 		"--mount", "type=volume,source="+m.StateVolume+",target=/to",
 		"--entrypoint", "sh", image, "-c",
-		"set -e; mkdir -p "+inside+"; cp -a /from/. "+inside+"/"); err != nil {
+		"set -e; mkdir -p "+inside+
+			"; tar -C /from --exclude='"+stateCache+"' -cf - . | tar -C "+inside+" -xf -"+
+			// And out of the destination, for a migration being retried: an
+			// interrupted first attempt can have copied gigabytes of cache that
+			// nothing will read again, and nothing else would remove it.
+			"; find "+inside+" -path '"+stateCache+"' -type d -prune -exec rm -rf {} +"); err != nil {
 		return fmt.Errorf("copy project %s state: %w", p.ID, err)
 	}
 	from, err := m.treeDigest(ctx, run, image, p, "/from")
@@ -85,8 +101,10 @@ func (m *Manager) migrateProjectStateWith(ctx context.Context, p *Project, run r
 }
 
 // treeDigest is every file in a tree by name and size, in one line per file,
-// sorted. It is what the migration compares: the copy has to be the same files
-// with the same bytes, and `cp -a` exiting zero is not that.
+// sorted, with the caches pruned on both sides. It is what the migration
+// compares: the copy has to be the same files with the same bytes, and a copy
+// exiting zero is not that -- all the more so now that the copy is a pipeline,
+// where a failure halfway through can still end in a shell that succeeded.
 func (m *Manager) treeDigest(ctx context.Context, run removalDocker, image string, p *Project, path string) (string, error) {
 	mounts := []string{"-v", p.Volume + ":/from:ro"}
 	if strings.HasPrefix(path, "/to") {
@@ -94,7 +112,9 @@ func (m *Manager) treeDigest(ctx context.Context, run removalDocker, image strin
 	}
 	args := append([]string{"run", "--rm", "--label", "cxz.owner=" + m.Owner, "--label", "cxz.project=" + p.ID}, mounts...)
 	args = append(args, "--entrypoint", "sh", image, "-c",
-		"cd "+path+" && find . -type f -printf '%s %p\\n' | LC_ALL=C sort")
+		// The same exclusion on both sides, or the comparison would refuse
+		// every migration for the caches it deliberately did not move.
+		"cd "+path+" && find . -path '"+stateCache+"' -prune -o -type f -printf '%s %p\\n' | LC_ALL=C sort")
 	b, err := run(ctx, args...)
 	if err != nil {
 		return "", fmt.Errorf("inventory %s of project %s: %w", path, p.ID, err)
