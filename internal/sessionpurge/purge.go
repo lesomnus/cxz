@@ -121,7 +121,9 @@ func Paths(scope Scope, root string, s Subject) ([]Target, error) {
 			add("profile", accounts.SessionRoot(root, s.CreateID))
 		}
 		add("socket", core.Socket(root, s.Session))
-		add("journal", core.Dir(root, s.Session))
+		// The session's own directory: its conversation store, and the journal
+		// that used to be the record until cxz#278.
+		add("conversation", core.Dir(root, s.Session))
 	}
 	for _, t := range out {
 		if err := contained(root, t.Path); err != nil {

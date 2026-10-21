@@ -1,19 +1,19 @@
 package supervisor
 
 import (
+	"context"
 	"bytes"
 	"encoding/json"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/journal"
-	"path/filepath"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"testing"
 )
 
 type sink struct{ bytes.Buffer }
 
 func TestCodexExternalAuthentication(t *testing.T) {
-	log, err := journal.Open(filepath.Join(t.TempDir(), "events"))
+	log, err := sessionstore.OpenLog(context.Background(), t.TempDir(), "session")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestCodexExternalAuthentication(t *testing.T) {
 
 func (s *sink) Close() error { return nil }
 func TestCodexProtocol(t *testing.T) {
-	log, e := journal.Open(filepath.Join(t.TempDir(), "events"))
+	log, e := sessionstore.OpenLog(context.Background(), t.TempDir(), "session")
 	if e != nil {
 		t.Fatal(e)
 	}

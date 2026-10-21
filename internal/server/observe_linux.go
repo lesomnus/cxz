@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"golang.org/x/sys/unix"
 )
 
@@ -106,7 +107,11 @@ func observeJournals(ctx context.Context, root string, changed func(string)) err
 					}
 					continue
 				}
-				if id := watches[wd]; id != "" && (name == "events.jsonl" || name == "pid.json" || name == "session.json") {
+				// The conversation is a SQLite file now: a commit lands in its
+				// write-ahead log, and the database itself changes only when
+				// that log is checkpointed. Both are the signal that a session
+				// moved, which the journal used to be. See cxz#278.
+				if id := watches[wd]; id != "" && (name == sessionstore.Name || name == sessionstore.Name+"-wal" || name == "pid.json" || name == "session.json") {
 					dirty[id] = true
 				}
 			}

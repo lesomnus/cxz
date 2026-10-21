@@ -197,18 +197,27 @@ func TestAppendingAfterConversionMatchesConvertingTheWhole(t *testing.T) {
 	}
 }
 
-// A conversion that was interrupted is finished by the next one, not repaired.
-func TestConvertIsRerunnable(t *testing.T) {
+// A conversion happens once and is finished rather than repeated: reading a
+// journal is reading all of it, and after cxz#278 nothing appends to one. A
+// conversion that was interrupted left no mark, so the next one finishes it.
+func TestConvertHappensOnce(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
 	events := conversation(t, dir)
-	for i := 0; i < 3; i++ {
+	n, err := Convert(ctx, dir, "s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != len(events) {
+		t.Fatal("the first conversion took", n, "of", len(events))
+	}
+	for i := 0; i < 2; i++ {
 		n, err := Convert(ctx, dir, "s")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if n != len(events) {
-			t.Fatal("pass", i, "converted", n)
+		if n != 0 {
+			t.Fatal("pass", i, "read the journal again:", n)
 		}
 	}
 	s, err := Open(ctx, Path(dir), "s", false)

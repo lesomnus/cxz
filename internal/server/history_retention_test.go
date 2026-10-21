@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"os"
@@ -44,10 +45,14 @@ func TestProjectionPrunesCheckpointAndResumesSuffix(t *testing.T) {
 		t.Fatal(p.snapshot)
 	}
 	p.mu.Unlock()
+	// What compaction removed is removed from the session's own store, which is
+	// the only place the conversation is. See cxz#278.
 	var count int
-	s.db.QueryRow("SELECT COUNT(*) FROM events").Scan(&count)
+	if err = l.Store().DB().QueryRowContext(t.Context(), "SELECT COUNT(*) FROM events WHERE session_id=?", m.ID).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
 	if count != 6 {
-		t.Fatal("old projection retained", count)
+		t.Fatal("the compacted conversation kept", count, "records")
 	}
 	batch, err := s.History(t.Context(), &api.WatchRequest{SessionId: m.ID})
 	if err != nil || len(batch.Events) != 6 || batch.Events[0].Kind != core.HistoryTrimmedKind || core.HistoryFloor(batch.Events[0].Kind, batch.Events[0].Payload) != 7 {
@@ -67,10 +72,16 @@ func TestProjectionPrunesCheckpointAndResumesSuffix(t *testing.T) {
 		t.Fatal(err)
 	}
 	p.mu.Unlock()
-	var version int
-	s.db.QueryRow("PRAGMA user_version").Scan(&version)
-	if version != 2 {
-		t.Fatal("legacy rollback not fenced", version)
+	// A conversation whose history has been trimmed must not be written by a
+	// build that would rebuild it from a journal nobody writes. That fence is
+	// the store's own generation now, not a version on this server's database.
+	// See cxz#278.
+	compat, err := l.Store().Compat(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if compat != sessionstore.Compat {
+		t.Fatal("the conversation is not fenced against an older writer:", compat)
 	}
 }
 

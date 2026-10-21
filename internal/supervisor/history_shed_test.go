@@ -1,20 +1,21 @@
 package supervisor
 
 import (
+	"context"
 	"encoding/json"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/historypolicy"
-	"github.com/lesomnus/cxz/internal/journal"
 )
 
-func shedFixture(t *testing.T) (*Supervisor, *journal.Log, string) {
+func shedFixture(t *testing.T) (*Supervisor, *sessionstore.Log, string) {
 	t.Helper()
 	root := t.TempDir()
-	log, err := journal.Open(filepath.Join(root, "events.jsonl"))
+	log, err := sessionstore.OpenLog(context.Background(), filepath.Dir(filepath.Join(root, "events.jsonl")), "session")
 	if err != nil {
 		t.Fatal(err)
 	}

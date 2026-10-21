@@ -11,56 +11,40 @@ import (
 	"github.com/lesomnus/cxz/internal/sessionstore"
 )
 
-// withStore gives a display supervisor the store a running one has, in the
-// directory its journal already lives in.
-func withStore(t *testing.T, provider string) (*Supervisor, string) {
+// storeDir is where the display supervisor's log keeps its file.
+func storeDir(t *testing.T, s *Supervisor) string {
 	t.Helper()
-	s, _ := displaySupervisor(t, provider)
-	dir := filepath.Dir(journalPathOf(t, s))
-	s.openStore(context.Background(), dir)
-	if s.store == nil {
-		t.Fatal("the supervisor has no store")
+	var path string
+	if err := s.store.DB().QueryRow(`PRAGMA database_list`).Scan(new(int), new(string), &path); err != nil {
+		t.Fatal(err)
 	}
-	t.Cleanup(s.closeStore)
-	return s, dir
+	return filepath.Dir(path)
 }
 
-func journalPathOf(t *testing.T, s *Supervisor) string {
-	t.Helper()
-	p := s.log.Path()
-	if p == "" {
-		t.Fatal("the journal has no path")
-	}
-	return p
-}
-
-// Every record the journal accepts reaches the store. The journal is still the
-// truth, so the test is not that the store is correct on its own but that it
-// holds what the journal holds -- sequence for sequence.
-func TestEveryJournalRecordReachesTheStore(t *testing.T) {
+// Every event a session records is in its store, in sequence. The store is the
+// record now -- there is no journal to compare it against, which is why this
+// compares what the session holds in memory with what is on disk.
+// See cxz#278.
+func TestEveryRecordedEventIsInTheStore(t *testing.T) {
 	ctx := context.Background()
-	s, dir := withStore(t, "claude")
+	s, _ := displaySupervisor(t, "claude")
+	s.store = s.log.Store()
 
-	// A single append, and a batch, which are the two paths into the journal.
+	// A single append, and a batch, which are the two paths into the store.
 	s.event("input", "build it", "", nil, nil)
 	s.consume([]byte(`{"type":"assistant","message":{"model":"claude-test","content":[{"type":"text","text":"on it"}]}}`))
 	s.event("state", "idle", "", nil, nil)
 
-	journalled := s.log.All()
-	if len(journalled) < 3 {
-		t.Fatal("the journal has", len(journalled), "records")
+	held := s.log.All()
+	if len(held) < 3 {
+		t.Fatal("the session holds", len(held), "records")
 	}
-	store, err := sessionstore.Open(ctx, sessionstore.Path(dir), "s", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer store.Close()
-	rows, err := store.DB().QueryContext(ctx, `SELECT seq, data FROM events WHERE session_id='s' ORDER BY seq`)
+	rows, err := s.store.DB().QueryContext(ctx, `SELECT seq, data FROM events WHERE session_id='session' ORDER BY seq`)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer rows.Close()
-	stored := map[uint64]core.Event{}
+	var stored []core.Event
 	for rows.Next() {
 		var seq uint64
 		var b []byte
@@ -71,115 +55,94 @@ func TestEveryJournalRecordReachesTheStore(t *testing.T) {
 		if err = json.Unmarshal(b, &e); err != nil {
 			t.Fatal(err)
 		}
-		stored[seq] = e
+		if e.Seq != seq {
+			t.Fatal("a record disagrees with the sequence it is stored under", e.Seq, seq)
+		}
+		stored = append(stored, e)
 	}
 	if err = rows.Err(); err != nil {
 		t.Fatal(err)
 	}
-	if len(stored) != len(journalled) {
-		t.Fatalf("the journal holds %d records, the store %d", len(journalled), len(stored))
+	if len(stored) != len(held) {
+		t.Fatalf("the session holds %d records and the store has %d", len(held), len(stored))
 	}
-	for _, want := range journalled {
-		got, ok := stored[want.Seq]
-		if !ok {
-			t.Fatalf("record %d (%s) never reached the store", want.Seq, want.Kind)
-		}
-		if got.Kind != want.Kind || got.Text != want.Text || got.RunID != want.RunID || got.TimeMS != want.TimeMS {
-			t.Fatalf("record %d differs\n store: %+v\njournal: %+v", want.Seq, got, want)
+	for i := range held {
+		if stored[i].Seq != held[i].Seq || stored[i].Kind != held[i].Kind || stored[i].Text != held[i].Text {
+			t.Fatalf("record %d differs: %+v vs %+v", i, held[i], stored[i])
 		}
 	}
 }
 
-// A store that cannot be written is not a durability failure. The journal is,
-// and it is the one that kills a run -- so a session whose store is broken
-// keeps recording.
-func TestABrokenStoreDoesNotStopTheRecording(t *testing.T) {
-	s, _ := withStore(t, "claude")
-	// Closing it is the bluntest way to make every write fail.
-	_ = s.store.Close()
-	s.event("input", "still recorded", "", nil, nil)
-	s.event("state", "idle", "", nil, nil)
-	found := false
-	for _, e := range s.log.All() {
-		if e.Kind == "input" && e.Text == "still recorded" {
-			found = true
+// A session that was recorded before stores existed converts its journal when
+// it opens, once, and picks up where a previous conversion left off rather than
+// starting over.
+func TestOpeningConvertsAJournalOnce(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	l, err := journal.Open(filepath.Join(dir, "events.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 6; i++ {
+		if _, err = l.Append(core.Event{SessionID: "session", RunID: "run", Kind: "input", Text: "said"}); err != nil {
+			t.Fatal(err)
 		}
 	}
-	if !found {
-		t.Fatal("the journal lost a record because the store could not take it")
+	if err = l.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	log, err := sessionstore.OpenLog(ctx, dir, "session")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := len(log.All()); got != 6 {
+		t.Fatal("the conversation came back with", got, "records")
+	}
+	if _, err = log.Append(core.Event{SessionID: "session", RunID: "run", Kind: "input", Text: "more"}); err != nil {
+		t.Fatal(err)
+	}
+	if err = log.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Opening again converts nothing and loses nothing: the journal is never
+	// written after this, and the record it was is already here.
+	again, err := sessionstore.OpenLog(ctx, dir, "session")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer again.Close()
+	if got := len(again.All()); got != 7 {
+		t.Fatal("reopening gave", got, "records")
 	}
 }
 
-// Converting is what a session that predates the store does at start, and it
-// picks up where it left off rather than starting over.
-func TestOpeningConvertsWhatTheStoreIsMissing(t *testing.T) {
+// The state a session records says which record it was reduced from, and it is
+// written after the records rather than before. It used to carry a fence
+// against the journal; there is no journal to be behind. See cxz#278.
+func TestRecordedStateNamesTheLastRecord(t *testing.T) {
 	ctx := context.Background()
 	s, _ := displaySupervisor(t, "claude")
-	s.event("input", "one", "", nil, nil)
-	s.event("assistant", "two", "", nil, nil)
-	dir := filepath.Dir(journalPathOf(t, s))
+	s.store = s.log.Store()
+	s.event("input", "build it", "", nil, nil)
+	s.recordState(ctx)
 
-	s.openStore(ctx, dir)
-	if s.store == nil {
-		t.Fatal("no store")
-	}
-	through, err := s.store.Through(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	last := s.log.All()[len(s.log.All())-1].Seq
-	if through != last {
-		t.Fatalf("the store converted through %d, the journal ends at %d", through, last)
-	}
-	// Records written while the store was open, then a restart: the second open
-	// has only the suffix to do.
-	s.event("input", "three", "", nil, nil)
-	s.closeStore()
-	s.openStore(ctx, dir)
-	defer s.closeStore()
-	through, err = s.store.Through(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	last = s.log.All()[len(s.log.All())-1].Seq
-	if through != last {
-		t.Fatalf("after a restart the store is through %d, the journal ends at %d", through, last)
-	}
-}
-
-// The state a session records has to be fenced to the journal it was reduced
-// from, or a reader cannot tell a current state from a stale one.
-func TestRecordedStateIsFencedToTheJournal(t *testing.T) {
-	ctx := context.Background()
-	s, _ := withStore(t, "claude")
-	s.event("input", "one", "", nil, nil)
-
-	snap, fence, found, err := s.store.State(ctx)
+	snap, found, err := s.store.State(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !found {
 		t.Fatal("no state was recorded")
 	}
-	if snap.LastSeq != s.snap.LastSeq || fence.Seq != s.snap.LastSeq {
-		t.Fatalf("state is at %d, fence at %d, the session at %d", snap.LastSeq, fence.Seq, s.snap.LastSeq)
+	if snap.LastSeq != s.snap.LastSeq || snap.LastSeq == 0 {
+		t.Fatal("the state does not name the last record", snap.LastSeq, s.snap.LastSeq)
 	}
-	size, mtime, err := journal.Fence(s.log.Path())
+	through, err := s.store.Through(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if fence.Size != size || fence.ModTime != mtime {
-		t.Fatal("the fence does not describe the journal it was written beside")
-	}
-
-	// One more record, and the fence has to move with it: a fence left behind
-	// would let a reader skip what was recorded after it.
-	s.event("assistant", "two", "", nil, nil)
-	_, moved, _, err := s.store.State(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if moved.Seq != s.snap.LastSeq || moved.Size == fence.Size {
-		t.Fatalf("the fence stayed at %d/%d while the session moved to %d", moved.Seq, moved.Size, s.snap.LastSeq)
+	if through != snap.LastSeq {
+		t.Fatal("the state claims more than the store holds", snap.LastSeq, through)
 	}
 }

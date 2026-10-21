@@ -14,7 +14,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/sessionfork"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"google.golang.org/grpc/codes"
@@ -90,7 +90,16 @@ func (s *Server) ForkSession(ctx context.Context, r *api.SessionForkInput) (*api
 			if e != nil {
 				return nil, status.Error(codes.FailedPrecondition, "session is starting or stopping; retry when settled")
 			}
-			events, e := journal.Read(filepath.Join(core.Dir(s.root, source.ID), "events.jsonl"))
+			// From the parent's store, which is the record. The parent is not
+			// running -- that is why this branch exists -- so nothing is
+			// appending to it while it is read. See cxz#278.
+			parent, e := sessionstore.Open(ctx, sessionstore.Path(core.Dir(s.root, source.ID)), source.ID, false)
+			if e != nil {
+				lock.Close()
+				return nil, e
+			}
+			events, e := parent.Events(ctx)
+			parent.Close()
 			if e != nil {
 				lock.Close()
 				return nil, e

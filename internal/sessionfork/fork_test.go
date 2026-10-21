@@ -1,6 +1,7 @@
 package sessionfork_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -9,7 +10,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/sessionfork"
 	"github.com/lesomnus/cxz/internal/supervisor"
 )
@@ -80,7 +81,7 @@ func TestForkPreservesConversationButSeparatesRuntimeAndNativeFiles(t *testing.T
 			if child.Fork.SessionID != source.ID || child.Fork.ThroughSeq != snapshot.LastSeq {
 				t.Fatal("missing lineage", child.Fork)
 			}
-			copied, err := journal.Read(filepath.Join(core.Dir(root, child.ID), "events.jsonl"))
+			copied, err := childEvents(t, root, child.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -154,7 +155,7 @@ func TestForkRestoresPreferencesFromATrimmedHistoryCheckpoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	history, err := journal.Read(filepath.Join(core.Dir(root, child.ID), "events.jsonl"))
+	history, err := childEvents(t, root, child.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,4 +168,16 @@ func TestForkRestoresPreferencesFromATrimmedHistoryCheckpoint(t *testing.T) {
 	if !found || child.Model != "current-model" || supervisor.Replay(history).VendorID != "" {
 		t.Fatal("checkpoint preferences/identity lost", history)
 	}
+}
+
+// childEvents is the conversation a fork wrote: into the child's own store,
+// which is where a conversation lives now. See cxz#278.
+func childEvents(t *testing.T, root, id string) ([]core.Event, error) {
+	t.Helper()
+	store, err := sessionstore.Open(context.Background(), sessionstore.Path(core.Dir(root, id)), id, false)
+	if err != nil {
+		return nil, err
+	}
+	defer store.Close()
+	return store.Events(context.Background())
 }

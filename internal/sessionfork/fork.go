@@ -16,6 +16,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 )
 
 type Request struct {
@@ -110,12 +111,17 @@ func Prepare(ctx context.Context, root string, source core.Session, snapshot cor
 	// Preserve sequence numbers, timestamps and response references. The boundary
 	// clears inherited control receipts/vendor IDs without rewriting the display
 	// history or replaying any tool. Settings are restored separately below it.
-	file, err := os.OpenFile(filepath.Join(dir, "events.jsonl"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
-	if err != nil {
-		return result, err
+	//
+	// Into the child's store, which is where a conversation lives: the journal
+	// is no longer written, so a fork that wrote one would produce a child whose
+	// record nothing reads. The events are collected first and committed in one
+	// transaction, so an interrupted fork leaves a child with no conversation
+	// rather than half of one. See cxz#278.
+	var child []core.Event
+	encode := func(event core.Event) error {
+		child = append(child, event)
+		return nil
 	}
-	defer file.Close()
-	encode := json.NewEncoder(file)
 	for _, event := range events {
 		if err = ctx.Err(); err != nil {
 			return result, err
@@ -137,14 +143,14 @@ func Prepare(ctx context.Context, root string, source core.Session, snapshot cor
 				return result, err
 			}
 		}
-		if err = encode.Encode(event); err != nil {
+		if err = encode(event); err != nil {
 			return result, err
 		}
 	}
 	last := snapshot.LastSeq
 	appendEvent := func(kind, text string, payload json.RawMessage) error {
 		last++
-		return encode.Encode(core.Event{SessionID: target.ID, Seq: last, TimeMS: target.CreatedAt, Kind: kind, Text: text, Payload: payload})
+		return encode(core.Event{SessionID: target.ID, Seq: last, TimeMS: target.CreatedAt, Kind: kind, Text: text, Payload: payload})
 	}
 	origin, _ := json.Marshal(target.Fork)
 	if err = appendEvent(core.ForkBoundaryKind, "", origin); err != nil {
@@ -186,10 +192,22 @@ func Prepare(ctx context.Context, root string, source core.Session, snapshot cor
 	if err = appendEvent("permission", snapshot.PermissionMode, nil); err != nil {
 		return result, err
 	}
-	if err = file.Sync(); err != nil {
+	store, err := sessionstore.Open(ctx, sessionstore.Path(dir), target.ID, true)
+	if err != nil {
 		return result, err
 	}
-	if err = file.Close(); err != nil {
+	if _, err = store.Fill(ctx, child, 0); err != nil {
+		store.Close()
+		return result, err
+	}
+	if err = store.SetState(ctx, core.Snapshot{
+		State: "stopped", RunID: snapshot.RunID, VendorID: "", LastSeq: last,
+		PermissionMode: snapshot.PermissionMode,
+	}); err != nil {
+		store.Close()
+		return result, err
+	}
+	if err = store.Close(); err != nil {
 		return result, err
 	}
 	if err = core.WriteJSON(filepath.Join(dir, "session.json"), target); err != nil {

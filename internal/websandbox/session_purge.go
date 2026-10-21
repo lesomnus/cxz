@@ -23,7 +23,7 @@ func (x *Sessions) Purge(_ context.Context, r *resource.SessionPurgeRequest) (*r
 	result := resource.SessionPurgeReply_builder{
 		Ref: proto.Clone(r.GetRef()).(*resource.SessionRef), DryRun: proto.Bool(r.GetDryRun()),
 		Targets: []*resource.SessionPurgeTarget{
-			resource.SessionPurgeTarget_builder{Kind: proto.String("journal"), Path: proto.String("/sandbox/" + st.value.GetRuntimeId() + "/journal"), Files: proto.Int32(1), Bytes: proto.Int64(int64(len(journal)))}.Build(),
+			resource.SessionPurgeTarget_builder{Kind: proto.String("conversation"), Path: proto.String("/sandbox/" + st.value.GetRuntimeId() + "/journal"), Files: proto.Int32(1), Bytes: proto.Int64(int64(len(journal)))}.Build(),
 			resource.SessionPurgeTarget_builder{Kind: proto.String("record"), Path: proto.String("sandbox session catalog"), Files: proto.Int32(1)}.Build(),
 		},
 		Retained: []string{"Project workspace", "Shared account settings"},

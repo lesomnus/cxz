@@ -1,7 +1,6 @@
 package logview
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,22 +9,21 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 )
 
-func TestJournalOmitsConversationAndUncommittedTail(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "events.jsonl")
-	events := []core.Event{{Kind: "assistant", Text: "private conversation", Raw: []byte("raw vendor data")}, {Kind: "update", Text: "update completed"}, {Kind: "diagnostic", Text: "failure details"}}
-	b, _ := json.Marshal(events)
-	b = append(b, '\n')
-	b = append(b, []byte(`{"kind":"diagnostic","text":"uncommitted"}`)...)
-	os.WriteFile(path, b, 0600)
+// A diagnostic report says what went wrong, never what was said: the
+// conversation and the verbatim vendor payload stay out of it.
+func TestTheDiagnosticReportOmitsTheConversation(t *testing.T) {
 	var r Report
-	r.Journal("journal", path)
+	r.Conversation("conversation", []core.Event{
+		{Kind: "assistant", Text: "private conversation", Raw: []byte("raw vendor data")},
+		{Kind: "update", Text: "update completed"},
+		{Kind: "diagnostic", Text: "failure details"},
+	}, false)
 	text := r.String()
-	if !strings.Contains(text, "failure details") || !strings.Contains(text, "update completed") || strings.Contains(text, "private conversation") || strings.Contains(text, "raw vendor data") || strings.Contains(text, "uncommitted") {
-		t.Fatal(text)
+	if !strings.Contains(text, "failure details") || !strings.Contains(text, "update completed") {
+		t.Fatal("the diagnostics are missing:", text)
 	}
-	after, _ := os.ReadFile(path)
-	if string(after) != string(b) {
-		t.Fatal("reading repaired the journal")
+	if strings.Contains(text, "private conversation") || strings.Contains(text, "raw vendor data") {
+		t.Fatal("the report carries what was said:", text)
 	}
 }
 func TestBoundedLogsAndMissingSource(t *testing.T) {

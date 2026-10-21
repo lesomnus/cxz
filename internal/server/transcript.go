@@ -30,13 +30,11 @@ func (s *Server) Transcript(ctx context.Context, r *api.TranscriptRequest) (*api
 		return nil, err
 	}
 	defer p.mu.Unlock()
+	// A session maintains its own rows: this server reads that store, it does
+	// not write it.
 	db := s.conversation(p)
-	// A session that maintains its own rows is not synced from here: this
-	// server reads that store, it does not write it.
-	if !p.owned {
-		if err = transcripthistory.SyncWith(ctx, db, r.SessionId, decodeTranscriptEvent, &p.transcript); err != nil {
-			return nil, err
-		}
+	if db == nil {
+		return &api.TranscriptReply{}, nil // recorded nothing yet
 	}
 	return transcripthistory.Page(ctx, db, r, decodeTranscriptEvent)
 }
@@ -54,10 +52,8 @@ func (s *Server) EventDetails(ctx context.Context, r *api.EventDetailsRequest) (
 	}
 	defer p.mu.Unlock()
 	db := s.conversation(p)
-	if !p.owned {
-		if err = transcripthistory.SyncWith(ctx, db, r.SessionId, decodeTranscriptEvent, &p.transcript); err != nil {
-			return nil, err
-		}
+	if db == nil {
+		return &api.EventBatch{}, nil // recorded nothing yet
 	}
 	return transcripthistory.Details(ctx, db, r, decodeTranscriptEvent)
 }

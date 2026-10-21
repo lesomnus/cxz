@@ -79,7 +79,7 @@ func TestPurgeReachesEveryPlaceASessionWrote(t *testing.T) {
 			kinds = append(kinds, target.Kind)
 		}
 	}
-	for _, want := range []string{"journal", "socket", "profile", "memory", "uploads"} {
+	for _, want := range []string{"conversation", "socket", "profile", "memory", "uploads"} {
 		if !strings.Contains(strings.Join(kinds, " "), want) {
 			t.Fatal("purge never reported", want, "in", kinds)
 		}
@@ -226,16 +226,16 @@ func TestPurgeAcceptsOpaqueCreationKeysAndOnlyRemovesTheirHashedProfile(t *testi
 	}
 }
 
-// The journal is the manifest the runtime rebuilds its database from, so it must
+// The conversation is the session's record, so it must
 // be unlinked after everything else: a purge killed midway then leaves a session
 // that still exists and can simply be purged again.
-func TestJournalIsUnlinkedLast(t *testing.T) {
+func TestTheConversationIsUnlinkedLast(t *testing.T) {
 	targets, err := Paths(Runtime, t.TempDir(), subject())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(targets) == 0 || targets[len(targets)-1].Kind != "journal" {
-		t.Fatal("journal is not the last target", targets)
+	if len(targets) == 0 || targets[len(targets)-1].Kind != "conversation" {
+		t.Fatal("the conversation is not the last target", targets)
 	}
 }
 
@@ -256,7 +256,7 @@ func TestSymlinkedTargetsAreRefusedRatherThanFollowed(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := Execute(ctx, Runtime, root, subject()); err == nil {
-		t.Fatal("followed a symlinked journal")
+		t.Fatal("followed a symlinked conversation")
 	}
 	if !exists(t, filepath.Join(outside, "keep.txt")) {
 		t.Fatal("purge deleted through a symlink")
@@ -279,10 +279,10 @@ func TestSessionWithoutAProfileOrProject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(reply.Targets) != 1 || reply.Targets[0].Kind != "journal" {
+	if len(reply.Targets) != 1 || reply.Targets[0].Kind != "conversation" {
 		t.Fatal("unexpected targets", reply.Targets)
 	}
 	if exists(t, path) {
-		t.Fatal("journal survived")
+		t.Fatal("the conversation survived")
 	}
 }

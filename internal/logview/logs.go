@@ -2,8 +2,6 @@
 package logview
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -57,25 +55,13 @@ func (r *Report) File(name, path string) {
 	}
 	r.Add(name, strings.ToValidUTF8(text, "�"))
 }
-func (r *Report) Journal(name, path string) {
-	b, truncated, err := Tail(path, Limit)
-	if err != nil {
-		r.Add(name, "Unavailable: "+err.Error())
-		return
-	}
+// Conversation reports the diagnostic events in the tail of a session's
+// conversation. It used to read the journal's last megabyte; the conversation
+// is a database now, so the caller reads its tail and this formats it.
+// See cxz#278.
+func (r *Report) Conversation(name string, events []core.Event, truncated bool) {
 	var lines []string
-	records := bytes.Split(b, []byte{'\n'})
-	// An unfinished final record is not committed and is never displayed.
-	for _, record := range records[:max(0, len(records)-1)] {
-		var events []core.Event
-		if len(record) > 0 && record[0] == '[' {
-			_ = json.Unmarshal(record, &events)
-		} else {
-			var event core.Event
-			if json.Unmarshal(record, &event) == nil {
-				events = []core.Event{event}
-			}
-		}
+	{
 		for _, e := range events {
 			switch e.Kind {
 			case "diagnostic", "error", "update", "permission", "state", "setting_status", "usage_status":
@@ -89,10 +75,10 @@ func (r *Report) Journal(name, path string) {
 	}
 	text := strings.Join(lines, "\n")
 	if text == "" {
-		text = "(no diagnostic events in the journal tail)"
+		text = "(no diagnostic events in the recent conversation)"
 	}
 	if truncated {
-		text = "[recent journal tail only: 1 MiB / 200 diagnostic events]\n" + text
+		text = "[recent conversation only: 200 diagnostic events]\n" + text
 	}
 	if len(text) > FileLimit {
 		text = text[:FileLimit] + "\n[diagnostic text truncated]"
