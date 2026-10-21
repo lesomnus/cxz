@@ -1,6 +1,7 @@
 package supervisor
 
 import (
+	"context"
 	"bytes"
 	"encoding/json"
 	"path/filepath"
@@ -9,7 +10,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 )
 
 func assistantEvents(s *Supervisor) []core.Event {
@@ -50,7 +51,7 @@ func TestClaudeResponseSnapshot(t *testing.T) {
 	}
 	// Check the actual durable journal, including compatibility with an old event.
 	path := filepath.Join(t.TempDir(), "events")
-	l, err := journal.Open(path)
+	l, err := sessionstore.OpenLog(context.Background(), filepath.Dir(path), "session")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +62,7 @@ func TestClaudeResponseSnapshot(t *testing.T) {
 	if err = l.Close(); err != nil {
 		t.Fatal(err)
 	}
-	l, err = journal.Open(path)
+	l, err = sessionstore.OpenLog(context.Background(), filepath.Dir(path), "session")
 	if err != nil {
 		t.Fatal(err)
 	}

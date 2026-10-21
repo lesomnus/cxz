@@ -460,6 +460,11 @@ func (p *Projection) Apply(e *api.Event) {
 	p.put(v, e.Seq)
 }
 
+// Schema is the reading projection's tables, for a store that wants the shape
+// complete when it is created rather than at its first reduction: a reader of
+// an empty conversation would otherwise find no tables at all. See cxz#278.
+func Schema() []string { return append([]string(nil), schema...) }
+
 var schema = []string{
 	`CREATE TABLE IF NOT EXISTS transcript_rows(session_id TEXT,seq INTEGER,updated INTEGER,kind TEXT,data BLOB,PRIMARY KEY(session_id,seq,updated))`,
 	`CREATE INDEX IF NOT EXISTS transcript_kind ON transcript_rows(session_id,kind,seq,updated)`,

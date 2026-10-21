@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/sessionpurge"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,20 +41,21 @@ func TestPurgeDropsTheDerivedProjectionAndTheJournal(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.projections[m.ID].mu.Unlock()
-	if rows(t, s, "SELECT count(*) FROM events WHERE session_id=?", m.ID) == 0 {
-		t.Fatal("fixture never projected an event")
+	if _, err := os.Stat(sessionstore.Path(core.Dir(s.root, m.ID))); err != nil {
+		t.Fatal("the fixture never recorded a conversation:", err)
 	}
 	out, err := s.PurgeSession(ctx, purgeIn(m.ID, false))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(out.Targets) == 0 || out.Targets[len(out.Targets)-1].Kind != "journal" {
+	if len(out.Targets) == 0 || out.Targets[len(out.Targets)-1].Kind != "conversation" {
 		t.Fatal("unexpected targets", out.Targets)
 	}
-	for _, query := range []string{"SELECT count(*) FROM events WHERE session_id=?", "SELECT count(*) FROM sessions WHERE id=?"} {
-		if n := rows(t, s, query, m.ID); n != 0 {
-			t.Fatal(query, "left", n)
-		}
+	if n := rows(t, s, "SELECT count(*) FROM sessions WHERE id=?", m.ID); n != 0 {
+		t.Fatal("the manifest row survived the purge")
+	}
+	if _, err := os.Stat(sessionstore.Path(core.Dir(s.root, m.ID))); !os.IsNotExist(err) {
+		t.Fatal("the conversation survived the purge", err)
 	}
 	if s.projections[m.ID] != nil {
 		t.Fatal("in-memory projection survived the purge")
@@ -92,11 +94,8 @@ func TestPurgeDryRunLeavesTheProjectionAndJournalAlone(t *testing.T) {
 	if rows(t, s, "SELECT count(*) FROM sessions WHERE id=?", m.ID) != 1 {
 		t.Fatal("dry run deleted the manifest row")
 	}
-	if rows(t, s, "SELECT count(*) FROM events WHERE session_id=?", m.ID) == 0 {
-		t.Fatal("dry run deleted projected events")
-	}
-	if _, err = os.Stat(filepath.Join(core.Dir(s.root, m.ID), "events.jsonl")); err != nil {
-		t.Fatal("dry run deleted the journal", err)
+	if _, err = os.Stat(sessionstore.Path(core.Dir(s.root, m.ID))); err != nil {
+		t.Fatal("dry run deleted the conversation", err)
 	}
 }
 
@@ -132,9 +131,9 @@ func TestPurgeSessionCreatedWithAWebUUID(t *testing.T) {
 	if err != nil {
 		t.Fatal("UUID creation key refused during preview", err)
 	}
-	want := map[string]string{"profile": profile, "journal": core.Dir(s.root, m.ID)}
+	want := map[string]string{"profile": profile, "conversation": core.Dir(s.root, m.ID)}
 	if !plan.DryRun || len(plan.Targets) != len(want) {
-		t.Fatal("preview did not include profile and journal", plan)
+		t.Fatal("preview did not include the profile and the conversation", plan)
 	}
 	for _, target := range plan.Targets {
 		if want[target.Kind] != target.Path {

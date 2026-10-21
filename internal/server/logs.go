@@ -6,6 +6,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/logview"
 )
 
@@ -41,7 +42,19 @@ func (s *Server) Logs(ctx context.Context, r *api.LogsRequest) (*api.LogsReply, 
 		}
 		dir := core.Dir(s.root, v.ID)
 		name := "session " + v.ID
-		report.Journal(name+" · diagnostics", filepath.Join(dir, "events.jsonl"))
+		// From the conversation's own tail, bounded, because it is a database
+		// rather than the end of a file. See cxz#278.
+		if store, err := sessionstore.Open(ctx, sessionstore.Path(dir), v.ID, false); err == nil {
+			events, err := store.Recent(ctx, 5000)
+			store.Close()
+			if err != nil {
+				report.Add(name+" · diagnostics", "Unavailable: "+err.Error())
+			} else {
+				report.Conversation(name+" · diagnostics", events, len(events) == 5000)
+			}
+		} else {
+			report.Add(name+" · diagnostics", "Unavailable: "+err.Error())
+		}
 		report.File(name+" · supervisor", filepath.Join(dir, "supervisor.log"))
 		report.File(name+" · agent stderr", filepath.Join(dir, "agent.stderr.log"))
 	}

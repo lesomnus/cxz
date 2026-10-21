@@ -93,11 +93,12 @@ func (s *Server) syncedRows(ctx context.Context, m core.Session, cursor uint64) 
 		return nil, err
 	}
 	defer p.mu.Unlock()
+	// The session maintains its own rows: sessionstore syncs the reading
+	// projection on every append. This server reads that store, it never writes
+	// it. See cxz#278.
 	db := s.conversation(p)
-	if !p.owned {
-		if err = transcripthistory.SyncWith(ctx, db, m.ID, decodeTranscriptEvent, &p.transcript); err != nil {
-			return nil, err
-		}
+	if db == nil {
+		return nil, nil // recorded nothing yet
 	}
 	return transcripthistory.Tail(ctx, db, m.ID, cursor, rowsPage, decodeTranscriptEvent)
 }

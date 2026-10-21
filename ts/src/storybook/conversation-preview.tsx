@@ -346,7 +346,7 @@ export function ComponentPreview({
                 dryRun: true,
                 targets: [
                   {
-                    kind: "journal",
+                    kind: "conversation",
                     path: "/storybook/conversation",
                     files: 1,
                     bytes: 1200n,

@@ -40,7 +40,7 @@ func (s *Server) Models(ctx context.Context, r *api.ModelsRequest) (*api.ModelsR
 		return nil, err
 	}
 	defer p.mu.Unlock()
-	out.LastSeq, out.RunId = p.cursor.Seq, p.snapshot.RunID
+	out.LastSeq, out.RunId = p.snapshot.LastSeq, p.snapshot.RunID
 	if v, ok := p.catalogs[p.snapshot.RunID]; ok {
 		out.Data, out.CatalogSeq, out.CatalogMs = v.payload, v.seq, v.ms
 	}

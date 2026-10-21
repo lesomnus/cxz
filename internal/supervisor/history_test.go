@@ -1,6 +1,7 @@
 package supervisor
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -8,14 +9,14 @@ import (
 	"testing"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/historypolicy"
-	"github.com/lesomnus/cxz/internal/journal"
 )
 
 func TestHistoryRetentionPreservesResumeAndIdempotence(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "events.jsonl")
-	log, err := journal.Open(path)
+	log, err := sessionstore.OpenLog(context.Background(), filepath.Dir(path), "session")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +59,7 @@ func TestHistoryRetentionPreservesResumeAndIdempotence(t *testing.T) {
 		t.Fatal(snap)
 	}
 	log.Close()
-	log, err = journal.Open(path)
+	log, err = sessionstore.OpenLog(context.Background(), filepath.Dir(path), "session")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +92,7 @@ func TestHistoryRetentionPreservesResumeAndIdempotence(t *testing.T) {
 
 func TestHistoryRetentionDefersActiveWorkAndDisabledPolicy(t *testing.T) {
 	root := t.TempDir()
-	l, err := journal.Open(filepath.Join(root, "events.jsonl"))
+	l, err := sessionstore.OpenLog(context.Background(), filepath.Dir(filepath.Join(root, "events.jsonl")), "session")
 	if err != nil {
 		t.Fatal(err)
 	}
