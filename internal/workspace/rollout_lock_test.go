@@ -11,14 +11,20 @@ import (
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 )
 
-// A rollout that cannot take the lock must say so. It used to return in
-// silence, so an installation that had stopped updating looked exactly like one
-// with nothing to do -- for as long as whoever held the lock held it. See
-// cxz#222.
-func TestARolloutThatCannotTakeTheLockSaysSo(t *testing.T) {
+// A rollout that cannot take the lock must say so, and must not say anything
+// else. It used to return in silence, so an installation that had stopped
+// updating looked exactly like one with nothing to do (cxz#222); then it wrote
+// "holding" over whatever the installation actually was, and an installation
+// that had finished rolling out read as held for twelve hours, because a pass
+// over ten projects does not always finish inside the thirty second interval
+// and most collisions are a tick meeting the previous one (cxz#257).
+func TestARolloutThatCannotTakeTheLockSaysSoWithoutRewritingTheState(t *testing.T) {
 	root := t.TempDir()
 	m := &Manager{Root: root}
 	if err := cxzupdate.SetPolicy(root, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := cxzupdate.Save(root, cxzupdate.State{State: "healthy"}); err != nil {
 		t.Fatal(err)
 	}
 	held, err := core.Lock(filepath.Join(root, "rollout.lock"))
@@ -33,11 +39,11 @@ func TestARolloutThatCannotTakeTheLockSaysSo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.State != "holding" {
-		t.Fatal("a contended rollout left no trace, state is", s.State)
-	}
 	if s.Reason == "" {
-		t.Fatal("it did not say what it was waiting for")
+		t.Fatal("a contended rollout left no trace")
+	}
+	if s.State != "healthy" {
+		t.Fatal("where the installation stands was rewritten by a lock collision:", s.State)
 	}
 	// And it does not rewrite that state on every tick while it waits.
 	before, err := modTime(cxzupdate.StatePath(root))
