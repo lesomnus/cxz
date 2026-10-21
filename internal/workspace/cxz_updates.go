@@ -129,6 +129,40 @@ func (m *Manager) noteUpdateStop(state, reason string) {
 	_ = cxzupdate.Save(m.Root, s)
 }
 
+// footnoteUpdate says why a pass could not look without pretending the
+// installation moved. A lock collision is not a state: this tick meeting the
+// previous one, or a project whose lock a client holds for a moment, used to be
+// written as "holding" and "waiting" -- and an installation with nothing left to
+// do then read as waiting for twelve hours, which is the same lie cxz#222 and
+// cxz#253 were about. See cxz#257.
+func (m *Manager) footnoteUpdate(reason string) {
+	s, err := cxzupdate.Load(m.Root)
+	if err != nil || s.Reason == reason {
+		return
+	}
+	s.Reason = reason
+	_ = cxzupdate.Save(m.Root, s)
+}
+
+// tryLockFor waits a little for a lock instead of giving up on the first
+// attempt. A client listing sessions holds a project's lock for a moment, and a
+// pass that gives up instantly can lose the same race every time: harmless
+// while everything is current, but a project that is actually behind would
+// never be updated, and the installation would say a project operation was in
+// progress while nothing was. See cxz#257.
+func tryLockFor(mu *sync.Mutex, d time.Duration) bool {
+	deadline := time.Now().Add(d)
+	for {
+		if mu.TryLock() {
+			return true
+		}
+		if time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+}
+
 func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	// Policy belongs to this installation, not whichever frontend last connected.
 	cfg, err := cxzupdate.Policy(m.Root)
@@ -146,11 +180,7 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 		// that looked and found nothing, and this silence -- a status whose
 		// timestamp simply stops moving -- cost an hour of looking in the
 		// wrong places. See cxz#222.
-		if s, err := cxzupdate.Load(m.Root); err == nil && s.State != "holding" {
-			s.State = "holding"
-			s.Reason = "another rollout holds the lock: " + e.Error()
-			_ = cxzupdate.Save(m.Root, s)
-		}
+		m.footnoteUpdate("a rollout holds the lock: " + e.Error())
 		return
 	}
 	defer lock.Close()
@@ -207,11 +237,11 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 		m.noteUpdateStop("waiting", "project inventory unavailable: "+e.Error())
 		return
 	}
+	var busy []string
 	for _, p := range ps {
 		projectLock := m.projectLock(p.ID)
-		if !projectLock.TryLock() {
-			s.State = "waiting"
-			s.Reason = "project operation in progress: " + p.ID
+		if !tryLockFor(projectLock, 2*time.Second) {
+			busy = append(busy, p.ID)
 			continue
 		}
 		// Bound by the step context; prevent concurrent manual project recreation.
@@ -371,6 +401,13 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	}
 	if s.State == "healthy" {
 		s.AppliedSequence = r.Sequence
+		// Everything this pass could reach is current. Projects it could not
+		// reach are a footnote, not a pending update: naming one as the state
+		// is how an installation with nothing to do came to report "project
+		// operation in progress" for twelve hours. See cxz#257.
+		if len(busy) > 0 {
+			s.Reason = "busy this pass, will look again: " + strings.Join(busy, ", ")
+		}
 	}
 	_ = cxzupdate.Save(m.Root, s)
 }
