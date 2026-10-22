@@ -61,6 +61,76 @@ func (s Layer) sync(ctx context.Context) error {
 
 // Bootstrap once; ordinary resource reads never reconcile Docker/runtime.
 // Keep errors retryable rather than poisoning initialization with sync.Once.
+// observeWindow is how stale a container observation may be when a read is
+// answered. The 30-second reconciliation loop is a safety net for subscribers,
+// not a freshness guarantee: a project page that asks is asking now.
+//
+// It is a window rather than an observation per read because the answer costs a
+// Docker inventory. Polling clients share one look; what they cannot do is read
+// a conclusion from minutes ago as though it were current -- which is the whole
+// reason the state is derived. See docs/plans/project-lifecycle-api.md.
+// A variable so a test can close the window rather than wait out the clock.
+var observeWindow = 2 * time.Second
+
+// observeProjects refreshes what is known about every project's container, if
+// what is known is older than the window. Sessions are not touched: this is the
+// container inventory, which is cheap, and not the per-project session calls.
+func (s Layer) observeProjects(ctx context.Context) error {
+	if s.bound {
+		return nil
+	}
+	s.shared.observedMu.Lock()
+	defer s.shared.observedMu.Unlock()
+	if time.Since(s.shared.observedAt) < observeWindow {
+		return nil
+	}
+	projects, err := s.shared.runtime.Projects(ctx, &api.Empty{})
+	if err != nil {
+		// A look that failed leaves the previous one in place, and leaves the
+		// window open so the next read tries again. The projects themselves are
+		// still answered from the database.
+		return nil
+	}
+	s.shared.mu.Lock()
+	defer s.shared.mu.Unlock()
+	for _, p := range projects.Projects {
+		if p.Id == "" || p.State == "foreign" {
+			continue
+		}
+		if err = s.observeStatus(ctx, p); err != nil {
+			return err
+		}
+	}
+	s.shared.observedAt = time.Now()
+	return nil
+}
+
+// observeStatus updates what is known about a project's container and nothing
+// else. It cannot register a project: a container that exists is not a reason
+// for a resource to exist, and a project that was erased must not come back
+// because its container was still around when the look happened. Registration
+// belongs to Add and to the one-time migration of runtime manifests.
+func (s Layer) observeStatus(ctx context.Context, v *api.Project) error {
+	srv := s.Next().Project()
+	ref := projectRef(v.Id)
+	old, err := srv.Get(ctx, resource.ProjectGetRequest_builder{Ref: ref, Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
+	if status.Code(err) == codes.NotFound {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if !old.GetListed() {
+		return nil
+	}
+	state := projectStatus(v)
+	if proto.Equal(old.GetStatus(), state) {
+		return nil
+	}
+	_, err = srv.Patch(ctx, resource.ProjectPatchRequest_builder{Ref: ref, Status: state, DateUpdatedForce: ptr(true)}.Build())
+	return err
+}
+
 func (s Layer) ensureSnapshot(ctx context.Context) error {
 	if s.bound {
 		return nil

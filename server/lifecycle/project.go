@@ -96,6 +96,9 @@ func (s ProjectServer) Get(ctx context.Context, r *resource.ProjectGetRequest) (
 	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
 	}
+	if err := s.observeProjects(ctx); err != nil {
+		return nil, err
+	}
 	v, err := s.ProjectServiceServer.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err == nil && !v.GetListed() {
 		return nil, status.Error(codes.NotFound, "project deleted")
@@ -112,6 +115,9 @@ func (s ProjectServer) List(ctx context.Context, r *resource.ProjectListRequest)
 	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
 	}
+	if err := s.observeProjects(ctx); err != nil {
+		return nil, err
+	}
 	return s.ProjectServiceServer.List(ctx, r)
 }
 func (s ProjectServer) Watch(r *resource.ProjectWatchRequest, stream grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
@@ -123,6 +129,9 @@ func (s ProjectServer) Watch(r *resource.ProjectWatchRequest, stream grpc.Server
 	s.shared.watchers.Add(1)
 	defer s.shared.watchers.Add(-1)
 	if err := s.ensureSnapshot(stream.Context()); err != nil {
+		return err
+	}
+	if err := s.observeProjects(stream.Context()); err != nil {
 		return err
 	}
 	return s.watchInventory(r, stream)

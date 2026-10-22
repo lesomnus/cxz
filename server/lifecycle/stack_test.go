@@ -22,10 +22,12 @@ import (
 type fixture struct {
 	api.UnimplementedSessionsServer
 	assets.Uploader
-	p      *api.Project
-	s      *api.Session
-	resume *api.Control
-	up     *api.ProjectRequest
+	p       *api.Project
+	s       *api.Session
+	resume  *api.Control
+	up      *api.ProjectRequest
+	looks   int
+	lookErr error
 }
 
 func TestUnversionedProtoNamespace(t *testing.T) {
@@ -49,6 +51,16 @@ func (f *fixture) SetSessionTitle(_ context.Context, id, title string) (string, 
 	}
 	f.s.Title = title
 	return title, nil
+}
+
+// Projects is the container inventory a read observes, counted so a test can
+// see how often it was asked.
+func (f *fixture) Projects(context.Context, *api.Empty) (*api.ProjectList, error) {
+	f.looks++
+	if f.lookErr != nil {
+		return nil, f.lookErr
+	}
+	return &api.ProjectList{Projects: []*api.Project{f.p}}, nil
 }
 func (f *fixture) ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error) {
 	return &api.ProjectList{Projects: []*api.Project{f.p}}, &api.SessionList{Sessions: []*api.Session{f.s}}, nil
