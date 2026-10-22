@@ -33,7 +33,8 @@ require (
 	github.com/muesli/termenv v0.16.0
 	github.com/protobuf-orm/ent v0.0.0-20260906224055-1575ccbff508
 	github.com/protobuf-orm/protobuf-orm v0.0.0-20260906212449-04c0cd58f10a
-	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260907034345-a9bdc5357d7d
+	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20261022151422-5b2cd8279e07
+	github.com/rivo/uniseg v0.4.7
 	github.com/tailscale/hujson v0.0.0-20260727124030-b80ff77dac4f
 	github.com/yuin/goldmark v1.7.8
 	golang.org/x/mod v0.40.0
@@ -96,7 +97,6 @@ require (
 	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260906232518-fa1777a2628d // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260906213448-03adaf8cb0fc // indirect
 	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260906213434-46a5916d5339 // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect
 	github.com/segmentio/asm v1.1.3 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
