@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/api"
@@ -197,18 +198,27 @@ func TestAppendingAfterConversionMatchesConvertingTheWhole(t *testing.T) {
 	}
 }
 
-// A conversion that was interrupted is finished by the next one, not repaired.
-func TestConvertIsRerunnable(t *testing.T) {
+// A conversion happens once and is finished rather than repeated: reading a
+// journal is reading all of it, and after cxz#278 nothing appends to one. A
+// conversion that was interrupted left no mark, so the next one finishes it.
+func TestConvertHappensOnce(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
 	events := conversation(t, dir)
-	for i := 0; i < 3; i++ {
+	n, err := Convert(ctx, dir, "s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != len(events) {
+		t.Fatal("the first conversion took", n, "of", len(events))
+	}
+	for i := 0; i < 2; i++ {
 		n, err := Convert(ctx, dir, "s")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if n != len(events) {
-			t.Fatal("pass", i, "converted", n)
+		if n != 0 {
+			t.Fatal("pass", i, "read the journal again:", n)
 		}
 	}
 	s, err := Open(ctx, Path(dir), "s", false)
@@ -307,5 +317,68 @@ func TestAStoreIsStamped(t *testing.T) {
 	}
 	if _, err = os.Stat(Path(dir)); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Bytes answers for the conversation, not for the file it lives in. The file
+// keeps the pages a delete frees, and the pages in use carry the index, the
+// derived projection and the overflow of blobs that are still there, so a
+// retention policy measured against either one trims and never gets under its
+// budget. See cxz#286.
+func TestBytesCountsTheConversationAndNotTheFile(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	l, err := OpenLog(ctx, dir, "s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	body := strings.Repeat("x", 64*1024)
+	for i := range 24 {
+		if _, err = l.AppendBatch([]core.Event{
+			{SessionID: "s", RunID: "run", Kind: "input", Text: "prompt"},
+			{SessionID: "s", RunID: "run", Kind: "assistant", Text: body},
+			{SessionID: "s", RunID: "run", Kind: "turn_end", Text: "completed"},
+			{SessionID: "s", RunID: "run", Kind: "state", Text: "idle"},
+		}); err != nil {
+			t.Fatal(i, err)
+		}
+	}
+	full, err := l.Size()
+	if err != nil {
+		t.Fatal(err)
+	}
+	events := l.All()
+	var sum int64
+	for _, e := range events {
+		b, err := json.Marshal(e)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum += int64(len(b))
+	}
+	if full != sum {
+		t.Fatalf("size %d is not the conversation's %d", full, sum)
+	}
+	// Trim to the last turn and the size has to follow it down. The file does
+	// not: it stays at its high-water mark, which is the whole point.
+	cut := events[len(events)-5]
+	checkpoint := core.Event{SessionID: "s", RunID: "run", Seq: cut.Seq, Kind: core.HistoryCheckpointKind, Payload: json.RawMessage(`{"version":1}`)}
+	if err = l.Compact(checkpoint); err != nil {
+		t.Fatal(err)
+	}
+	trimmed, err := l.Size()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if trimmed >= full/2 {
+		t.Fatalf("a trim of nearly everything moved the size %d -> %d", full, trimmed)
+	}
+	info, err := os.Stat(Path(dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Size() <= trimmed {
+		t.Fatal("the file is expected to stay larger than the conversation in it", info.Size(), trimmed)
 	}
 }

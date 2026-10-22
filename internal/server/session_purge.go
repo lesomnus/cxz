@@ -125,7 +125,10 @@ func (s *Server) forgetSession(ctx context.Context, id string) error {
 	if err = historypolicy.ForgetFloor(ctx, tx, id); err != nil {
 		return err
 	}
-	for _, q := range []string{"DELETE FROM events WHERE session_id=?", "DELETE FROM sessions WHERE id=?"} {
+	// Only the manifest: the conversation is a file in the session's own
+	// directory, which is one of the targets above. This server keeps no copy
+	// of it any more. See cxz#278.
+	for _, q := range []string{"DELETE FROM sessions WHERE id=?"} {
 		if _, err = tx.ExecContext(ctx, q, id); err != nil {
 			return err
 		}

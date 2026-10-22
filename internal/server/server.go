@@ -27,6 +27,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/observe"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
@@ -145,17 +146,32 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 				`DROP TABLE IF EXISTS transcript_state`,
 				`DROP TABLE IF EXISTS transcript_format`,
 				`DROP TABLE IF EXISTS transcript_seen`,
-				`VACUUM`,
 			} {
 				if _, e = db.ExecContext(ctx, q); e != nil {
 					return e
 				}
 			}
+			// Giving the space back is a rewrite of the whole file -- 2.3GB on
+			// this installation -- and doing it here cost the new manager its
+			// health check: the rollout timed out waiting for it to answer and
+			// rolled back. Dropping is instant; reclaiming can happen while the
+			// manager is already serving, once, and a failure costs nothing but
+			// the space.
+			go func() {
+				if _, err := db.ExecContext(context.WithoutCancel(ctx), `VACUUM`); err != nil {
+					fmt.Fprintln(os.Stderr, "reclaiming space after dropping the mirror:", err)
+				}
+			}()
 		}
 		defer s.manager.Close()
 		if s.conversations != nil {
 			go s.Seed(ctx)
 		}
+		// Every session gets a store, so that the journal can stop being the
+		// record. Background, for the same reason the reclaim above is: this
+		// reads journals, and a manager that is busy when the rollout asks
+		// whether it is healthy is rolled back.
+		go s.manager.ConvertStores(ctx)
 		broker, err := accounts.StartBroker(root, accounts.BrokerSocket, func(ctx context.Context, account string) error {
 			bin, err := distribution.Ensure(ctx, "/cxz/tools", "codex", "", true)
 			if err != nil {
@@ -667,6 +683,12 @@ func (s *Server) List(ctx context.Context, _ *api.Empty) (*api.SessionList, erro
 	}
 	return out, nil
 }
+// conversationFence is how much of a session's conversation is on disk and
+// when it last changed. Two numbers, so a comparison is a comparison.
+type conversationFence struct {
+	size, mtimeNS int64
+}
+
 func (s *Server) Get(ctx context.Context, r *api.SessionRef) (*api.Session, error) {
 	if s.manager != nil {
 		return s.manager.Get(ctx, r.Id)
@@ -792,7 +814,9 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 	}
 	cursor := r.AfterSeq
 	var lastWatchActivity time.Time
-	var lastJournalInfo os.FileInfo
+	// What the conversation looked like last time round, so a tick that has
+	// nothing new to say costs a stat rather than a snapshot.
+	var lastConversation conversationFence
 	var lastJournalRefresh time.Time
 	ticker := time.NewTicker(150 * time.Millisecond)
 	defer ticker.Stop()
@@ -822,8 +846,8 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 			}
 			lastWatchActivity = time.Now()
 		}
-		info, statErr := os.Stat(filepath.Join(core.Dir(s.root, m.ID), "events.jsonl"))
-		if statErr == nil && lastJournalInfo != nil && os.SameFile(info, lastJournalInfo) && info.Size() == lastJournalInfo.Size() && info.ModTime() == lastJournalInfo.ModTime() && time.Since(lastJournalRefresh) < 30*time.Second {
+		size, mtime, statErr := sessionstore.Fence(core.Dir(s.root, m.ID))
+		if statErr == nil && lastConversation == (conversationFence{size, mtime}) && time.Since(lastJournalRefresh) < 30*time.Second {
 			if e = beat(); e != nil {
 				return e
 			}
@@ -837,7 +861,7 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 		if _, e = s.snapshot(ctx, m); e != nil {
 			return e
 		}
-		lastJournalInfo, lastJournalRefresh = info, time.Now()
+		lastConversation, lastJournalRefresh = conversationFence{size, mtime}, time.Now()
 		db, release := s.conversationFor(ctx, m)
 		rows, e := db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 256", m.ID, cursor)
 		if e != nil {
@@ -871,7 +895,7 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 			lastFrame = time.Now()
 		}
 		if len(batch) == 256 {
-			lastJournalInfo = nil // Drain a backlog without waiting for another write.
+			lastConversation = conversationFence{} // Drain a backlog without waiting for another write.
 			continue
 		}
 		if e = beat(); e != nil {

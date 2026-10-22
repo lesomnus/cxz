@@ -1,19 +1,15 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json"
-	"errors"
-	"github.com/lesomnus/cxz/internal/eventview"
-	"path/filepath"
+	"os"
 	"sync"
 
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/eventview"
 	"github.com/lesomnus/cxz/internal/historypolicy"
-	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/supervisor"
@@ -21,9 +17,8 @@ import (
 )
 
 type sessionProjection struct {
-	mu         sync.Mutex
-	cursor     journal.Cursor
-	floor      uint64
+	mu       sync.Mutex
+	floor    uint64
 	snapshot   core.Snapshot
 	background map[string]*agentview.BackgroundState
 	// catalogs is the latest model catalog per run. It is reduced state like the
@@ -40,10 +35,9 @@ type sessionProjection struct {
 	// writes it; this server reads it. Held open because opening it per call
 	// would be a file open per page.
 	store *sessionstore.Store
-	// owned says this projection was taken from what the session recorded, so
-	// the journal has not been read in this process and the rows belong to the
-	// session rather than to this server.
-	owned bool
+	// derived says the reduced state above was built from this store, so a call
+	// that finds the session unmoved can answer without building it again.
+	derived bool
 }
 
 type catalogRecord struct {
@@ -73,183 +67,59 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 			p.mu.Unlock()
 		}
 	}()
-	path := filepath.Join(core.Dir(s.root, m.ID), "events.jsonl")
-	// A session records its reduced state beside its records, fenced to the
-	// journal it was reduced from. When that fence still matches, the state is
-	// this state and the journal is not read at all -- which on a real
-	// installation was 0.26 to 0.95s per session every time this process was
-	// new. See docs/plans/session-conversation-store.md.
-	taken, err := s.takeRecorded(ctx, p, m, path)
-	if err != nil {
-		return nil, err
-	}
-	if taken {
-		ok = true
-		return p, nil
-	}
-	events, next, reset, err := journal.ReadSince(ctx, path, p.cursor)
-	if err != nil {
-		return nil, err
-	}
-	var last uint64
-	if err = s.db.QueryRowContext(ctx, "SELECT COALESCE(MAX(seq),0) FROM events WHERE session_id=?", m.ID).Scan(&last); err != nil {
-		return nil, err
-	}
-	if last > next.Seq {
-		return nil, errors.New("journal is shorter than committed projection; refusing silent data loss")
-	}
-	if last < p.cursor.Seq && !reset {
-		return nil, errors.New("event projection changed unexpectedly; restart to rebuild from journal")
-	}
-	var floor uint64
-	if reset && len(events) > 0 && events[0].Kind == core.HistoryCheckpointKind {
-		floor = events[0].Seq
-	}
-	if last < next.Seq || floor > 0 {
-		tx, err := s.db.BeginTx(ctx, nil)
-		if err != nil {
-			return nil, err
-		}
-		defer tx.Rollback()
-		if floor > 0 {
-			if err = historypolicy.AdvanceFloor(ctx, tx, m.ID, floor); err != nil {
-				return nil, err
-			}
-		}
-
-		for _, e := range events {
-			if e.Seq <= last && e.Seq != floor {
-				continue
-			}
-			b, err := json.Marshal(e)
-			if err != nil {
-				return nil, err
-			}
-			// The checkpoint at the floor is written even though its sequence is
-			// behind the cache, because it replaces the record that compaction
-			// removed. Once it has, writing it again is writing the same bytes --
-			// and a replacement is a new rowid, which is how the reading
-			// projection tells a backfill from an append. So every restart of
-			// this process, whose first look at a journal is always a reset, used
-			// to put a record behind every reader's cursor and force a session to
-			// be projected from the beginning: 4s on a 103k-record conversation,
-			// 18s on a 146k one, paid by whoever opened it first. See cxz#227.
-			if e.Seq <= last {
-				var stored []byte
-				if err = tx.QueryRowContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq=?", m.ID, e.Seq).Scan(&stored); err == nil && bytes.Equal(stored, b) {
-					continue
-				}
-			}
-			if _, err = tx.ExecContext(ctx, "INSERT OR REPLACE INTO events VALUES(?,?,?)", m.ID, e.Seq, b); err != nil {
-				return nil, err
-			}
-		}
-		if err = tx.Commit(); err != nil {
-			return nil, err
-		}
-	}
-	if reset {
-		p.snapshot = supervisor.Replay(nil)
-		p.background = map[string]*agentview.BackgroundState{}
-		p.catalogs = map[string]catalogRecord{}
-	}
-	p.snapshot = supervisor.ReplayFrom(p.snapshot, events)
-	for _, e := range events {
-		if e.Kind == core.HistoryCheckpointKind {
-			var checkpoint core.HistoryCheckpoint
-			if err := json.Unmarshal(e.Payload, &checkpoint); err != nil {
-				return nil, err
-			}
-			for _, saved := range checkpoint.Resume {
-				if saved.Kind == "background" {
-					if p.background[saved.RunID] == nil {
-						p.background[saved.RunID] = &agentview.BackgroundState{}
-					}
-					p.background[saved.RunID].Apply(saved.Payload)
-				}
-			}
-		}
-		v := eventview.FromCore(e)
-		if v.Kind == "models" {
-			if p.catalogs == nil {
-				p.catalogs = map[string]catalogRecord{}
-			}
-			// Last one wins: a run republishes after a setting is applied, and
-			// only the newest describes the agent now.
-			p.catalogs[e.RunID] = catalogRecord{payload: v.Payload, seq: v.Seq, ms: v.TimeMs}
-			continue
-		}
-		if v.Kind != "background" {
-			continue
-		}
-		if p.background[e.RunID] == nil {
-			p.background[e.RunID] = &agentview.BackgroundState{}
-		}
-		p.background[e.RunID].Apply(v.Payload)
-	}
-	if floor > 0 {
-		p.floor = floor
-	}
-	p.cursor = next
-	ok = true
-	return p, nil
-}
-
-// takeRecorded takes a session's own reduced state when it can be trusted, so
-// that a projection new to this process starts where the session left off
-// rather than replaying its journal.
-//
-// Trust is the fence and nothing else: the journal's size and modification time
-// as they were when the session wrote the state. The journal is only appended
-// to, and compaction replaces the file, so a match means nothing has been
-// recorded since. Anything else -- no store, no state, a fence that no longer
-// matches -- answers false, and the caller reads the journal exactly as it
-// always has.
-//
-// The rest of what a projection holds is derived here rather than persisted,
-// because the store indexes its records by kind: the newest model catalog of
-// each run is one indexed look, background state is the records of one kind
-// folded in order, and the trim floor is already durable in the policy table.
-// Nothing new has to be written for any of them.
-func (s *Server) takeRecorded(ctx context.Context, p *sessionProjection, m core.Session, path string) (bool, error) {
-	if !p.owned && p.cursor.Seq > 0 {
-		return false, nil // this process is already reading the journal
-	}
+	// The session's own store is the conversation. It records its reduced state
+	// beside its records, so a projection new to this process starts where the
+	// session left off instead of replaying anything -- which on a real
+	// installation was 0.26 to 0.95s per session, every time this process was
+	// new.
+	//
+	// Until stage 5 this server also read the journal, kept a copy of the
+	// events in its own database, and used a fence -- the journal's size and
+	// mtime -- to decide which of the two to trust. There is no journal to
+	// read, so there is nothing to reconcile and nothing to copy.
+	// See cxz#278.
 	if p.store == nil {
+		// A session with no store has recorded nothing: it was created and has
+		// not started, or it is being asked about while its directory is still
+		// being made. That is an empty conversation, not an error.
+		if _, err := os.Stat(sessionstore.Path(core.Dir(s.root, m.ID))); err != nil {
+			p.snapshot = supervisor.Replay(nil)
+			p.background = map[string]*agentview.BackgroundState{}
+			p.catalogs = map[string]catalogRecord{}
+			ok = true
+			return p, nil
+		}
 		store, err := sessionstore.Open(ctx, sessionstore.Path(core.Dir(s.root, m.ID)), m.ID, false)
 		if err != nil {
-			return false, nil // no store yet; the journal is still the only truth
+			return nil, err
 		}
 		p.store = store
 	}
-	snap, fence, found, err := p.store.State(ctx)
-	if err != nil || !found {
-		return false, nil
-	}
-	size, mtime, err := journal.Fence(path)
+	snap, found, err := p.store.State(ctx)
 	if err != nil {
-		return false, nil
+		return nil, err
 	}
-	if fence.Size != size || fence.ModTime != mtime || fence.Seq != snap.LastSeq {
-		return false, nil
+	if !found {
+		// A session that has recorded nothing yet. Not an error: it is about to.
+		p.snapshot = supervisor.Replay(nil)
+		p.background = map[string]*agentview.BackgroundState{}
+		p.catalogs = map[string]catalogRecord{}
+		ok = true
+		return p, nil
 	}
-	through, err := p.store.Through(ctx)
-	if err != nil || through != fence.Seq {
-		return false, nil
-	}
-	// Checked on every call, not once. A session keeps recording, so a
-	// projection taken and then left alone would answer with the conversation as
-	// it was when it was taken -- which is how the first version of this left
-	// `Background` empty for the rest of a run.
-	if !p.owned || snap.LastSeq != p.snapshot.LastSeq {
+	// Derived on every call where the session has moved, not once: a session
+	// keeps recording, and a projection taken and then left alone would answer
+	// with the conversation as it was when it was taken -- which is how the
+	// first version of this left `Background` empty for the rest of a run.
+	if !p.derived || snap.LastSeq != p.snapshot.LastSeq {
 		if err = s.deriveFromStore(ctx, p, m); err != nil {
-			return false, err
+			return nil, err
 		}
+		p.derived = true
 	}
 	p.snapshot = snap
-	p.cursor = journal.Cursor{Offset: size, Seq: snap.LastSeq}
-	p.owned = true
-	return true, nil
+	ok = true
+	return p, nil
 }
 
 // deriveFromStore fills what a journal replay used to leave behind, with
@@ -264,18 +134,14 @@ func (s *Server) deriveFromStore(ctx context.Context, p *sessionProjection, m co
 		v := eventview.FromCore(e)
 		p.catalogs[e.RunID] = catalogRecord{payload: v.Payload, seq: v.Seq, ms: v.TimeMs}
 	}
-	background, err := p.store.EachOfKind(ctx, "background")
+	// Folded by the writer, because a raw background frame gets no row in the
+	// reading projection and finding it again would mean walking the whole
+	// conversation. See cxz#278.
+	background, err := p.store.Background(ctx)
 	if err != nil {
 		return err
 	}
-	p.background = map[string]*agentview.BackgroundState{}
-	for _, e := range background {
-		v := eventview.FromCore(e)
-		if p.background[e.RunID] == nil {
-			p.background[e.RunID] = &agentview.BackgroundState{}
-		}
-		p.background[e.RunID].Apply(v.Payload)
-	}
+	p.background = background
 	// The trim floor is already durable, in the policy table this server owns.
 	// It is read in a transaction because that is what the policy helper takes,
 	// and it creates its table on the way past.
@@ -295,16 +161,15 @@ func (s *Server) deriveFromStore(ctx context.Context, p *sessionProjection, m co
 	return nil
 }
 
-// conversation is the database a session's conversation is read from: the
-// session's own store once this server has taken that store's state, and the
-// server's cache until then. A session is in one or the other and never half of
-// each, because the fence that decides it is the same fence that decided
-// whether the journal was read.
+// conversation is the database a session's conversation is read from, which is
+// the session's own store. It used to be this or the server's copy of the
+// events, decided by a fence against the journal; there is neither a journal
+// nor a copy. See cxz#278.
 func (s *Server) conversation(p *sessionProjection) *sql.DB {
-	if p.owned && p.store != nil {
-		return p.store.DB()
+	if p.store == nil {
+		return nil // a session that has recorded nothing
 	}
-	return s.db
+	return p.store.DB()
 }
 
 // conversationFor is `conversation` for a caller that does not hold the
@@ -325,23 +190,8 @@ func (s *Server) conversationFor(ctx context.Context, m core.Session) (*sql.DB, 
 		}
 		return store.DB(), func() { store.Close() }
 	}
-	path := filepath.Join(core.Dir(s.root, m.ID), "events.jsonl")
-	size, mtime, err := journal.Fence(path)
-	if err != nil {
-		return s.db, func() {} // no journal here: this is the cache's session
-	}
 	store, err := sessionstore.Open(ctx, sessionstore.Path(core.Dir(s.root, m.ID)), m.ID, false)
 	if err != nil {
-		return s.db, func() {}
-	}
-	_, fence, found, err := store.State(ctx)
-	if err != nil || !found || fence.Size != size || fence.ModTime != mtime {
-		store.Close()
-		return s.db, func() {}
-	}
-	through, err := store.Through(ctx)
-	if err != nil || through != fence.Seq {
-		store.Close()
 		return s.db, func() {}
 	}
 	return store.DB(), func() { store.Close() }

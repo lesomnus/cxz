@@ -1,21 +1,19 @@
 package supervisor
 
 import (
+	"context"
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/historypolicy"
-	"github.com/lesomnus/cxz/internal/journal"
 )
 
 func TestHistoryRetentionPreservesResumeAndIdempotence(t *testing.T) {
 	root := t.TempDir()
-	path := filepath.Join(root, "events.jsonl")
-	log, err := journal.Open(path)
+	log, err := sessionstore.OpenLog(context.Background(), root, "session")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,18 +45,36 @@ func TestHistoryRetentionPreservesResumeAndIdempotence(t *testing.T) {
 	if events[0].Kind != core.HistoryCheckpointKind || events[len(events)-1].Seq != before+1 {
 		t.Fatal("missing checkpoint or sequence reset")
 	}
-	data, _ := os.ReadFile(path)
-	if strings.Contains(string(data), original.Text) {
+	stored, err := json.Marshal(events)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(stored), original.Text) {
 		t.Fatal("old command body retained")
 	}
-	if len(data) > historypolicy.MiB {
-		t.Fatal("retained display history exceeds budget", len(data))
+	// The budget and the cut have to measure the same thing. While the size was
+	// read as the store's pages in use -- index, projection and blob overflow
+	// included -- one trim could not get under a budget the retained events
+	// already obeyed, so every turn trimmed again. See cxz#286.
+	size, err := log.Size()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if size > historypolicy.MiB {
+		t.Fatal("retained display history exceeds budget", size)
+	}
+	floor := events[0].Seq
+	if err = s.retainHistory(root, func() error { t.Error("trimmed again with the budget already met"); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if again := log.All(); again[0].Seq != floor {
+		t.Fatalf("floor moved with nothing to trim: %d -> %d", floor, again[0].Seq)
 	}
 	if snap := Replay(events); snap.VendorID != "provider-thread" || snap.PermissionMode != "ask" || snap.State != "idle" {
 		t.Fatal(snap)
 	}
 	log.Close()
-	log, err = journal.Open(path)
+	log, err = sessionstore.OpenLog(context.Background(), root, "session")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +107,7 @@ func TestHistoryRetentionPreservesResumeAndIdempotence(t *testing.T) {
 
 func TestHistoryRetentionDefersActiveWorkAndDisabledPolicy(t *testing.T) {
 	root := t.TempDir()
-	l, err := journal.Open(filepath.Join(root, "events.jsonl"))
+	l, err := sessionstore.OpenLog(context.Background(), root, "session")
 	if err != nil {
 		t.Fatal(err)
 	}

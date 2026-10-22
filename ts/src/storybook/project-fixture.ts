@@ -375,7 +375,7 @@ export function projectFixture(
           dryRun: request.dryRun,
           targets: [
             {
-              kind: "journal",
+              kind: "conversation",
               path: `/storybook/${id}/journal`,
               files: 2,
               bytes: 4096n,

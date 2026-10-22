@@ -21,5 +21,5 @@ func (s *Server) Background(ctx context.Context, r *api.SessionRef) (*api.Backgr
 	}
 	defer p.mu.Unlock()
 	data, err := json.Marshal(p.background)
-	return &api.BackgroundReply{LastSeq: p.cursor.Seq, Data: data}, err
+	return &api.BackgroundReply{LastSeq: p.snapshot.LastSeq, Data: data}, err
 }

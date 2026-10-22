@@ -6,7 +6,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/memoryview"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
@@ -816,22 +816,49 @@ func TestLifecycle(t *testing.T) {
 	if err != nil || len(history.Events) == 0 || history.Events[0].Kind != core.HistoryTrimmedKind {
 		t.Fatal("retention not applied via public RPC", err)
 	}
+	boundaries := func() int {
+		t.Helper()
+		page, e := client.History(ctx, &api.WatchRequest{SessionId: id, Limit: 1000})
+		if e != nil {
+			t.Fatal(e)
+		}
+		n := 0
+		for _, v := range page.Events {
+			if v.Kind == core.HistoryTrimmedKind {
+				n++
+			}
+		}
+		return n
+	}
+	trimmedMarkers := boundaries()
 	// Idle is visible to projections before the supervisor finishes the atomic
 	// checkpoint replacement. Wait for that maintenance transaction to finish.
+	//
+	// What has to shrink is the conversation the session keeps, which is what
+	// Store.Bytes answers. Not the file: SQLite does not hand freed pages back
+	// to the filesystem, so it stays at its high-water mark. Not the pages in
+	// use either -- they hold the index and the derived projection as well, and
+	// a budget compared against them is one a trim cannot meet. See cxz#278,
+	// cxz#286.
+	stored := func() int64 {
+		store, err := sessionstore.Open(ctx, sessionstore.Path(core.Dir(state, id)), id, false)
+		if err != nil {
+			return -1
+		}
+		defer store.Close()
+		n, err := store.Bytes(ctx)
+		if err != nil {
+			return -1
+		}
+		return n
+	}
 	for deadline := time.Now().Add(8 * time.Second); time.Now().Before(deadline); {
-		info, err := os.Stat(filepath.Join(core.Dir(state, id), "events.jsonl"))
-		if err == nil && info.Size() <= 1<<20 {
+		if n := stored(); n >= 0 && n <= 1<<20 {
 			break
 		}
 		time.Sleep(30 * time.Millisecond)
 	}
-	if info, err := os.Stat(filepath.Join(core.Dir(state, id), "events.jsonl")); err != nil || info.Size() > 1<<20 {
-		events, _ := journal.Read(filepath.Join(core.Dir(state, id), "events.jsonl"))
-		sizes := map[string]int{}
-		for _, e := range events {
-			b, _ := json.Marshal(e)
-			sizes[e.Kind] += len(b)
-		}
+	if n := stored(); n < 0 || n > 1<<20 {
 		logs, _ := os.ReadFile(filepath.Join(core.Dir(state, id), "supervisor.log"))
 		var failures []string
 		for _, line := range strings.Split(string(logs), "\n") {
@@ -839,7 +866,7 @@ func TestLifecycle(t *testing.T) {
 				failures = append(failures, line)
 			}
 		}
-		t.Fatal("journal did not shrink", info, err, sizes, failures)
+		t.Fatal("the conversation did not shrink:", n, failures)
 	}
 	if _, e = client.Stop(ctx, &api.Control{SessionId: id, RunId: retained.RunId, ClientId: core.ID()}); e != nil {
 		t.Fatal(e)
@@ -853,6 +880,14 @@ func TestLifecycle(t *testing.T) {
 	afterRetention := await("idle")
 	if afterRetention.VendorId != retained.VendorId || afterRetention.PermissionMode != retained.PermissionMode {
 		t.Fatal("checkpoint lost resume state")
+	}
+	// Coming back says nothing new about the floor. The head checkpoint is the
+	// boundary every reader renders, and announcing it again on each start
+	// appended one more marker to the conversation every time -- thirteen for
+	// one floor in a session that had restarted that often, stacked among the
+	// newest messages. See cxz#286.
+	if n := boundaries(); n != trimmedMarkers {
+		t.Fatalf("a restart added %d history boundary markers", n-trimmedMarkers)
 	}
 	if receipt, e := client.Send(ctx, prunedRequest); e != nil || receipt.Status != "accepted" {
 		t.Fatal("pruned request duplicate was not recognized", receipt, e)

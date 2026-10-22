@@ -26,7 +26,6 @@ import (
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/filemap"
-	"github.com/lesomnus/cxz/internal/journal"
 	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/skillconfig"
 )
@@ -41,7 +40,7 @@ type Supervisor struct {
 	updateBlocked    bool
 	mu               sync.Mutex
 	session          core.Session
-	log              *journal.Log
+	log              *sessionstore.Log
 	// store is this session's own conversation file. Derived while the journal
 	// is still written, so a failure to write it never stops a recording.
 	store            *sessionstore.Store
@@ -172,7 +171,7 @@ func Run(ctx context.Context, root, id string) error {
 		return e
 	}
 	defer profileLock.Close()
-	l, e := journal.Open(filepath.Join(dir, "events.jsonl"))
+	l, e := sessionstore.OpenLog(ctx, dir, session.ID)
 	if e != nil {
 		return e
 	}
@@ -190,8 +189,8 @@ func Run(ctx context.Context, root, id string) error {
 			}
 		}
 	}
-	s.openStore(ctx, dir)
-	defer s.closeStore()
+	s.store = l.Store()
+	s.recordState(ctx)
 	defer s.quotaWorkers.Wait()
 	s.quotaRoot = root
 	var runtime struct{ Token string }
@@ -206,9 +205,12 @@ func Run(ctx context.Context, root, id string) error {
 	if old.Queued != "" {
 		s.event("diagnostic", fmt.Sprintf("the message waiting to be sent did not survive the restart: %q", old.Queued), "", nil, nil)
 	}
-	if events := l.All(); len(events) > 0 && events[0].Kind == core.HistoryCheckpointKind {
-		s.event(core.HistoryTrimmedKind, "Earlier display history was removed by the size limit.", "", core.HistoryBoundary{Through: events[0].Seq}, nil)
-	}
+	// A trimmed conversation does not announce its floor again here. It begins
+	// with its checkpoint and every reader turns that into the marker it shows
+	// (eventview.FromCore), so repeating it appended one more event to the
+	// conversation on every start: this session collected thirteen of them for
+	// one floor, stacked among the newest messages where they read as though
+	// history were being removed over and over. See cxz#286.
 	args := claudeSessionArgs(s.session, s.effort, old.VendorID)
 	if session.Kind == "codex" {
 		// Codex does not persist an empty thread until its first turn. Starting
@@ -405,7 +407,7 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, respo
 	}
 	if err != nil {
 		s.kill()
-		panic(fmt.Sprintf("journal durability failure: %v", err))
+		panic(fmt.Sprintf("conversation durability failure: %v", err))
 	}
 	s.snap.LastSeq = e.Seq
 	if kind == "assistant" && e.Response != nil && e.Response.Phase != "subagent" && (e.Response.TurnID == "" || e.Response.TurnID == s.responseContext.TurnID) {
@@ -431,11 +433,11 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, respo
 	if kind == "input" && id == s.snap.QueuedID {
 		s.snap.Queued, s.snap.QueuedID = "", ""
 	}
-	// Last, because what the store records beside the record is the state the
-	// record produced. Written before the reduction finished, it would describe
-	// the session as it was one record ago.
+	// Last, because the state recorded beside the records is the state those
+	// records produced. Written before the reduction finished, it would
+	// describe the session as it was one record ago.
 	if !s.buffering {
-		s.record([]core.Event{e})
+		s.recordState(context.Background())
 	}
 	return e
 }
@@ -532,9 +534,10 @@ func (s *Supervisor) consume(raw []byte) {
 		s.batch = nil
 		if err != nil {
 			s.kill()
-			panic(fmt.Sprintf("journal durability failure: %v", err))
+			panic(fmt.Sprintf("conversation durability failure: %v", err))
 		}
-		s.record(committed)
+		s.recordState(context.Background())
+		_ = committed
 		s.approvePending()
 		s.deliverQueued()
 		if completed && s.quotaRoot != "" {

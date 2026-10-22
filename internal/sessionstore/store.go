@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/transcripthistory"
 	"github.com/lesomnus/payday/config"
@@ -33,20 +34,29 @@ const Name = "conversation.db"
 
 // Schema is the shape of the file. Monotone, and a writer that does not know a
 // higher one refuses rather than guesses.
-const Schema = 1
+//
+// Generation 2 is the same shape with a different meaning: the journal is no
+// longer written, so this file is the record rather than a copy of one. Nothing
+// in it had to change, which is why this moves with no DDL behind it.
+const Schema = 2
 
 // Compat is the lowest schema generation that may still write this file. It
 // moves only when a change means something different rather than adding to it,
 // because moving it is what stops an older build -- the one a rollback or
 // `cxz use` puts back -- from recording a conversation at all.
-const Compat = 1
+//
+// It moves to 2 with the journal. A generation 1 build would read the journal
+// it finds beside this file, see the file ahead of it, and rebuild the file
+// from the journal -- which erases every conversation recorded since the
+// journal stopped. Refusing to record is the lesser loss, and it says so.
+// See cxz#278.
+const Compat = 2
 
-// Durability says whether this file is the truth yet. It is not, while the
-// journal is still written: a derived store that is lost is rebuilt from the
-// journal, so it buys nothing by syncing on every commit, which is the same
-// reason convindex runs on NORMAL. Stage 5 turns the journal off and this to
-// FULL in one change.
-const Durability = "NORMAL"
+// Durability says whether this file is the truth. It is, now that the journal
+// is no longer written: there is nothing left to rebuild it from, so every
+// commit syncs. It was NORMAL while the journal carried the one fsync and this
+// file was derived.
+const Durability = "FULL"
 
 func Path(dir string) string { return filepath.Join(dir, Name) }
 
@@ -60,6 +70,9 @@ type Store struct {
 	// AppendBatch, for the same reason.
 	mu    sync.Mutex
 	cache transcripthistory.Cache
+	// background is each run's background tasks, folded as they are appended
+	// and kept in the meta table beside the records.
+	background map[string]*agentview.BackgroundState
 }
 
 func (s *Store) DB() *sql.DB { return s.db }
@@ -70,11 +83,14 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-var meta = []string{
+var meta = append([]string{
 	`CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
 	// The events a session recorded, in the shape the reading projection reads.
 	`CREATE TABLE IF NOT EXISTS events(session_id TEXT NOT NULL, seq INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY(session_id,seq))`,
-}
+	// And the projection's own tables, so that a store is the whole shape as
+	// soon as it exists: a reader of a conversation with no events yet would
+	// otherwise find no tables to read.
+}, transcripthistory.Schema()...)
 
 // Open prepares the file and answers what it is. A reader that finds a schema
 // it does not know still reads what it can: refusing to read would make a
@@ -120,6 +136,15 @@ func Open(ctx context.Context, path, session string, write bool) (*Store, error)
 			db.Close()
 			return nil, err
 		}
+	} else if schema < Schema {
+		// The owner migrates, once, when it opens the file to write. Only the
+		// generation moves: the rows are already in the shape this build reads,
+		// and rewriting `rows_format` here would claim a reduction this build
+		// has not actually performed.
+		if err = s.generation(ctx); err != nil {
+			db.Close()
+			return nil, err
+		}
 	}
 	return s, nil
 }
@@ -131,6 +156,17 @@ func (s *Store) number(ctx context.Context, key string) (int, error) {
 		return 0, nil
 	}
 	return v, err
+}
+
+// generation records that this file is now read and written by a newer cxz,
+// and that an older one must not write it.
+func (s *Store) generation(ctx context.Context) error {
+	for key, value := range map[string]int{"schema": Schema, "compat": Compat} {
+		if _, err := s.db.ExecContext(ctx, `INSERT OR REPLACE INTO meta VALUES(?,?)`, key, fmt.Sprint(value)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Store) stamp(ctx context.Context) error {
@@ -190,7 +226,74 @@ func (s *Store) Append(ctx context.Context, events []core.Event) error {
 	if err = transcripthistory.SyncWith(ctx, s.db, s.session, Decode, &s.cache); err != nil {
 		return fmt.Errorf("reduce %s: %w", s.session, err)
 	}
-	return nil
+	return s.foldBackground(ctx, events)
+}
+
+// foldBackground keeps each run's background tasks beside the records.
+//
+// It is folded here, by the writer, because it cannot be found again
+// afterwards: for one provider a background frame is an event of its own, and
+// for the other it is a raw frame that only the reading view turns into one --
+// and raw frames get no row in the reading projection, so a reader looking for
+// them would have to walk the whole conversation. Reading state a writer
+// already computed is the point of this file. See cxz#278.
+func (s *Store) foldBackground(ctx context.Context, events []core.Event) error {
+	changed := false
+	for _, e := range events {
+		v := eventview.FromCore(e)
+		if v.Kind != "background" {
+			continue
+		}
+		if s.background == nil {
+			if err := s.loadBackground(ctx); err != nil {
+				return err
+			}
+		}
+		if s.background[e.RunID] == nil {
+			s.background[e.RunID] = &agentview.BackgroundState{}
+		}
+		s.background[e.RunID].Apply(v.Payload)
+		changed = true
+	}
+	if !changed {
+		return nil
+	}
+	b, err := json.Marshal(s.background)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.ExecContext(ctx, `INSERT OR REPLACE INTO meta VALUES('background',?)`, string(b))
+	return err
+}
+
+func (s *Store) loadBackground(ctx context.Context) error {
+	s.background = map[string]*agentview.BackgroundState{}
+	var raw string
+	err := s.db.QueryRowContext(ctx, `SELECT value FROM meta WHERE key='background'`).Scan(&raw)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal([]byte(raw), &s.background)
+}
+
+// Background is each run's background tasks as the session recorded them.
+func (s *Store) Background(ctx context.Context) (map[string]*agentview.BackgroundState, error) {
+	out := map[string]*agentview.BackgroundState{}
+	var raw string
+	err := s.db.QueryRowContext(ctx, `SELECT value FROM meta WHERE key='background'`).Scan(&raw)
+	if err == sql.ErrNoRows {
+		return out, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // Decode reads a stored record the way a reader sees it. Exported because a
@@ -235,23 +338,19 @@ func (s *Store) Fill(ctx context.Context, events []core.Event, through uint64) (
 // journal the position belongs to, as it looked when the position was written.
 // Anything else and a reader goes back to reading the journal, which is what it
 // did before this existed.
-type Fence struct {
-	Size    int64  `json:"size"`
-	ModTime int64  `json:"mtime_ns"`
-	Seq     uint64 `json:"seq"`
-}
-
 type state struct {
 	Snapshot core.Snapshot `json:"snapshot"`
-	Fence    Fence         `json:"fence"`
 }
 
 // SetState records the reduced session state beside the records it was reduced
-// from, with the fence that says which journal it belongs to. A reader that
-// finds a matching fence has the state without replaying anything -- which is
-// the whole reason this store exists.
-func (s *Store) SetState(ctx context.Context, snap core.Snapshot, f Fence) error {
-	b, err := json.Marshal(state{Snapshot: snap, Fence: f})
+// from. A reader has the state without replaying anything, which is the whole
+// reason this store exists.
+//
+// It used to carry a fence -- the size and mtime of the journal it was reduced
+// from -- because the journal was the record and this file could be behind it.
+// There is no journal to be behind any more. See cxz#278.
+func (s *Store) SetState(ctx context.Context, snap core.Snapshot) error {
+	b, err := json.Marshal(state{Snapshot: snap})
 	if err != nil {
 		return err
 	}
@@ -260,20 +359,20 @@ func (s *Store) SetState(ctx context.Context, snap core.Snapshot, f Fence) error
 }
 
 // State answers the recorded state, and whether there is one.
-func (s *Store) State(ctx context.Context) (core.Snapshot, Fence, bool, error) {
+func (s *Store) State(ctx context.Context) (core.Snapshot, bool, error) {
 	var raw string
 	err := s.db.QueryRowContext(ctx, `SELECT value FROM meta WHERE key='state'`).Scan(&raw)
 	if err == sql.ErrNoRows {
-		return core.Snapshot{}, Fence{}, false, nil
+		return core.Snapshot{}, false, nil
 	}
 	if err != nil {
-		return core.Snapshot{}, Fence{}, false, err
+		return core.Snapshot{}, false, err
 	}
 	var v state
 	if err = json.Unmarshal([]byte(raw), &v); err != nil {
-		return core.Snapshot{}, Fence{}, false, err
+		return core.Snapshot{}, false, err
 	}
-	return v.Snapshot, v.Fence, true, nil
+	return v.Snapshot, true, nil
 }
 
 // LatestPerRun answers the newest record of a kind for each run, which is how a
@@ -350,4 +449,68 @@ func (s *Store) Trim(ctx context.Context, checkpoint core.Event) error {
 	}
 	s.cache.Drop()
 	return transcripthistory.SyncWith(ctx, s.db, s.session, Decode, &s.cache)
+}
+
+// Events is the whole conversation in sequence order, which is how a session
+// loads its own history at startup.
+func (s *Store) Events(ctx context.Context) ([]core.Event, error) {
+	return s.records(ctx, `SELECT data FROM events WHERE session_id=? ORDER BY seq`, s.session)
+}
+
+// Bytes is how much conversation is stored: the events of this session as
+// recorded, which is the same count the journal's file size used to give and
+// the same one a retention policy picks its cut against.
+//
+// It is deliberately not the file, and not the pages in use either. A delete
+// does not return pages to the filesystem, so the file stays at its high-water
+// mark -- but the pages in use do not come back down to the conversation
+// either: they carry the index, the derived transcript projection, and the
+// overflow pages of blobs that are still stored. On a 79MB conversation they
+// read 143MB, so a policy with a 100MiB budget trimmed, measured no
+// improvement, and trimmed again every turn. See cxz#286.
+//
+// SQLite answers length() on a blob out of the record header, so this does not
+// read the conversation to measure it.
+func (s *Store) Bytes(ctx context.Context) (int64, error) {
+	var total int64
+	err := s.db.QueryRowContext(ctx, `SELECT COALESCE(sum(length(data)),0) FROM events WHERE session_id=?`, s.session).Scan(&total)
+	return total, err
+}
+
+// Replace rewrites events that are already stored, keeping their sequence. It
+// is how a payload is shed: the record stays where it was and says what it was,
+// with the verbatim bytes gone.
+func (s *Store) Replace(ctx context.Context, events []core.Event) error {
+	if len(events) == 0 {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, e := range events {
+		b, err := json.Marshal(e)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.ExecContext(ctx, `UPDATE events SET data=? WHERE session_id=? AND seq=?`, b, s.session, e.Seq); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// Recent is the tail of a conversation: the last limit records, in order. It is
+// what a diagnostic read wants -- the journal's tail, now that the tail is rows
+// rather than the end of a file. See cxz#278.
+func (s *Store) Recent(ctx context.Context, limit int) ([]core.Event, error) {
+	if limit <= 0 {
+		return nil, nil
+	}
+	out, err := s.records(ctx, `SELECT data FROM (SELECT seq, data FROM events WHERE session_id=?`+
+		` ORDER BY seq DESC LIMIT ?) ORDER BY seq`, s.session, limit)
+	return out, err
 }

@@ -1,19 +1,19 @@
 package supervisor
 
 import (
+	"context"
 	"bytes"
 	"encoding/json"
-	"path/filepath"
 	"slices"
 	"testing"
 
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 )
 
 func displaySupervisor(t *testing.T, provider string) (*Supervisor, *sink) {
 	t.Helper()
-	l, err := journal.Open(filepath.Join(t.TempDir(), "events"))
+	l, err := sessionstore.OpenLog(context.Background(), t.TempDir(), "session")
 	if err != nil {
 		t.Fatal(err)
 	}
