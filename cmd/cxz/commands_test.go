@@ -220,6 +220,16 @@ func (s projectStub) Down(_ context.Context, r *resource.ProjectControl) (*resou
 	return testProject(), nil
 }
 
+func (s projectStub) StopContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
+	return testProject(), nil
+}
+
+func (s projectStub) StartContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
+	return testProject(), nil
+}
+
 func (s projectStub) Erase(_ context.Context, r *resource.ProjectRef) (*resource.ProjectEraseResponse, error) {
 	s.requests <- r
 	return resource.ProjectEraseResponse_builder{Erased: ptr(true)}.Build(), nil
@@ -404,6 +414,15 @@ func TestCommandsReachAPI(t *testing.T) {
 	run("project", "down", "pn")
 	if (<-stub.requests).(*api.ProjectRequest).Workspace != "project-name" {
 		t.Fatal("wrong project")
+	}
+	// Stopping and starting are not the same command as removing, and not the
+	// same command as the session `stop` at the root.
+	for _, op := range []string{"stop", "start"} {
+		run("project", op, "pn")
+		request, ok := (<-stub.requests).(*api.ProjectRequest)
+		if !ok || request.Workspace != "project-name" || request.ClientId == "" {
+			t.Fatal("project "+op+" did not reach the resolved project", request)
+		}
 	}
 	got = run("down", "pn")
 	down, ok := (<-stub.requests).(*api.ProjectRequest)

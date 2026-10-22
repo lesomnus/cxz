@@ -324,6 +324,46 @@ func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command)
 	return process.Run()
 }
 
+// projectContainerCommands are the container's lifecycle without the project's.
+// They live under `project` because the root `stop` belongs to sessions, and
+// stopping a session is not stopping the thing it runs in.
+func projectContainerCommands() *xli.Command {
+	parent := &xli.Command{Name: "project", Brief: "Stop and start the project container", Handler: onRun(func(_ context.Context, c *xli.Command) error { return c.PrintHelp(c.Writer) })}
+	briefs := map[string]string{
+		"stop":  "Stop owned containers, keeping them so starting is seconds; sessions are stopped, not resumed",
+		"start": "Start the container this project already has, and its runtime; agents stay stopped",
+	}
+	for _, op := range []string{"stop", "start"} {
+		path := projectArg("WORKSPACE", true)
+		path.Default = ptr(".")
+		c := &xli.Command{Name: op, Brief: briefs[op], Args: arg.Args{path}, Handler: withClient(projectContainerCommand)}
+		parent.Commands = append(parent.Commands, c)
+	}
+	return parent
+}
+
+func projectContainerCommand(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+	path := arg.MustGet[string](c, "WORKSPACE")
+	if st, err := os.Stat(path); err == nil && st.IsDir() {
+		var e error
+		if path, e = dockerx.EnginePath(path); e != nil {
+			return e
+		}
+	}
+	r := &api.ProjectRequest{Workspace: path, ClientId: core.ID()}
+	var reply *api.Receipt
+	var err error
+	if c.Name == "stop" {
+		reply, err = client.StopContainer(ctx, r)
+	} else {
+		reply, err = client.StartContainer(ctx, r)
+	}
+	if err != nil {
+		return err
+	}
+	return writeOutput(c, reply)
+}
+
 func projectMetadataCommands() *xli.Command {
 	parent := &xli.Command{Name: "project", Brief: "Register projects and set their display names/aliases", Handler: onRun(func(_ context.Context, c *xli.Command) error { return c.PrintHelp(c.Writer) })}
 	for _, op := range []string{"add", "set"} {
