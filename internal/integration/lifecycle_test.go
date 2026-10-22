@@ -816,21 +816,33 @@ func TestLifecycle(t *testing.T) {
 	if err != nil || len(history.Events) == 0 || history.Events[0].Kind != core.HistoryTrimmedKind {
 		t.Fatal("retention not applied via public RPC", err)
 	}
-	boundaries := func() int {
+	// Every history boundary marker stands for one trim, so two of them never
+	// name the same floor. Counting them would be a different claim and a
+	// flaky one: a trim that genuinely happens while the session restarts is
+	// allowed to add a marker, and did under load. What is not allowed is the
+	// same floor being announced again. See cxz#286.
+	boundaries := func() []uint64 {
 		t.Helper()
 		page, e := client.History(ctx, &api.WatchRequest{SessionId: id, Limit: 1000})
 		if e != nil {
 			t.Fatal(e)
 		}
-		n := 0
+		var floors []uint64
+		seen := map[uint64]bool{}
 		for _, v := range page.Events {
-			if v.Kind == core.HistoryTrimmedKind {
-				n++
+			floor := core.HistoryFloor(v.Kind, v.Payload)
+			if v.Kind != core.HistoryTrimmedKind {
+				continue
 			}
+			if seen[floor] {
+				t.Fatalf("the floor %d is announced more than once: %v", floor, floors)
+			}
+			seen[floor] = true
+			floors = append(floors, floor)
 		}
-		return n
+		return floors
 	}
-	trimmedMarkers := boundaries()
+	trimmedFloors := boundaries()
 	// Idle is visible to projections before the supervisor finishes the atomic
 	// checkpoint replacement. Wait for that maintenance transaction to finish.
 	//
@@ -886,8 +898,9 @@ func TestLifecycle(t *testing.T) {
 	// appended one more marker to the conversation every time -- thirteen for
 	// one floor in a session that had restarted that often, stacked among the
 	// newest messages. See cxz#286.
-	if n := boundaries(); n != trimmedMarkers {
-		t.Fatalf("a restart added %d history boundary markers", n-trimmedMarkers)
+	floors := boundaries()
+	if len(floors) < len(trimmedFloors) {
+		t.Fatalf("a restart lost a history boundary: %v then %v", trimmedFloors, floors)
 	}
 	if receipt, e := client.Send(ctx, prunedRequest); e != nil || receipt.Status != "accepted" {
 		t.Fatal("pruned request duplicate was not recognized", receipt, e)

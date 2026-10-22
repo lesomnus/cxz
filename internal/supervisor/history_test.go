@@ -42,7 +42,9 @@ func TestHistoryRetentionPreservesResumeAndIdempotence(t *testing.T) {
 		t.Fatal(err, authorized)
 	}
 	events := log.All()
-	if events[0].Kind != core.HistoryCheckpointKind || events[len(events)-1].Seq != before+1 {
+	// The checkpoint is the boundary; nothing is appended to announce it, so the
+	// last event is the last one the conversation had.
+	if events[0].Kind != core.HistoryCheckpointKind || events[len(events)-1].Seq != before {
 		t.Fatal("missing checkpoint or sequence reset")
 	}
 	stored, err := json.Marshal(events)

@@ -239,7 +239,12 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 			}
 		}
 	}
-	s.event(core.HistoryTrimmedKind, "Earlier display history was removed by the size limit.", "", core.HistoryBoundary{Through: checkpoint.Seq}, nil)
+	// The trim is not announced as an event. The checkpoint it just wrote is the
+	// head of the conversation, and every reader renders that as the boundary
+	// marker (eventview.FromCore) -- so an appended event says the same thing a
+	// second time, with the same floor, and stays in the conversation for good.
+	// Two markers per trim is what the integration test found once it started
+	// asking whether any floor was announced twice. See cxz#286.
 	return nil
 }
 
