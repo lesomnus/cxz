@@ -6,6 +6,11 @@ import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
 import { PageToolbar, Button, EditableValue } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
+import {
+  containerState,
+  containerStateName,
+  running,
+} from "./project-state.ts";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime } from "#src/shared/components/date-time.tsx";
@@ -158,7 +163,7 @@ function ProjectDashboard({
   const [addingSession, setAddingSession] = useState(false);
   const branch = useRemote(
     (signal) => projectBranch(c, p, signal),
-    [c, p.runtimeId, p.status?.state, p.status?.remoteWorkspace],
+    [c, p.runtimeId, p.status?.containerState, p.status?.remoteWorkspace],
   );
   const git = branch.loading
     ? t("Loading…")
@@ -213,7 +218,7 @@ function ProjectDashboard({
             <Button
               className={styles.refresh}
               type="button"
-              disabled={branch.loading || p.status?.state !== "running"}
+              disabled={branch.loading || !running(p)}
               onClick={branch.reload}
             >
               {t("Refresh")}
@@ -221,7 +226,7 @@ function ProjectDashboard({
           </div>
           <Fields
             rows={[
-              [t("Status"), p.status?.state],
+              [t("Status"), t(containerStateName(containerState(p)))],
               [t("Workspace"), p.status?.remoteWorkspace],
               [t("Remote user"), p.status?.remoteUser],
               [t("Git branch"), git],

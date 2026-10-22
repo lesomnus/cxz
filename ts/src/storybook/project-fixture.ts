@@ -1,7 +1,7 @@
 import { clone, create, isFieldSet } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
-import { ProjectSchema } from "#gen/cxz/project_pb";
+import { ProjectSchema, ContainerState } from "#gen/cxz/project_pb";
 import {
   ProjectService,
   ProjectPatchRequestSchema,
@@ -36,7 +36,9 @@ export function projectFixture(
         ? "Backend services and API contracts"
         : "Frontend and design system",
       status: {
-        state: stopped ? "stopped" : "running",
+        containerState: stopped
+          ? ContainerState.STOPPED
+          : ContainerState.RUNNING,
         remoteWorkspace: "/workspace",
         remoteUser: "developer",
         containerId: `container-${i + 1}`,
@@ -151,7 +153,7 @@ export function projectFixture(
             Code.Unavailable,
           );
         const updated = clone(ProjectSchema, projects[index]!);
-        updated.status!.state = "stopped";
+        updated.status!.containerState = ContainerState.STOPPED;
         updated.dateUpdated = timestampFromDate(new Date());
         projects[index] = updated;
         for (let i = 0; i < sessions.length; i++) {

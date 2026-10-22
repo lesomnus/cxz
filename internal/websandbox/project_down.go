@@ -21,7 +21,7 @@ func (x *Projects) Down(_ context.Context, r *resource.ProjectControl) (*resourc
 		if p.GetStatus() == nil {
 			p.SetStatus(resource.ProjectStatus_builder{}.Build())
 		}
-		p.GetStatus().SetState("stopped")
+		p.GetStatus().SetContainerState(resource.ContainerState_CONTAINER_STATE_STOPPED)
 		p.SetDateUpdated(timestamppb.Now())
 		for _, st := range s.sessions {
 			if st.value.GetProject().GetRuntimeId() != p.GetRuntimeId() || st.value.GetStatus().GetState() == "stopped" {

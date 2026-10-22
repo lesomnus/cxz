@@ -1,3 +1,4 @@
+import { ContainerState } from "#gen/cxz/project_pb";
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it, vi } from "vitest";
 import { ProjectSchema } from "#gen/cxz/project_pb";
@@ -9,11 +10,14 @@ function fixture() {
     runtimeId: "project",
     alias: "web",
     listed: true,
-    status: { state: "running" },
+    status: { containerState: ContainerState.RUNNING },
   });
   const stopped = create(ProjectSchema, {
     ...project,
-    status: { ...project.status!, state: "stopped" },
+    status: {
+      ...project.status!,
+      containerState: ContainerState.STOPPED,
+    },
   });
   const c = {
     projects: {

@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { Button, ConfirmationDialog } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
+import { ContainerState } from "#gen/cxz/project_pb";
+import { containerState } from "./project-state.ts";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
@@ -31,7 +33,7 @@ export function ProjectActions({
       kind: "stop" as const,
       label: t("Stop"),
       description: t("Stop the project container and its sessions."),
-      disabled: project.status?.state === "stopped",
+      disabled: containerState(project) === ContainerState.STOPPED,
     },
     {
       kind: "purge" as const,

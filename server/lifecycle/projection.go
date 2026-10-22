@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/projectstate"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -26,7 +27,7 @@ func sessionStatus(v *api.Session) *resource.SessionStatus {
 	return resource.SessionStatus_builder{State: v.State, PermissionMode: v.PermissionMode, RunId: v.RunId, VendorId: v.VendorId, LastSeq: v.LastSeq, Queued: v.Queued, Pending: pending}.Build()
 }
 func projectStatus(v *api.Project) *resource.ProjectStatus {
-	return resource.ProjectStatus_builder{State: v.State, ContainerId: v.ContainerId, RemoteUser: v.RemoteUser, RemoteWorkspace: v.RemoteWorkspace, ProvisionState: v.ProvisionState, ProvisionStep: v.ProvisionStep, ProvisionAttempt: v.ProvisionAttempt, Error: v.Error}.Build()
+	return resource.ProjectStatus_builder{ContainerState: projectstate.Of(v.State), ContainerId: v.ContainerId, RemoteUser: v.RemoteUser, RemoteWorkspace: v.RemoteWorkspace, ProvisionState: v.ProvisionState, ProvisionStep: v.ProvisionStep, ProvisionAttempt: v.ProvisionAttempt, Error: v.Error}.Build()
 }
 
 func (s Layer) sync(ctx context.Context) error {

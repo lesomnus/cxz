@@ -132,7 +132,7 @@ func TestProjectNames(t *testing.T) {
 	if _, err = svc.Patch(ctx, resource.ProjectPatchRequest_builder{Ref: ref, Name: &newName}.Build()); status.Code(err) != codes.InvalidArgument {
 		t.Fatal("unversioned patch accepted", err)
 	}
-	if _, err = svc.Patch(ctx, resource.ProjectPatchRequest_builder{Ref: ref, Status: resource.ProjectStatus_builder{State: "running"}.Build()}.Build()); status.Code(err) != codes.PermissionDenied {
+	if _, err = svc.Patch(ctx, resource.ProjectPatchRequest_builder{Ref: ref, Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING}.Build()}.Build()); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("status patch allowed", err)
 	}
 	stop()

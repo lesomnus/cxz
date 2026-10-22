@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/lesomnus/cxz/internal/projectstate"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/xli/xlitest"
 	"google.golang.org/grpc"
@@ -29,7 +30,7 @@ type allStub struct {
 
 func ownedProject(id, workspace, state string) *resource.Project {
 	return resource.Project_builder{RuntimeId: id, Workspace: workspace, Name: id, Alias: id, Listed: true,
-		Status: resource.ProjectStatus_builder{State: state, ContainerId: "container-" + id}.Build()}.Build()
+		Status: resource.ProjectStatus_builder{ContainerState: projectstate.Of(state), ContainerId: "container-" + id}.Build()}.Build()
 }
 
 func (s *allStub) List(context.Context, *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {

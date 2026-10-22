@@ -102,7 +102,7 @@ func (c *Client) Create(ctx context.Context, r *api.CreateRequest, opts ...grpc.
 	if err != nil {
 		return nil, err
 	}
-	if p.GetStatus().GetState() != "running" {
+	if p.GetStatus().GetContainerState() != resource.ContainerState_CONTAINER_STATE_RUNNING {
 		if _, err = c.projects.Up(ctx, resource.ProjectUpRequest_builder{Ref: pr(p.GetRuntimeId()), ClientId: &r.ClientId, Agent: &r.Agent}.Build(), opts...); err != nil {
 			return nil, err
 		}

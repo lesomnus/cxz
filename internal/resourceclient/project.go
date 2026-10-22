@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/projectref"
+	"github.com/lesomnus/cxz/internal/projectstate"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -13,7 +14,7 @@ import (
 
 func project(p *resource.Project) *api.Project {
 	st := p.GetStatus()
-	return &api.Project{Id: p.GetRuntimeId(), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: st.GetState(), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
+	return &api.Project{Id: p.GetRuntimeId(), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: projectstate.Word(st.GetContainerState()), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
 }
 func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.ProjectList, error) {
 	out, err := c.registeredProjects(ctx, opts...)

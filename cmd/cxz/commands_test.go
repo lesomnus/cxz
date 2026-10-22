@@ -168,7 +168,7 @@ func (accountStub) Get(_ context.Context, r *resource.AccountGetRequest) (*resou
 }
 
 func testProject() *resource.Project {
-	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name", Alias: "pn", Status: resource.ProjectStatus_builder{State: "running"}.Build()}.Build()
+	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name", Alias: "pn", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING}.Build()}.Build()
 }
 func (s projectStub) Get(context.Context, *resource.ProjectGetRequest) (*resource.Project, error) {
 	return testProject(), nil

@@ -1,6 +1,7 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Project } from "#gen/cxz/project_pb";
 import { ref, type Connection } from "#src/shared/api/connection.ts";
+import { running } from "./project-state.ts";
 export type DashboardConnection = Connection;
 
 function resolvePath(base: string, value: string) {
@@ -20,7 +21,7 @@ export async function projectBranch(
   project: Project,
   signal: AbortSignal,
 ) {
-  if (project.status?.state !== "running") return { state: "offline" as const };
+  if (!running(project)) return { state: "offline" as const };
   const workspace = project.status?.remoteWorkspace;
   if (!workspace) return { state: "unavailable" as const };
   async function read(path: string) {

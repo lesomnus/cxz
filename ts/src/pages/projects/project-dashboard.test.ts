@@ -1,3 +1,4 @@
+import { ContainerState } from "#gen/cxz/project_pb";
 import { describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
@@ -9,7 +10,10 @@ const project = () =>
   create(ProjectSchema, {
     runtimeId: "chosen-project",
     workspace: "/host/source",
-    status: { state: "running", remoteWorkspace: "/workspace/app" },
+    status: {
+      containerState: ContainerState.RUNNING,
+      remoteWorkspace: "/workspace/app",
+    },
   });
 function downloads(files: Record<string, string | Error>) {
   const paths: string[] = [];
@@ -79,11 +83,11 @@ describe("project Git metadata", () => {
   it("does not read stopped projects or guess an unknown container path", async () => {
     const { client, paths } = downloads({});
     const p = project();
-    p.status!.state = "stopped";
+    p.status!.containerState = ContainerState.STOPPED;
     expect(await projectBranch(client, p, signal())).toEqual({
       state: "offline",
     });
-    p.status!.state = "running";
+    p.status!.containerState = ContainerState.RUNNING;
     p.status!.remoteWorkspace = "";
     expect(await projectBranch(client, p, signal())).toEqual({
       state: "unavailable",

@@ -80,7 +80,7 @@ func TestBrowserFixture(t *testing.T) {
 	time.Sleep(10 * time.Minute)
 }
 
-var fixtureProject = resource.Project_builder{Id: []byte("1234567890123456"), RuntimeId: "project", Alias: "demo", Name: "Demo project", Listed: true, Status: resource.ProjectStatus_builder{State: "running", RemoteWorkspace: "/workspace"}.Build()}.Build()
+var fixtureProject = resource.Project_builder{Id: []byte("1234567890123456"), RuntimeId: "project", Alias: "demo", Name: "Demo project", Listed: true, Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING, RemoteWorkspace: "/workspace"}.Build()}.Build()
 
 type fixtureProjects struct {
 	resource.UnimplementedProjectServiceServer
