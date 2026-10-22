@@ -164,11 +164,23 @@ func (c *Client) CreateContainer(ctx context.Context, r *api.ProjectRequest, opt
 	return &api.Receipt{ClientId: r.ClientId, Status: "created"}, nil
 }
 
+// create brings a project's container to where the caller asked for it, which
+// is what `Up` and `Recreate` used to be. Replacing a container is two calls
+// now, in this order, and this is the one place that composes them: the server
+// does not have an operation that removes a container as a step towards making
+// one, because deciding to lose a container is not a step -- it is the whole
+// question. A recreate without confirmation never gets this far; the CLI and
+// the UI ask first.
 func (c *Client) create(ctx context.Context, ref *resource.ProjectRef, r *api.ProjectRequest, opts ...grpc.CallOption) (*resource.Project, error) {
 	if r.Recreate {
-		return c.projects.Recreate(ctx, resource.ProjectRecreateRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Confirmed: &r.Confirmed, Config: &r.Config}.Build(), opts...)
+		if !r.Confirmed {
+			return nil, fmt.Errorf("recreate requires confirmation: writable layer lost and editors disconnect")
+		}
+		if _, err := c.projects.RemoveContainer(ctx, resource.ProjectControl_builder{Ref: ref, ClientId: &r.ClientId}.Build(), opts...); err != nil {
+			return nil, err
+		}
 	}
-	return c.projects.Up(ctx, resource.ProjectUpRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Config: &r.Config}.Build(), opts...)
+	return c.projects.CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Config: &r.Config}.Build(), opts...)
 }
 
 // StopContainer and StartContainer resolve the same way RemoveContainer does, without

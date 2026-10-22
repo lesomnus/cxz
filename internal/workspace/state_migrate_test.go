@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/payday/config"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
 )
@@ -147,21 +146,18 @@ func TestMigrationIsNothingToDoTwice(t *testing.T) {
 	}
 }
 
-// A recreate is the occasion to move the state, whether or not there was a
-// container to take down first. A project that is already absent -- stopped, or
-// left behind by a crash -- is exactly the one that would otherwise never move.
-func TestARecreateMovesTheStateEvenWithNoContainer(t *testing.T) {
+// The state moves while nothing is writing it, which is any moment the project
+// has no container. It used to take a recreate to get there; removing the
+// container is its own operation now, and a project left without one -- stopped,
+// or after a crash -- is exactly the one that would otherwise never move.
+func TestStateMovesWheneverThereIsNoContainer(t *testing.T) {
 	_, p := migrating(t)
-	if !stateMovable(&api.ProjectRequest{Recreate: true}, p) {
-		t.Fatal("an absent project's recreate was not an occasion to move its state")
+	if !stateMovable(p) {
+		t.Fatal("an absent container was not an occasion to move the state")
 	}
 	p.ContainerID = "c0ffee"
-	if stateMovable(&api.ProjectRequest{Recreate: true}, p) {
+	if stateMovable(p) {
 		t.Fatal("the state would have moved under a running container")
-	}
-	p.ContainerID = ""
-	if stateMovable(&api.ProjectRequest{}, p) {
-		t.Fatal("starting a project moved its state behind the user's back")
 	}
 }
 

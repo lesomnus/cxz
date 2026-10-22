@@ -29,11 +29,11 @@ func (p *preflightProjects) Add(context.Context, *resource.ProjectAddRequest, ..
 func (p *preflightProjects) Get(context.Context, *resource.ProjectGetRequest, ...grpc.CallOption) (*resource.Project, error) {
 	return p.items[0], nil
 }
-func (p *preflightProjects) Up(context.Context, *resource.ProjectUpRequest, ...grpc.CallOption) (*resource.Project, error) {
+func (p *preflightProjects) CreateContainer(context.Context, *resource.ProjectCreateRequest, ...grpc.CallOption) (*resource.Project, error) {
 	p.writes++
 	return p.items[0], nil
 }
-func (p *preflightProjects) Recreate(context.Context, *resource.ProjectRecreateRequest, ...grpc.CallOption) (*resource.Project, error) {
+func (p *preflightProjects) RemoveContainer(context.Context, *resource.ProjectControl, ...grpc.CallOption) (*resource.Project, error) {
 	p.writes++
 	return p.items[0], nil
 }

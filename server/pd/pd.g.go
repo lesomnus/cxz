@@ -4141,9 +4141,9 @@ func (s interceptProject) FileMappings(ctx context.Context, req *resource.FileMa
 		resource.ProjectService_FileMappings_FullMethodName, req, s.ProjectServiceServer.FileMappings)
 }
 
-func (s interceptProject) Up(ctx context.Context, req *resource.ProjectUpRequest) (*resource.Project, error) {
+func (s interceptProject) CreateContainer(ctx context.Context, req *resource.ProjectCreateRequest) (*resource.Project, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Up_FullMethodName, req, s.ProjectServiceServer.Up)
+		resource.ProjectService_CreateContainer_FullMethodName, req, s.ProjectServiceServer.CreateContainer)
 }
 
 func (s interceptProject) StopContainer(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
@@ -4159,11 +4159,6 @@ func (s interceptProject) StartContainer(ctx context.Context, req *resource.Proj
 func (s interceptProject) RemoveContainer(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_RemoveContainer_FullMethodName, req, s.ProjectServiceServer.RemoveContainer)
-}
-
-func (s interceptProject) Recreate(ctx context.Context, req *resource.ProjectRecreateRequest) (*resource.Project, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Recreate_FullMethodName, req, s.ProjectServiceServer.Recreate)
 }
 
 func (s interceptProject) InspectForeign(ctx context.Context, req *resource.InspectForeignRequest) (*resource.InspectForeignResponse, error) {
@@ -5873,13 +5868,13 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
-	case resource.ProjectService_Up_FullMethodName:
-		v := &resource.ProjectUpRequest{}
+	case resource.ProjectService_CreateContainer_FullMethodName:
+		v := &resource.ProjectCreateRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Project().Up(ctx, v)
+		res, err := s.Project().CreateContainer(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -5919,19 +5914,6 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().RemoveContainer(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Recreate_FullMethodName:
-		v := &resource.ProjectRecreateRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Recreate(ctx, v)
 		if err != nil {
 			return nil, err
 		}

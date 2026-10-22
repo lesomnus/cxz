@@ -182,17 +182,10 @@ func (s projectStub) Add(context.Context, *resource.ProjectAddRequest) (*resourc
 	}
 	return testProject(), nil
 }
-func (s projectStub) Recreate(context.Context, *resource.ProjectRecreateRequest) (*resource.Project, error) {
-	// Not recorded on the shared request channel: the assertions that read it
-	// are about other calls, and the mutation counter is what says this one
-	// reached the server.
-	if s.mutations != nil {
-		s.mutations.Add(1)
-	}
-	return testProject(), nil
-}
-
-func (s projectStub) Up(context.Context, *resource.ProjectUpRequest) (*resource.Project, error) {
+// Not recorded on the shared request channel: the assertions that read it are
+// about other calls, and the mutation counter is what says this one reached the
+// server.
+func (s projectStub) CreateContainer(context.Context, *resource.ProjectCreateRequest) (*resource.Project, error) {
 	if s.mutations != nil {
 		s.mutations.Add(1)
 	}
@@ -282,6 +275,18 @@ func TestCommandsReachAPI(t *testing.T) {
 	}
 	if mutations.Load() == 0 {
 		t.Fatal("nothing was recreated")
+	}
+	// Recreating is a removal and then a creation, composed by the client: the
+	// server has no operation that throws a container away as a step towards
+	// making one.
+	select {
+	case raw := <-stub.requests:
+		removal, ok := raw.(*api.ProjectRequest)
+		if !ok || removal.Workspace != "project-name" {
+			t.Fatal("recreate did not remove the container first", raw)
+		}
+	default:
+		t.Fatal("recreate did not remove the container first")
 	}
 	for _, confirmed := range []bool{false, true} {
 		args := []string{"project", "erase"}

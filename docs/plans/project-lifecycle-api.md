@@ -9,8 +9,7 @@
 `listed`도 없어졌다: 프로젝트는 등록돼 있거나 erased이고, 그 사이는 없다. 세션은
 `listed`를 유지한다.
 
-남은 것은 `CreateContainer`를 클라이언트 조합으로 묶는 뒷정리(`Up`/`Recreate` 제거),
-cxz#283, 그리고 표식 행 모델이다. 생성은 `pd gen`으로 한다 — `docs/README.md`의
+남은 것은 cxz#283과 표식 행 모델이다. 생성은 `pd gen`으로 한다 — `docs/README.md`의
 "Generated code"를 보라.
 
 Project는 DB에 등록된 워크스페이스다. 컨테이너가 존재하거나 실행 중이어야 리소스가
@@ -48,9 +47,9 @@ Project는 DB에 등록된 워크스페이스다. 컨테이너가 존재하거�
 | --- | --- | --- |
 | 목록 | 기본 `listed=true`, erased 제외 | erased만 기본 제외 — **완료** |
 | `Add` | 런타임 등록 파일과 DB를 함께 만듦 | DB 리소스만 생성 |
-| `Up` | 생성·시작·초기화·세션 선택이 한 경로 | `CreateContainer`와 `StartContainer`로 분리, 세션은 분리 |
+| `Up` | 생성·시작·초기화·세션 선택이 한 경로 | `CreateContainer`와 `StartContainer`로 분리, 세션은 분리 — **완료** |
 | `Down` | 컨테이너 제거 | 사라짐. `StopContainer`는 정지, `StartContainer`는 시작, `RemoveContainer`는 제거 — **완료** |
-| `Recreate` | 서버의 제거·재프로비저닝 복합 작업 | 클라이언트 조합 |
+| `Recreate` | 서버의 제거·재프로비저닝 복합 작업 | 클라이언트 조합 — **완료** |
 | `Erase` | 프로젝트·세션을 `listed=false`로 보관 | 소유 데이터 정리 후 행 제거 — **완료** |
 | `Remove` | 프로젝트 소유 데이터와 DB 행 영구 제거 | 사라짐. 데이터 삭제는 `Erase`, 컨테이너 제거는 `RemoveContainer` — **완료** |
 | 상태 | 문자열 `status.state`와 `container_id` | enum `status.container_state`와 관측 정보 |

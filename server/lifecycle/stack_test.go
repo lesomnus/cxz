@@ -111,7 +111,7 @@ func TestResourceStack(t *testing.T) {
 	if len(p.GetId()) != 16 || p.GetId()[9] != 7 {
 		t.Fatalf("not a payday Project ID: %x", p.GetId())
 	}
-	_, err = stack.Project().Up(ctx, resource.ProjectUpRequest_builder{Ref: resource.ProjectRef_builder{Id: p.GetId()}.Build(), ClientId: ptr("up-1")}.Build())
+	_, err = stack.Project().CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: resource.ProjectRef_builder{Id: p.GetId()}.Build(), ClientId: ptr("up-1")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}

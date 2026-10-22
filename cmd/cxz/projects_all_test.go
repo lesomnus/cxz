@@ -56,21 +56,20 @@ func (s *allStub) Devcontainer(context.Context, *resource.DevcontainerRequest) (
 	return &resource.DevcontainerReply{}, nil
 }
 
-func (s *allStub) Up(_ context.Context, r *resource.ProjectUpRequest) (*resource.Project, error) {
+func (s *allStub) CreateContainer(_ context.Context, r *resource.ProjectCreateRequest) (*resource.Project, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.upped = append(s.upped, r.GetRef().GetRuntimeId())
 	return s.Get(context.Background(), resource.ProjectGetRequest_builder{Ref: r.GetRef()}.Build())
 }
 
-func (s *allStub) Recreate(_ context.Context, r *resource.ProjectRecreateRequest) (*resource.Project, error) {
+// Recreating is RemoveContainer then CreateContainer, so what the stub records
+// as "recreated" is what the client removed first.
+func (s *allStub) RemoveContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	id := r.GetRef().GetRuntimeId()
 	s.mu.Lock()
 	s.recreated = append(s.recreated, id)
 	s.mu.Unlock()
-	if !r.GetConfirmed() {
-		return nil, fmt.Errorf("%s was recreated without confirmation", id)
-	}
 	if s.fail[id] {
 		return nil, fmt.Errorf("image build failed")
 	}
@@ -140,8 +139,10 @@ func TestRecreateAllTakesEveryRunningOwnedProject(t *testing.T) {
 	if calls := stub.calls(); strings.Join(calls, ",") != "api,web" {
 		t.Fatal("wrong targets or order:", calls)
 	}
-	if len(stub.upped) != 0 {
-		t.Fatal("recreate brought a project up instead:", stub.upped)
+	// Each target is removed and then created again, by the client, in that
+	// order.
+	if strings.Join(stub.upped, ",") != "api,web" {
+		t.Fatal("recreate did not create the containers it removed:", stub.upped)
 	}
 	for _, want := range []string{"recreated api /work/api", "recreated web /work/web"} {
 		if !strings.Contains(got.Stdout, want) {

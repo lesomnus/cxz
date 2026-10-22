@@ -488,31 +488,17 @@ func (m *Manager) CreateContainer(ctx context.Context, r *api.ProjectRequest) (r
 			p.ContainerID = v.ID
 			continue
 		}
-		if !r.Recreate || !r.Confirmed {
-			return nil, fmt.Errorf("foreign container %s: no adoption; use recreate with confirmation (writable layer lost, editors disconnect; workspace and named volumes retained)", v.ID[:12])
-		}
-		if _, e = dockerx.Run(ctx, "rm", "-f", v.ID); e != nil {
-			return nil, e
-		}
+		// A container for this workspace that cxz does not own is not cxz's to
+		// adopt or to delete. A confirmed recreate used to remove it; nothing
+		// does now. See docs/plans/project-lifecycle-api.md.
+		return nil, fmt.Errorf("foreign container %s holds this workspace; remove it yourself or point this project at another workspace", v.ID[:12])
 	}
-	if r.Recreate && p.ContainerID != "" {
-		if !r.Confirmed {
-			return nil, fmt.Errorf("recreate requires confirmation: writable layer lost and editors disconnect")
-		}
-		if e = m.checkpoint(ctx, p, "recreate"); e != nil {
-			return nil, e
-		}
-		if e = m.removeContainer(ctx, p); e != nil {
-			return nil, e
-		}
-		p.ContainerID = ""
-	}
-	if stateMovable(r, p) {
+	if stateMovable(p) {
 		if e = m.migrateProjectState(ctx, p); e != nil {
 			return nil, e
 		}
-	}
-	if r.Recreate && r.Confirmed {
+		// A container made again is made on the network the manager has now,
+		// not the one its last container was on.
 		p.Network = m.sharedNetwork()
 	}
 	// The Dev Container CLI reuses an existing container and ignores a changed

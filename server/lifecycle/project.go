@@ -149,13 +149,15 @@ func (s ProjectServer) Patch(ctx context.Context, r *resource.ProjectPatchReques
 func (s ProjectServer) Apply(context.Context, *resource.ProjectApplyRequest) (*resource.Project, error) {
 	return nil, closed()
 }
-func (s ProjectServer) Up(ctx context.Context, r *resource.ProjectUpRequest) (*resource.Project, error) {
-	return s.up(ctx, r.GetRef(), r.GetClientId(), r.GetAgent(), r.GetConfig(), r.GetTrustConfig(), false, false)
+// CreateContainer prepares the container and runs it through the Dev Container
+// lifecycle. It does not replace one: a project that already has a container
+// is answered as it is, and losing a container is `RemoveContainer`, asked for
+// on purpose.
+func (s ProjectServer) CreateContainer(ctx context.Context, r *resource.ProjectCreateRequest) (*resource.Project, error) {
+	return s.create(ctx, r.GetRef(), r.GetClientId(), r.GetAgent(), r.GetConfig(), r.GetTrustConfig())
 }
-func (s ProjectServer) Recreate(ctx context.Context, r *resource.ProjectRecreateRequest) (*resource.Project, error) {
-	return s.up(ctx, r.GetRef(), r.GetClientId(), r.GetAgent(), r.GetConfig(), r.GetTrustConfig(), true, r.GetConfirmed())
-}
-func (s ProjectServer) up(ctx context.Context, ref *resource.ProjectRef, clientID, agent, config string, trust, recreate, confirmed bool) (*resource.Project, error) {
+
+func (s ProjectServer) create(ctx context.Context, ref *resource.ProjectRef, clientID, agent, config string, trust bool) (*resource.Project, error) {
 	s.shared.transition.RLock()
 	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
@@ -169,7 +171,7 @@ func (s ProjectServer) up(ctx context.Context, ref *resource.ProjectRef, clientI
 		config = p.GetConfig()
 	}
 	// Creating a container is all this asks for; sessions are the caller's.
-	_, err = s.shared.runtime.CreateContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust, Recreate: recreate, Confirmed: confirmed})
+	_, err = s.shared.runtime.CreateContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust})
 	if err != nil {
 		return nil, err
 	}
