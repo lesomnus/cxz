@@ -405,12 +405,15 @@ func projectMetadataCommands() *xli.Command {
 		})}
 		parent.Commands = append(parent.Commands, c)
 	}
-	parent.Commands = append(parent.Commands, projectPurgeCommand())
+	parent.Commands = append(parent.Commands, projectEraseCommand())
 	return parent
 }
 
-func projectPurgeCommand() *xli.Command {
-	return &xli.Command{Name: "purge", Brief: "Permanently delete one project and its owned data; keep workspace sources", Args: arg.Args{projectArg("PROJECT", false)}, Flags: flg.Flags{switchFlag("yes", "Confirm permanent deletion of sessions, history, memory and owned volumes")}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+// `erase` is the name of the call it makes, and the call deletes data. The
+// confirmation is the client's: the ref it sends is a UUID, so there is nothing
+// for the server to resolve and nothing to preview.
+func projectEraseCommand() *xli.Command {
+	return &xli.Command{Name: "erase", Brief: "Permanently delete one project and its owned data; keep workspace sources", Args: arg.Args{projectArg("PROJECT", false)}, Flags: flg.Flags{switchFlag("yes", "Confirm permanent deletion of sessions, history, memory and owned volumes")}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
 		target := arg.MustGet[string](c, "PROJECT")
 		if st, err := os.Stat(target); err == nil && st.IsDir() {
 			var err error
@@ -419,20 +422,19 @@ func projectPurgeCommand() *xli.Command {
 				return err
 			}
 		}
-		confirmed := flg.MustGet[bool](c, "yes")
-		out, err := client.(*resourceclient.Client).RemoveProject(ctx, target, confirmed)
+		resources := client.(*resourceclient.Client)
+		p, err := resources.ResolveProject(ctx, target)
 		if err != nil {
 			return err
 		}
-		p := out.GetProject()
-		if !confirmed {
-			fmt.Fprintf(c.ErrWriter, "Target: %s %s (%s)\n", p.GetRuntimeId(), p.GetWorkspace(), p.GetName())
-			return fmt.Errorf("project purge permanently deletes this project's sessions, history, memory and owned resources; workspace sources and shared accounts are kept; pass --yes to confirm")
+		if !flg.MustGet[bool](c, "yes") {
+			fmt.Fprintf(c.ErrWriter, "Target: %s %s (%s)\n", p.Id, p.Workspace, p.Name)
+			return fmt.Errorf("project erase permanently deletes this project's sessions, history, memory and owned resources; workspace sources and shared accounts are kept; pass --yes to confirm")
 		}
-		if !out.GetRemoved() {
-			return fmt.Errorf("manager did not confirm project removal")
+		if err = resources.EraseProject(ctx, target); err != nil {
+			return err
 		}
-		fmt.Fprintf(c.Writer, "Removed project %s. Workspace sources preserved: %s\n", p.GetRuntimeId(), p.GetWorkspace())
+		fmt.Fprintf(c.Writer, "Erased project %s. Workspace sources preserved: %s\n", p.Id, p.Workspace)
 		return nil
 	})}
 }

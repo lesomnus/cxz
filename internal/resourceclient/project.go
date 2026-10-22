@@ -196,6 +196,14 @@ func (c *Client) container(ctx context.Context, r *api.ProjectRequest, call func
 	return &api.Receipt{ClientId: r.ClientId, Status: status}, nil
 }
 
-func (c *Client) RemoveProject(ctx context.Context, target string, confirmed bool) (*resource.ProjectRemoveReply, error) {
-	return c.projects.Remove(ctx, resource.ProjectRemoveRequest_builder{Target: &target, Confirmed: &confirmed}.Build())
+// EraseProject deletes the project's data. There is no preview step: the ref is
+// a UUID, so there is nothing to resolve wrongly, which is what the preview was
+// guarding against. Confirmation belongs to whoever is asking a person.
+func (c *Client) EraseProject(ctx context.Context, target string) error {
+	p, err := c.ResolveProject(ctx, target)
+	if err != nil {
+		return err
+	}
+	_, err = c.projects.Erase(ctx, pr(p.Id))
+	return err
 }

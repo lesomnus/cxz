@@ -7,7 +7,6 @@ option go_package = "github.com/lesomnus/cxz/resource";
 
 service ProjectService {
   // Permanently remove one project and its owned data, preserving workspace sources.
-  rpc Remove(ProjectRemoveRequest) returns (ProjectRemoveReply);
   // Ephemeral PTY on the manager host. First frame identifies a project and size;
   // later frames carry input or a resize. Terminal bytes are never journaled.
   rpc Terminal(stream ProjectTerminalRequest) returns (stream ProjectTerminalReply);
@@ -243,8 +242,6 @@ message ProjectEditorReply { string workspace = 1; string connection_token = 2; 
 message ProjectEditorTunnelRequest { ProjectRef ref = 1; bytes input = 2; }
 message ProjectEditorTunnelReply { bool ready = 1; bytes output = 2; }
 
-message ProjectRemoveRequest { string target = 1; bool confirmed = 2; }
-message ProjectRemoveReply { Project project = 1; bool removed = 2; }
 
 // The kinds of task that can be done beside a session. A new kind is a value
 // here, not another RPC.

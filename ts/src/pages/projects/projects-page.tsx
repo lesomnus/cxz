@@ -90,7 +90,7 @@ export function ProjectsPage({
               c={c}
               project={project}
               saved={setSaved}
-              purged={() => {
+              erased={() => {
                 setSaved(undefined);
                 const next = visibleProjects.find(
                   (p) => key(p.id) !== key(project.id),
@@ -127,7 +127,7 @@ function ProjectDashboard({
   c,
   project: p,
   saved,
-  purged,
+  erased,
   sessions,
   sessionsLoading,
   accounts,
@@ -137,7 +137,7 @@ function ProjectDashboard({
   c: DashboardConnection;
   project: Project;
   saved: (project: Project) => void;
-  purged: () => void;
+  erased: () => void;
   accounts: Account[];
   accountsError: string;
   reloadAccounts: () => void;
@@ -270,7 +270,7 @@ function ProjectDashboard({
             c={c}
             project={p}
             sessions={sessions}
-            purged={purged}
+            erased={erased}
             updated={saved}
           />
         </section>

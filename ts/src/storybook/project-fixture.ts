@@ -167,15 +167,18 @@ export function projectFixture(
         publish();
         return updated;
       },
-      remove: (request, context) => {
-        const index = projects.findIndex((p) => p.runtimeId === request.target);
+      erase: (request, context) => {
+        const index = projects.findIndex(
+          (p) =>
+            request.key.case === "id" &&
+            p.id.every((b, i) => b === (request.key.value as Uint8Array)[i]),
+        );
         if (index < 0)
           throw new ConnectError("Project not found", Code.NotFound);
         const project = clone(ProjectSchema, projects[index]!);
         calls.push({
-          method: "project.remove",
+          method: "project.erase",
           project: project.runtimeId,
-          confirmed: request.confirmed,
           signal: context.signal,
         });
         if (unavailable)
@@ -183,14 +186,12 @@ export function projectFixture(
             "Project removal is unavailable",
             Code.Unavailable,
           );
-        if (request.confirmed) {
-          projects.splice(index, 1);
-          for (let i = sessions.length - 1; i >= 0; i--)
-            if (sessions[i]!.project?.runtimeId === project.runtimeId)
-              sessions.splice(i, 1);
-          publish();
-        }
-        return { project, removed: request.confirmed };
+        projects.splice(index, 1);
+        for (let i = sessions.length - 1; i >= 0; i--)
+          if (sessions[i]!.project?.runtimeId === project.runtimeId)
+            sessions.splice(i, 1);
+        publish();
+        return { erased: true };
       },
       get: (request) => {
         const project = projects.find((p) =>

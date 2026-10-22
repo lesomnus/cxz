@@ -26,7 +26,6 @@ const (
 	ProjectService_Erase_FullMethodName                  = "/cxz.ProjectService/Erase"
 	ProjectService_List_FullMethodName                   = "/cxz.ProjectService/List"
 	ProjectService_Watch_FullMethodName                  = "/cxz.ProjectService/Watch"
-	ProjectService_Remove_FullMethodName                 = "/cxz.ProjectService/Remove"
 	ProjectService_Terminal_FullMethodName               = "/cxz.ProjectService/Terminal"
 	ProjectService_AuxiliaryLogin_FullMethodName         = "/cxz.ProjectService/AuxiliaryLogin"
 	ProjectService_SessionLogin_FullMethodName           = "/cxz.ProjectService/SessionLogin"
@@ -107,7 +106,6 @@ type ProjectServiceClient interface {
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *ProjectWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ProjectWatchResponse], error)
 	// Permanently remove one project and its owned data, preserving workspace sources.
-	Remove(ctx context.Context, in *ProjectRemoveRequest, opts ...grpc.CallOption) (*ProjectRemoveReply, error)
 	// Ephemeral PTY on the manager host. First frame identifies a project and size;
 	// later frames carry input or a resize. Terminal bytes are never journaled.
 	Terminal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectTerminalRequest, ProjectTerminalReply], error)
@@ -320,16 +318,6 @@ func (c *projectServiceClient) Watch(ctx context.Context, in *ProjectWatchReques
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchClient = grpc.ServerStreamingClient[ProjectWatchResponse]
-
-func (c *projectServiceClient) Remove(ctx context.Context, in *ProjectRemoveRequest, opts ...grpc.CallOption) (*ProjectRemoveReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ProjectRemoveReply)
-	err := c.cc.Invoke(ctx, ProjectService_Remove_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
 
 func (c *projectServiceClient) Terminal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectTerminalRequest, ProjectTerminalReply], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -880,7 +868,6 @@ type ProjectServiceServer interface {
 	// being read -- and that is harmless for the same reason.
 	Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error
 	// Permanently remove one project and its owned data, preserving workspace sources.
-	Remove(context.Context, *ProjectRemoveRequest) (*ProjectRemoveReply, error)
 	// Ephemeral PTY on the manager host. First frame identifies a project and size;
 	// later frames carry input or a resize. Terminal bytes are never journaled.
 	Terminal(grpc.BidiStreamingServer[ProjectTerminalRequest, ProjectTerminalReply]) error
@@ -1035,9 +1022,6 @@ func (UnimplementedProjectServiceServer) List(context.Context, *ProjectListReque
 }
 func (UnimplementedProjectServiceServer) Watch(*ProjectWatchRequest, grpc.ServerStreamingServer[ProjectWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
-}
-func (UnimplementedProjectServiceServer) Remove(context.Context, *ProjectRemoveRequest) (*ProjectRemoveReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method Remove not implemented")
 }
 func (UnimplementedProjectServiceServer) Terminal(grpc.BidiStreamingServer[ProjectTerminalRequest, ProjectTerminalReply]) error {
 	return status.Error(codes.Unimplemented, "method Terminal not implemented")
@@ -1325,24 +1309,6 @@ func _ProjectService_Watch_Handler(srv interface{}, stream grpc.ServerStream) er
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_WatchServer = grpc.ServerStreamingServer[ProjectWatchResponse]
-
-func _ProjectService_Remove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectRemoveRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).Remove(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_Remove_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).Remove(ctx, req.(*ProjectRemoveRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
 
 func _ProjectService_Terminal_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(ProjectServiceServer).Terminal(&grpc.GenericServerStream[ProjectTerminalRequest, ProjectTerminalReply]{ServerStream: stream})
@@ -2198,10 +2164,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _ProjectService_List_Handler,
-		},
-		{
-			MethodName: "Remove",
-			Handler:    _ProjectService_Remove_Handler,
 		},
 		{
 			MethodName: "Editor",

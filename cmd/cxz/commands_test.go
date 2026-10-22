@@ -235,11 +235,6 @@ func (s projectStub) Erase(_ context.Context, r *resource.ProjectRef) (*resource
 	return resource.ProjectEraseResponse_builder{Erased: ptr(true)}.Build(), nil
 }
 
-func (s projectStub) Remove(_ context.Context, r *resource.ProjectRemoveRequest) (*resource.ProjectRemoveReply, error) {
-	s.requests <- r
-	return resource.ProjectRemoveReply_builder{Project: testProject(), Removed: ptr(r.GetConfirmed())}.Build(), nil
-}
-
 func TestCommandsReachAPI(t *testing.T) {
 	root, err := os.MkdirTemp("", "cxz-cli-")
 	if err != nil {
@@ -289,23 +284,27 @@ func TestCommandsReachAPI(t *testing.T) {
 		t.Fatal("nothing was recreated")
 	}
 	for _, confirmed := range []bool{false, true} {
-		args := []string{"project", "purge"}
+		args := []string{"project", "erase"}
 		if confirmed {
 			args = append(args, "--yes")
 		}
 		args = append(args, "project-name")
 		got := xlitest.Run(t, newRoot(root), args...)
 		if confirmed && got.Err != nil || !confirmed && (got.Err == nil || !strings.Contains(got.Err.Error(), "--yes")) {
-			t.Fatalf("remove confirmation: %+v", got)
+			t.Fatalf("erase confirmation: %+v", got)
 		}
+		// Unconfirmed never reaches the RPC: erasing is confirmed by the
+		// client, and the ref it sends is a UUID.
 		select {
 		case raw := <-stub.requests:
-			req, ok := raw.(*resource.ProjectRemoveRequest)
-			if !ok || req.GetConfirmed() != confirmed || req.GetTarget() != "project-name" {
+			req, ok := raw.(*resource.ProjectRef)
+			if !ok || !confirmed || string(req.GetId()) != string(testProject().GetId()) {
 				t.Fatal(raw)
 			}
 		default:
-			t.Fatal("remove did not reach RPC")
+			if confirmed {
+				t.Fatal("erase did not reach RPC")
+			}
 		}
 	}
 	// Without an installation the snapshot stops at the manager, but the command

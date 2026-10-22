@@ -7,7 +7,7 @@ import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
-import { purgeProject } from "./project-purge";
+import { eraseProject } from "./project-erase";
 import {
   removeContainer,
   startContainer,
@@ -15,12 +15,20 @@ import {
 } from "./project-container";
 import styles from "./project-actions.module.css";
 
-type Action = "stop" | "start" | "remove" | "purge";
+type Action = "stop" | "start" | "remove" | "erase";
 
 // What a button says is the name of the call it makes. Stopping keeps the
 // container, starting brings it back, removing throws the container away and
 // keeps everything else, and purging is the one that deletes data.
 // See docs/plans/project-lifecycle-api.md.
+// Each action's glyph. Erasing borrows the trash: it is the one that deletes.
+const icons: Record<Action, "stop" | "resume" | "remove" | "purge"> = {
+  stop: "stop",
+  start: "resume",
+  remove: "remove",
+  erase: "purge",
+};
+
 // `description` is the line beside the button; `body` is what the confirmation
 // spells out. They are different lengths on purpose: the row stays scannable
 // and the dialog says what survives.
@@ -65,11 +73,11 @@ const copy: Record<
     ),
     note: t("The project remains listed and can be started again."),
   },
-  purge: {
-    label: t("Purge"),
+  erase: {
+    label: t("Erase"),
     description: t("Permanently delete this project and its owned data."),
-    title: t("Purge project"),
-    confirm: t("Purge permanently"),
+    title: t("Erase project"),
+    confirm: t("Erase permanently"),
     body: t(
       "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.",
     ),
@@ -80,13 +88,13 @@ export function ProjectActions({
   c,
   project,
   sessions,
-  purged,
+  erased,
   updated,
 }: {
   c: Connection;
   project: Project;
   sessions: Session[];
-  purged: () => void;
+  erased: () => void;
   updated: (project: Project) => void;
 }) {
   const trigger = useRef<HTMLButtonElement>(null);
@@ -102,7 +110,7 @@ export function ProjectActions({
         state === ContainerState.ABSENT ||
         state === ContainerState.UNSPECIFIED,
     },
-    { kind: "purge", disabled: false },
+    { kind: "erase", disabled: false },
   ];
   return (
     <>
@@ -111,7 +119,7 @@ export function ProjectActions({
           <div className={styles.row} key={action.kind}>
             <span className={styles.icon}>
               <SessionActionIcon
-                action={action.kind === "start" ? "resume" : action.kind}
+                action={icons[action.kind]}
               />
             </span>
             <p>{copy[action.kind].description}</p>
@@ -142,9 +150,9 @@ export function ProjectActions({
           execute={async () => {
             setError("");
             try {
-              if (target.kind === "purge") {
-                await purgeProject(c, target.project, sessions);
-                purged();
+              if (target.kind === "erase") {
+                await eraseProject(c, target.project, sessions);
+                erased();
               } else {
                 const control = {
                   stop: stopContainer,

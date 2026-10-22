@@ -48,8 +48,8 @@ Project는 DB에 등록된 워크스페이스다. 컨테이너가 존재하거�
 | `Up` | 생성·시작·초기화·세션 선택이 한 경로 | `CreateContainer`와 `StartContainer`로 분리, 세션은 분리 |
 | `Down` | 컨테이너 제거 | 사라짐. `StopContainer`는 정지, `StartContainer`는 시작, `RemoveContainer`는 제거 — **완료** |
 | `Recreate` | 서버의 제거·재프로비저닝 복합 작업 | 클라이언트 조합 |
-| `Erase` | 프로젝트·세션을 `listed=false`로 보관 | 소유 데이터 정리 후 삭제 표식 |
-| `Remove` | 프로젝트 소유 데이터와 DB 행 영구 제거 | 사라짐. 데이터 삭제는 `Erase`, 컨테이너 제거는 `RemoveContainer` |
+| `Erase` | 프로젝트·세션을 `listed=false`로 보관 | 소유 데이터 정리 후 행 제거 — **완료** |
+| `Remove` | 프로젝트 소유 데이터와 DB 행 영구 제거 | 사라짐. 데이터 삭제는 `Erase`, 컨테이너 제거는 `RemoveContainer` — **완료** |
 | 상태 | 문자열 `status.state`와 `container_id` | enum `status.container_state`와 관측 정보 |
 | 설정 신뢰 | `Up`의 `trust_config` 불리언이 `Project.Trusted`를 영구히 켬 | 동의한 설정 digest를 기록, 내용이 바뀌면 다시 묻는다 |
 
@@ -244,7 +244,9 @@ network/PID, `docker.sock`, `SYS_ADMIN` 같은 것을 찾고 발견이 있으면
 
 ## Erase의 삭제 경계
 
-`Erase`는 되돌리기 불가능한 데이터 정리다. CLI와 UI는 대상 Project를 조회하여
+`Erase`는 되돌리기 불가능한 데이터 정리다. 미리보기 단계는 없앴다 — 그것은 옛
+`Remove`가 **문자열**을 해석했기 때문에 필요했고(잘못된 프로젝트를 지울 위험),
+`Erase`는 UUID ref를 받으므로 해석할 것이 없다. CLI와 UI는 대상 Project를 조회하여
 식별 정보를 보여주고 명시적으로 확인받는다. 기존 `Remove(confirmed=false)`의
 미리보기 동작은 어디에도 남기지 않는다. 옛 `Remove`는 사라지므로 물려받을 곳도 없다.
 
@@ -254,9 +256,11 @@ network/PID, `docker.sock`, `SYS_ADMIN` 같은 것을 찾고 발견이 있으면
 다른 프로젝트, 사용자 소유 마운트와 워크스페이스 소스 파일은 유지한다.
 세션·Task·AuthBinding 등 종속 리소스도 일반 조회에서 남지 않도록 처리한다.
 
-컨테이너 정지와 외부 데이터 정리를 끝낸 뒤 Project와 종속 리소스의 삭제 표식을
-DB 트랜잭션으로 확정한다. Project 메타데이터는 payday의 `date_erased`로 남긴다.
-삭제 표식은 실행 데이터의 보존이나 복원 가능성을 뜻하지 않는다. 정리 중에는 같은
+컨테이너 정지와 외부 데이터 정리를 끝낸 뒤 삭제를 DB 트랜잭션으로 확정한다. 지금
+구현은 `date_erased`로 표식을 남겨 구독자에게 사라짐을 발행한 **뒤 행을 제거한다**.
+표식을 행으로 남기는 모델은 미뤘다: `workspace`와 경로 해시 `runtime_id`가 unique라서
+같은 워크스페이스를 다시 `Add`할 때 표식과 충돌한다. 그 문제를 풀기 전까지는 제거가
+"돌아오지 않는다"의 더 강한 형태다. 정리 중에는 같은
 프로젝트의 생성·시작·세션 쓰기가 데이터를 다시 만들지 못하게 막는다.
 
 외부 정리는 원자적이지 않다. 실패 시 완료한 단계와 남은 대상을 보존하고 같은 대상에
