@@ -43,7 +43,6 @@ test("unread response uses the left indicator and Sessions icon count clears whe
       runtimeId: "project",
       alias: "demo",
       name: "Demo project",
-      listed: true,
     },
     status: {
       runId: "run",
