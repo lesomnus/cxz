@@ -30,7 +30,9 @@ func workspaceEntryCommands() xli.Commands {
 		}
 	}
 	up.Flags = append(flags, formatFlag())
-	down := &xli.Command{Name: "down", Brief: "Remove owned containers; retain project, sessions, history and volumes", Args: arg.Args{projectArg("WORKSPACE", true)}, Flags: flg.Flags{formatFlag()}, Handler: withClient(workspaceEntry)}
+	// The workspace pair keeps its idiom; `cxz project remove` is the same
+	// operation under the name the RPC has.
+	down := &xli.Command{Name: "down", Brief: "Remove owned containers (cxz project remove); retain project, sessions, history and volumes", Args: arg.Args{projectArg("WORKSPACE", true)}, Flags: flg.Flags{formatFlag()}, Handler: withClient(workspaceEntry)}
 	down.Args[0].(*arg.String).Default = ptr(".")
 	return xli.Commands{up, down}
 }
@@ -54,10 +56,10 @@ func workspaceEntry(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	if err != nil {
 		return err
 	}
-	if _, err := resources.Down(ctx, &api.ProjectRequest{Workspace: p.Id, ClientId: core.ID()}); err != nil {
+	if _, err := resources.RemoveContainer(ctx, &api.ProjectRequest{Workspace: p.Id, ClientId: core.ID()}); err != nil {
 		return err
 	}
-	return writeOutput(c, map[string]any{"project": p.Id, "status": "stopped", "retained": "project, sessions, conversation history, workspace source and named volumes"})
+	return writeOutput(c, map[string]any{"project": p.Id, "status": "removed", "retained": "project, sessions, conversation history, workspace source and named volumes"})
 }
 
 func localTUI(ctx context.Context, client api.SessionsClient, c *xli.Command, selected string) error {

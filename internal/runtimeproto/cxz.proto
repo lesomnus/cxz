@@ -45,9 +45,18 @@ service Sessions {
   rpc Background(SessionRef) returns (BackgroundReply);
   rpc Models(ModelsRequest) returns (ModelsReply);
   rpc Search(SearchRequest) returns (stream SearchReply);
-  rpc Open(ProjectRequest) returns (Session);
   rpc Projects(Empty) returns (ProjectList);
-  rpc Down(ProjectRequest) returns (Receipt);
+  // The container's lifecycle, named after what each one does to it, because
+  // these are the words the CLI and the UI show. Create prepares and runs the
+  // container through the Dev Container lifecycle; Stop keeps it and Start
+  // brings it back; Remove throws it away and keeps the project, its sessions
+  // and their conversations. None of them creates or resumes a session -- that
+  // is Session.Add and Session.Resume, which the client composes with these.
+  // See docs/plans/project-lifecycle-api.md.
+  rpc CreateContainer(ProjectRequest) returns (Receipt);
+  rpc StopContainer(ProjectRequest) returns (Receipt);
+  rpc StartContainer(ProjectRequest) returns (Receipt);
+  rpc RemoveContainer(ProjectRequest) returns (Receipt);
   // Aux is a model task attached to a session: run once, with the context cxz
   // assembles, never accumulating into a conversation. Summary, suggestion and
   // title are its kinds. See docs/plans/aux-api.md.
@@ -214,6 +223,9 @@ message ProjectRequest {
  bool new_session = 4; bool recreate = 5; bool confirmed = 6;
  bool trust_config = 7; string client_id = 8;
  string model = 9;
+ // prepare_only is read by the client-side composition, not by the manager:
+ // creating a container never touches sessions, so it says "and do not create
+ // or resume one either".
  bool prepare_only = 10;
  string name = 11;
  string alias = 12;

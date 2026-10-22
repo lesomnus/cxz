@@ -33,9 +33,6 @@ func (s ProjectServer) Terminal(stream grpc.BidiStreamingServer[resource.Project
 	if err != nil {
 		return err
 	}
-	if !p.GetListed() {
-		return status.Error(codes.NotFound, "project deleted")
-	}
 	runtime, ok := s.shared.runtime.(containerterm.TerminalClient)
 	if !ok {
 		return status.Error(codes.Unimplemented, "container terminal transport unavailable")

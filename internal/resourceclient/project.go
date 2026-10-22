@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/projectref"
+	"github.com/lesomnus/cxz/internal/projectstate"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -13,7 +14,7 @@ import (
 
 func project(p *resource.Project) *api.Project {
 	st := p.GetStatus()
-	return &api.Project{Id: p.GetRuntimeId(), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: st.GetState(), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
+	return &api.Project{Id: p.GetRuntimeId(), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: projectstate.Word(st.GetContainerState()), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
 }
 func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.ProjectList, error) {
 	out, err := c.registeredProjects(ctx, opts...)
@@ -40,7 +41,7 @@ func (c *Client) registeredProjects(ctx context.Context, opts ...grpc.CallOption
 	out := &api.ProjectList{}
 	after := ""
 	for {
-		page, err := c.projects.List(ctx, resource.ProjectListRequest_builder{Filters: []*resource.ProjectFilter{resource.ProjectFilter_builder{Listed: ptr(true)}.Build()}, Size: 200, After: after}.Build(), opts...)
+		page, err := c.projects.List(ctx, resource.ProjectListRequest_builder{Size: 200, After: after}.Build(), opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -66,12 +67,7 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 		return nil, err
 	}
 	ref := pr(p.GetRuntimeId())
-	if r.Recreate {
-		p, err = c.projects.Recreate(ctx, resource.ProjectRecreateRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Confirmed: &r.Confirmed, Config: &r.Config}.Build(), opts...)
-	} else {
-		p, err = c.projects.Up(ctx, resource.ProjectUpRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Config: &r.Config}.Build(), opts...)
-	}
-	if err != nil {
+	if p, err = c.create(ctx, ref, r, opts...); err != nil {
 		return nil, err
 	}
 	if r.PrepareOnly {
@@ -133,7 +129,7 @@ func (c *Client) concurrentOpen(ctx context.Context, project, agent, model, acco
 	}
 	return nil
 }
-func (c *Client) Down(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+func (c *Client) RemoveContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
 	// Resolve without registering a new resource as a side effect of shutdown.
 	ps, err := c.Projects(ctx, &api.Empty{}, opts...)
 	if err != nil {
@@ -144,13 +140,82 @@ func (c *Client) Down(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 		return nil, err
 	}
 	id := p.Id
-	_, err = c.projects.Down(ctx, resource.ProjectControl_builder{Ref: pr(id), ClientId: &r.ClientId}.Build(), opts...)
+	_, err = c.projects.RemoveContainer(ctx, resource.ProjectControl_builder{Ref: pr(id), ClientId: &r.ClientId}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}
 	return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
 }
 
-func (c *Client) RemoveProject(ctx context.Context, target string, confirmed bool) (*resource.ProjectRemoveReply, error) {
-	return c.projects.Remove(ctx, resource.ProjectRemoveRequest_builder{Target: &target, Confirmed: &confirmed}.Build())
+// CreateContainer prepares the container and nothing else. `Open` is the
+// composition on top of it: create, then decide about a session.
+func (c *Client) CreateContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	ps, err := c.Projects(ctx, &api.Empty{}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	p, err := projectref.Resolve(ps.Projects, r.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = c.create(ctx, pr(p.Id), r, opts...); err != nil {
+		return nil, err
+	}
+	return &api.Receipt{ClientId: r.ClientId, Status: "created"}, nil
+}
+
+// create brings a project's container to where the caller asked for it, which
+// is what `Up` and `Recreate` used to be. Replacing a container is two calls
+// now, in this order, and this is the one place that composes them: the server
+// does not have an operation that removes a container as a step towards making
+// one, because deciding to lose a container is not a step -- it is the whole
+// question. A recreate without confirmation never gets this far; the CLI and
+// the UI ask first.
+func (c *Client) create(ctx context.Context, ref *resource.ProjectRef, r *api.ProjectRequest, opts ...grpc.CallOption) (*resource.Project, error) {
+	if r.Recreate {
+		if !r.Confirmed {
+			return nil, fmt.Errorf("recreate requires confirmation: writable layer lost and editors disconnect")
+		}
+		if _, err := c.projects.RemoveContainer(ctx, resource.ProjectControl_builder{Ref: ref, ClientId: &r.ClientId}.Build(), opts...); err != nil {
+			return nil, err
+		}
+	}
+	return c.projects.CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Config: &r.Config}.Build(), opts...)
+}
+
+// StopContainer and StartContainer resolve the same way RemoveContainer does, without
+// registering a resource as a side effect of stopping or starting one.
+func (c *Client) StopContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	return c.container(ctx, r, c.projects.StopContainer, "stopped", opts...)
+}
+
+func (c *Client) StartContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	return c.container(ctx, r, c.projects.StartContainer, "started", opts...)
+}
+
+func (c *Client) container(ctx context.Context, r *api.ProjectRequest, call func(context.Context, *resource.ProjectControl, ...grpc.CallOption) (*resource.Project, error), status string, opts ...grpc.CallOption) (*api.Receipt, error) {
+	ps, err := c.Projects(ctx, &api.Empty{}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	p, err := projectref.Resolve(ps.Projects, r.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = call(ctx, resource.ProjectControl_builder{Ref: pr(p.Id), ClientId: &r.ClientId}.Build(), opts...); err != nil {
+		return nil, err
+	}
+	return &api.Receipt{ClientId: r.ClientId, Status: status}, nil
+}
+
+// EraseProject deletes the project's data. There is no preview step: the ref is
+// a UUID, so there is nothing to resolve wrongly, which is what the preview was
+// guarding against. Confirmation belongs to whoever is asking a person.
+func (c *Client) EraseProject(ctx context.Context, target string) error {
+	p, err := c.ResolveProject(ctx, target)
+	if err != nil {
+		return err
+	}
+	_, err = c.projects.Erase(ctx, pr(p.Id))
+	return err
 }

@@ -23,7 +23,7 @@ func reorganizeCommands(root *xli.Command) {
 		switch c.Name {
 		case "project":
 			project.Commands = append(project.Commands, c.Commands...)
-		case "up", "down", "recreate", "shell", "exec":
+		case "up", "remove", "recreate", "shell", "exec":
 			project.Commands = append(project.Commands, c)
 		case "projects":
 			c.Name = "ls"

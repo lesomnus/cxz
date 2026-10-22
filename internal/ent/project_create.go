@@ -99,20 +99,6 @@ func (_c *ProjectCreate) SetStatus(v *resource.ProjectStatus) *ProjectCreate {
 	return _c
 }
 
-// SetListed sets the "listed" field.
-func (_c *ProjectCreate) SetListed(v bool) *ProjectCreate {
-	_c.mutation.SetListed(v)
-	return _c
-}
-
-// SetNillableListed sets the "listed" field if the given value is not nil.
-func (_c *ProjectCreate) SetNillableListed(v *bool) *ProjectCreate {
-	if v != nil {
-		_c.SetListed(*v)
-	}
-	return _c
-}
-
 // SetId sets the "id" field.
 func (_c *ProjectCreate) SetId(v uuid.UUID) *ProjectCreate {
 	_c.mutation.SetId(v)
@@ -262,10 +248,6 @@ func (_c *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec, error) {
 		}
 		_spec.SetField(project.FieldStatus, field.TypeJson, vv)
 		_node.Status = value
-	}
-	if value, ok := _c.mutation.Listed(); ok {
-		_spec.SetField(project.FieldListed, field.TypeBool, value)
-		_node.Listed = value
 	}
 	return _node, _spec, nil
 }

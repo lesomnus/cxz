@@ -27,7 +27,6 @@ type Mutation struct {
 	date_erased   *time.Time
 	date_created  *time.Time
 	status        **resource.ProjectStatus
-	listed        *bool
 	clearedFields map[string]struct{}
 	predicates    []predicate.Project
 }
@@ -275,38 +274,6 @@ func (m *Mutation) ResetStatus() {
 	delete(m.clearedFields, FieldStatus)
 }
 
-// SetListed sets the "listed" field.
-func (m *Mutation) SetListed(b bool) {
-	m.listed = &b
-}
-
-// Listed returns the value of the "listed" field in the mutation.
-func (m *Mutation) Listed() (r bool, exists bool) {
-	v := m.listed
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearListed clears the value of the "listed" field.
-func (m *Mutation) ClearListed() {
-	m.listed = nil
-	m.clearedFields[FieldListed] = struct{}{}
-}
-
-// ListedCleared returns if the "listed" field was cleared in this mutation.
-func (m *Mutation) ListedCleared() bool {
-	_, ok := m.clearedFields[FieldListed]
-	return ok
-}
-
-// ResetListed resets all changes to the "listed" field.
-func (m *Mutation) ResetListed() {
-	m.listed = nil
-	delete(m.clearedFields, FieldListed)
-}
-
 // Where appends a list predicates to the Mutation builder.
 func (m *Mutation) Where(ps ...predicate.Project) {
 	m.predicates = append(m.predicates, ps...)
@@ -341,7 +308,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 10)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -372,9 +339,6 @@ func (m *Mutation) Fields() []string {
 	if m.status != nil {
 		fields = append(fields, FieldStatus)
 	}
-	if m.listed != nil {
-		fields = append(fields, FieldListed)
-	}
 	return fields
 }
 
@@ -403,8 +367,6 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateCreated()
 	case FieldStatus:
 		return m.Status()
-	case FieldListed:
-		return m.Listed()
 	}
 	return nil, false
 }
@@ -491,13 +453,6 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatus(v)
 		return nil
-	case FieldListed:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetListed(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)
 }
@@ -537,9 +492,6 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldStatus) {
 		fields = append(fields, FieldStatus)
 	}
-	if m.FieldCleared(FieldListed) {
-		fields = append(fields, FieldListed)
-	}
 	return fields
 }
 
@@ -562,9 +514,6 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldStatus:
 		m.ClearStatus()
-		return nil
-	case FieldListed:
-		m.ClearListed()
 		return nil
 	}
 	return fmt.Errorf("unknown Project nullable field %s", name)
@@ -603,9 +552,6 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldStatus:
 		m.ResetStatus()
-		return nil
-	case FieldListed:
-		m.ResetListed()
 		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)

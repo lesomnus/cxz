@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ProjectSchema } from "#gen/cxz/project_pb";
 import { SessionSchema } from "#gen/cxz/session_pb";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
-import { purgeProject } from "./project-purge";
+import { eraseProject } from "./project-erase";
 
 function fixture(mode = "") {
   const project = create(ProjectSchema, {
@@ -22,23 +22,17 @@ function fixture(mode = "") {
       runtimeId: `session-${i}`,
     }),
   );
-  const calls: boolean[] = [];
+  const calls: string[] = [];
   const projects = createClient(
     ProjectService,
     createRouterTransport((router) =>
       router.service(ProjectService, {
-        remove(request) {
-          calls.push(request.confirmed);
-          expect(request.target).toBe("target");
-          if (mode === "failure" && request.confirmed)
-            throw new Error("Removal failed");
-          return {
-            project:
-              mode === "replaced"
-                ? create(ProjectSchema, { ...project, id: other.id })
-                : project,
-            removed: request.confirmed && mode !== "unconfirmed",
-          };
+        erase(request) {
+          // The ref is the UUID the page is looking at: nothing to resolve.
+          expect(request.key.case).toBe("id");
+          calls.push(String(request.key.value));
+          if (mode === "failure") throw new Error("Erase failed");
+          return { erased: mode !== "unconfirmed" };
         },
       }),
     ),
@@ -51,14 +45,14 @@ function fixture(mode = "") {
     conversations: { delete: vi.fn() },
     inventory: { snapshot: () => ({ sessions }), refresh: vi.fn() },
   };
-  const connection = c as unknown as Parameters<typeof purgeProject>[0];
+  const connection = c as unknown as Parameters<typeof eraseProject>[0];
   return { c, connection, project, sessions, calls };
 }
-describe("project purge", () => {
-  it("verifies the preview then confirms once and clears only the selected project's caches", async () => {
+describe("project erase", () => {
+  it("erases by UUID once and clears only the selected project's caches", async () => {
     const f = fixture();
-    await purgeProject(f.connection, f.project, [f.sessions[0]!]);
-    expect(f.calls).toEqual([false, true]);
+    await eraseProject(f.connection, f.project, [f.sessions[0]!]);
+    expect(f.calls).toEqual([String(f.project.id)]);
     expect(f.c.store.apply).toHaveBeenCalledWith("cxz.Project", [
       { id: f.project.id },
     ]);
@@ -77,12 +71,12 @@ describe("project purge", () => {
     ]);
     expect(f.c.inventory.refresh).toHaveBeenCalledOnce();
   });
-  it("refuses to confirm a target whose resource identity changed", async () => {
-    const f = fixture("replaced");
+  it("refuses a project it cannot name by UUID", async () => {
+    const f = fixture();
     await expect(
-      purgeProject(f.connection, f.project, f.sessions),
+      eraseProject(f.connection, create(ProjectSchema, { runtimeId: "target" }), f.sessions),
     ).rejects.toThrow("Project changed");
-    expect(f.calls).toEqual([false]);
+    expect(f.calls).toEqual([]);
     expect(f.c.store.apply).not.toHaveBeenCalled();
   });
   it.each(["failure", "unconfirmed"])(
@@ -90,9 +84,9 @@ describe("project purge", () => {
     async (mode) => {
       const f = fixture(mode);
       await expect(
-        purgeProject(f.connection, f.project, f.sessions),
+        eraseProject(f.connection, f.project, f.sessions),
       ).rejects.toThrow();
-      expect(f.calls).toEqual([false, true]);
+      expect(f.calls).toEqual([String(f.project.id)]);
       expect(f.c.store.apply).not.toHaveBeenCalled();
       expect(f.c.drafts.size).toBe(3);
       expect(f.c.inventory.refresh).not.toHaveBeenCalled();

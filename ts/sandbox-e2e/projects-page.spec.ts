@@ -348,24 +348,24 @@ test("project metadata persists through Project.Patch and inventory Watch", asyn
   await expect(page).toHaveURL(/projects\?project=project-1$/);
 });
 
-test("project Purge removes only the confirmed sandbox project", async ({
+test("project Erase removes only the confirmed sandbox project", async ({
   page,
 }) => {
   await page.goto("/sandbox.html#/projects");
   const actions = page.getByRole("region", { name: "Actions", exact: true });
   await expect(actions).toBeVisible({ timeout: 45000 });
-  await actions.getByRole("button", { name: "Purge", exact: true }).click();
+  await actions.getByRole("button", { name: "Erase", exact: true }).click();
   const dialog = page.getByRole("dialog", {
-    name: "Purge project",
+    name: "Erase project",
     exact: true,
   });
   await expect(dialog).toContainText("This cannot be undone.");
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   await expect(table.locator("tbody tr")).toHaveCount(8);
-  await actions.getByRole("button", { name: "Purge", exact: true }).click();
+  await actions.getByRole("button", { name: "Erase", exact: true }).click();
   await dialog
-    .getByRole("button", { name: "Purge permanently", exact: true })
+    .getByRole("button", { name: "Erase permanently", exact: true })
     .click();
   await expect(dialog).toHaveCount(0);
   const picker = page.getByRole("combobox", {
@@ -381,7 +381,7 @@ test("project Purge removes only the confirmed sandbox project", async ({
   ).toHaveCount(0);
 });
 
-test("project Stop retains the listed sandbox project and conversation records", async ({
+test("project Stop retains the sandbox project and conversation records", async ({
   page,
 }) => {
   await page.goto("/sandbox.html#/projects");
@@ -404,13 +404,6 @@ test("project Stop retains the listed sandbox project and conversation records",
   await expect(rows.locator("td:nth-child(6)")).toHaveText(
     Array(8).fill("Stopped"),
   );
-  await expect(
-    page
-      .getByRole("region", { name: "Information", exact: true })
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
-      .locator("dd"),
-  ).toHaveText("true");
   const picker = page.getByRole("combobox", {
     name: "Select project",
     exact: true,
@@ -428,4 +421,55 @@ test("project Stop retains the listed sandbox project and conversation records",
   await expect(
     actions.getByRole("button", { name: "Stop", exact: true }),
   ).toBeDisabled();
+});
+
+// The buttons say what they call, and what they call decides which of them is
+// available: Stop while it runs, Start once it is stopped, Remove while there
+// is a container. See docs/plans/project-lifecycle-api.md.
+test("project Stop, Start and Remove container move the container and keep the project", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  const button = (name: string) =>
+    actions.getByRole("button", { name, exact: true });
+  const status = page
+    .getByRole("region", { name: "Environment", exact: true })
+    .locator("dl > div")
+    .filter({ has: page.locator("dt", { hasText: /^Status$/ }) })
+    .locator("dd");
+  const confirm = async (action: string, dialogName: string) => {
+    await button(action).click();
+    const dialog = page.getByRole("dialog", { name: dialogName, exact: true });
+    await dialog.getByRole("button", { name: action, exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+  };
+
+  await expect(button("Stop")).toBeEnabled({ timeout: 45000 });
+  await expect(button("Start")).toBeDisabled();
+  await expect(status).toHaveText("Running");
+
+  await confirm("Stop", "Stop project");
+  await expect(status).toHaveText("Stopped");
+  await expect(button("Stop")).toBeDisabled();
+  await expect(button("Start")).toBeEnabled();
+
+  await confirm("Start", "Start project");
+  await expect(status).toHaveText("Running");
+  await expect(button("Start")).toBeDisabled();
+
+  await confirm("Remove container", "Remove container");
+  await expect(status).toHaveText("No container");
+  await expect(button("Remove container")).toBeDisabled();
+  await expect(button("Start")).toBeDisabled();
+
+  // The project and its sessions are still there; only the container went.
+  await expect(
+    page.getByRole("combobox", { name: "Select project", exact: true }),
+  ).toHaveText("Design playground");
+  await expect(
+    page
+      .getByRole("table", { name: "Sessions", exact: true })
+      .locator("tbody tr"),
+  ).toHaveCount(8);
 });

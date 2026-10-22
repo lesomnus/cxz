@@ -107,7 +107,7 @@ func (s ProjectServer) watchInventory(r *resource.ProjectWatchRequest, out grpc.
 			return page.GetItems(), page.GetNext(), nil
 		},
 		func(id []byte) (*resource.Project, bool, error) {
-			current := make([]*resource.ProjectFilter, 0, len(filters))
+			current := make([]*resource.ProjectFilter, 0, len(filters)+1)
 			for _, original := range filters {
 				if original.HasRef() && !bytes.Equal(original.GetRef().GetId(), id) {
 					continue
@@ -115,6 +115,13 @@ func (s ProjectServer) watchInventory(r *resource.ProjectWatchRequest, out grpc.
 				f := proto.Clone(original).(*resource.ProjectFilter)
 				f.SetRef(resource.ProjectRef_builder{Id: id}.Build())
 				current = append(current, f)
+			}
+			// No filters means every registered project, so the event is
+			// resolved by its id alone. Reaching here used to be impossible:
+			// an injected `listed=true` filter stood in for the default, and
+			// removing it is what made an unfiltered watch go quiet.
+			if len(filters) == 0 {
+				current = append(current, resource.ProjectFilter_builder{Ref: resource.ProjectRef_builder{Id: id}.Build()}.Build())
 			}
 			if len(current) == 0 {
 				return nil, false, nil

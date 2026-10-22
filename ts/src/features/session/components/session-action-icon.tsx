@@ -4,6 +4,7 @@ export function SessionActionIcon({
   action:
     | "stop"
     | "resume"
+    | "remove"
     | "restart"
     | "fork"
     | "purge"
@@ -26,6 +27,13 @@ export function SessionActionIcon({
     >
       {action === "stop" && <rect x="4" y="4" width="8" height="8" rx="1" />}
       {action === "resume" && <path d="m5 3 7 5-7 5Z" />}
+      {/* A container thrown away: the box, opened, with what it held gone. */}
+      {action === "remove" && (
+        <>
+          <path d="M3 6h10v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" />
+          <path d="M6 3h4M6 9h4" />
+        </>
+      )}
       {action === "restart" && (
         <>
           <path d="M13 7a5 5 0 1 0-.8 3.7M13 3v4H9" />

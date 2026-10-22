@@ -52,9 +52,11 @@ const (
 	Sessions_Background_FullMethodName             = "/cxz.runtime.Sessions/Background"
 	Sessions_Models_FullMethodName                 = "/cxz.runtime.Sessions/Models"
 	Sessions_Search_FullMethodName                 = "/cxz.runtime.Sessions/Search"
-	Sessions_Open_FullMethodName                   = "/cxz.runtime.Sessions/Open"
 	Sessions_Projects_FullMethodName               = "/cxz.runtime.Sessions/Projects"
-	Sessions_Down_FullMethodName                   = "/cxz.runtime.Sessions/Down"
+	Sessions_CreateContainer_FullMethodName        = "/cxz.runtime.Sessions/CreateContainer"
+	Sessions_StopContainer_FullMethodName          = "/cxz.runtime.Sessions/StopContainer"
+	Sessions_StartContainer_FullMethodName         = "/cxz.runtime.Sessions/StartContainer"
+	Sessions_RemoveContainer_FullMethodName        = "/cxz.runtime.Sessions/RemoveContainer"
 	Sessions_AuxRun_FullMethodName                 = "/cxz.runtime.Sessions/AuxRun"
 	Sessions_AuxCancel_FullMethodName              = "/cxz.runtime.Sessions/AuxCancel"
 	Sessions_AuxStatus_FullMethodName              = "/cxz.runtime.Sessions/AuxStatus"
@@ -129,9 +131,11 @@ type SessionsClient interface {
 	Background(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*BackgroundReply, error)
 	Models(ctx context.Context, in *ModelsRequest, opts ...grpc.CallOption) (*ModelsReply, error)
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SearchReply], error)
-	Open(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Session, error)
 	Projects(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ProjectList, error)
-	Down(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
+	CreateContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
+	StopContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
+	StartContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
+	RemoveContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
 	AuxRun(ctx context.Context, in *AuxRunInput, opts ...grpc.CallOption) (*AuxState, error)
 	AuxCancel(ctx context.Context, in *AuxCancelInput, opts ...grpc.CallOption) (*AuxState, error)
 	AuxStatus(ctx context.Context, in *AuxStatusInput, opts ...grpc.CallOption) (*AuxState, error)
@@ -534,16 +538,6 @@ func (c *sessionsClient) Search(ctx context.Context, in *SearchRequest, opts ...
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Sessions_SearchClient = grpc.ServerStreamingClient[SearchReply]
 
-func (c *sessionsClient) Open(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Session, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Session)
-	err := c.cc.Invoke(ctx, Sessions_Open_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sessionsClient) Projects(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ProjectList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ProjectList)
@@ -554,10 +548,40 @@ func (c *sessionsClient) Projects(ctx context.Context, in *Empty, opts ...grpc.C
 	return out, nil
 }
 
-func (c *sessionsClient) Down(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error) {
+func (c *sessionsClient) CreateContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Receipt)
-	err := c.cc.Invoke(ctx, Sessions_Down_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Sessions_CreateContainer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) StopContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_StopContainer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) StartContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_StartContainer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) RemoveContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_RemoveContainer_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -960,9 +984,11 @@ type SessionsServer interface {
 	Background(context.Context, *SessionRef) (*BackgroundReply, error)
 	Models(context.Context, *ModelsRequest) (*ModelsReply, error)
 	Search(*SearchRequest, grpc.ServerStreamingServer[SearchReply]) error
-	Open(context.Context, *ProjectRequest) (*Session, error)
 	Projects(context.Context, *Empty) (*ProjectList, error)
-	Down(context.Context, *ProjectRequest) (*Receipt, error)
+	CreateContainer(context.Context, *ProjectRequest) (*Receipt, error)
+	StopContainer(context.Context, *ProjectRequest) (*Receipt, error)
+	StartContainer(context.Context, *ProjectRequest) (*Receipt, error)
+	RemoveContainer(context.Context, *ProjectRequest) (*Receipt, error)
 	AuxRun(context.Context, *AuxRunInput) (*AuxState, error)
 	AuxCancel(context.Context, *AuxCancelInput) (*AuxState, error)
 	AuxStatus(context.Context, *AuxStatusInput) (*AuxState, error)
@@ -1107,14 +1133,20 @@ func (UnimplementedSessionsServer) Models(context.Context, *ModelsRequest) (*Mod
 func (UnimplementedSessionsServer) Search(*SearchRequest, grpc.ServerStreamingServer[SearchReply]) error {
 	return status.Error(codes.Unimplemented, "method Search not implemented")
 }
-func (UnimplementedSessionsServer) Open(context.Context, *ProjectRequest) (*Session, error) {
-	return nil, status.Error(codes.Unimplemented, "method Open not implemented")
-}
 func (UnimplementedSessionsServer) Projects(context.Context, *Empty) (*ProjectList, error) {
 	return nil, status.Error(codes.Unimplemented, "method Projects not implemented")
 }
-func (UnimplementedSessionsServer) Down(context.Context, *ProjectRequest) (*Receipt, error) {
-	return nil, status.Error(codes.Unimplemented, "method Down not implemented")
+func (UnimplementedSessionsServer) CreateContainer(context.Context, *ProjectRequest) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateContainer not implemented")
+}
+func (UnimplementedSessionsServer) StopContainer(context.Context, *ProjectRequest) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method StopContainer not implemented")
+}
+func (UnimplementedSessionsServer) StartContainer(context.Context, *ProjectRequest) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method StartContainer not implemented")
+}
+func (UnimplementedSessionsServer) RemoveContainer(context.Context, *ProjectRequest) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveContainer not implemented")
 }
 func (UnimplementedSessionsServer) AuxRun(context.Context, *AuxRunInput) (*AuxState, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxRun not implemented")
@@ -1815,24 +1847,6 @@ func _Sessions_Search_Handler(srv interface{}, stream grpc.ServerStream) error {
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Sessions_SearchServer = grpc.ServerStreamingServer[SearchReply]
 
-func _Sessions_Open_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SessionsServer).Open(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Sessions_Open_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionsServer).Open(ctx, req.(*ProjectRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Sessions_Projects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
@@ -1851,20 +1865,74 @@ func _Sessions_Projects_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Sessions_Down_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Sessions_CreateContainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ProjectRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SessionsServer).Down(ctx, in)
+		return srv.(SessionsServer).CreateContainer(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Sessions_Down_FullMethodName,
+		FullMethod: Sessions_CreateContainer_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionsServer).Down(ctx, req.(*ProjectRequest))
+		return srv.(SessionsServer).CreateContainer(ctx, req.(*ProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_StopContainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).StopContainer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_StopContainer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).StopContainer(ctx, req.(*ProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_StartContainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).StartContainer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_StartContainer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).StartContainer(ctx, req.(*ProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_RemoveContainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).RemoveContainer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_RemoveContainer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).RemoveContainer(ctx, req.(*ProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2620,16 +2688,24 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Sessions_Models_Handler,
 		},
 		{
-			MethodName: "Open",
-			Handler:    _Sessions_Open_Handler,
-		},
-		{
 			MethodName: "Projects",
 			Handler:    _Sessions_Projects_Handler,
 		},
 		{
-			MethodName: "Down",
-			Handler:    _Sessions_Down_Handler,
+			MethodName: "CreateContainer",
+			Handler:    _Sessions_CreateContainer_Handler,
+		},
+		{
+			MethodName: "StopContainer",
+			Handler:    _Sessions_StopContainer_Handler,
+		},
+		{
+			MethodName: "StartContainer",
+			Handler:    _Sessions_StartContainer_Handler,
+		},
+		{
+			MethodName: "RemoveContainer",
+			Handler:    _Sessions_RemoveContainer_Handler,
 		},
 		{
 			MethodName: "AuxRun",

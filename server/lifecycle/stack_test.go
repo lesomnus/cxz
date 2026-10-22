@@ -22,10 +22,12 @@ import (
 type fixture struct {
 	api.UnimplementedSessionsServer
 	assets.Uploader
-	p      *api.Project
-	s      *api.Session
-	resume *api.Control
-	up     *api.ProjectRequest
+	p       *api.Project
+	s       *api.Session
+	resume  *api.Control
+	up      *api.ProjectRequest
+	looks   int
+	lookErr error
 }
 
 func TestUnversionedProtoNamespace(t *testing.T) {
@@ -50,6 +52,27 @@ func (f *fixture) SetSessionTitle(_ context.Context, id, title string) (string, 
 	f.s.Title = title
 	return title, nil
 }
+
+// StopContainer and StartContainer move the container the way the manager does:
+// the project record is untouched and only what the next look sees changes.
+func (f *fixture) StopContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	f.p.State = "stopped"
+	return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
+}
+func (f *fixture) StartContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	f.p.State = "running"
+	return &api.Receipt{ClientId: r.ClientId, Status: "started"}, nil
+}
+
+// Projects is the container inventory a read observes, counted so a test can
+// see how often it was asked.
+func (f *fixture) Projects(context.Context, *api.Empty) (*api.ProjectList, error) {
+	f.looks++
+	if f.lookErr != nil {
+		return nil, f.lookErr
+	}
+	return &api.ProjectList{Projects: []*api.Project{f.p}}, nil
+}
 func (f *fixture) ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error) {
 	return &api.ProjectList{Projects: []*api.Project{f.p}}, &api.SessionList{Sessions: []*api.Session{f.s}}, nil
 }
@@ -60,9 +83,9 @@ func (f *fixture) Resume(_ context.Context, r *api.Control) (*api.Session, error
 	}
 	return f.s, nil
 }
-func (f *fixture) Open(_ context.Context, r *api.ProjectRequest) (*api.Session, error) {
+func (f *fixture) CreateContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
 	f.up = r
-	return f.s, nil
+	return &api.Receipt{ClientId: r.ClientId, Status: "created"}, nil
 }
 
 func TestResourceStack(t *testing.T) {
@@ -88,12 +111,12 @@ func TestResourceStack(t *testing.T) {
 	if len(p.GetId()) != 16 || p.GetId()[9] != 7 {
 		t.Fatalf("not a payday Project ID: %x", p.GetId())
 	}
-	_, err = stack.Project().Up(ctx, resource.ProjectUpRequest_builder{Ref: resource.ProjectRef_builder{Id: p.GetId()}.Build(), ClientId: ptr("up-1")}.Build())
+	_, err = stack.Project().CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: resource.ProjectRef_builder{Id: p.GetId()}.Build(), ClientId: ptr("up-1")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if f.up == nil || !f.up.PrepareOnly {
-		t.Fatal("Project.Up must not create a session")
+	if f.up == nil || f.up.NewSession {
+		t.Fatal("Project.Up must ask only for a container")
 	}
 	s, err := stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{ClientId: ptr("create-1")}.Build(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {

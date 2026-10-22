@@ -33,9 +33,6 @@ func (s ProjectServer) SessionLogin(stream grpc.BidiStreamingServer[resource.Pro
 	if err != nil {
 		return err
 	}
-	if !p.GetListed() {
-		return status.Error(codes.NotFound, "project deleted")
-	}
 	a, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: first.GetAccount(), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return err

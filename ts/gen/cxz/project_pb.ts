@@ -3,8 +3,8 @@
 // option features.field_presence = IMPLICIT;
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/project.proto.
  */
 export const file_cxz_project: GenFile = /*@__PURE__*/
-  fileDesc("ChFjeHovcHJvamVjdC5wcm90bxIDY3h6IvsDCgdQcm9qZWN0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIVCgVhbGlhcxgEIAEoCUIG6oIWAjABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIbCgl3b3Jrc3BhY2UYCCABKAlCCOqCFgQwAUABEg4KBmNvbmZpZxgJIAEoCRIcCgpydW50aW1lX2lkGAogASgJQgjqghYEMAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMSGwoGbGlzdGVkGBEgASgIQgvqghYHggEEdHJ1ZTpmyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWOAgHMjAKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGbGlzdGVkIDIoyAE6ACoAIr4BCg1Qcm9qZWN0U3RhdHVzEg0KBXN0YXRlGAEgASgJEhQKDGNvbnRhaW5lcl9pZBgCIAEoCRITCgtyZW1vdGVfdXNlchgDIAEoCRIYChByZW1vdGVfd29ya3NwYWNlGAQgASgJEhcKD3Byb3Zpc2lvbl9zdGF0ZRgFIAEoCRIWCg5wcm92aXNpb25fc3RlcBgGIAEoCRIZChFwcm92aXNpb25fYXR0ZW1wdBgHIAEoBBINCgVlcnJvchgIIAEoCUIrWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZZIDAggCyscWAGIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFjeHovcHJvamVjdC5wcm90bxIDY3h6ItoDCgdQcm9qZWN0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIVCgVhbGlhcxgEIAEoCUIG6oIWAjABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIbCgl3b3Jrc3BhY2UYCCABKAlCCOqCFgQwAUABEg4KBmNvbmZpZxgJIAEoCRIcCgpydW50aW1lX2lkGAogASgJQgjqghYEMAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlByb2plY3RTdGF0dXM6XMr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7Fi4IBzImChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIDIoyAE6ACoASgQIERASIuMBCg1Qcm9qZWN0U3RhdHVzEhQKDGNvbnRhaW5lcl9pZBgCIAEoCRITCgtyZW1vdGVfdXNlchgDIAEoCRIYChByZW1vdGVfd29ya3NwYWNlGAQgASgJEhcKD3Byb3Zpc2lvbl9zdGF0ZRgFIAEoCRIWCg5wcm92aXNpb25fc3RlcBgGIAEoCRIZChFwcm92aXNpb25fYXR0ZW1wdBgHIAEoBBINCgVlcnJvchgIIAEoCRIsCg9jb250YWluZXJfc3RhdGUYCSABKA4yEy5jeHouQ29udGFpbmVyU3RhdGVKBAgBEAIqpAEKDkNvbnRhaW5lclN0YXRlEh8KG0NPTlRBSU5FUl9TVEFURV9VTlNQRUNJRklFRBAAEhoKFkNPTlRBSU5FUl9TVEFURV9BQlNFTlQQARIbChdDT05UQUlORVJfU1RBVEVfQ1JFQVRFRBACEhsKF0NPTlRBSU5FUl9TVEFURV9SVU5OSU5HEAMSGwoXQ09OVEFJTkVSX1NUQVRFX1NUT1BQRUQQBEIrWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZZIDAggCyscWAGIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * A registered workspace, independent of whether its container is running.
@@ -78,11 +78,6 @@ export type Project = Message<"cxz.Project"> & {
    * @generated from field: cxz.ProjectStatus status = 16;
    */
   status?: ProjectStatus | undefined;
-
-  /**
-   * @generated from field: bool listed = 17;
-   */
-  listed: boolean;
 };
 
 /**
@@ -93,14 +88,14 @@ export const ProjectSchema: GenMessage<Project> = /*@__PURE__*/
   messageDesc(file_cxz_project, 0);
 
 /**
+ * What cxz knows about a project's container. Facts, and one value derived
+ * from them: `container_state` is computed when a read is answered and written
+ * down nowhere, so nothing has to remember to update it and nothing can be read
+ * later as though it were still true. See docs/plans/project-lifecycle-api.md.
+ *
  * @generated from message cxz.ProjectStatus
  */
 export type ProjectStatus = Message<"cxz.ProjectStatus"> & {
-  /**
-   * @generated from field: string state = 1;
-   */
-  state: string;
-
   /**
    * @generated from field: string container_id = 2;
    */
@@ -135,6 +130,11 @@ export type ProjectStatus = Message<"cxz.ProjectStatus"> & {
    * @generated from field: string error = 8;
    */
   error: string;
+
+  /**
+   * @generated from field: cxz.ContainerState container_state = 9;
+   */
+  containerState: ContainerState;
 };
 
 /**
@@ -143,4 +143,45 @@ export type ProjectStatus = Message<"cxz.ProjectStatus"> & {
  */
 export const ProjectStatusSchema: GenMessage<ProjectStatus> = /*@__PURE__*/
   messageDesc(file_cxz_project, 1);
+
+/**
+ * Derived from the container inventory, every time it is asked. A look that
+ * failed is not an absence, which is why the two have separate values: the
+ * unspecified one means nothing was observed -- Docker could not be asked, or
+ * has not been asked yet.
+ *
+ * @generated from enum cxz.ContainerState
+ */
+export enum ContainerState {
+  /**
+   * @generated from enum value: CONTAINER_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CONTAINER_STATE_ABSENT = 1;
+   */
+  ABSENT = 1,
+
+  /**
+   * @generated from enum value: CONTAINER_STATE_CREATED = 2;
+   */
+  CREATED = 2,
+
+  /**
+   * @generated from enum value: CONTAINER_STATE_RUNNING = 3;
+   */
+  RUNNING = 3,
+
+  /**
+   * @generated from enum value: CONTAINER_STATE_STOPPED = 4;
+   */
+  STOPPED = 4,
+}
+
+/**
+ * Describes the enum cxz.ContainerState.
+ */
+export const ContainerStateSchema: GenEnum<ContainerState> = /*@__PURE__*/
+  enumDesc(file_cxz_project, 0);
 

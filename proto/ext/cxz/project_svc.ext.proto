@@ -7,7 +7,6 @@ option go_package = "github.com/lesomnus/cxz/resource";
 
 service ProjectService {
   // Permanently remove one project and its owned data, preserving workspace sources.
-  rpc Remove(ProjectRemoveRequest) returns (ProjectRemoveReply);
   // Ephemeral PTY on the manager host. First frame identifies a project and size;
   // later frames carry input or a resize. Terminal bytes are never journaled.
   rpc Terminal(stream ProjectTerminalRequest) returns (stream ProjectTerminalReply);
@@ -116,12 +115,19 @@ service ProjectService {
   // Manager to project container: the registrations resolved for this project.
   rpc SyncMcpServers(SyncMcpServersRequest) returns (SyncMcpServersReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
-  // Provision/start a registered workspace. This never creates a conversation.
-  rpc Up(ProjectUpRequest) returns (Project);
-  // Remove owned containers, retaining the resource, workspace and volumes.
-  rpc Down(ProjectControl) returns (Project);
-  // Replace only explicitly confirmed targets. Foreign containers are not adopted.
-  rpc Recreate(ProjectRecreateRequest) returns (Project);
+  // The container's lifecycle. Create prepares and runs it through the Dev
+  // Container lifecycle; Stop leaves it in place and Start brings it and its
+  // runtime back; Remove throws it away and keeps the project, its sessions and
+  // their conversations. None of them creates or resumes a session: that is
+  // Session.Add and Session.Resume, which a client composes with these --
+  // replacing a container is Remove then Create, decided and confirmed where
+  // the person is. The names are what the CLI and the UI show, so a person
+  // reading a button knows which call it makes.
+  // See docs/plans/project-lifecycle-api.md.
+  rpc CreateContainer(ProjectCreateRequest) returns (Project);
+  rpc StopContainer(ProjectControl) returns (Project);
+  rpc StartContainer(ProjectControl) returns (Project);
+  rpc RemoveContainer(ProjectControl) returns (Project);
   // Foreign inventory is not part of the registered Project resource list.
   rpc InspectForeign(InspectForeignRequest) returns (InspectForeignResponse);
 }
@@ -161,22 +167,18 @@ message ProjectPathEntry {
   string kind = 6;
 }
 
-message ProjectUpRequest {
+message ProjectCreateRequest {
   ProjectRef ref = 1;
   string client_id = 2;
+  // Which agent's tools the container gets. Not a session: nothing here starts
+  // one.
   string agent = 3;
+  // Consent for a configuration that asks for something dangerous, named by
+  // the digest of what the person was shown.
   bool trust_config = 4;
   string config = 5;
 }
 message ProjectControl { ProjectRef ref = 1; string client_id = 2; }
-message ProjectRecreateRequest {
-  ProjectRef ref = 1;
-  string client_id = 2;
-  string agent = 3;
-  bool trust_config = 4;
-  bool confirmed = 5;
-  string config = 6;
-}
 message InspectForeignRequest {}
 message InspectForeignResponse { repeated ForeignContainer items = 1; }
 message ForeignContainer { string container_id = 1; string workspace = 2; string name = 3; }
@@ -235,8 +237,6 @@ message ProjectEditorReply { string workspace = 1; string connection_token = 2; 
 message ProjectEditorTunnelRequest { ProjectRef ref = 1; bytes input = 2; }
 message ProjectEditorTunnelReply { bool ready = 1; bytes output = 2; }
 
-message ProjectRemoveRequest { string target = 1; bool confirmed = 2; }
-message ProjectRemoveReply { Project project = 1; bool removed = 2; }
 
 // The kinds of task that can be done beside a session. A new kind is a value
 // here, not another RPC.

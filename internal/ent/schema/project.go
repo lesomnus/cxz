@@ -39,8 +39,6 @@ func (Project) Fields() []ent.Field {
 			Optional(),
 		field.Json("status", &resource.ProjectStatus{}).ValueScanner(entpb.ValueScanner[*resource.ProjectStatus]{}).
 			Optional(),
-		field.Bool("listed").
-			Optional(),
 	}
 }
 

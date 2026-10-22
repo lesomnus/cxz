@@ -11,18 +11,15 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// Remove only discards the selected project's in-memory sandbox fixtures.
-func (x *Projects) Remove(_ context.Context, r *resource.ProjectRemoveRequest) (*resource.ProjectRemoveReply, error) {
+// Erase discards the selected project's in-memory sandbox fixtures, which is
+// the sandbox's version of deleting what a project owns.
+func (x *Projects) Erase(_ context.Context, ref *resource.ProjectRef) (*resource.ProjectEraseResponse, error) {
 	s := x.S
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, p := range s.projects {
-		if r.GetTarget() != p.GetRuntimeId() && r.GetTarget() != p.GetAlias() && r.GetTarget() != "@"+p.GetAlias() {
+		if !matchProject(p, ref) {
 			continue
-		}
-		reply := resource.ProjectRemoveReply_builder{Project: proto.Clone(p).(*resource.Project), Removed: proto.Bool(r.GetConfirmed())}.Build()
-		if !r.GetConfirmed() {
-			return reply, nil
 		}
 		s.sessions = slices.DeleteFunc(s.sessions, func(st *session) bool {
 			if st.value.GetProject().GetRuntimeId() != p.GetRuntimeId() {
@@ -40,7 +37,7 @@ func (x *Projects) Remove(_ context.Context, r *resource.ProjectRemoveRequest) (
 		s.projects = slices.DeleteFunc(s.projects, func(other *resource.Project) bool { return other == p })
 		s.projectRev++
 		s.rev++
-		return reply, nil
+		return resource.ProjectEraseResponse_builder{Erased: proto.Bool(true)}.Build(), nil
 	}
 	return nil, status.Error(codes.NotFound, "sandbox project not found")
 }

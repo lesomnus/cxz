@@ -23,6 +23,60 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Derived from the container inventory, every time it is asked. A look that
+// failed is not an absence, which is why the two have separate values: the
+// unspecified one means nothing was observed -- Docker could not be asked, or
+// has not been asked yet.
+type ContainerState int32
+
+const (
+	ContainerState_CONTAINER_STATE_UNSPECIFIED ContainerState = 0
+	ContainerState_CONTAINER_STATE_ABSENT      ContainerState = 1
+	ContainerState_CONTAINER_STATE_CREATED     ContainerState = 2
+	ContainerState_CONTAINER_STATE_RUNNING     ContainerState = 3
+	ContainerState_CONTAINER_STATE_STOPPED     ContainerState = 4
+)
+
+// Enum value maps for ContainerState.
+var (
+	ContainerState_name = map[int32]string{
+		0: "CONTAINER_STATE_UNSPECIFIED",
+		1: "CONTAINER_STATE_ABSENT",
+		2: "CONTAINER_STATE_CREATED",
+		3: "CONTAINER_STATE_RUNNING",
+		4: "CONTAINER_STATE_STOPPED",
+	}
+	ContainerState_value = map[string]int32{
+		"CONTAINER_STATE_UNSPECIFIED": 0,
+		"CONTAINER_STATE_ABSENT":      1,
+		"CONTAINER_STATE_CREATED":     2,
+		"CONTAINER_STATE_RUNNING":     3,
+		"CONTAINER_STATE_STOPPED":     4,
+	}
+)
+
+func (x ContainerState) Enum() *ContainerState {
+	p := new(ContainerState)
+	*p = x
+	return p
+}
+
+func (x ContainerState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ContainerState) Descriptor() protoreflect.EnumDescriptor {
+	return file_cxz_project_proto_enumTypes[0].Descriptor()
+}
+
+func (ContainerState) Type() protoreflect.EnumType {
+	return &file_cxz_project_proto_enumTypes[0]
+}
+
+func (x ContainerState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // A registered workspace, independent of whether its container is running.
 // No tenant: project-local capability checks remain a separate trust boundary.
 type Project struct {
@@ -38,7 +92,6 @@ type Project struct {
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Status      *ProjectStatus         `protobuf:"bytes,16,opt,name=status"`
-	xxx_hidden_Listed      bool                   `protobuf:"varint,17,opt,name=listed"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -145,13 +198,6 @@ func (x *Project) GetStatus() *ProjectStatus {
 	return nil
 }
 
-func (x *Project) GetListed() bool {
-	if x != nil {
-		return x.xxx_hidden_Listed
-	}
-	return false
-}
-
 func (x *Project) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -197,10 +243,6 @@ func (x *Project) SetDateCreated(v *timestamppb.Timestamp) {
 
 func (x *Project) SetStatus(v *ProjectStatus) {
 	x.xxx_hidden_Status = v
-}
-
-func (x *Project) SetListed(v bool) {
-	x.xxx_hidden_Listed = v
 }
 
 func (x *Project) HasDateUpdated() bool {
@@ -261,7 +303,6 @@ type Project_builder struct {
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
 	Status      *ProjectStatus
-	Listed      bool
 }
 
 func (b0 Project_builder) Build() *Project {
@@ -279,13 +320,15 @@ func (b0 Project_builder) Build() *Project {
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Status = b.Status
-	x.xxx_hidden_Listed = b.Listed
 	return m0
 }
 
+// What cxz knows about a project's container. Facts, and one value derived
+// from them: `container_state` is computed when a read is answered and written
+// down nowhere, so nothing has to remember to update it and nothing can be read
+// later as though it were still true. See docs/plans/project-lifecycle-api.md.
 type ProjectStatus struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_State            string                 `protobuf:"bytes,1,opt,name=state"`
 	xxx_hidden_ContainerId      string                 `protobuf:"bytes,2,opt,name=container_id,json=containerId"`
 	xxx_hidden_RemoteUser       string                 `protobuf:"bytes,3,opt,name=remote_user,json=remoteUser"`
 	xxx_hidden_RemoteWorkspace  string                 `protobuf:"bytes,4,opt,name=remote_workspace,json=remoteWorkspace"`
@@ -293,6 +336,7 @@ type ProjectStatus struct {
 	xxx_hidden_ProvisionStep    string                 `protobuf:"bytes,6,opt,name=provision_step,json=provisionStep"`
 	xxx_hidden_ProvisionAttempt uint64                 `protobuf:"varint,7,opt,name=provision_attempt,json=provisionAttempt"`
 	xxx_hidden_Error            string                 `protobuf:"bytes,8,opt,name=error"`
+	xxx_hidden_ContainerState   ContainerState         `protobuf:"varint,9,opt,name=container_state,json=containerState,enum=cxz.ContainerState"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -320,13 +364,6 @@ func (x *ProjectStatus) ProtoReflect() protoreflect.Message {
 		return ms
 	}
 	return mi.MessageOf(x)
-}
-
-func (x *ProjectStatus) GetState() string {
-	if x != nil {
-		return x.xxx_hidden_State
-	}
-	return ""
 }
 
 func (x *ProjectStatus) GetContainerId() string {
@@ -378,8 +415,11 @@ func (x *ProjectStatus) GetError() string {
 	return ""
 }
 
-func (x *ProjectStatus) SetState(v string) {
-	x.xxx_hidden_State = v
+func (x *ProjectStatus) GetContainerState() ContainerState {
+	if x != nil {
+		return x.xxx_hidden_ContainerState
+	}
+	return ContainerState_CONTAINER_STATE_UNSPECIFIED
 }
 
 func (x *ProjectStatus) SetContainerId(v string) {
@@ -410,10 +450,13 @@ func (x *ProjectStatus) SetError(v string) {
 	x.xxx_hidden_Error = v
 }
 
+func (x *ProjectStatus) SetContainerState(v ContainerState) {
+	x.xxx_hidden_ContainerState = v
+}
+
 type ProjectStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	State            string
 	ContainerId      string
 	RemoteUser       string
 	RemoteWorkspace  string
@@ -421,13 +464,13 @@ type ProjectStatus_builder struct {
 	ProvisionStep    string
 	ProvisionAttempt uint64
 	Error            string
+	ContainerState   ContainerState
 }
 
 func (b0 ProjectStatus_builder) Build() *ProjectStatus {
 	m0 := &ProjectStatus{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_State = b.State
 	x.xxx_hidden_ContainerId = b.ContainerId
 	x.xxx_hidden_RemoteUser = b.RemoteUser
 	x.xxx_hidden_RemoteWorkspace = b.RemoteWorkspace
@@ -435,6 +478,7 @@ func (b0 ProjectStatus_builder) Build() *ProjectStatus {
 	x.xxx_hidden_ProvisionStep = b.ProvisionStep
 	x.xxx_hidden_ProvisionAttempt = b.ProvisionAttempt
 	x.xxx_hidden_Error = b.Error
+	x.xxx_hidden_ContainerState = b.ContainerState
 	return m0
 }
 
@@ -442,7 +486,7 @@ var File_cxz_project_proto protoreflect.FileDescriptor
 
 const file_cxz_project_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe6\x04\n" +
+	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbd\x04\n" +
 	"\aProject\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
@@ -457,20 +501,17 @@ const file_cxz_project_proto_rawDesc = "" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12*\n" +
-	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status\x12#\n" +
-	"\x06listed\x18\x11 \x01(\bB\v\xea\x82\x16\a\x82\x01\x04trueR\x06listed:f\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status:\\\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
-	"\x02id\x10\x01\x8a\xbb\x168\b\a20\n" +
+	"\x02id\x10\x01\x8a\xbb\x16.\b\a2&\n" +
 	"\x10\n" +
 	"\x0e\n" +
 	"\fdate_created\n" +
 	"\x06\n" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
-	"\x03ref\x1a\b\n" +
-	"\x06listed 2(\xc8\x01:\x00*\x00\"\xa7\x02\n" +
-	"\rProjectStatus\x12\x14\n" +
-	"\x05state\x18\x01 \x01(\tR\x05state\x12!\n" +
+	"\x03ref 2(\xc8\x01:\x00*\x00J\x04\b\x11\x10\x12\"\xd5\x02\n" +
+	"\rProjectStatus\x12!\n" +
 	"\fcontainer_id\x18\x02 \x01(\tR\vcontainerId\x12\x1f\n" +
 	"\vremote_user\x18\x03 \x01(\tR\n" +
 	"remoteUser\x12)\n" +
@@ -478,24 +519,34 @@ const file_cxz_project_proto_rawDesc = "" +
 	"\x0fprovision_state\x18\x05 \x01(\tR\x0eprovisionState\x12%\n" +
 	"\x0eprovision_step\x18\x06 \x01(\tR\rprovisionStep\x12+\n" +
 	"\x11provision_attempt\x18\a \x01(\x04R\x10provisionAttempt\x12\x14\n" +
-	"\x05error\x18\b \x01(\tR\x05errorB+\xca\xc7\x16\x00Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x05error\x18\b \x01(\tR\x05error\x12<\n" +
+	"\x0fcontainer_state\x18\t \x01(\x0e2\x13.cxz.ContainerStateR\x0econtainerStateJ\x04\b\x01\x10\x02*\xa4\x01\n" +
+	"\x0eContainerState\x12\x1f\n" +
+	"\x1bCONTAINER_STATE_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16CONTAINER_STATE_ABSENT\x10\x01\x12\x1b\n" +
+	"\x17CONTAINER_STATE_CREATED\x10\x02\x12\x1b\n" +
+	"\x17CONTAINER_STATE_RUNNING\x10\x03\x12\x1b\n" +
+	"\x17CONTAINER_STATE_STOPPED\x10\x04B+\xca\xc7\x16\x00Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
+var file_cxz_project_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_cxz_project_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_cxz_project_proto_goTypes = []any{
-	(*Project)(nil),               // 0: cxz.Project
-	(*ProjectStatus)(nil),         // 1: cxz.ProjectStatus
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(ContainerState)(0),           // 0: cxz.ContainerState
+	(*Project)(nil),               // 1: cxz.Project
+	(*ProjectStatus)(nil),         // 2: cxz.ProjectStatus
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_cxz_project_proto_depIdxs = []int32{
-	2, // 0: cxz.Project.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 1: cxz.Project.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 2: cxz.Project.date_created:type_name -> google.protobuf.Timestamp
-	1, // 3: cxz.Project.status:type_name -> cxz.ProjectStatus
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // 0: cxz.Project.date_updated:type_name -> google.protobuf.Timestamp
+	3, // 1: cxz.Project.date_erased:type_name -> google.protobuf.Timestamp
+	3, // 2: cxz.Project.date_created:type_name -> google.protobuf.Timestamp
+	2, // 3: cxz.Project.status:type_name -> cxz.ProjectStatus
+	0, // 4: cxz.ProjectStatus.container_state:type_name -> cxz.ContainerState
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_cxz_project_proto_init() }
@@ -508,13 +559,14 @@ func file_cxz_project_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_project_proto_rawDesc), len(file_cxz_project_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_cxz_project_proto_goTypes,
 		DependencyIndexes: file_cxz_project_proto_depIdxs,
+		EnumInfos:         file_cxz_project_proto_enumTypes,
 		MessageInfos:      file_cxz_project_proto_msgTypes,
 	}.Build()
 	File_cxz_project_proto = out.File

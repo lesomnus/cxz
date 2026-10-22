@@ -121,8 +121,8 @@ touching the runtime.
 - **A crash mid-tool-call** can leave `delivery_unknown`. There is no exactly-once
   guarantee; inspect the history before repeating a task.
 - **Abrupt loss** can leave manager history incomplete until `project up` recovers
-  it. `down` and `project down` collect final history first, which is why they are
-  preferable to killing containers.
+  it. `down`, `project remove` and `project stop` collect final history first,
+  which is why they are preferable to killing containers.
 - **A version gap** between manager and project runtime is expected during updates.
   Preference pushes a runtime does not understand are skipped rather than failing —
   otherwise the project would be unusable until it updated, and it only updates when

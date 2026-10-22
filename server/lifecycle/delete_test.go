@@ -16,14 +16,38 @@ import (
 
 type deletionFixture struct {
 	fixture
-	downErr      error
-	downs, stops int
+	removeErr       error
+	removals, stops int
+	erasures        int
+	erasedSessions  []string
+	erased          bool
 }
 
-func (f *deletionFixture) Down(context.Context, *api.ProjectRequest) (*api.Receipt, error) {
-	f.downs++
-	if f.downErr != nil {
-		return nil, f.downErr
+// RemoveProject is the manager's half of erasing a project: the containers, the
+// owned volumes and state, and every session's data. A manager that has erased
+// a project stops reporting it, which is what keeps a later projection from
+// putting the rows back.
+func (f *deletionFixture) RemoveProject(_ context.Context, id string, sessions []string) error {
+	f.erasures++
+	f.erasedSessions = sessions
+	if f.removeErr != nil {
+		return f.removeErr
+	}
+	f.erased = true
+	return nil
+}
+
+func (f *deletionFixture) ResourceSnapshot(ctx context.Context) (*api.ProjectList, *api.SessionList, error) {
+	if f.erased {
+		return &api.ProjectList{}, &api.SessionList{}, nil
+	}
+	return f.fixture.ResourceSnapshot(ctx)
+}
+
+func (f *deletionFixture) RemoveContainer(context.Context, *api.ProjectRequest) (*api.Receipt, error) {
+	f.removals++
+	if f.removeErr != nil {
+		return nil, f.removeErr
 	}
 	f.s.State = "stopped"
 	return &api.Receipt{}, nil
@@ -56,7 +80,7 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 				t.Fatal(err)
 			}
 			if kind == "project-failure" {
-				f.downErr = errors.New("cannot stop owned containers")
+				f.removeErr = errors.New("cannot stop owned containers")
 				if _, err = stack.Project().Erase(ctx, projectRef("project")); err == nil {
 					t.Fatal("ignored cleanup failure")
 				}
@@ -76,8 +100,8 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 					t.Fatal("non-idempotent deletion", err)
 				}
 			} else {
-				if _, err := stack.Project().Erase(ctx, projectRef("project")); err != nil || f.downs != 1 {
-					t.Fatal(err, f.downs)
+				if _, err := stack.Project().Erase(ctx, projectRef("project")); err != nil || f.erasures != 1 {
+					t.Fatal(err, f.erasures)
 				}
 			}
 			for i := 0; i < 2; i++ {
@@ -111,8 +135,10 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 				}
 			}
 			if kind == "project" {
-				if _, err = stack.Session().Restore(ctx, sessionRef("session")); status.Code(err) != codes.FailedPrecondition {
-					t.Fatal("restored into deleted project", err)
+				// Erasing a project deletes its sessions with it, so there is
+				// nothing left to restore -- not an archived row that refuses.
+				if _, err = stack.Session().Restore(ctx, sessionRef("session")); status.Code(err) != codes.NotFound {
+					t.Fatal("a session survived its project being erased", err)
 				}
 				if _, err = stack.Project().Add(ctx, resource.ProjectAddRequest_builder{Workspace: "/work"}.Build()); err != nil {
 					t.Fatal("cannot register removed workspace", err)
@@ -122,6 +148,11 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 					t.Fatal("old sessions reappeared", err)
 				}
 			}
+			if kind != "session" {
+				return
+			}
+			// Session archive and restore are unchanged by the project
+			// lifecycle work: erasing a session still keeps its row.
 			archived, err := stack.Session().List(ctx, resource.SessionListRequest_builder{Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Listed: ptr(false), Project: projectRef("project")}.Build()}}.Build())
 			if err != nil || len(archived.GetItems()) != 1 {
 				t.Fatal("archive not listed", archived, err)

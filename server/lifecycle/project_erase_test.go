@@ -38,7 +38,7 @@ func (f *removeFixture) ResourceSnapshot(ctx context.Context) (*api.ProjectList,
 	}
 	return f.fixture.ResourceSnapshot(ctx)
 }
-func TestProjectRemovePreviewFailureRetryAndRegistry(t *testing.T) {
+func TestProjectEraseFailureRetryAndRegistry(t *testing.T) {
 	ctx := t.Context()
 	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
 	if err != nil {
@@ -51,17 +51,13 @@ func TestProjectRemovePreviewFailureRetryAndRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, err := stack.Project().Remove(ctx, resource.ProjectRemoveRequest_builder{Target: ptr("/work")}.Build())
-	if err != nil || out.GetRemoved() || out.GetProject().GetRuntimeId() != "project" || f.calls != 0 {
-		t.Fatal(out, err, f.calls)
-	}
-	// Hidden sessions must be included in permanent deletion.
+	// A session already erased is still a session whose data must go.
 	if _, err := stack.Session().Erase(ctx, sessionRef("session")); err != nil {
 		t.Fatal(err)
 	}
 	f.err = errors.New("volume is in use")
-	request := resource.ProjectRemoveRequest_builder{Target: ptr("project"), Confirmed: ptr(true)}.Build()
-	if _, err := stack.Project().Remove(ctx, request); err == nil {
+	target := projectRef("project")
+	if _, err := stack.Project().Erase(ctx, target); err == nil {
 		t.Fatal("cleanup error ignored")
 	}
 	var count int
@@ -69,8 +65,8 @@ func TestProjectRemovePreviewFailureRetryAndRegistry(t *testing.T) {
 		t.Fatal(count, err)
 	}
 	f.err = nil
-	out, err = stack.Project().Remove(ctx, request)
-	if err != nil || !out.GetRemoved() || len(f.ids) != 1 || f.ids[0] != "session" {
+	out, err := stack.Project().Erase(ctx, target)
+	if err != nil || !out.GetErased() || len(f.ids) != 1 || f.ids[0] != "session" {
 		t.Fatal(out, err, f.ids)
 	}
 	for _, table := range []string{"project", "session", "authbinding"} {

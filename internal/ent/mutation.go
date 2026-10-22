@@ -2015,23 +2015,6 @@ func (m *ProjectMutation) OldStatus(ctx context.Context) (v *resource.ProjectSta
 	return oldValue.Status, nil
 }
 
-// OldListed returns the old "listed" field's value of the Project entity.
-// If the Project object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldListed(ctx context.Context) (v bool, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldListed is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldListed requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldListed: %w", err)
-	}
-	return oldValue.Listed, nil
-}
-
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -2057,8 +2040,6 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldDateCreated(ctx)
 	case project.FieldStatus:
 		return m.OldStatus(ctx)
-	case project.FieldListed:
-		return m.OldListed(ctx)
 	}
 	return nil, fmt.Errorf("unknown Project field %s", name)
 }

@@ -23,8 +23,7 @@ async function fixture(page, helpers = false, extraProject = false) {
     alias: "project",
     name: "Demo project",
     workspace: "/workspace",
-    listed: true,
-    status: { state: "running" },
+    status: { containerState: "CONTAINER_STATE_RUNNING" },
   };
   const projects = extraProject
     ? [

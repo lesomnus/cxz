@@ -25,6 +25,5 @@ func (e *Project) Proto() *resource.Project {
 	if e.Status != nil {
 		x.SetStatus(e.Status)
 	}
-	x.SetListed(e.Listed)
 	return x
 }

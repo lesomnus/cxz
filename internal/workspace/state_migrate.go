@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
 )
 
@@ -27,8 +26,13 @@ const stateCache = "*/home/.cache"
 // container down, so a project whose container was already gone -- recreated
 // after a crash, or stopped on purpose -- had no down to hang the move on and
 // kept its own volume however many times it was recreated.
-func stateMovable(r *api.ProjectRequest, p *Project) bool {
-	return r.Recreate && p.ContainerID == ""
+// A project's state can move only while nothing is writing it, which is any
+// moment it has no container. That used to be spelled "during a recreate",
+// because a recreate was the only way to get there; removing the container is
+// its own operation now. migrateProjectStateWith does nothing for a project
+// whose state has already moved.
+func stateMovable(p *Project) bool {
+	return p.ContainerID == ""
 }
 
 // migrateProjectState moves a project that still has a volume of its own into a

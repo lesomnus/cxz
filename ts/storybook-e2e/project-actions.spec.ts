@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("bottom-left Purge action requires confirmation and leaves other projects intact", async ({
+test("bottom-left Erase action requires confirmation and leaves other projects intact", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
@@ -12,13 +12,13 @@ test("bottom-left Purge action requires confirmation and leaves other projects i
     "Permanently delete this project and its owned data.",
     { exact: true },
   );
-  const trigger = actions.getByRole("button", { name: "Purge", exact: true });
+  const trigger = actions.getByRole("button", { name: "Erase", exact: true });
   const descriptionBox = (await description.boundingBox())!;
   const buttonBox = (await trigger.boundingBox())!;
   expect(buttonBox.x).toBeGreaterThan(descriptionBox.x + descriptionBox.width);
   await trigger.click();
   const dialog = page.getByRole("dialog", {
-    name: "Purge project",
+    name: "Erase project",
     exact: true,
   });
   await expect(dialog).toContainText("This cannot be undone.");
@@ -40,7 +40,7 @@ test("bottom-left Purge action requires confirmation and leaves other projects i
   await expect(dialog).toHaveCount(0);
   await trigger.click();
   await dialog
-    .getByRole("button", { name: "Purge permanently", exact: true })
+    .getByRole("button", { name: "Erase permanently", exact: true })
     .click();
   await expect(dialog).toHaveCount(0);
   const picker = page.getByRole("combobox", {
@@ -60,10 +60,10 @@ test("bottom-left Purge action requires confirmation and leaves other projects i
   await page.keyboard.press("Escape");
   await page
     .getByRole("region", { name: "Actions", exact: true })
-    .getByRole("button", { name: "Purge", exact: true })
+    .getByRole("button", { name: "Erase", exact: true })
     .click();
   await dialog
-    .getByRole("button", { name: "Purge permanently", exact: true })
+    .getByRole("button", { name: "Erase permanently", exact: true })
     .click();
   await expect(dialog).toHaveCount(0);
   await expect(
@@ -71,20 +71,20 @@ test("bottom-left Purge action requires confirmation and leaves other projects i
   ).toBeVisible();
 });
 
-test("project purge failure retains the confirmation and selected project", async ({
+test("project erase failure retains the confirmation and selected project", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--unavailable&viewMode=story");
   await page
     .getByRole("region", { name: "Actions", exact: true })
-    .getByRole("button", { name: "Purge", exact: true })
+    .getByRole("button", { name: "Erase", exact: true })
     .click();
   const dialog = page.getByRole("dialog", {
-    name: "Purge project",
+    name: "Erase project",
     exact: true,
   });
   await dialog
-    .getByRole("button", { name: "Purge permanently", exact: true })
+    .getByRole("button", { name: "Erase permanently", exact: true })
     .click();
   await expect(dialog.getByRole("alert")).toContainText(
     "Project removal is unavailable",
@@ -103,7 +103,7 @@ test("project purge failure retains the confirmation and selected project", asyn
   ).toHaveCount(2);
 });
 
-test("Stop confirms, stops all project sessions and retains the listed project", async ({
+test("Stop confirms, stops all project sessions and retains the project", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
@@ -134,20 +134,13 @@ test("Stop confirms, stops all project sessions and retains the listed project",
     "Stopped",
   ]);
   await expect(rows.first().getByRole("checkbox")).toBeChecked();
-  const info = page.getByRole("region", { name: "Information", exact: true });
-  await expect(
-    info
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
-      .locator("dd"),
-  ).toHaveText("true");
   const picker = page.getByRole("combobox", {
     name: "Select project",
     exact: true,
   });
   await expect(picker).toHaveText("Web workspace");
   await expect(
-    actions.getByRole("button", { name: "Purge", exact: true }),
+    actions.getByRole("button", { name: "Erase", exact: true }),
   ).toBeEnabled();
   await picker.click();
   await page

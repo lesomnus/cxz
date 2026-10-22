@@ -132,26 +132,6 @@ func (_u *ProjectUpdate) ClearStatus() *ProjectUpdate {
 	return _u
 }
 
-// SetListed sets the "listed" field.
-func (_u *ProjectUpdate) SetListed(v bool) *ProjectUpdate {
-	_u.mutation.SetListed(v)
-	return _u
-}
-
-// SetNillableListed sets the "listed" field if the given value is not nil.
-func (_u *ProjectUpdate) SetNillableListed(v *bool) *ProjectUpdate {
-	if v != nil {
-		_u.SetListed(*v)
-	}
-	return _u
-}
-
-// ClearListed clears the value of the "listed" field.
-func (_u *ProjectUpdate) ClearListed() *ProjectUpdate {
-	_u.mutation.ClearListed()
-	return _u
-}
-
 // Mutation returns the ProjectMutation object of the builder.
 func (_u *ProjectUpdate) Mutation() *ProjectMutation {
 	return _u.mutation
@@ -235,12 +215,6 @@ func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(project.FieldStatus, field.TypeJson)
-	}
-	if value, ok := _u.mutation.Listed(); ok {
-		_spec.SetField(project.FieldListed, field.TypeBool, value)
-	}
-	if _u.mutation.ListedCleared() {
-		_spec.ClearField(project.FieldListed, field.TypeBool)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -366,26 +340,6 @@ func (_u *ProjectUpdateOne) ClearStatus() *ProjectUpdateOne {
 	return _u
 }
 
-// SetListed sets the "listed" field.
-func (_u *ProjectUpdateOne) SetListed(v bool) *ProjectUpdateOne {
-	_u.mutation.SetListed(v)
-	return _u
-}
-
-// SetNillableListed sets the "listed" field if the given value is not nil.
-func (_u *ProjectUpdateOne) SetNillableListed(v *bool) *ProjectUpdateOne {
-	if v != nil {
-		_u.SetListed(*v)
-	}
-	return _u
-}
-
-// ClearListed clears the value of the "listed" field.
-func (_u *ProjectUpdateOne) ClearListed() *ProjectUpdateOne {
-	_u.mutation.ClearListed()
-	return _u
-}
-
 // Mutation returns the ProjectMutation object of the builder.
 func (_u *ProjectUpdateOne) Mutation() *ProjectMutation {
 	return _u.mutation
@@ -499,12 +453,6 @@ func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err er
 	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(project.FieldStatus, field.TypeJson)
-	}
-	if value, ok := _u.mutation.Listed(); ok {
-		_spec.SetField(project.FieldListed, field.TypeBool, value)
-	}
-	if _u.mutation.ListedCleared() {
-		_spec.ClearField(project.FieldListed, field.TypeBool)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Project{config: _u.config}

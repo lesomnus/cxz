@@ -14,7 +14,7 @@ func (c *Client) ResolveProject(ctx context.Context, handle string, opts ...grpc
 	var items []*api.Project
 	after := ""
 	for {
-		page, err := c.projects.List(ctx, resource.ProjectListRequest_builder{Filters: []*resource.ProjectFilter{resource.ProjectFilter_builder{Listed: ptr(true)}.Build()}, Size: 200, After: after}.Build(), opts...)
+		page, err := c.projects.List(ctx, resource.ProjectListRequest_builder{Size: 200, After: after}.Build(), opts...)
 		if err != nil {
 			return nil, err
 		}

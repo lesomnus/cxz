@@ -14,15 +14,12 @@ func TestTrustBoundary(t *testing.T) {
 		{"mounts": []any{"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"}},
 		{"services": map[string]any{"dev": map[string]any{"cap_add": []any{"SYS_ADMIN"}}}},
 	} {
-		if CheckTrust(cfg, false) == nil {
+		if len(Findings(cfg)) == 0 {
 			t.Fatalf("accepted privileged config: %v", cfg)
 		}
-		if e := CheckTrust(cfg, true); e != nil {
-			t.Fatal(e)
-		}
 	}
-	if e := CheckTrust(map[string]any{"postCreateCommand": "go test ./...", "remoteUser": "vscode"}, false); e != nil {
-		t.Fatal(e)
+	if f := Findings(map[string]any{"postCreateCommand": "go test ./...", "remoteUser": "vscode"}); len(f) > 0 {
+		t.Fatal(f)
 	}
 }
 
@@ -41,19 +38,43 @@ func TestPreflightBeforeRecreate(t *testing.T) {
 	put(".devcontainer/devcontainer.json", `{"dockerComposeFile":"compose.yaml","service":"dev", /* jsonc */}`)
 	put(".devcontainer/compose.yaml", "services:\n  dev:\n    image: alpine\n    privileged: true\n")
 	p := &Project{Workspace: root}
-	if err := preflight(p); err == nil || !strings.Contains(err.Error(), "compose.yaml") || !strings.Contains(err.Error(), "/services/dev/privileged") {
+	seen := &trust{}
+	if err := preflight(p, seen); err != nil {
+		t.Fatal(err)
+	}
+	// preflight reads; the decision is the caller's, and it names the file.
+	err := seen.decide(p, false)
+	if err == nil || !strings.Contains(err.Error(), "compose.yaml") || !strings.Contains(err.Error(), "/services/dev/privileged") {
 		t.Fatal("missing Compose trust diagnostic before destructive recreation", err)
 	}
-	p.Trusted = true
-	if e := preflight(p); e != nil {
+	if e := seen.decide(p, true); e != nil {
 		t.Fatal(e)
 	}
+	if p.TrustedConfig != seen.Digest() {
+		t.Fatal("consent was not recorded for what was read")
+	}
+	// Consent is for content. The same documents pass; a changed one asks again.
+	again := &trust{}
+	if e := preflight(p, again); e != nil {
+		t.Fatal(e)
+	}
+	if e := again.decide(p, false); e != nil {
+		t.Fatal("asked again for a configuration already consented to", e)
+	}
+	put(".devcontainer/compose.yaml", "services:\n  dev:\n    image: alpine\n    privileged: true\n    pid: host\n")
+	changed := &trust{}
+	if e := preflight(p, changed); e != nil {
+		t.Fatal(e)
+	}
+	if changed.decide(p, false) == nil {
+		t.Fatal("a configuration that grew a finding was accepted on an old consent")
+	}
 	put(".devcontainer/other/devcontainer.json", `{"image":"alpine"}`)
-	if preflight(p) == nil {
+	if preflight(p, &trust{}) == nil {
 		t.Fatal("ambiguous config accepted")
 	}
 	p.Config = filepath.Join(root, ".devcontainer/devcontainer.json")
-	if e := preflight(p); e != nil {
+	if e := preflight(p, &trust{}); e != nil {
 		t.Fatal(e)
 	}
 }
@@ -78,7 +99,7 @@ func TestTrustReasons(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.path+c.reason, func(t *testing.T) {
-			err := CheckTrust(c.cfg, false)
+			err := (&trust{findings: Findings(c.cfg)}).decide(&Project{}, false)
 			if err == nil {
 				t.Fatal("trust check bypassed")
 			}
@@ -90,7 +111,7 @@ func TestTrustReasons(t *testing.T) {
 			if strings.Contains(err.Error(), "PRIVATE_VALUE") {
 				t.Fatal("configuration value leaked")
 			}
-			if err := CheckTrust(c.cfg, true); err != nil {
+			if err := (&trust{findings: Findings(c.cfg)}).decide(&Project{}, true); err != nil {
 				t.Fatal("explicit trust rejected", err)
 			}
 		})
@@ -99,18 +120,21 @@ func TestTrustReasons(t *testing.T) {
 
 func TestTrustReportsAllDeterministically(t *testing.T) {
 	cfg := map[string]any{"privileged": true, "initializeCommand": "echo SECRET", "runArgs": []any{"--pid=host", "--privileged"}, "mounts": []any{"/SECRET/docker.sock"}}
-	first := CheckTrust(cfg, false).Error()
+	report := func() string {
+		return (&trust{findings: Findings(cfg)}).decide(&Project{}, false).Error()
+	}
+	first := report()
 	if strings.Count(first, "  - ") != 5 || strings.Contains(first, "SECRET") {
 		t.Fatal("incomplete or unsafe diagnostics", first)
 	}
 	for range 30 {
-		if CheckTrust(cfg, false).Error() != first {
+		if report() != first {
 			t.Fatal("unstable order")
 		}
 	}
-	err := CheckTrust(map[string]any{"a/b~c\n": map[string]any{"privileged": true}}, false)
-	if !strings.Contains(err.Error(), `/a~1b~0c\n/privileged`) {
-		t.Fatal("path not escaped", err)
+	escaped := Findings(map[string]any{"a/b~c\n": map[string]any{"privileged": true}})
+	if len(escaped) != 1 || !strings.Contains(escaped[0], `/a~1b~0c\n/privileged`) {
+		t.Fatal("path not escaped", escaped)
 	}
 }
 
@@ -120,7 +144,11 @@ func TestPreflightDevcontainerTrustLocation(t *testing.T) {
 	if err := os.WriteFile(file, []byte(`{"initializeCommand":"echo PRIVATE_VALUE"}`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	err := preflight(&Project{Workspace: root, Config: file})
+	seen := &trust{}
+	if err := preflight(&Project{Workspace: root, Config: file}, seen); err != nil {
+		t.Fatal(err)
+	}
+	err := seen.decide(&Project{}, false)
 	if err == nil || !strings.Contains(err.Error(), file) || !strings.Contains(err.Error(), "/initializeCommand") || strings.Contains(err.Error(), "PRIVATE_VALUE") {
 		t.Fatal("missing or unsafe source diagnostic", err)
 	}

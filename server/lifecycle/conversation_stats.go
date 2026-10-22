@@ -53,9 +53,6 @@ func (s SessionServer) ConversationStats(ctx context.Context, r *resource.Conver
 			if err != nil {
 				return nil, err
 			}
-			if !p.GetListed() {
-				return nil, status.Error(codes.NotFound, "project deleted")
-			}
 			filter.SetProject(resource.ProjectRef_builder{Id: p.GetId()}.Build())
 		}
 		after := ""

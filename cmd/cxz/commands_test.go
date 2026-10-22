@@ -168,7 +168,7 @@ func (accountStub) Get(_ context.Context, r *resource.AccountGetRequest) (*resou
 }
 
 func testProject() *resource.Project {
-	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name", Alias: "pn", Status: resource.ProjectStatus_builder{State: "running"}.Build()}.Build()
+	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name", Alias: "pn", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING}.Build()}.Build()
 }
 func (s projectStub) Get(context.Context, *resource.ProjectGetRequest) (*resource.Project, error) {
 	return testProject(), nil
@@ -182,17 +182,10 @@ func (s projectStub) Add(context.Context, *resource.ProjectAddRequest) (*resourc
 	}
 	return testProject(), nil
 }
-func (s projectStub) Recreate(context.Context, *resource.ProjectRecreateRequest) (*resource.Project, error) {
-	// Not recorded on the shared request channel: the assertions that read it
-	// are about other calls, and the mutation counter is what says this one
-	// reached the server.
-	if s.mutations != nil {
-		s.mutations.Add(1)
-	}
-	return testProject(), nil
-}
-
-func (s projectStub) Up(context.Context, *resource.ProjectUpRequest) (*resource.Project, error) {
+// Not recorded on the shared request channel: the assertions that read it are
+// about other calls, and the mutation counter is what says this one reached the
+// server.
+func (s projectStub) CreateContainer(context.Context, *resource.ProjectCreateRequest) (*resource.Project, error) {
 	if s.mutations != nil {
 		s.mutations.Add(1)
 	}
@@ -215,7 +208,17 @@ func (s projectStub) List(context.Context, *resource.ProjectListRequest) (*resou
 	}
 	return resource.ProjectListResponse_builder{Items: []*resource.Project{testProject()}}.Build(), nil
 }
-func (s projectStub) Down(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+func (s projectStub) RemoveContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
+	return testProject(), nil
+}
+
+func (s projectStub) StopContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
+	return testProject(), nil
+}
+
+func (s projectStub) StartContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
 	return testProject(), nil
 }
@@ -223,11 +226,6 @@ func (s projectStub) Down(_ context.Context, r *resource.ProjectControl) (*resou
 func (s projectStub) Erase(_ context.Context, r *resource.ProjectRef) (*resource.ProjectEraseResponse, error) {
 	s.requests <- r
 	return resource.ProjectEraseResponse_builder{Erased: ptr(true)}.Build(), nil
-}
-
-func (s projectStub) Remove(_ context.Context, r *resource.ProjectRemoveRequest) (*resource.ProjectRemoveReply, error) {
-	s.requests <- r
-	return resource.ProjectRemoveReply_builder{Project: testProject(), Removed: ptr(r.GetConfirmed())}.Build(), nil
 }
 
 func TestCommandsReachAPI(t *testing.T) {
@@ -278,24 +276,40 @@ func TestCommandsReachAPI(t *testing.T) {
 	if mutations.Load() == 0 {
 		t.Fatal("nothing was recreated")
 	}
+	// Recreating is a removal and then a creation, composed by the client: the
+	// server has no operation that throws a container away as a step towards
+	// making one.
+	select {
+	case raw := <-stub.requests:
+		removal, ok := raw.(*api.ProjectRequest)
+		if !ok || removal.Workspace != "project-name" {
+			t.Fatal("recreate did not remove the container first", raw)
+		}
+	default:
+		t.Fatal("recreate did not remove the container first")
+	}
 	for _, confirmed := range []bool{false, true} {
-		args := []string{"project", "purge"}
+		args := []string{"project", "erase"}
 		if confirmed {
 			args = append(args, "--yes")
 		}
 		args = append(args, "project-name")
 		got := xlitest.Run(t, newRoot(root), args...)
 		if confirmed && got.Err != nil || !confirmed && (got.Err == nil || !strings.Contains(got.Err.Error(), "--yes")) {
-			t.Fatalf("remove confirmation: %+v", got)
+			t.Fatalf("erase confirmation: %+v", got)
 		}
+		// Unconfirmed never reaches the RPC: erasing is confirmed by the
+		// client, and the ref it sends is a UUID.
 		select {
 		case raw := <-stub.requests:
-			req, ok := raw.(*resource.ProjectRemoveRequest)
-			if !ok || req.GetConfirmed() != confirmed || req.GetTarget() != "project-name" {
+			req, ok := raw.(*resource.ProjectRef)
+			if !ok || !confirmed || string(req.GetId()) != string(testProject().GetId()) {
 				t.Fatal(raw)
 			}
 		default:
-			t.Fatal("remove did not reach RPC")
+			if confirmed {
+				t.Fatal("erase did not reach RPC")
+			}
 		}
 	}
 	// Without an installation the snapshot stops at the manager, but the command
@@ -401,21 +415,32 @@ func TestCommandsReachAPI(t *testing.T) {
 	if answer.RequestId != "42" || !answer.Allow || answer.RunId != "current-run" || answer.AnswersJson != `{"color":"blue"}` {
 		t.Fatal(answer)
 	}
-	run("project", "down", "pn")
+	run("project", "remove", "pn")
 	if (<-stub.requests).(*api.ProjectRequest).Workspace != "project-name" {
 		t.Fatal("wrong project")
 	}
+	// Stopping and starting are not the same command as removing, and not the
+	// same command as the session `stop` at the root.
+	for _, op := range []string{"stop", "start"} {
+		run("project", op, "pn")
+		request, ok := (<-stub.requests).(*api.ProjectRequest)
+		if !ok || request.Workspace != "project-name" || request.ClientId == "" {
+			t.Fatal("project "+op+" did not reach the resolved project", request)
+		}
+	}
+	// The workspace pair keeps its idiom and makes the same call as
+	// `cxz project remove`.
 	got = run("down", "pn")
 	down, ok := (<-stub.requests).(*api.ProjectRequest)
 	if !ok || down.Workspace != "project-name" || down.ClientId == "" {
-		t.Fatal("top-level down must stop the resolved project without deleting it", down)
+		t.Fatal("top-level down must remove the resolved project's container without deleting it", down)
 	}
-	var stopped struct {
+	var removal struct {
 		Project  string `json:"project"`
 		Status   string `json:"status"`
 		Retained string `json:"retained"`
 	}
-	if err := json.Unmarshal([]byte(got.Stdout), &stopped); err != nil || stopped.Project != "project-name" || stopped.Status != "stopped" || !strings.Contains(stopped.Retained, "sessions, conversation history") {
+	if err := json.Unmarshal([]byte(got.Stdout), &removal); err != nil || removal.Project != "project-name" || removal.Status != "removed" || !strings.Contains(removal.Retained, "sessions, conversation history") {
 		t.Fatal("down must report retained sessions and history", got.Stdout, err)
 	}
 	completion := xlitest.Complete(t, newRoot(root), "project up ")

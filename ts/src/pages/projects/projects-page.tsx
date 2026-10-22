@@ -6,6 +6,11 @@ import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
 import { PageToolbar, Button, EditableValue } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
+import {
+  containerState,
+  containerStateName,
+  running,
+} from "./project-state.ts";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime } from "#src/shared/components/date-time.tsx";
@@ -85,7 +90,7 @@ export function ProjectsPage({
               c={c}
               project={project}
               saved={setSaved}
-              purged={() => {
+              erased={() => {
                 setSaved(undefined);
                 const next = visibleProjects.find(
                   (p) => key(p.id) !== key(project.id),
@@ -122,7 +127,7 @@ function ProjectDashboard({
   c,
   project: p,
   saved,
-  purged,
+  erased,
   sessions,
   sessionsLoading,
   accounts,
@@ -132,7 +137,7 @@ function ProjectDashboard({
   c: DashboardConnection;
   project: Project;
   saved: (project: Project) => void;
-  purged: () => void;
+  erased: () => void;
   accounts: Account[];
   accountsError: string;
   reloadAccounts: () => void;
@@ -158,7 +163,7 @@ function ProjectDashboard({
   const [addingSession, setAddingSession] = useState(false);
   const branch = useRemote(
     (signal) => projectBranch(c, p, signal),
-    [c, p.runtimeId, p.status?.state, p.status?.remoteWorkspace],
+    [c, p.runtimeId, p.status?.containerState, p.status?.remoteWorkspace],
   );
   const git = branch.loading
     ? t("Loading…")
@@ -200,7 +205,6 @@ function ProjectDashboard({
                   "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.",
                 ),
               ],
-              [t("Listed"), String(p.listed)],
               [t("Created"), <DateTime value={p.dateCreated} />],
               [t("Updated"), <DateTime value={p.dateUpdated} />],
               [t("Deleted"), <DateTime value={p.dateErased} />],
@@ -213,7 +217,7 @@ function ProjectDashboard({
             <Button
               className={styles.refresh}
               type="button"
-              disabled={branch.loading || p.status?.state !== "running"}
+              disabled={branch.loading || !running(p)}
               onClick={branch.reload}
             >
               {t("Refresh")}
@@ -221,7 +225,7 @@ function ProjectDashboard({
           </div>
           <Fields
             rows={[
-              [t("Status"), p.status?.state],
+              [t("Status"), t(containerStateName(containerState(p)))],
               [t("Workspace"), p.status?.remoteWorkspace],
               [t("Remote user"), p.status?.remoteUser],
               [t("Git branch"), git],
@@ -265,7 +269,7 @@ function ProjectDashboard({
             c={c}
             project={p}
             sessions={sessions}
-            purged={purged}
+            erased={erased}
             updated={saved}
           />
         </section>

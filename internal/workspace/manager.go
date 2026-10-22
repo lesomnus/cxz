@@ -29,8 +29,10 @@ import (
 
 type Project struct {
 	ID, Workspace, Name, Config, ContainerID, Network, Volume, Token, RemoteWorkspace, RemoteUser, Error string
-	Trusted                                                                                              bool
-	ComposeOverrideDigest                                                                                string
+	// TrustedConfig is the digest of the rendered configuration a person said
+	// yes to, and ConfigDigest is what the last provision rendered. A boolean
+	// used to stand in for the first of these and never expired. See cxz#274.
+	TrustedConfig, ConfigDigest string
 	Sessions                                                                                             []*api.Session
 	Job                                                                                                  ProvisionJob
 }
@@ -367,34 +369,32 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	if e != nil {
 		return nil, e
 	}
-	inventory, e := dockerx.List(ctx, "label=cxz.owner="+m.Owner)
-	if e != nil {
-		return nil, e
-	}
+	// One look at Docker answers for every project, and whether it answered at
+	// all decides what can be said. A list of registered projects is still a
+	// list when Docker cannot be reached: what is unknown is the containers.
+	inventory, lookErr := dockerx.List(ctx, "label=cxz.owner="+m.Owner)
 	out := &api.ProjectList{}
 	seen := map[string]bool{}
 	for _, p := range all {
-		lock := m.projectLock(p.ID)
-		if lock.TryLock() {
-			latest, err := m.resolve(ctx, p.ID)
-			if err == nil {
-				p = latest
-				err = m.reconcile(ctx, p, inventory)
-			}
-			lock.Unlock()
-			if err != nil {
-				return nil, err
-			}
-		}
-		state := "absent"
-		if v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); e == nil {
-			state = "stopped"
-			if v.State.Running {
-				state = "running"
+		if lookErr == nil {
+			lock := m.projectLock(p.ID)
+			if lock.TryLock() {
+				latest, err := m.resolve(ctx, p.ID)
+				if err == nil {
+					p = latest
+					err = m.reconcile(ctx, p, inventory)
+				}
+				lock.Unlock()
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 		seen[p.ContainerID] = true
-		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, State: state, Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt})
+		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, State: containerState(p, inventory, lookErr), Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt})
+	}
+	if lookErr != nil {
+		return out, nil
 	}
 	foreign, e := dockerx.List(ctx, "label=devcontainer.local_folder")
 	if e != nil {
@@ -407,7 +407,7 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	}
 	return out, nil
 }
-func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.Session, retErr error) {
+func (m *Manager) CreateContainer(ctx context.Context, r *api.ProjectRequest) (result *api.Receipt, retErr error) {
 	if err := settings.ValidateModel(r.Model); err != nil {
 		return nil, err
 	}
@@ -445,26 +445,20 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if latest, err := m.resolve(ctx, p.ID); err == nil {
 		p = latest
 	}
-	if r.TrustConfig {
-		p.Trusted = true
-	}
 	if r.Config != "" {
 		p.Config = r.Config
 	}
 	if r.Agent != "" && r.Agent != "claude" && r.Agent != "codex" {
 		return nil, fmt.Errorf("agent must be claude or codex")
 	}
-	configFile, e := m.provisionConfiguration(p)
+	rendered, e := m.render(ctx, p)
 	if e != nil {
 		return nil, e
 	}
-	configured := *p
-	configured.Config = configFile
-	if e = preflight(&configured); e != nil {
-		return nil, e
-	}
-	override, e := m.prepareComposeOverride(ctx, &configured)
-	if e != nil {
+	configFile, override := rendered.configFile, rendered.override
+	// Everything that will be acted on has been rendered, so this is where the
+	// one question gets asked -- before an image is built or a container made.
+	if e = rendered.trust.decide(p, r.TrustConfig); e != nil {
 		return nil, e
 	}
 	p.Job.Attempt++
@@ -494,37 +488,27 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 			p.ContainerID = v.ID
 			continue
 		}
-		if !r.Recreate || !r.Confirmed {
-			return nil, fmt.Errorf("foreign container %s: no adoption; use recreate with confirmation (writable layer lost, editors disconnect; workspace and named volumes retained)", v.ID[:12])
-		}
-		if _, e = dockerx.Run(ctx, "rm", "-f", v.ID); e != nil {
-			return nil, e
-		}
+		// A container for this workspace that cxz does not own is not cxz's to
+		// adopt or to delete. A confirmed recreate used to remove it; nothing
+		// does now. See docs/plans/project-lifecycle-api.md.
+		return nil, fmt.Errorf("foreign container %s holds this workspace; remove it yourself or point this project at another workspace", v.ID[:12])
 	}
-	if r.Recreate && p.ContainerID != "" {
-		if !r.Confirmed {
-			return nil, fmt.Errorf("recreate requires confirmation: writable layer lost and editors disconnect")
-		}
-		if e = m.checkpoint(ctx, p, "recreate"); e != nil {
-			return nil, e
-		}
-		if e = m.down(ctx, p); e != nil {
-			return nil, e
-		}
-		p.ContainerID = ""
-	}
-	if stateMovable(r, p) {
+	if stateMovable(p) {
 		if e = m.migrateProjectState(ctx, p); e != nil {
 			return nil, e
 		}
-	}
-	if r.Recreate && r.Confirmed {
+		// A container made again is made on the network the manager has now,
+		// not the one its last container was on.
 		p.Network = m.sharedNetwork()
 	}
-	if p.ContainerID != "" && p.ComposeOverrideDigest != override.Digest {
-		return nil, fmt.Errorf("devcontainer.compose changed; run cxz project recreate to apply it to the existing container")
+	// The Dev Container CLI reuses an existing container and ignores a changed
+	// configuration without a word, so noticing is cxz's job. An empty digest
+	// is a project provisioned before this was recorded: adopt what it renders
+	// now rather than calling the unknown a change.
+	if p.ContainerID != "" && p.ConfigDigest != "" && p.ConfigDigest != rendered.trust.Digest() {
+		return nil, fmt.Errorf("configuration changed; run cxz project recreate to apply it to the existing container")
 	}
-	p.ComposeOverrideDigest = override.Digest
+	p.ConfigDigest = rendered.trust.Digest()
 	if e = m.save(ctx, p); e != nil {
 		return nil, e
 	}
@@ -552,10 +536,11 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if e = m.checkpoint(ctx, p, "runtime-ready"); e != nil {
 		return nil, e
 	}
-	var list *api.SessionList
+	// Asking for the session list is how readiness is observed: the runtime
+	// answers it only once it is serving. The answer itself is not wanted here.
 	for i := 0; i < 150; i++ {
 		q, cancel := context.WithTimeout(ctx, time.Second)
-		list, e = client.List(q, &api.Empty{})
+		_, e = client.List(q, &api.Empty{})
 		cancel()
 		if e == nil {
 			break
@@ -572,80 +557,21 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if e = m.syncRuntimePreferences(ctx, client, p.ID); e != nil {
 		return nil, e
 	}
-	if r.PrepareOnly {
-		p.Job.State, p.Job.Step = "complete", "ready"
-		p.Job.UpdatedAt = time.Now().UnixMilli()
-		return &api.Session{ProjectId: p.ID, Workspace: p.RemoteWorkspace}, m.save(ctx, p)
-	}
-	var chosen *api.Session
-	if e = m.checkpoint(ctx, p, "session"); e != nil {
-		return nil, e
-	}
-	for _, s := range list.Sessions {
-		if s.Agent != kind || (r.Account != "" && s.Account != r.Account) {
-			continue
-		}
-		if r.NewSession {
-			if r.ClientId != "" && s.CreateId == r.ClientId {
-				chosen = s
-				break
-			}
-			continue
-		}
-		live := s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting"
-		if live {
-			chosen = s
-			break
-		}
-		if !r.NewSession && chosen == nil && s.Agent == kind {
-			chosen = s
-		}
-	}
-	if chosen == nil {
-		clientID := r.ClientId
-		if clientID == "" {
-			clientID = core.ID()
-		}
-		chosen, e = client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Agent: kind, Model: r.Model, ClientId: clientID})
-	} else if chosen.State == "interrupted" || chosen.State == "stopped" || chosen.State == "failed" {
-		if r.Model != "" && r.Model != chosen.Model {
-			return nil, fmt.Errorf("existing session model is immutable; use cxz session new --model after stopping it")
-		}
-		chosen, e = client.Resume(ctx, &api.Control{SessionId: chosen.Id, RunId: chosen.RunId, ClientId: core.ID()})
-	}
-	if chosen != nil && r.Model != "" && chosen.Model != r.Model {
-		return nil, fmt.Errorf("existing session model is immutable; stop it and create a new session")
-	}
-	if e != nil {
-		return nil, e
-	}
-	list, e = client.List(ctx, &api.Empty{})
-	if e != nil {
-		return nil, e
-	}
-	p.Sessions = list.Sessions
-	for _, s := range p.Sessions {
-		s.ProjectId = p.ID
-	}
-	chosen.ProjectId = p.ID
-	p.Job.State = "complete"
-	p.Job.Step = "ready"
+	// The container is up and its runtime answers. Sessions are not this
+	// operation's business: the client decides whether to resume an agent, and
+	// asks Session.Resume when it does. What the session half of this function
+	// used to do lives in `resourceclient.Client.Open`, which every caller
+	// already went through -- it has asked for `PrepareOnly` since the resource
+	// API took over project lifecycle, so the code below it was unreachable.
+	p.Job.State, p.Job.Step = "complete", "ready"
 	p.Job.UpdatedAt = time.Now().UnixMilli()
-	return chosen, m.save(ctx, p)
+	if e = m.save(ctx, p); e != nil {
+		return nil, e
+	}
+	return &api.Receipt{ClientId: r.ClientId, Status: "created"}, nil
 }
-func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {
-	p, e := m.resolve(ctx, r.Workspace)
-	if e != nil {
-		return e
-	}
-	lock := m.projectLock(p.ID)
-	lock.Lock()
-	defer lock.Unlock()
-	p, e = m.resolve(ctx, p.ID)
-	if e != nil {
-		return e
-	}
-	return m.down(ctx, p)
+func (m *Manager) RemoveContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	return m.containerOp(ctx, r, (*Manager).removeContainer, "removed; project, sessions, history and volumes retained")
 }
 
 // A session is stopped within stopBudget and the project as a whole within
@@ -658,34 +584,6 @@ var (
 	stopTotal  = 2 * time.Minute
 )
 
-func (m *Manager) down(ctx context.Context, p *Project) error {
-	// Stop the sessions before removing the containers, so the agents exit
-	// rather than being killed with them. Best effort, as a project that cannot
-	// answer must still be removable.
-	if conn, client, err := m.client(ctx, p); err == nil {
-		defer conn.Close()
-		if err := m.stopSessions(ctx, p, client); err != nil {
-			fmt.Fprintln(os.Stderr, "stopping sessions:", err)
-		}
-	}
-	containers, e := dockerx.List(ctx, "label=cxz.owner="+m.Owner, "label=cxz.project="+p.ID)
-	if e != nil {
-		return e
-	}
-	for _, v := range containers {
-		if _, e = dockerx.Owned(ctx, v.ID, m.Owner, p.ID); e != nil {
-			return e
-		}
-		if _, e = dockerx.Run(ctx, "rm", "-f", v.ID); e != nil {
-			return e
-		}
-	}
-	p.ContainerID = ""
-	p.Error = ""
-	p.Job.State, p.Job.Step = "complete", "down"
-	p.Job.UpdatedAt = time.Now().UnixMilli()
-	return m.save(ctx, p)
-}
 
 // stopSessions stops every live session of the project and refreshes what the
 // manager knows about them. One session that cannot answer costs its own

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/goccy/go-yaml"
-	"github.com/lesomnus/cxz/internal/configtrust"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -16,8 +15,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -94,9 +91,8 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	if e = json.Unmarshal(raw, &cfg); e != nil {
 		return e
 	}
-	if e = CheckTrust(cfg, p.Trusted); e != nil {
-		return fmt.Errorf("configuration %q: %w", configFile, e)
-	}
+	// The configuration was recorded and decided on by preflight, which read
+	// this same file before anything was built.
 	base := filepath.Dir(configFile)
 	abspath := func(v any) any {
 		if s, ok := v.(string); ok && !filepath.IsAbs(s) {
@@ -236,9 +232,6 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 			if e = yaml.Unmarshal(b, &compose); e != nil {
 				return e
 			}
-			if e = CheckTrust(compose, p.Trusted); e != nil {
-				return fmt.Errorf("configuration %q: %w", file, e)
-			}
 			ss, _ := compose["services"].(map[string]any)
 			for name := range ss {
 				services[name] = map[string]any{"labels": map[string]string{"cxz.owner": m.Owner, "cxz.project": p.ID}}
@@ -338,40 +331,12 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	if e = m.writeRuntime(ctx, p, runtime); e != nil {
 		return e
 	}
-	cmd := exec.CommandContext(ctx, "devcontainer", "up", "--workspace-folder", p.Workspace, "--config", configFile, "--override-config", configPath, "--id-label", "cxz.owner="+m.Owner, "--id-label", "cxz.project="+p.ID, "--id-label", "devcontainer.local_folder="+p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration")
 	if e = m.checkpoint(ctx, p, "devcontainer-up"); e != nil {
 		return e
 	}
-	cmd.Env = append(os.Environ(), provisionEnv("cxz-"+m.Owner[:12]+"-"+p.ID)...)
-	var stdout bytes.Buffer
-	log, e := os.OpenFile(filepath.Join(m.Root, "projects", p.ID, "provision.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	result, e := m.devcontainerUp(ctx, p, configFile, configPath, false)
 	if e != nil {
 		return e
-	}
-	cmd.Stdout = &stdout
-	cmd.Stderr = log
-	e = cmd.Run()
-	log.Close()
-	if e != nil {
-		return fmt.Errorf("devcontainer up failed: %w%s", e, provisionTail(filepath.Join(m.Root, "projects", p.ID, "provision.log")))
-	}
-	var result struct {
-		ContainerID     string `json:"containerId"`
-		RemoteWorkspace string `json:"remoteWorkspaceFolder"`
-		RemoteUser      string `json:"remoteUser"`
-	}
-	for _, line := range bytes.Split(stdout.Bytes(), []byte("\n")) {
-		var v struct {
-			ContainerID     string `json:"containerId"`
-			RemoteWorkspace string `json:"remoteWorkspaceFolder"`
-			RemoteUser      string `json:"remoteUser"`
-		}
-		if json.Unmarshal(line, &v) == nil && v.ContainerID != "" {
-			result = v
-		}
-	}
-	if result.ContainerID == "" {
-		return fmt.Errorf("devcontainer did not return a container id")
 	}
 	p.ContainerID = result.ContainerID
 	if result.RemoteWorkspace != "" {
@@ -435,13 +400,76 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 			return e
 		}
 	}
-	// The runtime reads binary choices on each Create. Its lifetime is not the
-	// docker exec connection; _boot only starts a detached, independently locked process.
 	if e = m.checkpoint(ctx, p, "runtime-boot"); e != nil {
 		return e
 	}
-	_, e = dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_boot")
-	return e
+	return m.boot(ctx, p)
+}
+
+// upResult is what the Dev Container CLI reports about the container it acted
+// on. The CLI prints one JSON object per phase, so the last one with an id is
+// the answer.
+type upResult struct {
+	ContainerID     string `json:"containerId"`
+	RemoteWorkspace string `json:"remoteWorkspaceFolder"`
+	RemoteUser      string `json:"remoteUser"`
+}
+
+// devcontainerUp runs the Dev Container CLI against this project.
+//
+// `existing` is the whole difference between creating and starting. Without it
+// the CLI creates what is missing and runs the create-time hooks; with it the
+// CLI fails if there is no container, starts the one there is, and runs only
+// the start-time hooks. It keeps that distinction itself -- cxz does not have
+// to remember which hooks have run. Measured in cxz#274.
+func (m *Manager) devcontainerUp(ctx context.Context, p *Project, configFile, configPath string, existing bool) (upResult, error) {
+	var out upResult
+	cmd := exec.CommandContext(ctx, "devcontainer", m.upArgs(p, configFile, configPath, existing)...)
+	cmd.Env = append(os.Environ(), provisionEnv("cxz-"+m.Owner[:12]+"-"+p.ID)...)
+	var stdout bytes.Buffer
+	path := filepath.Join(m.Root, "projects", p.ID, "provision.log")
+	log, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return out, err
+	}
+	cmd.Stdout = &stdout
+	cmd.Stderr = log
+	err = cmd.Run()
+	log.Close()
+	if err != nil {
+		return out, fmt.Errorf("devcontainer up failed: %w%s", err, provisionTail(path))
+	}
+	for _, line := range bytes.Split(stdout.Bytes(), []byte("\n")) {
+		var v upResult
+		if json.Unmarshal(line, &v) == nil && v.ContainerID != "" {
+			out = v
+		}
+	}
+	if out.ContainerID == "" {
+		return out, fmt.Errorf("devcontainer did not return a container id")
+	}
+	return out, nil
+}
+
+// upArgs is how the CLI is asked. `existing` is the only difference between
+// the two paths: it makes the CLI refuse to create and run only the start-time
+// hooks, which is what keeps `StartContainer` from quietly replacing a
+// container or repeating `postCreateCommand`.
+func (m *Manager) upArgs(p *Project, configFile, configPath string, existing bool) []string {
+	args := []string{"up", "--workspace-folder", p.Workspace, "--config", configFile, "--override-config", configPath, "--id-label", "cxz.owner=" + m.Owner, "--id-label", "cxz.project=" + p.ID, "--id-label", "devcontainer.local_folder=" + p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration"}
+	if existing {
+		args = append(args, "--expect-existing-container")
+	}
+	return args
+}
+
+// boot starts the project runtime in a container that is already up. The
+// runtime reads binary choices every time; its lifetime is not this exec, which
+// only starts a detached, independently locked process, so calling it again is
+// how a start converges rather than a second runtime.
+func (m *Manager) boot(ctx context.Context, p *Project) error {
+	_, err := dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_boot")
+	return err
 }
 func (m *Manager) writeRuntime(ctx context.Context, p *Project, r Runtime) error {
 	b, e := json.Marshal(r)
@@ -460,75 +488,14 @@ func (m *Manager) writeRuntime(ctx context.Context, p *Project, r Runtime) error
 	return dockerx.Input(ctx, bytes.NewReader(b), "run", "--rm", "-i", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "-c", "umask 022; cat > /cxz/state/runtime.next && mv /cxz/state/runtime.next /cxz/state/runtime.json")
 }
 
-// CheckTrust reports JSON Pointer locations, never configuration values.
-// Detection remains conservative (including string markers), not a sandbox.
-func CheckTrust(cfg map[string]any, trusted bool) error {
-	if trusted {
-		return nil
-	}
-	var findings []string
-	add := func(path, reason string) { findings = append(findings, fmt.Sprintf("  - %q: %s", path, reason)) }
-	var walk func(any, string)
-	walk = func(v any, path string) {
-		switch x := v.(type) {
-		case map[string]any:
-			keys := make([]string, 0, len(x))
-			for key := range x {
-				keys = append(keys, key)
-			}
-			sort.Strings(keys)
-			for _, key := range keys {
-				value := x[key]
-				child := path + "/" + strings.ReplaceAll(strings.ReplaceAll(key, "~", "~0"), "/", "~1")
-				switch {
-				case key == "privileged" && value == true:
-					add(child, "privileged container requested")
-				case key == "initializeCommand":
-					add(child, "host-side initialization command configured")
-				case key == "network_mode" && value == "host":
-					add(child, "host network namespace requested")
-				case key == "pid" && value == "host":
-					add(child, "host PID namespace requested")
-				}
-				walk(value, child)
-			}
-		case []any:
-			for i, value := range x {
-				child := path + "/" + strconv.Itoa(i)
-				if flag, ok := value.(string); ok && i+1 < len(x) && x[i+1] == "host" {
-					switch flag {
-					case "--network", "--net":
-						add(child, "host network namespace requested (next array item)")
-					case "--pid":
-						add(child, "host PID namespace requested (next array item)")
-					}
-				}
-				walk(value, child)
-			}
-		case string:
-			for _, rule := range []struct{ marker, reason string }{
-				{"docker.sock", "Docker socket reference detected"},
-				{"--privileged", "privileged container flag detected"},
-				{"--network=host", "host network flag detected"},
-				{"--pid=host", "host PID flag detected"},
-				{"SYS_ADMIN", "SYS_ADMIN capability reference detected"},
-			} {
-				if strings.Contains(x, rule.marker) {
-					add(path, rule.reason)
-				}
-			}
-		}
-	}
-	walk(cfg, "")
-	if len(findings) > 0 {
-		return &configtrust.Required{Findings: findings}
-	}
-	return nil
-}
-
 // Validate all readable configuration before a confirmed recreate removes a
 // container. Open resolves and snapshots fallback templates before this check.
-func preflight(p *Project) error {
+//
+// Every document it reads is recorded in the trust ledger, so the decision
+// about what the configuration asks for is made once, by the caller, against
+// all of it -- and so the digest that decision is remembered under covers the
+// same documents.
+func preflight(p *Project, t *trust) error {
 	file := p.Config
 	if file == "" {
 		configs := Discover(p.Workspace)
@@ -555,8 +522,8 @@ func preflight(p *Project) error {
 	if e = json.Unmarshal(b, &cfg); e != nil {
 		return e
 	}
-	if e = CheckTrust(cfg, p.Trusted); e != nil {
-		return fmt.Errorf("configuration %q: %w", file, e)
+	if e = t.saw(fmt.Sprintf("configuration %q:", file), cfg); e != nil {
+		return e
 	}
 	var files []any
 	switch v := cfg["dockerComposeFile"].(type) {
@@ -581,8 +548,8 @@ func preflight(p *Project) error {
 		if e = yaml.Unmarshal(b, &compose); e != nil {
 			return e
 		}
-		if e = CheckTrust(compose, p.Trusted); e != nil {
-			return fmt.Errorf("configuration %q: %w", name, e)
+		if e = t.saw(fmt.Sprintf("configuration %q:", name), compose); e != nil {
+			return e
 		}
 	}
 	return nil

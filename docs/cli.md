@@ -67,7 +67,9 @@ cxz project set --name NAME --alias ALIAS PROJECT
 cxz project up PROJECT              # recreate and resume
 cxz project recreate --yes PROJECT  # rebuild; writable layer lost
 cxz project recreate --yes @all     # rebuild every running owned project
-cxz project down PROJECT
+cxz project stop PROJECT            # stop the container, keep it
+cxz project start PROJECT           # start the container it already has
+cxz project remove PROJECT          # remove the container, keep everything else
 cxz project purge PROJECT              # preview permanent removal
 cxz project purge --yes PROJECT        # delete this project and its owned data
 cxz project ls                      # owned and foreign projects

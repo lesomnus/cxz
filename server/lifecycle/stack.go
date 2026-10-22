@@ -3,6 +3,7 @@
 package lifecycle
 
 import (
+	"time"
 	"context"
 	"crypto/sha256"
 	"database/sql"
@@ -42,6 +43,8 @@ type shared struct {
 	snapshotMu  sync.Mutex
 	initialMu   sync.Mutex
 	initialized bool
+	observedMu  sync.Mutex
+	observedAt  time.Time
 	watchers    atomic.Int64
 	watch       *watch.Watch
 	runtime     Runtime

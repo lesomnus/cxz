@@ -1,7 +1,7 @@
 import { create, clone, type MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
-import { ProjectSchema } from "#gen/cxz/project_pb";
+import { ContainerState, ProjectSchema } from "#gen/cxz/project_pb";
 import { SessionSchema } from "#gen/cxz/session_pb";
 import { TaskSchema, TaskStatus, type Task } from "#gen/cxz/task_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
@@ -20,8 +20,7 @@ export function taskFixture(count = 9, unavailable = false) {
       name: "Workspace",
       alias: "workspace",
       workspace: "/workspace",
-      listed: true,
-      status: { state: "running" },
+      status: { containerState: ContainerState.RUNNING },
     }),
     create(ProjectSchema, {
       id: id(2),
@@ -29,8 +28,7 @@ export function taskFixture(count = 9, unavailable = false) {
       name: "Documentation",
       alias: "docs",
       workspace: "/docs",
-      listed: true,
-      status: { state: "running" },
+      status: { containerState: ContainerState.RUNNING },
     }),
   ];
   const sessions = [
@@ -41,7 +39,6 @@ export function taskFixture(count = 9, unavailable = false) {
       alias: "oak",
       agent: "codex",
       project: projects[0],
-      listed: true,
       status: { state: "working", runId: "oak-run" },
     }),
     create(SessionSchema, {
@@ -51,7 +48,6 @@ export function taskFixture(count = 9, unavailable = false) {
       alias: "elm",
       agent: "claude",
       project: projects[0],
-      listed: true,
       status: { state: "stopped", runId: "elm-run" },
     }),
   ];

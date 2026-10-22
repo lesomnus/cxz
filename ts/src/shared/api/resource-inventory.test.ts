@@ -49,7 +49,6 @@ const project = (i: number) =>
   create(ProjectSchema, {
     id: new TextEncoder().encode(`project-${String(i).padStart(8, "0")}`),
     runtimeId: `project-${i}`,
-    listed: true,
   });
 const session = (i: number, p = project(i)) =>
   create(SessionSchema, {

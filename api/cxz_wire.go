@@ -7766,7 +7766,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\brevision\x18\x02 \x01(\tR\brevision\x12\x18\n" +
 	"\achannel\x18\x03 \x01(\tR\achannel\x12\x10\n" +
 	"\x03pin\x18\x04 \x01(\tR\x03pin\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error2\x86&\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error2\xa5'\n" +
 	"\bSessions\x12D\n" +
 	"\fDevcontainer\x12\x1e.cxz.runtime.DevcontainerInput\x1a\x14.cxz.runtime.Receipt\x12D\n" +
 	"\n" +
@@ -7806,10 +7806,12 @@ const file_cxz_proto_rawDesc = "" +
 	"\n" +
 	"Background\x12\x17.cxz.runtime.SessionRef\x1a\x1c.cxz.runtime.BackgroundReply\x12>\n" +
 	"\x06Models\x12\x1a.cxz.runtime.ModelsRequest\x1a\x18.cxz.runtime.ModelsReply\x12@\n" +
-	"\x06Search\x12\x1a.cxz.runtime.SearchRequest\x1a\x18.cxz.runtime.SearchReply0\x01\x129\n" +
-	"\x04Open\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Session\x128\n" +
-	"\bProjects\x12\x12.cxz.runtime.Empty\x1a\x18.cxz.runtime.ProjectList\x129\n" +
-	"\x04Down\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x129\n" +
+	"\x06Search\x12\x1a.cxz.runtime.SearchRequest\x1a\x18.cxz.runtime.SearchReply0\x01\x128\n" +
+	"\bProjects\x12\x12.cxz.runtime.Empty\x1a\x18.cxz.runtime.ProjectList\x12D\n" +
+	"\x0fCreateContainer\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x12B\n" +
+	"\rStopContainer\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x12C\n" +
+	"\x0eStartContainer\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x12D\n" +
+	"\x0fRemoveContainer\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x129\n" +
 	"\x06AuxRun\x12\x18.cxz.runtime.AuxRunInput\x1a\x15.cxz.runtime.AuxState\x12?\n" +
 	"\tAuxCancel\x12\x1b.cxz.runtime.AuxCancelInput\x1a\x15.cxz.runtime.AuxState\x12?\n" +
 	"\tAuxStatus\x12\x1b.cxz.runtime.AuxStatusInput\x1a\x15.cxz.runtime.AuxState\x12A\n" +
@@ -8046,117 +8048,121 @@ var file_cxz_proto_depIdxs = []int32{
 	3,   // 69: cxz.runtime.Sessions.Background:input_type -> cxz.runtime.SessionRef
 	37,  // 70: cxz.runtime.Sessions.Models:input_type -> cxz.runtime.ModelsRequest
 	40,  // 71: cxz.runtime.Sessions.Search:input_type -> cxz.runtime.SearchRequest
-	26,  // 72: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
-	0,   // 73: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
-	26,  // 74: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
-	53,  // 75: cxz.runtime.Sessions.AuxRun:input_type -> cxz.runtime.AuxRunInput
-	54,  // 76: cxz.runtime.Sessions.AuxCancel:input_type -> cxz.runtime.AuxCancelInput
-	56,  // 77: cxz.runtime.Sessions.AuxStatus:input_type -> cxz.runtime.AuxStatusInput
-	56,  // 78: cxz.runtime.Sessions.AuxEvents:input_type -> cxz.runtime.AuxStatusInput
-	58,  // 79: cxz.runtime.Sessions.AuxPrefer:input_type -> cxz.runtime.AuxPreferInput
-	55,  // 80: cxz.runtime.Sessions.AuxForget:input_type -> cxz.runtime.AuxForgetInput
-	0,   // 81: cxz.runtime.Sessions.AuxConfig:input_type -> cxz.runtime.Empty
-	60,  // 82: cxz.runtime.Sessions.AuxSetConfig:input_type -> cxz.runtime.AuxSetConfigInput
-	61,  // 83: cxz.runtime.Sessions.AuxModels:input_type -> cxz.runtime.AuxModelsInput
-	63,  // 84: cxz.runtime.Sessions.AuxLoginInfo:input_type -> cxz.runtime.AuxLoginInfoInput
-	68,  // 85: cxz.runtime.Sessions.PurgeSession:input_type -> cxz.runtime.SessionPurgeInput
-	0,   // 86: cxz.runtime.Sessions.GetHistoryPolicy:input_type -> cxz.runtime.Empty
-	71,  // 87: cxz.runtime.Sessions.SetHistoryPolicy:input_type -> cxz.runtime.HistoryPolicy
-	3,   // 88: cxz.runtime.Sessions.GetHistoryFloor:input_type -> cxz.runtime.SessionRef
-	0,   // 89: cxz.runtime.Sessions.MarkHistoryTrimmable:input_type -> cxz.runtime.Empty
-	65,  // 90: cxz.runtime.Sessions.PutSecretFile:input_type -> cxz.runtime.PutSecretFileInput
-	66,  // 91: cxz.runtime.Sessions.DeleteSecretFile:input_type -> cxz.runtime.DeleteSecretFileInput
-	73,  // 92: cxz.runtime.Sessions.GetSkills:input_type -> cxz.runtime.SkillsInput
-	74,  // 93: cxz.runtime.Sessions.AddSkill:input_type -> cxz.runtime.SkillInput
-	74,  // 94: cxz.runtime.Sessions.RemoveSkill:input_type -> cxz.runtime.SkillInput
-	75,  // 95: cxz.runtime.Sessions.SetSkillDefault:input_type -> cxz.runtime.SkillDefaultInput
-	76,  // 96: cxz.runtime.Sessions.SetProjectSkill:input_type -> cxz.runtime.ProjectSkillInput
-	77,  // 97: cxz.runtime.Sessions.ClearProjectSkill:input_type -> cxz.runtime.ClearProjectSkillInput
-	80,  // 98: cxz.runtime.Sessions.SyncSkills:input_type -> cxz.runtime.SyncSkillsInput
-	81,  // 99: cxz.runtime.Sessions.RenderDevcontainer:input_type -> cxz.runtime.RenderDevcontainerInput
-	87,  // 100: cxz.runtime.Sessions.GetMcpServers:input_type -> cxz.runtime.McpServersInput
-	88,  // 101: cxz.runtime.Sessions.PutMcpServer:input_type -> cxz.runtime.PutMcpServerInput
-	89,  // 102: cxz.runtime.Sessions.RemoveMcpServer:input_type -> cxz.runtime.McpServerInput
-	90,  // 103: cxz.runtime.Sessions.SetMcpServerDefault:input_type -> cxz.runtime.McpServerDefaultInput
-	91,  // 104: cxz.runtime.Sessions.SetProjectMcpServer:input_type -> cxz.runtime.ProjectMcpServerInput
-	92,  // 105: cxz.runtime.Sessions.ClearProjectMcpServer:input_type -> cxz.runtime.ClearProjectMcpServerInput
-	93,  // 106: cxz.runtime.Sessions.McpSessions:input_type -> cxz.runtime.McpSessionsInput
-	96,  // 107: cxz.runtime.Sessions.SyncMcpServers:input_type -> cxz.runtime.SyncMcpServersInput
-	97,  // 108: cxz.runtime.Sessions.McpLogs:input_type -> cxz.runtime.McpLogsInput
-	99,  // 109: cxz.runtime.Sessions.RestartMcp:input_type -> cxz.runtime.RestartMcpInput
-	14,  // 110: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
-	103, // 111: cxz.runtime.Sessions.SaveEngine:output_type -> cxz.runtime.EngineReply
-	103, // 112: cxz.runtime.Sessions.StartEngine:output_type -> cxz.runtime.EngineReply
-	103, // 113: cxz.runtime.Sessions.StopEngine:output_type -> cxz.runtime.EngineReply
-	103, // 114: cxz.runtime.Sessions.PruneEngine:output_type -> cxz.runtime.EngineReply
-	103, // 115: cxz.runtime.Sessions.EngineStatus:output_type -> cxz.runtime.EngineReply
-	104, // 116: cxz.runtime.Sessions.GetEngineInfo:output_type -> cxz.runtime.EngineInfo
-	105, // 117: cxz.runtime.Sessions.GetInstallationVersion:output_type -> cxz.runtime.InstallationVersion
-	14,  // 118: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
-	4,   // 119: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
-	4,   // 120: cxz.runtime.Sessions.ForkSession:output_type -> cxz.runtime.Session
-	5,   // 121: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
-	4,   // 122: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
-	14,  // 123: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
-	34,  // 124: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
-	31,  // 125: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
-	14,  // 126: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
-	14,  // 127: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
-	8,   // 128: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
-	14,  // 129: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
-	11,  // 130: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
-	14,  // 131: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
-	14,  // 132: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
-	4,   // 133: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
-	14,  // 134: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
-	16,  // 135: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
-	25,  // 136: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
-	20,  // 137: cxz.runtime.Sessions.Transcript:output_type -> cxz.runtime.TranscriptReply
-	22,  // 138: cxz.runtime.Sessions.Rows:output_type -> cxz.runtime.Row
-	25,  // 139: cxz.runtime.Sessions.EventDetails:output_type -> cxz.runtime.EventBatch
-	36,  // 140: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
-	38,  // 141: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
-	45,  // 142: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
-	4,   // 143: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
-	28,  // 144: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
-	14,  // 145: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
-	57,  // 146: cxz.runtime.Sessions.AuxRun:output_type -> cxz.runtime.AuxState
-	57,  // 147: cxz.runtime.Sessions.AuxCancel:output_type -> cxz.runtime.AuxState
-	57,  // 148: cxz.runtime.Sessions.AuxStatus:output_type -> cxz.runtime.AuxState
-	57,  // 149: cxz.runtime.Sessions.AuxEvents:output_type -> cxz.runtime.AuxState
-	57,  // 150: cxz.runtime.Sessions.AuxPrefer:output_type -> cxz.runtime.AuxState
-	14,  // 151: cxz.runtime.Sessions.AuxForget:output_type -> cxz.runtime.Receipt
-	59,  // 152: cxz.runtime.Sessions.AuxConfig:output_type -> cxz.runtime.AuxConfigReply
-	59,  // 153: cxz.runtime.Sessions.AuxSetConfig:output_type -> cxz.runtime.AuxConfigReply
-	62,  // 154: cxz.runtime.Sessions.AuxModels:output_type -> cxz.runtime.AuxModelsReply
-	64,  // 155: cxz.runtime.Sessions.AuxLoginInfo:output_type -> cxz.runtime.AuxLoginInfoReply
-	70,  // 156: cxz.runtime.Sessions.PurgeSession:output_type -> cxz.runtime.SessionPurgeReply
-	71,  // 157: cxz.runtime.Sessions.GetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
-	71,  // 158: cxz.runtime.Sessions.SetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
-	72,  // 159: cxz.runtime.Sessions.GetHistoryFloor:output_type -> cxz.runtime.HistoryFloorReply
-	0,   // 160: cxz.runtime.Sessions.MarkHistoryTrimmable:output_type -> cxz.runtime.Empty
-	67,  // 161: cxz.runtime.Sessions.PutSecretFile:output_type -> cxz.runtime.SecretFileReply
-	67,  // 162: cxz.runtime.Sessions.DeleteSecretFile:output_type -> cxz.runtime.SecretFileReply
-	79,  // 163: cxz.runtime.Sessions.GetSkills:output_type -> cxz.runtime.SkillsReply
-	79,  // 164: cxz.runtime.Sessions.AddSkill:output_type -> cxz.runtime.SkillsReply
-	79,  // 165: cxz.runtime.Sessions.RemoveSkill:output_type -> cxz.runtime.SkillsReply
-	79,  // 166: cxz.runtime.Sessions.SetSkillDefault:output_type -> cxz.runtime.SkillsReply
-	79,  // 167: cxz.runtime.Sessions.SetProjectSkill:output_type -> cxz.runtime.SkillsReply
-	79,  // 168: cxz.runtime.Sessions.ClearProjectSkill:output_type -> cxz.runtime.SkillsReply
-	14,  // 169: cxz.runtime.Sessions.SyncSkills:output_type -> cxz.runtime.Receipt
-	83,  // 170: cxz.runtime.Sessions.RenderDevcontainer:output_type -> cxz.runtime.RenderDevcontainerReply
-	86,  // 171: cxz.runtime.Sessions.GetMcpServers:output_type -> cxz.runtime.McpServersReply
-	86,  // 172: cxz.runtime.Sessions.PutMcpServer:output_type -> cxz.runtime.McpServersReply
-	86,  // 173: cxz.runtime.Sessions.RemoveMcpServer:output_type -> cxz.runtime.McpServersReply
-	86,  // 174: cxz.runtime.Sessions.SetMcpServerDefault:output_type -> cxz.runtime.McpServersReply
-	86,  // 175: cxz.runtime.Sessions.SetProjectMcpServer:output_type -> cxz.runtime.McpServersReply
-	86,  // 176: cxz.runtime.Sessions.ClearProjectMcpServer:output_type -> cxz.runtime.McpServersReply
-	95,  // 177: cxz.runtime.Sessions.McpSessions:output_type -> cxz.runtime.McpSessionsReply
-	14,  // 178: cxz.runtime.Sessions.SyncMcpServers:output_type -> cxz.runtime.Receipt
-	98,  // 179: cxz.runtime.Sessions.McpLogs:output_type -> cxz.runtime.McpLogsReply
-	14,  // 180: cxz.runtime.Sessions.RestartMcp:output_type -> cxz.runtime.Receipt
-	110, // [110:181] is the sub-list for method output_type
-	39,  // [39:110] is the sub-list for method input_type
+	0,   // 72: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
+	26,  // 73: cxz.runtime.Sessions.CreateContainer:input_type -> cxz.runtime.ProjectRequest
+	26,  // 74: cxz.runtime.Sessions.StopContainer:input_type -> cxz.runtime.ProjectRequest
+	26,  // 75: cxz.runtime.Sessions.StartContainer:input_type -> cxz.runtime.ProjectRequest
+	26,  // 76: cxz.runtime.Sessions.RemoveContainer:input_type -> cxz.runtime.ProjectRequest
+	53,  // 77: cxz.runtime.Sessions.AuxRun:input_type -> cxz.runtime.AuxRunInput
+	54,  // 78: cxz.runtime.Sessions.AuxCancel:input_type -> cxz.runtime.AuxCancelInput
+	56,  // 79: cxz.runtime.Sessions.AuxStatus:input_type -> cxz.runtime.AuxStatusInput
+	56,  // 80: cxz.runtime.Sessions.AuxEvents:input_type -> cxz.runtime.AuxStatusInput
+	58,  // 81: cxz.runtime.Sessions.AuxPrefer:input_type -> cxz.runtime.AuxPreferInput
+	55,  // 82: cxz.runtime.Sessions.AuxForget:input_type -> cxz.runtime.AuxForgetInput
+	0,   // 83: cxz.runtime.Sessions.AuxConfig:input_type -> cxz.runtime.Empty
+	60,  // 84: cxz.runtime.Sessions.AuxSetConfig:input_type -> cxz.runtime.AuxSetConfigInput
+	61,  // 85: cxz.runtime.Sessions.AuxModels:input_type -> cxz.runtime.AuxModelsInput
+	63,  // 86: cxz.runtime.Sessions.AuxLoginInfo:input_type -> cxz.runtime.AuxLoginInfoInput
+	68,  // 87: cxz.runtime.Sessions.PurgeSession:input_type -> cxz.runtime.SessionPurgeInput
+	0,   // 88: cxz.runtime.Sessions.GetHistoryPolicy:input_type -> cxz.runtime.Empty
+	71,  // 89: cxz.runtime.Sessions.SetHistoryPolicy:input_type -> cxz.runtime.HistoryPolicy
+	3,   // 90: cxz.runtime.Sessions.GetHistoryFloor:input_type -> cxz.runtime.SessionRef
+	0,   // 91: cxz.runtime.Sessions.MarkHistoryTrimmable:input_type -> cxz.runtime.Empty
+	65,  // 92: cxz.runtime.Sessions.PutSecretFile:input_type -> cxz.runtime.PutSecretFileInput
+	66,  // 93: cxz.runtime.Sessions.DeleteSecretFile:input_type -> cxz.runtime.DeleteSecretFileInput
+	73,  // 94: cxz.runtime.Sessions.GetSkills:input_type -> cxz.runtime.SkillsInput
+	74,  // 95: cxz.runtime.Sessions.AddSkill:input_type -> cxz.runtime.SkillInput
+	74,  // 96: cxz.runtime.Sessions.RemoveSkill:input_type -> cxz.runtime.SkillInput
+	75,  // 97: cxz.runtime.Sessions.SetSkillDefault:input_type -> cxz.runtime.SkillDefaultInput
+	76,  // 98: cxz.runtime.Sessions.SetProjectSkill:input_type -> cxz.runtime.ProjectSkillInput
+	77,  // 99: cxz.runtime.Sessions.ClearProjectSkill:input_type -> cxz.runtime.ClearProjectSkillInput
+	80,  // 100: cxz.runtime.Sessions.SyncSkills:input_type -> cxz.runtime.SyncSkillsInput
+	81,  // 101: cxz.runtime.Sessions.RenderDevcontainer:input_type -> cxz.runtime.RenderDevcontainerInput
+	87,  // 102: cxz.runtime.Sessions.GetMcpServers:input_type -> cxz.runtime.McpServersInput
+	88,  // 103: cxz.runtime.Sessions.PutMcpServer:input_type -> cxz.runtime.PutMcpServerInput
+	89,  // 104: cxz.runtime.Sessions.RemoveMcpServer:input_type -> cxz.runtime.McpServerInput
+	90,  // 105: cxz.runtime.Sessions.SetMcpServerDefault:input_type -> cxz.runtime.McpServerDefaultInput
+	91,  // 106: cxz.runtime.Sessions.SetProjectMcpServer:input_type -> cxz.runtime.ProjectMcpServerInput
+	92,  // 107: cxz.runtime.Sessions.ClearProjectMcpServer:input_type -> cxz.runtime.ClearProjectMcpServerInput
+	93,  // 108: cxz.runtime.Sessions.McpSessions:input_type -> cxz.runtime.McpSessionsInput
+	96,  // 109: cxz.runtime.Sessions.SyncMcpServers:input_type -> cxz.runtime.SyncMcpServersInput
+	97,  // 110: cxz.runtime.Sessions.McpLogs:input_type -> cxz.runtime.McpLogsInput
+	99,  // 111: cxz.runtime.Sessions.RestartMcp:input_type -> cxz.runtime.RestartMcpInput
+	14,  // 112: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
+	103, // 113: cxz.runtime.Sessions.SaveEngine:output_type -> cxz.runtime.EngineReply
+	103, // 114: cxz.runtime.Sessions.StartEngine:output_type -> cxz.runtime.EngineReply
+	103, // 115: cxz.runtime.Sessions.StopEngine:output_type -> cxz.runtime.EngineReply
+	103, // 116: cxz.runtime.Sessions.PruneEngine:output_type -> cxz.runtime.EngineReply
+	103, // 117: cxz.runtime.Sessions.EngineStatus:output_type -> cxz.runtime.EngineReply
+	104, // 118: cxz.runtime.Sessions.GetEngineInfo:output_type -> cxz.runtime.EngineInfo
+	105, // 119: cxz.runtime.Sessions.GetInstallationVersion:output_type -> cxz.runtime.InstallationVersion
+	14,  // 120: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
+	4,   // 121: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
+	4,   // 122: cxz.runtime.Sessions.ForkSession:output_type -> cxz.runtime.Session
+	5,   // 123: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
+	4,   // 124: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
+	14,  // 125: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
+	34,  // 126: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
+	31,  // 127: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
+	14,  // 128: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
+	14,  // 129: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
+	8,   // 130: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
+	14,  // 131: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
+	11,  // 132: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
+	14,  // 133: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
+	14,  // 134: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
+	4,   // 135: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
+	14,  // 136: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
+	16,  // 137: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
+	25,  // 138: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
+	20,  // 139: cxz.runtime.Sessions.Transcript:output_type -> cxz.runtime.TranscriptReply
+	22,  // 140: cxz.runtime.Sessions.Rows:output_type -> cxz.runtime.Row
+	25,  // 141: cxz.runtime.Sessions.EventDetails:output_type -> cxz.runtime.EventBatch
+	36,  // 142: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
+	38,  // 143: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
+	45,  // 144: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
+	28,  // 145: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
+	14,  // 146: cxz.runtime.Sessions.CreateContainer:output_type -> cxz.runtime.Receipt
+	14,  // 147: cxz.runtime.Sessions.StopContainer:output_type -> cxz.runtime.Receipt
+	14,  // 148: cxz.runtime.Sessions.StartContainer:output_type -> cxz.runtime.Receipt
+	14,  // 149: cxz.runtime.Sessions.RemoveContainer:output_type -> cxz.runtime.Receipt
+	57,  // 150: cxz.runtime.Sessions.AuxRun:output_type -> cxz.runtime.AuxState
+	57,  // 151: cxz.runtime.Sessions.AuxCancel:output_type -> cxz.runtime.AuxState
+	57,  // 152: cxz.runtime.Sessions.AuxStatus:output_type -> cxz.runtime.AuxState
+	57,  // 153: cxz.runtime.Sessions.AuxEvents:output_type -> cxz.runtime.AuxState
+	57,  // 154: cxz.runtime.Sessions.AuxPrefer:output_type -> cxz.runtime.AuxState
+	14,  // 155: cxz.runtime.Sessions.AuxForget:output_type -> cxz.runtime.Receipt
+	59,  // 156: cxz.runtime.Sessions.AuxConfig:output_type -> cxz.runtime.AuxConfigReply
+	59,  // 157: cxz.runtime.Sessions.AuxSetConfig:output_type -> cxz.runtime.AuxConfigReply
+	62,  // 158: cxz.runtime.Sessions.AuxModels:output_type -> cxz.runtime.AuxModelsReply
+	64,  // 159: cxz.runtime.Sessions.AuxLoginInfo:output_type -> cxz.runtime.AuxLoginInfoReply
+	70,  // 160: cxz.runtime.Sessions.PurgeSession:output_type -> cxz.runtime.SessionPurgeReply
+	71,  // 161: cxz.runtime.Sessions.GetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
+	71,  // 162: cxz.runtime.Sessions.SetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
+	72,  // 163: cxz.runtime.Sessions.GetHistoryFloor:output_type -> cxz.runtime.HistoryFloorReply
+	0,   // 164: cxz.runtime.Sessions.MarkHistoryTrimmable:output_type -> cxz.runtime.Empty
+	67,  // 165: cxz.runtime.Sessions.PutSecretFile:output_type -> cxz.runtime.SecretFileReply
+	67,  // 166: cxz.runtime.Sessions.DeleteSecretFile:output_type -> cxz.runtime.SecretFileReply
+	79,  // 167: cxz.runtime.Sessions.GetSkills:output_type -> cxz.runtime.SkillsReply
+	79,  // 168: cxz.runtime.Sessions.AddSkill:output_type -> cxz.runtime.SkillsReply
+	79,  // 169: cxz.runtime.Sessions.RemoveSkill:output_type -> cxz.runtime.SkillsReply
+	79,  // 170: cxz.runtime.Sessions.SetSkillDefault:output_type -> cxz.runtime.SkillsReply
+	79,  // 171: cxz.runtime.Sessions.SetProjectSkill:output_type -> cxz.runtime.SkillsReply
+	79,  // 172: cxz.runtime.Sessions.ClearProjectSkill:output_type -> cxz.runtime.SkillsReply
+	14,  // 173: cxz.runtime.Sessions.SyncSkills:output_type -> cxz.runtime.Receipt
+	83,  // 174: cxz.runtime.Sessions.RenderDevcontainer:output_type -> cxz.runtime.RenderDevcontainerReply
+	86,  // 175: cxz.runtime.Sessions.GetMcpServers:output_type -> cxz.runtime.McpServersReply
+	86,  // 176: cxz.runtime.Sessions.PutMcpServer:output_type -> cxz.runtime.McpServersReply
+	86,  // 177: cxz.runtime.Sessions.RemoveMcpServer:output_type -> cxz.runtime.McpServersReply
+	86,  // 178: cxz.runtime.Sessions.SetMcpServerDefault:output_type -> cxz.runtime.McpServersReply
+	86,  // 179: cxz.runtime.Sessions.SetProjectMcpServer:output_type -> cxz.runtime.McpServersReply
+	86,  // 180: cxz.runtime.Sessions.ClearProjectMcpServer:output_type -> cxz.runtime.McpServersReply
+	95,  // 181: cxz.runtime.Sessions.McpSessions:output_type -> cxz.runtime.McpSessionsReply
+	14,  // 182: cxz.runtime.Sessions.SyncMcpServers:output_type -> cxz.runtime.Receipt
+	98,  // 183: cxz.runtime.Sessions.McpLogs:output_type -> cxz.runtime.McpLogsReply
+	14,  // 184: cxz.runtime.Sessions.RestartMcp:output_type -> cxz.runtime.Receipt
+	112, // [112:185] is the sub-list for method output_type
+	39,  // [39:112] is the sub-list for method input_type
 	39,  // [39:39] is the sub-list for extension type_name
 	39,  // [39:39] is the sub-list for extension extendee
 	0,   // [0:39] is the sub-list for field type_name

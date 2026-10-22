@@ -66,5 +66,9 @@ test("resource navigation shares catalog subscriptions instead of opening a list
     sessionList: 1,
     sessionWatch: 1,
   });
-  expect(requests).toEqual(Array.from({ length: 4 }, () => [{ listed: true }]));
+  // Sessions ask for their listed half; projects have no halves to ask about,
+  // so their requests carry no filter at all. See cxz#274.
+  const asked = requests.map((f) => JSON.stringify(f ?? null));
+  expect(asked.filter((f) => f === JSON.stringify([{ listed: true }]))).toHaveLength(2);
+  expect(asked.filter((f) => f === "null")).toHaveLength(2);
 });

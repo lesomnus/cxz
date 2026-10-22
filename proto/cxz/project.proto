@@ -21,7 +21,7 @@ message Project {
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
   ProjectStatus status = 16;
-  bool listed = 17 [(orm.field) = {default: "true"}];
+  reserved 17;  // was `bool listed`: a project is registered or erased, nothing in between
   option (orm.message) = {
     rpc: {crud: true}
     indexes: [{name: "page", refs: [{name: "date_created", number: 15}, {name: "id", number: 1}]}]
@@ -29,13 +29,17 @@ message Project {
   option (payday.entity) = {
     domain: 7
     global: {}
-    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "listed"}], size: 50, max: 200}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}], size: 50, max: 200}
     watch: {}
   };
 }
 
+// What cxz knows about a project's container. Facts, and one value derived
+// from them: `container_state` is computed when a read is answered and written
+// down nowhere, so nothing has to remember to update it and nothing can be read
+// later as though it were still true. See docs/plans/project-lifecycle-api.md.
 message ProjectStatus {
-  string state = 1;
+  reserved 1;  // was `string state`: a conclusion, stored
   string container_id = 2;
   string remote_user = 3;
   string remote_workspace = 4;
@@ -43,4 +47,17 @@ message ProjectStatus {
   string provision_step = 6;
   uint64 provision_attempt = 7;
   string error = 8;
+  ContainerState container_state = 9;
+}
+
+// Derived from the container inventory, every time it is asked. A look that
+// failed is not an absence, which is why the two have separate values: the
+// unspecified one means nothing was observed -- Docker could not be asked, or
+// has not been asked yet.
+enum ContainerState {
+  CONTAINER_STATE_UNSPECIFIED = 0;
+  CONTAINER_STATE_ABSENT = 1;
+  CONTAINER_STATE_CREATED = 2;
+  CONTAINER_STATE_RUNNING = 3;
+  CONTAINER_STATE_STOPPED = 4;
 }

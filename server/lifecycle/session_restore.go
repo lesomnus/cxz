@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/lesomnus/cxz/resource"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // Restoring relists the same durable identity. The journal, provider thread,
@@ -22,9 +20,8 @@ func (s SessionServer) Restore(ctx context.Context, ref *resource.SessionRef) (*
 	if err != nil {
 		return nil, err
 	}
-	if !v.GetProject().GetListed() {
-		return nil, status.Error(codes.FailedPrecondition, "restore the project before its sessions")
-	}
+	// There is no archived project to restore first: erasing a project takes
+	// its sessions with it, so a session that is here has a project that is.
 	if v.GetListed() {
 		return v, nil
 	}

@@ -14,14 +14,14 @@ func TestProjectDownRetainsListingAndConversation(t *testing.T) {
 	x := &Projects{S: s}
 	before := proto.Clone(s.projects[0]).(*resource.Project)
 	events := history(t, &Sessions{S: s}, "session-1")
-	p, err := x.Down(t.Context(), resource.ProjectControl_builder{Ref: resource.ProjectRef_builder{Id: before.GetId()}.Build(), ClientId: proto.String("stop")}.Build())
+	p, err := x.StopContainer(t.Context(), resource.ProjectControl_builder{Ref: resource.ProjectRef_builder{Id: before.GetId()}.Build(), ClientId: proto.String("stop")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !p.GetListed() || p.GetStatus().GetState() != "stopped" || string(p.GetId()) != string(before.GetId()) || p.GetAlias() != before.GetAlias() || p.GetName() != before.GetName() {
+	if p.GetStatus().GetContainerState() != resource.ContainerState_CONTAINER_STATE_STOPPED || string(p.GetId()) != string(before.GetId()) || p.GetAlias() != before.GetAlias() || p.GetName() != before.GetName() {
 		t.Fatal("stop changed project identity/listing", p)
 	}
-	if len(s.projects) != 2 || len(s.sessions) != 9 || s.projects[1].GetStatus().GetState() != "running" {
+	if len(s.projects) != 2 || len(s.sessions) != 9 || s.projects[1].GetStatus().GetContainerState() != resource.ContainerState_CONTAINER_STATE_RUNNING {
 		t.Fatal("stop removed records or affected another project")
 	}
 	for _, st := range s.sessions {

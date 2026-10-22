@@ -36,8 +36,8 @@ func terminal(c *xli.Command) bool {
 func newProjectCommand(name string) *xli.Command {
 	path := projectArg("WORKSPACE", true)
 	path.Default = ptr(".")
-	c := &xli.Command{Name: name, Brief: map[string]string{"up": "Prepare project and print result", "new": "Create project session and print result", "down": "Remove owned containers; retain project, sessions, history and volumes", "recreate": "Replace container; writable layer lost, editors disconnect"}[name], Args: arg.Args{path}, Handler: withClient(projectCommand)}
-	if name != "down" {
+	c := &xli.Command{Name: name, Brief: map[string]string{"up": "Prepare project and print result", "new": "Create project session and print result", "remove": "Remove owned containers; retain project, sessions, history and volumes", "recreate": "Replace container; writable layer lost, editors disconnect"}[name], Args: arg.Args{path}, Handler: withClient(projectCommand)}
+	if name != "remove" {
 		config := stringFlag("config", "Devcontainer configuration", "")
 		config.Handler = flg.OnTab[string](func(_ context.Context, t tab.Tab) error { t.Files(""); return nil })
 		c.Flags = flg.Flags{agentFlag(""), stringFlag("model", "Model ID/alias for a new session (persisted on resume)", ""), config, switchFlag("trust-config", "Trust elevated settings and host initialization")}
@@ -140,14 +140,14 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			return workspaceReady(c, p)
 		}
 	}
-	if command == "down" {
+	if command == "remove" {
 		if st, e := os.Stat(path); e == nil && st.IsDir() {
 			path, e = dockerx.EnginePath(path)
 			if e != nil {
 				return e
 			}
 		}
-		r, e := client.Down(ctx, &api.ProjectRequest{Workspace: path, ClientId: core.ID()})
+		r, e := client.RemoveContainer(ctx, &api.ProjectRequest{Workspace: path, ClientId: core.ID()})
 		if e != nil {
 			return e
 		}
@@ -265,10 +265,10 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	s, e := openWithProjectLogin(call, request, terminal(c) && !exitOnError(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
 		return withConfigTrust(ctx, r, interactiveErrors(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
 			if !terminal(c) || exitOnError(c) {
-				return client.Open(ctx, r)
+				return resources.Open(ctx, r)
 			}
 			var session *api.Session
-			err := sessionProgress(ctx, c.ErrWriter, func() error { var err error; session, err = client.Open(ctx, r); return err })
+			err := sessionProgress(ctx, c.ErrWriter, func() error { var err error; session, err = resources.Open(ctx, r); return err })
 			return session, err
 		}, trustPrompt(c))
 	}, func(ctx context.Context, alias, key string) error {
@@ -324,6 +324,46 @@ func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command)
 	return process.Run()
 }
 
+// projectContainerCommands are the container's lifecycle without the project's.
+// They live under `project` because the root `stop` belongs to sessions, and
+// stopping a session is not stopping the thing it runs in.
+func projectContainerCommands() *xli.Command {
+	parent := &xli.Command{Name: "project", Brief: "Stop and start the project container", Handler: onRun(func(_ context.Context, c *xli.Command) error { return c.PrintHelp(c.Writer) })}
+	briefs := map[string]string{
+		"stop":  "Stop owned containers, keeping them so starting is seconds; sessions are stopped, not resumed",
+		"start": "Start the container this project already has, and its runtime; agents stay stopped",
+	}
+	for _, op := range []string{"stop", "start"} {
+		path := projectArg("WORKSPACE", true)
+		path.Default = ptr(".")
+		c := &xli.Command{Name: op, Brief: briefs[op], Args: arg.Args{path}, Handler: withClient(projectContainerCommand)}
+		parent.Commands = append(parent.Commands, c)
+	}
+	return parent
+}
+
+func projectContainerCommand(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+	path := arg.MustGet[string](c, "WORKSPACE")
+	if st, err := os.Stat(path); err == nil && st.IsDir() {
+		var e error
+		if path, e = dockerx.EnginePath(path); e != nil {
+			return e
+		}
+	}
+	r := &api.ProjectRequest{Workspace: path, ClientId: core.ID()}
+	var reply *api.Receipt
+	var err error
+	if c.Name == "stop" {
+		reply, err = client.StopContainer(ctx, r)
+	} else {
+		reply, err = client.StartContainer(ctx, r)
+	}
+	if err != nil {
+		return err
+	}
+	return writeOutput(c, reply)
+}
+
 func projectMetadataCommands() *xli.Command {
 	parent := &xli.Command{Name: "project", Brief: "Register projects and set their display names/aliases", Handler: onRun(func(_ context.Context, c *xli.Command) error { return c.PrintHelp(c.Writer) })}
 	for _, op := range []string{"add", "set"} {
@@ -365,12 +405,15 @@ func projectMetadataCommands() *xli.Command {
 		})}
 		parent.Commands = append(parent.Commands, c)
 	}
-	parent.Commands = append(parent.Commands, projectPurgeCommand())
+	parent.Commands = append(parent.Commands, projectEraseCommand())
 	return parent
 }
 
-func projectPurgeCommand() *xli.Command {
-	return &xli.Command{Name: "purge", Brief: "Permanently delete one project and its owned data; keep workspace sources", Args: arg.Args{projectArg("PROJECT", false)}, Flags: flg.Flags{switchFlag("yes", "Confirm permanent deletion of sessions, history, memory and owned volumes")}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+// `erase` is the name of the call it makes, and the call deletes data. The
+// confirmation is the client's: the ref it sends is a UUID, so there is nothing
+// for the server to resolve and nothing to preview.
+func projectEraseCommand() *xli.Command {
+	return &xli.Command{Name: "erase", Brief: "Permanently delete one project and its owned data; keep workspace sources", Args: arg.Args{projectArg("PROJECT", false)}, Flags: flg.Flags{switchFlag("yes", "Confirm permanent deletion of sessions, history, memory and owned volumes")}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
 		target := arg.MustGet[string](c, "PROJECT")
 		if st, err := os.Stat(target); err == nil && st.IsDir() {
 			var err error
@@ -379,20 +422,19 @@ func projectPurgeCommand() *xli.Command {
 				return err
 			}
 		}
-		confirmed := flg.MustGet[bool](c, "yes")
-		out, err := client.(*resourceclient.Client).RemoveProject(ctx, target, confirmed)
+		resources := client.(*resourceclient.Client)
+		p, err := resources.ResolveProject(ctx, target)
 		if err != nil {
 			return err
 		}
-		p := out.GetProject()
-		if !confirmed {
-			fmt.Fprintf(c.ErrWriter, "Target: %s %s (%s)\n", p.GetRuntimeId(), p.GetWorkspace(), p.GetName())
-			return fmt.Errorf("project purge permanently deletes this project's sessions, history, memory and owned resources; workspace sources and shared accounts are kept; pass --yes to confirm")
+		if !flg.MustGet[bool](c, "yes") {
+			fmt.Fprintf(c.ErrWriter, "Target: %s %s (%s)\n", p.Id, p.Workspace, p.Name)
+			return fmt.Errorf("project erase permanently deletes this project's sessions, history, memory and owned resources; workspace sources and shared accounts are kept; pass --yes to confirm")
 		}
-		if !out.GetRemoved() {
-			return fmt.Errorf("manager did not confirm project removal")
+		if err = resources.EraseProject(ctx, target); err != nil {
+			return err
 		}
-		fmt.Fprintf(c.Writer, "Removed project %s. Workspace sources preserved: %s\n", p.GetRuntimeId(), p.GetWorkspace())
+		fmt.Fprintf(c.Writer, "Erased project %s. Workspace sources preserved: %s\n", p.Id, p.Workspace)
 		return nil
 	})}
 }

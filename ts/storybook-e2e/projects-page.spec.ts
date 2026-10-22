@@ -405,17 +405,10 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
     "Workspace",
     "Configuration",
     "Runtime ID",
-    "Listed",
     "Created",
     "Updated",
     "Deleted",
   ]);
-  await expect(
-    info
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
-      .locator("dd"),
-  ).toHaveText("true");
   await expect(
     info
       .locator("dl > div")
@@ -444,12 +437,6 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
   await page
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
-  await expect(
-    info
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
-      .locator("dd"),
-  ).toHaveText("false");
   await expect(
     info
       .locator("dl > div")

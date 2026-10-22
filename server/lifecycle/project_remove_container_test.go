@@ -22,7 +22,7 @@ func (f *retainedProjectFixture) History(_ context.Context, r *api.WatchRequest)
 	}}, nil
 }
 
-func TestProjectDownUpRetainsSessions(t *testing.T) {
+func TestRemovingAContainerRetainsSessions(t *testing.T) {
 	ctx := context.Background()
 	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
 	if err != nil {
@@ -60,15 +60,18 @@ func TestProjectDownUpRetainsSessions(t *testing.T) {
 	if err != nil || len(history.GetEvents()) != 2 {
 		t.Fatal(history, err)
 	}
-	if _, err := stack.Project().Down(ctx, resource.ProjectControl_builder{Ref: projectRef("project"), ClientId: ptr("down")}.Build()); err != nil || f.downs != 1 {
-		t.Fatal(err, f.downs)
+	if _, err := stack.Project().RemoveContainer(ctx, resource.ProjectControl_builder{Ref: projectRef("project"), ClientId: ptr("remove")}.Build()); err != nil || f.removals != 1 {
+		t.Fatal(err, f.removals)
 	}
-	for _, phase := range []string{"down", "up"} {
+	for _, phase := range []string{"remove", "up"} {
 		if phase == "up" {
-			if _, err := stack.Project().Up(ctx, resource.ProjectUpRequest_builder{Ref: projectRef("project"), ClientId: ptr("up")}.Build()); err != nil {
+			if _, err := stack.Project().CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: projectRef("project"), ClientId: ptr("up")}.Build()); err != nil {
 				t.Fatal(err)
 			}
-			if f.up == nil || !f.up.PrepareOnly || f.up.NewSession || f.resume != nil {
+			// Creating a container cannot create a session -- that is the
+			// point of the split -- so what is checked is that nothing else
+			// did either.
+			if f.up == nil || f.up.NewSession || f.resume != nil {
 				t.Fatal("up must prepare the existing project without creating or resuming a session", f.up, f.resume)
 			}
 		}
@@ -86,7 +89,7 @@ func TestProjectDownUpRetainsSessions(t *testing.T) {
 			t.Fatal(phase, "session disappeared", sessions, err)
 		}
 		gotP, gotS := getProject(), getSession()
-		if !bytes.Equal(gotP.GetId(), p.GetId()) || gotP.GetAlias() != p.GetAlias() || gotP.GetName() != p.GetName() || !gotP.GetListed() {
+		if !bytes.Equal(gotP.GetId(), p.GetId()) || gotP.GetAlias() != p.GetAlias() || gotP.GetName() != p.GetName()  {
 			t.Fatal(phase, "project identity changed", gotP)
 		}
 		if !bytes.Equal(gotS.GetId(), s.GetId()) || gotS.GetRuntimeId() != s.GetRuntimeId() || gotS.GetAlias() != s.GetAlias() || gotS.GetName() != s.GetName() || !gotS.GetListed() || gotS.GetStatus().GetVendorId() != s.GetStatus().GetVendorId() || gotS.GetStatus().GetState() != "stopped" {

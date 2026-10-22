@@ -50,8 +50,7 @@ async function fixture(page, { state = "idle", authFailure = true } = {}) {
     alias: "project",
     name: "Demo project",
     workspace: "/workspace",
-    listed: true,
-    status: { state: "running" },
+    status: { containerState: "CONTAINER_STATE_RUNNING" },
   };
   const account = {
     id: id("account"),

@@ -47,9 +47,6 @@ func (s Service) scope(ctx context.Context, ref *resource.ProjectRef) (*resource
 	if err != nil {
 		return nil, err
 	}
-	if !p.GetListed() {
-		return nil, status.Error(codes.NotFound, "project deleted")
-	}
 	return p, nil
 }
 

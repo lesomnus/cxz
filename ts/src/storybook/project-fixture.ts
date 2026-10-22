@@ -1,7 +1,7 @@
 import { clone, create, isFieldSet } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
-import { ProjectSchema } from "#gen/cxz/project_pb";
+import { ProjectSchema, ContainerState } from "#gen/cxz/project_pb";
 import {
   ProjectService,
   ProjectPatchRequestSchema,
@@ -28,7 +28,6 @@ export function projectFixture(
       runtimeId: `project-${i + 1}`,
       alias: i ? "api" : "web",
       name,
-      listed: !i,
       dateErased: i ? timestampFromDate(new Date(now - 1000)) : undefined,
       workspace: "/host/workspace",
       config: ".devcontainer/devcontainer.json",
@@ -36,7 +35,9 @@ export function projectFixture(
         ? "Backend services and API contracts"
         : "Frontend and design system",
       status: {
-        state: stopped ? "stopped" : "running",
+        containerState: stopped
+          ? ContainerState.STOPPED
+          : ContainerState.RUNNING,
         remoteWorkspace: "/workspace",
         remoteUser: "developer",
         containerId: `container-${i + 1}`,
@@ -130,7 +131,7 @@ export function projectFixture(
       },
     });
     router.service(ProjectService, {
-      down: (request, context) => {
+      stopContainer: (request, context) => {
         const index = projects.findIndex(
           (p) =>
             request.ref?.key.case === "id" &&
@@ -141,7 +142,7 @@ export function projectFixture(
         if (index < 0)
           throw new ConnectError("Project not found", Code.NotFound);
         calls.push({
-          method: "project.down",
+          method: "project.stopContainer",
           project: projects[index]!.runtimeId,
           signal: context.signal,
         });
@@ -151,7 +152,7 @@ export function projectFixture(
             Code.Unavailable,
           );
         const updated = clone(ProjectSchema, projects[index]!);
-        updated.status!.state = "stopped";
+        updated.status!.containerState = ContainerState.STOPPED;
         updated.dateUpdated = timestampFromDate(new Date());
         projects[index] = updated;
         for (let i = 0; i < sessions.length; i++) {
@@ -165,15 +166,18 @@ export function projectFixture(
         publish();
         return updated;
       },
-      remove: (request, context) => {
-        const index = projects.findIndex((p) => p.runtimeId === request.target);
+      erase: (request, context) => {
+        const index = projects.findIndex(
+          (p) =>
+            request.key.case === "id" &&
+            p.id.every((b, i) => b === (request.key.value as Uint8Array)[i]),
+        );
         if (index < 0)
           throw new ConnectError("Project not found", Code.NotFound);
         const project = clone(ProjectSchema, projects[index]!);
         calls.push({
-          method: "project.remove",
+          method: "project.erase",
           project: project.runtimeId,
-          confirmed: request.confirmed,
           signal: context.signal,
         });
         if (unavailable)
@@ -181,14 +185,12 @@ export function projectFixture(
             "Project removal is unavailable",
             Code.Unavailable,
           );
-        if (request.confirmed) {
-          projects.splice(index, 1);
-          for (let i = sessions.length - 1; i >= 0; i--)
-            if (sessions[i]!.project?.runtimeId === project.runtimeId)
-              sessions.splice(i, 1);
-          publish();
-        }
-        return { project, removed: request.confirmed };
+        projects.splice(index, 1);
+        for (let i = sessions.length - 1; i >= 0; i--)
+          if (sessions[i]!.project?.runtimeId === project.runtimeId)
+            sessions.splice(i, 1);
+        publish();
+        return { erased: true };
       },
       get: (request) => {
         const project = projects.find((p) =>

@@ -161,10 +161,10 @@ func newRoot(state string) *xli.Command {
 		{Name: "uninstall", Brief: "Remove manager; retain projects and volumes", Handler: onRun(func(ctx context.Context, _ *xli.Command) error { return installer.Uninstall(ctx, stateFrom(ctx)) })},
 		{Name: "serve", Brief: "Run foreground development server", Flags: flg.Flags{stringFlag("agent", "Claude executable (not Account agent selection)", "claude")}, Handler: onRun(serveCommand)},
 	}
-	for _, name := range []string{"up", "new", "recreate", "down"} {
+	for _, name := range []string{"up", "new", "recreate", "remove"} {
 		root.Commands = append(root.Commands, newProjectCommand(name))
 	}
-	root.Commands = append(root.Commands, projectMetadataCommands())
+	root.Commands = append(root.Commands, projectMetadataCommands(), projectContainerCommands())
 	root.Commands = append(root.Commands, devcontainerCommand(), webCommand(), internalWebCommand(), connectionCommand(), conversationCommand())
 	root.Commands = append(root.Commands, pkiInternalCommands()...)
 	root.Commands = append(root.Commands, githubCommands(), gitconfigCommands())

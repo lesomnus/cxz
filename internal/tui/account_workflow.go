@@ -121,7 +121,7 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 				if inProject {
 					return client.Create(ctx, &api.CreateRequest{Workspace: workspace, Agent: provider, Model: model, ClientId: key, Account: alias})
 				}
-				return client.Open(ctx, &api.ProjectRequest{Workspace: projectID, NewSession: true, Agent: provider, Model: model, ClientId: key, Account: alias})
+				return openProject(ctx, client, &api.ProjectRequest{Workspace: projectID, NewSession: true, Agent: provider, Model: model, ClientId: key, Account: alias})
 			}
 			s, err := open()
 			_, loginKey, required := accounts.RequiredProjectLogin(err, alias, key)
