@@ -1,6 +1,6 @@
 # Project 생명주기 API 전환
 
-상태: 구현 중. 들어간 것: 설정 신뢰의 digest 동의, 컨테이너 작업 분리
+상태: 구현 완료, 배포 전. 들어간 것: 설정 신뢰의 digest 동의, 컨테이너 작업 분리
 (`internal/workspace/trust.go`, `container.go`), 파생되는 컨테이너 상태,
 `StopContainer`/`StartContainer`/`RemoveContainer`가 양쪽 API와 CLI·웹까지 연결됐다.
 **표시되는 동사는 RPC 이름과 같다** — 버튼이 Stop이라고 적혀 있으면 `StopContainer`를
@@ -9,8 +9,17 @@
 `listed`도 없어졌다: 프로젝트는 등록돼 있거나 erased이고, 그 사이는 없다. 세션은
 `listed`를 유지한다.
 
-남은 것은 cxz#283과 표식 행 모델이다. 생성은 `pd gen`으로 한다 — `docs/README.md`의
-"Generated code"를 보라.
+남은 것은 두 가지이고, 둘 다 결정을 기다린다.
+
+- **cxz#283** — 자동 업데이트가 웹 게이트웨이와 릴레이를 두고 간다. 배포 전에 필요하다.
+  매니저가 호스트의 설치 루트를 *볼 수는* 있지만(`/home/somnus`가 같은 경로로 붙어
+  있다) 그 경로를 알지 못한다. 세 가지 방법과 trade-off를 이슈에 적어 두었다 — 어느
+  쪽이든 "설치본의 디렉터리에 누가 쓸 수 있는가"를 바꾸므로 결정이 먼저다.
+- **표식 행 모델** — `workspace`와 경로 해시 `runtime_id`가 unique라서 표식 행이 같은
+  워크스페이스의 다음 `Add`와 충돌한다. cxz#237(runtime ID 폐기)과 같은 매듭이다.
+  지금은 행을 제거하므로 "돌아오지 않는다"의 더 강한 형태다.
+
+생성은 `pd gen`으로 한다 — `docs/README.md`의 "Generated code"를 보라.
 
 Project는 DB에 등록된 워크스페이스다. 컨테이너가 존재하거나 실행 중이어야 리소스가
 존재하는 것은 아니다. 리소스의 등록·삭제와 컨테이너의 생성·시작·정지·제거를 분리한다.
