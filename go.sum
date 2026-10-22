@@ -201,8 +201,8 @@ github.com/protobuf-orm/protobuf-orm v0.0.0-20260906212449-04c0cd58f10a h1:EXbJ2
 github.com/protobuf-orm/protobuf-orm v0.0.0-20260906212449-04c0cd58f10a/go.mod h1:OYlbo4/9t+Hgj/XZwdgN8Z9MyViTLPHxBWLUR4+j52o=
 github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260906232518-fa1777a2628d h1:jhCcUTgWGh0Y5nsyxPWsiNTqCURK+pCb7SeS12hiEfk=
 github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260906232518-fa1777a2628d/go.mod h1:ipUeDl8eP1cOYWU0En7ZZ8LHYjWx1kpyH6s76rfrhCY=
-github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260907034345-a9bdc5357d7d h1:gzmW0yfBtNmFc/HtHwXbb8/rJ/bW+UuNt6FTLrs9prk=
-github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260907034345-a9bdc5357d7d/go.mod h1:qj2tHR4lxdJ8Pl81QGG2H8Kvg3K7sCCT0jMoTMPuIfk=
+github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20261022151422-5b2cd8279e07 h1:BPVFjx2ochh2zzYvgTEpJC6+CqBvwz4z/RD/wNsuxqc=
+github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20261022151422-5b2cd8279e07/go.mod h1:qj2tHR4lxdJ8Pl81QGG2H8Kvg3K7sCCT0jMoTMPuIfk=
 github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260906213448-03adaf8cb0fc h1:vH89IDBqdLR6H5LAR1i4qp4FwyFfZo91Hk8knu4ZVfY=
 github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260906213448-03adaf8cb0fc/go.mod h1:4q7UNtqEYxIZ69Uimb9jhDpZKBwEfKVsOQXwwD+T5Oo=
 github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260906213434-46a5916d5339 h1:5n6G91XIVVUoHD+qYXAd9I1gb+XzO0EoJyZjCAjT04E=
