@@ -645,6 +645,8 @@ export const messages = {
   Stopped: "정지됨",
   Unknown: "알 수 없음",
   Running: "실행 중",
+  "Start the project container and its runtime.": "프로젝트 컨테이너와 런타임을 시작합니다.",
+  "Remove the project container, keeping everything else.": "프로젝트 컨테이너를 제거하고 나머지는 유지합니다.",
   Start: "시작",
   "Start project": "프로젝트 시작",
   "Remove container": "컨테이너 제거",

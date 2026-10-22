@@ -21,12 +21,23 @@ type Action = "stop" | "start" | "remove" | "purge";
 // container, starting brings it back, removing throws the container away and
 // keeps everything else, and purging is the one that deletes data.
 // See docs/plans/project-lifecycle-api.md.
+// `description` is the line beside the button; `body` is what the confirmation
+// spells out. They are different lengths on purpose: the row stays scannable
+// and the dialog says what survives.
 const copy: Record<
   Action,
-  { label: string; title: string; confirm: string; body: string; note: string }
+  {
+    label: string;
+    description: string;
+    title: string;
+    confirm: string;
+    body: string;
+    note: string;
+  }
 > = {
   stop: {
     label: t("Stop"),
+    description: t("Stop the project container and its sessions."),
     title: t("Stop project"),
     confirm: t("Stop"),
     body: t(
@@ -36,6 +47,7 @@ const copy: Record<
   },
   start: {
     label: t("Start"),
+    description: t("Start the project container and its runtime."),
     title: t("Start project"),
     confirm: t("Start"),
     body: t(
@@ -45,6 +57,7 @@ const copy: Record<
   },
   remove: {
     label: t("Remove container"),
+    description: t("Remove the project container, keeping everything else."),
     title: t("Remove container"),
     confirm: t("Remove container"),
     body: t(
@@ -54,6 +67,7 @@ const copy: Record<
   },
   purge: {
     label: t("Purge"),
+    description: t("Permanently delete this project and its owned data."),
     title: t("Purge project"),
     confirm: t("Purge permanently"),
     body: t(
@@ -100,7 +114,7 @@ export function ProjectActions({
                 action={action.kind === "start" ? "resume" : action.kind}
               />
             </span>
-            <p>{copy[action.kind].body}</p>
+            <p>{copy[action.kind].description}</p>
             <Button
               type="button"
               className={styles.action}

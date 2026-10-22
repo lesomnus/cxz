@@ -429,3 +429,54 @@ test("project Stop retains the listed sandbox project and conversation records",
     actions.getByRole("button", { name: "Stop", exact: true }),
   ).toBeDisabled();
 });
+
+// The buttons say what they call, and what they call decides which of them is
+// available: Stop while it runs, Start once it is stopped, Remove while there
+// is a container. See docs/plans/project-lifecycle-api.md.
+test("project Stop, Start and Remove container move the container and keep the project", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/projects");
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  const button = (name: string) =>
+    actions.getByRole("button", { name, exact: true });
+  const status = page
+    .getByRole("region", { name: "Environment", exact: true })
+    .locator("dl > div")
+    .filter({ has: page.locator("dt", { hasText: /^Status$/ }) })
+    .locator("dd");
+  const confirm = async (action: string, dialogName: string) => {
+    await button(action).click();
+    const dialog = page.getByRole("dialog", { name: dialogName, exact: true });
+    await dialog.getByRole("button", { name: action, exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+  };
+
+  await expect(button("Stop")).toBeEnabled({ timeout: 45000 });
+  await expect(button("Start")).toBeDisabled();
+  await expect(status).toHaveText("Running");
+
+  await confirm("Stop", "Stop project");
+  await expect(status).toHaveText("Stopped");
+  await expect(button("Stop")).toBeDisabled();
+  await expect(button("Start")).toBeEnabled();
+
+  await confirm("Start", "Start project");
+  await expect(status).toHaveText("Running");
+  await expect(button("Start")).toBeDisabled();
+
+  await confirm("Remove container", "Remove container");
+  await expect(status).toHaveText("No container");
+  await expect(button("Remove container")).toBeDisabled();
+  await expect(button("Start")).toBeDisabled();
+
+  // The project and its sessions are still there; only the container went.
+  await expect(
+    page.getByRole("combobox", { name: "Select project", exact: true }),
+  ).toHaveText("Design playground");
+  await expect(
+    page
+      .getByRole("table", { name: "Sessions", exact: true })
+      .locator("tbody tr"),
+  ).toHaveCount(8);
+});

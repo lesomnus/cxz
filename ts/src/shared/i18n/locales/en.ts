@@ -642,6 +642,8 @@ export const messages = {
   Stopped: "Stopped",
   Unknown: "Unknown",
   Running: "Running",
+  "Start the project container and its runtime.": "Start the project container and its runtime.",
+  "Remove the project container, keeping everything else.": "Remove the project container, keeping everything else.",
   Start: "Start",
   "Start project": "Start project",
   "Remove container": "Remove container",
