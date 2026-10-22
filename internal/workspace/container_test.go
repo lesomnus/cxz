@@ -1,11 +1,13 @@
 package workspace
 
 import (
+	"errors"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/lesomnus/cxz/internal/configtrust"
+	"github.com/lesomnus/cxz/internal/dockerx"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -77,5 +79,40 @@ func TestPreconditionIsNotAFailure(t *testing.T) {
 	s := status.Convert(err)
 	if s.Code() != codes.FailedPrecondition || s.Message() != err.Message {
 		t.Fatal(s.Code(), s.Message())
+	}
+}
+
+func TestContainerStateIsDerivedAndKnowsWhatItDoesNotKnow(t *testing.T) {
+	p := &Project{ID: "project", Workspace: "/workspaces/test", ContainerID: "recorded"}
+	labelled := func(id string, running bool) dockerx.Container {
+		var v dockerx.Container
+		v.ID = id
+		v.State.Running = running
+		v.Config.Labels = map[string]string{"cxz.project": p.ID, "devcontainer.local_folder": p.Workspace}
+		return v
+	}
+	if got := containerState(p, []dockerx.Container{labelled("recorded", true)}, nil); got != "running" {
+		t.Fatal(got)
+	}
+	if got := containerState(p, []dockerx.Container{labelled("recorded", false)}, nil); got != "stopped" {
+		t.Fatal(got)
+	}
+	// The labels answer, not the recorded id: a container made outside cxz's
+	// last operation is still this project's container.
+	if got := containerState(p, []dockerx.Container{labelled("replaced", true)}, nil); got != "running" {
+		t.Fatal(got)
+	}
+	if got := containerState(p, nil, nil); got != "absent" {
+		t.Fatal(got)
+	}
+	// The one that mattered: a look that failed is not an absence. A project
+	// whose container cxz could not see has not lost it.
+	if got := containerState(p, nil, errors.New("docker daemon unreachable")); got != "unknown" {
+		t.Fatalf("a failed look reported as %q", got)
+	}
+	other := labelled("other", true)
+	other.Config.Labels["cxz.project"] = "someone-else"
+	if got := containerState(p, []dockerx.Container{other}, nil); got != "absent" {
+		t.Fatal("adopted another project's container", got)
 	}
 }

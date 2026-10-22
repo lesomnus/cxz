@@ -227,3 +227,32 @@ func (m *Manager) render(ctx context.Context, p *Project) (rendered, error) {
 func (m *Manager) overrideConfig(p *Project) string {
 	return filepath.Join(m.Root, "projects", p.ID, "devcontainer.json")
 }
+
+// containerState is derived from what was collected, every time it is asked,
+// and is written down nowhere. A project resource exists whether or not a
+// container does; what the container is doing is a fact about the container, so
+// it is read from the container.
+//
+// `unknown` is the answer when Docker could not be asked. It used to be
+// `absent`: the look and the absence shared a value, so a daemon hiccup read as
+// "this project has no container" -- and `reconcile` would then clear the
+// recorded container id to match. A conclusion stored in place of what was
+// observed is the same mistake cxz#282 cost an hour of a wrong error on the
+// project page.
+func containerState(p *Project, inventory []dockerx.Container, lookErr error) string {
+	if lookErr != nil {
+		return "unknown"
+	}
+	for _, v := range inventory {
+		// The labels, not the recorded id: the id is what cxz last acted on,
+		// the labels are what the container says it is.
+		if v.Config.Labels["cxz.project"] != p.ID || v.Config.Labels["devcontainer.local_folder"] != p.Workspace {
+			continue
+		}
+		if v.State.Running {
+			return "running"
+		}
+		return "stopped"
+	}
+	return "absent"
+}

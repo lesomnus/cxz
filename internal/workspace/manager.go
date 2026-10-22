@@ -369,34 +369,32 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	if e != nil {
 		return nil, e
 	}
-	inventory, e := dockerx.List(ctx, "label=cxz.owner="+m.Owner)
-	if e != nil {
-		return nil, e
-	}
+	// One look at Docker answers for every project, and whether it answered at
+	// all decides what can be said. A list of registered projects is still a
+	// list when Docker cannot be reached: what is unknown is the containers.
+	inventory, lookErr := dockerx.List(ctx, "label=cxz.owner="+m.Owner)
 	out := &api.ProjectList{}
 	seen := map[string]bool{}
 	for _, p := range all {
-		lock := m.projectLock(p.ID)
-		if lock.TryLock() {
-			latest, err := m.resolve(ctx, p.ID)
-			if err == nil {
-				p = latest
-				err = m.reconcile(ctx, p, inventory)
-			}
-			lock.Unlock()
-			if err != nil {
-				return nil, err
-			}
-		}
-		state := "absent"
-		if v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); e == nil {
-			state = "stopped"
-			if v.State.Running {
-				state = "running"
+		if lookErr == nil {
+			lock := m.projectLock(p.ID)
+			if lock.TryLock() {
+				latest, err := m.resolve(ctx, p.ID)
+				if err == nil {
+					p = latest
+					err = m.reconcile(ctx, p, inventory)
+				}
+				lock.Unlock()
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 		seen[p.ContainerID] = true
-		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, State: state, Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt})
+		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, State: containerState(p, inventory, lookErr), Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt})
+	}
+	if lookErr != nil {
+		return out, nil
 	}
 	foreign, e := dockerx.List(ctx, "label=devcontainer.local_folder")
 	if e != nil {
