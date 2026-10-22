@@ -51,7 +51,7 @@ type Override struct {
 
 // Prepare one immutable snapshot for preflight and provision. This runs before
 // recreation can remove containers; only manager-owned configuration is written.
-func (m *Manager) prepareComposeOverride(ctx context.Context, p *Project) (Override, error) {
+func (m *Manager) prepareComposeOverride(ctx context.Context, p *Project, t *trust) (Override, error) {
 	var out Override
 	spec, err := projectconfig.Load(m.Root)
 	if err != nil || len(spec.Compose) == 0 {
@@ -92,8 +92,8 @@ func (m *Manager) prepareComposeOverride(ctx context.Context, p *Project) (Overr
 		if err != nil {
 			return out, err
 		}
-		if err = CheckTrust(map[string]any{"mounts": image.Mounts}, p.Trusted); err != nil {
-			return out, fmt.Errorf("configuration cxz devcontainer.compose: %w", err)
+		if err = t.saw("configuration cxz devcontainer.compose:", map[string]any{"mounts": image.Mounts}); err != nil {
+			return out, err
 		}
 		digest, err := json.Marshal(image)
 		if err != nil {
@@ -111,8 +111,8 @@ func (m *Manager) prepareComposeOverride(ctx context.Context, p *Project) (Overr
 	if err = json.Unmarshal(b, &override); err != nil {
 		return out, err
 	}
-	if err = CheckTrust(override, p.Trusted); err != nil {
-		return out, fmt.Errorf("configuration cxz devcontainer.compose: %w", err)
+	if err = t.saw("configuration cxz devcontainer.compose:", override); err != nil {
+		return out, err
 	}
 	dir := filepath.Join(m.Root, "projects", p.ID)
 	if err = os.MkdirAll(dir, 0700); err != nil {
@@ -138,8 +138,8 @@ func (m *Manager) prepareComposeOverride(ctx context.Context, p *Project) (Overr
 	if err = json.Unmarshal(merged, &resolved); err != nil {
 		return out, fmt.Errorf("devcontainer.compose preflight: %w", err)
 	}
-	if err = CheckTrust(resolved, p.Trusted); err != nil {
-		return out, fmt.Errorf("configuration merged devcontainer.compose: %w", err)
+	if err = t.saw("configuration merged devcontainer.compose:", resolved); err != nil {
+		return out, err
 	}
 	hash := sha256.Sum256(b)
 	return Override{ComposeFile: path, Digest: hex.EncodeToString(hash[:])}, nil

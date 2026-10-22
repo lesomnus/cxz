@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/goccy/go-yaml"
-	"github.com/lesomnus/cxz/internal/configtrust"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -16,8 +15,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -94,9 +91,8 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	if e = json.Unmarshal(raw, &cfg); e != nil {
 		return e
 	}
-	if e = CheckTrust(cfg, p.Trusted); e != nil {
-		return fmt.Errorf("configuration %q: %w", configFile, e)
-	}
+	// The configuration was recorded and decided on by preflight, which read
+	// this same file before anything was built.
 	base := filepath.Dir(configFile)
 	abspath := func(v any) any {
 		if s, ok := v.(string); ok && !filepath.IsAbs(s) {
@@ -235,9 +231,6 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 			var compose map[string]any
 			if e = yaml.Unmarshal(b, &compose); e != nil {
 				return e
-			}
-			if e = CheckTrust(compose, p.Trusted); e != nil {
-				return fmt.Errorf("configuration %q: %w", file, e)
 			}
 			ss, _ := compose["services"].(map[string]any)
 			for name := range ss {
@@ -460,75 +453,14 @@ func (m *Manager) writeRuntime(ctx context.Context, p *Project, r Runtime) error
 	return dockerx.Input(ctx, bytes.NewReader(b), "run", "--rm", "-i", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "-c", "umask 022; cat > /cxz/state/runtime.next && mv /cxz/state/runtime.next /cxz/state/runtime.json")
 }
 
-// CheckTrust reports JSON Pointer locations, never configuration values.
-// Detection remains conservative (including string markers), not a sandbox.
-func CheckTrust(cfg map[string]any, trusted bool) error {
-	if trusted {
-		return nil
-	}
-	var findings []string
-	add := func(path, reason string) { findings = append(findings, fmt.Sprintf("  - %q: %s", path, reason)) }
-	var walk func(any, string)
-	walk = func(v any, path string) {
-		switch x := v.(type) {
-		case map[string]any:
-			keys := make([]string, 0, len(x))
-			for key := range x {
-				keys = append(keys, key)
-			}
-			sort.Strings(keys)
-			for _, key := range keys {
-				value := x[key]
-				child := path + "/" + strings.ReplaceAll(strings.ReplaceAll(key, "~", "~0"), "/", "~1")
-				switch {
-				case key == "privileged" && value == true:
-					add(child, "privileged container requested")
-				case key == "initializeCommand":
-					add(child, "host-side initialization command configured")
-				case key == "network_mode" && value == "host":
-					add(child, "host network namespace requested")
-				case key == "pid" && value == "host":
-					add(child, "host PID namespace requested")
-				}
-				walk(value, child)
-			}
-		case []any:
-			for i, value := range x {
-				child := path + "/" + strconv.Itoa(i)
-				if flag, ok := value.(string); ok && i+1 < len(x) && x[i+1] == "host" {
-					switch flag {
-					case "--network", "--net":
-						add(child, "host network namespace requested (next array item)")
-					case "--pid":
-						add(child, "host PID namespace requested (next array item)")
-					}
-				}
-				walk(value, child)
-			}
-		case string:
-			for _, rule := range []struct{ marker, reason string }{
-				{"docker.sock", "Docker socket reference detected"},
-				{"--privileged", "privileged container flag detected"},
-				{"--network=host", "host network flag detected"},
-				{"--pid=host", "host PID flag detected"},
-				{"SYS_ADMIN", "SYS_ADMIN capability reference detected"},
-			} {
-				if strings.Contains(x, rule.marker) {
-					add(path, rule.reason)
-				}
-			}
-		}
-	}
-	walk(cfg, "")
-	if len(findings) > 0 {
-		return &configtrust.Required{Findings: findings}
-	}
-	return nil
-}
-
 // Validate all readable configuration before a confirmed recreate removes a
 // container. Open resolves and snapshots fallback templates before this check.
-func preflight(p *Project) error {
+//
+// Every document it reads is recorded in the trust ledger, so the decision
+// about what the configuration asks for is made once, by the caller, against
+// all of it -- and so the digest that decision is remembered under covers the
+// same documents.
+func preflight(p *Project, t *trust) error {
 	file := p.Config
 	if file == "" {
 		configs := Discover(p.Workspace)
@@ -555,8 +487,8 @@ func preflight(p *Project) error {
 	if e = json.Unmarshal(b, &cfg); e != nil {
 		return e
 	}
-	if e = CheckTrust(cfg, p.Trusted); e != nil {
-		return fmt.Errorf("configuration %q: %w", file, e)
+	if e = t.saw(fmt.Sprintf("configuration %q:", file), cfg); e != nil {
+		return e
 	}
 	var files []any
 	switch v := cfg["dockerComposeFile"].(type) {
@@ -581,8 +513,8 @@ func preflight(p *Project) error {
 		if e = yaml.Unmarshal(b, &compose); e != nil {
 			return e
 		}
-		if e = CheckTrust(compose, p.Trusted); e != nil {
-			return fmt.Errorf("configuration %q: %w", name, e)
+		if e = t.saw(fmt.Sprintf("configuration %q:", name), compose); e != nil {
+			return e
 		}
 	}
 	return nil

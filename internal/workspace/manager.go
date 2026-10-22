@@ -29,8 +29,10 @@ import (
 
 type Project struct {
 	ID, Workspace, Name, Config, ContainerID, Network, Volume, Token, RemoteWorkspace, RemoteUser, Error string
-	Trusted                                                                                              bool
-	ComposeOverrideDigest                                                                                string
+	// TrustedConfig is the digest of the rendered configuration a person said
+	// yes to, and ConfigDigest is what the last provision rendered. A boolean
+	// used to stand in for the first of these and never expired. See cxz#274.
+	TrustedConfig, ConfigDigest string
 	Sessions                                                                                             []*api.Session
 	Job                                                                                                  ProvisionJob
 }
@@ -445,9 +447,6 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if latest, err := m.resolve(ctx, p.ID); err == nil {
 		p = latest
 	}
-	if r.TrustConfig {
-		p.Trusted = true
-	}
 	if r.Config != "" {
 		p.Config = r.Config
 	}
@@ -460,11 +459,17 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	}
 	configured := *p
 	configured.Config = configFile
-	if e = preflight(&configured); e != nil {
+	rendered := &trust{}
+	if e = preflight(&configured, rendered); e != nil {
 		return nil, e
 	}
-	override, e := m.prepareComposeOverride(ctx, &configured)
+	override, e := m.prepareComposeOverride(ctx, &configured, rendered)
 	if e != nil {
+		return nil, e
+	}
+	// Everything that will be acted on has been rendered, so this is where the
+	// one question gets asked -- before an image is built or a container made.
+	if e = rendered.decide(p, r.TrustConfig); e != nil {
 		return nil, e
 	}
 	p.Job.Attempt++
@@ -521,10 +526,15 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if r.Recreate && r.Confirmed {
 		p.Network = m.sharedNetwork()
 	}
-	if p.ContainerID != "" && p.ComposeOverrideDigest != override.Digest {
-		return nil, fmt.Errorf("devcontainer.compose changed; run cxz project recreate to apply it to the existing container")
+	// The Dev Container CLI reuses an existing container and ignores a changed
+	// configuration without a word, so noticing is cxz's job. An empty digest
+	// is a project provisioned before this was recorded: adopt what it renders
+	// now rather than calling the unknown a change.
+	digest := rendered.Digest()
+	if p.ContainerID != "" && p.ConfigDigest != "" && p.ConfigDigest != digest {
+		return nil, fmt.Errorf("configuration changed; run cxz project recreate to apply it to the existing container")
 	}
-	p.ComposeOverrideDigest = override.Digest
+	p.ConfigDigest = digest
 	if e = m.save(ctx, p); e != nil {
 		return nil, e
 	}

@@ -44,7 +44,7 @@ func TestComposeOverridePreflightAndMerge(t *testing.T) {
 		}
 	}
 	set(`{"services":{"${DEVCONTAINER_SERVICE}":{"volumes":["/host/workspaces:/workspaces"],"environment":{"USER_OPTION":"kept"}}}}`)
-	out, err := m.prepareComposeOverride(context.Background(), p)
+	out, err := m.prepareComposeOverride(context.Background(), p, &trust{})
 	path := out.ComposeFile
 	if err != nil || len(out.Digest) != 64 {
 		t.Fatal(out, err)
@@ -90,7 +90,7 @@ func TestComposeOverridePreflightAndMerge(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("CXZ_TEST_COMPOSE_VALUE", "manager-value")
-	out, err = m.prepareComposeOverride(context.Background(), p)
+	out, err = m.prepareComposeOverride(context.Background(), p, &trust{})
 	path = out.ComposeFile
 	if err != nil {
 		t.Fatal(err)
@@ -114,22 +114,26 @@ func TestComposeOverridePreflightAndMerge(t *testing.T) {
 		t.Fatalf("include changed paths, commands or interpolation: %s", data)
 	}
 	set(`{"services":{"${DEVCONTAINER_SERVICE}":{"privileged":true}}}`)
-	if _, err = m.prepareComposeOverride(context.Background(), p); err == nil || !strings.Contains(err.Error(), "requires explicit trust") {
-		t.Fatal("override bypassed trust", err)
+	seen := &trust{}
+	if _, err = m.prepareComposeOverride(context.Background(), p, seen); err != nil {
+		t.Fatal(err)
 	}
-	p.Trusted = true
-	if _, err = m.prepareComposeOverride(context.Background(), p); err != nil {
-		t.Fatal("trusted override rejected", err)
+	// The override is rendered and recorded; refusing is the caller's decision.
+	if e := seen.decide(p, false); e == nil || !strings.Contains(e.Error(), "requires explicit trust") {
+		t.Fatal("override bypassed trust", e)
+	}
+	if e := seen.decide(p, true); e != nil {
+		t.Fatal("trusted override rejected", e)
 	}
 	set(`{"services":{"${DEVCONTAINER_SERVICE}":{"not_a_compose_option":true}}}`)
-	if _, err = m.prepareComposeOverride(context.Background(), p); err == nil {
+	if _, err = m.prepareComposeOverride(context.Background(), p, &trust{}); err == nil {
 		t.Fatal("invalid Compose accepted before recreate")
 	}
 	// An image devcontainer runs no Compose, so the same intent is translated
 	// rather than refused: the override reaches every project or it is a lie.
 	write("devcontainer.json", `{"image":"alpine"}`)
 	set(`{"services":{"${DEVCONTAINER_SERVICE}":{"volumes":["/host/src:/workspaces:ro"],"environment":["TRANSLATED=yes"]}}}`)
-	out, err = m.prepareComposeOverride(context.Background(), p)
+	out, err = m.prepareComposeOverride(context.Background(), p, &trust{})
 	if err != nil || out.ComposeFile != "" || len(out.Digest) != 64 {
 		t.Fatal("image devcontainer did not get a translated override", out, err)
 	}
@@ -141,18 +145,18 @@ func TestComposeOverridePreflightAndMerge(t *testing.T) {
 	}
 	// What has no image equivalent is named, never dropped.
 	set(`{"services":{"${DEVCONTAINER_SERVICE}":{"privileged":true}}}`)
-	if _, err = m.prepareComposeOverride(context.Background(), p); err == nil || !strings.Contains(err.Error(), "only volumes and environment translate") {
+	if _, err = m.prepareComposeOverride(context.Background(), p, &trust{}); err == nil || !strings.Contains(err.Error(), "only volumes and environment translate") {
 		t.Fatal("unsupported key silently dropped", err)
 	}
 	set(`{"services":{"${DEVCONTAINER_SERVICE}":{"volumes":["/a:/b"]},"sidecar":{"image":"redis"}}}`)
-	if _, err = m.prepareComposeOverride(context.Background(), p); err == nil || !strings.Contains(err.Error(), "sidecars need a Compose devcontainer") {
+	if _, err = m.prepareComposeOverride(context.Background(), p, &trust{}); err == nil || !strings.Contains(err.Error(), "sidecars need a Compose devcontainer") {
 		t.Fatal("sidecar silently dropped", err)
 	}
 	set(`{"services":{"${DEVCONTAINER_SERVICE}":{"volumes":["/host/workspaces:/workspaces"]}}}`)
 	if err := projectconfig.Save(m.Root, projectconfig.Spec{}); err != nil {
 		t.Fatal(err)
 	}
-	out, err = m.prepareComposeOverride(context.Background(), p)
+	out, err = m.prepareComposeOverride(context.Background(), p, &trust{})
 	if err != nil || out.ComposeFile != "" || out.Digest != "" || !out.Image.Empty() {
 		t.Fatal("stale override still used", out, err)
 	}

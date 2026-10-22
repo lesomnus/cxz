@@ -12,7 +12,7 @@ func TestMissingDevcontainerUsesManagedDefault(t *testing.T) {
 	workspace := t.TempDir()
 	m := &Manager{Root: t.TempDir()}
 	p := &Project{ID: "test", Name: "test", Workspace: workspace}
-	if err := preflight(p); err != nil {
+	if err := preflight(p, &trust{}); err != nil {
 		t.Fatal(err)
 	}
 	file, err := m.provisionConfiguration(p)
@@ -52,7 +52,7 @@ func TestMissingDevcontainerUsesManagedDefault(t *testing.T) {
 		t.Fatal("new real configuration not discovered", got, err)
 	}
 	p.Config = "missing-custom.json"
-	if err := preflight(p); err == nil {
+	if err := preflight(p, &trust{}); err == nil {
 		t.Fatal("explicit missing config silently ignored")
 	}
 }

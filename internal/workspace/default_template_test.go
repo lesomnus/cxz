@@ -102,7 +102,7 @@ func TestManagedTemplatePrecedenceAndImmutableSnapshots(t *testing.T) {
 		t.Fatal("explicit config not preferred", got, err)
 	}
 	p.Config = updated
-	if err := preflight(p); err != nil {
+	if err := preflight(p, &trust{}); err != nil {
 		t.Fatal(err)
 	}
 	template.Files["devcontainer.json"] = projectconfig.TemplateFile{Data: []byte(`{"image":"alpine","privileged":true}`)}
@@ -115,7 +115,11 @@ func TestManagedTemplatePrecedenceAndImmutableSnapshots(t *testing.T) {
 	}
 	configured := *p
 	configured.Config = dangerous
-	if err := preflight(&configured); err == nil {
+	seen := &trust{}
+	if err := preflight(&configured, seen); err != nil {
+		t.Fatal(err)
+	}
+	if seen.decide(&configured, false) == nil {
 		t.Fatal("template bypassed trust preflight")
 	}
 }
@@ -142,7 +146,7 @@ func TestDefaultComposeTemplateWithHostOverride(t *testing.T) {
 	}
 	configured := *p
 	configured.Config = file
-	if err := preflight(&configured); err != nil {
+	if err := preflight(&configured, &trust{}); err != nil {
 		t.Fatal(err)
 	}
 	// A Compose template mounts the workspace itself, so the materialized file
@@ -155,7 +159,7 @@ func TestDefaultComposeTemplateWithHostOverride(t *testing.T) {
 	if !strings.Contains(string(compose), p.Workspace+":/workspace") {
 		t.Fatal("workspace variable not substituted into the Compose file", string(compose))
 	}
-	override, err := m.prepareComposeOverride(context.Background(), &configured)
+	override, err := m.prepareComposeOverride(context.Background(), &configured, &trust{})
 	if err != nil || override.ComposeFile == "" || len(override.Digest) != 64 {
 		t.Fatal(override, err)
 	}
