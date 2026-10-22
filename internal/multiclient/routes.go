@@ -254,6 +254,28 @@ func (c *Client) Down(ctx context.Context, in *api.ProjectRequest, opts ...grpc.
 	return reply, err
 }
 
+func (c *Client) StopContainer(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	return c.containerOp(ctx, in, api.SessionsClient.StopContainer, opts...)
+}
+
+func (c *Client) StartContainer(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	return c.containerOp(ctx, in, api.SessionsClient.StartContainer, opts...)
+}
+
+func (c *Client) containerOp(ctx context.Context, in *api.ProjectRequest, call func(api.SessionsClient, context.Context, *api.ProjectRequest, ...grpc.CallOption) (*api.Receipt, error), opts ...grpc.CallOption) (*api.Receipt, error) {
+	_, id, client, err := c.route(ctx, in.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	request := proto.Clone(in).(*api.ProjectRequest)
+	request.Workspace = id
+	reply, err := call(client, ctx, request, opts...)
+	if err == nil {
+		c.refreshSource(ctx, in.Workspace)
+	}
+	return reply, err
+}
+
 func (c *Client) CopyMemory(ctx context.Context, in *api.CopyMemoryRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
 	name, id, client, err := c.route(ctx, in.SessionId)
 	if err != nil {

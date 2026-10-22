@@ -48,6 +48,11 @@ service Sessions {
   rpc Open(ProjectRequest) returns (Session);
   rpc Projects(Empty) returns (ProjectList);
   rpc Down(ProjectRequest) returns (Receipt);
+  // Stop leaves the container in place and Start brings it back, which Down and
+  // Open cannot express: Down removes the container, so returning costs a whole
+  // provision. See docs/plans/project-lifecycle-api.md.
+  rpc StopContainer(ProjectRequest) returns (Receipt);
+  rpc StartContainer(ProjectRequest) returns (Receipt);
   // Aux is a model task attached to a session: run once, with the context cxz
   // assembles, never accumulating into a conversation. Summary, suggestion and
   // title are its kinds. See docs/plans/aux-api.md.

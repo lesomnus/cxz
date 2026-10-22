@@ -53,6 +53,17 @@ func (f *fixture) SetSessionTitle(_ context.Context, id, title string) (string, 
 	return title, nil
 }
 
+// StopContainer and StartContainer move the container the way the manager does:
+// the project record is untouched and only what the next look sees changes.
+func (f *fixture) StopContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	f.p.State = "stopped"
+	return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
+}
+func (f *fixture) StartContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	f.p.State = "running"
+	return &api.Receipt{ClientId: r.ClientId, Status: "started"}, nil
+}
+
 // Projects is the container inventory a read observes, counted so a test can
 // see how often it was asked.
 func (f *fixture) Projects(context.Context, *api.Empty) (*api.ProjectList, error) {

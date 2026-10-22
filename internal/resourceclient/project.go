@@ -152,6 +152,31 @@ func (c *Client) Down(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 	return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
 }
 
+// StopContainer and StartContainer resolve the same way Down does, without
+// registering a resource as a side effect of stopping or starting one.
+func (c *Client) StopContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	return c.container(ctx, r, c.projects.StopContainer, "stopped", opts...)
+}
+
+func (c *Client) StartContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	return c.container(ctx, r, c.projects.StartContainer, "started", opts...)
+}
+
+func (c *Client) container(ctx context.Context, r *api.ProjectRequest, call func(context.Context, *resource.ProjectControl, ...grpc.CallOption) (*resource.Project, error), status string, opts ...grpc.CallOption) (*api.Receipt, error) {
+	ps, err := c.Projects(ctx, &api.Empty{}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	p, err := projectref.Resolve(ps.Projects, r.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = call(ctx, resource.ProjectControl_builder{Ref: pr(p.Id), ClientId: &r.ClientId}.Build(), opts...); err != nil {
+		return nil, err
+	}
+	return &api.Receipt{ClientId: r.ClientId, Status: status}, nil
+}
+
 func (c *Client) RemoveProject(ctx context.Context, target string, confirmed bool) (*resource.ProjectRemoveReply, error) {
 	return c.projects.Remove(ctx, resource.ProjectRemoveRequest_builder{Target: &target, Confirmed: &confirmed}.Build())
 }

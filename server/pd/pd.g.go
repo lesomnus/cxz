@@ -4159,6 +4159,16 @@ func (s interceptProject) Down(ctx context.Context, req *resource.ProjectControl
 		resource.ProjectService_Down_FullMethodName, req, s.ProjectServiceServer.Down)
 }
 
+func (s interceptProject) StopContainer(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_StopContainer_FullMethodName, req, s.ProjectServiceServer.StopContainer)
+}
+
+func (s interceptProject) StartContainer(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_StartContainer_FullMethodName, req, s.ProjectServiceServer.StartContainer)
+}
+
 func (s interceptProject) Recreate(ctx context.Context, req *resource.ProjectRecreateRequest) (*resource.Project, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_Recreate_FullMethodName, req, s.ProjectServiceServer.Recreate)
@@ -5904,6 +5914,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().Down(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_StopContainer_FullMethodName:
+		v := &resource.ProjectControl{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().StopContainer(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.ProjectService_StartContainer_FullMethodName:
+		v := &resource.ProjectControl{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Project().StartContainer(ctx, v)
 		if err != nil {
 			return nil, err
 		}

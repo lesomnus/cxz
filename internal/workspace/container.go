@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -37,7 +38,7 @@ func (e *Precondition) GRPCStatus() *status.Status {
 // StopContainer leaves the container where it is. The agents are asked to exit
 // first, so a session that comes back is a session that stopped rather than one
 // that was killed.
-func (m *Manager) StopContainer(ctx context.Context, p *Project) (retErr error) {
+func (m *Manager) stopContainer(ctx context.Context, p *Project) (retErr error) {
 	defer m.recordFailure(ctx, p, &retErr)
 	m.quiesce(ctx, p)
 	containers, err := m.owned(ctx, p)
@@ -66,7 +67,7 @@ func (m *Manager) StopContainer(ctx context.Context, p *Project) (retErr error) 
 // than applied, because it cannot be applied -- the Dev Container CLI reuses
 // the container it finds and ignores the difference without a word. Applying it
 // means replacing the container, which is the caller's decision to make.
-func (m *Manager) StartContainer(ctx context.Context, p *Project) (retErr error) {
+func (m *Manager) startContainer(ctx context.Context, p *Project) (retErr error) {
 	defer m.recordFailure(ctx, p, &retErr)
 	containers, err := m.owned(ctx, p)
 	if err != nil {
@@ -103,7 +104,7 @@ func (m *Manager) StartContainer(ctx context.Context, p *Project) (retErr error)
 // RemoveContainer throws the containers away and keeps everything else: the
 // registration, the sessions, their conversations, the project's state volume
 // and directory. What it removes is what a recreate would have removed anyway.
-func (m *Manager) RemoveContainer(ctx context.Context, p *Project) (retErr error) {
+func (m *Manager) removeContainer(ctx context.Context, p *Project) (retErr error) {
 	defer m.recordFailure(ctx, p, &retErr)
 	m.quiesce(ctx, p)
 	containers, err := m.owned(ctx, p)
@@ -255,4 +256,34 @@ func containerState(p *Project, inventory []dockerx.Container, lookErr error) st
 		return "stopped"
 	}
 	return "absent"
+}
+
+// The runtime API entry points. They resolve the project, take its lock and
+// answer with a receipt, the way Open and Down do -- the operations above are
+// what they run once the project is settled.
+
+func (m *Manager) StopContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	return m.containerOp(ctx, r, (*Manager).stopContainer, "stopped")
+}
+
+func (m *Manager) StartContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	return m.containerOp(ctx, r, (*Manager).startContainer, "started")
+}
+
+func (m *Manager) containerOp(ctx context.Context, r *api.ProjectRequest, op func(*Manager, context.Context, *Project) error, status string) (*api.Receipt, error) {
+	p, err := m.resolve(ctx, r.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	lock := m.projectLock(p.ID)
+	lock.Lock()
+	defer lock.Unlock()
+	// Under the lock, because the project may have moved while it was waiting.
+	if p, err = m.resolve(ctx, p.ID); err != nil {
+		return nil, err
+	}
+	if err = op(m, ctx, p); err != nil {
+		return nil, err
+	}
+	return &api.Receipt{ClientId: r.ClientId, Status: status}, nil
 }

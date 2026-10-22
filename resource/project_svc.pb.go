@@ -12298,7 +12298,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x14MCP_KIND_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eMCP_KIND_STDIO\x10\x01\x12\x11\n" +
 	"\rMCP_KIND_HTTP\x10\x02\x12\x14\n" +
-	"\x10MCP_KIND_BUILTIN\x10\x032\x86\x1b\n" +
+	"\x10MCP_KIND_BUILTIN\x10\x032\xef\x1b\n" +
 	"\x0eProjectService\x12+\n" +
 	"\x03Add\x12\x16.cxz.ProjectAddRequest\x1a\f.cxz.Project\x12+\n" +
 	"\x03Get\x12\x16.cxz.ProjectGetRequest\x1a\f.cxz.Project\x12/\n" +
@@ -12355,7 +12355,9 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x0eSyncMcpServers\x12\x1a.cxz.SyncMcpServersRequest\x1a\x18.cxz.SyncMcpServersReply\x12@\n" +
 	"\fFileMappings\x12\x18.cxz.FileMappingsRequest\x1a\x16.cxz.FileMappingsReply\x12)\n" +
 	"\x02Up\x12\x15.cxz.ProjectUpRequest\x1a\f.cxz.Project\x12)\n" +
-	"\x04Down\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x125\n" +
+	"\x04Down\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x122\n" +
+	"\rStopContainer\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x123\n" +
+	"\x0eStartContainer\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x125\n" +
 	"\bRecreate\x12\x1b.cxz.ProjectRecreateRequest\x1a\f.cxz.Project\x12I\n" +
 	"\x0eInspectForeign\x12\x1a.cxz.InspectForeignRequest\x1a\x1b.cxz.InspectForeignResponseB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
@@ -12585,65 +12587,69 @@ var file_cxz_project_svc_g_proto_depIdxs = []int32{
 	87,  // 114: cxz.ProjectService.FileMappings:input_type -> cxz.FileMappingsRequest
 	89,  // 115: cxz.ProjectService.Up:input_type -> cxz.ProjectUpRequest
 	90,  // 116: cxz.ProjectService.Down:input_type -> cxz.ProjectControl
-	91,  // 117: cxz.ProjectService.Recreate:input_type -> cxz.ProjectRecreateRequest
-	92,  // 118: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
-	102, // 119: cxz.ProjectService.Add:output_type -> cxz.Project
-	102, // 120: cxz.ProjectService.Get:output_type -> cxz.Project
-	102, // 121: cxz.ProjectService.Patch:output_type -> cxz.Project
-	102, // 122: cxz.ProjectService.Apply:output_type -> cxz.Project
-	9,   // 123: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
-	11,  // 124: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
-	14,  // 125: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
-	17,  // 126: cxz.ProjectService.Remove:output_type -> cxz.ProjectRemoveReply
-	19,  // 127: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
-	21,  // 128: cxz.ProjectService.AuxiliaryLogin:output_type -> cxz.ProjectLoginOutput
-	21,  // 129: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
-	23,  // 130: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
-	26,  // 131: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
-	28,  // 132: cxz.ProjectService.Editor:output_type -> cxz.ProjectEditorReply
-	30,  // 133: cxz.ProjectService.EditorTunnel:output_type -> cxz.ProjectEditorTunnelReply
-	32,  // 134: cxz.ProjectService.Devcontainer:output_type -> cxz.DevcontainerReply
-	34,  // 135: cxz.ProjectService.RenderDevcontainer:output_type -> cxz.RenderDevcontainerReply
-	37,  // 136: cxz.ProjectService.SaveEngine:output_type -> cxz.EngineReply
-	37,  // 137: cxz.ProjectService.StartEngine:output_type -> cxz.EngineReply
-	37,  // 138: cxz.ProjectService.StopEngine:output_type -> cxz.EngineReply
-	37,  // 139: cxz.ProjectService.PruneEngine:output_type -> cxz.EngineReply
-	37,  // 140: cxz.ProjectService.EngineStatus:output_type -> cxz.EngineReply
-	41,  // 141: cxz.ProjectService.GetEngineInfo:output_type -> cxz.EngineInfo
-	42,  // 142: cxz.ProjectService.GetInstallationVersion:output_type -> cxz.InstallationVersion
-	44,  // 143: cxz.ProjectService.Diagnostics:output_type -> cxz.DiagnosticsReply
-	44,  // 144: cxz.ProjectService.CaptureDiagnostics:output_type -> cxz.DiagnosticsReply
-	49,  // 145: cxz.ProjectService.AuxConfig:output_type -> cxz.AuxConfigReply
-	49,  // 146: cxz.ProjectService.AuxSetConfig:output_type -> cxz.AuxConfigReply
-	53,  // 147: cxz.ProjectService.AuxModels:output_type -> cxz.AuxModelsReply
-	56,  // 148: cxz.ProjectService.AuxLoginInfo:output_type -> cxz.AuxLoginInfoReply
-	58,  // 149: cxz.ProjectService.MarkHistoryTrimmable:output_type -> cxz.HistoryTrimmableReply
-	60,  // 150: cxz.ProjectService.GetHistoryPolicy:output_type -> cxz.HistoryPolicy
-	60,  // 151: cxz.ProjectService.SetHistoryPolicy:output_type -> cxz.HistoryPolicy
-	62,  // 152: cxz.ProjectService.PutSecretFile:output_type -> cxz.SecretFileReply
-	62,  // 153: cxz.ProjectService.DeleteSecretFile:output_type -> cxz.SecretFileReply
-	65,  // 154: cxz.ProjectService.GetSkills:output_type -> cxz.SkillsReply
-	65,  // 155: cxz.ProjectService.AddSkill:output_type -> cxz.SkillsReply
-	65,  // 156: cxz.ProjectService.RemoveSkill:output_type -> cxz.SkillsReply
-	65,  // 157: cxz.ProjectService.SetSkillDefault:output_type -> cxz.SkillsReply
-	65,  // 158: cxz.ProjectService.SetProjectSkill:output_type -> cxz.SkillsReply
-	65,  // 159: cxz.ProjectService.ClearProjectSkill:output_type -> cxz.SkillsReply
-	72,  // 160: cxz.ProjectService.SyncSkills:output_type -> cxz.SyncSkillsReply
-	74,  // 161: cxz.ProjectService.GetMcpServers:output_type -> cxz.McpServersReply
-	74,  // 162: cxz.ProjectService.PutMcpServer:output_type -> cxz.McpServersReply
-	74,  // 163: cxz.ProjectService.RemoveMcpServer:output_type -> cxz.McpServersReply
-	74,  // 164: cxz.ProjectService.SetMcpServerDefault:output_type -> cxz.McpServersReply
-	74,  // 165: cxz.ProjectService.SetProjectMcpServer:output_type -> cxz.McpServersReply
-	74,  // 166: cxz.ProjectService.ClearProjectMcpServer:output_type -> cxz.McpServersReply
-	83,  // 167: cxz.ProjectService.McpSessions:output_type -> cxz.McpSessionsReply
-	86,  // 168: cxz.ProjectService.SyncMcpServers:output_type -> cxz.SyncMcpServersReply
-	88,  // 169: cxz.ProjectService.FileMappings:output_type -> cxz.FileMappingsReply
-	102, // 170: cxz.ProjectService.Up:output_type -> cxz.Project
-	102, // 171: cxz.ProjectService.Down:output_type -> cxz.Project
-	102, // 172: cxz.ProjectService.Recreate:output_type -> cxz.Project
-	93,  // 173: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
-	119, // [119:174] is the sub-list for method output_type
-	64,  // [64:119] is the sub-list for method input_type
+	90,  // 117: cxz.ProjectService.StopContainer:input_type -> cxz.ProjectControl
+	90,  // 118: cxz.ProjectService.StartContainer:input_type -> cxz.ProjectControl
+	91,  // 119: cxz.ProjectService.Recreate:input_type -> cxz.ProjectRecreateRequest
+	92,  // 120: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
+	102, // 121: cxz.ProjectService.Add:output_type -> cxz.Project
+	102, // 122: cxz.ProjectService.Get:output_type -> cxz.Project
+	102, // 123: cxz.ProjectService.Patch:output_type -> cxz.Project
+	102, // 124: cxz.ProjectService.Apply:output_type -> cxz.Project
+	9,   // 125: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
+	11,  // 126: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
+	14,  // 127: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
+	17,  // 128: cxz.ProjectService.Remove:output_type -> cxz.ProjectRemoveReply
+	19,  // 129: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
+	21,  // 130: cxz.ProjectService.AuxiliaryLogin:output_type -> cxz.ProjectLoginOutput
+	21,  // 131: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
+	23,  // 132: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
+	26,  // 133: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
+	28,  // 134: cxz.ProjectService.Editor:output_type -> cxz.ProjectEditorReply
+	30,  // 135: cxz.ProjectService.EditorTunnel:output_type -> cxz.ProjectEditorTunnelReply
+	32,  // 136: cxz.ProjectService.Devcontainer:output_type -> cxz.DevcontainerReply
+	34,  // 137: cxz.ProjectService.RenderDevcontainer:output_type -> cxz.RenderDevcontainerReply
+	37,  // 138: cxz.ProjectService.SaveEngine:output_type -> cxz.EngineReply
+	37,  // 139: cxz.ProjectService.StartEngine:output_type -> cxz.EngineReply
+	37,  // 140: cxz.ProjectService.StopEngine:output_type -> cxz.EngineReply
+	37,  // 141: cxz.ProjectService.PruneEngine:output_type -> cxz.EngineReply
+	37,  // 142: cxz.ProjectService.EngineStatus:output_type -> cxz.EngineReply
+	41,  // 143: cxz.ProjectService.GetEngineInfo:output_type -> cxz.EngineInfo
+	42,  // 144: cxz.ProjectService.GetInstallationVersion:output_type -> cxz.InstallationVersion
+	44,  // 145: cxz.ProjectService.Diagnostics:output_type -> cxz.DiagnosticsReply
+	44,  // 146: cxz.ProjectService.CaptureDiagnostics:output_type -> cxz.DiagnosticsReply
+	49,  // 147: cxz.ProjectService.AuxConfig:output_type -> cxz.AuxConfigReply
+	49,  // 148: cxz.ProjectService.AuxSetConfig:output_type -> cxz.AuxConfigReply
+	53,  // 149: cxz.ProjectService.AuxModels:output_type -> cxz.AuxModelsReply
+	56,  // 150: cxz.ProjectService.AuxLoginInfo:output_type -> cxz.AuxLoginInfoReply
+	58,  // 151: cxz.ProjectService.MarkHistoryTrimmable:output_type -> cxz.HistoryTrimmableReply
+	60,  // 152: cxz.ProjectService.GetHistoryPolicy:output_type -> cxz.HistoryPolicy
+	60,  // 153: cxz.ProjectService.SetHistoryPolicy:output_type -> cxz.HistoryPolicy
+	62,  // 154: cxz.ProjectService.PutSecretFile:output_type -> cxz.SecretFileReply
+	62,  // 155: cxz.ProjectService.DeleteSecretFile:output_type -> cxz.SecretFileReply
+	65,  // 156: cxz.ProjectService.GetSkills:output_type -> cxz.SkillsReply
+	65,  // 157: cxz.ProjectService.AddSkill:output_type -> cxz.SkillsReply
+	65,  // 158: cxz.ProjectService.RemoveSkill:output_type -> cxz.SkillsReply
+	65,  // 159: cxz.ProjectService.SetSkillDefault:output_type -> cxz.SkillsReply
+	65,  // 160: cxz.ProjectService.SetProjectSkill:output_type -> cxz.SkillsReply
+	65,  // 161: cxz.ProjectService.ClearProjectSkill:output_type -> cxz.SkillsReply
+	72,  // 162: cxz.ProjectService.SyncSkills:output_type -> cxz.SyncSkillsReply
+	74,  // 163: cxz.ProjectService.GetMcpServers:output_type -> cxz.McpServersReply
+	74,  // 164: cxz.ProjectService.PutMcpServer:output_type -> cxz.McpServersReply
+	74,  // 165: cxz.ProjectService.RemoveMcpServer:output_type -> cxz.McpServersReply
+	74,  // 166: cxz.ProjectService.SetMcpServerDefault:output_type -> cxz.McpServersReply
+	74,  // 167: cxz.ProjectService.SetProjectMcpServer:output_type -> cxz.McpServersReply
+	74,  // 168: cxz.ProjectService.ClearProjectMcpServer:output_type -> cxz.McpServersReply
+	83,  // 169: cxz.ProjectService.McpSessions:output_type -> cxz.McpSessionsReply
+	86,  // 170: cxz.ProjectService.SyncMcpServers:output_type -> cxz.SyncMcpServersReply
+	88,  // 171: cxz.ProjectService.FileMappings:output_type -> cxz.FileMappingsReply
+	102, // 172: cxz.ProjectService.Up:output_type -> cxz.Project
+	102, // 173: cxz.ProjectService.Down:output_type -> cxz.Project
+	102, // 174: cxz.ProjectService.StopContainer:output_type -> cxz.Project
+	102, // 175: cxz.ProjectService.StartContainer:output_type -> cxz.Project
+	102, // 176: cxz.ProjectService.Recreate:output_type -> cxz.Project
+	93,  // 177: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
+	121, // [121:178] is the sub-list for method output_type
+	64,  // [64:121] is the sub-list for method input_type
 	64,  // [64:64] is the sub-list for extension type_name
 	64,  // [64:64] is the sub-list for extension extendee
 	0,   // [0:64] is the sub-list for field type_name

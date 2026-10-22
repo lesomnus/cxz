@@ -120,6 +120,12 @@ service ProjectService {
   rpc Up(ProjectUpRequest) returns (Project);
   // Remove owned containers, retaining the resource, workspace and volumes.
   rpc Down(ProjectControl) returns (Project);
+  // Stop leaves the container in place; Start brings it and its runtime back.
+  // Down removes the container, so returning through it costs a whole
+  // provision. Neither creates a container, and neither starts an agent: that
+  // is Session.Resume. See docs/plans/project-lifecycle-api.md.
+  rpc StopContainer(ProjectControl) returns (Project);
+  rpc StartContainer(ProjectControl) returns (Project);
   // Replace only explicitly confirmed targets. Foreign containers are not adopted.
   rpc Recreate(ProjectRecreateRequest) returns (Project);
   // Foreign inventory is not part of the registered Project resource list.

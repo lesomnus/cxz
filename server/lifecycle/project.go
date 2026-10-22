@@ -194,6 +194,36 @@ func (s ProjectServer) up(ctx context.Context, ref *resource.ProjectRef, clientI
 	}
 	return s.Get(ctx, resource.ProjectGetRequest_builder{Ref: ref, Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 }
+
+// StopContainer and StartContainer are the container's lifecycle without the
+// resource's: the project, its sessions and their conversations are untouched,
+// and neither starts an agent -- that is Session.Resume.
+func (s ProjectServer) StopContainer(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+	return s.container(ctx, r, s.shared.runtime.StopContainer)
+}
+
+func (s ProjectServer) StartContainer(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+	return s.container(ctx, r, s.shared.runtime.StartContainer)
+}
+
+func (s ProjectServer) container(ctx context.Context, r *resource.ProjectControl, call func(context.Context, *api.ProjectRequest) (*api.Receipt, error)) (*resource.Project, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	p, err := s.ProjectServiceServer.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if _, err = call(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), ClientId: r.GetClientId()}); err != nil {
+		return nil, err
+	}
+	// The answer is observed, not guessed: the read that follows looks at the
+	// container again rather than reporting what the operation intended.
+	return s.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
+}
+
 func (s ProjectServer) Down(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	s.shared.transition.RLock()
 	defer s.shared.transition.RUnlock()

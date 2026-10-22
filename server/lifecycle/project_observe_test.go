@@ -69,3 +69,58 @@ func TestAReadObservesTheContainerWithinItsWindow(t *testing.T) {
 		t.Fatal("a failed look overwrote what was known", got)
 	}
 }
+
+// Stopping keeps the container and the project; starting brings them back. The
+// project's identity, its sessions and their conversations are not part of
+// either operation -- the resource exists whether or not the container runs.
+func TestStopAndStartKeepTheProject(t *testing.T) {
+	ctx := context.Background()
+	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	f := &fixture{
+		p: &api.Project{Id: "project", Workspace: "/work", Name: "work", State: "running"},
+		s: &api.Session{Id: "session", ProjectId: "project", Workspace: "/work", Agent: "claude", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, State: "idle", RunId: "run"},
+	}
+	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
+	stack, err := Build(ctx, db, f, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	projects, sessions := stack.Project(), stack.Session()
+	before, err := projects.Get(ctx, resource.ProjectGetRequest_builder{Ref: projectRef("project")}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	window := observeWindow
+	observeWindow = 0
+	defer func() { observeWindow = window }()
+
+	stopped, err := projects.StopContainer(ctx, resource.ProjectControl_builder{Ref: projectRef("project")}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := stopped.GetStatus().GetContainerState(); got != resource.ContainerState_CONTAINER_STATE_STOPPED {
+		t.Fatal("stop did not answer with what it left behind", got)
+	}
+	if string(stopped.GetId()) != string(before.GetId()) || stopped.GetAlias() != before.GetAlias() || !stopped.GetListed() {
+		t.Fatal("stop changed the project", stopped)
+	}
+	page, err := sessions.List(ctx, resource.SessionListRequest_builder{}.Build())
+	if err != nil || len(page.GetItems()) != 1 {
+		t.Fatal("stop removed the session record", page, err)
+	}
+
+	started, err := projects.StartContainer(ctx, resource.ProjectControl_builder{Ref: projectRef("project")}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := started.GetStatus().GetContainerState(); got != resource.ContainerState_CONTAINER_STATE_RUNNING {
+		t.Fatal("start did not answer with a running container", got)
+	}
+	if string(started.GetId()) != string(before.GetId()) {
+		t.Fatal("start replaced the project", started)
+	}
+}

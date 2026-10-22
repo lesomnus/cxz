@@ -14,6 +14,21 @@ func (s *Server) Open(ctx context.Context, r *api.ProjectRequest) (*api.Session,
 	}
 	return s.manager.Open(ctx, r)
 }
+
+// StopContainer and StartContainer keep the container between them, which Down
+// and Open cannot: Down removes it. See docs/plans/project-lifecycle-api.md.
+func (s *Server) StopContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	if s.manager == nil {
+		return nil, status.Error(codes.PermissionDenied, "project lifecycle is not available in this runtime")
+	}
+	return s.manager.StopContainer(ctx, r)
+}
+func (s *Server) StartContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	if s.manager == nil {
+		return nil, status.Error(codes.PermissionDenied, "project lifecycle is not available in this runtime")
+	}
+	return s.manager.StartContainer(ctx, r)
+}
 func (s *Server) Projects(ctx context.Context, _ *api.Empty) (*api.ProjectList, error) {
 	if s.manager == nil {
 		return nil, status.Error(codes.PermissionDenied, "project lifecycle is not available in this runtime")

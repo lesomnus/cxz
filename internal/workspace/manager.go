@@ -502,7 +502,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 		if e = m.checkpoint(ctx, p, "recreate"); e != nil {
 			return nil, e
 		}
-		if e = m.RemoveContainer(ctx, p); e != nil {
+		if e = m.removeContainer(ctx, p); e != nil {
 			return nil, e
 		}
 		p.ContainerID = ""
@@ -643,7 +643,7 @@ func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {
 	if e != nil {
 		return e
 	}
-	return m.RemoveContainer(ctx, p)
+	return m.removeContainer(ctx, p)
 }
 
 // A session is stopped within stopBudget and the project as a whole within
