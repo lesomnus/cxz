@@ -67,12 +67,7 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 		return nil, err
 	}
 	ref := pr(p.GetRuntimeId())
-	if r.Recreate {
-		p, err = c.projects.Recreate(ctx, resource.ProjectRecreateRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Confirmed: &r.Confirmed, Config: &r.Config}.Build(), opts...)
-	} else {
-		p, err = c.projects.Up(ctx, resource.ProjectUpRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Config: &r.Config}.Build(), opts...)
-	}
-	if err != nil {
+	if p, err = c.create(ctx, ref, r, opts...); err != nil {
 		return nil, err
 	}
 	if r.PrepareOnly {
@@ -150,6 +145,30 @@ func (c *Client) RemoveContainer(ctx context.Context, r *api.ProjectRequest, opt
 		return nil, err
 	}
 	return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
+}
+
+// CreateContainer prepares the container and nothing else. `Open` is the
+// composition on top of it: create, then decide about a session.
+func (c *Client) CreateContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	ps, err := c.Projects(ctx, &api.Empty{}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	p, err := projectref.Resolve(ps.Projects, r.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = c.create(ctx, pr(p.Id), r, opts...); err != nil {
+		return nil, err
+	}
+	return &api.Receipt{ClientId: r.ClientId, Status: "created"}, nil
+}
+
+func (c *Client) create(ctx context.Context, ref *resource.ProjectRef, r *api.ProjectRequest, opts ...grpc.CallOption) (*resource.Project, error) {
+	if r.Recreate {
+		return c.projects.Recreate(ctx, resource.ProjectRecreateRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Confirmed: &r.Confirmed, Config: &r.Config}.Build(), opts...)
+	}
+	return c.projects.Up(ctx, resource.ProjectUpRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Config: &r.Config}.Build(), opts...)
 }
 
 // StopContainer and StartContainer resolve the same way RemoveContainer does, without

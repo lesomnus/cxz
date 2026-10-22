@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -226,18 +228,34 @@ func (c *Client) Models(ctx context.Context, in *api.ModelsRequest, opts ...grpc
 	return client.Models(ctx, &api.ModelsRequest{SessionId: id, Refresh: in.Refresh, RunId: in.RunId, ClientId: in.ClientId}, opts...)
 }
 
+// projectOpener is the client-side composition: create the container, then
+// decide about a session. It is not an RPC -- the manager's half is
+// CreateContainer and the session half is Session.Add/Resume -- so it is asked
+// for by shape rather than found on api.SessionsClient.
+type projectOpener interface {
+	Open(context.Context, *api.ProjectRequest, ...grpc.CallOption) (*api.Session, error)
+}
+
 func (c *Client) Open(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Session, error) {
 	name, id, client, err := c.route(ctx, in.Workspace)
 	if err != nil {
 		return nil, err
 	}
+	opener, ok := client.(projectOpener)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "this endpoint cannot open projects; update cxz")
+	}
 	request := proto.Clone(in).(*api.ProjectRequest)
 	request.Workspace = id
-	reply, err := client.Open(ctx, request, opts...)
+	reply, err := opener.Open(ctx, request, opts...)
 	if err == nil {
 		c.refreshSource(ctx, in.Workspace)
 	}
 	return decorateSession(name, reply), err
+}
+
+func (c *Client) CreateContainer(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+	return c.containerOp(ctx, in, api.SessionsClient.CreateContainer, opts...)
 }
 
 func (c *Client) RemoveContainer(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {

@@ -407,7 +407,7 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	}
 	return out, nil
 }
-func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.Session, retErr error) {
+func (m *Manager) CreateContainer(ctx context.Context, r *api.ProjectRequest) (result *api.Receipt, retErr error) {
 	if err := settings.ValidateModel(r.Model); err != nil {
 		return nil, err
 	}
@@ -550,10 +550,11 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if e = m.checkpoint(ctx, p, "runtime-ready"); e != nil {
 		return nil, e
 	}
-	var list *api.SessionList
+	// Asking for the session list is how readiness is observed: the runtime
+	// answers it only once it is serving. The answer itself is not wanted here.
 	for i := 0; i < 150; i++ {
 		q, cancel := context.WithTimeout(ctx, time.Second)
-		list, e = client.List(q, &api.Empty{})
+		_, e = client.List(q, &api.Empty{})
 		cancel()
 		if e == nil {
 			break
@@ -570,66 +571,18 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if e = m.syncRuntimePreferences(ctx, client, p.ID); e != nil {
 		return nil, e
 	}
-	if r.PrepareOnly {
-		p.Job.State, p.Job.Step = "complete", "ready"
-		p.Job.UpdatedAt = time.Now().UnixMilli()
-		return &api.Session{ProjectId: p.ID, Workspace: p.RemoteWorkspace}, m.save(ctx, p)
-	}
-	var chosen *api.Session
-	if e = m.checkpoint(ctx, p, "session"); e != nil {
-		return nil, e
-	}
-	for _, s := range list.Sessions {
-		if s.Agent != kind || (r.Account != "" && s.Account != r.Account) {
-			continue
-		}
-		if r.NewSession {
-			if r.ClientId != "" && s.CreateId == r.ClientId {
-				chosen = s
-				break
-			}
-			continue
-		}
-		live := s.State == "idle" || s.State == "working" || s.State == "waiting_input" || s.State == "starting"
-		if live {
-			chosen = s
-			break
-		}
-		if !r.NewSession && chosen == nil && s.Agent == kind {
-			chosen = s
-		}
-	}
-	if chosen == nil {
-		clientID := r.ClientId
-		if clientID == "" {
-			clientID = core.ID()
-		}
-		chosen, e = client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Agent: kind, Model: r.Model, ClientId: clientID})
-	} else if chosen.State == "interrupted" || chosen.State == "stopped" || chosen.State == "failed" {
-		if r.Model != "" && r.Model != chosen.Model {
-			return nil, fmt.Errorf("existing session model is immutable; use cxz session new --model after stopping it")
-		}
-		chosen, e = client.Resume(ctx, &api.Control{SessionId: chosen.Id, RunId: chosen.RunId, ClientId: core.ID()})
-	}
-	if chosen != nil && r.Model != "" && chosen.Model != r.Model {
-		return nil, fmt.Errorf("existing session model is immutable; stop it and create a new session")
-	}
-	if e != nil {
-		return nil, e
-	}
-	list, e = client.List(ctx, &api.Empty{})
-	if e != nil {
-		return nil, e
-	}
-	p.Sessions = list.Sessions
-	for _, s := range p.Sessions {
-		s.ProjectId = p.ID
-	}
-	chosen.ProjectId = p.ID
-	p.Job.State = "complete"
-	p.Job.Step = "ready"
+	// The container is up and its runtime answers. Sessions are not this
+	// operation's business: the client decides whether to resume an agent, and
+	// asks Session.Resume when it does. What the session half of this function
+	// used to do lives in `resourceclient.Client.Open`, which every caller
+	// already went through -- it has asked for `PrepareOnly` since the resource
+	// API took over project lifecycle, so the code below it was unreachable.
+	p.Job.State, p.Job.Step = "complete", "ready"
 	p.Job.UpdatedAt = time.Now().UnixMilli()
-	return chosen, m.save(ctx, p)
+	if e = m.save(ctx, p); e != nil {
+		return nil, e
+	}
+	return &api.Receipt{ClientId: r.ClientId, Status: "created"}, nil
 }
 func (m *Manager) RemoveContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
 	return m.containerOp(ctx, r, (*Manager).removeContainer, "removed; project, sessions, history and volumes retained")

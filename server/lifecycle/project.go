@@ -188,7 +188,8 @@ func (s ProjectServer) up(ctx context.Context, ref *resource.ProjectRef, clientI
 	if !p.GetListed() {
 		return nil, status.Error(codes.NotFound, "project deleted")
 	}
-	_, err = s.shared.runtime.Open(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust, Recreate: recreate, Confirmed: confirmed, PrepareOnly: true})
+	// Creating a container is all this asks for; sessions are the caller's.
+	_, err = s.shared.runtime.CreateContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust, Recreate: recreate, Confirmed: confirmed})
 	if err != nil {
 		return nil, err
 	}

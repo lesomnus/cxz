@@ -265,10 +265,10 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	s, e := openWithProjectLogin(call, request, terminal(c) && !exitOnError(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
 		return withConfigTrust(ctx, r, interactiveErrors(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Session, error) {
 			if !terminal(c) || exitOnError(c) {
-				return client.Open(ctx, r)
+				return resources.Open(ctx, r)
 			}
 			var session *api.Session
-			err := sessionProgress(ctx, c.ErrWriter, func() error { var err error; session, err = client.Open(ctx, r); return err })
+			err := sessionProgress(ctx, c.ErrWriter, func() error { var err error; session, err = resources.Open(ctx, r); return err })
 			return session, err
 		}, trustPrompt(c))
 	}, func(ctx context.Context, alias, key string) error {

@@ -83,9 +83,9 @@ func (f *fixture) Resume(_ context.Context, r *api.Control) (*api.Session, error
 	}
 	return f.s, nil
 }
-func (f *fixture) Open(_ context.Context, r *api.ProjectRequest) (*api.Session, error) {
+func (f *fixture) CreateContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
 	f.up = r
-	return f.s, nil
+	return &api.Receipt{ClientId: r.ClientId, Status: "created"}, nil
 }
 
 func TestResourceStack(t *testing.T) {
@@ -115,8 +115,8 @@ func TestResourceStack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if f.up == nil || !f.up.PrepareOnly {
-		t.Fatal("Project.Up must not create a session")
+	if f.up == nil || f.up.NewSession {
+		t.Fatal("Project.Up must ask only for a container")
 	}
 	s, err := stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{ClientId: ptr("create-1")}.Build(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {

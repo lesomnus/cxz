@@ -68,7 +68,10 @@ func TestRemovingAContainerRetainsSessions(t *testing.T) {
 			if _, err := stack.Project().Up(ctx, resource.ProjectUpRequest_builder{Ref: projectRef("project"), ClientId: ptr("up")}.Build()); err != nil {
 				t.Fatal(err)
 			}
-			if f.up == nil || !f.up.PrepareOnly || f.up.NewSession || f.resume != nil {
+			// Creating a container cannot create a session -- that is the
+			// point of the split -- so what is checked is that nothing else
+			// did either.
+			if f.up == nil || f.up.NewSession || f.resume != nil {
 				t.Fatal("up must prepare the existing project without creating or resuming a session", f.up, f.resume)
 			}
 		}

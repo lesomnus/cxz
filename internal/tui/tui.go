@@ -2405,7 +2405,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if e != nil {
 						return result{err: e}
 					}
-					s, e := m.client.Open(ctx, &api.ProjectRequest{Workspace: path, Agent: kind, Model: settings.From(lifetime).Model(kind), NewSession: true, ClientId: core.ID(), Account: account})
+					s, e := openProject(ctx, m.client, &api.ProjectRequest{Workspace: path, Agent: kind, Model: settings.From(lifetime).Model(kind), NewSession: true, ClientId: core.ID(), Account: account})
 					if e != nil {
 						return result{err: e}
 					}
