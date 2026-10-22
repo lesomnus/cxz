@@ -134,7 +134,7 @@ func (c *Client) concurrentOpen(ctx context.Context, project, agent, model, acco
 	}
 	return nil
 }
-func (c *Client) Down(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+func (c *Client) RemoveContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
 	// Resolve without registering a new resource as a side effect of shutdown.
 	ps, err := c.Projects(ctx, &api.Empty{}, opts...)
 	if err != nil {
@@ -145,14 +145,14 @@ func (c *Client) Down(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 		return nil, err
 	}
 	id := p.Id
-	_, err = c.projects.Down(ctx, resource.ProjectControl_builder{Ref: pr(id), ClientId: &r.ClientId}.Build(), opts...)
+	_, err = c.projects.RemoveContainer(ctx, resource.ProjectControl_builder{Ref: pr(id), ClientId: &r.ClientId}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}
 	return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
 }
 
-// StopContainer and StartContainer resolve the same way Down does, without
+// StopContainer and StartContainer resolve the same way RemoveContainer does, without
 // registering a resource as a side effect of stopping or starting one.
 func (c *Client) StopContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
 	return c.container(ctx, r, c.projects.StopContainer, "stopped", opts...)

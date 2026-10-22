@@ -215,7 +215,7 @@ func (s projectStub) List(context.Context, *resource.ProjectListRequest) (*resou
 	}
 	return resource.ProjectListResponse_builder{Items: []*resource.Project{testProject()}}.Build(), nil
 }
-func (s projectStub) Down(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+func (s projectStub) RemoveContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
 	return testProject(), nil
 }
@@ -411,7 +411,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	if answer.RequestId != "42" || !answer.Allow || answer.RunId != "current-run" || answer.AnswersJson != `{"color":"blue"}` {
 		t.Fatal(answer)
 	}
-	run("project", "down", "pn")
+	run("project", "remove", "pn")
 	if (<-stub.requests).(*api.ProjectRequest).Workspace != "project-name" {
 		t.Fatal("wrong project")
 	}
@@ -424,17 +424,19 @@ func TestCommandsReachAPI(t *testing.T) {
 			t.Fatal("project "+op+" did not reach the resolved project", request)
 		}
 	}
+	// The workspace pair keeps its idiom and makes the same call as
+	// `cxz project remove`.
 	got = run("down", "pn")
 	down, ok := (<-stub.requests).(*api.ProjectRequest)
 	if !ok || down.Workspace != "project-name" || down.ClientId == "" {
-		t.Fatal("top-level down must stop the resolved project without deleting it", down)
+		t.Fatal("top-level down must remove the resolved project's container without deleting it", down)
 	}
-	var stopped struct {
+	var removal struct {
 		Project  string `json:"project"`
 		Status   string `json:"status"`
 		Retained string `json:"retained"`
 	}
-	if err := json.Unmarshal([]byte(got.Stdout), &stopped); err != nil || stopped.Project != "project-name" || stopped.Status != "stopped" || !strings.Contains(stopped.Retained, "sessions, conversation history") {
+	if err := json.Unmarshal([]byte(got.Stdout), &removal); err != nil || removal.Project != "project-name" || removal.Status != "removed" || !strings.Contains(removal.Retained, "sessions, conversation history") {
 		t.Fatal("down must report retained sessions and history", got.Stdout, err)
 	}
 	completion := xlitest.Complete(t, newRoot(root), "project up ")

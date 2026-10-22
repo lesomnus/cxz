@@ -210,7 +210,7 @@ func TestAllSentinelIsRecreateOnly(t *testing.T) {
 	root := allProjectsCLI(t, stub)
 	// `session new` never reaches this: it is refused earlier for having no
 	// --account, which is its own message and the right one.
-	for _, command := range [][]string{{"project", "up"}, {"project", "down"}} {
+	for _, command := range [][]string{{"project", "up"}, {"project", "remove"}} {
 		got := xlitest.Run(t, newRoot(root), append(command, allProjects)...)
 		if got.Err == nil || !strings.Contains(got.Err.Error(), "only by cxz project recreate") {
 			t.Fatalf("%v: %v", command, got.Err)

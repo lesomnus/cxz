@@ -7766,7 +7766,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\brevision\x18\x02 \x01(\tR\brevision\x12\x18\n" +
 	"\achannel\x18\x03 \x01(\tR\achannel\x12\x10\n" +
 	"\x03pin\x18\x04 \x01(\tR\x03pin\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error2\x8f'\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error2\x9a'\n" +
 	"\bSessions\x12D\n" +
 	"\fDevcontainer\x12\x1e.cxz.runtime.DevcontainerInput\x1a\x14.cxz.runtime.Receipt\x12D\n" +
 	"\n" +
@@ -7808,10 +7808,10 @@ const file_cxz_proto_rawDesc = "" +
 	"\x06Models\x12\x1a.cxz.runtime.ModelsRequest\x1a\x18.cxz.runtime.ModelsReply\x12@\n" +
 	"\x06Search\x12\x1a.cxz.runtime.SearchRequest\x1a\x18.cxz.runtime.SearchReply0\x01\x129\n" +
 	"\x04Open\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Session\x128\n" +
-	"\bProjects\x12\x12.cxz.runtime.Empty\x1a\x18.cxz.runtime.ProjectList\x129\n" +
-	"\x04Down\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x12B\n" +
+	"\bProjects\x12\x12.cxz.runtime.Empty\x1a\x18.cxz.runtime.ProjectList\x12B\n" +
 	"\rStopContainer\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x12C\n" +
-	"\x0eStartContainer\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x129\n" +
+	"\x0eStartContainer\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x12D\n" +
+	"\x0fRemoveContainer\x12\x1b.cxz.runtime.ProjectRequest\x1a\x14.cxz.runtime.Receipt\x129\n" +
 	"\x06AuxRun\x12\x18.cxz.runtime.AuxRunInput\x1a\x15.cxz.runtime.AuxState\x12?\n" +
 	"\tAuxCancel\x12\x1b.cxz.runtime.AuxCancelInput\x1a\x15.cxz.runtime.AuxState\x12?\n" +
 	"\tAuxStatus\x12\x1b.cxz.runtime.AuxStatusInput\x1a\x15.cxz.runtime.AuxState\x12A\n" +
@@ -8050,9 +8050,9 @@ var file_cxz_proto_depIdxs = []int32{
 	40,  // 71: cxz.runtime.Sessions.Search:input_type -> cxz.runtime.SearchRequest
 	26,  // 72: cxz.runtime.Sessions.Open:input_type -> cxz.runtime.ProjectRequest
 	0,   // 73: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
-	26,  // 74: cxz.runtime.Sessions.Down:input_type -> cxz.runtime.ProjectRequest
-	26,  // 75: cxz.runtime.Sessions.StopContainer:input_type -> cxz.runtime.ProjectRequest
-	26,  // 76: cxz.runtime.Sessions.StartContainer:input_type -> cxz.runtime.ProjectRequest
+	26,  // 74: cxz.runtime.Sessions.StopContainer:input_type -> cxz.runtime.ProjectRequest
+	26,  // 75: cxz.runtime.Sessions.StartContainer:input_type -> cxz.runtime.ProjectRequest
+	26,  // 76: cxz.runtime.Sessions.RemoveContainer:input_type -> cxz.runtime.ProjectRequest
 	53,  // 77: cxz.runtime.Sessions.AuxRun:input_type -> cxz.runtime.AuxRunInput
 	54,  // 78: cxz.runtime.Sessions.AuxCancel:input_type -> cxz.runtime.AuxCancelInput
 	56,  // 79: cxz.runtime.Sessions.AuxStatus:input_type -> cxz.runtime.AuxStatusInput
@@ -8123,9 +8123,9 @@ var file_cxz_proto_depIdxs = []int32{
 	45,  // 144: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
 	4,   // 145: cxz.runtime.Sessions.Open:output_type -> cxz.runtime.Session
 	28,  // 146: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
-	14,  // 147: cxz.runtime.Sessions.Down:output_type -> cxz.runtime.Receipt
-	14,  // 148: cxz.runtime.Sessions.StopContainer:output_type -> cxz.runtime.Receipt
-	14,  // 149: cxz.runtime.Sessions.StartContainer:output_type -> cxz.runtime.Receipt
+	14,  // 147: cxz.runtime.Sessions.StopContainer:output_type -> cxz.runtime.Receipt
+	14,  // 148: cxz.runtime.Sessions.StartContainer:output_type -> cxz.runtime.Receipt
+	14,  // 149: cxz.runtime.Sessions.RemoveContainer:output_type -> cxz.runtime.Receipt
 	57,  // 150: cxz.runtime.Sessions.AuxRun:output_type -> cxz.runtime.AuxState
 	57,  // 151: cxz.runtime.Sessions.AuxCancel:output_type -> cxz.runtime.AuxState
 	57,  // 152: cxz.runtime.Sessions.AuxStatus:output_type -> cxz.runtime.AuxState

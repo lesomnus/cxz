@@ -22,7 +22,7 @@ func (f *retainedProjectFixture) History(_ context.Context, r *api.WatchRequest)
 	}}, nil
 }
 
-func TestProjectDownUpRetainsSessions(t *testing.T) {
+func TestRemovingAContainerRetainsSessions(t *testing.T) {
 	ctx := context.Background()
 	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
 	if err != nil {
@@ -60,10 +60,10 @@ func TestProjectDownUpRetainsSessions(t *testing.T) {
 	if err != nil || len(history.GetEvents()) != 2 {
 		t.Fatal(history, err)
 	}
-	if _, err := stack.Project().Down(ctx, resource.ProjectControl_builder{Ref: projectRef("project"), ClientId: ptr("down")}.Build()); err != nil || f.downs != 1 {
-		t.Fatal(err, f.downs)
+	if _, err := stack.Project().RemoveContainer(ctx, resource.ProjectControl_builder{Ref: projectRef("project"), ClientId: ptr("remove")}.Build()); err != nil || f.removals != 1 {
+		t.Fatal(err, f.removals)
 	}
-	for _, phase := range []string{"down", "up"} {
+	for _, phase := range []string{"remove", "up"} {
 		if phase == "up" {
 			if _, err := stack.Project().Up(ctx, resource.ProjectUpRequest_builder{Ref: projectRef("project"), ClientId: ptr("up")}.Build()); err != nil {
 				t.Fatal(err)

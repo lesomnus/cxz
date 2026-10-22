@@ -36,8 +36,8 @@ func terminal(c *xli.Command) bool {
 func newProjectCommand(name string) *xli.Command {
 	path := projectArg("WORKSPACE", true)
 	path.Default = ptr(".")
-	c := &xli.Command{Name: name, Brief: map[string]string{"up": "Prepare project and print result", "new": "Create project session and print result", "down": "Remove owned containers; retain project, sessions, history and volumes", "recreate": "Replace container; writable layer lost, editors disconnect"}[name], Args: arg.Args{path}, Handler: withClient(projectCommand)}
-	if name != "down" {
+	c := &xli.Command{Name: name, Brief: map[string]string{"up": "Prepare project and print result", "new": "Create project session and print result", "remove": "Remove owned containers; retain project, sessions, history and volumes", "recreate": "Replace container; writable layer lost, editors disconnect"}[name], Args: arg.Args{path}, Handler: withClient(projectCommand)}
+	if name != "remove" {
 		config := stringFlag("config", "Devcontainer configuration", "")
 		config.Handler = flg.OnTab[string](func(_ context.Context, t tab.Tab) error { t.Files(""); return nil })
 		c.Flags = flg.Flags{agentFlag(""), stringFlag("model", "Model ID/alias for a new session (persisted on resume)", ""), config, switchFlag("trust-config", "Trust elevated settings and host initialization")}
@@ -140,14 +140,14 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			return workspaceReady(c, p)
 		}
 	}
-	if command == "down" {
+	if command == "remove" {
 		if st, e := os.Stat(path); e == nil && st.IsDir() {
 			path, e = dockerx.EnginePath(path)
 			if e != nil {
 				return e
 			}
 		}
-		r, e := client.Down(ctx, &api.ProjectRequest{Workspace: path, ClientId: core.ID()})
+		r, e := client.RemoveContainer(ctx, &api.ProjectRequest{Workspace: path, ClientId: core.ID()})
 		if e != nil {
 			return e
 		}

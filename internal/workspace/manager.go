@@ -631,19 +631,8 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	p.Job.UpdatedAt = time.Now().UnixMilli()
 	return chosen, m.save(ctx, p)
 }
-func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {
-	p, e := m.resolve(ctx, r.Workspace)
-	if e != nil {
-		return e
-	}
-	lock := m.projectLock(p.ID)
-	lock.Lock()
-	defer lock.Unlock()
-	p, e = m.resolve(ctx, p.ID)
-	if e != nil {
-		return e
-	}
-	return m.removeContainer(ctx, p)
+func (m *Manager) RemoveContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+	return m.containerOp(ctx, r, (*Manager).removeContainer, "removed; project, sessions, history and volumes retained")
 }
 
 // A session is stopped within stopBudget and the project as a whole within

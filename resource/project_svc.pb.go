@@ -12298,7 +12298,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x14MCP_KIND_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eMCP_KIND_STDIO\x10\x01\x12\x11\n" +
 	"\rMCP_KIND_HTTP\x10\x02\x12\x14\n" +
-	"\x10MCP_KIND_BUILTIN\x10\x032\xef\x1b\n" +
+	"\x10MCP_KIND_BUILTIN\x10\x032\xfa\x1b\n" +
 	"\x0eProjectService\x12+\n" +
 	"\x03Add\x12\x16.cxz.ProjectAddRequest\x1a\f.cxz.Project\x12+\n" +
 	"\x03Get\x12\x16.cxz.ProjectGetRequest\x1a\f.cxz.Project\x12/\n" +
@@ -12354,10 +12354,10 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\vMcpSessions\x12\x17.cxz.McpSessionsRequest\x1a\x15.cxz.McpSessionsReply\x12F\n" +
 	"\x0eSyncMcpServers\x12\x1a.cxz.SyncMcpServersRequest\x1a\x18.cxz.SyncMcpServersReply\x12@\n" +
 	"\fFileMappings\x12\x18.cxz.FileMappingsRequest\x1a\x16.cxz.FileMappingsReply\x12)\n" +
-	"\x02Up\x12\x15.cxz.ProjectUpRequest\x1a\f.cxz.Project\x12)\n" +
-	"\x04Down\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x122\n" +
+	"\x02Up\x12\x15.cxz.ProjectUpRequest\x1a\f.cxz.Project\x122\n" +
 	"\rStopContainer\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x123\n" +
-	"\x0eStartContainer\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x125\n" +
+	"\x0eStartContainer\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x124\n" +
+	"\x0fRemoveContainer\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x125\n" +
 	"\bRecreate\x12\x1b.cxz.ProjectRecreateRequest\x1a\f.cxz.Project\x12I\n" +
 	"\x0eInspectForeign\x12\x1a.cxz.InspectForeignRequest\x1a\x1b.cxz.InspectForeignResponseB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
@@ -12586,9 +12586,9 @@ var file_cxz_project_svc_g_proto_depIdxs = []int32{
 	85,  // 113: cxz.ProjectService.SyncMcpServers:input_type -> cxz.SyncMcpServersRequest
 	87,  // 114: cxz.ProjectService.FileMappings:input_type -> cxz.FileMappingsRequest
 	89,  // 115: cxz.ProjectService.Up:input_type -> cxz.ProjectUpRequest
-	90,  // 116: cxz.ProjectService.Down:input_type -> cxz.ProjectControl
-	90,  // 117: cxz.ProjectService.StopContainer:input_type -> cxz.ProjectControl
-	90,  // 118: cxz.ProjectService.StartContainer:input_type -> cxz.ProjectControl
+	90,  // 116: cxz.ProjectService.StopContainer:input_type -> cxz.ProjectControl
+	90,  // 117: cxz.ProjectService.StartContainer:input_type -> cxz.ProjectControl
+	90,  // 118: cxz.ProjectService.RemoveContainer:input_type -> cxz.ProjectControl
 	91,  // 119: cxz.ProjectService.Recreate:input_type -> cxz.ProjectRecreateRequest
 	92,  // 120: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
 	102, // 121: cxz.ProjectService.Add:output_type -> cxz.Project
@@ -12643,9 +12643,9 @@ var file_cxz_project_svc_g_proto_depIdxs = []int32{
 	86,  // 170: cxz.ProjectService.SyncMcpServers:output_type -> cxz.SyncMcpServersReply
 	88,  // 171: cxz.ProjectService.FileMappings:output_type -> cxz.FileMappingsReply
 	102, // 172: cxz.ProjectService.Up:output_type -> cxz.Project
-	102, // 173: cxz.ProjectService.Down:output_type -> cxz.Project
-	102, // 174: cxz.ProjectService.StopContainer:output_type -> cxz.Project
-	102, // 175: cxz.ProjectService.StartContainer:output_type -> cxz.Project
+	102, // 173: cxz.ProjectService.StopContainer:output_type -> cxz.Project
+	102, // 174: cxz.ProjectService.StartContainer:output_type -> cxz.Project
+	102, // 175: cxz.ProjectService.RemoveContainer:output_type -> cxz.Project
 	102, // 176: cxz.ProjectService.Recreate:output_type -> cxz.Project
 	93,  // 177: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
 	121, // [121:178] is the sub-list for method output_type

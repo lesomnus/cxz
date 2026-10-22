@@ -71,9 +71,9 @@ const (
 	ProjectService_SyncMcpServers_FullMethodName         = "/cxz.ProjectService/SyncMcpServers"
 	ProjectService_FileMappings_FullMethodName           = "/cxz.ProjectService/FileMappings"
 	ProjectService_Up_FullMethodName                     = "/cxz.ProjectService/Up"
-	ProjectService_Down_FullMethodName                   = "/cxz.ProjectService/Down"
 	ProjectService_StopContainer_FullMethodName          = "/cxz.ProjectService/StopContainer"
 	ProjectService_StartContainer_FullMethodName         = "/cxz.ProjectService/StartContainer"
+	ProjectService_RemoveContainer_FullMethodName        = "/cxz.ProjectService/RemoveContainer"
 	ProjectService_Recreate_FullMethodName               = "/cxz.ProjectService/Recreate"
 	ProjectService_InspectForeign_FullMethodName         = "/cxz.ProjectService/InspectForeign"
 )
@@ -219,13 +219,15 @@ type ProjectServiceClient interface {
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(ctx context.Context, in *ProjectUpRequest, opts ...grpc.CallOption) (*Project, error)
 	// Remove owned containers, retaining the resource, workspace and volumes.
-	Down(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error)
-	// Stop leaves the container in place; Start brings it and its runtime back.
-	// Down removes the container, so returning through it costs a whole
-	// provision. Neither creates a container, and neither starts an agent: that
-	// is Session.Resume. See docs/plans/project-lifecycle-api.md.
+	// The container's lifecycle. Stop leaves the container in place and Start
+	// brings it and its runtime back; Remove throws the container away and keeps
+	// the project, its sessions and their conversations. None of them creates a
+	// container, and none starts an agent: that is Session.Resume. The names are
+	// what the CLI and the UI show, so a person reading a button knows which
+	// call it makes. See docs/plans/project-lifecycle-api.md.
 	StopContainer(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error)
 	StartContainer(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error)
+	RemoveContainer(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error)
 	// Replace only explicitly confirmed targets. Foreign containers are not adopted.
 	Recreate(ctx context.Context, in *ProjectRecreateRequest, opts ...grpc.CallOption) (*Project, error)
 	// Foreign inventory is not part of the registered Project resource list.
@@ -799,16 +801,6 @@ func (c *projectServiceClient) Up(ctx context.Context, in *ProjectUpRequest, opt
 	return out, nil
 }
 
-func (c *projectServiceClient) Down(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Project)
-	err := c.cc.Invoke(ctx, ProjectService_Down_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) StopContainer(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Project)
@@ -823,6 +815,16 @@ func (c *projectServiceClient) StartContainer(ctx context.Context, in *ProjectCo
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Project)
 	err := c.cc.Invoke(ctx, ProjectService_StartContainer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) RemoveContainer(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Project)
+	err := c.cc.Invoke(ctx, ProjectService_RemoveContainer_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -990,13 +992,15 @@ type ProjectServiceServer interface {
 	// Provision/start a registered workspace. This never creates a conversation.
 	Up(context.Context, *ProjectUpRequest) (*Project, error)
 	// Remove owned containers, retaining the resource, workspace and volumes.
-	Down(context.Context, *ProjectControl) (*Project, error)
-	// Stop leaves the container in place; Start brings it and its runtime back.
-	// Down removes the container, so returning through it costs a whole
-	// provision. Neither creates a container, and neither starts an agent: that
-	// is Session.Resume. See docs/plans/project-lifecycle-api.md.
+	// The container's lifecycle. Stop leaves the container in place and Start
+	// brings it and its runtime back; Remove throws the container away and keeps
+	// the project, its sessions and their conversations. None of them creates a
+	// container, and none starts an agent: that is Session.Resume. The names are
+	// what the CLI and the UI show, so a person reading a button knows which
+	// call it makes. See docs/plans/project-lifecycle-api.md.
 	StopContainer(context.Context, *ProjectControl) (*Project, error)
 	StartContainer(context.Context, *ProjectControl) (*Project, error)
+	RemoveContainer(context.Context, *ProjectControl) (*Project, error)
 	// Replace only explicitly confirmed targets. Foreign containers are not adopted.
 	Recreate(context.Context, *ProjectRecreateRequest) (*Project, error)
 	// Foreign inventory is not part of the registered Project resource list.
@@ -1167,14 +1171,14 @@ func (UnimplementedProjectServiceServer) FileMappings(context.Context, *FileMapp
 func (UnimplementedProjectServiceServer) Up(context.Context, *ProjectUpRequest) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method Up not implemented")
 }
-func (UnimplementedProjectServiceServer) Down(context.Context, *ProjectControl) (*Project, error) {
-	return nil, status.Error(codes.Unimplemented, "method Down not implemented")
-}
 func (UnimplementedProjectServiceServer) StopContainer(context.Context, *ProjectControl) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method StopContainer not implemented")
 }
 func (UnimplementedProjectServiceServer) StartContainer(context.Context, *ProjectControl) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method StartContainer not implemented")
+}
+func (UnimplementedProjectServiceServer) RemoveContainer(context.Context, *ProjectControl) (*Project, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveContainer not implemented")
 }
 func (UnimplementedProjectServiceServer) Recreate(context.Context, *ProjectRecreateRequest) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method Recreate not implemented")
@@ -2074,24 +2078,6 @@ func _ProjectService_Up_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_Down_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectControl)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).Down(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_Down_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).Down(ctx, req.(*ProjectControl))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_StopContainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ProjectControl)
 	if err := dec(in); err != nil {
@@ -2124,6 +2110,24 @@ func _ProjectService_StartContainer_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).StartContainer(ctx, req.(*ProjectControl))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_RemoveContainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectControl)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).RemoveContainer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_RemoveContainer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).RemoveContainer(ctx, req.(*ProjectControl))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2352,16 +2356,16 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ProjectService_Up_Handler,
 		},
 		{
-			MethodName: "Down",
-			Handler:    _ProjectService_Down_Handler,
-		},
-		{
 			MethodName: "StopContainer",
 			Handler:    _ProjectService_StopContainer_Handler,
 		},
 		{
 			MethodName: "StartContainer",
 			Handler:    _ProjectService_StartContainer_Handler,
+		},
+		{
+			MethodName: "RemoveContainer",
+			Handler:    _ProjectService_RemoveContainer_Handler,
 		},
 		{
 			MethodName: "Recreate",

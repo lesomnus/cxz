@@ -16,14 +16,14 @@ import (
 
 type deletionFixture struct {
 	fixture
-	downErr      error
-	downs, stops int
+	removeErr       error
+	removals, stops int
 }
 
-func (f *deletionFixture) Down(context.Context, *api.ProjectRequest) (*api.Receipt, error) {
-	f.downs++
-	if f.downErr != nil {
-		return nil, f.downErr
+func (f *deletionFixture) RemoveContainer(context.Context, *api.ProjectRequest) (*api.Receipt, error) {
+	f.removals++
+	if f.removeErr != nil {
+		return nil, f.removeErr
 	}
 	f.s.State = "stopped"
 	return &api.Receipt{}, nil
@@ -56,7 +56,7 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 				t.Fatal(err)
 			}
 			if kind == "project-failure" {
-				f.downErr = errors.New("cannot stop owned containers")
+				f.removeErr = errors.New("cannot stop owned containers")
 				if _, err = stack.Project().Erase(ctx, projectRef("project")); err == nil {
 					t.Fatal("ignored cleanup failure")
 				}
@@ -76,8 +76,8 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 					t.Fatal("non-idempotent deletion", err)
 				}
 			} else {
-				if _, err := stack.Project().Erase(ctx, projectRef("project")); err != nil || f.downs != 1 {
-					t.Fatal(err, f.downs)
+				if _, err := stack.Project().Erase(ctx, projectRef("project")); err != nil || f.removals != 1 {
+					t.Fatal(err, f.removals)
 				}
 			}
 			for i := 0; i < 2; i++ {

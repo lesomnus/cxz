@@ -224,7 +224,7 @@ func (s ProjectServer) container(ctx context.Context, r *resource.ProjectControl
 	return s.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 }
 
-func (s ProjectServer) Down(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+func (s ProjectServer) RemoveContainer(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	s.shared.transition.RLock()
 	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
@@ -234,7 +234,7 @@ func (s ProjectServer) Down(ctx context.Context, r *resource.ProjectControl) (*r
 	if err != nil {
 		return nil, err
 	}
-	if _, err = s.shared.runtime.Down(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), ClientId: r.GetClientId()}); err != nil {
+	if _, err = s.shared.runtime.RemoveContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), ClientId: r.GetClientId()}); err != nil {
 		return nil, err
 	}
 	return s.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())

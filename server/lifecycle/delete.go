@@ -78,7 +78,7 @@ func (s ProjectServer) Erase(ctx context.Context, ref *resource.ProjectRef) (*re
 	if err != nil {
 		return nil, err
 	}
-	if _, err = s.shared.runtime.Down(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), ClientId: core.ID()}); err != nil {
+	if _, err = s.shared.runtime.RemoveContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), ClientId: core.ID()}); err != nil {
 		return nil, err
 	}
 	s.shared.mu.Lock()

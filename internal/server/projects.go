@@ -35,11 +35,11 @@ func (s *Server) Projects(ctx context.Context, _ *api.Empty) (*api.ProjectList, 
 	}
 	return s.manager.Projects(ctx)
 }
-func (s *Server) Down(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+func (s *Server) RemoveContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
 	if s.manager == nil {
 		return nil, status.Error(codes.PermissionDenied, "project lifecycle is not available in this runtime")
 	}
-	if e := s.manager.Down(ctx, r); e != nil {
+	if _, e := s.manager.RemoveContainer(ctx, r); e != nil {
 		return nil, e
 	}
 	return &api.Receipt{ClientId: r.ClientId, Status: "stopped; workspace and named volumes retained"}, nil

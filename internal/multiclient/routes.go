@@ -240,14 +240,14 @@ func (c *Client) Open(ctx context.Context, in *api.ProjectRequest, opts ...grpc.
 	return decorateSession(name, reply), err
 }
 
-func (c *Client) Down(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+func (c *Client) RemoveContainer(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
 	_, id, client, err := c.route(ctx, in.Workspace)
 	if err != nil {
 		return nil, err
 	}
 	request := proto.Clone(in).(*api.ProjectRequest)
 	request.Workspace = id
-	reply, err := client.Down(ctx, request, opts...)
+	reply, err := client.RemoveContainer(ctx, request, opts...)
 	if err == nil {
 		c.refreshSource(ctx, in.Workspace)
 	}

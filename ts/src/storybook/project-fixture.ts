@@ -132,7 +132,7 @@ export function projectFixture(
       },
     });
     router.service(ProjectService, {
-      down: (request, context) => {
+      stopContainer: (request, context) => {
         const index = projects.findIndex(
           (p) =>
             request.ref?.key.case === "id" &&
@@ -143,7 +143,7 @@ export function projectFixture(
         if (index < 0)
           throw new ConnectError("Project not found", Code.NotFound);
         calls.push({
-          method: "project.down",
+          method: "project.stopContainer",
           project: projects[index]!.runtimeId,
           signal: context.signal,
         });
