@@ -453,23 +453,14 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	if r.Agent != "" && r.Agent != "claude" && r.Agent != "codex" {
 		return nil, fmt.Errorf("agent must be claude or codex")
 	}
-	configFile, e := m.provisionConfiguration(p)
+	rendered, e := m.render(ctx, p)
 	if e != nil {
 		return nil, e
 	}
-	configured := *p
-	configured.Config = configFile
-	rendered := &trust{}
-	if e = preflight(&configured, rendered); e != nil {
-		return nil, e
-	}
-	override, e := m.prepareComposeOverride(ctx, &configured, rendered)
-	if e != nil {
-		return nil, e
-	}
+	configFile, override := rendered.configFile, rendered.override
 	// Everything that will be acted on has been rendered, so this is where the
 	// one question gets asked -- before an image is built or a container made.
-	if e = rendered.decide(p, r.TrustConfig); e != nil {
+	if e = rendered.trust.decide(p, r.TrustConfig); e != nil {
 		return nil, e
 	}
 	p.Job.Attempt++
@@ -513,7 +504,7 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 		if e = m.checkpoint(ctx, p, "recreate"); e != nil {
 			return nil, e
 		}
-		if e = m.down(ctx, p); e != nil {
+		if e = m.RemoveContainer(ctx, p); e != nil {
 			return nil, e
 		}
 		p.ContainerID = ""
@@ -530,11 +521,10 @@ func (m *Manager) Open(ctx context.Context, r *api.ProjectRequest) (result *api.
 	// configuration without a word, so noticing is cxz's job. An empty digest
 	// is a project provisioned before this was recorded: adopt what it renders
 	// now rather than calling the unknown a change.
-	digest := rendered.Digest()
-	if p.ContainerID != "" && p.ConfigDigest != "" && p.ConfigDigest != digest {
+	if p.ContainerID != "" && p.ConfigDigest != "" && p.ConfigDigest != rendered.trust.Digest() {
 		return nil, fmt.Errorf("configuration changed; run cxz project recreate to apply it to the existing container")
 	}
-	p.ConfigDigest = digest
+	p.ConfigDigest = rendered.trust.Digest()
 	if e = m.save(ctx, p); e != nil {
 		return nil, e
 	}
@@ -655,7 +645,7 @@ func (m *Manager) Down(ctx context.Context, r *api.ProjectRequest) error {
 	if e != nil {
 		return e
 	}
-	return m.down(ctx, p)
+	return m.RemoveContainer(ctx, p)
 }
 
 // A session is stopped within stopBudget and the project as a whole within
@@ -668,34 +658,6 @@ var (
 	stopTotal  = 2 * time.Minute
 )
 
-func (m *Manager) down(ctx context.Context, p *Project) error {
-	// Stop the sessions before removing the containers, so the agents exit
-	// rather than being killed with them. Best effort, as a project that cannot
-	// answer must still be removable.
-	if conn, client, err := m.client(ctx, p); err == nil {
-		defer conn.Close()
-		if err := m.stopSessions(ctx, p, client); err != nil {
-			fmt.Fprintln(os.Stderr, "stopping sessions:", err)
-		}
-	}
-	containers, e := dockerx.List(ctx, "label=cxz.owner="+m.Owner, "label=cxz.project="+p.ID)
-	if e != nil {
-		return e
-	}
-	for _, v := range containers {
-		if _, e = dockerx.Owned(ctx, v.ID, m.Owner, p.ID); e != nil {
-			return e
-		}
-		if _, e = dockerx.Run(ctx, "rm", "-f", v.ID); e != nil {
-			return e
-		}
-	}
-	p.ContainerID = ""
-	p.Error = ""
-	p.Job.State, p.Job.Step = "complete", "down"
-	p.Job.UpdatedAt = time.Now().UnixMilli()
-	return m.save(ctx, p)
-}
 
 // stopSessions stops every live session of the project and refreshes what the
 // manager knows about them. One session that cannot answer costs its own

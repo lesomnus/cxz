@@ -331,40 +331,12 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	if e = m.writeRuntime(ctx, p, runtime); e != nil {
 		return e
 	}
-	cmd := exec.CommandContext(ctx, "devcontainer", "up", "--workspace-folder", p.Workspace, "--config", configFile, "--override-config", configPath, "--id-label", "cxz.owner="+m.Owner, "--id-label", "cxz.project="+p.ID, "--id-label", "devcontainer.local_folder="+p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration")
 	if e = m.checkpoint(ctx, p, "devcontainer-up"); e != nil {
 		return e
 	}
-	cmd.Env = append(os.Environ(), provisionEnv("cxz-"+m.Owner[:12]+"-"+p.ID)...)
-	var stdout bytes.Buffer
-	log, e := os.OpenFile(filepath.Join(m.Root, "projects", p.ID, "provision.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	result, e := m.devcontainerUp(ctx, p, configFile, configPath, false)
 	if e != nil {
 		return e
-	}
-	cmd.Stdout = &stdout
-	cmd.Stderr = log
-	e = cmd.Run()
-	log.Close()
-	if e != nil {
-		return fmt.Errorf("devcontainer up failed: %w%s", e, provisionTail(filepath.Join(m.Root, "projects", p.ID, "provision.log")))
-	}
-	var result struct {
-		ContainerID     string `json:"containerId"`
-		RemoteWorkspace string `json:"remoteWorkspaceFolder"`
-		RemoteUser      string `json:"remoteUser"`
-	}
-	for _, line := range bytes.Split(stdout.Bytes(), []byte("\n")) {
-		var v struct {
-			ContainerID     string `json:"containerId"`
-			RemoteWorkspace string `json:"remoteWorkspaceFolder"`
-			RemoteUser      string `json:"remoteUser"`
-		}
-		if json.Unmarshal(line, &v) == nil && v.ContainerID != "" {
-			result = v
-		}
-	}
-	if result.ContainerID == "" {
-		return fmt.Errorf("devcontainer did not return a container id")
 	}
 	p.ContainerID = result.ContainerID
 	if result.RemoteWorkspace != "" {
@@ -428,13 +400,76 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 			return e
 		}
 	}
-	// The runtime reads binary choices on each Create. Its lifetime is not the
-	// docker exec connection; _boot only starts a detached, independently locked process.
 	if e = m.checkpoint(ctx, p, "runtime-boot"); e != nil {
 		return e
 	}
-	_, e = dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_boot")
-	return e
+	return m.boot(ctx, p)
+}
+
+// upResult is what the Dev Container CLI reports about the container it acted
+// on. The CLI prints one JSON object per phase, so the last one with an id is
+// the answer.
+type upResult struct {
+	ContainerID     string `json:"containerId"`
+	RemoteWorkspace string `json:"remoteWorkspaceFolder"`
+	RemoteUser      string `json:"remoteUser"`
+}
+
+// devcontainerUp runs the Dev Container CLI against this project.
+//
+// `existing` is the whole difference between creating and starting. Without it
+// the CLI creates what is missing and runs the create-time hooks; with it the
+// CLI fails if there is no container, starts the one there is, and runs only
+// the start-time hooks. It keeps that distinction itself -- cxz does not have
+// to remember which hooks have run. Measured in cxz#274.
+func (m *Manager) devcontainerUp(ctx context.Context, p *Project, configFile, configPath string, existing bool) (upResult, error) {
+	var out upResult
+	cmd := exec.CommandContext(ctx, "devcontainer", m.upArgs(p, configFile, configPath, existing)...)
+	cmd.Env = append(os.Environ(), provisionEnv("cxz-"+m.Owner[:12]+"-"+p.ID)...)
+	var stdout bytes.Buffer
+	path := filepath.Join(m.Root, "projects", p.ID, "provision.log")
+	log, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return out, err
+	}
+	cmd.Stdout = &stdout
+	cmd.Stderr = log
+	err = cmd.Run()
+	log.Close()
+	if err != nil {
+		return out, fmt.Errorf("devcontainer up failed: %w%s", err, provisionTail(path))
+	}
+	for _, line := range bytes.Split(stdout.Bytes(), []byte("\n")) {
+		var v upResult
+		if json.Unmarshal(line, &v) == nil && v.ContainerID != "" {
+			out = v
+		}
+	}
+	if out.ContainerID == "" {
+		return out, fmt.Errorf("devcontainer did not return a container id")
+	}
+	return out, nil
+}
+
+// upArgs is how the CLI is asked. `existing` is the only difference between
+// the two paths: it makes the CLI refuse to create and run only the start-time
+// hooks, which is what keeps `StartContainer` from quietly replacing a
+// container or repeating `postCreateCommand`.
+func (m *Manager) upArgs(p *Project, configFile, configPath string, existing bool) []string {
+	args := []string{"up", "--workspace-folder", p.Workspace, "--config", configFile, "--override-config", configPath, "--id-label", "cxz.owner=" + m.Owner, "--id-label", "cxz.project=" + p.ID, "--id-label", "devcontainer.local_folder=" + p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration"}
+	if existing {
+		args = append(args, "--expect-existing-container")
+	}
+	return args
+}
+
+// boot starts the project runtime in a container that is already up. The
+// runtime reads binary choices every time; its lifetime is not this exec, which
+// only starts a detached, independently locked process, so calling it again is
+// how a start converges rather than a second runtime.
+func (m *Manager) boot(ctx context.Context, p *Project) error {
+	_, err := dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_boot")
+	return err
 }
 func (m *Manager) writeRuntime(ctx context.Context, p *Project, r Runtime) error {
 	b, e := json.Marshal(r)
