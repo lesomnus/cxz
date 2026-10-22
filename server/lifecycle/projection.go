@@ -120,9 +120,6 @@ func (s Layer) observeStatus(ctx context.Context, v *api.Project) error {
 	if err != nil {
 		return err
 	}
-	if !old.GetListed() {
-		return nil
-	}
 	state := projectStatus(v)
 	if proto.Equal(old.GetStatus(), state) {
 		return nil
@@ -180,18 +177,15 @@ func (s Layer) saveProject(ctx context.Context, v *api.Project) (*resource.Proje
 		if err != nil {
 			return nil, err
 		}
-		return srv.Add(ctx, resource.ProjectAddRequest_builder{Id: resourceID(7, v.Id), Alias: alias, Name: v.Name, Workspace: v.Workspace, Config: v.Config, RuntimeId: v.Id, Status: state, Listed: ptr(true)}.Build())
+		return srv.Add(ctx, resource.ProjectAddRequest_builder{Id: resourceID(7, v.Id), Alias: alias, Name: v.Name, Workspace: v.Workspace, Config: v.Config, RuntimeId: v.Id, Status: state}.Build())
 	}
 	if err != nil {
 		return nil, err
 	}
-	if !old.GetListed() {
+	if proto.Equal(old.GetStatus(), state) && old.GetConfig() == v.Config {
 		return old, nil
 	}
-	if proto.Equal(old.GetStatus(), state) && old.GetConfig() == v.Config && old.GetListed() {
-		return old, nil
-	}
-	return srv.Patch(ctx, resource.ProjectPatchRequest_builder{Ref: ref, Config: &v.Config, Status: state, Listed: ptr(true), DateUpdatedForce: ptr(true)}.Build())
+	return srv.Patch(ctx, resource.ProjectPatchRequest_builder{Ref: ref, Config: &v.Config, Status: state, DateUpdatedForce: ptr(true)}.Build())
 }
 func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string) (*resource.Session, error) {
 	srv := s.Next().Session()

@@ -22,7 +22,7 @@ func (s ProjectServer) Add(ctx context.Context, r *resource.ProjectAddRequest) (
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
-	if r.HasId() || r.GetRuntimeId() != "" || r.HasStatus() || r.HasDateCreated() || (r.HasListed() && !r.GetListed()) {
+	if r.HasId() || r.GetRuntimeId() != "" || r.HasStatus() || r.HasDateCreated() {
 		return nil, closed()
 	}
 	if r.GetWorkspace() == "" {
@@ -71,12 +71,6 @@ func (s ProjectServer) Add(ctx context.Context, r *resource.ProjectAddRequest) (
 	if err != nil {
 		return nil, err
 	}
-	if !v.GetListed() {
-		v, err = s.Next().Project().Patch(ctx, resource.ProjectPatchRequest_builder{Ref: projectRef(p.Id), Alias: &p.Alias, Listed: ptr(true), Status: projectStatus(p), DateUpdatedForce: ptr(true)}.Build())
-		if err != nil {
-			return nil, err
-		}
-	}
 	if r.GetName() != "" || r.GetDesc() != "" || r.GetAlias() != "" {
 		patch := resource.ProjectPatchRequest_builder{Ref: projectRef(p.Id), DateUpdatedForce: ptr(true)}.Build()
 		if r.GetName() != "" {
@@ -99,19 +93,13 @@ func (s ProjectServer) Get(ctx context.Context, r *resource.ProjectGetRequest) (
 	if err := s.observeProjects(ctx); err != nil {
 		return nil, err
 	}
-	v, err := s.ProjectServiceServer.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
-	if err == nil && !v.GetListed() {
-		return nil, status.Error(codes.NotFound, "project deleted")
-	}
-	if err != nil {
-		return nil, err
-	}
+	// A project the store answers with is a project that exists: an erased one
+	// is already NotFound, since every read narrows on `date_erased`.
 	return s.ProjectServiceServer.Get(ctx, r)
 }
+// List answers with every registered project. There is no hidden half any
+// more: a project is registered or erased, and an erased one is gone.
 func (s ProjectServer) List(ctx context.Context, r *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
-	if len(r.GetFilters()) == 0 {
-		r.SetFilters([]*resource.ProjectFilter{resource.ProjectFilter_builder{Listed: ptr(true)}.Build()})
-	}
 	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
 	}
@@ -121,11 +109,6 @@ func (s ProjectServer) List(ctx context.Context, r *resource.ProjectListRequest)
 	return s.ProjectServiceServer.List(ctx, r)
 }
 func (s ProjectServer) Watch(r *resource.ProjectWatchRequest, stream grpc.ServerStreamingServer[resource.ProjectWatchResponse]) error {
-	// Match List's default: all registered projects, with explicit filters still
-	// available for archived resources or a narrower subscription.
-	if len(r.GetFilters()) == 0 {
-		r.SetFilters([]*resource.ProjectFilter{resource.ProjectFilter_builder{Listed: ptr(true)}.Build()})
-	}
 	s.shared.watchers.Add(1)
 	defer s.shared.watchers.Add(-1)
 	if err := s.ensureSnapshot(stream.Context()); err != nil {
@@ -137,7 +120,7 @@ func (s ProjectServer) Watch(r *resource.ProjectWatchRequest, stream grpc.Server
 	return s.watchInventory(r, stream)
 }
 func (s ProjectServer) Patch(ctx context.Context, r *resource.ProjectPatchRequest) (*resource.Project, error) {
-	if r.HasStatus() || r.HasStatusNull() || r.HasConfig() || r.HasListed() || r.GetDateUpdatedForce() {
+	if r.HasStatus() || r.HasStatusNull() || r.HasConfig() || r.GetDateUpdatedForce() {
 		return nil, closed()
 	}
 	if r.HasName() {
@@ -184,9 +167,6 @@ func (s ProjectServer) up(ctx context.Context, ref *resource.ProjectRef, clientI
 	}
 	if config == "" {
 		config = p.GetConfig()
-	}
-	if !p.GetListed() {
-		return nil, status.Error(codes.NotFound, "project deleted")
 	}
 	// Creating a container is all this asks for; sessions are the caller's.
 	_, err = s.shared.runtime.CreateContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust, Recreate: recreate, Confirmed: confirmed})

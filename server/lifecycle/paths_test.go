@@ -120,7 +120,7 @@ func TestProjectPathsRPCStreamsAndCancels(t *testing.T) {
 		t.Fatal("path browsing refreshed the full project inventory")
 	}
 	layer, _ := resource.Find[Layer](stack)
-	if _, err := layer.Next().Project().Patch(ctx, resource.ProjectPatchRequest_builder{Ref: projectRef("project"), Listed: ptr(false), DateUpdatedForce: ptr(true)}.Build()); err != nil {
+	if _, err := layer.Next().Project().Erase(ctx, projectRef("project")); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := c.Paths(ctx, "project", "/", nil); status.Code(err) != codes.NotFound {

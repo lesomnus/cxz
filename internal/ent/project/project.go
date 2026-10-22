@@ -33,8 +33,6 @@ const (
 	FieldDateCreated = "date_created"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
-	// FieldListed holds the string denoting the listed field in the database.
-	FieldListed = "listed"
 	// Table holds the table name of the project in the database.
 	Table = "project"
 )
@@ -52,7 +50,6 @@ var Columns = []string{
 	FieldDateErased,
 	FieldDateCreated,
 	FieldStatus,
-	FieldListed,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -123,9 +120,4 @@ func ByDateErased(opts ...sql.OrderTermOption) OrderOption {
 // ByDateCreated orders the results by the date_created field.
 func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
-}
-
-// ByListed orders the results by the listed field.
-func ByListed(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldListed, opts...).ToFunc()
 }

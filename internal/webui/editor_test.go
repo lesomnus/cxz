@@ -31,7 +31,7 @@ type testEditorProjects struct {
 }
 
 func (p *testEditorProjects) Get(context.Context, *resource.ProjectGetRequest) (*resource.Project, error) {
-	return resource.Project_builder{RuntimeId: "project", Listed: true, Status: resource.ProjectStatus_builder{RemoteWorkspace: "/workspace"}.Build()}.Build(), nil
+	return resource.Project_builder{RuntimeId: "project", Status: resource.ProjectStatus_builder{RemoteWorkspace: "/workspace"}.Build()}.Build(), nil
 }
 func (p *testEditorProjects) Editor(context.Context, *resource.ProjectEditorRequest) (*resource.ProjectEditorReply, error) {
 	workspace := "/workspace"

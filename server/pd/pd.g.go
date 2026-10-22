@@ -2027,9 +2027,6 @@ func filterProject(f *resource.ProjectFilter) (predicate.Project, error) {
 
 		ps = append(ps, p)
 	}
-	if f.HasListed() {
-		ps = append(ps, project.ListedEQ(f.GetListed()))
-	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
 	}

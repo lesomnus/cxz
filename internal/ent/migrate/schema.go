@@ -239,7 +239,6 @@ var (
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "status", Type: field.TypeJson, Nullable: true},
-		{Name: "listed", Type: field.TypeBool, Nullable: true},
 	}
 	// ProjectTable holds the schema information for the "project" table.
 	ProjectTable = &schema.Table{

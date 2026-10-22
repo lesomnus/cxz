@@ -103,7 +103,7 @@ test("project erase failure retains the confirmation and selected project", asyn
   ).toHaveCount(2);
 });
 
-test("Stop confirms, stops all project sessions and retains the listed project", async ({
+test("Stop confirms, stops all project sessions and retains the project", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
@@ -134,13 +134,6 @@ test("Stop confirms, stops all project sessions and retains the listed project",
     "Stopped",
   ]);
   await expect(rows.first().getByRole("checkbox")).toBeChecked();
-  const info = page.getByRole("region", { name: "Information", exact: true });
-  await expect(
-    info
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
-      .locator("dd"),
-  ).toHaveText("true");
   const picker = page.getByRole("combobox", {
     name: "Select project",
     exact: true,

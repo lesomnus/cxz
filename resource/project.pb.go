@@ -92,7 +92,6 @@ type Project struct {
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Status      *ProjectStatus         `protobuf:"bytes,16,opt,name=status"`
-	xxx_hidden_Listed      bool                   `protobuf:"varint,17,opt,name=listed"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -199,13 +198,6 @@ func (x *Project) GetStatus() *ProjectStatus {
 	return nil
 }
 
-func (x *Project) GetListed() bool {
-	if x != nil {
-		return x.xxx_hidden_Listed
-	}
-	return false
-}
-
 func (x *Project) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -251,10 +243,6 @@ func (x *Project) SetDateCreated(v *timestamppb.Timestamp) {
 
 func (x *Project) SetStatus(v *ProjectStatus) {
 	x.xxx_hidden_Status = v
-}
-
-func (x *Project) SetListed(v bool) {
-	x.xxx_hidden_Listed = v
 }
 
 func (x *Project) HasDateUpdated() bool {
@@ -315,7 +303,6 @@ type Project_builder struct {
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
 	Status      *ProjectStatus
-	Listed      bool
 }
 
 func (b0 Project_builder) Build() *Project {
@@ -333,7 +320,6 @@ func (b0 Project_builder) Build() *Project {
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Status = b.Status
-	x.xxx_hidden_Listed = b.Listed
 	return m0
 }
 
@@ -500,7 +486,7 @@ var File_cxz_project_proto protoreflect.FileDescriptor
 
 const file_cxz_project_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe6\x04\n" +
+	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbd\x04\n" +
 	"\aProject\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
@@ -515,18 +501,16 @@ const file_cxz_project_proto_rawDesc = "" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12*\n" +
-	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status\x12#\n" +
-	"\x06listed\x18\x11 \x01(\bB\v\xea\x82\x16\a\x82\x01\x04trueR\x06listed:f\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status:\\\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
-	"\x02id\x10\x01\x8a\xbb\x168\b\a20\n" +
+	"\x02id\x10\x01\x8a\xbb\x16.\b\a2&\n" +
 	"\x10\n" +
 	"\x0e\n" +
 	"\fdate_created\n" +
 	"\x06\n" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
-	"\x03ref\x1a\b\n" +
-	"\x06listed 2(\xc8\x01:\x00*\x00\"\xd5\x02\n" +
+	"\x03ref 2(\xc8\x01:\x00*\x00J\x04\b\x11\x10\x12\"\xd5\x02\n" +
 	"\rProjectStatus\x12!\n" +
 	"\fcontainer_id\x18\x02 \x01(\tR\vcontainerId\x12\x1f\n" +
 	"\vremote_user\x18\x03 \x01(\tR\n" +

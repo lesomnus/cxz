@@ -38,9 +38,7 @@ type Project struct {
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// Status holds the value of the "status" field.
-	Status *resource.ProjectStatus `json:"status,omitempty"`
-	// Listed holds the value of the "listed" field.
-	Listed       bool `json:"listed,omitempty"`
+	Status       *resource.ProjectStatus `json:"status,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -49,8 +47,6 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case project.FieldListed:
-			values[i] = new(sql.NullBool)
 		case project.FieldAlias, project.FieldName, project.FieldDesc, project.FieldWorkspace, project.FieldConfig, project.FieldRuntimeId:
 			values[i] = new(sql.NullString)
 		case project.FieldDateUpdated, project.FieldDateErased, project.FieldDateCreated:
@@ -141,12 +137,6 @@ func (_m *Project) assignValues(columns []string, values []any) error {
 			} else {
 				_m.Status = value
 			}
-		case project.FieldListed:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field listed", values[i])
-			} else if value.Valid {
-				_m.Listed = value.Bool
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -214,9 +204,6 @@ func (_m *Project) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
-	builder.WriteString(", ")
-	builder.WriteString("listed=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Listed))
 	builder.WriteByte(')')
 	return builder.String()
 }

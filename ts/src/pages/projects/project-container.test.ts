@@ -13,7 +13,6 @@ function fixture() {
     id: new Uint8Array(16).fill(1),
     runtimeId: "project",
     alias: "web",
-    listed: true,
     status: { containerState: ContainerState.RUNNING },
   });
   const answered = create(ProjectSchema, {
@@ -52,7 +51,7 @@ describe("project container controls", () => {
     { name: "remove", run: removeContainer, rpc: "removeContainer" },
   ] as const;
   for (const control of controls) {
-    it(`${control.name} calls ${control.rpc} by UUID and keeps the project listed`, async () => {
+    it(`${control.name} calls ${control.rpc} by UUID and keeps the project`, async () => {
       const f = fixture();
       const result = await control.run(f.connection, f.project);
       expect(f.c.projects[control.rpc]).toHaveBeenCalledExactlyOnceWith(
@@ -68,7 +67,6 @@ describe("project container controls", () => {
       }
       expect(f.c.projects.erase).not.toHaveBeenCalled();
       expect(f.c.projects.remove).not.toHaveBeenCalled();
-      expect(result.listed).toBe(true);
       expect(result.alias).toBe("web");
       expect(f.c.store.apply).toHaveBeenCalledWith("cxz.Project", [
         { id: f.answered.id, value: f.answered },

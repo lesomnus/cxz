@@ -20,7 +20,6 @@ export function taskFixture(count = 9, unavailable = false) {
       name: "Workspace",
       alias: "workspace",
       workspace: "/workspace",
-      listed: true,
       status: { containerState: ContainerState.RUNNING },
     }),
     create(ProjectSchema, {
@@ -29,7 +28,6 @@ export function taskFixture(count = 9, unavailable = false) {
       name: "Documentation",
       alias: "docs",
       workspace: "/docs",
-      listed: true,
       status: { containerState: ContainerState.RUNNING },
     }),
   ];
@@ -41,7 +39,6 @@ export function taskFixture(count = 9, unavailable = false) {
       alias: "oak",
       agent: "codex",
       project: projects[0],
-      listed: true,
       status: { state: "working", runId: "oak-run" },
     }),
     create(SessionSchema, {
@@ -51,7 +48,6 @@ export function taskFixture(count = 9, unavailable = false) {
       alias: "elm",
       agent: "claude",
       project: projects[0],
-      listed: true,
       status: { state: "stopped", runId: "elm-run" },
     }),
   ];

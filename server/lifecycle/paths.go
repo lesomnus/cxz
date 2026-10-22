@@ -28,9 +28,6 @@ func (s ProjectServer) Paths(r *resource.ProjectPathsRequest, stream grpc.Server
 	if err != nil {
 		return err
 	}
-	if !p.GetListed() {
-		return status.Error(codes.NotFound, "project deleted")
-	}
 	runtime, ok := s.shared.runtime.(containerterm.PathClient)
 	if !ok {
 		return status.Error(codes.Unimplemented, "container path browsing unavailable")

@@ -20,9 +20,6 @@ func (s ProjectServer) editorRuntime(ctx context.Context, ref *resource.ProjectR
 	if err != nil {
 		return nil, "", err
 	}
-	if !p.GetListed() {
-		return nil, "", status.Error(codes.NotFound, "project deleted")
-	}
 	runtime, ok := s.shared.runtime.(editor.Runtime)
 	if !ok {
 		return nil, "", status.Error(codes.Unimplemented, "browser editor unavailable; update the Manager")

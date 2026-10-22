@@ -29,7 +29,7 @@ type allStub struct {
 }
 
 func ownedProject(id, workspace, state string) *resource.Project {
-	return resource.Project_builder{RuntimeId: id, Workspace: workspace, Name: id, Alias: id, Listed: true,
+	return resource.Project_builder{RuntimeId: id, Workspace: workspace, Name: id, Alias: id,
 		Status: resource.ProjectStatus_builder{ContainerState: projectstate.Of(state), ContainerId: "container-" + id}.Build()}.Build()
 }
 

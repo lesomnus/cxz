@@ -24,9 +24,6 @@ func (s ProjectServer) Download(r *resource.ProjectDownloadRequest, stream grpc.
 	if err != nil {
 		return err
 	}
-	if !p.GetListed() {
-		return status.Error(codes.NotFound, "project deleted")
-	}
 	runtime, ok := s.shared.runtime.(containerterm.DownloadClient)
 	if !ok {
 		return status.Error(codes.Unimplemented, "container downloads unavailable; update the manager")

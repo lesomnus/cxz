@@ -51,9 +51,6 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	if err != nil {
 		return nil, err
 	}
-	if !p.GetListed() {
-		return nil, status.Error(codes.NotFound, "project deleted")
-	}
 	if _, err := accounts.Resolve(r.GetAgent(), backend); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}

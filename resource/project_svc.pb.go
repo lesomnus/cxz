@@ -181,7 +181,6 @@ type ProjectAddRequest struct {
 	xxx_hidden_RuntimeId   string                 `protobuf:"bytes,10,opt,name=runtime_id,json=runtimeId"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Status      *ProjectStatus         `protobuf:"bytes,16,opt,name=status"`
-	xxx_hidden_Listed      bool                   `protobuf:"varint,17,opt,name=listed"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -276,19 +275,12 @@ func (x *ProjectAddRequest) GetStatus() *ProjectStatus {
 	return nil
 }
 
-func (x *ProjectAddRequest) GetListed() bool {
-	if x != nil {
-		return x.xxx_hidden_Listed
-	}
-	return false
-}
-
 func (x *ProjectAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
 }
 
 func (x *ProjectAddRequest) SetAlias(v string) {
@@ -323,11 +315,6 @@ func (x *ProjectAddRequest) SetStatus(v *ProjectStatus) {
 	x.xxx_hidden_Status = v
 }
 
-func (x *ProjectAddRequest) SetListed(v bool) {
-	x.xxx_hidden_Listed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
-}
-
 func (x *ProjectAddRequest) HasId() bool {
 	if x == nil {
 		return false
@@ -349,13 +336,6 @@ func (x *ProjectAddRequest) HasStatus() bool {
 	return x.xxx_hidden_Status != nil
 }
 
-func (x *ProjectAddRequest) HasListed() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
-}
-
 func (x *ProjectAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -367,11 +347,6 @@ func (x *ProjectAddRequest) ClearDateCreated() {
 
 func (x *ProjectAddRequest) ClearStatus() {
 	x.xxx_hidden_Status = nil
-}
-
-func (x *ProjectAddRequest) ClearListed() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
-	x.xxx_hidden_Listed = false
 }
 
 type ProjectAddRequest_builder struct {
@@ -386,7 +361,6 @@ type ProjectAddRequest_builder struct {
 	RuntimeId   string
 	DateCreated *timestamppb.Timestamp
 	Status      *ProjectStatus
-	Listed      *bool
 }
 
 func (b0 ProjectAddRequest_builder) Build() *ProjectAddRequest {
@@ -394,7 +368,7 @@ func (b0 ProjectAddRequest_builder) Build() *ProjectAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Alias = b.Alias
@@ -405,10 +379,6 @@ func (b0 ProjectAddRequest_builder) Build() *ProjectAddRequest {
 	x.xxx_hidden_RuntimeId = b.RuntimeId
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Status = b.Status
-	if b.Listed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
-		x.xxx_hidden_Listed = *b.Listed
-	}
 	return m0
 }
 
@@ -764,7 +734,6 @@ type ProjectSelect struct {
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Status      bool                   `protobuf:"varint,16,opt,name=status"`
-	xxx_hidden_Listed      bool                   `protobuf:"varint,17,opt,name=listed"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -873,71 +842,59 @@ func (x *ProjectSelect) GetStatus() bool {
 	return false
 }
 
-func (x *ProjectSelect) GetListed() bool {
-	if x != nil {
-		return x.xxx_hidden_Listed
-	}
-	return false
-}
-
 func (x *ProjectSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
 }
 
 func (x *ProjectSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 11)
 }
 
 func (x *ProjectSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
 }
 
 func (x *ProjectSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
 }
 
 func (x *ProjectSelect) SetWorkspace(v bool) {
 	x.xxx_hidden_Workspace = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
 }
 
 func (x *ProjectSelect) SetConfig(v bool) {
 	x.xxx_hidden_Config = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
 }
 
 func (x *ProjectSelect) SetRuntimeId(v bool) {
 	x.xxx_hidden_RuntimeId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
 }
 
 func (x *ProjectSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
 }
 
 func (x *ProjectSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
 }
 
 func (x *ProjectSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
 }
 
 func (x *ProjectSelect) SetStatus(v bool) {
 	x.xxx_hidden_Status = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
-}
-
-func (x *ProjectSelect) SetListed(v bool) {
-	x.xxx_hidden_Listed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
 }
 
 func (x *ProjectSelect) HasAll() bool {
@@ -1017,13 +974,6 @@ func (x *ProjectSelect) HasStatus() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
-func (x *ProjectSelect) HasListed() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
-}
-
 func (x *ProjectSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -1079,11 +1029,6 @@ func (x *ProjectSelect) ClearStatus() {
 	x.xxx_hidden_Status = false
 }
 
-func (x *ProjectSelect) ClearListed() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
-	x.xxx_hidden_Listed = false
-}
-
 type ProjectSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1098,7 +1043,6 @@ type ProjectSelect_builder struct {
 	DateErased  *bool
 	DateCreated *bool
 	Status      *bool
-	Listed      *bool
 }
 
 func (b0 ProjectSelect_builder) Build() *ProjectSelect {
@@ -1106,52 +1050,48 @@ func (b0 ProjectSelect_builder) Build() *ProjectSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
 		x.xxx_hidden_All = *b.All
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 11)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Workspace != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
 		x.xxx_hidden_Workspace = *b.Workspace
 	}
 	if b.Config != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
 		x.xxx_hidden_Config = *b.Config
 	}
 	if b.RuntimeId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
 		x.xxx_hidden_RuntimeId = *b.RuntimeId
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.Status != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
 		x.xxx_hidden_Status = *b.Status
-	}
-	if b.Listed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
-		x.xxx_hidden_Listed = *b.Listed
 	}
 	return m0
 }
@@ -1167,7 +1107,6 @@ type ProjectPatchRequest struct {
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	xxx_hidden_Status           *ProjectStatus         `protobuf:"bytes,32,opt,name=status"`
 	xxx_hidden_StatusNull       bool                   `protobuf:"varint,33,opt,name=status_null,json=statusNull"`
-	xxx_hidden_Listed           bool                   `protobuf:"varint,34,opt,name=listed"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
 	XXX_presence                [1]uint32
 	unknownFields               protoimpl.UnknownFields
@@ -1274,35 +1213,28 @@ func (x *ProjectPatchRequest) GetStatusNull() bool {
 	return false
 }
 
-func (x *ProjectPatchRequest) GetListed() bool {
-	if x != nil {
-		return x.xxx_hidden_Listed
-	}
-	return false
-}
-
 func (x *ProjectPatchRequest) SetRef(v *ProjectRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *ProjectPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 9)
 }
 
 func (x *ProjectPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
 }
 
 func (x *ProjectPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
 }
 
 func (x *ProjectPatchRequest) SetConfig(v string) {
 	x.xxx_hidden_Config = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
 }
 
 func (x *ProjectPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1311,7 +1243,7 @@ func (x *ProjectPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *ProjectPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
 }
 
 func (x *ProjectPatchRequest) SetStatus(v *ProjectStatus) {
@@ -1320,12 +1252,7 @@ func (x *ProjectPatchRequest) SetStatus(v *ProjectStatus) {
 
 func (x *ProjectPatchRequest) SetStatusNull(v bool) {
 	x.xxx_hidden_StatusNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
-}
-
-func (x *ProjectPatchRequest) SetListed(v bool) {
-	x.xxx_hidden_Listed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
 }
 
 func (x *ProjectPatchRequest) HasRef() bool {
@@ -1391,13 +1318,6 @@ func (x *ProjectPatchRequest) HasStatusNull() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *ProjectPatchRequest) HasListed() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
-}
-
 func (x *ProjectPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -1440,11 +1360,6 @@ func (x *ProjectPatchRequest) ClearStatusNull() {
 	x.xxx_hidden_StatusNull = false
 }
 
-func (x *ProjectPatchRequest) ClearListed() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
-	x.xxx_hidden_Listed = false
-}
-
 type ProjectPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1473,7 +1388,6 @@ type ProjectPatchRequest_builder struct {
 	// "leave it alone", so no value could have meant NULL. It wins
 	// outright: setting both this and status clears.
 	StatusNull *bool
-	Listed     *bool
 }
 
 func (b0 ProjectPatchRequest_builder) Build() *ProjectPatchRequest {
@@ -1482,34 +1396,30 @@ func (b0 ProjectPatchRequest_builder) Build() *ProjectPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 9)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	if b.Config != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
 		x.xxx_hidden_Config = b.Config
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_Status = b.Status
 	if b.StatusNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
 		x.xxx_hidden_StatusNull = *b.StatusNull
-	}
-	if b.Listed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
-		x.xxx_hidden_Listed = *b.Listed
 	}
 	return m0
 }
@@ -1864,13 +1774,10 @@ func (b0 ProjectListResponse_builder) Build() *ProjectListResponse {
 }
 
 type ProjectFilter struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref         *ProjectRef            `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Listed      bool                   `protobuf:"varint,2,opt,name=listed"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref *ProjectRef            `protobuf:"bytes,1,opt,name=ref"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ProjectFilter) Reset() {
@@ -1905,20 +1812,8 @@ func (x *ProjectFilter) GetRef() *ProjectRef {
 	return nil
 }
 
-func (x *ProjectFilter) GetListed() bool {
-	if x != nil {
-		return x.xxx_hidden_Listed
-	}
-	return false
-}
-
 func (x *ProjectFilter) SetRef(v *ProjectRef) {
 	x.xxx_hidden_Ref = v
-}
-
-func (x *ProjectFilter) SetListed(v bool) {
-	x.xxx_hidden_Listed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
 }
 
 func (x *ProjectFilter) HasRef() bool {
@@ -1928,27 +1823,14 @@ func (x *ProjectFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ProjectFilter) HasListed() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
 func (x *ProjectFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
-}
-
-func (x *ProjectFilter) ClearListed() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_Listed = false
 }
 
 type ProjectFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref    *ProjectRef
-	Listed *bool
+	Ref *ProjectRef
 }
 
 func (b0 ProjectFilter_builder) Build() *ProjectFilter {
@@ -1956,10 +1838,6 @@ func (b0 ProjectFilter_builder) Build() *ProjectFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
-	if b.Listed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
-		x.xxx_hidden_Listed = *b.Listed
-	}
 	return m0
 }
 
@@ -11686,7 +11564,7 @@ var File_cxz_project_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17cxz/project_svc.g.proto\x12\x03cxz\x1a\x17cxz/account_svc.g.proto\x1a\x11cxz/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xe3\x02\n" +
+	"\x17cxz/project_svc.g.proto\x12\x03cxz\x1a\x17cxz/account_svc.g.proto\x1a\x11cxz/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xcb\x02\n" +
 	"\x11ProjectAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -11698,8 +11576,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"runtime_id\x18\n" +
 	" \x01(\tB\x05\xaa\x01\x02\b\x02R\truntimeId\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12*\n" +
-	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status\x12\x16\n" +
-	"\x06listed\x18\x11 \x01(\bR\x06listed\"b\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status\"b\n" +
 	"\x11ProjectGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12*\n" +
 	"\x06select\x18\x02 \x01(\v2\x12.cxz.ProjectSelectR\x06select\"~\n" +
@@ -11711,7 +11588,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"runtime_id\x18\n" +
 	" \x01(\tH\x00R\truntimeIdB\x05\n" +
-	"\x03key\"\xcb\x02\n" +
+	"\x03key\"\xb3\x02\n" +
 	"\rProjectSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
@@ -11726,8 +11603,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12\x16\n" +
-	"\x06status\x18\x10 \x01(\bR\x06status\x12\x16\n" +
-	"\x06listed\x18\x11 \x01(\bR\x06listed\"\xe0\x02\n" +
+	"\x06status\x18\x10 \x01(\bR\x06status\"\xc8\x02\n" +
 	"\x13ProjectPatchRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -11739,8 +11615,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12*\n" +
 	"\x06status\x18  \x01(\v2\x12.cxz.ProjectStatusR\x06status\x12\x1f\n" +
 	"\vstatus_null\x18! \x01(\bR\n" +
-	"statusNull\x12\x16\n" +
-	"\x06listed\x18\" \x01(\bR\x06listed\"\\\n" +
+	"statusNull\"\\\n" +
 	"\x13ProjectApplyRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
@@ -11752,10 +11627,9 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"T\n" +
 	"\x13ProjectListResponse\x12\"\n" +
 	"\x05items\x18\x01 \x03(\v2\f.cxz.ProjectR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"J\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"2\n" +
 	"\rProjectFilter\x12!\n" +
-	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x16\n" +
-	"\x06listed\x18\x02 \x01(\bR\x06listed\"o\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\"o\n" +
 	"\x13ProjectWatchRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.cxz.ProjectFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"C\n" +

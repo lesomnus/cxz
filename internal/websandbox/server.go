@@ -67,7 +67,7 @@ func New(seed uint64, delay time.Duration) *Server {
 	s := &Server{seed: seed, delay: delay, ctx: ctx, cancel: cancel, tasks: taskapi.NewMemory()}
 	for i, name := range []string{"Design playground", "Secondary project"} {
 		id := fmt.Sprintf("project-%d", i+1)
-		s.projects = append(s.projects, resource.Project_builder{Id: []byte(fmt.Sprintf("project-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, DateCreated: timestamppb.Now(), DateUpdated: timestamppb.Now(), Workspace: "/workspace", Listed: true, Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING, RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
+		s.projects = append(s.projects, resource.Project_builder{Id: []byte(fmt.Sprintf("project-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, DateCreated: timestamppb.Now(), DateUpdated: timestamppb.Now(), Workspace: "/workspace", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING, RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
 	}
 	for i, name := range []string{"Project checklist", "Conversation", "Long history", "Approval question", "Simulated error", "Seeded random work", "Stopped session", "Other project", "Tool activity"} {
 		id := fmt.Sprintf("session-%d", i+1)
@@ -215,7 +215,7 @@ func projectMatches(p *resource.Project, filters []*resource.ProjectFilter) bool
 		return true
 	}
 	for _, f := range filters {
-		if matchProject(p, f.GetRef()) && (!f.HasListed() || f.GetListed() == p.GetListed()) {
+		if matchProject(p, f.GetRef()) {
 			return true
 		}
 	}

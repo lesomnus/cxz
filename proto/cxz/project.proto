@@ -21,7 +21,7 @@ message Project {
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
   ProjectStatus status = 16;
-  bool listed = 17 [(orm.field) = {default: "true"}];
+  reserved 17;  // was `bool listed`: a project is registered or erased, nothing in between
   option (orm.message) = {
     rpc: {crud: true}
     indexes: [{name: "page", refs: [{name: "date_created", number: 15}, {name: "id", number: 1}]}]
@@ -29,7 +29,7 @@ message Project {
   option (payday.entity) = {
     domain: 7
     global: {}
-    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "listed"}], size: 50, max: 200}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}], size: 50, max: 200}
     watch: {}
   };
 }

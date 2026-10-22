@@ -205,7 +205,6 @@ function ProjectDashboard({
                   "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.",
                 ),
               ],
-              [t("Listed"), String(p.listed)],
               [t("Created"), <DateTime value={p.dateCreated} />],
               [t("Updated"), <DateTime value={p.dateUpdated} />],
               [t("Deleted"), <DateTime value={p.dateErased} />],

@@ -222,7 +222,7 @@ func TestProjectTerminalRPC(t *testing.T) {
 		t.Fatal("terminal refreshed full inventory")
 	}
 	layer, _ := resource.Find[Layer](stack)
-	if _, err := layer.Next().Project().Patch(ctx, resource.ProjectPatchRequest_builder{Ref: projectRef("project"), Listed: ptr(false), DateUpdatedForce: ptr(true)}.Build()); err != nil {
+	if _, err := layer.Next().Project().Erase(ctx, projectRef("project")); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := c.OpenTerminal(ctx, "project", 80, 24); status.Code(err) != codes.NotFound {

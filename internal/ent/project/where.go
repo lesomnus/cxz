@@ -100,11 +100,6 @@ func DateCreated(v time.Time) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldDateCreated, v))
 }
 
-// Listed applies equality check predicate on the "listed" field. It's identical to ListedEQ.
-func Listed(v bool) predicate.Project {
-	return predicate.Project(sql.FieldEQ(FieldListed, v))
-}
-
 // AliasEQ applies the EQ predicate on the "alias" field.
 func AliasEQ(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldAlias, v))
@@ -643,26 +638,6 @@ func StatusIsNil() predicate.Project {
 // StatusNotNil applies the NotNil predicate on the "status" field.
 func StatusNotNil() predicate.Project {
 	return predicate.Project(sql.FieldNotNull(FieldStatus))
-}
-
-// ListedEQ applies the EQ predicate on the "listed" field.
-func ListedEQ(v bool) predicate.Project {
-	return predicate.Project(sql.FieldEQ(FieldListed, v))
-}
-
-// ListedNEQ applies the NEQ predicate on the "listed" field.
-func ListedNEQ(v bool) predicate.Project {
-	return predicate.Project(sql.FieldNEQ(FieldListed, v))
-}
-
-// ListedIsNil applies the IsNil predicate on the "listed" field.
-func ListedIsNil() predicate.Project {
-	return predicate.Project(sql.FieldIsNull(FieldListed))
-}
-
-// ListedNotNil applies the NotNil predicate on the "listed" field.
-func ListedNotNil() predicate.Project {
-	return predicate.Project(sql.FieldNotNull(FieldListed))
 }
 
 // And groups predicates with the AND operator between them.

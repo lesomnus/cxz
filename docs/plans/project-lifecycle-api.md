@@ -6,9 +6,12 @@
 **표시되는 동사는 RPC 이름과 같다** — 버튼이 Stop이라고 적혀 있으면 `StopContainer`를
 부른다. 옛 `Down`은 없어졌다.
 
-남은 것은 `listed` 제거와 `Erase`의 의미 전환, 그리고 `CreateContainer`(지금의 `Up`에서
-세션 선택을 떼어내는 일)다. 생성은 `pd gen`으로 한다 — `docs/README.md`의 "Generated
-code"를 보라.
+`listed`도 없어졌다: 프로젝트는 등록돼 있거나 erased이고, 그 사이는 없다. 세션은
+`listed`를 유지한다.
+
+남은 것은 `CreateContainer`를 클라이언트 조합으로 묶는 뒷정리(`Up`/`Recreate` 제거),
+cxz#283, 그리고 표식 행 모델이다. 생성은 `pd gen`으로 한다 — `docs/README.md`의
+"Generated code"를 보라.
 
 Project는 DB에 등록된 워크스페이스다. 컨테이너가 존재하거나 실행 중이어야 리소스가
 존재하는 것은 아니다. 리소스의 등록·삭제와 컨테이너의 생성·시작·정지·제거를 분리한다.
@@ -43,7 +46,7 @@ Project는 DB에 등록된 워크스페이스다. 컨테이너가 존재하거�
 
 | 영역 | 현재 | 전환 후 |
 | --- | --- | --- |
-| 목록 | 기본 `listed=true`, erased 제외 | erased만 기본 제외 |
+| 목록 | 기본 `listed=true`, erased 제외 | erased만 기본 제외 — **완료** |
 | `Add` | 런타임 등록 파일과 DB를 함께 만듦 | DB 리소스만 생성 |
 | `Up` | 생성·시작·초기화·세션 선택이 한 경로 | `CreateContainer`와 `StartContainer`로 분리, 세션은 분리 |
 | `Down` | 컨테이너 제거 | 사라짐. `StopContainer`는 정지, `StartContainer`는 시작, `RemoveContainer`는 제거 — **완료** |
@@ -325,8 +328,9 @@ CLI `recreate`와 UI의 재생성 버튼은 이 조합을 사용할 수 있지�
 호환을 버려도 남는 작업이다. DB는 전환을 넘어 살아남는다.
 
 1. 기존 `listed=false` Project는 **삭제하거나 erased로 변환하지 않는다.** 데이터 보존을
-   위해 `date_erased`가 없으면 일반 목록에 포함한다. 이름·보관용 alias도 임의 복원하지
-   않는다. 기존 `Session.listed`와 세션 보관/복원 계약은 이번 범위에서 변경하지 않는다.
+   위해 `date_erased`가 없으면 일반 목록에 포함한다. — **해당 없음이었다**: 설치본에
+   보관된 프로젝트가 0개여서(세션은 2개, 범위 밖) 이행할 데이터가 없었다. `Session.listed`와
+   세션 보관/복원 계약은 그대로다.
 2. 기존 리소스와 runtime manifest를 한 번 대응시키고 등록 의도를 DB로 확정한다.
    Docker가 없어도 이관할 수 있어야 한다. 이후 런타임 발견으로 리소스를 자동 생성하는
    경로를 제거한다. 기존 프로젝트 상태 볼륨과 새 매니저 내 상태 디렉터리를 모두 다루며

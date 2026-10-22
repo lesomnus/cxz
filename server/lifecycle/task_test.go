@@ -67,7 +67,7 @@ func taskStack(t *testing.T) (*taskFixture, resource.Server, *sql.DB) {
 		t.Fatal(err)
 	}
 	layer, _ := resource.Find[Layer](stack)
-	_, err = layer.Next().Project().Add(t.Context(), resource.ProjectAddRequest_builder{Id: resourceID(7, "other-project"), RuntimeId: "other-project", Workspace: "/other", Listed: ptr(true)}.Build())
+	_, err = layer.Next().Project().Add(t.Context(), resource.ProjectAddRequest_builder{Id: resourceID(7, "other-project"), RuntimeId: "other-project", Workspace: "/other"}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}

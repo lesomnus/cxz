@@ -100,6 +100,10 @@ export class ResourceInventory {
     const stalled = `The ${
       kind === "sessions" ? "session" : "project"
     } list stopped loading.`;
+    // Sessions keep an archived half, so listing them says which half it wants.
+    // Projects do not: a project is registered or erased, and the default list
+    // is every registered one. See cxz#274.
+    const request = kind === "sessions" ? { filters: [{ listed: true }] } : {};
     while (!signal.aborted) {
       const rows = new Map<string, Project | Session>();
       let after = "";
@@ -107,8 +111,6 @@ export class ResourceInventory {
         // A bounded List also settles an empty catalog: older Watch servers do
         // not emit an initial frame when no rows match. The Watch's snapshot
         // streams ALL pages, so large catalogs need no per-project paging.
-        // This filter spans every project; no per-project refs are requested.
-        const request = { filters: [{ listed: true }] };
         const page = await client.list({ ...request, size: 1 }, { signal });
         if (signal.aborted) return;
         after = page.next;
@@ -170,7 +172,7 @@ export class ResourceInventory {
           try {
             while (after) {
               const page = await client.list(
-                { filters: [{ listed: true }], size: 200, after },
+                { ...request, size: 200, after },
                 { signal },
               );
               if (signal.aborted) return;

@@ -80,7 +80,7 @@ func TestBrowserFixture(t *testing.T) {
 	time.Sleep(10 * time.Minute)
 }
 
-var fixtureProject = resource.Project_builder{Id: []byte("1234567890123456"), RuntimeId: "project", Alias: "demo", Name: "Demo project", Listed: true, Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING, RemoteWorkspace: "/workspace"}.Build()}.Build()
+var fixtureProject = resource.Project_builder{Id: []byte("1234567890123456"), RuntimeId: "project", Alias: "demo", Name: "Demo project", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING, RemoteWorkspace: "/workspace"}.Build()}.Build()
 
 type fixtureProjects struct {
 	resource.UnimplementedProjectServiceServer
@@ -223,7 +223,7 @@ func (f *browserFixture) snapshot() *resource.Session {
 	if !f.resolved {
 		pending = append(pending, resource.SessionEvent_builder{Seq: 3, RunId: "run", Kind: "approval", Text: "AskUserQuestion", RequestId: "q", Payload: []byte(`{"input":{"questions":[{"question":"Which environment?","options":[{"label":"Development","description":"Use a disposable environment"},{"label":"Production"}]}]}}`)}.Build())
 	}
-	return resource.Session_builder{Id: []byte("abcdefghijklmnop"), RuntimeId: "session", Alias: "demo-chat", Name: "Demo conversation", Agent: "claude", Listed: true, Project: fixtureProject, Status: resource.SessionStatus_builder{RunId: "run", State: "idle", LastSeq: 3, Pending: pending}.Build()}.Build()
+	return resource.Session_builder{Id: []byte("abcdefghijklmnop"), RuntimeId: "session", Alias: "demo-chat", Name: "Demo conversation", Agent: "claude", Project: fixtureProject, Status: resource.SessionStatus_builder{RunId: "run", State: "idle", LastSeq: 3, Pending: pending}.Build()}.Build()
 }
 func (f *browserFixture) Get(context.Context, *resource.SessionGetRequest) (*resource.Session, error) {
 	f.mu.Lock()

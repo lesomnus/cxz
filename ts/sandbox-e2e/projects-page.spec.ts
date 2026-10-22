@@ -381,7 +381,7 @@ test("project Erase removes only the confirmed sandbox project", async ({
   ).toHaveCount(0);
 });
 
-test("project Stop retains the listed sandbox project and conversation records", async ({
+test("project Stop retains the sandbox project and conversation records", async ({
   page,
 }) => {
   await page.goto("/sandbox.html#/projects");
@@ -404,13 +404,6 @@ test("project Stop retains the listed sandbox project and conversation records",
   await expect(rows.locator("td:nth-child(6)")).toHaveText(
     Array(8).fill("Stopped"),
   );
-  await expect(
-    page
-      .getByRole("region", { name: "Information", exact: true })
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Listed$/ }) })
-      .locator("dd"),
-  ).toHaveText("true");
   const picker = page.getByRole("combobox", {
     name: "Select project",
     exact: true,

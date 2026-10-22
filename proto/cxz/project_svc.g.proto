@@ -170,7 +170,6 @@ message ProjectAddRequest {
   string runtime_id = 10 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
   ProjectStatus status = 16;
-  bool listed = 17;
 }
 
 message ProjectGetRequest {
@@ -199,7 +198,6 @@ message ProjectSelect {
   bool date_erased = 14;
   bool date_created = 15;
   bool status = 16;
-  bool listed = 17;
 }
 
 message ProjectPatchRequest {
@@ -228,7 +226,6 @@ message ProjectPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and status clears.
   bool status_null = 33;
-  bool listed = 34;
 }
 
 message ProjectApplyRequest {
@@ -277,7 +274,6 @@ message ProjectListResponse {
 
 message ProjectFilter {
   ProjectRef ref = 1;
-  bool listed = 2;
 }
 
 message ProjectWatchRequest {

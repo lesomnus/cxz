@@ -131,7 +131,7 @@ func TestEditorLifecycleRPCRejectsDeletedProjectsAndInvalidFrames(t *testing.T) 
 		}
 	}
 	layer, _ := resource.Find[Layer](stack)
-	if _, err = layer.Next().Project().Patch(ctx, resource.ProjectPatchRequest_builder{Ref: projectRef("project"), Listed: ptr(false), DateUpdatedForce: ptr(true)}.Build()); err != nil {
+	if _, err = layer.Next().Project().Erase(ctx, projectRef("project")); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = client.Editor(ctx, request); status.Code(err) != codes.NotFound {
