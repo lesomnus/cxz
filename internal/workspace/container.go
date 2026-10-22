@@ -37,7 +37,8 @@ func (e *Precondition) GRPCStatus() *status.Status {
 // StopContainer leaves the container where it is. The agents are asked to exit
 // first, so a session that comes back is a session that stopped rather than one
 // that was killed.
-func (m *Manager) StopContainer(ctx context.Context, p *Project) error {
+func (m *Manager) StopContainer(ctx context.Context, p *Project) (retErr error) {
+	defer m.recordFailure(ctx, p, &retErr)
 	m.quiesce(ctx, p)
 	containers, err := m.owned(ctx, p)
 	if err != nil {
@@ -65,7 +66,8 @@ func (m *Manager) StopContainer(ctx context.Context, p *Project) error {
 // than applied, because it cannot be applied -- the Dev Container CLI reuses
 // the container it finds and ignores the difference without a word. Applying it
 // means replacing the container, which is the caller's decision to make.
-func (m *Manager) StartContainer(ctx context.Context, p *Project) error {
+func (m *Manager) StartContainer(ctx context.Context, p *Project) (retErr error) {
+	defer m.recordFailure(ctx, p, &retErr)
 	containers, err := m.owned(ctx, p)
 	if err != nil {
 		return err
@@ -80,7 +82,7 @@ func (m *Manager) StartContainer(ctx context.Context, p *Project) error {
 	if err = config.startable(p); err != nil {
 		return err
 	}
-	if err = m.checkpoint(ctx, p, "devcontainer-up"); err != nil {
+	if err = m.checkpoint(ctx, p, "start"); err != nil {
 		return err
 	}
 	result, err := m.devcontainerUp(ctx, p, config.configFile, m.overrideConfig(p), true)
@@ -101,7 +103,8 @@ func (m *Manager) StartContainer(ctx context.Context, p *Project) error {
 // RemoveContainer throws the containers away and keeps everything else: the
 // registration, the sessions, their conversations, the project's state volume
 // and directory. What it removes is what a recreate would have removed anyway.
-func (m *Manager) RemoveContainer(ctx context.Context, p *Project) error {
+func (m *Manager) RemoveContainer(ctx context.Context, p *Project) (retErr error) {
+	defer m.recordFailure(ctx, p, &retErr)
 	m.quiesce(ctx, p)
 	containers, err := m.owned(ctx, p)
 	if err != nil {
@@ -117,6 +120,22 @@ func (m *Manager) RemoveContainer(ctx context.Context, p *Project) error {
 	p.Job.State, p.Job.Step = "complete", "down"
 	p.Job.UpdatedAt = time.Now().UnixMilli()
 	return m.save(ctx, p)
+}
+
+// recordFailure leaves behind what went wrong, the way provisioning does, so a
+// container operation that failed is visible rather than only absent from its
+// result. A precondition is recorded too: it describes the project's state, and
+// the next operation that succeeds retires it (cxz#282).
+func (m *Manager) recordFailure(ctx context.Context, p *Project, err *error) {
+	if *err == nil {
+		return
+	}
+	p.Job.State = "failed"
+	p.Job.UpdatedAt = time.Now().UnixMilli()
+	p.Error = (*err).Error()
+	if e := m.save(context.WithoutCancel(ctx), p); e != nil {
+		*err = fmt.Errorf("%w; recording failure: %v", *err, e)
+	}
 }
 
 // owned is every container this manager made for this project, checked for
