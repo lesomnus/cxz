@@ -266,10 +266,6 @@ func (m *Manager) StopContainer(ctx context.Context, r *api.ProjectRequest) (*ap
 	return m.containerOp(ctx, r, (*Manager).stopContainer, "stopped")
 }
 
-func (m *Manager) StartContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
-	return m.containerOp(ctx, r, (*Manager).startContainer, "started")
-}
-
 func (m *Manager) containerOp(ctx context.Context, r *api.ProjectRequest, op func(*Manager, context.Context, *Project) error, status string) (*api.Receipt, error) {
 	p, err := m.resolve(ctx, r.Workspace)
 	if err != nil {

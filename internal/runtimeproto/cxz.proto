@@ -46,16 +46,17 @@ service Sessions {
   rpc Models(ModelsRequest) returns (ModelsReply);
   rpc Search(SearchRequest) returns (stream SearchReply);
   rpc Projects(Empty) returns (ProjectList);
-  // The container's lifecycle, named after what each one does to it, because
-  // these are the words the CLI and the UI show. Create prepares and runs the
-  // container through the Dev Container lifecycle; Stop keeps it and Start
-  // brings it back; Remove throws it away and keeps the project, its sessions
-  // and their conversations. None of them creates or resumes a session -- that
-  // is Session.Add and Session.Resume, which the client composes with these.
+  // The container's lifecycle. Start makes the project run -- building and
+  // creating the container when there is none, starting the one there is
+  // otherwise; Stop keeps it; Remove throws it away and keeps the project, its
+  // sessions and their conversations. None of them creates or resumes a
+  // session.
+  //
+  // These keep the `Container` suffix that the client-facing names dropped,
+  // because `Stop` on this service is a session's.
   // See docs/plans/project-lifecycle-api.md.
-  rpc CreateContainer(ProjectRequest) returns (Receipt);
-  rpc StopContainer(ProjectRequest) returns (Receipt);
   rpc StartContainer(ProjectRequest) returns (Receipt);
+  rpc StopContainer(ProjectRequest) returns (Receipt);
   rpc RemoveContainer(ProjectRequest) returns (Receipt);
   // Aux is a model task attached to a session: run once, with the context cxz
   // assembles, never accumulating into a conversation. Summary, suggestion and

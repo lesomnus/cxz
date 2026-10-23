@@ -1,6 +1,7 @@
 import { clone, create, isFieldSet } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
+import { BinaryWriter, WireType } from "@bufbuild/protobuf/wire";
 import { ProjectSchema, ContainerState } from "#gen/cxz/project_pb";
 import {
   ProjectService,
@@ -19,7 +20,7 @@ export function projectFixture(
   unavailable = false,
   stopped = false,
   sessionCount = 2,
-  failure: "" | "control" | "preview" = "",
+  failure: "" | "control" | "preview" | "trust" = "",
 ) {
   const now = Date.now();
   const projects = ["Web workspace", "API workspace"].map((name, i) =>
@@ -131,7 +132,9 @@ export function projectFixture(
       },
     });
     router.service(ProjectService, {
-      stopContainer: (request, context) => {
+      // A configuration that asks for something dangerous is refused until the
+      // start says yes to it, the way internal/configtrust refuses it.
+      start: (request, context) => {
         const index = projects.findIndex(
           (p) =>
             request.ref?.key.case === "id" &&
@@ -142,7 +145,53 @@ export function projectFixture(
         if (index < 0)
           throw new ConnectError("Project not found", Code.NotFound);
         calls.push({
-          method: "project.stopContainer",
+          method: request.trustConfig
+            ? "project.start.trusted"
+            : "project.start",
+          project: projects[index]!.runtimeId,
+          signal: context.signal,
+        });
+        if (failure === "trust" && !request.trustConfig) {
+          const error = new ConnectError(
+            [
+              "devcontainer configuration requires explicit trust:",
+              'configuration "/host/workspace/.devcontainer/docker-compose.yaml":  - "/services/dev/privileged": privileged container requested',
+              "inspect these settings and explicitly pass --trust-config if trusted (configuration values omitted)",
+            ].join("\n"),
+            Code.FailedPrecondition,
+          );
+          error.details = [
+            {
+              type: "google.rpc.ErrorInfo",
+              value: new BinaryWriter()
+                .tag(1, WireType.LengthDelimited)
+                .string("TRUST_REQUIRED")
+                .tag(2, WireType.LengthDelimited)
+                .string("cxz.config")
+                .finish(),
+            },
+          ];
+          throw error;
+        }
+        const updated = clone(ProjectSchema, projects[index]!);
+        updated.status!.containerState = ContainerState.RUNNING;
+        updated.dateUpdated = timestampFromDate(new Date());
+        projects[index] = updated;
+        publish();
+        return updated;
+      },
+      stop: (request, context) => {
+        const index = projects.findIndex(
+          (p) =>
+            request.ref?.key.case === "id" &&
+            p.id.every(
+              (b, i) => b === (request.ref!.key.value as Uint8Array)[i],
+            ),
+        );
+        if (index < 0)
+          throw new ConnectError("Project not found", Code.NotFound);
+        calls.push({
+          method: "project.stop",
           project: projects[index]!.runtimeId,
           signal: context.signal,
         });

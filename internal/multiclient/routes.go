@@ -254,9 +254,7 @@ func (c *Client) Open(ctx context.Context, in *api.ProjectRequest, opts ...grpc.
 	return decorateSession(name, reply), err
 }
 
-func (c *Client) CreateContainer(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
-	return c.containerOp(ctx, in, api.SessionsClient.CreateContainer, opts...)
-}
+
 
 func (c *Client) RemoveContainer(ctx context.Context, in *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
 	_, id, client, err := c.route(ctx, in.Workspace)

@@ -8,12 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Server) CreateContainer(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
-	if s.manager == nil {
-		return nil, status.Error(codes.PermissionDenied, "project lifecycle is only available through the installed manager")
-	}
-	return s.manager.CreateContainer(ctx, r)
-}
+
 
 // StopContainer and StartContainer keep the container between them, which Down
 // and Open cannot: Down removes it. See docs/plans/project-lifecycle-api.md.

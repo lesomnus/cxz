@@ -44,7 +44,7 @@ func TestLibraryRPCUsesResolvedSession(t *testing.T) {
 	if _, e = stack.Project().Add(ctx, resource.ProjectAddRequest_builder{Workspace: p.Workspace}.Build()); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = stack.Project().CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: projectRef(p.Id), ClientId: ptr("up")}.Build()); e != nil {
+	if _, e = stack.Project().Start(ctx, resource.ProjectStartRequest_builder{Ref: projectRef(p.Id), ClientId: ptr("up")}.Build()); e != nil {
 		t.Fatal(e)
 	}
 	ln := bufconn.Listen(1 << 20)
@@ -91,7 +91,7 @@ func libraryStack(t *testing.T) (resource.SessionServiceClient, *api.Session, fu
 		db.Close()
 		t.Fatal(e)
 	}
-	if _, e = stack.Project().CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: projectRef(p.Id), ClientId: ptr("up")}.Build()); e != nil {
+	if _, e = stack.Project().Start(ctx, resource.ProjectStartRequest_builder{Ref: projectRef(p.Id), ClientId: ptr("up")}.Build()); e != nil {
 		db.Close()
 		t.Fatal(e)
 	}

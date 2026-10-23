@@ -142,19 +142,21 @@ service ProjectService {
   // Manager to project container: the registrations resolved for this project.
   rpc SyncMcpServers(SyncMcpServersRequest) returns (SyncMcpServersReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
-  // The container's lifecycle. Create prepares and runs it through the Dev
-  // Container lifecycle; Stop leaves it in place and Start brings it and its
-  // runtime back; Remove throws it away and keeps the project, its sessions and
-  // their conversations. None of them creates or resumes a session: that is
-  // Session.Add and Session.Resume, which a client composes with these --
-  // replacing a container is Remove then Create, decided and confirmed where
-  // the person is. The names are what the CLI and the UI show, so a person
+  // A project's container, in the three words a person uses about it. Start
+  // makes the project run: it builds and creates the container when there is
+  // none and starts the one there is otherwise, because "make it run" is one
+  // intention either way. Stop keeps the container. Remove throws it away and
+  // keeps the project, its sessions, their conversations and its volumes --
+  // which is also how a changed configuration gets applied, since starting
+  // cannot apply one.
+  //
+  // None of them creates or resumes a session: that is Session.Add and
+  // Session.Resume. These names are what the CLI and the UI show, so a person
   // reading a button knows which call it makes.
   // See docs/plans/project-lifecycle-api.md.
-  rpc CreateContainer(ProjectCreateRequest) returns (Project);
-  rpc StopContainer(ProjectControl) returns (Project);
-  rpc StartContainer(ProjectControl) returns (Project);
-  rpc RemoveContainer(ProjectControl) returns (Project);
+  rpc Start(ProjectStartRequest) returns (Project);
+  rpc Stop(ProjectControl) returns (Project);
+  rpc Remove(ProjectControl) returns (Project);
   // Foreign inventory is not part of the registered Project resource list.
   rpc InspectForeign(InspectForeignRequest) returns (InspectForeignResponse);
 }
@@ -812,11 +814,11 @@ message FileMappingsReply {
   string status = 1;
 }
 
-message ProjectCreateRequest {
+message ProjectStartRequest {
   ProjectRef ref = 1;
   string client_id = 2;
-  // Which agent's tools the container gets. Not a session: nothing here starts
-  // one.
+  // Which agent's tools a container gets when this call has to make one. Not a
+  // session: nothing here starts one.
   string agent = 3;
   // Consent for a configuration that asks for something dangerous, named by
   // the digest of what the person was shown.

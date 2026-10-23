@@ -149,15 +149,15 @@ func (s ProjectServer) Patch(ctx context.Context, r *resource.ProjectPatchReques
 func (s ProjectServer) Apply(context.Context, *resource.ProjectApplyRequest) (*resource.Project, error) {
 	return nil, closed()
 }
-// CreateContainer prepares the container and runs it through the Dev Container
-// lifecycle. It does not replace one: a project that already has a container
-// is answered as it is, and losing a container is `RemoveContainer`, asked for
-// on purpose.
-func (s ProjectServer) CreateContainer(ctx context.Context, r *resource.ProjectCreateRequest) (*resource.Project, error) {
-	return s.create(ctx, r.GetRef(), r.GetClientId(), r.GetAgent(), r.GetConfig(), r.GetTrustConfig())
+// Start makes the project run: it builds and creates the container when there
+// is none, and starts the one there is otherwise. It does not replace one --
+// losing a container is `Remove`, asked for on purpose -- and it does not apply
+// a changed configuration, because starting cannot: it says so instead.
+func (s ProjectServer) Start(ctx context.Context, r *resource.ProjectStartRequest) (*resource.Project, error) {
+	return s.start(ctx, r.GetRef(), r.GetClientId(), r.GetAgent(), r.GetConfig(), r.GetTrustConfig())
 }
 
-func (s ProjectServer) create(ctx context.Context, ref *resource.ProjectRef, clientID, agent, config string, trust bool) (*resource.Project, error) {
+func (s ProjectServer) start(ctx context.Context, ref *resource.ProjectRef, clientID, agent, config string, trust bool) (*resource.Project, error) {
 	s.shared.transition.RLock()
 	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
@@ -170,23 +170,19 @@ func (s ProjectServer) create(ctx context.Context, ref *resource.ProjectRef, cli
 	if config == "" {
 		config = p.GetConfig()
 	}
-	// Creating a container is all this asks for; sessions are the caller's.
-	_, err = s.shared.runtime.CreateContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust})
+	// Making the project run is all this asks for; sessions are the caller's.
+	_, err = s.shared.runtime.StartContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust})
 	if err != nil {
 		return nil, err
 	}
 	return s.Get(ctx, resource.ProjectGetRequest_builder{Ref: ref, Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 }
 
-// StopContainer and StartContainer are the container's lifecycle without the
-// resource's: the project, its sessions and their conversations are untouched,
-// and neither starts an agent -- that is Session.Resume.
-func (s ProjectServer) StopContainer(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+// Stop and Remove are the container's lifecycle without the resource's: the
+// project, its sessions and their conversations are untouched, and neither
+// touches an agent -- that is Session.Resume.
+func (s ProjectServer) Stop(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	return s.container(ctx, r, s.shared.runtime.StopContainer)
-}
-
-func (s ProjectServer) StartContainer(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
-	return s.container(ctx, r, s.shared.runtime.StartContainer)
 }
 
 func (s ProjectServer) container(ctx context.Context, r *resource.ProjectControl, call func(context.Context, *api.ProjectRequest) (*api.Receipt, error)) (*resource.Project, error) {
@@ -207,7 +203,7 @@ func (s ProjectServer) container(ctx context.Context, r *resource.ProjectControl
 	return s.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 }
 
-func (s ProjectServer) RemoveContainer(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+func (s ProjectServer) Remove(ctx context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	s.shared.transition.RLock()
 	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {

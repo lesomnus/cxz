@@ -98,7 +98,7 @@ func TestStopAndStartKeepTheProject(t *testing.T) {
 	observeWindow = 0
 	defer func() { observeWindow = window }()
 
-	stopped, err := projects.StopContainer(ctx, resource.ProjectControl_builder{Ref: projectRef("project")}.Build())
+	stopped, err := projects.Stop(ctx, resource.ProjectControl_builder{Ref: projectRef("project")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestStopAndStartKeepTheProject(t *testing.T) {
 		t.Fatal("stop removed the session record", page, err)
 	}
 
-	started, err := projects.StartContainer(ctx, resource.ProjectControl_builder{Ref: projectRef("project")}.Build())
+	started, err := projects.Start(ctx, resource.ProjectStartRequest_builder{Ref: projectRef("project")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}

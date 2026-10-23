@@ -337,6 +337,11 @@ func projectContainerCommands() *xli.Command {
 		path := projectArg("WORKSPACE", true)
 		path.Default = ptr(".")
 		c := &xli.Command{Name: op, Brief: briefs[op], Args: arg.Args{path}, Handler: withClient(projectContainerCommand)}
+		if op == "start" {
+			// Starting renders the configuration and asks about it the way `up`
+			// does, so it needs the same way to answer.
+			c.Flags = flg.Flags{switchFlag("trust-config", "Trust elevated settings and host initialization")}
+		}
 		parent.Commands = append(parent.Commands, c)
 	}
 	return parent
@@ -356,7 +361,10 @@ func projectContainerCommand(ctx context.Context, client api.SessionsClient, c *
 	if c.Name == "stop" {
 		reply, err = client.StopContainer(ctx, r)
 	} else {
-		reply, err = client.StartContainer(ctx, r)
+		r.TrustConfig = flg.MustGet[bool](c, "trust-config")
+		reply, err = withConfigTrust(ctx, r, interactiveErrors(c), func(ctx context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+			return client.StartContainer(ctx, r)
+		}, trustPrompt(c))
 	}
 	if err != nil {
 		return err

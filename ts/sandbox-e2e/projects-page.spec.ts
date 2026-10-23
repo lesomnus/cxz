@@ -426,7 +426,7 @@ test("project Stop retains the sandbox project and conversation records", async 
 // The buttons say what they call, and what they call decides which of them is
 // available: Stop while it runs, Start once it is stopped, Remove while there
 // is a container. See docs/plans/project-lifecycle-api.md.
-test("project Stop, Start and Remove container move the container and keep the project", async ({
+test("project Stop, Start and Remove move the container and keep the project", async ({
   page,
 }) => {
   await page.goto("/sandbox.html#/projects");
@@ -458,10 +458,12 @@ test("project Stop, Start and Remove container move the container and keep the p
   await expect(status).toHaveText("Running");
   await expect(button("Start")).toBeDisabled();
 
-  await confirm("Remove container", "Remove container");
+  await confirm("Remove", "Remove container");
   await expect(status).toHaveText("No container");
-  await expect(button("Remove container")).toBeDisabled();
-  await expect(button("Start")).toBeDisabled();
+  await expect(button("Remove")).toBeDisabled();
+  // Start is what makes a project run, so it is offered with no container as
+  // well: it builds one. The sandbox answers it the same way either way.
+  await expect(button("Start")).toBeEnabled();
 
   // The project and its sessions are still there; only the container went.
   await expect(
