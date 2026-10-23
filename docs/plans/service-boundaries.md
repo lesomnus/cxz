@@ -113,10 +113,14 @@ Gate·Audit·Intercept·Batch에 나타나지 않는다. 직접 등록해야 한
 
 CLI verb도 잃지 않는다. cxz는 `pdcmd`를 쓰지 않고 명령을 직접 쓴다.
 
-**그리고 반대 방향으로, 파일이 진실인 엔티티는 죽은 `Watch`를 갖는다.** payday의
-`Watch`는 sink를 통과한 쓰기에 반응한다. 쓰기가 layer에서 파일로 가면 `Watch`는
-선언돼 있는데 영원히 아무것도 발행하지 않는다. 빈 테이블은 눈에 보이는 흉터지만 죽은
-`Watch`는 조용한 거짓이고, 그건 우리가 방금 `ProjectStatus.state`에서 걷어낸 종류다.
+**그리고 반대 방향으로, 파일이 진실인 엔티티는 동작하지 않는 `Watch`를 갖는다.**
+payday의 `Watch`는 sink를 통과한 쓰기에 반응해서 발행한다. 쓰기가 layer에서 파일로
+가면 sink를 통과하지 않으므로, `Watch`는 선언돼 있고 구독도 성공하는데 아무것도
+오지 않는다.
+
+둘을 비교하면 이렇다. 빈 테이블은 스키마를 읽으면 보이고, 아무 호출도 거짓 답을 하지
+않는다. 동작하지 않는 `Watch`는 호출이 성공하고 답이 비어 있으므로, 쓰는 쪽은 자기
+코드를 의심하게 된다. 그래서 빈 테이블보다 나쁘다.
 
 그래서 파일이 진실인 리소스에 대해 엔티티 없는 서비스는 타협이 아니라 **맞는 답**이다.
 지금 26개는 전부 매니저(`s.shared.runtime`)로의 통과 호출이고 DB를 건드리지 않는다.
@@ -186,11 +190,15 @@ message SkillClearRequest  { string name = 1; ProjectRef in = 2; }
 받지 않고, 프로젝트를 받는 것은 `Enable`·`Clear`·`List`뿐이다 — 실제로 프로젝트가
 관여하는 셋이다.
 
-**남는 흉터 하나**: 파일 이름이 `project_svc.ext.proto`인데 안에 Project가 아닌
-서비스가 있다. 오버레이는 이름으로 계약에 매칭되므로 `ProjectRef`를 받으려면 그
-파일이어야 한다. 대안은 자기 파일을 쓰고 프로젝트를 불투명한 문자열로 받는
-것인데(런타임 API가 지금 하는 방식), 그러면 §2의 `ref` 규칙을 다시 어긴다. 전자를
-택한다 — 파일 머리에 "이 파일은 project 계약과 거기에 병합되는 것들"이라고 적는다.
+**받아들여야 하는 것 하나.** payday에서 `proto/ext/cxz/project_svc.ext.proto`는
+"`ProjectService`에 더할 것을 쓰는 파일"이다. 거기에 `SkillService`를 쓰면 파일 이름이
+내용을 다 말하지 않게 된다 — `SkillService`를 찾는 사람이 그 파일을 열어 볼 이유가
+없다. 실행에는 아무 영향이 없고, 찾기 어려워지는 것이 전부다.
+
+그래도 그 파일이어야 하는 이유는 §5의 (2)다: `ProjectRef`는 생성된 계약 파일에만
+있고, 오버레이는 이름으로 그 계약에 매칭된다. 대안은 §7의 1번에 적었다. 이 길을
+택한다면 파일 머리에 "이 파일은 project 계약에 병합되는 것들이고, 여기 있는 서비스가
+모두 Project에 대한 것은 아니다"라고 적는다.
 
 ### 6.4 행이 아닌 것: `Installation`
 
@@ -317,16 +325,67 @@ message McpConnectionListRequest { ProjectRef in = 1; }
 
 §5를 측정한 뒤 남은 것은 셋이다. 저장소 결정은 사라졌다 — 옮길 저장소가 없다.
 
-1. **`SkillService`·`McpServerService`·`McpConnectionService`를
-   `project_svc.ext.proto`에 두는 것을 받아들이는가.** `ProjectRef`를 받으려면 그
-   파일이어야 한다(§5의 (2), (3)). 아니라면 자기 파일을 쓰고 프로젝트를 불투명한
-   문자열로 받는다 — §2의 규칙을 어기는 쪽이다.
-2. **`McpConnectionService`라는 이름**, 그리고 그것이 `List` 하나로 시작하는 것.
-   나중에 "이 세션의 이 MCP를 다시 띄워라"가 붙을 자리이기도 하다.
-3. **`MarkHistoryTrimmable`을 옮기는가 지우는가.**
-   [where-we-are](where-we-are.md)의 "바로 다음" 2번이 지우자고 적어 두었고, 호출자는
-   아직 있다(`internal/supervisor/history.go`가 compaction 전에 묻는다). 지우는 쪽이면
-   `InstallationService`에 자리가 없다.
+### 7.1 새 서비스 셋을 어느 파일에 선언하는가
+
+`SkillService`, `McpServerService`, `McpConnectionService`는 `ProjectRef`를 받아야
+한다. 그러려면 §5의 (2)·(3) 때문에 선택지가 둘뿐이다.
+
+- **A.** `proto/ext/cxz/project_svc.ext.proto`에 선언한다. `ProjectRef`를 받는다.
+  대가는 그 파일에 `ProjectService`가 아닌 서비스가 들어가서, 파일 이름만 보고는
+  안에 무엇이 있는지 알 수 없다는 것이다. 실행에 영향은 없다.
+- **B.** `proto/cxz/skill.proto` 같은 자기 파일에 선언한다. 파일 이름이 내용과
+  맞는다. 대가는 프로젝트를 `ProjectRef`가 아니라 `string`(uuid 또는 runtime id)으로
+  받아야 한다는 것이다. `ProjectRef`는 `id`/`alias`/`workspace`/`runtime_id` 중
+  하나를 담는 oneof이고, 서버는 그 네 가지를 다 받아 준다.
+
+B의 실제 손실은 생각보다 작다. 지금도 alias를 푸는 것은 클라이언트다 —
+`internal/resourceclient/skills.go`의 `projectRef()`가 `Projects`를 불러
+`projectref.Resolve`로 handle을 id로 바꾼 뒤 보낸다. 그러니 `cxz skill enable pn`은
+B에서도 그대로 동작한다. 잃는 것은 "서버가 네 가지 표기를 다 받아 준다"는 성질과,
+요청만 보고 그 문자열이 프로젝트를 가리킨다는 것을 알 수 있다는 점이다.
+
+**A를 권한다.** 파일 이름은 주석 한 줄로 설명되고, 타입은 안 된다.
+
+### 7.2 `McpConnectionService`를 지금 만드는가, 이름은 무엇인가
+
+두 가지를 같이 정해야 한다.
+
+1. **이름.** 제안한 `McpSessionService`는 `McpSessionStatus.session`이 에이전트
+   세션의 id라서 cxz의 `Session`과 같은 단어를 쓰게 된다. 돌아가는 것은 한 에이전트
+   세션과 한 MCP 서버 사이의 연결이므로 `McpConnectionService`를 제안한다.
+   `McpSessionService`로 가도 동작에는 차이가 없고, 읽는 사람이 "MCP의 세션"과
+   "세션의 MCP"를 구분해야 한다.
+2. **지금 만드는가.** 옮길 RPC가 `McpSessions` 하나뿐이다. RPC 하나짜리 서비스를
+   지금 만들 것인지, 두 번째 조작("이 세션의 이 MCP를 다시 띄워라", "왜 실패했는지
+   보여 달라")이 생길 때까지 `McpSessions`를 `ProjectService`에 두고 §2 위반 하나를
+   남길 것인지.
+
+**지금 만드는 쪽을 권한다.** `McpSessions`는 `ProjectRef`를 받으므로 `ProjectService`에
+두어도 §2 위반은 아니다. 그러나 등록(`McpServerService`)과 실행 중인 것이 다른 리소스라는
+것을 한 번 적어 두면, 두 번째 조작이 생길 때 그게 어디로 갈지 묻지 않아도 된다.
+
+### 7.3 `MarkHistoryTrimmable`을 지우는가
+
+**무엇인지부터.** cxz는 세션 대화를 SQLite 파일(`sessions`/`events` 테이블)에
+저장하고, 보존 예산을 넘으면 오래된 것을 잘라낸다(compaction). 잘라내기 **전에**
+수퍼바이저가 이 RPC를 부르고, 받은 쪽은 그 파일에 `PRAGMA user_version=2`를 쓴다.
+목적은 옛 버전 보호다: 잘라내기를 모르는 옛 cxz 빌드가 그 파일을 열면 version 2를
+보고, 구멍 난 대화를 보여 주는 대신 거부한다. 수퍼바이저는 이 호출이 실패하면
+잘라내기를 멈춘다(`internal/supervisor/history.go:298`,
+`internal/server/history_policy.go:50`).
+
+**그래서 이건 설치본에 대한 것이 아니다.** 대화 파일 하나에 표식을 쓰는 조작이고,
+부르는 쪽은 프로젝트 컨테이너 안의 수퍼바이저다. `InstallationService`에 둘 것이
+아니다 — 제안의 §6.4에서 빼 둔 이유다.
+
+[where-we-are](where-we-are.md)의 "바로 다음" 2번은 이 울타리가 "이제 쓰이지 않는다"며
+지우자고 적어 두었다. 그 문장과 코드가 어긋난다: 호출자는 아직 있다. 어긋남이 어느
+쪽인지는 사람이 안다 — 지금 쓰이는 어느 빌드도 잘라내기를 모르지 않는다면 울타리가
+할 일이 없고, 그러면 RPC·수퍼바이저의 호출·`PRAGMA` 셋을 함께 지운다. 그게 아니라면
+남기고, 이 제안이 건드리지 않는다(클라이언트가 부를 일이 없으므로 리소스 API에서
+빼고 런타임 API에만 두는 것이 맞다 — §6.2의 `SyncSkills`와 같은 모양이다).
+
+**지우는 쪽을 권한다.** 다만 "옛 빌드가 더 없다"는 판단은 내 것이 아니다.
 
 ## 8. 순서
 
