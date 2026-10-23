@@ -5,6 +5,11 @@ import "cxz/account_svc.g.proto";
 import "google/protobuf/timestamp.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
+message ProjectWatchResponse {
+  // Present on initial snapshot pages; true on the final page. Live changes omit it.
+  bool snapshot_complete = 1000;
+}
+
 service ProjectService {
   // Permanently remove one project and its owned data, preserving workspace sources.
   // Ephemeral PTY on the manager host. First frame identifies a project and size;

@@ -2259,10 +2259,13 @@ func (b0 SessionWatchRequest_builder) Build() *SessionWatchRequest {
 }
 
 type SessionWatchResponse struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Items *[]*SessionWatchItem   `protobuf:"bytes,1,rep,name=items"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Items            *[]*SessionWatchItem   `protobuf:"bytes,1,rep,name=items"`
+	xxx_hidden_SnapshotComplete bool                   `protobuf:"varint,1000,opt,name=snapshot_complete,json=snapshotComplete"`
+	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
+	XXX_presence                [1]uint32
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *SessionWatchResponse) Reset() {
@@ -2299,8 +2302,32 @@ func (x *SessionWatchResponse) GetItems() []*SessionWatchItem {
 	return nil
 }
 
+func (x *SessionWatchResponse) GetSnapshotComplete() bool {
+	if x != nil {
+		return x.xxx_hidden_SnapshotComplete
+	}
+	return false
+}
+
 func (x *SessionWatchResponse) SetItems(v []*SessionWatchItem) {
 	x.xxx_hidden_Items = &v
+}
+
+func (x *SessionWatchResponse) SetSnapshotComplete(v bool) {
+	x.xxx_hidden_SnapshotComplete = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *SessionWatchResponse) HasSnapshotComplete() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionWatchResponse) ClearSnapshotComplete() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_SnapshotComplete = false
 }
 
 type SessionWatchResponse_builder struct {
@@ -2308,6 +2335,8 @@ type SessionWatchResponse_builder struct {
 
 	// What changed, or -- in the first message -- everything that matches.
 	Items []*SessionWatchItem
+	// Present on initial snapshot pages; true on the final page. Live changes omit it.
+	SnapshotComplete *bool
 }
 
 func (b0 SessionWatchResponse_builder) Build() *SessionWatchResponse {
@@ -2315,6 +2344,10 @@ func (b0 SessionWatchResponse_builder) Build() *SessionWatchResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Items = &b.Items
+	if b.SnapshotComplete != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_SnapshotComplete = *b.SnapshotComplete
+	}
 	return m0
 }
 
@@ -14537,9 +14570,10 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x06listed\x18\x04 \x01(\bR\x06listed\"o\n" +
 	"\x13SessionWatchRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.cxz.SessionFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"C\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"q\n" +
 	"\x14SessionWatchResponse\x12+\n" +
-	"\x05items\x18\x01 \x03(\v2\x15.cxz.SessionWatchItemR\x05items\"e\n" +
+	"\x05items\x18\x01 \x03(\v2\x15.cxz.SessionWatchItemR\x05items\x12,\n" +
+	"\x11snapshot_complete\x18\xe8\a \x01(\bR\x10snapshotComplete\"e\n" +
 	"\x10SessionWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
 	"\x05value\x18\x02 \x01(\v2\f.cxz.SessionR\x05value\x12\x1d\n" +

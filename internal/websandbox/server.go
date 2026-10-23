@@ -284,7 +284,11 @@ func (x *Projects) Watch(r *resource.ProjectWatchRequest, stream grpc.ServerStre
 		}
 		s.mu.Unlock()
 		if first || rev != last {
-			if err := stream.Send(resource.ProjectWatchResponse_builder{Items: items}.Build()); err != nil {
+			reply := resource.ProjectWatchResponse_builder{Items: items}.Build()
+			if first {
+				reply.SetSnapshotComplete(true)
+			}
+			if err := stream.Send(reply); err != nil {
 				return err
 			}
 			last = rev
@@ -357,7 +361,11 @@ func (x *Sessions) Watch(r *resource.SessionWatchRequest, stream grpc.ServerStre
 		}
 		s.mu.Unlock()
 		if first || rev != last {
-			if err := stream.Send(resource.SessionWatchResponse_builder{Items: items}.Build()); err != nil {
+			reply := resource.SessionWatchResponse_builder{Items: items}.Build()
+			if first {
+				reply.SetSnapshotComplete(true)
+			}
+			if err := stream.Send(reply); err != nil {
 				return err
 			}
 			last = rev

@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net"
 	"path/filepath"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/watch"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
@@ -83,7 +85,7 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	pb, err := pw.Recv()
-	if err != nil || len(pb.GetItems()) != 2 {
+	if err != nil || len(pb.GetItems()) != 2 || !pb.HasSnapshotComplete() || !pb.GetSnapshotComplete() {
 		t.Fatalf("unscoped project snapshot: %v %v", pb, err)
 	}
 	sw, err := sessions.Watch(ctx, &resource.SessionWatchRequest{})
@@ -91,7 +93,7 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	sb, err := sw.Recv()
-	if err != nil || len(sb.GetItems()) != 2 {
+	if err != nil || len(sb.GetItems()) != 2 || !sb.HasSnapshotComplete() || !sb.GetSnapshotComplete() {
 		t.Fatalf("unscoped session snapshot: %v %v", sb, err)
 	}
 	for _, item := range sb.GetItems() {
@@ -104,7 +106,7 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	sb, err = sw.Recv()
-	if err != nil || len(sb.GetItems()) != 1 || !bytes.Equal(sb.GetItems()[0].GetId(), added.GetId()) {
+	if err != nil || sb.HasSnapshotComplete() || len(sb.GetItems()) != 1 || !bytes.Equal(sb.GetItems()[0].GetId(), added.GetId()) {
 		t.Fatalf("new session after subscription: %v %v", sb, err)
 	}
 	addedProject, err := layer.Next().Project().Add(ctx, resource.ProjectAddRequest_builder{RuntimeId: "third", Workspace: "/third"}.Build())
@@ -112,7 +114,7 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	pb, err = pw.Recv()
-	if err != nil || len(pb.GetItems()) != 1 || !bytes.Equal(pb.GetItems()[0].GetId(), addedProject.GetId()) {
+	if err != nil || pb.HasSnapshotComplete() || len(pb.GetItems()) != 1 || !bytes.Equal(pb.GetItems()[0].GetId(), addedProject.GetId()) {
 		t.Fatalf("new project after subscription: %v %v", pb, err)
 	}
 	if _, err := layer.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: resource.SessionRef_builder{Id: live.GetId()}.Build(), Name: ptr("renamed"), DateUpdatedForce: ptr(true)}.Build()); err != nil {
@@ -137,5 +139,62 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 	ab, err := aw.Recv()
 	if err != nil || len(ab.GetItems()) != 1 || string(ab.GetItems()[0].GetId()) != string(archived.GetId()) {
 		t.Fatalf("explicit scope: %v %v", ab, err)
+	}
+}
+
+func TestInventorySnapshotCompletion(t *testing.T) {
+	for _, pages := range []int{0, 1, 3} {
+		t.Run(string(rune('0'+pages)), func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			broker, err := (config.WatchConfig{Broker: config.BrokerMemory}).Build(config.DbConfig{Driver: "sqlite3"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			page := 0
+			done := errors.New("snapshot delivered")
+			var complete []bool
+			err = streamInventory(ctx, watch.New(broker), "cxz.Project", false,
+				func(after string) ([]*resource.Project, string, error) {
+					page++
+					if pages == 0 {
+						return nil, "", nil
+					}
+					next := ""
+					if page < pages {
+						next = "next"
+					}
+					return []*resource.Project{resource.Project_builder{Id: resourceID(7, string(rune('0'+page)))}.Build()}, next, nil
+				},
+				func([]byte) (*resource.Project, bool, error) {
+					t.Fatal("snapshot must not resolve live writes")
+					return nil, false, nil
+				},
+				func(rows []inventoryRow[*resource.Project], final *bool) error {
+					if final == nil {
+						t.Fatal("snapshot page has no completion marker")
+					}
+					if pages == 0 && len(rows) != 0 {
+						t.Fatal("empty snapshot has rows")
+					}
+					complete = append(complete, *final)
+					if *final {
+						return done
+					}
+					return nil
+				})
+			if !errors.Is(err, done) {
+				t.Fatal(err)
+			}
+			want := max(1, pages)
+			if len(complete) != want {
+				t.Fatal("wrong snapshot page count", complete)
+			}
+			for i, final := range complete {
+				if final != (i == want-1) {
+					t.Fatal("only the final snapshot page may commit", complete)
+				}
+			}
+		})
 	}
 }

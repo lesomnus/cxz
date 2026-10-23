@@ -296,6 +296,8 @@ message ProjectWatchRequest {
 message ProjectWatchResponse {
   // What changed, or -- in the first message -- everything that matches.
   repeated ProjectWatchItem items = 1;
+  // Present on initial snapshot pages; true on the final page. Live changes omit it.
+  bool snapshot_complete = 1000;
 }
 
 message ProjectWatchItem {
