@@ -100,12 +100,34 @@ func (s *Server) lockProjection(ctx context.Context, m core.Session) (*sessionPr
 		return nil, err
 	}
 	if !found {
-		// A session that has recorded nothing yet. Not an error: it is about to.
-		p.snapshot = supervisor.Replay(nil)
-		p.background = map[string]*agentview.BackgroundState{}
-		p.catalogs = map[string]catalogRecord{}
-		ok = true
-		return p, nil
+		through, err := p.store.Through(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if through == 0 {
+			// A session that has recorded nothing yet. Not an error: it is about to.
+			p.snapshot = supervisor.Replay(nil)
+			p.background = map[string]*agentview.BackgroundState{}
+			p.catalogs = map[string]catalogRecord{}
+			ok = true
+			return p, nil
+		}
+		// Records and no state: a session that last ran before it wrote its
+		// state beside its records, and has not run since. Its state is what
+		// its records reduce to -- the same replay its supervisor does when it
+		// launches, and the one that writes the state down. Reading it as
+		// empty answered with no run, so resuming it was refused as stale
+		// before the supervisor that would have fixed it could start.
+		// Nothing is recording, so the replay is done once per process.
+		if p.derived && p.snapshot.LastSeq == through {
+			snap = p.snapshot
+		} else {
+			events, err := p.store.Events(ctx)
+			if err != nil {
+				return nil, err
+			}
+			snap = supervisor.Replay(events)
+		}
 	}
 	// Derived on every call where the session has moved, not once: a session
 	// keeps recording, and a projection taken and then left alone would answer
