@@ -1,7 +1,6 @@
 # ProjectService 쪼개기 — 서비스 경계
 
-상태: 제안. 구현 전. 남은 결정은 §7.1 하나다 — 파일이 진실인 엔티티의 `id`를
-어떻게 만드는가.
+상태: 제안. 구현 전. 결정은 다 됐다(§7) — 남은 것은 승인과 구현이다.
 
 `ProjectService`는 생성된 7개 verb(`Add` `Get` `Patch` `Apply` `Erase` `List`
 `Watch`) 위에 손으로 쓴 RPC 47개를 얹고 있다. 그중 **26개는 Project를 가리키지
@@ -114,6 +113,30 @@ Gate·Audit·Intercept·Batch에 나타나지 않는다. 직접 등록해야 한
 
 CLI verb도 잃지 않는다. cxz는 `pdcmd`를 쓰지 않고 명령을 직접 쓴다.
 
+**(0) 그런데 스킬·MCP에는 이 선택이 필요 없다. 내가 전제를 틀리게 알고 있었다.**
+"진실은 공유 디렉터리의 파일이고 `cxz share`가 고친다"고 적었는데, 경로를 확인하면
+그렇지 않다.
+
+| | 어디 | 누가 고치나 |
+| --- | --- | --- |
+| 스킬 디렉터리 | `root/share/skills/<name>/` (`skillconfig.Library`) | 사람. `cxz share`가 닿는다 |
+| 스킬 색인 | `root/skills.json` (`config.go:133`) | 매니저만 |
+| MCP 색인 | `root/mcp.json` (`mcpconfig/config.go:107`) | 매니저만 |
+
+`cxz share`는 `root/share` **안**의 파일을 고치는 명령이고, 색인은 거기 없다. 상태
+루트에 있다 — `cxz.db`와 같은 디렉터리의 다른 파일이다. 그리고 등록은 이미 API
+호출이다: `cxz skill add NAME`이 "`${CXZ_SHARE_DIR}/skills`의 디렉터리를 등록"한다.
+사람이 `skills.json`을 고치는 경로는 없다.
+
+그래서 색인을 DB로 옮기는 것은 소유자를 바꾸는 일이 아니다. 매니저가 자기 상태를 어느
+파일에 두느냐의 문제이고, 행으로 두면 §6.3이 생성된 CRUD를 **진짜로** 받는다. 마이그레이션도
+자동이다 — `server/lifecycle/stack.go:75`가 시작할 때 `migrate.NewSchema(driver).Create(ctx)`를
+돌린다.
+
+아래 (5)는 그래도 적어 둔다. `Installation`과 `McpConnection`은 행이 아니고, 프로젝트
+런타임 쪽에서는 스킬 테이블이 비어 있어야 하므로(전달받은 묶음만 안다) 거기서는 이
+패턴이 그대로 필요하다.
+
 **(5) 엔티티를 선언하고 sink가 답하지 않게 하는 길도 있다. 이 저장소가 이미 그렇게
 하고 있다.** `Connection`은 선언된 엔티티인데(domain 12, `global`, `list:`) 매니저는
 그 서비스를 `Unimplemented`로 답한다. `server/lifecycle/stack.go:122`에 이유가 적혀
@@ -177,23 +200,23 @@ id가 없다. 그래서 파일에 하나 적거나, 이름에서 `pdid` 형식�
 only SyncSkills: it is the side being told."* 매니저의 `SyncSkills`는 호출되면
 에러를 던진다. 클라이언트가 보는 표면에 있을 이유가 없다 — 지운다.
 
-### 6.3 행으로 선언하고 파일이 답하는 둘: `Skill`, `McpServer`
+### 6.3 행이 되는 둘: `Skill`, `McpServer`
 
-둘 다 같은 모양이다. 등록은 설치본 전체, 활성화는 프로젝트별, 진실의 출처는 공유
-디렉터리의 파일(`skills.json`, mcp 설정)이고 `cxz share`가 그걸 고친다.
+등록은 설치본 전체, 활성화는 프로젝트별. 색인은 지금 `root/skills.json`과
+`root/mcp.json`인데, 둘 다 매니저만 고치는 상태 루트의 파일이다(§5의 (0)). 그걸
+`cxz.db`의 행으로 옮긴다. 스킬 디렉터리는 `root/share/skills`에 그대로 남는다 —
+Project가 행이고 워크스페이스가 디스크에 있는 것과 같은 구조다.
 
-§5의 (5)로 선언한다 — 엔티티를 선언하고, 답은 layer가 파일에서 한다. `Connection`이
-이미 그렇게 되어 있다. `watch:`는 선언하지 않는다(sink를 통과하는 쓰기가 없으므로
-발행할 것이 없다). `list:`는 선언하고 layer가 답한다 — 요청 메시지의 필터 필드가
-생성되고, 그 필터를 파일을 읽어 적용한다.
+행이 진짜이므로 sink가 답한다. layer가 덮어쓸 것이 없고, 생성된 `List`와 `Watch`가
+실제로 동작하고, id는 payday가 만든다.
 
 ```proto
 // proto/cxz/skill.proto
 message Skill {
-  bytes  id    = 1  [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
-  string alias = 4  [(orm.field) = {unique: true}];   // 스킬 디렉터리 이름
-  string desc  = 6;
-  bool   enabled = 7;                                  // 프로젝트가 정하지 않았을 때의 기본값
+  bytes  id      = 1  [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  string alias   = 4  [(orm.field) = {unique: true}];   // 스킬 디렉터리 이름
+  string desc    = 6;                                    // SKILL.md에서 읽어 채운다
+  bool   enabled = 7;                                    // 프로젝트가 정하지 않았을 때의 기본값
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased  = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
@@ -202,31 +225,45 @@ message Skill {
     domain: 13
     global: {}
     list: {order: [{field: {name: "alias"}}, {field: {name: "id"}}], by: [{name: "ref"}], size: 100, max: 200}
+    watch: {}
   };
 }
 
-// 스킬이 한 프로젝트에 속하는 것이 아니다. 설치본 전체에 등록되고 프로젝트마다
-// 켜지거나 꺼진다. 그래서 `Skill`에 `Project` edge를 두면 거짓이 된다 — 관계는
-// 속성(`enabled`)을 가진 다대다이고, 그건 행 하나다.
+// 스킬은 한 프로젝트에 속하지 않는다. 설치본 전체에 등록되고 프로젝트마다 켜지거나
+// 꺼진다. 그래서 `Skill`에 `Project` edge를 두면 거짓이 된다 — 관계는 속성
+// (`enabled`)을 가진 다대다이고, 그건 행 하나다.
 message SkillActivation {
   bytes   id      = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
   Skill   skill   = 8 [(orm.edge) = {immutable: true}];
   Project project = 9 [(orm.edge) = {immutable: true}];
   bool    enabled = 10;
-  ...
+  // ... 같은 타임스탬프 셋
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [{name: "pair", refs: [{name: "skill", number: 8}, {name: "project", number: 9}], unique: true}]
+  };
   option (payday.entity) = {
     domain: 14
     global: {}
     list: {order: [...], by: [{name: "ref"}, {name: "skill"}, {name: "project"}], size: 200, max: 500}
+    watch: {}
   };
 }
 ```
 
+`alias`는 스킬 디렉터리 이름이다. 그걸 정체성으로 삼는 것이 아니라 — 정체성은
+payday가 만든 `id`다 — 사람이 쓰는 이름으로 둔다. `skillconfig`가 이미
+"the name must match its directory"를 강제하므로 디렉터리 이름이 곧 그 값이고,
+이름을 바꾸는 것은 `Patch` 한 번이다. `id`는 그대로 남는다.
+
 프로젝트 edge를 8·9에 두는 것은 이 저장소의 관행이다 — `Session.project = 8`,
 `Task.project = 8`, `AuthBinding.project = 9`. (payday는 필드 3을 "테넌트보다 작은
-집합으로 가는 edge" 자리로 비워 두지만, 이 저장소는 쓰지 않았다.)
+집합으로 가는 edge" 자리로 비워 두지만 이 저장소는 쓰지 않았다.)
 
-이렇게 하면 손으로 쓸 RPC가 남지 않는다. 지금 13개가 이렇게 대응된다:
+`McpServer`는 같은 모양이고 `alias` 자리에 지금의 `id` 문자열이, `desc` 외에 명령·인자·
+환경·URL·헤더가 들어간다. 지금 MCP 설정은 전부 설정값이라 행에 더 잘 맞는다.
+
+손으로 쓸 RPC가 남지 않는다. 13개가 이렇게 대응된다:
 
 | 지금 | 다음 |
 | --- | --- |
@@ -237,17 +274,19 @@ message SkillActivation {
 | `SetProjectSkill`, `SetProjectMcpServer` | `SkillActivation.Apply{skill, project, enabled}` |
 | `ClearProjectSkill`, `ClearProjectMcpServer` | `SkillActivation.Erase` |
 
-`AddSkill(ProjectRef)`이 설치본 전체에 등록하면서 프로젝트를 받던 문제(§4)도
-사라진다. `Skill.Add`는 프로젝트를 받지 않고, 프로젝트를 받는 것은 `SkillActivation`
-뿐이다.
+`AddSkill(ProjectRef)`이 설치본 전체에 등록하면서 프로젝트를 받던 문제(§4)도 사라진다.
+`Skill.Add`는 프로젝트를 받지 않고, 프로젝트를 받는 것은 `SkillActivation`뿐이다.
 
-**구현에서 지켜야 할 것 둘.**
+**이관과 그 대가.** `skills.json`과 `mcp.json`을 한 번 읽어 행으로 넣고, 그 다음부터
+쓰지 않는다. 테이블 생성은 시작할 때 자동이다. 대가는 롤백이다 — 이관한 릴리스보다
+과거로 돌아간 빌드는 `skills.json`을 읽고 등록이 비어 있는 것을 본다. 디렉터리는
+`root/share/skills`에 그대로 있으므로 `cxz skill add`로 다시 등록하면 복구된다. 영구
+손실이 아니고, `cxzupdate.Schema`를 올릴 일도 아니다.
 
-1. `Layer`가 `Skill()`과 `SkillActivation()`을 모두 덮어써야 한다. 덮어쓰지 않은
-   메서드는 `resource.Overlay`를 타고 sink로 내려가 빈 테이블을 읽고 "없음"을
-   답한다. 답하지 않을 메서드는 `Connection()`처럼 명시적으로 `Unimplemented`를
-   돌려준다.
-2. `Skill.id`가 안정돼야 한다 — §7.1.
+**프로젝트 런타임 쪽.** 프로젝트 컨테이너도 같은 리소스 스택을 올리므로 그쪽에도
+테이블이 생기지만 비어 있어야 한다 — 프로젝트는 전달받은 묶음(`skills-runtime.json`)만
+알고 라이브러리를 모른다. 그래서 그쪽 `Skill()`·`SkillActivation()`은 `Connection()`처럼
+`Unimplemented`를 돌려준다. 빈 테이블을 답하는 것보다 거부가 낫다(§5의 (5)).
 
 ### 6.4 행이 아닌 것: `Installation`
 
@@ -395,38 +434,33 @@ import하므로(Session이 Project edge를 가진다) 반대 방향은 순환이
 손으로 쓸 것은 47 → 약 29다. 줄어든 열두 개는 §6.3이 엔티티로 가서 생성된 CRUD를
 받기 때문이다.
 
-테이블은 넷 생긴다(`skill`, `skill_activation`, `mcp_server`, `mcp_activation`). 전부
-비어 있고 답은 layer가 파일에서 한다 — `Connection`이 이미 그 모양이다.
-`InstallationService`와 `McpConnectionService`는 엔티티가 아니므로 테이블이 없다.
+테이블은 넷 생긴다(`skill`, `skill_activation`, `mcp_server`, `mcp_activation`). 매니저
+쪽에서는 행이 진짜이고 sink가 답한다. 프로젝트 런타임 쪽에서는 비어 있어야 하므로 그
+넷을 `Unimplemented`로 답한다. `InstallationService`와 `McpConnectionService`는 엔티티가
+아니므로 테이블이 없다.
 
 ## 7. 결정
 
-셋 중 둘은 정해졌다(§7.2, §7.3). 남은 것은 §7.1이다.
+셋 다 정해졌다. 아래는 무엇을 정했고 왜인지다.
 
-### 7.1 파일이 진실인 엔티티의 `id`를 어떻게 만드는가
+### 7.1 스킬·MCP 색인을 DB에 둔다 — 정해졌다
 
-이것만 남았다. §5의 (5)로 가면 `Skill`과 `McpServer`는 payday 엔티티이므로 uuid
-`id`를 키로 가져야 하고, `Add`는 그 id를 담아 답한다. 그런데 진실은 파일이고
-`skills.json`에는 id가 없다. layer가 어디선가 **안정된** id를 만들어야 한다. 두
-가지다.
+이 질문은 "파일이 진실인 엔티티의 `id`를 어떻게 만드는가"였다. 전제가 틀려서 질문
+자체가 없어졌다(§5의 (0)): 색인은 `cxz share`가 닿는 곳에 없고 매니저만 고치는 상태
+루트의 파일이다. 행으로 옮기면 payday가 `id`를 만든다.
 
-- **파일에 적는다.** `skills.json`의 각 항목에 `"id"`를 하나 더 둔다. 명시적이다.
-  대가는 사람이 고치는 파일에 uuid가 들어간다는 것, 그리고 사람이 디렉터리만 만들어
-  둔 스킬에는 id가 없어서 등록 때 채워야 한다는 것이다.
-- **이름에서 파생시킨다.** `sha256(alias)`의 앞 16바이트를 uuid로 놓고 payday가
-  요구하는 두 바이트를 덮어쓴다 — `v[6] = 0x80 | (v[6] & 0x0F)`, `v[9] = domain`
-  (`pdid.New`가 하는 것과 같다). 그러면 `pdid.Of`가 받아 주고, 파일에 새로 적을 것이
-  없고, 사람이 디렉터리를 만들어 둔 스킬도 id를 갖는다. 대가는 스킬 이름을 바꾸면
-  id가 바뀐다는 것이다.
+곁들여 정리해 둘 것 둘.
 
-**파생을 권한다.** 이름이 바뀌면 다른 등록이 되는 것이 맞고 — `SkillActivation`도
-파일에서 이름으로 키가 잡혀 있으니 같이 움직인다 — 사람이 고치는 파일에 uuid를
-넣지 않는 쪽이 낫다. 시간순 정렬을 잃지만 `list:`의 정렬은 `alias`가 먼저이고 `id`는
-커서를 고유하게 만드는 마지막 칸이라 영향이 없다.
-
-이 결정이 아니라 §5의 (1)(엔티티 없는 서비스)로 가겠다면 `id`는 필요 없다. 대신
-스킬을 `string name`으로 가리키고, 서비스 선언이 `project_svc.ext.proto`에 들어간다.
-그 쪽을 택하면 §6.3의 생성된 CRUD도 함께 포기한다 — 손으로 쓸 RPC 여섯 개가 돌아온다.
+- **`id`는 `bytes` uuid여야 한다.** 선택이 아니다. payday의 식별자는 9번째 바이트에
+  domain을 담고(`pdid.New`의 `v[9] = byte(d)`), `pdid.Mint`가 생성된 쓰기 경로에 들어가
+  "다른 종류의 식별자로 저장하려는 요청"을 거부한다. 문자열 키로 바꾸면 그 검사와,
+  감사 추적이 식별자만 보고 종류를 아는 성질이 사라진다. 필드 번호 1·4·5·6·13·14·15도
+  payday가 이름으로 읽는 자리다.
+- **`alias`를 정체성으로 쓰지 않는다.** payday에서 `alias`는 사람이 쓰는 핸들이고
+  변경 가능하다. 스킬의 `alias`는 디렉터리 이름이고(`skillconfig`가 둘이 같아야 한다고
+  강제한다) 이름을 바꾸는 것은 `Patch` 한 번이다. 정체성은 `id`이고 그건 안 바뀐다.
+  이름에서 id를 파생시키자던 앞의 제안은 접는다 — 필요도 없고, 이름이 바뀌면 id가
+  바뀌는 쪽이 틀렸다.
 
 ### 7.2 `McpConnectionService` — 정해졌다
 
@@ -500,11 +534,16 @@ binaries cannot recover these sessions."* 즉 Schema 1 빌드는 이 설치본�
    옮기는 것이 일의 대부분이다. 웹 호출자는 `auxConfig`/`auxSetConfig`
    둘뿐이고(`ts/src`), 나머지는 CLI(`cmd/cxz`)와
    `internal/resourceclient`·`internal/multiclient`다.
-3. §6.3 `Skill`·`McpServer`와 §6.5 `McpConnection`. §7.1이 선행한다.
+3. §6.3 `Skill`·`McpServer`. 엔티티 넷, 자동 마이그레이션, `skills.json`·`mcp.json`을
+   한 번 읽어 행으로 넣는 이관 하나. 생성된 CRUD가 손으로 쓴 12개를 대신하므로
+   `cmd/cxz/skill.go`·`mcp.go`와 `internal/resourceclient`·`internal/multiclient`의
+   래퍼가 그만큼 줄어든다.
+4. §6.5 `McpConnection`. MCP 계약이 생긴 다음이다 — 그 오버레이에 선언한다.
 
-세 단계 모두 등록이 한 줄씩 필요하다 — `internal/server/server.go`,
-`internal/websandbox/server.go`, 그리고 웹의 `ts/src/shared/api/connection.ts`.
-생성된 `resource.RegisterServer`가 이들을 모르기 때문이다(§5의 (4)).
+`InstallationService`와 `McpConnectionService`는 등록이 한 줄씩 필요하다 —
+`internal/server/server.go`, `internal/websandbox/server.go`, 그리고 웹의
+`ts/src/shared/api/connection.ts`. 생성된 `resource.RegisterServer`가 엔티티 없는
+서비스를 모르기 때문이다(§5의 (4)). §6.3의 넷은 엔티티라서 자동으로 등록된다.
 
 ## 측정을 다시 하는 방법
 
