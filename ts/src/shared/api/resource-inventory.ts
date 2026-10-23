@@ -1,10 +1,17 @@
 import { useSyncExternalStore } from "react";
+import { equals, isFieldSet, type Message } from "@bufbuild/protobuf";
 import { Code, ConnectError, type Client } from "@connectrpc/connect";
 import { key, type Store } from "@lesomnus/payday/store";
-import type { Project } from "#gen/cxz/project_pb";
-import type { Session } from "#gen/cxz/session_pb";
-import type { ProjectService } from "#gen/cxz/project_svc_pb";
-import type { SessionService } from "#gen/cxz/session_svc_pb";
+import { ProjectSchema, type Project } from "#gen/cxz/project_pb";
+import { SessionSchema, type Session } from "#gen/cxz/session_pb";
+import {
+  ProjectWatchResponseSchema,
+  type ProjectService,
+} from "#gen/cxz/project_svc_pb";
+import {
+  SessionWatchResponseSchema,
+  type SessionService,
+} from "#gen/cxz/session_svc_pb";
 import { readBy, release } from "./stream-deadline";
 
 /**
@@ -18,8 +25,9 @@ type Kind = "projects" | "sessions";
 // What this reads from a Watch frame, which is all two entities have in common
 // at the type level: a row named by id that either carries its value or says it
 // is gone. `action` is the RPC behind the change and nothing here shows it.
-type WatchFrame = {
+type WatchFrame = Message & {
   items: readonly { id: Uint8Array; value?: Project | Session }[];
+  snapshotComplete?: boolean;
 };
 type Snapshot = {
   projects: Project[];
@@ -40,6 +48,7 @@ export class ResourceInventory {
   private state = empty();
   private listeners = new Set<() => void>();
   private stop: AbortController | undefined;
+  private settled = { projects: false, sessions: false };
 
   constructor(
     private projects: Pick<Client<typeof ProjectService>, "list" | "watch">,
@@ -53,16 +62,16 @@ export class ResourceInventory {
     this.stop?.abort();
     const stop = new AbortController();
     this.stop = stop;
-    void this.watch("projects", this.projects, "cxz.Project", stop.signal);
-    void this.watch("sessions", this.sessions, "cxz.Session", stop.signal);
+    void this.watch("projects", this.projects, stop.signal);
+    void this.watch("sessions", this.sessions, stop.signal);
   };
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     if (!this.stop) {
       const stop = new AbortController();
       this.stop = stop;
-      void this.watch("projects", this.projects, "cxz.Project", stop.signal);
-      void this.watch("sessions", this.sessions, "cxz.Session", stop.signal);
+      void this.watch("projects", this.projects, stop.signal);
+      void this.watch("sessions", this.sessions, stop.signal);
     }
     return () => {
       this.listeners.delete(listener);
@@ -79,9 +88,40 @@ export class ResourceInventory {
     loading: boolean,
     error?: unknown,
   ) {
+    const previous = this.state[kind];
+    const byId = new Map(previous.map((row) => [key(row.id), row]));
+    const changes: { id: Uint8Array; value?: Project | Session }[] = [];
+    const next = [...rows.values()].map((row) => {
+      const old = byId.get(key(row.id));
+      byId.delete(key(row.id));
+      if (
+        old &&
+        (kind === "projects"
+          ? equals(ProjectSchema, old as Project, row as Project)
+          : equals(SessionSchema, old as Session, row as Session))
+      )
+        return old;
+      changes.push({ id: row.id, value: row });
+      return row;
+    });
+    for (const row of byId.values()) changes.push({ id: row.id });
+    const same =
+      next.length === previous.length &&
+      next.every((row, i) => row === previous[i]);
+    if (
+      same &&
+      this.state.loading[kind] === loading &&
+      this.state.errors[kind] === error
+    )
+      return;
+    if (changes.length)
+      this.store.apply(
+        kind === "projects" ? "cxz.Project" : "cxz.Session",
+        changes,
+      );
     this.state = {
       ...this.state,
-      [kind]: [...rows.values()],
+      [kind]: same ? previous : next,
       loading: { ...this.state.loading, [kind]: loading },
       errors: { ...this.state.errors, [kind]: error },
     };
@@ -93,7 +133,6 @@ export class ResourceInventory {
     client:
       | Pick<Client<typeof ProjectService>, "list" | "watch">
       | Pick<Client<typeof SessionService>, "list" | "watch">,
-    entity: string,
     signal: AbortSignal,
   ) {
     let retry = 0;
@@ -104,64 +143,94 @@ export class ResourceInventory {
     // Projects do not: a project is registered or erased, and the default list
     // is every registered one. See cxz#274.
     const request = kind === "sessions" ? { filters: [{ listed: true }] } : {};
+    const completion =
+      kind === "projects"
+        ? ProjectWatchResponseSchema.field.snapshotComplete
+        : SessionWatchResponseSchema.field.snapshotComplete;
     while (!signal.aborted) {
-      const rows = new Map<string, Project | Session>();
+      let rows = new Map<string, Project | Session>(
+        this.state[kind].map((row) => [key(row.id), row]),
+      );
+      const hasSnapshot = this.settled[kind];
+      const listed = new Map<string, Project | Session>();
+      const attempt = new AbortController();
+      const abort = () => attempt.abort();
+      signal.addEventListener("abort", abort, { once: true });
+      if (signal.aborted) abort();
       let after = "";
       try {
         // A bounded List also settles an empty catalog: older Watch servers do
         // not emit an initial frame when no rows match. The Watch's snapshot
         // streams ALL pages, so large catalogs need no per-project paging.
-        const page = await client.list({ ...request, size: 1 }, { signal });
+        const page = await client.list(
+          { ...request, size: 1 },
+          { signal: attempt.signal },
+        );
         if (signal.aborted) return;
         after = page.next;
-        for (const row of page.items) rows.set(key(row.id), row);
-        this.store.apply(
-          entity,
-          page.items.map((value) => ({ id: value.id, value })),
-        );
+        for (const row of page.items) listed.set(key(row.id), row);
         // What this one row settles is only whether the catalog is empty, or
         // holds exactly one. Beyond that it is a probe, not an inventory, and
         // publishing it as a settled catalog is what made cxz#189 look
         // plausible instead of broken: one session listed, no spinner, no
         // error, forever. The snapshot owes the rest, so say it is still coming.
         const partial = after !== "";
-        this.publish(kind, rows, partial);
+        if (!partial) {
+          rows = new Map(listed);
+          this.publish(kind, rows, false);
+          this.settled[kind] = true;
+        } else if (!hasSnapshot) {
+          for (const [id, row] of listed) rows.set(id, row);
+          this.publish(kind, rows, true);
+        }
         const stream: AsyncIterator<WatchFrame> = client
           .watch(request, {
-            signal,
+            signal: attempt.signal,
           })
           [Symbol.asyncIterator]();
         try {
           let first = true;
+          let pending = partial;
+          const snapshot = new Map<string, Project | Session>();
           for (;;) {
-            // Only the first frame is waited on. A snapshot that has arrived
-            // and a catalog that is not changing are both legitimately silent,
-            // but a snapshot that never starts is not -- and nothing else here
-            // can tell it from a stream that is merely quiet.
-            const step = await (first && partial
+            // Snapshot pages have a deadline; a settled subscription may stay
+            // silent indefinitely when nothing changes.
+            const step = await (first && pending
               ? readBy(stream.next(), SNAPSHOT_DEADLINE_MS, stalled)
               : stream.next());
             if (step.done) break;
             if (signal.aborted) return;
             const batch = step.value;
-            // A reconnect begins with a fresh snapshot, replacing stale
-            // membership rather than keeping rows that disappeared while
-            // disconnected.
-            if (first) rows.clear();
-            first = false;
             retry = 0;
-            this.store.apply(entity, batch.items);
+            const target = first ? snapshot : rows;
             for (const item of batch.items) {
               const id = key(item.id);
-              if (item.value) rows.set(id, item.value);
-              else rows.delete(id);
+              if (item.value) target.set(id, item.value);
+              else target.delete(id);
+            }
+            if (first) {
+              if (isFieldSet(batch, completion) && !batch.snapshotComplete) {
+                pending = true;
+                if (!hasSnapshot) {
+                  for (const [id, row] of snapshot) rows.set(id, row);
+                  this.publish(kind, rows, true);
+                }
+                continue;
+              }
+              // Old managers send their snapshot without a completion field.
+              // New managers mark its final page so a refresh never briefly
+              // removes rows that are still in flight.
+              rows = snapshot;
+              first = false;
+              this.settled[kind] = true;
             }
             this.publish(kind, rows, false);
           }
         } finally {
           release(stream);
         }
-        throw new Error("Resource subscription disconnected");
+        if (!this.settled[kind])
+          throw new Error("Resource subscription disconnected");
       } catch (error) {
         if (signal.aborted) return;
         const code = ConnectError.from(error).code;
@@ -173,16 +242,14 @@ export class ResourceInventory {
             while (after) {
               const page = await client.list(
                 { ...request, size: 200, after },
-                { signal },
+                { signal: attempt.signal },
               );
               if (signal.aborted) return;
               after = page.next;
-              for (const row of page.items) rows.set(key(row.id), row);
-              this.store.apply(
-                entity,
-                page.items.map((value) => ({ id: value.id, value })),
-              );
+              for (const row of page.items) listed.set(key(row.id), row);
             }
+            rows = listed;
+            this.settled[kind] = true;
             error = new Error(
               "Update the cxz Manager to enable shared resource subscriptions.",
             );
@@ -193,6 +260,9 @@ export class ResourceInventory {
           return;
         }
         this.publish(kind, rows, false, error);
+      } finally {
+        attempt.abort();
+        signal.removeEventListener("abort", abort);
       }
       if (signal.aborted) return;
       // Reconnect without multiplying streams or spinning on a rejected RPC.

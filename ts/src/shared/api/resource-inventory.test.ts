@@ -33,12 +33,14 @@ class Feed<T> {
       const next =
         this.values.shift() ??
         (await new Promise<T | undefined>((resolve) => {
-          const abort = () => resolve(undefined);
-          signal?.addEventListener("abort", abort, { once: true });
-          this.waiting = (value) => {
+          const finish = (value: T | undefined) => {
             signal?.removeEventListener("abort", abort);
+            if (this.waiting === finish) this.waiting = undefined;
             resolve(value);
           };
+          const abort = () => finish(undefined);
+          signal?.addEventListener("abort", abort, { once: true });
+          this.waiting = finish;
         }));
       if (next === undefined || signal?.aborted) return;
       yield next;
@@ -143,6 +145,7 @@ describe("shared resource inventory", () => {
       for (let i = 0; i < ps.length; i += 20) {
         f.p.push(
           create(ProjectWatchResponseSchema, {
+            snapshotComplete: i + 20 >= ps.length,
             items: ps
               .slice(i, i + 20)
               .map((value) => ({ id: value.id, value })),
@@ -150,6 +153,7 @@ describe("shared resource inventory", () => {
         );
         f.s.push(
           create(SessionWatchResponseSchema, {
+            snapshotComplete: i + 20 >= ss.length,
             items: ss
               .slice(i, i + 20)
               .map((value) => ({ id: value.id, value })),
@@ -271,6 +275,7 @@ describe("shared resource inventory", () => {
         "stopped loading",
       );
       expect(f.sessions.watch).toHaveBeenCalledTimes(1);
+      expect(f.sessions.watch.mock.calls[0][1].signal.aborted).toBe(true);
       await vi.advanceTimersByTimeAsync(500);
       expect(f.sessions.watch).toHaveBeenCalledTimes(2);
       f.s.push(
@@ -328,7 +333,7 @@ describe("shared resource inventory", () => {
     f.s.end();
     await vi.advanceTimersByTimeAsync(499);
     expect(f.sessions.watch).toHaveBeenCalledTimes(1);
-    expect(f.inventory.snapshot().errors.sessions).toBeDefined();
+    expect(f.inventory.snapshot().errors.sessions).toBeUndefined();
     await vi.advanceTimersByTimeAsync(1);
     expect(f.sessions.watch).toHaveBeenCalledTimes(2);
     expect(f.inventory.snapshot().sessions).toEqual([]);
@@ -347,5 +352,187 @@ describe("shared resource inventory", () => {
     await vi.advanceTimersByTimeAsync(30000);
     expect(f.sessions.watch).toHaveBeenCalledTimes(2);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("keeps unchanged rows, arrays and store subscribers untouched by replayed updates", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    const changed = vi.fn();
+    const off = f.inventory.subscribe(changed);
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      const ps = [project(0), project(1)];
+      const ss = ps.map((p, i) => session(i, p));
+      f.p.push(
+        create(ProjectWatchResponseSchema, {
+          snapshotComplete: true,
+          items: ps.map((value) => ({ id: value.id, value })),
+        }),
+      );
+      f.s.push(
+        create(SessionWatchResponseSchema, {
+          snapshotComplete: true,
+          items: ss.map((value) => ({ id: value.id, value })),
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      const before = f.inventory.snapshot();
+      f.store.apply.mockClear();
+      changed.mockClear();
+      // The RPC decoder produces new objects even when every field is equal.
+      f.p.push(
+        create(ProjectWatchResponseSchema, {
+          items: ps.map((p) => ({
+            id: p.id,
+            value: project(Number(p.runtimeId.split("-")[1])),
+          })),
+        }),
+      );
+      f.s.push(
+        create(SessionWatchResponseSchema, {
+          items: ss.map((s, i) => ({ id: s.id, value: session(i) })),
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.inventory.snapshot()).toBe(before);
+      expect(changed).not.toHaveBeenCalled();
+      expect(f.store.apply).not.toHaveBeenCalled();
+
+      const updated = create(SessionSchema, { ...session(1), name: "Renamed" });
+      f.s.push(
+        create(SessionWatchResponseSchema, {
+          items: [
+            { id: ss[0].id, value: session(0) },
+            { id: updated.id, value: updated },
+          ],
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      const after = f.inventory.snapshot();
+      expect(after.projects).toBe(before.projects);
+      expect(after.sessions[0]).toBe(before.sessions[0]);
+      expect(after.sessions[1].name).toBe("Renamed");
+      expect(changed).toHaveBeenCalledOnce();
+      expect(f.store.apply).toHaveBeenCalledExactlyOnceWith("cxz.Session", [
+        { id: updated.id, value: updated },
+      ]);
+    } finally {
+      off();
+    }
+  });
+
+  it("retains the complete catalog through refresh probes and incomplete snapshot pages", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.projects.list.mockResolvedValue(
+      create(ProjectListResponseSchema, {
+        items: [project(0)],
+        next: "more",
+      }),
+    );
+    f.sessions.list.mockResolvedValue(
+      create(SessionListResponseSchema, {
+        items: [session(0)],
+        next: "more",
+      }),
+    );
+    const changed = vi.fn();
+    const off = f.inventory.subscribe(changed);
+    const ps = Array.from({ length: 80 }, (_, i) => project(i));
+    const ss = ps.map((p, i) => session(i, p));
+    const send = (start: number, end: number, complete: boolean) => {
+      f.p.push(
+        create(ProjectWatchResponseSchema, {
+          snapshotComplete: complete,
+          items: ps.slice(start, end).map((value) => ({ id: value.id, value })),
+        }),
+      );
+      f.s.push(
+        create(SessionWatchResponseSchema, {
+          snapshotComplete: complete,
+          items: ss.slice(start, end).map((value) => ({ id: value.id, value })),
+        }),
+      );
+    };
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      send(0, 80, true);
+      await vi.advanceTimersByTimeAsync(0);
+      const before = f.inventory.snapshot();
+      const signal = f.sessions.watch.mock.calls[0][1].signal;
+      f.store.apply.mockClear();
+      changed.mockClear();
+      f.inventory.refresh();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(signal.aborted).toBe(true);
+      expect(f.inventory.snapshot()).toBe(before);
+      send(0, 20, false);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.inventory.snapshot()).toBe(before);
+      send(20, 60, false);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.inventory.snapshot()).toBe(before);
+      send(60, 80, true);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.inventory.snapshot()).toBe(before);
+      expect(changed).not.toHaveBeenCalled();
+      expect(f.store.apply).not.toHaveBeenCalled();
+      expect(f.inventory.snapshot().loading).toEqual({
+        projects: false,
+        sessions: false,
+      });
+    } finally {
+      off();
+    }
+  });
+
+  it("commits offline removals only with a complete replacement snapshot, including the store", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.sessions.list.mockResolvedValue(
+      create(SessionListResponseSchema, {
+        items: [session(0)],
+        next: "more",
+      }),
+    );
+    const off = f.inventory.subscribe(() => {});
+    const ss = [session(0), session(1), session(2)];
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      f.s.push(
+        create(SessionWatchResponseSchema, {
+          snapshotComplete: true,
+          items: ss.map((value) => ({ id: value.id, value })),
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      const before = f.inventory.snapshot().sessions;
+      f.inventory.refresh();
+      await vi.advanceTimersByTimeAsync(0);
+      f.store.apply.mockClear();
+      f.s.push(
+        create(SessionWatchResponseSchema, {
+          snapshotComplete: false,
+          items: [{ id: ss[0].id, value: session(0) }],
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.inventory.snapshot().sessions).toBe(before);
+      f.s.push(
+        create(SessionWatchResponseSchema, {
+          snapshotComplete: true,
+          items: [{ id: ss[2].id, value: session(2) }],
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.inventory.snapshot().sessions).toEqual([ss[0], ss[2]]);
+      expect(f.inventory.snapshot().sessions[0]).toBe(before[0]);
+      expect(f.inventory.snapshot().sessions[1]).toBe(before[2]);
+      expect(f.store.apply).toHaveBeenCalledExactlyOnceWith("cxz.Session", [
+        { id: ss[1].id },
+      ]);
+    } finally {
+      off();
+    }
   });
 });

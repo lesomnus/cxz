@@ -336,7 +336,7 @@ func (s taskInventory) Watch(r *resource.TaskWatchRequest, out grpc.ServerStream
 			}
 			return page.GetItems()[0], true, nil
 		},
-		func(rows []inventoryRow[*resource.Task]) error {
+		func(rows []inventoryRow[*resource.Task], _ *bool) error {
 			items := make([]*resource.TaskWatchItem, 0, len(rows))
 			for _, row := range rows {
 				items = append(items, resource.TaskWatchItem_builder{Id: row.id, Value: row.value, Action: row.action}.Build())
