@@ -62,9 +62,16 @@ The [mobile web plan](plans/mobile-web.md) records the VPN/HTTPS direction,
 proposed delivery scope, open decisions and acceptance scenarios. It references
 feature IDs; current support is tracked separately in the matrix above.
 
-The [Project lifecycle API plan](plans/project-lifecycle-api.md) proposes separate
-resource and container lifecycles, unfiltered registration visibility, and the
-data and client migration needed to replace Up/Down/Recreate and project Purge.
+The [Project lifecycle API plan](plans/project-lifecycle-api.md) records the
+separation of the resource and container lifecycles, unfiltered registration
+visibility, and what replaced Up/Down/Recreate and project Purge: `Start`,
+`Stop`, `Remove` and `Erase`. It is implemented; what is left is two decisions,
+named at the top of it.
+
+The [service boundaries proposal](plans/service-boundaries.md) is about where
+those RPCs live rather than what they do. 26 of `ProjectService`'s 47
+hand-written RPCs do not name a Project, and it proposes which service each
+belongs to. Not implemented: three decisions come first.
 
 ## Generated code
 
