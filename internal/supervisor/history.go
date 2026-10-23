@@ -13,8 +13,6 @@ import (
 	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/historypolicy"
-	"github.com/lesomnus/cxz/internal/transport"
-	"github.com/lesomnus/cxz/resource"
 )
 
 func commandDigest(c core.Command) string {
@@ -95,7 +93,7 @@ func makeHistoryCheckpoint(events []core.Event) (core.Event, error) {
 
 // Called with the supervisor mutex held, only between turns. Unknown or active
 // background work postpones pruning; no provider file is opened or rewritten.
-func (s *Supervisor) retainHistory(root string, authorize func() error) error {
+func (s *Supervisor) retainHistory(root string) error {
 	p, err := historypolicy.Load(root)
 	if err != nil {
 		return err
@@ -210,11 +208,6 @@ func (s *Supervisor) retainHistory(root string, authorize func() error) error {
 	if err != nil {
 		return err
 	}
-	if authorize != nil {
-		if err = authorize(); err != nil {
-			return err
-		}
-	}
 	// Compact is the trim. The log it compacts is the store, so one call removes
 	// the events and rebuilds the projection of what is left; it used to be
 	// followed by a second Trim of the same store with the same checkpoint,
@@ -295,21 +288,9 @@ func (s *Supervisor) shedRaw(limit int64) error {
 	return nil
 }
 
-func authorizeHistoryCheckpoint(root string) error {
-	conn, err := transport.Dial(root)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	_, err = resource.NewProjectServiceClient(conn).MarkHistoryTrimmable(ctx, resource.HistoryTrimmableRequest_builder{}.Build())
-	return err
-}
-
 // Called under mu after completed turns and on the periodic idle check.
 func (s *Supervisor) maintainHistory(root string) {
-	if err := s.retainHistory(root, func() error { return authorizeHistoryCheckpoint(root) }); err != nil {
+	if err := s.retainHistory(root); err != nil {
 		fmt.Fprintln(os.Stderr, "history retention:", err)
 	}
 }

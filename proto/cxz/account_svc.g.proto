@@ -37,6 +37,14 @@ service AccountService {
   // Remove the central saved login and future token-supply authorizations.
   // Already-issued access tokens are not revoked at the provider.
   rpc Logout(AccountRef) returns (AccountAuthStatus);
+  // The models this account may use, as its provider reports them. A catalog
+  // read: it generates no response and does not prove a stored token will be
+  // accepted. The agent and the backend are read off the registered account
+  // rather than taken from the request.
+  rpc Models(AccountRef) returns (AccountModels);
+  // Where a login has to happen and under which profile. No credential travels
+  // here, which is why it is separate from the stream that performs one.
+  rpc LoginInfo(AccountRef) returns (AccountLoginInfo);
 }
 
 message AccountAddRequest {
@@ -205,4 +213,25 @@ message AccountAuthStatus {
   bool can_login = 5;
   bool can_logout = 6;
   string message = 7;
+}
+
+message AccountModels {
+  repeated AccountModel models = 1;
+  bool needs_login = 2;
+}
+
+message AccountModel {
+  string id = 1;
+  string resolved_id = 2;
+  string name = 3;
+  repeated string efforts = 4;
+  string default_effort = 5;
+  bool default = 6;
+}
+
+message AccountLoginInfo {
+  string owner = 1;
+  string account = 2;
+  string agent = 3;
+  string backend = 4;
 }

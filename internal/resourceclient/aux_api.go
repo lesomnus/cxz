@@ -52,19 +52,19 @@ func (c *Client) AuxForget(ctx context.Context, r *api.AuxForgetInput, opts ...g
 }
 
 func (c *Client) AuxConfig(ctx context.Context, r *api.Empty, opts ...grpc.CallOption) (*api.AuxConfigReply, error) {
-	v, err := c.projects.AuxConfig(ctx, resource.AuxConfigRequest_builder{}.Build(), opts...)
+	v, err := c.installation.Agents(ctx, resource.AgentsRequest_builder{}.Build(), opts...)
 	return auxConfig(v, err)
 }
 
 func (c *Client) AuxSetConfig(ctx context.Context, r *api.AuxSetConfigInput, opts ...grpc.CallOption) (*api.AuxConfigReply, error) {
-	v, err := c.projects.AuxSetConfig(ctx, resource.AuxSetConfigRequest_builder{
+	v, err := c.installation.SaveAgents(ctx, resource.SaveAgentsRequest_builder{
 		Profiles: auxProfilesOf(r.Profiles),
 	}.Build(), opts...)
 	return auxConfig(v, err)
 }
 
 func (c *Client) AuxModels(ctx context.Context, r *api.AuxModelsInput, opts ...grpc.CallOption) (*api.AuxModelsReply, error) {
-	v, err := c.projects.AuxModels(ctx, resource.AuxModelsRequest_builder{Account: &r.Account}.Build(), opts...)
+	v, err := c.Accounts.Models(ctx, resource.AccountRef_builder{Alias: &r.Account}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (c *Client) AuxModels(ctx context.Context, r *api.AuxModelsInput, opts ...g
 }
 
 func (c *Client) AuxLoginInfo(ctx context.Context, r *api.AuxLoginInfoInput, opts ...grpc.CallOption) (*api.AuxLoginInfoReply, error) {
-	v, err := c.projects.AuxLoginInfo(ctx, resource.AuxLoginInfoRequest_builder{Account: &r.Account}.Build(), opts...)
+	v, err := c.Accounts.LoginInfo(ctx, resource.AccountRef_builder{Alias: &r.Account}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func aux(v *resource.Aux) *api.Aux {
 	return out
 }
 
-func auxConfig(v *resource.AuxConfigReply, err error) (*api.AuxConfigReply, error) {
+func auxConfig(v *resource.AgentProfiles, err error) (*api.AuxConfigReply, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func auxConfig(v *resource.AuxConfigReply, err error) (*api.AuxConfigReply, erro
 	return out, nil
 }
 
-func auxProfile(p *resource.AuxProfile) *api.AuxProfile {
+func auxProfile(p *resource.AgentProfile) *api.AuxProfile {
 	if p == nil {
 		return nil
 	}
@@ -153,19 +153,19 @@ func auxProfile(p *resource.AuxProfile) *api.AuxProfile {
 	}
 }
 
-func auxProfileOf(p *api.AuxProfile) *resource.AuxProfile {
+func auxProfileOf(p *api.AuxProfile) *resource.AgentProfile {
 	if p == nil {
 		return nil
 	}
 	kind := auxkind.Of(p.Kind)
-	return resource.AuxProfile_builder{
+	return resource.AgentProfile_builder{
 		Kind: &kind, Enabled: &p.Enabled, Account: &p.Account, Agent: &p.Agent,
 		Backend: &p.Backend, Model: &p.Model, Effort: &p.Effort,
 	}.Build()
 }
 
-func auxProfilesOf(profiles []*api.AuxProfile) []*resource.AuxProfile {
-	out := make([]*resource.AuxProfile, 0, len(profiles))
+func auxProfilesOf(profiles []*api.AuxProfile) []*resource.AgentProfile {
+	out := make([]*resource.AgentProfile, 0, len(profiles))
 	for _, p := range profiles {
 		out = append(out, auxProfileOf(p))
 	}

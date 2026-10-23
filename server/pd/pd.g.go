@@ -3902,6 +3902,16 @@ func (s interceptAccount) Logout(ctx context.Context, req *resource.AccountRef) 
 		resource.AccountService_Logout_FullMethodName, req, s.AccountServiceServer.Logout)
 }
 
+func (s interceptAccount) Models(ctx context.Context, req *resource.AccountRef) (*resource.AccountModels, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_Models_FullMethodName, req, s.AccountServiceServer.Models)
+}
+
+func (s interceptAccount) LoginInfo(ctx context.Context, req *resource.AccountRef) (*resource.AccountLoginInfo, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_LoginInfo_FullMethodName, req, s.AccountServiceServer.LoginInfo)
+}
+
 func (s Intercept) Project() resource.ProjectServiceServer {
 	return interceptProject{s, s.Next().Project()}
 }
@@ -3961,96 +3971,6 @@ func (s interceptProject) Editor(ctx context.Context, req *resource.ProjectEdito
 		resource.ProjectService_Editor_FullMethodName, req, s.ProjectServiceServer.Editor)
 }
 
-func (s interceptProject) Devcontainer(ctx context.Context, req *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Devcontainer_FullMethodName, req, s.ProjectServiceServer.Devcontainer)
-}
-
-func (s interceptProject) RenderDevcontainer(ctx context.Context, req *resource.RenderDevcontainerRequest) (*resource.RenderDevcontainerReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_RenderDevcontainer_FullMethodName, req, s.ProjectServiceServer.RenderDevcontainer)
-}
-
-func (s interceptProject) SaveEngine(ctx context.Context, req *resource.SaveEngineRequest) (*resource.EngineReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SaveEngine_FullMethodName, req, s.ProjectServiceServer.SaveEngine)
-}
-
-func (s interceptProject) StartEngine(ctx context.Context, req *resource.StartEngineRequest) (*resource.EngineReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_StartEngine_FullMethodName, req, s.ProjectServiceServer.StartEngine)
-}
-
-func (s interceptProject) StopEngine(ctx context.Context, req *resource.EngineRequest) (*resource.EngineReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_StopEngine_FullMethodName, req, s.ProjectServiceServer.StopEngine)
-}
-
-func (s interceptProject) PruneEngine(ctx context.Context, req *resource.EngineRequest) (*resource.EngineReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_PruneEngine_FullMethodName, req, s.ProjectServiceServer.PruneEngine)
-}
-
-func (s interceptProject) EngineStatus(ctx context.Context, req *resource.EngineRequest) (*resource.EngineReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_EngineStatus_FullMethodName, req, s.ProjectServiceServer.EngineStatus)
-}
-
-func (s interceptProject) GetEngineInfo(ctx context.Context, req *resource.EngineRequest) (*resource.EngineInfo, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_GetEngineInfo_FullMethodName, req, s.ProjectServiceServer.GetEngineInfo)
-}
-
-func (s interceptProject) GetInstallationVersion(ctx context.Context, req *resource.EngineRequest) (*resource.InstallationVersion, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_GetInstallationVersion_FullMethodName, req, s.ProjectServiceServer.GetInstallationVersion)
-}
-
-func (s interceptProject) Diagnostics(ctx context.Context, req *resource.DiagnosticsRequest) (*resource.DiagnosticsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_Diagnostics_FullMethodName, req, s.ProjectServiceServer.Diagnostics)
-}
-
-func (s interceptProject) CaptureDiagnostics(ctx context.Context, req *resource.CaptureDiagnosticsRequest) (*resource.DiagnosticsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_CaptureDiagnostics_FullMethodName, req, s.ProjectServiceServer.CaptureDiagnostics)
-}
-
-func (s interceptProject) AuxConfig(ctx context.Context, req *resource.AuxConfigRequest) (*resource.AuxConfigReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_AuxConfig_FullMethodName, req, s.ProjectServiceServer.AuxConfig)
-}
-
-func (s interceptProject) AuxSetConfig(ctx context.Context, req *resource.AuxSetConfigRequest) (*resource.AuxConfigReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_AuxSetConfig_FullMethodName, req, s.ProjectServiceServer.AuxSetConfig)
-}
-
-func (s interceptProject) AuxModels(ctx context.Context, req *resource.AuxModelsRequest) (*resource.AuxModelsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_AuxModels_FullMethodName, req, s.ProjectServiceServer.AuxModels)
-}
-
-func (s interceptProject) AuxLoginInfo(ctx context.Context, req *resource.AuxLoginInfoRequest) (*resource.AuxLoginInfoReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_AuxLoginInfo_FullMethodName, req, s.ProjectServiceServer.AuxLoginInfo)
-}
-
-func (s interceptProject) MarkHistoryTrimmable(ctx context.Context, req *resource.HistoryTrimmableRequest) (*resource.HistoryTrimmableReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_MarkHistoryTrimmable_FullMethodName, req, s.ProjectServiceServer.MarkHistoryTrimmable)
-}
-
-func (s interceptProject) GetHistoryPolicy(ctx context.Context, req *resource.HistoryPolicyRequest) (*resource.HistoryPolicy, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_GetHistoryPolicy_FullMethodName, req, s.ProjectServiceServer.GetHistoryPolicy)
-}
-
-func (s interceptProject) SetHistoryPolicy(ctx context.Context, req *resource.HistoryPolicy) (*resource.HistoryPolicy, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SetHistoryPolicy_FullMethodName, req, s.ProjectServiceServer.SetHistoryPolicy)
-}
-
 func (s interceptProject) PutSecretFile(ctx context.Context, req *resource.PutSecretFileRequest) (*resource.SecretFileReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_PutSecretFile_FullMethodName, req, s.ProjectServiceServer.PutSecretFile)
@@ -4059,86 +3979,6 @@ func (s interceptProject) PutSecretFile(ctx context.Context, req *resource.PutSe
 func (s interceptProject) DeleteSecretFile(ctx context.Context, req *resource.DeleteSecretFileRequest) (*resource.SecretFileReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_DeleteSecretFile_FullMethodName, req, s.ProjectServiceServer.DeleteSecretFile)
-}
-
-func (s interceptProject) GetSkills(ctx context.Context, req *resource.SkillsRequest) (*resource.SkillsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_GetSkills_FullMethodName, req, s.ProjectServiceServer.GetSkills)
-}
-
-func (s interceptProject) AddSkill(ctx context.Context, req *resource.SkillRequest) (*resource.SkillsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_AddSkill_FullMethodName, req, s.ProjectServiceServer.AddSkill)
-}
-
-func (s interceptProject) RemoveSkill(ctx context.Context, req *resource.SkillRequest) (*resource.SkillsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_RemoveSkill_FullMethodName, req, s.ProjectServiceServer.RemoveSkill)
-}
-
-func (s interceptProject) SetSkillDefault(ctx context.Context, req *resource.SkillDefaultRequest) (*resource.SkillsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SetSkillDefault_FullMethodName, req, s.ProjectServiceServer.SetSkillDefault)
-}
-
-func (s interceptProject) SetProjectSkill(ctx context.Context, req *resource.ProjectSkillRequest) (*resource.SkillsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SetProjectSkill_FullMethodName, req, s.ProjectServiceServer.SetProjectSkill)
-}
-
-func (s interceptProject) ClearProjectSkill(ctx context.Context, req *resource.ClearProjectSkillRequest) (*resource.SkillsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_ClearProjectSkill_FullMethodName, req, s.ProjectServiceServer.ClearProjectSkill)
-}
-
-func (s interceptProject) SyncSkills(ctx context.Context, req *resource.SyncSkillsRequest) (*resource.SyncSkillsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SyncSkills_FullMethodName, req, s.ProjectServiceServer.SyncSkills)
-}
-
-func (s interceptProject) GetMcpServers(ctx context.Context, req *resource.McpServersRequest) (*resource.McpServersReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_GetMcpServers_FullMethodName, req, s.ProjectServiceServer.GetMcpServers)
-}
-
-func (s interceptProject) PutMcpServer(ctx context.Context, req *resource.PutMcpServerRequest) (*resource.McpServersReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_PutMcpServer_FullMethodName, req, s.ProjectServiceServer.PutMcpServer)
-}
-
-func (s interceptProject) RemoveMcpServer(ctx context.Context, req *resource.McpServerRequest) (*resource.McpServersReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_RemoveMcpServer_FullMethodName, req, s.ProjectServiceServer.RemoveMcpServer)
-}
-
-func (s interceptProject) SetMcpServerDefault(ctx context.Context, req *resource.McpServerDefaultRequest) (*resource.McpServersReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SetMcpServerDefault_FullMethodName, req, s.ProjectServiceServer.SetMcpServerDefault)
-}
-
-func (s interceptProject) SetProjectMcpServer(ctx context.Context, req *resource.ProjectMcpServerRequest) (*resource.McpServersReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SetProjectMcpServer_FullMethodName, req, s.ProjectServiceServer.SetProjectMcpServer)
-}
-
-func (s interceptProject) ClearProjectMcpServer(ctx context.Context, req *resource.ClearProjectMcpServerRequest) (*resource.McpServersReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_ClearProjectMcpServer_FullMethodName, req, s.ProjectServiceServer.ClearProjectMcpServer)
-}
-
-func (s interceptProject) McpSessions(ctx context.Context, req *resource.McpSessionsRequest) (*resource.McpSessionsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_McpSessions_FullMethodName, req, s.ProjectServiceServer.McpSessions)
-}
-
-func (s interceptProject) SyncMcpServers(ctx context.Context, req *resource.SyncMcpServersRequest) (*resource.SyncMcpServersReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SyncMcpServers_FullMethodName, req, s.ProjectServiceServer.SyncMcpServers)
-}
-
-func (s interceptProject) FileMappings(ctx context.Context, req *resource.FileMappingsRequest) (*resource.FileMappingsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_FileMappings_FullMethodName, req, s.ProjectServiceServer.FileMappings)
 }
 
 func (s interceptProject) Start(ctx context.Context, req *resource.ProjectStartRequest) (*resource.Project, error) {
@@ -4154,11 +3994,6 @@ func (s interceptProject) Stop(ctx context.Context, req *resource.ProjectControl
 func (s interceptProject) Remove(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_Remove_FullMethodName, req, s.ProjectServiceServer.Remove)
-}
-
-func (s interceptProject) InspectForeign(ctx context.Context, req *resource.InspectForeignRequest) (*resource.InspectForeignResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_InspectForeign_FullMethodName, req, s.ProjectServiceServer.InspectForeign)
 }
 
 func (s Intercept) AuthBinding() resource.AuthBindingServiceServer {
@@ -5304,6 +5139,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
+	case resource.AccountService_Models_FullMethodName:
+		v := &resource.AccountRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().Models(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AccountService_LoginInfo_FullMethodName:
+		v := &resource.AccountRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().LoginInfo(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case resource.ProjectService_Add_FullMethodName:
 		v := &resource.ProjectAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -5395,240 +5256,6 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
-	case resource.ProjectService_Devcontainer_FullMethodName:
-		v := &resource.DevcontainerRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Devcontainer(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_RenderDevcontainer_FullMethodName:
-		v := &resource.RenderDevcontainerRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().RenderDevcontainer(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_SaveEngine_FullMethodName:
-		v := &resource.SaveEngineRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SaveEngine(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_StartEngine_FullMethodName:
-		v := &resource.StartEngineRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().StartEngine(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_StopEngine_FullMethodName:
-		v := &resource.EngineRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().StopEngine(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_PruneEngine_FullMethodName:
-		v := &resource.EngineRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().PruneEngine(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_EngineStatus_FullMethodName:
-		v := &resource.EngineRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().EngineStatus(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_GetEngineInfo_FullMethodName:
-		v := &resource.EngineRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().GetEngineInfo(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_GetInstallationVersion_FullMethodName:
-		v := &resource.EngineRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().GetInstallationVersion(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_Diagnostics_FullMethodName:
-		v := &resource.DiagnosticsRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().Diagnostics(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_CaptureDiagnostics_FullMethodName:
-		v := &resource.CaptureDiagnosticsRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().CaptureDiagnostics(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_AuxConfig_FullMethodName:
-		v := &resource.AuxConfigRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().AuxConfig(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_AuxSetConfig_FullMethodName:
-		v := &resource.AuxSetConfigRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().AuxSetConfig(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_AuxModels_FullMethodName:
-		v := &resource.AuxModelsRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().AuxModels(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_AuxLoginInfo_FullMethodName:
-		v := &resource.AuxLoginInfoRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().AuxLoginInfo(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_MarkHistoryTrimmable_FullMethodName:
-		v := &resource.HistoryTrimmableRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().MarkHistoryTrimmable(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_GetHistoryPolicy_FullMethodName:
-		v := &resource.HistoryPolicyRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().GetHistoryPolicy(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_SetHistoryPolicy_FullMethodName:
-		v := &resource.HistoryPolicy{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SetHistoryPolicy(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
 	case resource.ProjectService_PutSecretFile_FullMethodName:
 		v := &resource.PutSecretFileRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -5649,214 +5276,6 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().DeleteSecretFile(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_GetSkills_FullMethodName:
-		v := &resource.SkillsRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().GetSkills(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_AddSkill_FullMethodName:
-		v := &resource.SkillRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().AddSkill(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_RemoveSkill_FullMethodName:
-		v := &resource.SkillRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().RemoveSkill(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_SetSkillDefault_FullMethodName:
-		v := &resource.SkillDefaultRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SetSkillDefault(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_SetProjectSkill_FullMethodName:
-		v := &resource.ProjectSkillRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SetProjectSkill(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_ClearProjectSkill_FullMethodName:
-		v := &resource.ClearProjectSkillRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().ClearProjectSkill(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_SyncSkills_FullMethodName:
-		v := &resource.SyncSkillsRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SyncSkills(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_GetMcpServers_FullMethodName:
-		v := &resource.McpServersRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().GetMcpServers(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_PutMcpServer_FullMethodName:
-		v := &resource.PutMcpServerRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().PutMcpServer(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_RemoveMcpServer_FullMethodName:
-		v := &resource.McpServerRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().RemoveMcpServer(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_SetMcpServerDefault_FullMethodName:
-		v := &resource.McpServerDefaultRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SetMcpServerDefault(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_SetProjectMcpServer_FullMethodName:
-		v := &resource.ProjectMcpServerRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SetProjectMcpServer(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_ClearProjectMcpServer_FullMethodName:
-		v := &resource.ClearProjectMcpServerRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().ClearProjectMcpServer(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_McpSessions_FullMethodName:
-		v := &resource.McpSessionsRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().McpSessions(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_SyncMcpServers_FullMethodName:
-		v := &resource.SyncMcpServersRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SyncMcpServers(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_FileMappings_FullMethodName:
-		v := &resource.FileMappingsRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().FileMappings(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -5896,19 +5315,6 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().Remove(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_InspectForeign_FullMethodName:
-		v := &resource.InspectForeignRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().InspectForeign(ctx, v)
 		if err != nil {
 			return nil, err
 		}

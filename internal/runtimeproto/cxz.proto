@@ -89,11 +89,6 @@ service Sessions {
   // The floor a project runtime has trimmed to. Only the manager asks, to keep
   // its cache from offering history the journal no longer has.
   rpc GetHistoryFloor(SessionRef) returns (HistoryFloorReply);
-  // Asked before a journal is compacted, not after: it records in the
-  // projection that trimmed history is now possible, so a release that predates
-  // trimming refuses the database instead of serving history that is gone. A
-  // failure here stops the compaction.
-  rpc MarkHistoryTrimmable(Empty) returns (Empty);
   rpc PutSecretFile(PutSecretFileInput) returns (SecretFileReply);
   rpc DeleteSecretFile(DeleteSecretFileInput) returns (SecretFileReply);
   // The installation's Agent Skills library, and which projects see each

@@ -27,8 +27,8 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/observe"
-	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/quotashare"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"github.com/lesomnus/cxz/internal/transcripthistory"
@@ -338,6 +338,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	opts = append(opts, grpc.ChainUnaryInterceptor(watching.Unary(), versionpin.Unary(root), s.updateGate.Unary), grpc.ChainStreamInterceptor(watching.Stream(), versionpin.Stream(root), s.updateGate.Stream), grpc.MaxRecvMsgSize(8*1024*1024), grpc.MaxSendMsgSize(20*1024*1024))
 	g := grpc.NewServer(opts...)
 	resource.RegisterServer(g, resources)
+	registerInstallation(g, resources)
 	if os.Getenv("CXZ_PROJECT_ID") == "" {
 		layer, _ := resource.Find[lifecycle.Layer](resources)
 		uploads := attachmenthttp.Handler{Uploader: attachmenthttp.Guard(layer, versionpin.Stream(root), s.updateGate.Stream)}
@@ -374,6 +375,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		}))
 		projectServer := grpc.NewServer(projectOptions...)
 		resource.RegisterServer(projectServer, resources)
+		registerInstallation(projectServer, resources)
 		defer projectServer.Stop()
 		go projectServer.Serve(tcp)
 	}
@@ -683,6 +685,7 @@ func (s *Server) List(ctx context.Context, _ *api.Empty) (*api.SessionList, erro
 	}
 	return out, nil
 }
+
 // conversationFence is how much of a session's conversation is on disk and
 // when it last changed. Two numbers, so a comparison is a comparison.
 type conversationFence struct {
@@ -907,4 +910,18 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 		case <-ticker.C:
 		}
 	}
+}
+
+// These four have no entity behind them, so the generated
+// `resource.RegisterServer` does not know about them and the stack is asked for
+// the layer that answers them. See docs/plans/service-boundaries.md.
+func registerInstallation(g grpc.ServiceRegistrar, resources resource.Server) {
+	layer, ok := resource.Find[lifecycle.Layer](resources)
+	if !ok {
+		return
+	}
+	resource.RegisterInstallationServiceServer(g, layer.Installation())
+	resource.RegisterSkillServiceServer(g, layer.Skill())
+	resource.RegisterMcpServerServiceServer(g, layer.McpServer())
+	resource.RegisterMcpConnectionServiceServer(g, layer.McpConnection())
 }

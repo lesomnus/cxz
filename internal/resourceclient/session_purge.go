@@ -26,22 +26,17 @@ func (c *Client) PurgeSession(ctx context.Context, r *api.SessionPurgeInput, opt
 	return out, nil
 }
 
-func (c *Client) MarkHistoryTrimmable(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.Empty, error) {
-	if _, err := c.projects.MarkHistoryTrimmable(ctx, resource.HistoryTrimmableRequest_builder{}.Build(), opts...); err != nil {
-		return nil, err
-	}
-	return &api.Empty{}, nil
-}
-
 func (c *Client) GetHistoryPolicy(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.HistoryPolicy, error) {
-	v, err := c.projects.GetHistoryPolicy(ctx, resource.HistoryPolicyRequest_builder{}.Build(), opts...)
+	v, err := c.installation.Retention(ctx, resource.RetentionRequest_builder{}.Build(), opts...)
 	return historyPolicy(v, err)
 }
 
 func (c *Client) SetHistoryPolicy(ctx context.Context, r *api.HistoryPolicy, opts ...grpc.CallOption) (*api.HistoryPolicy, error) {
-	v, err := c.projects.SetHistoryPolicy(ctx, resource.HistoryPolicy_builder{
-		Disabled: &r.Disabled, MaxMib: &r.MaxMib, RawMib: &r.RawMib,
-		WindowMib: &r.WindowMib, WindowTurns: &r.WindowTurns,
+	v, err := c.installation.SaveRetention(ctx, resource.SaveRetentionRequest_builder{
+		Retention: resource.HistoryPolicy_builder{
+			Disabled: &r.Disabled, MaxMib: &r.MaxMib, RawMib: &r.RawMib,
+			WindowMib: &r.WindowMib, WindowTurns: &r.WindowTurns,
+		}.Build(),
 	}.Build(), opts...)
 	return historyPolicy(v, err)
 }

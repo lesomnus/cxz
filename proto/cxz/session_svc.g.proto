@@ -3,6 +3,7 @@ package cxz;
 
 import "cxz/account_svc.g.proto";
 import "cxz/auth_binding_svc.g.proto";
+import "cxz/installation.proto";
 import "cxz/project_svc.g.proto";
 import "cxz/session.proto";
 import "google/protobuf/timestamp.proto";

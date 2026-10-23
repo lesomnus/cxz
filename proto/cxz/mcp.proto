@@ -1,0 +1,83 @@
+edition = "2023";
+package cxz;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// MCP registrations, and which projects see each one. The same shape as the
+// skills library and no entity either, plus a definition that arrives whole:
+// its environment and headers hold explicit values, so editing one field at a
+// time would mean reading the others back out first.
+service McpServerService {
+  rpc List(McpServerListRequest) returns (McpServerList);
+  rpc Put(McpServerPutRequest) returns (McpServerList);
+  rpc Remove(McpServerRemoveRequest) returns (McpServerList);
+  rpc SetDefault(McpServerDefaultRequest) returns (McpServerList);
+  rpc Enable(McpServerEnableRequest) returns (McpServerList);
+  rpc Clear(McpServerClearRequest) returns (McpServerList);
+}
+
+// What a project's live sessions actually launched with. A registration and a
+// thing running from it are two resources: one is a file the manager owns, the
+// other is asked of the project container when the answer is made and is stored
+// nowhere. It is also why this is separate from reading the registrations -- a
+// settings list should not stall on a container.
+//
+// No Watch, for the same reason `container_state` is not stored: there is
+// nothing to publish, only something to observe.
+service McpConnectionService {
+  rpc List(McpConnectionListRequest) returns (McpConnectionList);
+}
+
+// `in` and `project` are a project's id or workspace path rather than a
+// `ProjectRef`. Two reasons, and the first is a hard one: a `ProjectRef` is
+// written by contract generation, so only a file payday generates a contract for
+// can name it -- and an extra service declared in such an overlay may not reuse
+// a method name the entity's own contract has, which `List`, `Add` and `Remove`
+// all are. The second is that the project here is not the row being acted on. It
+// chooses whose view comes back. Resolving a handle to an id is the client's job
+// already (`internal/resourceclient`), so what arrives is an id either way.
+// See docs/plans/service-boundaries.md.
+
+// An MCP server definition. kind is what the connection is: a local process, an
+// HTTP endpoint, or one cxz provides itself. env and headers hold explicit
+// values and are kept private, which is why a definition travels whole:
+// changing one of them field by field would mean reading the others back out.
+enum McpKind {
+  MCP_KIND_UNSPECIFIED = 0;
+  MCP_KIND_STDIO = 1;
+  MCP_KIND_HTTP = 2;
+  // Provided by cxz. It cannot be registered or replaced by a caller, so this
+  // value only ever arrives in a reply.
+  MCP_KIND_BUILTIN = 3;
+}
+message McpServer {
+  string name = 1; McpKind kind = 2; bool enabled = 3;
+  string command = 4; repeated string args = 5; map<string, string> env = 6;
+  string url = 7; map<string, string> headers = 8;
+}
+message McpEntry {
+  string id = 1; McpServer server = 2;
+  // Set only when this project decided for itself; absent means it inherits.
+  bool override = 3;
+  bool effective = 4;
+}
+message McpServerList { repeated McpEntry entries = 1; string message = 2; }
+// ref scopes the view, as it does for the skills library. A registration is
+// installation-wide, so put and remove have nowhere to name a project.
+message McpServerListRequest { string in = 1; }
+message McpServerPutRequest { string id = 1; McpServer server = 2; }
+message McpServerRemoveRequest { string id = 1; }
+message McpServerDefaultRequest { string id = 1; bool enabled = 2; }
+message McpServerEnableRequest { string id = 1; string in = 2; bool enabled = 3; }
+message McpServerClearRequest { string id = 1; string in = 2; }
+message McpConnectionListRequest { string project = 1; }
+// servers maps an MCP id to what its connection is doing in this session.
+// pending says the session launched with something other than what is
+// registered now, so the difference waits for the next launch.
+// session is the runtime id and not a SessionRef, for the same reason
+// PutSecretFileRequest's is: this contract cannot refer to the session one,
+// because the dependency runs the other way.
+message McpConnection {
+  string session = 1; string title = 2; bool pending = 3;
+  string launch_digest = 4; map<string, string> servers = 5;
+}
+message McpConnectionList { repeated McpConnection connections = 1; string message = 2; }

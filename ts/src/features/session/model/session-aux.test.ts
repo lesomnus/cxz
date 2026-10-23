@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
-import { AuxKind } from "#gen/cxz/project_svc_pb";
+import { AuxKind } from "#gen/cxz/installation_pb";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
 import { AuxStateSchema } from "#gen/cxz/session_svc_pb";
 import { attachSummaries } from "./session-aux";

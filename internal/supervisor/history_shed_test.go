@@ -65,7 +65,7 @@ func TestTelemetryIsShedBeforeConversationIsTrimmed(t *testing.T) {
 	if err := historypolicy.Save(root, historypolicy.Policy{MaxMiB: 10, RawMiB: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.retainHistory(root, func() error { t.Error("a checkpoint was authorized for a telemetry shed"); return nil }); err != nil {
+	if err := s.retainHistory(root); err != nil {
 		t.Fatal(err)
 	}
 	events := log.All()
@@ -123,7 +123,7 @@ func TestTheLastTurnKeepsItsStream(t *testing.T) {
 	if err := historypolicy.Save(root, historypolicy.Policy{RawMiB: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.retainHistory(root, nil); err != nil {
+	if err := s.retainHistory(root); err != nil {
 		t.Fatal(err)
 	}
 	events := log.All()
@@ -146,7 +146,7 @@ func TestDisabledRetentionShedsNothing(t *testing.T) {
 	if err := historypolicy.Save(root, historypolicy.Policy{Disabled: true, RawMiB: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.retainHistory(root, nil); err != nil {
+	if err := s.retainHistory(root); err != nil {
 		t.Fatal(err)
 	}
 	if log.RawBytes() != before {
@@ -164,7 +164,7 @@ func TestNothingIsShedMidTurn(t *testing.T) {
 	if err := historypolicy.Save(root, historypolicy.Policy{RawMiB: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.retainHistory(root, nil); err != nil {
+	if err := s.retainHistory(root); err != nil {
 		t.Fatal(err)
 	}
 	if log.RawBytes() != before {

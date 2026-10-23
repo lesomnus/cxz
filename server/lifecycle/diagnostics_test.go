@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func diagnosticsStack(t *testing.T, o *observe.Log) resource.Server {
+func diagnosticsStack(t *testing.T, o *observe.Log) resource.InstallationServiceServer {
 	t.Helper()
 	ctx := context.Background()
 	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
@@ -30,7 +30,7 @@ func diagnosticsStack(t *testing.T, o *observe.Log) resource.Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return stack
+	return layerOf(t, stack).Installation()
 }
 
 func TestDiagnosticsReportsWhatTheManagerDid(t *testing.T) {
@@ -53,7 +53,7 @@ func TestDiagnosticsReportsWhatTheManagerDid(t *testing.T) {
 	ctx := context.Background()
 	stack := diagnosticsStack(t, o)
 
-	out, err := stack.Project().Diagnostics(ctx, resource.DiagnosticsRequest_builder{StatsOnly: ptr(true)}.Build())
+	out, err := stack.Diagnostics(ctx, resource.DiagnosticsRequest_builder{StatsOnly: ptr(true)}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestDiagnosticsReportsWhatTheManagerDid(t *testing.T) {
 		t.Fatal("reply does not say where records are kept")
 	}
 
-	out, err = stack.Project().Diagnostics(ctx, resource.DiagnosticsRequest_builder{Method: ptr("/cxz.SessionService/Send")}.Build())
+	out, err = stack.Diagnostics(ctx, resource.DiagnosticsRequest_builder{Method: ptr("/cxz.SessionService/Send")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,20 +85,20 @@ func TestCaptureDiagnosticsOpensAndClosesAWindow(t *testing.T) {
 	t.Cleanup(func() { o.Close() })
 	ctx := context.Background()
 	stack := diagnosticsStack(t, o)
-	out, err := stack.Project().CaptureDiagnostics(ctx, resource.CaptureDiagnosticsRequest_builder{Seconds: ptr(int32(60))}.Build())
+	out, err := stack.Capture(ctx, resource.CaptureRequest_builder{Seconds: ptr(int32(60))}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !out.HasCapturingUntil() || o.CapturingUntil().IsZero() {
 		t.Fatal("window did not open")
 	}
-	if out, err = stack.Project().CaptureDiagnostics(ctx, resource.CaptureDiagnosticsRequest_builder{Seconds: ptr(int32(0))}.Build()); err != nil {
+	if out, err = stack.Capture(ctx, resource.CaptureRequest_builder{Seconds: ptr(int32(0))}.Build()); err != nil {
 		t.Fatal(err)
 	}
 	if out.HasCapturingUntil() || !o.CapturingUntil().IsZero() {
 		t.Fatal("window did not close")
 	}
-	if _, err = stack.Project().CaptureDiagnostics(ctx, resource.CaptureDiagnosticsRequest_builder{Seconds: ptr(int32(-1))}.Build()); status.Code(err) != codes.InvalidArgument {
+	if _, err = stack.Capture(ctx, resource.CaptureRequest_builder{Seconds: ptr(int32(-1))}.Build()); status.Code(err) != codes.InvalidArgument {
 		t.Fatal("negative window accepted", err)
 	}
 }
@@ -108,10 +108,10 @@ func TestCaptureDiagnosticsOpensAndClosesAWindow(t *testing.T) {
 func TestDiagnosticsWithoutCollectionIsUnavailable(t *testing.T) {
 	ctx := context.Background()
 	stack := diagnosticsStack(t, nil)
-	if _, err := stack.Project().Diagnostics(ctx, resource.DiagnosticsRequest_builder{}.Build()); status.Code(err) != codes.Unavailable {
+	if _, err := stack.Diagnostics(ctx, resource.DiagnosticsRequest_builder{}.Build()); status.Code(err) != codes.Unavailable {
 		t.Fatal(err)
 	}
-	if _, err := stack.Project().CaptureDiagnostics(ctx, resource.CaptureDiagnosticsRequest_builder{}.Build()); status.Code(err) != codes.Unavailable {
+	if _, err := stack.Capture(ctx, resource.CaptureRequest_builder{}.Build()); status.Code(err) != codes.Unavailable {
 		t.Fatal(err)
 	}
 }

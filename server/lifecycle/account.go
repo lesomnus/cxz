@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
@@ -73,6 +74,69 @@ func (s Layer) Account() resource.AccountServiceServer { return AccountServer{s,
 func accountRef(alias string) *resource.AccountRef {
 	return resource.AccountRef_builder{Alias: &alias}.Build()
 }
+
+// Models and LoginInfo are about one account, so they belong to this service
+// rather than to the project service, where they were `AuxModels` and
+// `AuxLoginInfo`. See docs/plans/service-boundaries.md.
+//
+// Both read what an account authenticates as off the registered row instead of
+// taking a caller's word for it, which is what keeps a request from naming one
+// account and authenticating as another.
+func (s AccountServer) Models(ctx context.Context, ref *resource.AccountRef) (*resource.AccountModels, error) {
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	account, err := s.registered(ctx, ref)
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.shared.runtime.AuxModels(ctx, &api.AuxModelsInput{
+		Account: account.GetAlias(), Agent: account.GetAgent(), Backend: account.GetAuthBackend(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	reply := resource.AccountModels_builder{NeedsLogin: ptr(out.NeedsLogin)}
+	for _, m := range out.Models {
+		reply.Models = append(reply.Models, resource.AccountModel_builder{
+			Id: &m.Id, ResolvedId: &m.ResolvedId, Name: &m.Name,
+			Efforts: m.Efforts, DefaultEffort: &m.DefaultEffort, Default: &m.Default,
+		}.Build())
+	}
+	return reply.Build(), nil
+}
+
+func (s AccountServer) LoginInfo(ctx context.Context, ref *resource.AccountRef) (*resource.AccountLoginInfo, error) {
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	account, err := s.registered(ctx, ref)
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.shared.runtime.AuxLoginInfo(ctx, &api.AuxLoginInfoInput{
+		Account: account.GetAlias(), Agent: account.GetAgent(), Backend: account.GetAuthBackend(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resource.AccountLoginInfo_builder{
+		Owner: ptr(out.Owner), Account: ptr(out.Account),
+		Agent: ptr(out.Agent), Backend: ptr(out.Backend),
+	}.Build(), nil
+}
+
+// registered reads the whole row a ref names. A ref naming nothing is refused
+// here rather than reaching the runtime as an empty account.
+func (s AccountServer) registered(ctx context.Context, ref *resource.AccountRef) (*resource.Account, error) {
+	if ref.GetAlias() == "" && len(ref.GetId()) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "select a registered account")
+	}
+	return s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{
+		Ref: ref, Select: resource.AccountSelect_builder{All: ptr(true)}.Build(),
+	}.Build())
+}
+
 func (s AccountServer) Add(ctx context.Context, r *resource.AccountAddRequest) (*resource.Account, error) {
 	if err := s.effect(); err != nil {
 		return nil, err

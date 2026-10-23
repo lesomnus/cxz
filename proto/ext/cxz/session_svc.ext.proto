@@ -1,5 +1,6 @@
 edition = "2023";
 package cxz;
+import "cxz/installation.proto";
 import "cxz/session.proto";
 import "cxz/account_svc.g.proto";
 import "google/protobuf/timestamp.proto";

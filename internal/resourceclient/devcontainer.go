@@ -9,7 +9,7 @@ import (
 )
 
 func (c *Client) Devcontainer(ctx context.Context, r *api.DevcontainerInput, opts ...grpc.CallOption) (*api.Receipt, error) {
-	out, err := c.projects.Devcontainer(ctx, resource.DevcontainerRequest_builder{Spec: r.Spec}.Build(), opts...)
+	out, err := c.installation.SaveDevcontainer(ctx, resource.SaveDevcontainerRequest_builder{Spec: r.Spec}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

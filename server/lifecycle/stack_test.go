@@ -79,6 +79,7 @@ func (f *fixture) Resume(_ context.Context, r *api.Control) (*api.Session, error
 	}
 	return f.s, nil
 }
+
 // Starting records what it was asked for and leaves the project running, which
 // is what the manager's dispatch does whether it had to make a container or
 // only start one.

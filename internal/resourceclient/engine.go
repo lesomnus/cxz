@@ -10,31 +10,31 @@ import (
 )
 
 func (c *Client) SaveEngine(ctx context.Context, r *api.SaveEngineInput, opts ...grpc.CallOption) (*api.EngineReply, error) {
-	return engineReply(c.projects.SaveEngine(ctx, resource.SaveEngineRequest_builder{
+	return engineReply(c.installation.SaveEngine(ctx, resource.SaveEngineRequest_builder{
 		Spec: resourceEngineSpec(r.Spec),
 	}.Build(), opts...))
 }
 
 func (c *Client) StartEngine(ctx context.Context, r *api.StartEngineInput, opts ...grpc.CallOption) (*api.EngineReply, error) {
-	return engineReply(c.projects.StartEngine(ctx, resource.StartEngineRequest_builder{
+	return engineReply(c.installation.StartEngine(ctx, resource.StartEngineRequest_builder{
 		Spec: resourceEngineSpec(r.Spec),
 	}.Build(), opts...))
 }
 
 func (c *Client) StopEngine(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.EngineReply, error) {
-	return engineReply(c.projects.StopEngine(ctx, resource.EngineRequest_builder{}.Build(), opts...))
+	return engineReply(c.installation.StopEngine(ctx, resource.EngineRequest_builder{}.Build(), opts...))
 }
 
 func (c *Client) PruneEngine(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.EngineReply, error) {
-	return engineReply(c.projects.PruneEngine(ctx, resource.EngineRequest_builder{}.Build(), opts...))
+	return engineReply(c.installation.PruneEngine(ctx, resource.EngineRequest_builder{}.Build(), opts...))
 }
 
 func (c *Client) EngineStatus(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.EngineReply, error) {
-	return engineReply(c.projects.EngineStatus(ctx, resource.EngineRequest_builder{}.Build(), opts...))
+	return engineReply(c.installation.EngineStatus(ctx, resource.EngineRequest_builder{}.Build(), opts...))
 }
 
 func (c *Client) GetEngineInfo(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.EngineInfo, error) {
-	v, err := c.projects.GetEngineInfo(ctx, resource.EngineRequest_builder{}.Build(), opts...)
+	v, err := c.installation.Engine(ctx, resource.EngineRequest_builder{}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *Client) GetEngineInfo(ctx context.Context, _ *api.Empty, opts ...grpc.C
 }
 
 func (c *Client) GetInstallationVersion(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.InstallationVersion, error) {
-	v, err := c.projects.GetInstallationVersion(ctx, resource.EngineRequest_builder{}.Build(), opts...)
+	v, err := c.installation.Version(ctx, resource.EngineRequest_builder{}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

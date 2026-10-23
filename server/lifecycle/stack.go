@@ -3,7 +3,6 @@
 package lifecycle
 
 import (
-	"time"
 	"context"
 	"crypto/sha256"
 	"database/sql"
@@ -25,6 +24,7 @@ import (
 	"google.golang.org/grpc/status"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type Runtime interface {

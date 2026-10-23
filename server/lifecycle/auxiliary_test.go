@@ -51,18 +51,18 @@ func TestAuxiliaryUsesRegisteredAccountNotClientProvider(t *testing.T) {
 	}
 	// The request names an account and nothing else about authentication; what
 	// it authenticates as is read off the registered account.
-	_, e = stack.Project().AuxModels(ctx, resource.AuxModelsRequest_builder{Account: ptr("work")}.Build())
+	_, e = stack.Account().Models(ctx, resource.AccountRef_builder{Alias: ptr("work")}.Build())
 	if e != nil {
 		t.Fatal(e)
 	}
 	if f.models.Agent != "codex" || f.models.Backend != accounts.BrokeredAccessToken {
 		t.Fatal("wrong authentication for the registered account", f.models)
 	}
-	_, e = stack.Project().AuxModels(ctx, resource.AuxModelsRequest_builder{Account: ptr("missing")}.Build())
+	_, e = stack.Account().Models(ctx, resource.AccountRef_builder{Alias: ptr("missing")}.Build())
 	if e == nil || f.calls != 1 {
 		t.Fatal("missing account reached runner")
 	}
-	_, e = stack.Project().AuxModels(ctx, resource.AuxModelsRequest_builder{}.Build())
+	_, e = stack.Account().Models(ctx, resource.AccountRef_builder{}.Build())
 	if e == nil || f.calls != 1 {
 		t.Fatal("nameless account reached runner")
 	}

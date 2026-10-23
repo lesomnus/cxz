@@ -44,14 +44,6 @@ func (c *Client) SetHistoryPolicy(ctx context.Context, r *api.HistoryPolicy, opt
 	return client.SetHistoryPolicy(ctx, r, opts...)
 }
 
-func (c *Client) MarkHistoryTrimmable(ctx context.Context, r *api.Empty, opts ...grpc.CallOption) (*api.Empty, error) {
-	_, _, client, err := c.route(ctx, "")
-	if err != nil {
-		return nil, err
-	}
-	return client.MarkHistoryTrimmable(ctx, r, opts...)
-}
-
 // A trim floor is a session's, and a session names the connection that holds
 // it. It is routed like every other session read rather than refused here:
 // resolving it is what the resource API does now.

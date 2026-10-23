@@ -144,7 +144,6 @@ type projectStub struct {
 	started      chan *resource.ProjectStartRequest
 	mutations    *atomic.Int32
 	unregistered *atomic.Bool
-	overrides    chan projectconfig.Spec
 }
 type accountStub struct {
 	resource.UnimplementedAccountServiceServer
@@ -183,6 +182,7 @@ func (s projectStub) Add(context.Context, *resource.ProjectAddRequest) (*resourc
 	}
 	return testProject(), nil
 }
+
 // Recorded apart from the shared request channel: nearly every command starts
 // a project on the way to what it was actually asked to do, and the assertions
 // that read that channel are about the other calls.
@@ -201,7 +201,14 @@ func (s projectStub) Start(_ context.Context, r *resource.ProjectStartRequest) (
 	return testProject(), nil
 }
 
-func (s projectStub) Devcontainer(_ context.Context, r *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
+// The installation's devcontainer settings are the installation service's, not
+// a project's. See docs/plans/service-boundaries.md.
+type installationStub struct {
+	resource.UnimplementedInstallationServiceServer
+	overrides chan projectconfig.Spec
+}
+
+func (s installationStub) SaveDevcontainer(_ context.Context, r *resource.SaveDevcontainerRequest) (*resource.InstallationReceipt, error) {
 	var spec projectconfig.Spec
 	if err := json.Unmarshal(r.GetSpec(), &spec); err != nil {
 		return nil, err
@@ -209,7 +216,7 @@ func (s projectStub) Devcontainer(_ context.Context, r *resource.DevcontainerReq
 	if len(spec.Compose) > 0 && s.overrides != nil {
 		s.overrides <- spec
 	}
-	return &resource.DevcontainerReply{}, nil
+	return &resource.InstallationReceipt{}, nil
 }
 func (s projectStub) List(context.Context, *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
 	if s.unregistered != nil && s.unregistered.Load() {
@@ -254,7 +261,8 @@ func TestCommandsReachAPI(t *testing.T) {
 	unregistered := &atomic.Bool{}
 	overrides := make(chan projectconfig.Spec, 4)
 	started := make(chan *resource.ProjectStartRequest, 16)
-	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, started: started, mutations: mutations, unregistered: unregistered, overrides: overrides})
+	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, started: started, mutations: mutations, unregistered: unregistered})
+	resource.RegisterInstallationServiceServer(server, installationStub{overrides: overrides})
 	go server.Serve(listener)
 	defer server.Stop()
 	table := xlitest.Run(t, newRoot(root), "project", "ls")

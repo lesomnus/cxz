@@ -1,0 +1,56 @@
+edition = "2023";
+package cxz;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// The installation's Agent Skills library, and which projects see each skill.
+// Not a Project, and not a row: a skill is a directory under the share
+// directory, registered once for the installation and switched on per project,
+// with an index the manager owns. So this service has no entity behind it -- no
+// table, and nothing generated but its messages and stubs.
+//
+// One method per decision rather than one with a verb: enabling a skill by
+// default and enabling it for one project write to different places, and
+// restoring a project's default has nowhere to put an on/off that would be
+// ignored. So no request here can name one and mean another.
+service SkillService {
+  rpc List(SkillListRequest) returns (SkillList);
+  rpc Add(SkillAddRequest) returns (SkillList);
+  rpc Remove(SkillRemoveRequest) returns (SkillList);
+  rpc SetDefault(SkillDefaultRequest) returns (SkillList);
+  rpc Enable(SkillEnableRequest) returns (SkillList);
+  rpc Clear(SkillClearRequest) returns (SkillList);
+}
+
+// `in` and `project` are a project's id or workspace path rather than a
+// `ProjectRef`. Two reasons, and the first is a hard one: a `ProjectRef` is
+// written by contract generation, so only a file payday generates a contract for
+// can name it -- and an extra service declared in such an overlay may not reuse
+// a method name the entity's own contract has, which `List`, `Add` and `Remove`
+// all are. The second is that the project here is not the row being acted on. It
+// chooses whose view comes back. Resolving a handle to an id is the client's job
+// already (`internal/resourceclient`), so what arrives is an id either way.
+// See docs/plans/service-boundaries.md.
+
+// `in` is the project whose view comes back -- "as seen in" and never "to".
+// Every entry then says what that project sees and whether it decided for
+// itself; without it the view is the installation's own defaults. A
+// registration is installation-wide, which is why `Add` and `Remove` take `in`
+// and still do not write anything about it: it chooses the answer, not the
+// subject. That reading used to be impossible -- the field was `ref`, in the
+// position every other request uses for the row it acts on.
+message SkillListRequest { string in = 1; }
+message SkillAddRequest { string name = 1; string in = 2; }
+message SkillRemoveRequest { string name = 1; string in = 2; }
+message SkillDefaultRequest { string name = 1; bool enabled = 2; }
+// The project half: what one project decided, against the default.
+message SkillEnableRequest { string name = 1; string in = 2; bool enabled = 3; }
+message SkillClearRequest { string name = 1; string in = 2; }
+message SkillEntry {
+  string name = 1; string description = 2;
+  // Set only when this project decided for itself; absent means it inherits
+  // the installation's default, which is a different thing from agreeing with
+  // it.
+  bool override = 3;
+  bool effective = 4;
+}
+message SkillList { repeated SkillEntry entries = 1; string message = 2; }

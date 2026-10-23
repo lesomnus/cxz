@@ -97,6 +97,7 @@ func (s ProjectServer) Get(ctx context.Context, r *resource.ProjectGetRequest) (
 	// is already NotFound, since every read narrows on `date_erased`.
 	return s.ProjectServiceServer.Get(ctx, r)
 }
+
 // List answers with every registered project. There is no hidden half any
 // more: a project is registered or erased, and an erased one is gone.
 func (s ProjectServer) List(ctx context.Context, r *resource.ProjectListRequest) (*resource.ProjectListResponse, error) {
@@ -149,6 +150,7 @@ func (s ProjectServer) Patch(ctx context.Context, r *resource.ProjectPatchReques
 func (s ProjectServer) Apply(context.Context, *resource.ProjectApplyRequest) (*resource.Project, error) {
 	return nil, closed()
 }
+
 // Start makes the project run: it builds and creates the container when there
 // is none, and starts the one there is otherwise. It does not replace one --
 // losing a container is `Remove`, asked for on purpose -- and it does not apply
@@ -217,59 +219,4 @@ func (s ProjectServer) Remove(ctx context.Context, r *resource.ProjectControl) (
 		return nil, err
 	}
 	return s.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
-}
-func (s ProjectServer) InspectForeign(ctx context.Context, _ *resource.InspectForeignRequest) (*resource.InspectForeignResponse, error) {
-	ps, err := s.shared.runtime.Projects(ctx, &api.Empty{})
-	if err != nil {
-		return nil, err
-	}
-	var items []*resource.ForeignContainer
-	for _, p := range ps.Projects {
-		if p.State == "foreign" {
-			items = append(items, resource.ForeignContainer_builder{ContainerId: &p.ContainerId, Workspace: &p.Workspace, Name: &p.Name}.Build())
-		}
-	}
-	return resource.InspectForeignResponse_builder{Items: items}.Build(), nil
-}
-
-func (s ProjectServer) FileMappings(ctx context.Context, r *resource.FileMappingsRequest) (*resource.FileMappingsReply, error) {
-	if err := s.effect(); err != nil {
-		return nil, err
-	}
-	out, err := s.shared.runtime.FileMappings(ctx, &api.FileMappingsInput{Bundle: r.GetBundle()})
-	if err != nil {
-		return nil, err
-	}
-	return resource.FileMappingsReply_builder{Status: &out.Status}.Build(), nil
-}
-
-func (s ProjectServer) Devcontainer(ctx context.Context, r *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
-	if err := s.effect(); err != nil {
-		return nil, err
-	}
-	out, err := s.shared.runtime.Devcontainer(ctx, &api.DevcontainerInput{Spec: r.GetSpec()})
-	if err != nil {
-		return nil, err
-	}
-	return resource.DevcontainerReply_builder{Status: &out.Status}.Build(), nil
-}
-
-// RenderDevcontainer passes the handle through rather than resolving it. It
-// may name a directory inside a workspace, and only the manager knows which
-// registered workspace owns that directory -- a ref resolved here would have
-// to be the workspace already, which is the thing the caller is asking about.
-func (s ProjectServer) RenderDevcontainer(ctx context.Context, r *resource.RenderDevcontainerRequest) (*resource.RenderDevcontainerReply, error) {
-	out, err := s.shared.runtime.RenderDevcontainer(ctx, &api.RenderDevcontainerInput{Handle: r.GetHandle()})
-	if err != nil {
-		return nil, err
-	}
-	reply := resource.RenderDevcontainerReply_builder{
-		Project: &out.Project, Name: &out.Name, Workspace: &out.Workspace, Note: &out.Note,
-	}
-	for _, f := range out.Files {
-		reply.Files = append(reply.Files, resource.RenderedFile_builder{
-			Name: &f.Name, Source: &f.Source, Role: &f.Role, Data: f.Data,
-		}.Build())
-	}
-	return reply.Build(), nil
 }

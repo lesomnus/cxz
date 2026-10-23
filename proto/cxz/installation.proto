@@ -1,0 +1,234 @@
+edition = "2023";
+package cxz;
+import "google/protobuf/timestamp.proto";
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// No file-level `features.field_presence`. These messages came from the merged
+// project contract, which has none either, so they keep explicit presence and
+// an absent field stays different from a zero one -- a retention budget of 0 is
+// not the same as one nobody set.
+
+// This installation: its container engine, its retention budgets, its agent
+// profiles, the configuration sources it shares with every project, and what it
+// can say about its own calls.
+//
+// It is not an entity. There is no row and no table -- the truth is files under
+// the installation root, and this service reads and writes them. Which also
+// means nothing here can name a row: a `ProjectRef` is written by contract
+// generation, so a file payday generates nothing for cannot reach one. Nothing
+// here needs to. See docs/plans/service-boundaries.md.
+//
+// Being entity-less, it is registered by hand rather than by
+// `resource.RegisterServer`, and the generated Gate, Audit, Intercept and Batch
+// layers do not wrap it.
+service InstallationService {
+  // The engine, as four things a person does to it and one line back about
+  // each. A save with no spec has nothing to fall back on; a start without one
+  // applies what was saved.
+  rpc SaveEngine(SaveEngineRequest) returns (EngineReply);
+  rpc StartEngine(StartEngineRequest) returns (EngineReply);
+  rpc StopEngine(EngineRequest) returns (EngineReply);
+  rpc PruneEngine(EngineRequest) returns (EngineReply);
+  rpc EngineStatus(EngineRequest) returns (EngineReply);
+  // The same engine as facts rather than as a sentence. It asks the engine, so
+  // it can be slow; the four above are what a person drives it with.
+  rpc Engine(EngineRequest) returns (EngineInfo);
+  // Which cxz this installation runs, and what it would move to.
+  rpc Version(EngineRequest) returns (InstallationVersion);
+
+  // The history budgets. They bound cxz's own records only; provider context is
+  // not affected. See docs/history.md.
+  rpc Retention(RetentionRequest) returns (HistoryPolicy);
+  rpc SaveRetention(SaveRetentionRequest) returns (HistoryPolicy);
+
+  // Which account and model each kind of auxiliary task runs on. The kinds are
+  // in AuxKind; a session asks for a run through SessionService.
+  rpc Agents(AgentsRequest) returns (AgentProfiles);
+  rpc SaveAgents(SaveAgentsRequest) returns (AgentProfiles);
+
+  // The configuration every project starts from: the devcontainer settings this
+  // installation applies, and the files it shares into each project.
+  rpc SaveDevcontainer(SaveDevcontainerRequest) returns (InstallationReceipt);
+  rpc SaveSharedFiles(SaveSharedFilesRequest) returns (InstallationReceipt);
+  // What a handle's devcontainer configuration renders to, merge order
+  // included. Read only.
+  rpc RenderDevcontainer(RenderDevcontainerRequest) returns (RenderDevcontainerReply);
+
+  // The manager's own RPC log, and the window that records request detail.
+  // Metadata only: this answer crosses the plaintext surface.
+  rpc Diagnostics(DiagnosticsRequest) returns (DiagnosticsReply);
+  rpc Capture(CaptureRequest) returns (DiagnosticsReply);
+
+  // Containers on this host that look like a project's and are not owned by
+  // this installation. Never adopted and never removed; this only reports them.
+  rpc ForeignContainers(ForeignContainersRequest) returns (ForeignContainersReply);
+}
+
+// A save replaces the budgets whole, so the policy is the field rather than the
+// request: the request is what carries it, which is what keeps a resource from
+// being its own request.
+message SaveRetentionRequest { HistoryPolicy retention = 1; }
+
+message ForeignContainersRequest {}
+
+message ForeignContainersReply { repeated ForeignContainer items = 1; }
+
+message ForeignContainer { string container_id = 1; string workspace = 2; string name = 3; }
+
+message SaveSharedFilesRequest { bytes bundle = 1; }
+
+
+
+message SaveDevcontainerRequest { bytes spec = 1; }
+
+// One line of text for a person: what was saved, or what it applies to.
+message InstallationReceipt { string status = 1; }
+
+// handle is not a key to a row, which is why it is not a ProjectRef: it may be
+// a directory inside a workspace rather than the workspace itself -- a
+// .devcontainer directory is exactly where someone wonders which devcontainer
+// is in effect -- so the manager walks up to the registered workspace that
+// owns it. Only a registered workspace matches, so walking up cannot widen the
+// answer, and the reply names the project it settled on.
+message RenderDevcontainerRequest { string handle = 1; }
+
+// role is one line of prose, because the order of a merge is what a reader
+// needs and what a file name cannot say. source is a path on the manager host.
+message RenderedFile { string name = 1; string source = 2; string role = 3; bytes data = 4; }
+
+message RenderDevcontainerReply {
+  string project = 1; string name = 2; string workspace = 3;
+  // Set when something could not be rendered -- no Compose files to merge, or
+  // no Compose CLI to merge them with -- rather than failing the read.
+  string note = 4;
+  repeated RenderedFile files = 5;
+}
+
+// The kinds of task that can be done beside a session. A new kind is a value
+// here, not another RPC.
+enum AuxKind {
+  AUX_KIND_UNSPECIFIED = 0;
+  AUX_KIND_SUMMARY = 1;
+  AUX_KIND_SUGGESTION = 2;
+  AUX_KIND_TITLE = 3;
+}
+
+// Which account and model run a kind. Per kind, because whether two kinds share
+// a profile is what decides whether one call can answer both. agent and backend
+// are read only: they come from the registered account, not from a caller.
+message AgentProfile {
+  AuxKind kind = 1; bool enabled = 2; string account = 3; string agent = 4;
+  string backend = 5; string model = 6; string effort = 7;
+  // Read only: the boundary the server set when the kind was enabled, so a
+  // caller can say what it applies to. Ignored when it arrives.
+  google.protobuf.Timestamp since = 8;
+}
+
+message AgentsRequest {}
+
+message SaveAgentsRequest { repeated AgentProfile profiles = 1; }
+
+message AgentProfiles {
+  string revision = 1; repeated AgentProfile profiles = 2;
+  string message = 3; string owner = 4;
+}
+
+message RetentionRequest {}
+
+// disabled turns removal off entirely; zero in a budget means the default. Both
+// budgets are per session.
+message HistoryPolicy {
+  bool disabled = 1; int32 max_mib = 2; int32 raw_mib = 3;
+  int32 window_mib = 4; int32 window_turns = 5;
+}
+
+// The engine has two modes and nothing else, so this is where the action
+// string's enum belongs: on the value with a closed set, not on the verb.
+enum EngineMode {
+  ENGINE_MODE_UNSPECIFIED = 0;
+  ENGINE_MODE_OFF = 1;
+  ENGINE_MODE_DIND = 2;
+}
+
+// override is the user's own Compose document and stays bytes: it is theirs to
+// write and cxz only merges it.
+message EngineSpec { EngineMode mode = 1; string image = 2; bytes override = 3; }
+
+message EngineRequest {}
+
+// A save has nothing to fall back on, so its spec is required. An absent spec
+// on a start means "apply the one already saved", which is what an empty
+// payload meant.
+message SaveEngineRequest { EngineSpec spec = 1; }
+
+message StartEngineRequest { EngineSpec spec = 1; }
+
+// One line of text for a person: an endpoint, a sentence, or what a prune
+// reclaimed.
+message EngineReply { string status = 1; }
+
+// What the engine is, and nothing else. The history budgets and the cxz build
+// have their own calls.
+message EngineInfo {
+  EngineMode mode = 1; string state = 2; string health = 3;
+  string image = 4; string configured_image = 5; string endpoint = 6;
+  string build_cache = 7; string reclaimable = 8;
+  // Set when the engine is running but its disk usage could not be read,
+  // rather than reporting a size of nothing.
+  string usage_error = 9;
+}
+
+// error is set when the channel or the pin could not be read; the build itself
+// is compiled in and always known.
+message InstallationVersion {
+  string version = 1; string revision = 2; string channel = 3;
+  string pin = 4; string error = 5;
+}
+
+message DiagnosticsRequest {
+  // Narrow to one method, and to what happened since a point in time. Limit
+  // takes the newest; zero means everything kept.
+  string method = 1;
+  google.protobuf.Timestamp since = 2;
+  int32 limit = 3;
+  // Aggregates alone, for the common question of what is slow.
+  bool stats_only = 4;
+}
+
+message CaptureRequest {
+  // Seconds to keep every call for; zero stops an active window.
+  int32 seconds = 1;
+}
+
+message RpcRecord {
+  google.protobuf.Timestamp at = 1;
+  string method = 2;
+  // A gRPC status name, as the status renders it: OK, DeadlineExceeded.
+  string code = 3;
+  int64 elapsed_ms = 4;
+  // Of the elapsed time, how much was spent waiting, and on what.
+  int64 waited_ms = 5;
+  string waited_on = 6;
+  bool stream = 7;
+}
+
+message RpcStat {
+  string method = 1;
+  int64 calls = 2;
+  int64 failed = 3;
+  int64 in_flight = 4;
+  // Histogram bucket bounds, so they read as "at or under": what a bucketed
+  // histogram can honestly say without keeping every sample.
+  int64 p50_ms = 5;
+  int64 p99_ms = 6;
+  int64 max_ms = 7;
+}
+
+message DiagnosticsReply {
+  repeated RpcStat stats = 1;
+  repeated RpcRecord records = 2;
+  // Set while a capture window is open.
+  google.protobuf.Timestamp capturing_until = 3;
+  // Where the failed and the slow are appended, on the manager's filesystem.
+  string path = 4;
+}

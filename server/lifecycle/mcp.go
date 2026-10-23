@@ -10,20 +10,33 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// A registration belongs to the installation, so it lives on the project
-// service, scoped by an optional ref the same way the skills library is. The
-// two calls about one session's connection are on the session service, because
-// that is whose connection it is.
-
-func (s ProjectServer) GetMcpServers(ctx context.Context, r *resource.McpServersRequest) (*resource.McpServersReply, error) {
-	project, err := s.projectScope(ctx, r.GetRef())
-	if err != nil {
-		return nil, err
-	}
-	return mcpServersReply(s.shared.runtime.GetMcpServers(ctx, &api.McpServersInput{Project: project}))
+// A registration belongs to the installation, not to a project, so it has its
+// own service -- `in` chooses whose view comes back and never what to write,
+// the same way the skills library does. What is *running* from a registration
+// is a different resource again: McpConnectionService observes it, and the two
+// calls about one session's own connection stay on the session service, because
+// that is whose connection it is. See docs/plans/service-boundaries.md.
+type McpServerServer struct {
+	Layer
+	resource.UnimplementedMcpServerServiceServer
 }
 
-func (s ProjectServer) PutMcpServer(ctx context.Context, r *resource.PutMcpServerRequest) (*resource.McpServersReply, error) {
+type McpConnectionServer struct {
+	Layer
+	resource.UnimplementedMcpConnectionServiceServer
+}
+
+func (s Layer) McpServer() resource.McpServerServiceServer { return McpServerServer{Layer: s} }
+
+func (s Layer) McpConnection() resource.McpConnectionServiceServer {
+	return McpConnectionServer{Layer: s}
+}
+
+func (s McpServerServer) List(ctx context.Context, r *resource.McpServerListRequest) (*resource.McpServerList, error) {
+	return mcpServersReply(s.shared.runtime.GetMcpServers(ctx, &api.McpServersInput{Project: r.GetIn()}))
+}
+
+func (s McpServerServer) Put(ctx context.Context, r *resource.McpServerPutRequest) (*resource.McpServerList, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -36,14 +49,14 @@ func (s ProjectServer) PutMcpServer(ctx context.Context, r *resource.PutMcpServe
 	}))
 }
 
-func (s ProjectServer) RemoveMcpServer(ctx context.Context, r *resource.McpServerRequest) (*resource.McpServersReply, error) {
+func (s McpServerServer) Remove(ctx context.Context, r *resource.McpServerRemoveRequest) (*resource.McpServerList, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
 	return mcpServersReply(s.shared.runtime.RemoveMcpServer(ctx, &api.McpServerInput{Id: r.GetId()}))
 }
 
-func (s ProjectServer) SetMcpServerDefault(ctx context.Context, r *resource.McpServerDefaultRequest) (*resource.McpServersReply, error) {
+func (s McpServerServer) SetDefault(ctx context.Context, r *resource.McpServerDefaultRequest) (*resource.McpServerList, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -52,65 +65,40 @@ func (s ProjectServer) SetMcpServerDefault(ctx context.Context, r *resource.McpS
 	}))
 }
 
-func (s ProjectServer) SetProjectMcpServer(ctx context.Context, r *resource.ProjectMcpServerRequest) (*resource.McpServersReply, error) {
-	project, err := s.changeScope(ctx, r.GetRef())
-	if err != nil {
+func (s McpServerServer) Enable(ctx context.Context, r *resource.McpServerEnableRequest) (*resource.McpServerList, error) {
+	if err := s.effect(); err != nil {
 		return nil, err
 	}
 	return mcpServersReply(s.shared.runtime.SetProjectMcpServer(ctx, &api.ProjectMcpServerInput{
-		Project: project, Id: r.GetId(), Enabled: r.GetEnabled(),
+		Project: r.GetIn(), Id: r.GetId(), Enabled: r.GetEnabled(),
 	}))
 }
 
-func (s ProjectServer) ClearProjectMcpServer(ctx context.Context, r *resource.ClearProjectMcpServerRequest) (*resource.McpServersReply, error) {
-	project, err := s.changeScope(ctx, r.GetRef())
-	if err != nil {
+func (s McpServerServer) Clear(ctx context.Context, r *resource.McpServerClearRequest) (*resource.McpServerList, error) {
+	if err := s.effect(); err != nil {
 		return nil, err
 	}
 	return mcpServersReply(s.shared.runtime.ClearProjectMcpServer(ctx, &api.ClearProjectMcpServerInput{
-		Project: project, Id: r.GetId(),
+		Project: r.GetIn(), Id: r.GetId(),
 	}))
 }
 
-func (s ProjectServer) McpSessions(ctx context.Context, r *resource.McpSessionsRequest) (*resource.McpSessionsReply, error) {
-	project, err := s.projectScope(ctx, r.GetRef())
+func (s McpConnectionServer) List(ctx context.Context, r *resource.McpConnectionListRequest) (*resource.McpConnectionList, error) {
+	if r.GetProject() == "" {
+		return nil, status.Error(codes.InvalidArgument, "a connection list needs a project")
+	}
+	out, err := s.shared.runtime.McpSessions(ctx, &api.McpSessionsInput{Project: r.GetProject()})
 	if err != nil {
 		return nil, err
 	}
-	if project == "" {
-		return nil, status.Error(codes.InvalidArgument, "a session status needs a project")
-	}
-	out, err := s.shared.runtime.McpSessions(ctx, &api.McpSessionsInput{Project: project})
-	if err != nil {
-		return nil, err
-	}
-	reply := resource.McpSessionsReply_builder{Message: &out.Message}
+	reply := resource.McpConnectionList_builder{Message: &out.Message}
 	for _, v := range out.Sessions {
-		reply.Sessions = append(reply.Sessions, resource.McpSessionStatus_builder{
+		reply.Connections = append(reply.Connections, resource.McpConnection_builder{
 			Session: &v.SessionId, Title: &v.Title, Pending: &v.Pending,
 			LaunchDigest: &v.LaunchDigest, Servers: v.Servers,
 		}.Build())
 	}
 	return reply.Build(), nil
-}
-
-func (s ProjectServer) SyncMcpServers(ctx context.Context, r *resource.SyncMcpServersRequest) (*resource.SyncMcpServersReply, error) {
-	if err := s.effect(); err != nil {
-		return nil, err
-	}
-	servers := map[string]*api.McpServer{}
-	for id, v := range r.GetServers() {
-		server, err := runtimeMcpServer(v)
-		if err != nil {
-			return nil, err
-		}
-		servers[id] = server
-	}
-	out, err := s.shared.runtime.SyncMcpServers(ctx, &api.SyncMcpServersInput{Servers: servers})
-	if err != nil {
-		return nil, err
-	}
-	return resource.SyncMcpServersReply_builder{Status: &out.Status}.Build(), nil
 }
 
 func (s SessionServer) McpLogs(ctx context.Context, r *resource.SessionMcpRequest) (*resource.SessionMcpLogsReply, error) {
@@ -158,11 +146,11 @@ func runtimeMcpServer(v *resource.McpServer) (*api.McpServer, error) {
 	}, nil
 }
 
-func mcpServersReply(v *api.McpServersReply, err error) (*resource.McpServersReply, error) {
+func mcpServersReply(v *api.McpServersReply, err error) (*resource.McpServerList, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := resource.McpServersReply_builder{Message: &v.Message}
+	out := resource.McpServerList_builder{Message: &v.Message}
 	for _, e := range v.Entries {
 		out.Entries = append(out.Entries, resource.McpEntry_builder{
 			Id: &e.Id, Server: resourceMcpServer(e.Server),

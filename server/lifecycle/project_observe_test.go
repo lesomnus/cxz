@@ -105,7 +105,7 @@ func TestStopAndStartKeepTheProject(t *testing.T) {
 	if got := stopped.GetStatus().GetContainerState(); got != resource.ContainerState_CONTAINER_STATE_STOPPED {
 		t.Fatal("stop did not answer with what it left behind", got)
 	}
-	if string(stopped.GetId()) != string(before.GetId()) || stopped.GetAlias() != before.GetAlias()  {
+	if string(stopped.GetId()) != string(before.GetId()) || stopped.GetAlias() != before.GetAlias() {
 		t.Fatal("stop changed the project", stopped)
 	}
 	page, err := sessions.List(ctx, resource.SessionListRequest_builder{}.Build())
