@@ -1,6 +1,7 @@
 # ProjectService 쪼개기 — 서비스 경계
 
-상태: 제안. 구현 전이고, 세 가지 결정을 기다린다(§7).
+상태: 제안. 구현 전. 남은 결정은 §7.1 하나다 — 스킬·MCP의 진실이 파일인가 행인가,
+그리고 그에 따라 프로젝트를 요청의 `ProjectRef`로 받는가 edge로 받는가.
 
 `ProjectService`는 생성된 7개 verb(`Add` `Get` `Patch` `Apply` `Erase` `List`
 `Watch`) 위에 손으로 쓴 RPC 47개를 얹고 있다. 그중 **26개는 Project를 가리키지
@@ -162,6 +163,16 @@ only SyncSkills: it is the side being told."* 매니저의 `SyncSkills`는 호�
 §5의 (3)으로 선언한다 — 엔티티 없는 서비스를 오버레이 안에 쓴다. 그러면 테이블도
 죽은 `Watch`도 없고, `ProjectRef`는 받을 수 있다.
 
+**`ProjectRef`는 요청 메시지에만 나온다.** 리소스 메시지에는 들어가지 않는다. 이
+저장소에서 엔티티 메시지가 다른 엔티티를 가리키는 방법은 edge 하나뿐이고 —
+`proto/cxz/session.proto:20`의 `Project project = 8 [(orm.edge) = {immutable:
+true}]` — 엔티티 메시지에 `XxxRef` 필드를 둔 곳은 **한 곳도 없다**. 반대로 요청
+메시지가 `XxxRef`를 받는 곳은 오버레이 세 파일에 63개 있고(session 39, project 19,
+task 5), payday 자신의 예도 그 모양이다(`RobotMoveRequest{RobotRef ref = 1; CellRef
+to = 2}`). 아래의 `in`은 그 63개와 같은 자리다.
+
+edge를 쓰려면 엔티티여야 하고, 엔티티는 테이블이다. 그 선택지는 §7.1에 적었다.
+
 ```proto
 // proto/ext/cxz/project_svc.ext.proto — `ProjectRef`가 있는 파일이라서 여기다.
 // 엔티티가 아니므로 `SkillRef`는 없다. 스킬은 라이브러리 안에서 유일한
@@ -181,6 +192,12 @@ message SkillRemoveRequest { string name = 1; }
 message SkillDefaultRequest{ string name = 1; bool enabled = 2; }
 message SkillEnableRequest { string name = 1; ProjectRef in = 2; bool enabled = 3; }
 message SkillClearRequest  { string name = 1; ProjectRef in = 2; }
+
+// 답. 리소스 메시지이고, 프로젝트를 가리키는 필드가 없다 — 어느 프로젝트의
+// 시야인지는 물어본 쪽이 안다. 지금 `SkillEntry`가 이미 이 모양이다.
+message SkillEntry { string name = 1; string description = 2; bool enabled = 3;
+                     bool override = 4; bool effective = 5; }
+message SkillList  { repeated SkillEntry entries = 1; string message = 2; }
 ```
 
 `McpServerService`는 `string name` 자리에 `string id`가 오는 같은 모양이다.
@@ -321,80 +338,123 @@ message McpConnectionListRequest { ProjectRef in = 1; }
 값이 아니다 — 값은 **어느 RPC도 자기 것이 아닌 서비스에 있지 않다**는 것이다. 엔티티로
 갔다면 스무 개가 생성된 CRUD로 사라졌겠지만, 그 대가는 테이블과 죽은 `Watch`였다.
 
-## 7. 결정해야 하는 것
+## 7. 결정
 
-§5를 측정한 뒤 남은 것은 셋이다. 저장소 결정은 사라졌다 — 옮길 저장소가 없다.
+셋 중 둘은 정해졌다(§7.2, §7.3). 남은 것은 §7.1이다.
 
 ### 7.1 새 서비스 셋을 어느 파일에 선언하는가
 
-`SkillService`, `McpServerService`, `McpConnectionService`는 `ProjectRef`를 받아야
-한다. 그러려면 §5의 (2)·(3) 때문에 선택지가 둘뿐이다.
+`SkillService`, `McpServerService`, `McpConnectionService`가 프로젝트를 받는
+방법이 셋이다.
 
-- **A.** `proto/ext/cxz/project_svc.ext.proto`에 선언한다. `ProjectRef`를 받는다.
-  대가는 그 파일에 `ProjectService`가 아닌 서비스가 들어가서, 파일 이름만 보고는
-  안에 무엇이 있는지 알 수 없다는 것이다. 실행에 영향은 없다.
-- **B.** `proto/cxz/skill.proto` 같은 자기 파일에 선언한다. 파일 이름이 내용과
-  맞는다. 대가는 프로젝트를 `ProjectRef`가 아니라 `string`(uuid 또는 runtime id)으로
-  받아야 한다는 것이다. `ProjectRef`는 `id`/`alias`/`workspace`/`runtime_id` 중
-  하나를 담는 oneof이고, 서버는 그 네 가지를 다 받아 준다.
+- **A.** `proto/ext/cxz/project_svc.ext.proto`에 선언하고 요청 메시지가
+  `ProjectRef`를 받는다. 지금 63개가 쓰는 자리와 같다. 대가는 그 파일에
+  `ProjectService`가 아닌 서비스가 들어가서, 파일 이름만 보고는 안에 무엇이 있는지
+  알 수 없다는 것이다. 실행에 영향은 없다.
+- **B.** `proto/cxz/skill.proto` 같은 자기 파일에 선언하고 프로젝트를
+  `string`(uuid 또는 runtime id)으로 받는다. 파일 이름이 내용과 맞는다. 대가는
+  `ProjectRef`가 `id`/`alias`/`workspace`/`runtime_id` 중 하나를 담는 oneof이고 서버가
+  그 네 가지를 다 받아 주는데, 문자열은 하나만 받는다는 것이다.
+- **C.** `Skill`과 `McpServer`를 **엔티티로** 선언하고 프로젝트를 edge로 가리킨다.
+  `Project project = 3 [(orm.edge) = ...]` — payday가 필드 3을 "테넌트보다 작은
+  집합(사이트·플릿·프로젝트)으로 가는 edge" 자리로 비워 두므로 번호도 이미 정해져
+  있다. 그러면 `list: {by: [{name: "project"}]}`로 프로젝트별 조회가 생성되고,
+  등록·삭제·기본값 변경이 생성된 `Add`/`Erase`/`Patch`가 된다. 손으로 쓸 RPC는
+  활성화 둘만 남는다.
 
-B의 실제 손실은 생각보다 작다. 지금도 alias를 푸는 것은 클라이언트다 —
-`internal/resourceclient/skills.go`의 `projectRef()`가 `Projects`를 불러
-`projectref.Resolve`로 handle을 id로 바꾼 뒤 보낸다. 그러니 `cxz skill enable pn`은
-B에서도 그대로 동작한다. 잃는 것은 "서버가 네 가지 표기를 다 받아 준다"는 성질과,
-요청만 보고 그 문자열이 프로젝트를 가리킨다는 것을 알 수 있다는 점이다.
+**C가 가장 적은 코드다. 쓸 수 있는 조건이 하나 있다: 행이 진짜여야 한다.** edge는
+행 위의 컬럼이고, `list: {by: project}`는 그 컬럼에 대한 `WHERE`다. 진실이 공유
+디렉터리의 파일이면 테이블이 비어 있고, 생성된 `List`는 빈 답을 준다. 그걸 피하려고
+layer가 `List`를 가로채면, edge도 생성된 필터도 쓰이지 않는다 — 선언만 남는다.
 
-**A를 권한다.** 파일 이름은 주석 한 줄로 설명되고, 타입은 안 된다.
+그래서 C는 "스킬과 MCP의 진실을 DB로 옮긴다"와 같은 선택이다. 지난 결정은 그
+반대였다(§5). 둘 중 하나다:
 
-### 7.2 `McpConnectionService`를 지금 만드는가, 이름은 무엇인가
+- 파일이 진실이면 → edge는 쓸 수 없고, 프로젝트를 가리키는 것은 요청 메시지뿐이다
+  → **A** (또는 B).
+- 행이 진실이면 → **C**이고, `cxz share`가 고치는 `skills.json`·mcp 설정은 없어지거나
+  행에서 만들어 내는 파일이 된다. MCP는 설정뿐이라 행에 잘 맞는다. 스킬은 디렉터리가
+  payload로 남고 행은 등록이 된다 — Project가 행이고 워크스페이스가 디스크에 있는
+  것과 같은 구조다.
 
-두 가지를 같이 정해야 한다.
+**A를 권한다**, 지난 결정을 유지한다면. 파일 이름이 내용을 다 말하지 않는 것은 주석
+한 줄로 설명되고, 동작하지 않는 `Watch`나 빈 테이블은 설명되지 않는다. 다만 C로
+가겠다면 지금이 그 결정을 바꿀 자리다 — 코드는 C가 제일 적고, 마이그레이션 하나와
+`cxz share`의 편집 대상 변경이 그 대가다.
 
-1. **이름.** 제안한 `McpSessionService`는 `McpSessionStatus.session`이 에이전트
-   세션의 id라서 cxz의 `Session`과 같은 단어를 쓰게 된다. 돌아가는 것은 한 에이전트
-   세션과 한 MCP 서버 사이의 연결이므로 `McpConnectionService`를 제안한다.
-   `McpSessionService`로 가도 동작에는 차이가 없고, 읽는 사람이 "MCP의 세션"과
-   "세션의 MCP"를 구분해야 한다.
-2. **지금 만드는가.** 옮길 RPC가 `McpSessions` 하나뿐이다. RPC 하나짜리 서비스를
-   지금 만들 것인지, 두 번째 조작("이 세션의 이 MCP를 다시 띄워라", "왜 실패했는지
-   보여 달라")이 생길 때까지 `McpSessions`를 `ProjectService`에 두고 §2 위반 하나를
-   남길 것인지.
+### 7.2 `McpConnectionService` — 정해졌다
 
-**지금 만드는 쪽을 권한다.** `McpSessions`는 `ProjectRef`를 받으므로 `ProjectService`에
-두어도 §2 위반은 아니다. 그러나 등록(`McpServerService`)과 실행 중인 것이 다른 리소스라는
-것을 한 번 적어 두면, 두 번째 조작이 생길 때 그게 어디로 갈지 묻지 않아도 된다.
+이름은 `McpConnectionService`, 만드는 시점은 지금. `McpSessionStatus.session`이
+에이전트 세션의 id라서 `McpSession`은 cxz의 `Session`과 같은 단어를 두 뜻으로 쓰게
+된다. 옮기는 RPC는 `McpSessions` 하나이고, `List`로 시작한다.
 
-### 7.3 `MarkHistoryTrimmable`을 지우는가
+### 7.3 `MarkHistoryTrimmable` — 지운다
 
-**무엇인지부터.** cxz는 세션 대화를 SQLite 파일(`sessions`/`events` 테이블)에
-저장하고, 보존 예산을 넘으면 오래된 것을 잘라낸다(compaction). 잘라내기 **전에**
-수퍼바이저가 이 RPC를 부르고, 받은 쪽은 그 파일에 `PRAGMA user_version=2`를 쓴다.
-목적은 옛 버전 보호다: 잘라내기를 모르는 옛 cxz 빌드가 그 파일을 열면 version 2를
-보고, 구멍 난 대화를 보여 주는 대신 거부한다. 수퍼바이저는 이 호출이 실패하면
-잘라내기를 멈춘다(`internal/supervisor/history.go:298`,
-`internal/server/history_policy.go:50`).
+**무엇인지.** 수퍼바이저가 세션 대화를 잘라내기(trim) **전에** 이 RPC를 부르고,
+받은 쪽은 `root/cxz.db`에 `PRAGMA user_version=2`를 쓴다
+(`internal/server/history_policy.go:50`). 그 설치 루트를 열 때 cxz는
+`PRAGMA user_version`을 읽고 자기가 아는 것보다 높으면 시작을 거부한다 — 지금
+빌드는 `version > 2`에서 거부한다(`internal/server/server.go:92`). 그래서 1만 아는
+옛 빌드는 2를 보고 거부하게 된다. 구멍 난 대화를 보여 주지 않기 위한 일방향
+표식이고, 호출이 실패하면 수퍼바이저는 잘라내기를 멈춘다
+(`internal/supervisor/history.go:298`).
 
-**그래서 이건 설치본에 대한 것이 아니다.** 대화 파일 하나에 표식을 쓰는 조작이고,
-부르는 쪽은 프로젝트 컨테이너 안의 수퍼바이저다. `InstallationService`에 둘 것이
-아니다 — 제안의 §6.4에서 빼 둔 이유다.
+잘라내기 자체는 이 파일이 아니라 세션별 대화 파일(`internal/sessionstore`)에서
+일어난다. 그 파일에는 자기 울타리가 따로 있다 — `meta` 테이블의
+`sessionstore.Schema`와 `Compat`(둘 다 2)이고, 옛 세대 빌드가 **기록하는 것**을
+막는다.
 
-[where-we-are](where-we-are.md)의 "바로 다음" 2번은 이 울타리가 "이제 쓰이지 않는다"며
-지우자고 적어 두었다. 그 문장과 코드가 어긋난다: 호출자는 아직 있다. 어긋남이 어느
-쪽인지는 사람이 안다 — 지금 쓰이는 어느 빌드도 잘라내기를 모르지 않는다면 울타리가
-할 일이 없고, 그러면 RPC·수퍼바이저의 호출·`PRAGMA` 셋을 함께 지운다. 그게 아니라면
-남기고, 이 제안이 건드리지 않는다(클라이언트가 부를 일이 없으므로 리소스 API에서
-빼고 런타임 API에만 두는 것이 맞다 — §6.2의 `SyncSkills`와 같은 모양이다).
+**지운다.** 울타리가 막으려던 상황이 더는 올 수 없다. 바이너리가 설치되거나 고정되는
+모든 경로가 `Schema == 2`를 요구한다:
 
-**지우는 쪽을 권한다.** 다만 "옛 빌드가 더 없다"는 판단은 내 것이 아니다.
+| 경로 | 검사 |
+| --- | --- |
+| 릴리스 수락 | `internal/releasechannel/release.go:45`, `internal/cxzupdate/release.go:105` |
+| `cxz use` 고정 | `internal/cxzupdate/pin_linux.go:154` |
+| 매니저 헬스 | `internal/cxzupdate/manager_linux.go:232` |
+| 프로젝트 런타임 | `internal/cxzupdate/runtime_linux.go:152` |
+
+`Schema`는 `releasechannel.StateSchema = 2`이고, 그 상수에 달린 주석이 바로 이
+경계를 말한다: *"Schema 2 journals may start with a retention checkpoint. Schema 1
+binaries cannot recover these sessions."* 즉 Schema 1 빌드는 이 설치본에 설치될 수도,
+고정될 수도, 헬스를 통과할 수도 없다. `user_version` 표식은 그 울타리가 생기기 전의
+전환기용이었다.
+
+마이그레이션도 필요 없다. 지금 빌드는 1과 2를 모두 받아 주므로, 이미 2가 찍힌
+설치본은 그대로 열리고 새 설치본은 1에 머문다.
+
+**지울 것, 순서대로.**
+
+1. `proto/ext/cxz/project_svc.ext.proto`에서 `rpc MarkHistoryTrimmable`과
+   `HistoryTrimmableRequest`/`HistoryTrimmableReply`를 지우고 `pd gen`.
+2. `server/lifecycle/history_policy.go`의 핸들러.
+3. 런타임 API: `internal/runtimeproto/cxz.proto`의 `MarkHistoryTrimmable`과
+   `internal/server/history_policy.go:50`의 구현(`PRAGMA` 포함),
+   `internal/resourceclient/session_purge.go:29`,
+   `internal/multiclient/session_purge.go:47`.
+4. `internal/supervisor/history.go`: `authorizeHistoryCheckpoint`와
+   `retainHistory(root, authorize)`의 두 번째 인자.
+5. **테스트 하나를 바꿔 써야 한다.** 수퍼바이저 테스트 네 곳이 그 콜백을 "잘라내기가
+   일어났는가"의 신호로 쓴다(`history_test.go:41`, `:69`, `:120`,
+   `history_shed_test.go:68`). 콜백이 없어지면 그 단정을 **효과**로 바꾼다 — 저장소의
+   floor가 움직였는지, 크기가 줄었는지. 통보가 아니라 결과를 보는 쪽이 더 나은
+   단정이기도 하다.
+6. `internal/server/server.go:92`의 `version > 2`는 **그대로 둔다.** 이미 2가 찍힌
+   파일을 계속 받아 줘야 하고, 그 검사는 미래의 3을 막는 일을 계속 한다.
+7. [where-we-are](where-we-are.md)의 "바로 다음" 2번을 지운다.
+
+그 문서는 이 울타리가 "이제 쓰이지 않는다"고 적었는데 호출자는 있었다. 어긋남의
+답은 "호출자는 있지만 막을 대상이 없다"이고, 위의 표가 그 근거다.
 
 ## 8. 순서
 
-1. §6.1(2개 이동)과 §6.2(2개 제거). 독립적이고, 결정을 기다릴 것이 없다.
+1. §6.1(2개 이동), §6.2(2개 제거), §7.3(`MarkHistoryTrimmable` 삭제). 셋 다
+   독립적이고 기다릴 결정이 없다.
 2. §6.4 `Installation`. 자기 파일 하나, 테이블 없음, 마이그레이션 없음. 메시지를
    옮기는 것이 일의 대부분이다. 웹 호출자는 `auxConfig`/`auxSetConfig`
    둘뿐이고(`ts/src`), 나머지는 CLI(`cmd/cxz`)와
    `internal/resourceclient`·`internal/multiclient`다.
-3. §6.3 `Skill`·`McpServer`와 §6.5 `McpConnection`. 1번 결정이 선행한다.
+3. §6.3 `Skill`·`McpServer`와 §6.5 `McpConnection`. §7.1이 선행한다.
 
 세 단계 모두 등록이 한 줄씩 필요하다 — `internal/server/server.go`,
 `internal/websandbox/server.go`, 그리고 웹의 `ts/src/shared/api/connection.ts`.
