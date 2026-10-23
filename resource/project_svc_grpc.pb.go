@@ -46,9 +46,6 @@ const (
 	ProjectService_CaptureDiagnostics_FullMethodName     = "/cxz.ProjectService/CaptureDiagnostics"
 	ProjectService_AuxConfig_FullMethodName              = "/cxz.ProjectService/AuxConfig"
 	ProjectService_AuxSetConfig_FullMethodName           = "/cxz.ProjectService/AuxSetConfig"
-	ProjectService_AuxModels_FullMethodName              = "/cxz.ProjectService/AuxModels"
-	ProjectService_AuxLoginInfo_FullMethodName           = "/cxz.ProjectService/AuxLoginInfo"
-	ProjectService_MarkHistoryTrimmable_FullMethodName   = "/cxz.ProjectService/MarkHistoryTrimmable"
 	ProjectService_GetHistoryPolicy_FullMethodName       = "/cxz.ProjectService/GetHistoryPolicy"
 	ProjectService_SetHistoryPolicy_FullMethodName       = "/cxz.ProjectService/SetHistoryPolicy"
 	ProjectService_PutSecretFile_FullMethodName          = "/cxz.ProjectService/PutSecretFile"
@@ -59,7 +56,6 @@ const (
 	ProjectService_SetSkillDefault_FullMethodName        = "/cxz.ProjectService/SetSkillDefault"
 	ProjectService_SetProjectSkill_FullMethodName        = "/cxz.ProjectService/SetProjectSkill"
 	ProjectService_ClearProjectSkill_FullMethodName      = "/cxz.ProjectService/ClearProjectSkill"
-	ProjectService_SyncSkills_FullMethodName             = "/cxz.ProjectService/SyncSkills"
 	ProjectService_GetMcpServers_FullMethodName          = "/cxz.ProjectService/GetMcpServers"
 	ProjectService_PutMcpServer_FullMethodName           = "/cxz.ProjectService/PutMcpServer"
 	ProjectService_RemoveMcpServer_FullMethodName        = "/cxz.ProjectService/RemoveMcpServer"
@@ -67,7 +63,6 @@ const (
 	ProjectService_SetProjectMcpServer_FullMethodName    = "/cxz.ProjectService/SetProjectMcpServer"
 	ProjectService_ClearProjectMcpServer_FullMethodName  = "/cxz.ProjectService/ClearProjectMcpServer"
 	ProjectService_McpSessions_FullMethodName            = "/cxz.ProjectService/McpSessions"
-	ProjectService_SyncMcpServers_FullMethodName         = "/cxz.ProjectService/SyncMcpServers"
 	ProjectService_FileMappings_FullMethodName           = "/cxz.ProjectService/FileMappings"
 	ProjectService_Start_FullMethodName                  = "/cxz.ProjectService/Start"
 	ProjectService_Stop_FullMethodName                   = "/cxz.ProjectService/Stop"
@@ -155,17 +150,13 @@ type ProjectServiceClient interface {
 	// one that is left on.
 	CaptureDiagnostics(ctx context.Context, in *CaptureDiagnosticsRequest, opts ...grpc.CallOption) (*DiagnosticsReply, error)
 	// Aux is a model task done beside a session: run once, with the context cxz
-	// assembles, never accumulating into a conversation. These four are the part
+	// assembles, never accumulating into a conversation. These two are the part
 	// that belongs to the installation rather than to one session -- which
-	// account and model each kind runs on. See docs/plans/aux-api.md.
+	// account and model each kind runs on. See docs/plans/aux-api.md. What a
+	// single account offers is `AccountService.Models` and `LoginInfo`: those
+	// name an account, so they are that service's.
 	AuxConfig(ctx context.Context, in *AuxConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error)
 	AuxSetConfig(ctx context.Context, in *AuxSetConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error)
-	AuxModels(ctx context.Context, in *AuxModelsRequest, opts ...grpc.CallOption) (*AuxModelsReply, error)
-	AuxLoginInfo(ctx context.Context, in *AuxLoginInfoRequest, opts ...grpc.CallOption) (*AuxLoginInfoReply, error)
-	// Asked by a session supervisor before it compacts a journal, so that a
-	// release predating trimming refuses the projection rather than serving
-	// history that is gone. A failure stops the compaction.
-	MarkHistoryTrimmable(ctx context.Context, in *HistoryTrimmableRequest, opts ...grpc.CallOption) (*HistoryTrimmableReply, error)
 	// The history budgets of this installation. They bound cxz's own records
 	// only; provider context is not affected. See docs/history.md.
 	GetHistoryPolicy(ctx context.Context, in *HistoryPolicyRequest, opts ...grpc.CallOption) (*HistoryPolicy, error)
@@ -191,10 +182,6 @@ type ProjectServiceClient interface {
 	SetSkillDefault(ctx context.Context, in *SkillDefaultRequest, opts ...grpc.CallOption) (*SkillsReply, error)
 	SetProjectSkill(ctx context.Context, in *ProjectSkillRequest, opts ...grpc.CallOption) (*SkillsReply, error)
 	ClearProjectSkill(ctx context.Context, in *ClearProjectSkillRequest, opts ...grpc.CallOption) (*SkillsReply, error)
-	// Manager to project container: the skills this project is allowed to see,
-	// already resolved. An unactivated skill costs the project nothing, not even
-	// the bytes.
-	SyncSkills(ctx context.Context, in *SyncSkillsRequest, opts ...grpc.CallOption) (*SyncSkillsReply, error)
 	// MCP registrations, and which projects see each one. The same six decisions
 	// as the skills library, for the same reason, plus a definition that arrives
 	// whole: its environment and headers hold explicit values, so editing one
@@ -209,8 +196,6 @@ type ProjectServiceClient interface {
 	// a change is still waiting for a restart. Separate from reading the
 	// registrations, because a settings list should not stall on a container.
 	McpSessions(ctx context.Context, in *McpSessionsRequest, opts ...grpc.CallOption) (*McpSessionsReply, error)
-	// Manager to project container: the registrations resolved for this project.
-	SyncMcpServers(ctx context.Context, in *SyncMcpServersRequest, opts ...grpc.CallOption) (*SyncMcpServersReply, error)
 	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
 	// A project's container, in the three words a person uses about it. Start
 	// makes the project run: it builds and creates the container when there is
@@ -548,36 +533,6 @@ func (c *projectServiceClient) AuxSetConfig(ctx context.Context, in *AuxSetConfi
 	return out, nil
 }
 
-func (c *projectServiceClient) AuxModels(ctx context.Context, in *AuxModelsRequest, opts ...grpc.CallOption) (*AuxModelsReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AuxModelsReply)
-	err := c.cc.Invoke(ctx, ProjectService_AuxModels_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) AuxLoginInfo(ctx context.Context, in *AuxLoginInfoRequest, opts ...grpc.CallOption) (*AuxLoginInfoReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AuxLoginInfoReply)
-	err := c.cc.Invoke(ctx, ProjectService_AuxLoginInfo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) MarkHistoryTrimmable(ctx context.Context, in *HistoryTrimmableRequest, opts ...grpc.CallOption) (*HistoryTrimmableReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HistoryTrimmableReply)
-	err := c.cc.Invoke(ctx, ProjectService_MarkHistoryTrimmable_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) GetHistoryPolicy(ctx context.Context, in *HistoryPolicyRequest, opts ...grpc.CallOption) (*HistoryPolicy, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HistoryPolicy)
@@ -678,16 +633,6 @@ func (c *projectServiceClient) ClearProjectSkill(ctx context.Context, in *ClearP
 	return out, nil
 }
 
-func (c *projectServiceClient) SyncSkills(ctx context.Context, in *SyncSkillsRequest, opts ...grpc.CallOption) (*SyncSkillsReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SyncSkillsReply)
-	err := c.cc.Invoke(ctx, ProjectService_SyncSkills_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) GetMcpServers(ctx context.Context, in *McpServersRequest, opts ...grpc.CallOption) (*McpServersReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(McpServersReply)
@@ -752,16 +697,6 @@ func (c *projectServiceClient) McpSessions(ctx context.Context, in *McpSessionsR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(McpSessionsReply)
 	err := c.cc.Invoke(ctx, ProjectService_McpSessions_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) SyncMcpServers(ctx context.Context, in *SyncMcpServersRequest, opts ...grpc.CallOption) (*SyncMcpServersReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SyncMcpServersReply)
-	err := c.cc.Invoke(ctx, ProjectService_SyncMcpServers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -898,17 +833,13 @@ type ProjectServiceServer interface {
 	// one that is left on.
 	CaptureDiagnostics(context.Context, *CaptureDiagnosticsRequest) (*DiagnosticsReply, error)
 	// Aux is a model task done beside a session: run once, with the context cxz
-	// assembles, never accumulating into a conversation. These four are the part
+	// assembles, never accumulating into a conversation. These two are the part
 	// that belongs to the installation rather than to one session -- which
-	// account and model each kind runs on. See docs/plans/aux-api.md.
+	// account and model each kind runs on. See docs/plans/aux-api.md. What a
+	// single account offers is `AccountService.Models` and `LoginInfo`: those
+	// name an account, so they are that service's.
 	AuxConfig(context.Context, *AuxConfigRequest) (*AuxConfigReply, error)
 	AuxSetConfig(context.Context, *AuxSetConfigRequest) (*AuxConfigReply, error)
-	AuxModels(context.Context, *AuxModelsRequest) (*AuxModelsReply, error)
-	AuxLoginInfo(context.Context, *AuxLoginInfoRequest) (*AuxLoginInfoReply, error)
-	// Asked by a session supervisor before it compacts a journal, so that a
-	// release predating trimming refuses the projection rather than serving
-	// history that is gone. A failure stops the compaction.
-	MarkHistoryTrimmable(context.Context, *HistoryTrimmableRequest) (*HistoryTrimmableReply, error)
 	// The history budgets of this installation. They bound cxz's own records
 	// only; provider context is not affected. See docs/history.md.
 	GetHistoryPolicy(context.Context, *HistoryPolicyRequest) (*HistoryPolicy, error)
@@ -934,10 +865,6 @@ type ProjectServiceServer interface {
 	SetSkillDefault(context.Context, *SkillDefaultRequest) (*SkillsReply, error)
 	SetProjectSkill(context.Context, *ProjectSkillRequest) (*SkillsReply, error)
 	ClearProjectSkill(context.Context, *ClearProjectSkillRequest) (*SkillsReply, error)
-	// Manager to project container: the skills this project is allowed to see,
-	// already resolved. An unactivated skill costs the project nothing, not even
-	// the bytes.
-	SyncSkills(context.Context, *SyncSkillsRequest) (*SyncSkillsReply, error)
 	// MCP registrations, and which projects see each one. The same six decisions
 	// as the skills library, for the same reason, plus a definition that arrives
 	// whole: its environment and headers hold explicit values, so editing one
@@ -952,8 +879,6 @@ type ProjectServiceServer interface {
 	// a change is still waiting for a restart. Separate from reading the
 	// registrations, because a settings list should not stall on a container.
 	McpSessions(context.Context, *McpSessionsRequest) (*McpSessionsReply, error)
-	// Manager to project container: the registrations resolved for this project.
-	SyncMcpServers(context.Context, *SyncMcpServersRequest) (*SyncMcpServersReply, error)
 	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
 	// A project's container, in the three words a person uses about it. Start
 	// makes the project run: it builds and creates the container when there is
@@ -1063,15 +988,6 @@ func (UnimplementedProjectServiceServer) AuxConfig(context.Context, *AuxConfigRe
 func (UnimplementedProjectServiceServer) AuxSetConfig(context.Context, *AuxSetConfigRequest) (*AuxConfigReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxSetConfig not implemented")
 }
-func (UnimplementedProjectServiceServer) AuxModels(context.Context, *AuxModelsRequest) (*AuxModelsReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method AuxModels not implemented")
-}
-func (UnimplementedProjectServiceServer) AuxLoginInfo(context.Context, *AuxLoginInfoRequest) (*AuxLoginInfoReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method AuxLoginInfo not implemented")
-}
-func (UnimplementedProjectServiceServer) MarkHistoryTrimmable(context.Context, *HistoryTrimmableRequest) (*HistoryTrimmableReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method MarkHistoryTrimmable not implemented")
-}
 func (UnimplementedProjectServiceServer) GetHistoryPolicy(context.Context, *HistoryPolicyRequest) (*HistoryPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetHistoryPolicy not implemented")
 }
@@ -1102,9 +1018,6 @@ func (UnimplementedProjectServiceServer) SetProjectSkill(context.Context, *Proje
 func (UnimplementedProjectServiceServer) ClearProjectSkill(context.Context, *ClearProjectSkillRequest) (*SkillsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ClearProjectSkill not implemented")
 }
-func (UnimplementedProjectServiceServer) SyncSkills(context.Context, *SyncSkillsRequest) (*SyncSkillsReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method SyncSkills not implemented")
-}
 func (UnimplementedProjectServiceServer) GetMcpServers(context.Context, *McpServersRequest) (*McpServersReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetMcpServers not implemented")
 }
@@ -1125,9 +1038,6 @@ func (UnimplementedProjectServiceServer) ClearProjectMcpServer(context.Context, 
 }
 func (UnimplementedProjectServiceServer) McpSessions(context.Context, *McpSessionsRequest) (*McpSessionsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method McpSessions not implemented")
-}
-func (UnimplementedProjectServiceServer) SyncMcpServers(context.Context, *SyncMcpServersRequest) (*SyncMcpServersReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method SyncMcpServers not implemented")
 }
 func (UnimplementedProjectServiceServer) FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method FileMappings not implemented")
@@ -1586,60 +1496,6 @@ func _ProjectService_AuxSetConfig_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_AuxModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuxModelsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).AuxModels(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_AuxModels_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).AuxModels(ctx, req.(*AuxModelsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_AuxLoginInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuxLoginInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).AuxLoginInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_AuxLoginInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).AuxLoginInfo(ctx, req.(*AuxLoginInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_MarkHistoryTrimmable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HistoryTrimmableRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).MarkHistoryTrimmable(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_MarkHistoryTrimmable_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).MarkHistoryTrimmable(ctx, req.(*HistoryTrimmableRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_GetHistoryPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HistoryPolicyRequest)
 	if err := dec(in); err != nil {
@@ -1820,24 +1676,6 @@ func _ProjectService_ClearProjectSkill_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_SyncSkills_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SyncSkillsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).SyncSkills(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_SyncSkills_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).SyncSkills(ctx, req.(*SyncSkillsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_GetMcpServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(McpServersRequest)
 	if err := dec(in); err != nil {
@@ -1960,24 +1798,6 @@ func _ProjectService_McpSessions_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).McpSessions(ctx, req.(*McpSessionsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_SyncMcpServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SyncMcpServersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).SyncMcpServers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_SyncMcpServers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).SyncMcpServers(ctx, req.(*SyncMcpServersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2160,18 +1980,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ProjectService_AuxSetConfig_Handler,
 		},
 		{
-			MethodName: "AuxModels",
-			Handler:    _ProjectService_AuxModels_Handler,
-		},
-		{
-			MethodName: "AuxLoginInfo",
-			Handler:    _ProjectService_AuxLoginInfo_Handler,
-		},
-		{
-			MethodName: "MarkHistoryTrimmable",
-			Handler:    _ProjectService_MarkHistoryTrimmable_Handler,
-		},
-		{
 			MethodName: "GetHistoryPolicy",
 			Handler:    _ProjectService_GetHistoryPolicy_Handler,
 		},
@@ -2212,10 +2020,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ProjectService_ClearProjectSkill_Handler,
 		},
 		{
-			MethodName: "SyncSkills",
-			Handler:    _ProjectService_SyncSkills_Handler,
-		},
-		{
 			MethodName: "GetMcpServers",
 			Handler:    _ProjectService_GetMcpServers_Handler,
 		},
@@ -2242,10 +2046,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "McpSessions",
 			Handler:    _ProjectService_McpSessions_Handler,
-		},
-		{
-			MethodName: "SyncMcpServers",
-			Handler:    _ProjectService_SyncMcpServers_Handler,
 		},
 		{
 			MethodName: "FileMappings",

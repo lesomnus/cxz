@@ -94,25 +94,6 @@ func (s ProjectServer) McpSessions(ctx context.Context, r *resource.McpSessionsR
 	return reply.Build(), nil
 }
 
-func (s ProjectServer) SyncMcpServers(ctx context.Context, r *resource.SyncMcpServersRequest) (*resource.SyncMcpServersReply, error) {
-	if err := s.effect(); err != nil {
-		return nil, err
-	}
-	servers := map[string]*api.McpServer{}
-	for id, v := range r.GetServers() {
-		server, err := runtimeMcpServer(v)
-		if err != nil {
-			return nil, err
-		}
-		servers[id] = server
-	}
-	out, err := s.shared.runtime.SyncMcpServers(ctx, &api.SyncMcpServersInput{Servers: servers})
-	if err != nil {
-		return nil, err
-	}
-	return resource.SyncMcpServersReply_builder{Status: &out.Status}.Build(), nil
-}
-
 func (s SessionServer) McpLogs(ctx context.Context, r *resource.SessionMcpRequest) (*resource.SessionMcpLogsReply, error) {
 	v, err := s.resolve(ctx, r.GetRef())
 	if err != nil {

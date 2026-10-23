@@ -11,16 +11,6 @@ import (
 // rather than per session. They bound cxz's own records only; provider context
 // is untouched. See docs/history.md.
 
-func (s ProjectServer) MarkHistoryTrimmable(ctx context.Context, _ *resource.HistoryTrimmableRequest) (*resource.HistoryTrimmableReply, error) {
-	if err := s.effect(); err != nil {
-		return nil, err
-	}
-	if _, err := s.shared.runtime.MarkHistoryTrimmable(ctx, &api.Empty{}); err != nil {
-		return nil, err
-	}
-	return resource.HistoryTrimmableReply_builder{}.Build(), nil
-}
-
 func (s ProjectServer) GetHistoryPolicy(ctx context.Context, _ *resource.HistoryPolicyRequest) (*resource.HistoryPolicy, error) {
 	if err := s.effect(); err != nil {
 		return nil, err

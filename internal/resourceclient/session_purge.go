@@ -26,13 +26,6 @@ func (c *Client) PurgeSession(ctx context.Context, r *api.SessionPurgeInput, opt
 	return out, nil
 }
 
-func (c *Client) MarkHistoryTrimmable(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.Empty, error) {
-	if _, err := c.projects.MarkHistoryTrimmable(ctx, resource.HistoryTrimmableRequest_builder{}.Build(), opts...); err != nil {
-		return nil, err
-	}
-	return &api.Empty{}, nil
-}
-
 func (c *Client) GetHistoryPolicy(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.HistoryPolicy, error) {
 	v, err := c.projects.GetHistoryPolicy(ctx, resource.HistoryPolicyRequest_builder{}.Build(), opts...)
 	return historyPolicy(v, err)

@@ -7,6 +7,8 @@ import (
 	"github.com/lesomnus/cxz/internal/mcpkind"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (c *Client) GetMcpServers(ctx context.Context, r *api.McpServersInput, opts ...grpc.CallOption) (*api.McpServersReply, error) {
@@ -72,16 +74,10 @@ func (c *Client) McpSessions(ctx context.Context, r *api.McpSessionsInput, opts 
 	return out, nil
 }
 
-func (c *Client) SyncMcpServers(ctx context.Context, r *api.SyncMcpServersInput, opts ...grpc.CallOption) (*api.Receipt, error) {
-	servers := map[string]*resource.McpServer{}
-	for id, v := range r.Servers {
-		servers[id] = resourceMcpServer(v)
-	}
-	out, err := c.projects.SyncMcpServers(ctx, resource.SyncMcpServersRequest_builder{Servers: servers}.Build(), opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &api.Receipt{Status: out.GetStatus()}, nil
+// SyncMcpServers is the manager's call to a project container, for the same
+// reason SyncSkills is. See that one.
+func (c *Client) SyncMcpServers(context.Context, *api.SyncMcpServersInput, ...grpc.CallOption) (*api.Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "MCP registrations are delivered by a manager to a project over the runtime API")
 }
 
 func (c *Client) McpLogs(ctx context.Context, r *api.McpLogsInput, opts ...grpc.CallOption) (*api.McpLogsReply, error) {

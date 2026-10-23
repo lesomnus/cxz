@@ -37,9 +37,8 @@ func TestHistoryRetentionPreservesResumeAndIdempotence(t *testing.T) {
 	if err = historypolicy.Save(root, historypolicy.Policy{MaxMiB: 1}); err != nil {
 		t.Fatal(err)
 	}
-	authorized := false
-	if err = s.retainHistory(root, func() error { authorized = true; return nil }); err != nil || !authorized {
-		t.Fatal(err, authorized)
+	if err = s.retainHistory(root); err != nil {
+		t.Fatal(err)
 	}
 	events := log.All()
 	// The checkpoint is the boundary; nothing is appended to announce it, so the
@@ -66,7 +65,7 @@ func TestHistoryRetentionPreservesResumeAndIdempotence(t *testing.T) {
 		t.Fatal("retained display history exceeds budget", size)
 	}
 	floor := events[0].Seq
-	if err = s.retainHistory(root, func() error { t.Error("trimmed again with the budget already met"); return nil }); err != nil {
+	if err = s.retainHistory(root); err != nil {
 		t.Fatal(err)
 	}
 	if again := log.All(); again[0].Seq != floor {
@@ -117,13 +116,24 @@ func TestHistoryRetentionDefersActiveWorkAndDisabledPolicy(t *testing.T) {
 	s := &Supervisor{log: l, snap: core.Snapshot{State: "working"}, receipts: map[string]record{}}
 	s.event("assistant", strings.Repeat("x", 2*historypolicy.MiB), "", nil, nil)
 	historypolicy.Save(root, historypolicy.Policy{MaxMiB: 1})
-	authorize := func() error { t.Fatal("active work attempted pruning"); return nil }
-	if err = s.retainHistory(root, authorize); err != nil {
+	// Nothing may be taken while work is unfinished, and nothing may be taken
+	// with retention switched off. The assertion is the floor: a trim moves it,
+	// and a checkpoint appears at the head of the log.
+	floor := l.All()[0].Seq
+	untouched := func(why string) {
+		events := l.All()
+		if events[0].Seq != floor || events[0].Kind == core.HistoryCheckpointKind {
+			t.Fatal(why)
+		}
+	}
+	if err = s.retainHistory(root); err != nil {
 		t.Fatal(err)
 	}
+	untouched("active work attempted pruning")
 	s.snap.State = "idle"
 	historypolicy.Save(root, historypolicy.Policy{Disabled: true})
-	if err = s.retainHistory(root, authorize); err != nil {
+	if err = s.retainHistory(root); err != nil {
 		t.Fatal(err)
 	}
+	untouched("pruned with retention disabled")
 }

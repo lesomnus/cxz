@@ -43,17 +43,6 @@ func runtimeHistoryPolicy(p historypolicy.Policy) *api.HistoryPolicy {
 	}
 }
 
-// MarkHistoryTrimmable records that this projection may now hold trimmed
-// history. A release that predates trimming reads the version and refuses
-// rather than serving a conversation that is no longer there, which is why the
-// supervisor asks before it compacts and stops if the answer is an error.
-func (s *Server) MarkHistoryTrimmable(ctx context.Context, _ *api.Empty) (*api.Empty, error) {
-	if _, err := s.db.ExecContext(ctx, "PRAGMA user_version=2"); err != nil {
-		return nil, err
-	}
-	return &api.Empty{}, nil
-}
-
 // GetHistoryFloor says how far this runtime has trimmed, so that a manager's
 // cache stops offering history the journal no longer has. A manager does not
 // hold the journal, so it asks the project runtime that does.

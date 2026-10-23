@@ -108,6 +108,11 @@ export function resourceFixture() {
         signedIn.delete(alias);
         return authStatus(alias);
       },
+      models: () => ({
+        models: [
+          { id: "demo-model", name: "Demo model", efforts: ["low", "high"] },
+        ],
+      }),
     });
     router.service(ProjectService, {
       auxConfig: () => ({ profiles: config }),
@@ -119,11 +124,6 @@ export function resourceFixture() {
         );
         return { profiles: config };
       },
-      auxModels: () => ({
-        models: [
-          { id: "demo-model", name: "Demo model", efforts: ["low", "high"] },
-        ],
-      }),
     });
     router.service(SessionService, {
       libraryMemories: () => ({

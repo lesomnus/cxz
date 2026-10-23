@@ -3902,6 +3902,16 @@ func (s interceptAccount) Logout(ctx context.Context, req *resource.AccountRef) 
 		resource.AccountService_Logout_FullMethodName, req, s.AccountServiceServer.Logout)
 }
 
+func (s interceptAccount) Models(ctx context.Context, req *resource.AccountRef) (*resource.AccountModels, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_Models_FullMethodName, req, s.AccountServiceServer.Models)
+}
+
+func (s interceptAccount) LoginInfo(ctx context.Context, req *resource.AccountRef) (*resource.AccountLoginInfo, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccountServiceServer,
+		resource.AccountService_LoginInfo_FullMethodName, req, s.AccountServiceServer.LoginInfo)
+}
+
 func (s Intercept) Project() resource.ProjectServiceServer {
 	return interceptProject{s, s.Next().Project()}
 }
@@ -4026,21 +4036,6 @@ func (s interceptProject) AuxSetConfig(ctx context.Context, req *resource.AuxSet
 		resource.ProjectService_AuxSetConfig_FullMethodName, req, s.ProjectServiceServer.AuxSetConfig)
 }
 
-func (s interceptProject) AuxModels(ctx context.Context, req *resource.AuxModelsRequest) (*resource.AuxModelsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_AuxModels_FullMethodName, req, s.ProjectServiceServer.AuxModels)
-}
-
-func (s interceptProject) AuxLoginInfo(ctx context.Context, req *resource.AuxLoginInfoRequest) (*resource.AuxLoginInfoReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_AuxLoginInfo_FullMethodName, req, s.ProjectServiceServer.AuxLoginInfo)
-}
-
-func (s interceptProject) MarkHistoryTrimmable(ctx context.Context, req *resource.HistoryTrimmableRequest) (*resource.HistoryTrimmableReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_MarkHistoryTrimmable_FullMethodName, req, s.ProjectServiceServer.MarkHistoryTrimmable)
-}
-
 func (s interceptProject) GetHistoryPolicy(ctx context.Context, req *resource.HistoryPolicyRequest) (*resource.HistoryPolicy, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_GetHistoryPolicy_FullMethodName, req, s.ProjectServiceServer.GetHistoryPolicy)
@@ -4091,11 +4086,6 @@ func (s interceptProject) ClearProjectSkill(ctx context.Context, req *resource.C
 		resource.ProjectService_ClearProjectSkill_FullMethodName, req, s.ProjectServiceServer.ClearProjectSkill)
 }
 
-func (s interceptProject) SyncSkills(ctx context.Context, req *resource.SyncSkillsRequest) (*resource.SyncSkillsReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SyncSkills_FullMethodName, req, s.ProjectServiceServer.SyncSkills)
-}
-
 func (s interceptProject) GetMcpServers(ctx context.Context, req *resource.McpServersRequest) (*resource.McpServersReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_GetMcpServers_FullMethodName, req, s.ProjectServiceServer.GetMcpServers)
@@ -4129,11 +4119,6 @@ func (s interceptProject) ClearProjectMcpServer(ctx context.Context, req *resour
 func (s interceptProject) McpSessions(ctx context.Context, req *resource.McpSessionsRequest) (*resource.McpSessionsReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
 		resource.ProjectService_McpSessions_FullMethodName, req, s.ProjectServiceServer.McpSessions)
-}
-
-func (s interceptProject) SyncMcpServers(ctx context.Context, req *resource.SyncMcpServersRequest) (*resource.SyncMcpServersReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_SyncMcpServers_FullMethodName, req, s.ProjectServiceServer.SyncMcpServers)
 }
 
 func (s interceptProject) FileMappings(ctx context.Context, req *resource.FileMappingsRequest) (*resource.FileMappingsReply, error) {
@@ -5304,6 +5289,32 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
+	case resource.AccountService_Models_FullMethodName:
+		v := &resource.AccountRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().Models(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case resource.AccountService_LoginInfo_FullMethodName:
+		v := &resource.AccountRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Account().LoginInfo(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case resource.ProjectService_Add_FullMethodName:
 		v := &resource.ProjectAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -5564,45 +5575,6 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
-	case resource.ProjectService_AuxModels_FullMethodName:
-		v := &resource.AuxModelsRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().AuxModels(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_AuxLoginInfo_FullMethodName:
-		v := &resource.AuxLoginInfoRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().AuxLoginInfo(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_MarkHistoryTrimmable_FullMethodName:
-		v := &resource.HistoryTrimmableRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().MarkHistoryTrimmable(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
 	case resource.ProjectService_GetHistoryPolicy_FullMethodName:
 		v := &resource.HistoryPolicyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -5733,19 +5705,6 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
-	case resource.ProjectService_SyncSkills_FullMethodName:
-		v := &resource.SyncSkillsRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SyncSkills(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
 	case resource.ProjectService_GetMcpServers_FullMethodName:
 		v := &resource.McpServersRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -5831,19 +5790,6 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 		}
 
 		res, err := s.Project().McpSessions(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_SyncMcpServers_FullMethodName:
-		v := &resource.SyncMcpServersRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().SyncMcpServers(ctx, v)
 		if err != nil {
 			return nil, err
 		}

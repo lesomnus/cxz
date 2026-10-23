@@ -178,46 +178,6 @@ func (s ProjectServer) AuxSetConfig(ctx context.Context, r *resource.AuxSetConfi
 	return auxConfigReply(out), nil
 }
 
-func (s ProjectServer) AuxModels(ctx context.Context, r *resource.AuxModelsRequest) (*resource.AuxModelsReply, error) {
-	if err := s.effect(); err != nil {
-		return nil, err
-	}
-	agent, backend, err := s.auxAccount(ctx, r.GetAccount())
-	if err != nil {
-		return nil, err
-	}
-	out, err := s.shared.runtime.AuxModels(ctx, &api.AuxModelsInput{Account: r.GetAccount(), Agent: agent, Backend: backend})
-	if err != nil {
-		return nil, err
-	}
-	reply := resource.AuxModelsReply_builder{NeedsLogin: ptr(out.NeedsLogin)}
-	for _, m := range out.Models {
-		reply.Models = append(reply.Models, resource.AuxModel_builder{
-			Id: &m.Id, ResolvedId: &m.ResolvedId, Name: &m.Name,
-			Efforts: m.Efforts, DefaultEffort: &m.DefaultEffort, Default: &m.Default,
-		}.Build())
-	}
-	return reply.Build(), nil
-}
-
-func (s ProjectServer) AuxLoginInfo(ctx context.Context, r *resource.AuxLoginInfoRequest) (*resource.AuxLoginInfoReply, error) {
-	if err := s.effect(); err != nil {
-		return nil, err
-	}
-	agent, backend, err := s.auxAccount(ctx, r.GetAccount())
-	if err != nil {
-		return nil, err
-	}
-	out, err := s.shared.runtime.AuxLoginInfo(ctx, &api.AuxLoginInfoInput{Account: r.GetAccount(), Agent: agent, Backend: backend})
-	if err != nil {
-		return nil, err
-	}
-	return resource.AuxLoginInfoReply_builder{
-		Owner: ptr(out.Owner), Account: ptr(out.Account),
-		Agent: ptr(out.Agent), Backend: ptr(out.Backend),
-	}.Build(), nil
-}
-
 // auxAccount reads what an account authenticates as off the registered account
 // rather than taking a caller's word for it, which is what keeps a request from
 // naming one account and authenticating as another.

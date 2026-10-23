@@ -64,7 +64,7 @@ func (c *Client) AuxSetConfig(ctx context.Context, r *api.AuxSetConfigInput, opt
 }
 
 func (c *Client) AuxModels(ctx context.Context, r *api.AuxModelsInput, opts ...grpc.CallOption) (*api.AuxModelsReply, error) {
-	v, err := c.projects.AuxModels(ctx, resource.AuxModelsRequest_builder{Account: &r.Account}.Build(), opts...)
+	v, err := c.Accounts.Models(ctx, resource.AccountRef_builder{Alias: &r.Account}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (c *Client) AuxModels(ctx context.Context, r *api.AuxModelsInput, opts ...g
 }
 
 func (c *Client) AuxLoginInfo(ctx context.Context, r *api.AuxLoginInfoInput, opts ...grpc.CallOption) (*api.AuxLoginInfoReply, error) {
-	v, err := c.projects.AuxLoginInfo(ctx, resource.AuxLoginInfoRequest_builder{Account: &r.Account}.Build(), opts...)
+	v, err := c.Accounts.LoginInfo(ctx, resource.AccountRef_builder{Alias: &r.Account}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

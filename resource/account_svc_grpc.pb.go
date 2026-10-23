@@ -19,15 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AccountService_Add_FullMethodName    = "/cxz.AccountService/Add"
-	AccountService_Get_FullMethodName    = "/cxz.AccountService/Get"
-	AccountService_Patch_FullMethodName  = "/cxz.AccountService/Patch"
-	AccountService_Apply_FullMethodName  = "/cxz.AccountService/Apply"
-	AccountService_Erase_FullMethodName  = "/cxz.AccountService/Erase"
-	AccountService_List_FullMethodName   = "/cxz.AccountService/List"
-	AccountService_Watch_FullMethodName  = "/cxz.AccountService/Watch"
-	AccountService_Status_FullMethodName = "/cxz.AccountService/Status"
-	AccountService_Logout_FullMethodName = "/cxz.AccountService/Logout"
+	AccountService_Add_FullMethodName       = "/cxz.AccountService/Add"
+	AccountService_Get_FullMethodName       = "/cxz.AccountService/Get"
+	AccountService_Patch_FullMethodName     = "/cxz.AccountService/Patch"
+	AccountService_Apply_FullMethodName     = "/cxz.AccountService/Apply"
+	AccountService_Erase_FullMethodName     = "/cxz.AccountService/Erase"
+	AccountService_List_FullMethodName      = "/cxz.AccountService/List"
+	AccountService_Watch_FullMethodName     = "/cxz.AccountService/Watch"
+	AccountService_Status_FullMethodName    = "/cxz.AccountService/Status"
+	AccountService_Logout_FullMethodName    = "/cxz.AccountService/Logout"
+	AccountService_Models_FullMethodName    = "/cxz.AccountService/Models"
+	AccountService_LoginInfo_FullMethodName = "/cxz.AccountService/LoginInfo"
 )
 
 // AccountServiceClient is the client API for AccountService service.
@@ -63,6 +65,14 @@ type AccountServiceClient interface {
 	// Remove the central saved login and future token-supply authorizations.
 	// Already-issued access tokens are not revoked at the provider.
 	Logout(ctx context.Context, in *AccountRef, opts ...grpc.CallOption) (*AccountAuthStatus, error)
+	// The models this account may use, as its provider reports them. A catalog
+	// read: it generates no response and does not prove a stored token will be
+	// accepted. The agent and the backend are read off the registered account
+	// rather than taken from the request.
+	Models(ctx context.Context, in *AccountRef, opts ...grpc.CallOption) (*AccountModels, error)
+	// Where a login has to happen and under which profile. No credential travels
+	// here, which is why it is separate from the stream that performs one.
+	LoginInfo(ctx context.Context, in *AccountRef, opts ...grpc.CallOption) (*AccountLoginInfo, error)
 }
 
 type accountServiceClient struct {
@@ -172,6 +182,26 @@ func (c *accountServiceClient) Logout(ctx context.Context, in *AccountRef, opts 
 	return out, nil
 }
 
+func (c *accountServiceClient) Models(ctx context.Context, in *AccountRef, opts ...grpc.CallOption) (*AccountModels, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AccountModels)
+	err := c.cc.Invoke(ctx, AccountService_Models_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) LoginInfo(ctx context.Context, in *AccountRef, opts ...grpc.CallOption) (*AccountLoginInfo, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AccountLoginInfo)
+	err := c.cc.Invoke(ctx, AccountService_LoginInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AccountServiceServer is the server API for AccountService service.
 // All implementations must embed UnimplementedAccountServiceServer
 // for forward compatibility.
@@ -205,6 +235,14 @@ type AccountServiceServer interface {
 	// Remove the central saved login and future token-supply authorizations.
 	// Already-issued access tokens are not revoked at the provider.
 	Logout(context.Context, *AccountRef) (*AccountAuthStatus, error)
+	// The models this account may use, as its provider reports them. A catalog
+	// read: it generates no response and does not prove a stored token will be
+	// accepted. The agent and the backend are read off the registered account
+	// rather than taken from the request.
+	Models(context.Context, *AccountRef) (*AccountModels, error)
+	// Where a login has to happen and under which profile. No credential travels
+	// here, which is why it is separate from the stream that performs one.
+	LoginInfo(context.Context, *AccountRef) (*AccountLoginInfo, error)
 	mustEmbedUnimplementedAccountServiceServer()
 }
 
@@ -241,6 +279,12 @@ func (UnimplementedAccountServiceServer) Status(context.Context, *AccountRef) (*
 }
 func (UnimplementedAccountServiceServer) Logout(context.Context, *AccountRef) (*AccountAuthStatus, error) {
 	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
+}
+func (UnimplementedAccountServiceServer) Models(context.Context, *AccountRef) (*AccountModels, error) {
+	return nil, status.Error(codes.Unimplemented, "method Models not implemented")
+}
+func (UnimplementedAccountServiceServer) LoginInfo(context.Context, *AccountRef) (*AccountLoginInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoginInfo not implemented")
 }
 func (UnimplementedAccountServiceServer) mustEmbedUnimplementedAccountServiceServer() {}
 func (UnimplementedAccountServiceServer) testEmbeddedByValue()                        {}
@@ -418,6 +462,42 @@ func _AccountService_Logout_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccountService_Models_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).Models(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_Models_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).Models(ctx, req.(*AccountRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_LoginInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).LoginInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_LoginInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).LoginInfo(ctx, req.(*AccountRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AccountService_ServiceDesc is the grpc.ServiceDesc for AccountService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -456,6 +536,14 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Logout",
 			Handler:    _AccountService_Logout_Handler,
+		},
+		{
+			MethodName: "Models",
+			Handler:    _AccountService_Models_Handler,
+		},
+		{
+			MethodName: "LoginInfo",
+			Handler:    _AccountService_LoginInfo_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

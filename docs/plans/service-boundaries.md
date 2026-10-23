@@ -1,6 +1,8 @@
 # ProjectService 쪼개기 — 서비스 경계
 
-상태: 제안. 구현 전. 결정은 다 됐다(§7) — 남은 것은 승인과 구현이다.
+상태: 결정 완료. 1단계는 구현했다 — §6.1(2개를 `AccountService`로), §6.2(2개를 리소스
+API에서 제거), §7.3(`MarkHistoryTrimmable` 삭제). 남은 것은 §6.4 `Installation`,
+§6.3 `Skill`·`McpServer`, §6.5 `McpConnection`이다.
 
 `ProjectService`는 생성된 7개 verb(`Add` `Get` `Patch` `Apply` `Erase` `List`
 `Watch`) 위에 손으로 쓴 RPC 47개를 얹고 있다. 그중 **26개는 Project를 가리키지

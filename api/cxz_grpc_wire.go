@@ -70,7 +70,6 @@ const (
 	Sessions_GetHistoryPolicy_FullMethodName       = "/cxz.runtime.Sessions/GetHistoryPolicy"
 	Sessions_SetHistoryPolicy_FullMethodName       = "/cxz.runtime.Sessions/SetHistoryPolicy"
 	Sessions_GetHistoryFloor_FullMethodName        = "/cxz.runtime.Sessions/GetHistoryFloor"
-	Sessions_MarkHistoryTrimmable_FullMethodName   = "/cxz.runtime.Sessions/MarkHistoryTrimmable"
 	Sessions_PutSecretFile_FullMethodName          = "/cxz.runtime.Sessions/PutSecretFile"
 	Sessions_DeleteSecretFile_FullMethodName       = "/cxz.runtime.Sessions/DeleteSecretFile"
 	Sessions_GetSkills_FullMethodName              = "/cxz.runtime.Sessions/GetSkills"
@@ -148,7 +147,6 @@ type SessionsClient interface {
 	GetHistoryPolicy(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HistoryPolicy, error)
 	SetHistoryPolicy(ctx context.Context, in *HistoryPolicy, opts ...grpc.CallOption) (*HistoryPolicy, error)
 	GetHistoryFloor(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*HistoryFloorReply, error)
-	MarkHistoryTrimmable(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	PutSecretFile(ctx context.Context, in *PutSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error)
 	DeleteSecretFile(ctx context.Context, in *DeleteSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error)
 	GetSkills(ctx context.Context, in *SkillsInput, opts ...grpc.CallOption) (*SkillsReply, error)
@@ -725,16 +723,6 @@ func (c *sessionsClient) GetHistoryFloor(ctx context.Context, in *SessionRef, op
 	return out, nil
 }
 
-func (c *sessionsClient) MarkHistoryTrimmable(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, Sessions_MarkHistoryTrimmable_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sessionsClient) PutSecretFile(ctx context.Context, in *PutSecretFileInput, opts ...grpc.CallOption) (*SecretFileReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SecretFileReply)
@@ -990,7 +978,6 @@ type SessionsServer interface {
 	GetHistoryPolicy(context.Context, *Empty) (*HistoryPolicy, error)
 	SetHistoryPolicy(context.Context, *HistoryPolicy) (*HistoryPolicy, error)
 	GetHistoryFloor(context.Context, *SessionRef) (*HistoryFloorReply, error)
-	MarkHistoryTrimmable(context.Context, *Empty) (*Empty, error)
 	PutSecretFile(context.Context, *PutSecretFileInput) (*SecretFileReply, error)
 	DeleteSecretFile(context.Context, *DeleteSecretFileInput) (*SecretFileReply, error)
 	GetSkills(context.Context, *SkillsInput) (*SkillsReply, error)
@@ -1173,9 +1160,6 @@ func (UnimplementedSessionsServer) SetHistoryPolicy(context.Context, *HistoryPol
 }
 func (UnimplementedSessionsServer) GetHistoryFloor(context.Context, *SessionRef) (*HistoryFloorReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetHistoryFloor not implemented")
-}
-func (UnimplementedSessionsServer) MarkHistoryTrimmable(context.Context, *Empty) (*Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method MarkHistoryTrimmable not implemented")
 }
 func (UnimplementedSessionsServer) PutSecretFile(context.Context, *PutSecretFileInput) (*SecretFileReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutSecretFile not implemented")
@@ -2148,24 +2132,6 @@ func _Sessions_GetHistoryFloor_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Sessions_MarkHistoryTrimmable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SessionsServer).MarkHistoryTrimmable(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Sessions_MarkHistoryTrimmable_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionsServer).MarkHistoryTrimmable(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Sessions_PutSecretFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PutSecretFileInput)
 	if err := dec(in); err != nil {
@@ -2720,10 +2686,6 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetHistoryFloor",
 			Handler:    _Sessions_GetHistoryFloor_Handler,
-		},
-		{
-			MethodName: "MarkHistoryTrimmable",
-			Handler:    _Sessions_MarkHistoryTrimmable_Handler,
 		},
 		{
 			MethodName: "PutSecretFile",

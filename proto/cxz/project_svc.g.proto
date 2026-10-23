@@ -85,17 +85,13 @@ service ProjectService {
   // one that is left on.
   rpc CaptureDiagnostics(CaptureDiagnosticsRequest) returns (DiagnosticsReply);
   // Aux is a model task done beside a session: run once, with the context cxz
-  // assembles, never accumulating into a conversation. These four are the part
+  // assembles, never accumulating into a conversation. These two are the part
   // that belongs to the installation rather than to one session -- which
-  // account and model each kind runs on. See docs/plans/aux-api.md.
+  // account and model each kind runs on. See docs/plans/aux-api.md. What a
+  // single account offers is `AccountService.Models` and `LoginInfo`: those
+  // name an account, so they are that service's.
   rpc AuxConfig(AuxConfigRequest) returns (AuxConfigReply);
   rpc AuxSetConfig(AuxSetConfigRequest) returns (AuxConfigReply);
-  rpc AuxModels(AuxModelsRequest) returns (AuxModelsReply);
-  rpc AuxLoginInfo(AuxLoginInfoRequest) returns (AuxLoginInfoReply);
-  // Asked by a session supervisor before it compacts a journal, so that a
-  // release predating trimming refuses the projection rather than serving
-  // history that is gone. A failure stops the compaction.
-  rpc MarkHistoryTrimmable(HistoryTrimmableRequest) returns (HistoryTrimmableReply);
   // The history budgets of this installation. They bound cxz's own records
   // only; provider context is not affected. See docs/history.md.
   rpc GetHistoryPolicy(HistoryPolicyRequest) returns (HistoryPolicy);
@@ -121,10 +117,6 @@ service ProjectService {
   rpc SetSkillDefault(SkillDefaultRequest) returns (SkillsReply);
   rpc SetProjectSkill(ProjectSkillRequest) returns (SkillsReply);
   rpc ClearProjectSkill(ClearProjectSkillRequest) returns (SkillsReply);
-  // Manager to project container: the skills this project is allowed to see,
-  // already resolved. An unactivated skill costs the project nothing, not even
-  // the bytes.
-  rpc SyncSkills(SyncSkillsRequest) returns (SyncSkillsReply);
   // MCP registrations, and which projects see each one. The same six decisions
   // as the skills library, for the same reason, plus a definition that arrives
   // whole: its environment and headers hold explicit values, so editing one
@@ -139,8 +131,6 @@ service ProjectService {
   // a change is still waiting for a restart. Separate from reading the
   // registrations, because a settings list should not stall on a container.
   rpc McpSessions(McpSessionsRequest) returns (McpSessionsReply);
-  // Manager to project container: the registrations resolved for this project.
-  rpc SyncMcpServers(SyncMcpServersRequest) returns (SyncMcpServersReply);
   rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
   // A project's container, in the three words a person uses about it. Start
   // makes the project run: it builds and creates the container when there is
@@ -588,43 +578,6 @@ message AuxSetConfigRequest {
   repeated AuxProfile profiles = 1;
 }
 
-// A catalog read for one registered account. It does not generate a response,
-// and it does not prove a stored token will be accepted for one.
-message AuxModelsRequest {
-  string account = 1;
-}
-
-message AuxModelsReply {
-  repeated AuxModel models = 1;
-  bool needs_login = 2;
-}
-
-message AuxModel {
-  string id = 1;
-  string resolved_id = 2;
-  string name = 3;
-  repeated string efforts = 4;
-  string default_effort = 5;
-  bool default = 6;
-}
-
-// Where a login has to happen and under which profile. No credential travels
-// here, which is why it is separate from the stream that performs one.
-message AuxLoginInfoRequest {
-  string account = 1;
-}
-
-message AuxLoginInfoReply {
-  string owner = 1;
-  string account = 2;
-  string agent = 3;
-  string backend = 4;
-}
-
-message HistoryTrimmableRequest {}
-
-message HistoryTrimmableReply {}
-
 message HistoryPolicyRequest {}
 
 // disabled turns removal off entirely; zero in a budget means the default. Both
@@ -697,14 +650,6 @@ message ProjectSkillRequest {
 message ClearProjectSkillRequest {
   ProjectRef ref = 1;
   string name = 2;
-}
-
-message SyncSkillsRequest {
-  bytes bundle = 1;
-}
-
-message SyncSkillsReply {
-  string status = 1;
 }
 
 // ref scopes the view, as it does for the skills library. A registration is
@@ -796,14 +741,6 @@ message McpSessionStatus {
   bool pending = 3;
   string launch_digest = 4;
   map<string, string> servers = 5;
-}
-
-message SyncMcpServersRequest {
-  map<string, McpServer> servers = 1;
-}
-
-message SyncMcpServersReply {
-  string status = 1;
 }
 
 message FileMappingsRequest {

@@ -64,17 +64,6 @@ func (s ProjectServer) ClearProjectSkill(ctx context.Context, r *resource.ClearP
 	}))
 }
 
-func (s ProjectServer) SyncSkills(ctx context.Context, r *resource.SyncSkillsRequest) (*resource.SyncSkillsReply, error) {
-	if err := s.effect(); err != nil {
-		return nil, err
-	}
-	out, err := s.shared.runtime.SyncSkills(ctx, &api.SyncSkillsInput{Bundle: r.GetBundle()})
-	if err != nil {
-		return nil, err
-	}
-	return resource.SyncSkillsReply_builder{Status: &out.Status}.Build(), nil
-}
-
 // projectScope resolves an optional ref to the runtime id an installation's
 // settings are keyed by. No ref is the installation itself, which is a scope
 // and not a missing argument.

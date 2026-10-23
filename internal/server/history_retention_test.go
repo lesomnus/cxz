@@ -85,7 +85,7 @@ func TestProjectionPrunesCheckpointAndResumesSuffix(t *testing.T) {
 	}
 }
 
-func TestRetentionPolicyAndSchemaFenceThroughPublicRPC(t *testing.T) {
+func TestRetentionPolicySurvivesRestartThroughPublicRPC(t *testing.T) {
 	t.Setenv("CXZ_PROJECT_ID", "")
 	t.Setenv("CXZ_OWNER", "")
 	root, err := os.MkdirTemp("", "cxz-retention-")
@@ -116,13 +116,8 @@ func TestRetentionPolicyAndSchemaFenceThroughPublicRPC(t *testing.T) {
 		}
 		if err == nil && iteration == 0 {
 			_, err = client.SetHistoryPolicy(t.Context(), &api.HistoryPolicy{MaxMib: 25})
-			if err == nil {
-				// Marking the projection is what the supervisor does before it
-				// compacts, and what fences an older release off the file.
-				_, err = client.MarkHistoryTrimmable(t.Context(), &api.Empty{})
-			}
 		} else if err == nil && reply.MaxMib != 25 {
-			err = fmt.Errorf("policy lost across schema-2 restart: %d MiB", reply.MaxMib)
+			err = fmt.Errorf("policy lost across restart: %d MiB", reply.MaxMib)
 		}
 		conn.Close()
 		cancel()

@@ -7,6 +7,8 @@ import (
 	"github.com/lesomnus/cxz/internal/projectref"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (c *Client) GetSkills(ctx context.Context, r *api.SkillsInput, opts ...grpc.CallOption) (*api.SkillsReply, error) {
@@ -63,12 +65,13 @@ func (c *Client) ClearProjectSkill(ctx context.Context, r *api.ClearProjectSkill
 	}.Build(), opts...))
 }
 
-func (c *Client) SyncSkills(ctx context.Context, r *api.SyncSkillsInput, opts ...grpc.CallOption) (*api.Receipt, error) {
-	out, err := c.projects.SyncSkills(ctx, resource.SyncSkillsRequest_builder{Bundle: r.Bundle}.Build(), opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &api.Receipt{Status: out.GetStatus()}, nil
+// SyncSkills is the manager's call to a project container, over the runtime
+// API. This client talks to a manager's resource API, and a manager does not
+// deliver to itself -- so there is nothing here to deliver to, and the resource
+// API no longer carries the call at all.
+// See docs/plans/service-boundaries.md.
+func (c *Client) SyncSkills(context.Context, *api.SyncSkillsInput, ...grpc.CallOption) (*api.Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "skills are delivered by a manager to a project over the runtime API")
 }
 
 func (c *Client) RenderDevcontainer(ctx context.Context, r *api.RenderDevcontainerInput, opts ...grpc.CallOption) (*api.RenderDevcontainerReply, error) {

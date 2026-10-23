@@ -55,9 +55,7 @@ root이므로 `conversation.db`가 `root:root`로 생겼고, SQLite는 읽기 �
    되돌릴 수 있으므로(저장소를 버리고 저널에서 다시 만들면 옛 빌드로 돌아갈 수 있다),
    그 기간은 사람이 정한다. 지금 설치본에 24개가 남아 있고, 전부 10-21 18:36 이전에
    멈췄다.
-2. **`MarkHistoryTrimmable`과 서버의 `user_version` 울타리는 이제 쓰이지 않는다.** 지울
-   때가 되면 지운다. 호출자가 없는 길은 남기지 않는다.
-3. **웹 게이트웨이와 릴레이가 설치 당시 이미지에 머문다**(cxz#283). 자동 업데이트는 매니저만
+2. **웹 게이트웨이와 릴레이가 설치 당시 이미지에 머문다**(cxz#283). 자동 업데이트는 매니저만
    바꾼다. 지금 설치본에서 51 커밋 뒤처져 있다 — 사람이 호스트에서 `cxz web up`을 해야
    따라온다.
 
@@ -95,5 +93,7 @@ root이므로 `conversation.db`가 `root:root`로 생겼고, SQLite는 읽기 �
   지금 그 상태다(런타임은 정상, `Job.state`는 `failed`). 다음 `up`이 지운다.
 - cxz#283 — 자동 업데이트가 웹 게이트웨이와 릴레이를 두고 간다.
 - **서비스 경계** — `ProjectService`의 손으로 쓴 RPC 47개 중 26개가 Project를 가리키지
-  않는다. [service-boundaries.md](service-boundaries.md)에 각각 어디로 가야 하는지와
-  먼저 필요한 세 가지 결정을 적었다. 구현 전이다.
+  않는다. [service-boundaries.md](service-boundaries.md)에 각각 어디로 가야 하는지를
+  적었고 결정은 다 끝났다. 1단계(§6.1·§6.2·§7.3)는 들어갔다 — `MarkHistoryTrimmable`도
+  거기서 지웠다. 남은 것은 §6.4 `Installation`, §6.3 `Skill`·`McpServer`, §6.5
+  `McpConnection`이다.
