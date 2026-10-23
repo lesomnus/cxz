@@ -141,7 +141,7 @@ func (s *rpcStub) Reply(_ context.Context, r *resource.SessionReplyRequest) (*re
 type projectStub struct {
 	resource.UnimplementedProjectServiceServer
 	requests     chan any
-	started      chan string
+	started      chan *resource.ProjectStartRequest
 	mutations    *atomic.Int32
 	unregistered *atomic.Bool
 	overrides    chan projectconfig.Spec
@@ -191,7 +191,7 @@ func (s projectStub) Start(_ context.Context, r *resource.ProjectStartRequest) (
 		// Never block the server: almost every command starts a project, and
 		// the assertions only care about the ones they drain for.
 		select {
-		case s.started <- r.GetRef().GetRuntimeId():
+		case s.started <- r:
 		default:
 		}
 	}
@@ -253,7 +253,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	mutations := &atomic.Int32{}
 	unregistered := &atomic.Bool{}
 	overrides := make(chan projectconfig.Spec, 4)
-	started := make(chan string, 16)
+	started := make(chan *resource.ProjectStartRequest, 16)
 	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, started: started, mutations: mutations, unregistered: unregistered, overrides: overrides})
 	go server.Serve(listener)
 	defer server.Stop()
@@ -297,8 +297,8 @@ func TestCommandsReachAPI(t *testing.T) {
 		t.Fatal("recreate did not remove the container first")
 	}
 	select {
-	case id := <-started:
-		if id != "project-name" {
+	case r := <-started:
+		if id := r.GetRef().GetRuntimeId(); id != "project-name" {
 			t.Fatal("recreate started the wrong project", id)
 		}
 	default:
@@ -447,8 +447,14 @@ func TestCommandsReachAPI(t *testing.T) {
 		<-started
 	}
 	run("project", "start", "pn")
-	if id := <-started; id != "project-name" {
-		t.Fatal("project start did not reach the resolved project", id)
+	if r := <-started; r.GetRef().GetRuntimeId() != "project-name" || r.GetTrustConfig() {
+		t.Fatal("project start did not reach the resolved project, or trusted without being told to", r)
+	}
+	// Starting asks about the configuration the way `up` does, so it takes the
+	// same answer; without it a project that needs one could not be started.
+	run("project", "start", "--trust-config", "pn")
+	if r := <-started; !r.GetTrustConfig() {
+		t.Fatal("project start dropped --trust-config", r)
 	}
 	// The workspace pair keeps its idiom and makes the same call as
 	// `cxz project remove`.
