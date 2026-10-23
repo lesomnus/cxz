@@ -60,12 +60,12 @@ func TestRemovingAContainerRetainsSessions(t *testing.T) {
 	if err != nil || len(history.GetEvents()) != 2 {
 		t.Fatal(history, err)
 	}
-	if _, err := stack.Project().RemoveContainer(ctx, resource.ProjectControl_builder{Ref: projectRef("project"), ClientId: ptr("remove")}.Build()); err != nil || f.removals != 1 {
+	if _, err := stack.Project().Remove(ctx, resource.ProjectControl_builder{Ref: projectRef("project"), ClientId: ptr("remove")}.Build()); err != nil || f.removals != 1 {
 		t.Fatal(err, f.removals)
 	}
 	for _, phase := range []string{"remove", "up"} {
 		if phase == "up" {
-			if _, err := stack.Project().CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: projectRef("project"), ClientId: ptr("up")}.Build()); err != nil {
+			if _, err := stack.Project().Start(ctx, resource.ProjectStartRequest_builder{Ref: projectRef("project"), ClientId: ptr("up")}.Build()); err != nil {
 				t.Fatal(err)
 			}
 			// Creating a container cannot create a session -- that is the

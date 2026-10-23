@@ -67,7 +67,7 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 		return nil, err
 	}
 	ref := pr(p.GetRuntimeId())
-	if p, err = c.create(ctx, ref, r, opts...); err != nil {
+	if p, err = c.start(ctx, ref, r, opts...); err != nil {
 		return nil, err
 	}
 	if r.PrepareOnly {
@@ -140,16 +140,16 @@ func (c *Client) RemoveContainer(ctx context.Context, r *api.ProjectRequest, opt
 		return nil, err
 	}
 	id := p.Id
-	_, err = c.projects.RemoveContainer(ctx, resource.ProjectControl_builder{Ref: pr(id), ClientId: &r.ClientId}.Build(), opts...)
+	_, err = c.projects.Remove(ctx, resource.ProjectControl_builder{Ref: pr(id), ClientId: &r.ClientId}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}
 	return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
 }
 
-// CreateContainer prepares the container and nothing else. `Open` is the
-// composition on top of it: create, then decide about a session.
-func (c *Client) CreateContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
+// StartContainer makes the project run and nothing else. `Open` is the
+// composition on top of it: start, then decide about a session.
+func (c *Client) StartContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
 	ps, err := c.Projects(ctx, &api.Empty{}, opts...)
 	if err != nil {
 		return nil, err
@@ -158,39 +158,34 @@ func (c *Client) CreateContainer(ctx context.Context, r *api.ProjectRequest, opt
 	if err != nil {
 		return nil, err
 	}
-	if _, err = c.create(ctx, pr(p.Id), r, opts...); err != nil {
+	if _, err = c.start(ctx, pr(p.Id), r, opts...); err != nil {
 		return nil, err
 	}
-	return &api.Receipt{ClientId: r.ClientId, Status: "created"}, nil
+	return &api.Receipt{ClientId: r.ClientId, Status: "started"}, nil
 }
 
-// create brings a project's container to where the caller asked for it, which
-// is what `Up` and `Recreate` used to be. Replacing a container is two calls
-// now, in this order, and this is the one place that composes them: the server
-// does not have an operation that removes a container as a step towards making
-// one, because deciding to lose a container is not a step -- it is the whole
-// question. A recreate without confirmation never gets this far; the CLI and
-// the UI ask first.
-func (c *Client) create(ctx context.Context, ref *resource.ProjectRef, r *api.ProjectRequest, opts ...grpc.CallOption) (*resource.Project, error) {
+// start makes a project run, and replaces its container first when that is
+// what was asked for. Replacing is two calls, in this order, and this is the
+// one place that composes them: the server has no operation that removes a
+// container as a step towards making one, because deciding to lose a container
+// is not a step -- it is the whole question. A recreate without confirmation
+// never gets this far; the CLI and the UI ask first.
+func (c *Client) start(ctx context.Context, ref *resource.ProjectRef, r *api.ProjectRequest, opts ...grpc.CallOption) (*resource.Project, error) {
 	if r.Recreate {
 		if !r.Confirmed {
 			return nil, fmt.Errorf("recreate requires confirmation: writable layer lost and editors disconnect")
 		}
-		if _, err := c.projects.RemoveContainer(ctx, resource.ProjectControl_builder{Ref: ref, ClientId: &r.ClientId}.Build(), opts...); err != nil {
+		if _, err := c.projects.Remove(ctx, resource.ProjectControl_builder{Ref: ref, ClientId: &r.ClientId}.Build(), opts...); err != nil {
 			return nil, err
 		}
 	}
-	return c.projects.CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Config: &r.Config}.Build(), opts...)
+	return c.projects.Start(ctx, resource.ProjectStartRequest_builder{Ref: ref, ClientId: &r.ClientId, Agent: &r.Agent, TrustConfig: &r.TrustConfig, Config: &r.Config}.Build(), opts...)
 }
 
-// StopContainer and StartContainer resolve the same way RemoveContainer does, without
-// registering a resource as a side effect of stopping or starting one.
+// StopContainer and RemoveContainer resolve the same way, without registering a
+// resource as a side effect of stopping or removing one.
 func (c *Client) StopContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
-	return c.container(ctx, r, c.projects.StopContainer, "stopped", opts...)
-}
-
-func (c *Client) StartContainer(ctx context.Context, r *api.ProjectRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
-	return c.container(ctx, r, c.projects.StartContainer, "started", opts...)
+	return c.container(ctx, r, c.projects.Stop, "stopped", opts...)
 }
 
 func (c *Client) container(ctx context.Context, r *api.ProjectRequest, call func(context.Context, *resource.ProjectControl, ...grpc.CallOption) (*resource.Project, error), status string, opts ...grpc.CallOption) (*api.Receipt, error) {

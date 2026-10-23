@@ -14,7 +14,7 @@ func TestProjectDownRetainsListingAndConversation(t *testing.T) {
 	x := &Projects{S: s}
 	before := proto.Clone(s.projects[0]).(*resource.Project)
 	events := history(t, &Sessions{S: s}, "session-1")
-	p, err := x.StopContainer(t.Context(), resource.ProjectControl_builder{Ref: resource.ProjectRef_builder{Id: before.GetId()}.Build(), ClientId: proto.String("stop")}.Build())
+	p, err := x.Stop(t.Context(), resource.ProjectControl_builder{Ref: resource.ProjectRef_builder{Id: before.GetId()}.Build(), ClientId: proto.String("stop")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}

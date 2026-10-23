@@ -10783,7 +10783,7 @@ func (b0 FileMappingsReply_builder) Build() *FileMappingsReply {
 	return m0
 }
 
-type ProjectCreateRequest struct {
+type ProjectStartRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref         *ProjectRef            `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_ClientId    *string                `protobuf:"bytes,2,opt,name=client_id,json=clientId"`
@@ -10796,20 +10796,20 @@ type ProjectCreateRequest struct {
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *ProjectCreateRequest) Reset() {
-	*x = ProjectCreateRequest{}
+func (x *ProjectStartRequest) Reset() {
+	*x = ProjectStartRequest{}
 	mi := &file_cxz_project_svc_g_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ProjectCreateRequest) String() string {
+func (x *ProjectStartRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ProjectCreateRequest) ProtoMessage() {}
+func (*ProjectStartRequest) ProtoMessage() {}
 
-func (x *ProjectCreateRequest) ProtoReflect() protoreflect.Message {
+func (x *ProjectStartRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_cxz_project_svc_g_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -10821,14 +10821,14 @@ func (x *ProjectCreateRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ProjectCreateRequest) GetRef() *ProjectRef {
+func (x *ProjectStartRequest) GetRef() *ProjectRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ProjectCreateRequest) GetClientId() string {
+func (x *ProjectStartRequest) GetClientId() string {
 	if x != nil {
 		if x.xxx_hidden_ClientId != nil {
 			return *x.xxx_hidden_ClientId
@@ -10838,7 +10838,7 @@ func (x *ProjectCreateRequest) GetClientId() string {
 	return ""
 }
 
-func (x *ProjectCreateRequest) GetAgent() string {
+func (x *ProjectStartRequest) GetAgent() string {
 	if x != nil {
 		if x.xxx_hidden_Agent != nil {
 			return *x.xxx_hidden_Agent
@@ -10848,14 +10848,14 @@ func (x *ProjectCreateRequest) GetAgent() string {
 	return ""
 }
 
-func (x *ProjectCreateRequest) GetTrustConfig() bool {
+func (x *ProjectStartRequest) GetTrustConfig() bool {
 	if x != nil {
 		return x.xxx_hidden_TrustConfig
 	}
 	return false
 }
 
-func (x *ProjectCreateRequest) GetConfig() string {
+func (x *ProjectStartRequest) GetConfig() string {
 	if x != nil {
 		if x.xxx_hidden_Config != nil {
 			return *x.xxx_hidden_Config
@@ -10865,96 +10865,96 @@ func (x *ProjectCreateRequest) GetConfig() string {
 	return ""
 }
 
-func (x *ProjectCreateRequest) SetRef(v *ProjectRef) {
+func (x *ProjectStartRequest) SetRef(v *ProjectRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ProjectCreateRequest) SetClientId(v string) {
+func (x *ProjectStartRequest) SetClientId(v string) {
 	x.xxx_hidden_ClientId = &v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
 }
 
-func (x *ProjectCreateRequest) SetAgent(v string) {
+func (x *ProjectStartRequest) SetAgent(v string) {
 	x.xxx_hidden_Agent = &v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
 }
 
-func (x *ProjectCreateRequest) SetTrustConfig(v bool) {
+func (x *ProjectStartRequest) SetTrustConfig(v bool) {
 	x.xxx_hidden_TrustConfig = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
 }
 
-func (x *ProjectCreateRequest) SetConfig(v string) {
+func (x *ProjectStartRequest) SetConfig(v string) {
 	x.xxx_hidden_Config = &v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
-func (x *ProjectCreateRequest) HasRef() bool {
+func (x *ProjectStartRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ProjectCreateRequest) HasClientId() bool {
+func (x *ProjectStartRequest) HasClientId() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
-func (x *ProjectCreateRequest) HasAgent() bool {
+func (x *ProjectStartRequest) HasAgent() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
-func (x *ProjectCreateRequest) HasTrustConfig() bool {
+func (x *ProjectStartRequest) HasTrustConfig() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *ProjectCreateRequest) HasConfig() bool {
+func (x *ProjectStartRequest) HasConfig() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *ProjectCreateRequest) ClearRef() {
+func (x *ProjectStartRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *ProjectCreateRequest) ClearClientId() {
+func (x *ProjectStartRequest) ClearClientId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
 	x.xxx_hidden_ClientId = nil
 }
 
-func (x *ProjectCreateRequest) ClearAgent() {
+func (x *ProjectStartRequest) ClearAgent() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
 	x.xxx_hidden_Agent = nil
 }
 
-func (x *ProjectCreateRequest) ClearTrustConfig() {
+func (x *ProjectStartRequest) ClearTrustConfig() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_TrustConfig = false
 }
 
-func (x *ProjectCreateRequest) ClearConfig() {
+func (x *ProjectStartRequest) ClearConfig() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
 	x.xxx_hidden_Config = nil
 }
 
-type ProjectCreateRequest_builder struct {
+type ProjectStartRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref      *ProjectRef
 	ClientId *string
-	// Which agent's tools the container gets. Not a session: nothing here starts
-	// one.
+	// Which agent's tools a container gets when this call has to make one. Not a
+	// session: nothing here starts one.
 	Agent *string
 	// Consent for a configuration that asks for something dangerous, named by
 	// the digest of what the person was shown.
@@ -10962,8 +10962,8 @@ type ProjectCreateRequest_builder struct {
 	Config      *string
 }
 
-func (b0 ProjectCreateRequest_builder) Build() *ProjectCreateRequest {
-	m0 := &ProjectCreateRequest{}
+func (b0 ProjectStartRequest_builder) Build() *ProjectStartRequest {
+	m0 := &ProjectStartRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -11695,8 +11695,8 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x13FileMappingsRequest\x12\x16\n" +
 	"\x06bundle\x18\x01 \x01(\fR\x06bundle\"+\n" +
 	"\x11FileMappingsReply\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status\"\xa7\x01\n" +
-	"\x14ProjectCreateRequest\x12!\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\"\xa6\x01\n" +
+	"\x13ProjectStartRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12\x14\n" +
 	"\x05agent\x18\x03 \x01(\tR\x05agent\x12!\n" +
@@ -11726,7 +11726,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x14MCP_KIND_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eMCP_KIND_STDIO\x10\x01\x12\x11\n" +
 	"\rMCP_KIND_HTTP\x10\x02\x12\x14\n" +
-	"\x10MCP_KIND_BUILTIN\x10\x032\x96\x1b\n" +
+	"\x10MCP_KIND_BUILTIN\x10\x032\xc4\x1a\n" +
 	"\x0eProjectService\x12+\n" +
 	"\x03Add\x12\x16.cxz.ProjectAddRequest\x1a\f.cxz.Project\x12+\n" +
 	"\x03Get\x12\x16.cxz.ProjectGetRequest\x1a\f.cxz.Project\x12/\n" +
@@ -11780,11 +11780,10 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x15ClearProjectMcpServer\x12!.cxz.ClearProjectMcpServerRequest\x1a\x14.cxz.McpServersReply\x12=\n" +
 	"\vMcpSessions\x12\x17.cxz.McpSessionsRequest\x1a\x15.cxz.McpSessionsReply\x12F\n" +
 	"\x0eSyncMcpServers\x12\x1a.cxz.SyncMcpServersRequest\x1a\x18.cxz.SyncMcpServersReply\x12@\n" +
-	"\fFileMappings\x12\x18.cxz.FileMappingsRequest\x1a\x16.cxz.FileMappingsReply\x12:\n" +
-	"\x0fCreateContainer\x12\x19.cxz.ProjectCreateRequest\x1a\f.cxz.Project\x122\n" +
-	"\rStopContainer\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x123\n" +
-	"\x0eStartContainer\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x124\n" +
-	"\x0fRemoveContainer\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x12I\n" +
+	"\fFileMappings\x12\x18.cxz.FileMappingsRequest\x1a\x16.cxz.FileMappingsReply\x12/\n" +
+	"\x05Start\x12\x18.cxz.ProjectStartRequest\x1a\f.cxz.Project\x12)\n" +
+	"\x04Stop\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x12+\n" +
+	"\x06Remove\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x12I\n" +
 	"\x0eInspectForeign\x12\x1a.cxz.InspectForeignRequest\x1a\x1b.cxz.InspectForeignResponseB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
 var file_cxz_project_svc_g_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
@@ -11877,7 +11876,7 @@ var file_cxz_project_svc_g_proto_goTypes = []any{
 	(*SyncMcpServersReply)(nil),          // 84: cxz.SyncMcpServersReply
 	(*FileMappingsRequest)(nil),          // 85: cxz.FileMappingsRequest
 	(*FileMappingsReply)(nil),            // 86: cxz.FileMappingsReply
-	(*ProjectCreateRequest)(nil),         // 87: cxz.ProjectCreateRequest
+	(*ProjectStartRequest)(nil),          // 87: cxz.ProjectStartRequest
 	(*ProjectControl)(nil),               // 88: cxz.ProjectControl
 	(*InspectForeignRequest)(nil),        // 89: cxz.InspectForeignRequest
 	(*InspectForeignResponse)(nil),       // 90: cxz.InspectForeignResponse
@@ -11951,7 +11950,7 @@ var file_cxz_project_svc_g_proto_depIdxs = []int32{
 	82,  // 55: cxz.McpSessionsReply.sessions:type_name -> cxz.McpSessionStatus
 	94,  // 56: cxz.McpSessionStatus.servers:type_name -> cxz.McpSessionStatus.ServersEntry
 	95,  // 57: cxz.SyncMcpServersRequest.servers:type_name -> cxz.SyncMcpServersRequest.ServersEntry
-	5,   // 58: cxz.ProjectCreateRequest.ref:type_name -> cxz.ProjectRef
+	5,   // 58: cxz.ProjectStartRequest.ref:type_name -> cxz.ProjectRef
 	5,   // 59: cxz.ProjectControl.ref:type_name -> cxz.ProjectRef
 	91,  // 60: cxz.InspectForeignResponse.items:type_name -> cxz.ForeignContainer
 	74,  // 61: cxz.SyncMcpServersRequest.ServersEntry.value:type_name -> cxz.McpServer
@@ -12005,68 +12004,66 @@ var file_cxz_project_svc_g_proto_depIdxs = []int32{
 	80,  // 109: cxz.ProjectService.McpSessions:input_type -> cxz.McpSessionsRequest
 	83,  // 110: cxz.ProjectService.SyncMcpServers:input_type -> cxz.SyncMcpServersRequest
 	85,  // 111: cxz.ProjectService.FileMappings:input_type -> cxz.FileMappingsRequest
-	87,  // 112: cxz.ProjectService.CreateContainer:input_type -> cxz.ProjectCreateRequest
-	88,  // 113: cxz.ProjectService.StopContainer:input_type -> cxz.ProjectControl
-	88,  // 114: cxz.ProjectService.StartContainer:input_type -> cxz.ProjectControl
-	88,  // 115: cxz.ProjectService.RemoveContainer:input_type -> cxz.ProjectControl
-	89,  // 116: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
-	99,  // 117: cxz.ProjectService.Add:output_type -> cxz.Project
-	99,  // 118: cxz.ProjectService.Get:output_type -> cxz.Project
-	99,  // 119: cxz.ProjectService.Patch:output_type -> cxz.Project
-	99,  // 120: cxz.ProjectService.Apply:output_type -> cxz.Project
-	9,   // 121: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
-	11,  // 122: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
-	14,  // 123: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
-	17,  // 124: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
-	19,  // 125: cxz.ProjectService.AuxiliaryLogin:output_type -> cxz.ProjectLoginOutput
-	19,  // 126: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
-	21,  // 127: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
-	24,  // 128: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
-	26,  // 129: cxz.ProjectService.Editor:output_type -> cxz.ProjectEditorReply
-	28,  // 130: cxz.ProjectService.EditorTunnel:output_type -> cxz.ProjectEditorTunnelReply
-	30,  // 131: cxz.ProjectService.Devcontainer:output_type -> cxz.DevcontainerReply
-	32,  // 132: cxz.ProjectService.RenderDevcontainer:output_type -> cxz.RenderDevcontainerReply
-	35,  // 133: cxz.ProjectService.SaveEngine:output_type -> cxz.EngineReply
-	35,  // 134: cxz.ProjectService.StartEngine:output_type -> cxz.EngineReply
-	35,  // 135: cxz.ProjectService.StopEngine:output_type -> cxz.EngineReply
-	35,  // 136: cxz.ProjectService.PruneEngine:output_type -> cxz.EngineReply
-	35,  // 137: cxz.ProjectService.EngineStatus:output_type -> cxz.EngineReply
-	39,  // 138: cxz.ProjectService.GetEngineInfo:output_type -> cxz.EngineInfo
-	40,  // 139: cxz.ProjectService.GetInstallationVersion:output_type -> cxz.InstallationVersion
-	42,  // 140: cxz.ProjectService.Diagnostics:output_type -> cxz.DiagnosticsReply
-	42,  // 141: cxz.ProjectService.CaptureDiagnostics:output_type -> cxz.DiagnosticsReply
-	47,  // 142: cxz.ProjectService.AuxConfig:output_type -> cxz.AuxConfigReply
-	47,  // 143: cxz.ProjectService.AuxSetConfig:output_type -> cxz.AuxConfigReply
-	51,  // 144: cxz.ProjectService.AuxModels:output_type -> cxz.AuxModelsReply
-	54,  // 145: cxz.ProjectService.AuxLoginInfo:output_type -> cxz.AuxLoginInfoReply
-	56,  // 146: cxz.ProjectService.MarkHistoryTrimmable:output_type -> cxz.HistoryTrimmableReply
-	58,  // 147: cxz.ProjectService.GetHistoryPolicy:output_type -> cxz.HistoryPolicy
-	58,  // 148: cxz.ProjectService.SetHistoryPolicy:output_type -> cxz.HistoryPolicy
-	60,  // 149: cxz.ProjectService.PutSecretFile:output_type -> cxz.SecretFileReply
-	60,  // 150: cxz.ProjectService.DeleteSecretFile:output_type -> cxz.SecretFileReply
-	63,  // 151: cxz.ProjectService.GetSkills:output_type -> cxz.SkillsReply
-	63,  // 152: cxz.ProjectService.AddSkill:output_type -> cxz.SkillsReply
-	63,  // 153: cxz.ProjectService.RemoveSkill:output_type -> cxz.SkillsReply
-	63,  // 154: cxz.ProjectService.SetSkillDefault:output_type -> cxz.SkillsReply
-	63,  // 155: cxz.ProjectService.SetProjectSkill:output_type -> cxz.SkillsReply
-	63,  // 156: cxz.ProjectService.ClearProjectSkill:output_type -> cxz.SkillsReply
-	70,  // 157: cxz.ProjectService.SyncSkills:output_type -> cxz.SyncSkillsReply
-	72,  // 158: cxz.ProjectService.GetMcpServers:output_type -> cxz.McpServersReply
-	72,  // 159: cxz.ProjectService.PutMcpServer:output_type -> cxz.McpServersReply
-	72,  // 160: cxz.ProjectService.RemoveMcpServer:output_type -> cxz.McpServersReply
-	72,  // 161: cxz.ProjectService.SetMcpServerDefault:output_type -> cxz.McpServersReply
-	72,  // 162: cxz.ProjectService.SetProjectMcpServer:output_type -> cxz.McpServersReply
-	72,  // 163: cxz.ProjectService.ClearProjectMcpServer:output_type -> cxz.McpServersReply
-	81,  // 164: cxz.ProjectService.McpSessions:output_type -> cxz.McpSessionsReply
-	84,  // 165: cxz.ProjectService.SyncMcpServers:output_type -> cxz.SyncMcpServersReply
-	86,  // 166: cxz.ProjectService.FileMappings:output_type -> cxz.FileMappingsReply
-	99,  // 167: cxz.ProjectService.CreateContainer:output_type -> cxz.Project
-	99,  // 168: cxz.ProjectService.StopContainer:output_type -> cxz.Project
-	99,  // 169: cxz.ProjectService.StartContainer:output_type -> cxz.Project
-	99,  // 170: cxz.ProjectService.RemoveContainer:output_type -> cxz.Project
-	90,  // 171: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
-	117, // [117:172] is the sub-list for method output_type
-	62,  // [62:117] is the sub-list for method input_type
+	87,  // 112: cxz.ProjectService.Start:input_type -> cxz.ProjectStartRequest
+	88,  // 113: cxz.ProjectService.Stop:input_type -> cxz.ProjectControl
+	88,  // 114: cxz.ProjectService.Remove:input_type -> cxz.ProjectControl
+	89,  // 115: cxz.ProjectService.InspectForeign:input_type -> cxz.InspectForeignRequest
+	99,  // 116: cxz.ProjectService.Add:output_type -> cxz.Project
+	99,  // 117: cxz.ProjectService.Get:output_type -> cxz.Project
+	99,  // 118: cxz.ProjectService.Patch:output_type -> cxz.Project
+	99,  // 119: cxz.ProjectService.Apply:output_type -> cxz.Project
+	9,   // 120: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
+	11,  // 121: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
+	14,  // 122: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
+	17,  // 123: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
+	19,  // 124: cxz.ProjectService.AuxiliaryLogin:output_type -> cxz.ProjectLoginOutput
+	19,  // 125: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
+	21,  // 126: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
+	24,  // 127: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
+	26,  // 128: cxz.ProjectService.Editor:output_type -> cxz.ProjectEditorReply
+	28,  // 129: cxz.ProjectService.EditorTunnel:output_type -> cxz.ProjectEditorTunnelReply
+	30,  // 130: cxz.ProjectService.Devcontainer:output_type -> cxz.DevcontainerReply
+	32,  // 131: cxz.ProjectService.RenderDevcontainer:output_type -> cxz.RenderDevcontainerReply
+	35,  // 132: cxz.ProjectService.SaveEngine:output_type -> cxz.EngineReply
+	35,  // 133: cxz.ProjectService.StartEngine:output_type -> cxz.EngineReply
+	35,  // 134: cxz.ProjectService.StopEngine:output_type -> cxz.EngineReply
+	35,  // 135: cxz.ProjectService.PruneEngine:output_type -> cxz.EngineReply
+	35,  // 136: cxz.ProjectService.EngineStatus:output_type -> cxz.EngineReply
+	39,  // 137: cxz.ProjectService.GetEngineInfo:output_type -> cxz.EngineInfo
+	40,  // 138: cxz.ProjectService.GetInstallationVersion:output_type -> cxz.InstallationVersion
+	42,  // 139: cxz.ProjectService.Diagnostics:output_type -> cxz.DiagnosticsReply
+	42,  // 140: cxz.ProjectService.CaptureDiagnostics:output_type -> cxz.DiagnosticsReply
+	47,  // 141: cxz.ProjectService.AuxConfig:output_type -> cxz.AuxConfigReply
+	47,  // 142: cxz.ProjectService.AuxSetConfig:output_type -> cxz.AuxConfigReply
+	51,  // 143: cxz.ProjectService.AuxModels:output_type -> cxz.AuxModelsReply
+	54,  // 144: cxz.ProjectService.AuxLoginInfo:output_type -> cxz.AuxLoginInfoReply
+	56,  // 145: cxz.ProjectService.MarkHistoryTrimmable:output_type -> cxz.HistoryTrimmableReply
+	58,  // 146: cxz.ProjectService.GetHistoryPolicy:output_type -> cxz.HistoryPolicy
+	58,  // 147: cxz.ProjectService.SetHistoryPolicy:output_type -> cxz.HistoryPolicy
+	60,  // 148: cxz.ProjectService.PutSecretFile:output_type -> cxz.SecretFileReply
+	60,  // 149: cxz.ProjectService.DeleteSecretFile:output_type -> cxz.SecretFileReply
+	63,  // 150: cxz.ProjectService.GetSkills:output_type -> cxz.SkillsReply
+	63,  // 151: cxz.ProjectService.AddSkill:output_type -> cxz.SkillsReply
+	63,  // 152: cxz.ProjectService.RemoveSkill:output_type -> cxz.SkillsReply
+	63,  // 153: cxz.ProjectService.SetSkillDefault:output_type -> cxz.SkillsReply
+	63,  // 154: cxz.ProjectService.SetProjectSkill:output_type -> cxz.SkillsReply
+	63,  // 155: cxz.ProjectService.ClearProjectSkill:output_type -> cxz.SkillsReply
+	70,  // 156: cxz.ProjectService.SyncSkills:output_type -> cxz.SyncSkillsReply
+	72,  // 157: cxz.ProjectService.GetMcpServers:output_type -> cxz.McpServersReply
+	72,  // 158: cxz.ProjectService.PutMcpServer:output_type -> cxz.McpServersReply
+	72,  // 159: cxz.ProjectService.RemoveMcpServer:output_type -> cxz.McpServersReply
+	72,  // 160: cxz.ProjectService.SetMcpServerDefault:output_type -> cxz.McpServersReply
+	72,  // 161: cxz.ProjectService.SetProjectMcpServer:output_type -> cxz.McpServersReply
+	72,  // 162: cxz.ProjectService.ClearProjectMcpServer:output_type -> cxz.McpServersReply
+	81,  // 163: cxz.ProjectService.McpSessions:output_type -> cxz.McpSessionsReply
+	84,  // 164: cxz.ProjectService.SyncMcpServers:output_type -> cxz.SyncMcpServersReply
+	86,  // 165: cxz.ProjectService.FileMappings:output_type -> cxz.FileMappingsReply
+	99,  // 166: cxz.ProjectService.Start:output_type -> cxz.Project
+	99,  // 167: cxz.ProjectService.Stop:output_type -> cxz.Project
+	99,  // 168: cxz.ProjectService.Remove:output_type -> cxz.Project
+	90,  // 169: cxz.ProjectService.InspectForeign:output_type -> cxz.InspectForeignResponse
+	116, // [116:170] is the sub-list for method output_type
+	62,  // [62:116] is the sub-list for method input_type
 	62,  // [62:62] is the sub-list for extension type_name
 	62,  // [62:62] is the sub-list for extension extendee
 	0,   // [0:62] is the sub-list for field type_name

@@ -642,6 +642,8 @@ export const messages = {
   Stopped: "Stopped",
   Unknown: "Unknown",
   Running: "Running",
+  Remove: "Remove",
+  "Makes the project run: the container it already has, or a new one built from its configuration, which takes minutes. Agents stay stopped until a session is resumed.": "Makes the project run: the container it already has, or a new one built from its configuration, which takes minutes. Agents stay stopped until a session is resumed.",
   Erase: "Erase",
   "Erase project": "Erase project",
   "Erase permanently": "Erase permanently",

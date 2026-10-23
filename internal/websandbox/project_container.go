@@ -14,18 +14,20 @@ import (
 // UI reads is the state they leave behind, and the sessions that stop with it.
 // See docs/plans/project-lifecycle-api.md.
 
-func (x *Projects) StopContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+func (x *Projects) Stop(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	return x.S.container(r, resource.ContainerState_CONTAINER_STATE_STOPPED, true)
 }
 
-func (x *Projects) StartContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
-	return x.S.container(r, resource.ContainerState_CONTAINER_STATE_RUNNING, false)
+// Start makes the project run whether or not it had a container, which in the
+// sandbox is the same move either way.
+func (x *Projects) Start(_ context.Context, r *resource.ProjectStartRequest) (*resource.Project, error) {
+	return x.S.container(resource.ProjectControl_builder{Ref: r.GetRef()}.Build(), resource.ContainerState_CONTAINER_STATE_RUNNING, false)
 }
 
 // Removing leaves no container, and the project with everything else: the
 // sandbox keeps its sessions and their conversations exactly as the real one
 // does.
-func (x *Projects) RemoveContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+func (x *Projects) Remove(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	return x.S.container(r, resource.ContainerState_CONTAINER_STATE_ABSENT, true)
 }
 

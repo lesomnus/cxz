@@ -645,6 +645,8 @@ export const messages = {
   Stopped: "정지됨",
   Unknown: "알 수 없음",
   Running: "실행 중",
+  Remove: "제거",
+  "Makes the project run: the container it already has, or a new one built from its configuration, which takes minutes. Agents stay stopped until a session is resumed.": "프로젝트를 실행 상태로 만듭니다: 이미 있는 컨테이너를 시작하거나, 없으면 설정에서 새로 만듭니다(몇 분 걸립니다). 에이전트는 세션을 재개할 때까지 정지 상태입니다.",
   Erase: "지우기",
   "Erase project": "프로젝트 지우기",
   "Erase permanently": "영구히 지우기",

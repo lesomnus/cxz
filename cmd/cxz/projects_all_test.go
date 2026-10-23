@@ -56,7 +56,7 @@ func (s *allStub) Devcontainer(context.Context, *resource.DevcontainerRequest) (
 	return &resource.DevcontainerReply{}, nil
 }
 
-func (s *allStub) CreateContainer(_ context.Context, r *resource.ProjectCreateRequest) (*resource.Project, error) {
+func (s *allStub) Start(_ context.Context, r *resource.ProjectStartRequest) (*resource.Project, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.upped = append(s.upped, r.GetRef().GetRuntimeId())
@@ -65,7 +65,7 @@ func (s *allStub) CreateContainer(_ context.Context, r *resource.ProjectCreateRe
 
 // Recreating is RemoveContainer then CreateContainer, so what the stub records
 // as "recreated" is what the client removed first.
-func (s *allStub) RemoveContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+func (s *allStub) Remove(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	id := r.GetRef().GetRuntimeId()
 	s.mu.Lock()
 	s.recreated = append(s.recreated, id)

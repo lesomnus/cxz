@@ -141,6 +141,7 @@ func (s *rpcStub) Reply(_ context.Context, r *resource.SessionReplyRequest) (*re
 type projectStub struct {
 	resource.UnimplementedProjectServiceServer
 	requests     chan any
+	started      chan string
 	mutations    *atomic.Int32
 	unregistered *atomic.Bool
 	overrides    chan projectconfig.Spec
@@ -182,10 +183,18 @@ func (s projectStub) Add(context.Context, *resource.ProjectAddRequest) (*resourc
 	}
 	return testProject(), nil
 }
-// Not recorded on the shared request channel: the assertions that read it are
-// about other calls, and the mutation counter is what says this one reached the
-// server.
-func (s projectStub) CreateContainer(context.Context, *resource.ProjectCreateRequest) (*resource.Project, error) {
+// Recorded apart from the shared request channel: nearly every command starts
+// a project on the way to what it was actually asked to do, and the assertions
+// that read that channel are about the other calls.
+func (s projectStub) Start(_ context.Context, r *resource.ProjectStartRequest) (*resource.Project, error) {
+	if s.started != nil {
+		// Never block the server: almost every command starts a project, and
+		// the assertions only care about the ones they drain for.
+		select {
+		case s.started <- r.GetRef().GetRuntimeId():
+		default:
+		}
+	}
 	if s.mutations != nil {
 		s.mutations.Add(1)
 	}
@@ -208,17 +217,12 @@ func (s projectStub) List(context.Context, *resource.ProjectListRequest) (*resou
 	}
 	return resource.ProjectListResponse_builder{Items: []*resource.Project{testProject()}}.Build(), nil
 }
-func (s projectStub) RemoveContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+func (s projectStub) Remove(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
 	return testProject(), nil
 }
 
-func (s projectStub) StopContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
-	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
-	return testProject(), nil
-}
-
-func (s projectStub) StartContainer(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
+func (s projectStub) Stop(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
 	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
 	return testProject(), nil
 }
@@ -249,7 +253,8 @@ func TestCommandsReachAPI(t *testing.T) {
 	mutations := &atomic.Int32{}
 	unregistered := &atomic.Bool{}
 	overrides := make(chan projectconfig.Spec, 4)
-	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, mutations: mutations, unregistered: unregistered, overrides: overrides})
+	started := make(chan string, 16)
+	resource.RegisterProjectServiceServer(server, projectStub{requests: stub.requests, started: started, mutations: mutations, unregistered: unregistered, overrides: overrides})
 	go server.Serve(listener)
 	defer server.Stop()
 	table := xlitest.Run(t, newRoot(root), "project", "ls")
@@ -269,6 +274,9 @@ func TestCommandsReachAPI(t *testing.T) {
 	// to resume, so it is recreated as a project rather than refused for an
 	// account it does not need -- which is what left the one project in that
 	// state unable to have its state migrated. See cxz#263.
+	for len(started) > 0 {
+		<-started
+	}
 	recreated := xlitest.Run(t, newRoot(root), "project", "recreate", "--trust-config", "--yes", "project-name")
 	if recreated.Err != nil {
 		t.Fatal("a project with no sessions was not recreated:", recreated.Err)
@@ -276,9 +284,9 @@ func TestCommandsReachAPI(t *testing.T) {
 	if mutations.Load() == 0 {
 		t.Fatal("nothing was recreated")
 	}
-	// Recreating is a removal and then a creation, composed by the client: the
-	// server has no operation that throws a container away as a step towards
-	// making one.
+	// Recreating is a removal and then a start, in that order, composed by the
+	// client: the server has no operation that throws a container away as a
+	// step towards making one.
 	select {
 	case raw := <-stub.requests:
 		removal, ok := raw.(*api.ProjectRequest)
@@ -287,6 +295,14 @@ func TestCommandsReachAPI(t *testing.T) {
 		}
 	default:
 		t.Fatal("recreate did not remove the container first")
+	}
+	select {
+	case id := <-started:
+		if id != "project-name" {
+			t.Fatal("recreate started the wrong project", id)
+		}
+	default:
+		t.Fatal("recreate removed the container and did not start one")
 	}
 	for _, confirmed := range []bool{false, true} {
 		args := []string{"project", "erase"}
@@ -332,7 +348,7 @@ func TestCommandsReachAPI(t *testing.T) {
 			got := xlitest.Run(t, newRoot(root), tc.args...)
 			wantMutations := int32(0)
 			if i == 0 {
-				wantMutations = 2 // Register and prepare only, without a session.
+				wantMutations = 2 // Register and start only, without a session.
 			}
 			if got.Err != nil || !strings.Contains(got.Stdout, tc.want) || len(stub.requests) != 0 || mutations.Load() != wantMutations {
 				t.Fatalf("up %v (attempt %d): %+v; mutations %d", tc.args, i, got, mutations.Load())
@@ -421,12 +437,18 @@ func TestCommandsReachAPI(t *testing.T) {
 	}
 	// Stopping and starting are not the same command as removing, and not the
 	// same command as the session `stop` at the root.
-	for _, op := range []string{"stop", "start"} {
-		run("project", op, "pn")
-		request, ok := (<-stub.requests).(*api.ProjectRequest)
-		if !ok || request.Workspace != "project-name" || request.ClientId == "" {
-			t.Fatal("project "+op+" did not reach the resolved project", request)
-		}
+	run("project", "stop", "pn")
+	stopped, ok := (<-stub.requests).(*api.ProjectRequest)
+	if !ok || stopped.Workspace != "project-name" || stopped.ClientId == "" {
+		t.Fatal("project stop did not reach the resolved project", stopped)
+	}
+	// Starting is recorded on its own channel, like every other start.
+	for len(started) > 0 {
+		<-started
+	}
+	run("project", "start", "pn")
+	if id := <-started; id != "project-name" {
+		t.Fatal("project start did not reach the resolved project", id)
 	}
 	// The workspace pair keeps its idiom and makes the same call as
 	// `cxz project remove`.
