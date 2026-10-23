@@ -94,3 +94,6 @@ root이므로 `conversation.db`가 `root:root`로 생겼고, SQLite는 읽기 �
 - cxz#282 — 실패가 끝났는데도 프로젝트가 그 실패를 계속 보고한다. 이 저장소의 프로젝트가
   지금 그 상태다(런타임은 정상, `Job.state`는 `failed`). 다음 `up`이 지운다.
 - cxz#283 — 자동 업데이트가 웹 게이트웨이와 릴레이를 두고 간다.
+- **서비스 경계** — `ProjectService`의 손으로 쓴 RPC 47개 중 26개가 Project를 가리키지
+  않는다. [service-boundaries.md](service-boundaries.md)에 각각 어디로 가야 하는지와
+  먼저 필요한 세 가지 결정을 적었다. 구현 전이다.

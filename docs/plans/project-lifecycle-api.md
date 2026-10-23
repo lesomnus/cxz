@@ -2,8 +2,8 @@
 
 상태: 구현 완료, 배포 전. 들어간 것: 설정 신뢰의 digest 동의, 컨테이너 작업 분리
 (`internal/workspace/trust.go`, `container.go`), 파생되는 컨테이너 상태,
-`StopContainer`/`StartContainer`/`RemoveContainer`가 양쪽 API와 CLI·웹까지 연결됐다.
-**표시되는 동사는 RPC 이름과 같다** — 버튼이 Stop이라고 적혀 있으면 `StopContainer`를
+컨테이너 작업이 양쪽 API와 CLI·웹까지 연결됐다.
+**표시되는 동사는 RPC 이름과 같다** — 버튼이 Stop이라고 적혀 있으면 `Stop`을
 부른다. 옛 `Down`은 없어졌다.
 
 `listed`도 없어졌다: 프로젝트는 등록돼 있거나 erased이고, 그 사이는 없다. 세션은
@@ -34,21 +34,23 @@ Project는 DB에 등록된 워크스페이스다. 컨테이너가 존재하거�
   Erase 완료 시에는 기존 구독자가 항목을 제거할 수 있는 삭제 알림을 보낸다.
 - `Add`는 DB 리소스만 만든다. 런타임 manifest, 컨테이너, 네트워크, 볼륨, 자격 증명,
   세션을 만들지 않는다.
-- 컨테이너 작업은 `CreateContainer`, `StartContainer`, `StopContainer`,
-  `RemoveContainer`로 나눈다. CRI의 이름을 그대로 쓴다. 파괴적 의미가 뒤집히는 옛 이름을
+- 컨테이너 작업은 `Start`, `Stop`, `Remove`로 나눈다. 파괴적 의미가 뒤집히는 옛 이름을
   재사용하지 않는 것이 두 번째 이유다 — "이름과 울타리"를 보라.
-- `CreateContainer`는 Dev Container 생명주기를 끝까지 수행한다. 컨테이너를 만들고
+- `Start`는 프로젝트를 돌아가게 한다. 컨테이너가 없으면 만들고, 있으면 시작한다.
+  만드는 경로는 Dev Container 생명주기를 끝까지 수행한다 — 컨테이너를 만들고
   시작하고 `onCreateCommand`·`updateContentCommand`·`postCreateCommand`를 돌린 뒤
-  **실행 중인 컨테이너**를 남긴다. 세션은 만들지 않는다.
+  **실행 중인 컨테이너**를 남긴다. 세션은 만들지 않는다. 둘 중 어느 경로인지는
+  매니저가 프로젝트 락 안에서 정한다(`Manager.StartContainer`).
 - `Erase`는 현재 프로젝트 Purge의 데이터 정리를 수행한다. 사용자에게도 `Erase`라고
   표시한다. 기존 `Erase`의 `listed=false` 보관 의미는 없앤다.
 - `Recreate` RPC를 제거한다. CLI와 UI의 재생성 기능은 여러 RPC를 조합한다.
 - 설정 신뢰는 불리언이 아니라 **동의한 설정의 digest**로 기록한다 — "설정 신뢰"를 보라.
 
-명명은 [CRI RuntimeService][cri]의 `CreateContainer`, `StartContainer`,
-`StopContainer`, `RemoveContainer`를 따른다. containerd도 [Task.Start][containerd]를
-제공하지만 정지·제거는 `Kill`·`Delete`로 표현한다. cxz는 이들 런타임의 구현을
-채택하는 것이 아니라 작업의 경계와 이름을 맞춘다.
+[CRI RuntimeService][cri]와 containerd의 [Task.Start][containerd]는 **작업이 어디서
+갈라지는지**를 볼 때만 참고했다. 이름은 가져오지 않는다 — 클라이언트가 보는 API는
+사람이 말하는 대로 `Start`·`Stop`·`Remove`다. 런타임 API는
+`StartContainer`/`StopContainer`/`RemoveContainer`를 쓰는데, 그 서비스의 `Stop`은
+이미 세션의 것이라서다(cxz#289).
 
 ## 현재 구현과의 차이
 
@@ -56,11 +58,11 @@ Project는 DB에 등록된 워크스페이스다. 컨테이너가 존재하거�
 | --- | --- | --- |
 | 목록 | 기본 `listed=true`, erased 제외 | erased만 기본 제외 — **완료** |
 | `Add` | 런타임 등록 파일과 DB를 함께 만듦 | DB 리소스만 생성 |
-| `Up` | 생성·시작·초기화·세션 선택이 한 경로 | `CreateContainer`와 `StartContainer`로 분리, 세션은 분리 — **완료** |
-| `Down` | 컨테이너 제거 | 사라짐. `StopContainer`는 정지, `StartContainer`는 시작, `RemoveContainer`는 제거 — **완료** |
+| `Up` | 생성·시작·초기화·세션 선택이 한 경로 | `Start` 하나가 만들거나 시작하고, 세션은 분리 — **완료** |
+| `Down` | 컨테이너 제거 | 사라짐. `Stop`은 정지, `Start`는 시작, `Remove`는 제거 — **완료** |
 | `Recreate` | 서버의 제거·재프로비저닝 복합 작업 | 클라이언트 조합 — **완료** |
 | `Erase` | 프로젝트·세션을 `listed=false`로 보관 | 소유 데이터 정리 후 행 제거 — **완료** |
-| `Remove` | 프로젝트 소유 데이터와 DB 행 영구 제거 | 사라짐. 데이터 삭제는 `Erase`, 컨테이너 제거는 `RemoveContainer` — **완료** |
+| `Remove` | 프로젝트 소유 데이터와 DB 행 영구 제거 | 이름이 컨테이너 제거로 옮겨갔다. 데이터 삭제는 `Erase` — **완료** |
 | 상태 | 문자열 `status.state`와 `container_id` | enum `status.container_state`와 관측 정보 |
 | 설정 신뢰 | `Up`의 `trust_config` 불리언이 `Project.Trusted`를 영구히 켬 | 동의한 설정 digest를 기록, 내용이 바뀌면 다시 묻는다 |
 
@@ -109,8 +111,8 @@ id까지 지웠다. 저장된 결론이 세상과 어긋나는 것은 이번 주
 
 `RUNNING`은 에이전트 준비 완료와 다르다. 프로비저닝 기록(`provision_state`,
 `provision_step`, 오류)은 cxz가 한 작업의 기록이므로 저장하지만, 컨테이너가 실행됐는지와
-별개로 유지한다. `CreateContainer` 중의 이미지 빌드와 생성 시점 훅, `StartContainer`의
-시작 시점 훅도 이 진행 상태로 구분한다.
+별개로 유지한다. `Start`가 만드는 경로에서 하는 이미지 빌드와 생성 시점 훅,
+시작 경로의 시작 시점 훅도 이 진행 상태로 구분한다.
 
 현재도 클라이언트는 컨테이너를 직접 조회하지 않는다. Manager가 Docker를 조회하고,
 `server/lifecycle/projection.go`가 결과를 DB status에 반영한 뒤 `List/Watch`로 전달한다.
@@ -134,30 +136,29 @@ id까지 지웠다. 저장된 결론이 세상과 어긋나는 것은 이번 주
 | RPC | 호출 전 | 성공 후 | 범위 |
 | --- | --- | --- | --- |
 | `Add` | 리소스 없음 | 리소스 존재, 관측 전 `UNKNOWN` | 메타데이터 저장만 수행 |
-| `CreateContainer` | 리소스 존재, 컨테이너 없음 | `RUNNING`, 생성 시점 훅까지 완료 | 이미지·설정·마운트·소유 자원 준비, 생성, 시작, 생성 시점 훅 |
-| `StartContainer` | `CREATED` 또는 `STOPPED` | `RUNNING`, 런타임 준비 완료 | 기존 컨테이너 시작과 시작 시점 훅 |
-| `StopContainer` | `RUNNING` | `STOPPED` | 세션과 부속 프로세스 정리, 컨테이너 정지 |
-| `RemoveContainer` | `CREATED` / `STOPPED` / `RUNNING` | `ABSENT` | 실행 중이면 정지 절차를 거쳐 컨테이너 제거 |
+| `Start` (컨테이너 없음) | 리소스 존재, `ABSENT` 또는 `UNKNOWN` | `RUNNING`, 생성 시점 훅까지 완료 | 이미지·설정·마운트·소유 자원 준비, 생성, 시작, 생성 시점 훅 |
+| `Start` (컨테이너 있음) | `CREATED` 또는 `STOPPED` | `RUNNING`, 런타임 준비 완료 | 기존 컨테이너 시작과 시작 시점 훅 |
+| `Stop` | `RUNNING` | `STOPPED` | 세션과 부속 프로세스 정리, 컨테이너 정지 |
+| `Remove` | `CREATED` / `STOPPED` / `RUNNING` | `ABSENT` | 실행 중이면 정지 절차를 거쳐 컨테이너 제거 |
 | `Erase` | 리소스 존재, 모든 컨테이너 상태 | 소유 데이터 정리, `date_erased` 설정 | 일반 `Get/List/Watch`에서 제거 |
 
 `Add` 직후의 `UNKNOWN`은 컨테이너 조회를 하지 않았다는 뜻이다. 이후 관측으로
-`ABSENT` 등을 채운다. `CreateContainer`는 자신의 작업 전에 실제 소유 상태를 확인하므로
+`ABSENT` 등을 채운다. `Start`는 자신의 작업 전에 실제 소유 상태를 확인하므로
 사용자가 별도로 상태가 갱신되기를 기다릴 필요는 없다.
 
 반복 호출과 잘못된 전이는 다음과 같이 처리한다.
 
 - `Add`: 이미 등록된 워크스페이스는 `AlreadyExists`. erased 프로젝트를 재등록할 때는
   새 리소스 UUID를 만들며 과거 세션이나 데이터를 복원하지 않는다.
-- `CreateContainer`: 컨테이너가 이미 있으면 `AlreadyExists`. 만들다 실패한 재시도는
-  같은 컨테이너로 수렴한다. 숨겨진 교체는 하지 않는다.
-- `StartContainer`: 컨테이너가 없으면 `FailedPrecondition`. 실행 중이면 준비 상태를
-  확인하고 수렴하며 기존 컨테이너를 교체하지 않는다. 초기화 실패 후 재시도도 이
-  경로다. 설정이 바뀌었으면 `FailedPrecondition`으로 알리고, 적용은 클라이언트가
-  `RemoveContainer`+`CreateContainer`로 결정한다.
-- `StopContainer`: 이미 정지됐거나 컨테이너가 없으면 성공. 정상 종료를 기다리는 제한
+- `Start`: 컨테이너가 없으면 만든다 — 그게 이 호출의 나머지 절반이고, 어느 경로인지는
+  매니저가 소유 컨테이너 목록을 보고 정한다. 만들다 실패한 재시도는 같은 컨테이너로
+  수렴한다. 이미 실행 중이면 준비 상태를 확인하고 수렴하며 기존 컨테이너를 교체하지
+  않는다 — 숨겨진 교체는 없다. 초기화 실패 후 재시도도 이 경로다. 설정이 바뀌었으면
+  `FailedPrecondition`으로 알리고, 적용은 클라이언트가 `Remove`+`Start`로 결정한다.
+- `Stop`: 이미 정지됐거나 컨테이너가 없으면 성공. 정상 종료를 기다리는 제한
   시간이 지나면 소유 프로세스를 강제 종료한다. 성공은 컨테이너가 실행 중이 아님을
   보장한다.
-- `RemoveContainer`: 컨테이너가 이미 없으면 성공. 리소스, 세션, 대화 DB, 프로필, 첨부
+- `Remove`: 컨테이너가 이미 없으면 성공. 리소스, 세션, 대화 DB, 프로필, 첨부
   파일, 공유 메모리, 프로젝트 상태 볼륨·디렉터리는 유지한다.
 - `Erase`: 이미 삭제된 UUID에 대한 반복 호출은 성공. 도중 실패하면 남은 정리를
   재시도할 수 있어야 하며 성공한 것처럼 응답하지 않는다.
@@ -166,7 +167,7 @@ id까지 지웠다. 저장된 결론이 세상과 어긋나는 것은 이번 주
 
 컨테이너 작업은 어느 것도 세션을 생성하거나 재개하지 않는다. 컨테이너가 떠 있다는 것과
 에이전트가 돌고 있다는 것은 다른 사실이고, 다시 실행할지는 클라이언트가
-`Session.Resume`으로 결정한다. `StopContainer` 성공 후 소속 세션이 `working`으로 남지
+`Session.Resume`으로 결정한다. `Stop` 성공 후 소속 세션이 `working`으로 남지
 않도록 세션 상태는 갱신한다.
 
 ## 생성과 시작의 경계
@@ -186,18 +187,17 @@ Dev Container CLI 0.89.0으로 측정한 결과다(alpine 이미지, 훅마다 �
 
 그래서 구현은 이렇게 나뉜다.
 
-- `CreateContainer` = 지금의 `devcontainer up`(`provision.go`) + cxz의 도구 설치와
+- `Start`의 만드는 경로 = 지금의 `devcontainer up`(`provision.go`) + cxz의 도구 설치와
   `_boot`. 성공하면 컨테이너는 실행 중이다.
-- `StartContainer` = `devcontainer up --expect-existing-container` + 런타임 준비 확인.
-  훅의 일회성은 CLI가 스스로 지킨다. 컨테이너가 없으면 CLI가 실패하므로 그것을
-  `FailedPrecondition`으로 옮긴다.
-- `StopContainer`·`RemoveContainer`는 CLI에 해당 명령이 없으므로 지금처럼 docker
-  레벨이다.
+- `Start`의 시작 경로 = `devcontainer up --expect-existing-container` + 런타임 준비
+  확인. 훅의 일회성은 CLI가 스스로 지킨다. 컨테이너가 없으면 CLI가 실패하므로 이
+  경로를 고르기 전에 소유 컨테이너 목록을 본다.
+- `Stop`·`Remove`는 CLI에 해당 명령이 없으므로 지금처럼 docker 레벨이다.
 
 세 번째 줄이 cxz의 몫을 정한다. **CLI는 설정이 바뀐 것을 알려주지 않는다.** 이미
 `manager.go`가 compose 오버라이드에 대해 digest를 들고 바뀌면 거부하는데
 (`devcontainer.compose changed; run cxz project recreate`), 그 검사를 **렌더된 설정
-전체**로 넓혀 `StartContainer`의 계약으로 삼는다. 같은 digest가 아래 "설정 신뢰"의
+전체**로 넓혀 `Start`의 계약으로 삼는다. 같은 digest가 아래 "설정 신뢰"의
 동의 대상이기도 하므로 Project가 들고 있는 digest는 하나다.
 
 남은 회귀 검증은 구성별 차이다: 단일 이미지·Dockerfile·Compose에서 위 표가 같은지,
@@ -231,13 +231,13 @@ network/PID, `docker.sock`, `SYS_ADMIN` 같은 것을 찾고 발견이 있으면
 - 요청 필드는 불리언이 아니라 **사용자가 본 내용의 digest**다. 발견 목록을 보고 승인하는
   사이에 파일이 바뀔 수 있으므로, 서버는 지금 렌더한 digest와 같은지 확인하고 다르면
   다시 묻는다.
-- 동의를 받는 지점은 서버가 렌더된 설정을 손에 든 자리 전부다: `CreateContainer`(빌드
-  전에 거부), `StartContainer`(digest 비교 — 경계 절의 그 검사), 그리고 읽기 전용
+- 동의를 받는 지점은 서버가 렌더된 설정을 손에 든 자리 전부다: `Start`(만드는 경로는
+  빌드 전에 거부, 시작 경로는 digest 비교 — 경계 절의 그 검사), 그리고 읽기 전용
   `RenderDevcontainer`/`Devcontainer`는 **동의 없이 발견 목록을 반환**한다. UI가
-  `CreateContainer` 전에 근거를 보여줄 수 있는 유일한 자리다.
+  컨테이너를 만들기 전에 근거를 보여줄 수 있는 유일한 자리다.
 
 이 digest는 설정 변경 감지와 같은 값이다. Project가 들고 있는 설정 digest는 하나고 용도가
-둘이다: 바뀌었으면 `StartContainer`가 거부하고, 바뀐 내용에 발견이 있으면 동의를 다시 받는다.
+둘이다: 바뀌었으면 `Start`가 거부하고, 바뀐 내용에 발견이 있으면 동의를 다시 받는다.
 
 ## Project의 정체성
 
@@ -288,10 +288,10 @@ runtime ID 자체를 없애는 별도 작업([cxz#237][runtime-id])은 이 전�
 재생성은 공용 클라이언트 로직에서 다음 순서로 수행한다.
 
 ```text
-대상과 변경 영향 확인 → StopContainer → RemoveContainer → CreateContainer
+대상과 변경 영향 확인 → Stop → Remove → Start
 ```
 
-`CreateContainer`가 실행 중인 컨테이너를 남기므로 조합은 거기서 끝난다. 에이전트를 다시
+`Start`가 실행 중인 컨테이너를 남기므로 조합은 거기서 끝난다. 에이전트를 다시
 띄우는 것은 그 뒤 클라이언트의 `Session.Resume`이다. 각 단계의 완료 후 다음을 호출하며
 실패한 지점에서 멈춘다. 어느 단계까지 끝났는지와
 현재 상태를 표시하고, 재조회 후 재시도한다. 실패를 만회하려고 `Erase`를 호출하지 않는다.
@@ -300,7 +300,7 @@ CLI `recreate`와 UI의 재생성 버튼은 이 조합을 사용할 수 있지�
 
 서버는 각 변이 RPC를 프로젝트 단위로 직렬화한다. 단계를 여러 RPC로 나누면 그 사이에
 다른 클라이언트가 개입할 수 있으므로 컨테이너 대상 작업에 기대 ID/세대 조건을 둔다.
-없는 상태에서의 `CreateContainer`도 세대 조건으로 보호한다. 조건 불일치는 `Aborted`로 반환하고
+컨테이너 없는 상태에서의 `Start`도 세대 조건으로 보호한다. 조건 불일치는 `Aborted`로 반환하고
 자동으로 새 대상을 골라 계속하지 않는다. 재시도 키는 같은 작업의 재전송에만 재사용한다.
 메타데이터 버전과 컨테이너 세대는 별도로 다뤄 주기적 status 갱신이 모든 작업을
 무효화하지 않게 한다.
@@ -314,9 +314,14 @@ CLI `recreate`와 UI의 재생성 버튼은 이 조합을 사용할 수 있지�
 호환 계층은 만들지 않는다. 사용자가 한 명이고 설치본이 하나다. 대신 **낡은 호출이 조용히
 성공하지 않게** 두 가지만 한다.
 
-1. **컨테이너 작업에 CRI 이름을 그대로 쓴다.** 그러면 파괴적 의미가 뒤집히는 이름
-   재사용이 사라진다. 옛 `Remove`는 제거되어 `Unimplemented`로 떨어지므로, 낡은
-   `cxz project remove`가 컨테이너만 지우는 새 동작으로 오해될 여지가 없다.
+1. **낡은 호출이 새 요청 모양에 들어맞지 않는다.** 이름은 CRI에서 가져오지 않았으므로
+   (cxz#289) 옛 `Remove`(프로젝트 데이터 영구 제거)와 새 `Remove`(컨테이너 제거)가 같은
+   이름을 쓴다. 막아 주는 것은 이름이 아니라 요청이다: 옛
+   `ProjectRemoveRequest{string target = 1; bool confirmed = 2}`는 새
+   `ProjectControl{ProjectRef ref = 1; string client_id = 2}`로 읽히지 않는다 — 필드 2의
+   wire type이 달라서 `confirmed`를 보낸 호출은 파싱에서 실패한다. 조용히 성공하지는
+   않지만 이건 이름이 세운 울타리가 아니라 우연이다. 진짜 울타리는 아래의
+   `cxzupdate.Protocol`이고, 설치본을 한 번에 올리는 것이다.
 2. **`Erase`는 낡은 클라이언트가 보내지 않는 명시 필드를 요구한다.** 없으면 실행 전에
    `FailedPrecondition`과 안내로 거부한다. 지금 `TRUST_REQUIRED`가 쓰는 그 패턴이고,
    새로운 개념을 만들지 않는다.
@@ -362,7 +367,7 @@ CLI `recreate`와 UI의 재생성 버튼은 이 조합을 사용할 수 있지�
 각 단계는 구현 PR의 단위다.
 
 1. **구성별 경계 회귀.** 위 "생성과 시작의 경계"를 단일 이미지·Dockerfile·Compose에서
-   재확인한다. `StartContainer`가 생성 시점 훅을 다시 돌리지 않는 것, Features·사용자
+   재확인한다. `Start`의 시작 경로가 생성 시점 훅을 다시 돌리지 않는 것, Features·사용자
    UID·Compose 의존 서비스·네트워크·마운트가 두 단계에 걸쳐 보존되는 것을 본다.
    컨테이너 세대와 재시도·오류·진행 상태를 proto에 반영할 수준으로 확정한다.
 2. **스키마와 이관.** enum·관측 필드, `listed` 제거, 설정 digest 동의, tombstone·새
@@ -374,7 +379,7 @@ CLI `recreate`와 UI의 재생성 버튼은 이 조합을 사용할 수 있지�
    `internal/resourceclient`를 새 계약으로 연결한다. Erase 정리, 잠금·세대 조건,
    실패 후 복구, DB 기반 조회와 Watch까지 같은 전이 규칙을 사용한다.
 5. **클라이언트와 sandbox.** CLI/TUI·웹의 기존 Up/Down/Recreate/프로젝트 Purge 호출을
-   새 동작이나 조합으로 바꾼다. `StopContainer`/`RemoveContainer`/`Erase`의 설명과 확인 UI를
+   새 동작이나 조합으로 바꾼다. `Stop`/`Remove`/`Erase`의 설명과 확인 UI를
    구별한다 — 하나는 멈추고, 하나는 컨테이너를 버리고, 하나는 대화를 지운다.
    프로젝트 표시 필터는 클라이언트 설정으로 처리한다. WASM도 같은 상태·오류를 재현한다.
 6. **통합·출시.** 아래 수용 기준을 통과하고 `docs/projects.md`, CLI/API 문서,
@@ -385,12 +390,12 @@ CLI `recreate`와 UI의 재생성 버튼은 이 조합을 사용할 수 있지�
 
 - Docker를 사용할 수 없는 환경에서도 `Add`는 리소스를 만들고 `Get/List/Watch`는
   erased가 아닌 리소스를 반환한다. 페이지 전체와 Watch 초기 목록에 빠진 항목이 없다.
-- 각 RPC의 정상·반복·잘못된 전이를 테스트한다. `CreateContainer` 후 컨테이너는 실행 중이고
-  생성 시점 훅이 한 번 돌았으며, `StopContainer` 후에는 존재하되 정지됐고,
-  `RemoveContainer` 후에는 없어야 한다. `StopContainer`→`StartContainer`가 생성 시점 훅을
+- 각 RPC의 정상·반복·잘못된 전이를 테스트한다. 컨테이너 없이 부른 `Start` 후 컨테이너는
+  실행 중이고 생성 시점 훅이 한 번 돌았으며, `Stop` 후에는 존재하되 정지됐고,
+  `Remove` 후에는 없어야 한다. `Stop`→`Start`가 생성 시점 훅을
   다시 돌리지 않는다.
 - 컨테이너 작업과 재생성 조합이 세션을 새로 만들거나 재개하거나 프롬프트를 재전송하지
-  않는다. `StopContainer → StartContainer`와 `RemoveContainer → CreateContainer` 뒤 기존
+  않는다. `Stop → Start`와 `Remove → Start` 뒤 기존
   세션을 명시적으로 재개하면 같은 vendor 대화와 UUID·alias·설정·업로드·메모리·기록을 쓴다.
 - 이미지 빌드, 생성, 시작 훅, 준비 확인, 정지, 각 삭제 단계에 실패를 주입한다.
   실제 남은 상태·오류가 조회되고 재시도로 수렴한다. `UNKNOWN`이 `ABSENT`로 오인되지 않는다.
@@ -401,7 +406,7 @@ CLI `recreate`와 UI의 재생성 버튼은 이 조합을 사용할 수 있지�
 - 기존 `listed=false` 데이터는 삭제 없이 목록에 나타난다. erased tombstone은 재시작과
   재확인 후에도 돌아오지 않는다. 같은 워크스페이스의 새 Add는 과거 데이터를 복원하지 않는다.
 - 낡은 클라이언트의 `Erase`는 실행 전에 거부되고, 사라진 `Remove`는 `Unimplemented`로
-  떨어진다. 설정이 바뀐 뒤의 `StartContainer`는 거부되고, 발견이 있는 새 설정은 동의를
+  떨어진다. 설정이 바뀐 뒤의 `Start`는 거부되고, 발견이 있는 새 설정은 동의를
   다시 요구한다. 동의한 digest와 다른 내용은 승인으로 재사용되지 않는다.
 - 결정적 테스트와 WASM 전이 테스트에 더해 실제 Docker에서 생성/시작/정지/제거,
   단일 이미지·Dockerfile·Compose 훅, 두 상태 저장 배치의 보존·삭제를 검증한다.
