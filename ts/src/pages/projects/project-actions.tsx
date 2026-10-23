@@ -8,6 +8,7 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { eraseProject } from "./project-erase";
+import { trustRequired } from "./config-trust";
 import {
   removeContainer,
   startContainer,
@@ -99,6 +100,12 @@ export function ProjectActions({
 }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const [target, setTarget] = useState<{ kind: Action; project: Project }>();
+  // A start the configuration refused until someone says yes to it: the
+  // findings are what they are saying yes to.
+  const [trust, setTrust] = useState<{
+    project: Project;
+    findings: string[];
+  }>();
   const [error, setError] = useState("");
   const state = containerState(project);
   const actions: { kind: Action; disabled: boolean }[] = [
@@ -112,8 +119,7 @@ export function ProjectActions({
     {
       kind: "remove",
       disabled:
-        state === ContainerState.ABSENT ||
-        state === ContainerState.UNSPECIFIED,
+        state === ContainerState.ABSENT || state === ContainerState.UNSPECIFIED,
     },
     { kind: "erase", disabled: false },
   ];
@@ -123,9 +129,7 @@ export function ProjectActions({
         {actions.map((action) => (
           <div className={styles.row} key={action.kind}>
             <span className={styles.icon}>
-              <SessionActionIcon
-                action={icons[action.kind]}
-              />
+              <SessionActionIcon action={icons[action.kind]} />
             </span>
             <p>{copy[action.kind].description}</p>
             <Button
@@ -168,22 +172,70 @@ export function ProjectActions({
               }
               return true;
             } catch (failure) {
+              const findings =
+                target.kind === "start" ? trustRequired(failure) : undefined;
+              if (findings) {
+                // Not a failure: a question. This dialog closes and the
+                // next one asks it.
+                setTrust({ project: target.project, findings });
+                return true;
+              }
               setError(String(failure));
               return false;
             }
           }}
         >
           <p>
-            <strong>
-              {target.project.name ||
-                target.project.alias ||
-                target.project.runtimeId}
-            </strong>
+            <strong>{label(target.project)}</strong>
           </p>
           <p>{copy[target.kind].body}</p>
           <p className="muted">{copy[target.kind].note}</p>
         </ConfirmationDialog>
       )}
+      {trust && (
+        <ConfirmationDialog
+          title={t("Trust configuration")}
+          confirmLabel={t("Trust and start")}
+          close={() => {
+            setTrust(undefined);
+            trigger.current?.focus({ preventScroll: true });
+          }}
+          failureMessage={error || t("Action failed. Please try again.")}
+          execute={async () => {
+            setError("");
+            try {
+              updated(await startContainer(c, trust.project, true));
+              return true;
+            } catch (failure) {
+              setError(String(failure));
+              return false;
+            }
+          }}
+        >
+          <p>
+            <strong>{label(trust.project)}</strong>
+          </p>
+          <p>
+            {t(
+              "This project's devcontainer configuration asks for access beyond its container. Start it only if you trust this configuration.",
+            )}
+          </p>
+          <ul className={styles.findings}>
+            {trust.findings.map((finding) => (
+              <li key={finding}>
+                <code>{finding}</code>
+              </li>
+            ))}
+          </ul>
+          <p className="muted">
+            {t("You will be asked again if the configuration changes.")}
+          </p>
+        </ConfirmationDialog>
+      )}
     </>
   );
+}
+
+function label(project: Project) {
+  return project.name || project.alias || project.runtimeId;
 }

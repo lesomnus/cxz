@@ -58,3 +58,13 @@
 .row .action:not(:disabled):hover {
   background: var(--ui-confirm-button-background);
 }
+.findings {
+  display: grid;
+  gap: calc(var(--ui-space) / 2);
+  margin: 0;
+  padding-inline-start: calc(3 * var(--ui-space));
+  font-size: 12px;
+}
+.findings code {
+  overflow-wrap: anywhere;
+}
