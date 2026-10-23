@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@lesomnus/nox";
-import { AuxKind } from "#gen/cxz/project_svc_pb";
+import { AuxKind } from "#gen/cxz/installation_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useSessionAux } from "#src/features/session/model/use-session-aux.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";

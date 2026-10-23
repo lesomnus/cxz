@@ -3,6 +3,7 @@ import { createConnectTransport } from "@connectrpc/connect-web";
 import { Store } from "@lesomnus/payday/store";
 import { Queries } from "@lesomnus/payday/query";
 import { entities } from "#gen/entities";
+import { InstallationService } from "#gen/cxz/installation_pb";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
 import { AccountService } from "#gen/cxz/account_svc_pb";
@@ -26,6 +27,9 @@ export class Connection {
   readonly store;
   readonly queries;
   readonly projects;
+  // Not an entity service, so it is not in the resource store's catalog: the
+  // installation is files on the manager. See docs/plans/service-boundaries.md.
+  readonly installation;
   readonly sessions;
   readonly accounts;
   readonly bindings;
@@ -61,6 +65,7 @@ export class Connection {
     });
     this.queries = new Queries(this.store, this.transport, entities);
     this.projects = createClient(ProjectService, this.transport);
+    this.installation = createClient(InstallationService, this.transport);
     this.sessions = createClient(SessionService, this.transport);
     this.accounts = createClient(AccountService, this.transport);
     this.bindings = createClient(AuthBindingService, this.transport);

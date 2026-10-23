@@ -37,8 +37,8 @@ func (s *allStub) List(context.Context, *resource.ProjectListRequest) (*resource
 	return resource.ProjectListResponse_builder{Items: s.items}.Build(), nil
 }
 
-func (s *allStub) InspectForeign(context.Context, *resource.InspectForeignRequest) (*resource.InspectForeignResponse, error) {
-	return resource.InspectForeignResponse_builder{Items: []*resource.ForeignContainer{
+func (allInstallationStub) ForeignContainers(context.Context, *resource.ForeignContainersRequest) (*resource.ForeignContainersReply, error) {
+	return resource.ForeignContainersReply_builder{Items: []*resource.ForeignContainer{
 		resource.ForeignContainer_builder{ContainerId: ptr("container-theirs"), Workspace: ptr("/work/theirs"), Name: ptr("theirs")}.Build(),
 	}}.Build(), nil
 }
@@ -52,8 +52,16 @@ func (s *allStub) Get(_ context.Context, r *resource.ProjectGetRequest) (*resour
 	return nil, fmt.Errorf("no project %s", r.GetRef().GetRuntimeId())
 }
 
-func (s *allStub) Devcontainer(context.Context, *resource.DevcontainerRequest) (*resource.DevcontainerReply, error) {
-	return &resource.DevcontainerReply{}, nil
+// Devcontainer settings and foreign containers are the installation's, so this
+// fixture answers them on that service instead. See
+// docs/plans/service-boundaries.md.
+type allInstallationStub struct {
+	resource.UnimplementedInstallationServiceServer
+	*allStub
+}
+
+func (allInstallationStub) SaveDevcontainer(context.Context, *resource.SaveDevcontainerRequest) (*resource.InstallationReceipt, error) {
+	return &resource.InstallationReceipt{}, nil
 }
 
 func (s *allStub) Start(_ context.Context, r *resource.ProjectStartRequest) (*resource.Project, error) {
@@ -94,6 +102,7 @@ func allProjectsCLI(t *testing.T, stub *allStub) string {
 	}
 	server := grpc.NewServer()
 	resource.RegisterProjectServiceServer(server, stub)
+	resource.RegisterInstallationServiceServer(server, allInstallationStub{allStub: stub})
 	go server.Serve(listener)
 	t.Cleanup(server.Stop)
 	return root

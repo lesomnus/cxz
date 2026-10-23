@@ -17,9 +17,9 @@ func (c *Client) Diagnostics(ctx context.Context, method string, since time.Time
 	if !since.IsZero() {
 		r.SetSince(timestamppb.New(since))
 	}
-	return c.projects.Diagnostics(ctx, r, opts...)
+	return c.installation.Diagnostics(ctx, r, opts...)
 }
 func (c *Client) CaptureDiagnostics(ctx context.Context, d time.Duration, opts ...grpc.CallOption) (*resource.DiagnosticsReply, error) {
 	seconds := int32(d / time.Second)
-	return c.projects.CaptureDiagnostics(ctx, resource.CaptureDiagnosticsRequest_builder{Seconds: &seconds}.Build(), opts...)
+	return c.installation.Capture(ctx, resource.CaptureRequest_builder{Seconds: &seconds}.Build(), opts...)
 }

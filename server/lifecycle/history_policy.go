@@ -11,7 +11,7 @@ import (
 // rather than per session. They bound cxz's own records only; provider context
 // is untouched. See docs/history.md.
 
-func (s ProjectServer) GetHistoryPolicy(ctx context.Context, _ *resource.HistoryPolicyRequest) (*resource.HistoryPolicy, error) {
+func (s InstallationServer) Retention(ctx context.Context, _ *resource.RetentionRequest) (*resource.HistoryPolicy, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -19,13 +19,14 @@ func (s ProjectServer) GetHistoryPolicy(ctx context.Context, _ *resource.History
 	return historyPolicy(out, err)
 }
 
-func (s ProjectServer) SetHistoryPolicy(ctx context.Context, r *resource.HistoryPolicy) (*resource.HistoryPolicy, error) {
+func (s InstallationServer) SaveRetention(ctx context.Context, r *resource.SaveRetentionRequest) (*resource.HistoryPolicy, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
+	p := r.GetRetention()
 	out, err := s.shared.runtime.SetHistoryPolicy(ctx, &api.HistoryPolicy{
-		Disabled: r.GetDisabled(), MaxMib: r.GetMaxMib(), RawMib: r.GetRawMib(),
-		WindowMib: r.GetWindowMib(), WindowTurns: r.GetWindowTurns(),
+		Disabled: p.GetDisabled(), MaxMib: p.GetMaxMib(), RawMib: p.GetRawMib(),
+		WindowMib: p.GetWindowMib(), WindowTurns: p.GetWindowTurns(),
 	})
 	return historyPolicy(out, err)
 }

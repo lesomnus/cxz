@@ -1,9 +1,9 @@
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useState } from "react";
 import { Button } from "@lesomnus/nox";
-import { AuxKind, type AuxProfile } from "#gen/cxz/project_svc_pb";
+import { AuxKind, type AgentProfile } from "#gen/cxz/installation_pb";
 import { create } from "@bufbuild/protobuf";
-import { AuxProfileSchema } from "#gen/cxz/project_svc_pb";
+import { AgentProfileSchema } from "#gen/cxz/installation_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { accountRef, listAccounts } from "#src/features/accounts/account-data.ts";
@@ -12,11 +12,11 @@ import { auxKinds } from "./auxiliary-controls";
 import styles from "#src/shared/components/resource-surface.module.css";
 export function AuxiliarySettings({ c }: { c: Connection }) {
   const configuration = useRemote(
-    (signal) => c.projects.auxConfig({}, { signal, timeoutMs: 10000 }),
+    (signal) => c.installation.agents({}, { signal, timeoutMs: 10000 }),
     [c],
   );
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
-  const [profiles, setProfiles] = useState<AuxProfile[]>([]);
+  const [profiles, setProfiles] = useState<AgentProfile[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -25,11 +25,11 @@ export function AuxiliarySettings({ c }: { c: Connection }) {
         auxKinds.map(
           ({ kind }) =>
             configuration.data!.profiles.find((p) => p.kind === kind) ??
-            create(AuxProfileSchema, { kind }),
+            create(AgentProfileSchema, { kind }),
         ),
       );
   }, [configuration.data]);
-  function update(kind: AuxKind, patch: Partial<AuxProfile>) {
+  function update(kind: AuxKind, patch: Partial<AgentProfile>) {
     setProfiles((old) =>
       old.map((p) => (p.kind === kind ? { ...p, ...patch } : p)),
     );
@@ -59,7 +59,7 @@ export function AuxiliarySettings({ c }: { c: Connection }) {
           setBusy(true);
           setError("");
           try {
-            const saved = await c.projects.auxSetConfig(
+            const saved = await c.installation.saveAgents(
               { profiles },
               { timeoutMs: 20000 },
             );
@@ -84,10 +84,10 @@ function AuxiliaryProfile({
   update,
 }: {
   c: Connection;
-  profile: AuxProfile;
+  profile: AgentProfile;
   accounts: Awaited<ReturnType<typeof listAccounts>>;
   disabled: boolean;
-  update: (patch: Partial<AuxProfile>) => void;
+  update: (patch: Partial<AgentProfile>) => void;
 }) {
   const [login, setLogin] = useState(false);
   const models = useRemote(

@@ -21,7 +21,7 @@ func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOp
 	if err != nil {
 		return nil, err
 	}
-	foreign, err := c.projects.InspectForeign(ctx, &resource.InspectForeignRequest{}, opts...)
+	foreign, err := c.installation.ForeignContainers(ctx, &resource.ForeignContainersRequest{}, opts...)
 	if err != nil && status.Code(err) != codes.Unimplemented {
 		return nil, err
 	}

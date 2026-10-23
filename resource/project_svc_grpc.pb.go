@@ -19,55 +19,38 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProjectService_Add_FullMethodName                    = "/cxz.ProjectService/Add"
-	ProjectService_Get_FullMethodName                    = "/cxz.ProjectService/Get"
-	ProjectService_Patch_FullMethodName                  = "/cxz.ProjectService/Patch"
-	ProjectService_Apply_FullMethodName                  = "/cxz.ProjectService/Apply"
-	ProjectService_Erase_FullMethodName                  = "/cxz.ProjectService/Erase"
-	ProjectService_List_FullMethodName                   = "/cxz.ProjectService/List"
-	ProjectService_Watch_FullMethodName                  = "/cxz.ProjectService/Watch"
-	ProjectService_Terminal_FullMethodName               = "/cxz.ProjectService/Terminal"
-	ProjectService_AuxiliaryLogin_FullMethodName         = "/cxz.ProjectService/AuxiliaryLogin"
-	ProjectService_SessionLogin_FullMethodName           = "/cxz.ProjectService/SessionLogin"
-	ProjectService_Paths_FullMethodName                  = "/cxz.ProjectService/Paths"
-	ProjectService_Download_FullMethodName               = "/cxz.ProjectService/Download"
-	ProjectService_Editor_FullMethodName                 = "/cxz.ProjectService/Editor"
-	ProjectService_EditorTunnel_FullMethodName           = "/cxz.ProjectService/EditorTunnel"
-	ProjectService_Devcontainer_FullMethodName           = "/cxz.ProjectService/Devcontainer"
-	ProjectService_RenderDevcontainer_FullMethodName     = "/cxz.ProjectService/RenderDevcontainer"
-	ProjectService_SaveEngine_FullMethodName             = "/cxz.ProjectService/SaveEngine"
-	ProjectService_StartEngine_FullMethodName            = "/cxz.ProjectService/StartEngine"
-	ProjectService_StopEngine_FullMethodName             = "/cxz.ProjectService/StopEngine"
-	ProjectService_PruneEngine_FullMethodName            = "/cxz.ProjectService/PruneEngine"
-	ProjectService_EngineStatus_FullMethodName           = "/cxz.ProjectService/EngineStatus"
-	ProjectService_GetEngineInfo_FullMethodName          = "/cxz.ProjectService/GetEngineInfo"
-	ProjectService_GetInstallationVersion_FullMethodName = "/cxz.ProjectService/GetInstallationVersion"
-	ProjectService_Diagnostics_FullMethodName            = "/cxz.ProjectService/Diagnostics"
-	ProjectService_CaptureDiagnostics_FullMethodName     = "/cxz.ProjectService/CaptureDiagnostics"
-	ProjectService_AuxConfig_FullMethodName              = "/cxz.ProjectService/AuxConfig"
-	ProjectService_AuxSetConfig_FullMethodName           = "/cxz.ProjectService/AuxSetConfig"
-	ProjectService_GetHistoryPolicy_FullMethodName       = "/cxz.ProjectService/GetHistoryPolicy"
-	ProjectService_SetHistoryPolicy_FullMethodName       = "/cxz.ProjectService/SetHistoryPolicy"
-	ProjectService_PutSecretFile_FullMethodName          = "/cxz.ProjectService/PutSecretFile"
-	ProjectService_DeleteSecretFile_FullMethodName       = "/cxz.ProjectService/DeleteSecretFile"
-	ProjectService_GetSkills_FullMethodName              = "/cxz.ProjectService/GetSkills"
-	ProjectService_AddSkill_FullMethodName               = "/cxz.ProjectService/AddSkill"
-	ProjectService_RemoveSkill_FullMethodName            = "/cxz.ProjectService/RemoveSkill"
-	ProjectService_SetSkillDefault_FullMethodName        = "/cxz.ProjectService/SetSkillDefault"
-	ProjectService_SetProjectSkill_FullMethodName        = "/cxz.ProjectService/SetProjectSkill"
-	ProjectService_ClearProjectSkill_FullMethodName      = "/cxz.ProjectService/ClearProjectSkill"
-	ProjectService_GetMcpServers_FullMethodName          = "/cxz.ProjectService/GetMcpServers"
-	ProjectService_PutMcpServer_FullMethodName           = "/cxz.ProjectService/PutMcpServer"
-	ProjectService_RemoveMcpServer_FullMethodName        = "/cxz.ProjectService/RemoveMcpServer"
-	ProjectService_SetMcpServerDefault_FullMethodName    = "/cxz.ProjectService/SetMcpServerDefault"
-	ProjectService_SetProjectMcpServer_FullMethodName    = "/cxz.ProjectService/SetProjectMcpServer"
-	ProjectService_ClearProjectMcpServer_FullMethodName  = "/cxz.ProjectService/ClearProjectMcpServer"
-	ProjectService_McpSessions_FullMethodName            = "/cxz.ProjectService/McpSessions"
-	ProjectService_FileMappings_FullMethodName           = "/cxz.ProjectService/FileMappings"
-	ProjectService_Start_FullMethodName                  = "/cxz.ProjectService/Start"
-	ProjectService_Stop_FullMethodName                   = "/cxz.ProjectService/Stop"
-	ProjectService_Remove_FullMethodName                 = "/cxz.ProjectService/Remove"
-	ProjectService_InspectForeign_FullMethodName         = "/cxz.ProjectService/InspectForeign"
+	ProjectService_Add_FullMethodName                   = "/cxz.ProjectService/Add"
+	ProjectService_Get_FullMethodName                   = "/cxz.ProjectService/Get"
+	ProjectService_Patch_FullMethodName                 = "/cxz.ProjectService/Patch"
+	ProjectService_Apply_FullMethodName                 = "/cxz.ProjectService/Apply"
+	ProjectService_Erase_FullMethodName                 = "/cxz.ProjectService/Erase"
+	ProjectService_List_FullMethodName                  = "/cxz.ProjectService/List"
+	ProjectService_Watch_FullMethodName                 = "/cxz.ProjectService/Watch"
+	ProjectService_Terminal_FullMethodName              = "/cxz.ProjectService/Terminal"
+	ProjectService_AuxiliaryLogin_FullMethodName        = "/cxz.ProjectService/AuxiliaryLogin"
+	ProjectService_SessionLogin_FullMethodName          = "/cxz.ProjectService/SessionLogin"
+	ProjectService_Paths_FullMethodName                 = "/cxz.ProjectService/Paths"
+	ProjectService_Download_FullMethodName              = "/cxz.ProjectService/Download"
+	ProjectService_Editor_FullMethodName                = "/cxz.ProjectService/Editor"
+	ProjectService_EditorTunnel_FullMethodName          = "/cxz.ProjectService/EditorTunnel"
+	ProjectService_PutSecretFile_FullMethodName         = "/cxz.ProjectService/PutSecretFile"
+	ProjectService_DeleteSecretFile_FullMethodName      = "/cxz.ProjectService/DeleteSecretFile"
+	ProjectService_GetSkills_FullMethodName             = "/cxz.ProjectService/GetSkills"
+	ProjectService_AddSkill_FullMethodName              = "/cxz.ProjectService/AddSkill"
+	ProjectService_RemoveSkill_FullMethodName           = "/cxz.ProjectService/RemoveSkill"
+	ProjectService_SetSkillDefault_FullMethodName       = "/cxz.ProjectService/SetSkillDefault"
+	ProjectService_SetProjectSkill_FullMethodName       = "/cxz.ProjectService/SetProjectSkill"
+	ProjectService_ClearProjectSkill_FullMethodName     = "/cxz.ProjectService/ClearProjectSkill"
+	ProjectService_GetMcpServers_FullMethodName         = "/cxz.ProjectService/GetMcpServers"
+	ProjectService_PutMcpServer_FullMethodName          = "/cxz.ProjectService/PutMcpServer"
+	ProjectService_RemoveMcpServer_FullMethodName       = "/cxz.ProjectService/RemoveMcpServer"
+	ProjectService_SetMcpServerDefault_FullMethodName   = "/cxz.ProjectService/SetMcpServerDefault"
+	ProjectService_SetProjectMcpServer_FullMethodName   = "/cxz.ProjectService/SetProjectMcpServer"
+	ProjectService_ClearProjectMcpServer_FullMethodName = "/cxz.ProjectService/ClearProjectMcpServer"
+	ProjectService_McpSessions_FullMethodName           = "/cxz.ProjectService/McpSessions"
+	ProjectService_Start_FullMethodName                 = "/cxz.ProjectService/Start"
+	ProjectService_Stop_FullMethodName                  = "/cxz.ProjectService/Stop"
+	ProjectService_Remove_FullMethodName                = "/cxz.ProjectService/Remove"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -116,51 +99,6 @@ type ProjectServiceClient interface {
 	Editor(ctx context.Context, in *ProjectEditorRequest, opts ...grpc.CallOption) (*ProjectEditorReply, error)
 	// Private gateway transport to the editor's loopback listener; not web RPC.
 	EditorTunnel(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProjectEditorTunnelRequest, ProjectEditorTunnelReply], error)
-	Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error)
-	// What one project actually runs under: the configuration cxz handed the
-	// devcontainer CLI, every Compose file in merge order, and the merge itself,
-	// read back from what provisioning wrote. Devcontainer, above, saves the
-	// settings; this reads what a project got from them, which is why the two
-	// are not one call.
-	RenderDevcontainer(ctx context.Context, in *RenderDevcontainerRequest, opts ...grpc.CallOption) (*RenderDevcontainerReply, error)
-	// The shared Docker engine. Five operations, each named, where one message
-	// with an action string used to carry all of them -- and a spec field that
-	// only two of them could mean anything by. The enum that is left is on the
-	// thing that has a closed set of values, which is the engine's mode.
-	SaveEngine(ctx context.Context, in *SaveEngineRequest, opts ...grpc.CallOption) (*EngineReply, error)
-	StartEngine(ctx context.Context, in *StartEngineRequest, opts ...grpc.CallOption) (*EngineReply, error)
-	StopEngine(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*EngineReply, error)
-	PruneEngine(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*EngineReply, error)
-	EngineStatus(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*EngineReply, error)
-	GetEngineInfo(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*EngineInfo, error)
-	// What this installation of cxz is: its build, its update channel and
-	// whether it is pinned. It travelled inside the engine's info reply, which is
-	// how a question about Docker came to answer a question about cxz.
-	GetInstallationVersion(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*InstallationVersion, error)
-	// What the manager has been doing: per-method aggregates, and the calls it
-	// kept -- which method, which status, how long, and how much of that was
-	// spent waiting rather than working. Metadata only: no request or reply ever
-	// enters it, because the answer is read over the plaintext surface.
-	//
-	// It was only ever on the manager's stdout, so every question about a stalled
-	// installation needed `docker logs` on the host. See cxz#211.
-	Diagnostics(ctx context.Context, in *DiagnosticsRequest, opts ...grpc.CallOption) (*DiagnosticsReply, error)
-	// Keep every call for a while, not only the failed and the slow ones. The
-	// window expires on its own: a verbose setting that has to be turned off is
-	// one that is left on.
-	CaptureDiagnostics(ctx context.Context, in *CaptureDiagnosticsRequest, opts ...grpc.CallOption) (*DiagnosticsReply, error)
-	// Aux is a model task done beside a session: run once, with the context cxz
-	// assembles, never accumulating into a conversation. These two are the part
-	// that belongs to the installation rather than to one session -- which
-	// account and model each kind runs on. See docs/plans/aux-api.md. What a
-	// single account offers is `AccountService.Models` and `LoginInfo`: those
-	// name an account, so they are that service's.
-	AuxConfig(ctx context.Context, in *AuxConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error)
-	AuxSetConfig(ctx context.Context, in *AuxSetConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error)
-	// The history budgets of this installation. They bound cxz's own records
-	// only; provider context is not affected. See docs/history.md.
-	GetHistoryPolicy(ctx context.Context, in *HistoryPolicyRequest, opts ...grpc.CallOption) (*HistoryPolicy, error)
-	SetHistoryPolicy(ctx context.Context, in *HistoryPolicy, opts ...grpc.CallOption) (*HistoryPolicy, error)
 	// A secret file is written by the workspace helper inside a project
 	// container, for a client that cannot reach the engine itself. Two calls
 	// rather than one with a verb: only one of them carries a secret, and that
@@ -196,7 +134,6 @@ type ProjectServiceClient interface {
 	// a change is still waiting for a restart. Separate from reading the
 	// registrations, because a settings list should not stall on a container.
 	McpSessions(ctx context.Context, in *McpSessionsRequest, opts ...grpc.CallOption) (*McpSessionsReply, error)
-	FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error)
 	// A project's container, in the three words a person uses about it. Start
 	// makes the project run: it builds and creates the container when there is
 	// none and starts the one there is otherwise, because "make it run" is one
@@ -212,8 +149,6 @@ type ProjectServiceClient interface {
 	Start(ctx context.Context, in *ProjectStartRequest, opts ...grpc.CallOption) (*Project, error)
 	Stop(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error)
 	Remove(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error)
-	// Foreign inventory is not part of the registered Project resource list.
-	InspectForeign(ctx context.Context, in *InspectForeignRequest, opts ...grpc.CallOption) (*InspectForeignResponse, error)
 }
 
 type projectServiceClient struct {
@@ -403,156 +338,6 @@ func (c *projectServiceClient) EditorTunnel(ctx context.Context, opts ...grpc.Ca
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_EditorTunnelClient = grpc.BidiStreamingClient[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]
 
-func (c *projectServiceClient) Devcontainer(ctx context.Context, in *DevcontainerRequest, opts ...grpc.CallOption) (*DevcontainerReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DevcontainerReply)
-	err := c.cc.Invoke(ctx, ProjectService_Devcontainer_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) RenderDevcontainer(ctx context.Context, in *RenderDevcontainerRequest, opts ...grpc.CallOption) (*RenderDevcontainerReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RenderDevcontainerReply)
-	err := c.cc.Invoke(ctx, ProjectService_RenderDevcontainer_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) SaveEngine(ctx context.Context, in *SaveEngineRequest, opts ...grpc.CallOption) (*EngineReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EngineReply)
-	err := c.cc.Invoke(ctx, ProjectService_SaveEngine_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) StartEngine(ctx context.Context, in *StartEngineRequest, opts ...grpc.CallOption) (*EngineReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EngineReply)
-	err := c.cc.Invoke(ctx, ProjectService_StartEngine_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) StopEngine(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*EngineReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EngineReply)
-	err := c.cc.Invoke(ctx, ProjectService_StopEngine_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) PruneEngine(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*EngineReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EngineReply)
-	err := c.cc.Invoke(ctx, ProjectService_PruneEngine_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) EngineStatus(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*EngineReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EngineReply)
-	err := c.cc.Invoke(ctx, ProjectService_EngineStatus_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) GetEngineInfo(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*EngineInfo, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EngineInfo)
-	err := c.cc.Invoke(ctx, ProjectService_GetEngineInfo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) GetInstallationVersion(ctx context.Context, in *EngineRequest, opts ...grpc.CallOption) (*InstallationVersion, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InstallationVersion)
-	err := c.cc.Invoke(ctx, ProjectService_GetInstallationVersion_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) Diagnostics(ctx context.Context, in *DiagnosticsRequest, opts ...grpc.CallOption) (*DiagnosticsReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DiagnosticsReply)
-	err := c.cc.Invoke(ctx, ProjectService_Diagnostics_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) CaptureDiagnostics(ctx context.Context, in *CaptureDiagnosticsRequest, opts ...grpc.CallOption) (*DiagnosticsReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DiagnosticsReply)
-	err := c.cc.Invoke(ctx, ProjectService_CaptureDiagnostics_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) AuxConfig(ctx context.Context, in *AuxConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AuxConfigReply)
-	err := c.cc.Invoke(ctx, ProjectService_AuxConfig_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) AuxSetConfig(ctx context.Context, in *AuxSetConfigRequest, opts ...grpc.CallOption) (*AuxConfigReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AuxConfigReply)
-	err := c.cc.Invoke(ctx, ProjectService_AuxSetConfig_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) GetHistoryPolicy(ctx context.Context, in *HistoryPolicyRequest, opts ...grpc.CallOption) (*HistoryPolicy, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HistoryPolicy)
-	err := c.cc.Invoke(ctx, ProjectService_GetHistoryPolicy_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) SetHistoryPolicy(ctx context.Context, in *HistoryPolicy, opts ...grpc.CallOption) (*HistoryPolicy, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HistoryPolicy)
-	err := c.cc.Invoke(ctx, ProjectService_SetHistoryPolicy_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) PutSecretFile(ctx context.Context, in *PutSecretFileRequest, opts ...grpc.CallOption) (*SecretFileReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SecretFileReply)
@@ -703,16 +488,6 @@ func (c *projectServiceClient) McpSessions(ctx context.Context, in *McpSessionsR
 	return out, nil
 }
 
-func (c *projectServiceClient) FileMappings(ctx context.Context, in *FileMappingsRequest, opts ...grpc.CallOption) (*FileMappingsReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FileMappingsReply)
-	err := c.cc.Invoke(ctx, ProjectService_FileMappings_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) Start(ctx context.Context, in *ProjectStartRequest, opts ...grpc.CallOption) (*Project, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Project)
@@ -737,16 +512,6 @@ func (c *projectServiceClient) Remove(ctx context.Context, in *ProjectControl, o
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Project)
 	err := c.cc.Invoke(ctx, ProjectService_Remove_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) InspectForeign(ctx context.Context, in *InspectForeignRequest, opts ...grpc.CallOption) (*InspectForeignResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InspectForeignResponse)
-	err := c.cc.Invoke(ctx, ProjectService_InspectForeign_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -799,51 +564,6 @@ type ProjectServiceServer interface {
 	Editor(context.Context, *ProjectEditorRequest) (*ProjectEditorReply, error)
 	// Private gateway transport to the editor's loopback listener; not web RPC.
 	EditorTunnel(grpc.BidiStreamingServer[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]) error
-	Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error)
-	// What one project actually runs under: the configuration cxz handed the
-	// devcontainer CLI, every Compose file in merge order, and the merge itself,
-	// read back from what provisioning wrote. Devcontainer, above, saves the
-	// settings; this reads what a project got from them, which is why the two
-	// are not one call.
-	RenderDevcontainer(context.Context, *RenderDevcontainerRequest) (*RenderDevcontainerReply, error)
-	// The shared Docker engine. Five operations, each named, where one message
-	// with an action string used to carry all of them -- and a spec field that
-	// only two of them could mean anything by. The enum that is left is on the
-	// thing that has a closed set of values, which is the engine's mode.
-	SaveEngine(context.Context, *SaveEngineRequest) (*EngineReply, error)
-	StartEngine(context.Context, *StartEngineRequest) (*EngineReply, error)
-	StopEngine(context.Context, *EngineRequest) (*EngineReply, error)
-	PruneEngine(context.Context, *EngineRequest) (*EngineReply, error)
-	EngineStatus(context.Context, *EngineRequest) (*EngineReply, error)
-	GetEngineInfo(context.Context, *EngineRequest) (*EngineInfo, error)
-	// What this installation of cxz is: its build, its update channel and
-	// whether it is pinned. It travelled inside the engine's info reply, which is
-	// how a question about Docker came to answer a question about cxz.
-	GetInstallationVersion(context.Context, *EngineRequest) (*InstallationVersion, error)
-	// What the manager has been doing: per-method aggregates, and the calls it
-	// kept -- which method, which status, how long, and how much of that was
-	// spent waiting rather than working. Metadata only: no request or reply ever
-	// enters it, because the answer is read over the plaintext surface.
-	//
-	// It was only ever on the manager's stdout, so every question about a stalled
-	// installation needed `docker logs` on the host. See cxz#211.
-	Diagnostics(context.Context, *DiagnosticsRequest) (*DiagnosticsReply, error)
-	// Keep every call for a while, not only the failed and the slow ones. The
-	// window expires on its own: a verbose setting that has to be turned off is
-	// one that is left on.
-	CaptureDiagnostics(context.Context, *CaptureDiagnosticsRequest) (*DiagnosticsReply, error)
-	// Aux is a model task done beside a session: run once, with the context cxz
-	// assembles, never accumulating into a conversation. These two are the part
-	// that belongs to the installation rather than to one session -- which
-	// account and model each kind runs on. See docs/plans/aux-api.md. What a
-	// single account offers is `AccountService.Models` and `LoginInfo`: those
-	// name an account, so they are that service's.
-	AuxConfig(context.Context, *AuxConfigRequest) (*AuxConfigReply, error)
-	AuxSetConfig(context.Context, *AuxSetConfigRequest) (*AuxConfigReply, error)
-	// The history budgets of this installation. They bound cxz's own records
-	// only; provider context is not affected. See docs/history.md.
-	GetHistoryPolicy(context.Context, *HistoryPolicyRequest) (*HistoryPolicy, error)
-	SetHistoryPolicy(context.Context, *HistoryPolicy) (*HistoryPolicy, error)
 	// A secret file is written by the workspace helper inside a project
 	// container, for a client that cannot reach the engine itself. Two calls
 	// rather than one with a verb: only one of them carries a secret, and that
@@ -879,7 +599,6 @@ type ProjectServiceServer interface {
 	// a change is still waiting for a restart. Separate from reading the
 	// registrations, because a settings list should not stall on a container.
 	McpSessions(context.Context, *McpSessionsRequest) (*McpSessionsReply, error)
-	FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error)
 	// A project's container, in the three words a person uses about it. Start
 	// makes the project run: it builds and creates the container when there is
 	// none and starts the one there is otherwise, because "make it run" is one
@@ -895,8 +614,6 @@ type ProjectServiceServer interface {
 	Start(context.Context, *ProjectStartRequest) (*Project, error)
 	Stop(context.Context, *ProjectControl) (*Project, error)
 	Remove(context.Context, *ProjectControl) (*Project, error)
-	// Foreign inventory is not part of the registered Project resource list.
-	InspectForeign(context.Context, *InspectForeignRequest) (*InspectForeignResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -949,51 +666,6 @@ func (UnimplementedProjectServiceServer) Editor(context.Context, *ProjectEditorR
 func (UnimplementedProjectServiceServer) EditorTunnel(grpc.BidiStreamingServer[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]) error {
 	return status.Error(codes.Unimplemented, "method EditorTunnel not implemented")
 }
-func (UnimplementedProjectServiceServer) Devcontainer(context.Context, *DevcontainerRequest) (*DevcontainerReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method Devcontainer not implemented")
-}
-func (UnimplementedProjectServiceServer) RenderDevcontainer(context.Context, *RenderDevcontainerRequest) (*RenderDevcontainerReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method RenderDevcontainer not implemented")
-}
-func (UnimplementedProjectServiceServer) SaveEngine(context.Context, *SaveEngineRequest) (*EngineReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method SaveEngine not implemented")
-}
-func (UnimplementedProjectServiceServer) StartEngine(context.Context, *StartEngineRequest) (*EngineReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method StartEngine not implemented")
-}
-func (UnimplementedProjectServiceServer) StopEngine(context.Context, *EngineRequest) (*EngineReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method StopEngine not implemented")
-}
-func (UnimplementedProjectServiceServer) PruneEngine(context.Context, *EngineRequest) (*EngineReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method PruneEngine not implemented")
-}
-func (UnimplementedProjectServiceServer) EngineStatus(context.Context, *EngineRequest) (*EngineReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method EngineStatus not implemented")
-}
-func (UnimplementedProjectServiceServer) GetEngineInfo(context.Context, *EngineRequest) (*EngineInfo, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetEngineInfo not implemented")
-}
-func (UnimplementedProjectServiceServer) GetInstallationVersion(context.Context, *EngineRequest) (*InstallationVersion, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetInstallationVersion not implemented")
-}
-func (UnimplementedProjectServiceServer) Diagnostics(context.Context, *DiagnosticsRequest) (*DiagnosticsReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method Diagnostics not implemented")
-}
-func (UnimplementedProjectServiceServer) CaptureDiagnostics(context.Context, *CaptureDiagnosticsRequest) (*DiagnosticsReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method CaptureDiagnostics not implemented")
-}
-func (UnimplementedProjectServiceServer) AuxConfig(context.Context, *AuxConfigRequest) (*AuxConfigReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method AuxConfig not implemented")
-}
-func (UnimplementedProjectServiceServer) AuxSetConfig(context.Context, *AuxSetConfigRequest) (*AuxConfigReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method AuxSetConfig not implemented")
-}
-func (UnimplementedProjectServiceServer) GetHistoryPolicy(context.Context, *HistoryPolicyRequest) (*HistoryPolicy, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetHistoryPolicy not implemented")
-}
-func (UnimplementedProjectServiceServer) SetHistoryPolicy(context.Context, *HistoryPolicy) (*HistoryPolicy, error) {
-	return nil, status.Error(codes.Unimplemented, "method SetHistoryPolicy not implemented")
-}
 func (UnimplementedProjectServiceServer) PutSecretFile(context.Context, *PutSecretFileRequest) (*SecretFileReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutSecretFile not implemented")
 }
@@ -1039,9 +711,6 @@ func (UnimplementedProjectServiceServer) ClearProjectMcpServer(context.Context, 
 func (UnimplementedProjectServiceServer) McpSessions(context.Context, *McpSessionsRequest) (*McpSessionsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method McpSessions not implemented")
 }
-func (UnimplementedProjectServiceServer) FileMappings(context.Context, *FileMappingsRequest) (*FileMappingsReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method FileMappings not implemented")
-}
 func (UnimplementedProjectServiceServer) Start(context.Context, *ProjectStartRequest) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method Start not implemented")
 }
@@ -1050,9 +719,6 @@ func (UnimplementedProjectServiceServer) Stop(context.Context, *ProjectControl) 
 }
 func (UnimplementedProjectServiceServer) Remove(context.Context, *ProjectControl) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method Remove not implemented")
-}
-func (UnimplementedProjectServiceServer) InspectForeign(context.Context, *InspectForeignRequest) (*InspectForeignResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method InspectForeign not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 func (UnimplementedProjectServiceServer) testEmbeddedByValue()                        {}
@@ -1261,276 +927,6 @@ func _ProjectService_EditorTunnel_Handler(srv interface{}, stream grpc.ServerStr
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProjectService_EditorTunnelServer = grpc.BidiStreamingServer[ProjectEditorTunnelRequest, ProjectEditorTunnelReply]
-
-func _ProjectService_Devcontainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DevcontainerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).Devcontainer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_Devcontainer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).Devcontainer(ctx, req.(*DevcontainerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_RenderDevcontainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RenderDevcontainerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).RenderDevcontainer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_RenderDevcontainer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).RenderDevcontainer(ctx, req.(*RenderDevcontainerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_SaveEngine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SaveEngineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).SaveEngine(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_SaveEngine_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).SaveEngine(ctx, req.(*SaveEngineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_StartEngine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StartEngineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).StartEngine(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_StartEngine_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).StartEngine(ctx, req.(*StartEngineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_StopEngine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EngineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).StopEngine(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_StopEngine_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).StopEngine(ctx, req.(*EngineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_PruneEngine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EngineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).PruneEngine(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_PruneEngine_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).PruneEngine(ctx, req.(*EngineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_EngineStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EngineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).EngineStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_EngineStatus_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).EngineStatus(ctx, req.(*EngineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_GetEngineInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EngineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetEngineInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_GetEngineInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetEngineInfo(ctx, req.(*EngineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_GetInstallationVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EngineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetInstallationVersion(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_GetInstallationVersion_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetInstallationVersion(ctx, req.(*EngineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_Diagnostics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DiagnosticsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).Diagnostics(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_Diagnostics_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).Diagnostics(ctx, req.(*DiagnosticsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_CaptureDiagnostics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CaptureDiagnosticsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).CaptureDiagnostics(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_CaptureDiagnostics_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).CaptureDiagnostics(ctx, req.(*CaptureDiagnosticsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_AuxConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuxConfigRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).AuxConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_AuxConfig_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).AuxConfig(ctx, req.(*AuxConfigRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_AuxSetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuxSetConfigRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).AuxSetConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_AuxSetConfig_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).AuxSetConfig(ctx, req.(*AuxSetConfigRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_GetHistoryPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HistoryPolicyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetHistoryPolicy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_GetHistoryPolicy_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetHistoryPolicy(ctx, req.(*HistoryPolicyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_SetHistoryPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HistoryPolicy)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).SetHistoryPolicy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_SetHistoryPolicy_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).SetHistoryPolicy(ctx, req.(*HistoryPolicy))
-	}
-	return interceptor(ctx, in, info, handler)
-}
 
 func _ProjectService_PutSecretFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PutSecretFileRequest)
@@ -1802,24 +1198,6 @@ func _ProjectService_McpSessions_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_FileMappings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FileMappingsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).FileMappings(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_FileMappings_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).FileMappings(ctx, req.(*FileMappingsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ProjectStartRequest)
 	if err := dec(in); err != nil {
@@ -1874,24 +1252,6 @@ func _ProjectService_Remove_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_InspectForeign_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InspectForeignRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).InspectForeign(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_InspectForeign_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).InspectForeign(ctx, req.(*InspectForeignRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1926,66 +1286,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Editor",
 			Handler:    _ProjectService_Editor_Handler,
-		},
-		{
-			MethodName: "Devcontainer",
-			Handler:    _ProjectService_Devcontainer_Handler,
-		},
-		{
-			MethodName: "RenderDevcontainer",
-			Handler:    _ProjectService_RenderDevcontainer_Handler,
-		},
-		{
-			MethodName: "SaveEngine",
-			Handler:    _ProjectService_SaveEngine_Handler,
-		},
-		{
-			MethodName: "StartEngine",
-			Handler:    _ProjectService_StartEngine_Handler,
-		},
-		{
-			MethodName: "StopEngine",
-			Handler:    _ProjectService_StopEngine_Handler,
-		},
-		{
-			MethodName: "PruneEngine",
-			Handler:    _ProjectService_PruneEngine_Handler,
-		},
-		{
-			MethodName: "EngineStatus",
-			Handler:    _ProjectService_EngineStatus_Handler,
-		},
-		{
-			MethodName: "GetEngineInfo",
-			Handler:    _ProjectService_GetEngineInfo_Handler,
-		},
-		{
-			MethodName: "GetInstallationVersion",
-			Handler:    _ProjectService_GetInstallationVersion_Handler,
-		},
-		{
-			MethodName: "Diagnostics",
-			Handler:    _ProjectService_Diagnostics_Handler,
-		},
-		{
-			MethodName: "CaptureDiagnostics",
-			Handler:    _ProjectService_CaptureDiagnostics_Handler,
-		},
-		{
-			MethodName: "AuxConfig",
-			Handler:    _ProjectService_AuxConfig_Handler,
-		},
-		{
-			MethodName: "AuxSetConfig",
-			Handler:    _ProjectService_AuxSetConfig_Handler,
-		},
-		{
-			MethodName: "GetHistoryPolicy",
-			Handler:    _ProjectService_GetHistoryPolicy_Handler,
-		},
-		{
-			MethodName: "SetHistoryPolicy",
-			Handler:    _ProjectService_SetHistoryPolicy_Handler,
 		},
 		{
 			MethodName: "PutSecretFile",
@@ -2048,10 +1348,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ProjectService_McpSessions_Handler,
 		},
 		{
-			MethodName: "FileMappings",
-			Handler:    _ProjectService_FileMappings_Handler,
-		},
-		{
 			MethodName: "Start",
 			Handler:    _ProjectService_Start_Handler,
 		},
@@ -2062,10 +1358,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Remove",
 			Handler:    _ProjectService_Remove_Handler,
-		},
-		{
-			MethodName: "InspectForeign",
-			Handler:    _ProjectService_InspectForeign_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

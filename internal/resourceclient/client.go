@@ -13,15 +13,22 @@ import (
 )
 
 type Client struct {
-	projects resource.ProjectServiceClient
-	sessions resource.SessionServiceClient
-	Accounts resource.AccountServiceClient
-	Bindings resource.AuthBindingServiceClient
-	uploads  *attachmenthttp.Client
+	projects     resource.ProjectServiceClient
+	sessions     resource.SessionServiceClient
+	installation resource.InstallationServiceClient
+	Accounts     resource.AccountServiceClient
+	Bindings     resource.AuthBindingServiceClient
+	uploads      *attachmenthttp.Client
 }
 
 func New(conn grpc.ClientConnInterface, uploads ...*attachmenthttp.Client) *Client {
-	c := &Client{projects: resource.NewProjectServiceClient(conn), sessions: resource.NewSessionServiceClient(conn), Accounts: resource.NewAccountServiceClient(conn), Bindings: resource.NewAuthBindingServiceClient(conn)}
+	c := &Client{
+		projects:     resource.NewProjectServiceClient(conn),
+		sessions:     resource.NewSessionServiceClient(conn),
+		installation: resource.NewInstallationServiceClient(conn),
+		Accounts:     resource.NewAccountServiceClient(conn),
+		Bindings:     resource.NewAuthBindingServiceClient(conn),
+	}
 	if len(uploads) > 0 {
 		c.uploads = uploads[0]
 	}
@@ -259,7 +266,7 @@ func (c *Client) Logs(ctx context.Context, r *api.LogsRequest, opts ...grpc.Call
 }
 
 func (c *Client) FileMappings(ctx context.Context, r *api.FileMappingsInput, opts ...grpc.CallOption) (*api.Receipt, error) {
-	out, err := c.projects.FileMappings(ctx, resource.FileMappingsRequest_builder{Bundle: r.Bundle}.Build(), opts...)
+	out, err := c.installation.SaveSharedFiles(ctx, resource.SaveSharedFilesRequest_builder{Bundle: r.Bundle}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

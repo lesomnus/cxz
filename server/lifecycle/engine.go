@@ -14,7 +14,7 @@ import (
 // because it has two values; the operation is a method because it is an
 // operation.
 
-func (s ProjectServer) SaveEngine(ctx context.Context, r *resource.SaveEngineRequest) (*resource.EngineReply, error) {
+func (s InstallationServer) SaveEngine(ctx context.Context, r *resource.SaveEngineRequest) (*resource.EngineReply, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func (s ProjectServer) SaveEngine(ctx context.Context, r *resource.SaveEngineReq
 	return engineReply(s.shared.runtime.SaveEngine(ctx, &api.SaveEngineInput{Spec: spec}))
 }
 
-func (s ProjectServer) StartEngine(ctx context.Context, r *resource.StartEngineRequest) (*resource.EngineReply, error) {
+func (s InstallationServer) StartEngine(ctx context.Context, r *resource.StartEngineRequest) (*resource.EngineReply, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -36,28 +36,28 @@ func (s ProjectServer) StartEngine(ctx context.Context, r *resource.StartEngineR
 	return engineReply(s.shared.runtime.StartEngine(ctx, &api.StartEngineInput{Spec: spec}))
 }
 
-func (s ProjectServer) StopEngine(ctx context.Context, _ *resource.EngineRequest) (*resource.EngineReply, error) {
+func (s InstallationServer) StopEngine(ctx context.Context, _ *resource.EngineRequest) (*resource.EngineReply, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
 	return engineReply(s.shared.runtime.StopEngine(ctx, &api.Empty{}))
 }
 
-func (s ProjectServer) PruneEngine(ctx context.Context, _ *resource.EngineRequest) (*resource.EngineReply, error) {
+func (s InstallationServer) PruneEngine(ctx context.Context, _ *resource.EngineRequest) (*resource.EngineReply, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
 	return engineReply(s.shared.runtime.PruneEngine(ctx, &api.Empty{}))
 }
 
-func (s ProjectServer) EngineStatus(ctx context.Context, _ *resource.EngineRequest) (*resource.EngineReply, error) {
+func (s InstallationServer) EngineStatus(ctx context.Context, _ *resource.EngineRequest) (*resource.EngineReply, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
 	return engineReply(s.shared.runtime.EngineStatus(ctx, &api.Empty{}))
 }
 
-func (s ProjectServer) GetEngineInfo(ctx context.Context, _ *resource.EngineRequest) (*resource.EngineInfo, error) {
+func (s InstallationServer) Engine(ctx context.Context, _ *resource.EngineRequest) (*resource.EngineInfo, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (s ProjectServer) GetEngineInfo(ctx context.Context, _ *resource.EngineRequ
 	}.Build(), nil
 }
 
-func (s ProjectServer) GetInstallationVersion(ctx context.Context, _ *resource.EngineRequest) (*resource.InstallationVersion, error) {
+func (s InstallationServer) Version(ctx context.Context, _ *resource.EngineRequest) (*resource.InstallationVersion, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}

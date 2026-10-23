@@ -14,7 +14,7 @@ import (
 // The manager's own RPC log, which used to be reachable only as container
 // stdout on the installation host. Metadata only: this answer crosses the
 // plaintext surface, so no request or reply is in it. See cxz#211.
-func (s ProjectServer) Diagnostics(_ context.Context, r *resource.DiagnosticsRequest) (*resource.DiagnosticsReply, error) {
+func (s InstallationServer) Diagnostics(_ context.Context, r *resource.DiagnosticsRequest) (*resource.DiagnosticsReply, error) {
 	o := s.shared.observe
 	if o == nil {
 		return nil, status.Error(codes.Unavailable, "diagnostics are not collected by this server")
@@ -35,7 +35,7 @@ func (s ProjectServer) Diagnostics(_ context.Context, r *resource.DiagnosticsReq
 
 // A capture window expires on its own, so an installation cannot be left
 // writing every call forever.
-func (s ProjectServer) CaptureDiagnostics(_ context.Context, r *resource.CaptureDiagnosticsRequest) (*resource.DiagnosticsReply, error) {
+func (s InstallationServer) Capture(_ context.Context, r *resource.CaptureRequest) (*resource.DiagnosticsReply, error) {
 	o := s.shared.observe
 	if o == nil {
 		return nil, status.Error(codes.Unavailable, "diagnostics are not collected by this server")

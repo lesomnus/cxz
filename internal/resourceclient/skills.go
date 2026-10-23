@@ -75,7 +75,7 @@ func (c *Client) SyncSkills(context.Context, *api.SyncSkillsInput, ...grpc.CallO
 }
 
 func (c *Client) RenderDevcontainer(ctx context.Context, r *api.RenderDevcontainerInput, opts ...grpc.CallOption) (*api.RenderDevcontainerReply, error) {
-	v, err := c.projects.RenderDevcontainer(ctx, resource.RenderDevcontainerRequest_builder{
+	v, err := c.installation.RenderDevcontainer(ctx, resource.RenderDevcontainerRequest_builder{
 		Handle: &r.Handle,
 	}.Build(), opts...)
 	if err != nil {

@@ -2,7 +2,7 @@ import { clone, create } from "@bufbuild/protobuf";
 import { useState } from "react";
 import { Button } from "@lesomnus/nox";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { AuxKind } from "#gen/cxz/project_svc_pb";
+import { AuxKind } from "#gen/cxz/installation_pb";
 import { AuxStateSchema, AuxSchema } from "#gen/cxz/session_svc_pb";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";

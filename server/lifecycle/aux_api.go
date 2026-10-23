@@ -146,7 +146,7 @@ func (s SessionServer) auxState(ctx context.Context, ref *resource.SessionRef, o
 	return reply.Build(), nil
 }
 
-func (s ProjectServer) AuxConfig(ctx context.Context, r *resource.AuxConfigRequest) (*resource.AuxConfigReply, error) {
+func (s InstallationServer) Agents(ctx context.Context, r *resource.AgentsRequest) (*resource.AgentProfiles, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (s ProjectServer) AuxConfig(ctx context.Context, r *resource.AuxConfigReque
 	return auxConfigReply(out), nil
 }
 
-func (s ProjectServer) AuxSetConfig(ctx context.Context, r *resource.AuxSetConfigRequest) (*resource.AuxConfigReply, error) {
+func (s InstallationServer) SaveAgents(ctx context.Context, r *resource.SaveAgentsRequest) (*resource.AgentProfiles, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (s ProjectServer) AuxSetConfig(ctx context.Context, r *resource.AuxSetConfi
 // auxAccount reads what an account authenticates as off the registered account
 // rather than taking a caller's word for it, which is what keeps a request from
 // naming one account and authenticating as another.
-func (s ProjectServer) auxAccount(ctx context.Context, account string) (string, string, error) {
+func (s InstallationServer) auxAccount(ctx context.Context, account string) (string, string, error) {
 	if account == "" {
 		return "", "", status.Error(codes.InvalidArgument, "select a registered account")
 	}
@@ -196,7 +196,7 @@ func (s ProjectServer) auxAccount(ctx context.Context, account string) (string, 
 
 // auxProfile fills in what an account authenticates as, for the same reason
 // auxAccount does.
-func (s ProjectServer) auxProfile(ctx context.Context, p *resource.AuxProfile, required bool) (*api.AuxProfile, error) {
+func (s InstallationServer) auxProfile(ctx context.Context, p *resource.AgentProfile, required bool) (*api.AuxProfile, error) {
 	kind := auxkind.Name(p.GetKind())
 	if kind == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "unknown aux kind %v", p.GetKind())
@@ -219,8 +219,8 @@ func (s ProjectServer) auxProfile(ctx context.Context, p *resource.AuxProfile, r
 	return out, nil
 }
 
-func auxConfigReply(out *api.AuxConfigReply) *resource.AuxConfigReply {
-	reply := resource.AuxConfigReply_builder{
+func auxConfigReply(out *api.AuxConfigReply) *resource.AgentProfiles {
+	reply := resource.AgentProfiles_builder{
 		Revision: &out.Revision, Message: &out.Message, Owner: &out.Owner,
 	}
 	for _, p := range out.Profiles {
@@ -229,12 +229,12 @@ func auxConfigReply(out *api.AuxConfigReply) *resource.AuxConfigReply {
 	return reply.Build()
 }
 
-func auxProfileOf(p *api.AuxProfile) *resource.AuxProfile {
+func auxProfileOf(p *api.AuxProfile) *resource.AgentProfile {
 	if p == nil {
 		return nil
 	}
 	kind := auxkind.Of(p.Kind)
-	return resource.AuxProfile_builder{
+	return resource.AgentProfile_builder{
 		Kind: &kind, Enabled: &p.Enabled, Account: &p.Account, Agent: &p.Agent,
 		Backend: &p.Backend, Model: &p.Model, Effort: &p.Effort, Since: auxSince(p.SinceMs),
 	}.Build()

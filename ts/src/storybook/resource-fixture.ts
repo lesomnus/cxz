@@ -5,7 +5,7 @@ import {
   AccountService,
   AccountAuthStatus_State as AuthState,
 } from "#gen/cxz/account_svc_pb";
-import { ProjectService, AuxKind } from "#gen/cxz/project_svc_pb";
+import { AuxKind, InstallationService } from "#gen/cxz/installation_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 
@@ -114,9 +114,9 @@ export function resourceFixture() {
         ],
       }),
     });
-    router.service(ProjectService, {
-      auxConfig: () => ({ profiles: config }),
-      auxSetConfig: (request) => {
+    router.service(InstallationService, {
+      agents: () => ({ profiles: config }),
+      saveAgents: (request) => {
         config.splice(
           0,
           config.length,

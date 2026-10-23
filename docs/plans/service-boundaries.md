@@ -363,6 +363,19 @@ message CaptureRequest          { int32 seconds = 1; }
 `Patch`인 척하지 않는 편이 낫다. 엔티티가 아니므로 `Patch`의 필드 마스크 의미를
 공짜로 얻지 못하고, 손으로 흉내 낸 `Patch`는 생성된 것과 이름만 같아서 더 나쁘다.
 
+**구현에서 통합 `Get`은 넣지 않았다.** 위 표의 "생성된 `Get`의 필드들"이 그
+계획이었는데, `AuxConfigReply`의 `revision`과 `message`가 호출마다 달라지는 값이다
+— 설치본의 상태가 아니라 그 호출이 한 일에 대한 말이다. 한 `Installation`
+메시지에 접으면 읽는 쪽이 그 둘을 설치본 상태로 오해하게 되고, 읽기를 하나로
+합치는 것만으로 호출자 전부가 바뀐다. 그래서 읽기는 각자의 이름으로 남겼다:
+`Engine`(엔진에 묻는다, 느릴 수 있다), `Version`, `Retention`, `Agents`. 쓰기만
+`Save*`로 모았다.
+
+**presence는 EXPLICIT이다.** 처음에 새 파일에 `features.field_presence = IMPLICIT`를
+넣었는데, 이 메시지들은 병합된 project 계약에서 왔고 그쪽에는 그 옵션이 없다 — 즉
+EXPLICIT이었다. IMPLICIT으로 옮기면 보존 예산 0과 "아무도 설정하지 않음"이 같은
+값이 된다. 파일 머리에 그 이유를 적어 두었다.
+
 `MarkHistoryTrimmable`은 여기 없다 — 아래의 결정이 먼저다.
 
 ### 6.5 실행 중인 instance: `McpConnectionService`

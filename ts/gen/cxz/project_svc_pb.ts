@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/project_svc.g.proto.
  */
 export const file_cxz_project_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChdjeHovcHJvamVjdF9zdmMuZy5wcm90bxIDY3h6IoECChFQcm9qZWN0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISGAoJd29ya3NwYWNlGAggASgJQgWqAQIIAhIVCgZjb25maWcYCSABKAlCBaoBAggCEhkKCnJ1bnRpbWVfaWQYCiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMiVQoRUHJvamVjdEdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSIgoGc2VsZWN0GAIgASgLMhIuY3h6LlByb2plY3RTZWxlY3QiXQoKUHJvamVjdFJlZhIMCgJpZBgBIAEoDEgAEg8KBWFsaWFzGAQgASgJSAASEwoJd29ya3NwYWNlGAggASgJSAASFAoKcnVudGltZV9pZBgKIAEoCUgAQgUKA2tleSLPAQoNUHJvamVjdFNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEhEKCXdvcmtzcGFjZRgIIAEoCBIOCgZjb25maWcYCSABKAgSEgoKcnVudGltZV9pZBgKIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEg4KBnN0YXR1cxgQIAEoCCL1AQoTUHJvamVjdFBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSDgoGY29uZmlnGBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIEiIKBnN0YXR1cxggIAEoCzISLmN4ei5Qcm9qZWN0U3RhdHVzEhMKC3N0YXR1c19udWxsGCEgASgIIlAKE1Byb2plY3RBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCImChRQcm9qZWN0RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZAoSUHJvamVjdExpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5jeHouUHJvamVjdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiRwoTUHJvamVjdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLmN4ei5Qcm9qZWN0EhMKBG5leHQYAiABKAlCBaoBAggCIi0KDVByb2plY3RGaWx0ZXISHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYiWAoTUHJvamVjdFdhdGNoUmVxdWVzdBIjCgdmaWx0ZXJzGAEgAygLMhIuY3h6LlByb2plY3RGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiWAoUUHJvamVjdFdhdGNoUmVzcG9uc2USJAoFaXRlbXMYASADKAsyFS5jeHouUHJvamVjdFdhdGNoSXRlbRIaChFzbmFwc2hvdF9jb21wbGV0ZRjoByABKAgiUgoQUHJvamVjdFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLmN4ei5Qcm9qZWN0EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiZAoWUHJvamVjdFRlcm1pbmFsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIPCgdjb2x1bW5zGAIgASgNEgwKBHJvd3MYAyABKA0SDQoFaW5wdXQYBCABKAwiVAoUUHJvamVjdFRlcm1pbmFsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMEg4KBmV4aXRlZBgDIAEoCBINCgVlcnJvchgEIAEoCSJ5ChNQcm9qZWN0TG9naW5SZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiAKB2FjY291bnQYAiABKAsyDy5jeHouQWNjb3VudFJlZhITCgtzZXNzaW9uX2tleRgDIAEoCRINCgVpbnB1dBgEIAEoDCIkChJQcm9qZWN0TG9naW5PdXRwdXQSDgoGb3V0cHV0GAEgASgMIkEKE1Byb2plY3RQYXRoc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSJOChFQcm9qZWN0UGF0aHNSZXBseRImCgdlbnRyaWVzGAEgAygLMhUuY3h6LlByb2plY3RQYXRoRW50cnkSEQoJdHJ1bmNhdGVkGAIgASgIInsKEFByb2plY3RQYXRoRW50cnkSDAoEbmFtZRgBIAEoCRIRCglkaXJlY3RvcnkYAiABKAgSEgoKZXhlY3V0YWJsZRgDIAEoCBIPCgdzeW1saW5rGAQgASgIEhMKC2xpbmtfdGFyZ2V0GAUgASgJEgwKBGtpbmQYBiABKAkiRAoWUHJvamVjdERvd25sb2FkUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIMCgRwYXRoGAIgASgJIjgKFFByb2plY3REb3dubG9hZFJlcGx5EgwKBGRhdGEYASABKAwSEgoKdG90YWxfc2l6ZRgCIAEoAyI0ChRQcm9qZWN0RWRpdG9yUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZiJUChJQcm9qZWN0RWRpdG9yUmVwbHkSEQoJd29ya3NwYWNlGAEgASgJEhgKEGNvbm5lY3Rpb25fdG9rZW4YAiABKAkSEQoJc2ltdWxhdGVkGAMgASgIIkkKGlByb2plY3RFZGl0b3JUdW5uZWxSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEg0KBWlucHV0GAIgASgMIjkKGFByb2plY3RFZGl0b3JUdW5uZWxSZXBseRINCgVyZWFkeRgBIAEoCBIOCgZvdXRwdXQYAiABKAwiIwoTRGV2Y29udGFpbmVyUmVxdWVzdBIMCgRzcGVjGAEgASgMIiMKEURldmNvbnRhaW5lclJlcGx5Eg4KBnN0YXR1cxgBIAEoCSIrChlSZW5kZXJEZXZjb250YWluZXJSZXF1ZXN0Eg4KBmhhbmRsZRgBIAEoCSJ7ChdSZW5kZXJEZXZjb250YWluZXJSZXBseRIPCgdwcm9qZWN0GAEgASgJEgwKBG5hbWUYAiABKAkSEQoJd29ya3NwYWNlGAMgASgJEgwKBG5vdGUYBCABKAkSIAoFZmlsZXMYBSADKAsyES5jeHouUmVuZGVyZWRGaWxlIkgKDFJlbmRlcmVkRmlsZRIMCgRuYW1lGAEgASgJEg4KBnNvdXJjZRgCIAEoCRIMCgRyb2xlGAMgASgJEgwKBGRhdGEYBCABKAwiMgoRU2F2ZUVuZ2luZVJlcXVlc3QSHQoEc3BlYxgBIAEoCzIPLmN4ei5FbmdpbmVTcGVjIh0KC0VuZ2luZVJlcGx5Eg4KBnN0YXR1cxgBIAEoCSJMCgpFbmdpbmVTcGVjEh0KBG1vZGUYASABKA4yDy5jeHouRW5naW5lTW9kZRINCgVpbWFnZRgCIAEoCRIQCghvdmVycmlkZRgDIAEoDCIzChJTdGFydEVuZ2luZVJlcXVlc3QSHQoEc3BlYxgBIAEoCzIPLmN4ei5FbmdpbmVTcGVjIg8KDUVuZ2luZVJlcXVlc3QixAEKCkVuZ2luZUluZm8SHQoEbW9kZRgBIAEoDjIPLmN4ei5FbmdpbmVNb2RlEg0KBXN0YXRlGAIgASgJEg4KBmhlYWx0aBgDIAEoCRINCgVpbWFnZRgEIAEoCRIYChBjb25maWd1cmVkX2ltYWdlGAUgASgJEhAKCGVuZHBvaW50GAYgASgJEhMKC2J1aWxkX2NhY2hlGAcgASgJEhMKC3JlY2xhaW1hYmxlGAggASgJEhMKC3VzYWdlX2Vycm9yGAkgASgJImUKE0luc3RhbGxhdGlvblZlcnNpb24SDwoHdmVyc2lvbhgBIAEoCRIQCghyZXZpc2lvbhgCIAEoCRIPCgdjaGFubmVsGAMgASgJEgsKA3BpbhgEIAEoCRINCgVlcnJvchgFIAEoCSJyChJEaWFnbm9zdGljc1JlcXVlc3QSDgoGbWV0aG9kGAEgASgJEikKBXNpbmNlGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBINCgVsaW1pdBgDIAEoBRISCgpzdGF0c19vbmx5GAQgASgIIpMBChBEaWFnbm9zdGljc1JlcGx5EhsKBXN0YXRzGAEgAygLMgwuY3h6LlJwY1N0YXQSHwoHcmVjb3JkcxgCIAMoCzIOLmN4ei5ScGNSZWNvcmQSMwoPY2FwdHVyaW5nX3VudGlsGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIMCgRwYXRoGAQgASgJInsKB1JwY1N0YXQSDgoGbWV0aG9kGAEgASgJEg0KBWNhbGxzGAIgASgDEg4KBmZhaWxlZBgDIAEoAxIRCglpbl9mbGlnaHQYBCABKAMSDgoGcDUwX21zGAUgASgDEg4KBnA5OV9tcxgGIAEoAxIOCgZtYXhfbXMYByABKAMimwEKCVJwY1JlY29yZBImCgJhdBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDgoGbWV0aG9kGAIgASgJEgwKBGNvZGUYAyABKAkSEgoKZWxhcHNlZF9tcxgEIAEoAxIRCgl3YWl0ZWRfbXMYBSABKAMSEQoJd2FpdGVkX29uGAYgASgJEg4KBnN0cmVhbRgHIAEoCCIsChlDYXB0dXJlRGlhZ25vc3RpY3NSZXF1ZXN0Eg8KB3NlY29uZHMYASABKAUiEgoQQXV4Q29uZmlnUmVxdWVzdCJlCg5BdXhDb25maWdSZXBseRIQCghyZXZpc2lvbhgBIAEoCRIhCghwcm9maWxlcxgCIAMoCzIPLmN4ei5BdXhQcm9maWxlEg8KB21lc3NhZ2UYAyABKAkSDQoFb3duZXIYBCABKAkitAEKCkF1eFByb2ZpbGUSGgoEa2luZBgBIAEoDjIMLmN4ei5BdXhLaW5kEg8KB2VuYWJsZWQYAiABKAgSDwoHYWNjb3VudBgDIAEoCRINCgVhZ2VudBgEIAEoCRIPCgdiYWNrZW5kGAUgASgJEg0KBW1vZGVsGAYgASgJEg4KBmVmZm9ydBgHIAEoCRIpCgVzaW5jZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiOAoTQXV4U2V0Q29uZmlnUmVxdWVzdBIhCghwcm9maWxlcxgBIAMoCzIPLmN4ei5BdXhQcm9maWxlIhYKFEhpc3RvcnlQb2xpY3lSZXF1ZXN0Im0KDUhpc3RvcnlQb2xpY3kSEAoIZGlzYWJsZWQYASABKAgSDwoHbWF4X21pYhgCIAEoBRIPCgdyYXdfbWliGAMgASgFEhIKCndpbmRvd19taWIYBCABKAUSFAoMd2luZG93X3R1cm5zGAUgASgFIlUKFFB1dFNlY3JldEZpbGVSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEg8KB3Nlc3Npb24YAiABKAkSDgoGc2VjcmV0GAMgASgMIh8KD1NlY3JldEZpbGVSZXBseRIMCgRwYXRoGAEgASgJIkUKF0RlbGV0ZVNlY3JldEZpbGVSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEgwKBHBhdGgYAiABKAkiLQoNU2tpbGxzUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZiJACgtTa2lsbHNSZXBseRIgCgdlbnRyaWVzGAEgAygLMg8uY3h6LlNraWxsRW50cnkSDwoHbWVzc2FnZRgCIAEoCSJUCgpTa2lsbEVudHJ5EgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSEAoIb3ZlcnJpZGUYAyABKAgSEQoJZWZmZWN0aXZlGAQgASgIIjoKDFNraWxsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIMCgRuYW1lGAIgASgJIjQKE1NraWxsRGVmYXVsdFJlcXVlc3QSDAoEbmFtZRgBIAEoCRIPCgdlbmFibGVkGAIgASgIIlIKE1Byb2plY3RTa2lsbFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEbmFtZRgCIAEoCRIPCgdlbmFibGVkGAMgASgIIkYKGENsZWFyUHJvamVjdFNraWxsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIMCgRuYW1lGAIgASgJIjEKEU1jcFNlcnZlcnNSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmIkIKD01jcFNlcnZlcnNSZXBseRIeCgdlbnRyaWVzGAEgAygLMg0uY3h6Lk1jcEVudHJ5Eg8KB21lc3NhZ2UYAiABKAkiWwoITWNwRW50cnkSCgoCaWQYASABKAkSHgoGc2VydmVyGAIgASgLMg4uY3h6Lk1jcFNlcnZlchIQCghvdmVycmlkZRgDIAEoCBIRCgllZmZlY3RpdmUYBCABKAgiogIKCU1jcFNlcnZlchIMCgRuYW1lGAEgASgJEhoKBGtpbmQYAiABKA4yDC5jeHouTWNwS2luZBIPCgdlbmFibGVkGAMgASgIEg8KB2NvbW1hbmQYBCABKAkSDAoEYXJncxgFIAMoCRIkCgNlbnYYBiADKAsyFy5jeHouTWNwU2VydmVyLkVudkVudHJ5EgsKA3VybBgHIAEoCRIsCgdoZWFkZXJzGAggAygLMhsuY3h6Lk1jcFNlcnZlci5IZWFkZXJzRW50cnkaKgoIRW52RW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ARouCgxIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJBChNQdXRNY3BTZXJ2ZXJSZXF1ZXN0EgoKAmlkGAEgASgJEh4KBnNlcnZlchgCIAEoCzIOLmN4ei5NY3BTZXJ2ZXIiHgoQTWNwU2VydmVyUmVxdWVzdBIKCgJpZBgBIAEoCSI2ChdNY3BTZXJ2ZXJEZWZhdWx0UmVxdWVzdBIKCgJpZBgBIAEoCRIPCgdlbmFibGVkGAIgASgIIlQKF1Byb2plY3RNY3BTZXJ2ZXJSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEgoKAmlkGAIgASgJEg8KB2VuYWJsZWQYAyABKAgiSAocQ2xlYXJQcm9qZWN0TWNwU2VydmVyUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIKCgJpZBgCIAEoCSIyChJNY3BTZXNzaW9uc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYiTAoQTWNwU2Vzc2lvbnNSZXBseRInCghzZXNzaW9ucxgBIAMoCzIVLmN4ei5NY3BTZXNzaW9uU3RhdHVzEg8KB21lc3NhZ2UYAiABKAkivwEKEE1jcFNlc3Npb25TdGF0dXMSDwoHc2Vzc2lvbhgBIAEoCRINCgV0aXRsZRgCIAEoCRIPCgdwZW5kaW5nGAMgASgIEhUKDWxhdW5jaF9kaWdlc3QYBCABKAkSMwoHc2VydmVycxgFIAMoCzIiLmN4ei5NY3BTZXNzaW9uU3RhdHVzLlNlcnZlcnNFbnRyeRouCgxTZXJ2ZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIlChNGaWxlTWFwcGluZ3NSZXF1ZXN0Eg4KBmJ1bmRsZRgBIAEoDCIjChFGaWxlTWFwcGluZ3NSZXBseRIOCgZzdGF0dXMYASABKAkiewoTUHJvamVjdFN0YXJ0UmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIRCgljbGllbnRfaWQYAiABKAkSDQoFYWdlbnQYAyABKAkSFAoMdHJ1c3RfY29uZmlnGAQgASgIEg4KBmNvbmZpZxgFIAEoCSJBCg5Qcm9qZWN0Q29udHJvbBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIRCgljbGllbnRfaWQYAiABKAkiFwoVSW5zcGVjdEZvcmVpZ25SZXF1ZXN0Ij4KFkluc3BlY3RGb3JlaWduUmVzcG9uc2USJAoFaXRlbXMYASADKAsyFS5jeHouRm9yZWlnbkNvbnRhaW5lciJJChBGb3JlaWduQ29udGFpbmVyEhQKDGNvbnRhaW5lcl9pZBgBIAEoCRIRCgl3b3Jrc3BhY2UYAiABKAkSDAoEbmFtZRgDIAEoCSpUCgpFbmdpbmVNb2RlEhsKF0VOR0lORV9NT0RFX1VOU1BFQ0lGSUVEEAASEwoPRU5HSU5FX01PREVfT0ZGEAESFAoQRU5HSU5FX01PREVfRElORBACKmYKB0F1eEtpbmQSGAoUQVVYX0tJTkRfVU5TUEVDSUZJRUQQABIUChBBVVhfS0lORF9TVU1NQVJZEAESFwoTQVVYX0tJTkRfU1VHR0VTVElPThACEhIKDkFVWF9LSU5EX1RJVExFEAMqYAoHTWNwS2luZBIYChRNQ1BfS0lORF9VTlNQRUNJRklFRBAAEhIKDk1DUF9LSU5EX1NURElPEAESEQoNTUNQX0tJTkRfSFRUUBACEhQKEE1DUF9LSU5EX0JVSUxUSU4QAzLzFwoOUHJvamVjdFNlcnZpY2USKwoDQWRkEhYuY3h6LlByb2plY3RBZGRSZXF1ZXN0GgwuY3h6LlByb2plY3QSKwoDR2V0EhYuY3h6LlByb2plY3RHZXRSZXF1ZXN0GgwuY3h6LlByb2plY3QSLwoFUGF0Y2gSGC5jeHouUHJvamVjdFBhdGNoUmVxdWVzdBoMLmN4ei5Qcm9qZWN0Ei8KBUFwcGx5EhguY3h6LlByb2plY3RBcHBseVJlcXVlc3QaDC5jeHouUHJvamVjdBIzCgVFcmFzZRIPLmN4ei5Qcm9qZWN0UmVmGhkuY3h6LlByb2plY3RFcmFzZVJlc3BvbnNlEjkKBExpc3QSFy5jeHouUHJvamVjdExpc3RSZXF1ZXN0GhguY3h6LlByb2plY3RMaXN0UmVzcG9uc2USPgoFV2F0Y2gSGC5jeHouUHJvamVjdFdhdGNoUmVxdWVzdBoZLmN4ei5Qcm9qZWN0V2F0Y2hSZXNwb25zZTABEkYKCFRlcm1pbmFsEhsuY3h6LlByb2plY3RUZXJtaW5hbFJlcXVlc3QaGS5jeHouUHJvamVjdFRlcm1pbmFsUmVwbHkoATABEkcKDkF1eGlsaWFyeUxvZ2luEhguY3h6LlByb2plY3RMb2dpblJlcXVlc3QaFy5jeHouUHJvamVjdExvZ2luT3V0cHV0KAEwARJFCgxTZXNzaW9uTG9naW4SGC5jeHouUHJvamVjdExvZ2luUmVxdWVzdBoXLmN4ei5Qcm9qZWN0TG9naW5PdXRwdXQoATABEjsKBVBhdGhzEhguY3h6LlByb2plY3RQYXRoc1JlcXVlc3QaFi5jeHouUHJvamVjdFBhdGhzUmVwbHkwARJECghEb3dubG9hZBIbLmN4ei5Qcm9qZWN0RG93bmxvYWRSZXF1ZXN0GhkuY3h6LlByb2plY3REb3dubG9hZFJlcGx5MAESPAoGRWRpdG9yEhkuY3h6LlByb2plY3RFZGl0b3JSZXF1ZXN0GhcuY3h6LlByb2plY3RFZGl0b3JSZXBseRJSCgxFZGl0b3JUdW5uZWwSHy5jeHouUHJvamVjdEVkaXRvclR1bm5lbFJlcXVlc3QaHS5jeHouUHJvamVjdEVkaXRvclR1bm5lbFJlcGx5KAEwARJACgxEZXZjb250YWluZXISGC5jeHouRGV2Y29udGFpbmVyUmVxdWVzdBoWLmN4ei5EZXZjb250YWluZXJSZXBseRJSChJSZW5kZXJEZXZjb250YWluZXISHi5jeHouUmVuZGVyRGV2Y29udGFpbmVyUmVxdWVzdBocLmN4ei5SZW5kZXJEZXZjb250YWluZXJSZXBseRI2CgpTYXZlRW5naW5lEhYuY3h6LlNhdmVFbmdpbmVSZXF1ZXN0GhAuY3h6LkVuZ2luZVJlcGx5EjgKC1N0YXJ0RW5naW5lEhcuY3h6LlN0YXJ0RW5naW5lUmVxdWVzdBoQLmN4ei5FbmdpbmVSZXBseRIyCgpTdG9wRW5naW5lEhIuY3h6LkVuZ2luZVJlcXVlc3QaEC5jeHouRW5naW5lUmVwbHkSMwoLUHJ1bmVFbmdpbmUSEi5jeHouRW5naW5lUmVxdWVzdBoQLmN4ei5FbmdpbmVSZXBseRI0CgxFbmdpbmVTdGF0dXMSEi5jeHouRW5naW5lUmVxdWVzdBoQLmN4ei5FbmdpbmVSZXBseRI0Cg1HZXRFbmdpbmVJbmZvEhIuY3h6LkVuZ2luZVJlcXVlc3QaDy5jeHouRW5naW5lSW5mbxJGChZHZXRJbnN0YWxsYXRpb25WZXJzaW9uEhIuY3h6LkVuZ2luZVJlcXVlc3QaGC5jeHouSW5zdGFsbGF0aW9uVmVyc2lvbhI9CgtEaWFnbm9zdGljcxIXLmN4ei5EaWFnbm9zdGljc1JlcXVlc3QaFS5jeHouRGlhZ25vc3RpY3NSZXBseRJLChJDYXB0dXJlRGlhZ25vc3RpY3MSHi5jeHouQ2FwdHVyZURpYWdub3N0aWNzUmVxdWVzdBoVLmN4ei5EaWFnbm9zdGljc1JlcGx5EjcKCUF1eENvbmZpZxIVLmN4ei5BdXhDb25maWdSZXF1ZXN0GhMuY3h6LkF1eENvbmZpZ1JlcGx5Ej0KDEF1eFNldENvbmZpZxIYLmN4ei5BdXhTZXRDb25maWdSZXF1ZXN0GhMuY3h6LkF1eENvbmZpZ1JlcGx5EkEKEEdldEhpc3RvcnlQb2xpY3kSGS5jeHouSGlzdG9yeVBvbGljeVJlcXVlc3QaEi5jeHouSGlzdG9yeVBvbGljeRI6ChBTZXRIaXN0b3J5UG9saWN5EhIuY3h6Lkhpc3RvcnlQb2xpY3kaEi5jeHouSGlzdG9yeVBvbGljeRJACg1QdXRTZWNyZXRGaWxlEhkuY3h6LlB1dFNlY3JldEZpbGVSZXF1ZXN0GhQuY3h6LlNlY3JldEZpbGVSZXBseRJGChBEZWxldGVTZWNyZXRGaWxlEhwuY3h6LkRlbGV0ZVNlY3JldEZpbGVSZXF1ZXN0GhQuY3h6LlNlY3JldEZpbGVSZXBseRIxCglHZXRTa2lsbHMSEi5jeHouU2tpbGxzUmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRIvCghBZGRTa2lsbBIRLmN4ei5Ta2lsbFJlcXVlc3QaEC5jeHouU2tpbGxzUmVwbHkSMgoLUmVtb3ZlU2tpbGwSES5jeHouU2tpbGxSZXF1ZXN0GhAuY3h6LlNraWxsc1JlcGx5Ej0KD1NldFNraWxsRGVmYXVsdBIYLmN4ei5Ta2lsbERlZmF1bHRSZXF1ZXN0GhAuY3h6LlNraWxsc1JlcGx5Ej0KD1NldFByb2plY3RTa2lsbBIYLmN4ei5Qcm9qZWN0U2tpbGxSZXF1ZXN0GhAuY3h6LlNraWxsc1JlcGx5EkQKEUNsZWFyUHJvamVjdFNraWxsEh0uY3h6LkNsZWFyUHJvamVjdFNraWxsUmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRI9Cg1HZXRNY3BTZXJ2ZXJzEhYuY3h6Lk1jcFNlcnZlcnNSZXF1ZXN0GhQuY3h6Lk1jcFNlcnZlcnNSZXBseRI+CgxQdXRNY3BTZXJ2ZXISGC5jeHouUHV0TWNwU2VydmVyUmVxdWVzdBoULmN4ei5NY3BTZXJ2ZXJzUmVwbHkSPgoPUmVtb3ZlTWNwU2VydmVyEhUuY3h6Lk1jcFNlcnZlclJlcXVlc3QaFC5jeHouTWNwU2VydmVyc1JlcGx5EkkKE1NldE1jcFNlcnZlckRlZmF1bHQSHC5jeHouTWNwU2VydmVyRGVmYXVsdFJlcXVlc3QaFC5jeHouTWNwU2VydmVyc1JlcGx5EkkKE1NldFByb2plY3RNY3BTZXJ2ZXISHC5jeHouUHJvamVjdE1jcFNlcnZlclJlcXVlc3QaFC5jeHouTWNwU2VydmVyc1JlcGx5ElAKFUNsZWFyUHJvamVjdE1jcFNlcnZlchIhLmN4ei5DbGVhclByb2plY3RNY3BTZXJ2ZXJSZXF1ZXN0GhQuY3h6Lk1jcFNlcnZlcnNSZXBseRI9CgtNY3BTZXNzaW9ucxIXLmN4ei5NY3BTZXNzaW9uc1JlcXVlc3QaFS5jeHouTWNwU2Vzc2lvbnNSZXBseRJACgxGaWxlTWFwcGluZ3MSGC5jeHouRmlsZU1hcHBpbmdzUmVxdWVzdBoWLmN4ei5GaWxlTWFwcGluZ3NSZXBseRIvCgVTdGFydBIYLmN4ei5Qcm9qZWN0U3RhcnRSZXF1ZXN0GgwuY3h6LlByb2plY3QSKQoEU3RvcBITLmN4ei5Qcm9qZWN0Q29udHJvbBoMLmN4ei5Qcm9qZWN0EisKBlJlbW92ZRITLmN4ei5Qcm9qZWN0Q29udHJvbBoMLmN4ei5Qcm9qZWN0EkkKDkluc3BlY3RGb3JlaWduEhouY3h6Lkluc3BlY3RGb3JlaWduUmVxdWVzdBobLmN4ei5JbnNwZWN0Rm9yZWlnblJlc3BvbnNlQiJaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlYghlZGl0aW9uc3DoBw", [file_cxz_account_svc_g, file_cxz_project, file_google_protobuf_timestamp, file_patch_patch]);
+  fileDesc("ChdjeHovcHJvamVjdF9zdmMuZy5wcm90bxIDY3h6IoECChFQcm9qZWN0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISGAoJd29ya3NwYWNlGAggASgJQgWqAQIIAhIVCgZjb25maWcYCSABKAlCBaoBAggCEhkKCnJ1bnRpbWVfaWQYCiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIgoGc3RhdHVzGBAgASgLMhIuY3h6LlByb2plY3RTdGF0dXMiVQoRUHJvamVjdEdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSIgoGc2VsZWN0GAIgASgLMhIuY3h6LlByb2plY3RTZWxlY3QiXQoKUHJvamVjdFJlZhIMCgJpZBgBIAEoDEgAEg8KBWFsaWFzGAQgASgJSAASEwoJd29ya3NwYWNlGAggASgJSAASFAoKcnVudGltZV9pZBgKIAEoCUgAQgUKA2tleSLPAQoNUHJvamVjdFNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEhEKCXdvcmtzcGFjZRgIIAEoCBIOCgZjb25maWcYCSABKAgSEgoKcnVudGltZV9pZBgKIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEg4KBnN0YXR1cxgQIAEoCCL1AQoTUHJvamVjdFBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSDgoGY29uZmlnGBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIEiIKBnN0YXR1cxggIAEoCzISLmN4ei5Qcm9qZWN0U3RhdHVzEhMKC3N0YXR1c19udWxsGCEgASgIIlAKE1Byb2plY3RBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCImChRQcm9qZWN0RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZAoSUHJvamVjdExpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5jeHouUHJvamVjdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiRwoTUHJvamVjdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLmN4ei5Qcm9qZWN0EhMKBG5leHQYAiABKAlCBaoBAggCIi0KDVByb2plY3RGaWx0ZXISHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYiWAoTUHJvamVjdFdhdGNoUmVxdWVzdBIjCgdmaWx0ZXJzGAEgAygLMhIuY3h6LlByb2plY3RGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiWAoUUHJvamVjdFdhdGNoUmVzcG9uc2USJAoFaXRlbXMYASADKAsyFS5jeHouUHJvamVjdFdhdGNoSXRlbRIaChFzbmFwc2hvdF9jb21wbGV0ZRjoByABKAgiUgoQUHJvamVjdFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLmN4ei5Qcm9qZWN0EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiZAoWUHJvamVjdFRlcm1pbmFsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIPCgdjb2x1bW5zGAIgASgNEgwKBHJvd3MYAyABKA0SDQoFaW5wdXQYBCABKAwiVAoUUHJvamVjdFRlcm1pbmFsUmVwbHkSDQoFcmVhZHkYASABKAgSDgoGb3V0cHV0GAIgASgMEg4KBmV4aXRlZBgDIAEoCBINCgVlcnJvchgEIAEoCSJ5ChNQcm9qZWN0TG9naW5SZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiAKB2FjY291bnQYAiABKAsyDy5jeHouQWNjb3VudFJlZhITCgtzZXNzaW9uX2tleRgDIAEoCRINCgVpbnB1dBgEIAEoDCIkChJQcm9qZWN0TG9naW5PdXRwdXQSDgoGb3V0cHV0GAEgASgMIkEKE1Byb2plY3RQYXRoc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSJOChFQcm9qZWN0UGF0aHNSZXBseRImCgdlbnRyaWVzGAEgAygLMhUuY3h6LlByb2plY3RQYXRoRW50cnkSEQoJdHJ1bmNhdGVkGAIgASgIInsKEFByb2plY3RQYXRoRW50cnkSDAoEbmFtZRgBIAEoCRIRCglkaXJlY3RvcnkYAiABKAgSEgoKZXhlY3V0YWJsZRgDIAEoCBIPCgdzeW1saW5rGAQgASgIEhMKC2xpbmtfdGFyZ2V0GAUgASgJEgwKBGtpbmQYBiABKAkiRAoWUHJvamVjdERvd25sb2FkUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIMCgRwYXRoGAIgASgJIjgKFFByb2plY3REb3dubG9hZFJlcGx5EgwKBGRhdGEYASABKAwSEgoKdG90YWxfc2l6ZRgCIAEoAyI0ChRQcm9qZWN0RWRpdG9yUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZiJUChJQcm9qZWN0RWRpdG9yUmVwbHkSEQoJd29ya3NwYWNlGAEgASgJEhgKEGNvbm5lY3Rpb25fdG9rZW4YAiABKAkSEQoJc2ltdWxhdGVkGAMgASgIIkkKGlByb2plY3RFZGl0b3JUdW5uZWxSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEg0KBWlucHV0GAIgASgMIjkKGFByb2plY3RFZGl0b3JUdW5uZWxSZXBseRINCgVyZWFkeRgBIAEoCBIOCgZvdXRwdXQYAiABKAwiVQoUUHV0U2VjcmV0RmlsZVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDwoHc2Vzc2lvbhgCIAEoCRIOCgZzZWNyZXQYAyABKAwiHwoPU2VjcmV0RmlsZVJlcGx5EgwKBHBhdGgYASABKAkiRQoXRGVsZXRlU2VjcmV0RmlsZVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSDAoEcGF0aBgCIAEoCSItCg1Ta2lsbHNSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmIkAKC1NraWxsc1JlcGx5EiAKB2VudHJpZXMYASADKAsyDy5jeHouU2tpbGxFbnRyeRIPCgdtZXNzYWdlGAIgASgJIlQKClNraWxsRW50cnkSDAoEbmFtZRgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIQCghvdmVycmlkZRgDIAEoCBIRCgllZmZlY3RpdmUYBCABKAgiOgoMU2tpbGxSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEgwKBG5hbWUYAiABKAkiNAoTU2tpbGxEZWZhdWx0UmVxdWVzdBIMCgRuYW1lGAEgASgJEg8KB2VuYWJsZWQYAiABKAgiUgoTUHJvamVjdFNraWxsUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZhIMCgRuYW1lGAIgASgJEg8KB2VuYWJsZWQYAyABKAgiRgoYQ2xlYXJQcm9qZWN0U2tpbGxSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEgwKBG5hbWUYAiABKAkiMQoRTWNwU2VydmVyc1JlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYiQgoPTWNwU2VydmVyc1JlcGx5Eh4KB2VudHJpZXMYASADKAsyDS5jeHouTWNwRW50cnkSDwoHbWVzc2FnZRgCIAEoCSJbCghNY3BFbnRyeRIKCgJpZBgBIAEoCRIeCgZzZXJ2ZXIYAiABKAsyDi5jeHouTWNwU2VydmVyEhAKCG92ZXJyaWRlGAMgASgIEhEKCWVmZmVjdGl2ZRgEIAEoCCKiAgoJTWNwU2VydmVyEgwKBG5hbWUYASABKAkSGgoEa2luZBgCIAEoDjIMLmN4ei5NY3BLaW5kEg8KB2VuYWJsZWQYAyABKAgSDwoHY29tbWFuZBgEIAEoCRIMCgRhcmdzGAUgAygJEiQKA2VudhgGIAMoCzIXLmN4ei5NY3BTZXJ2ZXIuRW52RW50cnkSCwoDdXJsGAcgASgJEiwKB2hlYWRlcnMYCCADKAsyGy5jeHouTWNwU2VydmVyLkhlYWRlcnNFbnRyeRoqCghFbnZFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBGi4KDEhlYWRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIkEKE1B1dE1jcFNlcnZlclJlcXVlc3QSCgoCaWQYASABKAkSHgoGc2VydmVyGAIgASgLMg4uY3h6Lk1jcFNlcnZlciIeChBNY3BTZXJ2ZXJSZXF1ZXN0EgoKAmlkGAEgASgJIjYKF01jcFNlcnZlckRlZmF1bHRSZXF1ZXN0EgoKAmlkGAEgASgJEg8KB2VuYWJsZWQYAiABKAgiVAoXUHJvamVjdE1jcFNlcnZlclJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSCgoCaWQYAiABKAkSDwoHZW5hYmxlZBgDIAEoCCJIChxDbGVhclByb2plY3RNY3BTZXJ2ZXJSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEgoKAmlkGAIgASgJIjIKEk1jcFNlc3Npb25zUmVxdWVzdBIcCgNyZWYYASABKAsyDy5jeHouUHJvamVjdFJlZiJMChBNY3BTZXNzaW9uc1JlcGx5EicKCHNlc3Npb25zGAEgAygLMhUuY3h6Lk1jcFNlc3Npb25TdGF0dXMSDwoHbWVzc2FnZRgCIAEoCSK/AQoQTWNwU2Vzc2lvblN0YXR1cxIPCgdzZXNzaW9uGAEgASgJEg0KBXRpdGxlGAIgASgJEg8KB3BlbmRpbmcYAyABKAgSFQoNbGF1bmNoX2RpZ2VzdBgEIAEoCRIzCgdzZXJ2ZXJzGAUgAygLMiIuY3h6Lk1jcFNlc3Npb25TdGF0dXMuU2VydmVyc0VudHJ5Gi4KDFNlcnZlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBInsKE1Byb2plY3RTdGFydFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSEQoJY2xpZW50X2lkGAIgASgJEg0KBWFnZW50GAMgASgJEhQKDHRydXN0X2NvbmZpZxgEIAEoCBIOCgZjb25maWcYBSABKAkiQQoOUHJvamVjdENvbnRyb2wSHAoDcmVmGAEgASgLMg8uY3h6LlByb2plY3RSZWYSEQoJY2xpZW50X2lkGAIgASgJKmAKB01jcEtpbmQSGAoUTUNQX0tJTkRfVU5TUEVDSUZJRUQQABISCg5NQ1BfS0lORF9TVERJTxABEhEKDU1DUF9LSU5EX0hUVFAQAhIUChBNQ1BfS0lORF9CVUlMVElOEAMyvg8KDlByb2plY3RTZXJ2aWNlEisKA0FkZBIWLmN4ei5Qcm9qZWN0QWRkUmVxdWVzdBoMLmN4ei5Qcm9qZWN0EisKA0dldBIWLmN4ei5Qcm9qZWN0R2V0UmVxdWVzdBoMLmN4ei5Qcm9qZWN0Ei8KBVBhdGNoEhguY3h6LlByb2plY3RQYXRjaFJlcXVlc3QaDC5jeHouUHJvamVjdBIvCgVBcHBseRIYLmN4ei5Qcm9qZWN0QXBwbHlSZXF1ZXN0GgwuY3h6LlByb2plY3QSMwoFRXJhc2USDy5jeHouUHJvamVjdFJlZhoZLmN4ei5Qcm9qZWN0RXJhc2VSZXNwb25zZRI5CgRMaXN0EhcuY3h6LlByb2plY3RMaXN0UmVxdWVzdBoYLmN4ei5Qcm9qZWN0TGlzdFJlc3BvbnNlEj4KBVdhdGNoEhguY3h6LlByb2plY3RXYXRjaFJlcXVlc3QaGS5jeHouUHJvamVjdFdhdGNoUmVzcG9uc2UwARJGCghUZXJtaW5hbBIbLmN4ei5Qcm9qZWN0VGVybWluYWxSZXF1ZXN0GhkuY3h6LlByb2plY3RUZXJtaW5hbFJlcGx5KAEwARJHCg5BdXhpbGlhcnlMb2dpbhIYLmN4ei5Qcm9qZWN0TG9naW5SZXF1ZXN0GhcuY3h6LlByb2plY3RMb2dpbk91dHB1dCgBMAESRQoMU2Vzc2lvbkxvZ2luEhguY3h6LlByb2plY3RMb2dpblJlcXVlc3QaFy5jeHouUHJvamVjdExvZ2luT3V0cHV0KAEwARI7CgVQYXRocxIYLmN4ei5Qcm9qZWN0UGF0aHNSZXF1ZXN0GhYuY3h6LlByb2plY3RQYXRoc1JlcGx5MAESRAoIRG93bmxvYWQSGy5jeHouUHJvamVjdERvd25sb2FkUmVxdWVzdBoZLmN4ei5Qcm9qZWN0RG93bmxvYWRSZXBseTABEjwKBkVkaXRvchIZLmN4ei5Qcm9qZWN0RWRpdG9yUmVxdWVzdBoXLmN4ei5Qcm9qZWN0RWRpdG9yUmVwbHkSUgoMRWRpdG9yVHVubmVsEh8uY3h6LlByb2plY3RFZGl0b3JUdW5uZWxSZXF1ZXN0Gh0uY3h6LlByb2plY3RFZGl0b3JUdW5uZWxSZXBseSgBMAESQAoNUHV0U2VjcmV0RmlsZRIZLmN4ei5QdXRTZWNyZXRGaWxlUmVxdWVzdBoULmN4ei5TZWNyZXRGaWxlUmVwbHkSRgoQRGVsZXRlU2VjcmV0RmlsZRIcLmN4ei5EZWxldGVTZWNyZXRGaWxlUmVxdWVzdBoULmN4ei5TZWNyZXRGaWxlUmVwbHkSMQoJR2V0U2tpbGxzEhIuY3h6LlNraWxsc1JlcXVlc3QaEC5jeHouU2tpbGxzUmVwbHkSLwoIQWRkU2tpbGwSES5jeHouU2tpbGxSZXF1ZXN0GhAuY3h6LlNraWxsc1JlcGx5EjIKC1JlbW92ZVNraWxsEhEuY3h6LlNraWxsUmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRI9Cg9TZXRTa2lsbERlZmF1bHQSGC5jeHouU2tpbGxEZWZhdWx0UmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRI9Cg9TZXRQcm9qZWN0U2tpbGwSGC5jeHouUHJvamVjdFNraWxsUmVxdWVzdBoQLmN4ei5Ta2lsbHNSZXBseRJEChFDbGVhclByb2plY3RTa2lsbBIdLmN4ei5DbGVhclByb2plY3RTa2lsbFJlcXVlc3QaEC5jeHouU2tpbGxzUmVwbHkSPQoNR2V0TWNwU2VydmVycxIWLmN4ei5NY3BTZXJ2ZXJzUmVxdWVzdBoULmN4ei5NY3BTZXJ2ZXJzUmVwbHkSPgoMUHV0TWNwU2VydmVyEhguY3h6LlB1dE1jcFNlcnZlclJlcXVlc3QaFC5jeHouTWNwU2VydmVyc1JlcGx5Ej4KD1JlbW92ZU1jcFNlcnZlchIVLmN4ei5NY3BTZXJ2ZXJSZXF1ZXN0GhQuY3h6Lk1jcFNlcnZlcnNSZXBseRJJChNTZXRNY3BTZXJ2ZXJEZWZhdWx0EhwuY3h6Lk1jcFNlcnZlckRlZmF1bHRSZXF1ZXN0GhQuY3h6Lk1jcFNlcnZlcnNSZXBseRJJChNTZXRQcm9qZWN0TWNwU2VydmVyEhwuY3h6LlByb2plY3RNY3BTZXJ2ZXJSZXF1ZXN0GhQuY3h6Lk1jcFNlcnZlcnNSZXBseRJQChVDbGVhclByb2plY3RNY3BTZXJ2ZXISIS5jeHouQ2xlYXJQcm9qZWN0TWNwU2VydmVyUmVxdWVzdBoULmN4ei5NY3BTZXJ2ZXJzUmVwbHkSPQoLTWNwU2Vzc2lvbnMSFy5jeHouTWNwU2Vzc2lvbnNSZXF1ZXN0GhUuY3h6Lk1jcFNlc3Npb25zUmVwbHkSLwoFU3RhcnQSGC5jeHouUHJvamVjdFN0YXJ0UmVxdWVzdBoMLmN4ei5Qcm9qZWN0EikKBFN0b3ASEy5jeHouUHJvamVjdENvbnRyb2waDC5jeHouUHJvamVjdBIrCgZSZW1vdmUSEy5jeHouUHJvamVjdENvbnRyb2waDC5jeHouUHJvamVjdEIiWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZWIIZWRpdGlvbnNw6Ac", [file_cxz_account_svc_g, file_cxz_project, file_google_protobuf_timestamp, file_patch_patch]);
 
 /**
  * @generated from message cxz.ProjectAddRequest
@@ -860,710 +860,6 @@ export const ProjectEditorTunnelReplySchema: GenMessage<ProjectEditorTunnelReply
   messageDesc(file_cxz_project_svc_g, 25);
 
 /**
- * @generated from message cxz.DevcontainerRequest
- */
-export type DevcontainerRequest = Message<"cxz.DevcontainerRequest"> & {
-  /**
-   * @generated from field: bytes spec = 1;
-   */
-  spec: Uint8Array;
-};
-
-/**
- * Describes the message cxz.DevcontainerRequest.
- * Use `create(DevcontainerRequestSchema)` to create a new message.
- */
-export const DevcontainerRequestSchema: GenMessage<DevcontainerRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 26);
-
-/**
- * @generated from message cxz.DevcontainerReply
- */
-export type DevcontainerReply = Message<"cxz.DevcontainerReply"> & {
-  /**
-   * @generated from field: string status = 1;
-   */
-  status: string;
-};
-
-/**
- * Describes the message cxz.DevcontainerReply.
- * Use `create(DevcontainerReplySchema)` to create a new message.
- */
-export const DevcontainerReplySchema: GenMessage<DevcontainerReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 27);
-
-/**
- * handle is not a key to a row, which is why it is not a ProjectRef: it may be
- * a directory inside a workspace rather than the workspace itself -- a
- * .devcontainer directory is exactly where someone wonders which devcontainer
- * is in effect -- so the manager walks up to the registered workspace that
- * owns it. Only a registered workspace matches, so walking up cannot widen the
- * answer, and the reply names the project it settled on.
- *
- * @generated from message cxz.RenderDevcontainerRequest
- */
-export type RenderDevcontainerRequest = Message<"cxz.RenderDevcontainerRequest"> & {
-  /**
-   * @generated from field: string handle = 1;
-   */
-  handle: string;
-};
-
-/**
- * Describes the message cxz.RenderDevcontainerRequest.
- * Use `create(RenderDevcontainerRequestSchema)` to create a new message.
- */
-export const RenderDevcontainerRequestSchema: GenMessage<RenderDevcontainerRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 28);
-
-/**
- * @generated from message cxz.RenderDevcontainerReply
- */
-export type RenderDevcontainerReply = Message<"cxz.RenderDevcontainerReply"> & {
-  /**
-   * @generated from field: string project = 1;
-   */
-  project: string;
-
-  /**
-   * @generated from field: string name = 2;
-   */
-  name: string;
-
-  /**
-   * @generated from field: string workspace = 3;
-   */
-  workspace: string;
-
-  /**
-   * Set when something could not be rendered -- no Compose files to merge, or
-   * no Compose CLI to merge them with -- rather than failing the read.
-   *
-   * @generated from field: string note = 4;
-   */
-  note: string;
-
-  /**
-   * @generated from field: repeated cxz.RenderedFile files = 5;
-   */
-  files: RenderedFile[];
-};
-
-/**
- * Describes the message cxz.RenderDevcontainerReply.
- * Use `create(RenderDevcontainerReplySchema)` to create a new message.
- */
-export const RenderDevcontainerReplySchema: GenMessage<RenderDevcontainerReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 29);
-
-/**
- * role is one line of prose, because the order of a merge is what a reader
- * needs and what a file name cannot say. source is a path on the manager host.
- *
- * @generated from message cxz.RenderedFile
- */
-export type RenderedFile = Message<"cxz.RenderedFile"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * @generated from field: string source = 2;
-   */
-  source: string;
-
-  /**
-   * @generated from field: string role = 3;
-   */
-  role: string;
-
-  /**
-   * @generated from field: bytes data = 4;
-   */
-  data: Uint8Array;
-};
-
-/**
- * Describes the message cxz.RenderedFile.
- * Use `create(RenderedFileSchema)` to create a new message.
- */
-export const RenderedFileSchema: GenMessage<RenderedFile> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 30);
-
-/**
- * A save has nothing to fall back on, so its spec is required. An absent spec
- * on a start means "apply the one already saved", which is what an empty
- * payload meant.
- *
- * @generated from message cxz.SaveEngineRequest
- */
-export type SaveEngineRequest = Message<"cxz.SaveEngineRequest"> & {
-  /**
-   * @generated from field: cxz.EngineSpec spec = 1;
-   */
-  spec?: EngineSpec | undefined;
-};
-
-/**
- * Describes the message cxz.SaveEngineRequest.
- * Use `create(SaveEngineRequestSchema)` to create a new message.
- */
-export const SaveEngineRequestSchema: GenMessage<SaveEngineRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 31);
-
-/**
- * One line of text for a person: an endpoint, a sentence, or what a prune
- * reclaimed.
- *
- * @generated from message cxz.EngineReply
- */
-export type EngineReply = Message<"cxz.EngineReply"> & {
-  /**
-   * @generated from field: string status = 1;
-   */
-  status: string;
-};
-
-/**
- * Describes the message cxz.EngineReply.
- * Use `create(EngineReplySchema)` to create a new message.
- */
-export const EngineReplySchema: GenMessage<EngineReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 32);
-
-/**
- * override is the user's own Compose document and stays bytes: it is theirs to
- * write and cxz only merges it.
- *
- * @generated from message cxz.EngineSpec
- */
-export type EngineSpec = Message<"cxz.EngineSpec"> & {
-  /**
-   * @generated from field: cxz.EngineMode mode = 1;
-   */
-  mode: EngineMode;
-
-  /**
-   * @generated from field: string image = 2;
-   */
-  image: string;
-
-  /**
-   * @generated from field: bytes override = 3;
-   */
-  override: Uint8Array;
-};
-
-/**
- * Describes the message cxz.EngineSpec.
- * Use `create(EngineSpecSchema)` to create a new message.
- */
-export const EngineSpecSchema: GenMessage<EngineSpec> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 33);
-
-/**
- * @generated from message cxz.StartEngineRequest
- */
-export type StartEngineRequest = Message<"cxz.StartEngineRequest"> & {
-  /**
-   * @generated from field: cxz.EngineSpec spec = 1;
-   */
-  spec?: EngineSpec | undefined;
-};
-
-/**
- * Describes the message cxz.StartEngineRequest.
- * Use `create(StartEngineRequestSchema)` to create a new message.
- */
-export const StartEngineRequestSchema: GenMessage<StartEngineRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 34);
-
-/**
- * @generated from message cxz.EngineRequest
- */
-export type EngineRequest = Message<"cxz.EngineRequest"> & {
-};
-
-/**
- * Describes the message cxz.EngineRequest.
- * Use `create(EngineRequestSchema)` to create a new message.
- */
-export const EngineRequestSchema: GenMessage<EngineRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 35);
-
-/**
- * What the engine is, and nothing else. The history budgets and the cxz build
- * have their own calls.
- *
- * @generated from message cxz.EngineInfo
- */
-export type EngineInfo = Message<"cxz.EngineInfo"> & {
-  /**
-   * @generated from field: cxz.EngineMode mode = 1;
-   */
-  mode: EngineMode;
-
-  /**
-   * @generated from field: string state = 2;
-   */
-  state: string;
-
-  /**
-   * @generated from field: string health = 3;
-   */
-  health: string;
-
-  /**
-   * @generated from field: string image = 4;
-   */
-  image: string;
-
-  /**
-   * @generated from field: string configured_image = 5;
-   */
-  configuredImage: string;
-
-  /**
-   * @generated from field: string endpoint = 6;
-   */
-  endpoint: string;
-
-  /**
-   * @generated from field: string build_cache = 7;
-   */
-  buildCache: string;
-
-  /**
-   * @generated from field: string reclaimable = 8;
-   */
-  reclaimable: string;
-
-  /**
-   * Set when the engine is running but its disk usage could not be read,
-   * rather than reporting a size of nothing.
-   *
-   * @generated from field: string usage_error = 9;
-   */
-  usageError: string;
-};
-
-/**
- * Describes the message cxz.EngineInfo.
- * Use `create(EngineInfoSchema)` to create a new message.
- */
-export const EngineInfoSchema: GenMessage<EngineInfo> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 36);
-
-/**
- * error is set when the channel or the pin could not be read; the build itself
- * is compiled in and always known.
- *
- * @generated from message cxz.InstallationVersion
- */
-export type InstallationVersion = Message<"cxz.InstallationVersion"> & {
-  /**
-   * @generated from field: string version = 1;
-   */
-  version: string;
-
-  /**
-   * @generated from field: string revision = 2;
-   */
-  revision: string;
-
-  /**
-   * @generated from field: string channel = 3;
-   */
-  channel: string;
-
-  /**
-   * @generated from field: string pin = 4;
-   */
-  pin: string;
-
-  /**
-   * @generated from field: string error = 5;
-   */
-  error: string;
-};
-
-/**
- * Describes the message cxz.InstallationVersion.
- * Use `create(InstallationVersionSchema)` to create a new message.
- */
-export const InstallationVersionSchema: GenMessage<InstallationVersion> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 37);
-
-/**
- * @generated from message cxz.DiagnosticsRequest
- */
-export type DiagnosticsRequest = Message<"cxz.DiagnosticsRequest"> & {
-  /**
-   * Narrow to one method, and to what happened since a point in time. Limit
-   * takes the newest; zero means everything kept.
-   *
-   * @generated from field: string method = 1;
-   */
-  method: string;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp since = 2;
-   */
-  since?: Timestamp | undefined;
-
-  /**
-   * @generated from field: int32 limit = 3;
-   */
-  limit: number;
-
-  /**
-   * Aggregates alone, for the common question of what is slow.
-   *
-   * @generated from field: bool stats_only = 4;
-   */
-  statsOnly: boolean;
-};
-
-/**
- * Describes the message cxz.DiagnosticsRequest.
- * Use `create(DiagnosticsRequestSchema)` to create a new message.
- */
-export const DiagnosticsRequestSchema: GenMessage<DiagnosticsRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 38);
-
-/**
- * @generated from message cxz.DiagnosticsReply
- */
-export type DiagnosticsReply = Message<"cxz.DiagnosticsReply"> & {
-  /**
-   * @generated from field: repeated cxz.RpcStat stats = 1;
-   */
-  stats: RpcStat[];
-
-  /**
-   * @generated from field: repeated cxz.RpcRecord records = 2;
-   */
-  records: RpcRecord[];
-
-  /**
-   * Set while a capture window is open.
-   *
-   * @generated from field: google.protobuf.Timestamp capturing_until = 3;
-   */
-  capturingUntil?: Timestamp | undefined;
-
-  /**
-   * Where the failed and the slow are appended, on the manager's filesystem.
-   *
-   * @generated from field: string path = 4;
-   */
-  path: string;
-};
-
-/**
- * Describes the message cxz.DiagnosticsReply.
- * Use `create(DiagnosticsReplySchema)` to create a new message.
- */
-export const DiagnosticsReplySchema: GenMessage<DiagnosticsReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 39);
-
-/**
- * @generated from message cxz.RpcStat
- */
-export type RpcStat = Message<"cxz.RpcStat"> & {
-  /**
-   * @generated from field: string method = 1;
-   */
-  method: string;
-
-  /**
-   * @generated from field: int64 calls = 2;
-   */
-  calls: bigint;
-
-  /**
-   * @generated from field: int64 failed = 3;
-   */
-  failed: bigint;
-
-  /**
-   * @generated from field: int64 in_flight = 4;
-   */
-  inFlight: bigint;
-
-  /**
-   * Histogram bucket bounds, so they read as "at or under": what a bucketed
-   * histogram can honestly say without keeping every sample.
-   *
-   * @generated from field: int64 p50_ms = 5;
-   */
-  p50Ms: bigint;
-
-  /**
-   * @generated from field: int64 p99_ms = 6;
-   */
-  p99Ms: bigint;
-
-  /**
-   * @generated from field: int64 max_ms = 7;
-   */
-  maxMs: bigint;
-};
-
-/**
- * Describes the message cxz.RpcStat.
- * Use `create(RpcStatSchema)` to create a new message.
- */
-export const RpcStatSchema: GenMessage<RpcStat> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 40);
-
-/**
- * @generated from message cxz.RpcRecord
- */
-export type RpcRecord = Message<"cxz.RpcRecord"> & {
-  /**
-   * @generated from field: google.protobuf.Timestamp at = 1;
-   */
-  at?: Timestamp | undefined;
-
-  /**
-   * @generated from field: string method = 2;
-   */
-  method: string;
-
-  /**
-   * A gRPC status name, as the status renders it: OK, DeadlineExceeded.
-   *
-   * @generated from field: string code = 3;
-   */
-  code: string;
-
-  /**
-   * @generated from field: int64 elapsed_ms = 4;
-   */
-  elapsedMs: bigint;
-
-  /**
-   * Of the elapsed time, how much was spent waiting, and on what.
-   *
-   * @generated from field: int64 waited_ms = 5;
-   */
-  waitedMs: bigint;
-
-  /**
-   * @generated from field: string waited_on = 6;
-   */
-  waitedOn: string;
-
-  /**
-   * @generated from field: bool stream = 7;
-   */
-  stream: boolean;
-};
-
-/**
- * Describes the message cxz.RpcRecord.
- * Use `create(RpcRecordSchema)` to create a new message.
- */
-export const RpcRecordSchema: GenMessage<RpcRecord> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 41);
-
-/**
- * @generated from message cxz.CaptureDiagnosticsRequest
- */
-export type CaptureDiagnosticsRequest = Message<"cxz.CaptureDiagnosticsRequest"> & {
-  /**
-   * Seconds to keep every call for; zero stops an active window.
-   *
-   * @generated from field: int32 seconds = 1;
-   */
-  seconds: number;
-};
-
-/**
- * Describes the message cxz.CaptureDiagnosticsRequest.
- * Use `create(CaptureDiagnosticsRequestSchema)` to create a new message.
- */
-export const CaptureDiagnosticsRequestSchema: GenMessage<CaptureDiagnosticsRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 42);
-
-/**
- * @generated from message cxz.AuxConfigRequest
- */
-export type AuxConfigRequest = Message<"cxz.AuxConfigRequest"> & {
-};
-
-/**
- * Describes the message cxz.AuxConfigRequest.
- * Use `create(AuxConfigRequestSchema)` to create a new message.
- */
-export const AuxConfigRequestSchema: GenMessage<AuxConfigRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 43);
-
-/**
- * @generated from message cxz.AuxConfigReply
- */
-export type AuxConfigReply = Message<"cxz.AuxConfigReply"> & {
-  /**
-   * @generated from field: string revision = 1;
-   */
-  revision: string;
-
-  /**
-   * @generated from field: repeated cxz.AuxProfile profiles = 2;
-   */
-  profiles: AuxProfile[];
-
-  /**
-   * @generated from field: string message = 3;
-   */
-  message: string;
-
-  /**
-   * @generated from field: string owner = 4;
-   */
-  owner: string;
-};
-
-/**
- * Describes the message cxz.AuxConfigReply.
- * Use `create(AuxConfigReplySchema)` to create a new message.
- */
-export const AuxConfigReplySchema: GenMessage<AuxConfigReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 44);
-
-/**
- * Which account and model run a kind. Per kind, because whether two kinds share
- * a profile is what decides whether one call can answer both. agent and backend
- * are read only: they come from the registered account, not from a caller.
- *
- * @generated from message cxz.AuxProfile
- */
-export type AuxProfile = Message<"cxz.AuxProfile"> & {
-  /**
-   * @generated from field: cxz.AuxKind kind = 1;
-   */
-  kind: AuxKind;
-
-  /**
-   * @generated from field: bool enabled = 2;
-   */
-  enabled: boolean;
-
-  /**
-   * @generated from field: string account = 3;
-   */
-  account: string;
-
-  /**
-   * @generated from field: string agent = 4;
-   */
-  agent: string;
-
-  /**
-   * @generated from field: string backend = 5;
-   */
-  backend: string;
-
-  /**
-   * @generated from field: string model = 6;
-   */
-  model: string;
-
-  /**
-   * @generated from field: string effort = 7;
-   */
-  effort: string;
-
-  /**
-   * Read only: the boundary the server set when the kind was enabled, so a
-   * caller can say what it applies to. Ignored when it arrives.
-   *
-   * @generated from field: google.protobuf.Timestamp since = 8;
-   */
-  since?: Timestamp | undefined;
-};
-
-/**
- * Describes the message cxz.AuxProfile.
- * Use `create(AuxProfileSchema)` to create a new message.
- */
-export const AuxProfileSchema: GenMessage<AuxProfile> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 45);
-
-/**
- * @generated from message cxz.AuxSetConfigRequest
- */
-export type AuxSetConfigRequest = Message<"cxz.AuxSetConfigRequest"> & {
-  /**
-   * @generated from field: repeated cxz.AuxProfile profiles = 1;
-   */
-  profiles: AuxProfile[];
-};
-
-/**
- * Describes the message cxz.AuxSetConfigRequest.
- * Use `create(AuxSetConfigRequestSchema)` to create a new message.
- */
-export const AuxSetConfigRequestSchema: GenMessage<AuxSetConfigRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 46);
-
-/**
- * @generated from message cxz.HistoryPolicyRequest
- */
-export type HistoryPolicyRequest = Message<"cxz.HistoryPolicyRequest"> & {
-};
-
-/**
- * Describes the message cxz.HistoryPolicyRequest.
- * Use `create(HistoryPolicyRequestSchema)` to create a new message.
- */
-export const HistoryPolicyRequestSchema: GenMessage<HistoryPolicyRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 47);
-
-/**
- * disabled turns removal off entirely; zero in a budget means the default. Both
- * budgets are per session.
- *
- * @generated from message cxz.HistoryPolicy
- */
-export type HistoryPolicy = Message<"cxz.HistoryPolicy"> & {
-  /**
-   * @generated from field: bool disabled = 1;
-   */
-  disabled: boolean;
-
-  /**
-   * @generated from field: int32 max_mib = 2;
-   */
-  maxMib: number;
-
-  /**
-   * @generated from field: int32 raw_mib = 3;
-   */
-  rawMib: number;
-
-  /**
-   * @generated from field: int32 window_mib = 4;
-   */
-  windowMib: number;
-
-  /**
-   * @generated from field: int32 window_turns = 5;
-   */
-  windowTurns: number;
-};
-
-/**
- * Describes the message cxz.HistoryPolicy.
- * Use `create(HistoryPolicySchema)` to create a new message.
- */
-export const HistoryPolicySchema: GenMessage<HistoryPolicy> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 48);
-
-/**
  * session is the runtime id and not a SessionRef: it names the scope the helper
  * writes under rather than a row to look up, and this contract cannot refer to
  * the session one -- the dependency runs the other way.
@@ -1592,7 +888,7 @@ export type PutSecretFileRequest = Message<"cxz.PutSecretFileRequest"> & {
  * Use `create(PutSecretFileRequestSchema)` to create a new message.
  */
 export const PutSecretFileRequestSchema: GenMessage<PutSecretFileRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 49);
+  messageDesc(file_cxz_project_svc_g, 26);
 
 /**
  * @generated from message cxz.SecretFileReply
@@ -1609,7 +905,7 @@ export type SecretFileReply = Message<"cxz.SecretFileReply"> & {
  * Use `create(SecretFileReplySchema)` to create a new message.
  */
 export const SecretFileReplySchema: GenMessage<SecretFileReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 50);
+  messageDesc(file_cxz_project_svc_g, 27);
 
 /**
  * @generated from message cxz.DeleteSecretFileRequest
@@ -1631,7 +927,7 @@ export type DeleteSecretFileRequest = Message<"cxz.DeleteSecretFileRequest"> & {
  * Use `create(DeleteSecretFileRequestSchema)` to create a new message.
  */
 export const DeleteSecretFileRequestSchema: GenMessage<DeleteSecretFileRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 51);
+  messageDesc(file_cxz_project_svc_g, 28);
 
 /**
  * ref scopes the view that comes back: with one, each entry says what that
@@ -1653,7 +949,7 @@ export type SkillsRequest = Message<"cxz.SkillsRequest"> & {
  * Use `create(SkillsRequestSchema)` to create a new message.
  */
 export const SkillsRequestSchema: GenMessage<SkillsRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 52);
+  messageDesc(file_cxz_project_svc_g, 29);
 
 /**
  * @generated from message cxz.SkillsReply
@@ -1675,7 +971,7 @@ export type SkillsReply = Message<"cxz.SkillsReply"> & {
  * Use `create(SkillsReplySchema)` to create a new message.
  */
 export const SkillsReplySchema: GenMessage<SkillsReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 53);
+  messageDesc(file_cxz_project_svc_g, 30);
 
 /**
  * @generated from message cxz.SkillEntry
@@ -1711,7 +1007,7 @@ export type SkillEntry = Message<"cxz.SkillEntry"> & {
  * Use `create(SkillEntrySchema)` to create a new message.
  */
 export const SkillEntrySchema: GenMessage<SkillEntry> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 54);
+  messageDesc(file_cxz_project_svc_g, 31);
 
 /**
  * @generated from message cxz.SkillRequest
@@ -1733,7 +1029,7 @@ export type SkillRequest = Message<"cxz.SkillRequest"> & {
  * Use `create(SkillRequestSchema)` to create a new message.
  */
 export const SkillRequestSchema: GenMessage<SkillRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 55);
+  messageDesc(file_cxz_project_svc_g, 32);
 
 /**
  * @generated from message cxz.SkillDefaultRequest
@@ -1755,7 +1051,7 @@ export type SkillDefaultRequest = Message<"cxz.SkillDefaultRequest"> & {
  * Use `create(SkillDefaultRequestSchema)` to create a new message.
  */
 export const SkillDefaultRequestSchema: GenMessage<SkillDefaultRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 56);
+  messageDesc(file_cxz_project_svc_g, 33);
 
 /**
  * @generated from message cxz.ProjectSkillRequest
@@ -1782,7 +1078,7 @@ export type ProjectSkillRequest = Message<"cxz.ProjectSkillRequest"> & {
  * Use `create(ProjectSkillRequestSchema)` to create a new message.
  */
 export const ProjectSkillRequestSchema: GenMessage<ProjectSkillRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 57);
+  messageDesc(file_cxz_project_svc_g, 34);
 
 /**
  * @generated from message cxz.ClearProjectSkillRequest
@@ -1804,7 +1100,7 @@ export type ClearProjectSkillRequest = Message<"cxz.ClearProjectSkillRequest"> &
  * Use `create(ClearProjectSkillRequestSchema)` to create a new message.
  */
 export const ClearProjectSkillRequestSchema: GenMessage<ClearProjectSkillRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 58);
+  messageDesc(file_cxz_project_svc_g, 35);
 
 /**
  * ref scopes the view, as it does for the skills library. A registration is
@@ -1824,7 +1120,7 @@ export type McpServersRequest = Message<"cxz.McpServersRequest"> & {
  * Use `create(McpServersRequestSchema)` to create a new message.
  */
 export const McpServersRequestSchema: GenMessage<McpServersRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 59);
+  messageDesc(file_cxz_project_svc_g, 36);
 
 /**
  * @generated from message cxz.McpServersReply
@@ -1846,7 +1142,7 @@ export type McpServersReply = Message<"cxz.McpServersReply"> & {
  * Use `create(McpServersReplySchema)` to create a new message.
  */
 export const McpServersReplySchema: GenMessage<McpServersReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 60);
+  messageDesc(file_cxz_project_svc_g, 37);
 
 /**
  * @generated from message cxz.McpEntry
@@ -1880,7 +1176,7 @@ export type McpEntry = Message<"cxz.McpEntry"> & {
  * Use `create(McpEntrySchema)` to create a new message.
  */
 export const McpEntrySchema: GenMessage<McpEntry> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 61);
+  messageDesc(file_cxz_project_svc_g, 38);
 
 /**
  * @generated from message cxz.McpServer
@@ -1932,7 +1228,7 @@ export type McpServer = Message<"cxz.McpServer"> & {
  * Use `create(McpServerSchema)` to create a new message.
  */
 export const McpServerSchema: GenMessage<McpServer> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 62);
+  messageDesc(file_cxz_project_svc_g, 39);
 
 /**
  * @generated from message cxz.PutMcpServerRequest
@@ -1954,7 +1250,7 @@ export type PutMcpServerRequest = Message<"cxz.PutMcpServerRequest"> & {
  * Use `create(PutMcpServerRequestSchema)` to create a new message.
  */
 export const PutMcpServerRequestSchema: GenMessage<PutMcpServerRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 63);
+  messageDesc(file_cxz_project_svc_g, 40);
 
 /**
  * @generated from message cxz.McpServerRequest
@@ -1971,7 +1267,7 @@ export type McpServerRequest = Message<"cxz.McpServerRequest"> & {
  * Use `create(McpServerRequestSchema)` to create a new message.
  */
 export const McpServerRequestSchema: GenMessage<McpServerRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 64);
+  messageDesc(file_cxz_project_svc_g, 41);
 
 /**
  * @generated from message cxz.McpServerDefaultRequest
@@ -1993,7 +1289,7 @@ export type McpServerDefaultRequest = Message<"cxz.McpServerDefaultRequest"> & {
  * Use `create(McpServerDefaultRequestSchema)` to create a new message.
  */
 export const McpServerDefaultRequestSchema: GenMessage<McpServerDefaultRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 65);
+  messageDesc(file_cxz_project_svc_g, 42);
 
 /**
  * @generated from message cxz.ProjectMcpServerRequest
@@ -2020,7 +1316,7 @@ export type ProjectMcpServerRequest = Message<"cxz.ProjectMcpServerRequest"> & {
  * Use `create(ProjectMcpServerRequestSchema)` to create a new message.
  */
 export const ProjectMcpServerRequestSchema: GenMessage<ProjectMcpServerRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 66);
+  messageDesc(file_cxz_project_svc_g, 43);
 
 /**
  * @generated from message cxz.ClearProjectMcpServerRequest
@@ -2042,7 +1338,7 @@ export type ClearProjectMcpServerRequest = Message<"cxz.ClearProjectMcpServerReq
  * Use `create(ClearProjectMcpServerRequestSchema)` to create a new message.
  */
 export const ClearProjectMcpServerRequestSchema: GenMessage<ClearProjectMcpServerRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 67);
+  messageDesc(file_cxz_project_svc_g, 44);
 
 /**
  * @generated from message cxz.McpSessionsRequest
@@ -2059,7 +1355,7 @@ export type McpSessionsRequest = Message<"cxz.McpSessionsRequest"> & {
  * Use `create(McpSessionsRequestSchema)` to create a new message.
  */
 export const McpSessionsRequestSchema: GenMessage<McpSessionsRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 68);
+  messageDesc(file_cxz_project_svc_g, 45);
 
 /**
  * @generated from message cxz.McpSessionsReply
@@ -2081,7 +1377,7 @@ export type McpSessionsReply = Message<"cxz.McpSessionsReply"> & {
  * Use `create(McpSessionsReplySchema)` to create a new message.
  */
 export const McpSessionsReplySchema: GenMessage<McpSessionsReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 69);
+  messageDesc(file_cxz_project_svc_g, 46);
 
 /**
  * servers maps an MCP id to what its connection is doing in this session.
@@ -2125,41 +1421,7 @@ export type McpSessionStatus = Message<"cxz.McpSessionStatus"> & {
  * Use `create(McpSessionStatusSchema)` to create a new message.
  */
 export const McpSessionStatusSchema: GenMessage<McpSessionStatus> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 70);
-
-/**
- * @generated from message cxz.FileMappingsRequest
- */
-export type FileMappingsRequest = Message<"cxz.FileMappingsRequest"> & {
-  /**
-   * @generated from field: bytes bundle = 1;
-   */
-  bundle: Uint8Array;
-};
-
-/**
- * Describes the message cxz.FileMappingsRequest.
- * Use `create(FileMappingsRequestSchema)` to create a new message.
- */
-export const FileMappingsRequestSchema: GenMessage<FileMappingsRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 71);
-
-/**
- * @generated from message cxz.FileMappingsReply
- */
-export type FileMappingsReply = Message<"cxz.FileMappingsReply"> & {
-  /**
-   * @generated from field: string status = 1;
-   */
-  status: string;
-};
-
-/**
- * Describes the message cxz.FileMappingsReply.
- * Use `create(FileMappingsReplySchema)` to create a new message.
- */
-export const FileMappingsReplySchema: GenMessage<FileMappingsReply> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 72);
+  messageDesc(file_cxz_project_svc_g, 47);
 
 /**
  * @generated from message cxz.ProjectStartRequest
@@ -2202,7 +1464,7 @@ export type ProjectStartRequest = Message<"cxz.ProjectStartRequest"> & {
  * Use `create(ProjectStartRequestSchema)` to create a new message.
  */
 export const ProjectStartRequestSchema: GenMessage<ProjectStartRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 73);
+  messageDesc(file_cxz_project_svc_g, 48);
 
 /**
  * @generated from message cxz.ProjectControl
@@ -2224,127 +1486,7 @@ export type ProjectControl = Message<"cxz.ProjectControl"> & {
  * Use `create(ProjectControlSchema)` to create a new message.
  */
 export const ProjectControlSchema: GenMessage<ProjectControl> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 74);
-
-/**
- * @generated from message cxz.InspectForeignRequest
- */
-export type InspectForeignRequest = Message<"cxz.InspectForeignRequest"> & {
-};
-
-/**
- * Describes the message cxz.InspectForeignRequest.
- * Use `create(InspectForeignRequestSchema)` to create a new message.
- */
-export const InspectForeignRequestSchema: GenMessage<InspectForeignRequest> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 75);
-
-/**
- * @generated from message cxz.InspectForeignResponse
- */
-export type InspectForeignResponse = Message<"cxz.InspectForeignResponse"> & {
-  /**
-   * @generated from field: repeated cxz.ForeignContainer items = 1;
-   */
-  items: ForeignContainer[];
-};
-
-/**
- * Describes the message cxz.InspectForeignResponse.
- * Use `create(InspectForeignResponseSchema)` to create a new message.
- */
-export const InspectForeignResponseSchema: GenMessage<InspectForeignResponse> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 76);
-
-/**
- * @generated from message cxz.ForeignContainer
- */
-export type ForeignContainer = Message<"cxz.ForeignContainer"> & {
-  /**
-   * @generated from field: string container_id = 1;
-   */
-  containerId: string;
-
-  /**
-   * @generated from field: string workspace = 2;
-   */
-  workspace: string;
-
-  /**
-   * @generated from field: string name = 3;
-   */
-  name: string;
-};
-
-/**
- * Describes the message cxz.ForeignContainer.
- * Use `create(ForeignContainerSchema)` to create a new message.
- */
-export const ForeignContainerSchema: GenMessage<ForeignContainer> = /*@__PURE__*/
-  messageDesc(file_cxz_project_svc_g, 77);
-
-/**
- * The engine has two modes and nothing else, so this is where the action
- * string's enum belongs: on the value with a closed set, not on the verb.
- *
- * @generated from enum cxz.EngineMode
- */
-export enum EngineMode {
-  /**
-   * @generated from enum value: ENGINE_MODE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: ENGINE_MODE_OFF = 1;
-   */
-  OFF = 1,
-
-  /**
-   * @generated from enum value: ENGINE_MODE_DIND = 2;
-   */
-  DIND = 2,
-}
-
-/**
- * Describes the enum cxz.EngineMode.
- */
-export const EngineModeSchema: GenEnum<EngineMode> = /*@__PURE__*/
-  enumDesc(file_cxz_project_svc_g, 0);
-
-/**
- * The kinds of task that can be done beside a session. A new kind is a value
- * here, not another RPC.
- *
- * @generated from enum cxz.AuxKind
- */
-export enum AuxKind {
-  /**
-   * @generated from enum value: AUX_KIND_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: AUX_KIND_SUMMARY = 1;
-   */
-  SUMMARY = 1,
-
-  /**
-   * @generated from enum value: AUX_KIND_SUGGESTION = 2;
-   */
-  SUGGESTION = 2,
-
-  /**
-   * @generated from enum value: AUX_KIND_TITLE = 3;
-   */
-  TITLE = 3,
-}
-
-/**
- * Describes the enum cxz.AuxKind.
- */
-export const AuxKindSchema: GenEnum<AuxKind> = /*@__PURE__*/
-  enumDesc(file_cxz_project_svc_g, 1);
+  messageDesc(file_cxz_project_svc_g, 49);
 
 /**
  * An MCP server definition. kind is what the connection is: a local process, an
@@ -2383,7 +1525,7 @@ export enum McpKind {
  * Describes the enum cxz.McpKind.
  */
 export const McpKindSchema: GenEnum<McpKind> = /*@__PURE__*/
-  enumDesc(file_cxz_project_svc_g, 2);
+  enumDesc(file_cxz_project_svc_g, 0);
 
 /**
  * @generated from service cxz.ProjectService
@@ -2543,163 +1685,6 @@ export const ProjectService: GenService<{
     output: typeof ProjectEditorTunnelReplySchema;
   },
   /**
-   * @generated from rpc cxz.ProjectService.Devcontainer
-   */
-  devcontainer: {
-    methodKind: "unary";
-    input: typeof DevcontainerRequestSchema;
-    output: typeof DevcontainerReplySchema;
-  },
-  /**
-   * What one project actually runs under: the configuration cxz handed the
-   * devcontainer CLI, every Compose file in merge order, and the merge itself,
-   * read back from what provisioning wrote. Devcontainer, above, saves the
-   * settings; this reads what a project got from them, which is why the two
-   * are not one call.
-   *
-   * @generated from rpc cxz.ProjectService.RenderDevcontainer
-   */
-  renderDevcontainer: {
-    methodKind: "unary";
-    input: typeof RenderDevcontainerRequestSchema;
-    output: typeof RenderDevcontainerReplySchema;
-  },
-  /**
-   * The shared Docker engine. Five operations, each named, where one message
-   * with an action string used to carry all of them -- and a spec field that
-   * only two of them could mean anything by. The enum that is left is on the
-   * thing that has a closed set of values, which is the engine's mode.
-   *
-   * @generated from rpc cxz.ProjectService.SaveEngine
-   */
-  saveEngine: {
-    methodKind: "unary";
-    input: typeof SaveEngineRequestSchema;
-    output: typeof EngineReplySchema;
-  },
-  /**
-   * @generated from rpc cxz.ProjectService.StartEngine
-   */
-  startEngine: {
-    methodKind: "unary";
-    input: typeof StartEngineRequestSchema;
-    output: typeof EngineReplySchema;
-  },
-  /**
-   * @generated from rpc cxz.ProjectService.StopEngine
-   */
-  stopEngine: {
-    methodKind: "unary";
-    input: typeof EngineRequestSchema;
-    output: typeof EngineReplySchema;
-  },
-  /**
-   * @generated from rpc cxz.ProjectService.PruneEngine
-   */
-  pruneEngine: {
-    methodKind: "unary";
-    input: typeof EngineRequestSchema;
-    output: typeof EngineReplySchema;
-  },
-  /**
-   * @generated from rpc cxz.ProjectService.EngineStatus
-   */
-  engineStatus: {
-    methodKind: "unary";
-    input: typeof EngineRequestSchema;
-    output: typeof EngineReplySchema;
-  },
-  /**
-   * @generated from rpc cxz.ProjectService.GetEngineInfo
-   */
-  getEngineInfo: {
-    methodKind: "unary";
-    input: typeof EngineRequestSchema;
-    output: typeof EngineInfoSchema;
-  },
-  /**
-   * What this installation of cxz is: its build, its update channel and
-   * whether it is pinned. It travelled inside the engine's info reply, which is
-   * how a question about Docker came to answer a question about cxz.
-   *
-   * @generated from rpc cxz.ProjectService.GetInstallationVersion
-   */
-  getInstallationVersion: {
-    methodKind: "unary";
-    input: typeof EngineRequestSchema;
-    output: typeof InstallationVersionSchema;
-  },
-  /**
-   * What the manager has been doing: per-method aggregates, and the calls it
-   * kept -- which method, which status, how long, and how much of that was
-   * spent waiting rather than working. Metadata only: no request or reply ever
-   * enters it, because the answer is read over the plaintext surface.
-   *
-   * It was only ever on the manager's stdout, so every question about a stalled
-   * installation needed `docker logs` on the host. See cxz#211.
-   *
-   * @generated from rpc cxz.ProjectService.Diagnostics
-   */
-  diagnostics: {
-    methodKind: "unary";
-    input: typeof DiagnosticsRequestSchema;
-    output: typeof DiagnosticsReplySchema;
-  },
-  /**
-   * Keep every call for a while, not only the failed and the slow ones. The
-   * window expires on its own: a verbose setting that has to be turned off is
-   * one that is left on.
-   *
-   * @generated from rpc cxz.ProjectService.CaptureDiagnostics
-   */
-  captureDiagnostics: {
-    methodKind: "unary";
-    input: typeof CaptureDiagnosticsRequestSchema;
-    output: typeof DiagnosticsReplySchema;
-  },
-  /**
-   * Aux is a model task done beside a session: run once, with the context cxz
-   * assembles, never accumulating into a conversation. These two are the part
-   * that belongs to the installation rather than to one session -- which
-   * account and model each kind runs on. See docs/plans/aux-api.md. What a
-   * single account offers is `AccountService.Models` and `LoginInfo`: those
-   * name an account, so they are that service's.
-   *
-   * @generated from rpc cxz.ProjectService.AuxConfig
-   */
-  auxConfig: {
-    methodKind: "unary";
-    input: typeof AuxConfigRequestSchema;
-    output: typeof AuxConfigReplySchema;
-  },
-  /**
-   * @generated from rpc cxz.ProjectService.AuxSetConfig
-   */
-  auxSetConfig: {
-    methodKind: "unary";
-    input: typeof AuxSetConfigRequestSchema;
-    output: typeof AuxConfigReplySchema;
-  },
-  /**
-   * The history budgets of this installation. They bound cxz's own records
-   * only; provider context is not affected. See docs/history.md.
-   *
-   * @generated from rpc cxz.ProjectService.GetHistoryPolicy
-   */
-  getHistoryPolicy: {
-    methodKind: "unary";
-    input: typeof HistoryPolicyRequestSchema;
-    output: typeof HistoryPolicySchema;
-  },
-  /**
-   * @generated from rpc cxz.ProjectService.SetHistoryPolicy
-   */
-  setHistoryPolicy: {
-    methodKind: "unary";
-    input: typeof HistoryPolicySchema;
-    output: typeof HistoryPolicySchema;
-  },
-  /**
    * A secret file is written by the workspace helper inside a project
    * container, for a client that cannot reach the engine itself. Two calls
    * rather than one with a verb: only one of them carries a secret, and that
@@ -2844,14 +1829,6 @@ export const ProjectService: GenService<{
     output: typeof McpSessionsReplySchema;
   },
   /**
-   * @generated from rpc cxz.ProjectService.FileMappings
-   */
-  fileMappings: {
-    methodKind: "unary";
-    input: typeof FileMappingsRequestSchema;
-    output: typeof FileMappingsReplySchema;
-  },
-  /**
    * A project's container, in the three words a person uses about it. Start
    * makes the project run: it builds and creates the container when there is
    * none and starts the one there is otherwise, because "make it run" is one
@@ -2887,16 +1864,6 @@ export const ProjectService: GenService<{
     methodKind: "unary";
     input: typeof ProjectControlSchema;
     output: typeof ProjectSchema;
-  },
-  /**
-   * Foreign inventory is not part of the registered Project resource list.
-   *
-   * @generated from rpc cxz.ProjectService.InspectForeign
-   */
-  inspectForeign: {
-    methodKind: "unary";
-    input: typeof InspectForeignRequestSchema;
-    output: typeof InspectForeignResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_cxz_project_svc_g, 0);

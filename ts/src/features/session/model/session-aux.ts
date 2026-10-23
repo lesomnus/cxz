@@ -1,4 +1,4 @@
-import { AuxKind } from "#gen/cxz/project_svc_pb";
+import { AuxKind } from "#gen/cxz/installation_pb";
 import type { AuxState } from "#gen/cxz/session_svc_pb";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 

@@ -14488,7 +14488,7 @@ var File_cxz_session_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17cxz/session_svc.g.proto\x12\x03cxz\x1a\x17cxz/account_svc.g.proto\x1a\x1ccxz/auth_binding_svc.g.proto\x1a\x17cxz/project_svc.g.proto\x1a\x11cxz/session.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\x84\x04\n" +
+	"\x17cxz/session_svc.g.proto\x12\x03cxz\x1a\x17cxz/account_svc.g.proto\x1a\x1ccxz/auth_binding_svc.g.proto\x1a\x16cxz/installation.proto\x1a\x17cxz/project_svc.g.proto\x1a\x11cxz/session.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\x84\x04\n" +
 	"\x11SessionAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x19\n" +
@@ -15378,6 +15378,7 @@ func file_cxz_session_svc_g_proto_init() {
 	}
 	file_cxz_account_svc_g_proto_init()
 	file_cxz_auth_binding_svc_g_proto_init()
+	file_cxz_installation_proto_init()
 	file_cxz_project_svc_g_proto_init()
 	file_cxz_session_proto_init()
 	file_cxz_session_svc_g_proto_msgTypes[2].OneofWrappers = []any{

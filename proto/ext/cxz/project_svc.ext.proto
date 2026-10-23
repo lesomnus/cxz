@@ -29,51 +29,6 @@ service ProjectService {
   rpc Editor(ProjectEditorRequest) returns (ProjectEditorReply);
   // Private gateway transport to the editor's loopback listener; not web RPC.
   rpc EditorTunnel(stream ProjectEditorTunnelRequest) returns (stream ProjectEditorTunnelReply);
- rpc Devcontainer(DevcontainerRequest) returns (DevcontainerReply);
-  // What one project actually runs under: the configuration cxz handed the
-  // devcontainer CLI, every Compose file in merge order, and the merge itself,
-  // read back from what provisioning wrote. Devcontainer, above, saves the
-  // settings; this reads what a project got from them, which is why the two
-  // are not one call.
-  rpc RenderDevcontainer(RenderDevcontainerRequest) returns (RenderDevcontainerReply);
-  // The shared Docker engine. Five operations, each named, where one message
-  // with an action string used to carry all of them -- and a spec field that
-  // only two of them could mean anything by. The enum that is left is on the
-  // thing that has a closed set of values, which is the engine's mode.
-  rpc SaveEngine(SaveEngineRequest) returns (EngineReply);
-  rpc StartEngine(StartEngineRequest) returns (EngineReply);
-  rpc StopEngine(EngineRequest) returns (EngineReply);
-  rpc PruneEngine(EngineRequest) returns (EngineReply);
-  rpc EngineStatus(EngineRequest) returns (EngineReply);
-  rpc GetEngineInfo(EngineRequest) returns (EngineInfo);
-  // What this installation of cxz is: its build, its update channel and
-  // whether it is pinned. It travelled inside the engine's info reply, which is
-  // how a question about Docker came to answer a question about cxz.
-  rpc GetInstallationVersion(EngineRequest) returns (InstallationVersion);
-  // What the manager has been doing: per-method aggregates, and the calls it
-  // kept -- which method, which status, how long, and how much of that was
-  // spent waiting rather than working. Metadata only: no request or reply ever
-  // enters it, because the answer is read over the plaintext surface.
-  //
-  // It was only ever on the manager's stdout, so every question about a stalled
-  // installation needed `docker logs` on the host. See cxz#211.
-  rpc Diagnostics(DiagnosticsRequest) returns (DiagnosticsReply);
-  // Keep every call for a while, not only the failed and the slow ones. The
-  // window expires on its own: a verbose setting that has to be turned off is
-  // one that is left on.
-  rpc CaptureDiagnostics(CaptureDiagnosticsRequest) returns (DiagnosticsReply);
-  // Aux is a model task done beside a session: run once, with the context cxz
-  // assembles, never accumulating into a conversation. These two are the part
-  // that belongs to the installation rather than to one session -- which
-  // account and model each kind runs on. See docs/plans/aux-api.md. What a
-  // single account offers is `AccountService.Models` and `LoginInfo`: those
-  // name an account, so they are that service's.
-  rpc AuxConfig(AuxConfigRequest) returns (AuxConfigReply);
-  rpc AuxSetConfig(AuxSetConfigRequest) returns (AuxConfigReply);
-  // The history budgets of this installation. They bound cxz's own records
-  // only; provider context is not affected. See docs/history.md.
-  rpc GetHistoryPolicy(HistoryPolicyRequest) returns (HistoryPolicy);
-  rpc SetHistoryPolicy(HistoryPolicy) returns (HistoryPolicy);
   // A secret file is written by the workspace helper inside a project
   // container, for a client that cannot reach the engine itself. Two calls
   // rather than one with a verb: only one of them carries a secret, and that
@@ -109,7 +64,6 @@ service ProjectService {
   // a change is still waiting for a restart. Separate from reading the
   // registrations, because a settings list should not stall on a container.
   rpc McpSessions(McpSessionsRequest) returns (McpSessionsReply);
-  rpc FileMappings(FileMappingsRequest) returns (FileMappingsReply);
   // A project's container, in the three words a person uses about it. Start
   // makes the project run: it builds and creates the container when there is
   // none and starts the one there is otherwise, because "make it run" is one
@@ -125,8 +79,6 @@ service ProjectService {
   rpc Start(ProjectStartRequest) returns (Project);
   rpc Stop(ProjectControl) returns (Project);
   rpc Remove(ProjectControl) returns (Project);
-  // Foreign inventory is not part of the registered Project resource list.
-  rpc InspectForeign(InspectForeignRequest) returns (InspectForeignResponse);
 }
 
 message ProjectTerminalRequest {
@@ -176,34 +128,6 @@ message ProjectStartRequest {
   string config = 5;
 }
 message ProjectControl { ProjectRef ref = 1; string client_id = 2; }
-message InspectForeignRequest {}
-message InspectForeignResponse { repeated ForeignContainer items = 1; }
-message ForeignContainer { string container_id = 1; string workspace = 2; string name = 3; }
-
-message FileMappingsRequest { bytes bundle = 1; }
-message FileMappingsReply { string status = 1; }
-
-
-message DevcontainerRequest { bytes spec = 1; }
-message DevcontainerReply { string status = 1; }
-
-// handle is not a key to a row, which is why it is not a ProjectRef: it may be
-// a directory inside a workspace rather than the workspace itself -- a
-// .devcontainer directory is exactly where someone wonders which devcontainer
-// is in effect -- so the manager walks up to the registered workspace that
-// owns it. Only a registered workspace matches, so walking up cannot widen the
-// answer, and the reply names the project it settled on.
-message RenderDevcontainerRequest { string handle = 1; }
-// role is one line of prose, because the order of a merge is what a reader
-// needs and what a file name cannot say. source is a path on the manager host.
-message RenderedFile { string name = 1; string source = 2; string role = 3; bytes data = 4; }
-message RenderDevcontainerReply {
-  string project = 1; string name = 2; string workspace = 3;
-  // Set when something could not be rendered -- no Compose files to merge, or
-  // no Compose CLI to merge them with -- rather than failing the read.
-  string note = 4;
-  repeated RenderedFile files = 5;
-}
 
 // ref scopes the view that comes back: with one, each entry says what that
 // project sees and whether it decided for itself. Without one, the view is the
@@ -232,46 +156,12 @@ message ProjectEditorReply { string workspace = 1; string connection_token = 2; 
 message ProjectEditorTunnelRequest { ProjectRef ref = 1; bytes input = 2; }
 message ProjectEditorTunnelReply { bool ready = 1; bytes output = 2; }
 
-
-// The kinds of task that can be done beside a session. A new kind is a value
-// here, not another RPC.
-enum AuxKind {
-  AUX_KIND_UNSPECIFIED = 0;
-  AUX_KIND_SUMMARY = 1;
-  AUX_KIND_SUGGESTION = 2;
-  AUX_KIND_TITLE = 3;
-}
-// Which account and model run a kind. Per kind, because whether two kinds share
-// a profile is what decides whether one call can answer both. agent and backend
-// are read only: they come from the registered account, not from a caller.
-message AuxProfile {
-  AuxKind kind = 1; bool enabled = 2; string account = 3; string agent = 4;
-  string backend = 5; string model = 6; string effort = 7;
-  // Read only: the boundary the server set when the kind was enabled, so a
-  // caller can say what it applies to. Ignored when it arrives.
-  google.protobuf.Timestamp since = 8;
-}
-message AuxConfigRequest {}
-message AuxSetConfigRequest { repeated AuxProfile profiles = 1; }
-message AuxConfigReply {
-  string revision = 1; repeated AuxProfile profiles = 2;
-  string message = 3; string owner = 4;
-}
-
 // session is the runtime id and not a SessionRef: it names the scope the helper
 // writes under rather than a row to look up, and this contract cannot refer to
 // the session one -- the dependency runs the other way.
 message PutSecretFileRequest { ProjectRef ref = 1; string session = 2; bytes secret = 3; }
 message DeleteSecretFileRequest { ProjectRef ref = 1; string path = 2; }
 message SecretFileReply { string path = 1; }
-
-message HistoryPolicyRequest {}
-// disabled turns removal off entirely; zero in a budget means the default. Both
-// budgets are per session.
-message HistoryPolicy {
-  bool disabled = 1; int32 max_mib = 2; int32 raw_mib = 3;
-  int32 window_mib = 4; int32 window_turns = 5;
-}
 
 // An MCP server definition. kind is what the connection is: a local process, an
 // HTTP endpoint, or one cxz provides itself. env and headers hold explicit
@@ -319,82 +209,3 @@ message McpSessionStatus {
 }
 message McpSessionsReply { repeated McpSessionStatus sessions = 1; string message = 2; }
 
-// The engine has two modes and nothing else, so this is where the action
-// string's enum belongs: on the value with a closed set, not on the verb.
-enum EngineMode {
-  ENGINE_MODE_UNSPECIFIED = 0;
-  ENGINE_MODE_OFF = 1;
-  ENGINE_MODE_DIND = 2;
-}
-// override is the user's own Compose document and stays bytes: it is theirs to
-// write and cxz only merges it.
-message EngineSpec { EngineMode mode = 1; string image = 2; bytes override = 3; }
-message EngineRequest {}
-// A save has nothing to fall back on, so its spec is required. An absent spec
-// on a start means "apply the one already saved", which is what an empty
-// payload meant.
-message SaveEngineRequest { EngineSpec spec = 1; }
-message StartEngineRequest { EngineSpec spec = 1; }
-// One line of text for a person: an endpoint, a sentence, or what a prune
-// reclaimed.
-message EngineReply { string status = 1; }
-// What the engine is, and nothing else. The history budgets and the cxz build
-// have their own calls.
-message EngineInfo {
-  EngineMode mode = 1; string state = 2; string health = 3;
-  string image = 4; string configured_image = 5; string endpoint = 6;
-  string build_cache = 7; string reclaimable = 8;
-  // Set when the engine is running but its disk usage could not be read,
-  // rather than reporting a size of nothing.
-  string usage_error = 9;
-}
-// error is set when the channel or the pin could not be read; the build itself
-// is compiled in and always known.
-message InstallationVersion {
-  string version = 1; string revision = 2; string channel = 3;
-  string pin = 4; string error = 5;
-}
-
-message DiagnosticsRequest {
-  // Narrow to one method, and to what happened since a point in time. Limit
-  // takes the newest; zero means everything kept.
-  string method = 1;
-  google.protobuf.Timestamp since = 2;
-  int32 limit = 3;
-  // Aggregates alone, for the common question of what is slow.
-  bool stats_only = 4;
-}
-message CaptureDiagnosticsRequest {
-  // Seconds to keep every call for; zero stops an active window.
-  int32 seconds = 1;
-}
-message RpcRecord {
-  google.protobuf.Timestamp at = 1;
-  string method = 2;
-  // A gRPC status name, as the status renders it: OK, DeadlineExceeded.
-  string code = 3;
-  int64 elapsed_ms = 4;
-  // Of the elapsed time, how much was spent waiting, and on what.
-  int64 waited_ms = 5;
-  string waited_on = 6;
-  bool stream = 7;
-}
-message RpcStat {
-  string method = 1;
-  int64 calls = 2;
-  int64 failed = 3;
-  int64 in_flight = 4;
-  // Histogram bucket bounds, so they read as "at or under": what a bucketed
-  // histogram can honestly say without keeping every sample.
-  int64 p50_ms = 5;
-  int64 p99_ms = 6;
-  int64 max_ms = 7;
-}
-message DiagnosticsReply {
-  repeated RpcStat stats = 1;
-  repeated RpcRecord records = 2;
-  // Set while a capture window is open.
-  google.protobuf.Timestamp capturing_until = 3;
-  // Where the failed and the slow are appended, on the manager's filesystem.
-  string path = 4;
-}
