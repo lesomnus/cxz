@@ -171,3 +171,39 @@ func TestASessionThatHasRecordedNothing(t *testing.T) {
 		t.Fatal("a session that recorded nothing had a conversation", page.Events)
 	}
 }
+
+// A session that last ran before sessions wrote their state beside their
+// records has the records and no state. It is not a session that recorded
+// nothing: its run is in its records, and resuming it is checked against that
+// run. Read as empty, it had no run, and every resume was refused as stale.
+func TestASessionRecordedBeforeItsStateWas(t *testing.T) {
+	s, m, l := projectionFixture(t)
+	ctx := context.Background()
+	batch := []core.Event{
+		{Kind: "state", Text: "working", RunID: "run"},
+		{Kind: "assistant", RunID: "run", Text: "history"},
+		{Kind: "state", Text: "stopped", RunID: "run"},
+	}
+	for i := range batch {
+		batch[i].SessionID = m.ID
+	}
+	// The log itself rather than the recording one: no state is written.
+	if _, err := l.Log.AppendBatch(batch); err != nil {
+		t.Fatal(err)
+	}
+	if _, found, err := l.Log.Store().State(ctx); err != nil || found {
+		t.Fatal("the fixture recorded a state", found, err)
+	}
+	v, err := s.Get(ctx, &api.SessionRef{Id: m.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.RunId != "run" || v.State != "stopped" || v.LastSeq != 3 {
+		t.Fatal("the session is not what its records reduce to", v)
+	}
+	// Asked again it answers the same, from what it already reduced.
+	again, err := s.Get(ctx, &api.SessionRef{Id: m.ID})
+	if err != nil || again.RunId != "run" || again.LastSeq != 3 {
+		t.Fatal(again, err)
+	}
+}
