@@ -92,8 +92,8 @@ root이므로 `conversation.db`가 `root:root`로 생겼고, SQLite는 읽기 �
 - cxz#282 — 실패가 끝났는데도 프로젝트가 그 실패를 계속 보고한다. 이 저장소의 프로젝트가
   지금 그 상태다(런타임은 정상, `Job.state`는 `failed`). 다음 `up`이 지운다.
 - cxz#283 — 자동 업데이트가 웹 게이트웨이와 릴레이를 두고 간다.
-- **서비스 경계** — `ProjectService`의 손으로 쓴 RPC 47개 중 26개가 Project를 가리키지
-  않는다. [service-boundaries.md](service-boundaries.md)에 각각 어디로 가야 하는지를
-  적었고 결정은 다 끝났다. 1단계(§6.1·§6.2·§7.3)는 들어갔다 — `MarkHistoryTrimmable`도
-  거기서 지웠다. 남은 것은 §6.4 `Installation`, §6.3 `Skill`·`McpServer`, §6.5
-  `McpConnection`이다.
+- **서비스 경계** — 끝났다. `ProjectService`의 손으로 쓴 RPC 47개 중 26개가 Project를
+  가리키지 않았고, 지금은 12개만 남아 전부 가리킨다.
+  [service-boundaries.md](service-boundaries.md)에 어디로 갔는지와, 구현하면서 뒤집힌
+  결정 하나(스킬·MCP 색인은 DB로 가지 않는다 — 매니저와 리소스 계층이 다른 DB를 들고
+  스킬을 해소하는 쪽이 매니저다)를 과정째로 적었다.

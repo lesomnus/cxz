@@ -30,14 +30,7 @@ func diagnosticsStack(t *testing.T, o *observe.Log) resource.InstallationService
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Diagnostics answer from the installation service, which has no entity and
-	// so is not in `resource.Server`; the stack is asked for the layer that
-	// holds it, the way the gRPC registration does.
-	layer, ok := resource.Find[Layer](stack)
-	if !ok {
-		t.Fatal("no lifecycle layer in the stack")
-	}
-	return layer.Installation()
+	return layerOf(t, stack).Installation()
 }
 
 func TestDiagnosticsReportsWhatTheManagerDid(t *testing.T) {

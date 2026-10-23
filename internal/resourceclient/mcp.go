@@ -12,60 +12,60 @@ import (
 )
 
 func (c *Client) GetMcpServers(ctx context.Context, r *api.McpServersInput, opts ...grpc.CallOption) (*api.McpServersReply, error) {
-	ref, err := c.projectRef(ctx, r.Project, opts...)
+	in, err := c.projectHandle(ctx, r.Project, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return mcpServersReply(c.projects.GetMcpServers(ctx, resource.McpServersRequest_builder{Ref: ref}.Build(), opts...))
+	return mcpServersReply(c.mcpServers.List(ctx, resource.McpServerListRequest_builder{In: &in}.Build(), opts...))
 }
 
 func (c *Client) PutMcpServer(ctx context.Context, r *api.PutMcpServerInput, opts ...grpc.CallOption) (*api.McpServersReply, error) {
-	return mcpServersReply(c.projects.PutMcpServer(ctx, resource.PutMcpServerRequest_builder{
+	return mcpServersReply(c.mcpServers.Put(ctx, resource.McpServerPutRequest_builder{
 		Id: &r.Id, Server: resourceMcpServer(r.Server),
 	}.Build(), opts...))
 }
 
 func (c *Client) RemoveMcpServer(ctx context.Context, r *api.McpServerInput, opts ...grpc.CallOption) (*api.McpServersReply, error) {
-	return mcpServersReply(c.projects.RemoveMcpServer(ctx, resource.McpServerRequest_builder{Id: &r.Id}.Build(), opts...))
+	return mcpServersReply(c.mcpServers.Remove(ctx, resource.McpServerRemoveRequest_builder{Id: &r.Id}.Build(), opts...))
 }
 
 func (c *Client) SetMcpServerDefault(ctx context.Context, r *api.McpServerDefaultInput, opts ...grpc.CallOption) (*api.McpServersReply, error) {
-	return mcpServersReply(c.projects.SetMcpServerDefault(ctx, resource.McpServerDefaultRequest_builder{
+	return mcpServersReply(c.mcpServers.SetDefault(ctx, resource.McpServerDefaultRequest_builder{
 		Id: &r.Id, Enabled: &r.Enabled,
 	}.Build(), opts...))
 }
 
 func (c *Client) SetProjectMcpServer(ctx context.Context, r *api.ProjectMcpServerInput, opts ...grpc.CallOption) (*api.McpServersReply, error) {
-	ref, err := c.projectRef(ctx, r.Project, opts...)
+	in, err := c.projectHandle(ctx, r.Project, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return mcpServersReply(c.projects.SetProjectMcpServer(ctx, resource.ProjectMcpServerRequest_builder{
-		Ref: ref, Id: &r.Id, Enabled: &r.Enabled,
+	return mcpServersReply(c.mcpServers.Enable(ctx, resource.McpServerEnableRequest_builder{
+		Id: &r.Id, In: &in, Enabled: &r.Enabled,
 	}.Build(), opts...))
 }
 
 func (c *Client) ClearProjectMcpServer(ctx context.Context, r *api.ClearProjectMcpServerInput, opts ...grpc.CallOption) (*api.McpServersReply, error) {
-	ref, err := c.projectRef(ctx, r.Project, opts...)
+	in, err := c.projectHandle(ctx, r.Project, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return mcpServersReply(c.projects.ClearProjectMcpServer(ctx, resource.ClearProjectMcpServerRequest_builder{
-		Ref: ref, Id: &r.Id,
+	return mcpServersReply(c.mcpServers.Clear(ctx, resource.McpServerClearRequest_builder{
+		Id: &r.Id, In: &in,
 	}.Build(), opts...))
 }
 
 func (c *Client) McpSessions(ctx context.Context, r *api.McpSessionsInput, opts ...grpc.CallOption) (*api.McpSessionsReply, error) {
-	ref, err := c.projectRef(ctx, r.Project, opts...)
+	project, err := c.projectHandle(ctx, r.Project, opts...)
 	if err != nil {
 		return nil, err
 	}
-	v, err := c.projects.McpSessions(ctx, resource.McpSessionsRequest_builder{Ref: ref}.Build(), opts...)
+	v, err := c.mcpConnection.List(ctx, resource.McpConnectionListRequest_builder{Project: &project}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}
 	out := &api.McpSessionsReply{Message: v.GetMessage()}
-	for _, s := range v.GetSessions() {
+	for _, s := range v.GetConnections() {
 		out.Sessions = append(out.Sessions, &api.McpSessionStatus{
 			SessionId: s.GetSession(), Title: s.GetTitle(), Pending: s.GetPending(),
 			LaunchDigest: s.GetLaunchDigest(), Servers: s.GetServers(),
@@ -100,7 +100,7 @@ func (c *Client) RestartMcp(ctx context.Context, r *api.RestartMcpInput, opts ..
 	return &api.Receipt{Status: v.GetStatus()}, nil
 }
 
-func mcpServersReply(v *resource.McpServersReply, err error) (*api.McpServersReply, error) {
+func mcpServersReply(v *resource.McpServerList, err error) (*api.McpServersReply, error) {
 	if err != nil {
 		return nil, err
 	}

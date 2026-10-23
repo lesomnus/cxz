@@ -13,21 +13,27 @@ import (
 )
 
 type Client struct {
-	projects     resource.ProjectServiceClient
-	sessions     resource.SessionServiceClient
-	installation resource.InstallationServiceClient
-	Accounts     resource.AccountServiceClient
-	Bindings     resource.AuthBindingServiceClient
-	uploads      *attachmenthttp.Client
+	projects      resource.ProjectServiceClient
+	sessions      resource.SessionServiceClient
+	installation  resource.InstallationServiceClient
+	skills        resource.SkillServiceClient
+	mcpServers    resource.McpServerServiceClient
+	mcpConnection resource.McpConnectionServiceClient
+	Accounts      resource.AccountServiceClient
+	Bindings      resource.AuthBindingServiceClient
+	uploads       *attachmenthttp.Client
 }
 
 func New(conn grpc.ClientConnInterface, uploads ...*attachmenthttp.Client) *Client {
 	c := &Client{
-		projects:     resource.NewProjectServiceClient(conn),
-		sessions:     resource.NewSessionServiceClient(conn),
-		installation: resource.NewInstallationServiceClient(conn),
-		Accounts:     resource.NewAccountServiceClient(conn),
-		Bindings:     resource.NewAuthBindingServiceClient(conn),
+		projects:      resource.NewProjectServiceClient(conn),
+		sessions:      resource.NewSessionServiceClient(conn),
+		installation:  resource.NewInstallationServiceClient(conn),
+		skills:        resource.NewSkillServiceClient(conn),
+		mcpServers:    resource.NewMcpServerServiceClient(conn),
+		mcpConnection: resource.NewMcpConnectionServiceClient(conn),
+		Accounts:      resource.NewAccountServiceClient(conn),
+		Bindings:      resource.NewAuthBindingServiceClient(conn),
 	}
 	if len(uploads) > 0 {
 		c.uploads = uploads[0]

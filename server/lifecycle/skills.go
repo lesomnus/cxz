@@ -7,35 +7,41 @@ import (
 	"github.com/lesomnus/cxz/resource"
 )
 
-// The library belongs to the installation, so it lives on the project service
-// rather than on a session. A ref scopes it: with one, the answer is what that
-// project sees; without one, the installation's own defaults.
-
-func (s ProjectServer) GetSkills(ctx context.Context, r *resource.SkillsRequest) (*resource.SkillsReply, error) {
-	project, err := s.projectScope(ctx, r.GetRef())
-	if err != nil {
-		return nil, err
-	}
-	return skillsReply(s.shared.runtime.GetSkills(ctx, &api.SkillsInput{Project: project}))
+// The library belongs to the installation, not to a project, so it has its own
+// service rather than a corner of the project one. `in` says whose view to
+// answer with: a project id or workspace path for that project's, nothing for
+// the installation's own defaults. It never says what to write.
+// See docs/plans/service-boundaries.md.
+//
+// There is no entity behind this service, so there is no generated server under
+// it either. The runtime resolves `in` itself, which is why nothing here looks
+// a project up first.
+type SkillServer struct {
+	Layer
+	resource.UnimplementedSkillServiceServer
 }
 
-func (s ProjectServer) AddSkill(ctx context.Context, r *resource.SkillRequest) (*resource.SkillsReply, error) {
-	project, err := s.changeScope(ctx, r.GetRef())
-	if err != nil {
-		return nil, err
-	}
-	return skillsReply(s.shared.runtime.AddSkill(ctx, &api.SkillInput{Project: project, Name: r.GetName()}))
+func (s Layer) Skill() resource.SkillServiceServer { return SkillServer{Layer: s} }
+
+func (s SkillServer) List(ctx context.Context, r *resource.SkillListRequest) (*resource.SkillList, error) {
+	return skillsReply(s.shared.runtime.GetSkills(ctx, &api.SkillsInput{Project: r.GetIn()}))
 }
 
-func (s ProjectServer) RemoveSkill(ctx context.Context, r *resource.SkillRequest) (*resource.SkillsReply, error) {
-	project, err := s.changeScope(ctx, r.GetRef())
-	if err != nil {
+func (s SkillServer) Add(ctx context.Context, r *resource.SkillAddRequest) (*resource.SkillList, error) {
+	if err := s.effect(); err != nil {
 		return nil, err
 	}
-	return skillsReply(s.shared.runtime.RemoveSkill(ctx, &api.SkillInput{Project: project, Name: r.GetName()}))
+	return skillsReply(s.shared.runtime.AddSkill(ctx, &api.SkillInput{Project: r.GetIn(), Name: r.GetName()}))
 }
 
-func (s ProjectServer) SetSkillDefault(ctx context.Context, r *resource.SkillDefaultRequest) (*resource.SkillsReply, error) {
+func (s SkillServer) Remove(ctx context.Context, r *resource.SkillRemoveRequest) (*resource.SkillList, error) {
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	return skillsReply(s.shared.runtime.RemoveSkill(ctx, &api.SkillInput{Project: r.GetIn(), Name: r.GetName()}))
+}
+
+func (s SkillServer) SetDefault(ctx context.Context, r *resource.SkillDefaultRequest) (*resource.SkillList, error) {
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -44,54 +50,29 @@ func (s ProjectServer) SetSkillDefault(ctx context.Context, r *resource.SkillDef
 	}))
 }
 
-func (s ProjectServer) SetProjectSkill(ctx context.Context, r *resource.ProjectSkillRequest) (*resource.SkillsReply, error) {
-	project, err := s.changeScope(ctx, r.GetRef())
-	if err != nil {
+func (s SkillServer) Enable(ctx context.Context, r *resource.SkillEnableRequest) (*resource.SkillList, error) {
+	if err := s.effect(); err != nil {
 		return nil, err
 	}
 	return skillsReply(s.shared.runtime.SetProjectSkill(ctx, &api.ProjectSkillInput{
-		Project: project, Name: r.GetName(), Enabled: r.GetEnabled(),
+		Project: r.GetIn(), Name: r.GetName(), Enabled: r.GetEnabled(),
 	}))
 }
 
-func (s ProjectServer) ClearProjectSkill(ctx context.Context, r *resource.ClearProjectSkillRequest) (*resource.SkillsReply, error) {
-	project, err := s.changeScope(ctx, r.GetRef())
-	if err != nil {
+func (s SkillServer) Clear(ctx context.Context, r *resource.SkillClearRequest) (*resource.SkillList, error) {
+	if err := s.effect(); err != nil {
 		return nil, err
 	}
 	return skillsReply(s.shared.runtime.ClearProjectSkill(ctx, &api.ClearProjectSkillInput{
-		Project: project, Name: r.GetName(),
+		Project: r.GetIn(), Name: r.GetName(),
 	}))
 }
 
-// projectScope resolves an optional ref to the runtime id an installation's
-// settings are keyed by. No ref is the installation itself, which is a scope
-// and not a missing argument.
-func (s ProjectServer) projectScope(ctx context.Context, ref *resource.ProjectRef) (string, error) {
-	if ref == nil {
-		return "", nil
-	}
-	v, err := s.ProjectServiceServer.Get(ctx, resource.ProjectGetRequest_builder{
-		Ref: ref, Select: resource.ProjectSelect_builder{All: ptr(true)}.Build(),
-	}.Build())
-	if err != nil {
-		return "", err
-	}
-	return v.GetRuntimeId(), nil
-}
-
-func (s ProjectServer) changeScope(ctx context.Context, ref *resource.ProjectRef) (string, error) {
-	if err := s.effect(); err != nil {
-		return "", err
-	}
-	return s.projectScope(ctx, ref)
-}
-
-func skillsReply(v *api.SkillsReply, err error) (*resource.SkillsReply, error) {
+func skillsReply(v *api.SkillsReply, err error) (*resource.SkillList, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := resource.SkillsReply_builder{Message: &v.Message}
+	out := resource.SkillList_builder{Message: &v.Message}
 	for _, e := range v.Entries {
 		out.Entries = append(out.Entries, resource.SkillEntry_builder{
 			Name: &e.Name, Description: &e.Description,

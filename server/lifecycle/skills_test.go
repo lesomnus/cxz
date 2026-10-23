@@ -52,30 +52,30 @@ func skillStack(t *testing.T) (*skillFixture, resource.Server, func()) {
 	return f, stack, func() { db.Close() }
 }
 
-// A ref scopes the library rather than selecting a row to act on. With one, the
+// `in` scopes the library rather than selecting a row to act on. With one, the
 // answer is what that project sees; without one it is the installation's own
 // defaults -- which is a scope, not a missing argument, so it is not refused.
-func TestSkillsRefIsAScope(t *testing.T) {
+// The layer passes it through: resolving a handle is the client's (see
+// `projectHandle`) and refusing an unknown one is the runtime's (see
+// `TestAnUnknownScopeIsRefused` in internal/workspace).
+func TestSkillsScopeIsPassedThrough(t *testing.T) {
 	ctx := context.Background()
 	f, stack, done := skillStack(t)
 	defer done()
 
-	if _, err := stack.Project().GetSkills(ctx, resource.SkillsRequest_builder{}.Build()); err != nil {
+	if _, err := layerOf(t, stack).Skill().List(ctx, resource.SkillListRequest_builder{}.Build()); err != nil {
 		t.Fatal("the installation's own scope was refused:", err)
 	}
 	if len(f.scopes) != 1 || f.scopes[0] != "" {
-		t.Fatal("an absent ref did not reach the runtime as no project:", f.scopes)
+		t.Fatal("an absent scope did not reach the runtime as no project:", f.scopes)
 	}
 
-	// A path is a handle a caller has; the ref resolves to the runtime id the
-	// library is keyed by, so the runtime is never handed a path to guess at.
-	ref := resource.ProjectRef_builder{Workspace: &f.p.Workspace}.Build()
-	out, err := stack.Project().GetSkills(ctx, resource.SkillsRequest_builder{Ref: ref}.Build())
+	out, err := layerOf(t, stack).Skill().List(ctx, resource.SkillListRequest_builder{In: ptr("project")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(f.scopes) != 2 || f.scopes[1] != "project" {
-		t.Fatal("the ref was not resolved to a runtime id:", f.scopes)
+		t.Fatal("the scope did not reach the runtime as it was given:", f.scopes)
 	}
 
 	// A project's own decision has to survive the trip, because absent means
@@ -97,16 +97,23 @@ func TestSkillsRefIsAScope(t *testing.T) {
 	}
 }
 
-// A project that is not registered is not a scope, and a change to the library
-// is not the place to find out by having nothing happen.
-func TestAnUnknownProjectIsRefused(t *testing.T) {
+// A write names the skill and the project separately, and the project is the
+// scope rather than the subject: switching one on for a project reaches the
+// runtime with both, and neither can stand in for the other.
+func TestEnableNamesTheSkillAndTheScope(t *testing.T) {
 	ctx := context.Background()
-	_, stack, done := skillStack(t)
+	f, stack, done := skillStack(t)
 	defer done()
-	ref := resource.ProjectRef_builder{Workspace: ptr("/nowhere")}.Build()
-	if _, err := stack.Project().SetProjectSkill(ctx, resource.ProjectSkillRequest_builder{
-		Ref: ref, Name: ptr("review"), Enabled: ptr(true),
-	}.Build()); err == nil {
-		t.Fatal("accepted a project the installation does not hold")
+	out, err := layerOf(t, stack).Skill().Enable(ctx, resource.SkillEnableRequest_builder{
+		Name: ptr("review"), In: ptr("project"), Enabled: ptr(true),
+	}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.GetMessage() != "review" {
+		t.Fatal("the skill did not reach the runtime:", out.GetMessage())
+	}
+	if len(f.scopes) != 1 || f.scopes[0] != "project" {
+		t.Fatal("the scope did not reach the runtime:", f.scopes)
 	}
 }

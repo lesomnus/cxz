@@ -75,7 +75,7 @@ func TestMcpKindIsRefusedAtTheBoundary(t *testing.T) {
 	f, stack, done := mcpStack(t)
 	defer done()
 
-	_, err := stack.Project().PutMcpServer(ctx, resource.PutMcpServerRequest_builder{
+	_, err := layerOf(t, stack).McpServer().Put(ctx, resource.McpServerPutRequest_builder{
 		Id: ptr("a"),
 		Server: resource.McpServer_builder{
 			Name: ptr("a"), Kind: ptr(resource.McpKind_MCP_KIND_UNSPECIFIED),
@@ -90,11 +90,11 @@ func TestMcpKindIsRefusedAtTheBoundary(t *testing.T) {
 
 	// A definition with no server at all is refused for the same reason: there
 	// is nothing to validate and nothing to store.
-	if _, err = stack.Project().PutMcpServer(ctx, resource.PutMcpServerRequest_builder{Id: ptr("a")}.Build()); status.Code(err) != codes.InvalidArgument {
+	if _, err = layerOf(t, stack).McpServer().Put(ctx, resource.McpServerPutRequest_builder{Id: ptr("a")}.Build()); status.Code(err) != codes.InvalidArgument {
 		t.Fatal(err)
 	}
 
-	out, err := stack.Project().PutMcpServer(ctx, resource.PutMcpServerRequest_builder{
+	out, err := layerOf(t, stack).McpServer().Put(ctx, resource.McpServerPutRequest_builder{
 		Id: ptr("a"),
 		Server: resource.McpServer_builder{
 			Name: ptr("a"), Kind: ptr(resource.McpKind_MCP_KIND_STDIO), Command: ptr("serve"),
@@ -118,7 +118,7 @@ func TestMcpOverrideSurvivesTheReply(t *testing.T) {
 	ctx := context.Background()
 	_, stack, done := mcpStack(t)
 	defer done()
-	out, err := stack.Project().GetMcpServers(ctx, resource.McpServersRequest_builder{}.Build())
+	out, err := layerOf(t, stack).McpServer().List(ctx, resource.McpServerListRequest_builder{}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -912,11 +912,16 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 	}
 }
 
-// InstallationService has no entity behind it, so the generated
-// `resource.RegisterServer` does not know about it and the stack is asked for
-// the layer that answers it. See docs/plans/service-boundaries.md.
+// These four have no entity behind them, so the generated
+// `resource.RegisterServer` does not know about them and the stack is asked for
+// the layer that answers them. See docs/plans/service-boundaries.md.
 func registerInstallation(g grpc.ServiceRegistrar, resources resource.Server) {
-	if layer, ok := resource.Find[lifecycle.Layer](resources); ok {
-		resource.RegisterInstallationServiceServer(g, layer.Installation())
+	layer, ok := resource.Find[lifecycle.Layer](resources)
+	if !ok {
+		return
 	}
+	resource.RegisterInstallationServiceServer(g, layer.Installation())
+	resource.RegisterSkillServiceServer(g, layer.Skill())
+	resource.RegisterMcpServerServiceServer(g, layer.McpServer())
+	resource.RegisterMcpConnectionServiceServer(g, layer.McpConnection())
 }

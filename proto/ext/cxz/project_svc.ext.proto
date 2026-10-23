@@ -39,31 +39,6 @@ service ProjectService {
   // from a local socket on this side. See internal/transport.Confidential.
   rpc PutSecretFile(PutSecretFileRequest) returns (SecretFileReply);
   rpc DeleteSecretFile(DeleteSecretFileRequest) returns (SecretFileReply);
-  // The installation's Agent Skills library, and which projects see each
-  // skill. One method per decision rather than one with a verb: enabling a
-  // skill by default and enabling it for one project write to different
-  // places, and restoring a project's default has nowhere to put an on/off
-  // that would be ignored. So no request here can name one and mean another.
-  rpc GetSkills(SkillsRequest) returns (SkillsReply);
-  rpc AddSkill(SkillRequest) returns (SkillsReply);
-  rpc RemoveSkill(SkillRequest) returns (SkillsReply);
-  rpc SetSkillDefault(SkillDefaultRequest) returns (SkillsReply);
-  rpc SetProjectSkill(ProjectSkillRequest) returns (SkillsReply);
-  rpc ClearProjectSkill(ClearProjectSkillRequest) returns (SkillsReply);
-  // MCP registrations, and which projects see each one. The same six decisions
-  // as the skills library, for the same reason, plus a definition that arrives
-  // whole: its environment and headers hold explicit values, so editing one
-  // field at a time would mean reading the others back out first.
-  rpc GetMcpServers(McpServersRequest) returns (McpServersReply);
-  rpc PutMcpServer(PutMcpServerRequest) returns (McpServersReply);
-  rpc RemoveMcpServer(McpServerRequest) returns (McpServersReply);
-  rpc SetMcpServerDefault(McpServerDefaultRequest) returns (McpServersReply);
-  rpc SetProjectMcpServer(ProjectMcpServerRequest) returns (McpServersReply);
-  rpc ClearProjectMcpServer(ClearProjectMcpServerRequest) returns (McpServersReply);
-  // What each of a project's live sessions actually launched with, and whether
-  // a change is still waiting for a restart. Separate from reading the
-  // registrations, because a settings list should not stall on a container.
-  rpc McpSessions(McpSessionsRequest) returns (McpSessionsReply);
   // A project's container, in the three words a person uses about it. Start
   // makes the project run: it builds and creates the container when there is
   // none and starts the one there is otherwise, because "make it run" is one
@@ -129,25 +104,6 @@ message ProjectStartRequest {
 }
 message ProjectControl { ProjectRef ref = 1; string client_id = 2; }
 
-// ref scopes the view that comes back: with one, each entry says what that
-// project sees and whether it decided for itself. Without one, the view is the
-// installation's own defaults. A registration is installation-wide either way,
-// so ref on an add or a remove only chooses whose view is reported back.
-message SkillsRequest { ProjectRef ref = 1; }
-message SkillRequest { ProjectRef ref = 1; string name = 2; }
-message SkillDefaultRequest { string name = 1; bool enabled = 2; }
-message ProjectSkillRequest { ProjectRef ref = 1; string name = 2; bool enabled = 3; }
-message ClearProjectSkillRequest { ProjectRef ref = 1; string name = 2; }
-message SkillEntry {
-  string name = 1; string description = 2;
-  // Set only when this project decided for itself; absent means it inherits
-  // the installation's default, which is a different thing from agreeing with
-  // it.
-  bool override = 3;
-  bool effective = 4;
-}
-message SkillsReply { repeated SkillEntry entries = 1; string message = 2; }
-
 message ProjectDownloadRequest { ProjectRef ref = 1; string path = 2; }
 message ProjectDownloadReply { bytes data = 1; int64 total_size = 2; }
 
@@ -162,50 +118,3 @@ message ProjectEditorTunnelReply { bool ready = 1; bytes output = 2; }
 message PutSecretFileRequest { ProjectRef ref = 1; string session = 2; bytes secret = 3; }
 message DeleteSecretFileRequest { ProjectRef ref = 1; string path = 2; }
 message SecretFileReply { string path = 1; }
-
-// An MCP server definition. kind is what the connection is: a local process, an
-// HTTP endpoint, or one cxz provides itself. env and headers hold explicit
-// values and are kept private, which is why a definition travels whole:
-// changing one of them field by field would mean reading the others back out.
-enum McpKind {
-  MCP_KIND_UNSPECIFIED = 0;
-  MCP_KIND_STDIO = 1;
-  MCP_KIND_HTTP = 2;
-  // Provided by cxz. It cannot be registered or replaced by a caller, so this
-  // value only ever arrives in a reply.
-  MCP_KIND_BUILTIN = 3;
-}
-message McpServer {
-  string name = 1; McpKind kind = 2; bool enabled = 3;
-  string command = 4; repeated string args = 5; map<string, string> env = 6;
-  string url = 7; map<string, string> headers = 8;
-}
-message McpEntry {
-  string id = 1; McpServer server = 2;
-  // Set only when this project decided for itself; absent means it inherits.
-  bool override = 3;
-  bool effective = 4;
-}
-message McpServersReply { repeated McpEntry entries = 1; string message = 2; }
-// ref scopes the view, as it does for the skills library. A registration is
-// installation-wide, so put and remove have nowhere to name a project.
-message McpServersRequest { ProjectRef ref = 1; }
-message PutMcpServerRequest { string id = 1; McpServer server = 2; }
-message McpServerRequest { string id = 1; }
-message McpServerDefaultRequest { string id = 1; bool enabled = 2; }
-message ProjectMcpServerRequest { ProjectRef ref = 1; string id = 2; bool enabled = 3; }
-message ClearProjectMcpServerRequest { ProjectRef ref = 1; string id = 2; }
-
-message McpSessionsRequest { ProjectRef ref = 1; }
-// servers maps an MCP id to what its connection is doing in this session.
-// pending says the session launched with something other than what is
-// registered now, so the difference waits for the next launch.
-// session is the runtime id and not a SessionRef, for the same reason
-// PutSecretFileRequest's is: this contract cannot refer to the session one,
-// because the dependency runs the other way.
-message McpSessionStatus {
-  string session = 1; string title = 2; bool pending = 3;
-  string launch_digest = 4; map<string, string> servers = 5;
-}
-message McpSessionsReply { repeated McpSessionStatus sessions = 1; string message = 2; }
-

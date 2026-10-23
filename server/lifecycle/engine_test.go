@@ -72,18 +72,6 @@ func engineStack(t *testing.T) (*engineFixture, resource.Server, func()) {
 	return f, stack, func() { db.Close() }
 }
 
-// The engine is the installation's, and that service has no entity -- so it is
-// not in `resource.Server` and the stack is asked for the layer holding it,
-// the way the gRPC registration does.
-func installationOf(t *testing.T, stack resource.Server) resource.InstallationServiceServer {
-	t.Helper()
-	layer, ok := resource.Find[Layer](stack)
-	if !ok {
-		t.Fatal("no lifecycle layer in the stack")
-	}
-	return layer.Installation()
-}
-
 // A save needs a configuration; a start may apply the one already saved. The
 // envelope had one spec field for five operations, so there was nothing to
 // check -- an empty payload meant "fall back" for up and "save nothing" for
@@ -93,14 +81,14 @@ func TestSaveNeedsAConfigurationAndStartDoesNot(t *testing.T) {
 	f, stack, done := engineStack(t)
 	defer done()
 
-	if _, err := installationOf(t, stack).SaveEngine(ctx, resource.SaveEngineRequest_builder{}.Build()); status.Code(err) != codes.InvalidArgument {
+	if _, err := layerOf(t, stack).Installation().SaveEngine(ctx, resource.SaveEngineRequest_builder{}.Build()); status.Code(err) != codes.InvalidArgument {
 		t.Fatal("saved nothing in particular:", err)
 	}
 	if len(f.saved) != 0 {
 		t.Fatal("it reached the runtime anyway:", f.saved)
 	}
 
-	out, err := installationOf(t, stack).StartEngine(ctx, resource.StartEngineRequest_builder{}.Build())
+	out, err := layerOf(t, stack).Installation().StartEngine(ctx, resource.StartEngineRequest_builder{}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,14 +107,14 @@ func TestEngineModeIsRefusedAtTheBoundary(t *testing.T) {
 	f, stack, done := engineStack(t)
 	defer done()
 
-	_, err := installationOf(t, stack).SaveEngine(ctx, resource.SaveEngineRequest_builder{
+	_, err := layerOf(t, stack).Installation().SaveEngine(ctx, resource.SaveEngineRequest_builder{
 		Spec: resource.EngineSpec_builder{Mode: ptr(resource.EngineMode_ENGINE_MODE_UNSPECIFIED)}.Build(),
 	}.Build())
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatal("an unknown mode was passed on:", err)
 	}
 
-	if _, err = installationOf(t, stack).SaveEngine(ctx, resource.SaveEngineRequest_builder{
+	if _, err = layerOf(t, stack).Installation().SaveEngine(ctx, resource.SaveEngineRequest_builder{
 		Spec: resource.EngineSpec_builder{
 			Mode: ptr(resource.EngineMode_ENGINE_MODE_DIND), Image: ptr("docker:29-dind"),
 			Override: []byte(`{"services":{}}`),
@@ -143,7 +131,7 @@ func TestEngineModeIsRefusedAtTheBoundary(t *testing.T) {
 	}
 
 	// And it comes back as the enum rather than whatever string the engine holds.
-	info, err := installationOf(t, stack).Engine(ctx, resource.EngineRequest_builder{}.Build())
+	info, err := layerOf(t, stack).Installation().Engine(ctx, resource.EngineRequest_builder{}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +147,7 @@ func TestTheBuildIsNotTheEnginesBusiness(t *testing.T) {
 	ctx := context.Background()
 	_, stack, done := engineStack(t)
 	defer done()
-	out, err := installationOf(t, stack).Version(ctx, resource.EngineRequest_builder{}.Build())
+	out, err := layerOf(t, stack).Installation().Version(ctx, resource.EngineRequest_builder{}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
