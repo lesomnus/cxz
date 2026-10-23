@@ -190,3 +190,43 @@ test("failed project Stop retains the confirmation and records", async ({
       .locator("tbody tr"),
   ).toHaveCount(2);
 });
+
+test("Start asks for trust when the configuration needs it and starts only once given", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--requires-trust&viewMode=story",
+  );
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  const start = actions.getByRole("button", { name: "Start", exact: true });
+  const confirm = page.getByRole("dialog", {
+    name: "Start project",
+    exact: true,
+  });
+  const trust = page.getByRole("dialog", {
+    name: "Trust configuration",
+    exact: true,
+  });
+  await start.click();
+  await confirm.getByRole("button", { name: "Start", exact: true }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(trust).toContainText(
+    '"/services/dev/privileged": privileged container requested',
+  );
+  await expect(
+    trust.getByRole("button", { name: "Cancel", exact: true }),
+  ).toBeFocused();
+  await trust.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(trust).toHaveCount(0);
+  await expect(start).toBeEnabled();
+  await start.click();
+  await confirm.getByRole("button", { name: "Start", exact: true }).click();
+  await trust
+    .getByRole("button", { name: "Trust and start", exact: true })
+    .click();
+  await expect(trust).toHaveCount(0);
+  await expect(start).toBeDisabled();
+  await expect(
+    actions.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeEnabled();
+});

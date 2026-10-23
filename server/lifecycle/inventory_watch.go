@@ -27,7 +27,7 @@ func streamInventory[T interface{ GetId() []byte }](
 	ctx context.Context, broker *watch.Watch, service string, skip bool,
 	list func(string) ([]T, string, error),
 	read func([]byte) (T, bool, error),
-	send func([]inventoryRow[T]) error,
+	send func([]inventoryRow[T], *bool) error,
 ) error {
 	var snapshot func(watch.Seen) error
 	if !skip {
@@ -48,7 +48,7 @@ func streamInventory[T interface{ GetId() []byte }](
 					rows = append(rows, inventoryRow[T]{id: value.GetId(), value: value})
 				}
 				// An empty initial frame settles a catalog with no matching rows too.
-				if err := send(rows); err != nil {
+				if err := send(rows, ptr(next == "")); err != nil {
 					return err
 				}
 				if next == "" {
@@ -74,7 +74,7 @@ func streamInventory[T interface{ GetId() []byte }](
 		if len(rows) == 0 {
 			return nil
 		}
-		return send(rows)
+		return send(rows, nil)
 	})
 }
 
@@ -135,12 +135,12 @@ func (s ProjectServer) watchInventory(r *resource.ProjectWatchRequest, out grpc.
 			}
 			return page.GetItems()[0], true, nil
 		},
-		func(rows []inventoryRow[*resource.Project]) error {
+		func(rows []inventoryRow[*resource.Project], complete *bool) error {
 			items := make([]*resource.ProjectWatchItem, 0, len(rows))
 			for _, row := range rows {
 				items = append(items, resource.ProjectWatchItem_builder{Id: row.id, Value: row.value, Action: row.action}.Build())
 			}
-			return out.Send(resource.ProjectWatchResponse_builder{Items: items}.Build())
+			return out.Send(resource.ProjectWatchResponse_builder{Items: items, SnapshotComplete: complete}.Build())
 		})
 }
 
@@ -201,11 +201,11 @@ func (s SessionServer) watchInventory(r *resource.SessionWatchRequest, out grpc.
 			}
 			return page.GetItems()[0], true, nil
 		},
-		func(rows []inventoryRow[*resource.Session]) error {
+		func(rows []inventoryRow[*resource.Session], complete *bool) error {
 			items := make([]*resource.SessionWatchItem, 0, len(rows))
 			for _, row := range rows {
 				items = append(items, resource.SessionWatchItem_builder{Id: row.id, Value: row.value, Action: row.action}.Build())
 			}
-			return out.Send(resource.SessionWatchResponse_builder{Items: items}.Build())
+			return out.Send(resource.SessionWatchResponse_builder{Items: items, SnapshotComplete: complete}.Build())
 		})
 }

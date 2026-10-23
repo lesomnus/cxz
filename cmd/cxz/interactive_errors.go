@@ -59,20 +59,21 @@ func handleCommandError(ctx context.Context, c *xli.Command, err error) error {
 	}
 	return &displayedError{err}
 }
-func withConfigTrust(ctx context.Context, r *api.ProjectRequest, interactive bool,
-	open func(context.Context, *api.ProjectRequest) (*api.Session, error),
+func withConfigTrust[T any](ctx context.Context, r *api.ProjectRequest, interactive bool,
+	open func(context.Context, *api.ProjectRequest) (T, error),
 	confirm func(context.Context, error) (bool, error),
-) (*api.Session, error) {
+) (T, error) {
+	var zero T
 	s, err := open(ctx, r)
 	if err == nil || r.TrustConfig || !interactive || !configtrust.IsRequired(err) {
 		return s, err
 	}
 	yes, promptErr := confirm(ctx, err)
 	if promptErr != nil {
-		return nil, promptErr
+		return zero, promptErr
 	}
 	if !yes {
-		return nil, &displayedError{err}
+		return zero, &displayedError{err}
 	}
 	r.TrustConfig = true
 	return open(ctx, r)

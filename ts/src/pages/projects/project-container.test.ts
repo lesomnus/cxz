@@ -71,6 +71,20 @@ describe("project container controls", () => {
       expect(f.c.inventory.refresh).toHaveBeenCalledOnce();
     });
   }
+  // Consent is sent only with the answer to the question; a plain start never
+  // trusts on anyone's behalf.
+  it("start sends trust only when it was given", async () => {
+    const f = fixture();
+    await startContainer(f.connection, f.project, true);
+    expect(f.c.projects.start).toHaveBeenCalledExactlyOnceWith(
+      {
+        ref: { key: { case: "id", value: f.project.id } },
+        clientId: expect.any(String),
+        trustConfig: true,
+      },
+      { timeoutMs: 120_000 },
+    );
+  });
   it("preserves local state on failure and does not retry", async () => {
     const f = fixture();
     f.c.projects.stop.mockRejectedValue(new Error("Stop failed"));

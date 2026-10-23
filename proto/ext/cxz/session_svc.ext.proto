@@ -5,6 +5,11 @@ import "cxz/account_svc.g.proto";
 import "google/protobuf/timestamp.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
+message SessionWatchResponse {
+  // Present on initial snapshot pages; true on the final page. Live changes omit it.
+  bool snapshot_complete = 1000;
+}
+
 service SessionService {
   // Read retained conversation statistics, never account billing or lifetime totals.
   rpc ConversationStats(ConversationStatsRequest) returns (ConversationStatsReply);

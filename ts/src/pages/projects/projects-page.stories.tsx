@@ -15,13 +15,20 @@ function Preview({
   mixedStates = false,
   failControls = false,
   failPreview = false,
+  requireTrust = false,
 }) {
   const [router] = useState(() => {
     const fixture = projectFixture(
       unavailable,
       stopped,
       sessionCount,
-      failControls ? "control" : failPreview ? "preview" : "",
+      failControls
+        ? "control"
+        : failPreview
+          ? "preview"
+          : requireTrust
+            ? "trust"
+            : "",
     );
     if (mixedStates) {
       const states = [
@@ -123,6 +130,9 @@ export const Loading: Story = { args: { empty: true, loading: true } };
 
 export const Unavailable: Story = { args: { unavailable: true } };
 export const Stopped: Story = { args: { stopped: true } };
+export const RequiresTrust: Story = {
+  args: { stopped: true, requireTrust: true },
+};
 
 export const LiveInventory: Story = { args: { streaming: true } };
 
