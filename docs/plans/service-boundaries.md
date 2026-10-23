@@ -1,7 +1,7 @@
 # ProjectService 쪼개기 — 서비스 경계
 
-상태: 제안. 구현 전. 남은 결정은 §7.1 하나다 — 스킬·MCP의 진실이 파일인가 행인가,
-그리고 그에 따라 프로젝트를 요청의 `ProjectRef`로 받는가 edge로 받는가.
+상태: 제안. 구현 전. 남은 결정은 §7.1 하나다 — 파일이 진실인 엔티티의 `id`를
+어떻게 만드는가.
 
 `ProjectService`는 생성된 7개 verb(`Add` `Get` `Patch` `Apply` `Erase` `List`
 `Watch`) 위에 손으로 쓴 RPC 47개를 얹고 있다. 그중 **26개는 Project를 가리키지
@@ -72,7 +72,7 @@ chooses whose view comes back."* ref는 주체가 아니라 응답의 시야를 
 belong to the installation, so they are read and written here rather than per
 session."* 설치본의 것이라는 걸 알면서 Project 서비스에 두었다.
 
-## 5. 엔티티 없는 서비스 — 측정한 것
+## 5. 테이블 없이 서비스를 갖는 두 길 — 측정한 것
 
 처음 이 문서는 "payday에서 서비스는 엔티티에서 나오므로 분리된 service는 곧
 테이블이다"라고 적었다. 틀렸다. 실제로 돌려 본 결과는 이렇다.
@@ -114,18 +114,40 @@ Gate·Audit·Intercept·Batch에 나타나지 않는다. 직접 등록해야 한
 
 CLI verb도 잃지 않는다. cxz는 `pdcmd`를 쓰지 않고 명령을 직접 쓴다.
 
-**그리고 반대 방향으로, 파일이 진실인 엔티티는 동작하지 않는 `Watch`를 갖는다.**
-payday의 `Watch`는 sink를 통과한 쓰기에 반응해서 발행한다. 쓰기가 layer에서 파일로
-가면 sink를 통과하지 않으므로, `Watch`는 선언돼 있고 구독도 성공하는데 아무것도
-오지 않는다.
+**(5) 엔티티를 선언하고 sink가 답하지 않게 하는 길도 있다. 이 저장소가 이미 그렇게
+하고 있다.** `Connection`은 선언된 엔티티인데(domain 12, `global`, `list:`) 매니저는
+그 서비스를 `Unimplemented`로 답한다. `server/lifecycle/stack.go:122`에 이유가 적혀
+있다: *"Left to the store it would serve an empty table instead, which is a worse
+answer than a refusal."* 즉 "엔티티는 선언하고 답은 layer가 한다"는 이 저장소의
+기존 패턴이다.
 
-둘을 비교하면 이렇다. 빈 테이블은 스키마를 읽으면 보이고, 아무 호출도 거짓 답을 하지
-않는다. 동작하지 않는 `Watch`는 호출이 성공하고 답이 비어 있으므로, 쓰는 쪽은 자기
-코드를 의심하게 된다. 그래서 빈 테이블보다 나쁘다.
+그 길을 재 보았다. `Skill`과 `SkillActivation`을 `list:`·`watch:` 없이 선언하고
+`pd gen`을 돌린 결과:
 
-그래서 파일이 진실인 리소스에 대해 엔티티 없는 서비스는 타협이 아니라 **맞는 답**이다.
+- 생성을 통과한다. `list:`와 `watch:`는 선택이다 — 안 쓰면 `List`와 `Watch` RPC가
+  아예 **생기지 않는다**(`Add` `Get` `Patch` `Apply` `Erase`만 생긴다). 그래서
+  동작하지 않는 `Watch`를 떠안을 필요가 없다. 쓰고 싶으면 `list:`만 선언하고 layer가
+  답한다.
+- `SkillRef{id | alias}`가 생긴다. 요청이 스킬을 alias로 가리킬 수 있다.
+- ent 스키마와 `skill`·`skillactivation` 테이블이 생긴다. 그리고 `go build ./...`가
+  **코드 수정 없이 통과한다** — `Layer`가 `resource.Overlay`를 품고 있어서 구현하지
+  않은 메서드가 자동으로 아래로 흘러간다.
+- Gate·Audit·Intercept·Batch가 붙는다(`server/pd/pd.g.go`에 `SkillService_` 항목
+  10개). (4)에서 잃는다고 적은 것들을 이 길은 유지한다.
+
+**조심할 것은 그 자동 흐름 하나다.** 구현하지 않은 메서드는 빈 테이블을 읽어
+"없음"이나 빈 목록을 답한다. 막는 방법도 `Connection`이 보여 준다 — 답하지 않을
+메서드는 명시적으로 `Unimplemented`를 돌려준다.
+
+**드는 비용은 테이블이 아니라 식별자다.** payday 엔티티는 모두 uuid `id`를 키로
+가지고, 그 안에 domain 바이트가 들어간다(`pdid`). `Add`는 그 id를 담아 답한다. 진실이
+파일이면 layer가 스킬마다 **안정된** id를 만들어 들고 있어야 하는데, `skills.json`에는
+id가 없다. 그래서 파일에 하나 적거나, 이름에서 `pdid` 형식에 맞게 결정적으로
+파생시켜야 한다. 새로 생기는 유일한 실제 작업이고, §7.1이 그것이다.
+
 지금 26개는 전부 매니저(`s.shared.runtime`)로의 통과 호출이고 DB를 건드리지 않는다.
-옮길 저장소가 없다.
+그래서 (1)과 (5) 중 어느 쪽이든 저장 위치는 그대로다 — 다른 것은 요청이 행을 어떻게
+가리키느냐뿐이다.
 
 ## 6. 제안
 
@@ -135,8 +157,8 @@ payday의 `Watch`는 sink를 통과한 쓰기에 반응해서 발행한다. 쓰�
 | --- | --- | --- |
 | `ProjectService`에 남는다 | 12 | Terminal, SessionLogin, AuxiliaryLogin, Paths, Download, Editor, EditorTunnel, PutSecretFile, DeleteSecretFile, Start, Stop, Remove |
 | `AccountService`로 | 2 | AuxModels, AuxLoginInfo |
-| 새 `SkillService` | 6 | GetSkills, AddSkill, RemoveSkill, SetSkillDefault, SetProjectSkill, ClearProjectSkill |
-| 새 `McpServerService` | 6 | GetMcpServers, PutMcpServer, RemoveMcpServer, SetMcpServerDefault, SetProjectMcpServer, ClearProjectMcpServer |
+| 새 `SkillService`+`SkillActivationService` | 6 | GetSkills, AddSkill, RemoveSkill, SetSkillDefault, SetProjectSkill, ClearProjectSkill — 전부 생성된 CRUD가 된다(§6.3) |
+| 새 `McpServerService`+`McpActivationService` | 6 | GetMcpServers, PutMcpServer, RemoveMcpServer, SetMcpServerDefault, SetProjectMcpServer, ClearProjectMcpServer — 같다 |
 | 새 `McpConnectionService` | 1 | McpSessions |
 | 새 `InstallationService` | 18 | 엔진 7, 진단 2, 보존 3, InspectForeign, AuxConfig, AuxSetConfig, Devcontainer, RenderDevcontainer, FileMappings |
 | 리소스 API에서 제거 | 2 | SyncSkills, SyncMcpServers |
@@ -155,67 +177,77 @@ payday의 `Watch`는 sink를 통과한 쓰기에 반응해서 발행한다. 쓰�
 only SyncSkills: it is the side being told."* 매니저의 `SyncSkills`는 호출되면
 에러를 던진다. 클라이언트가 보는 표면에 있을 이유가 없다 — 지운다.
 
-### 6.3 파일이 진실인 둘: `Skill`, `McpServer`
+### 6.3 행으로 선언하고 파일이 답하는 둘: `Skill`, `McpServer`
 
-둘 다 같은 모양이다. 등록은 설치본 전체, 활성화는 프로젝트별 override, 진실의 출처는
-공유 디렉터리의 파일(`skills.json`, mcp 설정)이고 `cxz share`가 그걸 고친다.
+둘 다 같은 모양이다. 등록은 설치본 전체, 활성화는 프로젝트별, 진실의 출처는 공유
+디렉터리의 파일(`skills.json`, mcp 설정)이고 `cxz share`가 그걸 고친다.
 
-§5의 (3)으로 선언한다 — 엔티티 없는 서비스를 오버레이 안에 쓴다. 그러면 테이블도
-죽은 `Watch`도 없고, `ProjectRef`는 받을 수 있다.
-
-**`ProjectRef`는 요청 메시지에만 나온다.** 리소스 메시지에는 들어가지 않는다. 이
-저장소에서 엔티티 메시지가 다른 엔티티를 가리키는 방법은 edge 하나뿐이고 —
-`proto/cxz/session.proto:20`의 `Project project = 8 [(orm.edge) = {immutable:
-true}]` — 엔티티 메시지에 `XxxRef` 필드를 둔 곳은 **한 곳도 없다**. 반대로 요청
-메시지가 `XxxRef`를 받는 곳은 오버레이 세 파일에 63개 있고(session 39, project 19,
-task 5), payday 자신의 예도 그 모양이다(`RobotMoveRequest{RobotRef ref = 1; CellRef
-to = 2}`). 아래의 `in`은 그 63개와 같은 자리다.
-
-edge를 쓰려면 엔티티여야 하고, 엔티티는 테이블이다. 그 선택지는 §7.1에 적었다.
+§5의 (5)로 선언한다 — 엔티티를 선언하고, 답은 layer가 파일에서 한다. `Connection`이
+이미 그렇게 되어 있다. `watch:`는 선언하지 않는다(sink를 통과하는 쓰기가 없으므로
+발행할 것이 없다). `list:`는 선언하고 layer가 답한다 — 요청 메시지의 필터 필드가
+생성되고, 그 필터를 파일을 읽어 적용한다.
 
 ```proto
-// proto/ext/cxz/project_svc.ext.proto — `ProjectRef`가 있는 파일이라서 여기다.
-// 엔티티가 아니므로 `SkillRef`는 없다. 스킬은 라이브러리 안에서 유일한
-// 디렉터리 이름으로 가리킨다 — 지금도 그게 식별자다.
-service SkillService {
-  rpc List(SkillListRequest)       returns (SkillList);  // `in`은 시야
-  rpc Add(SkillAddRequest)         returns (SkillList);  // 라이브러리에 등록
-  rpc Remove(SkillRemoveRequest)   returns (SkillList);
-  rpc SetDefault(SkillDefaultRequest) returns (SkillList);
-  rpc Enable(SkillEnableRequest)   returns (SkillList);  // 한 프로젝트에서
-  rpc Clear(SkillClearRequest)     returns (SkillList);
+// proto/cxz/skill.proto
+message Skill {
+  bytes  id    = 1  [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  string alias = 4  [(orm.field) = {unique: true}];   // 스킬 디렉터리 이름
+  string desc  = 6;
+  bool   enabled = 7;                                  // 프로젝트가 정하지 않았을 때의 기본값
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased  = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  option (orm.message) = {rpc: {crud: true}};
+  option (payday.entity) = {
+    domain: 13
+    global: {}
+    list: {order: [{field: {name: "alias"}}, {field: {name: "id"}}], by: [{name: "ref"}], size: 100, max: 200}
+  };
 }
 
-message SkillListRequest   { ProjectRef in = 1; }  // 없으면 설치본의 기본값
-message SkillAddRequest    { string name = 1; }
-message SkillRemoveRequest { string name = 1; }
-message SkillDefaultRequest{ string name = 1; bool enabled = 2; }
-message SkillEnableRequest { string name = 1; ProjectRef in = 2; bool enabled = 3; }
-message SkillClearRequest  { string name = 1; ProjectRef in = 2; }
-
-// 답. 리소스 메시지이고, 프로젝트를 가리키는 필드가 없다 — 어느 프로젝트의
-// 시야인지는 물어본 쪽이 안다. 지금 `SkillEntry`가 이미 이 모양이다.
-message SkillEntry { string name = 1; string description = 2; bool enabled = 3;
-                     bool override = 4; bool effective = 5; }
-message SkillList  { repeated SkillEntry entries = 1; string message = 2; }
+// 스킬이 한 프로젝트에 속하는 것이 아니다. 설치본 전체에 등록되고 프로젝트마다
+// 켜지거나 꺼진다. 그래서 `Skill`에 `Project` edge를 두면 거짓이 된다 — 관계는
+// 속성(`enabled`)을 가진 다대다이고, 그건 행 하나다.
+message SkillActivation {
+  bytes   id      = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  Skill   skill   = 8 [(orm.edge) = {immutable: true}];
+  Project project = 9 [(orm.edge) = {immutable: true}];
+  bool    enabled = 10;
+  ...
+  option (payday.entity) = {
+    domain: 14
+    global: {}
+    list: {order: [...], by: [{name: "ref"}, {name: "skill"}, {name: "project"}], size: 200, max: 500}
+  };
+}
 ```
 
-`McpServerService`는 `string name` 자리에 `string id`가 오는 같은 모양이다.
+프로젝트 edge를 8·9에 두는 것은 이 저장소의 관행이다 — `Session.project = 8`,
+`Task.project = 8`, `AuthBinding.project = 9`. (payday는 필드 3을 "테넌트보다 작은
+집합으로 가는 edge" 자리로 비워 두지만, 이 저장소는 쓰지 않았다.)
 
-고쳐지는 것은 이름만이 아니다. 지금 `AddSkill(ProjectRef ref, name)`은 설치본
-전체에 등록하면서 프로젝트를 주체인 것처럼 받는다(§4). 위에서는 등록이 프로젝트를
-받지 않고, 프로젝트를 받는 것은 `Enable`·`Clear`·`List`뿐이다 — 실제로 프로젝트가
-관여하는 셋이다.
+이렇게 하면 손으로 쓸 RPC가 남지 않는다. 지금 13개가 이렇게 대응된다:
 
-**받아들여야 하는 것 하나.** payday에서 `proto/ext/cxz/project_svc.ext.proto`는
-"`ProjectService`에 더할 것을 쓰는 파일"이다. 거기에 `SkillService`를 쓰면 파일 이름이
-내용을 다 말하지 않게 된다 — `SkillService`를 찾는 사람이 그 파일을 열어 볼 이유가
-없다. 실행에는 아무 영향이 없고, 찾기 어려워지는 것이 전부다.
+| 지금 | 다음 |
+| --- | --- |
+| `AddSkill`, `PutMcpServer` | `Skill.Add` / `Skill.Patch` |
+| `RemoveSkill`, `RemoveMcpServer` | `Skill.Erase` |
+| `GetSkills`, `GetMcpServers` | `Skill.List` + `SkillActivation.List{project}` |
+| `SetSkillDefault`, `SetMcpServerDefault` | `Skill.Patch{enabled}` |
+| `SetProjectSkill`, `SetProjectMcpServer` | `SkillActivation.Apply{skill, project, enabled}` |
+| `ClearProjectSkill`, `ClearProjectMcpServer` | `SkillActivation.Erase` |
 
-그래도 그 파일이어야 하는 이유는 §5의 (2)다: `ProjectRef`는 생성된 계약 파일에만
-있고, 오버레이는 이름으로 그 계약에 매칭된다. 대안은 §7의 1번에 적었다. 이 길을
-택한다면 파일 머리에 "이 파일은 project 계약에 병합되는 것들이고, 여기 있는 서비스가
-모두 Project에 대한 것은 아니다"라고 적는다.
+`AddSkill(ProjectRef)`이 설치본 전체에 등록하면서 프로젝트를 받던 문제(§4)도
+사라진다. `Skill.Add`는 프로젝트를 받지 않고, 프로젝트를 받는 것은 `SkillActivation`
+뿐이다.
+
+**구현에서 지켜야 할 것 둘.**
+
+1. `Layer`가 `Skill()`과 `SkillActivation()`을 모두 덮어써야 한다. 덮어쓰지 않은
+   메서드는 `resource.Overlay`를 타고 sink로 내려가 빈 테이블을 읽고 "없음"을
+   답한다. 답하지 않을 메서드는 `Connection()`처럼 명시적으로 `Unimplemented`를
+   돌려준다.
+2. `Skill.id`가 안정돼야 한다 — §7.1.
 
 ### 6.4 행이 아닌 것: `Installation`
 
@@ -317,70 +349,84 @@ message CaptureRequest          { int32 seconds = 1; }
    쓰기가 없다.
 
 ```proto
-// project_svc.ext.proto — `ProjectRef`를 받으므로 여기다.
+// proto/ext/cxz/mcp_svc.ext.proto — MCP 계약의 오버레이.
 service McpConnectionService {
   rpc List(McpConnectionListRequest) returns (McpConnectionList);
 }
-message McpConnectionListRequest { ProjectRef in = 1; }
+message McpConnectionListRequest { ProjectRef project = 1; }
 ```
 
-세션을 `SessionRef`로 받고 싶겠지만 못 받는다. 지금 proto에 적힌 이유가 그대로
-유효하다: project 계약은 session 계약을 가리킬 수 없고, 의존 방향이 반대다. 나눠도
-그건 안 풀린다 — 나누는 이유가 그것이어서는 안 된다.
+여기서 `ProjectRef`를 쓸 수 있는 이유는 §5의 (2)와 어긋나지 않는다. `McpActivation`이
+Project edge를 가지므로 MCP 계약이 `cxz/project_svc.g.proto`를 import하고, 오버레이는
+그 계약에 병합된다. `task_svc.ext.proto`가 이미 그렇게 하고 있다 — 생성된 메시지에
+`ProjectRef project = 1000`을 더한다(`proto/ext/cxz/task_svc.ext.proto:20-22`).
+
+**그리고 나누면 세션을 제대로 가리킬 수 있게 된다.** 지금 `McpSessionStatus.session`은
+불투명한 런타임 id이고, proto에 그 이유가 적혀 있다 — project 계약은 session 계약을
+가리킬 수 없다. 사실이다: `session_svc.g.proto`가 `project_svc.g.proto`를
+import하므로(Session이 Project edge를 가진다) 반대 방향은 순환이다.
+
+그런데 **새 계약은 둘 다 import할 수 있다.** `task_svc.g.proto`가 이미 그렇게 하고
+있고, 그 import를 만든 것은 오버레이다 —
+`proto/ext/cxz/task_svc.ext.proto:28`의 `message TaskActor { SessionRef session = 1; }`
+(Task 엔티티는 세션을 edge로 갖지 않고 `source_session` 문자열만 갖는다). MCP 계약은
+누구도 import하지 않는 잎이므로 같은 일을 할 수 있다.
+
+그래서 연결 항목은 세션을 `SessionRef`로 담는다. `SessionRef`의 oneof에 `runtime_id`가
+있으므로(`session_svc.g.proto:156`) 지금 들고 있는 값을 그대로 넣어 타입만 얻는다.
+나누는 이유가 이것은 아니지만, 나누면 따라온다.
 
 ### 6.6 결과
 
-`ProjectService` = 생성된 7개 + 손으로 쓴 12개. 전부 Project 행을 가리킨다. 새
-테이블은 없고, 마이그레이션도 없다.
+`ProjectService` = 생성된 7개 + 손으로 쓴 12개. 전부 Project 행을 가리킨다.
 
-개수는 많이 줄지 않는다. 47개에서 둘을 지우고 나머지를 여섯 서비스에 나누면 45개이고,
-`Installation`에서 읽기 몇 개가 `Get` 하나로 합쳐져 41개쯤이 된다. 그게 이 제안의
-값이 아니다 — 값은 **어느 RPC도 자기 것이 아닌 서비스에 있지 않다**는 것이다. 엔티티로
-갔다면 스무 개가 생성된 CRUD로 사라졌겠지만, 그 대가는 테이블과 죽은 `Watch`였다.
+손으로 쓴 47개는 이렇게 흩어진다:
+
+| | |
+| --- | --- |
+| `ProjectService`에 남는다 | 12 |
+| `AccountService`로 옮긴다 | 2 |
+| 지운다(`SyncSkills`, `SyncMcpServers`) | 2 |
+| `MarkHistoryTrimmable` — 지운다(§7.3) | 1 |
+| 생성된 CRUD가 흡수한다(스킬·MCP 등록과 활성화) | 12 |
+| `InstallationService`로 옮긴다(읽기 몇 개가 `Get`으로 합쳐져 14개쯤) | 17 |
+| `McpConnectionService`로 옮긴다 | 1 |
+
+손으로 쓸 것은 47 → 약 29다. 줄어든 열두 개는 §6.3이 엔티티로 가서 생성된 CRUD를
+받기 때문이다.
+
+테이블은 넷 생긴다(`skill`, `skill_activation`, `mcp_server`, `mcp_activation`). 전부
+비어 있고 답은 layer가 파일에서 한다 — `Connection`이 이미 그 모양이다.
+`InstallationService`와 `McpConnectionService`는 엔티티가 아니므로 테이블이 없다.
 
 ## 7. 결정
 
 셋 중 둘은 정해졌다(§7.2, §7.3). 남은 것은 §7.1이다.
 
-### 7.1 새 서비스 셋을 어느 파일에 선언하는가
+### 7.1 파일이 진실인 엔티티의 `id`를 어떻게 만드는가
 
-`SkillService`, `McpServerService`, `McpConnectionService`가 프로젝트를 받는
-방법이 셋이다.
+이것만 남았다. §5의 (5)로 가면 `Skill`과 `McpServer`는 payday 엔티티이므로 uuid
+`id`를 키로 가져야 하고, `Add`는 그 id를 담아 답한다. 그런데 진실은 파일이고
+`skills.json`에는 id가 없다. layer가 어디선가 **안정된** id를 만들어야 한다. 두
+가지다.
 
-- **A.** `proto/ext/cxz/project_svc.ext.proto`에 선언하고 요청 메시지가
-  `ProjectRef`를 받는다. 지금 63개가 쓰는 자리와 같다. 대가는 그 파일에
-  `ProjectService`가 아닌 서비스가 들어가서, 파일 이름만 보고는 안에 무엇이 있는지
-  알 수 없다는 것이다. 실행에 영향은 없다.
-- **B.** `proto/cxz/skill.proto` 같은 자기 파일에 선언하고 프로젝트를
-  `string`(uuid 또는 runtime id)으로 받는다. 파일 이름이 내용과 맞는다. 대가는
-  `ProjectRef`가 `id`/`alias`/`workspace`/`runtime_id` 중 하나를 담는 oneof이고 서버가
-  그 네 가지를 다 받아 주는데, 문자열은 하나만 받는다는 것이다.
-- **C.** `Skill`과 `McpServer`를 **엔티티로** 선언하고 프로젝트를 edge로 가리킨다.
-  `Project project = 3 [(orm.edge) = ...]` — payday가 필드 3을 "테넌트보다 작은
-  집합(사이트·플릿·프로젝트)으로 가는 edge" 자리로 비워 두므로 번호도 이미 정해져
-  있다. 그러면 `list: {by: [{name: "project"}]}`로 프로젝트별 조회가 생성되고,
-  등록·삭제·기본값 변경이 생성된 `Add`/`Erase`/`Patch`가 된다. 손으로 쓸 RPC는
-  활성화 둘만 남는다.
+- **파일에 적는다.** `skills.json`의 각 항목에 `"id"`를 하나 더 둔다. 명시적이다.
+  대가는 사람이 고치는 파일에 uuid가 들어간다는 것, 그리고 사람이 디렉터리만 만들어
+  둔 스킬에는 id가 없어서 등록 때 채워야 한다는 것이다.
+- **이름에서 파생시킨다.** `sha256(alias)`의 앞 16바이트를 uuid로 놓고 payday가
+  요구하는 두 바이트를 덮어쓴다 — `v[6] = 0x80 | (v[6] & 0x0F)`, `v[9] = domain`
+  (`pdid.New`가 하는 것과 같다). 그러면 `pdid.Of`가 받아 주고, 파일에 새로 적을 것이
+  없고, 사람이 디렉터리를 만들어 둔 스킬도 id를 갖는다. 대가는 스킬 이름을 바꾸면
+  id가 바뀐다는 것이다.
 
-**C가 가장 적은 코드다. 쓸 수 있는 조건이 하나 있다: 행이 진짜여야 한다.** edge는
-행 위의 컬럼이고, `list: {by: project}`는 그 컬럼에 대한 `WHERE`다. 진실이 공유
-디렉터리의 파일이면 테이블이 비어 있고, 생성된 `List`는 빈 답을 준다. 그걸 피하려고
-layer가 `List`를 가로채면, edge도 생성된 필터도 쓰이지 않는다 — 선언만 남는다.
+**파생을 권한다.** 이름이 바뀌면 다른 등록이 되는 것이 맞고 — `SkillActivation`도
+파일에서 이름으로 키가 잡혀 있으니 같이 움직인다 — 사람이 고치는 파일에 uuid를
+넣지 않는 쪽이 낫다. 시간순 정렬을 잃지만 `list:`의 정렬은 `alias`가 먼저이고 `id`는
+커서를 고유하게 만드는 마지막 칸이라 영향이 없다.
 
-그래서 C는 "스킬과 MCP의 진실을 DB로 옮긴다"와 같은 선택이다. 지난 결정은 그
-반대였다(§5). 둘 중 하나다:
-
-- 파일이 진실이면 → edge는 쓸 수 없고, 프로젝트를 가리키는 것은 요청 메시지뿐이다
-  → **A** (또는 B).
-- 행이 진실이면 → **C**이고, `cxz share`가 고치는 `skills.json`·mcp 설정은 없어지거나
-  행에서 만들어 내는 파일이 된다. MCP는 설정뿐이라 행에 잘 맞는다. 스킬은 디렉터리가
-  payload로 남고 행은 등록이 된다 — Project가 행이고 워크스페이스가 디스크에 있는
-  것과 같은 구조다.
-
-**A를 권한다**, 지난 결정을 유지한다면. 파일 이름이 내용을 다 말하지 않는 것은 주석
-한 줄로 설명되고, 동작하지 않는 `Watch`나 빈 테이블은 설명되지 않는다. 다만 C로
-가겠다면 지금이 그 결정을 바꿀 자리다 — 코드는 C가 제일 적고, 마이그레이션 하나와
-`cxz share`의 편집 대상 변경이 그 대가다.
+이 결정이 아니라 §5의 (1)(엔티티 없는 서비스)로 가겠다면 `id`는 필요 없다. 대신
+스킬을 `string name`으로 가리키고, 서비스 선언이 `project_svc.ext.proto`에 들어간다.
+그 쪽을 택하면 §6.3의 생성된 CRUD도 함께 포기한다 — 손으로 쓸 RPC 여섯 개가 돌아온다.
 
 ### 7.2 `McpConnectionService` — 정해졌다
 
