@@ -407,7 +407,7 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	}
 	return out, nil
 }
-func (m *Manager) CreateContainer(ctx context.Context, r *api.ProjectRequest) (result *api.Receipt, retErr error) {
+func (m *Manager) StartContainer(ctx context.Context, r *api.ProjectRequest) (result *api.Receipt, retErr error) {
 	if err := settings.ValidateModel(r.Model); err != nil {
 		return nil, err
 	}
@@ -448,6 +448,22 @@ func (m *Manager) CreateContainer(ctx context.Context, r *api.ProjectRequest) (r
 	if r.Config != "" {
 		p.Config = r.Config
 	}
+	// A container that is there is started, not made again. The Dev Container
+	// CLI runs the start-time hooks and leaves the create-time ones done, so
+	// returning takes seconds; making one is the long way round -- image,
+	// create-time hooks, tools -- and is what happens when there is nothing to
+	// start. One verb either way: what a person asked for is that the project
+	// runs. See docs/plans/project-lifecycle-api.md.
+	containers, e := m.owned(ctx, p)
+	if e != nil {
+		return nil, e
+	}
+	if len(containers) > 0 {
+		if e = m.startContainer(ctx, p); e != nil {
+			return nil, e
+		}
+		return &api.Receipt{ClientId: r.ClientId, Status: "started"}, nil
+	}
 	if r.Agent != "" && r.Agent != "claude" && r.Agent != "codex" {
 		return nil, fmt.Errorf("agent must be claude or codex")
 	}
@@ -474,11 +490,11 @@ func (m *Manager) CreateContainer(ctx context.Context, r *api.ProjectRequest) (r
 			}
 		}
 	}()
-	containers, e := dockerx.List(ctx, "label=devcontainer.local_folder="+path)
+	foreign, e := dockerx.List(ctx, "label=devcontainer.local_folder="+path)
 	if e != nil {
 		return nil, e
 	}
-	for _, v := range containers {
+	for _, v := range foreign {
 		if v.Config.Labels["cxz.owner"] == m.Owner && v.Config.Labels["cxz.project"] == p.ID {
 			if p.ContainerID != "" && p.ContainerID != v.ID {
 				if _, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); err == nil {

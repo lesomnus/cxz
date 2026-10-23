@@ -59,15 +59,15 @@ const copy: Record<
     title: t("Start project"),
     confirm: t("Start"),
     body: t(
-      "Starts the container this project already has, and its runtime. Agents stay stopped until a session is resumed.",
+      "Makes the project run: the container it already has, or a new one built from its configuration, which takes minutes. Agents stay stopped until a session is resumed.",
     ),
     note: t("Workspace source files and shared accounts are preserved."),
   },
   remove: {
-    label: t("Remove container"),
+    label: t("Remove"),
     description: t("Remove the project container, keeping everything else."),
     title: t("Remove container"),
-    confirm: t("Remove container"),
+    confirm: t("Remove"),
     body: t(
       "Removes the project container. The project, its sessions, conversation history and volumes are retained; starting again builds a new container.",
     ),
@@ -103,7 +103,12 @@ export function ProjectActions({
   const state = containerState(project);
   const actions: { kind: Action; disabled: boolean }[] = [
     { kind: "stop", disabled: state !== ContainerState.RUNNING },
-    { kind: "start", disabled: state !== ContainerState.STOPPED },
+    {
+      kind: "start",
+      disabled:
+        state === ContainerState.RUNNING ||
+        state === ContainerState.UNSPECIFIED,
+    },
     {
       kind: "remove",
       disabled:

@@ -4141,24 +4141,19 @@ func (s interceptProject) FileMappings(ctx context.Context, req *resource.FileMa
 		resource.ProjectService_FileMappings_FullMethodName, req, s.ProjectServiceServer.FileMappings)
 }
 
-func (s interceptProject) CreateContainer(ctx context.Context, req *resource.ProjectCreateRequest) (*resource.Project, error) {
+func (s interceptProject) Start(ctx context.Context, req *resource.ProjectStartRequest) (*resource.Project, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_CreateContainer_FullMethodName, req, s.ProjectServiceServer.CreateContainer)
+		resource.ProjectService_Start_FullMethodName, req, s.ProjectServiceServer.Start)
 }
 
-func (s interceptProject) StopContainer(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
+func (s interceptProject) Stop(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_StopContainer_FullMethodName, req, s.ProjectServiceServer.StopContainer)
+		resource.ProjectService_Stop_FullMethodName, req, s.ProjectServiceServer.Stop)
 }
 
-func (s interceptProject) StartContainer(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
+func (s interceptProject) Remove(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_StartContainer_FullMethodName, req, s.ProjectServiceServer.StartContainer)
-}
-
-func (s interceptProject) RemoveContainer(ctx context.Context, req *resource.ProjectControl) (*resource.Project, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
-		resource.ProjectService_RemoveContainer_FullMethodName, req, s.ProjectServiceServer.RemoveContainer)
+		resource.ProjectService_Remove_FullMethodName, req, s.ProjectServiceServer.Remove)
 }
 
 func (s interceptProject) InspectForeign(ctx context.Context, req *resource.InspectForeignRequest) (*resource.InspectForeignResponse, error) {
@@ -5868,52 +5863,39 @@ func dispatch(ctx context.Context, s resource.Server, op *pdpb.Op) (*anypb.Any, 
 
 		return anypb.New(res)
 
-	case resource.ProjectService_CreateContainer_FullMethodName:
-		v := &resource.ProjectCreateRequest{}
+	case resource.ProjectService_Start_FullMethodName:
+		v := &resource.ProjectStartRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Project().CreateContainer(ctx, v)
+		res, err := s.Project().Start(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case resource.ProjectService_StopContainer_FullMethodName:
+	case resource.ProjectService_Stop_FullMethodName:
 		v := &resource.ProjectControl{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Project().StopContainer(ctx, v)
+		res, err := s.Project().Stop(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case resource.ProjectService_StartContainer_FullMethodName:
+	case resource.ProjectService_Remove_FullMethodName:
 		v := &resource.ProjectControl{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Project().StartContainer(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case resource.ProjectService_RemoveContainer_FullMethodName:
-		v := &resource.ProjectControl{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Project().RemoveContainer(ctx, v)
+		res, err := s.Project().Remove(ctx, v)
 		if err != nil {
 			return nil, err
 		}

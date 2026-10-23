@@ -24,12 +24,10 @@ function fixture() {
   });
   const c = {
     projects: {
-      stopContainer: vi.fn().mockResolvedValue(answered),
-      startContainer: vi.fn().mockResolvedValue(answered),
-      removeContainer: vi.fn().mockResolvedValue(answered),
-      down: vi.fn(),
+      stop: vi.fn().mockResolvedValue(answered),
+      start: vi.fn().mockResolvedValue(answered),
+      remove: vi.fn().mockResolvedValue(answered),
       erase: vi.fn(),
-      remove: vi.fn(),
     },
     store: { apply: vi.fn() },
     inventory: { refresh: vi.fn() },
@@ -46,9 +44,9 @@ describe("project container controls", () => {
   // One function per RPC: a button that says Stop calls StopContainer, and
   // nothing in here archives or deletes anything.
   const controls = [
-    { name: "stop", run: stopContainer, rpc: "stopContainer" },
-    { name: "start", run: startContainer, rpc: "startContainer" },
-    { name: "remove", run: removeContainer, rpc: "removeContainer" },
+    { name: "stop", run: stopContainer, rpc: "stop" },
+    { name: "start", run: startContainer, rpc: "start" },
+    { name: "remove", run: removeContainer, rpc: "remove" },
   ] as const;
   for (const control of controls) {
     it(`${control.name} calls ${control.rpc} by UUID and keeps the project`, async () => {
@@ -66,7 +64,6 @@ describe("project container controls", () => {
           expect(f.c.projects[other.rpc]).not.toHaveBeenCalled();
       }
       expect(f.c.projects.erase).not.toHaveBeenCalled();
-      expect(f.c.projects.remove).not.toHaveBeenCalled();
       expect(result.alias).toBe("web");
       expect(f.c.store.apply).toHaveBeenCalledWith("cxz.Project", [
         { id: f.answered.id, value: f.answered },
@@ -76,11 +73,11 @@ describe("project container controls", () => {
   }
   it("preserves local state on failure and does not retry", async () => {
     const f = fixture();
-    f.c.projects.stopContainer.mockRejectedValue(new Error("Stop failed"));
+    f.c.projects.stop.mockRejectedValue(new Error("Stop failed"));
     await expect(stopContainer(f.connection, f.project)).rejects.toThrow(
       "Stop failed",
     );
-    expect(f.c.projects.stopContainer).toHaveBeenCalledOnce();
+    expect(f.c.projects.stop).toHaveBeenCalledOnce();
     expect(f.c.store.apply).not.toHaveBeenCalled();
     expect(f.c.inventory.refresh).not.toHaveBeenCalled();
   });

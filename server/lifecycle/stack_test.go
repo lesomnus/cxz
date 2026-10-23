@@ -53,15 +53,11 @@ func (f *fixture) SetSessionTitle(_ context.Context, id, title string) (string, 
 	return title, nil
 }
 
-// StopContainer and StartContainer move the container the way the manager does:
-// the project record is untouched and only what the next look sees changes.
+// Stopping moves the container the way the manager does: the project record is
+// untouched and only what the next look sees changes.
 func (f *fixture) StopContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
 	f.p.State = "stopped"
 	return &api.Receipt{ClientId: r.ClientId, Status: "stopped"}, nil
-}
-func (f *fixture) StartContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
-	f.p.State = "running"
-	return &api.Receipt{ClientId: r.ClientId, Status: "started"}, nil
 }
 
 // Projects is the container inventory a read observes, counted so a test can
@@ -83,9 +79,13 @@ func (f *fixture) Resume(_ context.Context, r *api.Control) (*api.Session, error
 	}
 	return f.s, nil
 }
-func (f *fixture) CreateContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
+// Starting records what it was asked for and leaves the project running, which
+// is what the manager's dispatch does whether it had to make a container or
+// only start one.
+func (f *fixture) StartContainer(_ context.Context, r *api.ProjectRequest) (*api.Receipt, error) {
 	f.up = r
-	return &api.Receipt{ClientId: r.ClientId, Status: "created"}, nil
+	f.p.State = "running"
+	return &api.Receipt{ClientId: r.ClientId, Status: "started"}, nil
 }
 
 func TestResourceStack(t *testing.T) {
@@ -111,7 +111,7 @@ func TestResourceStack(t *testing.T) {
 	if len(p.GetId()) != 16 || p.GetId()[9] != 7 {
 		t.Fatalf("not a payday Project ID: %x", p.GetId())
 	}
-	_, err = stack.Project().CreateContainer(ctx, resource.ProjectCreateRequest_builder{Ref: resource.ProjectRef_builder{Id: p.GetId()}.Build(), ClientId: ptr("up-1")}.Build())
+	_, err = stack.Project().Start(ctx, resource.ProjectStartRequest_builder{Ref: resource.ProjectRef_builder{Id: p.GetId()}.Build(), ClientId: ptr("up-1")}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
