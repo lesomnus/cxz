@@ -78,8 +78,9 @@ Implemented: `ProjectService` is down to 12 hand-written RPCs, and
 The [task relations plan](plans/task-relations.md) is about the thing a task
 cannot say today: that it is blocked by another task. It measures what is
 missing, benchmarks eight task trackers on relation kinds, cycle handling and
-status effects, and proposes a `TaskLink` join entity with cycles refused.
-Not implemented: the status policy is a recommendation, not a decision.
+status effects, and settles on a `TaskLink` join entity with cycles refused and
+blockedness derived rather than stored. Decided, not implemented: the six
+decisions are listed at the top of it and the work is staged in four steps.
 
 ## Generated code
 
