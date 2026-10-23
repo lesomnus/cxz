@@ -437,12 +437,18 @@ func TestCommandsReachAPI(t *testing.T) {
 	}
 	// Stopping and starting are not the same command as removing, and not the
 	// same command as the session `stop` at the root.
-	for _, op := range []string{"stop", "start"} {
-		run("project", op, "pn")
-		request, ok := (<-stub.requests).(*api.ProjectRequest)
-		if !ok || request.Workspace != "project-name" || request.ClientId == "" {
-			t.Fatal("project "+op+" did not reach the resolved project", request)
-		}
+	run("project", "stop", "pn")
+	stopped, ok := (<-stub.requests).(*api.ProjectRequest)
+	if !ok || stopped.Workspace != "project-name" || stopped.ClientId == "" {
+		t.Fatal("project stop did not reach the resolved project", stopped)
+	}
+	// Starting is recorded on its own channel, like every other start.
+	for len(started) > 0 {
+		<-started
+	}
+	run("project", "start", "pn")
+	if id := <-started; id != "project-name" {
+		t.Fatal("project start did not reach the resolved project", id)
 	}
 	// The workspace pair keeps its idiom and makes the same call as
 	// `cxz project remove`.
