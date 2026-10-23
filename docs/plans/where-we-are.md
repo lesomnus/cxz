@@ -97,3 +97,8 @@ root이므로 `conversation.db`가 `root:root`로 생겼고, SQLite는 읽기 �
   [service-boundaries.md](service-boundaries.md)에 어디로 갔는지와, 구현하면서 뒤집힌
   결정 하나(스킬·MCP 색인은 DB로 가지 않는다 — 매니저와 리소스 계층이 다른 DB를 들고
   스킬을 해소하는 쪽이 매니저다)를 과정째로 적었다.
+- **task 사이의 관계** — 설계안만 있다. task는 "저것에 막혀 있다"를 적을 자리가 없고,
+  [task-relations.md](task-relations.md)가 `TaskLink` 조인 엔티티를 제안한다. 순환
+  거부는 결정됐고, 막힌 task를 어떻게 다룰지(상태는 건드리지 않고 `Claim`만 거부하는
+  쪽을 권고)는 결정 전이다. 생성은 실제로 돌려 봤다 — 같은 타입을 가리키는 edge 두 개는
+  되고, enum은 `list: by:`에 못 들어간다.
