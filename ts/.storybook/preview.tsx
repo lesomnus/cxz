@@ -1,4 +1,5 @@
 import { UIProvider } from "@lesomnus/nox";
+import { ThemeProvider } from "#src/shared/theme/theme.tsx";
 import { useLayoutEffect } from "react";
 import type { Preview } from "@storybook/react-vite";
 import { t, localeStore } from "#src/shared/i18n/i18n.ts";
@@ -48,9 +49,11 @@ const preview: Preview = {
         void localeStore.activate(context.globals.locale);
       }, [context.globals.theme, context.globals.locale]);
       return (
-        <UIProvider translate={t} locale={locale}>
-          <Story />
-        </UIProvider>
+        <ThemeProvider>
+          <UIProvider translate={t} locale={locale}>
+            <Story />
+          </UIProvider>
+        </ThemeProvider>
       );
     },
   ],
