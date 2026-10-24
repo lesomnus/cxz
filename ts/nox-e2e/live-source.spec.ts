@@ -12,7 +12,7 @@ test("Nox TSX and CSS edits reach the consumer without rebuilding or losing stat
     "<button\n",
     '<button\n      data-nox-live="updated"\n',
   );
-  const changedTokens = `${originalTokens}\n:root { --ui-hover: rgb(12, 34, 56); }\n`;
+  const changedTokens = `${originalTokens}\n:root { --ui-button-hover-background: rgb(12, 34, 56); }\n`;
   expect(changedComponent).not.toBe(originalComponent);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
