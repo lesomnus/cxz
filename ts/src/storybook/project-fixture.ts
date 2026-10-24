@@ -304,15 +304,20 @@ export function projectFixture(
         return clone(ProjectSchema, updated);
       },
       async *download(request, context) {
+        const project = projects.find((p) =>
+          matchesProject(p, request.ref, `project-${projects.indexOf(p) + 1}`),
+        );
+        if (!project)
+          throw new ConnectError("Project not found", Code.NotFound);
         calls.push({
           method: "download",
-          project: String(request.ref?.key.value),
+          project: projectId(project),
           signal: context.signal,
         });
         if (unavailable)
           throw new ConnectError("Workspace is unavailable", Code.Unavailable);
         const data = new TextEncoder().encode(
-          request.ref?.key.value === "project-2"
+          project === projects[1]
             ? "ref: refs/heads/api-main\n"
             : "ref: refs/heads/ui/dashboard\n",
         );
