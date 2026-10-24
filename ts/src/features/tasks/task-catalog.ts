@@ -1,3 +1,4 @@
+import { projectRef } from "#src/shared/api/project-id.ts";
 import { Code, ConnectError, type Client } from "@connectrpc/connect";
 import { useMemo, useSyncExternalStore } from "react";
 import type { Task } from "#gen/cxz/task_pb";
@@ -54,7 +55,7 @@ export class ProjectTasks {
       let first = true;
       try {
         for await (const frame of this.client.watch(
-          { project: { key: { case: "runtimeId", value: this.project } } },
+          { project: projectRef(this.project) },
           { signal },
         )) {
           if (signal.aborted) return;

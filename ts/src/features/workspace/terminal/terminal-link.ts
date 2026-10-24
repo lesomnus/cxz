@@ -1,3 +1,4 @@
+import { projectRef } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { MessageInitShape } from "@bufbuild/protobuf";
 import type { ProjectTerminalRequestSchema } from "#gen/cxz/project_svc_pb";
@@ -59,7 +60,7 @@ export function openTerminal(
   if (c.inProcess) {
     const abort = new AbortController();
     const queue = new InputQueue();
-    queue.push({ ref: ref(project), columns, rows });
+    queue.push({ ref: projectRef(project), columns, rows });
     void (async () => {
       try {
         for await (const frame of c.projects.terminal(queue.read(), {

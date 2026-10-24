@@ -1,3 +1,4 @@
+import { projectId } from "#src/shared/api/project-id.ts";
 import { SidebarHint } from "#src/shared/navigation/sidebar-hint.tsx";
 import { useBackgroundSessions } from "#src/features/session/model/use-background-sessions.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -308,7 +309,7 @@ export function Workspace({
                   .filter((p) => sessionsByProject.has(key(p.id)))
                   .map((p) => (
                     <SessionTreeGroup
-                      key={p.runtimeId}
+                      key={projectId(p)}
                       project={p}
                       items={sessionsByProject.get(key(p.id)) ?? []}
                       loading={inventory.loading.sessions}
@@ -316,12 +317,12 @@ export function Workspace({
                       unread={unread}
                       errors={errors}
                       background={background}
-                      open={!collapsed.has(p.runtimeId)}
+                      open={!collapsed.has(projectId(p))}
                       toggle={() =>
                         setCollapsed((old) => {
                           const next = new Set(old);
-                          if (next.has(p.runtimeId)) next.delete(p.runtimeId);
-                          else next.add(p.runtimeId);
+                          if (next.has(projectId(p))) next.delete(projectId(p));
+                          else next.add(projectId(p));
                           return next;
                         })
                       }

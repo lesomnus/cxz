@@ -1,3 +1,4 @@
+import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import type { Task } from "#gen/cxz/task_pb";
 import { TaskStatus } from "#gen/cxz/task_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -15,13 +16,13 @@ export const taskStatusName = (status: TaskStatus) =>
   (status === TaskStatus.CANCELED ? "Canceled" : "Unknown");
 export const taskRef = (project: Project, task: Task) => ({
   key: { case: "id" as const, value: task.id },
-  project: { key: { case: "runtimeId" as const, value: project.runtimeId } },
+  project: projectRef(projectId(project)),
 });
 export const taskLookup = (project: Project, value: string) => ({
   key: /^[0-9a-f]{32}$/i.test(value)
     ? { case: "id" as const, value: bytes(value) }
     : { case: "alias" as const, value },
-  project: { key: { case: "runtimeId" as const, value: project.runtimeId } },
+  project: projectRef(projectId(project)),
 });
 export const taskKey = (task: Task) => key(task.id);
 export const taskOwner = (task: Task) => ({

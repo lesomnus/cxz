@@ -1,3 +1,4 @@
+import { projectId } from "#src/shared/api/project-id.ts";
 import { useRef, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
@@ -238,5 +239,5 @@ export function ProjectActions({
 }
 
 function label(project: Project) {
-  return project.name || project.alias || project.runtimeId;
+  return project.name || project.alias || projectId(project);
 }

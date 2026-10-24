@@ -1,3 +1,8 @@
+import { useProject } from "#src/shared/api/use-project.ts";
+import {
+  projectId as projectUUID,
+  projectRef,
+} from "#src/shared/api/project-id.ts";
 import { useState } from "react";
 import { Button, PageToolbar } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
@@ -34,10 +39,8 @@ export function TasksView({
   selection: TaskSelection;
   select: (value: TaskSelection) => void;
 }) {
-  const project =
-    projects.find((project) => project.runtimeId === selection.project) ??
-    (!selection.project ? projects[0] : undefined);
-  const projectId = project?.runtimeId ?? "";
+  const project = useProject(c, projects, selection.project);
+  const projectId = projectUUID(project) ?? "";
   const state = useProjectTasks(c, projectId);
   const [adding, setAdding] = useState(false);
   const open = (task: Task) =>

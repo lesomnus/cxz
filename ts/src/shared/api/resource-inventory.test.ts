@@ -1,3 +1,4 @@
+import { projectId } from "#src/shared/api/project-id.ts";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -50,7 +51,6 @@ class Feed<T> {
 const project = (i: number) =>
   create(ProjectSchema, {
     id: new TextEncoder().encode(`project-${String(i).padStart(8, "0")}`),
-    runtimeId: `project-${i}`,
   });
 const session = (i: number, p = project(i)) =>
   create(SessionSchema, {
@@ -120,10 +120,10 @@ describe("shared resource inventory", () => {
     const off = f.inventory.subscribe(() => {});
     try {
       await vi.advanceTimersByTimeAsync(30000);
-      expect(f.inventory.snapshot().projects.map((p) => p.runtimeId)).toEqual([
-        "project-0",
-        "project-1",
-        "project-2",
+      expect(f.inventory.snapshot().projects.map((p) => projectId(p))).toEqual([
+        projectId(project(0)),
+        projectId(project(1)),
+        projectId(project(2)),
       ]);
       expect(String(f.inventory.snapshot().errors.projects)).toContain(
         "Update the cxz Manager",
@@ -191,8 +191,8 @@ describe("shared resource inventory", () => {
       await vi.waitFor(() =>
         expect(f.inventory.snapshot().sessions[0].name).toBe("Changed"),
       );
-      expect(f.inventory.snapshot().sessions[0].project?.runtimeId).toBe(
-        "project-1",
+      expect(projectId(f.inventory.snapshot().sessions[0].project)).toBe(
+        projectId(project(1)),
       );
       expect(
         f.inventory
@@ -382,9 +382,9 @@ describe("shared resource inventory", () => {
       // The RPC decoder produces new objects even when every field is equal.
       f.p.push(
         create(ProjectWatchResponseSchema, {
-          items: ps.map((p) => ({
+          items: ps.map((p, index) => ({
             id: p.id,
-            value: project(Number(p.runtimeId.split("-")[1])),
+            value: project(index),
           })),
         }),
       );

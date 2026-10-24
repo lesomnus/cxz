@@ -11,7 +11,6 @@ import {
 function fixture() {
   const project = create(ProjectSchema, {
     id: new Uint8Array(16).fill(1),
-    runtimeId: "project",
     alias: "web",
     status: { containerState: ContainerState.RUNNING },
   });

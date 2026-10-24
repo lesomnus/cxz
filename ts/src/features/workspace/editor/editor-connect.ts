@@ -1,3 +1,4 @@
+import { projectRef } from "#src/shared/api/project-id.ts";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 
@@ -7,7 +8,10 @@ export async function connectWorkspaceEditor(
   signal: AbortSignal,
 ): Promise<{ workspace: string; simulated: boolean }> {
   if (c.inProcess)
-    return c.projects.editor({ ref: ref(id) }, { signal, timeoutMs: 180000 });
+    return c.projects.editor(
+      { ref: projectRef(id) },
+      { signal, timeoutMs: 180000 },
+    );
   const response = await fetch(new URL("/editor/connect", c.baseUrl), {
     method: "POST",
     credentials: "same-origin",

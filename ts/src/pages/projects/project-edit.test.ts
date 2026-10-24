@@ -7,7 +7,6 @@ import { editProject, validateProjectField } from "./project-edit";
 const project = () =>
   create(ProjectSchema, {
     id: new Uint8Array(16).fill(1),
-    runtimeId: "stable-project",
     alias: "web",
     name: "Workspace",
     desc: "Original description",

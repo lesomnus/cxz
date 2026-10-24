@@ -1,3 +1,4 @@
+import { projectFixtureId, matchesProject } from "./project-id";
 import { create, clone, type MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
@@ -15,16 +16,14 @@ export function taskFixture(count = 9, unavailable = false) {
   };
   const projects = [
     create(ProjectSchema, {
-      id: id(1),
-      runtimeId: "project-1",
+      id: projectFixtureId(1),
       name: "Workspace",
       alias: "workspace",
       workspace: "/workspace",
       status: { containerState: ContainerState.RUNNING },
     }),
     create(ProjectSchema, {
-      id: id(2),
-      runtimeId: "project-2",
+      id: projectFixtureId(2),
       name: "Documentation",
       alias: "docs",
       workspace: "/docs",
@@ -148,7 +147,8 @@ export function taskFixture(count = 9, unavailable = false) {
               items: rows
                 .filter(
                   (task) =>
-                    task.project?.runtimeId === request.project?.key.value,
+                    !!task.project &&
+                    matchesProject(task.project, request.project),
                 )
                 .map((value) => ({
                   id: value.id,
@@ -180,8 +180,8 @@ export function taskFixture(count = 9, unavailable = false) {
             priority: request.priority,
             status: TaskStatus.TODO,
             clientId: request.clientId,
-            project: projects.find(
-              (project) => project.runtimeId === request.project?.key.value,
+            project: projects.find((project) =>
+              matchesProject(project, request.project),
             ),
           });
           rows.push(task);

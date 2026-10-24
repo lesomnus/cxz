@@ -388,11 +388,11 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
   await projectId.getByRole("button", { name: "Copy", exact: true }).click();
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-    .toBe("01000000-0000-0000-0000-000000000000");
+    .toBe("00000000-0000-8000-8007-000000000001");
   await projectId.locator("[tabindex]").hover();
   await expect(
     page.getByRole("tooltip", {
-      name: "01000000-0000-0000-0000-000000000000",
+      name: "00000000-0000-8000-8007-000000000001",
       exact: true,
     }),
   ).toBeVisible();
@@ -404,7 +404,6 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
     "Description",
     "Workspace",
     "Configuration",
-    "Runtime ID",
     "Created",
     "Updated",
     "Deleted",

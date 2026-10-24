@@ -1,3 +1,4 @@
+import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
 import { useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -47,7 +48,11 @@ export function WorkspaceTerminal({
       hide={hide}
       projectError={project.error ? String(project.error) : ""}
       renderSession={(props) => (
-        <TerminalSession {...props} c={c} runtimeId={project.data?.runtimeId} />
+        <TerminalSession
+          {...props}
+          c={c}
+          runtimeId={projectUUID(project.data)}
+        />
       )}
     />
   );

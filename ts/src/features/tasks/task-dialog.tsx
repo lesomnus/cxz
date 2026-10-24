@@ -1,3 +1,4 @@
+import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button, CardActions, Card } from "@lesomnus/nox";
@@ -125,7 +126,7 @@ function TaskEditor({
             )
         : await c.tasks.add(
             {
-              project: ref(project.runtimeId),
+              project: projectRef(projectId(project)),
               clientId: creation.current,
               name: name.trim(),
               alias: alias.trim(),
@@ -135,7 +136,7 @@ function TaskEditor({
             options,
           );
       if (!request.signal.aborted) {
-        c.taskCatalog.forProject(project.runtimeId).apply(value);
+        c.taskCatalog.forProject(projectId(project)).apply(value);
         saved(value);
       }
       return true;
@@ -375,7 +376,7 @@ export function TaskDialog({
             { signal, timeoutMs: 10000 },
           )
         : Promise.resolve(undefined),
-    [c, project.runtimeId, selected],
+    [c, projectId(project), selected],
   );
   return (
     <AnchoredDialog

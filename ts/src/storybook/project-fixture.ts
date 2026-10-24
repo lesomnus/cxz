@@ -1,3 +1,5 @@
+import { projectFixtureId, matchesProject } from "./project-id";
+import { projectId } from "#src/shared/api/project-id.ts";
 import { clone, create, isFieldSet } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
@@ -25,8 +27,7 @@ export function projectFixture(
   const now = Date.now();
   const projects = ["Web workspace", "API workspace"].map((name, i) =>
     create(ProjectSchema, {
-      id: Uint8Array.from({ length: 16 }, (_, n) => (n === 0 ? i + 1 : 0)),
-      runtimeId: `project-${i + 1}`,
+      id: projectFixtureId(i + 1),
       alias: i ? "api" : "web",
       name,
       dateErased: i ? timestampFromDate(new Date(now - 1000)) : undefined,
@@ -148,7 +149,7 @@ export function projectFixture(
           method: request.trustConfig
             ? "project.start.trusted"
             : "project.start",
-          project: projects[index]!.runtimeId,
+          project: projectId(projects[index]!),
           signal: context.signal,
         });
         if (failure === "trust" && !request.trustConfig) {
@@ -192,7 +193,7 @@ export function projectFixture(
           throw new ConnectError("Project not found", Code.NotFound);
         calls.push({
           method: "project.stop",
-          project: projects[index]!.runtimeId,
+          project: projectId(projects[index]!),
           signal: context.signal,
         });
         if (unavailable)
@@ -205,7 +206,7 @@ export function projectFixture(
         updated.dateUpdated = timestampFromDate(new Date());
         projects[index] = updated;
         for (let i = 0; i < sessions.length; i++) {
-          if (sessions[i]!.project?.runtimeId !== updated.runtimeId) continue;
+          if (projectId(sessions[i]!.project) !== projectId(updated)) continue;
           const session = clone(SessionSchema, sessions[i]!);
           session.status!.state = "stopped";
           session.status!.pending = [];
@@ -226,7 +227,7 @@ export function projectFixture(
         const project = clone(ProjectSchema, projects[index]!);
         calls.push({
           method: "project.erase",
-          project: project.runtimeId,
+          project: projectId(project),
           signal: context.signal,
         });
         if (unavailable)
@@ -236,7 +237,7 @@ export function projectFixture(
           );
         projects.splice(index, 1);
         for (let i = sessions.length - 1; i >= 0; i--)
-          if (sessions[i]!.project?.runtimeId === project.runtimeId)
+          if (projectId(sessions[i]!.project) === projectId(project))
             sessions.splice(i, 1);
         publish();
         return { erased: true };
@@ -247,7 +248,11 @@ export function projectFixture(
             ? p.id.every(
                 (b, i) => b === (request.ref!.key.value as Uint8Array)[i],
               )
-            : p.runtimeId === request.ref?.key.value,
+            : matchesProject(
+                p,
+                request.ref,
+                `project-${projects.indexOf(p) + 1}`,
+              ),
         );
         if (!project)
           throw new ConnectError("Project not found", Code.NotFound);
@@ -292,7 +297,7 @@ export function projectFixture(
         projects[index] = updated;
         calls.push({
           method: "project.patch",
-          project: project.runtimeId,
+          project: projectId(project),
           signal: context.signal,
         });
         publish();
@@ -316,8 +321,12 @@ export function projectFixture(
     });
     router.service(SessionService, {
       add: (request, context) => {
-        const project = projects.find(
-          (p) => p.runtimeId === request.project?.key.value,
+        const project = projects.find((p) =>
+          matchesProject(
+            p,
+            request.project,
+            `project-${projects.indexOf(p) + 1}`,
+          ),
         );
         if (!project)
           throw new ConnectError("Project not found", Code.NotFound);
@@ -346,7 +355,7 @@ export function projectFixture(
         calls.push({
           method: "add",
           session: session.runtimeId,
-          project: project.runtimeId,
+          project: projectId(project),
           signal: context.signal,
         });
         sessions.push(session);
@@ -377,7 +386,7 @@ export function projectFixture(
             sessions.some(
               (s) =>
                 s.runtimeId !== id &&
-                s.project?.runtimeId === updated.project?.runtimeId &&
+                projectId(s.project) === projectId(updated.project) &&
                 s.alias === request.alias,
             )
           )

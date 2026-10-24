@@ -16,7 +16,8 @@ export async function eraseProject(
   target: Project,
   knownSessions: Session[],
 ) {
-  if (!target.id.length) throw new Error(t("Project changed. Close this dialog and try again."));
+  if (!target.id.length)
+    throw new Error(t("Project changed. Close this dialog and try again."));
   const result = await c.projects.erase(
     { key: { case: "id", value: target.id } },
     { timeoutMs: 120_000 },
