@@ -114,7 +114,7 @@ func (m *Manager) prepareComposeOverride(ctx context.Context, p *Project, t *tru
 	if err = t.saw("configuration cxz devcontainer.compose:", override); err != nil {
 		return out, err
 	}
-	dir := filepath.Join(m.Root, "projects", p.ID)
+	dir := filepath.Join(m.Root, "projects", p.storageID())
 	if err = os.MkdirAll(dir, 0700); err != nil {
 		return out, err
 	}
@@ -125,7 +125,7 @@ func (m *Manager) prepareComposeOverride(ctx context.Context, p *Project, t *tru
 	if len(m.Owner) < 12 {
 		return out, fmt.Errorf("invalid manager owner")
 	}
-	args := []string{"compose", "--project-name", "cxz-" + m.Owner[:12] + "-" + p.ID}
+	args := []string{"compose", "--project-name", "cxz-" + m.Owner[:12] + "-" + p.storageID()}
 	for _, f := range files {
 		args = append(args, "-f", f.(string))
 	}

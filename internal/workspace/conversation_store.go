@@ -70,7 +70,7 @@ func (m *Manager) conversationStore(ctx context.Context, session string) (*sessi
 	if err != nil {
 		return nil, err
 	}
-	dir, _ := m.projectState(p.ID)
+	dir, _ := m.projectState(p.storageID())
 	sessionDir := core.Dir(filepath.Join(dir, "data"), session)
 	path := sessionstore.Path(sessionDir)
 	if _, err = os.Stat(path); err != nil {

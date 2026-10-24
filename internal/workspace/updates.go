@@ -137,7 +137,7 @@ func (m *Manager) rolloutOne(ctx context.Context, state *updateState) {
 			if p.ContainerID == "" {
 				continue
 			}
-			v, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+			v, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 			if err != nil {
 				return
 			}

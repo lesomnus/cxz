@@ -62,6 +62,8 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 	if err != nil {
 		return err
 	}
+	storage := id
+for _,p:=range projects {if p.ID==id {storage=p.storageID()}}
 	ids := map[string]bool{}
 	for _, session := range sessions {
 		ids[session] = true
@@ -78,7 +80,7 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 				}
 				for _, container := range strings.Fields(string(containers)) {
 					if container == p.ContainerID {
-						if _, err := inspectRemoval(ctx, run, "container", container, m.Owner, id); err != nil {
+						if _, err := inspectRemoval(ctx, run, "container", container, m.Owner, storage); err != nil {
 							return err
 						}
 					}
@@ -91,7 +93,7 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 				}
 				for _, volume := range strings.Fields(string(volumes)) {
 					if volume == p.Volume {
-						if _, err := inspectRemoval(ctx, run, "volume", volume, m.Owner, id); err != nil {
+						if _, err := inspectRemoval(ctx, run, "volume", volume, m.Owner, storage); err != nil {
 							return err
 						}
 					}
@@ -107,7 +109,7 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 			return fmt.Errorf("invalid session removal scope")
 		}
 	}
-	if err := removeProjectDocker(ctx, run, m.Owner, id, m.Container); err != nil {
+	if err := removeProjectDocker(ctx, run, m.Owner, storage, m.Container); err != nil {
 		return err
 	}
 	m.historyMu.Lock()
@@ -135,6 +137,7 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 			return err
 		}
 	}
+	if storage!=id {if err:=accounts.RevokeProjectGrants(m.Root,storage);err!=nil{return err}}
 	if err := accounts.RevokeProjectGrants(m.Root, id); err != nil {
 		return err
 	}
@@ -154,6 +157,7 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 			return err
 		}
 	}
+	if storage!=id {if err:=root.RemoveAll(filepath.Join("assets","exports",storage));err!=nil{return err}}
 	if err := root.RemoveAll(filepath.Join("assets", "exports", id)); err != nil {
 		return err
 	}
@@ -165,7 +169,7 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 		if err != nil {
 			return err
 		}
-		err = secrets.RemoveAll(id)
+		err = secrets.RemoveAll(storage)
 		secrets.Close()
 		if err != nil {
 			return err
@@ -175,7 +179,7 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 	}
 	// The manifest is removed before the database row, so startup cannot restore
 	// deleted intent. Registry rows remain until all cleanup succeeds for retries.
-	if err := root.RemoveAll(filepath.Join("projects", id)); err != nil {
+	if err := root.RemoveAll(filepath.Join("projects", storage)); err != nil {
 		return err
 	}
 	tx, err := m.DB.BeginTx(ctx, nil)

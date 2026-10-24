@@ -50,7 +50,7 @@ func (m *Manager) secretProject(ctx context.Context, project string) (*Project, 
 	if p.ContainerID == "" || p.RemoteUser == "" {
 		return nil, status.Error(codes.FailedPrecondition, "project container unavailable; start the project")
 	}
-	c, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+	c, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 	if err != nil {
 		return nil, err
 	}

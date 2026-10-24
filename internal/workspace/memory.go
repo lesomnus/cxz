@@ -88,7 +88,7 @@ func (m *Manager) Memory(ctx context.Context, r *api.MemoryRequest) (*api.Memory
 	if err != nil {
 		return nil, err
 	}
-	out, err := m.memoryHelper(ctx, p.ID, "_memory-read", memoryview.Query{Session: memorySession(s), Path: r.Path}, []memoryMount{{volume: p.Volume, project: p.ID, target: "/cxz/state"}})
+	out, err := m.memoryHelper(ctx, p.ID, "_memory-read", memoryview.Query{Session: memorySession(s), Path: r.Path}, []memoryMount{{volume: p.Volume, project: p.storageID(), target: "/cxz/state"}})
 	if err != nil {
 		return nil, err
 	}

@@ -30,10 +30,10 @@ func (m *Manager) Logs(ctx context.Context, r *api.LogsRequest) (*api.LogsReply,
 		}
 		var report logview.Report
 		if r.Project {
-			report.File("project provisioning", filepath.Join(m.Root, "projects", p.ID, "provision.log"))
+			report.File("project provisioning", filepath.Join(m.Root, "projects", p.storageID(), "provision.log"))
 			output := &logview.Buffer{}
 			work, cancel := context.WithTimeout(ctx, 5*time.Second)
-			_, inspectErr := dockerx.Owned(work, p.ContainerID, m.Owner, p.ID)
+			_, inspectErr := dockerx.Owned(work, p.ContainerID, m.Owner, p.storageID())
 			if inspectErr == nil {
 				cmd := exec.CommandContext(work, "docker", "logs", "--timestamps", "--tail", "200", p.ContainerID)
 				cmd.Stdout = output

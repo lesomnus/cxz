@@ -20,7 +20,7 @@ func (m *Manager) OpenTerminal(ctx context.Context, project string, columns, row
 	if p.ContainerID == "" || p.RemoteUser == "" || p.RemoteWorkspace == "" {
 		return nil, status.Error(codes.FailedPrecondition, "project container unavailable; start the project")
 	}
-	c, err := dockerx.Owned(check, p.ContainerID, m.Owner, p.ID)
+	c, err := dockerx.Owned(check, p.ContainerID, m.Owner, p.storageID())
 	if err != nil {
 		return nil, err
 	}

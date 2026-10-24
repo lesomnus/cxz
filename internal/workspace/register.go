@@ -2,11 +2,10 @@ package workspace
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"os"
 	"path/filepath"
@@ -37,17 +36,16 @@ func (m *Manager) Register(ctx context.Context, path, config string) (*api.Proje
 	if err != nil || rel == ".." || strings.HasPrefix(rel, "../") {
 		return nil, fmt.Errorf("workspace outside installed root")
 	}
-	sum := sha256.Sum256([]byte(path))
-	id := hex.EncodeToString(sum[:12])
-	lock := m.projectLock(id)
+	lock := m.projectLock(path)
 	lock.Lock()
 	defer lock.Unlock()
-	if p, err := m.resolve(ctx, id); err == nil {
+	if p, err := m.resolve(ctx, path); err == nil {
 		return projectView(p), nil
 	}
 	if len(m.Owner) < 12 {
 		return nil, fmt.Errorf("invalid manager owner")
 	}
+	id := projectid.New()
 	p := &Project{ID: id, Workspace: path, Name: filepath.Base(path), Config: config, Network: m.sharedNetwork(), Volume: m.newProjectVolume(id), Token: core.ID() + core.ID()}
 	if err = m.save(ctx, p); err != nil {
 		return nil, err

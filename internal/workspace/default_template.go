@@ -64,7 +64,7 @@ func (m *Manager) materializeTemplate(p *Project, t *projectconfig.DefaultTempla
 		return "", err
 	}
 	sum := sha256.Sum256(b)
-	parent := filepath.Join(m.Root, "projects", p.ID, "templates")
+	parent := filepath.Join(m.Root, "projects", p.storageID(), "templates")
 	target := filepath.Join(parent, hex.EncodeToString(sum[:]))
 	config := filepath.Join(target, "devcontainer.json")
 	if _, err := os.Stat(config); err == nil {

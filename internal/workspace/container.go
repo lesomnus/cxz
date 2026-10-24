@@ -142,13 +142,13 @@ func (m *Manager) recordFailure(ctx context.Context, p *Project, err *error) {
 // owned is every container this manager made for this project, checked for
 // ownership so no operation here can touch something it did not create.
 func (m *Manager) owned(ctx context.Context, p *Project) ([]dockerx.Container, error) {
-	containers, err := dockerx.List(ctx, "label=cxz.owner="+m.Owner, "label=cxz.project="+p.ID)
+	containers, err := dockerx.List(ctx, "label=cxz.owner="+m.Owner, "label=cxz.project="+p.storageID())
 	if err != nil {
 		return nil, err
 	}
 	out := make([]dockerx.Container, 0, len(containers))
 	for _, v := range containers {
-		full, err := dockerx.Owned(ctx, v.ID, m.Owner, p.ID)
+		full, err := dockerx.Owned(ctx, v.ID, m.Owner, p.storageID())
 		if err != nil {
 			return nil, err
 		}
@@ -226,7 +226,7 @@ func (m *Manager) render(ctx context.Context, p *Project) (rendered, error) {
 // made with; a change to the source configuration is refused above, not
 // silently rendered into a file the CLI then ignores.
 func (m *Manager) overrideConfig(p *Project) string {
-	return filepath.Join(m.Root, "projects", p.ID, "devcontainer.json")
+	return filepath.Join(m.Root, "projects", p.storageID(), "devcontainer.json")
 }
 
 // containerState is derived from what was collected, every time it is asked,
@@ -247,7 +247,7 @@ func containerState(p *Project, inventory []dockerx.Container, lookErr error) st
 	for _, v := range inventory {
 		// The labels, not the recorded id: the id is what cxz last acted on,
 		// the labels are what the container says it is.
-		if v.Config.Labels["cxz.project"] != p.ID || v.Config.Labels["devcontainer.local_folder"] != p.Workspace {
+		if v.Config.Labels["cxz.project"] != p.storageID() || v.Config.Labels["devcontainer.local_folder"] != p.Workspace {
 			continue
 		}
 		if v.State.Running {

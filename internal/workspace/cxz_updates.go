@@ -18,7 +18,7 @@ import (
 )
 
 func (m *Manager) projectHealth(ctx context.Context, p *Project, action, tx string) (cxzupdate.Health, error) {
-	if _, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); e != nil {
+	if _, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID()); e != nil {
 		return cxzupdate.Health{}, e
 	}
 	return cxzupdate.ContainerHealth(ctx, p.ContainerID, p.RemoteUser, "/cxz/state/data", action, tx)
@@ -62,7 +62,7 @@ func (m *Manager) QuietForUpdate(ctx context.Context) (map[string]string, error)
 			}
 			// One inspect, not two: projectHealth makes the same call, and it
 			// is the call that says whether the container is still ours.
-			v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+			v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 			if e != nil {
 				out[i] = answer{blocked: e}
 				return
@@ -113,6 +113,7 @@ func (m *Manager) RunCxzUpdates(ctx context.Context) {
 		}
 	}
 }
+
 // note records where this tick stopped, for the paths that used to return
 // without saying anything. A reason left over from an earlier tick is worse
 // than none: it sends whoever is asking to a condition that has already
@@ -256,7 +257,7 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 		if p.ContainerID == "" {
 			continue
 		}
-		v, err := dockerx.Owned(work, p.ContainerID, m.Owner, p.ID)
+		v, err := dockerx.Owned(work, p.ContainerID, m.Owner, p.storageID())
 		if err != nil {
 			s.State = "waiting"
 			s.Reason = err.Error()

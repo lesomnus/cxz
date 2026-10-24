@@ -147,7 +147,7 @@ func (m *Manager) pushMCP(ctx context.Context, project string) []string {
 		if project != "" && project != p.ID || p.ContainerID == "" {
 			continue
 		}
-		v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+		v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 		if e == nil && !v.State.Running {
 			continue
 		}

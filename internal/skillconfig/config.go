@@ -410,3 +410,25 @@ func ForgetProject(root, project string) error {
 	delete(c.Projects, project)
 	return save(root, c)
 }
+
+// MigrateProject preserves project overrides when its legacy handle is retired.
+func MigrateProject(root, old, next string) error {
+	c, err := Load(root)
+	if err != nil {
+		return err
+	}
+	values, ok := c.Projects[old]
+	if !ok {
+		return nil
+	}
+	if c.Projects[next] == nil {
+		c.Projects[next] = map[string]bool{}
+	}
+	for key, value := range values {
+		if _, exists := c.Projects[next][key]; !exists {
+			c.Projects[next][key] = value
+		}
+	}
+	delete(c.Projects, old)
+	return save(root, c)
+}

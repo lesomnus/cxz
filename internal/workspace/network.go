@@ -13,7 +13,7 @@ func (m *Manager) sharedNetwork() string { return "cxz-" + m.Owner[:12] + "-work
 func (m *Manager) ensureProjectNetwork(ctx context.Context, p *Project) error {
 	m.dockerMu.Lock()
 	defer m.dockerMu.Unlock()
-	project := p.ID
+	project := p.storageID()
 	if p.Network == m.sharedNetwork() {
 		project = ""
 	}
