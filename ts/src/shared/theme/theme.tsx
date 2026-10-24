@@ -1,45 +1,21 @@
-import { useLayoutEffect, useSyncExternalStore, type ReactNode } from "react";
-import { useSettings } from "#src/shared/settings/settings.ts";
+import {
+  ThemeProvider as NoxThemeProvider,
+  useTheme as useNoxTheme,
+} from "@lesomnus/nox";
+import { useMemo, type ReactNode } from "react";
+import { settingsStore } from "#src/shared/settings/settings.ts";
+import { createSettingsThemeStorage } from "./theme-storage";
 
-export type ThemePreference = "light" | "dark" | "system";
-export type Theme = "light" | "dark";
-export function resolveTheme(value: unknown): ThemePreference {
-  return value === "light" || value === "system" ? value : "dark";
-}
-let media: MediaQueryList | undefined;
-let systemDark = false;
-const listeners = new Set<() => void>();
-function systemTheme() {
-  if (!media) {
-    media = window.matchMedia("(prefers-color-scheme: dark)");
-    systemDark = media.matches;
-    media.addEventListener("change", (event) => {
-      // Publish the event's snapshot before notifying any React subscribers.
-      systemDark = event.matches;
-      for (const listener of listeners) listener();
-    });
-  }
-  return media;
-}
-function subscribe(callback: () => void) {
-  systemTheme();
-  listeners.add(callback);
-  return () => listeners.delete(callback);
-}
-function systemSnapshot() {
-  systemTheme();
-  return systemDark;
-}
-export function useTheme(): Theme {
-  const { snapshot } = useSettings();
-  const dark = useSyncExternalStore(subscribe, systemSnapshot);
-  const preference = resolveTheme(snapshot.document["ui.theme"]);
-  return preference === "system" ? (dark ? "dark" : "light") : preference;
+export { resolveThemePreference as resolveTheme } from "@lesomnus/nox";
+export type { Theme, ThemePreference } from "@lesomnus/nox";
+
+export function useTheme() {
+  return useNoxTheme().theme;
 }
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const theme = useTheme();
-  useLayoutEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
-  return children;
+  const storage = useMemo(
+    () => createSettingsThemeStorage(settingsStore()),
+    [],
+  );
+  return <NoxThemeProvider storage={storage}>{children}</NoxThemeProvider>;
 }

@@ -36,7 +36,7 @@ test("conversation starts at the transcript and Terminal lives in the menu on de
     await expect(key).toHaveCSS("border-bottom-width", "2px");
   }
   const labelBox = (await terminal
-    .locator(".action-menu-item-label")
+    .getByText("Terminal", { exact: true })
     .boundingBox())!;
   const shortcutBox = (await terminal.locator("kbd").first().boundingBox())!;
   expect(shortcutBox.x).toBeGreaterThan(labelBox.x + labelBox.width);

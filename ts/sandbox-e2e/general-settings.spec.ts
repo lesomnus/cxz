@@ -75,6 +75,7 @@ test("General is first, language menus preserve text position and segmented syst
   ).toHaveAttribute("data-muted", "true");
   await chooseSetting(page, "Appearance", "light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-ui-theme", "light");
   await expect(page.locator("html")).toHaveCSS(
     "background-color",
     "rgb(250, 250, 250)",
@@ -105,6 +106,10 @@ test("General is first, language menus preserve text position and segmented syst
   await page.reload();
   await general(page);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-ui-theme", "light");
+  expect(
+    await page.evaluate(() => localStorage.getItem("nox.theme")),
+  ).toBeNull();
   await chooseSetting(page, "Appearance", "dark");
   await page.emulateMedia({ colorScheme: "light" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");

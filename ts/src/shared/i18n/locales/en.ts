@@ -559,6 +559,8 @@ export const messages = {
   "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.",
   "{label} choices": "{label} choices",
+  "Scroll {label} choices": "Scroll {label} choices",
+  "Scroll {label}": "Scroll {label}",
   "{minutes}m {seconds}s": "{minutes}m {seconds}s",
   "{name} — {scope}: {count} tokens{included}":
     "{name} — {scope}: {count} tokens{included}",

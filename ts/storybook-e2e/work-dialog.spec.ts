@@ -256,7 +256,7 @@ test("work batches split at assistant replies and summaries align right", async 
       (node) => getComputedStyle(node, "::backdrop").backgroundColor,
     ),
   ).toBe("rgba(0, 0, 0, 0)");
-  await expect(dialog.locator("[data-work-backdrop]")).not.toHaveCSS(
+  await expect(dialog.locator('[data-drawer="backdrop"]')).not.toHaveCSS(
     "background-color",
     "rgba(0, 0, 0, 0)",
   );

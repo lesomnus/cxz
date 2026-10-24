@@ -112,7 +112,9 @@ test("confirmation dialog traps focus, cancels without acting and fits a small v
   const cancelBounds = (await cancel.boundingBox())!;
   expect(confirmBounds.x + confirmBounds.width).toBeLessThan(cancelBounds.x);
   expect(confirmBounds.width).toEqual(cancelBounds.width);
-  const heading = (await dialog.locator(".card-heading strong").boundingBox())!;
+  const heading = (await dialog
+    .getByRole("heading", { name: "Stop session" })
+    .boundingBox())!;
   const text = (await dialog.locator(".card-body p").boundingBox())!;
   expect(text.x).toBeCloseTo(heading.x, 0);
   expect(confirmBounds.x).toBeGreaterThan(heading.x);

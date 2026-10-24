@@ -1,8 +1,15 @@
-import { UIProvider } from "@lesomnus/nox";
+import { UIProvider, type UITranslate } from "@lesomnus/nox";
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
-import { localeStore, resolveLocale, t } from "./i18n";
+import { localeStore, resolveLocale, t, translateKnown } from "./i18n";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import { Button } from "@lesomnus/nox";
+
+// Keep the provider callback stable as settings change. New Nox keys fall back
+// to their English text while retaining parameter interpolation.
+const translateUI: UITranslate = (message, values = {}) =>
+  translateKnown(message).replace(/\{(\w+)\}/g, (placeholder, name: string) =>
+    String(values[name] ?? placeholder),
+  );
 
 export function useLocale() {
   return useSyncExternalStore(localeStore.subscribe, localeStore.snapshot);
@@ -29,7 +36,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
           </Button>
         </div>
       )}
-      <UIProvider translate={t} locale={locale}>
+      <UIProvider translate={translateUI} locale={locale}>
         {children}
       </UIProvider>
     </>

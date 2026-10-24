@@ -1,6 +1,7 @@
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useState } from "react";
-import { Button, ConfirmationDialog } from "@lesomnus/nox";
+import { Button } from "@lesomnus/nox";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { AccountAuthStatus_State as AuthState } from "#gen/cxz/account_svc_pb";

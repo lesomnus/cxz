@@ -1,6 +1,7 @@
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useState } from "react";
-import { Button, ConfirmationDialog } from "@lesomnus/nox";
+import { Button } from "@lesomnus/nox";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { SourceEditor } from "@lesomnus/nox/editor";
 import {
   LibraryScope,

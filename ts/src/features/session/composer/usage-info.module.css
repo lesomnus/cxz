@@ -92,7 +92,7 @@
 }
 .separator {
   padding-inline: 6px;
-  color: color-mix(in srgb, currentColor 78%, var(--ui-shade-0));
+  color: var(--ui-text-separator);
 }
 
 .contextContent > .percent {

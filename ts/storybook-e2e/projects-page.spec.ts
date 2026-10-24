@@ -6,7 +6,7 @@ test("project page and shared toolbar stories render their selector and states",
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(
-    "/iframe.html?id=components-pagetoolbar--project-selector&viewMode=story",
+    "/iframe.html?id=layout-pagetoolbar--project-selector&viewMode=story",
   );
   const picker = page.getByRole("combobox", {
     name: "Select project",

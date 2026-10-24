@@ -6,6 +6,7 @@ import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 import { storyEvent, responseEvent } from "#src/storybook/fixtures.ts";
 import "#src/app/styles/style.css";
 import { installReactPerformanceBudget } from "#src/shared/browser/react-performance.ts";
+import { ThemeProvider } from "#src/shared/theme/theme.tsx";
 if (new URL(location.href).searchParams.get("budget") !== "off")
   installReactPerformanceBudget();
 
@@ -59,4 +60,8 @@ function Fixture() {
     </UIProvider>
   );
 }
-createRoot(document.getElementById("root")!).render(<Fixture />);
+createRoot(document.getElementById("root")!).render(
+  <ThemeProvider>
+    <Fixture />
+  </ThemeProvider>,
+);

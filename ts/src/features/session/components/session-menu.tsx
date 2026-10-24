@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import type { SessionPurgeReply } from "#gen/cxz/session_svc_pb";
 import { ActionMenu } from "@lesomnus/nox";
-import { ConfirmationDialog } from "@lesomnus/nox";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";

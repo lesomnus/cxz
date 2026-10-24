@@ -8,8 +8,12 @@ test("shared panel items show selection separately from hover", async ({
   );
   const general = page.getByRole("button", { name: "General", exact: true });
   const editor = page.getByRole("button", { name: "Editor", exact: true });
-  const background = (element: HTMLElement) =>
-    getComputedStyle(element).backgroundColor;
+  const background = async (element: HTMLElement) => {
+    await Promise.all(
+      element.getAnimations().map((animation) => animation.finished),
+    );
+    return getComputedStyle(element).backgroundColor;
+  };
   await expect(general).toHaveAttribute("aria-pressed", "true");
   const selected = await general.evaluate(background);
   const normal = await editor.evaluate(background);

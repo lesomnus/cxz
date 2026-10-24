@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { Button, ConfirmationDialog } from "@lesomnus/nox";
+import { Button } from "@lesomnus/nox";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import { ContainerState } from "#gen/cxz/project_pb";
 import { containerState } from "./project-state.ts";
