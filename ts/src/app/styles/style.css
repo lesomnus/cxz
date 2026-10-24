@@ -761,6 +761,7 @@ header strong {
 }
 .session-details .editable-value-trigger {
   width: calc(100% + 2 * var(--control-inline-inset));
+  margin-block: 0;
   margin-inline: calc(-1 * var(--control-inline-inset));
   border-radius: var(--details-value-radius);
 }

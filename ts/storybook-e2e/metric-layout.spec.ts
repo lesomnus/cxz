@@ -38,9 +38,25 @@ test("response metric values precede their icons and do not move them across val
       .click();
     await expect(page.locator('[data-metric="tool_calls"]')).toHaveText("0999");
     const large = await geometry();
-    expect(large).toEqual(small);
+    expect(large.map((metric) => metric.key)).toEqual(
+      small.map((metric) => metric.key),
+    );
+    for (let index = 0; index < large.length; index++) {
+      for (const dimension of [
+        "left",
+        "top",
+        "width",
+        "valueWidth",
+        "iconLeft",
+      ] as const) {
+        // Intrinsic duration glyph widths can round by a fraction of a pixel.
+        expect(large[index][dimension]).toBeCloseTo(small[index][dimension], 0);
+      }
+    }
     expect(
-      large.every((metric) => metric.valueBeforeIcon && metric.valueFits),
+      [...small, ...large].every(
+        (metric) => metric.valueBeforeIcon && metric.valueFits,
+      ),
     ).toBe(true);
     await page
       .getByRole("button", { name: "Use small values", exact: true })

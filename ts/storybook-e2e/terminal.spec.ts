@@ -38,9 +38,7 @@ test("terminal docking story opens independent xterm shells and nested panes", a
 test("portable split layout story resizes using the keyboard", async ({
   page,
 }) => {
-  await page.goto(
-    "/iframe.html?id=components-splitlayout--nested&viewMode=story",
-  );
+  await page.goto("/iframe.html?id=layout-splitlayout--nested&viewMode=story");
   const handles = page.getByRole("separator", { name: "Resize panes" });
   await expect(handles).toHaveCount(2);
   await handles.first().focus();
