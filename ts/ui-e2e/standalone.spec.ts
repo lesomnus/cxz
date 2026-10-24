@@ -24,7 +24,7 @@ test("package styling and tokens work without resetting host controls", async ({
   const button = page.getByRole("button", { name: "New session", exact: true });
   await expect(button).toHaveCSS("border-top-width", "0px");
   await button.hover();
-  await expect(button).toHaveCSS("background-color", "rgb(40, 40, 40)");
+  await expect(button).toHaveCSS("background-color", "rgb(34, 34, 34)");
   await page.evaluate(() => {
     const plain = document.createElement("button");
     plain.id = "host-button";
@@ -55,7 +55,7 @@ test("package styling and tokens work without resetting host controls", async ({
     "/iframe.html?id=components-button--default&viewMode=story&globals=theme:light",
   );
   await button.hover();
-  await expect(button).toHaveCSS("background-color", "rgb(230, 230, 230)");
+  await expect(button).toHaveCSS("background-color", "rgb(238, 238, 238)");
 });
 
 test("portaled dropdown aligns the current value and handles keyboard selection", async ({

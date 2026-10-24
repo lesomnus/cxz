@@ -4,7 +4,7 @@ test("standalone scroll area supplies its own style, centered rail, hover, drag 
   page,
 }) => {
   await page.goto(
-    "/iframe.html?id=components-scrollarea--short-overflow&viewMode=story",
+    "/iframe.html?id=layout-scrollarea--short-overflow&viewMode=story",
   );
   const area = page.locator('[data-scroll-area="root"]'),
     viewport = area.locator('[data-scroll-area="viewport"]');
@@ -63,7 +63,7 @@ test("standalone scroll area supplies its own style, centered rail, hover, drag 
     )
     .toBeLessThan(1);
   await page.goto(
-    "/iframe.html?id=components-scrollarea--no-overflow&viewMode=story",
+    "/iframe.html?id=layout-scrollarea--no-overflow&viewMode=story",
   );
   await expect(page.getByRole("scrollbar")).toHaveCount(0);
 });
@@ -76,7 +76,7 @@ test("standalone content growth keeps the rail centered and viewportRef/onScroll
     if (/\/cxz\./.test(request.url())) api.push(request.url());
   });
   await page.goto(
-    "/iframe.html?id=components-scrollarea--growing-content&viewMode=story",
+    "/iframe.html?id=layout-scrollarea--growing-content&viewMode=story",
   );
   const area = page.locator('[data-scroll-area="root"]'),
     viewport = area.locator('[data-scroll-area="viewport"]'),
