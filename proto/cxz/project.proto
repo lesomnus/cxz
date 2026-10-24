@@ -16,7 +16,8 @@ message Project {
   string desc = 6;
   string workspace = 8 [(orm.field) = {unique: true, immutable: true}];
   string config = 9;
-  string runtime_id = 10 [(orm.field) = {unique: true, immutable: true}];
+  reserved 10;
+  reserved runtime_id;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];

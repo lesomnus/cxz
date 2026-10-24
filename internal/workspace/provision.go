@@ -1,7 +1,6 @@
 package workspace
 
 import (
-"github.com/lesomnus/cxz/internal/projectid"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -11,6 +10,7 @@ import (
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/githubauth"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/tailscale/hujson"
 	"io"
 	"os"
@@ -314,7 +314,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	}
 	// The bootstrap hook can run before the manager knows the remote workspace
 	// and selected binaries. It waits for this project-local runtime manifest.
-	runtime := Runtime{ProjectID: p.ID, Workspace: p.RemoteWorkspace, Token: p.Token}
+	runtime := Runtime{ProjectID: p.ID, LegacyProjectID: p.StorageID, Workspace: p.RemoteWorkspace, Token: p.Token}
 	prev, readErr := m.readRuntime(ctx, p)
 	if readErr != nil {
 		return readErr

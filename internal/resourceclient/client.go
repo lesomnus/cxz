@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/attachmenthttp"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/sessionalias"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
@@ -63,10 +64,10 @@ func sr(id string) *resource.SessionRef {
 	}
 	return resource.SessionRef_builder{RuntimeId: &id}.Build()
 }
-func pr(id string) *resource.ProjectRef { return resource.ProjectRef_builder{RuntimeId: &id}.Build() }
+func pr(id string) *resource.ProjectRef { return projectid.Ref(id) }
 func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.CallOption) (*api.Session, error) {
 	p := s.GetProject()
-	if p != nil && p.GetRuntimeId() == "" {
+	if p != nil && len(p.GetId()) > 0 && p.GetWorkspace() == "" {
 		var err error
 		p, err = c.projects.Get(ctx, resource.ProjectGetRequest_builder{Ref: resource.ProjectRef_builder{Id: p.GetId()}.Build(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build(), opts...)
 		if err != nil {
@@ -74,7 +75,7 @@ func (c *Client) view(ctx context.Context, s *resource.Session, opts ...grpc.Cal
 		}
 	}
 	st := s.GetStatus()
-	v := &api.Session{Id: s.GetRuntimeId(), Title: s.GetName(), Agent: s.GetAgent(), Model: s.GetModel(), CreateId: s.GetClientId(), ProjectId: p.GetRuntimeId(), Workspace: p.GetWorkspace(), State: st.GetState(), PermissionMode: st.GetPermissionMode(), RunId: st.GetRunId(), VendorId: st.GetVendorId(), LastSeq: st.GetLastSeq(), Queued: st.GetQueued()}
+	v := &api.Session{Id: s.GetRuntimeId(), Title: s.GetName(), Agent: s.GetAgent(), Model: s.GetModel(), CreateId: s.GetClientId(), ProjectId: projectid.String(p.GetId()), Workspace: p.GetWorkspace(), State: st.GetState(), PermissionMode: st.GetPermissionMode(), RunId: st.GetRunId(), VendorId: st.GetVendorId(), LastSeq: st.GetLastSeq(), Queued: st.GetQueued()}
 	v.ProjectName = p.GetName()
 	v.Alias = s.GetAlias()
 	v.ProjectAlias = p.GetAlias()
@@ -116,18 +117,18 @@ func (c *Client) Create(ctx context.Context, r *api.CreateRequest, opts ...grpc.
 		return nil, err
 	}
 	if p.GetStatus().GetContainerState() != resource.ContainerState_CONTAINER_STATE_RUNNING {
-		if _, err = c.projects.Start(ctx, resource.ProjectStartRequest_builder{Ref: pr(p.GetRuntimeId()), ClientId: &r.ClientId, Agent: &r.Agent}.Build(), opts...); err != nil {
+		if _, err = c.projects.Start(ctx, resource.ProjectStartRequest_builder{Ref: pr(projectid.String(p.GetId())), ClientId: &r.ClientId, Agent: &r.Agent}.Build(), opts...); err != nil {
 			return nil, err
 		}
 	}
-	b, err := c.Bind(ctx, p.GetRuntimeId(), r.Account)
+	b, err := c.Bind(ctx, projectid.String(p.GetId()), r.Account)
 	if err != nil {
 		return nil, err
 	}
 	if (r.AuthBinding != "" && r.AuthBinding != b.GetBindingId()) || (r.AuthBackend != "" && r.AuthBackend != b.GetAuthBackend()) {
 		return nil, fmt.Errorf("auth binding/backend mismatch")
 	}
-	s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: pr(p.GetRuntimeId()), Name: r.Title, ClientId: r.ClientId, Agent: r.Agent, Model: r.Model, Account: ar(r.Account), AuthBinding: br(b.GetBindingId())}.Build(), opts...)
+	s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: pr(projectid.String(p.GetId())), Name: r.Title, ClientId: r.ClientId, Agent: r.Agent, Model: r.Model, Account: ar(r.Account), AuthBinding: br(b.GetBindingId())}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

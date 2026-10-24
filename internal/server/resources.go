@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/workspace"
 	"os"
 	"path/filepath"
@@ -45,7 +46,7 @@ func (s *Server) RegisterProject(ctx context.Context, path, config string) (*api
 		h := sha256.Sum256([]byte(path))
 		id = hex.EncodeToString(h[:12])
 	}
-	return &api.Project{Id: id, Workspace: path, Name: filepath.Base(path), Config: config, State: "running", RemoteWorkspace: path}, nil
+	return &api.Project{Id: projectid.Canonical(id), Workspace: path, Name: filepath.Base(path), Config: config, State: "running", RemoteWorkspace: path}, nil
 }
 
 func (s *Server) ResourceSnapshot(ctx context.Context) (*api.ProjectList, *api.SessionList, error) {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"math/rand/v2"
 	"slices"
 	"strings"
@@ -67,7 +68,7 @@ func New(seed uint64, delay time.Duration) *Server {
 	s := &Server{seed: seed, delay: delay, ctx: ctx, cancel: cancel, tasks: taskapi.NewMemory()}
 	for i, name := range []string{"Design playground", "Secondary project"} {
 		id := fmt.Sprintf("project-%d", i+1)
-		s.projects = append(s.projects, resource.Project_builder{Id: []byte(fmt.Sprintf("project-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, DateCreated: timestamppb.Now(), DateUpdated: timestamppb.Now(), Workspace: "/workspace", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING, RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
+		s.projects = append(s.projects, resource.Project_builder{Id: projectid.Bytes(id), Alias: id, Name: name, DateCreated: timestamppb.Now(), DateUpdated: timestamppb.Now(), Workspace: "/workspace", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING, RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
 	}
 	for i, name := range []string{"Project checklist", "Conversation", "Long history", "Approval question", "Simulated error", "Seeded random work", "Stopped session", "Other project", "Tool activity"} {
 		id := fmt.Sprintf("session-%d", i+1)
@@ -184,7 +185,7 @@ func (s *Server) state(st *session, state string) {
 	s.event(st, "state", state, "", nil)
 }
 func matchProject(p *resource.Project, r *resource.ProjectRef) bool {
-	return r == nil || r.GetRuntimeId() == p.GetRuntimeId() || r.GetAlias() == p.GetAlias() || bytes.Equal(r.GetId(), p.GetId())
+	return r == nil || projectid.Same(r.GetRuntimeId(), projectid.String(p.GetId())) || r.GetAlias() == p.GetAlias() || bytes.Equal(r.GetId(), p.GetId())
 }
 func matchSession(st *session, r *resource.SessionRef) bool {
 	return r == nil || r.GetRuntimeId() == st.value.GetRuntimeId() || r.GetAlias() == st.value.GetAlias() || bytes.Equal(r.GetId(), st.value.GetId())
@@ -242,14 +243,14 @@ func (p *Projects) List(_ context.Context, r *resource.ProjectListRequest) (*res
 	defer p.S.mu.Unlock()
 	var items []*resource.Project
 	for _, v := range p.S.projects {
-		if v.GetRuntimeId() > r.GetAfter() && projectMatches(v, r.GetFilters()) {
+		if projectid.String(v.GetId()) > r.GetAfter() && projectMatches(v, r.GetFilters()) {
 			items = append(items, proto.Clone(v).(*resource.Project))
 		}
 	}
 	next := ""
 	if len(items) > limit(r.GetSize()) {
 		items = items[:limit(r.GetSize())]
-		next = items[len(items)-1].GetRuntimeId()
+		next = projectid.String(items[len(items)-1].GetId())
 	}
 	return resource.ProjectListResponse_builder{Items: items, Next: next}.Build(), nil
 }

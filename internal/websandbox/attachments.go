@@ -3,6 +3,7 @@ package websandbox
 import (
 	"context"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 
 	"github.com/lesomnus/cxz/internal/assets"
@@ -76,7 +77,7 @@ func (x *Sessions) UploadAttachment(ctx context.Context, in assets.Upload, body 
 	if s.uploads == nil {
 		s.uploads = make(map[string]sandboxAttachment)
 	}
-	s.uploads[path] = sandboxAttachment{project: st.value.GetProject().GetRuntimeId(), content: content}
+	s.uploads[path] = sandboxAttachment{project: projectid.String(st.value.GetProject().GetId()), content: content}
 	s.uploadBytes += in.Size
 	return path, nil
 }

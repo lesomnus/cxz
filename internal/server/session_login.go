@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"os"
 
@@ -23,7 +24,7 @@ func (s *Server) LoginSession(ctx context.Context, project, account, key string,
 	if err != nil {
 		return err
 	}
-	if runtime.ProjectID != project {
+	if !projectid.Same(runtime.ProjectID, project) {
 		return status.Error(codes.PermissionDenied, "login project does not match runtime")
 	}
 	if runtime.Claude == "" {
@@ -39,7 +40,7 @@ func (s *Server) LoginSession(ctx context.Context, project, account, key string,
 		if err := json.Unmarshal(raw, &session); err != nil {
 			return err
 		}
-		if session.ProjectID != project || session.Account != account || session.Kind != "claude" || session.AuthBackend != accounts.ProjectLocalOAuth {
+		if !projectid.Same(session.ProjectID, project) || session.Account != account || session.Kind != "claude" || session.AuthBackend != accounts.ProjectLocalOAuth {
 			return status.Error(codes.PermissionDenied, "login account does not match session")
 		}
 		v, err := s.snapshot(ctx, session)

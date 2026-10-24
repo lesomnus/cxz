@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/slug"
 	"google.golang.org/grpc"
@@ -22,7 +23,7 @@ func (s ProjectServer) Add(ctx context.Context, r *resource.ProjectAddRequest) (
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
-	if r.HasId() || r.GetRuntimeId() != "" || r.HasStatus() || r.HasDateCreated() {
+	if r.HasId() || r.HasStatus() || r.HasDateCreated() {
 		return nil, closed()
 	}
 	if r.GetWorkspace() == "" {
@@ -51,7 +52,7 @@ func (s ProjectServer) Add(ctx context.Context, r *resource.ProjectAddRequest) (
 				path = canonical
 			}
 		}
-		if owner != nil && owner.GetWorkspace() != path && owner.GetRuntimeId() != r.GetWorkspace() {
+		if owner != nil && owner.GetWorkspace() != path && projectid.String(owner.GetId()) != r.GetWorkspace() {
 			return nil, status.Error(codes.AlreadyExists, "project alias is already in use")
 		}
 	}
@@ -139,7 +140,7 @@ func (s ProjectServer) Patch(ctx context.Context, r *resource.ProjectPatchReques
 		if err != nil {
 			return nil, err
 		}
-		a, err := s.alias(ctx, p.GetRuntimeId(), p.GetName(), r.GetAlias())
+		a, err := s.alias(ctx, projectid.String(p.GetId()), p.GetName(), r.GetAlias())
 		if err != nil {
 			return nil, err
 		}
@@ -173,7 +174,7 @@ func (s ProjectServer) start(ctx context.Context, ref *resource.ProjectRef, clie
 		config = p.GetConfig()
 	}
 	// Making the project run is all this asks for; sessions are the caller's.
-	_, err = s.shared.runtime.StartContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust})
+	_, err = s.shared.runtime.StartContainer(ctx, &api.ProjectRequest{Workspace: projectid.String(p.GetId()), Config: config, Agent: agent, ClientId: clientID, TrustConfig: trust})
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +198,7 @@ func (s ProjectServer) container(ctx context.Context, r *resource.ProjectControl
 	if err != nil {
 		return nil, err
 	}
-	if _, err = call(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), ClientId: r.GetClientId()}); err != nil {
+	if _, err = call(ctx, &api.ProjectRequest{Workspace: projectid.String(p.GetId()), ClientId: r.GetClientId()}); err != nil {
 		return nil, err
 	}
 	// The answer is observed, not guessed: the read that follows looks at the
@@ -215,7 +216,7 @@ func (s ProjectServer) Remove(ctx context.Context, r *resource.ProjectControl) (
 	if err != nil {
 		return nil, err
 	}
-	if _, err = s.shared.runtime.RemoveContainer(ctx, &api.ProjectRequest{Workspace: p.GetRuntimeId(), ClientId: r.GetClientId()}); err != nil {
+	if _, err = s.shared.runtime.RemoveContainer(ctx, &api.ProjectRequest{Workspace: projectid.String(p.GetId()), ClientId: r.GetClientId()}); err != nil {
 		return nil, err
 	}
 	return s.Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetRef(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())

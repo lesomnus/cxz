@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net"
 	"net/http"
@@ -62,7 +63,7 @@ func StartRegistry(socket string, authorize func(context.Context, RegistryReques
 		}
 		var entries []entry
 		for _, s := range sessions {
-			if s.ProjectID == q.Project {
+			if projectid.Same(s.ProjectID, q.Project) {
 				entries = append(entries, entry{s, s.RuntimeID, s.ProjectID})
 			}
 		}

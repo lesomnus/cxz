@@ -66,7 +66,7 @@ func (m *Manager) migrateProjectIdentities(ctx context.Context) error {
 		if p.StorageID == "" {
 			continue
 		}
-		if !projectid.Same(p.ID, p.StorageID) {
+		if !projectid.Legacy(p.StorageID) || !projectid.Same(p.ID, p.StorageID) {
 			return fmt.Errorf("invalid legacy project mapping for %s", p.ID)
 		}
 		if err = mcpconfig.MigrateProject(m.Root, storage, p.ID); err != nil {
@@ -78,13 +78,21 @@ func (m *Manager) migrateProjectIdentities(ctx context.Context) error {
 		// Existing containers bind this physical export directory. Publish through
 		// a relative UUID alias so their mounts keep seeing subsequent uploads.
 		exports := filepath.Join(m.Root, "assets", "exports")
-		if err = os.MkdirAll(filepath.Join(exports, storage), 0755); err != nil { return err }
-		alias := filepath.Join(exports,p.ID)
-		if target,e := os.Readlink(alias); e == nil {
-			if target!=storage { return fmt.Errorf("project export mapping mismatch") }
+		if err = os.MkdirAll(filepath.Join(exports, storage), 0755); err != nil {
+			return err
+		}
+		alias := filepath.Join(exports, p.ID)
+		if target, e := os.Readlink(alias); e == nil {
+			if target != storage {
+				return fmt.Errorf("project export mapping mismatch")
+			}
 		} else if os.IsNotExist(e) {
-			if err=os.Symlink(storage,alias);err!=nil{return err}
-		} else { return fmt.Errorf("project export mapping conflict: %w",e) }
+			if err = os.Symlink(storage, alias); err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("project export mapping conflict: %w", e)
+		}
 		for _, session := range p.Sessions {
 			session.ProjectId = p.ID
 		}

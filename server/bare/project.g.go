@@ -109,7 +109,6 @@ func (s ProjectServiceServer) Add(ctx context.Context, req *resource.ProjectAddR
 	q.SetDesc(req.GetDesc())
 	q.SetWorkspace(req.GetWorkspace())
 	q.SetConfig(req.GetConfig())
-	q.SetRuntimeId(req.GetRuntimeId())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -197,9 +196,6 @@ func ProjectSelectedFields(m *resource.ProjectSelect) []string {
 	if m.GetConfig() {
 		vs = append(vs, project.FieldConfig)
 	}
-	if m.GetRuntimeId() {
-		vs = append(vs, project.FieldRuntimeId)
-	}
 	if m.GetDateUpdated() {
 		vs = append(vs, project.FieldDateUpdated)
 	}
@@ -277,7 +273,7 @@ func ProjectGetKey(ctx context.Context, db *ent.Client, ref *resource.ProjectRef
 var projectOrmEntity = ormpatch.MustEntityOf(resource.File_cxz_project_proto, "Project")
 
 var projectPatchColumns = entpatch.Columns{
-	1: project.FieldId, 4: project.FieldAlias, 5: project.FieldName, 6: project.FieldDesc, 8: project.FieldWorkspace, 9: project.FieldConfig, 10: project.FieldRuntimeId, 13: project.FieldDateUpdated, 14: project.FieldDateErased, 15: project.FieldDateCreated, 16: project.FieldStatus}
+	1: project.FieldId, 4: project.FieldAlias, 5: project.FieldName, 6: project.FieldDesc, 8: project.FieldWorkspace, 9: project.FieldConfig, 13: project.FieldDateUpdated, 14: project.FieldDateErased, 15: project.FieldDateCreated, 16: project.FieldStatus}
 
 func (s ProjectServiceServer) Apply(ctx context.Context, req *resource.ProjectApplyRequest) (*resource.Project, error) {
 	if !req.HasPatch() {
@@ -482,8 +478,6 @@ func pickProject(req *resource.ProjectRef) (predicate.Project, error) {
 		return project.AliasEQ(req.GetAlias()), nil
 	case resource.ProjectRef_Workspace_case:
 		return project.WorkspaceEQ(req.GetWorkspace()), nil
-	case resource.ProjectRef_RuntimeId_case:
-		return project.RuntimeIdEQ(req.GetRuntimeId()), nil
 	case resource.ProjectRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Project")
 	default:

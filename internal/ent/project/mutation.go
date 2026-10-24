@@ -22,7 +22,6 @@ type Mutation struct {
 	desc          *string
 	workspace     *string
 	_config       *string
-	runtime_id    *string
 	date_updated  *time.Time
 	date_erased   *time.Time
 	date_created  *time.Time
@@ -138,25 +137,6 @@ func (m *Mutation) Config() (r string, exists bool) {
 // ResetConfig resets all changes to the "config" field.
 func (m *Mutation) ResetConfig() {
 	m._config = nil
-}
-
-// SetRuntimeId sets the "runtime_id" field.
-func (m *Mutation) SetRuntimeId(s string) {
-	m.runtime_id = &s
-}
-
-// RuntimeId returns the value of the "runtime_id" field in the mutation.
-func (m *Mutation) RuntimeId() (r string, exists bool) {
-	v := m.runtime_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetRuntimeId resets all changes to the "runtime_id" field.
-func (m *Mutation) ResetRuntimeId() {
-	m.runtime_id = nil
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -308,7 +288,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 9)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -323,9 +303,6 @@ func (m *Mutation) Fields() []string {
 	}
 	if m._config != nil {
 		fields = append(fields, FieldConfig)
-	}
-	if m.runtime_id != nil {
-		fields = append(fields, FieldRuntimeId)
 	}
 	if m.date_updated != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -357,8 +334,6 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Workspace()
 	case FieldConfig:
 		return m.Config()
-	case FieldRuntimeId:
-		return m.RuntimeId()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -417,13 +392,6 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetConfig(v)
-		return nil
-	case FieldRuntimeId:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRuntimeId(v)
 		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
@@ -537,9 +505,6 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldConfig:
 		m.ResetConfig()
-		return nil
-	case FieldRuntimeId:
-		m.ResetRuntimeId()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

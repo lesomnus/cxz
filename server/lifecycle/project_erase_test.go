@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"errors"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"path/filepath"
 	"testing"
 
@@ -25,7 +26,7 @@ func (f *removeFixture) RemoveProject(_ context.Context, id string, ids []string
 	if f.err != nil {
 		return f.err
 	}
-	if id != f.p.Id {
+	if id != projectid.Canonical(f.p.Id) {
 		return errors.New("wrong project")
 	}
 	f.ids = ids

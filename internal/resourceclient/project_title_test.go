@@ -2,6 +2,7 @@ package resourceclient
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"testing"
@@ -22,7 +23,7 @@ func TestRenameProjectUsesTypedNamePatch(t *testing.T) {
 	if err := c.RenameProject(t.Context(), "project-id", "New title"); err != nil {
 		t.Fatal(err)
 	}
-	if p.got.GetRef().GetRuntimeId() != "project-id" || p.got.GetName() != "New title" || p.got.HasAlias() {
+	if projectid.RefString(p.got.GetRef()) != projectid.Canonical("project-id") || p.got.GetName() != "New title" || p.got.HasAlias() {
 		t.Fatal("incorrect name patch", p.got)
 	}
 }

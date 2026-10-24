@@ -87,7 +87,7 @@ func (m *Manager) CreateSession(ctx context.Context, r *api.CreateRequest) (*api
 	if err = m.syncRuntimePreferences(ctx, client, p.ID); err != nil {
 		return nil, err
 	}
-	v, err := client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Title: r.Title, Agent: r.Agent, Model: r.Model, ClientId: r.ClientId, Account: r.Account, AuthBackend: r.AuthBackend, AuthBinding: r.AuthBinding})
+	v, err := client.Create(ctx, &api.CreateRequest{Workspace: p.RemoteWorkspace, Title: r.Title, Agent: r.Agent, Model: r.Model, ClientId: r.ClientId, Account: r.Account, AuthBackend: r.AuthBackend})
 	if err != nil {
 		return nil, err
 	}

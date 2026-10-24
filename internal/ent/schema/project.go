@@ -28,8 +28,6 @@ func (Project) Fields() []ent.Field {
 		field.String("workspace").
 			Immutable(),
 		field.String("config"),
-		field.String("runtime_id").
-			Immutable(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -49,9 +47,6 @@ func (Project) Indexes() []ent.Index {
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 		index.Fields("workspace").
-			Unique().
-			Annotations(entsql.IndexWhere("date_erased IS NULL")),
-		index.Fields("runtime_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

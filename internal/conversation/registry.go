@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 )
 
@@ -14,20 +15,20 @@ func RegistryFromResources(ctx context.Context, project string, list func(contex
 	after := ""
 	yes := true
 	for {
-		page, err := list(ctx, resource.SessionListRequest_builder{Size: 200, After: after, Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Listed: &yes, Project: resource.ProjectRef_builder{RuntimeId: &project}.Build()}.Build()}}.Build())
+		page, err := list(ctx, resource.SessionListRequest_builder{Size: 200, After: after, Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Listed: &yes, Project: projectid.Ref(project)}.Build()}}.Build())
 		if err != nil {
 			return nil, err
 		}
 		for _, v := range page.GetItems() {
 			// List expands project relations; check even if a backend ignores filters.
-			if v.GetProject().GetRuntimeId() != project || !v.GetListed() {
+			if !projectid.Same(projectid.String(v.GetProject().GetId()), project) || !v.GetListed() {
 				continue
 			}
 			id, err := uuid.FromBytes(v.GetId())
 			if err != nil {
 				return nil, fmt.Errorf("invalid session UUID")
 			}
-			out = append(out, Session{ID: id.String(), Alias: v.GetAlias(), Agent: v.GetAgent(), State: v.GetStatus().GetState(), RuntimeID: v.GetRuntimeId(), ProjectID: project})
+			out = append(out, Session{ID: id.String(), Alias: v.GetAlias(), Agent: v.GetAgent(), State: v.GetStatus().GetState(), RuntimeID: v.GetRuntimeId(), ProjectID: projectid.Canonical(project)})
 			if len(out) > 10000 {
 				return nil, fmt.Errorf("too many project sessions")
 			}

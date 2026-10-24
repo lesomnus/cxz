@@ -9,20 +9,21 @@ import (
 )
 
 type Session struct {
-	Supervisor  string      `json:"supervisor,omitempty"`
-	CreateID    string      `json:"create_id"`
-	ID          string      `json:"id"`
-	Workspace   string      `json:"workspace"`
-	Title       string      `json:"title"`
-	CreatedAt   int64       `json:"created_at"`
-	Agent       string      `json:"agent"`
-	Kind        string      `json:"kind,omitempty"`
-	Model       string      `json:"model,omitempty"`
-	ProjectID   string      `json:"project_id,omitempty"`
-	Account     string      `json:"account,omitempty"`
-	AuthBackend string      `json:"auth_backend"`
-	AuthBinding string      `json:"auth_binding"`
-	Fork        *ForkOrigin `json:"fork,omitempty"`
+	Supervisor      string      `json:"supervisor,omitempty"`
+	CreateID        string      `json:"create_id"`
+	ID              string      `json:"id"`
+	Workspace       string      `json:"workspace"`
+	Title           string      `json:"title"`
+	CreatedAt       int64       `json:"created_at"`
+	Agent           string      `json:"agent"`
+	Kind            string      `json:"kind,omitempty"`
+	Model           string      `json:"model,omitempty"`
+	ProjectID       string      `json:"project_id,omitempty"`
+	LegacyProjectID string      `json:"legacy_project_id,omitempty"`
+	Account         string      `json:"account,omitempty"`
+	AuthBackend     string      `json:"auth_backend"`
+	AuthBinding     string      `json:"auth_binding"`
+	Fork            *ForkOrigin `json:"fork,omitempty"`
 }
 
 // ForkOrigin is private runtime metadata. NativePath refers to the child's own

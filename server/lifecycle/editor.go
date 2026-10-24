@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"time"
 
@@ -24,7 +25,7 @@ func (s ProjectServer) editorRuntime(ctx context.Context, ref *resource.ProjectR
 	if !ok {
 		return nil, "", status.Error(codes.Unimplemented, "browser editor unavailable; update the Manager")
 	}
-	return runtime, p.GetRuntimeId(), nil
+	return runtime, projectid.String(p.GetId()), nil
 }
 
 func (s ProjectServer) Editor(ctx context.Context, r *resource.ProjectEditorRequest) (*resource.ProjectEditorReply, error) {

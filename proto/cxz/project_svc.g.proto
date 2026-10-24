@@ -85,7 +85,6 @@ message ProjectAddRequest {
   string desc = 6 [features.field_presence = IMPLICIT];
   string workspace = 8 [features.field_presence = IMPLICIT];
   string config = 9 [features.field_presence = IMPLICIT];
-  string runtime_id = 10 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
   ProjectStatus status = 16;
 }
@@ -100,7 +99,8 @@ message ProjectRef {
     bytes id = 1;
     string alias = 4;
     string workspace = 8;
-    string runtime_id = 10;
+    // Accepted for links and clients created before project UUIDs became canonical.
+    string runtime_id = 10 [deprecated = true];
   }
 }
 
@@ -111,7 +111,6 @@ message ProjectSelect {
   bool desc = 6;
   bool workspace = 8;
   bool config = 9;
-  bool runtime_id = 10;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;

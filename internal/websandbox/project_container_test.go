@@ -1,6 +1,7 @@
 package websandbox
 
 import (
+	"github.com/lesomnus/cxz/internal/projectid"
 	"testing"
 	"time"
 
@@ -25,7 +26,7 @@ func TestProjectDownRetainsListingAndConversation(t *testing.T) {
 		t.Fatal("stop removed records or affected another project")
 	}
 	for _, st := range s.sessions {
-		if st.value.GetProject().GetRuntimeId() == p.GetRuntimeId() && (!st.value.GetListed() || st.value.GetStatus().GetState() != "stopped") {
+		if projectid.String(st.value.GetProject().GetId()) == projectid.String(p.GetId()) && (!st.value.GetListed() || st.value.GetStatus().GetState() != "stopped") {
 			t.Fatal("session unlisted or not stopped", st.value)
 		}
 	}

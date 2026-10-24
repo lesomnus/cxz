@@ -29,8 +29,6 @@ type Project struct {
 	Workspace string `json:"workspace,omitempty"`
 	// Config holds the value of the "config" field.
 	Config string `json:"config,omitempty"`
-	// RuntimeId holds the value of the "runtime_id" field.
-	RuntimeId string `json:"runtime_id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -47,7 +45,7 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case project.FieldAlias, project.FieldName, project.FieldDesc, project.FieldWorkspace, project.FieldConfig, project.FieldRuntimeId:
+		case project.FieldAlias, project.FieldName, project.FieldDesc, project.FieldWorkspace, project.FieldConfig:
 			values[i] = new(sql.NullString)
 		case project.FieldDateUpdated, project.FieldDateErased, project.FieldDateCreated:
 			values[i] = new(sql.NullTime)
@@ -105,12 +103,6 @@ func (_m *Project) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field config", values[i])
 			} else if value.Valid {
 				_m.Config = value.String
-			}
-		case project.FieldRuntimeId:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field runtime_id", values[i])
-			} else if value.Valid {
-				_m.RuntimeId = value.String
 			}
 		case project.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -187,9 +179,6 @@ func (_m *Project) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("config=")
 	builder.WriteString(_m.Config)
-	builder.WriteString(", ")
-	builder.WriteString("runtime_id=")
-	builder.WriteString(_m.RuntimeId)
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

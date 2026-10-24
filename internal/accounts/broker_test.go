@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"os"
 	"path/filepath"
 	"strings"
@@ -78,6 +79,15 @@ func TestBrokerIsolationRefreshAndRestart(t *testing.T) {
 	tok, err := fetch("", false)
 	if err != nil || tok.AccessToken != "synthetic-old" {
 		t.Fatal("initial token", err)
+	}
+	canonical := projectid.Canonical("project-a")
+	for _, binding := range []string{grant.Binding, BindingID(canonical, "work", BrokeredAccessToken)} {
+		if _, err := FetchToken(ctx, projectRoot, "work", canonical, binding, "", false); err != nil {
+			t.Fatal("UUID migration disconnected existing grant", err)
+		}
+	}
+	if _, err := FetchToken(ctx, projectRoot, "work", canonical, BindingID(canonical, "personal", BrokeredAccessToken), "", false); err == nil {
+		t.Fatal("migration bridge accepted another account binding")
 	}
 	if _, err = fetch("subject-personal", true); err == nil {
 		t.Fatal("cross-account refresh accepted")

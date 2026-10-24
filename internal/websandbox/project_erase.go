@@ -2,6 +2,7 @@ package websandbox
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"slices"
 	"strings"
 
@@ -22,7 +23,7 @@ func (x *Projects) Erase(_ context.Context, ref *resource.ProjectRef) (*resource
 			continue
 		}
 		s.sessions = slices.DeleteFunc(s.sessions, func(st *session) bool {
-			if st.value.GetProject().GetRuntimeId() != p.GetRuntimeId() {
+			if projectid.String(st.value.GetProject().GetId()) != projectid.String(p.GetId()) {
 				return false
 			}
 			s.cancelTurn(st)

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net/http"
 	"regexp"
@@ -56,7 +57,7 @@ func (p *terminalProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	upstream, err := p.client.Terminal(ctx)
 	if err == nil {
-		err = upstream.Send(resource.ProjectTerminalRequest_builder{Ref: resource.ProjectRef_builder{RuntimeId: &id}.Build(), Columns: uintPointer(uint32(cols)), Rows: uintPointer(uint32(rows))}.Build())
+		err = upstream.Send(resource.ProjectTerminalRequest_builder{Ref: projectid.Ref(id), Columns: uintPointer(uint32(cols)), Rows: uintPointer(uint32(rows))}.Build())
 	}
 	if err != nil {
 		_ = wsjson.Write(ctx, c, terminalStatus{Error: status.Convert(err).Message()})

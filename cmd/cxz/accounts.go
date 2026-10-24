@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"os"
 	"os/exec"
@@ -276,7 +277,7 @@ func accountInternalCommands() []*xli.Command {
 		if err != nil {
 			return err
 		}
-		if r.ProjectID != g.Project {
+		if !projectid.Same(r.ProjectID, g.Project) {
 			return fmt.Errorf("account connection project mismatch")
 		}
 		return accounts.InstallGrant(stateFrom(ctx), g)

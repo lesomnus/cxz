@@ -5,6 +5,7 @@ package memorylib
 import (
 	"context"
 	"encoding/json"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"net"
 	"os"
 	"path/filepath"
@@ -48,7 +49,7 @@ func TestConversationMCPMetadataThenFile(t *testing.T) {
 	}
 	id := uuid.New()
 	g := grpc.NewServer()
-	resource.RegisterSessionServiceServer(g, &conversationSessions{items: []*resource.Session{resource.Session_builder{Id: id[:], Alias: "seal", RuntimeId: b.Session.ID, Agent: "codex", Listed: true, Project: resource.Project_builder{RuntimeId: "project"}.Build(), Status: resource.SessionStatus_builder{State: "stopped"}.Build()}.Build()}})
+	resource.RegisterSessionServiceServer(g, &conversationSessions{items: []*resource.Session{resource.Session_builder{Id: id[:], Alias: "seal", RuntimeId: b.Session.ID, Agent: "codex", Listed: true, Project: resource.Project_builder{Id: projectid.Bytes("project")}.Build(), Status: resource.SessionStatus_builder{State: "stopped"}.Build()}.Build()}})
 	ln, err := net.Listen("unix", transport.Socket(root))
 	if err != nil {
 		t.Fatal(err)

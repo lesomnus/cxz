@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
@@ -25,7 +26,7 @@ func (s ProjectServer) PutSecretFile(ctx context.Context, r *resource.PutSecretF
 	secret := r.GetSecret()
 	defer clear(secret)
 	out, err := s.shared.runtime.PutSecretFile(ctx, &api.PutSecretFileInput{
-		Project: v.GetRuntimeId(), Session: r.GetSession(), Secret: secret,
+		Project: projectid.String(v.GetId()), Session: r.GetSession(), Secret: secret,
 	})
 	if err != nil {
 		return nil, err
@@ -44,7 +45,7 @@ func (s ProjectServer) DeleteSecretFile(ctx context.Context, r *resource.DeleteS
 		return nil, err
 	}
 	out, err := s.shared.runtime.DeleteSecretFile(ctx, &api.DeleteSecretFileInput{
-		Project: v.GetRuntimeId(), Path: r.GetPath(),
+		Project: projectid.String(v.GetId()), Path: r.GetPath(),
 	})
 	if err != nil {
 		return nil, err

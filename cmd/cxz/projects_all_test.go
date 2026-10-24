@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"net"
 	"os"
 	"path/filepath"
@@ -29,7 +30,7 @@ type allStub struct {
 }
 
 func ownedProject(id, workspace, state string) *resource.Project {
-	return resource.Project_builder{RuntimeId: id, Workspace: workspace, Name: id, Alias: id,
+	return resource.Project_builder{Id: projectid.Bytes(id), Workspace: workspace, Name: id, Alias: id,
 		Status: resource.ProjectStatus_builder{ContainerState: projectstate.Of(state), ContainerId: "container-" + id}.Build()}.Build()
 }
 
@@ -45,7 +46,7 @@ func (allInstallationStub) ForeignContainers(context.Context, *resource.ForeignC
 
 func (s *allStub) Get(_ context.Context, r *resource.ProjectGetRequest) (*resource.Project, error) {
 	for _, p := range s.items {
-		if p.GetRuntimeId() == r.GetRef().GetRuntimeId() {
+		if projectid.String(p.GetId()) == projectid.RefString(r.GetRef()) {
 			return p, nil
 		}
 	}
@@ -67,14 +68,22 @@ func (allInstallationStub) SaveDevcontainer(context.Context, *resource.SaveDevco
 func (s *allStub) Start(_ context.Context, r *resource.ProjectStartRequest) (*resource.Project, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.upped = append(s.upped, r.GetRef().GetRuntimeId())
+	v, err := s.Get(context.Background(), resource.ProjectGetRequest_builder{Ref: r.GetRef()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	s.upped = append(s.upped, v.GetAlias())
 	return s.Get(context.Background(), resource.ProjectGetRequest_builder{Ref: r.GetRef()}.Build())
 }
 
 // Recreating is RemoveContainer then CreateContainer, so what the stub records
 // as "recreated" is what the client removed first.
 func (s *allStub) Remove(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
-	id := r.GetRef().GetRuntimeId()
+	v, err := s.Get(context.Background(), resource.ProjectGetRequest_builder{Ref: r.GetRef()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	id := v.GetAlias()
 	s.mu.Lock()
 	s.recreated = append(s.recreated, id)
 	s.mu.Unlock()
@@ -153,7 +162,7 @@ func TestRecreateAllTakesEveryRunningOwnedProject(t *testing.T) {
 	if strings.Join(stub.upped, ",") != "api,web" {
 		t.Fatal("recreate did not create the containers it removed:", stub.upped)
 	}
-	for _, want := range []string{"recreated api /work/api", "recreated web /work/web"} {
+	for _, want := range []string{"recreated " + projectid.Canonical("api") + " /work/api", "recreated " + projectid.Canonical("web") + " /work/web"} {
 		if !strings.Contains(got.Stdout, want) {
 			t.Fatalf("missing %q: %s", want, got.Stdout)
 		}
@@ -179,7 +188,7 @@ func TestRecreateAllContinuesPastAFailure(t *testing.T) {
 	if calls := stub.calls(); strings.Join(calls, ",") != "api,web,zero" {
 		t.Fatal("a failure stopped the remaining projects:", calls)
 	}
-	if !strings.Contains(got.Stdout, "recreated zero") {
+	if !strings.Contains(got.Stdout, "recreated "+projectid.Canonical("zero")) {
 		t.Fatal("the project after the failure was not reported:", got.Stdout)
 	}
 }

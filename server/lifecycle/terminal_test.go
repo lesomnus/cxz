@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net"
 	"os/exec"
@@ -39,7 +40,7 @@ func (t *trackedTerminal) Wait() error {
 	return err
 }
 func (f *terminalRuntime) OpenTerminal(ctx context.Context, project string, w, h int) (containerterm.Terminal, error) {
-	if project != f.p.Id {
+	if project != projectid.Canonical(f.p.Id) {
 		return nil, status.Error(codes.NotFound, "wrong project")
 	}
 	p, err := containerterm.StartPTY(exec.CommandContext(ctx, "sh", "-c", "stty -echo; printf 'shell-ready\\n'; exec sh"), w, h)

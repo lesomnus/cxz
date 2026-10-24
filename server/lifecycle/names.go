@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/projectref"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/slug"
@@ -41,7 +42,7 @@ func (s Layer) alias(ctx context.Context, id, name, requested string) (string, e
 		if err != nil {
 			return "", err
 		}
-		if p.GetRuntimeId() == id {
+		if projectid.Same(projectid.String(p.GetId()), id) {
 			return candidate, nil
 		}
 		if explicit {

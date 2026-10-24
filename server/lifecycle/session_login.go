@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"os"
 	"sync"
@@ -78,7 +79,7 @@ func (s ProjectServer) SessionLogin(stream grpc.BidiStreamingServer[resource.Pro
 		}
 	}()
 	output := &sessionLoginOutput{stream: stream, cancel: cancel}
-	err = runtime.LoginSession(ctx, p.GetRuntimeId(), a.GetAlias(), first.GetSessionKey(), in, output)
+	err = runtime.LoginSession(ctx, projectid.String(p.GetId()), a.GetAlias(), first.GetSessionKey(), in, output)
 	select {
 	case inputErr := <-inputErr:
 		return inputErr

@@ -36,7 +36,7 @@ type Project struct {
 	Sessions                    []*api.Session
 	Job                         ProvisionJob
 }
-type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
+type Runtime struct{ ProjectID, LegacyProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
 	removedSessions map[string]bool // protected by writeMu; rejects late frames after removal
 	auxStop         context.CancelFunc
@@ -438,10 +438,14 @@ func (m *Manager) StartContainer(ctx context.Context, r *api.ProjectRequest) (re
 	}
 	p := existing
 	if p == nil {
-		registered, err := m.Register(ctx,path,r.Config)
-if err!=nil{return nil,err}
-p,err=m.resolve(ctx,registered.Id)
-if err!=nil{return nil,err}
+		registered, err := m.Register(ctx, path, r.Config)
+		if err != nil {
+			return nil, err
+		}
+		p, err = m.resolve(ctx, registered.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
 	lock := m.projectLock(p.ID)
 	lock.Lock()

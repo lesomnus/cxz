@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/containerterm"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
@@ -27,7 +28,7 @@ type downloadRuntime struct {
 }
 
 func (f *downloadRuntime) Download(ctx context.Context, project, path string, w io.Writer) error {
-	if project != f.p.Id {
+	if project != projectid.Canonical(f.p.Id) {
 		return status.Error(codes.NotFound, "wrong project")
 	}
 	if path == "denied" {

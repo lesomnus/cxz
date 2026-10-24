@@ -2,6 +2,7 @@ package conversation
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"path/filepath"
 	"testing"
 
@@ -41,7 +42,7 @@ func TestCanonicalRegistryPagination(t *testing.T) {
 	calls := 0
 	list := func(_ context.Context, r *resource.SessionListRequest) (*resource.SessionListResponse, error) {
 		calls++
-		if r.GetFilters()[0].GetProject().GetRuntimeId() != "p" {
+		if projectid.RefString(r.GetFilters()[0].GetProject()) != projectid.Canonical("p") {
 			t.Fatal("missing project filter")
 		}
 		next := "next"
@@ -49,7 +50,7 @@ func TestCanonicalRegistryPagination(t *testing.T) {
 			next = ""
 			alias = "otter"
 		}
-		return resource.SessionListResponse_builder{Next: next, Items: []*resource.Session{resource.Session_builder{Id: id[:], Alias: alias, Listed: yes, RuntimeId: "runtime", Project: resource.Project_builder{RuntimeId: "p"}.Build()}.Build(), resource.Session_builder{Id: id[:], Alias: "other", Listed: yes, Project: resource.Project_builder{RuntimeId: "other"}.Build()}.Build()}}.Build(), nil
+		return resource.SessionListResponse_builder{Next: next, Items: []*resource.Session{resource.Session_builder{Id: id[:], Alias: alias, Listed: yes, RuntimeId: "runtime", Project: resource.Project_builder{Id: projectid.Bytes("p")}.Build()}.Build(), resource.Session_builder{Id: id[:], Alias: "other", Listed: yes, Project: resource.Project_builder{Id: projectid.Bytes("other")}.Build()}.Build()}}.Build(), nil
 	}
 	got, err := RegistryFromResources(t.Context(), "p", list)
 	if err != nil || calls != 2 || len(got) != 2 || got[0].ID != id.String() {

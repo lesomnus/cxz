@@ -60,7 +60,7 @@ func call[T any](t *testing.T, ctx context.Context, c *mcp.ClientSession, name s
 	t.Helper()
 	v, err := c.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: args})
 	if err != nil || v.IsError {
-		t.Fatalf("%s: %v %v", name, v, err)
+		t.Fatalf("%s: %v %v; content: %+v", name, v, err, v.Content)
 	}
 	raw, err := json.Marshal(v.StructuredContent)
 	if err != nil {

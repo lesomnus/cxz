@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net"
 	"net/http"
@@ -349,7 +350,7 @@ func FetchToken(ctx context.Context, root, account, project, binding, previous s
 	if err != nil {
 		return Token{}, err
 	}
-	if g.Scope != "" || g.Project != project || g.Binding != binding || (previous != "" && previous != g.AccountID) {
+	if g.Scope != "" || g.Account != account || !projectid.Same(g.Project, project) || (g.Binding != binding && BindingID(project, account, BrokeredAccessToken) != binding) || (previous != "" && previous != g.AccountID) {
 		return Token{}, fmt.Errorf("token request account/binding mismatch")
 	}
 	return fetchGrantToken(ctx, g, previous, refresh)

@@ -20,9 +20,6 @@ func (x *Project) Ref() *ProjectRef {
 	if v := x.GetWorkspace(); len(v) > 0 {
 		return ProjectByWorkspace(v)
 	}
-	if v := x.GetRuntimeId(); len(v) > 0 {
-		return ProjectByRuntimeId(v)
-	}
 
 	return nil
 }
@@ -39,8 +36,6 @@ func (x *ProjectRef) Picks(v *Project) bool {
 		return x.GetAlias() == v.GetAlias()
 	case ProjectRef_Workspace_case:
 		return x.GetWorkspace() == v.GetWorkspace()
-	case ProjectRef_RuntimeId_case:
-		return x.GetRuntimeId() == v.GetRuntimeId()
 	default:
 		return false
 	}
@@ -72,12 +67,6 @@ func ProjectByWorkspace(v string) *ProjectRef {
 	return x
 }
 
-func ProjectByRuntimeId(v string) *ProjectRef {
-	x := &ProjectRef{}
-	x.SetRuntimeId(v)
-	return x
-}
-
 func ProjectGetById(v []byte) *ProjectGetRequest {
 	return ProjectGetRequest_builder{Ref: ProjectById(v)}.Build()
 }
@@ -88,8 +77,4 @@ func ProjectGetByAlias(v string) *ProjectGetRequest {
 
 func ProjectGetByWorkspace(v string) *ProjectGetRequest {
 	return ProjectGetRequest_builder{Ref: ProjectByWorkspace(v)}.Build()
-}
-
-func ProjectGetByRuntimeId(v string) *ProjectGetRequest {
-	return ProjectGetRequest_builder{Ref: ProjectByRuntimeId(v)}.Build()
 }

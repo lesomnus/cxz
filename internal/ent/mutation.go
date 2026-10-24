@@ -1930,23 +1930,6 @@ func (m *ProjectMutation) OldConfig(ctx context.Context) (v string, err error) {
 	return oldValue.Config, nil
 }
 
-// OldRuntimeId returns the old "runtime_id" field's value of the Project entity.
-// If the Project object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldRuntimeId(ctx context.Context) (v string, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldRuntimeId is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldRuntimeId requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRuntimeId: %w", err)
-	}
-	return oldValue.RuntimeId, nil
-}
-
 // OldDateUpdated returns the old "date_updated" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -2030,8 +2013,6 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldWorkspace(ctx)
 	case project.FieldConfig:
 		return m.OldConfig(ctx)
-	case project.FieldRuntimeId:
-		return m.OldRuntimeId(ctx)
 	case project.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case project.FieldDateErased:

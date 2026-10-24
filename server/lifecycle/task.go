@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"bytes"
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 
 	"github.com/lesomnus/cxz/api"
@@ -56,7 +57,7 @@ func (s TaskServer) target(ctx context.Context, ref *resource.ProjectRef) (resou
 		return nil, nil, err
 	}
 	if connector, ok := s.shared.runtime.(taskConnector); ok {
-		conn, err := connector.TaskConnection(ctx, p.GetRuntimeId())
+		conn, err := connector.TaskConnection(ctx, projectid.String(p.GetId()))
 		if err != nil {
 			return nil, nil, err
 		}

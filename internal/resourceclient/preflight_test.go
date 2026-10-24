@@ -3,6 +3,7 @@ package resourceclient
 import (
 	"context"
 	"errors"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"strings"
 	"testing"
 
@@ -109,7 +110,7 @@ func TestOpenFailsBeforeAnyProjectMutation(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			p := resource.Project_builder{RuntimeId: "project", Workspace: "/project", Alias: "alias"}.Build()
+			p := resource.Project_builder{Id: projectid.Bytes("project"), Workspace: "/project", Alias: "alias"}.Build()
 			projects := &preflightProjects{items: []*resource.Project{p}}
 			if tc.unregistered {
 				projects.items = nil
@@ -137,7 +138,7 @@ func TestOpenFailsBeforeAnyProjectMutation(t *testing.T) {
 	}
 }
 func TestExistingSessionAndPrepareOnlyNeedNoAccountFlag(t *testing.T) {
-	p := resource.Project_builder{RuntimeId: "project", Workspace: "/project", Alias: "alias"}.Build()
+	p := resource.Project_builder{Id: projectid.Bytes("project"), Workspace: "/project", Alias: "alias"}.Build()
 	for _, state := range []string{"idle", "working", "waiting_input", "stopped", "interrupted", "failed"} {
 		projects := &preflightProjects{items: []*resource.Project{p}}
 		c := &Client{projects: projects, sessions: preflightSessions{items: []*resource.Session{fixtureSession(p, state)}}, Accounts: preflightAccounts{}}
@@ -163,12 +164,13 @@ func TestExistingSessionAndPrepareOnlyNeedNoAccountFlag(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
 // Recreating is about the container, and a project with no sessions has
 // nothing to resume: it is recreated as a project rather than refused for an
 // account it does not need. Refusing it meant the one project in that state
 // could not have its state migrated at all. See cxz#263.
 func TestAProjectWithNoSessionsIsRecreatedWithoutAnAccount(t *testing.T) {
-	p := resource.Project_builder{RuntimeId: "project", Workspace: "/project", Alias: "alias"}.Build()
+	p := resource.Project_builder{Id: projectid.Bytes("project"), Workspace: "/project", Alias: "alias"}.Build()
 	projects := &preflightProjects{items: []*resource.Project{p}}
 	c := &Client{projects: projects, sessions: preflightSessions{}, Accounts: preflightAccounts{}}
 	r := &api.ProjectRequest{Workspace: "/project", Recreate: true, Confirmed: true}
@@ -192,7 +194,7 @@ func TestAProjectWithNoSessionsIsRecreatedWithoutAnAccount(t *testing.T) {
 }
 
 func TestPreflightFailsClosedOnSessionLookupFailure(t *testing.T) {
-	projects := &preflightProjects{items: []*resource.Project{resource.Project_builder{RuntimeId: "project", Workspace: "/project"}.Build()}}
+	projects := &preflightProjects{items: []*resource.Project{resource.Project_builder{Id: projectid.Bytes("project"), Workspace: "/project"}.Build()}}
 	c := &Client{projects: projects, sessions: preflightSessions{err: status.Error(codes.Unavailable, "offline")}}
 	_, err := c.Open(context.Background(), &api.ProjectRequest{Workspace: "/project"})
 	if status.Code(err) != codes.Unavailable || projects.writes != 0 {

@@ -258,7 +258,7 @@ func Run(ctx context.Context, root, id string) error {
 		s.codex.token = func(previous string, refresh bool) (accounts.Token, error) {
 			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 			defer cancel()
-			return accounts.FetchToken(ctx, root, session.Account, session.ProjectID, session.AuthBinding, previous, refresh)
+			return accounts.FetchToken(ctx, root, session.Account, session.AuthProjectID(), session.AuthBinding, previous, refresh)
 		}
 	}
 	s.cmd = exec.Command(session.Agent, args...)

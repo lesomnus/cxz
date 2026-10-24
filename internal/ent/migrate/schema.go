@@ -234,7 +234,6 @@ var (
 		{Name: "desc", Type: field.TypeString},
 		{Name: "workspace", Type: field.TypeString},
 		{Name: "config", Type: field.TypeString},
-		{Name: "runtime_id", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -249,7 +248,7 @@ var (
 			{
 				Name:    "project_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectColumns[9], ProjectColumns[0]},
+				Columns: []*schema.Column{ProjectColumns[8], ProjectColumns[0]},
 			},
 			{
 				Name:    "project_alias",
@@ -263,14 +262,6 @@ var (
 				Name:    "project_workspace",
 				Unique:  true,
 				Columns: []*schema.Column{ProjectColumns[4]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "date_erased IS NULL",
-				},
-			},
-			{
-				Name:    "project_runtime_id",
-				Unique:  true,
-				Columns: []*schema.Column{ProjectColumns[6]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

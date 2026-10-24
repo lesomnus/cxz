@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/projectstate"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
@@ -177,7 +178,7 @@ func (s Layer) saveProject(ctx context.Context, v *api.Project) (*resource.Proje
 		if err != nil {
 			return nil, err
 		}
-		return srv.Add(ctx, resource.ProjectAddRequest_builder{Id: resourceID(7, v.Id), Alias: alias, Name: v.Name, Workspace: v.Workspace, Config: v.Config, RuntimeId: v.Id, Status: state}.Build())
+		return srv.Add(ctx, resource.ProjectAddRequest_builder{Id: projectid.Bytes(v.Id), Alias: alias, Name: v.Name, Workspace: v.Workspace, Config: v.Config, Status: state}.Build())
 	}
 	if err != nil {
 		return nil, err
@@ -206,7 +207,7 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 			}
 			account = accountRef(v.Account)
 		}
-		binding, err := s.ensureBinding(ctx, v.ProjectId, v.Account, v.Agent, v.AuthBackend)
+		binding, err := s.ensureBinding(ctx, v.ProjectId, v.Account, v.Agent, v.AuthBackend, v.AuthBinding)
 		if err != nil {
 			return nil, err
 		}

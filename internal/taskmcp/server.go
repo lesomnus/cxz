@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"strings"
 	"time"
 
@@ -115,7 +116,7 @@ func New(conn grpc.ClientConnInterface, binding Binding) (*mcp.Server, error) {
 }
 
 func (t tools) project() *resource.ProjectRef {
-	return resource.ProjectRef_builder{RuntimeId: proto.String(t.binding.Project)}.Build()
+	return projectid.Ref(t.binding.Project)
 }
 
 func (t tools) actor() *resource.TaskActor {
@@ -141,7 +142,7 @@ func (t tools) active(ctx context.Context) error {
 		return err
 	}
 	state := s.GetStatus().GetState()
-	if !s.GetListed() || s.GetProject().GetRuntimeId() != t.binding.Project || s.GetStatus().GetRunId() != t.binding.Run || (state != "idle" && state != "working" && state != "waiting_input") {
+	if !s.GetListed() || !projectid.Same(projectid.String(s.GetProject().GetId()), t.binding.Project) || s.GetStatus().GetRunId() != t.binding.Run || (state != "idle" && state != "working" && state != "waiting_input") {
 		return status.Error(codes.FailedPrecondition, "MCP launch run is stale or inactive; restart the agent")
 	}
 	return nil
