@@ -182,11 +182,19 @@ test("horizontal code, dropdowns and Monaco reuse the panel handle styling", asy
   await choices.evaluate((el: HTMLElement) => {
     el.style.maxHeight = "30px";
   });
-  await nearEdge(choices, "data-scrollbar-near-y", (box) => ({
+  const menuArea = page.locator('.setting-menu [data-scroll-area="root"]');
+  const menuHandle = menuArea.locator('[data-scroll-area="handle"]');
+  await expect(menuArea.getByRole("scrollbar")).toBeVisible();
+  await nearEdge(menuArea, "data-near", (box) => ({
     x: box.width - 18,
-    y: 5,
+    y: box.height / 2,
   }));
-  expect((await skin(choices)).width).toBe("12px");
+  await expect(menuHandle).toHaveCSS("width", "4px");
+  await expect(menuHandle).toHaveCSS("opacity", "1");
+  await expect(menuHandle).toHaveCSS("transform", "matrix(2, 0, 0, 1, 0, 0)");
+  const menuColor = await menuHandle.evaluate(
+    (el) => getComputedStyle(el).backgroundColor,
+  );
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
@@ -227,6 +235,7 @@ test("horizontal code, dropdowns and Monaco reuse the panel handle styling", asy
     probe.remove();
     return color;
   });
+  expect(menuColor).toBe(panelColor);
   expect(
     await slider.evaluate(
       (el) => getComputedStyle(el, "::before").backgroundColor,
