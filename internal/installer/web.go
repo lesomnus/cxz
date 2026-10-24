@@ -36,6 +36,7 @@ func InstallWeb(ctx context.Context, root string, cfg webconfig.Config, out io.W
 	if err != nil {
 		return err
 	}
+	v.Image = manager.Config.Image
 	if !manager.State.Running {
 		return fmt.Errorf("start the Manager with cxz install first")
 	}
@@ -59,7 +60,7 @@ func RefreshWebLocked(ctx context.Context, root string, out io.Writer) error {
 	if err = json.Unmarshal(b, &cfg); err != nil {
 		return err
 	}
-	v, err := transport.Load(root)
+	v, err := liveInstallation(ctx, root)
 	if err != nil {
 		return err
 	}
@@ -254,6 +255,14 @@ func WebStatus(ctx context.Context, root string, cfg webconfig.Config, configPat
 		s.State = "Manager is not installed"
 		return s, nil
 	}
+	manager, err := dockerx.Owned(ctx, v.Container, v.Owner, "")
+	if err != nil {
+		return s, err
+	}
+	if manager.Config.Labels["cxz.role"] != "daemon" {
+		return s, fmt.Errorf("invalid manager role")
+	}
+	v.Image = manager.Config.Image
 	s.Container, s.ManagerImage = v.Container+"-web", v.Image
 	c, exists, err := findWeb(ctx, v)
 	if err != nil {

@@ -110,7 +110,8 @@ func fakeWebDocker(t *testing.T, root string) string {
 printf '%s\n' "$*" >> "$WEB_TEST_ROOT/calls"
 case "$1" in
  ps) if [ ! -e "$WEB_TEST_ROOT/renamed" ] && [ "$WEB_TEST_MISSING" != 1 ]; then echo old; fi;;
- inspect) printf '[{"Id":"old","Config":{"Image":"fixture:old","Labels":{"cxz.owner":"%s","cxz.role":"web"}},"State":{"Running":%s}}]' "${WEB_TEST_OWNER:-fixture}" "${WEB_TEST_RUNNING:-true}";;
+ inspect) if [ "$2" = manager ]; then printf '[{"Id":"manager","Config":{"Image":"fixture:new","Labels":{"cxz.owner":"fixture","cxz.role":"daemon"}},"State":{"Running":true}}]'; exit 0; fi
+          printf '[{"Id":"old","Config":{"Image":"fixture:old","Labels":{"cxz.owner":"%s","cxz.role":"%s"}},"State":{"Running":%s}}]' "${WEB_TEST_OWNER:-fixture}" "${WEB_TEST_ROLE:-web}" "${WEB_TEST_RUNNING:-true}";;
  rename) if [ "$3" = manager-web ]; then rm -f "$WEB_TEST_ROOT/renamed"; else touch "$WEB_TEST_ROOT/renamed"; fi;;
  run) if [ "$WEB_TEST_UNSUPPORTED" = 1 ]; then exit 1; fi
       if [ "$2" = -d ] && [ "$WEB_TEST_FAIL" = 1 ]; then exit 1; fi;;
@@ -124,10 +125,13 @@ esac
 }
 
 func TestWebRefreshLifecycle(t *testing.T) {
-	for _, scenario := range []string{"uninstalled", "missing", "stopped", "foreign", "success", "unsupported", "rollback"} {
+	for _, scenario := range []string{"uninstalled", "missing", "stopped", "foreign", "success", "stale-metadata", "unsupported", "rollback"} {
 		t.Run(scenario, func(t *testing.T) {
 			v, c, root := webFixture(t)
 			log := fakeWebDocker(t, root)
+			if scenario == "stale-metadata" {
+				v.Image = "fixture:old"
+			}
 			if err := core.WriteJSON(filepath.Join(root, "installation.json"), v); err != nil {
 				t.Fatal(err)
 			}
@@ -155,8 +159,8 @@ func TestWebRefreshLifecycle(t *testing.T) {
 			}
 			b, _ := os.ReadFile(log)
 			calls := string(b)
-			if scenario == "success" {
-				if !strings.Contains(calls, "exec manager-web curl") || !strings.Contains(calls, "rm old") {
+			if scenario == "success" || scenario == "stale-metadata" {
+				if !strings.Contains(calls, "exec manager-web curl") || !strings.Contains(calls, "rm old") || !strings.Contains(calls, "fixture:new --state") {
 					t.Fatal(calls)
 				}
 			} else if scenario == "rollback" {
@@ -165,6 +169,37 @@ func TestWebRefreshLifecycle(t *testing.T) {
 				}
 			} else if strings.Contains(calls, "rename ") || strings.Contains(calls, "stop ") || strings.Contains(calls, "run -d") {
 				t.Fatal(calls)
+			}
+		})
+	}
+}
+
+func TestServiceStatusUsesLiveManagerImageWithoutRewritingHostMetadata(t *testing.T) {
+	for _, role := range []string{"web", "remote"} {
+		t.Run(role, func(t *testing.T) {
+			v, c, root := webFixture(t)
+			v.Image = "fixture:old"
+			fakeWebDocker(t, root)
+			t.Setenv("WEB_TEST_ROLE", role)
+			path := filepath.Join(root, "installation.json")
+			if err := core.WriteJSON(path, v); err != nil {
+				t.Fatal(err)
+			}
+			before, _ := os.ReadFile(path)
+			if role == "web" {
+				status, err := WebStatus(t.Context(), root, c, "config")
+				if err != nil || status.ManagerImage != "fixture:new" || !status.NeedsRefresh {
+					t.Fatalf("%+v %v", status, err)
+				}
+			} else {
+				status, err := RelayStatus(t.Context(), root)
+				if err != nil || status.ManagerImage != "fixture:new" || !status.NeedsRefresh {
+					t.Fatalf("%+v %v", status, err)
+				}
+			}
+			after, _ := os.ReadFile(path)
+			if string(before) != string(after) {
+				t.Fatal("host metadata changed")
 			}
 		})
 	}

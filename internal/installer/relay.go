@@ -47,6 +47,7 @@ func InstallRelay(ctx context.Context, root string, cfg RelayConfig, out io.Writ
 	if err != nil {
 		return err
 	}
+	v.Image = manager.Config.Image
 	if !manager.State.Running {
 		return fmt.Errorf("start the Manager with cxz install first")
 	}
@@ -71,7 +72,7 @@ func RefreshRelayLocked(ctx context.Context, root string, out io.Writer) error {
 	if err = json.Unmarshal(b, &cfg); err != nil {
 		return err
 	}
-	v, err := transport.Load(root)
+	v, err := liveInstallation(ctx, root)
 	if err != nil {
 		return err
 	}
@@ -257,6 +258,14 @@ func RelayStatus(ctx context.Context, root string) (RelayState, error) {
 		s.State = "Manager is not installed"
 		return s, nil
 	}
+	manager, err := dockerx.Owned(ctx, v.Container, v.Owner, "")
+	if err != nil {
+		return s, err
+	}
+	if manager.Config.Labels["cxz.role"] != "daemon" {
+		return s, fmt.Errorf("invalid manager role")
+	}
+	v.Image = manager.Config.Image
 	s.Container, s.ManagerImage = relayName(v), v.Image
 	if issued, err := dockerx.Run(ctx, "exec", v.Container, "/usr/local/bin/cxz", "--state", "/var/lib/cxz", "_pki", "issued"); err == nil {
 		var report struct {
