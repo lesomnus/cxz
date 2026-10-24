@@ -460,6 +460,9 @@ test("account registration, session creation and archive restore use resource AP
     exact: true,
   });
   await menuTrigger.hover();
+  await menuTrigger.evaluate((el) =>
+    Promise.all(el.getAnimations().map((animation) => animation.finished)),
+  );
   const hoverBackground = await menuTrigger.evaluate(
     (el) => getComputedStyle(el).backgroundColor,
   );
@@ -791,7 +794,9 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
         .map((animation) => animation.finished.catch(() => {})),
     ),
   );
-  const triggerBounds = await projectPicker.boundingBox();
+  const triggerBounds = await projectPicker
+    .locator(".meta-value")
+    .boundingBox();
   await projectPicker.click();
   const search = page.getByRole("combobox", {
     name: "Search Project",
