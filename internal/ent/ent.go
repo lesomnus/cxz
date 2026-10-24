@@ -18,6 +18,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/session"
 	"github.com/lesomnus/cxz/internal/ent/task"
+	"github.com/lesomnus/cxz/internal/ent/tasklink"
 	"github.com/lesomnus/cxz/internal/ent/tenant"
 	"github.com/protobuf-orm/ent"
 	"github.com/protobuf-orm/ent/dialect/sql"
@@ -91,6 +92,7 @@ func checkColumn(t, c string) error {
 			project.Table:     project.ValidColumn,
 			session.Table:     session.ValidColumn,
 			task.Table:        task.ValidColumn,
+			tasklink.Table:    tasklink.ValidColumn,
 			tenant.Table:      tenant.ValidColumn,
 		})
 	})

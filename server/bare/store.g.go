@@ -17,6 +17,7 @@ import (
 	project "github.com/lesomnus/cxz/internal/ent/project"
 	session "github.com/lesomnus/cxz/internal/ent/session"
 	task "github.com/lesomnus/cxz/internal/ent/task"
+	tasklink "github.com/lesomnus/cxz/internal/ent/tasklink"
 	tenant "github.com/lesomnus/cxz/internal/ent/tenant"
 	resource "github.com/lesomnus/cxz/resource"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
@@ -327,6 +328,7 @@ type Scope interface {
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
 	SessionScope(ctx context.Context) (predicate.Session, error)
 	TaskScope(ctx context.Context) (predicate.Task, error)
+	TaskLinkScope(ctx context.Context) (predicate.TaskLink, error)
 }
 
 // Unscoped is a [Scope] that narrows nothing. Embed it and write out the
@@ -369,6 +371,9 @@ func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
 	return nil, nil
 }
 func (Unscoped) TaskScope(_ context.Context) (predicate.Task, error) {
+	return nil, nil
+}
+func (Unscoped) TaskLinkScope(_ context.Context) (predicate.TaskLink, error) {
 	return nil, nil
 }
 
@@ -591,6 +596,26 @@ func (ss Scopes) TaskScope(ctx context.Context) (predicate.Task, error) {
 	return task.And(ps...), nil
 }
 
+func (ss Scopes) TaskLinkScope(ctx context.Context) (predicate.TaskLink, error) {
+	ps := make([]predicate.TaskLink, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.TaskLinkScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return tasklink.And(ps...), nil
+}
+
 // Minter decides the key a row is stored under. It is asked once per Add,
 // for an entity whose key is a uuid, and only for those.
 //
@@ -671,7 +696,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. Account, AuthBinding, Connection, Holder, Project, Session and Task free the names they held when a row
+// check. Account, AuthBinding, Connection, Holder, Project, Session, Task and TaskLink free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -723,3 +748,6 @@ func (s Server) Holder() resource.HolderServiceServer   { return HolderServiceSe
 func (s Server) Outbox() resource.OutboxServiceServer   { return OutboxServiceServer{Store: s.Store} }
 func (s Server) Session() resource.SessionServiceServer { return SessionServiceServer{Store: s.Store} }
 func (s Server) Task() resource.TaskServiceServer       { return TaskServiceServer{Store: s.Store} }
+func (s Server) TaskLink() resource.TaskLinkServiceServer {
+	return TaskLinkServiceServer{Store: s.Store}
+}

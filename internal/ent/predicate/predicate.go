@@ -55,5 +55,8 @@ func SessionOrErr(p Session, err error) Session {
 // Task is the predicate function for task builders.
 type Task func(*sql.Selector)
 
+// TaskLink is the predicate function for tasklink builders.
+type TaskLink func(*sql.Selector)
+
 // Tenant is the predicate function for tenant builders.
 type Tenant func(*sql.Selector)

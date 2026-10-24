@@ -66,6 +66,9 @@ func (s TaskServer) target(ctx context.Context, ref *resource.ProjectRef) (resou
 	}
 	return taskapi.Service{
 		TaskServiceServer: taskInventory{TaskServiceServer: s.Next().Task(), Layer: s.Layer},
+		// Claim is the one operation a link refuses, and it is refused here --
+		// beside the store that holds both the task and its links.
+		Blockers: TaskLinkServer{Layer: s.Layer}.links().Blockers,
 		Project: func(ctx context.Context, ref *resource.ProjectRef) (*resource.Project, error) {
 			return s.Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: ref, Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
 		},

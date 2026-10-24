@@ -37,9 +37,13 @@ type Runtime interface {
 	SetSessionTitle(context.Context, string, string) (string, error)
 }
 type shared struct {
-	db          *sql.DB
-	transition  sync.RWMutex
-	mu          sync.Mutex
+	db         *sql.DB
+	transition sync.RWMutex
+	mu         sync.Mutex
+	// linkMu serializes the read-check-write a task link needs: two sessions
+	// adding opposite blocking edges at once would otherwise both read a graph
+	// without the other's edge and both pass the cycle check.
+	linkMu      sync.Mutex
 	snapshotMu  sync.Mutex
 	initialMu   sync.Mutex
 	initialized bool

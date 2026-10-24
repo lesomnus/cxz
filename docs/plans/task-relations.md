@@ -1,6 +1,10 @@
 # Task 사이의 관계 — 설계 계획
 
-상태: **설계 결정 완료, 구현 전.** 결정 여섯 개:
+상태: **1–3단계 구현됨**(§8). `TaskLink` 엔티티와 레이어 규칙, 파생 `blocked`,
+`Claim` 거부, MCP 도구 `task_link`/`task_unlink`가 들어갔다. 남은 것은 4단계(웹)다.
+구현하면서 뒤집힌 것 셋은 §10에 적었다.
+
+결정 여섯 개:
 
 | | 결정한 것 | 어디 |
 | --- | --- | --- |
@@ -9,12 +13,12 @@
 | 3 | 프로젝트 간 링크는 범위 밖. 거부하고, 왜인지와 무엇이 먼저인지 적는다 | §2 |
 | 4 | 순환은 거부한다 | §5 |
 | 5 | `kind` enum은 지금 정의하고 `BLOCKS`만 구현한다 | §4, §9 |
-| 6 | 끝난 blocker의 링크는 남긴다. 상한은 열린 것만 센다 (프로젝트당 500, task당 32) | §5 |
+| 6 | 끝난 blocker의 링크는 남긴다 (상한은 §10(b)에서 바뀌었다) | §5, §10 |
 
 지금은 "이 task는 저 task에 막혀 있다"를 적을 자리가 없다. 이 문서는 없는 것을
 측정하고(§1, §2), 다른 도구 8개가 같은 문제를 어떻게 푸는지 보고(§3), 모양과
 집행 지점을 정하고(§4, §5, §6), 표면과 단계를 나눈다(§7, §8). §9는 결정의 근거와
-남은 것이다.
+남은 것, §10은 구현이 뒤집은 것이다.
 
 ## 1. 지금 없는 것
 
@@ -167,9 +171,10 @@ message TaskLink {
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
-  Task source = 8 [(orm.edge) = {immutable: true}];
-  Task target = 9 [(orm.edge) = {immutable: true}];
-  TaskLinkKind kind = 10 [(orm.field) = {immutable: true}];
+  Project project = 8 [(orm.edge) = {immutable: true}];   // §10(a)에서 더해졌다
+  Task source = 9 [(orm.edge) = {immutable: true}];
+  Task target = 10 [(orm.edge) = {immutable: true}];
+  TaskLinkKind kind = 11 [(orm.field) = {immutable: true}];
   string client_id = 16 [(orm.field) = {unique: true, immutable: true}];
   option (orm.message) = {
     rpc: {crud: true}
@@ -178,7 +183,7 @@ message TaskLink {
   option (payday.entity) = {
     domain: 13
     global: {}
-    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "source"}, {name: "target"}], size: 100, max: 500}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "project"}, {name: "source"}, {name: "target"}], size: 100, max: 500}
     watch: {}
   };
 }
@@ -248,10 +253,10 @@ enum TaskLinkKind {
 500이므로(§4의 `size: 100, max: 500`) 프로젝트의 열린 링크가 500개 아래면 그래프 전체가
 한 번의 쿼리로 손에 들어온다. 그래서 "방문 노드 상한" 같은 별도 개념이 필요 없다.
 
-**상한 둘** (결정 6, 둘 다 `internal/taskapi`의 상수라 숫자는 한 줄로 고친다):
+**상한 둘** (둘 다 `internal/taskapi`의 상수라 숫자는 한 줄로 고친다):
 
-- 프로젝트당 **열린** `BLOCKS` 링크 500개 — 한 페이지. 끝난 blocker의 링크는 세지
-  않으므로, 기록을 남기면서도(§9) 상한은 실제로 막혀 있는 것만 센다.
+- 프로젝트당 `BLOCKS` 링크 500개 — 한 페이지. 처음에는 "열린 것만" 세려 했는데
+  구현에서 뒤집혔다: §10(b).
 - task당 32개. 선례는 라벨 상한 32다 (`internal/taskapi/service.go:377`).
 
 **소유권은 요구하지 않는다** (결정 2). 조건은 두 행이 같은 프로젝트에 있는 것과 위의
@@ -322,8 +327,9 @@ enum TaskLinkKind {
 
 - **MCP**(`internal/taskmcp/server.go`, 지금 도구 6개): `task_link`와 `task_unlink`를
   더한다. `task_get`의 뷰에 `blocked_by`/`blocks`를 더하고(`related`는 4단계),
-  `task_list`에 막힘 표시와 "막히지 않은 것만" 옵션을 둔다. `Instructions`에 한 줄:
-  막힌 일은 claim 되지 않으니 그걸 풀거나 다른 일을 집어라.
+  `task_list`는 각 항목에 `blocked`를 싣는다 ("막히지 않은 것만" 옵션은 두지 않았다 —
+  §10(c)). `Instructions`에 한 줄: 막힌 일은 claim 되지 않으니 그걸 풀거나 다른 일을
+  집어라.
 - **웹**(`ts/src/features/tasks/`): 카탈로그가 `TaskService.Watch` 하나로 사는 구조라
   (`task-catalog.ts`) 링크용 watch 스트림이 하나 더 붙고 보드에서 합쳐진다. 보드에
   배지, `task-dialog.tsx`에 링크 구획.
@@ -333,17 +339,26 @@ enum TaskLinkKind {
 
 ## 8. 단계
 
-1. `proto/cxz/task_link.proto` + 오버레이(§4 마지막 항목) + `pd gen`. 손으로 쓸 코드
-   없이 CRUD가 산다.
-2. `internal/taskapi`에 링크 규칙(§5) + `server/lifecycle/task_link.go`의 라우팅 +
-   `Patch`/`Apply` 거부. 테스트: 자기 링크, 2-고리, 3-고리, 프로젝트 교차, 중복 재시도,
-   `RELATES` 거부, 상한.
-3. 파생 `blocked` + `Claim` 거부(§6) + MCP 도구와 뷰(§7). **한 PR이다** — §6의 마지막
-   항목이 이유다.
-4. 웹과 스텁 둘(`internal/taskapi/memory.go`, `ts/src/storybook/task-fixture.ts`).
-   `RELATES`를 여기서 켠다.
+1. ~~`proto/cxz/task_link.proto` + 오버레이(§4 마지막 항목) + `pd gen`~~ — 됐다.
+   손으로 쓴 코드 없이 CRUD가 산다.
+2. ~~`internal/taskapi`에 링크 규칙(§5) + `server/lifecycle/task_link.go`의 라우팅 +
+   `Patch`/`Apply` 거부~~ — 됐다. `internal/taskapi/link.go`와
+   `server/lifecycle/task_link.go`. 테스트는 `server/lifecycle/task_link_test.go`:
+   자기 링크, 2-고리, 3-고리, 프로젝트 교차, 중복 재시도, `RELATES` 거부, task당 상한,
+   그리고 반대 간선 두 개를 동시에 넣는 경합(하나만 통과한다).
+3. ~~파생 `blocked` + `Claim` 거부(§6) + MCP 도구와 뷰(§7)~~ — 됐다. `Claim`의 거부는
+   `internal/taskapi/service.go`, 도구 둘과 뷰는 `internal/taskmcp/link.go`.
+   공유 계약(`internal/taskmcptest`)이 둘을 **양쪽 어댑터**에서 확인한다 — 실제 스택과
+   샌드박스. 그래서 샌드박스에도 메모리 링크 저장소를 만들었다
+   (`internal/taskapi/memory_link.go`); 거부는 전부 `LinkService`에 있으므로 정책이
+   두 벌이 되지는 않았다.
+4. **남은 것**: 웹. 카탈로그에 링크용 watch 스트림, 보드 배지,
+   `task-dialog.tsx`의 링크 구획, `ts/src/storybook/task-fixture.ts`. 샌드박스의
+   `MemoryLinks`는 `Watch`를 구현하지 않았다 — 지금 링크 스트림을 읽는 것이 없고, 빈
+   스냅샷을 영원히 보내는 스트림은 거부보다 나쁜 답이다. `RELATES`도 여기서 켠다.
 
-1–3이 핵이고 3 없이는 쓸 수 없다. 4는 뒤로 미뤄도 에이전트는 이미 쓸 수 있다.
+1–3이 핵이고 3 없이는 쓸 수 없다. 4 없이도 에이전트는 이미 쓸 수 있다 — 지금 그
+상태다.
 
 ## 9. 결정의 나머지와 범위 밖
 
@@ -359,3 +374,33 @@ enum TaskLinkKind {
 - **아직 결정하지 않은 것은 없다.** 다시 열릴 자리는 둘이다: 프로젝트 간 링크가 실제로
   필요해지는 날(§2 — 그때는 이 설계보다 큰 기능이 먼저다), 그리고 `Claim` 거부가 과하다고
   판명되는 날(§6 — 한 줄 지우면 C다).
+
+## 10. 구현이 뒤집은 것
+
+세 가지가 짐작과 달랐다. 셋 다 코드가 있는 지금의 상태이고, 위의 §4·§5·§7은 그에
+맞춰 읽어야 한다.
+
+**(a) `TaskLink`에 `project` edge를 더했다.** §4의 정의에는 없었다. 없으면 생성되는
+`TaskLinkFilter`에 프로젝트가 없고, "이 프로젝트의 링크 전부"가 서버 측 필터가 아니라
+레이어가 믿어야 하는 스캔이 된다 — 순환 검사가 매번 하는 읽기가 바로 그것이다.
+`Task`가 같은 edge를 갖는 이유와 같아서, 필드 번호도 같은 자리(8)에 두고 `source`·
+`target`·`kind`를 9·10·11로 밀었다. 비용은 열 하나다.
+
+**(b) 상한은 지워지지 않은 링크 전부를 센다. "열린 것만"이 아니다.** §5는 끝난
+blocker의 링크를 상한에서 빼겠다고 적었는데, 구현해 보니 둘이 어긋난다. 순환 검사는
+blocker가 끝났든 아니든 **그 간선을 걸어야 한다** — 끝난 blocker는 막기를 멈출 뿐
+간선이 사라지는 것이 아니고, 고리는 구조이기 때문이다. 그래서 검사가 읽는 것은 지워지지
+않은 링크 전부이고, 상한이 세야 하는 것도 그것이다. 상태를 알아야만 세는 쪽으로 가면
+`Add`마다 프로젝트의 task 전부를 한 번 더 읽어야 한다. 끝난 blocker의 링크를 **남긴다**는
+결정(결정 6)은 그대로다. 500에 닿으면 기록이 아닌 링크를 지우라고 에러가 말한다.
+
+**(c) `task_list`에 "막히지 않은 것만" 옵션을 두지 않았다.** §7에 적었던 것인데, 막힘은
+파생 값이라 서버가 거를 수 없다. 페이지를 자른 뒤에 거르면 `limit`과 `next`가 거짓말을
+한다 — 20개를 달라고 해서 3개가 오고, 다음 커서는 거른 것을 세지 않는다. 대신 각 항목에
+`blocked`를 싣고, 무엇에 막혔는지는 `task_get`이 말한다. `instructions.txt`가 막힌 일은
+claim되지 않으니 blocker를 집으라고 적는다.
+
+덧붙여 짐작대로였던 것: 같은 타입을 가리키는 edge 두 개는 생성된다. enum은
+`list: by:`에 들어가지 않는다. `Patch`에 쓸 수 있는 필드가 없어서 `Patch`/`Apply`는
+거부한다. `client_id`의 부분 유니크 인덱스가 중복을 멱등하게 만든다 — 그리고 링크를
+끊은 뒤 다시 거는 것까지 되는지는 테스트가 확인한다.

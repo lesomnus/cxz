@@ -79,8 +79,9 @@ The [task relations plan](plans/task-relations.md) is about the thing a task
 cannot say today: that it is blocked by another task. It measures what is
 missing, benchmarks eight task trackers on relation kinds, cycle handling and
 status effects, and settles on a `TaskLink` join entity with cycles refused and
-blockedness derived rather than stored. Decided, not implemented: the six
-decisions are listed at the top of it and the work is staged in four steps.
+blockedness derived rather than stored. Implemented except for the web surface;
+the six decisions are listed at the top of it, the three the implementation
+reversed at the bottom.
 
 ## Generated code
 
