@@ -16,6 +16,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/networkservices"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/webconfig"
 	"github.com/lesomnus/cxz/internal/webui"
@@ -32,6 +33,11 @@ func InstallWeb(ctx context.Context, root string, cfg webconfig.Config, out io.W
 	if err != nil {
 		return fmt.Errorf("install the Manager first: %w", err)
 	}
+	ctx, release, err := networkservices.LockHost(ctx, v.Container, v.Owner)
+	if err != nil {
+		return err
+	}
+	defer release()
 	manager, err := dockerx.Owned(ctx, v.Container, v.Owner, "")
 	if err != nil {
 		return err
@@ -60,10 +66,20 @@ func RefreshWebLocked(ctx context.Context, root string, out io.Writer) error {
 	if err = json.Unmarshal(b, &cfg); err != nil {
 		return err
 	}
-	v, err := liveInstallation(ctx, root)
+	v, err := transport.Load(root)
 	if err != nil {
 		return err
 	}
+	ctx, release, err := networkservices.LockHost(ctx, v.Container, v.Owner)
+	if err != nil {
+		return err
+	}
+	defer release()
+	v, err = liveInstallation(ctx, root)
+	if err != nil {
+		return err
+	}
+
 	old, exists, err := findWeb(ctx, v)
 	if err != nil || !exists {
 		return err
@@ -301,6 +317,16 @@ func UninstallWeb(ctx context.Context, root string) error {
 	if err != nil {
 		return err
 	}
+	ctx, release, err := networkservices.LockHost(ctx, v.Container, v.Owner)
+	if err != nil {
+		return err
+	}
+	defer release()
+	v, err = liveInstallation(ctx, root)
+	if err != nil {
+		return err
+	}
+
 	return removeWeb(ctx, v)
 }
 

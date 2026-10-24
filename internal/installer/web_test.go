@@ -110,10 +110,11 @@ func fakeWebDocker(t *testing.T, root string) string {
 printf '%s\n' "$*" >> "$WEB_TEST_ROOT/calls"
 case "$1" in
  ps) if [ ! -e "$WEB_TEST_ROOT/renamed" ] && [ "$WEB_TEST_MISSING" != 1 ]; then echo old; fi;;
- inspect) if [ "$2" = manager ]; then printf '[{"Id":"manager","Config":{"Image":"fixture:new","Labels":{"cxz.owner":"fixture","cxz.role":"daemon"}},"State":{"Running":true}}]'; exit 0; fi
+ inspect) if [ "$2" = manager ]; then printf '[{"Id":"manager","Config":{"Image":"fixture:new","Labels":{"cxz.owner":"fixture","cxz.role":"daemon"}},"State":{"Running":true},"Mounts":[{"Type":"volume","Name":"fixture-state","Destination":"/var/lib/cxz"}]}]'; exit 0; fi
           printf '[{"Id":"old","Config":{"Image":"fixture:old","Labels":{"cxz.owner":"%s","cxz.role":"%s"}},"State":{"Running":%s}}]' "${WEB_TEST_OWNER:-fixture}" "${WEB_TEST_ROLE:-web}" "${WEB_TEST_RUNNING:-true}";;
  rename) if [ "$3" = manager-web ]; then rm -f "$WEB_TEST_ROOT/renamed"; else touch "$WEB_TEST_ROOT/renamed"; fi;;
- run) if [ "$WEB_TEST_UNSUPPORTED" = 1 ]; then exit 1; fi
+ run) case "$*" in *cxz.role=network-lock*) printf 'locked\n'; cat >/dev/null; exit 0;; esac
+      if [ "$WEB_TEST_UNSUPPORTED" = 1 ]; then exit 1; fi
       if [ "$2" = -d ] && [ "$WEB_TEST_FAIL" = 1 ]; then exit 1; fi;;
  *) ;;
 esac

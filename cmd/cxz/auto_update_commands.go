@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
+	"github.com/lesomnus/cxz/internal/networkservices"
 	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
@@ -138,6 +139,10 @@ func localUpdateCommand(ctx context.Context, root, action string) ([]byte, error
 		attempts = attempts[len(attempts)-5:]
 	}
 	out := map[string]any{"channel": channel, "enabled": policy.Active(), "running": cxzupdate.Current(), "update": state, "attempts": attempts}
+	if container, owner := os.Getenv("CXZ_MANAGER_CONTAINER"), os.Getenv("CXZ_OWNER"); container != "" && owner != "" {
+		out["network_services"] = networkservices.Inspect(ctx, container, owner)
+	}
+
 	for k, v := range rolloutDetail(ctx, root) {
 		out[k] = v
 	}
