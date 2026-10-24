@@ -1,6 +1,6 @@
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useId, useRef, useState } from "react";
-import { Button, DialogCard, DialogActions } from "@lesomnus/nox";
+import { Button, Card, CardActions } from "@lesomnus/nox";
 import { useNavigate } from "@tanstack/react-router";
 import { requiredSessionLogin } from "#src/features/accounts/login-required.ts";
 import type { Project } from "#gen/cxz/project_pb";
@@ -114,12 +114,12 @@ export function SessionCreate({
           void createSession();
         }}
       >
-        <DialogCard
+        <Card
           title="Add session"
           close={busy ? undefined : close}
           closeLabel="Close"
           footer={
-            <DialogActions>
+            <CardActions>
               <Button
                 type="submit"
                 form={formId}
@@ -130,7 +130,7 @@ export function SessionCreate({
               <Button type="button" disabled={busy} onClick={close}>
                 Cancel
               </Button>
-            </DialogActions>
+            </CardActions>
           }
         >
           <div className={styles.list}>
@@ -192,7 +192,7 @@ export function SessionCreate({
               />
             )}
           </div>
-        </DialogCard>
+        </Card>
       </form>
     </AnchoredDialog>
   );

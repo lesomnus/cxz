@@ -1,6 +1,6 @@
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useEffect, useId, useRef, useState } from "react";
-import { Button, DialogActions, DialogCard } from "@lesomnus/nox";
+import { Button, CardActions, Card } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Project } from "#gen/cxz/project_pb";
@@ -168,12 +168,12 @@ function TaskEditor({
           void mutate();
         }}
       >
-        <DialogCard
+        <Card
           title={task ? "Task details" : "Add task"}
           close={busy ? undefined : close}
           closeLabel="Close"
           footer={
-            <DialogActions>
+            <CardActions>
               {owned && (
                 <Button
                   type="button"
@@ -193,7 +193,7 @@ function TaskEditor({
               <Button type="button" disabled={busy} onClick={close}>
                 Cancel
               </Button>
-            </DialogActions>
+            </CardActions>
           }
         >
           <fieldset className={styles.form} disabled={busy}>
@@ -325,7 +325,7 @@ function TaskEditor({
               Reload latest task
             </Button>
           )}
-        </DialogCard>
+        </Card>
       </form>
       {confirmRelease && (
         <ConfirmationDialog
@@ -402,7 +402,7 @@ export function TaskDialog({
           reload={detail.reload}
         />
       ) : (
-        <DialogCard title="Task details" close={close} closeLabel="Close">
+        <Card title="Task details" close={close} closeLabel="Close">
           {detail.error ? (
             <>
               <p role="alert">{detail.error}</p>
@@ -413,7 +413,7 @@ export function TaskDialog({
           ) : (
             <p role="status">Loading task…</p>
           )}
-        </DialogCard>
+        </Card>
       )}
     </AnchoredDialog>
   );

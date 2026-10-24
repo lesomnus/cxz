@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useId } from "react";
-import { Button, DialogCard, DialogActions } from "@lesomnus/nox";
+import { Button, Card, CardActions } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
@@ -60,13 +60,13 @@ export function AccountAddForm({
           }
         }}
       >
-        <DialogCard
+        <Card
           title="Add account"
           close={busy ? undefined : close}
           closeLabel="Close"
           data-entered="true"
           footer={
-            <DialogActions>
+            <CardActions>
               <Button
                 type="submit"
                 form={id}
@@ -77,7 +77,7 @@ export function AccountAddForm({
               <Button type="button" disabled={busy} onClick={close}>
                 Cancel
               </Button>
-            </DialogActions>
+            </CardActions>
           }
         >
           <fieldset disabled={busy} className={accountStyles.form}>
@@ -118,7 +118,7 @@ export function AccountAddForm({
             </small>
             {error && <p role="alert">{error}</p>}
           </fieldset>
-        </DialogCard>
+        </Card>
       </form>
     </AnchoredDialog>
   );

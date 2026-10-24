@@ -1,6 +1,6 @@
 import { eventListSource } from "#src/features/session/model/event-source.ts";
 import { useId, useRef, useState, type ReactNode } from "react";
-import { Button, ElapsedTime, Drawer, DrawerCard } from "@lesomnus/nox";
+import { Button, ElapsedTime, Drawer, Card } from "@lesomnus/nox";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { WorkGroup } from "#src/features/session/model/work-groups.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -115,7 +115,9 @@ export function WorkDialog({
       restoreFocus={false}
       aria-label={t("Tasks between responses")}
     >
-      <DrawerCard
+      <Card
+        fill
+        bodyPadding="var(--ui-space)"
         title={`${t("Tasks")} · ${work.events.length}`}
         close={() => close()}
         closeLabel={t("Close task dialog")}
@@ -174,7 +176,7 @@ export function WorkDialog({
             </div>
           )}
         </div>
-      </DrawerCard>
+      </Card>
     </Drawer>
   );
 }
