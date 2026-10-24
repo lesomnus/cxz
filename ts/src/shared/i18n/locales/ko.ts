@@ -562,6 +562,8 @@ export const messages = {
   "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "{error}. 연결이 끊긴 경우 결과가 불확실할 수 있습니다. 재시도하기 전에 대화를 확인하세요.",
   "{label} choices": "{label} 선택지",
+  "Scroll {label} choices": "{label} 선택지 스크롤",
+  "Scroll {label}": "{label} 스크롤",
   "{minutes}m {seconds}s": "{minutes}분 {seconds}초",
   "{name} — {scope}: {count} tokens{included}":
     "{name} — {scope}: {count} tokens{included}",

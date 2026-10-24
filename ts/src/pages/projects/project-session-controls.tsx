@@ -1,5 +1,6 @@
 import type { Session } from "#gen/cxz/session_pb";
-import { ActionMenu, Button, ConfirmationDialog } from "@lesomnus/nox";
+import { ActionMenu, Button } from "@lesomnus/nox";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import {
   canControl,

@@ -99,13 +99,13 @@ test("inline editor and modal use independent defaults and injected translations
   await input.press("Enter");
   await expect(trigger).toHaveText("New workspace");
   await page.goto(
-    "/iframe.html?id=components-confirmationdialog--default&viewMode=story",
+    "/iframe.html?id=components-dialog--async-action&viewMode=story",
   );
-  await page.getByRole("button", { name: "Open confirmation" }).click();
+  await page.getByRole("button", { name: "Open operation" }).click();
   await expect(
     page.getByRole("button", { name: "Cancel", exact: true }),
   ).toBeFocused();
-  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("Action completed");
 });
 

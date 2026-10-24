@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { Button, ConfirmationDialog } from "@lesomnus/nox";
+import { Button } from "@lesomnus/nox";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";

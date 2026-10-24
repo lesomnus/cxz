@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { ConfirmationDialog } from "@lesomnus/nox";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { Button } from "@lesomnus/nox";
 
 const meta = {

@@ -1,11 +1,7 @@
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useEffect, useId, useRef, useState } from "react";
-import {
-  Button,
-  ConfirmationDialog,
-  DialogActions,
-  DialogCard,
-} from "@lesomnus/nox";
+import { Button, DialogActions, DialogCard } from "@lesomnus/nox";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
