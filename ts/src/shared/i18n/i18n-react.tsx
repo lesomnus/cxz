@@ -1,6 +1,6 @@
 import { UIProvider } from "@lesomnus/nox";
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
-import { localeStore, resolveLocale, t } from "./i18n";
+import { localeStore, resolveLocale, t, translateKnown } from "./i18n";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import { Button } from "@lesomnus/nox";
 
@@ -29,7 +29,15 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
           </Button>
         </div>
       )}
-      <UIProvider translate={t} locale={locale}>
+      <UIProvider
+        translate={(message, values = {}) =>
+          translateKnown(message).replace(
+            /\{(\w+)\}/g,
+            (placeholder, name: string) => String(values[name] ?? placeholder),
+          )
+        }
+        locale={locale}
+      >
         {children}
       </UIProvider>
     </>
