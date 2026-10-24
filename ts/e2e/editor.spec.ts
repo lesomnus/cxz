@@ -86,7 +86,10 @@ test("editable settings JSON and its worker load under production CSP and save t
     .poll(() => page.evaluate(() => localStorage.getItem("settings")))
     .toBe(raw);
   await expect(
-    page.getByLabel("Global editor Tab display width", { exact: true }),
+    page.getByRole("slider", {
+      name: "Global editor Tab display width",
+      exact: true,
+    }),
   ).toHaveValue("6");
   await expect(
     pane.locator(".view-lines").getByText('"editor.tabSize"', { exact: true }),

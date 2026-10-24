@@ -99,7 +99,10 @@ test("English defaults and only Apply settings downloads the language pack, pres
     .getByRole("link", { name: "에디터", exact: true })
     .click();
   await expect(
-    page.getByLabel("전역 에디터 Tab 문자 표시 폭", { exact: true }),
+    page.getByRole("slider", {
+      name: "전역 에디터 Tab 문자 표시 폭",
+      exact: true,
+    }),
   ).toHaveValue("8");
   await page.screenshot({ path: "test-results/settings-language-ko.png" });
 });

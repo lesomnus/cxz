@@ -480,7 +480,10 @@ test("JSON editing, validation, export and import preserve unknown settings in t
     .getByRole("link", { name: "Editor", exact: true })
     .click();
   await expect(
-    page.getByLabel("Global editor Tab display width", { exact: true }),
+    page.getByRole("slider", {
+      name: "Global editor Tab display width",
+      exact: true,
+    }),
   ).toHaveValue("8");
   await chooseSetting(page, "Global editor Color palette", "warm");
   expect((await stored(page)).future).toEqual({ enabled: true });
@@ -533,7 +536,10 @@ test("JSON editing, validation, export and import preserve unknown settings in t
     .getByRole("link", { name: "Editor", exact: true })
     .click();
   await expect(
-    page.getByLabel("Session editor Tab display width", { exact: true }),
+    page.getByRole("slider", {
+      name: "Session editor Tab display width",
+      exact: true,
+    }),
   ).toHaveValue("6");
   await page.screenshot({
     path: "test-results/settings-editor.png",
@@ -595,7 +601,10 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
     page.locator(".settings-page p[role=alert]:visible"),
   ).toContainText("Invalid settings file");
   await expect(
-    page.getByLabel("Global editor Indentation size", { exact: true }),
+    page.getByRole("slider", {
+      name: "Global editor Indentation size",
+      exact: true,
+    }),
   ).toBeDisabled();
   const source = await file(page);
   await expect.poll(() => readJSON(page, source)).toBe('{"broken"');
@@ -609,7 +618,10 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
     .getByRole("link", { name: "Editor", exact: true })
     .click();
   await expect(
-    page.getByLabel("Global editor Indentation size", { exact: true }),
+    page.getByRole("slider", {
+      name: "Global editor Indentation size",
+      exact: true,
+    }),
   ).toBeEnabled();
   await chooseSetting(page, "Session editor Color palette", "monochrome");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
