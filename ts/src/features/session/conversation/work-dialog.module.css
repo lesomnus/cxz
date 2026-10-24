@@ -30,49 +30,6 @@
   opacity: 1;
   visibility: visible;
 }
-.overlay.overlay {
-  position: fixed;
-  inset: auto;
-  margin: 0;
-  max-width: none;
-  max-height: none;
-  overflow: clip;
-  --work-dialog-gap: calc(2 * var(--ui-space));
-}
-.overlay.overlay::backdrop {
-  background: transparent;
-}
-.backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgb(0 0 0 / 22%);
-  animation: dim-enter var(--ui-dialog-enter-duration) ease-out both;
-}
-.overlay[data-closing="true"] .backdrop {
-  animation: none;
-  opacity: 0;
-  transition: opacity var(--ui-dialog-enter-duration) ease-in;
-}
-.frame {
-  position: absolute;
-  top: var(--work-dialog-gap);
-  right: var(--work-dialog-gap);
-  bottom: var(--work-dialog-gap);
-  width: min(420px, calc(100% - 2 * var(--work-dialog-gap)));
-}
-.frame > div {
-  height: 100%;
-}
-.card.card {
-  height: 100%;
-}
-.card.card :global(.card-body) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: var(--ui-space);
-}
 .layout {
   --ui-scroll-area-background: var(--ui-dialog-body-background);
   display: flex;
@@ -127,20 +84,4 @@
 }
 .details :global(.detail-tab-bar) {
   margin-block: var(--space);
-}
-@keyframes dim-enter {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .backdrop {
-    animation: none;
-  }
-  .overlay[data-closing="true"] .backdrop {
-    transition: none;
-  }
 }

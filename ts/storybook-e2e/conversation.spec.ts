@@ -183,7 +183,7 @@ test("tool details stay inside the work dialog and dismiss on backdrop clicks", 
   await expect(drawer.getByRole("tabpanel")).toContainText("main");
   await expect(drawer.locator(".detail-copy")).toBeVisible();
   await drawer
-    .locator("[data-work-backdrop]")
+    .locator('[data-drawer="backdrop"]')
     .click({ position: { x: 4, y: 100 } });
   await expect(drawer).toHaveCount(0);
   expect(errors).toEqual([]);
