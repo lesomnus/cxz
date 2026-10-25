@@ -108,15 +108,18 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
           <small>{t("Diagnostics observed by this browser")}</small>
         </div>
         <div className={styles.actions}>
-          <Switch
-            label={t("Live updates")}
-            checked={live}
-            onChange={(value) => {
-              setLive(value);
-              setOffset(0);
-              setRevision((r) => r + 1);
-            }}
-          />
+          <span className={styles.actions}>
+            <small>{t("Live updates")}</small>
+            <Switch
+              label={t("Live updates")}
+              checked={live}
+              onChange={(value) => {
+                setLive(value);
+                setOffset(0);
+                setRevision((r) => r + 1);
+              }}
+            />
+          </span>
           <Button onClick={() => setRevision((r) => r + 1)}>
             {t("Refresh")}
           </Button>

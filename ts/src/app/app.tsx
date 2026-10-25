@@ -59,7 +59,9 @@ export function App({ children }: PropsWithChildren) {
       <div
         style={{ height: "100dvh", display: "flex", flexDirection: "column" }}
       >
-        <RouteLink {...resourceLocation("sessions")}>{t("Back to sessions")}</RouteLink>
+        <RouteLink {...resourceLocation("sessions")}>
+          {t("Back to sessions")}
+        </RouteLink>
         <LogsPage />
       </div>
     );

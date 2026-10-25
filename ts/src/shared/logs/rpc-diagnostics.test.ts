@@ -18,7 +18,7 @@ it("records stream iteration failures, retries and recovery at the same public s
         events: async function* () {
           if (++attempt === 1)
             throw new ConnectError("connection closed", Code.Unavailable);
-          yield { heartbeat: true };
+          yield { heartbeat: true, text: "private response text" };
         },
       }),
     {
@@ -36,6 +36,7 @@ it("records stream iteration failures, retries and recovery at the same public s
   const read = async () => {
     for await (const _ of client.events({
       ref: { key: { case: "id", value: id } },
+      clientId: "private request text",
     })) {
     }
   };
@@ -51,6 +52,8 @@ it("records stream iteration failures, retries and recovery at the same public s
     logs.every((e) => e.session === "00000000-0000-8000-8008-000000000001"),
   ).toBe(true);
   expect(logs[0].details?.code).toBe("Unavailable");
+  expect(JSON.stringify(logs)).not.toContain("private request text");
+  expect(JSON.stringify(logs)).not.toContain("private response text");
 });
 it("does not log normal cancellation, request/response bodies or successful unary calls", async () => {
   const logs: LogInput[] = [];

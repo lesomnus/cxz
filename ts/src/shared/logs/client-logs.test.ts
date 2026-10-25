@@ -45,3 +45,34 @@ it("bounds a burst before it reaches a slow storage queue and falls back on stor
   await logs.flush();
   expect((await logs.query()).total).toBe(258);
 });
+
+it("keeps only one write in flight and a bounded buffer while storage is stalled", async () => {
+  const storage = new MemoryLogStorage();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const append = storage.append.bind(storage);
+  const write = vi
+    .spyOn(storage, "append")
+    .mockImplementationOnce(async (entries) => {
+      await gate;
+      await append(entries);
+    });
+  const logs = new ClientLogs(storage);
+  logs.write(event);
+  const draining = logs.flush();
+  await Promise.resolve();
+  for (let i = 0; i < 500; i++)
+    logs.write({ ...event, message: `while blocked ${i}` });
+  expect(logs.flush()).toBe(draining);
+  expect(write).toHaveBeenCalledOnce();
+  release();
+  await draining;
+  expect(write).toHaveBeenCalledTimes(2);
+  const page = await logs.query();
+  expect(page.total).toBe(258);
+  expect(await logs.export({ search: "records dropped" })).toContain(
+    '"count":244',
+  );
+});

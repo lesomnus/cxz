@@ -245,10 +245,10 @@ const notFoundRoute = createRoute({
         handle === "logs"
           ? "/setting/logs"
           : handle === "editor"
-          ? "/setting/editor"
-          : handle === "connections"
-            ? "/setting/connection"
-            : "/setting/general";
+            ? "/setting/editor"
+            : handle === "connections"
+              ? "/setting/connection"
+              : "/setting/general";
       throw redirect({ to, replace: true });
     }
   },
