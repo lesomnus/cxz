@@ -406,6 +406,11 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			} else if result.State == "updated" {
 				s.State = "waiting"
 				s.Reason = "session updated: " + session.Id
+				if agentBinary != "" {
+					if err := m.promoteAgentDefault(work, p, session.Agent, result); err != nil {
+						s.Reason = "session updated; project agent default: " + err.Error()
+					}
+				}
 			} else {
 				s.State = "waiting"
 				s.Reason = result.Reason
