@@ -35,7 +35,7 @@ func TestBlockedTerminalDoesNotBlockCursorPosition(t *testing.T) {
 	close(sink.release)
 	<-done
 	a := r.Stop()
-	if len(a.Events) != 1 || a.Events[0].Kind != "terminal_write" || a.Events[0].Count != len("PRIVATE SCREEN CONTENT") || a.Events[0].Duration < a.Events[0].IO {
+	if len(a.Events) != 1 || a.Events[0].Kind != "terminal_write" || a.Events[0].Count != len("PRIVATE SCREEN CONTENT") || a.Events[0].Duration < a.Events[0].Wait+a.Events[0].IO {
 		t.Fatal(a.Events)
 	}
 	b, _ := json.Marshal(a.Events)
