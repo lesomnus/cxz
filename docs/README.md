@@ -70,8 +70,18 @@ named at the top of it.
 
 The [service boundaries proposal](plans/service-boundaries.md) is about where
 those RPCs live rather than what they do. 26 of `ProjectService`'s 47
-hand-written RPCs do not name a Project, and it proposes which service each
-belongs to. Not implemented: three decisions come first.
+hand-written RPCs did not name a Project; it records which service each went to.
+Implemented: `ProjectService` is down to 12 hand-written RPCs, and
+`InstallationService`, `SkillService`, `McpServerService` and
+`McpConnectionService` carry the rest.
+
+The [task relations plan](plans/task-relations.md) is about the thing a task
+cannot say today: that it is blocked by another task. It measures what is
+missing, benchmarks eight task trackers on relation kinds, cycle handling and
+status effects, and settles on a `TaskLink` join entity with cycles refused and
+blockedness derived rather than stored. Implemented except for the web surface;
+the six decisions are listed at the top of it, the three the implementation
+reversed at the bottom.
 
 ## Generated code
 

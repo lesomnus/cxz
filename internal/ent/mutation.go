@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/session"
 	"github.com/lesomnus/cxz/internal/ent/task"
+	"github.com/lesomnus/cxz/internal/ent/tasklink"
 	"github.com/lesomnus/cxz/internal/ent/tenant"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/protobuf-orm/ent"
@@ -42,6 +43,7 @@ const (
 	TypeProject     = "Project"
 	TypeSession     = "Session"
 	TypeTask        = "Task"
+	TypeTaskLink    = "TaskLink"
 	TypeTenant      = "Tenant"
 )
 
@@ -2871,6 +2873,278 @@ func (m *TaskMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldProjectId(ctx)
 	}
 	return nil, fmt.Errorf("unknown Task field %s", name)
+}
+
+// TaskLinkMutation represents an operation that mutates the TaskLink nodes in the graph.
+type TaskLinkMutation struct {
+	tasklink.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*TaskLink, error)
+}
+
+var _ ent.Mutation = (*TaskLinkMutation)(nil)
+
+// tasklinkOption allows management of the mutation configuration using functional options.
+type tasklinkOption func(*TaskLinkMutation)
+
+// newTaskLinkMutation creates new mutation for the TaskLink entity.
+func newTaskLinkMutation(c config, op Op, opts ...tasklinkOption) *TaskLinkMutation {
+	m := &TaskLinkMutation{
+		Mutation: *tasklink.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of TaskLink entities.
+func (m *TaskLinkMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TaskLinkMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withTaskLinkId sets the Id field of the mutation.
+func withTaskLinkId(id uuid.UUID) tasklinkOption {
+	return func(m *TaskLinkMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *TaskLink
+		)
+		m.oldValue = func(ctx context.Context) (*TaskLink, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().TaskLink.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTaskLink sets the old TaskLink of the mutation.
+func withTaskLink(node *TaskLink) tasklinkOption {
+	return func(m *TaskLinkMutation) {
+		m.oldValue = func(context.Context) (*TaskLink, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TaskLinkMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TaskLinkMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TaskLinkMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().TaskLink.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the TaskLink entity.
+// If the TaskLink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskLinkMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateErased returns the old "date_erased" field's value of the TaskLink entity.
+// If the TaskLink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskLinkMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the TaskLink entity.
+// If the TaskLink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskLinkMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldKind returns the old "kind" field's value of the TaskLink entity.
+// If the TaskLink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskLinkMutation) OldKind(ctx context.Context) (v int32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldKind requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// OldClientId returns the old "client_id" field's value of the TaskLink entity.
+// If the TaskLink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskLinkMutation) OldClientId(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldClientId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldClientId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClientId: %w", err)
+	}
+	return oldValue.ClientId, nil
+}
+
+// OldProjectId returns the old "project_id" field's value of the TaskLink entity.
+// If the TaskLink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskLinkMutation) OldProjectId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldProjectId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldProjectId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectId: %w", err)
+	}
+	return oldValue.ProjectId, nil
+}
+
+// OldSourceId returns the old "source_id" field's value of the TaskLink entity.
+// If the TaskLink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskLinkMutation) OldSourceId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSourceId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSourceId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceId: %w", err)
+	}
+	return oldValue.SourceId, nil
+}
+
+// OldTargetId returns the old "target_id" field's value of the TaskLink entity.
+// If the TaskLink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskLinkMutation) OldTargetId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldTargetId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldTargetId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTargetId: %w", err)
+	}
+	return oldValue.TargetId, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TaskLinkMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case tasklink.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case tasklink.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case tasklink.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case tasklink.FieldKind:
+		return m.OldKind(ctx)
+	case tasklink.FieldClientId:
+		return m.OldClientId(ctx)
+	case tasklink.FieldProjectId:
+		return m.OldProjectId(ctx)
+	case tasklink.FieldSourceId:
+		return m.OldSourceId(ctx)
+	case tasklink.FieldTargetId:
+		return m.OldTargetId(ctx)
+	}
+	return nil, fmt.Errorf("unknown TaskLink field %s", name)
 }
 
 // TenantMutation represents an operation that mutates the Tenant nodes in the graph.

@@ -1,0 +1,74 @@
+edition = "2023";
+package cxz;
+import "cxz/project.proto";
+import "cxz/task.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// One directed link between two tasks of the same project.
+//
+// `source` blocks `target`. Only one row is stored and the other direction is a
+// read: "what blocks me" lists by `target`, "what I block" lists by `source`.
+// Nothing in this repository -- and nothing in the eight trackers surveyed in
+// docs/plans/task-relations.md -- stores a relation twice.
+//
+// It is an entity of its own rather than a field on Task because a task may be
+// blocked by several and a link carries a kind, which an edge cannot say. Both
+// endpoints must be in the same project: a task row lives in that project
+// runtime's resources.db, so a link across two projects has no single database
+// to live in and no process that can read both ends. The layer refuses one and
+// says so. Supporting it later needs the thing every cross-project task read is
+// already waiting on -- a manager-side fan-out across runtimes -- not a change
+// here; the request messages already carry a project on both endpoints.
+//
+// `kind` cannot appear in `list: by:`: the generator refuses an enum there,
+// because a filter compares for equality and it does not write that for an
+// enum. Selecting by kind is the layer's job, which costs nothing -- it reads
+// the project's links by `target` and filters in memory.
+message TaskLink {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  // The project both endpoints belong to. Redundant with the tasks, which carry
+  // it -- and kept anyway, for the two reasons Task keeps it: it gives List a
+  // server-side filter, so reading a project's links is one query and not a scan
+  // the layer has to trust, and it lets a row say which project it is in without
+  // reading two others.
+  Project project = 8 [(orm.edge) = {immutable: true}];
+  // The task that blocks. Immutable: a link is added and removed, never aimed
+  // somewhere else, so there is no Patch to write (see the layer, which refuses
+  // Patch and Apply for exactly that reason).
+  Task source = 9 [(orm.edge) = {immutable: true}];
+  // The task that is blocked.
+  Task target = 10 [(orm.edge) = {immutable: true}];
+  TaskLinkKind kind = 11 [(orm.field) = {immutable: true}];
+  // Set by the layer, not the caller: `<source>:<kind>:<target>`. The unique
+  // index below is partial -- it covers the rows that are not erased -- so this
+  // makes adding the same link twice a retry that returns the row, and leaves an
+  // unlinked pair free to be linked again.
+  string client_id = 16 [(orm.field) = {unique: true, immutable: true}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [{name: "page", refs: [{name: "date_created", number: 15}, {name: "id", number: 1}]}]
+  };
+  option (payday.entity) = {
+    domain: 13
+    global: {}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "project"}, {name: "source"}, {name: "target"}], size: 100, max: 500}
+    watch: {}
+  };
+}
+
+enum TaskLinkKind {
+  TASK_LINK_KIND_UNSPECIFIED = 0;
+  // `source` must be done or canceled before `target` can be claimed.
+  TASK_LINK_KIND_BLOCKS = 1;
+  // Undirected: the two tasks are worth reading together. Defined here so the
+  // field never has to change, and refused by the layer until the surfaces that
+  // make it useful exist. See docs/plans/task-relations.md §9.
+  TASK_LINK_KIND_RELATES = 2;
+}

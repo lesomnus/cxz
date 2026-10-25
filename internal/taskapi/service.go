@@ -20,6 +20,9 @@ type Service struct {
 	resource.TaskServiceServer
 	Project func(context.Context, *resource.ProjectRef) (*resource.Project, error)
 	Session func(context.Context, *resource.SessionRef) (*resource.Session, error)
+	// Blockers answers the tasks that still block this one, and is what Claim
+	// refuses on. Nil where links are not served, which leaves Claim as it was.
+	Blockers func(context.Context, *resource.Task) ([]*resource.Task, error)
 }
 
 type actionKey struct{}
@@ -263,6 +266,20 @@ func (s Service) Claim(ctx context.Context, r *resource.TaskClaimRequest) (*reso
 	}
 	if v.GetAssignee() != "" || v.GetStatus() != resource.TaskStatus_TASK_STATUS_TODO {
 		return nil, status.Error(codes.FailedPrecondition, "task is already owned or not Todo")
+	}
+	// Being blocked is checked here and nowhere else. The status a task carries
+	// is the one somebody set, so a link never writes it; what a link does is
+	// refuse the one operation that would start work that cannot proceed. Here
+	// the thing picking up work is an agent, and an agent cannot read an icon.
+	// Editing, canceling and finishing a blocked task all stay possible.
+	if s.Blockers != nil {
+		blockers, err := s.Blockers(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		if reason := Blocked(blockers); reason != "" {
+			return nil, status.Error(codes.FailedPrecondition, reason)
+		}
 	}
 	return s.TaskServiceServer.Patch(actionContext(ctx, resource.TaskService_Claim_FullMethodName), resource.TaskPatchRequest_builder{
 		Ref: resource.TaskRef_builder{Id: v.GetId()}.Build(), DateUpdated: r.GetDateUpdated(), Assignee: proto.String(a.GetRuntimeId()),

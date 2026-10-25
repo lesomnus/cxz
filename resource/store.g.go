@@ -36,6 +36,7 @@ type Server interface {
 	Outbox() OutboxServiceServer
 	Session() SessionServiceServer
 	Task() TaskServiceServer
+	TaskLink() TaskLinkServiceServer
 }
 
 // RegisterServer registers every service of `s` with `g`.
@@ -53,6 +54,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterOutboxServiceServer(g, s.Outbox())
 	RegisterSessionServiceServer(g, s.Session())
 	RegisterTaskServiceServer(g, s.Task())
+	RegisterTaskLinkServiceServer(g, s.TaskLink())
 }
 
 type UnimplementedServer struct {
@@ -66,6 +68,7 @@ type UnimplementedServer struct {
 	OutboxServer      OutboxServiceServer
 	SessionServer     SessionServiceServer
 	TaskServer        TaskServiceServer
+	TaskLinkServer    TaskLinkServiceServer
 }
 
 func (UnimplementedServer) Account() AccountServiceServer { return UnimplementedAccountServiceServer{} }
@@ -82,6 +85,9 @@ func (UnimplementedServer) Holder() HolderServiceServer   { return Unimplemented
 func (UnimplementedServer) Outbox() OutboxServiceServer   { return UnimplementedOutboxServiceServer{} }
 func (UnimplementedServer) Session() SessionServiceServer { return UnimplementedSessionServiceServer{} }
 func (UnimplementedServer) Task() TaskServiceServer       { return UnimplementedTaskServiceServer{} }
+func (UnimplementedServer) TaskLink() TaskLinkServiceServer {
+	return UnimplementedTaskLinkServiceServer{}
+}
 
 type StaticServer struct {
 	AccountServer     AccountServiceServer
@@ -94,6 +100,7 @@ type StaticServer struct {
 	OutboxServer      OutboxServiceServer
 	SessionServer     SessionServiceServer
 	TaskServer        TaskServiceServer
+	TaskLinkServer    TaskLinkServiceServer
 }
 
 func (s StaticServer) Account() AccountServiceServer         { return s.AccountServer }
@@ -106,6 +113,7 @@ func (s StaticServer) Holder() HolderServiceServer           { return s.HolderSe
 func (s StaticServer) Outbox() OutboxServiceServer           { return s.OutboxServer }
 func (s StaticServer) Session() SessionServiceServer         { return s.SessionServer }
 func (s StaticServer) Task() TaskServiceServer               { return s.TaskServer }
+func (s StaticServer) TaskLink() TaskLinkServiceServer       { return s.TaskLinkServer }
 
 type Client interface {
 	Account() AccountServiceClient
@@ -118,6 +126,7 @@ type Client interface {
 	Outbox() OutboxServiceClient
 	Session() SessionServiceClient
 	Task() TaskServiceClient
+	TaskLink() TaskLinkServiceClient
 }
 
 func NewClient(c *grpc.ClientConn) Client {
@@ -132,6 +141,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Outbox:      NewOutboxServiceClient(c),
 		_Session:     NewSessionServiceClient(c),
 		_Task:        NewTaskServiceClient(c),
+		_TaskLink:    NewTaskLinkServiceClient(c),
 	}
 }
 
@@ -146,6 +156,7 @@ type client struct {
 	_Outbox      OutboxServiceClient
 	_Session     SessionServiceClient
 	_Task        TaskServiceClient
+	_TaskLink    TaskLinkServiceClient
 }
 
 func (c *client) Account() AccountServiceClient         { return c._Account }
@@ -158,6 +169,7 @@ func (c *client) Holder() HolderServiceClient           { return c._Holder }
 func (c *client) Outbox() OutboxServiceClient           { return c._Outbox }
 func (c *client) Session() SessionServiceClient         { return c._Session }
 func (c *client) Task() TaskServiceClient               { return c._Task }
+func (c *client) TaskLink() TaskLinkServiceClient       { return c._TaskLink }
 
 // Middleware is a server that delegates to another server.
 type Middleware interface {
