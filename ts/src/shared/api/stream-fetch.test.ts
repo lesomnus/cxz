@@ -7,7 +7,11 @@ class Socket {
   sent: unknown[] = [];
   closed = false;
   onopen?: () => void;
-  onclose?: () => void;
+  onclose?: (event?: {
+    code: number;
+    reason: string;
+    wasClean: boolean;
+  }) => void;
   onerror?: () => void;
   onmessage?: (e: { data: unknown }) => void;
   constructor(public url: URL) {
@@ -138,4 +142,17 @@ it("reader cancellation releases the subscription and queue growth is bounded", 
   next.socket.data([1]);
   await expect((await next.response).arrayBuffer()).rejects.toThrow("too slow");
   expect(next.socket.closed).toBe(true);
+});
+it("preserves WebSocket close codes and reasons even after an error event", async () => {
+  const { response, socket } = await connected();
+  const failure = expect(response).rejects.toMatchObject({
+    message: "RPC stream connection failed",
+    closeCode: 1012,
+    closeReason: "service restart",
+    wasClean: true,
+  });
+  socket.onerror?.();
+  socket.onclose?.({ code: 1012, reason: "service restart", wasClean: true });
+  await failure;
+  expect(socket.closed).toBe(true);
 });

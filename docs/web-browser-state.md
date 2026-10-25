@@ -9,6 +9,7 @@ Manager setting and does not follow the user to another device or origin.
 | Conversation/editor split and file explorer width | localStorage, key `cxz.layout.v1`, JSON `{ "session": 940, "file": 240 }` in CSS pixels | Across refresh and browser restarts |
 | Session drafts, paste contents and cursor selections | sessionStorage, `cxz.draft.v1:` keys scoped by connection/session, with separate selection records | Across refresh within the tab |
 | Unread completion/error state and notification cursors | sessionStorage, `cxz.attention.v1:` key scoped by connection | Across refresh within the tab |
+| Browser diagnostics | OPFS `cxz-client-logs-v1`, rotating JSONL; bounded memory fallback | Across reload/restart until size rotation, browser eviction, site-data clearing or explicit Clear; [contract](web-client-logs.md) |
 | Project collapse state, file tree expansion, open editor state and conversation cache | React state / authenticated Connection memory | Until the owning component or connection is recreated |
 
 The two saved widths are shared across projects and sessions on that origin.

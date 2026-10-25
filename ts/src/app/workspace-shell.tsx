@@ -292,6 +292,7 @@ export function Workspace({
                     ["general", "/setting/general", t("General")],
                     ["editor", "/setting/editor", t("Editor")],
                     ["connections", "/setting/connection", t("Connections")],
+                    ["logs", "/setting/logs", t("Logs")],
                   ] as const
                 ).map(([topic, to, label]) => (
                   <PanelLink

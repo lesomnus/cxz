@@ -1,5 +1,28 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Logs: "Logs",
+  "Diagnostics observed by this browser":
+    "Diagnostics observed by this browser",
+  "Live updates": "Live updates",
+  "Download filtered logs": "Download filtered logs",
+  "Clear logs": "Clear logs",
+  "Search logs": "Search logs",
+  "Log level": "Log level",
+  "Log category": "Log category",
+  "All levels": "All levels",
+  "All categories": "All categories",
+  "Connection URL": "Connection URL",
+  "Project UUID": "Project UUID",
+  "Session UUID": "Session UUID",
+  "Memory only": "Memory only",
+  "{count} matching records": "{count} matching records",
+  "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).":
+    "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).",
+  "Client logs": "Client logs",
+  Time: "Time",
+  Level: "Level",
+  "No matching logs": "No matching logs",
+  Previous: "Previous",
   "Canonical UUID used to identify this project across APIs and links.":
     "Canonical UUID used to identify this project across APIs and links.",
 

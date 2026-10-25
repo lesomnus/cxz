@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { browserSpeechLanguage } from "./speech-language";
+import { clientLogs } from "#src/shared/logs/client-logs.ts";
 
 // Web Speech is not yet included in TypeScript's DOM declarations.
 type RecognitionResult = {
@@ -64,6 +65,12 @@ export function useSpeechInput({
     setErrorMessage(message);
     // Diagnostic metadata only; never log audio or recognized text.
     console.warn("Voice input failed", { code, message, language });
+    clientLogs().write({
+      level: "warn",
+      category: "client",
+      message: "Voice input failed",
+      details: { code, error: message, language },
+    });
     cancel();
   }
 

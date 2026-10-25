@@ -1,5 +1,27 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  Logs: "로그",
+  "Diagnostics observed by this browser": "이 브라우저에서 관측한 진단 기록",
+  "Live updates": "실시간 갱신",
+  "Download filtered logs": "검색한 로그 다운로드",
+  "Clear logs": "로그 전체 삭제",
+  "Search logs": "로그 검색",
+  "Log level": "로그 레벨",
+  "Log category": "로그 분류",
+  "All levels": "모든 레벨",
+  "All categories": "모든 분류",
+  "Connection URL": "연결 URL",
+  "Project UUID": "프로젝트 UUID",
+  "Session UUID": "세션 UUID",
+  "Memory only": "메모리에만 저장",
+  "{count} matching records": "검색 결과 {count}건",
+  "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).":
+    "로그를 브라우저 저장소에 저장할 수 없습니다. 최대 2 MiB를 현재 탭의 메모리에 보관하며 새로고침하면 사라집니다.",
+  "Client logs": "클라이언트 로그",
+  Time: "시각",
+  Level: "레벨",
+  "No matching logs": "검색된 로그가 없습니다",
+  Previous: "이전",
   "Canonical UUID used to identify this project across APIs and links.":
     "API 호출과 링크에서 프로젝트를 식별하는 UUID입니다.",
 

@@ -1,3 +1,5 @@
+import { RPCStreamError } from "#src/shared/logs/rpc-diagnostics.ts";
+
 // HTTP/1.1 has a small origin-wide connection pool, shared by every tab.
 // Connect's long-lived subscriptions use WebSockets on plaintext origins so
 // ordinary reads and writes never wait behind those subscriptions. HTTPS keeps
@@ -91,8 +93,21 @@ async function streamFetch(url: URL, init: RequestInit, headers: Headers) {
         fail(error);
       }
     };
-    socket.onerror = () => fail(new TypeError("RPC stream connection failed"));
-    socket.onclose = () => fail(new TypeError("RPC stream disconnected"));
+    let connectionFailed = false;
+    socket.onerror = () => {
+      connectionFailed = true;
+    };
+    socket.onclose = (event) =>
+      fail(
+        new RPCStreamError(
+          connectionFailed
+            ? "RPC stream connection failed"
+            : "RPC stream disconnected",
+          event?.code ?? 1006,
+          event?.reason ?? "",
+          event?.wasClean ?? false,
+        ),
+      );
     init.signal?.addEventListener("abort", aborted, { once: true });
     if (init.signal?.aborted) aborted();
   });

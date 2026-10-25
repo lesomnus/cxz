@@ -18,12 +18,16 @@ import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { ConversationCache } from "#src/features/session/model/conversation-cache.ts";
 import { SessionAttention } from "#src/features/session/model/session-attention.ts";
 import { rpcFetch } from "./stream-fetch";
+import {
+  publicUUID,
+  rpcDiagnostics,
+} from "#src/shared/logs/rpc-diagnostics.ts";
 
 // All client state belongs to one authenticated Connection. No credentials or
 // conversation cache are persisted in localStorage. Drafts use tab-local storage.
 export class Connection {
   readonly clientId = crypto.randomUUID();
-  readonly transport;
+  readonly transport: Transport;
   readonly store;
   readonly queries;
   readonly projects;
@@ -35,7 +39,7 @@ export class Connection {
   readonly bindings;
   readonly tasks;
   readonly taskCatalog;
-  readonly inventory;
+  readonly inventory: ResourceInventory;
   readonly attention;
   readonly conversations;
   // Original paste bodies stay in this authenticated connection's memory, like drafts.
@@ -58,6 +62,24 @@ export class Connection {
       createConnectTransport({
         baseUrl,
         fetch: rpcFetch,
+        interceptors: [
+          rpcDiagnostics(baseUrl, {
+            resolve: (kind, ref): string | undefined => {
+              const rows =
+                kind === "session"
+                  ? this.inventory?.snapshot().sessions
+                  : this.inventory?.snapshot().projects;
+              const resource = rows?.find((row) =>
+                ref.key?.case === "runtimeId" && "runtimeId" in row
+                  ? row.runtimeId === ref.key.value
+                  : ref.key?.case === "alias" && row.alias === ref.key.value,
+              );
+              return resource
+                ? publicUUID({ key: { case: "id", value: resource.id } })
+                : undefined;
+            },
+          }),
+        ],
       });
     this.store = Store.open(entities, {
       name: "cxz",

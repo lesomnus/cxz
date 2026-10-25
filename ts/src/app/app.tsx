@@ -6,8 +6,14 @@ import { Connection, authenticate } from "#src/shared/api/connection.ts";
 import { Button } from "@lesomnus/nox";
 import { Workspace } from "./workspace-shell";
 import "#src/app/styles/style.css";
+import { useWorkspaceRoute } from "./router";
+import { LogsPage } from "#src/pages/settings/logs-page.tsx";
+import { RouteLink } from "#src/shared/navigation/route-link.tsx";
+import { recordClientError } from "#src/shared/logs/client-logs.ts";
+import { resourceLocation } from "#src/shared/navigation/resource-route.ts";
 export function App({ children }: PropsWithChildren) {
   useLocale();
+  const route = useWorkspaceRoute();
   const [connection, setConnection] = useState<Connection>();
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
@@ -17,7 +23,10 @@ export function App({ children }: PropsWithChildren) {
       .then((r) => {
         if (r.ok) setConnection(new Connection());
       })
-      .catch(() => setError(t("Cannot reach cxz")));
+      .catch((error: unknown) => {
+        recordClientError(error, "Cannot reach cxz");
+        setError(t("Cannot reach cxz"));
+      });
   }, []);
   async function login(e: React.FormEvent) {
     e.preventDefault();
@@ -41,6 +50,19 @@ export function App({ children }: PropsWithChildren) {
     connection?.dispose();
     setConnection(undefined);
   }
+  if (
+    !connection &&
+    route.resource === "settings" &&
+    route.settingsTopic === "logs"
+  )
+    return (
+      <div
+        style={{ height: "100dvh", display: "flex", flexDirection: "column" }}
+      >
+        <RouteLink {...resourceLocation("sessions")}>{t("Back to sessions")}</RouteLink>
+        <LogsPage />
+      </div>
+    );
   if (!connection)
     return (
       <main className="login">
@@ -61,6 +83,7 @@ export function App({ children }: PropsWithChildren) {
         </form>
         <p role="alert">{error}</p>
         <small>{location.origin}</small>
+        <RouteLink to="/setting/logs">{t("Logs")}</RouteLink>
       </main>
     );
   return (

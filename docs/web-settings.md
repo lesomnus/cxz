@@ -1,5 +1,9 @@
 # Browser settings
 
+**Logs** is a separate settings topic at `/setting/logs` for browser diagnostics,
+filters, JSONL download and deletion. Its rotating OPFS data is separate from
+settings.json; see [browser client logs](web-client-logs.md).
+
 The resource sidebar's **Settings** button opens settings. Topics belong to the left
 panel, **General** first and **Editor** second; there are no top tabs. The settings
 body stays centered at a bounded reading width, with global and session editor groups stacked.

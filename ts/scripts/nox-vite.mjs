@@ -1,9 +1,24 @@
 import { defaultClientConditions, defaultServerConditions } from "vite";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+function clientRevision() {
+  try {
+    return execFileSync("git", ["rev-parse", "--short=12", "HEAD"], {
+      cwd: fileURLToPath(new URL("../..", import.meta.url)),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "unknown";
+  }
+}
 
 // Development reads the submodule's TSX/CSS directly. Production uses the
 // package's compiled public entries at the commit pinned by cxz.
 export function noxConfig(command) {
   return {
+    define: { __CXZ_CLIENT_REVISION__: JSON.stringify(clientRevision()) },
     resolve: {
       conditions: [
         ...(command === "serve" ? ["nox-source"] : []),
