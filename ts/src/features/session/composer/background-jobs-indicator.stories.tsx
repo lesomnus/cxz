@@ -10,7 +10,7 @@ import { SessionService } from "#gen/cxz/session_svc_pb";
 import { BackgroundReport } from "#src/features/activity/background-report.tsx";
 import type { BackgroundTask } from "#src/features/activity/background-tasks.ts";
 import { useSessionBackground } from "#src/features/session/model/use-session-background.ts";
-import { storyEvent } from "#src/storybook/fixtures.ts";
+import { storyEvent, sessionFixtureId } from "#src/storybook/fixtures.ts";
 
 const meta = {
   title: "Conversation/BackgroundJobs",
@@ -93,18 +93,22 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
         ];
     const transport = createRouterTransport((router) => {
       router.service(SessionService, {
-        background: () => ({
-          data: new TextEncoder().encode(
-            JSON.stringify({
-              preview: {
-                Snapshot: true,
-                Tasks: Object.fromEntries(
-                  tasks.map((task) => [task.task_id, task]),
-                ),
-              },
-            }),
-          ),
-        }),
+        background: (request) => {
+          if (request.ref?.key.case !== "id")
+            throw new Error("Background requires a public session UUID");
+          return {
+            data: new TextEncoder().encode(
+              JSON.stringify({
+                preview: {
+                  Snapshot: true,
+                  Tasks: Object.fromEntries(
+                    tasks.map((task) => [task.task_id, task]),
+                  ),
+                },
+              }),
+            ),
+          };
+        },
       });
     });
     return { c: new Connection(location.origin, transport), tasks };
@@ -113,7 +117,11 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
     <ComponentPreview
       backgroundJobs={fixture.tasks.filter((task) => task.active).length}
       backgroundReport={
-        <BackgroundReport c={fixture.c} session="preview" run="preview" />
+        <BackgroundReport
+          c={fixture.c}
+          session={sessionFixtureId()}
+          run="preview"
+        />
       }
     />
   );
@@ -148,21 +156,29 @@ export const EmptyJobList: Story = {
 };
 
 function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
+  const [requests, setRequests] = useState(0);
   const connection = useMemo(
     () =>
       ({
         sessions: {
-          background: async () => ({
-            data: new TextEncoder().encode(
-              JSON.stringify({ preview: { Snapshot: true, Tasks: {} } }),
-            ),
-            lastSeq: 0n,
-          }),
+          background: async (request: {
+            ref?: { key?: { case?: string } };
+          }) => {
+            if (request.ref?.key?.case !== "id")
+              throw new Error("Background requires a public session UUID");
+            setRequests((count) => count + 1);
+            return {
+              data: new TextEncoder().encode(
+                JSON.stringify({ preview: { Snapshot: true, Tasks: {} } }),
+              ),
+              lastSeq: 0n,
+            };
+          },
         },
       }) as unknown as Connection,
     [],
   );
-  const jobs = useSessionBackground(connection, "preview", "preview");
+  const jobs = useSessionBackground(connection, sessionFixtureId(), "preview");
   const sequence = useRef(0);
   const active = useRef<string[]>([]);
   const emit = (data: Record<string, unknown>) => {
@@ -183,7 +199,10 @@ function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
     });
   return (
     <>
-      <div style={{ display: "flex", gap: 4 }}>
+      <div
+        data-background-requests={requests}
+        style={{ display: "flex", gap: 4 }}
+      >
         <Button
           onClick={() => {
             const id = `task-${sequence.current + 1}`;

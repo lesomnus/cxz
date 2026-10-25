@@ -6,6 +6,7 @@ import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import { BackgroundReport } from "#src/features/activity/background-report.tsx";
 import { AuxiliarySettings } from "#src/features/auxiliary/auxiliary-settings.tsx";
 import { resourceFixture } from "./resource-fixture";
+import { sessionFixtureId } from "./fixtures";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { createWorkspaceRouter } from "#src/app/router.tsx";
 import { create } from "@bufbuild/protobuf";
@@ -69,7 +70,7 @@ function ResourcePreview({
       ) : view === "usage" ? (
         <UsageReport c={c} />
       ) : view === "background" ? (
-        <BackgroundReport c={c} session="demo" run="run" />
+        <BackgroundReport c={c} session={sessionFixtureId()} run="run" />
       ) : (
         <AuxiliarySettings c={c} />
       )}

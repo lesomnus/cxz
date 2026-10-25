@@ -150,7 +150,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const visibleApprovals = useVisibleApprovals(pending);
   const background = useSessionBackground(
     c,
-    id,
+    current.data?.id,
     turn.runId || current.data?.status?.runId || "",
   );
   const [error, setError] = useState("");
@@ -775,7 +775,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         content: () => (
           <BackgroundReport
             c={c}
-            session={id}
+            session={s?.id}
             run={turn.runId || s?.status?.runId || ""}
           />
         ),

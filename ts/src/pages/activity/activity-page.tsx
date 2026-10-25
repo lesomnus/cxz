@@ -39,7 +39,7 @@ export function ActivityPage({
           {session ? (
             <BackgroundReport
               c={c}
-              session={id}
+              session={session.id}
               run={session.status?.runId ?? ""}
             />
           ) : (
