@@ -67,7 +67,7 @@ func (m *Manager) stopContainer(ctx context.Context, p *Project) (retErr error) 
 // than applied, because it cannot be applied -- the Dev Container CLI reuses
 // the container it finds and ignores the difference without a word. Applying it
 // means replacing the container, which is the caller's decision to make.
-func (m *Manager) startContainer(ctx context.Context, p *Project) (retErr error) {
+func (m *Manager) startContainer(ctx context.Context, p *Project, agent string) (retErr error) {
 	defer m.recordFailure(ctx, p, &retErr)
 	containers, err := m.owned(ctx, p)
 	if err != nil {
@@ -91,6 +91,11 @@ func (m *Manager) startContainer(ctx context.Context, p *Project) (retErr error)
 		return err
 	}
 	p.ContainerID = result.ContainerID
+	if agent != "" {
+		if err = m.prepareAgent(ctx, p, agent); err != nil {
+			return err
+		}
+	}
 	if err = m.boot(ctx, p); err != nil {
 		return err
 	}

@@ -414,6 +414,9 @@ func (m *Manager) StartContainer(ctx context.Context, r *api.ProjectRequest) (re
 	if err := settings.ValidateModel(r.Model); err != nil {
 		return nil, err
 	}
+	if r.Agent != "" && r.Agent != "claude" && r.Agent != "codex" {
+		return nil, fmt.Errorf("agent must be claude or codex")
+	}
 	path := r.Workspace
 	if path == "" {
 		return nil, fmt.Errorf("workspace required")
@@ -467,13 +470,10 @@ func (m *Manager) StartContainer(ctx context.Context, r *api.ProjectRequest) (re
 		return nil, e
 	}
 	if len(containers) > 0 {
-		if e = m.startContainer(ctx, p); e != nil {
+		if e = m.startContainer(ctx, p, r.Agent); e != nil {
 			return nil, e
 		}
 		return &api.Receipt{ClientId: r.ClientId, Status: "started"}, nil
-	}
-	if r.Agent != "" && r.Agent != "claude" && r.Agent != "codex" {
-		return nil, fmt.Errorf("agent must be claude or codex")
 	}
 	rendered, e := m.render(ctx, p)
 	if e != nil {

@@ -27,8 +27,9 @@ func (s *Server) LoginSession(ctx context.Context, project, account, key string,
 	if !projectid.Same(runtime.ProjectID, project) {
 		return status.Error(codes.PermissionDenied, "login project does not match runtime")
 	}
-	if runtime.Claude == "" {
-		return status.Error(codes.FailedPrecondition, "Claude is not provisioned in this project")
+	binary, err := runtime.AgentBinary("claude")
+	if err != nil {
+		return status.Error(codes.FailedPrecondition, err.Error())
 	}
 	if key == "" || len(key) > 1024 {
 		return status.Error(codes.InvalidArgument, "session creation key required")
@@ -54,5 +55,5 @@ func (s *Server) LoginSession(ctx context.Context, project, account, key string,
 		return err
 	}
 	backend, _ := accounts.Resolve("claude", accounts.ProjectLocalOAuth)
-	return backend.Login(ctx, accounts.LoginRequest{Root: accounts.SessionRoot(s.root, key), Account: account, Workspace: runtime.Workspace, Binary: runtime.Claude, Env: os.Environ(), Input: input, Output: output, Error: output})
+	return backend.Login(ctx, accounts.LoginRequest{Root: accounts.SessionRoot(s.root, key), Account: account, Workspace: runtime.Workspace, Binary: binary, Env: os.Environ(), Input: input, Output: output, Error: output})
 }

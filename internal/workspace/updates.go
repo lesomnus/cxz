@@ -205,6 +205,10 @@ func (m *Manager) rolloutOne(ctx context.Context, state *updateState) {
 				version := state.Versions[s.Agent]
 				if version == binaryVersion(s.Agent, probe.Binary) {
 					key := s.Id + "/" + version
+					if err := m.promoteAgentDefault(work, p, s.Agent, &api.AgentUpdateStatus{State: "updated", Binary: probe.Binary}); err != nil {
+						state.Jobs[key] = updateJob{Project: p.ID, Session: s.Id, Provider: s.Agent, Version: version, State: "default_failed", Reason: err.Error(), At: time.Now()}
+						continue
+					}
 					if job, ok := state.Jobs[key]; ok && job.State != "updated" {
 						job.State = "updated"
 						job.Reason = "replacement observed running"
@@ -258,6 +262,9 @@ func (m *Manager) rolloutOne(ctx context.Context, state *updateState) {
 				} else {
 					job.State = result.State
 					job.Reason = result.Reason
+					if err := m.promoteAgentDefault(work, p, s.Agent, result); err != nil {
+						job.State, job.Reason = "default_failed", err.Error()
+					}
 					if !result.Ready && result.State != "rolled_back" {
 						job.State = "waiting"
 					}
