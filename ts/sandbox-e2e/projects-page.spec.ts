@@ -463,19 +463,22 @@ test("project Stop, Start and Remove move the container and keep the project", a
   await expect(button("Stop")).toBeDisabled();
   await expect(button("Start")).toBeEnabled();
 
-  // Stopping retains a container, so its project stays in the session panel.
+  // Stopped containers are hidden from the session panel too.
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Session list" });
   const group = panel.getByRole("region", {
     name: "Design playground",
     exact: true,
   });
-  await expect(group).toBeVisible();
+  await expect(group).toHaveCount(0);
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
 
   await confirm("Start", "Start project");
   await expect(status).toHaveText("Running");
   await expect(button("Start")).toBeDisabled();
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  await expect(group).toBeVisible();
+  await page.getByRole("link", { name: "Projects view", exact: true }).click();
 
   await confirm("Remove", "Remove container");
   await expect(status).toHaveText("No container");

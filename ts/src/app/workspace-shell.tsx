@@ -310,6 +310,7 @@ export function Workspace({
                   .filter(
                     (p) =>
                       p.status?.containerState !== ContainerState.ABSENT &&
+                      p.status?.containerState !== ContainerState.STOPPED &&
                       sessionsByProject.has(key(p.id)),
                   )
                   .map((p) => (
