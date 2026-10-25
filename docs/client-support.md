@@ -110,6 +110,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | WEB-06 | N/A: browser-specific requirement | N/A: browser-specific requirement | Not implemented |
 | WEB-07 | N/A: developer npm workflow, not a cxz CLI command | N/A | Supported: separate payday WASM design sandbox with shared UI, scenario sessions, seed/pace and reset; production server not required |
 | WEB-08 | N/A: browser-specific requirement | N/A | Supported: wide-view Monaco preview, explicit same-origin OpenVSCode devcontainer connection, project state and WASM fake connection; see [contract](web-editor.md) |
+| WEB-09 | N/A: browser-specific requirement | N/A | Pending until this change merges: Settings → Logs, Worker/OPFS rotation, memory fallback, structured RPC/JS diagnostics, filtering/details/export/clear; [contract and source](web-client-logs.md) |
 
 ## Evidence and updates
 

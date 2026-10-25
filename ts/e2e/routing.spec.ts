@@ -236,3 +236,41 @@ test("an unknown connection never opens the local session with the same alias", 
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toHaveCount(0);
 });
+
+test("client logs are reachable from settings and without an authenticated or reachable Manager", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto("/setting/general");
+  await page.getByRole("link", { name: "Logs", exact: true }).click();
+  await expect(page).toHaveURL(/\/setting\/logs$/);
+  await expect(
+    page.getByRole("heading", { name: "Logs", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
+  // Client-local diagnostics remain readable after signing out.
+  await expect(
+    page.getByRole("heading", { name: "Logs", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Back to sessions", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Connect", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Logs", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Logs", exact: true }),
+  ).toBeVisible();
+  await page.route("**/auth/status", (route) => route.abort());
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Logs", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator("summary").filter({ hasText: "Cannot reach cxz" }),
+  ).toHaveCount(1);
+  await page.goto("/settings/logs");
+  await expect(page).toHaveURL(/\/setting\/logs$/);
+});

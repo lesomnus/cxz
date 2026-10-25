@@ -96,6 +96,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | WEB-06 | Additional mobile connection modes | Evaluate multiple Managers, direct SSH and native shell integration separately; desktop connection support does not establish mobile support. |
 | WEB-07 | Design sandbox | Preview the shared web UI with isolated simulated sessions and timed fake-agent events, reproducible seeds and reset. No real accounts, tools or project mutations; distinguish design fixtures from production integration tests. |
 | WEB-08 | Workspace editor | At 1600px available width, show an 800px conversation and separate read-only project file preview. Explicit Connect opens the selected session project devcontainer through an authenticated IDE tunnel; isolate project state and support fake sandbox connections. See [contract](web-editor.md). |
+| WEB-09 | Browser diagnostics | Inspect client errors and RPC connection/retry/recovery history with source/resource identity, bounded local retention, filtering, details, export and deletion. See [contract](web-client-logs.md). |
 
 ## Shared contracts
 
