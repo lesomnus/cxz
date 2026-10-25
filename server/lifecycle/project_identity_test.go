@@ -7,8 +7,41 @@ import (
 
 	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
+
+type projectRouteFixture struct {
+	*taskFixture
+	projects chan string
+}
+
+func (f *projectRouteFixture) TaskConnection(_ context.Context, project string) (*grpc.ClientConn, error) {
+	f.projects <- project
+	return nil, status.Error(codes.Unavailable, "project runtime unavailable")
+}
+
+func TestTaskLinksRouteBothProjectReferencesByUUID(t *testing.T) {
+	f, stack, _ := taskStack(t)
+	runtime := &projectRouteFixture{taskFixture: f, projects: make(chan string, 1)}
+	layer, _ := resource.Find[Layer](stack)
+	layer.shared.runtime = runtime
+	client := resource.NewTaskLinkServiceClient(taskConn(t, stack))
+	for _, ref := range []*resource.ProjectRef{
+		resource.ProjectRef_builder{RuntimeId: proto.String(f.p.Id)}.Build(),
+		projectid.Ref(f.p.Id),
+	} {
+		_, err := client.List(t.Context(), resource.TaskLinkListRequest_builder{Project: ref}.Build())
+		if status.Code(err) != codes.Unavailable {
+			t.Fatalf("runtime connection failure must propagate: %v", err)
+		}
+		if got := <-runtime.projects; got != projectid.Canonical(f.p.Id) {
+			t.Fatalf("runtime received project %q instead of its UUID", got)
+		}
+	}
+}
 
 func TestLegacyProjectReferencesResolveToSameUUIDOverRPC(t *testing.T) {
 	f, stack, _ := taskStack(t)

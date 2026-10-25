@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/networkservices"
 	"github.com/lesomnus/cxz/internal/releasechannel"
 	"github.com/lesomnus/cxz/internal/versionpin"
 	"golang.org/x/mod/semver"
@@ -280,15 +281,16 @@ func ValidBinary(path string) bool {
 }
 
 type State struct {
-	Channel         string    `json:"channel,omitempty"`
-	CheckedAt       time.Time `json:"checked_at"`
-	FailedAt        time.Time `json:"failed_at,omitempty"`
-	FailedRevision  string    `json:"failed_revision,omitempty"`
-	Release         *Release  `json:"release,omitempty"`
-	State           string    `json:"state"`
-	Reason          string    `json:"reason,omitempty"`
-	AppliedSequence int64     `json:"applied_sequence,omitempty"`
-	Running         Build     `json:"running"`
+	NetworkServices *networkservices.Report `json:"network_services,omitempty"`
+	Channel         string                  `json:"channel,omitempty"`
+	CheckedAt       time.Time               `json:"checked_at"`
+	FailedAt        time.Time               `json:"failed_at,omitempty"`
+	FailedRevision  string                  `json:"failed_revision,omitempty"`
+	Release         *Release                `json:"release,omitempty"`
+	State           string                  `json:"state"`
+	Reason          string                  `json:"reason,omitempty"`
+	AppliedSequence int64                   `json:"applied_sequence,omitempty"`
+	Running         Build                   `json:"running"`
 }
 
 func StatePath(root string) string { return filepath.Join(root, "cxz-update.json") }
@@ -318,7 +320,7 @@ func Check(ctx context.Context, root string, force bool) (State, error) {
 		s.Channel = "edge"
 	}
 	if s.Channel != channel {
-		s = State{Channel: channel}
+		s = State{Channel: channel, NetworkServices: s.NetworkServices}
 	}
 	s.Running = Current()
 	if !force && time.Since(s.CheckedAt) < Interval {

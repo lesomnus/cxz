@@ -401,6 +401,59 @@ var (
 			},
 		},
 	}
+	// TasklinkColumns holds the columns for the "tasklink" table.
+	TasklinkColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "kind", Type: field.TypeInt32},
+		{Name: "client_id", Type: field.TypeString},
+		{Name: "project_id", Type: field.TypeUuid},
+		{Name: "source_id", Type: field.TypeUuid},
+		{Name: "target_id", Type: field.TypeUuid},
+	}
+	// TasklinkTable holds the schema information for the "tasklink" table.
+	TasklinkTable = &schema.Table{
+		Name:       "tasklink",
+		Columns:    TasklinkColumns,
+		PrimaryKey: []*schema.Column{TasklinkColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "tasklink_project_project",
+				Columns:    []*schema.Column{TasklinkColumns[6]},
+				RefColumns: []*schema.Column{ProjectColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "tasklink_task_source",
+				Columns:    []*schema.Column{TasklinkColumns[7]},
+				RefColumns: []*schema.Column{TaskColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "tasklink_task_target",
+				Columns:    []*schema.Column{TasklinkColumns[8]},
+				RefColumns: []*schema.Column{TaskColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "tasklink_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{TasklinkColumns[3], TasklinkColumns[0]},
+			},
+			{
+				Name:    "tasklink_client_id",
+				Unique:  true,
+				Columns: []*schema.Column{TasklinkColumns[5]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// TenantColumns holds the columns for the "tenant" table.
 	TenantColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -428,6 +481,7 @@ var (
 		ProjectTable,
 		SessionTable,
 		TaskTable,
+		TasklinkTable,
 		TenantTable,
 	}
 )
@@ -466,6 +520,12 @@ func init() {
 	TaskTable.ForeignKeys[0].RefTable = ProjectTable
 	TaskTable.Annotation = &entsql.Annotation{
 		Table: "task",
+	}
+	TasklinkTable.ForeignKeys[0].RefTable = ProjectTable
+	TasklinkTable.ForeignKeys[1].RefTable = TaskTable
+	TasklinkTable.ForeignKeys[2].RefTable = TaskTable
+	TasklinkTable.Annotation = &entsql.Annotation{
+		Table: "tasklink",
 	}
 	TenantTable.Annotation = &entsql.Annotation{
 		Table: "tenant",

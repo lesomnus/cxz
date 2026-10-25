@@ -1,0 +1,17 @@
+edition = "2023";
+package cxz;
+import "cxz/task_link.proto";
+import "cxz/project_svc.g.proto";
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// Scope is mandatory even when addressing an ID, for the reason TaskRef carries
+// it: it routes to the authoritative project runtime, and is checked there
+// rather than trusted as an identity. Without it the manager cannot tell which
+// runtime owns the row and would answer from its own resources.db, which holds
+// no tasks.
+//
+// `TaskLinkAddRequest` needs nothing added -- its `source` and `target` are
+// TaskRefs, which already carry one.
+message TaskLinkRef { ProjectRef project = 1000; }
+message TaskLinkListRequest { ProjectRef project = 1000; }
+message TaskLinkWatchRequest { ProjectRef project = 1000; }

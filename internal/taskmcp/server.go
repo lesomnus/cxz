@@ -27,9 +27,10 @@ type Binding struct {
 }
 
 type tools struct {
-	binding  Binding
-	tasks    resource.TaskServiceClient
-	sessions resource.SessionServiceClient
+	binding    Binding
+	tasks      resource.TaskServiceClient
+	linkClient resource.TaskLinkServiceClient
+	sessions   resource.SessionServiceClient
 }
 
 type taskView struct {
@@ -44,6 +45,12 @@ type taskView struct {
 	Desc        *string           `json:"desc,omitempty"`
 	Labels      map[string]string `json:"labels,omitempty"`
 	Source      *sourceView       `json:"source,omitempty"`
+	// Blocked is set in a list, where it is the whole answer: a task something
+	// still blocks cannot be claimed. BlockedBy and Blocks are the details, and
+	// keep a finished blocker with its status -- why work was held up is a record.
+	Blocked   bool       `json:"blocked,omitempty"`
+	BlockedBy []linkView `json:"blocked_by,omitempty"`
+	Blocks    []linkView `json:"blocks,omitempty"`
 }
 
 type sourceView struct {
@@ -97,7 +104,7 @@ func New(conn grpc.ClientConnInterface, binding Binding) (*mcp.Server, error) {
 	if binding.Project == "" || binding.Session == "" || binding.Run == "" {
 		return nil, fmt.Errorf("Task MCP requires a project, session and launch run; restart the agent")
 	}
-	t := tools{binding: binding, tasks: resource.NewTaskServiceClient(conn), sessions: resource.NewSessionServiceClient(conn)}
+	t := tools{binding: binding, tasks: resource.NewTaskServiceClient(conn), linkClient: resource.NewTaskLinkServiceClient(conn), sessions: resource.NewSessionServiceClient(conn)}
 	s := mcp.NewServer(&mcp.Implementation{Name: "cxz-tasks", Version: "1"}, &mcp.ServerOptions{Instructions: Instructions})
 	s.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
@@ -112,6 +119,8 @@ func New(conn grpc.ClientConnInterface, binding Binding) (*mcp.Server, error) {
 	mcp.AddTool(s, &mcp.Tool{Name: "task_claim", Description: "Atomically claim unassigned Todo work for this session/run."}, t.claim)
 	mcp.AddTool(s, &mcp.Tool{Name: "task_patch", Description: "Edit unassigned work or this run's task. Execution status changes require ownership."}, t.patch)
 	mcp.AddTool(s, &mcp.Tool{Name: "task_release", Description: "Release this run's task back to Todo for another session."}, t.release)
+	mcp.AddTool(s, &mcp.Tool{Name: "task_link", Description: "Record that a task cannot start until another finishes. A blocked task cannot be claimed. Cycles are refused."}, t.link)
+	mcp.AddTool(s, &mcp.Tool{Name: "task_unlink", Description: "Remove a blocking link that is no longer true."}, t.unlink)
 	return s, nil
 }
 
@@ -181,9 +190,18 @@ func (t tools) list(ctx context.Context, _ *mcp.CallToolRequest, in listInput) (
 	if err != nil {
 		return nil, listOutput{}, err
 	}
+	// Blockedness is derived, so it cannot be a server-side filter and is not
+	// offered as one: a filter applied after the page was cut would make limit
+	// and next lie about what is there. It is reported per task instead.
+	blocked, err := t.blocked(ctx, page.GetItems())
+	if err != nil {
+		return nil, listOutput{}, err
+	}
 	out := listOutput{Tasks: make([]taskView, 0, len(page.GetItems())), Next: page.GetNext()}
 	for _, v := range page.GetItems() {
-		out.Tasks = append(out.Tasks, view(v, false))
+		item := view(v, false)
+		item.Blocked = blocked[string(v.GetId())]
+		out.Tasks = append(out.Tasks, item)
 	}
 	return nil, out, nil
 }
@@ -201,7 +219,17 @@ func (t tools) get(ctx context.Context, _ *mcp.CallToolRequest, in getInput) (*m
 	if err != nil {
 		return nil, taskView{}, err
 	}
-	return nil, view(v, true), nil
+	out := view(v, true)
+	out.BlockedBy, out.Blocks, err = t.relations(ctx, v)
+	if err != nil {
+		return nil, taskView{}, err
+	}
+	for _, link := range out.BlockedBy {
+		if link.Status != "done" && link.Status != "canceled" {
+			out.Blocked = true
+		}
+	}
+	return nil, out, nil
 }
 
 func (t tools) add(ctx context.Context, _ *mcp.CallToolRequest, in addInput) (*mcp.CallToolResult, taskView, error) {

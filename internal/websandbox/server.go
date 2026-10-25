@@ -37,6 +37,7 @@ type Server struct {
 	projectRev     uint64
 	ctx            context.Context
 	tasks          *taskapi.Memory
+	taskLinks      *taskapi.MemoryLinks
 	cancel         context.CancelFunc
 	uploads        map[string]sandboxAttachment
 	uploadSequence uint64
@@ -65,7 +66,7 @@ type Sessions struct {
 
 func New(seed uint64, delay time.Duration) *Server {
 	ctx, cancel := context.WithCancel(context.Background())
-	s := &Server{seed: seed, delay: delay, ctx: ctx, cancel: cancel, tasks: taskapi.NewMemory()}
+	s := &Server{seed: seed, delay: delay, ctx: ctx, cancel: cancel, tasks: taskapi.NewMemory(), taskLinks: taskapi.NewMemoryLinks()}
 	for i, name := range []string{"Design playground", "Secondary project"} {
 		id := fmt.Sprintf("project-%d", i+1)
 		s.projects = append(s.projects, resource.Project_builder{Id: projectid.Bytes(id), Alias: id, Name: name, DateCreated: timestamppb.Now(), DateUpdated: timestamppb.Now(), Workspace: "/workspace", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING, RemoteWorkspace: "/workspace", RemoteUser: "sandbox", ContainerId: "fake-" + id}.Build()}.Build())
@@ -156,6 +157,7 @@ func (s *Server) Register(r grpc.ServiceRegistrar) {
 	resource.RegisterProjectServiceServer(r, &Projects{S: s})
 	resource.RegisterSessionServiceServer(r, s.Sessions())
 	resource.RegisterTaskServiceServer(r, s.Tasks())
+	resource.RegisterTaskLinkServiceServer(r, s.TaskLinks())
 }
 
 // Sessions is also what receives file bodies, which do not arrive as calls.

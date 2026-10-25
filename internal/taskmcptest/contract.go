@@ -49,7 +49,12 @@ type task struct {
 	AssigneeRun                                string `json:"assignee_run"`
 	Labels                                     map[string]string
 	Source                                     struct{ Session, Run string }
+	Blocked                                    bool
+	BlockedBy                                  []link `json:"blocked_by"`
+	Blocks                                     []link
 }
+
+type link struct{ Ref, Name, Status string }
 
 type page struct {
 	Tasks []task
@@ -87,7 +92,7 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	}
 	change := func(v task) map[string]any { return map[string]any{"ref": v.ID, "version": v.Version} }
 	listed, err := a.ListTools(ctx, nil)
-	if err != nil || len(listed.Tools) != 6 {
+	if err != nil || len(listed.Tools) != 8 {
 		t.Fatalf("tool discovery: %v %v", listed, err)
 	}
 	for _, tool := range listed.Tools {
@@ -198,5 +203,39 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	if _, err := taskmcp.New(conn, taskmcp.Binding{Project: f.Actors[0].Project, Session: f.Actors[0].Session}); err == nil {
 		t.Fatal("a launch without a run was accepted")
 	}
-	t.Log(fmt.Sprintf("six MCP tools passed for project %s", f.Actors[0].Project))
+
+	// Blocking is recorded as a link, read from both ends, and enforced in one
+	// place: a blocked task cannot be claimed. Nothing about it writes a status.
+	first := call[task](t, ctx, fresh, "task_add", map[string]any{"client_id": "blocker", "name": "Must come first"})
+	second := call[task](t, ctx, fresh, "task_add", map[string]any{"client_id": "blocked", "name": "Comes after"})
+	linked := call[task](t, ctx, fresh, "task_link", map[string]any{"ref": second.ID, "blocked_by": first.ID})
+	if !linked.Blocked || len(linked.BlockedBy) != 1 || linked.BlockedBy[0].Ref != first.Alias || linked.Status != "todo" {
+		t.Fatalf("a link neither reported nor left the status alone: %+v", linked)
+	}
+	if other := call[task](t, ctx, fresh, "task_get", map[string]any{"ref": first.ID}); len(other.Blocks) != 1 || other.Blocks[0].Ref != second.Alias || other.Blocked {
+		t.Fatalf("the blocker should read the same link from its end: %+v", other)
+	}
+	for _, item := range call[page](t, ctx, fresh, "task_list", map[string]any{}).Tasks {
+		if item.ID == second.ID && !item.Blocked {
+			t.Fatal("task_list did not mark blocked work")
+		}
+		if item.ID == first.ID && item.Blocked {
+			t.Fatal("task_list marked a blocker as blocked")
+		}
+	}
+	reject(fresh, "task_claim", change(linked))
+	reject(fresh, "task_link", map[string]any{"ref": second.ID, "blocked_by": second.ID})
+	reject(fresh, "task_link", map[string]any{"ref": first.ID, "blocked_by": second.ID})
+	// Editing it is still allowed; only starting it is not.
+	edit := change(linked)
+	edit["desc"] = "Still editable while blocked"
+	linked = call[task](t, ctx, fresh, "task_patch", edit)
+	free := call[task](t, ctx, fresh, "task_unlink", map[string]any{"ref": second.ID, "blocked_by": first.ID})
+	if free.Blocked || len(free.BlockedBy) != 0 {
+		t.Fatalf("unlink: %+v", free)
+	}
+	if started := call[task](t, ctx, fresh, "task_claim", change(free)); started.Status != "in_progress" {
+		t.Fatalf("claim after unlink: %+v", started)
+	}
+	t.Log(fmt.Sprintf("eight MCP tools passed for project %s", f.Actors[0].Project))
 }
