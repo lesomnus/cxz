@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/gofrs/flock"
 	"github.com/lesomnus/cxz/internal/core"
 	"io"
 	"net/http"
@@ -149,7 +150,14 @@ func ResolveAgent(root, kind, arch string, musl bool, registered string) (string
 		return "", err
 	}
 	if registered != "" {
-		if found, err := cachedAgent(registered); err == nil && found {
+		compatible := true
+		prefix := filepath.Join(root, kind) + string(os.PathSeparator)
+		if strings.HasPrefix(registered, prefix) {
+			version := strings.Split(strings.TrimPrefix(registered, prefix), string(os.PathSeparator))[0]
+			want, err := AgentPath(root, kind, arch, musl, version)
+			compatible = err == nil && registered == want
+		}
+		if found, err := cachedAgent(registered); compatible && err == nil && found {
 			return registered, nil
 		}
 	}
@@ -179,11 +187,15 @@ func EnsureVersion(ctx context.Context, root, kind, arch string, musl bool, vers
 	if e := os.MkdirAll(filepath.Dir(dir), 0755); e != nil {
 		return "", e
 	}
-	lock, e := core.Lock(dir + ".lock")
+	lock := flock.New(dir+".lock", flock.SetFlag(os.O_CREATE|os.O_RDWR), flock.SetPermissions(0600))
+	defer lock.Close()
+	locked, e := lock.TryLockContext(ctx, 100*time.Millisecond)
 	if e != nil {
 		return "", e
 	}
-	defer lock.Close()
+	if !locked {
+		return "", fmt.Errorf("agent release installation lock unavailable")
+	}
 	if found, err := cachedAgent(bin); err != nil {
 		return "", err
 	} else if found {

@@ -116,6 +116,26 @@ func TestAgentPreparationFailuresPreserveRuntime(t *testing.T) {
 	}
 }
 
+func TestAgentPreparationRestoresAMissingManifest(t *testing.T) {
+	m, p, _ := agentProject(t)
+	dir, _ := m.projectState(p.ID)
+	if err := os.Remove(filepath.Join(dir, "runtime.json")); err != nil {
+		t.Fatal(err)
+	}
+	binary := "/cxz/tools/codex/0.154.0/x86_64-unknown-linux-musl/bin/codex"
+	a := agentPreparation{
+		ensure: func(context.Context, string) (string, error) { return binary, nil },
+		verify: func(context.Context, string) error { return nil },
+	}
+	if err := m.prepareAgentWith(t.Context(), p, "codex", a); err != nil {
+		t.Fatal(err)
+	}
+	r, err := m.projectRuntime(t.Context(), p)
+	if err != nil || r != (Runtime{ProjectID: p.ID, Workspace: p.RemoteWorkspace, Token: p.Token, Codex: binary}) {
+		t.Fatal("manifest recovery lost project metadata", r, err)
+	}
+}
+
 func TestAgentPreparationCanUseAWorkingRegisteredReleaseOffline(t *testing.T) {
 	m, p, before := agentProject(t)
 	a := agentPreparation{

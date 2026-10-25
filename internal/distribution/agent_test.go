@@ -1,10 +1,13 @@
 package distribution
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/cxz/internal/core"
 )
@@ -109,6 +112,16 @@ func TestRuntimeResolvesAgentsWithoutWritingTheSharedCache(t *testing.T) {
 			t.Fatal("registered choice or cached fallback lost", got, err)
 		}
 	}
+	wrong, _ := AgentPath(root, "claude", "amd64", false, "3.0.0")
+	if err := os.MkdirAll(filepath.Dir(wrong), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(wrong, []byte("wrong platform"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := ResolveAgent(root, "claude", "arm64", true, wrong); err != nil || got != selected {
+		t.Fatal("a registration from the previous container platform was reused", got, err)
+	}
 	if _, err := ResolveAgent(root, "claude", "amd64", true, ""); err == nil {
 		t.Fatal("used a cached binary for the wrong architecture")
 	}
@@ -120,5 +133,62 @@ func TestRuntimeResolvesAgentsWithoutWritingTheSharedCache(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "codex")); !os.IsNotExist(err) {
 		t.Fatal("the read-only resolver attempted an installation", err)
+	}
+}
+
+func TestConcurrentAgentInstallWaitsForThePublishedRelease(t *testing.T) {
+	root := t.TempDir()
+	binary, _ := AgentPath(root, "codex", "amd64", true, "1.2.3")
+	dir := filepath.Dir(filepath.Dir(binary))
+	if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
+		t.Fatal(err)
+	}
+	lock, err := core.Lock(dir + ".lock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lock.Close()
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		got, err := EnsureVersion(ctx, root, "codex", "amd64", true, "1.2.3")
+		if err == nil && got != binary {
+			err = errors.New("the published cache entry was not reused")
+		}
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		t.Fatal("a competing installer did not wait", err)
+	case <-time.After(30 * time.Millisecond):
+	}
+	// The lock holder completes a verified, immutable publication.
+	if err = os.MkdirAll(filepath.Dir(binary), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(binary, []byte("published release"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err = lock.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err = <-done; err != nil {
+		t.Fatal("a completed installation was not reused", err)
+	}
+
+	missing, _ := AgentPath(root, "codex", "amd64", true, "2.0.0")
+	if err = os.MkdirAll(filepath.Dir(filepath.Dir(filepath.Dir(missing))), 0755); err != nil {
+		t.Fatal(err)
+	}
+	lock, err = core.Lock(filepath.Dir(filepath.Dir(missing)) + ".lock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lock.Close()
+	ctx, cancel = context.WithTimeout(t.Context(), 20*time.Millisecond)
+	defer cancel()
+	if _, err = EnsureVersion(ctx, root, "codex", "amd64", true, "2.0.0"); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("waiting for another installer did not honor cancellation", err)
 	}
 }

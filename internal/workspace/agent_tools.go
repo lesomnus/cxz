@@ -32,7 +32,10 @@ func (m *Manager) projectRuntime(ctx context.Context, p *Project) (Runtime, erro
 	}
 	var r Runtime
 	if len(raw) == 0 {
-		return r, fmt.Errorf("project runtime manifest missing; run cxz project up")
+		if p.RemoteWorkspace == "" || p.Token == "" {
+			return r, fmt.Errorf("project has not been prepared; run cxz project up")
+		}
+		return Runtime{ProjectID: p.ID, LegacyProjectID: p.StorageID, Workspace: p.RemoteWorkspace, Token: p.Token}, nil
 	}
 	if err = json.Unmarshal(raw, &r); err != nil {
 		return r, fmt.Errorf("invalid project runtime manifest: %w", err)
@@ -84,6 +87,9 @@ func (m *Manager) prepareAgent(ctx context.Context, p *Project, kind string) err
 }
 
 func (m *Manager) prepareAgentWith(ctx context.Context, p *Project, kind string, a agentPreparation) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	r, err := m.projectRuntime(ctx, p)
 	if err != nil {
 		return err
@@ -95,6 +101,9 @@ func (m *Manager) prepareAgentWith(ctx context.Context, p *Project, kind string,
 	binary, err := a.ensure(ctx, kind)
 	if err == nil {
 		err = a.verify(ctx, binary)
+	}
+	if err == nil {
+		err = ctx.Err()
 	}
 	if err != nil {
 		// An unavailable release must not strand a project with a working CLI.
