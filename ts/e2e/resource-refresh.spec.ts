@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { expect, test } from "@playwright/test";
+import { projectFixture } from "../test-support/projects";
 
 test.use({
   viewport: { width: 1440, height: 900 },
@@ -30,8 +31,7 @@ for (const view of ["sessions", "projects"] as const) {
     const id = (value: string) =>
       Buffer.from(value.padEnd(16, "0")).toString("base64");
     const projects = Array.from({ length: 3 }, (_, i) => ({
-      id: id(`project-${i}`),
-      runtimeId: `project-${i}`,
+      id: projectFixture(i + 1).id,
       alias: `project-${i}`,
       name: `Project ${i}`,
       workspace: `/workspaces/project-${i}`,
@@ -85,7 +85,9 @@ for (const view of ["sessions", "projects"] as const) {
     });
     try {
       await page.goto(
-        view === "projects" ? "/projects?project=project-2" : "/sessions",
+        view === "projects"
+          ? `/projects?project=${projectFixture(3).uuid}`
+          : "/sessions",
       );
       const selector =
         view === "projects"

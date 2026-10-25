@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { projectFixture } from "../test-support/projects.ts";
 
 function stream(rows) {
   const frames = rows.map((row) => {
@@ -37,8 +38,7 @@ test("large Transcript pages stay responsive and preserve the reading anchor", a
   });
   const id = (name) => Buffer.from(name.padEnd(16, "0")).toString("base64");
   const project = {
-    id: id("project"),
-    runtimeId: "project",
+    id: projectFixture().id,
     alias: "project",
     name: "Project",
     listed: true,

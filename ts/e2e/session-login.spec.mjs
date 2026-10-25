@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { BinaryWriter, WireType } from "@bufbuild/protobuf/wire";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { projectFixture } from "../test-support/projects.ts";
 
 test.use({
   viewport: { width: 1280, height: 900 },
@@ -45,8 +46,7 @@ function loginDetail() {
 async function fixture(page, { state = "idle", authFailure = true } = {}) {
   const id = (v) => Buffer.from(v.padEnd(16, "0")).toString("base64");
   const project = {
-    id: id("project"),
-    runtimeId: "project",
+    id: projectFixture().id,
     alias: "project",
     name: "Demo project",
     workspace: "/workspace",
@@ -221,7 +221,7 @@ test("expired Claude OAuth offers session login and resumes without replaying th
   const target = f.sockets[0].url;
   expect(Object.fromEntries(target.searchParams)).toEqual({
     account: "work1",
-    project: "project",
+    project: projectFixture().uuid,
     key: "original-creation",
   });
   await panel.getByLabel("Authentication code").fill("test-code");
