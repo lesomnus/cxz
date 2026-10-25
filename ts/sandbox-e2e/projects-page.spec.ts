@@ -463,6 +463,16 @@ test("project Stop, Start and Remove move the container and keep the project", a
   await expect(button("Stop")).toBeDisabled();
   await expect(button("Start")).toBeEnabled();
 
+  // Stopping retains a container, so its project stays in the session panel.
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  const panel = page.getByRole("complementary", { name: "Session list" });
+  const group = panel.getByRole("region", {
+    name: "Design playground",
+    exact: true,
+  });
+  await expect(group).toBeVisible();
+  await page.getByRole("link", { name: "Projects view", exact: true }).click();
+
   await confirm("Start", "Start project");
   await expect(status).toHaveText("Running");
   await expect(button("Start")).toBeDisabled();
@@ -483,4 +493,22 @@ test("project Stop, Start and Remove move the container and keep the project", a
       .getByRole("table", { name: "Sessions", exact: true })
       .locator("tbody tr"),
   ).toHaveCount(8);
+
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  await expect(group).toHaveCount(0);
+  await expect(
+    panel.getByRole("region", {
+      name: "Secondary project",
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  // Rebuilding the container publishes an inventory update and restores the
+  // group, including its retained sessions, without reloading the workspace.
+  await page.getByRole("link", { name: "Projects view", exact: true }).click();
+  await confirm("Start", "Start project");
+  await expect(status).toHaveText("Running");
+  await page.getByRole("link", { name: "Sessions view", exact: true }).click();
+  await expect(group).toBeVisible();
+  await expect(group.locator(".tree-session")).toHaveCount(8);
 });

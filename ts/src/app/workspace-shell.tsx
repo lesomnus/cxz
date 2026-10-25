@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import type { Session } from "#gen/cxz/session_pb";
+import { ContainerState } from "#gen/cxz/project_pb";
 import { ActionMenu } from "@lesomnus/nox";
 import { Connection } from "#src/shared/api/connection.ts";
 import { ProfileMenu } from "./profile-menu";
@@ -306,7 +307,11 @@ export function Workspace({
                 aria-label={t("Projects and sessions")}
               >
                 {projects
-                  .filter((p) => sessionsByProject.has(key(p.id)))
+                  .filter(
+                    (p) =>
+                      p.status?.containerState !== ContainerState.ABSENT &&
+                      sessionsByProject.has(key(p.id)),
+                  )
                   .map((p) => (
                     <SessionTreeGroup
                       key={projectId(p)}
