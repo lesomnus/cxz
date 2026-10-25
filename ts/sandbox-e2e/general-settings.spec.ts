@@ -35,6 +35,7 @@ test("General is first, language menus preserve text position and segmented syst
     "General",
     "Editor",
     "Connections",
+    "Logs",
   ]);
   await expect(
     page.getByRole("button", { name: "Language", exact: true }),
