@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/x/vt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/transport"
 )
 
@@ -55,7 +56,9 @@ func OpenPTY(ctx context.Context, p *api.Project, width, height int) (Terminal, 
 	if err != nil {
 		return nil, err
 	}
-	if !c.State.Running || c.Config.Labels["cxz.project"] != p.Id || c.Config.Labels["cxz.owner"] == "" {
+	// Existing containers retain their legacy labels after the project UUID
+	// migration. Compare identities without changing the container or public ID.
+	if !c.State.Running || !projectid.Same(c.Config.Labels["cxz.project"], p.Id) || c.Config.Labels["cxz.owner"] == "" {
 		return nil, fmt.Errorf("refusing terminal in an unowned or stopped project container")
 	}
 	cmd := exec.CommandContext(ctx, "docker", "exec", "-it", "--user", p.RemoteUser, "--workdir", p.RemoteWorkspace, "--env", "TERM=xterm-256color", c.ID, "sh", "-c", `

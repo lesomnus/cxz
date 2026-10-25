@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/wisp"
 )
@@ -161,7 +162,7 @@ func openWisp(lifetime, ctx context.Context, p *api.Project, stderr ...io.Writer
 	if err != nil {
 		return nil, err
 	}
-	if !c.State.Running || c.Config.Labels["cxz.project"] != p.Id || c.Config.Labels["cxz.owner"] == "" {
+	if !c.State.Running || !projectid.Same(c.Config.Labels["cxz.project"], p.Id) || c.Config.Labels["cxz.owner"] == "" {
 		return nil, fmt.Errorf("refusing wisp in unowned or stopped container")
 	}
 	procCtx, stop := context.WithCancel(lifetime)

@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/projectid"
 )
 
 func waitText(t *testing.T, s *Session, text string) {
@@ -135,7 +136,7 @@ func TestDockerTerminal(t *testing.T) {
 			_, _ = dockerx.Run(cleanup, "rm", "-f", id)
 		}
 	})
-	p := &api.Project{Id: project, ContainerId: id, RemoteUser: "root", RemoteWorkspace: "/tmp"}
+	p := &api.Project{Id: projectid.Canonical(project), ContainerId: id, RemoteUser: "root", RemoteWorkspace: "/tmp"}
 	paths, err := ListPaths(ctx, p, "/")
 	if err != nil {
 		t.Fatal(err)
