@@ -35,7 +35,7 @@ for (const view of ["sessions", "projects"] as const) {
       alias: `project-${i}`,
       name: `Project ${i}`,
       workspace: `/workspaces/project-${i}`,
-      status: { containerState: "CONTAINER_STATE_ABSENT" },
+      status: { containerState: "CONTAINER_STATE_RUNNING" },
     }));
     const sessions = projects.flatMap((project, i) =>
       Array.from({ length: 2 }, (_, j) => ({
