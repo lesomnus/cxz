@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,5 +90,29 @@ func TestBrokeredSessionHomes(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(p, "auth.json")); !os.IsNotExist(err) {
 			t.Fatal("persisted broker token")
 		}
+	}
+}
+
+// A session created before project UUIDs has its binding derived from the
+// handle it was created under. Reading its manifest canonicalizes the project
+// to the UUID and keeps the handle; launching it must check the binding
+// against the handle, or every such session fails to start. See
+// docs/project-identity.md.
+func TestLaunchSessionMadeBeforeProjectUUIDs(t *testing.T) {
+	root := t.TempDir()
+	const legacy = "716fff60ce70b503280f7c49"
+	var s core.Session
+	manifest := `{"id":"s","create_id":"one","kind":"claude","account":"work","project_id":"` + legacy + `","auth_backend":"` + ProjectLocalOAuth + `","auth_binding":"` + BindingID(legacy, "work", ProjectLocalOAuth) + `"}`
+	if err := json.Unmarshal([]byte(manifest), &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.ProjectID == legacy || s.AuthProjectID() != legacy {
+		t.Fatal("the fixture is not a canonicalized legacy session", s.ProjectID, s.AuthProjectID())
+	}
+	if err := Install(AuthRoot(root, s), s.Account, s.Kind, []byte(`{"claudeAiOauth":{"accessToken":"synthetic"}}`)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LaunchSession(root, s, nil); err != nil {
+		t.Fatal(err)
 	}
 }
