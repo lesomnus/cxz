@@ -1,20 +1,28 @@
 import { createLink } from "@tanstack/react-router";
-import { forwardRef, type AnchorHTMLAttributes } from "react";
-import { ButtonContent, PanelItemAnchor } from "@lesomnus/nox";
+import { forwardRef } from "react";
+import {
+  ButtonAnchor,
+  type ButtonAnchorProps,
+  PanelItemAnchor,
+} from "@lesomnus/nox";
 
-const NavigationAnchor = forwardRef<
-  HTMLAnchorElement,
-  AnchorHTMLAttributes<HTMLAnchorElement> & { pressTarget?: string }
->(function NavigationAnchor(
-  { children, pressTarget, className = "", ...props },
-  ref,
-) {
-  return (
-    <a {...props} ref={ref} className={`route-link ${className}`}>
-      <ButtonContent pressTarget={pressTarget}>{children}</ButtonContent>
-    </a>
-  );
-});
+const NavigationAnchor = forwardRef<HTMLAnchorElement, ButtonAnchorProps>(
+  function NavigationAnchor(
+    { children, pressTarget, className = "", ...props },
+    ref,
+  ) {
+    return (
+      <ButtonAnchor
+        {...props}
+        ref={ref}
+        pressTarget={pressTarget}
+        className={`route-link ${className}`}
+      >
+        {children}
+      </ButtonAnchor>
+    );
+  },
+);
 
 // Real links retain native new-tab behavior and the shared button press motion.
 export const RouteLink = createLink(NavigationAnchor);
