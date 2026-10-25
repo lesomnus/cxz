@@ -374,6 +374,9 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	if e != nil {
 		return e
 	}
+	if e = m.verifyAgentBinary(ctx, p, bin); e != nil {
+		return e
+	}
 	runtime.Workspace = p.RemoteWorkspace
 	// Preserve the other vendor's selected binary when switching agent types.
 	prev, e = dockerx.Run(ctx, "exec", p.ContainerID, "cat", "/cxz/state/runtime.json")

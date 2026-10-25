@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/transport"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -23,6 +25,20 @@ func LoadRuntime(root string) (Runtime, error) {
 		e = json.Unmarshal(b, &r)
 	}
 	return r, e
+}
+
+// AgentBinary repairs a missing registration from a compatible cached release.
+// The project never downloads into or modifies its read-only tools mount.
+func (r *Runtime) AgentBinary(kind string) (string, error) {
+	path, err := r.agentPath(kind)
+	if err != nil {
+		return "", err
+	}
+	musl, err := filepath.Glob("/lib/ld-musl-*.so.1")
+	if err != nil {
+		return "", err
+	}
+	return distribution.ResolveAgent("/cxz/tools", kind, runtime.GOARCH, len(musl) > 0, *path)
 }
 func Boot(root string) error {
 	if e := core.Prepare(root); e != nil {

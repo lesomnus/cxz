@@ -607,12 +607,9 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 		if path != runtime.Workspace {
 			return nil, status.Error(codes.PermissionDenied, "project runtime only serves its own workspace")
 		}
-		bin = runtime.Claude
-		if r.Agent == "codex" {
-			bin = runtime.Codex
-		}
-		if bin == "" {
-			return nil, status.Error(codes.FailedPrecondition, "agent is not provisioned; run cxz project up --agent "+r.Agent)
+		bin, e = runtime.AgentBinary(r.Agent)
+		if e != nil {
+			return nil, status.Error(codes.FailedPrecondition, e.Error())
 		}
 	}
 	if r.Account != "" {

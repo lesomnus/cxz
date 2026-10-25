@@ -141,6 +141,30 @@ func cachedAgent(path string) (bool, error) {
 	return true, nil
 }
 
+// ResolveAgent is the read-only half of preparation, also usable inside a
+// project container. Only Ensure may download, and it runs in the Manager.
+func ResolveAgent(root, kind, arch string, musl bool, registered string) (string, error) {
+	version, err := SelectedAgentVersion(root, kind)
+	if err != nil {
+		return "", err
+	}
+	if registered != "" {
+		if found, err := cachedAgent(registered); err == nil && found {
+			return registered, nil
+		}
+	}
+	binary, err := AgentPath(root, kind, arch, musl, version)
+	if err != nil {
+		return "", err
+	}
+	if found, err := cachedAgent(binary); err != nil {
+		return "", err
+	} else if !found {
+		return "", fmt.Errorf("%s %s is not cached; prepare the agent through the Manager", kind, version)
+	}
+	return binary, nil
+}
+
 func EnsureVersion(ctx context.Context, root, kind, arch string, musl bool, version string) (string, error) {
 	r, e := agentLayout(root, kind, arch, musl, version)
 	if e != nil {

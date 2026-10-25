@@ -82,3 +82,43 @@ func TestEnsureAgentReusesTheSelectedCachedRelease(t *testing.T) {
 		t.Fatal("accepted an unknown provider")
 	}
 }
+
+func TestRuntimeResolvesAgentsWithoutWritingTheSharedCache(t *testing.T) {
+	root := t.TempDir()
+	if err := core.WriteJSON(filepath.Join(root, "releases.json"), map[string]string{"claude": "3.0.0"}); err != nil {
+		t.Fatal(err)
+	}
+	selected, _ := AgentPath(root, "claude", "arm64", true, "3.0.0")
+	if err := os.MkdirAll(filepath.Dir(selected), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(selected, []byte("cached"), 0555); err != nil {
+		t.Fatal(err)
+	}
+	registered := filepath.Join(t.TempDir(), "custom-claude")
+	if err := os.WriteFile(registered, []byte("custom"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"", "/removed/claude", registered} {
+		got, err := ResolveAgent(root, "claude", "arm64", true, path)
+		want := selected
+		if path == registered {
+			want = registered
+		}
+		if err != nil || got != want {
+			t.Fatal("registered choice or cached fallback lost", got, err)
+		}
+	}
+	if _, err := ResolveAgent(root, "claude", "amd64", true, ""); err == nil {
+		t.Fatal("used a cached binary for the wrong architecture")
+	}
+	if _, err := ResolveAgent(root, "claude", "arm64", false, ""); err == nil {
+		t.Fatal("used a cached binary for the wrong libc")
+	}
+	if _, err := ResolveAgent(root, "codex", "amd64", false, ""); err == nil {
+		t.Fatal("missing cache did not report that the Manager must prepare it")
+	}
+	if _, err := os.Stat(filepath.Join(root, "codex")); !os.IsNotExist(err) {
+		t.Fatal("the read-only resolver attempted an installation", err)
+	}
+}

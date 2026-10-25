@@ -56,11 +56,14 @@ func projectView(p *Project) *api.Project {
 	return &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, Error: p.Error, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt}
 }
 
-// CreateSession operates only on a prepared project. Provisioning is Project.Up,
-// not an implicit part of Session.Add, so its checkpoint/retry count is stable.
+// CreateSession operates only on a running project, preparing the requested CLI
+// without repeating container provisioning or changing its checkpoint count.
 func (m *Manager) CreateSession(ctx context.Context, r *api.CreateRequest) (*api.Session, error) {
 	if r.Account == "" {
 		return nil, fmt.Errorf("account required; use --account")
+	}
+	if r.Agent == "" {
+		r.Agent = "claude"
 	}
 	p, err := m.resolve(ctx, r.Workspace)
 	if err != nil {
@@ -78,6 +81,9 @@ func (m *Manager) CreateSession(ctx context.Context, r *api.CreateRequest) (*api
 		return nil, err
 	}
 	defer conn.Close()
+	if err = m.prepareAgent(ctx, p, r.Agent); err != nil {
+		return nil, err
+	}
 	if err = resourceclient.New(conn).EnsureAccount(ctx, r.Account, r.Agent, r.AuthBackend); err != nil {
 		return nil, err
 	}
