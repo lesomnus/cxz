@@ -13,6 +13,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/networkservices"
 	"github.com/lesomnus/cxz/internal/transport"
 )
 
@@ -43,10 +44,16 @@ func InstallRelay(ctx context.Context, root string, cfg RelayConfig, out io.Writ
 	if err != nil {
 		return fmt.Errorf("install the Manager first: %w", err)
 	}
+	ctx, release, err := networkservices.LockHost(ctx, v.Container, v.Owner)
+	if err != nil {
+		return err
+	}
+	defer release()
 	manager, err := dockerx.Owned(ctx, v.Container, v.Owner, "")
 	if err != nil {
 		return err
 	}
+	v.Image = manager.Config.Image
 	if !manager.State.Running {
 		return fmt.Errorf("start the Manager with cxz install first")
 	}
@@ -75,6 +82,16 @@ func RefreshRelayLocked(ctx context.Context, root string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
+	ctx, release, err := networkservices.LockHost(ctx, v.Container, v.Owner)
+	if err != nil {
+		return err
+	}
+	defer release()
+	v, err = liveInstallation(ctx, root)
+	if err != nil {
+		return err
+	}
+
 	old, exists, err := findRelay(ctx, v)
 	if err != nil || !exists || !old.State.Running || old.Config.Image == v.Image {
 		return err
@@ -219,6 +236,16 @@ func UninstallRelay(ctx context.Context, root string) error {
 	if err != nil {
 		return err
 	}
+	ctx, release, err := networkservices.LockHost(ctx, v.Container, v.Owner)
+	if err != nil {
+		return err
+	}
+	defer release()
+	v, err = liveInstallation(ctx, root)
+	if err != nil {
+		return err
+	}
+
 	c, exists, err := findRelay(ctx, v)
 	if err != nil {
 		return err
@@ -257,6 +284,14 @@ func RelayStatus(ctx context.Context, root string) (RelayState, error) {
 		s.State = "Manager is not installed"
 		return s, nil
 	}
+	manager, err := dockerx.Owned(ctx, v.Container, v.Owner, "")
+	if err != nil {
+		return s, err
+	}
+	if manager.Config.Labels["cxz.role"] != "daemon" {
+		return s, fmt.Errorf("invalid manager role")
+	}
+	v.Image = manager.Config.Image
 	s.Container, s.ManagerImage = relayName(v), v.Image
 	if issued, err := dockerx.Run(ctx, "exec", v.Container, "/usr/local/bin/cxz", "--state", "/var/lib/cxz", "_pki", "issued"); err == nil {
 		var report struct {

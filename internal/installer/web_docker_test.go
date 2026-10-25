@@ -1,7 +1,9 @@
 package installer
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/networkservices"
 )
 
 // Opt-in, disposable containers only. Set CXZ_TEST_WEB_DOCKER=1 to build a
@@ -26,7 +29,7 @@ func TestWebDocker(t *testing.T) {
 	if image == "" {
 		t.Skip("set CXZ_TEST_WEB_DOCKER=1 for container integration")
 	}
-	ctx, cancel := context.WithTimeout(t.Context(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 240*time.Second)
 	defer cancel()
 	v, c, root := webFixture(t)
 	v.Owner = core.ID()
@@ -86,20 +89,23 @@ func TestWebDocker(t *testing.T) {
 	if _, err = dockerx.Run(ctx, "volume", "create", v.StateVolume); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = dockerx.Run(ctx, "run", "-d", "--name", v.Container, "--label", "cxz.owner="+v.Owner, "--mount", "type=volume,source="+v.StateVolume+",target=/var/lib/cxz", "-e", "CXZ_AUTO_UPDATE=0", image, "--state", "/var/lib/cxz", "-x", "manager", "serve", "--agent", "/bin/true"); err != nil {
-		t.Fatal(err)
-	}
-	for {
-		if _, err = dockerx.Run(ctx, "exec", v.Container, "cxz", "--state", "/var/lib/cxz", "_ready"); err == nil {
-			break
+	startManager := func(image string) {
+		t.Helper()
+		if _, err = dockerx.Run(ctx, "run", "-d", "--name", v.Container, "--label", "cxz.owner="+v.Owner, "--label", "cxz.role=daemon", "--mount", "type=volume,source="+v.StateVolume+",target=/var/lib/cxz", "-v", "/var/run/docker.sock:/var/run/docker.sock", "-e", "CXZ_AUTO_UPDATE=0", image, "--state", "/var/lib/cxz", "-x", "manager", "serve", "--agent", "/bin/true"); err != nil {
+			t.Fatal(err)
 		}
-		select {
-		case <-ctx.Done():
-			logs, _ := dockerx.Run(context.Background(), "logs", v.Container)
-			t.Fatalf("Manager failed: %s %v", logs, err)
-		case <-time.After(100 * time.Millisecond):
+		for {
+			if _, err = dockerx.Run(ctx, "exec", v.Container, "cxz", "--state", "/var/lib/cxz", "_ready"); err == nil {
+				return
+			}
+			select {
+			case <-ctx.Done():
+				t.Fatal("Manager failed:", err)
+			case <-time.After(100 * time.Millisecond):
+			}
 		}
 	}
+	startManager(image)
 	if err = core.WriteJSON(filepath.Join(root, "installation.json"), v); err != nil {
 		t.Fatal(err)
 	}
@@ -136,14 +142,93 @@ func TestWebDocker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect through Manager socket: %v %s", err, b)
 	}
-	// A Manager image change refreshes the gateway using saved configuration.
+	// Exercise the automatic path with both TLS web and mTLS relay installed.
+	ln, err = net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	relayListen := ln.Addr().String()
+	ln.Close()
+	if err = InstallRelay(ctx, root, RelayConfig{Listen: relayListen}, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	relayBefore, _, err := findRelay(ctx, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := func(id string) []byte {
+		t.Helper()
+		b, err := dockerx.Run(ctx, "inspect", "--format", "{{json .HostConfig}}", id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return b
+	}
+	webConfig, relayConfig := config(first.ID), config(relayBefore.ID)
+	hostBefore, err := os.ReadFile(filepath.Join(root, "installation.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	nextImage := "cxz-web-test-next:" + v.Owner
 	if _, err = dockerx.Run(ctx, "tag", v.Image, nextImage); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { dockerx.Run(context.Background(), "image", "rm", nextImage) }()
-	v.Image = nextImage
-	if err = core.WriteJSON(filepath.Join(root, "installation.json"), v); err != nil {
+	// An automatic rollout changes the running image, leaving host metadata old.
+	if _, err = dockerx.Run(ctx, "stop", "--time", "1", v.Container); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = dockerx.Run(ctx, "rm", v.Container); err != nil {
+		t.Fatal(err)
+	}
+	startManager(nextImage)
+	webState, err := WebStatus(ctx, root, c, "")
+	if err != nil || !webState.NeedsRefresh || webState.ManagerImage != nextImage {
+		t.Fatal("stale web status", webState, err)
+	}
+	relayState, err := RelayStatus(ctx, root)
+	if err != nil || !relayState.NeedsRefresh {
+		t.Fatal("stale relay status", relayState, err)
+	}
+	refresh := func() ([]byte, error) {
+		return dockerx.Run(ctx, "exec", v.Container, "cxz", "_refresh-network-services", "/var/lib/cxz", v.Container, v.Owner)
+	}
+	_, release, err := networkservices.LockHost(ctx, v.Container, v.Owner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, blocked := refresh()
+	release()
+	if blocked == nil || !strings.Contains(blocked.Error(), "busy") {
+		t.Fatalf("host lock bypassed: %s %v", out, blocked)
+	}
+	out, err = refresh()
+	if err != nil {
+		t.Fatalf("automatic refresh: %v %s", err, out)
+	}
+	var report networkservices.Report
+	if err = json.Unmarshal(out, &report); err != nil || report.Failure() != nil || report.Web.NeedsRefresh || report.Relay.NeedsRefresh {
+		t.Fatalf("refresh report: %s %v", out, err)
+	}
+	relayAfter, _, err := findRelay(ctx, v)
+	if err != nil || relayAfter.ID == relayBefore.ID || relayAfter.Config.Image != nextImage {
+		t.Fatal("relay not refreshed", err)
+	}
+	webAfter, _, err := findWeb(ctx, v)
+	if err != nil || webAfter.ID == first.ID || webAfter.Config.Image != nextImage {
+		t.Fatal("web not refreshed", err)
+	}
+	if !bytes.Equal(webConfig, config(webAfter.ID)) || !bytes.Equal(relayConfig, config(relayAfter.ID)) {
+		t.Fatal("automatic refresh changed HostConfig")
+	}
+	hostAfter, err := os.ReadFile(filepath.Join(root, "installation.json"))
+	if err != nil || !bytes.Equal(hostBefore, hostAfter) {
+		t.Fatal("automatic refresh touched host metadata", err)
+	}
+	if _, err = refresh(); err != nil {
+		t.Fatal("repeated automatic refresh", err)
+	}
+	if err = UninstallRelay(ctx, root); err != nil {
 		t.Fatal(err)
 	}
 	if err = RefreshWebLocked(ctx, root, io.Discard); err != nil {
@@ -235,7 +320,7 @@ func buildWebFixtureImage(t *testing.T) string {
 	if err := os.WriteFile(filepath.Join(dir, "webui", "index.html"), []byte("<!doctype html><title>Fixture</title>"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	dockerfile := "FROM alpine:3.22\nRUN apk add --no-cache curl ca-certificates\nCOPY cxz /usr/local/bin/cxz\nCOPY webui /usr/local/share/cxz/webui\nENTRYPOINT [\"/usr/local/bin/cxz\"]\n"
+	dockerfile := "FROM docker:28-cli AS dockercli\nFROM alpine:3.22\nCOPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker\nRUN apk add --no-cache curl ca-certificates util-linux\nCOPY cxz /usr/local/bin/cxz\nCOPY webui /usr/local/share/cxz/webui\nENTRYPOINT [\"/usr/local/bin/cxz\"]\n"
 	if err := os.WriteFile(filepath.Join(dir, "Dockerfile"), []byte(dockerfile), 0600); err != nil {
 		t.Fatal(err)
 	}

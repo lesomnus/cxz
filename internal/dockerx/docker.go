@@ -56,6 +56,7 @@ type Container struct {
 		Labels map[string]string
 		Image  string
 		User   string
+		Cmd    []string
 	}
 	State struct {
 		Running bool

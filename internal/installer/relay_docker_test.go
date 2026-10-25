@@ -57,7 +57,7 @@ func TestRelayDocker(t *testing.T) {
 	if _, err := dockerx.Run(ctx, "volume", "create", v.StateVolume); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := dockerx.Run(ctx, "run", "-d", "--name", v.Container, "--label", "cxz.owner="+v.Owner, "--mount", "type=volume,source="+v.StateVolume+",target=/var/lib/cxz", "-e", "CXZ_AUTO_UPDATE=0", image, "--state", "/var/lib/cxz", "-x", "manager", "serve", "--agent", "/bin/true"); err != nil {
+	if _, err := dockerx.Run(ctx, "run", "-d", "--name", v.Container, "--label", "cxz.owner="+v.Owner, "--label", "cxz.role=daemon", "--mount", "type=volume,source="+v.StateVolume+",target=/var/lib/cxz", "-e", "CXZ_AUTO_UPDATE=0", image, "--state", "/var/lib/cxz", "-x", "manager", "serve", "--agent", "/bin/true"); err != nil {
 		t.Fatal(err)
 	}
 	for {

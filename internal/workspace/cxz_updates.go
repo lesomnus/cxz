@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/networkservices"
 	"strings"
 )
 
@@ -113,6 +114,7 @@ func (m *Manager) RunCxzUpdates(ctx context.Context) {
 		}
 	}
 }
+
 // note records where this tick stopped, for the paths that used to return
 // without saying anything. A reason left over from an earlier tick is worse
 // than none: it sends whoever is asking to a condition that has already
@@ -186,6 +188,24 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 	defer lock.Close()
 	work, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
+
+	// Reconcile siblings against the actual running manager, including the first
+	// tick after an old helper replaced it. This also retries independently of
+	// release-channel availability and never opens the host install directory.
+	var networkErr error
+	if m.Container != "" && m.Owner != "" {
+		report, err := networkservices.Refresh(work, m.Root, m.Container, m.Owner)
+		networkErr = err
+		state, loadErr := cxzupdate.Load(m.Root)
+		if loadErr != nil {
+			m.noteUpdateStop("waiting", "network service status unreadable: "+loadErr.Error())
+			return
+		}
+		state.NetworkServices = &report
+		if err = cxzupdate.Save(m.Root, state); err != nil {
+			return
+		}
+	}
 	s, e := cxzupdate.Check(work, m.Root, false)
 	if e != nil {
 		m.noteUpdateStop("waiting", "release channel unavailable: "+e.Error())
@@ -398,6 +418,10 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			_ = cxzupdate.Save(m.Root, s)
 			return
 		}
+	}
+	if s.State == "healthy" && networkErr != nil {
+		s.State = "waiting"
+		s.Reason = "network services: " + networkErr.Error()
 	}
 	if s.State == "healthy" {
 		s.AppliedSequence = r.Sequence

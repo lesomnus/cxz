@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
+	"github.com/lesomnus/cxz/internal/networkservices"
 	"os"
 	"time"
 )
@@ -14,6 +15,21 @@ func updateInternal(args []string) (bool, error) {
 		return false, nil
 	}
 	switch args[0] {
+	case "_recover-network-services", "_refresh-network-services":
+		if len(args) != 4 {
+			return true, fmt.Errorf("invalid network service arguments")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		if args[0] == "_recover-network-services" {
+			return true, networkservices.RecoverLocked(ctx, args[1], args[2], args[3])
+		}
+		report, err := networkservices.Refresh(ctx, args[1], args[2], args[3])
+		if encodeErr := json.NewEncoder(os.Stdout).Encode(report); err == nil {
+			err = encodeErr
+		}
+		return true, err
+
 	case "_publish-tools":
 		return true, cxzupdate.PublishTools()
 	case "_update-runtime-start":

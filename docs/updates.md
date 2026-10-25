@@ -24,7 +24,7 @@ It needs no Go and no source build tools.
 
 **Choosing a channel explicitly is immediate and forceful.** On a Linux host it
 replaces and restarts the frontend, the manager, running project runtimes and
-running session supervisors and agents, plus an installed running web gateway.
+running session supervisors and agents, plus installed running web gateways and relays.
 It does not wait for idle, so **work in progress is interrupted**. Conversations reopen with their history in a new run and
 the last input is not resent. Sessions already stopped stay stopped. Project
 containers and data volumes are not recreated. It does not change the provider CLI
@@ -55,6 +55,7 @@ What waits for what:
 | | Replaced when |
 |---|---|
 | **Manager** | Every running session in the installation is safely idle |
+| **Web gateway / relay** | After the manager changes image, if installed and running |
 | **Project runtime** | That project's sessions are safely idle, or an explicit `project recreate` |
 | **Supervisor / agent** | That session has been safely idle for five minutes |
 | **TUI** | Five minutes without input, and no draft, modal, attachment or in-flight request |
@@ -103,6 +104,34 @@ supervisor on the next explicit resume.
 Active work always wins. Tools running, background tasks, child processes, pending
 approvals, a settings change in flight, or simply not being able to tell — all of
 them defer the replacement.
+
+## Web gateway and relay updates
+
+With server automatic updates enabled, each rollout pass compares installed,
+running web and relay containers against the **running manager's image**, even
+when the release channel is unavailable. This also repairs existing installations
+whose host `installation.json` still names the image from an earlier install.
+Stopped or removed services stay stopped or removed.
+
+Replacement preserves the installed container's command, environment, published
+ports, read-only token/TLS mounts, state-volume subpaths and security settings.
+It verifies ownership and role, checks the target command before stopping the old
+container, and probes the replacement before removing the backup. Failure restores
+the old service and the next pass retries; a gateway replacement requires browser
+users to sign in again. A sibling failure does not roll back a healthy manager.
+
+The manager writes recovery intent only to its state volume, under
+`network-services/`. It never writes the host installation directory. Interrupted
+swaps are recovered under the same volume's `network-services.lock` before another
+replacement or a host `web`/`expose` up/down operation. Host operations acquire
+`install.lock` first, then hold the volume lock through a disposable container;
+automatic rollout holds `rollout.lock` before the volume lock. The holder mounts
+only the state volume and releases the lock when its caller disconnects.
+
+`cxz self-update status --server` includes a live `network_services` snapshot with
+manager/service images, running state and `needs_refresh`. The last reconciliation
+result and any failures are retained at `update.network_services`. Status stays
+observable while updates are paused; pausing does not itself reconcile services.
 
 ## Building from source
 
