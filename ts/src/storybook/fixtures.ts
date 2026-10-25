@@ -379,8 +379,14 @@ export const project = create(ProjectSchema, {
   alias: "cxz",
   name: "cxz",
 });
+export function sessionFixtureId(index = 1) {
+  const id = projectFixtureId(index);
+  id[9] = 8;
+  return id;
+}
 export function storySession(index = 0) {
   return create(SessionSchema, {
+    id: sessionFixtureId(index + 1),
     runtimeId: `session-${index}`,
     alias: ["oak", "seal", "pine"][index % 3],
     name: ["UI exploration", "Editor improvements", "History performance"][

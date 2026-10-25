@@ -7,15 +7,16 @@ import {
 } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
-import { ref } from "#src/shared/api/connection.ts";
+import { sessionRef, sessionUUID } from "#src/shared/api/session-id.ts";
 import { BackgroundJobs } from "./background-jobs";
 
 export function useSessionBackground(
   c: Connection,
-  session: string,
+  session: Uint8Array | undefined,
   run: string,
 ) {
-  const store = useMemo(() => new BackgroundJobs(run), [c, session, run]);
+  const uuid = sessionUUID(session);
+  const store = useMemo(() => new BackgroundJobs(run), [c, uuid, run]);
   const latest = useRef(store);
   latest.current = store;
   const snapshot = useSyncExternalStore(store.subscribe, store.snapshot);
@@ -25,7 +26,7 @@ export function useSessionBackground(
     [],
   );
   useEffect(() => {
-    if (!run) return;
+    if (!run || !uuid || !session) return;
     let controller: AbortController | undefined;
     let disposed = false;
     const read = () => {
@@ -35,7 +36,7 @@ export function useSessionBackground(
       store.beginSnapshot();
       void c.sessions
         .background(
-          { ref: ref(session) },
+          { ref: sessionRef(session) },
           { signal: request.signal, timeoutMs: 10000 },
         )
         .then((reply) => {
@@ -59,7 +60,7 @@ export function useSessionBackground(
       refresh.current = () => {};
       document.removeEventListener("visibilitychange", visible);
     };
-  }, [c, session, run, store]);
+  }, [c, uuid, run, store]);
   return {
     count: snapshot.count,
     receive,

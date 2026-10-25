@@ -2,16 +2,28 @@ import type { Client } from "@connectrpc/connect";
 import type { SessionService } from "#gen/cxz/session_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { BackgroundJobs } from "./background-jobs";
+import { sessionRef, sessionUUID } from "#src/shared/api/session-id.ts";
 
-type Request = { id: string; run: string; revision: bigint };
+type Request = {
+  id: string;
+  uuid: string;
+  resourceId: Uint8Array;
+  run: string;
+  revision: bigint;
+};
 const same = (a: Request | undefined, b: Request) =>
-  a?.run === b.run && a.revision === b.revision;
+  a?.uuid === b.uuid && a.run === b.run && a.revision === b.revision;
+const retryDelay = 30_000;
 
 // Catalog-driven snapshots, without a live stream for every sidebar row.
 export class SessionBackground {
   private desired = new Map<string, Request>();
   private loaded = new Map<string, Request>();
   private queued = new Map<string, Request>();
+  private failed = new Map<
+    string,
+    { uuid: string; run: string; retryAt: number }
+  >();
   private pending = new Map<
     string,
     { request: Request; controller: AbortController }
@@ -37,7 +49,9 @@ export class SessionBackground {
     const desired = new Map<string, Request>();
     for (const session of sessions) {
       const status = session.status;
+      const uuid = sessionUUID(session.id);
       if (
+        !uuid ||
         !status?.runId ||
         status.state === "stopped" ||
         ["running", "working", "waiting_input", "waiting"].includes(
@@ -46,13 +60,27 @@ export class SessionBackground {
       )
         continue;
       const request = {
-        id: session.runtimeId,
+        // Existing conversation state still uses runtime handles internally;
+        // RPC references always use the public resource UUID.
+        id: session.runtimeId || uuid,
+        uuid,
+        resourceId: new Uint8Array(session.id),
         run: status.runId,
         revision: status.lastSeq,
       };
       desired.set(request.id, request);
-      if (this.desired.get(request.id)?.run !== request.run)
+      if (
+        this.desired.get(request.id)?.uuid !== request.uuid ||
+        this.desired.get(request.id)?.run !== request.run
+      )
         this.mark(request.id, false);
+      const failure = this.failed.get(request.id);
+      if (
+        failure?.uuid === uuid &&
+        failure.run === request.run &&
+        Date.now() < failure.retryAt
+      )
+        continue;
       if (
         !same(this.loaded.get(request.id), request) &&
         (!same(this.pending.get(request.id)?.request, request) ||
@@ -64,6 +92,8 @@ export class SessionBackground {
     for (const id of this.value) if (!desired.has(id)) this.mark(id, false);
     for (const id of this.loaded.keys())
       if (!desired.has(id)) this.loaded.delete(id);
+    for (const id of this.failed.keys())
+      if (!desired.has(id)) this.failed.delete(id);
     for (const id of this.queued.keys())
       if (!desired.has(id)) this.queued.delete(id);
     for (const [id, pending] of this.pending)
@@ -79,7 +109,7 @@ export class SessionBackground {
       this.pending.set(id, { request, controller });
       void this.api
         .background(
-          { ref: { key: { case: "runtimeId", value: id } } },
+          { ref: sessionRef(request.resourceId) },
           { signal: controller.signal, timeoutMs: 10000 },
         )
         .then((reply) => {
@@ -87,12 +117,27 @@ export class SessionBackground {
             return;
           const jobs = new BackgroundJobs(request.run);
           jobs.seed(reply.data, reply.lastSeq);
+          this.failed.delete(id);
           this.loaded.set(id, request);
           this.mark(id, (jobs.snapshot().count ?? 0) > 0);
         })
         .catch(() => {
-          if (!controller.signal.aborted && same(this.desired.get(id), request))
+          const current = this.desired.get(id);
+          if (
+            !controller.signal.aborted &&
+            current?.uuid === request.uuid &&
+            current.run === request.run
+          ) {
+            // A busy catalog must not turn a failed lookup into a request
+            // loop. A later observation retries; no polling timer is added.
+            this.failed.set(id, {
+              uuid: request.uuid,
+              run: request.run,
+              retryAt: Date.now() + retryDelay,
+            });
+            this.queued.delete(id);
             this.mark(id, false);
+          }
         })
         .finally(() => {
           this.pending.delete(id);
@@ -104,6 +149,7 @@ export class SessionBackground {
     this.queued.clear();
     this.desired.clear();
     this.loaded.clear();
+    this.failed.clear();
     for (const pending of this.pending.values()) pending.controller.abort();
   }
 }

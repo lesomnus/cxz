@@ -1,4 +1,26 @@
 import { expect, test } from "@playwright/test";
+
+test("background details use a public UUID for initial load and refresh", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-backgroundjobs--job-list&viewMode=story",
+  );
+  await page.locator("[data-background-jobs]").click();
+  await expect(
+    page.getByText("Build the web application and verify generated assets", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(
+    page.getByText("Build the web application and verify generated assets", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
 test("background count follows native job lifecycle independently of the foreground turn", async ({
   page,
 }) => {
@@ -8,7 +30,9 @@ test("background count follows native job lifecycle independently of the foregro
     "/iframe.html?id=conversation-backgroundjobs--live-telemetry&viewMode=story",
   );
   const indicator = page.locator("[data-background-jobs]");
+  const requests = page.locator("[data-background-requests]");
   await expect(indicator).toHaveText("0");
+  await expect(requests).toHaveAttribute("data-background-requests", "1");
   await expect(indicator).toHaveAttribute("data-active", "false");
   await page.getByRole("button", { name: "Start job", exact: true }).click();
   await page.getByRole("button", { name: "Start job", exact: true }).click();
@@ -65,6 +89,9 @@ test("background count follows native job lifecycle independently of the foregro
   await page.getByRole("button", { name: "Finish job", exact: true }).click();
   await expect(indicator).toHaveText("0");
   await expect(indicator).toHaveAttribute("data-active", "false");
+  // Fresh Uint8Arrays with equal UUID contents must not reload the snapshot
+  // or reinitialize the job counter when this fixture rerenders.
+  await expect(requests).toHaveAttribute("data-background-requests", "1");
   expect(errors).toEqual([]);
 });
 test("unknown status stays distinct from zero and reduced motion stops the luminous outline", async ({

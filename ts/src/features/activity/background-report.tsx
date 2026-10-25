@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Button } from "@lesomnus/nox";
-import { Connection, ref } from "#src/shared/api/connection.ts";
+import { Connection } from "#src/shared/api/connection.ts";
+import { sessionRef, sessionUUID } from "#src/shared/api/session-id.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 import { backgroundTasks } from "./background-tasks";
@@ -11,13 +12,15 @@ export function BackgroundReport({
   run,
 }: {
   c: Connection;
-  session: string;
+  session: Uint8Array | undefined;
   run: string;
 }) {
+  const uuid = sessionUUID(session);
   const snapshot = useRemote(
     async (signal) => {
+      if (!uuid || !session || !run) return [];
       const reply = await c.sessions.background(
-        { ref: ref(session) },
+        { ref: sessionRef(session) },
         { signal, timeoutMs: 10000 },
       );
       const state = JSON.parse(new TextDecoder().decode(reply.data) || "{}")[
@@ -27,16 +30,17 @@ export function BackgroundReport({
         throw new Error("Background job status unavailable");
       return backgroundTasks(reply.data, run);
     },
-    [c, session, run],
+    [c, uuid, run],
   );
   const refresh = useRef(snapshot.reload);
   refresh.current = snapshot.reload;
   useEffect(() => {
+    if (!uuid || !run) return;
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") refresh.current();
     }, 10000);
     return () => clearInterval(timer);
-  }, []);
+  }, [uuid, run]);
   return (
     <section className={styles.section}>
       <div className={styles.row}>
