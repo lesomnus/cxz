@@ -13,6 +13,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/wisp"
 )
@@ -89,7 +90,7 @@ func StreamPaths(ctx context.Context, p *api.Project, dir string, emit func(Path
 	if err != nil {
 		return PathListing{}, err
 	}
-	if !c.State.Running || c.Config.Labels["cxz.project"] != p.Id || c.Config.Labels["cxz.owner"] == "" {
+	if !c.State.Running || !projectid.Same(c.Config.Labels["cxz.project"], p.Id) || c.Config.Labels["cxz.owner"] == "" {
 		return PathListing{}, fmt.Errorf("refusing path lookup in unowned or stopped container")
 	}
 	cmd := exec.CommandContext(ctx, "docker", "exec", "--user", p.RemoteUser, c.ID, "sh", "-c", listPathsScript, "cxz-paths", dir)

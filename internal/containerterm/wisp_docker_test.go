@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/projectid"
 )
 
 func TestDockerWisp(t *testing.T) {
@@ -53,7 +54,7 @@ func TestDockerWisp(t *testing.T) {
 	if _, err := dockerx.Run(ctx, "cp", bin, id+":/cxz/tools/cxz"); err != nil {
 		t.Fatal(err)
 	}
-	p := &api.Project{Id: project, ContainerId: id, RemoteUser: "root"}
+	p := &api.Project{Id: projectid.Canonical(project), ContainerId: id, RemoteUser: "root"}
 	pool := &WispPool{}
 	defer pool.Close()
 	start := time.Now()

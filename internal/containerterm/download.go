@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/transport"
 )
 
@@ -66,7 +67,7 @@ func DownloadFile(ctx context.Context, p *api.Project, path string, dst io.Write
 	if err != nil {
 		return err
 	}
-	if !c.State.Running || c.Config.Labels["cxz.project"] != p.Id || c.Config.Labels["cxz.owner"] == "" {
+	if !c.State.Running || !projectid.Same(c.Config.Labels["cxz.project"], p.Id) || c.Config.Labels["cxz.owner"] == "" {
 		return fmt.Errorf("refusing download from unowned or stopped container")
 	}
 	ctx, cancel := context.WithCancel(ctx)

@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"github.com/lesomnus/cxz/internal/containerterm"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -32,6 +34,7 @@ func TestDockerManagerPaths(t *testing.T) {
 		t.Fatalf("build: %v %s", err, b)
 	}
 	owner, project := core.ID(), core.ID()
+	projectID := projectid.Canonical(project)
 	image := os.Getenv("CXZ_TERMINAL_TEST_IMAGE")
 	if image == "" {
 		image = "alpine:latest"
@@ -48,7 +51,7 @@ func TestDockerManagerPaths(t *testing.T) {
 			_, _ = dockerx.Run(cleanup, "rm", "-f", id)
 		}
 	}()
-	if _, err := dockerx.Run(ctx, "exec", id, "sh", "-c", "mkdir -p /cxz/tools /browse/'한글 dir'; adduser -D -u 1001 browse; touch /browse/run.sh; chmod 755 /browse/run.sh; ln -s '한글 dir' /browse/link; chmod 700 /root"); err != nil {
+	if _, err := dockerx.Run(ctx, "exec", id, "sh", "-c", "mkdir -p /cxz/tools /browse/'한글 dir'; adduser -D -u 1001 browse; printf 'download-fixture' > /browse/run.sh; chmod 755 /browse/run.sh; ln -s '한글 dir' /browse/link; chmod 700 /root"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := dockerx.Run(ctx, "cp", bin, id+":/cxz/tools/cxz"); err != nil {
@@ -66,12 +69,12 @@ func TestDockerManagerPaths(t *testing.T) {
 	}
 	defer m.Close()
 	m.Owner = owner
-	if err := m.save(ctx, &Project{ID: project, ContainerID: id, RemoteUser: "browse", RemoteWorkspace: "/browse"}); err != nil {
+	if err := m.save(ctx, &Project{ID: projectID, StorageID: project, ContainerID: id, RemoteUser: "browse", RemoteWorkspace: "/browse"}); err != nil {
 		t.Fatal(err)
 	}
 	for range 2 {
 		partial := false
-		out, err := m.Paths(ctx, project, "/browse/", func(containerterm.PathListing) { partial = true })
+		out, err := m.Paths(ctx, projectID, "/browse/", func(containerterm.PathListing) { partial = true })
 		if err != nil || len(out.Entries) != 3 || !partial {
 			t.Fatal(out, err)
 		}
@@ -83,13 +86,17 @@ func TestDockerManagerPaths(t *testing.T) {
 			t.Fatal(entries)
 		}
 	}
-	if _, err := m.Paths(ctx, project, "~/", nil); err != nil {
+	if _, err := m.Paths(ctx, projectID, "~/", nil); err != nil {
 		t.Fatal("remote user's home unavailable", err)
 	}
-	if _, err := m.Paths(ctx, project, "/root/", nil); err == nil {
+	if _, err := m.Paths(ctx, projectID, "/root/", nil); err == nil {
 		t.Fatal("lookup ran as root instead of remote user")
 	}
-	terminal, err := m.OpenTerminal(ctx, project, 80, 24)
+	var download bytes.Buffer
+	if err := m.Download(ctx, projectID, "/browse/run.sh", &download); err != nil || download.String() != "download-fixture" {
+		t.Fatal("migrated project download", download.String(), err)
+	}
+	terminal, err := m.OpenTerminal(ctx, projectID, 80, 24)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,10 +114,10 @@ func TestDockerManagerPaths(t *testing.T) {
 		}
 	}
 	m.Owner = "foreign"
-	if _, err := m.Paths(ctx, project, "/", nil); err == nil {
+	if _, err := m.Paths(ctx, projectID, "/", nil); err == nil {
 		t.Fatal("cached helper bypassed manager ownership")
 	}
-	if terminal, err := m.OpenTerminal(ctx, project, 80, 24); err == nil {
+	if terminal, err := m.OpenTerminal(ctx, projectID, 80, 24); err == nil {
 		terminal.Close()
 		terminal.Wait()
 		t.Fatal("terminal bypassed manager ownership")
@@ -119,10 +126,10 @@ func TestDockerManagerPaths(t *testing.T) {
 	if _, err := dockerx.Run(ctx, "stop", id); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := m.Paths(ctx, project, "/", nil); status.Code(err) != codes.FailedPrecondition {
+	if _, err := m.Paths(ctx, projectID, "/", nil); status.Code(err) != codes.FailedPrecondition {
 		t.Fatal("stopped project lookup", err)
 	}
-	if _, err := m.OpenTerminal(ctx, project, 80, 24); status.Code(err) != codes.FailedPrecondition {
+	if _, err := m.OpenTerminal(ctx, projectID, 80, 24); status.Code(err) != codes.FailedPrecondition {
 		t.Fatal("stopped project terminal", err)
 	}
 }
