@@ -5,7 +5,7 @@ for (const width of [1440, 390]) {
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/sandbox.html#/projects");
+    await page.goto("/sandbox.html#/c/_/project");
     const profile = page.getByRole("button", { name: "Profile", exact: true });
     await expect(profile).toBeVisible({ timeout: 45000 });
     const button = (await profile.boundingBox())!;
@@ -22,7 +22,7 @@ for (const width of [1440, 390]) {
     await expect(profile).toBeFocused();
     await profile.press("Enter");
     await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
-    await expect(page).toHaveURL(/settings\/general/);
+    await expect(page).toHaveURL(/setting\/general/);
     await expect(menu).toBeHidden();
     await profile.click();
     await page.locator(".brand").click();

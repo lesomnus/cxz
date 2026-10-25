@@ -49,7 +49,7 @@ export function ProfileMenu({
             icon: <ResourceIcon kind="settings" />,
             run: () => {
               openSettings();
-              void navigate({ to: "/settings/general" });
+              void navigate({ to: "/setting/general" });
             },
           },
           {

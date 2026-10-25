@@ -216,9 +216,9 @@ test("session navigation highlights rows and long-list scrolling stays inside th
 }) => {
   const errors = await story(page, "sessions-panel--long-list");
   const selected = page.locator(".tree-session.active");
-  await expect(selected).toHaveAttribute("href", "/sessions/session-0");
-  await page.locator('.tree-session[href="/sessions/session-1"]').click();
-  await expect(selected).toHaveAttribute("href", "/sessions/session-1");
+  await expect(selected).toHaveAttribute("href", "/c/_/session/oak");
+  await page.locator('.tree-session[href="/c/_/session/seal"]').click();
+  await expect(selected).toHaveAttribute("href", "/c/_/session/seal");
   const scrollbar = page.getByRole("scrollbar", { name: "Panel scroll" });
   await scrollbar.focus();
   await scrollbar.press("End");

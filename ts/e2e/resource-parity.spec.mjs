@@ -572,7 +572,7 @@ test("account registration, session creation and archive restore use resource AP
     )
     .toBe(true);
   await expect(create).toHaveCount(0);
-  await page.goto("/sessions");
+  await page.goto("/c/_/session");
   await page
     .locator("main")
     .getByRole("button", { name: "Archive", exact: true })
@@ -600,7 +600,7 @@ test("search opens the matched response and queue recall preserves its text", as
     .fill("Earlier");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.getByRole("link", { name: /Earlier response/ }).click();
-  await expect(page).toHaveURL(/seq=%222%22/);
+  await expect(page).toHaveURL(/[?]seq=2$/);
   await expect(
     page.getByRole("button", { name: "Recall", exact: true }),
   ).toBeVisible();
@@ -618,7 +618,7 @@ test("conversation search uses loaded messages immediately without a Search requ
   page,
 }) => {
   const requests = await fixture(page);
-  await page.locator('.tree-session[href="/sessions/fixture"]').click();
+  await page.locator('.tree-session[href="/c/_/session/oak"]').click();
   await expect(page.locator(".transcript")).toContainText("Current response");
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
   await page.keyboard.press("Control+Shift+F");
@@ -721,7 +721,7 @@ test("local session search Enter visits loaded responses before wrapping without
   page,
 }) => {
   const requests = await fixture(page);
-  await page.locator('.tree-session[href="/sessions/fixture"]').click();
+  await page.locator('.tree-session[href="/c/_/session/oak"]').click();
   await expect(page.locator(".transcript")).toContainText("Current response");
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
   await page.keyboard.press("Control+Shift+F");

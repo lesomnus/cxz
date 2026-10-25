@@ -1,3 +1,4 @@
+import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useState } from "react";
 import { Button } from "@lesomnus/nox";
@@ -121,8 +122,7 @@ export function AccountDetails({
         {sessions.map((session) => (
           <RouteLink
             key={session.runtimeId}
-            to="/sessions/$sessionId"
-            params={{ sessionId: session.runtimeId }}
+            {...sessionLocation(session)}
             className={accountStyles.session}
           >
             <SessionIdentity session={session} />

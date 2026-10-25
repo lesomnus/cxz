@@ -203,6 +203,8 @@ export const messages = {
   "Action failed. Check session status before retrying.":
     "Action failed. Check session status before retrying.",
   "(path not reported)": "(path not reported)",
+  "This connection is unavailable. Use _ to address the server that served this page.":
+    "This connection is unavailable. Use _ to address the server that served this page.",
   "Page not found": "Page not found",
   "{count} more files in Details": "{count} more files in Details",
 

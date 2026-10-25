@@ -4,7 +4,7 @@ test.use({
   viewport: { width: 1440, height: 900 },
 });
 async function ready(page: Page) {
-  await page.goto("/sandbox.html#/sessions/session-1");
+  await page.goto("/sandbox.html#/c/_/session/session-1");
   await expect(
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });
@@ -139,7 +139,7 @@ test("Fork preserves the conversation and new input stays in the child session",
   );
   const previous = await messages.allTextContents();
   await choose(page, "Fork");
-  await expect(page).toHaveURL(/#\/sessions\/session-fork-/);
+  await expect(page).toHaveURL(/#\/c\/_\/session\/session-fork-/);
   await expect(messages).toHaveText(previous);
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("Explore the second direction in this fork.");
@@ -231,7 +231,7 @@ test("Purge previews without deleting, cancels, then removes only the confirmed 
   await expect(listed).toHaveCount(before - 1);
 });
 
-test("Details edits title and alias without changing the session route or conversation", async ({
+test("Details edits title and alias while keeping conversation identity and updating the alias address", async ({
   page,
 }) => {
   await ready(page);
@@ -311,7 +311,7 @@ test("Details edits title and alias without changing the session route or conver
     .getByRole("button", { name: "Close details", exact: true })
     .click();
   expect(await runId(page)).toBe(originalRun);
-  await expect(page).toHaveURL(/#\/sessions\/session-1$/);
+  await expect(page).toHaveURL(/#\/c\/_\/session\/oak-tree$/);
   await expect(page.locator("article.input .message-body").last()).toHaveText(
     originalMessage,
   );

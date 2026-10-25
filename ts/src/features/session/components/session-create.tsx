@@ -1,3 +1,4 @@
+import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useId, useRef, useState } from "react";
@@ -81,8 +82,7 @@ export function SessionCreate({
       c.store.apply("cxz.Session", [{ id: session.id, value: session }]);
       close();
       await navigate({
-        to: "/sessions/$sessionId",
-        params: { sessionId: session.runtimeId },
+        ...sessionLocation(session),
       });
     } catch (error) {
       if (controller.signal.aborted) return;

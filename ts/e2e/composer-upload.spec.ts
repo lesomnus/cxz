@@ -11,7 +11,7 @@ test("browser file drop reaches the authenticated HTTP upload bridge and sends i
     headers: { Origin: "https://127.0.0.1:18081" },
     data: { token: "a".repeat(32) },
   });
-  await page.goto("/sessions/session");
+  await page.goto("/c/_/session/session");
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await expect(input).toBeVisible();
   const uploading = page.waitForResponse((response) =>

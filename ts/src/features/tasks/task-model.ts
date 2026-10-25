@@ -4,6 +4,7 @@ import { TaskStatus } from "#gen/cxz/task_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import { bytes, key } from "@lesomnus/payday/store";
+import { resourceRef } from "#src/shared/navigation/resource-route.ts";
 
 export const taskStatuses = [
   { value: TaskStatus.TODO, label: "Todo" },
@@ -21,7 +22,7 @@ export const taskRef = (project: Project, task: Task) => ({
 export const taskLookup = (project: Project, value: string) => ({
   key: /^[0-9a-f]{32}$/i.test(value)
     ? { case: "id" as const, value: bytes(value) }
-    : { case: "alias" as const, value },
+    : resourceRef(value).key,
   project: projectRef(projectId(project)),
 });
 export const taskKey = (task: Task) => key(task.id);

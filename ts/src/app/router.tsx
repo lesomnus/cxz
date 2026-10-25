@@ -8,6 +8,15 @@ import {
   type RouterHistory,
 } from "@tanstack/react-router";
 import type { ComponentType, PropsWithChildren } from "react";
+import {
+  resourceLocation,
+  sessionLocation,
+  projectLocation,
+  accountLocation,
+  taskLocation,
+  parseRouteSearch,
+  stringifyRouteSearch,
+} from "#src/shared/navigation/resource-route.ts";
 
 export type ResourceView =
   | "sessions"
@@ -21,12 +30,10 @@ export type ResourceView =
   | "auxiliary"
   | "not-found";
 export type SettingsTopic = "general" | "editor" | "connections";
-
 type WorkspaceRouterContext = {
   shell: ComponentType<PropsWithChildren>;
   view: ComponentType;
 };
-
 declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
     resource?: ResourceView;
@@ -36,7 +43,6 @@ declare module "@tanstack/react-router" {
     router: ReturnType<typeof createWorkspaceRouter>;
   }
 }
-
 const rootRoute = createRootRouteWithContext<WorkspaceRouterContext>()({
   component: RouterShell,
 });
@@ -56,109 +62,106 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   beforeLoad: () => {
-    throw redirect({ to: "/sessions", replace: true });
+    throw redirect({ ...resourceLocation("sessions"), replace: true });
   },
 });
-const sessionsRoute = createRoute({
+const connectionRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "sessions",
+  path: "c/$connection",
   component: RouteView,
 });
 const sessionListRoute = createRoute({
-  getParentRoute: () => sessionsRoute,
-  path: "/",
+  getParentRoute: () => connectionRoute,
+  path: "session",
   staticData: { resource: "sessions" },
 });
 const sessionRoute = createRoute({
-  getParentRoute: () => sessionsRoute,
-  path: "$sessionId",
+  getParentRoute: () => connectionRoute,
+  path: "session/$sessionId",
   staticData: { resource: "sessions" },
-  validateSearch: (search: Record<string, unknown>): { seq?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { seq?: string } => ({
     seq:
-      typeof search.seq === "string" && /^[1-9]\d*$/.test(search.seq)
-        ? search.seq
-        : undefined,
+      typeof s.seq === "string" && /^[1-9]\d*$/.test(s.seq) ? s.seq : undefined,
   }),
 });
 const projectsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "projects",
-  component: RouteView,
+  getParentRoute: () => connectionRoute,
+  path: "project",
   staticData: { resource: "projects" },
-  validateSearch: (search: Record<string, unknown>): { project?: string } => ({
-    project:
-      typeof search.project === "string" && search.project.length <= 256
-        ? search.project
-        : undefined,
-  }),
+});
+const projectRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "project/$projectId",
+  staticData: { resource: "projects" },
 });
 const accountsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "accounts",
-  component: RouteView,
+  getParentRoute: () => connectionRoute,
+  path: "account",
   staticData: { resource: "accounts" },
-  validateSearch: (search: Record<string, unknown>): { account?: string } => ({
-    account:
-      typeof search.account === "string" &&
-      /^[a-z][a-z0-9-]{0,62}$/.test(search.account)
-        ? search.account
-        : undefined,
-  }),
 });
+const accountRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "account/$accountId",
+  staticData: { resource: "accounts" },
+});
+const taskSearch = (
+  s: Record<string, unknown>,
+): { project?: string; assignee?: string; run?: string } => {
+  const value = (key: string) =>
+    typeof s[key] === "string" && (s[key] as string).length <= 256
+      ? (s[key] as string)
+      : undefined;
+  return {
+    project: value("project"),
+    assignee: value("assignee"),
+    run: value("run"),
+  };
+};
 const tasksRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "tasks",
-  component: RouteView,
+  getParentRoute: () => connectionRoute,
+  path: "task",
   staticData: { resource: "tasks" },
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { project?: string; task?: string; assignee?: string; run?: string } => {
-    const value = (key: string) =>
-      typeof search[key] === "string" && (search[key] as string).length <= 256
-        ? (search[key] as string)
-        : undefined;
-    return {
-      project: value("project"),
-      task: value("task"),
-      assignee: value("assignee"),
-      run: value("run"),
-    };
-  },
+  validateSearch: taskSearch,
+});
+const taskRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "task/$taskId",
+  staticData: { resource: "tasks" },
+  validateSearch: taskSearch,
 });
 const searchRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => connectionRoute,
   path: "search",
-  component: RouteView,
   staticData: { resource: "search" },
 });
 const memoryRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => connectionRoute,
   path: "memory",
-  component: RouteView,
   staticData: { resource: "memory" },
+  validateSearch: (s: Record<string, unknown>) => ({
+    project: typeof s.project === "string" ? s.project : undefined,
+  }),
 });
 const activityRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => connectionRoute,
   path: "activity",
-  component: RouteView,
   staticData: { resource: "activity" },
 });
 const auxiliaryRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => connectionRoute,
   path: "auxiliary",
-  component: RouteView,
   staticData: { resource: "auxiliary" },
 });
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "settings",
+  path: "setting",
   component: RouteView,
 });
 const settingsIndexRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: "/",
   beforeLoad: () => {
-    throw redirect({ to: "/settings/general", replace: true });
+    throw redirect({ to: "/setting/general", replace: true });
   },
 });
 const generalRoute = createRoute({
@@ -173,7 +176,7 @@ const editorRoute = createRoute({
 });
 const connectionsRoute = createRoute({
   getParentRoute: () => settingsRoute,
-  path: "connections",
+  path: "connection",
   staticData: { resource: "settings", settingsTopic: "connections" },
 });
 const notFoundRoute = createRoute({
@@ -181,17 +184,84 @@ const notFoundRoute = createRoute({
   path: "$",
   component: RouteView,
   staticData: { resource: "not-found" },
+  beforeLoad: ({ location }) => {
+    const parts = location.pathname.split("/").filter(Boolean);
+    const query = location.search as Record<string, unknown>;
+    let handle: string | undefined;
+    try {
+      handle = parts[1] && decodeURIComponent(parts[1]);
+    } catch {
+      return;
+    }
+    if (parts.length > 2) return;
+    if (parts[0] === "sessions")
+      throw redirect({
+        ...(handle ? sessionLocation(handle) : resourceLocation("sessions")),
+        search: { seq: typeof query.seq === "string" ? query.seq : undefined },
+        replace: true,
+      });
+    if (parts[0] === "projects" && !handle)
+      throw redirect({
+        ...projectLocation(
+          typeof query.project === "string" ? query.project : undefined,
+        ),
+        replace: true,
+      });
+    if (parts[0] === "accounts" && !handle)
+      throw redirect({
+        ...accountLocation(
+          typeof query.account === "string" ? query.account : undefined,
+        ),
+        replace: true,
+      });
+    if (parts[0] === "tasks" && !handle)
+      throw redirect({
+        ...taskLocation({
+          ...taskSearch(query),
+          task: typeof query.task === "string" ? query.task : undefined,
+        }),
+        replace: true,
+      });
+    if (
+      ["search", "memory", "activity", "auxiliary"].includes(parts[0]) &&
+      !handle
+    )
+      throw redirect({
+        ...resourceLocation(
+          parts[0] as "search" | "memory" | "activity" | "auxiliary",
+        ),
+        replace: true,
+      });
+    if (
+      parts[0] === "settings" &&
+      (!handle || ["general", "editor", "connections"].includes(handle))
+    ) {
+      const to =
+        handle === "editor"
+          ? "/setting/editor"
+          : handle === "connections"
+            ? "/setting/connection"
+            : "/setting/general";
+      throw redirect({ to, replace: true });
+    }
+  },
 });
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  sessionsRoute.addChildren([sessionListRoute, sessionRoute]),
-  projectsRoute,
-  accountsRoute,
-  tasksRoute,
-  searchRoute,
-  memoryRoute,
-  activityRoute,
-  auxiliaryRoute,
+  connectionRoute.addChildren([
+    sessionListRoute,
+    sessionRoute,
+    projectsRoute,
+    projectRoute,
+    accountsRoute,
+    accountRoute,
+    tasksRoute,
+    taskRoute,
+    searchRoute,
+    memoryRoute,
+    activityRoute,
+    auxiliaryRoute,
+  ]),
   settingsRoute.addChildren([
     settingsIndexRoute,
     generalRoute,
@@ -200,7 +270,6 @@ const routeTree = rootRoute.addChildren([
   ]),
   notFoundRoute,
 ]);
-
 export function createWorkspaceRouter(
   context: WorkspaceRouterContext,
   history?: RouterHistory,
@@ -209,26 +278,36 @@ export function createWorkspaceRouter(
     routeTree,
     context,
     history,
-    // SessionHistory owns fetching and transcript scroll restoration.
+    parseSearch: parseRouteSearch,
+    stringifySearch: stringifyRouteSearch,
     defaultPreload: false,
     trailingSlash: "never",
     scrollRestoration: false,
   });
 }
-
 export function useWorkspaceRoute() {
-  const data = useRouterState({
-    select: (state) => state.matches.at(-1)?.staticData,
-  });
-  const session =
-    sessionRoute.useParams({ shouldThrow: false })?.sessionId ?? "";
+  const match = useRouterState({ select: (state) => state.matches.at(-1) });
+  const detailTaskSearch = taskRoute.useSearch({ shouldThrow: false });
+  const listTaskSearch = tasksRoute.useSearch({ shouldThrow: false });
+  const connection = connectionRoute.useParams({
+    shouldThrow: false,
+  })?.connection;
+  const resource =
+    connection && connection !== "_"
+      ? "not-found"
+      : (match?.staticData.resource ?? "sessions");
   return {
-    resource: data?.resource ?? "sessions",
-    settingsTopic: data?.settingsTopic ?? "general",
-    session,
+    resource,
+    connection,
+    settingsTopic: match?.staticData.settingsTopic ?? "general",
+    session: sessionRoute.useParams({ shouldThrow: false })?.sessionId ?? "",
     seq: sessionRoute.useSearch({ shouldThrow: false })?.seq,
-    account: accountsRoute.useSearch({ shouldThrow: false })?.account ?? "",
-    project: projectsRoute.useSearch({ shouldThrow: false })?.project,
-    tasks: tasksRoute.useSearch({ shouldThrow: false }) ?? {},
+    account: accountRoute.useParams({ shouldThrow: false })?.accountId ?? "",
+    project: projectRoute.useParams({ shouldThrow: false })?.projectId,
+    tasks: {
+      ...(detailTaskSearch ?? listTaskSearch ?? {}),
+      task: taskRoute.useParams({ shouldThrow: false })?.taskId,
+    },
+    memoryProject: memoryRoute.useSearch({ shouldThrow: false })?.project,
   };
 }

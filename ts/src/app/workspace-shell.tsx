@@ -29,6 +29,11 @@ import { WorkspaceContext } from "./workspace-context";
 import { useSessionAttention } from "#src/features/session/model/use-session-attention.ts";
 import { resumableStates } from "#src/features/session/model/session-actions.ts";
 import { useSettings } from "#src/shared/settings/settings.ts";
+import {
+  matchesResource,
+  resourceLocation,
+  sessionLocation,
+} from "#src/shared/navigation/resource-route.ts";
 export function Workspace({
   connection: c,
   logout,
@@ -44,13 +49,18 @@ export function Workspace({
   useEffect(() => c.conversations.mount(), [c]);
   const route = useWorkspaceRoute();
   const resource = route.resource === "not-found" ? "sessions" : route.resource;
-  const session = route.session;
+  const inventory = useResourceInventory(c);
+  const selectedSession = inventory.sessions.find((s) =>
+    matchesResource(s, route.session),
+  );
+  const session = selectedSession?.runtimeId ?? route.session;
   const hasResourcePanel = !["accounts", "tasks", "projects"].includes(
     resource,
   );
   const settingsTopic = route.settingsTopic;
   const lastSession = useRef("");
-  if (route.resource === "sessions") lastSession.current = session;
+  if (route.resource === "sessions")
+    lastSession.current = selectedSession?.alias || route.session;
   const [settingsFileOpen, setSettingsFileOpen] = useState(false);
   useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -72,7 +82,6 @@ export function Workspace({
     };
   }, []);
   useEffect(() => setAddingSession(false), [resource, session]);
-  const inventory = useResourceInventory(c);
   const { unread, errors } = useSessionAttention(
     c,
     inventory.sessions,
@@ -125,13 +134,10 @@ export function Workspace({
             >
               <RouteLink
                 {...(view === "projects"
-                  ? { to: "/projects" as const }
+                  ? resourceLocation("projects")
                   : lastSession.current
-                    ? {
-                        to: "/sessions/$sessionId" as const,
-                        params: { sessionId: lastSession.current },
-                      }
-                    : { to: "/sessions" as const })}
+                    ? sessionLocation(lastSession.current)
+                    : resourceLocation("sessions"))}
                 className={`resource-link ${resource === view ? "active" : ""}`}
                 aria-label={
                   view === "sessions" ? t("Sessions view") : t("Projects view")
@@ -165,7 +171,7 @@ export function Workspace({
               }
             >
               <RouteLink
-                to={`/${view}`}
+                {...resourceLocation(view)}
                 className={`resource-link ${resource === view ? "active" : ""}`}
                 aria-label={
                   view === "auxiliary"
@@ -283,9 +289,9 @@ export function Workspace({
               >
                 {(
                   [
-                    ["general", "/settings/general", t("General")],
-                    ["editor", "/settings/editor", t("Editor")],
-                    ["connections", "/settings/connections", t("Connections")],
+                    ["general", "/setting/general", t("General")],
+                    ["editor", "/setting/editor", t("Editor")],
+                    ["connections", "/setting/connection", t("Connections")],
                   ] as const
                 ).map(([topic, to, label]) => (
                   <PanelLink
@@ -340,7 +346,7 @@ export function Workspace({
               </div>
             ) : (
               <nav className="settings-topics" aria-label="Resource navigation">
-                <PanelLink to={`/${resource}`} aria-current="page">
+                <PanelLink {...resourceLocation(resource)} aria-current="page">
                   {resource === "memory"
                     ? "Shared memory"
                     : resource === "auxiliary"

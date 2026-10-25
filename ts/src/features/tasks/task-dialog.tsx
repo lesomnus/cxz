@@ -1,3 +1,4 @@
+import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useEffect, useId, useRef, useState } from "react";
@@ -257,8 +258,7 @@ function TaskEditor({
                 <span>Assigned to</span>
                 {owner ? (
                   <RouteLink
-                    to="/sessions/$sessionId"
-                    params={{ sessionId: owner.runtimeId }}
+                    {...sessionLocation(owner)}
                     className={styles.sessionLink}
                   >
                     <AgentIdentity
@@ -282,8 +282,7 @@ function TaskEditor({
                 <div>
                   <span>Created from</span>
                   <RouteLink
-                    to="/sessions/$sessionId"
-                    params={{ sessionId: source.runtimeId }}
+                    {...sessionLocation(source)}
                     search={
                       task.sourceSeq ? { seq: String(task.sourceSeq) } : {}
                     }

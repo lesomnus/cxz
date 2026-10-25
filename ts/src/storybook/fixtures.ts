@@ -388,7 +388,7 @@ export function storySession(index = 0) {
   return create(SessionSchema, {
     id: sessionFixtureId(index + 1),
     runtimeId: `session-${index}`,
-    alias: ["oak", "seal", "pine"][index % 3],
+    alias: index < 3 ? ["oak", "seal", "pine"][index] : `session-${index}`,
     name: ["UI exploration", "Editor improvements", "History performance"][
       index % 3
     ],

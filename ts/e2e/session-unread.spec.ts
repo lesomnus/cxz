@@ -88,7 +88,7 @@ test("unread response uses the left indicator and Sessions icon count clears whe
       ]),
     });
   });
-  await page.goto("/sessions");
+  await page.goto("/c/_/session");
   const row = page.locator(".tree-session").first();
   const unread = row
     .locator(".session-indicator")

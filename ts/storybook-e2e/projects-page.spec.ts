@@ -69,7 +69,7 @@ test("session table splits identity columns and supports individual and select-a
   await expect(rows.first().locator("td").nth(4)).toHaveText("Work account");
   await expect(
     rows.first().getByRole("link", { name: "Work account", exact: true }),
-  ).toHaveAttribute("href", "/accounts?account=work");
+  ).toHaveAttribute("href", "/c/_/account/work");
   await expect(rows.first().locator("td").nth(5)).toHaveText(
     "Waiting for input",
   );

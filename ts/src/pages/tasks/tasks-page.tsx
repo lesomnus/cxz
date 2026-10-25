@@ -4,6 +4,7 @@ import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { TasksView } from "#src/features/tasks/tasks-view.tsx";
+import { taskLocation } from "#src/shared/navigation/resource-route.ts";
 
 export function TasksPage(props: {
   c: Connection;
@@ -18,7 +19,7 @@ export function TasksPage(props: {
     <TasksView
       {...props}
       selection={tasks}
-      select={(search) => void navigate({ to: "/tasks", search })}
+      select={(search) => void navigate(taskLocation(search))}
     />
   );
 }

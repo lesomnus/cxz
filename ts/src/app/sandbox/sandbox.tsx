@@ -1,3 +1,7 @@
+import {
+  sessionLocation,
+  matchesResource,
+} from "#src/shared/navigation/resource-route.ts";
 import { ThemeProvider } from "#src/shared/theme/theme.tsx";
 import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
 import { LocaleProvider, useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -47,11 +51,19 @@ function SandboxApp({ children }: PropsWithChildren) {
   const navigate = useNavigate();
   const route = useWorkspaceRoute();
   const [scenario, setScenario] = useState("session-1");
-  useEffect(() => {
-    if (route.session) setScenario(route.session);
-  }, [route.session]);
   const [generation, setGeneration] = useState(0);
   const [connection, setConnection] = useState<Connection>();
+  useEffect(() => {
+    if (!connection || !route.session) return;
+    const sync = () => {
+      const session = connection.inventory
+        .snapshot()
+        .sessions.find((s) => matchesResource(s, route.session));
+      if (session) setScenario(session.runtimeId);
+    };
+    sync();
+    return connection.inventory.subscribe(sync);
+  }, [connection, route.session]);
   const [loading, setLoading] = useState("Starting sandbox…");
   // Kept rather than flashed: the first attempt stalling is the explanation for a
   // slow start, and it is worth still being on screen once the sandbox is up.
@@ -181,8 +193,12 @@ function SandboxApp({ children }: PropsWithChildren) {
             onChange={(e) => {
               setScenario(e.target.value);
               void navigate({
-                to: "/sessions/$sessionId",
-                params: { sessionId: e.target.value },
+                ...sessionLocation(
+                  connection?.inventory
+                    .snapshot()
+                    .sessions.find((s) => s.runtimeId === e.target.value) ??
+                    e.target.value,
+                ),
               });
             }}
           >
@@ -239,7 +255,7 @@ function SandboxApp({ children }: PropsWithChildren) {
   );
 }
 const history = createHashHistory();
-if (!location.hash) history.replace("/sessions/session-1");
+if (!location.hash) history.replace("/c/_/session/session-1");
 const router = createWorkspaceRouter(
   { shell: SandboxApp, view: WorkspaceView },
   history,

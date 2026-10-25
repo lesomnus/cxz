@@ -8,7 +8,7 @@ test.use({
 test("event details grow only the trigger's exterior, toggle and replace in place, and dismiss from the transcript", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/sessions/session-5");
+  await page.goto("/sandbox.html#/c/_/session/session-5");
   const trigger = page.locator(".detail-anchor").last();
   await expect(trigger).toContainText("Simulated usage limit", {
     timeout: 45000,
@@ -131,7 +131,7 @@ test("grouped tool details fit short viewports and isolate editor scrolling", as
 }) => {
   // A short conversation leaves less room than this tool's combined details.
   await page.setViewportSize({ width: 1440, height: 360 });
-  await page.goto("/sandbox.html#/sessions/session-3");
+  await page.goto("/sandbox.html#/c/_/session/session-3");
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await expect(input).toBeVisible({ timeout: 45000 });
   await input.fill("Inspect this work");

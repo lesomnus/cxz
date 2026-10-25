@@ -38,7 +38,7 @@ test("sidebar hints appear to the right without native titles and dismiss on nav
 test("sidebar controls fit its inner width without horizontal scrolling at any viewport", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/projects");
+  await page.goto("/sandbox.html#/c/_/project");
   const sidebar = page.getByRole("navigation", {
     name: "Resources",
     exact: true,

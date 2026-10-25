@@ -1,3 +1,4 @@
+import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { useRef, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
@@ -89,8 +90,7 @@ export function SessionLibrary({
               ) : (
                 <RouteLink
                   className={styles.item}
-                  to="/sessions/$sessionId"
-                  params={{ sessionId: session.runtimeId }}
+                  {...sessionLocation(session)}
                 >
                   <span>
                     {session.name || session.alias}

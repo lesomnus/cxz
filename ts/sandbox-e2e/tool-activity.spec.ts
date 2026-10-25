@@ -24,7 +24,7 @@ const details = (page: import("@playwright/test").Page) =>
 test("paired tools are one card each, carrying what the row says they are", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/sessions/session-9");
+  await page.goto("/sandbox.html#/c/_/session/session-9");
   await expect(page.locator(".transcript")).toBeVisible({ timeout: 45000 });
   await details(page).click();
   const cards = page.locator("#work-dialog .tool-activity");

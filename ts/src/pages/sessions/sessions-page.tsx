@@ -17,6 +17,16 @@ import { Conversation } from "#src/features/session/conversation/conversation.ts
 import { ProjectEditorPane } from "#src/features/workspace/editor/project-editor-pane.tsx";
 import { SessionLibrary } from "#src/features/session/components/session-library.tsx";
 import { MarkdownFileLinks } from "#src/shared/content/markdown.tsx";
+import { useSession } from "#src/shared/api/use-session.ts";
+import { useResourceInventory } from "#src/shared/api/resource-inventory.ts";
+import { ConversationLoading } from "#src/features/session/conversation/conversation-loading.tsx";
+import { Button } from "@lesomnus/nox";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  sessionLocation,
+  uuid,
+} from "#src/shared/navigation/resource-route.ts";
+import { useWorkspaceRoute } from "#src/app/router.tsx";
 export function SessionsPage({
   c,
   id,
@@ -27,8 +37,37 @@ export function SessionsPage({
   projects: Project[];
 }) {
   useLocale();
+  const inventory = useResourceInventory(c);
+  const resolved = useSession(c, inventory.sessions, id);
+  const navigate = useNavigate();
+  const { seq } = useWorkspaceRoute();
+  useEffect(() => {
+    if (resolved.session?.alias && resolved.session.alias !== id && !uuid(id))
+      void navigate({
+        ...sessionLocation(resolved.session),
+        search: { seq },
+        replace: true,
+      });
+  }, [navigate, resolved.session?.alias, id, seq]);
   return id ? (
-    <SessionWorkspace c={c} id={id} projects={projects} />
+    resolved.session ? (
+      <SessionWorkspace
+        c={c}
+        id={resolved.session.runtimeId}
+        projects={projects}
+      />
+    ) : (
+      <div className="session-workspace">
+        {resolved.error ? (
+          <div role="alert">
+            <p>{resolved.error}</p>
+            <Button onClick={resolved.reload}>Retry</Button>
+          </div>
+        ) : (
+          <ConversationLoading stage="session" />
+        )}
+      </div>
+    )
   ) : (
     <SessionLibrary c={c} projects={projects} />
   );
