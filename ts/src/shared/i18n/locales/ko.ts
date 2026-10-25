@@ -218,6 +218,8 @@ export const messages = {
     "3초 이내 두 번 클릭하거나 Esc 두 번",
   "Provider rejected the interrupt": "에이전트가 중단 요청을 거부했습니다",
   "(path not reported)": "(경로 미제공)",
+  "This connection is unavailable. Use _ to address the server that served this page.":
+    "이 연결을 사용할 수 없습니다. 현재 페이지를 제공하는 서버는 _로 지정할 수 있습니다.",
   "Page not found": "페이지를 찾을 수 없습니다",
   "{count} more files in Details": "상세 정보에서 파일 {count}개 더 보기",
 

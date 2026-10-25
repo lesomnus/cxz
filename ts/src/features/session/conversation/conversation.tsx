@@ -1,3 +1,5 @@
+import { resourceLocation } from "#src/shared/navigation/resource-route.ts";
+import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import {
   projectId as projectUUID,
   projectRef,
@@ -720,8 +722,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         );
         c.store.apply("cxz.Session", [{ id: child.id, value: child }]);
         await navigate({
-          to: "/sessions/$sessionId",
-          params: { sessionId: child.runtimeId },
+          ...sessionLocation(child),
         });
         forkRequest.current = undefined;
       } catch (error) {
@@ -1296,7 +1297,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                 c.drafts.delete(id);
                 c.attention.reset(id);
                 c.conversations.delete(id);
-                await navigate({ to: "/sessions", replace: true });
+                await navigate({
+                  ...resourceLocation("sessions"),
+                  replace: true,
+                });
               })
             }
           />

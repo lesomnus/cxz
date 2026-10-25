@@ -112,7 +112,7 @@ test("large Transcript pages stay responsive and preserve the reading anchor", a
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await page.locator('.tree-session[href="/sessions/fixture"]').click();
+  await page.locator('.tree-session[href="/c/_/session/fixture"]').click();
   await expect(page.locator(".virtual-messages")).toBeVisible();
   await page.waitForFunction(
     () => document.querySelector(".transcript").scrollTop > 0,

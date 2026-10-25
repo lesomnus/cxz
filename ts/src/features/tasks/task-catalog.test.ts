@@ -60,7 +60,7 @@ describe("project task subscriptions", () => {
       offToolbar = toolbar.subscribe(() => {});
     expect(watch).toHaveBeenCalledTimes(1);
     expect(watch.mock.calls[0][0]).toEqual({
-      project: { key: { case: "runtimeId", value: "P" } },
+      project: { key: { case: "alias", value: "P" } },
     });
     feed.push(frame());
     await tick();

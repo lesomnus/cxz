@@ -1,3 +1,4 @@
+import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { formatOffsetDateTime } from "#src/shared/components/date-time-format.ts";
 import { useEffect, useState } from "react";
@@ -43,8 +44,7 @@ function TaskCard({
         {owner ? (
           <RouteLink
             className={styles.owner}
-            to="/sessions/$sessionId"
-            params={{ sessionId: owner.runtimeId }}
+            {...sessionLocation(owner)}
             title={owner.name || owner.alias}
           >
             <AgentBrand agent={owner.agent} />

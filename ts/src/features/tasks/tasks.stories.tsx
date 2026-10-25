@@ -31,7 +31,9 @@ function TaskPreview({
         ),
       },
       createMemoryHistory({
-        initialEntries: ["/tasks?project=00000000-0000-8000-8007-000000000001"],
+        initialEntries: [
+          "/c/_/task?project=00000000-0000-8000-8007-000000000001",
+        ],
       }),
     ),
   );

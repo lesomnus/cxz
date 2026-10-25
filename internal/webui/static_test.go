@@ -13,6 +13,12 @@ func TestSPAFileNavigation(t *testing.T) {
 		method, path, accept, body string
 		status                     int
 	}{
+		{"GET", "/c/_/session/oak", "text/html", "app shell", 200},
+		{"GET", "/c/_/session/alias.with.dots", "text/html", "app shell", 200},
+		{"GET", "/c/_/project/00000000-0000-8000-8007-000000000001", "text/html", "app shell", 200},
+		{"GET", "/setting/connection", "text/html", "app shell", 200},
+		{"GET", "/c/unknown/session/oak", "text/html", "app shell", 200},
+		{"POST", "/c/_/session/oak", "text/html", "", 404},
 		{"GET", "/sessions", "text/html", "app shell", 200},
 		{"GET", "/sessions/session-1?tab=details", "text/html", "app shell", 200},
 		{"GET", "/sessions/alias.with.dots", "text/html", "app shell", 200},

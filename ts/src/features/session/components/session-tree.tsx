@@ -1,3 +1,7 @@
+import {
+  sessionLocation,
+  matchesResource,
+} from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import type { Project } from "#gen/cxz/project_pb";
@@ -54,17 +58,16 @@ export function SessionTreeGroup({
         <div className="tree-sessions">
           {items.map((s) => (
             <PanelLink
-              to="/sessions/$sessionId"
-              params={{ sessionId: s.runtimeId }}
+              {...sessionLocation(s)}
               key={s.runtimeId}
-              className={`tree-session ${styles.session} ${selected === s.runtimeId ? "active" : ""}`}
+              className={`tree-session ${styles.session} ${matchesResource(s, selected) ? "active" : ""}`}
               data-state={s.status?.state}
               data-unread={
                 unread.has(s.runtimeId) || errors.has(s.runtimeId) || undefined
               }
               data-inactive={resumableStates.has(s.status?.state ?? "")}
               pressTarget=".session-heading"
-              aria-current={selected === s.runtimeId ? "true" : undefined}
+              aria-current={matchesResource(s, selected) ? "true" : undefined}
             >
               <SessionIndicator
                 session={s}

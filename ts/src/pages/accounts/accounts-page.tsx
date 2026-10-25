@@ -3,6 +3,7 @@ import type { Session } from "#gen/cxz/session_pb";
 import { AccountsView } from "#src/features/accounts/accounts-view.tsx";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { useNavigate } from "@tanstack/react-router";
+import { accountLocation } from "#src/shared/navigation/resource-route.ts";
 export function AccountsPage({
   c,
   sessions,
@@ -20,9 +21,7 @@ export function AccountsPage({
       sessions={sessions}
       sessionsLoading={sessionsLoading}
       selected={account}
-      select={(alias) =>
-        void navigate({ to: "/accounts", search: { account: alias } })
-      }
+      select={(alias) => void navigate(accountLocation(alias))}
     />
   );
 }

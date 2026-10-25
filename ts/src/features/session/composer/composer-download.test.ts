@@ -28,7 +28,7 @@ it("downloads chunked binary bytes through the project-scoped API, including emp
   ]);
   expect(client.download).toHaveBeenCalledWith(
     {
-      ref: { key: { case: "runtimeId", value: "project-2" } },
+      ref: { key: { case: "alias", value: "project-2" } },
       path: "~/file.bin",
     },
     { signal, timeoutMs: 120000 },

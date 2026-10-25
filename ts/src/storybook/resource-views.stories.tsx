@@ -42,7 +42,7 @@ function AccountPreview({ c }: { c: Connection }) {
           />
         ),
       },
-      createMemoryHistory({ initialEntries: ["/accounts"] }),
+      createMemoryHistory({ initialEntries: ["/c/_/account"] }),
     ),
   );
   return <RouterProvider router={router} />;

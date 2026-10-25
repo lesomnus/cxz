@@ -106,7 +106,7 @@ function Preview({
           );
         },
       },
-      createMemoryHistory({ initialEntries: ["/projects"] }),
+      createMemoryHistory({ initialEntries: ["/c/_/project"] }),
     );
   });
   return <RouterProvider router={router} />;

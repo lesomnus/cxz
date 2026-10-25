@@ -8,7 +8,7 @@ test.use({
 test("local search includes loaded virtualized history, excludes unloaded history and closes only explicitly", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/sessions/session-3");
+  await page.goto("/sandbox.html#/c/_/session/session-3");
   const pane = page.locator(".transcript");
   await expect(pane).toContainText("History item 2100", { timeout: 45000 });
   await expect(pane).not.toContainText("History item 1800");
@@ -48,7 +48,7 @@ test("local search includes loaded virtualized history, excludes unloaded histor
 test("local search has no result page limit and Enter visits newest matches with focus and highlight cleanup", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/sessions/session-3");
+  await page.goto("/sandbox.html#/c/_/session/session-3");
   const pane = page.locator(".transcript");
   await expect(pane).toContainText("History item 2100", { timeout: 45000 });
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
@@ -101,7 +101,7 @@ test("local search has no result page limit and Enter visits newest matches with
 test("green search ticks share existing marker motion and disappear when search clears or closes", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/sessions/session-3");
+  await page.goto("/sandbox.html#/c/_/session/session-3");
   const pane = page.locator(".transcript");
   await expect(pane).toContainText("History item 2100", { timeout: 45000 });
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();

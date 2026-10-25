@@ -2,19 +2,28 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "./connection";
 import { projectId, projectRef } from "./project-id";
 import { useRemote } from "./use-remote";
+import { matchesResource } from "#src/shared/navigation/resource-route.ts";
+import { useRef } from "react";
 
 export function useProject(
   c: Connection,
   projects: readonly Project[],
   selected?: string,
 ) {
+  const remembered = useRef<{ handle: string; id: string } | undefined>(
+    undefined,
+  );
   const found =
-    projects.find((p) => projectId(p) === selected) ??
+    projects.find((p) => selected && matchesResource(p, selected)) ??
+    (remembered.current?.handle === selected
+      ? projects.find((p) => projectId(p) === remembered.current?.id)
+      : undefined) ??
     (!selected ? projects[0] : undefined);
+  if (found && selected)
+    remembered.current = { handle: selected, id: projectId(found) };
   const legacy = useRemote(
     async (signal) => {
-      if (!selected || found || projectRef(selected).key.case === "id")
-        return undefined;
+      if (!selected || found) return undefined;
       return {
         handle: selected,
         project: await c.projects.get(

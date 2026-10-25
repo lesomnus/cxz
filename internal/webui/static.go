@@ -32,7 +32,7 @@ func clientNavigation(urlPath string) bool {
 		}
 	}
 	// Session identifiers can contain punctuation. Other missing file paths stay 404.
-	for _, prefix := range []string{"/sessions", "/projects", "/settings"} {
+	for _, prefix := range []string{"/c", "/setting", "/sessions", "/projects", "/settings"} {
 		if urlPath == prefix || strings.HasPrefix(urlPath, prefix+"/") {
 			return true
 		}

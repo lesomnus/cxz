@@ -18,7 +18,7 @@ async function language(page: Page) {
       .isVisible())
   )
     await page.evaluate(() => {
-      location.hash = "/sessions";
+      location.hash = "/c/_/session";
     });
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();

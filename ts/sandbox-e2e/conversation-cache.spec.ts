@@ -7,7 +7,7 @@ test.use({
 test("cached conversation restores its reading row and offset without keeping hidden transcript DOM", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/sessions/session-3");
+  await page.goto("/sandbox.html#/c/_/session/session-3");
   await expect(
     page.getByText("History item 2100", { exact: false }),
   ).toBeVisible({ timeout: 45000 });

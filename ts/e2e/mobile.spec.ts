@@ -79,7 +79,7 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
     page.locator("article.input").filter({ hasText: "초안 preserved" }),
   ).toHaveCount(1);
   await page.reload();
-  await expect(page).toHaveURL(/\/sessions\/session$/);
+  await expect(page).toHaveURL(/\/c\/_\/session\/demo-chat$/);
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toBeVisible();

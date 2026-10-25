@@ -5,6 +5,8 @@ import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";
+import { useWorkspaceRoute } from "#src/app/router.tsx";
+import { matchesResource } from "#src/shared/navigation/resource-route.ts";
 export function MemoryPage({
   c,
   sessions,
@@ -13,7 +15,16 @@ export function MemoryPage({
   sessions: Session[];
 }) {
   const [selected, setSelected] = useState("");
-  const session = selected || sessions[0]?.runtimeId || "";
+  const { memoryProject } = useWorkspaceRoute();
+  const scoped = sessions.filter(
+    (s) =>
+      !memoryProject ||
+      (!!s.project && matchesResource(s.project, memoryProject)),
+  );
+  const session =
+    scoped.find((s) => s.runtimeId === selected)?.runtimeId ||
+    scoped[0]?.runtimeId ||
+    "";
   return (
     <main className={styles.page}>
       <header className={styles.heading}>
@@ -21,7 +32,7 @@ export function MemoryPage({
         <ValueMenu
           label="Session"
           value={session}
-          options={sessions.map((s) => ({
+          options={scoped.map((s) => ({
             value: s.runtimeId,
             label: `${s.project?.name || s.project?.alias || ""} · ${s.alias}`,
           }))}

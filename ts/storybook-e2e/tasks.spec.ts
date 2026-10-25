@@ -17,7 +17,7 @@ test("task board creates and edits work, and releases a stopped owner's task onl
   await expect(page.getByText("Previous run", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /elm/ })).toHaveAttribute(
     "href",
-    "/sessions/elm",
+    "/c/_/session/elm",
   );
   await page.getByRole("button", { name: "Add task", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add task", exact: true });

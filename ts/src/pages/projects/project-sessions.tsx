@@ -198,8 +198,8 @@ export function ProjectSessions({
                   <td className={`${styles.cardCell} ${styles.account}`}>
                     {accountAlias ? (
                       <Link
-                        to="/accounts"
-                        search={{ account: accountAlias }}
+                        to="/c/$connection/account/$accountId"
+                        params={{ connection: "_", accountId: accountAlias }}
                         className={styles.accountCard}
                         title={accountName}
                       >

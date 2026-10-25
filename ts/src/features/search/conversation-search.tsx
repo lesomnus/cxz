@@ -1,3 +1,4 @@
+import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
@@ -261,8 +262,7 @@ export function ConversationSearch({
             <RouteLink
               className={styles.item}
               key={String(hit.seq)}
-              to="/sessions/$sessionId"
-              params={{ sessionId: visit.sessionId }}
+              {...sessionLocation(visit.alias || visit.sessionId)}
               search={{ seq: hit.seq.toString() }}
             >
               <span>

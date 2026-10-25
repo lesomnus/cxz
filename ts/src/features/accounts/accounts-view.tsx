@@ -8,6 +8,7 @@ import { AccountAddForm } from "./account-add-form";
 import { AccountDetails } from "./account-details";
 import resourceStyles from "#src/shared/components/resource-surface.module.css";
 import styles from "./accounts.module.css";
+import { matchesResource } from "#src/shared/navigation/resource-route.ts";
 export function AccountsView({
   c,
   selected,
@@ -29,7 +30,11 @@ export function AccountsView({
     if (!selected) return;
     const card = Array.from(
       content.current?.querySelectorAll<HTMLElement>("[data-account]") ?? [],
-    ).find((node) => node.dataset.account === selected);
+    ).find(
+      (node) =>
+        node.dataset.account ===
+        accounts.data?.find((a) => matchesResource(a, selected))?.alias,
+    );
     card?.scrollIntoView({ block: "start" });
   }, [selected, accounts.data]);
   return (

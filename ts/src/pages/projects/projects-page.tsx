@@ -33,6 +33,11 @@ import { SessionCreate } from "#src/features/session/components/session-create.t
 import { listAccounts } from "#src/features/accounts/account-data.ts";
 import type { Account } from "#gen/cxz/account_pb";
 import styles from "./projects-page.module.css";
+import {
+  projectLocation,
+  resourceHandle,
+  uuid,
+} from "#src/shared/navigation/resource-route.ts";
 
 export function ProjectsPage({
   c,
@@ -74,7 +79,13 @@ export function ProjectsPage({
           value={projectId(project) ?? ""}
           loading={projectsLoading}
           choose={(project) =>
-            void navigate({ to: "/projects", search: { project } })
+            void navigate(
+              projectLocation(
+                resourceHandle(
+                  visibleProjects.find((p) => projectId(p) === project)!,
+                ),
+              ),
+            )
           }
         />
       </PageToolbar>
@@ -89,16 +100,24 @@ export function ProjectsPage({
               key={projectId(project)}
               c={c}
               project={project}
-              saved={setSaved}
+              saved={(updated) => {
+                setSaved(updated);
+                if (
+                  selected === project.alias &&
+                  !uuid(selected) &&
+                  updated.alias !== project.alias
+                )
+                  void navigate({
+                    ...projectLocation(resourceHandle(updated)),
+                    replace: true,
+                  });
+              }}
               erased={() => {
                 setSaved(undefined);
                 const next = visibleProjects.find(
                   (p) => key(p.id) !== key(project.id),
                 );
-                void navigate({
-                  to: "/projects",
-                  search: { project: projectId(next) },
-                });
+                void navigate(projectLocation(next && resourceHandle(next)));
               }}
               sessions={sessions.filter(
                 (s) => s.project && key(s.project.id) === key(project.id),

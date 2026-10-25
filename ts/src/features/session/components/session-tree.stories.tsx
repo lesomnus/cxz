@@ -1,3 +1,4 @@
+import { matchesResource } from "#src/shared/navigation/resource-route.ts";
 import { useMemo, useState, type PropsWithChildren } from "react";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -43,7 +44,7 @@ function SessionPanel({
             />
           ),
         },
-        createMemoryHistory({ initialEntries: ["/sessions/session-0"] }),
+        createMemoryHistory({ initialEntries: ["/c/_/session/session-0"] }),
       ),
     [count, loading, expanded, unread, error, background, states],
   );
@@ -80,12 +81,15 @@ function SessionList({
           project={project}
           items={items}
           loading={loading}
-          selected={route.session}
+          selected={
+            items.find((s) => matchesResource(s, route.session))?.runtimeId ??
+            route.session
+          }
           unread={
             unread
               ? new Set(
                   items
-                    .filter((s) => s.runtimeId !== route.session)
+                    .filter((s) => !matchesResource(s, route.session))
                     .map((s) => s.runtimeId),
                 )
               : undefined

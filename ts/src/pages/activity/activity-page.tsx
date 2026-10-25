@@ -1,3 +1,4 @@
+import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useState } from "react";
 
@@ -55,8 +56,7 @@ export function ActivityPage({
                   <RouteLink
                     className={styles.item}
                     key={s.runtimeId}
-                    to="/sessions/$sessionId"
-                    params={{ sessionId: s.runtimeId }}
+                    {...sessionLocation(s)}
                   >
                     <span>
                       {s.name || s.alias}
