@@ -26,6 +26,60 @@ func TestBackgroundJournalProjection(t *testing.T) {
 	}
 }
 
+func TestBackgroundTelemetryUpdatesStateWithoutConversationRows(t *testing.T) {
+	for _, provider := range []string{"claude", "codex"} {
+		t.Run(provider, func(t *testing.T) {
+			s, m, log := projectionFixture(t)
+			ctx := context.Background()
+			if _, err := log.Append(core.Event{SessionID: m.ID, RunID: "run", Kind: "assistant", Text: "Running the server."}); err != nil {
+				t.Fatal(err)
+			}
+			for _, active := range []bool{true, false} {
+				tasks := []agentview.BackgroundTask{}
+				if active {
+					tasks = append(tasks, agentview.BackgroundTask{ID: "bg", Description: "server", Active: true})
+				}
+				kind := "system"
+				if provider == "codex" {
+					kind = "background"
+				}
+				payload, err := json.Marshal(map[string]any{"type": kind, "provider": provider, "subtype": "background_tasks_changed", "tasks": tasks})
+				if err != nil {
+					t.Fatal(err)
+				}
+				e := core.Event{SessionID: m.ID, RunID: "run", Kind: "background", Text: "background_tasks_changed", Payload: payload}
+				if provider == "claude" {
+					e.Kind, e.Raw, e.Payload = "raw", payload, nil
+				}
+				written, err := log.Append(e)
+				if err != nil {
+					t.Fatal(err)
+				}
+				background, err := s.Background(ctx, &api.SessionRef{Id: m.ID})
+				if err != nil {
+					t.Fatal(err)
+				}
+				var states map[string]agentview.BackgroundState
+				if err = json.Unmarshal(background.Data, &states); err != nil || states["run"].Tasks["bg"].Active != active {
+					t.Fatal("background state stopped updating", states, err)
+				}
+				page, err := s.Transcript(ctx, &api.TranscriptRequest{SessionId: m.ID})
+				if err != nil || len(page.Events) != 1 || page.Events[0].Text != "Running the server." || page.SnapshotSeq != written.Seq {
+					t.Fatal("telemetry became a conversation card", page, err)
+				}
+				rows, err := s.syncedRows(ctx, m, 1)
+				if err != nil || len(rows) != 0 {
+					t.Fatal("telemetry became a live row", rows, err)
+				}
+				details, err := s.EventDetails(ctx, &api.EventDetailsRequest{SessionId: m.ID, Seq: written.Seq})
+				if err != nil || len(details.Events) != 1 || string(details.Events[0].Payload) != string(payload) {
+					t.Fatal("the telemetry record was lost", details, err)
+				}
+			}
+		})
+	}
+}
+
 func TestCodexBackgroundSnapshotProjection(t *testing.T) {
 	s, m, log := projectionFixture(t)
 	for _, payload := range []string{

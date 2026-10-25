@@ -150,7 +150,7 @@ func related(e *api.Event) string {
 	return text(child(p, "params"), "itemId")
 }
 
-var hidden = map[string]bool{"raw": true, "state": true, "vendor": true, "intent": true, "receipt": true, "approval_resolved": true, "models": true, "models_status": true, "usage": true, "usage_status": true, "history_checkpoint": true, "fork_boundary": true}
+var hidden = map[string]bool{"raw": true, "state": true, "vendor": true, "intent": true, "receipt": true, "approval_resolved": true, "models": true, "models_status": true, "usage": true, "usage_status": true, "background": true, "history_checkpoint": true, "fork_boundary": true}
 
 // prune drops what a restore would no longer load, so that holding the reduced
 // state between syncs costs what rebuilding it would have read rather than the
@@ -479,7 +479,7 @@ var schema = []string{
 	`CREATE TABLE IF NOT EXISTS transcript_seen(session_id TEXT PRIMARY KEY,written INTEGER)`,
 }
 
-const projectionFormat = 5
+const projectionFormat = 6
 
 // Format is the interpretation version a store stamps beside the rows it holds,
 // so that a reader can tell rows built by these rules from rows built by older
@@ -844,7 +844,12 @@ func SyncWith(ctx context.Context, db *sql.DB, id string, decode Decode, cache *
 	return nil
 }
 
-const currentVersion = ` updated<=? AND updated=(SELECT MAX(updated) FROM transcript_rows x WHERE x.session_id=r.session_id AND x.seq=r.seq AND x.updated<=?) `
+// Older supervisors materialized background telemetry as conversation rows.
+// Readers open their stores read-only, so exclude those rows before applying
+// limits and pagination flags, without waiting for a writer to rebuild them.
+const visibleRows = `kind<>'background'`
+
+const currentVersion = visibleRows + ` AND updated<=? AND updated=(SELECT MAX(updated) FROM transcript_rows x WHERE x.session_id=r.session_id AND x.seq=r.seq AND x.updated<=?) `
 
 // metadataQuery asks for the newest records of each metadata kind as of a
 // snapshot, and for their bodies. It is built here rather than written inline so
@@ -1085,7 +1090,7 @@ func Tail(ctx context.Context, db *sql.DB, id string, afterUpdated uint64, limit
 	if limit <= 0 {
 		limit = 256
 	}
-	rows, err := db.QueryContext(ctx, `SELECT seq,updated,data FROM transcript_rows WHERE session_id=? AND updated>? ORDER BY updated ASC,seq ASC LIMIT ?`, id, afterUpdated, limit)
+	rows, err := db.QueryContext(ctx, `SELECT seq,updated,data FROM transcript_rows WHERE session_id=? AND `+visibleRows+` AND updated>? ORDER BY updated ASC,seq ASC LIMIT ?`, id, afterUpdated, limit)
 	if err != nil {
 		return nil, err
 	}
