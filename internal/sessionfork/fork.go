@@ -55,7 +55,7 @@ func Prepare(ctx context.Context, root string, source core.Session, snapshot cor
 	target := source
 	target.ID, target.CreateID, target.CreatedAt, target.Supervisor = request.ID, request.ClientID, time.Now().UnixMilli(), ""
 	target.Fork = &core.ForkOrigin{SessionID: source.ID, RunID: snapshot.RunID, VendorID: snapshot.VendorID, ThroughSeq: snapshot.LastSeq}
-	backend, err := accounts.ResolveBinding(target.Kind, target.AuthBackend, target.ProjectID, target.Account, target.AuthBinding)
+	backend, err := accounts.ResolveBinding(target.Kind, target.AuthBackend, target.AuthProjectID(), target.Account, target.AuthBinding)
 	if err != nil {
 		return result, err
 	}

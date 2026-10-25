@@ -25,7 +25,9 @@ func AuthRoot(root string, s core.Session) string {
 }
 
 func LaunchSession(root string, s core.Session, env []string) (LaunchAuth, error) {
-	b, err := ResolveBinding(s.Kind, s.AuthBackend, s.ProjectID, s.Account, s.AuthBinding)
+	// The binding was derived from the project handle the session was created
+	// under, which is not the canonical UUID for a session made before them.
+	b, err := ResolveBinding(s.Kind, s.AuthBackend, s.AuthProjectID(), s.Account, s.AuthBinding)
 	if err != nil {
 		return LaunchAuth{}, err
 	}
