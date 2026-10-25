@@ -96,6 +96,7 @@ func (w *cursorWriter) Write(p []byte) (int, error) {
 	}
 	writeStart := time.Now()
 	n, err := w.out.Write(buf)
+	finished := time.Now()
 	if n < len(buf) && err == nil {
 		err = io.ErrShortWrite
 	}
@@ -103,7 +104,7 @@ func (w *cursorWriter) Write(p []byte) (int, error) {
 	if err != nil {
 		errorCode = "write_failed"
 	}
-	w.recorder.Add(debugEvent{Kind: "terminal_write", Duration: time.Since(start).Microseconds(), Wait: locked.Sub(start).Microseconds(), IO: time.Since(writeStart).Microseconds(), Count: n, ErrorCode: errorCode})
+	w.recorder.Add(debugEvent{Kind: "terminal_write", Duration: finished.Sub(start).Microseconds(), Wait: locked.Sub(start).Microseconds(), IO: finished.Sub(writeStart).Microseconds(), Count: n, ErrorCode: errorCode})
 	return min(n, len(p)), err
 }
 
