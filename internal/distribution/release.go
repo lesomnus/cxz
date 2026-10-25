@@ -67,16 +67,37 @@ func verify(path, want string) error {
 // Ensure publishes only checksum-verified immutable releases. Shared tools are
 // read-only in projects; credentials never enter this cache.
 func Ensure(ctx context.Context, root, kind, arch string, musl bool) (string, error) {
-	version := ClaudeVersion
-	if kind == "codex" {
-		version = CodexVersion
+	version, err := SelectedAgentVersion(root, kind)
+	if err != nil {
+		return "", err
 	}
-	return EnsureVersion(ctx, root, kind, arch, musl, SelectedVersion(root, kind, version))
+	return EnsureVersion(ctx, root, kind, arch, musl, version)
 }
 
-func EnsureVersion(ctx context.Context, root, kind, arch string, musl bool, version string) (string, error) {
+// SelectedAgentVersion is the installation's choice, not the highest directory
+// left in its cache. Older releases may be retained for running sessions.
+func SelectedAgentVersion(root, kind string) (string, error) {
+	switch kind {
+	case "claude":
+		return SelectedVersion(root, kind, ClaudeVersion), nil
+	case "codex":
+		return SelectedVersion(root, kind, CodexVersion), nil
+	default:
+		return "", fmt.Errorf("unknown agent %s", kind)
+	}
+}
+
+type agentRelease struct{ platform, target, dir, binary string }
+
+// AgentPath locates a version for the container's platform without downloading.
+func AgentPath(root, kind, arch string, musl bool, version string) (string, error) {
+	r, err := agentLayout(root, kind, arch, musl, version)
+	return r.binary, err
+}
+
+func agentLayout(root, kind, arch string, musl bool, version string) (agentRelease, error) {
 	if !ValidVersion(version) {
-		return "", fmt.Errorf("invalid release version")
+		return agentRelease{}, fmt.Errorf("invalid release version")
 	}
 	if arch == "" {
 		arch = runtime.GOARCH
@@ -87,7 +108,7 @@ func EnsureVersion(ctx context.Context, root, kind, arch string, musl bool, vers
 		platform = "linux-arm64"
 		target = "aarch64-unknown-linux-musl"
 	} else if arch != "amd64" && arch != "x86_64" {
-		return "", fmt.Errorf("unsupported architecture %s", arch)
+		return agentRelease{}, fmt.Errorf("unsupported architecture %s", arch)
 	}
 	if musl {
 		platform += "-musl"
@@ -96,14 +117,39 @@ func EnsureVersion(ctx context.Context, root, kind, arch string, musl bool, vers
 	if kind == "codex" {
 		key = target
 	} else if kind != "claude" {
-		return "", fmt.Errorf("unknown agent %s", kind)
+		return agentRelease{}, fmt.Errorf("unknown agent %s", kind)
 	}
 	dir := filepath.Join(root, kind, version, key)
 	bin := filepath.Join(dir, "claude")
 	if kind == "codex" {
 		bin = filepath.Join(dir, "bin", "codex")
 	}
-	if _, e := os.Stat(bin); e == nil {
+	return agentRelease{platform, target, dir, bin}, nil
+}
+
+func cachedAgent(path string) (bool, error) {
+	st, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if !st.Mode().IsRegular() || st.Mode()&0111 == 0 {
+		return false, fmt.Errorf("agent executable unavailable: %s", path)
+	}
+	return true, nil
+}
+
+func EnsureVersion(ctx context.Context, root, kind, arch string, musl bool, version string) (string, error) {
+	r, e := agentLayout(root, kind, arch, musl, version)
+	if e != nil {
+		return "", e
+	}
+	platform, target, dir, bin := r.platform, r.target, r.dir, r.binary
+	if found, err := cachedAgent(bin); err != nil {
+		return "", err
+	} else if found {
 		return bin, nil
 	}
 	if e := os.MkdirAll(filepath.Dir(dir), 0755); e != nil {
@@ -114,7 +160,9 @@ func EnsureVersion(ctx context.Context, root, kind, arch string, musl bool, vers
 		return "", e
 	}
 	defer lock.Close()
-	if _, e = os.Stat(bin); e == nil {
+	if found, err := cachedAgent(bin); err != nil {
+		return "", err
+	} else if found {
 		return bin, nil
 	}
 	tmp, e := os.MkdirTemp(filepath.Dir(dir), ".download-")
