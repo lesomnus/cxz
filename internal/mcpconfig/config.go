@@ -358,3 +358,30 @@ func ForgetProject(root, project string) error {
 	delete(c.Projects, project)
 	return core.WriteJSON(filepath.Join(root, "mcp.json"), c)
 }
+
+// MigrateProject preserves project overrides when its legacy handle is retired.
+func MigrateProject(root, old, next string) error {
+	l := flock.New(filepath.Join(root, "mcp.lock"))
+	if err := l.Lock(); err != nil {
+		return err
+	}
+	defer l.Unlock()
+	c, err := Load(root)
+	if err != nil {
+		return err
+	}
+	values, ok := c.Projects[old]
+	if !ok {
+		return nil
+	}
+	if c.Projects[next] == nil {
+		c.Projects[next] = map[string]bool{}
+	}
+	for key, value := range values {
+		if _, exists := c.Projects[next][key]; !exists {
+			c.Projects[next][key] = value
+		}
+	}
+	delete(c.Projects, old)
+	return core.WriteJSON(filepath.Join(root, "mcp.json"), c)
+}

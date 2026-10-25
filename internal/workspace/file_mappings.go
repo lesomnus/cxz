@@ -43,7 +43,7 @@ func (m *Manager) FileMappings(ctx context.Context, b filemap.Bundle) (*api.Rece
 		if p.ContainerID == "" {
 			continue
 		}
-		v, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+		v, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 		if err != nil {
 			failures = append(failures, fmt.Errorf("%s: %w", p.Name, err))
 			continue

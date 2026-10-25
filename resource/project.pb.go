@@ -87,7 +87,6 @@ type Project struct {
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Workspace   string                 `protobuf:"bytes,8,opt,name=workspace"`
 	xxx_hidden_Config      string                 `protobuf:"bytes,9,opt,name=config"`
-	xxx_hidden_RuntimeId   string                 `protobuf:"bytes,10,opt,name=runtime_id,json=runtimeId"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -163,13 +162,6 @@ func (x *Project) GetConfig() string {
 	return ""
 }
 
-func (x *Project) GetRuntimeId() string {
-	if x != nil {
-		return x.xxx_hidden_RuntimeId
-	}
-	return ""
-}
-
 func (x *Project) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -223,10 +215,6 @@ func (x *Project) SetWorkspace(v string) {
 
 func (x *Project) SetConfig(v string) {
 	x.xxx_hidden_Config = v
-}
-
-func (x *Project) SetRuntimeId(v string) {
-	x.xxx_hidden_RuntimeId = v
 }
 
 func (x *Project) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -298,7 +286,6 @@ type Project_builder struct {
 	Desc        string
 	Workspace   string
 	Config      string
-	RuntimeId   string
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -315,7 +302,6 @@ func (b0 Project_builder) Build() *Project {
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Workspace = b.Workspace
 	x.xxx_hidden_Config = b.Config
-	x.xxx_hidden_RuntimeId = b.RuntimeId
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -486,17 +472,14 @@ var File_cxz_project_proto protoreflect.FileDescriptor
 
 const file_cxz_project_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbd\x04\n" +
+	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa6\x04\n" +
 	"\aProject\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12&\n" +
 	"\tworkspace\x18\b \x01(\tB\b\xea\x82\x16\x040\x01@\x01R\tworkspace\x12\x16\n" +
-	"\x06config\x18\t \x01(\tR\x06config\x12'\n" +
-	"\n" +
-	"runtime_id\x18\n" +
-	" \x01(\tB\b\xea\x82\x16\x040\x01@\x01R\truntimeId\x12F\n" +
+	"\x06config\x18\t \x01(\tR\x06config\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -510,7 +493,9 @@ const file_cxz_project_proto_rawDesc = "" +
 	"\x06\n" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
-	"\x03ref 2(\xc8\x01:\x00*\x00J\x04\b\x11\x10\x12\"\xd5\x02\n" +
+	"\x03ref 2(\xc8\x01:\x00*\x00J\x04\b\n" +
+	"\x10\vJ\x04\b\x11\x10\x12R\n" +
+	"runtime_id\"\xd5\x02\n" +
 	"\rProjectStatus\x12!\n" +
 	"\fcontainer_id\x18\x02 \x01(\tR\vcontainerId\x12\x1f\n" +
 	"\vremote_user\x18\x03 \x01(\tR\n" +

@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"database/sql"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"net"
 	"path/filepath"
 	"sync"
@@ -67,7 +68,7 @@ func taskStack(t *testing.T) (*taskFixture, resource.Server, *sql.DB) {
 		t.Fatal(err)
 	}
 	layer, _ := resource.Find[Layer](stack)
-	_, err = layer.Next().Project().Add(t.Context(), resource.ProjectAddRequest_builder{Id: resourceID(7, "other-project"), RuntimeId: "other-project", Workspace: "/other"}.Build())
+	_, err = layer.Next().Project().Add(t.Context(), resource.ProjectAddRequest_builder{Id: projectid.Bytes("other-project"), Workspace: "/other"}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +188,7 @@ func (f *taskRouterFixture) TaskConnection(_ context.Context, project string) (*
 	if f.offline.Load() {
 		return nil, status.Error(codes.Unavailable, "project is stopped")
 	}
-	if project != f.p.Id {
+	if project != projectid.Canonical(f.p.Id) {
 		return nil, status.Error(codes.NotFound, "project not found")
 	}
 	return grpc.NewClient("passthrough:///task-project", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return f.listener.Dial() }))

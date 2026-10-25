@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net"
 	"os"
@@ -30,7 +31,7 @@ type loginRuntime struct {
 }
 
 func (f *loginRuntime) LoginSession(ctx context.Context, project, account, key string, input io.ReadCloser, output io.Writer) error {
-	if project != "project" || account != "work1" {
+	if project != projectid.Canonical("project") || account != "work1" {
 		return fmt.Errorf("wrong login target")
 	}
 	fmt.Fprintln(output, "https://example.invalid/login")

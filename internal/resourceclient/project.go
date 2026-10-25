@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/projectref"
 	"github.com/lesomnus/cxz/internal/projectstate"
 	"github.com/lesomnus/cxz/resource"
@@ -14,7 +15,7 @@ import (
 
 func project(p *resource.Project) *api.Project {
 	st := p.GetStatus()
-	return &api.Project{Id: p.GetRuntimeId(), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: projectstate.Word(st.GetContainerState()), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
+	return &api.Project{Id: projectid.String(p.GetId()), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: projectstate.Word(st.GetContainerState()), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
 }
 func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.ProjectList, error) {
 	out, err := c.registeredProjects(ctx, opts...)
@@ -66,18 +67,18 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 	if err != nil {
 		return nil, err
 	}
-	ref := pr(p.GetRuntimeId())
+	ref := pr(projectid.String(p.GetId()))
 	if p, err = c.start(ctx, ref, r, opts...); err != nil {
 		return nil, err
 	}
 	if r.PrepareOnly {
-		return &api.Session{ProjectId: p.GetRuntimeId(), Workspace: p.GetStatus().GetRemoteWorkspace()}, nil
+		return &api.Session{ProjectId: projectid.String(p.GetId()), Workspace: p.GetStatus().GetRemoteWorkspace()}, nil
 	}
 	list, err := c.List(ctx, &api.Empty{}, opts...)
 	if err != nil {
 		return nil, err
 	}
-	kind, chosen, err := chooseSession(list.Sessions, p.GetRuntimeId(), r, false)
+	kind, chosen, err := chooseSession(list.Sessions, projectid.String(p.GetId()), r, false)
 	if err != nil {
 		return nil, err
 	}
@@ -85,14 +86,14 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 		if r.Account == "" {
 			return nil, ErrAccountRequired
 		}
-		b, err := c.Bind(ctx, p.GetRuntimeId(), r.Account)
+		b, err := c.Bind(ctx, projectid.String(p.GetId()), r.Account)
 		if err != nil {
 			return nil, err
 		}
 		s, err := c.sessions.Add(ctx, resource.SessionAddRequest_builder{Project: ref, Agent: kind, Model: r.Model, ClientId: r.ClientId, Account: ar(r.Account), AuthBinding: br(b.GetBindingId())}.Build(), opts...)
 		if err != nil {
 			if !r.NewSession {
-				if attached := c.concurrentOpen(ctx, p.GetRuntimeId(), kind, r.Model, r.Account, opts...); attached != nil {
+				if attached := c.concurrentOpen(ctx, projectid.String(p.GetId()), kind, r.Model, r.Account, opts...); attached != nil {
 					return attached, nil
 				}
 			}
@@ -106,7 +107,7 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 	if chosen.State == "interrupted" || chosen.State == "stopped" || chosen.State == "failed" {
 		resumed, err := c.Resume(ctx, &api.Control{SessionId: chosen.Id, RunId: chosen.RunId, ClientId: r.ClientId}, opts...)
 		if err != nil && !r.NewSession {
-			if attached := c.concurrentOpen(ctx, p.GetRuntimeId(), kind, r.Model, chosen.Account, opts...); attached != nil && attached.Id == chosen.Id {
+			if attached := c.concurrentOpen(ctx, projectid.String(p.GetId()), kind, r.Model, chosen.Account, opts...); attached != nil && attached.Id == chosen.Id {
 				return attached, nil
 			}
 		}

@@ -2,6 +2,7 @@ package websandbox
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
@@ -45,7 +46,7 @@ func (s *Server) container(r *resource.ProjectControl, state resource.ContainerS
 		p.SetDateUpdated(timestamppb.Now())
 		if stopSessions {
 			for _, st := range s.sessions {
-				if st.value.GetProject().GetRuntimeId() != p.GetRuntimeId() || st.value.GetStatus().GetState() == "stopped" {
+				if projectid.String(st.value.GetProject().GetId()) != projectid.String(p.GetId()) || st.value.GetStatus().GetState() == "stopped" {
 					continue
 				}
 				s.cancelTurn(st)

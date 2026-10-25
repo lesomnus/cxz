@@ -14,8 +14,8 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/sessionfork"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -69,7 +69,7 @@ func (s *Server) ForkSession(ctx context.Context, r *api.SessionForkInput) (*api
 		// challenge and creation key; never duplicate a rotating refresh token.
 		target := source
 		target.CreateID = r.ClientId
-		backend, err := accounts.ResolveBinding(target.Kind, target.AuthBackend, target.ProjectID, target.Account, target.AuthBinding)
+		backend, err := accounts.ResolveBinding(target.Kind, target.AuthBackend, target.AuthProjectID(), target.Account, target.AuthBinding)
 		if err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}

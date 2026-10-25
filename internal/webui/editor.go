@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net"
 	"net/http"
@@ -35,7 +36,7 @@ func (p *editorProxy) connect(ctx context.Context, r *resource.ProjectEditorRequ
 	if err != nil {
 		return nil, err
 	}
-	if _, err = editor.BasePath(project.GetRuntimeId()); err != nil {
+	if _, err = editor.BasePath(projectid.String(project.GetId())); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 	reply, err := p.client.Editor(ctx, r)
@@ -46,7 +47,7 @@ func (p *editorProxy) connect(ctx context.Context, r *resource.ProjectEditorRequ
 		return nil, status.Error(codes.FailedPrecondition, "invalid Manager editor connection")
 	}
 	p.mu.Lock()
-	p.connected[project.GetRuntimeId()] = editorConnection{ref: proto.Clone(r.GetRef()).(*resource.ProjectRef), token: reply.GetConnectionToken()}
+	p.connected[projectid.String(project.GetId())] = editorConnection{ref: proto.Clone(r.GetRef()).(*resource.ProjectRef), token: reply.GetConnectionToken()}
 	p.mu.Unlock()
 	reply.ClearConnectionToken()
 	return reply, nil
@@ -162,7 +163,7 @@ func (p *editorProxy) connectBrowser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid project", http.StatusBadRequest)
 		return
 	}
-	reply, err := p.connect(r.Context(), resource.ProjectEditorRequest_builder{Ref: resource.ProjectRef_builder{RuntimeId: &request.Project}.Build()}.Build())
+	reply, err := p.connect(r.Context(), resource.ProjectEditorRequest_builder{Ref: projectid.Ref(request.Project)}.Build())
 	if err != nil {
 		http.Error(w, status.Convert(err).Message(), http.StatusBadGateway)
 		return

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -103,7 +104,7 @@ func TestLoginBridgeInputCompletionAndLogoutCancellation(t *testing.T) {
 		t.Fatal(frame, err)
 	}
 	first := <-fixture.first
-	if first.GetRef().GetRuntimeId() != "project" || first.GetAccount().GetAlias() != "work" || first.GetSessionKey() != "creation" {
+	if projectid.RefString(first.GetRef()) != projectid.Canonical("project") || first.GetAccount().GetAlias() != "work" || first.GetSessionKey() != "creation" {
 		t.Fatal(first)
 	}
 	if err := socket.Write(ctx, websocket.MessageText, []byte("code\n")); err != nil {

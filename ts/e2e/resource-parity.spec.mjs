@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { projectFixture } from "../test-support/projects.ts";
 test.use({
   viewport: { width: 1280, height: 900 },
   isMobile: false,
@@ -18,8 +19,7 @@ function stream(rows) {
 async function fixture(page, helpers = false, extraProject = false) {
   const id = (value) => Buffer.from(value.padEnd(16, "0")).toString("base64");
   const project = {
-    id: id("project"),
-    runtimeId: "project",
+    id: projectFixture().id,
     alias: "project",
     name: "Demo project",
     workspace: "/workspace",
@@ -30,8 +30,7 @@ async function fixture(page, helpers = false, extraProject = false) {
         project,
         {
           ...project,
-          id: id("second"),
-          runtimeId: "second",
+          id: projectFixture(2).id,
           alias: "docs-playground",
           name: "Docs playground",
         },

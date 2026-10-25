@@ -1,3 +1,4 @@
+import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
@@ -65,7 +66,7 @@ export function WorkspaceEditor({
   closePreview?: () => void;
 }) {
   useLocale();
-  const id = project.runtimeId;
+  const id = projectId(project);
   const [state] = useState(() => {
     let state = c.editors.get(id);
     if (!state) {
@@ -111,7 +112,7 @@ export function WorkspaceEditor({
     try {
       const entries: ProjectPathEntry[] = [];
       for await (const reply of c.projects.paths(
-        { ref: ref(id), path },
+        { ref: projectRef(id), path },
         { signal: controller.signal },
       )) {
         entries.push(
@@ -165,7 +166,7 @@ export function WorkspaceEditor({
       const chunks: Uint8Array[] = [];
       let size = 0;
       for await (const reply of c.projects.download(
-        { ref: ref(id), path },
+        { ref: projectRef(id), path },
         { signal: controller.signal, timeoutMs: 30000 },
       )) {
         size += reply.data.length;

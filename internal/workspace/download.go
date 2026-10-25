@@ -13,7 +13,7 @@ func (m *Manager) Download(ctx context.Context, project, path string, dst io.Wri
 	if err != nil {
 		return err
 	}
-	if _, err = dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); err != nil {
+	if _, err = dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID()); err != nil {
 		return err
 	}
 	return containerterm.DownloadFile(ctx, projectView(p), path, dst)

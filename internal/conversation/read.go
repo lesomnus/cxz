@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"os"
 	"path/filepath"
@@ -39,7 +40,7 @@ func (s *Store) resolve(ctx context.Context, handle string) (Session, error) {
 	}
 	var matches []Session
 	for _, v := range items {
-		if v.ProjectID == s.Project && (v.ID == handle || v.Alias == handle) {
+		if projectid.Same(v.ProjectID, s.Project) && (v.ID == handle || v.Alias == handle) {
 			matches = append(matches, v)
 		}
 	}
@@ -97,7 +98,7 @@ func (s *Store) journal(ctx context.Context, v Session) ([]core.Event, []unreada
 		return nil, nil, err
 	}
 	var manifest core.Session
-	if json.Unmarshal(b, &manifest) != nil || manifest.ID != v.RuntimeID || manifest.ProjectID != s.Project {
+	if json.Unmarshal(b, &manifest) != nil || manifest.ID != v.RuntimeID || !projectid.Same(manifest.ProjectID, s.Project) {
 		return nil, nil, fmt.Errorf("session manifest outside project scope")
 	}
 	f, err := root.Open(filepath.Join(dir, "events.jsonl"))

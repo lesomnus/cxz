@@ -70,7 +70,7 @@ func (m *Manager) SetHistoryPolicy(ctx context.Context, in *api.HistoryPolicy) (
 			if p.ContainerID == "" {
 				continue
 			}
-			v, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+			v, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 			if err == nil && !v.State.Running {
 				continue
 			}

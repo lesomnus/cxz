@@ -17,7 +17,7 @@ func (m *Manager) Paths(ctx context.Context, project, path string, emit func(con
 	if p.ContainerID == "" || p.RemoteUser == "" {
 		return containerterm.PathListing{}, status.Error(codes.FailedPrecondition, "project container unavailable; start the project")
 	}
-	c, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+	c, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 	if err != nil {
 		return containerterm.PathListing{}, err
 	}

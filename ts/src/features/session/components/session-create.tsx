@@ -1,3 +1,4 @@
+import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button, Card, CardActions } from "@lesomnus/nox";
@@ -35,7 +36,7 @@ export function SessionCreate({
   const request = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => request.current?.abort(), []);
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
-  const [project, setProject] = useState(projects[0]?.runtimeId ?? "");
+  const [project, setProject] = useState(projectId(projects[0]) ?? "");
   const [alias, setAlias] = useState("");
   const [title, setTitle] = useState("");
   const [model, setModel] = useState("");
@@ -45,7 +46,7 @@ export function SessionCreate({
   const creation = useRef({ signature: "", id: "" });
   const selected = accounts.data?.find((a) => a.alias === alias);
   useEffect(() => {
-    if (!project && projects[0]) setProject(projects[0].runtimeId);
+    if (!project && projects[0]) setProject(projectId(projects[0]));
   }, [projects, project]);
   async function createSession(afterLogin = false) {
     if (!selected || !project || pending.current || (login && !afterLogin))
@@ -62,12 +63,12 @@ export function SessionCreate({
     try {
       const account = { key: { case: "alias" as const, value: alias } };
       const binding = await c.bindings.add(
-        { project: ref(project), account },
+        { project: projectRef(project), account },
         { signal: controller.signal, timeoutMs: 10000 },
       );
       const session = await c.sessions.add(
         {
-          project: ref(project),
+          project: projectRef(project),
           account,
           authBinding: { key: { case: "bindingId", value: binding.bindingId } },
           name: title,
@@ -139,7 +140,7 @@ export function SessionCreate({
               searchable
               value={project}
               options={projects.map((p) => ({
-                value: p.runtimeId,
+                value: projectId(p),
                 label: p.name || p.alias,
                 searchText: p.alias,
               }))}

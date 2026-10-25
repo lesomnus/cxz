@@ -2,6 +2,7 @@ package webui
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net/http"
 	"strings"
@@ -47,7 +48,7 @@ func (p *loginProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	alias := account
 	first := resource.ProjectLoginRequest_builder{Account: resource.AccountRef_builder{Alias: &alias}.Build()}
 	if kind == "session" {
-		first.Ref = resource.ProjectRef_builder{RuntimeId: &project}.Build()
+		first.Ref = projectid.Ref(project)
 		first.SessionKey = &key
 	}
 	if err == nil {

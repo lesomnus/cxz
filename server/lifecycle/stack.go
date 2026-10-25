@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent"
 	"github.com/lesomnus/cxz/internal/ent/migrate"
 	"github.com/lesomnus/cxz/internal/observe"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/cxz/server/bare"
 	"github.com/lesomnus/cxz/server/pd"
@@ -74,6 +75,9 @@ func (b builder) Build(next resource.Server) (resource.Server, error) {
 // A separate database keeps the rc.1 registry/journal untouched. Resource
 // projections can be rebuilt from runtime manifests, without changing vendor IDs.
 func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log) (resource.Server, error) {
+	if err := migrateProjectSchema(ctx, db); err != nil {
+		return nil, err
+	}
 	driver := entsql.OpenDB(dialect.SQLite, db)
 	client := ent.NewClient(ent.Driver(driver))
 	if err := migrate.NewSchema(driver).Create(ctx); err != nil {
@@ -89,7 +93,7 @@ func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log) (resource
 		return nil, err
 	}
 	// Publish each committed Sink call, including background projection writes.
-	return resource.Build(sessionNamingSink{sink.WithWatch(w)}, pd.InterceptBuild([]grpc.UnaryServerInterceptor{taskWatchUnary(w)}, nil), builder{&shared{runtime: r, db: db, watch: w, observe: o}}, pd.AuditBuild(), pd.GateBuild())
+	return resource.Build(sessionNamingSink{sink.WithWatch(w)}, pd.InterceptBuild([]grpc.UnaryServerInterceptor{projectReferencesUnary, taskWatchUnary(w)}, []grpc.StreamServerInterceptor{projectReferencesStream}), builder{&shared{runtime: r, db: db, watch: w, observe: o}}, pd.AuditBuild(), pd.GateBuild())
 }
 func (s Layer) WithDriver(d dialect.Driver) (resource.Server, error) {
 	next, err := enttx.Rebind(s.Next(), d)
@@ -144,7 +148,7 @@ func resourceID(domain byte, runtimeID string) []byte {
 	return id
 }
 func projectRef(id string) *resource.ProjectRef {
-	return resource.ProjectRef_builder{RuntimeId: &id}.Build()
+	return projectid.Ref(id)
 }
 func sessionRef(id string) *resource.SessionRef {
 	return resource.SessionRef_builder{RuntimeId: &id}.Build()

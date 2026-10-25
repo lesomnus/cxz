@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { expect, test } from "@playwright/test";
+import { browserProject } from "../test-support/projects";
 
 test.use({
   viewport: { width: 1440, height: 900 },
@@ -37,12 +38,7 @@ test("switching views retains one native stream and returns cached offscreen res
   const auxHeld = gate();
   let deliveredAux = 0;
   const auxStreams: string[] = [];
-  const project = {
-    id: b64("1234567890123456"),
-    runtimeId: "project",
-    alias: "demo",
-    name: "Demo project",
-  };
+  const project = await browserProject(page.request);
   const sessions = ["alpha", "beta"].map((id) => ({
     id: b64(id),
     runtimeId: id,

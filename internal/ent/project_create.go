@@ -53,12 +53,6 @@ func (_c *ProjectCreate) SetConfig(v string) *ProjectCreate {
 	return _c
 }
 
-// SetRuntimeId sets the "runtime_id" field.
-func (_c *ProjectCreate) SetRuntimeId(v string) *ProjectCreate {
-	_c.mutation.SetRuntimeId(v)
-	return _c
-}
-
 // SetDateUpdated sets the "date_updated" field.
 func (_c *ProjectCreate) SetDateUpdated(v time.Time) *ProjectCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -154,9 +148,6 @@ func (_c *ProjectCreate) check() error {
 	if _, ok := _c.mutation.Config(); !ok {
 		return &ValidationError{Name: "config", err: errors.New(`ent: missing required field "Project.config"`)}
 	}
-	if _, ok := _c.mutation.RuntimeId(); !ok {
-		return &ValidationError{Name: "runtime_id", err: errors.New(`ent: missing required field "Project.runtime_id"`)}
-	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Project.date_updated"`)}
 	}
@@ -221,10 +212,6 @@ func (_c *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec, error) {
 	if value, ok := _c.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
 		_node.Config = value
-	}
-	if value, ok := _c.mutation.RuntimeId(); ok {
-		_spec.SetField(project.FieldRuntimeId, field.TypeString, value)
-		_node.RuntimeId = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(project.FieldDateUpdated, field.TypeTime, value)

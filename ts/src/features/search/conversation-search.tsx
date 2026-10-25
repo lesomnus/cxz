@@ -1,3 +1,4 @@
+import { projectId } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useRef, useState } from "react";
@@ -160,7 +161,7 @@ export function ConversationSearch({
             options={[
               { value: "", label: "All projects" },
               ...projects.map((p) => ({
-                value: p.runtimeId,
+                value: projectId(p),
                 label: p.name || p.alias,
               })),
             ]}

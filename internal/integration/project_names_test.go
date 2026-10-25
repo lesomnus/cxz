@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
 	"github.com/lesomnus/cxz/resource"
@@ -125,7 +126,7 @@ func TestProjectNames(t *testing.T) {
 	alias := "web"
 	ref := resource.ProjectRef_builder{Alias: &alias}.Build()
 	got, err := svc.Get(ctx, resource.ProjectGetRequest_builder{Ref: ref}.Build())
-	if err != nil || got.GetRuntimeId() != p.Id {
+	if err != nil || projectid.String(got.GetId()) != p.Id {
 		t.Fatal("generated alias ref failed", err)
 	}
 	// A raw patch still cannot set operational state, nor bypass optimistic locking.

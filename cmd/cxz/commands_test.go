@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"net"
 	"os"
 	"path/filepath"
@@ -168,7 +169,7 @@ func (accountStub) Get(_ context.Context, r *resource.AccountGetRequest) (*resou
 }
 
 func testProject() *resource.Project {
-	return resource.Project_builder{RuntimeId: "project-name", Workspace: "project-name", Name: "project-name", Alias: "pn", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING}.Build()}.Build()
+	return resource.Project_builder{Id: projectid.Bytes("project-name"), Workspace: "project-name", Name: "project-name", Alias: "pn", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING}.Build()}.Build()
 }
 func (s projectStub) Get(context.Context, *resource.ProjectGetRequest) (*resource.Project, error) {
 	return testProject(), nil
@@ -225,12 +226,12 @@ func (s projectStub) List(context.Context, *resource.ProjectListRequest) (*resou
 	return resource.ProjectListResponse_builder{Items: []*resource.Project{testProject()}}.Build(), nil
 }
 func (s projectStub) Remove(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
-	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
+	s.requests <- &api.ProjectRequest{Workspace: projectid.RefString(r.GetRef()), ClientId: r.GetClientId()}
 	return testProject(), nil
 }
 
 func (s projectStub) Stop(_ context.Context, r *resource.ProjectControl) (*resource.Project, error) {
-	s.requests <- &api.ProjectRequest{Workspace: r.GetRef().GetRuntimeId(), ClientId: r.GetClientId()}
+	s.requests <- &api.ProjectRequest{Workspace: projectid.RefString(r.GetRef()), ClientId: r.GetClientId()}
 	return testProject(), nil
 }
 
@@ -298,7 +299,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	select {
 	case raw := <-stub.requests:
 		removal, ok := raw.(*api.ProjectRequest)
-		if !ok || removal.Workspace != "project-name" {
+		if !ok || removal.Workspace != projectid.Canonical("project-name") {
 			t.Fatal("recreate did not remove the container first", raw)
 		}
 	default:
@@ -306,7 +307,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	}
 	select {
 	case r := <-started:
-		if id := r.GetRef().GetRuntimeId(); id != "project-name" {
+		if id := projectid.RefString(r.GetRef()); id != projectid.Canonical("project-name") {
 			t.Fatal("recreate started the wrong project", id)
 		}
 	default:
@@ -346,8 +347,8 @@ func TestCommandsReachAPI(t *testing.T) {
 		want string
 	}{
 		{[]string{"up", "project-name"}, "project-name"},
-		{[]string{"up", "--format", "json", "project-name"}, `"id":"project-name"`},
-		{[]string{"--format", "json", "up", "project-name"}, `"id":"project-name"`},
+		{[]string{"up", "--format", "json", "project-name"}, `"id":"` + projectid.Canonical("project-name") + `"`},
+		{[]string{"--format", "json", "up", "project-name"}, `"id":"` + projectid.Canonical("project-name") + `"`},
 		{[]string{"up", "--format", "table", "project-name"}, "project-name"},
 	} {
 		unregistered.Store(true)
@@ -440,14 +441,14 @@ func TestCommandsReachAPI(t *testing.T) {
 		t.Fatal(answer)
 	}
 	run("project", "remove", "pn")
-	if (<-stub.requests).(*api.ProjectRequest).Workspace != "project-name" {
+	if (<-stub.requests).(*api.ProjectRequest).Workspace != projectid.Canonical("project-name") {
 		t.Fatal("wrong project")
 	}
 	// Stopping and starting are not the same command as removing, and not the
 	// same command as the session `stop` at the root.
 	run("project", "stop", "pn")
 	stopped, ok := (<-stub.requests).(*api.ProjectRequest)
-	if !ok || stopped.Workspace != "project-name" || stopped.ClientId == "" {
+	if !ok || stopped.Workspace != projectid.Canonical("project-name") || stopped.ClientId == "" {
 		t.Fatal("project stop did not reach the resolved project", stopped)
 	}
 	// Starting is recorded on its own channel, like every other start.
@@ -455,7 +456,7 @@ func TestCommandsReachAPI(t *testing.T) {
 		<-started
 	}
 	run("project", "start", "pn")
-	if r := <-started; r.GetRef().GetRuntimeId() != "project-name" || r.GetTrustConfig() {
+	if r := <-started; projectid.RefString(r.GetRef()) != projectid.Canonical("project-name") || r.GetTrustConfig() {
 		t.Fatal("project start did not reach the resolved project, or trusted without being told to", r)
 	}
 	// Starting asks about the configuration the way `up` does, so it takes the
@@ -468,7 +469,7 @@ func TestCommandsReachAPI(t *testing.T) {
 	// `cxz project remove`.
 	got = run("down", "pn")
 	down, ok := (<-stub.requests).(*api.ProjectRequest)
-	if !ok || down.Workspace != "project-name" || down.ClientId == "" {
+	if !ok || down.Workspace != projectid.Canonical("project-name") || down.ClientId == "" {
 		t.Fatal("top-level down must remove the resolved project's container without deleting it", down)
 	}
 	var removal struct {
@@ -476,7 +477,7 @@ func TestCommandsReachAPI(t *testing.T) {
 		Status   string `json:"status"`
 		Retained string `json:"retained"`
 	}
-	if err := json.Unmarshal([]byte(got.Stdout), &removal); err != nil || removal.Project != "project-name" || removal.Status != "removed" || !strings.Contains(removal.Retained, "sessions, conversation history") {
+	if err := json.Unmarshal([]byte(got.Stdout), &removal); err != nil || removal.Project != projectid.Canonical("project-name") || removal.Status != "removed" || !strings.Contains(removal.Retained, "sessions, conversation history") {
 		t.Fatal("down must report retained sessions and history", got.Stdout, err)
 	}
 	completion := xlitest.Complete(t, newRoot(root), "project up ")

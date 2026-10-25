@@ -37,7 +37,7 @@ func (m *Manager) ConvertStores(ctx context.Context) {
 		return
 	}
 	for _, p := range projects {
-		dir, _ := m.projectState(p.ID)
+		dir, _ := m.projectState(p.storageID())
 		for _, s := range p.Sessions {
 			if ctx.Err() != nil {
 				return

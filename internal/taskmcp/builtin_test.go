@@ -5,6 +5,7 @@ package taskmcp_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net"
 	"os"
@@ -29,7 +30,7 @@ type scopedTasks struct {
 }
 
 func (scopedTasks) List(_ context.Context, r *resource.TaskListRequest) (*resource.TaskListResponse, error) {
-	if r.GetProject().GetRuntimeId() != "P" || r.GetSize() != 20 {
+	if projectid.RefString(r.GetProject()) != projectid.Canonical("P") || r.GetSize() != 20 {
 		return nil, status.Error(codes.InvalidArgument, "wrong project scope or page size")
 	}
 	return resource.TaskListResponse_builder{Items: []*resource.Task{}}.Build(), nil

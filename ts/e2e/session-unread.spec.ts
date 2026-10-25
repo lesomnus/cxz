@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { expect, test } from "@playwright/test";
+import { browserProject } from "../test-support/projects";
 
 test.use({
   viewport: { width: 1280, height: 900 },
@@ -38,12 +39,7 @@ test("unread response uses the left indicator and Sessions icon count clears whe
     name: "Demo conversation",
     agent: "claude",
     listed: true,
-    project: {
-      id: Buffer.from("1234567890123456").toString("base64"),
-      runtimeId: "project",
-      alias: "demo",
-      name: "Demo project",
-    },
+    project: await browserProject(page.request),
     status: {
       runId: "run",
       state: "idle",

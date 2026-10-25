@@ -9,11 +9,9 @@ import { eraseProject } from "./project-erase";
 function fixture(mode = "") {
   const project = create(ProjectSchema, {
     id: new Uint8Array(16).fill(1),
-    runtimeId: "target",
   });
   const other = create(ProjectSchema, {
     id: new Uint8Array(16).fill(2),
-    runtimeId: "other",
   });
   const sessions = [project, project, other].map((p, i) =>
     create(SessionSchema, {
@@ -74,7 +72,7 @@ describe("project erase", () => {
   it("refuses a project it cannot name by UUID", async () => {
     const f = fixture();
     await expect(
-      eraseProject(f.connection, create(ProjectSchema, { runtimeId: "target" }), f.sessions),
+      eraseProject(f.connection, create(ProjectSchema, {}), f.sessions),
     ).rejects.toThrow("Project changed");
     expect(f.calls).toEqual([]);
     expect(f.c.store.apply).not.toHaveBeenCalled();

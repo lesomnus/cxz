@@ -2,6 +2,7 @@ package websandbox
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"google.golang.org/grpc"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ func TestProjectMetadataEdits(t *testing.T) {
 	if updated.GetName() != "New workspace" || updated.GetAlias() != "new-alias" || updated.GetDesc() != "Details" {
 		t.Fatal(updated)
 	}
-	if string(updated.GetId()) != string(original.GetId()) || updated.GetRuntimeId() != original.GetRuntimeId() || updated.GetWorkspace() != original.GetWorkspace() || !proto.Equal(updated.GetStatus(), original.GetStatus()) {
+	if string(updated.GetId()) != string(original.GetId()) || projectid.String(updated.GetId()) != projectid.String(original.GetId()) || updated.GetWorkspace() != original.GetWorkspace() || !proto.Equal(updated.GetStatus(), original.GetStatus()) {
 		t.Fatal("metadata edit changed project identity or runtime")
 	}
 	if s.projectRev != 1 {

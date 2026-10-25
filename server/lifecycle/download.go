@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"time"
 
 	"github.com/lesomnus/cxz/internal/containerterm"
@@ -28,7 +29,7 @@ func (s ProjectServer) Download(r *resource.ProjectDownloadRequest, stream grpc.
 	if !ok {
 		return status.Error(codes.Unimplemented, "container downloads unavailable; update the manager")
 	}
-	return runtime.Download(ctx, p.GetRuntimeId(), r.GetPath(), downloadStreamWriter{stream})
+	return runtime.Download(ctx, projectid.String(p.GetId()), r.GetPath(), downloadStreamWriter{stream})
 }
 
 type downloadStreamWriter struct {

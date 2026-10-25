@@ -37,7 +37,7 @@ func (p *Projects) Terminal(stream grpc.BidiStreamingServer[resource.ProjectTerm
 	write := func(text string) error {
 		return stream.Send(resource.ProjectTerminalReply_builder{Output: []byte(text)}.Build())
 	}
-	prompt := "sandbox@" + project.GetRuntimeId() + ":/workspace$ "
+	prompt := "sandbox@" + project.GetAlias() + ":/workspace$ "
 	if err = write("WASM simulated shell (help for commands)\r\n" + prompt); err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (p *Projects) Terminal(stream grpc.BidiStreamingServer[resource.ProjectTerm
 							if !strings.HasPrefix(name, "/") {
 								name = "/workspace/" + name
 							}
-							if text, ok := files(project.GetRuntimeId())[name]; ok {
+							if text, ok := files(project.GetAlias())[name]; ok {
 								output += strings.ReplaceAll(text, "\n", "\r\n")
 							} else {
 								output += "File not found\r\n"

@@ -1,6 +1,7 @@
 package websandbox
 
 import (
+	"github.com/lesomnus/cxz/internal/projectid"
 	"testing"
 	"time"
 
@@ -20,7 +21,7 @@ func TestProjectEraseDeletesOnlyItsOwnFixtures(t *testing.T) {
 	if err != nil || !erased.GetErased() {
 		t.Fatal("erase did not report what it did", err)
 	}
-	if len(s.projects) != 1 || !proto.Equal(s.projects[0], other) || len(s.sessions) != 1 || s.sessions[0].value.GetProject().GetRuntimeId() != "project-2" {
+	if len(s.projects) != 1 || !proto.Equal(s.projects[0], other) || len(s.sessions) != 1 || projectid.String(s.sessions[0].value.GetProject().GetId()) != projectid.Canonical("project-2") {
 		t.Fatal("erase affected another project")
 	}
 	if s.projectRev != 1 {

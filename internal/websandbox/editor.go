@@ -2,6 +2,7 @@ package websandbox
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"path"
 	"sort"
 	"strings"
@@ -48,7 +49,7 @@ func (p *Projects) Paths(r *resource.ProjectPathsRequest, stream grpc.ServerStre
 	entries := map[string]bool{}
 	found := false
 	prefix := strings.TrimSuffix(root, "/") + "/"
-	for name := range files(project.GetRuntimeId()) {
+	for name := range files(project.GetAlias()) {
 		if strings.HasPrefix(name, prefix) {
 			found = true
 			rel := strings.TrimPrefix(name, prefix)
@@ -102,12 +103,12 @@ func (p *Projects) Download(r *resource.ProjectDownloadRequest, stream grpc.Serv
 	if err != nil {
 		return err
 	}
-	text, ok := files(project.GetRuntimeId())[sandboxPath(r.GetPath())]
+	text, ok := files(project.GetAlias())[sandboxPath(r.GetPath())]
 	if !ok {
 		p.S.mu.Lock()
 		upload, found := p.S.uploads[r.GetPath()]
 		p.S.mu.Unlock()
-		if !found || upload.project != project.GetRuntimeId() {
+		if !found || upload.project != projectid.String(project.GetId()) {
 			return status.Error(codes.NotFound, "sandbox file not found")
 		}
 		if len(upload.content) == 0 {

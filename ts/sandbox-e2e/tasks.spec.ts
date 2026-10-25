@@ -1,3 +1,4 @@
+import { SANDBOX_PROJECT_IDS } from "./fixture-shape";
 import { expect, test, devices } from "@playwright/test";
 
 test.use({
@@ -71,7 +72,9 @@ test("Tasks project toolbar switches projects and keeps Add accessible on mobile
   await page
     .getByRole("option", { name: "Design playground", exact: true })
     .click();
-  await expect(page).toHaveURL(/#\/tasks\?project=project-1$/);
+  await expect(page).toHaveURL(
+    new RegExp(`#/tasks[?]project=${SANDBOX_PROJECT_IDS[1]}$`),
+  );
   await expect(picker).toHaveText("Design playground");
   const add = page.getByRole("button", { name: "Add task", exact: true });
   await expect(add).toBeEnabled();

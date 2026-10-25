@@ -16,7 +16,6 @@ func (e *Project) Proto() *resource.Project {
 	x.SetDesc(e.Desc)
 	x.SetWorkspace(e.Workspace)
 	x.SetConfig(e.Config)
-	x.SetRuntimeId(e.RuntimeId)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

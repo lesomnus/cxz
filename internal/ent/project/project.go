@@ -23,8 +23,6 @@ const (
 	FieldWorkspace = "workspace"
 	// FieldConfig holds the string denoting the config field in the database.
 	FieldConfig = "config"
-	// FieldRuntimeId holds the string denoting the runtime_id field in the database.
-	FieldRuntimeId = "runtime_id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -45,7 +43,6 @@ var Columns = []string{
 	FieldDesc,
 	FieldWorkspace,
 	FieldConfig,
-	FieldRuntimeId,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -100,11 +97,6 @@ func ByWorkspace(opts ...sql.OrderTermOption) OrderOption {
 // ByConfig orders the results by the config field.
 func ByConfig(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldConfig, opts...).ToFunc()
-}
-
-// ByRuntimeId orders the results by the runtime_id field.
-func ByRuntimeId(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRuntimeId, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

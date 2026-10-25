@@ -43,7 +43,7 @@ func (m *Manager) prepareAssetRoot(ctx context.Context, p *Project) (string, err
 	if !assets.ValidID(p.ID) {
 		return "", fmt.Errorf("invalid project ID")
 	}
-	local := assets.ExportRoot(filepath.Join(m.Root, "assets"), p.ID)
+	local := assets.ExportRoot(filepath.Join(m.Root, "assets"), p.storageID())
 	if err := os.MkdirAll(local, 0755); err != nil {
 		return "", err
 	}

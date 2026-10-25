@@ -5,6 +5,23 @@ import "cxz/account_svc.g.proto";
 import "google/protobuf/timestamp.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
+message ProjectRef {
+  oneof key {
+    // Accepted for links and clients created before project UUIDs became canonical.
+    string runtime_id = 10 [deprecated = true];
+  }
+}
+
+message ProjectAddRequest {
+  reserved 10;
+  reserved runtime_id;
+}
+
+message ProjectSelect {
+  reserved 10;
+  reserved runtime_id;
+}
+
 message ProjectWatchResponse {
   // Present on initial snapshot pages; true on the final page. Live changes omit it.
   bool snapshot_complete = 1000;

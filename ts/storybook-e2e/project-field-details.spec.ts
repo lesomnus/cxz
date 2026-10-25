@@ -18,14 +18,14 @@ test("shared fields use tighter spacing and label help escapes clipping with key
     }));
     expect(spacing.gap).toBe(spacing.inset);
   }
-  for (const label of ["Provisioning", "Runtime ID"]) {
+  for (const label of ["Provisioning", "Project ID"]) {
     const icon = page.getByRole("img", { name: `About ${label}`, exact: true });
     await icon.hover();
     const tooltip = page.getByRole("tooltip");
     await expect(tooltip).toContainText(
       label === "Provisioning"
         ? "preparing the project container"
-        : "separately from the database UUID",
+        : "Canonical UUID",
     );
     expect(
       await tooltip.evaluate((el) => el.parentElement === document.body),

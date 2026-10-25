@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/containerterm"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
@@ -27,7 +28,7 @@ type downloadRuntime struct {
 }
 
 func (f *downloadRuntime) Download(ctx context.Context, project, path string, w io.Writer) error {
-	if project != f.p.Id {
+	if project != projectid.Canonical(f.p.Id) {
 		return status.Error(codes.NotFound, "wrong project")
 	}
 	if path == "denied" {
@@ -75,6 +76,24 @@ func TestDownloadRPCStreamsBinaryAndCancels(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.Close()
+	legacyStream, err := resource.NewProjectServiceClient(conn).Download(ctx, resource.ProjectDownloadRequest_builder{Ref: resource.ProjectRef_builder{RuntimeId: ptr("project")}.Build(), Path: ptr("/file")}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var legacyData []byte
+	for {
+		frame, err := legacyStream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		legacyData = append(legacyData, frame.GetData()...)
+	}
+	if !bytes.Equal(legacyData, f.data) {
+		t.Fatal("legacy streaming reference lost binary content")
+	}
 	client := resourceclient.New(conn)
 	out := sizeBuffer{size: -1}
 	if err := client.Download(ctx, "project", "/file", &out); err != nil || !bytes.Equal(out.Bytes(), f.data) {

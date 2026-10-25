@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"net"
 	"path/filepath"
 	"reflect"
@@ -27,7 +28,7 @@ type pathsRuntime struct {
 }
 
 func (f *pathsRuntime) Paths(ctx context.Context, project, path string, emit func(containerterm.PathListing)) (containerterm.PathListing, error) {
-	if project != f.p.Id {
+	if project != projectid.Canonical(f.p.Id) {
 		return containerterm.PathListing{}, status.Error(codes.NotFound, "wrong project")
 	}
 	if path == "/denied" {

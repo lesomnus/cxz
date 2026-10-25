@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"bytes"
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net"
 	"path/filepath"
@@ -30,7 +31,7 @@ func (f *editorRuntimeFixture) Editor(context.Context, string) (editor.Result, e
 	return editor.Result{Workspace: "/workspace", Token: strings.Repeat("a", 64)}, nil
 }
 func (f *editorRuntimeFixture) OpenEditorTunnel(ctx context.Context, id string) (io.ReadWriteCloser, error) {
-	if id != f.p.Id {
+	if id != projectid.Canonical(f.p.Id) {
 		return nil, status.Error(codes.NotFound, "wrong project")
 	}
 	client, server := net.Pipe()

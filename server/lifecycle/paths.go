@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"strings"
 	"time"
 
@@ -48,7 +49,7 @@ func (s ProjectServer) Paths(r *resource.ProjectPathsRequest, stream grpc.Server
 		}
 		sent = len(listing.Entries)
 	}
-	out, err := runtime.Paths(ctx, p.GetRuntimeId(), path, emit)
+	out, err := runtime.Paths(ctx, projectid.String(p.GetId()), path, emit)
 	if sendErr != nil {
 		return sendErr
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"net"
 	"path/filepath"
 	"testing"
@@ -41,7 +42,7 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	layer, _ := resource.Find[Layer](stack)
-	_, err = layer.Next().Project().Add(ctx, resource.ProjectAddRequest_builder{RuntimeId: "second", Workspace: "/second"}.Build())
+	_, err = layer.Next().Project().Add(ctx, resource.ProjectAddRequest_builder{Id: projectid.Bytes("second"), Workspace: "/second"}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +110,7 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 	if err != nil || sb.HasSnapshotComplete() || len(sb.GetItems()) != 1 || !bytes.Equal(sb.GetItems()[0].GetId(), added.GetId()) {
 		t.Fatalf("new session after subscription: %v %v", sb, err)
 	}
-	addedProject, err := layer.Next().Project().Add(ctx, resource.ProjectAddRequest_builder{RuntimeId: "third", Workspace: "/third"}.Build())
+	addedProject, err := layer.Next().Project().Add(ctx, resource.ProjectAddRequest_builder{Id: projectid.Bytes("third"), Workspace: "/third"}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,3 +1,5 @@
+import { useProject } from "#src/shared/api/use-project.ts";
+import { projectId } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -63,15 +65,13 @@ export function ProjectsPage({
   });
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
   const { project: selected } = useWorkspaceRoute();
-  const project =
-    visibleProjects.find((item) => item.runtimeId === selected) ??
-    (!selected ? visibleProjects[0] : undefined);
+  const project = useProject(c, visibleProjects, selected);
   return (
     <main className={styles.page} aria-label={t("Project workspace")}>
       <PageToolbar aria-label={t("Project toolbar")}>
         <ProjectPicker
           projects={visibleProjects}
-          value={project?.runtimeId ?? ""}
+          value={projectId(project) ?? ""}
           loading={projectsLoading}
           choose={(project) =>
             void navigate({ to: "/projects", search: { project } })
@@ -86,7 +86,7 @@ export function ProjectsPage({
           {error && <p role="alert">{error}</p>}
           {project ? (
             <ProjectDashboard
-              key={project.runtimeId}
+              key={projectId(project)}
               c={c}
               project={project}
               saved={setSaved}
@@ -97,7 +97,7 @@ export function ProjectsPage({
                 );
                 void navigate({
                   to: "/projects",
-                  search: { project: next?.runtimeId },
+                  search: { project: projectId(next) },
                 });
               }}
               sessions={sessions.filter(
@@ -163,7 +163,7 @@ function ProjectDashboard({
   const [addingSession, setAddingSession] = useState(false);
   const branch = useRemote(
     (signal) => projectBranch(c, p, signal),
-    [c, p.runtimeId, p.status?.containerState, p.status?.remoteWorkspace],
+    [c, projectId(p), p.status?.containerState, p.status?.remoteWorkspace],
   );
   const git = branch.loading
     ? t("Loading…")
@@ -192,19 +192,15 @@ function ProjectDashboard({
                     p.id.length === 16 ? new Id(p.id).toString() : undefined
                   }
                 />,
+                t(
+                  "Canonical UUID used to identify this project across APIs and links.",
+                ),
               ],
               [t("Name"), editable("name", t("Name"))],
               [t("Alias"), editable("alias", t("Alias"))],
               [t("Description"), editable("desc", t("Description"))],
               [t("Workspace"), p.workspace],
               [t("Configuration"), p.config],
-              [
-                t("Runtime ID"),
-                <IdentifierValue value={p.runtimeId} />,
-                t(
-                  "Project identifier used in API calls and links. Stored as runtime_id, separately from the database UUID and container ID.",
-                ),
-              ],
               [t("Created"), <DateTime value={p.dateCreated} />],
               [t("Updated"), <DateTime value={p.dateUpdated} />],
               [t("Deleted"), <DateTime value={p.dateErased} />],

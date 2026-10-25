@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/githubauth"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/tailscale/hujson"
 	"io"
 	"os"
@@ -141,7 +142,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 		// The manager owns this filesystem, so it does the two things a helper
 		// container used to do: make the directory, and make it writable by the
 		// remote user. No container for either.
-		dir, _ := m.projectState(p.ID)
+		dir, _ := m.projectState(p.storageID())
 		if e = os.MkdirAll(dir, 0700); e != nil {
 			return e
 		}
@@ -149,10 +150,10 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 			return e
 		}
 	} else {
-		if e = dockerx.EnsureResource(ctx, "volume", p.Volume, m.Owner, p.ID); e != nil {
+		if e = dockerx.EnsureResource(ctx, "volume", p.Volume, m.Owner, p.storageID()); e != nil {
 			return e
 		}
-		if _, e = dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "chmod", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "1777", "/cxz/state"); e != nil {
+		if _, e = dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.storageID(), "--entrypoint", "chmod", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "1777", "/cxz/state"); e != nil {
 			return e
 		}
 	}
@@ -234,7 +235,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 			}
 			ss, _ := compose["services"].(map[string]any)
 			for name := range ss {
-				services[name] = map[string]any{"labels": map[string]string{"cxz.owner": m.Owner, "cxz.project": p.ID}}
+				services[name] = map[string]any{"labels": map[string]string{"cxz.owner": m.Owner, "cxz.project": p.storageID()}}
 				if name == service {
 					if spec, ok := ss[name].(map[string]any); ok {
 						switch networks := spec["networks"].(type) {
@@ -284,7 +285,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 			if m.StateVolume == "" {
 				return fmt.Errorf("project %s has no state volume and this manager was installed without one", p.ID)
 			}
-			dir, subpath := m.projectState(p.ID)
+			dir, subpath := m.projectState(p.storageID())
 			// A subpath mount requires the directory to be there already, and
 			// the manager's own root is that volume.
 			if e = os.MkdirAll(dir, 0700); e != nil {
@@ -296,8 +297,8 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 		dev["volumes"] = []any{stateMount, map[string]any{"type": "volume", "source": m.ToolsVolume, "target": "/cxz/tools", "read_only": true}}
 		dev["volumes"] = append(dev["volumes"].([]any), map[string]any{"type": "bind", "source": secretSource, "target": "/cxz/secrets"}, map[string]any{"type": "bind", "source": assetSource, "target": "/cxz/assets", "read_only": true})
 		stateVolumes[m.ToolsVolume] = map[string]any{"external": true, "name": m.ToolsVolume}
-		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.ID, "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": stateVolumes}
-		cp := filepath.Join(m.Root, "projects", p.ID, "compose.json")
+		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.storageID(), "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": stateVolumes}
+		cp := filepath.Join(m.Root, "projects", p.storageID(), "compose.json")
 		if e = core.WriteJSON(cp, override); e != nil {
 			return e
 		}
@@ -307,13 +308,13 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 		runArgs = append(runArgs, "--network", p.Network, "--mount", "type=bind,source="+secretSource+",target=/cxz/secrets", "--mount", "type=bind,source="+assetSource+",target=/cxz/assets,readonly")
 		cfg["runArgs"] = runArgs
 	}
-	configPath := filepath.Join(m.Root, "projects", p.ID, "devcontainer.json")
+	configPath := filepath.Join(m.Root, "projects", p.storageID(), "devcontainer.json")
 	if e = core.WriteJSON(configPath, cfg); e != nil {
 		return e
 	}
 	// The bootstrap hook can run before the manager knows the remote workspace
 	// and selected binaries. It waits for this project-local runtime manifest.
-	runtime := Runtime{ProjectID: p.ID, Workspace: p.RemoteWorkspace, Token: p.Token}
+	runtime := Runtime{ProjectID: p.ID, LegacyProjectID: p.StorageID, Workspace: p.RemoteWorkspace, Token: p.Token}
 	prev, readErr := m.readRuntime(ctx, p)
 	if readErr != nil {
 		return readErr
@@ -323,7 +324,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 		if e = json.Unmarshal(prev, &old); e != nil {
 			return fmt.Errorf("invalid saved runtime: %w", e)
 		}
-		if old.ProjectID != p.ID || old.Token != p.Token {
+		if !projectid.Same(old.ProjectID, p.ID) || old.Token != p.Token {
 			return fmt.Errorf("project volume identity mismatch")
 		}
 		runtime.Claude, runtime.Codex = old.Claude, old.Codex
@@ -346,7 +347,7 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	if p.RemoteUser == "" {
 		p.RemoteUser = "root"
 	}
-	if _, e = dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); e != nil {
+	if _, e = dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID()); e != nil {
 		return e
 	}
 	if e = m.installGitConfig(ctx, p); e != nil {
@@ -425,9 +426,9 @@ type upResult struct {
 func (m *Manager) devcontainerUp(ctx context.Context, p *Project, configFile, configPath string, existing bool) (upResult, error) {
 	var out upResult
 	cmd := exec.CommandContext(ctx, "devcontainer", m.upArgs(p, configFile, configPath, existing)...)
-	cmd.Env = append(os.Environ(), provisionEnv("cxz-"+m.Owner[:12]+"-"+p.ID)...)
+	cmd.Env = append(os.Environ(), provisionEnv("cxz-"+m.Owner[:12]+"-"+p.storageID())...)
 	var stdout bytes.Buffer
-	path := filepath.Join(m.Root, "projects", p.ID, "provision.log")
+	path := filepath.Join(m.Root, "projects", p.storageID(), "provision.log")
 	log, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return out, err
@@ -456,7 +457,7 @@ func (m *Manager) devcontainerUp(ctx context.Context, p *Project, configFile, co
 // hooks, which is what keeps `StartContainer` from quietly replacing a
 // container or repeating `postCreateCommand`.
 func (m *Manager) upArgs(p *Project, configFile, configPath string, existing bool) []string {
-	args := []string{"up", "--workspace-folder", p.Workspace, "--config", configFile, "--override-config", configPath, "--id-label", "cxz.owner=" + m.Owner, "--id-label", "cxz.project=" + p.ID, "--id-label", "devcontainer.local_folder=" + p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration"}
+	args := []string{"up", "--workspace-folder", p.Workspace, "--config", configFile, "--override-config", configPath, "--id-label", "cxz.owner=" + m.Owner, "--id-label", "cxz.project=" + p.storageID(), "--id-label", "devcontainer.local_folder=" + p.Workspace, "--mount-workspace-git-root=false", "--update-remote-user-uid-default", "off", "--include-merged-configuration"}
 	if existing {
 		args = append(args, "--expect-existing-container")
 	}
@@ -478,14 +479,14 @@ func (m *Manager) writeRuntime(ctx context.Context, p *Project, r Runtime) error
 	}
 	if p.Volume == "" {
 		// The manager owns this filesystem. Same atomic rename, no container.
-		dir, _ := m.projectState(p.ID)
+		dir, _ := m.projectState(p.storageID())
 		next := filepath.Join(dir, "runtime.next")
 		if err := os.WriteFile(next, b, 0644); err != nil {
 			return err
 		}
 		return os.Rename(next, filepath.Join(dir, "runtime.json"))
 	}
-	return dockerx.Input(ctx, bytes.NewReader(b), "run", "--rm", "-i", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID, "--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "-c", "umask 022; cat > /cxz/state/runtime.next && mv /cxz/state/runtime.next /cxz/state/runtime.json")
+	return dockerx.Input(ctx, bytes.NewReader(b), "run", "--rm", "-i", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.storageID(), "--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state", m.Image, "-c", "umask 022; cat > /cxz/state/runtime.next && mv /cxz/state/runtime.next /cxz/state/runtime.json")
 }
 
 // Validate all readable configuration before a confirmed recreate removes a

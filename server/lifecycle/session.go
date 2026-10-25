@@ -1,7 +1,9 @@
 package lifecycle
 
 import (
+	"bytes"
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"time"
 
 	"github.com/lesomnus/cxz/api"
@@ -54,18 +56,18 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	if _, err := accounts.Resolve(r.GetAgent(), backend); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
-	binding, err := s.Next().AuthBinding().Get(ctx, resource.AuthBindingGetRequest_builder{Ref: r.GetAuthBinding(), Select: resource.AuthBindingSelect_builder{All: ptr(true)}.Build()}.Build())
+	binding, err := s.Next().AuthBinding().Get(ctx, resource.AuthBindingGetRequest_builder{Ref: r.GetAuthBinding(), Select: resource.AuthBindingSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build(), Account: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
-	if _, err := accounts.ResolveBinding(r.GetAgent(), backend, p.GetRuntimeId(), account, binding.GetBindingId()); err != nil || binding.GetAuthBackend() != backend {
+	if !bytes.Equal(binding.GetProject().GetId(), p.GetId()) || binding.GetAccount().GetAlias() != account || binding.GetAuthBackend() != backend {
 		return nil, status.Error(codes.InvalidArgument, "auth binding does not match project/account/backend")
 	}
 	v, err := s.shared.runtime.Create(ctx, &api.CreateRequest{Workspace: p.GetWorkspace(), Title: r.GetName(), Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), Account: account, AuthBackend: backend, AuthBinding: binding.GetBindingId()})
 	if err != nil {
 		return nil, err
 	}
-	v.ProjectId = p.GetRuntimeId()
+	v.ProjectId = projectid.String(p.GetId())
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
 	saved, err := s.saveSession(ctx, v, r.GetClientId())

@@ -2,9 +2,7 @@ package workspace
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,15 +26,17 @@ import (
 )
 
 type Project struct {
+	// StorageID preserves pre-UUID paths and immutable Docker ownership labels.
+	StorageID                                                                                            string `json:",omitempty"`
 	ID, Workspace, Name, Config, ContainerID, Network, Volume, Token, RemoteWorkspace, RemoteUser, Error string
 	// TrustedConfig is the digest of the rendered configuration a person said
 	// yes to, and ConfigDigest is what the last provision rendered. A boolean
 	// used to stand in for the first of these and never expired. See cxz#274.
 	TrustedConfig, ConfigDigest string
-	Sessions                                                                                             []*api.Session
-	Job                                                                                                  ProvisionJob
+	Sessions                    []*api.Session
+	Job                         ProvisionJob
 }
-type Runtime struct{ ProjectID, Workspace, Token, Claude, Codex string }
+type Runtime struct{ ProjectID, LegacyProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
 	removedSessions map[string]bool // protected by writeMu; rejects late frames after removal
 	auxStop         context.CancelFunc
@@ -120,6 +120,9 @@ func New(db *sql.DB, root string) (*Manager, error) {
 	if e != nil {
 		return nil, e
 	}
+	if e = m.migrateProjectIdentities(context.Background()); e != nil {
+		return nil, e
+	}
 	manifests, e := filepath.Glob(filepath.Join(root, "projects", "*", "project.json"))
 	if e != nil {
 		return nil, e
@@ -133,7 +136,7 @@ func New(db *sql.DB, root string) (*Manager, error) {
 		if err = json.Unmarshal(b, &p); err != nil {
 			return nil, fmt.Errorf("invalid project manifest %s: %w", file, err)
 		}
-		if p.ID != filepath.Base(filepath.Dir(file)) {
+		if p.storageID() != filepath.Base(filepath.Dir(file)) {
 			return nil, fmt.Errorf("project manifest identity mismatch")
 		}
 		// Recreate only empty host-tmpfs directories after an engine-host reboot.
@@ -193,10 +196,10 @@ func (m *Manager) save(ctx context.Context, p *Project) error {
 	if e != nil {
 		return e
 	}
-	if e = os.MkdirAll(filepath.Join(m.Root, "projects", p.ID), 0700); e != nil {
+	if e = os.MkdirAll(filepath.Join(m.Root, "projects", p.storageID()), 0700); e != nil {
 		return e
 	}
-	if e = core.WriteJSON(filepath.Join(m.Root, "projects", p.ID, "project.json"), p); e != nil {
+	if e = core.WriteJSON(filepath.Join(m.Root, "projects", p.storageID(), "project.json"), p); e != nil {
 		return e
 	}
 	_, e = m.DB.ExecContext(ctx, "INSERT INTO projects VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data", p.ID, b)
@@ -228,7 +231,7 @@ func (m *Manager) resolve(ctx context.Context, path string) (*Project, error) {
 		return nil, e
 	}
 	for _, p := range all {
-		if p.ID == path || p.Workspace == path {
+		if p.ID == path || p.StorageID == path && path != "" || p.Workspace == path {
 			return p, nil
 		}
 	}
@@ -247,7 +250,7 @@ func (m *Manager) resolve(ctx context.Context, path string) (*Project, error) {
 	return nil, fmt.Errorf("project not found: %s", path)
 }
 func (m *Manager) client(ctx context.Context, p *Project) (*grpc.ClientConn, api.SessionsClient, error) {
-	v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+	v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 	if e != nil {
 		return nil, nil, e
 	}
@@ -435,9 +438,14 @@ func (m *Manager) StartContainer(ctx context.Context, r *api.ProjectRequest) (re
 	}
 	p := existing
 	if p == nil {
-		h := sha256.Sum256([]byte(path))
-		id := hex.EncodeToString(h[:12])
-		p = &Project{ID: id, Workspace: path, Name: filepath.Base(path), Network: m.sharedNetwork(), Volume: m.newProjectVolume(id), Token: core.ID() + core.ID()}
+		registered, err := m.Register(ctx, path, r.Config)
+		if err != nil {
+			return nil, err
+		}
+		p, err = m.resolve(ctx, registered.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
 	lock := m.projectLock(p.ID)
 	lock.Lock()
@@ -495,9 +503,9 @@ func (m *Manager) StartContainer(ctx context.Context, r *api.ProjectRequest) (re
 		return nil, e
 	}
 	for _, v := range foreign {
-		if v.Config.Labels["cxz.owner"] == m.Owner && v.Config.Labels["cxz.project"] == p.ID {
+		if v.Config.Labels["cxz.owner"] == m.Owner && v.Config.Labels["cxz.project"] == p.storageID() {
 			if p.ContainerID != "" && p.ContainerID != v.ID {
-				if _, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID); err == nil {
+				if _, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID()); err == nil {
 					return nil, fmt.Errorf("multiple owned workspace containers; inspect cxz project ls before retrying")
 				}
 			}
@@ -599,7 +607,6 @@ var (
 	stopBudget = 30 * time.Second
 	stopTotal  = 2 * time.Minute
 )
-
 
 // stopSessions stops every live session of the project and refreshes what the
 // manager knows about them. One session that cannot answer costs its own

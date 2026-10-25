@@ -1,3 +1,4 @@
+import { projectId } from "#src/shared/api/project-id.ts";
 import { IconValueMenu } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
@@ -17,7 +18,7 @@ export function ProjectPicker({
   choose: (value: string) => void;
 }) {
   useLocale();
-  const selected = projects.find((project) => project.runtimeId === value);
+  const selected = projects.find((project) => projectId(project) === value);
   return (
     <IconValueMenu
       className={styles.picker}
@@ -32,7 +33,7 @@ export function ProjectPicker({
             : t("Select project")
       }
       options={projects.map((project) => ({
-        value: project.runtimeId,
+        value: projectId(project),
         label: project.name || project.alias,
         searchText: `${project.alias} ${project.workspace}`,
       }))}

@@ -80,11 +80,6 @@ func Config(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldConfig, v))
 }
 
-// RuntimeId applies equality check predicate on the "runtime_id" field. It's identical to RuntimeIdEQ.
-func RuntimeId(v string) predicate.Project {
-	return predicate.Project(sql.FieldEQ(FieldRuntimeId, v))
-}
-
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldDateUpdated, v))
@@ -423,71 +418,6 @@ func ConfigEqualFold(v string) predicate.Project {
 // ConfigContainsFold applies the ContainsFold predicate on the "config" field.
 func ConfigContainsFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldContainsFold(FieldConfig, v))
-}
-
-// RuntimeIdEQ applies the EQ predicate on the "runtime_id" field.
-func RuntimeIdEQ(v string) predicate.Project {
-	return predicate.Project(sql.FieldEQ(FieldRuntimeId, v))
-}
-
-// RuntimeIdNEQ applies the NEQ predicate on the "runtime_id" field.
-func RuntimeIdNEQ(v string) predicate.Project {
-	return predicate.Project(sql.FieldNEQ(FieldRuntimeId, v))
-}
-
-// RuntimeIdIn applies the In predicate on the "runtime_id" field.
-func RuntimeIdIn(vs ...string) predicate.Project {
-	return predicate.Project(sql.FieldIn(FieldRuntimeId, vs...))
-}
-
-// RuntimeIdNotIn applies the NotIn predicate on the "runtime_id" field.
-func RuntimeIdNotIn(vs ...string) predicate.Project {
-	return predicate.Project(sql.FieldNotIn(FieldRuntimeId, vs...))
-}
-
-// RuntimeIdGT applies the GT predicate on the "runtime_id" field.
-func RuntimeIdGT(v string) predicate.Project {
-	return predicate.Project(sql.FieldGT(FieldRuntimeId, v))
-}
-
-// RuntimeIdGTE applies the GTE predicate on the "runtime_id" field.
-func RuntimeIdGTE(v string) predicate.Project {
-	return predicate.Project(sql.FieldGTE(FieldRuntimeId, v))
-}
-
-// RuntimeIdLT applies the LT predicate on the "runtime_id" field.
-func RuntimeIdLT(v string) predicate.Project {
-	return predicate.Project(sql.FieldLT(FieldRuntimeId, v))
-}
-
-// RuntimeIdLTE applies the LTE predicate on the "runtime_id" field.
-func RuntimeIdLTE(v string) predicate.Project {
-	return predicate.Project(sql.FieldLTE(FieldRuntimeId, v))
-}
-
-// RuntimeIdContains applies the Contains predicate on the "runtime_id" field.
-func RuntimeIdContains(v string) predicate.Project {
-	return predicate.Project(sql.FieldContains(FieldRuntimeId, v))
-}
-
-// RuntimeIdHasPrefix applies the HasPrefix predicate on the "runtime_id" field.
-func RuntimeIdHasPrefix(v string) predicate.Project {
-	return predicate.Project(sql.FieldHasPrefix(FieldRuntimeId, v))
-}
-
-// RuntimeIdHasSuffix applies the HasSuffix predicate on the "runtime_id" field.
-func RuntimeIdHasSuffix(v string) predicate.Project {
-	return predicate.Project(sql.FieldHasSuffix(FieldRuntimeId, v))
-}
-
-// RuntimeIdEqualFold applies the EqualFold predicate on the "runtime_id" field.
-func RuntimeIdEqualFold(v string) predicate.Project {
-	return predicate.Project(sql.FieldEqualFold(FieldRuntimeId, v))
-}
-
-// RuntimeIdContainsFold applies the ContainsFold predicate on the "runtime_id" field.
-func RuntimeIdContainsFold(v string) predicate.Project {
-	return predicate.Project(sql.FieldContainsFold(FieldRuntimeId, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

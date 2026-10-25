@@ -52,7 +52,7 @@ func (m *Manager) migrateProjectStateWith(ctx context.Context, p *Project, run r
 	if p.Volume == "" || m.StateVolume == "" {
 		return nil
 	}
-	dir, _ := m.projectState(p.ID)
+	dir, _ := m.projectState(p.storageID())
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
@@ -63,9 +63,9 @@ func (m *Manager) migrateProjectStateWith(ctx context.Context, p *Project, run r
 	// One container, both trees: the project's volume read-only, and the
 	// manager's where this project's directory lives. tar rather than cp,
 	// because tar can leave the caches behind.
-	inside := "/to/projects/" + p.ID + "/state"
+	inside := "/to/projects/" + p.storageID() + "/state"
 	if _, err := run(ctx, "run", "--rm",
-		"--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID,
+		"--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.storageID(),
 		"-v", p.Volume+":/from:ro",
 		"--mount", "type=volume,source="+m.StateVolume+",target=/to",
 		"--entrypoint", "sh", image, "-c",
@@ -114,7 +114,7 @@ func (m *Manager) treeDigest(ctx context.Context, run removalDocker, image strin
 	if strings.HasPrefix(path, "/to") {
 		mounts = []string{"--mount", "type=volume,source=" + m.StateVolume + ",target=/to,readonly"}
 	}
-	args := append([]string{"run", "--rm", "--label", "cxz.owner=" + m.Owner, "--label", "cxz.project=" + p.ID}, mounts...)
+	args := append([]string{"run", "--rm", "--label", "cxz.owner=" + m.Owner, "--label", "cxz.project=" + p.storageID()}, mounts...)
 	args = append(args, "--entrypoint", "sh", image, "-c",
 		// The same exclusion on both sides, or the comparison would refuse
 		// every migration for the caches it deliberately did not move.
@@ -132,9 +132,9 @@ func (m *Manager) treeDigest(ctx context.Context, run removalDocker, image strin
 // after it is a subdirectory of the manager's.
 func (m *Manager) stateMount(p *Project, target string, write bool) memoryMount {
 	if p.Volume != "" {
-		return memoryMount{volume: p.Volume, project: p.ID, target: target, write: write}
+		return memoryMount{volume: p.Volume, project: p.storageID(), target: target, write: write}
 	}
-	_, subpath := m.projectState(p.ID)
+	_, subpath := m.projectState(p.storageID())
 	// The manager's volume carries the owner label and no project label, which
 	// is what the ownership check compares against; the project is named by the
 	// subpath rather than by a label of its own.
@@ -147,7 +147,7 @@ func (m *Manager) stateLocation(p *Project) string {
 	if p.Volume != "" {
 		return "volume:" + p.Volume
 	}
-	_, subpath := m.projectState(p.ID)
+	_, subpath := m.projectState(p.storageID())
 	return "volume:" + m.StateVolume + "/" + subpath
 }
 
@@ -157,14 +157,14 @@ func (m *Manager) stateLocation(p *Project) string {
 // because only a container can see inside a volume.
 func (m *Manager) readRuntime(ctx context.Context, p *Project) ([]byte, error) {
 	if p.Volume == "" {
-		dir, _ := m.projectState(p.ID)
+		dir, _ := m.projectState(p.storageID())
 		b, err := os.ReadFile(filepath.Join(dir, "runtime.json"))
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
 		return b, err
 	}
-	return dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.ID,
+	return dockerx.Run(ctx, "run", "--rm", "--label", "cxz.owner="+m.Owner, "--label", "cxz.project="+p.storageID(),
 		"--entrypoint", "sh", "--mount", "type=volume,source="+p.Volume+",target=/cxz/state,readonly", m.Image,
 		"-c", "if test -f /cxz/state/runtime.json; then cat /cxz/state/runtime.json; fi")
 }

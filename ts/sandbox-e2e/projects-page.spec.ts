@@ -1,3 +1,4 @@
+import { SANDBOX_PROJECT_IDS } from "./fixture-shape";
 import { expect, test, devices } from "@playwright/test";
 
 test.use({
@@ -85,7 +86,9 @@ test("projects use the full workspace with a persistent project picker and scope
   await page
     .getByRole("option", { name: "Secondary project", exact: true })
     .click();
-  await expect(page).toHaveURL(/#\/projects\?project=project-2$/);
+  await expect(page).toHaveURL(
+    new RegExp(`#/projects[?]project=${SANDBOX_PROJECT_IDS[2]}$`),
+  );
   await expect(picker).toHaveText("Secondary project");
   await expect(cards).toHaveCount(1);
   await expect(cards).toContainText("session-8");
@@ -97,7 +100,9 @@ test("projects use the full workspace with a persistent project picker and scope
   await expect(picker).toHaveText("Secondary project", { timeout: 45000 });
   await cards.getByRole("checkbox").focus();
   await cards.getByRole("checkbox").press("Space");
-  await expect(page).toHaveURL(/#\/projects\?project=project-2$/);
+  await expect(page).toHaveURL(
+    new RegExp(`#/projects[?]project=${SANDBOX_PROJECT_IDS[2]}$`),
+  );
   await expect(cards).toHaveAttribute("data-selected", "true");
   await expect(
     main.getByRole("checkbox", { name: "Select all sessions", exact: true }),
@@ -345,7 +350,9 @@ test("project metadata persists through Project.Patch and inventory Watch", asyn
       .getByRole("table", { name: "Sessions", exact: true })
       .locator("tbody tr"),
   ).toHaveCount(8);
-  await expect(page).toHaveURL(/projects\?project=project-1$/);
+  await expect(page).toHaveURL(
+    new RegExp(`projects[?]project=${SANDBOX_PROJECT_IDS[1]}$`),
+  );
 });
 
 test("project Erase removes only the confirmed sandbox project", async ({
@@ -374,7 +381,9 @@ test("project Erase removes only the confirmed sandbox project", async ({
   });
   await expect(picker).toHaveText("Secondary project");
   await expect(table.locator("tbody tr")).toHaveCount(1);
-  await expect(page).toHaveURL(/projects\?project=project-2$/);
+  await expect(page).toHaveURL(
+    new RegExp(`projects[?]project=${SANDBOX_PROJECT_IDS[2]}$`),
+  );
   await picker.click();
   await expect(
     page.getByRole("option", { name: "Design playground", exact: true }),

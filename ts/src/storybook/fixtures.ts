@@ -1,3 +1,4 @@
+import { projectFixtureId } from "./project-id";
 import { create } from "@bufbuild/protobuf";
 import {
   ResponseMetadataSchema,
@@ -374,7 +375,7 @@ export function questionEvent(example: QuestionExample = "choice") {
   return event;
 }
 export const project = create(ProjectSchema, {
-  runtimeId: "storybook",
+  id: projectFixtureId(),
   alias: "cxz",
   name: "cxz",
 });

@@ -1,3 +1,7 @@
+import {
+  projectId as projectUUID,
+  projectRef,
+} from "#src/shared/api/project-id.ts";
 import { EventView } from "./event-view";
 import {
   eventSource,
@@ -491,12 +495,12 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const sessionProject =
     s?.project?.id &&
     projects.find((project) => key(project.id) === key(s.project!.id));
-  const projectId = sessionProject?.runtimeId ?? "";
+  const projectId = projectUUID(sessionProject) ?? "";
   const lookupPaths = useCallback<LookupPaths>(
     async (path, signal) => {
       const entries = [];
       for await (const reply of c.projects.paths(
-        { ref: ref(projectId), path },
+        { ref: projectRef(projectId), path },
         { signal, timeoutMs: 5000 },
       )) {
         entries.push(...reply.entries);
@@ -650,7 +654,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     );
     c.store.apply("cxz.Session", [{ id: stopped.id, value: stopped }]);
     const account = stopped.account?.alias ?? "";
-    const loginProject = stopped.project?.runtimeId || projectId;
+    const loginProject = projectUUID(stopped.project) || projectId;
     if (
       stopped.agent !== "claude" ||
       !account ||

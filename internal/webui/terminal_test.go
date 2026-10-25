@@ -2,6 +2,7 @@ package webui
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net"
 	"net/http"
@@ -30,7 +31,7 @@ func (*fixtureProjects) Terminal(stream grpc.BidiStreamingServer[resource.Projec
 	if err != nil {
 		return err
 	}
-	if first.GetRef().GetRuntimeId() != "project" {
+	if projectid.RefString(first.GetRef()) != projectid.Canonical("project") {
 		return io.EOF
 	}
 	dir, err := os.MkdirTemp("", "cxz-web-terminal-fixture-")

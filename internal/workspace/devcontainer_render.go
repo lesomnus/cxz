@@ -52,7 +52,7 @@ func (m *Manager) resolveNearest(ctx context.Context, handle string) (*Project, 
 
 func (m *Manager) renderProjectDevcontainer(ctx context.Context, p *Project) (*api.RenderDevcontainerReply, error) {
 	out := &api.RenderDevcontainerReply{Project: p.ID, Name: p.Name, Workspace: p.Workspace}
-	dir := filepath.Join(m.Root, "projects", p.ID)
+	dir := filepath.Join(m.Root, "projects", p.storageID())
 	config := filepath.Join(dir, "devcontainer.json")
 	b, err := os.ReadFile(config)
 	if os.IsNotExist(err) {
@@ -136,7 +136,7 @@ func (m *Manager) resolvedCompose(ctx context.Context, p *Project, files []strin
 	if len(m.Owner) < 12 {
 		return nil, fmt.Errorf("invalid manager owner")
 	}
-	args := []string{"compose", "--project-name", "cxz-" + m.Owner[:12] + "-" + p.ID}
+	args := []string{"compose", "--project-name", "cxz-" + m.Owner[:12] + "-" + p.storageID()}
 	for _, file := range files {
 		args = append(args, "-f", file)
 	}

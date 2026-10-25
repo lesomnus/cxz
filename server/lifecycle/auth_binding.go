@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -39,11 +40,11 @@ func (s AuthBindingServer) Add(ctx context.Context, r *resource.AuthBindingAddRe
 	}
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
-	return s.ensureBinding(ctx, p.GetRuntimeId(), a.GetAlias(), a.GetAgent(), a.GetAuthBackend())
+	return s.ensureBinding(ctx, projectid.String(p.GetId()), a.GetAlias(), a.GetAgent(), a.GetAuthBackend())
 }
 
 // Caller holds shared.mu. The unique binding ID makes retries converge.
-func (s Layer) ensureBinding(ctx context.Context, project, alias, agent, backend string) (*resource.AuthBinding, error) {
+func (s Layer) ensureBinding(ctx context.Context, project, alias, agent, backend string, existing ...string) (*resource.AuthBinding, error) {
 	b, err := accounts.Resolve(agent, backend)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
@@ -56,6 +57,21 @@ func (s Layer) ensureBinding(ctx context.Context, project, alias, agent, backend
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	id := spec.ID
+	if len(existing) > 0 && existing[0] != "" && existing[0] != id {
+		legacy := ""
+		if resolver, ok := s.shared.runtime.(interface {
+			LegacyProjectID(context.Context, string) (string, error)
+		}); ok {
+			legacy, err = resolver.LegacyProjectID(ctx, project)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if legacy == "" || accounts.BindingID(legacy, alias, backend) != existing[0] {
+			return nil, status.Error(codes.FailedPrecondition, "runtime auth binding mismatch")
+		}
+		id = existing[0]
+	}
 	v, err := s.Next().AuthBinding().Get(ctx, resource.AuthBindingGetRequest_builder{Ref: bindingRef(id), Select: resource.AuthBindingSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err == nil {
 		return v, nil

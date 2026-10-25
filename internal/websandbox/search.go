@@ -3,6 +3,7 @@ package websandbox
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -90,7 +91,7 @@ func (x *Sessions) Search(r *resource.SessionSearchRequest, stream grpc.ServerSt
 		excerpt := string(runes[start:min(len(runes), start+snippet)])
 		hits = append(hits, resource.SessionSearchHit_builder{Seq: proto.Uint64(event.GetSeq()), TimeMs: proto.Int64(event.GetTimeMs()), Kind: proto.String(event.GetKind()), Bytes: proto.Int32(int32(len(text))), Snippet: proto.String(excerpt)}.Build())
 	}
-	visit := resource.SessionSearchVisit_builder{SessionId: proto.String(st.value.GetRuntimeId()), Alias: proto.String(st.value.GetAlias()), Title: proto.String(st.value.GetName()), Agent: proto.String(st.value.GetAgent()), ProjectId: proto.String(st.value.GetProject().GetRuntimeId()), Hits: hits}.Build()
+	visit := resource.SessionSearchVisit_builder{SessionId: proto.String(st.value.GetRuntimeId()), Alias: proto.String(st.value.GetAlias()), Title: proto.String(st.value.GetName()), Agent: proto.String(st.value.GetAgent()), ProjectId: proto.String(projectid.String(st.value.GetProject().GetId())), Hits: hits}.Build()
 	x.S.mu.Unlock()
 	next := ""
 	if more {

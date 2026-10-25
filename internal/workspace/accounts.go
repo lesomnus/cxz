@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"os/exec"
@@ -16,7 +17,20 @@ func (m *Manager) connectAccount(ctx context.Context, p *Project, account, backe
 	if backend != accounts.BrokeredAccessToken {
 		return nil
 	}
-	grant, err := accounts.IssueGrant(m.Root, p.ID, account)
+	scope := p.ID
+	if b, err := m.readRuntime(ctx, p); err != nil {
+		return err
+	} else if len(b) > 0 {
+		var r Runtime
+		if err = json.Unmarshal(b, &r); err != nil {
+			return err
+		}
+		if !projectid.Same(r.ProjectID, p.ID) {
+			return fmt.Errorf("runtime project identity mismatch")
+		}
+		scope = r.ProjectID
+	}
+	grant, err := accounts.IssueGrant(m.Root, scope, account)
 	if err != nil {
 		return err
 	}

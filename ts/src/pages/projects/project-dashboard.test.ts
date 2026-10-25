@@ -8,7 +8,9 @@ import { projectBranch, type DashboardConnection } from "./project-dashboard";
 
 const project = () =>
   create(ProjectSchema, {
-    runtimeId: "chosen-project",
+    id: Uint8Array.from({ length: 16 }, (_, i) =>
+      i === 6 ? 0x80 : i === 8 ? 0x80 : i === 9 ? 7 : 1,
+    ),
     workspace: "/host/source",
     status: {
       containerState: ContainerState.RUNNING,
@@ -23,7 +25,7 @@ function downloads(files: Record<string, string | Error>) {
         request: { ref?: { key: { value?: unknown } }; path: string },
         options: { signal: AbortSignal },
       ) {
-        expect(request.ref?.key.value).toBe("chosen-project");
+        expect(request.ref?.key.value).toEqual(project().id);
         expect(options.signal).toBeInstanceOf(AbortSignal);
         paths.push(request.path);
         const body = files[request.path];

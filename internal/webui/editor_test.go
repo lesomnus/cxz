@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/containerterm"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"
@@ -31,7 +32,7 @@ type testEditorProjects struct {
 }
 
 func (p *testEditorProjects) Get(context.Context, *resource.ProjectGetRequest) (*resource.Project, error) {
-	return resource.Project_builder{RuntimeId: "project", Status: resource.ProjectStatus_builder{RemoteWorkspace: "/workspace"}.Build()}.Build(), nil
+	return resource.Project_builder{Id: projectid.Bytes("project"), Status: resource.ProjectStatus_builder{RemoteWorkspace: "/workspace"}.Build()}.Build(), nil
 }
 func (p *testEditorProjects) Editor(context.Context, *resource.ProjectEditorRequest) (*resource.ProjectEditorReply, error) {
 	workspace := "/workspace"
@@ -94,7 +95,7 @@ func TestEditorProxyAuthenticationBytesUpgradeAndRevocation(t *testing.T) {
 			http.Error(w, "bad upstream authentication", 403)
 			return
 		}
-		if r.URL.Path == "/editor/project/socket" {
+		if r.URL.Path == "/editor/"+projectid.Canonical("project")+"/socket" {
 			c, b, err := w.(http.Hijacker).Hijack()
 			if err != nil {
 				return
@@ -140,7 +141,7 @@ func TestEditorProxyAuthenticationBytesUpgradeAndRevocation(t *testing.T) {
 		}
 		return res
 	}
-	unauth := request("GET", "/editor/project/", "", nil)
+	unauth := request("GET", "/editor/"+projectid.Canonical("project")+"/", "", nil)
 	unauth.Body.Close()
 	if unauth.StatusCode != 401 {
 		t.Fatal(unauth.StatusCode)
@@ -154,7 +155,7 @@ func TestEditorProxyAuthenticationBytesUpgradeAndRevocation(t *testing.T) {
 		r.AddCookie(cookie)
 		return http.DefaultTransport.RoundTrip(r)
 	})}
-	id := "project"
+	id := projectid.Canonical("project")
 	setup := request("POST", "/editor/connect", `{"project":"project"}`, cookie)
 	var reply map[string]any
 	if err := json.NewDecoder(setup.Body).Decode(&reply); err != nil {
@@ -164,14 +165,14 @@ func TestEditorProxyAuthenticationBytesUpgradeAndRevocation(t *testing.T) {
 	if setup.StatusCode != http.StatusOK || len(reply) != 1 || reply["workspace"] != "/workspace" {
 		t.Fatal("private token leaked or setup failed", reply, setup.StatusCode)
 	}
-	res := request("GET", "/editor/project/?folder=%2Fworkspace", "", cookie)
+	res := request("GET", "/editor/"+projectid.Canonical("project")+"/?folder=%2Fworkspace", "", cookie)
 	data, err := io.ReadAll(res.Body)
 	res.Body.Close()
-	if err != nil || res.StatusCode != 200 || string(data) != "/editor/project/ /workspace" {
+	if err != nil || res.StatusCode != 200 || string(data) != "/editor/"+projectid.Canonical("project")+"/ /workspace" {
 		t.Fatalf("proxy: %d %q %v", res.StatusCode, data, err)
 	}
 	editorCookies := res.Cookies()
-	if len(editorCookies) != 1 || editorCookies[0].Name != "vscode-tkn" || editorCookies[0].Path != "/editor/project/" || !editorCookies[0].Secure || editorCookies[0].HttpOnly || editorCookies[0].SameSite != http.SameSiteStrictMode {
+	if len(editorCookies) != 1 || editorCookies[0].Name != "vscode-tkn" || editorCookies[0].Path != "/editor/"+projectid.Canonical("project")+"/" || !editorCookies[0].Secure || editorCookies[0].HttpOnly || editorCookies[0].SameSite != http.SameSiteStrictMode {
 		t.Fatal("workbench handshake cookie is not path-scoped/secure")
 	}
 	if res.Header.Get("X-Frame-Options") != "SAMEORIGIN" || !strings.Contains(res.Header.Get("Content-Security-Policy"), "frame-ancestors 'self'") {
@@ -200,7 +201,7 @@ func TestEditorProxyAuthenticationBytesUpgradeAndRevocation(t *testing.T) {
 	}
 	defer socket.Close()
 	socket.SetDeadline(time.Now().Add(5 * time.Second))
-	fmt.Fprintf(socket, "GET /editor/project/socket HTTP/1.1\r\nHost: cxz.test\r\nOrigin: https://cxz.test\r\nCookie: %s=%s\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n", cookie.Name, cookie.Value)
+	fmt.Fprintf(socket, "GET /editor/%s/socket HTTP/1.1\r\nHost: cxz.test\r\nOrigin: https://cxz.test\r\nCookie: %s=%s\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n", projectid.Canonical("project"), cookie.Name, cookie.Value)
 	reader := bufio.NewReader(socket)
 	response, err := http.ReadResponse(reader, nil)
 	if err != nil || response.StatusCode != 101 {
@@ -220,7 +221,7 @@ func TestEditorProxyAuthenticationBytesUpgradeAndRevocation(t *testing.T) {
 	if n, ok := err.(net.Error); ok && n.Timeout() {
 		t.Fatal("upgrade remained alive after logout")
 	}
-	revoked := request("GET", "/editor/project/", "", cookie)
+	revoked := request("GET", "/editor/"+projectid.Canonical("project")+"/", "", cookie)
 	revoked.Body.Close()
 	if revoked.StatusCode != 401 {
 		t.Fatal("revoked editor access")

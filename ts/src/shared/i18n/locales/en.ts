@@ -1,5 +1,8 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Canonical UUID used to identify this project across APIs and links.":
+    "Canonical UUID used to identify this project across APIs and links.",
+
   "Stop the project container and its sessions.":
     "Stop the project container and its sessions.",
   "Stop project": "Stop project",
@@ -645,22 +648,30 @@ export const messages = {
   Unknown: "Unknown",
   Running: "Running",
   Remove: "Remove",
-  "Makes the project run: the container it already has, or a new one built from its configuration, which takes minutes. Agents stay stopped until a session is resumed.": "Makes the project run: the container it already has, or a new one built from its configuration, which takes minutes. Agents stay stopped until a session is resumed.",
+  "Makes the project run: the container it already has, or a new one built from its configuration, which takes minutes. Agents stay stopped until a session is resumed.":
+    "Makes the project run: the container it already has, or a new one built from its configuration, which takes minutes. Agents stay stopped until a session is resumed.",
   Erase: "Erase",
   "Erase project": "Erase project",
   "Erase permanently": "Erase permanently",
-  "Start the project container and its runtime.": "Start the project container and its runtime.",
-  "Remove the project container, keeping everything else.": "Remove the project container, keeping everything else.",
+  "Start the project container and its runtime.":
+    "Start the project container and its runtime.",
+  "Remove the project container, keeping everything else.":
+    "Remove the project container, keeping everything else.",
   Start: "Start",
   "Start project": "Start project",
   "Trust configuration": "Trust configuration",
   "Trust and start": "Trust and start",
-  "This project's devcontainer configuration asks for access beyond its container. Start it only if you trust this configuration.": "This project's devcontainer configuration asks for access beyond its container. Start it only if you trust this configuration.",
-  "You will be asked again if the configuration changes.": "You will be asked again if the configuration changes.",
+  "This project's devcontainer configuration asks for access beyond its container. Start it only if you trust this configuration.":
+    "This project's devcontainer configuration asks for access beyond its container. Start it only if you trust this configuration.",
+  "You will be asked again if the configuration changes.":
+    "You will be asked again if the configuration changes.",
   "Remove container": "Remove container",
-  "Stops the project container and all its sessions. The container is kept, so starting it again takes seconds.": "Stops the project container and all its sessions. The container is kept, so starting it again takes seconds.",
-  "Starts the container this project already has, and its runtime. Agents stay stopped until a session is resumed.": "Starts the container this project already has, and its runtime. Agents stay stopped until a session is resumed.",
-  "Removes the project container. The project, its sessions, conversation history and volumes are retained; starting again builds a new container.": "Removes the project container. The project, its sessions, conversation history and volumes are retained; starting again builds a new container.",
+  "Stops the project container and all its sessions. The container is kept, so starting it again takes seconds.":
+    "Stops the project container and all its sessions. The container is kept, so starting it again takes seconds.",
+  "Starts the container this project already has, and its runtime. Agents stay stopped until a session is resumed.":
+    "Starts the container this project already has, and its runtime. Agents stay stopped until a session is resumed.",
+  "Removes the project container. The project, its sessions, conversation history and volumes are retained; starting again builds a new container.":
+    "Removes the project container. The project, its sessions, conversation history and volumes are retained; starting again builds a new container.",
   "No container": "No container",
   "Not started": "Not started",
   "Waiting for input": "Waiting for input",

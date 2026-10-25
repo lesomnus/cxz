@@ -1,3 +1,4 @@
+import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Project } from "#gen/cxz/project_pb";
 import { ref, type Connection } from "#src/shared/api/connection.ts";
@@ -29,7 +30,7 @@ export async function projectBranch(
       size = 0;
     const decoder = new TextDecoder();
     for await (const reply of c.projects.download(
-      { ref: ref(project.runtimeId), path },
+      { ref: projectRef(projectId(project)), path },
       { signal, timeoutMs: 10000 },
     )) {
       size += reply.data.byteLength;

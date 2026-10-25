@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"path/filepath"
 	"testing"
 	"time"
@@ -56,7 +57,7 @@ func TestForkResolvesSourceAndPublishesChildWithSameResourceEdges(t *testing.T) 
 		t.Fatal("fork mapping/publishing failed", f.request, child)
 	}
 	child, err = stack.Session().Get(t.Context(), resource.SessionGetRequest_builder{Ref: sessionRef("child"), Select: resource.SessionSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build(), Account: resource.AccountSelect_builder{All: ptr(true)}.Build(), AuthBinding: resource.AuthBindingSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
-	if err != nil || child.GetProject().GetRuntimeId() != source.GetProject().GetRuntimeId() || child.GetAccount().GetAlias() != source.GetAccount().GetAlias() || child.GetAuthBinding().GetBindingId() != source.GetAuthBinding().GetBindingId() {
+	if err != nil || projectid.String(child.GetProject().GetId()) != projectid.String(source.GetProject().GetId()) || child.GetAccount().GetAlias() != source.GetAccount().GetAlias() || child.GetAuthBinding().GetBindingId() != source.GetAuthBinding().GetBindingId() {
 		t.Fatal("fork lost resource edges", child, err)
 	}
 }

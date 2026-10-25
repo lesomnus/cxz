@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"os"
 	"path/filepath"
 
@@ -20,7 +21,7 @@ func conversationTools(server *mcp.Server, store *Store) {
 		b, err := os.ReadFile(filepath.Join(filepath.Dir(store.stateRoot), "runtime.json"))
 		if err == nil {
 			var runtime struct{ Token, ProjectID string }
-			if json.Unmarshal(b, &runtime) != nil || runtime.Token == "" || runtime.ProjectID != store.Session.ProjectID {
+			if json.Unmarshal(b, &runtime) != nil || runtime.Token == "" || !projectid.Same(runtime.ProjectID, store.Session.ProjectID) {
 				return nil, fmt.Errorf("invalid project runtime identity")
 			}
 			return conversation.RemoteRegistry(ctx, conversation.Socket, runtime.Token, conversation.RegistryRequest{Project: runtime.ProjectID, Caller: store.Session.ID})

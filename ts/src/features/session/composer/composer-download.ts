@@ -1,3 +1,4 @@
+import { projectRef } from "#src/shared/api/project-id.ts";
 import { ref, type Connection } from "#src/shared/api/connection.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 
@@ -11,7 +12,7 @@ export async function containerDownload(
   let received = 0n,
     expected: bigint | undefined;
   for await (const reply of client.download(
-    { ref: ref(project), path },
+    { ref: projectRef(project), path },
     { signal, timeoutMs: 120000 },
   )) {
     if (reply.totalSize > 0n || (expected === undefined && !reply.data.length))

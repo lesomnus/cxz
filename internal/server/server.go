@@ -451,7 +451,7 @@ func authCheckError(err error, backend string, creationKeys ...string) error {
 
 func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, error) {
 	if m.Account != "" {
-		backend, err := accounts.ResolveBinding(m.Kind, m.AuthBackend, m.ProjectID, m.Account, m.AuthBinding)
+		backend, err := accounts.ResolveBinding(m.Kind, m.AuthBackend, m.AuthProjectID(), m.Account, m.AuthBinding)
 		if err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}

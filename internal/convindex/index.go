@@ -74,7 +74,12 @@ func Open(ctx context.Context, root string) (*Index, error) {
 			return nil, err
 		}
 	}
-	return &Index{db: db}, nil
+	i := &Index{db: db}
+	if err = i.migrateProjectIDs(ctx); err != nil {
+		db.Close()
+		return nil, err
+	}
+	return i, nil
 }
 
 func (i *Index) Close() error { return i.db.Close() }
@@ -157,6 +162,7 @@ func Text(e core.Event) (string, bool) {
 // reading history and the live stream both pass through here, and catching up
 // deliberately re-reads.
 func (i *Index) Ingest(ctx context.Context, s Session, events []core.Event, from, through uint64) error {
+	s.Project = canonicalProject(s.Project)
 	if s.ID == "" {
 		return fmt.Errorf("a session id is required")
 	}
@@ -247,6 +253,7 @@ func (i *Index) Forget(ctx context.Context, session string) error {
 
 // ForgetProject removes a project's sessions, for a project that was removed.
 func (i *Index) ForgetProject(ctx context.Context, project string) error {
+	project = canonicalProject(project)
 	if project == "" {
 		return fmt.Errorf("a project id is required")
 	}

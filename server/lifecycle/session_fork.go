@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
@@ -23,7 +24,9 @@ func (s SessionServer) Fork(ctx context.Context, r *resource.SessionControl) (*r
 	if err != nil {
 		return nil, err
 	}
-	child.ProjectId = source.GetProject().GetRuntimeId()
+	if !projectid.Same(child.ProjectId, projectid.String(source.GetProject().GetId())) {
+		return nil, status.Error(codes.FailedPrecondition, "fork project mismatch")
+	}
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
 	return s.saveSession(ctx, child, r.GetClientId())

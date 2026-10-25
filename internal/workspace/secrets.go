@@ -23,7 +23,7 @@ func (m *Manager) prepareSecretRoot(p *Project) (string, error) {
 	if err = os.Chmod(wisp.HostSecretsMount, 0700); err != nil {
 		return "", err
 	}
-	local := filepath.Join(wisp.HostSecretsMount, p.ID)
+	local := filepath.Join(wisp.HostSecretsMount, p.storageID())
 	if err = os.Mkdir(local, os.ModeSticky|0777); err != nil && !os.IsExist(err) {
 		return "", err
 	}
@@ -33,7 +33,7 @@ func (m *Manager) prepareSecretRoot(p *Project) (string, error) {
 	if err = os.Chmod(local, os.ModeSticky|0777); err != nil {
 		return "", err
 	}
-	return filepath.Join(host, p.ID), nil
+	return filepath.Join(host, p.storageID()), nil
 }
 
 // Host tmpfs survives all cxz processes. Sweep at manager startup and hourly,

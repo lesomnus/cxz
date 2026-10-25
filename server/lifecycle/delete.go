@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -104,7 +105,7 @@ func (s ProjectServer) Erase(ctx context.Context, ref *resource.ProjectRef) (*re
 	var ids []string
 	after := ""
 	for {
-		page, e := s.Next().Session().List(ctx, resource.SessionListRequest_builder{Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Project: projectRef(p.GetRuntimeId())}.Build()}, Size: 200, After: after}.Build())
+		page, e := s.Next().Session().List(ctx, resource.SessionListRequest_builder{Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Project: projectRef(projectid.String(p.GetId()))}.Build()}, Size: 200, After: after}.Build())
 		if e != nil {
 			return nil, e
 		}
@@ -119,7 +120,7 @@ func (s ProjectServer) Erase(ctx context.Context, ref *resource.ProjectRef) (*re
 	for _, id := range ids {
 		forgetAuxiliary(ctx, s.shared.runtime, id)
 	}
-	if err = runtime.RemoveProject(ctx, p.GetRuntimeId(), ids); err != nil {
+	if err = runtime.RemoveProject(ctx, projectid.String(p.GetId()), ids); err != nil {
 		return nil, err
 	}
 	// Publish the disappearance through the watch path before the rows go, so a
@@ -139,14 +140,14 @@ func (s ProjectServer) Erase(ctx context.Context, ref *resource.ProjectRef) (*re
 	}
 	defer tx.Rollback()
 	for _, query := range []string{
-		"DELETE FROM audit WHERE object_id IN (SELECT id FROM session WHERE project_id IN (SELECT id FROM project WHERE runtime_id=?))",
-		"DELETE FROM audit WHERE object_id IN (SELECT id FROM authbinding WHERE project_id IN (SELECT id FROM project WHERE runtime_id=?))",
-		"DELETE FROM audit WHERE object_id IN (SELECT id FROM project WHERE runtime_id=?)",
-		"DELETE FROM session WHERE project_id IN (SELECT id FROM project WHERE runtime_id=?)",
-		"DELETE FROM authbinding WHERE project_id IN (SELECT id FROM project WHERE runtime_id=?)",
-		"DELETE FROM project WHERE runtime_id=?",
+		"DELETE FROM audit WHERE object_id IN (SELECT id FROM session WHERE project_id IN (SELECT id FROM project WHERE id=?))",
+		"DELETE FROM audit WHERE object_id IN (SELECT id FROM authbinding WHERE project_id IN (SELECT id FROM project WHERE id=?))",
+		"DELETE FROM audit WHERE object_id IN (SELECT id FROM project WHERE id=?)",
+		"DELETE FROM session WHERE project_id IN (SELECT id FROM project WHERE id=?)",
+		"DELETE FROM authbinding WHERE project_id IN (SELECT id FROM project WHERE id=?)",
+		"DELETE FROM project WHERE id=?",
 	} {
-		if _, err = tx.ExecContext(ctx, query, p.GetRuntimeId()); err != nil {
+		if _, err = tx.ExecContext(ctx, query, projectid.String(p.GetId())); err != nil {
 			return nil, err
 		}
 	}

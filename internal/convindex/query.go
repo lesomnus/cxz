@@ -188,7 +188,7 @@ func (i *Index) Search(ctx context.Context, q Query, now time.Time) ([]Visit, Re
 	if len(q.Projects) > 0 {
 		where = append(where, "s.project IN ("+placeholders(len(q.Projects))+")")
 		for _, v := range q.Projects {
-			args = append(args, v)
+			args = append(args, canonicalProject(v))
 		}
 	}
 	if len(q.Exclude) > 0 {

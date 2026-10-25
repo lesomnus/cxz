@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"os"
 	"path/filepath"
@@ -92,7 +93,22 @@ func Dir(root, project string) string { return filepath.Join(root, "memories", k
 func SnapshotID(session string) string { return "session-" + key(session) }
 
 func New(root string, session core.Session) *Store {
-	return &Store{root: Dir(root, session.ProjectID), stateRoot: root, Session: session}
+	storage := session.ProjectID
+	if session.LegacyProjectID != "" {
+		storage = session.LegacyProjectID
+	}
+	if b, err := os.ReadFile(filepath.Join(filepath.Dir(root), "runtime.json")); err == nil {
+		var runtime struct{ ProjectID, LegacyProjectID string }
+		if json.Unmarshal(b, &runtime) == nil {
+			for _, legacy := range []string{runtime.LegacyProjectID, runtime.ProjectID} {
+				if projectid.Legacy(legacy) && projectid.Same(legacy, session.ProjectID) {
+					storage = legacy
+					break
+				}
+			}
+		}
+	}
+	return &Store{root: Dir(root, storage), stateRoot: root, Session: session}
 }
 func (s *Store) OwnID() string { return SnapshotID(s.Session.ID) }
 

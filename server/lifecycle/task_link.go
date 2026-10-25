@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/taskapi"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
@@ -35,7 +36,7 @@ func (s TaskLinkServer) target(ctx context.Context, ref *resource.ProjectRef) (r
 		return nil, nil, err
 	}
 	if connector, ok := s.shared.runtime.(taskConnector); ok {
-		conn, err := connector.TaskConnection(ctx, p.GetRuntimeId())
+		conn, err := connector.TaskConnection(ctx, projectid.String(p.GetId()))
 		if err != nil {
 			return nil, nil, err
 		}

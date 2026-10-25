@@ -31,7 +31,7 @@ func (m *Manager) editorProject(ctx context.Context, project string) (*Project, 
 	if p.ContainerID == "" || p.RemoteUser == "" || p.RemoteWorkspace == "" {
 		return nil, status.Error(codes.FailedPrecondition, "start the project before connecting its editor")
 	}
-	c, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.ID)
+	c, err := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 	if err != nil {
 		return nil, err
 	}

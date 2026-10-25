@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 
 	"github.com/lesomnus/cxz/internal/containerterm"
@@ -37,7 +38,7 @@ func (s ProjectServer) Terminal(stream grpc.BidiStreamingServer[resource.Project
 	if !ok {
 		return status.Error(codes.Unimplemented, "container terminal transport unavailable")
 	}
-	terminal, err := runtime.OpenTerminal(ctx, p.GetRuntimeId(), int(first.GetColumns()), int(first.GetRows()))
+	terminal, err := runtime.OpenTerminal(ctx, projectid.String(p.GetId()), int(first.GetColumns()), int(first.GetRows()))
 	if err != nil {
 		return err
 	}

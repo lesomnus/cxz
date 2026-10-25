@@ -20,7 +20,7 @@ type ProvisionJob struct {
 func (m *Manager) reconcile(ctx context.Context, p *Project, containers []dockerx.Container) error {
 	id := ""
 	for _, c := range containers {
-		if c.Config.Labels["cxz.owner"] != m.Owner || c.Config.Labels["cxz.project"] != p.ID || c.Config.Labels["devcontainer.local_folder"] != p.Workspace {
+		if c.Config.Labels["cxz.owner"] != m.Owner || c.Config.Labels["cxz.project"] != p.storageID() || c.Config.Labels["devcontainer.local_folder"] != p.Workspace {
 			continue
 		}
 		if id != "" {
