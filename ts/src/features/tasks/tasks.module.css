@@ -126,15 +126,7 @@
   font: 0.75rem var(--ui-font-mono);
   line-height: 12px;
 }
-.taskHeader :global(.card-close) {
-  position: absolute;
-  top: 2px;
-  right: 4px;
-  width: var(--toolbar-button-width);
-  height: var(--toolbar-button-height);
-  min-height: var(--toolbar-button-height);
-  border-radius: var(--toolbar-button-radius);
-}
+.taskHeader :global(.card-close),
 .card .cardOpen {
   --task-open-inset: 2px;
   position: absolute;
