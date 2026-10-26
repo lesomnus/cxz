@@ -1,5 +1,9 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Editor options": "입력창 설정",
+  "Show control characters": "제어문자 표시",
+  "Word wrap": "자동 줄바꿈",
+
   Logs: "로그",
   "Diagnostics observed by this browser": "이 브라우저에서 관측한 진단 기록",
   "Live updates": "실시간 갱신",

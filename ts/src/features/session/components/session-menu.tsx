@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import type { SessionPurgeReply } from "#gen/cxz/session_svc_pb";
 import { ActionMenu } from "@lesomnus/nox";
+import { ComposerOptions } from "#src/features/session/composer/composer-options.tsx";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -93,6 +94,7 @@ export function SessionMenu({
         motion={{ from: "bottom-right", effect: "reveal" }}
         disabled={!session}
         status={session?.status?.state}
+        footer={<ComposerOptions />}
         groups={[
           {
             label: t("Controls"),

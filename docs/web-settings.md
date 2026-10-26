@@ -244,3 +244,21 @@ validation, persistence failures, import/export, stale drafts, cross-tab updates
 mobile navigation and live read-only Monaco configuration. The settings browser
 test also checks centered reading width, the available-width split boundary,
 topic navigation and JSON undo/draft retention through folding and resizing.
+
+## Conversation input display
+
+The session menu's fixed bottom toolbar provides **Show control characters** and
+**Word wrap** toggles. They stay visible while the actions scroll, and toggling
+one leaves the menu open. Left/Right and Home/End move focus between the toggles;
+Escape closes the menu and restores focus to its trigger.
+
+`composer.showControlCharacters` defaults to `false`; `composer.wordWrap` defaults
+to `true`. Both accept booleans in the existing localStorage settings document,
+persist immediately, and follow cross-tab updates. Failed storage writes leave
+the previous preference applied and report the error in the menu.
+
+Markers for spaces, tabs, line endings and invisible characters are decorative.
+They do not change the textarea value, selection, copied text, or sent messages.
+Disabling wrapping uses native horizontal scrolling and keeps the editor mirror,
+line numbers and completion-caret calculations aligned. These preferences are
+separate from code-file editor settings.

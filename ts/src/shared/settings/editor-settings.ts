@@ -51,6 +51,10 @@ export function parseSettings(raw: string): SettingsDocument {
   if (!document || typeof document !== "object" || Array.isArray(document))
     throw new Error(t("Settings must be a JSON object."));
   const value = document as SettingsDocument;
+  for (const name of ["composer.showControlCharacters", "composer.wordWrap"]) {
+    if (Object.hasOwn(value, name) && typeof value[name] !== "boolean")
+      throw new Error(t("{name}: Enter true or false.", { name }));
+  }
   if (
     Object.hasOwn(value, "session.panel.hideStopped") &&
     typeof value["session.panel.hideStopped"] !== "boolean"
