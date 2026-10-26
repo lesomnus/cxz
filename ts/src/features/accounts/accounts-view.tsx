@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@lesomnus/nox";
+import { Button, SectionLayout } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -41,7 +41,7 @@ export function AccountsView({
     <>
       <main className={`${resourceStyles.page} ${styles.page}`}>
         <div className={resourceStyles.body}>
-          <div ref={content} className={styles.cards}>
+          <SectionLayout ref={content}>
             <header className={styles.header}>
               <Button
                 ref={add}
@@ -87,7 +87,7 @@ export function AccountsView({
                 />
               </article>
             ))}
-          </div>
+          </SectionLayout>
         </div>
       </main>
       {adding && (

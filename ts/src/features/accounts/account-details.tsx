@@ -1,7 +1,7 @@
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useState } from "react";
-import { Button } from "@lesomnus/nox";
+import { Button, SectionGroup, Section } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -42,8 +42,8 @@ export function AccountDetails({
     [AuthState.UNSPECIFIED]: "Unknown",
   };
   return (
-    <div className={`${styles.content} ${styles.sectionGroup}`}>
-      <section className={styles.section} aria-label="Account details">
+    <SectionGroup>
+      <Section aria-label="Account details">
         <ResourceFields
           rows={[
             ["Display name", account.name || account.alias],
@@ -60,8 +60,8 @@ export function AccountDetails({
           ]}
         />
         {account.desc && <p>{account.desc}</p>}
-      </section>
-      <section className={styles.section} aria-label="Authentication">
+      </Section>
+      <Section aria-label="Authentication">
         <div className={styles.row}>
           <strong>Authentication</strong>
           <Button disabled={status.loading} onClick={status.reload}>
@@ -109,11 +109,8 @@ export function AccountDetails({
             }}
           />
         )}
-      </section>
-      <section
-        className={styles.section}
-        aria-label="Sessions using this account"
-      >
+      </Section>
+      <Section aria-label="Sessions using this account">
         <strong>Sessions · {sessions.length}</strong>
         {sessionsLoading && <p className={styles.muted}>Loading sessions…</p>}
         {!sessionsLoading && !sessions.length && (
@@ -131,7 +128,7 @@ export function AccountDetails({
             </span>
           </RouteLink>
         ))}
-      </section>
+      </Section>
       {status.data && <UsageReport c={c} account={account.alias} />}
       {logout && (
         <ConfirmationDialog
@@ -152,6 +149,6 @@ export function AccountDetails({
           </p>
         </ConfirmationDialog>
       )}
-    </div>
+    </SectionGroup>
   );
 }

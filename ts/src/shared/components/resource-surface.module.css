@@ -36,18 +36,6 @@
   display: grid;
   gap: var(--space);
 }
-/* Adjacent surfaces share tight inner corners; the group's silhouette stays round. */
-.sectionGroup > .section {
-  border-radius: var(--ui-control-inset);
-}
-.sectionGroup > .section:first-child {
-  border-start-start-radius: var(--wrapper-radius);
-  border-start-end-radius: var(--wrapper-radius);
-}
-.sectionGroup > .section:last-child {
-  border-end-start-radius: var(--wrapper-radius);
-  border-end-end-radius: var(--wrapper-radius);
-}
 .row {
   display: flex;
   align-items: center;

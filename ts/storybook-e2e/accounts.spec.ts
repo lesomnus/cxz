@@ -15,6 +15,22 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     await expect(work).toBeVisible();
+    const layout = page.locator('[data-section-layout="layout"]');
+    await expect(layout).toHaveCount(1);
+    const group = work.locator('[data-section-layout="group"]');
+    await expect(group).toHaveCount(1);
+    const sections = group.locator(':scope > [data-section-layout="section"]');
+    await expect(sections).toHaveCount(4);
+    const corners = await sections.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const css = getComputedStyle(node);
+        return [css.borderTopLeftRadius, css.borderBottomLeftRadius];
+      }),
+    );
+    expect(parseFloat(corners[0][0])).toBeGreaterThan(
+      parseFloat(corners[0][1]),
+    );
+    expect(corners.at(-1)![1]).toBe(corners[0][0]);
     const details = work.getByRole("region", { name: "Account details" });
     await expect(
       details.getByRole("img", { name: "Codex", exact: true }),
