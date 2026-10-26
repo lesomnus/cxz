@@ -21,6 +21,8 @@ test("bottom-left Erase action requires confirmation and leaves other projects i
     name: "Erase project",
     exact: true,
   });
+  await expect(dialog.locator(".floating-card")).toHaveCSS("opacity", "1");
+  await expect(dialog.locator(".floating-card")).toHaveCSS("transform", "none");
   await expect(dialog).toContainText("This cannot be undone.");
   await expect(dialog).toContainText(
     "Workspace source files and shared accounts are preserved.",

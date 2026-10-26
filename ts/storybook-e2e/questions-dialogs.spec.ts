@@ -8,6 +8,8 @@ async function finishEntrance(dialog: Locator) {
         .map((animation) => animation.finished.catch(() => undefined)),
     );
   });
+  await expect(dialog.locator(".floating-card")).toHaveCSS("opacity", "1");
+  await expect(dialog.locator(".floating-card")).toHaveCSS("transform", "none");
 }
 
 for (const action of ["Restart", "Purge"]) {
