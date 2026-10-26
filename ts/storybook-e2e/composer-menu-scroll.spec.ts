@@ -180,6 +180,12 @@ for (const width of [1280, 390]) {
     );
     await area.hover();
     const frame = (await popup.boundingBox())!;
+    const container = (await page.locator(".composer-wrapper").boundingBox())!;
+    const button = (await trigger.boundingBox())!;
+    expect(container.y - (frame.y + frame.height)).toBeCloseTo(
+      button.y - container.y,
+      1,
+    );
     const bar = (await handle.boundingBox())!;
     expect(bar.x).toBeGreaterThan(frame.x + frame.width);
     expect(bar.x + bar.width).toBeLessThan(width);

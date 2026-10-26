@@ -34,12 +34,12 @@ export type SessionMenuProps = {
   tools?: { label: string; run: () => void; disabled?: boolean }[];
 };
 
-// Mirror the button's inset across the toolbar's top edge.
+// Mirror the button's inset across the wrapper's visible top border.
 function toolbarMenuGap(trigger: HTMLButtonElement) {
-  const toolbar = trigger.closest(".composer-toolbar");
-  if (!toolbar) return 4;
+  const wrapper = trigger.closest(".composer-wrapper");
+  if (!wrapper) return 4;
   const inset =
-    trigger.getBoundingClientRect().top - toolbar.getBoundingClientRect().top;
+    trigger.getBoundingClientRect().top - wrapper.getBoundingClientRect().top;
   return 2 * Math.max(0, inset);
 }
 

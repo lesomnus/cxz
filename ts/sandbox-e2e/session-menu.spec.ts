@@ -78,11 +78,11 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   const bounds = (await popup.boundingBox())!;
 
   const triggerBounds = (await trigger.boundingBox())!;
-  const toolbarBounds = (await page
-    .locator(".composer-toolbar")
+  const containerBounds = (await page
+    .locator(".composer-wrapper")
     .boundingBox())!;
-  const inset = triggerBounds.y - toolbarBounds.y;
-  expect(toolbarBounds.y - (bounds.y + bounds.height)).toBeCloseTo(inset, 0);
+  const inset = triggerBounds.y - containerBounds.y;
+  expect(containerBounds.y - (bounds.y + bounds.height)).toBeCloseTo(inset, 0);
   // Measure in the same frame, before ResizeObserver can repair stale coordinates.
   expect(
     await popup.evaluate((el) => {
