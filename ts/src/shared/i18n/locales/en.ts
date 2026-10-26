@@ -3,7 +3,6 @@ export const messages = {
   "Editor options": "Editor options",
   "Show control characters": "Show control characters",
   "Word wrap": "Word wrap",
-  "Insert spaces with Tab": "Insert spaces with Tab",
 
   Logs: "Logs",
   "Diagnostics observed by this browser":

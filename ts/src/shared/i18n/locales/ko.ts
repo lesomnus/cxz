@@ -3,7 +3,6 @@ export const messages = {
   "Editor options": "입력창 설정",
   "Show control characters": "제어문자 표시",
   "Word wrap": "자동 줄바꿈",
-  "Insert spaces with Tab": "Tab 키로 공백 입력",
 
   Logs: "로그",
   "Diagnostics observed by this browser": "이 브라우저에서 관측한 진단 기록",
