@@ -1545,7 +1545,8 @@ pre {
   line-height: 1.5;
 }
 .composer-editor textarea,
-.editor-mirror {
+.editor-mirror,
+.editor-control-mirror {
   font-kerning: none;
   font-variant-ligatures: none;
 }
@@ -3281,4 +3282,56 @@ summary:hover {
 .question-other[data-selected="true"] > :is(.question-other-editor, input) {
   outline: 1px solid var(--shade-144);
   outline-offset: -1px;
+}
+
+/* Separate, non-interactive markers leave native text, caret and selection intact. */
+.editor-controls-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 12px 9px;
+  overflow: hidden;
+  scrollbar-gutter: stable;
+  pointer-events: none;
+  user-select: none;
+}
+.editor-control-mirror {
+  position: relative;
+  color: transparent;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.editor-control-line {
+  min-height: 1.5em;
+}
+.editor-control-character {
+  position: relative;
+}
+.editor-control-character::after {
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: attr(data-symbol);
+  color: var(--shade-119);
+}
+.editor-line-end {
+  display: inline;
+}
+.composer-editor[data-composing="true"] .editor-controls-surface {
+  visibility: hidden;
+}
+.composer-editor[data-word-wrap="false"]
+  :is(textarea, .editor-mirror, .editor-control-mirror) {
+  white-space: pre;
+  overflow-wrap: normal;
+}
+.composer-editor[data-word-wrap="false"]
+  :is(.editor-mirror, .editor-control-mirror) {
+  width: max-content;
+  min-width: 100%;
+}
+
+.composer-send-ghost .editor-controls-surface,
+.composer-input[data-send-exiting] .editor-controls-surface {
+  visibility: hidden;
 }

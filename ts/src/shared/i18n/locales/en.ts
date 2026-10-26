@@ -1,5 +1,9 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Editor options": "Editor options",
+  "Show control characters": "Show control characters",
+  "Word wrap": "Word wrap",
+
   Logs: "Logs",
   "Diagnostics observed by this browser":
     "Diagnostics observed by this browser",

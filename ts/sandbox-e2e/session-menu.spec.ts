@@ -40,6 +40,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await trigger.focus();
   await trigger.press("ArrowDown");
   const menu = page.getByRole("menu", { name: "Session menu" });
+  const popup = page.locator(".action-menu-popup");
   await expect(menu.getByRole("group", { name: "Controls" })).toBeVisible();
   await expect(
     page.getByRole("menuitem", { name: "Stop", exact: true }),
@@ -69,12 +70,12 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await expect(
     menu.getByRole("menuitem", { name: "Copy session link" }),
   ).toHaveCount(0);
-  await menu.evaluate(async (el) => {
+  await popup.evaluate(async (el) => {
     await Promise.all(
       el.getAnimations({ subtree: true }).map((a) => a.finished),
     );
   });
-  const bounds = (await menu.boundingBox())!;
+  const bounds = (await popup.boundingBox())!;
 
   const triggerBounds = (await trigger.boundingBox())!;
   const toolbarBounds = (await page
@@ -84,7 +85,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   expect(toolbarBounds.y - (bounds.y + bounds.height)).toBeCloseTo(inset, 0);
   // Measure in the same frame, before ResizeObserver can repair stale coordinates.
   expect(
-    await menu.evaluate((el) => {
+    await popup.evaluate((el) => {
       const trigger = document.querySelector(
         '[aria-label="Session menu"][aria-haspopup="menu"]',
       )!;
@@ -122,7 +123,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await expect(trigger).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
   await trigger.click();
-  const mobile = (await menu.boundingBox())!;
+  const mobile = (await popup.boundingBox())!;
   expect(mobile.x).toBeGreaterThanOrEqual(0);
   expect(mobile.x + mobile.width).toBeLessThanOrEqual(390);
   expect(mobile.y).toBeGreaterThanOrEqual(0);
