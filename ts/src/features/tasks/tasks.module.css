@@ -116,6 +116,10 @@
   border-radius: 50%;
   background: var(--task-priority-color, var(--muted));
 }
+.card[data-previous-run] :global(.card-heading)::before {
+  border: 1.5px solid var(--task-priority-color, var(--muted));
+  background: transparent;
+}
 .card :global(.card-heading) strong {
   transform: translateY(-1px);
   color: var(--muted);

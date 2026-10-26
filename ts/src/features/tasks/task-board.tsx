@@ -36,8 +36,9 @@ function TaskCard({
       className={styles.card}
       data-task-alias={task.alias}
       data-priority={task.priority}
+      data-previous-run={issue === "Previous run" || undefined}
       title={task.alias}
-      aria-label={`${priorityLabels[task.priority] ?? "Unknown"} priority: ${task.alias}`}
+      aria-label={`${priorityLabels[task.priority] ?? "Unknown"} priority: ${task.alias}${issue === "Previous run" ? " (previous run)" : ""}`}
       bodyPadding="calc(2 * var(--space))"
       footer={
         <>
