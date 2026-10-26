@@ -42,12 +42,8 @@ test("background count follows native job lifecycle independently of the foregro
     page.getByRole("button", { name: "Stop response", exact: true }),
   ).toBeDisabled();
   const segments = indicator.locator('[data-border-trail="segment"]');
-  await expect(segments).toHaveCount(2);
-  expect(
-    await segments.nth(0).evaluate((node) => getComputedStyle(node).stroke),
-  ).not.toBe(
-    await segments.nth(1).evaluate((node) => getComputedStyle(node).stroke),
-  );
+  await expect(segments).toHaveCount(1);
+  await expect(indicator.locator('[data-border-trail="sheen"]')).toHaveCount(1);
   const send = page.getByRole("button", { name: "Send", exact: true });
   const before = (await indicator.boundingBox())!;
   const sendBox = (await send.boundingBox())!;

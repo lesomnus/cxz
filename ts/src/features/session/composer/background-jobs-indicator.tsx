@@ -28,7 +28,8 @@ export function BackgroundJobsIndicator({
       <BorderTrailButton
         type="button"
         active={active}
-        segments={Math.max(1, count ?? 0)}
+        progress={{ value: count ?? 0, perSegment: 8 }}
+        sheen
         className={`toolbar-button ${styles.indicator}`}
         aria-label={label}
         aria-describedby={hint}
