@@ -40,7 +40,7 @@ test("composer menu toggles stay open, preserve text and selection, and persist 
   const markers = page.locator(".editor-controls-surface");
   await expect(markers).toBeVisible();
   await expect(markers.locator('[data-symbol="→"]')).toHaveCount(1);
-  await expect(markers.locator('[data-symbol="↵"]')).toHaveCount(1);
+  await expect(markers.locator('[data-symbol="¶"]')).toHaveCount(1);
   await expect(input).toHaveValue(text);
   expect(
     await input.evaluate((el: HTMLTextAreaElement) => [

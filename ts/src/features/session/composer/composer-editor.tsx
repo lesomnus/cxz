@@ -1126,8 +1126,10 @@ export function ComposerEditor({
                     {index < lines.length - 1 && (
                       <span
                         className="editor-control-character editor-line-end"
-                        data-symbol="↵"
-                      />
+                        data-symbol="¶"
+                      >
+                        {"\u200b"}
+                      </span>
                     )}
                     {!line && "\u200b"}
                   </div>

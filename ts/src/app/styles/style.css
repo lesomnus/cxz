@@ -3315,8 +3315,7 @@ summary:hover {
   color: var(--shade-119);
 }
 .editor-line-end {
-  display: inline-block;
-  width: 0;
+  display: inline;
 }
 .composer-editor[data-composing="true"] .editor-controls-surface {
   visibility: hidden;
