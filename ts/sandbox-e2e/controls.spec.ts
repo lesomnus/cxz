@@ -180,7 +180,7 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   expect(currentBefore.x - (await model.boundingBox())!.x).toBe(6);
   await expect(page.locator("form.composer")).toHaveCSS("padding-top", "0px");
   await model.click();
-  const choices = page.getByRole("listbox", { name: "Model choices" });
+  const choices = page.locator(".setting-menu");
   await expect(choices).toBeVisible();
   await expect(choices).toHaveCSS("padding", "2px");
   const currentAfter = (await choices

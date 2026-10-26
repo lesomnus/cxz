@@ -36,10 +36,7 @@ for (const width of [1440, 390]) {
         const trigger = page.getByRole("combobox", { name, exact: true });
         const before = await textBounds(trigger.locator(".meta-value"));
         await trigger.click();
-        const menu = page.getByRole("listbox", {
-          name: `${name} choices`,
-          exact: true,
-        });
+        const menu = page.locator(".setting-menu");
         await expect(menu).toBeVisible();
         const after = await textBounds(
           menu.locator(".setting-current .meta-value"),

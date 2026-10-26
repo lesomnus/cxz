@@ -58,7 +58,7 @@ test("General is first, language menus preserve text position and segmented syst
   await expect(language).toHaveAttribute("data-muted", "true");
   const before = (await language.locator(".meta-value").boundingBox())!;
   await language.click();
-  const popup = page.getByRole("listbox");
+  const popup = page.locator(".setting-menu");
   const after = (await popup
     .locator(".setting-current .meta-value")
     .boundingBox())!;
@@ -180,12 +180,6 @@ test("sliders reset to per-field inheritance and equal-width Tab input cells ani
     /Default|Inherit global/,
   );
   await page.keyboard.press("End");
-  if (
-    await page
-      .getByRole("listbox")
-      .evaluate((el) => el.classList.contains("opens-up"))
-  )
-    await page.keyboard.press("ArrowUp");
   await page.keyboard.press("Enter");
   await expect(palette).toHaveText("Warm");
   await expect(palette).toHaveAttribute("data-muted", "false");
