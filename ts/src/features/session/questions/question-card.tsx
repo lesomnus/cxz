@@ -153,7 +153,7 @@ export function QuestionCard({
             disabled={busy}
           >
             <div className="question-text" id={`${prefix}-question-${index}`}>
-              {q.text}
+              <Markdown text={q.text} />
             </div>
             <ScrollFade viewportClassName="question-options">
               {q.options.map((o) => (

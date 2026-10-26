@@ -3076,6 +3076,15 @@ summary:hover {
   padding: calc(2 * var(--space));
   font-size: 12px;
 }
+.question-text > .markdown {
+  padding-inline: 0;
+}
+.question-text > .markdown > :first-child {
+  margin-top: 0;
+}
+.question-text > .markdown > :last-child {
+  margin-bottom: 0;
+}
 .question-card .question-options {
   min-height: 0;
   overflow: auto;

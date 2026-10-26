@@ -238,6 +238,7 @@ export type QuestionExample =
   | "free-text"
   | "steps"
   | "async-steps"
+  | "markdown"
   | "previews"
   | "long";
 export function questionEvent(example: QuestionExample = "choice") {
@@ -262,7 +263,26 @@ export function questionEvent(example: QuestionExample = "choice") {
       ],
     },
   });
-  if (example === "free-text" || example === "async-steps") {
+  if (example === "markdown") {
+    event.payload = new TextEncoder().encode(
+      JSON.stringify({
+        params: {
+          questions: [
+            {
+              id: "markdown",
+              question:
+                "How should we update **the composer**?\n\n" +
+                "- Keep `Ctrl+Enter` to send.\n" +
+                "- Preserve keyboard focus.\n\n" +
+                "```ts\nconst tabSize = 4;\n```\n\n" +
+                "See the [guide](https://example.com/docs).",
+              options: [{ label: "Keep defaults" }, { label: "Customize" }],
+            },
+          ],
+        },
+      }),
+    );
+  } else if (example === "free-text" || example === "async-steps") {
     event.text = "agentMessage/questions";
     event.payload = new TextEncoder().encode(
       JSON.stringify({
