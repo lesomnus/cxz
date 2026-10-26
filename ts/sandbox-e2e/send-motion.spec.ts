@@ -243,6 +243,25 @@ test("pending sends lock native and custom edits until confirmation", async ({
   await expect(ink).toHaveAttribute("aria-hidden", "true");
   await expect(ink).toHaveCSS("pointer-events", "none");
   await expect(ink).toHaveAttribute("data-renderer", "webgl2");
+  const centered = () =>
+    ink.evaluate((canvas: HTMLCanvasElement) => {
+      const gl = canvas.getContext("webgl2")!;
+      const program = gl.getParameter(gl.CURRENT_PROGRAM) as WebGLProgram;
+      const center = gl.getUniform(
+        program,
+        gl.getUniformLocation(program, "u_center")!,
+      ) as Float32Array;
+      return (
+        Math.abs(center[0] - canvas.clientWidth / 2) + Math.abs(center[1] + 24)
+      );
+    });
+  await expect.poll(centered).toBeLessThan(0.01);
+  const width = await ink.evaluate((el) => el.clientWidth);
+  await page.setViewportSize({ width: 700, height: 1000 });
+  await expect.poll(() => ink.evaluate((el) => el.clientWidth)).not.toBe(width);
+  await expect.poll(centered).toBeLessThan(0.01);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect.poll(centered).toBeLessThan(0.01);
   await expect
     .poll(() =>
       ink.evaluate((canvas: HTMLCanvasElement) => {
