@@ -1,5 +1,47 @@
 import { expect, test } from "@playwright/test";
 
+test("composer rail blurs its backdrop beyond the thin track line", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
+  );
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  const popup = page.locator(".action-menu-popup");
+  await expect(popup.locator("[data-menu-frame]")).toHaveCSS("filter", "none");
+  const area = popup.locator('[data-scroll-area="root"]');
+  const rail = area.locator('[data-scroll-area="rail"]');
+  await area.hover();
+  await expect
+    .poll(() =>
+      rail.evaluate((node) => getComputedStyle(node, "::before").opacity),
+    )
+    .toBe("1");
+  await page.evaluate(() => {
+    const background = document.createElement("div");
+    background.style.cssText =
+      "position:fixed;inset:0;z-index:1000;pointer-events:none;background:repeating-linear-gradient(0deg,#222 0 2px,#ddd 2px 4px)";
+    document.body.append(background);
+  });
+  const bounds = (await rail.boundingBox())!;
+  const clips = [0.25, 0.75].map((fraction) => ({
+    x: Math.round(bounds.x + bounds.width * fraction - 1),
+    y: Math.round(bounds.y + bounds.height - 30),
+    width: 2,
+    height: 20,
+  }));
+  const blurred = [];
+  for (const clip of clips) blurred.push(await page.screenshot({ clip }));
+  await page.addStyleTag({
+    content:
+      '[data-scroll-area="rail"]::before {backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}',
+  });
+  for (const [index, clip] of clips.entries())
+    expect((await page.screenshot({ clip })).equals(blurred[index])).toBe(
+      false,
+    );
+});
+
 for (const width of [1280, 390]) {
   test(`composer menu scrollbar stays outside its border at width ${width}`, async ({
     page,
