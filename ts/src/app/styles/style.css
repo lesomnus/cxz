@@ -1456,6 +1456,7 @@ pre {
 }
 .composer-input {
   z-index: 2;
+  background-color: var(--shade-24);
   border: 1px solid var(--shade-58);
   width: calc(100% + 2px + 2 * var(--composer-overhang));
   margin: calc(-1 * var(--composer-toolbar-overlap))
@@ -1464,7 +1465,7 @@ pre {
   transition: background-color 150ms ease-out;
 }
 .composer-input[data-sending="true"] {
-  background-color: var(--shade-27);
+  background-color: var(--shade-20);
 }
 .composer-input::before {
   content: "";
