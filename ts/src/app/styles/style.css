@@ -3326,9 +3326,6 @@ summary:hover {
 .editor-line-end {
   display: inline;
 }
-.composer-editor[data-composing="true"] .editor-controls-surface {
-  visibility: hidden;
-}
 .composer-editor[data-word-wrap="false"]
   :is(textarea, .editor-mirror, .editor-control-mirror) {
   white-space: pre;

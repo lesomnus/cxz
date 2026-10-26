@@ -6,6 +6,76 @@ test.use({
   permissions: ["clipboard-read", "clipboard-write"],
 });
 
+for (const wordWrap of [true, false]) {
+  test(`control characters remain visible through Korean IME composition (wrap=${wordWrap})`, async ({
+    page,
+    context,
+  }) => {
+    await page.addInitScript((wordWrap) => {
+      localStorage.setItem(
+        "settings",
+        JSON.stringify({
+          "composer.showControlCharacters": true,
+          "composer.wordWrap": wordWrap,
+        }),
+      );
+    }, wordWrap);
+    await page.goto("/sandbox.html#/sessions/session-1");
+    const input = page.getByRole("textbox", { name: "Message", exact: true });
+    await expect(input).toBeEditable({ timeout: 45000 });
+    const prefix = "before ";
+    const suffix = "\t after\nnext line";
+    await input.fill(prefix + suffix);
+    await input.evaluate((el: HTMLTextAreaElement, position) => {
+      el.focus();
+      el.setSelectionRange(position, position);
+    }, prefix.length);
+    const editor = input.locator("..").locator("..");
+    const markers = editor.locator(".editor-controls-surface");
+    const tab = markers.locator('[data-symbol="→"]');
+    await expect(markers).toBeVisible();
+    const initialTab = await tab.boundingBox();
+    const cdp = await context.newCDPSession(page);
+    // Drive the browser's IME rather than dispatching composition events alone:
+    // each update replaces the active composition and fires native input events.
+    for (const text of ["ㄱ", "가", "각"]) {
+      await cdp.send("Input.imeSetComposition", {
+        text,
+        selectionStart: text.length,
+        selectionEnd: text.length,
+      });
+      await expect(editor).toHaveAttribute("data-composing", "true");
+      await expect(input).toHaveValue(prefix + text + suffix);
+      await expect(markers).toBeVisible();
+      await expect(tab).toBeVisible();
+      // The line-end anchor is zero-width; its visible glyph is a pseudo-element.
+      await expect(markers.locator('[data-symbol="¶"]')).toHaveCSS(
+        "visibility",
+        "visible",
+      );
+      await expect(markers.locator('[data-symbol="·"]')).toHaveCount(3);
+      await expect(markers.locator(".editor-control-line").first()).toHaveText(
+        prefix + text + "\t after\u200b",
+      );
+      expect((await tab.boundingBox())!.x).toBeGreaterThan(initialTab!.x);
+      await expect(tab).toHaveCSS("pointer-events", "none");
+      expect(
+        await tab.evaluate((el) => getComputedStyle(el, "::after").content),
+      ).toBe('"→"');
+    }
+    await cdp.send("Input.insertText", { text: "각" });
+    await expect(editor).toHaveAttribute("data-composing", "false");
+    await expect(input).toHaveValue(prefix + "각" + suffix);
+    await expect(markers).toBeVisible();
+    await input.press("Control+a");
+    await input.press("Control+c");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      prefix + "각" + suffix,
+    );
+    await cdp.detach();
+  });
+}
+
 test("composer menu toggles stay open, preserve text and selection, and persist real display settings", async ({
   page,
 }) => {
