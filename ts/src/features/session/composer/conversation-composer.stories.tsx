@@ -41,6 +41,30 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const MenuOverTranscript: Story = {
+  args: {
+    uploadMode: "ready",
+    events: [
+      responseEvent(
+        2,
+        "codex",
+        Array.from(
+          { length: 24 },
+          (_, index) =>
+            `Conversation paragraph ${index + 1}. Open the session menu over this actual response to inspect the scroll rail backdrop. Text, numbers 0123456789 and punctuation stay in the transcript's normal paint layers.`,
+        ).join("\n\n"),
+      ),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Open the Session menu over a real transcript response. The external rail sits above ordinary conversation text; no synthetic background or extra foreground layer is used.",
+      },
+    },
+  },
+};
 export const CursorMemory: Story = {
   render: function CursorMemory() {
     const [drafts] = useState(

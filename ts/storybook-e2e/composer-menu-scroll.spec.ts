@@ -1,46 +1,143 @@
 import { expect, test } from "@playwright/test";
 
-test("composer rail blurs its backdrop beyond the thin track line", async ({
-  page,
-}) => {
-  await page.goto(
-    "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
-  );
-  await page.getByRole("button", { name: "Session menu", exact: true }).click();
-  const popup = page.locator(".action-menu-popup");
-  await expect(popup.locator("[data-menu-frame]")).toHaveCSS("filter", "none");
-  const area = popup.locator('[data-scroll-area="root"]');
-  const rail = area.locator('[data-scroll-area="rail"]');
-  await area.hover();
-  await expect
-    .poll(() =>
-      rail.evaluate((node) => getComputedStyle(node, "::before").opacity),
-    )
-    .toBe("1");
-  await page.evaluate(() => {
-    const background = document.createElement("div");
-    background.style.cssText =
-      "position:fixed;inset:0;z-index:1000;pointer-events:none;background:repeating-linear-gradient(0deg,#222 0 2px,#ddd 2px 4px)";
-    document.body.append(background);
+for (const deviceScaleFactor of [1, 1.5]) {
+  test.describe(`real transcript backdrop at scale ${deviceScaleFactor}`, () => {
+    test.use({ deviceScaleFactor });
+    test("rail removes real conversation glyph detail while keeping the menu glass", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1040, height: 760 });
+      await page.goto(
+        "/iframe.html?id=conversation-composer--menu-over-transcript&viewMode=story",
+      );
+      await page
+        .getByRole("button", { name: "Session menu", exact: true })
+        .click();
+      const popup = page.locator(".action-menu-popup");
+      await expect(popup.locator("[data-menu-frame]")).toHaveCSS(
+        "filter",
+        "none",
+      );
+      await expect(popup).toHaveCSS("backdrop-filter", "none");
+      expect(
+        await popup.evaluate(
+          (node) => getComputedStyle(node, "::before").backdropFilter,
+        ),
+      ).not.toBe("none");
+      const area = popup.locator('[data-scroll-area="root"]');
+      const rail = area.locator('[data-scroll-area="rail"]');
+      await area.hover();
+      await expect
+        .poll(() =>
+          rail.evaluate((node) => getComputedStyle(node, "::before").opacity),
+        )
+        .toBe("1");
+      await page.evaluate(
+        () =>
+          new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          ),
+      );
+      const clip = await rail.evaluate((node) => {
+        const bounds = node.getBoundingClientRect();
+        const thumb = node
+          .querySelector('[role="scrollbar"]')!
+          .getBoundingClientRect();
+        const walker = document.createTreeWalker(
+          document.querySelector(".transcript .markdown")!,
+          NodeFilter.SHOW_TEXT,
+        );
+        let text: Node | null;
+        while ((text = walker.nextNode())) {
+          const range = document.createRange();
+          range.selectNodeContents(text);
+          const line = range.getBoundingClientRect();
+          if (line.bottom < thumb.bottom || line.top > bounds.bottom) continue;
+          for (
+            let index = 0;
+            index < (text.textContent?.length ?? 0);
+            index++
+          ) {
+            if (!/\w/.test(text.textContent![index])) continue;
+            range.setStart(text, index);
+            range.setEnd(text, index + 1);
+            const glyph = range.getBoundingClientRect();
+            if (
+              glyph.left >= bounds.left + 2 &&
+              glyph.right <= bounds.right - 2 &&
+              glyph.top >= thumb.bottom + 5 &&
+              glyph.bottom <= bounds.bottom - 5
+            )
+              return {
+                x: Math.floor(glyph.x),
+                y: Math.floor(glyph.y),
+                width: Math.ceil(glyph.width),
+                height: Math.ceil(glyph.height),
+              };
+          }
+        }
+        throw new Error(
+          "No actual conversation glyph is behind the uncovered rail",
+        );
+      });
+      const contrast = async (png: Buffer) =>
+        page.evaluate(
+          async ({ base64, region }) => {
+            const image = new Image();
+            image.src = `data:image/png;base64,${base64}`;
+            await image.decode();
+            const canvas = document.createElement("canvas");
+            const scale = image.width / innerWidth;
+            canvas.width = Math.ceil(region.width * scale);
+            canvas.height = Math.ceil(region.height * scale);
+            const context = canvas.getContext("2d")!;
+            context.drawImage(
+              image,
+              region.x * scale,
+              region.y * scale,
+              region.width * scale,
+              region.height * scale,
+              0,
+              0,
+              canvas.width,
+              canvas.height,
+            );
+            const pixels = context.getImageData(
+              0,
+              0,
+              canvas.width,
+              canvas.height,
+            ).data;
+            let min = 255,
+              max = 0;
+            for (let index = 0; index < pixels.length; index += 4) {
+              const light =
+                (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3;
+              min = Math.min(min, light);
+              max = Math.max(max, light);
+            }
+            return max - min;
+          },
+          { base64: png.toString("base64"), region: clip },
+        );
+      // Capture the viewport first: partial captures can alter backdrop compositing.
+      const blurred = await contrast(await page.screenshot());
+      await page.addStyleTag({
+        content:
+          '[data-scroll-area="rail"]::before { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }',
+      });
+      await page.evaluate(
+        () =>
+          new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          ),
+      );
+      const sharp = await contrast(await page.screenshot());
+      expect(sharp).toBeGreaterThan(100);
+      expect(blurred).toBeLessThan(sharp / 2);
+    });
   });
-  const bounds = (await rail.boundingBox())!;
-  const clips = [0.25, 0.75].map((fraction) => ({
-    x: Math.round(bounds.x + bounds.width * fraction - 1),
-    y: Math.round(bounds.y + bounds.height - 30),
-    width: 2,
-    height: 20,
-  }));
-  const blurred = [];
-  for (const clip of clips) blurred.push(await page.screenshot({ clip }));
-  await page.addStyleTag({
-    content:
-      '[data-scroll-area="rail"]::before {backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}',
-  });
-  for (const [index, clip] of clips.entries())
-    expect((await page.screenshot({ clip })).equals(blurred[index])).toBe(
-      false,
-    );
-});
+}
 
 for (const width of [1280, 390]) {
   test(`composer menu scrollbar stays outside its border at width ${width}`, async ({
