@@ -41,7 +41,8 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await trigger.press("ArrowDown");
   const menu = page.getByRole("menu", { name: "Session menu" });
   const popup = page.locator(".action-menu-popup");
-  await expect(menu.getByRole("group", { name: "Controls" })).toBeVisible();
+  await expect(menu.locator('[data-action-menu-layout="row"]')).toBeVisible();
+  await expect(menu.getByText("Controls", { exact: true })).toHaveCount(0);
   await expect(
     page.getByRole("menuitem", { name: "Stop", exact: true }),
   ).toBeFocused();
@@ -209,7 +210,7 @@ test("lifecycle actions share one scrolling row and Purge is absent", async ({
     Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
   );
   const menu = page.getByRole("menu", { name: "Session menu", exact: true });
-  const row = menu.getByRole("group", { name: "Controls", exact: true });
+  const row = menu.locator('[data-action-menu-layout="row"]');
   const actions = row.getByRole("menuitem");
   await expect(actions).toHaveText(["Stop", "Restart", "Fork"]);
   await expect(
