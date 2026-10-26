@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@lesomnus/nox";
+import { ToggleButton } from "@lesomnus/nox";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -14,7 +14,7 @@ export function ComposerOptions() {
   const wrap = snapshot.document["composer.wordWrap"] !== false;
   function toggle(key: string, value: boolean) {
     try {
-      store.set(key, !value);
+      store.set(key, value);
       setError("");
     } catch (error) {
       setError(String(error));
@@ -50,42 +50,36 @@ export function ComposerOptions() {
           buttons[next]?.focus();
         }}
       >
-        <Button
+        <ToggleButton
           type="button"
           variant="toolbar"
-          className={styles.toggle}
           aria-label={t("Show control characters")}
           title={t("Show control characters")}
-          aria-pressed={controls}
+          pressed={controls}
           tabIndex={focused === 0 ? 0 : -1}
           onFocus={() => setFocused(0)}
-          onClick={() => toggle("composer.showControlCharacters", controls)}
+          onPressedChange={(pressed) =>
+            toggle("composer.showControlCharacters", pressed)
+          }
         >
-          ¶
-        </Button>
-        <Button
+          {({ pressed }) => (
+            <EditorOptionIcon option="controls" pressed={pressed} />
+          )}
+        </ToggleButton>
+        <ToggleButton
           type="button"
           variant="toolbar"
-          className={styles.toggle}
           aria-label={t("Word wrap")}
           title={t("Word wrap")}
-          aria-pressed={wrap}
+          pressed={wrap}
           tabIndex={focused === 1 ? 0 : -1}
           onFocus={() => setFocused(1)}
-          onClick={() => toggle("composer.wordWrap", wrap)}
+          onPressedChange={(pressed) => toggle("composer.wordWrap", pressed)}
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            aria-hidden="true"
-          >
-            <path d="M3 5h14M3 10h11a3 3 0 0 1 0 6h-4m3-3-3 3 3 3M3 15h3" />
-          </svg>
-        </Button>
+          {({ pressed }) => (
+            <EditorOptionIcon option="wrap" pressed={pressed} />
+          )}
+        </ToggleButton>
       </div>
       {error && (
         <small className={styles.error} role="alert">
@@ -93,5 +87,38 @@ export function ComposerOptions() {
         </small>
       )}
     </>
+  );
+}
+
+function EditorOptionIcon({
+  option,
+  pressed,
+}: {
+  option: "controls" | "wrap";
+  pressed: boolean;
+}) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {option === "controls" ? (
+        <>
+          <path d="M11 16V4H8a3 3 0 0 0 0 6h3m3-6v12M8 4h8" />
+          {!pressed && <path d="m3 3 14 14" />}
+        </>
+      ) : pressed ? (
+        <path d="M3 4h14M3 9h11a3 3 0 0 1 0 6h-4m3-3-3 3 3 3M3 14h3" />
+      ) : (
+        <path d="M3 4h14M3 9h14M3 14h9m2-2 3 2-3 2" />
+      )}
+    </svg>
   );
 }
