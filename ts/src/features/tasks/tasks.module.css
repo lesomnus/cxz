@@ -180,7 +180,9 @@
   overflow-wrap: anywhere;
 }
 .cardMeta {
+  --task-owner-height: 20px;
   display: flex;
+  min-height: var(--task-owner-height);
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
@@ -192,7 +194,12 @@
 .cardMeta time {
   white-space: nowrap;
 }
-.owner {
+.card .owner {
+  --agent-logo-size: 14px;
+  height: var(--task-owner-height);
+  min-height: var(--task-owner-height);
+  padding: 2px 6px;
+  line-height: 14px;
   min-width: 0;
   max-width: 100%;
   color: var(--muted);
@@ -203,6 +210,11 @@
   display: flex;
   align-items: center;
   gap: var(--space);
+}
+.owner :global(.agent-brand) {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
 }
 .owner:hover {
   color: var(--shade-237);
