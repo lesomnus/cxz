@@ -85,16 +85,6 @@ export function WorkSummary({
   return (
     <div className={styles.summary} data-work-summary={id}>
       <div className={styles.counters}>
-        <ServiceCount
-          service="cxz_memory"
-          count={services.cxz_memory}
-          partial={partial}
-        />
-        <ServiceCount
-          service="cxz_tasks"
-          count={services.cxz_tasks}
-          partial={partial}
-        />
         <span className="meta-popover">
           <Button
             type="button"
@@ -115,6 +105,16 @@ export function WorkSummary({
             {countLabel} · {t("View details")}
           </span>
         </span>
+        <ServiceCount
+          service="cxz_memory"
+          count={services.cxz_memory}
+          partial={partial}
+        />
+        <ServiceCount
+          service="cxz_tasks"
+          count={services.cxz_tasks}
+          partial={partial}
+        />
       </div>
       {durationMs !== undefined && (
         <ElapsedTime

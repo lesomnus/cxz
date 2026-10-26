@@ -35,6 +35,10 @@
 .countSuffix {
   width: 1ch;
 }
+.counters :global(.meta-tooltip) {
+  left: 0;
+  right: auto;
+}
 .summary :global(.meta-popover):focus-within :global(.meta-tooltip) {
   opacity: 1;
   visibility: visible;

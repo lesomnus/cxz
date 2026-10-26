@@ -84,6 +84,17 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   await summaries.first().getByRole("button").hover();
   await expect(tooltip).toContainText("4 tasks performed · View details");
   await expect(tooltip).toBeVisible();
+  await expect(tooltip).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+  const triggerBounds = (await summaries
+    .first()
+    .getByRole("button")
+    .boundingBox())!;
+  const tooltipBounds = (await tooltip.boundingBox())!;
+  expect(tooltipBounds.x).toBeCloseTo(triggerBounds.x, 1);
+  expect(tooltipBounds.y + tooltipBounds.height).toBeLessThan(triggerBounds.y);
+  expect(tooltipBounds.x + tooltipBounds.width).toBeGreaterThan(
+    triggerBounds.x + triggerBounds.width,
+  );
   await expect(page.locator(".transcript .tool-activity")).toHaveCount(0);
   const pane = page.locator(".transcript");
   const before = await pane.evaluate((node) => ({
@@ -328,10 +339,10 @@ test("all work counts share reply boundaries and align left of elapsed time", as
         button: button.toJSON(),
       };
     });
-    expect(bounds.memory.x).toBeGreaterThanOrEqual(bounds.left);
+    expect(bounds.button.x).toBeGreaterThanOrEqual(bounds.left);
+    expect(bounds.button.right).toBeLessThanOrEqual(bounds.memory.x);
     expect(bounds.memory.right).toBeLessThanOrEqual(bounds.tasks.x);
-    expect(bounds.tasks.right).toBeLessThanOrEqual(bounds.button.x);
-    expect(bounds.button.right).toBeLessThanOrEqual(bounds.duration.x);
+    expect(bounds.tasks.right).toBeLessThanOrEqual(bounds.duration.x);
     expect(bounds.duration.right).toBeLessThanOrEqual(bounds.right);
   }
   const memory = summaries
@@ -339,6 +350,11 @@ test("all work counts share reply boundaries and align left of elapsed time", as
     .getByRole("img", { name: "Memory calls: 2", exact: true });
   await memory.hover();
   await expect(memory.getByRole("tooltip")).toHaveText("cxz_memory · 2");
+  const memoryBounds = (await memory.boundingBox())!;
+  expect((await memory.getByRole("tooltip").boundingBox())!.x).toBeCloseTo(
+    memoryBounds.x,
+    1,
+  );
   await summaries.first().getByRole("button").click();
   const dialog = page.getByRole("dialog", {
     name: "Tasks between responses",
