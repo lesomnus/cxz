@@ -97,6 +97,10 @@
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+.card.card.card :global(.card-body) {
+  overflow: visible;
+  overscroll-behavior: auto;
+}
 .card.card.card :global(.card-heading) {
   min-height: 0;
   padding: 8px;
