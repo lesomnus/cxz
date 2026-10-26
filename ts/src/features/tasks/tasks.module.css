@@ -89,7 +89,12 @@
   margin-bottom: var(--space);
   min-width: 0;
 }
-.card :global(.card-heading) {
+.card.card {
+  border-color: var(--shade-32);
+}
+.card.card.card :global(.card-heading) {
+  min-height: 0;
+  padding: 8px;
   justify-content: flex-start;
   gap: calc(1.5 * var(--space));
 }
@@ -105,6 +110,7 @@
   transform: translateY(-1px);
   color: var(--muted);
   font: 0.75rem var(--ui-font-mono);
+  line-height: 12px;
 }
 .cardMain {
   width: 100%;
