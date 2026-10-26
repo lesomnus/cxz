@@ -35,7 +35,6 @@ import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
 import type { EditorSelection } from "#src/features/session/composer/editor-selection.ts";
 import type { UploadProgress } from "#src/features/session/composer/composer-upload.ts";
 import { create } from "@bufbuild/protobuf";
-import { SessionPurgeReplySchema } from "#gen/cxz/session_svc_pb";
 import type { SessionInfo } from "#src/features/session/model/session-info.ts";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
 import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
@@ -213,7 +212,6 @@ export function ComponentPreview({
   const pastes = useRef<Map<string, ComposerPaste>>(previewPastes());
   const startedAt = useRef(Date.now() - 14_000);
   const [stopped, setStopped] = useState(sessionStopped);
-  const [purged, setPurged] = useState(false);
   const [generation, setGeneration] = useState(1);
   const active = working && !stopped;
   const [identity, setIdentity] = useState({
@@ -310,7 +308,7 @@ export function ComponentPreview({
         interrupt={() => setStopped(true)}
         menu={(pick) => (
           <SessionMenu
-            session={purged ? undefined : session}
+            session={session}
             info={{
               model: session.model,
               effort: "medium",
@@ -339,24 +337,6 @@ export function ComponentPreview({
             manage={async (operation) => {
               setStopped(operation === "stop");
               if (operation !== "stop") setGeneration((value) => value + 1);
-              return true;
-            }}
-            previewPurge={async () =>
-              create(SessionPurgeReplySchema, {
-                dryRun: true,
-                targets: [
-                  {
-                    kind: "conversation",
-                    path: "/storybook/conversation",
-                    files: 1,
-                    bytes: 1200n,
-                  },
-                ],
-                retained: ["Project workspace"],
-              })
-            }
-            purge={async () => {
-              setPurged(true);
               return true;
             }}
           />

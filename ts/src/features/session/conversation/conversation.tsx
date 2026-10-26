@@ -1,4 +1,3 @@
-import { resourceLocation } from "#src/shared/navigation/resource-route.ts";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import {
   projectId as projectUUID,
@@ -1275,32 +1274,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                     throw error;
                   await openSessionLogin(run);
                 }
-              })
-            }
-            previewPurge={async () => {
-              let plan;
-              await action(async () => {
-                plan = await c.sessions.purge(
-                  { ref: ref(id), dryRun: true },
-                  { timeoutMs: 20_000 },
-                );
-              });
-              return plan;
-            }}
-            purge={() =>
-              action(async (session) => {
-                await c.sessions.purge(
-                  { ref: ref(id) },
-                  { timeoutMs: 120_000 },
-                );
-                c.store.apply("cxz.Session", [{ id: session.id }]);
-                c.drafts.delete(id);
-                c.attention.reset(id);
-                c.conversations.delete(id);
-                await navigate({
-                  ...resourceLocation("sessions"),
-                  replace: true,
-                });
               })
             }
           />
