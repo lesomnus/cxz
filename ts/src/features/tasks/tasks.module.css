@@ -54,7 +54,6 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--shade-22);
   border-radius: var(--wrapper-radius);
   overflow: hidden;
 }
@@ -83,14 +82,14 @@
   padding: var(--control-inset);
 }
 .column > :global(.panel-scroll-region) {
-  --ui-scroll-area-background: var(--shade-22);
+  --ui-scroll-area-background: transparent;
 }
 .card {
   margin-bottom: var(--space);
   min-width: 0;
 }
 .card.card {
-  border-color: var(--shade-32);
+  border-color: var(--shade-40);
 }
 .card.card.card :global(.card-heading) {
   min-height: 0;
