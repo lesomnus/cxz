@@ -5,14 +5,16 @@
   gap: var(--ui-space);
 }
 .toolbar {
-  /* Match the compact segmented control's 28px cells. */
-  --ui-toolbar-button-width: 28px;
   margin-left: auto;
 }
 .footer svg {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
+}
+.toolbar svg {
+  width: 12px;
+  height: 12px;
 }
 .error {
   display: block;
