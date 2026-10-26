@@ -101,14 +101,14 @@
   overflow: visible;
   overscroll-behavior: auto;
 }
-.card.card.card :global(.card-heading) {
+.taskHeader.taskHeader.taskHeader :global(.card-heading) {
   min-height: 0;
   padding: 8px;
   padding-right: calc(var(--toolbar-button-width) + 8px);
   justify-content: flex-start;
   gap: calc(1.5 * var(--space));
 }
-.card :global(.card-heading)::before {
+.taskHeader :global(.card-heading)::before {
   content: "";
   flex: 0 0 auto;
   width: 6px;
@@ -116,15 +116,24 @@
   border-radius: 50%;
   background: var(--task-priority-color, var(--muted));
 }
-.card[data-previous-run] :global(.card-heading)::before {
+.taskHeader[data-previous-run] :global(.card-heading)::before {
   border: 1.5px solid var(--task-priority-color, var(--muted));
   background: transparent;
 }
-.card :global(.card-heading) strong {
+.taskHeader :global(.card-heading) strong {
   transform: translateY(-1px);
   color: var(--muted);
   font: 0.75rem var(--ui-font-mono);
   line-height: 12px;
+}
+.taskHeader :global(.card-close) {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  width: var(--toolbar-button-width);
+  height: var(--toolbar-button-height);
+  min-height: var(--toolbar-button-height);
+  border-radius: var(--toolbar-button-radius);
 }
 .card .cardOpen {
   position: absolute;
@@ -230,19 +239,19 @@
   font-size: 0.7rem;
   color: var(--shade-180, var(--shade-237));
 }
-.card[data-priority="0"] {
+.taskHeader[data-priority="0"] {
   --task-priority-color: #e87979;
 }
-.card[data-priority="1"] {
+.taskHeader[data-priority="1"] {
   --task-priority-color: #e6a15c;
 }
-.card[data-priority="2"] {
+.taskHeader[data-priority="2"] {
   --task-priority-color: #d4be70;
 }
-.card[data-priority="3"] {
+.taskHeader[data-priority="3"] {
   --task-priority-color: #7ea8ce;
 }
-.card[data-priority="4"] {
+.taskHeader[data-priority="4"] {
   --task-priority-color: #90969e;
 }
 .empty,

@@ -171,7 +171,10 @@ function TaskEditor({
         }}
       >
         <Card
-          title={task ? "Task details" : "Add task"}
+          className={task ? styles.taskHeader : undefined}
+          data-priority={task ? priority : undefined}
+          data-previous-run={issue === "Previous run" || undefined}
+          title={task ? alias || task.alias : "Add task"}
           close={busy ? undefined : close}
           closeLabel="Close"
           footer={
