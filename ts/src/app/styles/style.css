@@ -1549,6 +1549,8 @@ pre {
 .editor-control-mirror {
   font-kerning: none;
   font-variant-ligatures: none;
+  /* Preserve every space's advance across soft wraps in native and mirror text. */
+  white-space: break-spaces;
 }
 .editor-gutter {
   position: relative;
@@ -1671,7 +1673,6 @@ pre {
 }
 .editor-mirror {
   position: relative;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .editor-line {
@@ -3310,7 +3311,6 @@ summary:hover {
 .editor-control-mirror {
   position: relative;
   color: transparent;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .editor-control-line {
