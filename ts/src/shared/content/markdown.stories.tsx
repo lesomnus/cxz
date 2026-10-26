@@ -73,7 +73,7 @@ export const FileLinks: Story = {
     docs: {
       description: {
         story:
-          "Session pages open absolute container paths, source references with line/column suffixes, and local file URIs in the workspace editor through the session's project API. The browser's resolved link preview is not used as a web navigation URL. This preview displays the path passed to that callback. External websites still open in a new tab; other URI schemes retain the sanitizer's restrictions.",
+          "Container file links appear as compact chips with a small file icon, distinct from ordinary underlined web links. Session pages open absolute container paths, source references with line/column suffixes, and local file URIs in the workspace editor through the session's project API. The browser's resolved link preview is not used as a web navigation URL. This preview displays the path passed to that callback. External websites still open in a new tab; other URI schemes retain the sanitizer's restrictions.",
       },
     },
   },

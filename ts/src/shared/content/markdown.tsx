@@ -13,6 +13,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { MarkdownCodeBlock } from "./markdown-code-block";
 import styles from "./markdown-code-block.module.css";
 import { workspaceFilePath } from "./file-links";
+import fileLinkStyles from "./file-link.module.css";
 
 export const MarkdownFileLinks = createContext<
   ((path: string) => void) | undefined
@@ -43,6 +44,8 @@ function purifier(fileLinks: boolean) {
       ) {
         node.removeAttribute("target");
         node.removeAttribute("rel");
+        node.classList.add(fileLinkStyles.link);
+        node.setAttribute("data-container-file", "true");
         return;
       }
       node.setAttribute("target", "_blank");

@@ -20,6 +20,11 @@ test("container links call the file opener without web navigation and external l
   ]) {
     const link = page.getByRole("link", { name, exact: true });
     await expect(link).not.toHaveAttribute("target", "_blank");
+    await expect(link).toHaveCSS("text-decoration-line", "none");
+    await expect(link).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    expect(
+      await link.evaluate((el) => getComputedStyle(el, "::before").maskImage),
+    ).not.toBe("none");
     await link.click();
     await expect(output).toHaveText(path);
     expect(page.url()).toBe(original);
@@ -29,6 +34,7 @@ test("container links call the file opener without web navigation and external l
     const link = page.getByRole("link", { name, exact: true });
     await expect(link).toHaveAttribute("target", "_blank");
     await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(link).not.toHaveAttribute("data-container-file");
   }
   await expect(page.locator('a:has-text("Unsafe link")')).not.toHaveAttribute(
     "href",

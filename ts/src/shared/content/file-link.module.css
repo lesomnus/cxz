@@ -1,0 +1,44 @@
+:global(.markdown) a.link {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  padding: 0 calc(1.5 * var(--ui-space));
+  padding-inline-start: calc(var(--ui-icon-size-small) + 2 * var(--ui-space));
+  border-radius: var(--ui-space);
+  background: var(--ui-shade-32);
+  color: var(--ui-shade-181);
+  font-family: var(--ui-font-mono);
+  font-size: 0.9em;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  transition:
+    background-color 120ms,
+    color 120ms;
+}
+:global(.markdown) a.link::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: var(--ui-space);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z'/%3E%3Cpath d='M14 3v6h6M8 13h8M8 17h5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+:global(.markdown) a.link code {
+  padding: 0;
+  background: transparent;
+  font: inherit;
+}
+:global(.markdown) a.link:hover,
+:global(.markdown) a.link:focus-visible {
+  background: var(--ui-shade-48);
+  color: var(--ui-shade-237);
+}
+@media (prefers-reduced-motion: reduce) {
+  :global(.markdown) a.link {
+    transition: none;
+  }
+}
