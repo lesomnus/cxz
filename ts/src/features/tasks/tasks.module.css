@@ -54,6 +54,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  padding-inline: 2px;
   background: var(--shade-22);
   border-radius: var(--wrapper-radius);
   overflow: hidden;
