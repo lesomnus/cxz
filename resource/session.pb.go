@@ -744,6 +744,7 @@ type ToolSummary struct {
 	xxx_hidden_OmittedFiles uint32                 `protobuf:"varint,6,opt,name=omitted_files,json=omittedFiles"`
 	xxx_hidden_Kind         string                 `protobuf:"bytes,7,opt,name=kind"`
 	xxx_hidden_Description  string                 `protobuf:"bytes,8,opt,name=description"`
+	xxx_hidden_McpServer    string                 `protobuf:"bytes,9,opt,name=mcp_server,json=mcpServer"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -831,6 +832,13 @@ func (x *ToolSummary) GetDescription() string {
 	return ""
 }
 
+func (x *ToolSummary) GetMcpServer() string {
+	if x != nil {
+		return x.xxx_hidden_McpServer
+	}
+	return ""
+}
+
 func (x *ToolSummary) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
@@ -863,6 +871,10 @@ func (x *ToolSummary) SetDescription(v string) {
 	x.xxx_hidden_Description = v
 }
 
+func (x *ToolSummary) SetMcpServer(v string) {
+	x.xxx_hidden_McpServer = v
+}
+
 type ToolSummary_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -881,6 +893,8 @@ type ToolSummary_builder struct {
 	// description, or a Skill with its arguments. Empty otherwise, and a reader
 	// falls back to `name` rather than this repeating it.
 	Description string
+	// MCP origin retained when provider payloads are omitted from transcript rows.
+	McpServer string
 }
 
 func (b0 ToolSummary_builder) Build() *ToolSummary {
@@ -895,6 +909,7 @@ func (b0 ToolSummary_builder) Build() *ToolSummary {
 	x.xxx_hidden_OmittedFiles = b.OmittedFiles
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Description = b.Description
+	x.xxx_hidden_McpServer = b.McpServer
 	return m0
 }
 
@@ -1259,7 +1274,7 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\bresponse\x18\b \x01(\v2\x15.cxz.ResponseMetadataR\bresponse\x123\n" +
 	"\ftool_summary\x18\t \x01(\v2\x10.cxz.ToolSummaryR\vtoolSummary\x12\x1c\n" +
 	"\theartbeat\x18\n" +
-	" \x01(\bR\theartbeat\"\xee\x01\n" +
+	" \x01(\bR\theartbeat\"\x8d\x02\n" +
 	"\vToolSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05shell\x18\x02 \x01(\tR\x05shell\x12\x18\n" +
@@ -1268,7 +1283,9 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\x05files\x18\x05 \x03(\v2\x14.cxz.ToolFileSummaryR\x05files\x12#\n" +
 	"\romitted_files\x18\x06 \x01(\rR\fomittedFiles\x12\x12\n" +
 	"\x04kind\x18\a \x01(\tR\x04kind\x12 \n" +
-	"\vdescription\x18\b \x01(\tR\vdescription\"\xd7\x01\n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\x12\x1d\n" +
+	"\n" +
+	"mcp_server\x18\t \x01(\tR\tmcpServer\"\xd7\x01\n" +
 	"\x0fToolFileSummary\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x1b\n" +
 	"\tmove_path\x18\x02 \x01(\tR\bmovePath\x12\x16\n" +

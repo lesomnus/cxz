@@ -179,8 +179,8 @@ func (p *Projection) put(e *api.Event, updated uint64) {
 func summary(e *api.Event) *api.Event {
 	v := proto.Clone(e).(*api.Event)
 	v.Payload = nil
-	label := &api.ToolSummary{Name: e.Text, State: "pending"}
 	data := object(e.Payload)
+	label := &api.ToolSummary{Name: e.Text, State: "pending", McpServer: mcpServer(e.Text, data)}
 	item := child(data, "item")
 	if text(item, "type") == "commandExecution" {
 		label.Name = "Bash"
@@ -249,6 +249,25 @@ func clip(s string, n int) string {
 		return string(r[:n]) + "…"
 	}
 	return s
+}
+
+func mcpServer(name string, data map[string]any) string {
+	item := child(data, "item")
+	if text(item, "type") == "mcpToolCall" {
+		return clip(text(item, "server"), 160)
+	}
+	if strings.HasPrefix(name, "mcp__") {
+		server, tool, ok := strings.Cut(strings.TrimPrefix(name, "mcp__"), "__")
+		if ok && tool != "" {
+			return clip(server, 160)
+		}
+	}
+	for _, server := range []string{"cxz_memory", "cxz_tasks"} {
+		if strings.HasPrefix(name, server+"_") || strings.HasPrefix(name, server+".") {
+			return server
+		}
+	}
+	return ""
 }
 func failed(e *api.Event) bool {
 	p := object(e.Payload)
@@ -479,7 +498,7 @@ var schema = []string{
 	`CREATE TABLE IF NOT EXISTS transcript_seen(session_id TEXT PRIMARY KEY,written INTEGER)`,
 }
 
-const projectionFormat = 6
+const projectionFormat = 7
 
 // Format is the interpretation version a store stamps beside the rows it holds,
 // so that a reader can tell rows built by these rules from rows built by older

@@ -1,8 +1,8 @@
 package supervisor
 
 import (
-	"context"
 	"bytes"
+	"context"
 	"encoding/json"
 	"slices"
 	"testing"
@@ -143,5 +143,24 @@ func TestClaudeTelemetryAndDefaultTools(t *testing.T) {
 	}
 	if usage != 2 {
 		t.Fatal("telemetry not normalized", usage)
+	}
+}
+
+func TestCodexMCPCallsAreRecordedAsOneExecution(t *testing.T) {
+	s, _ := displaySupervisor(t, "codex")
+	s.consume([]byte(`{"method":"item/started","params":{"item":{"id":"mcp-1","type":"mcpToolCall","server":"cxz_memory","tool":"memory_read","status":"inProgress"}}}`))
+	s.consume([]byte(`{"method":"item/completed","params":{"item":{"id":"mcp-1","type":"mcpToolCall","server":"cxz_memory","tool":"memory_read","status":"completed","result":{"content":[]}}}}`))
+	var kinds []string
+	for _, e := range s.log.All() {
+		if e.Kind != "tool_call" && e.Kind != "tool_result" {
+			continue
+		}
+		kinds = append(kinds, e.Kind)
+		if e.RequestID != "mcp-1" || e.RunID != "run" || !bytes.Contains(e.Payload, []byte(`"server":"cxz_memory"`)) {
+			t.Fatal("MCP identity or payload was lost", e)
+		}
+	}
+	if !slices.Equal(kinds, []string{"tool_call", "tool_result"}) {
+		t.Fatal("MCP execution was not recorded", kinds)
 	}
 }

@@ -187,6 +187,7 @@ message ToolSummary {
   // The shape a reader lays out, and the provider's own words for the call when
   // it supplied any. See proto/cxz/session.proto for why neither is inferred.
   string kind = 7; string description = 8;
+  string mcp_server = 9;
 }
 // Counts describe recorded diff hunks or submitted content/replacement spans.
 // An unknown measure never implies zero changes.

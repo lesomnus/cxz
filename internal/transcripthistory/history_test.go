@@ -700,3 +700,55 @@ func TestFailedResultBodiesRemainLazy(t *testing.T) {
 		}
 	}
 }
+
+func TestMCPServerSurvivesProjectionAndRebuild(t *testing.T) {
+	db, add := fixture(t)
+	cases := []struct{ name, raw, server string }{
+		{"mcp__cxz_memory__memory_read", `{}`, "cxz_memory"},
+		{"mcp__cxz_tasks__task_list", `{}`, "cxz_tasks"},
+		{"cxz_memory_search", `{}`, "cxz_memory"},
+		{"", `{"item":{"type":"mcpToolCall","server":"cxz_memory","tool":"memory_search","status":"completed"}}`, "cxz_memory"},
+		{"", `{"item":{"type":"mcpToolCall","server":"cxz_tasks","tool":"task_claim","status":"completed"}}`, "cxz_tasks"},
+		{"mcp__external__search", `{}`, "external"},
+		{"Bash", `{"input":{"command":"echo cxz_memory_read"}}`, ""},
+	}
+	for i, tc := range cases {
+		call := event(uint64(i*2+1), "tool_call", fmt.Sprintf("mcp-%d", i), tc.raw)
+		call.Text = tc.name
+		add(call, event(uint64(i*2+2), "tool_result", call.RequestId, tc.raw))
+	}
+	check := func() *api.TranscriptReply {
+		t.Helper()
+		page := syncPage(t, db, &api.TranscriptRequest{})
+		if len(page.Events) != len(cases) {
+			t.Fatalf("executions counted more than once: %d", len(page.Events))
+		}
+		for i, e := range page.Events {
+			if e.GetToolSummary().GetMcpServer() != cases[i].server || len(e.Payload) != 0 {
+				t.Fatalf("MCP origin missing from compact row: %v", e)
+			}
+		}
+		return page
+	}
+	page := check()
+	// Upgrade an existing projection without changing its native journal.
+	for _, row := range page.Events {
+		old := proto.Clone(row).(*api.Event)
+		old.ToolSummary.McpServer = ""
+		raw, err := json.Marshal(old)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = db.Exec(`UPDATE transcript_rows SET data=? WHERE session_id='s' AND seq=?`, raw, row.Seq); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := db.Exec(`UPDATE transcript_format SET version=6 WHERE session_id='s'`); err != nil {
+		t.Fatal(err)
+	}
+	check()
+	details, err := Details(t.Context(), db, &api.EventDetailsRequest{SessionId: "s", Seq: 7}, decode)
+	if err != nil || len(details.Events) != 2 || !strings.Contains(string(details.Events[0].Payload), `"server":"cxz_memory"`) {
+		t.Fatal("native MCP details changed", details, err)
+	}
+}

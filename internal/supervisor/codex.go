@@ -280,7 +280,7 @@ func (c *codexProtocol) consume(raw []byte) {
 			s.event("tool_output", output.Delta, output.ItemID, nil, nil)
 		}
 	case "item/started":
-		if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" {
+		if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" || p.Item.Type == "mcpToolCall" {
 			s.event("tool_call", p.Item.Command, p.Item.ID, v.Params, nil)
 		}
 		if p.Item.Type == "commandExecution" {
@@ -310,7 +310,7 @@ func (c *codexProtocol) consume(raw []byte) {
 					s.pending[id] = s.event("approval", agentview.CodexAsyncQuestion, id, v.Params, nil)
 				}
 			}
-		} else if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" {
+		} else if p.Item.Type == "commandExecution" || p.Item.Type == "fileChange" || p.Item.Type == "mcpToolCall" {
 			s.event("tool_result", p.Item.Output, p.Item.ID, v.Params, nil)
 		}
 		if p.Item.Type == "commandExecution" {
