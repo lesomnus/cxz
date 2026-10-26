@@ -1,6 +1,6 @@
 import { projectId } from "#src/shared/api/project-id.ts";
-import { useRef, useState } from "react";
-import { Button } from "@lesomnus/nox";
+import { useId, useRef, useState } from "react";
+import { Section, SectionGroup, SectionLayout } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import { ContainerState } from "#gen/cxz/project_pb";
@@ -32,9 +32,6 @@ const icons: Record<Action, "stop" | "resume" | "remove" | "purge"> = {
   erase: "purge",
 };
 
-// `description` is the line beside the button; `body` is what the confirmation
-// spells out. They are different lengths on purpose: the row stays scannable
-// and the dialog says what survives.
 const copy: Record<
   Action,
   {
@@ -78,7 +75,7 @@ const copy: Record<
   },
   erase: {
     label: t("Erase"),
-    description: t("Permanently delete this project and its owned data."),
+    description: t("Erase this project and its owned data permanently."),
     title: t("Erase project"),
     confirm: t("Erase permanently"),
     body: t(
@@ -101,6 +98,7 @@ export function ProjectActions({
   updated: (project: Project) => void;
 }) {
   const trigger = useRef<HTMLButtonElement>(null);
+  const id = useId();
   const [target, setTarget] = useState<{ kind: Action; project: Project }>();
   // A start the configuration refused until someone says yes to it: the
   // findings are what they are saying yes to.
@@ -127,28 +125,50 @@ export function ProjectActions({
   ];
   return (
     <>
-      <div className={styles.rows}>
-        {actions.map((action) => (
-          <div className={styles.row} key={action.kind}>
-            <span className={styles.icon}>
-              <SessionActionIcon action={icons[action.kind]} />
-            </span>
-            <p>{copy[action.kind].description}</p>
-            <Button
-              type="button"
-              className={styles.action}
-              disabled={action.disabled}
-              onClick={(event) => {
-                trigger.current = event.currentTarget;
-                setError("");
-                setTarget({ kind: action.kind, project });
-              }}
-            >
-              {copy[action.kind].label}
-            </Button>
-          </div>
-        ))}
-      </div>
+      <SectionLayout align="start" maxWidth="none">
+        <SectionGroup>
+          <Section className={styles.header}>
+            <h2>{t("Actions")}</h2>
+          </Section>
+          {actions.map((action) => {
+            const description = copy[action.kind].description;
+            const wordEnd = description.search(/\s/u);
+            const emphasisEnd = wordEnd < 0 ? description.length : wordEnd;
+            return (
+              <Section
+                as="button"
+                key={action.kind}
+                type="button"
+                effect="sparkle"
+                className={styles.action}
+                aria-label={copy[action.kind].label}
+                aria-describedby={`${id}-${action.kind}-description`}
+                disabled={action.disabled}
+                onClick={(event) => {
+                  trigger.current = event.currentTarget;
+                  setError("");
+                  setTarget({ kind: action.kind, project });
+                }}
+              >
+                <span className={styles.content}>
+                  <span className={styles.icon} aria-hidden="true">
+                    <SessionActionIcon action={icons[action.kind]} />
+                  </span>
+                  <span
+                    className={styles.description}
+                    id={`${id}-${action.kind}-description`}
+                  >
+                    <strong>{description.slice(0, emphasisEnd)}</strong>
+                    <span className={styles.detail}>
+                      {description.slice(emphasisEnd)}
+                    </span>
+                  </span>
+                </span>
+              </Section>
+            );
+          })}
+        </SectionGroup>
+      </SectionLayout>
       {target && (
         <ConfirmationDialog
           title={copy[target.kind].title}

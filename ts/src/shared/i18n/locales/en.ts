@@ -38,8 +38,8 @@ export const messages = {
   "The project remains listed and can be started again.":
     "The project remains listed and can be started again.",
 
-  "Permanently delete this project and its owned data.":
-    "Permanently delete this project and its owned data.",
+  "Erase this project and its owned data permanently.":
+    "Erase this project and its owned data permanently.",
   "Purge project": "Purge project",
   "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
     "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.",

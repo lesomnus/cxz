@@ -37,7 +37,7 @@ export const messages = {
   "The project remains listed and can be started again.":
     "프로젝트는 목록에 유지되며 다시 시작할 수 있습니다.",
 
-  "Permanently delete this project and its owned data.":
+  "Erase this project and its owned data permanently.":
     "이 프로젝트와 소유 데이터를 영구 삭제합니다.",
   "Purge project": "프로젝트 영구 삭제",
   "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
