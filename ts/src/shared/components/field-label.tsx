@@ -1,4 +1,4 @@
-import { OverflowHint } from "@lesomnus/nox";
+import { Popover } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./field-label.module.css";
@@ -16,7 +16,7 @@ export function FieldLabel({
       <span>{label}</span>
       {description && (
         <span className={styles.help}>
-          <OverflowHint content={description}>
+          <Popover content={description}>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -36,7 +36,7 @@ export function FieldLabel({
                 stroke="none"
               />
             </svg>
-          </OverflowHint>
+          </Popover>
         </span>
       )}
     </span>

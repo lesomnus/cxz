@@ -1,5 +1,5 @@
 import { CopyButton } from "./copy-button";
-import { OverflowHint } from "@lesomnus/nox";
+import { Popover } from "@lesomnus/nox";
 import styles from "./identifier-value.module.css";
 
 export function IdentifierValue({ value }: { value?: string }) {
@@ -8,9 +8,9 @@ export function IdentifierValue({ value }: { value?: string }) {
   return (
     <span className={styles.value}>
       {value.length > 7 ? (
-        <OverflowHint content={value} placement="in-place">
+        <Popover content={value} placement="in-place">
           {prefix}
-        </OverflowHint>
+        </Popover>
       ) : (
         prefix
       )}

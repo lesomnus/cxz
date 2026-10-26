@@ -1,13 +1,8 @@
-.hint {
-  position: fixed;
+.content {
   display: flex;
   align-items: center;
   gap: calc(2 * var(--ui-space));
-  z-index: 1000;
-  width: max-content;
-  max-width: calc(100vw - 4 * var(--ui-space));
-  padding: calc(2 * var(--ui-space));
-  pointer-events: none;
+  min-width: 0;
 }
 .path {
   min-width: 0;

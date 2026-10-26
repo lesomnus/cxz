@@ -12,6 +12,8 @@ import { relativeMessageTime } from "#src/features/session/conversation/message-
 import { boardTasks, ownerIssue, taskTime, taskKey } from "./task-model";
 import styles from "./tasks.module.css";
 
+const priorityLabels = ["Highest", "High", "Normal", "Low", "Lowest"];
+
 function TaskCard({
   task,
   sessions,
@@ -37,8 +39,17 @@ function TaskCard({
         onClick={() => open(task)}
         aria-label={`Open task: ${task.name}`}
       >
-        <strong>{task.name}</strong>
-        <small className={styles.alias}>{task.alias}</small>
+        <span className={styles.cardHeading}>
+          <span
+            className={styles.priority}
+            data-priority={task.priority}
+            role="img"
+            aria-label={`${priorityLabels[task.priority] ?? "Unknown"} priority`}
+            title={`${priorityLabels[task.priority] ?? "Unknown"} priority`}
+          />
+          <small className={styles.alias}>{task.alias}</small>
+        </span>
+        <strong className={styles.cardTitle}>{task.name}</strong>
       </Button>
       <div className={styles.cardMeta}>
         {owner ? (
@@ -70,11 +81,6 @@ function TaskCard({
         )}
       </div>
       {issue && <span className={styles.ownerIssue}>{issue}</span>}
-      {task.priority < 2 && (
-        <span className={styles.priority}>
-          {task.priority === 0 ? "Highest priority" : "High priority"}
-        </span>
-      )}
     </article>
   );
 }
