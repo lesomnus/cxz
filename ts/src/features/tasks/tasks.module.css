@@ -97,9 +97,6 @@
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-.card.card.card :global(.card-body) {
-  background: transparent;
-}
 .card.card.card :global(.card-heading) {
   min-height: 0;
   padding: 8px;
