@@ -264,13 +264,13 @@ export function ConversationComposer({
               duration={2400}
               origin={[inkCenterX, -24]}
               centerMotion="fixed"
-              color={[inkTone, inkTone, inkTone, 0.06]}
-              sparkleColor={[
+              color={[
                 inkTone,
                 inkTone,
                 inkTone,
-                theme === "dark" ? 0.08 : 0.2,
+                theme === "dark" ? 0.025 : 0.06,
               ]}
+              sparkleColor={[inkTone, inkTone, inkTone, 0.2]}
             />
           )}
           <div
