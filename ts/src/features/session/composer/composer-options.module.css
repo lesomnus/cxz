@@ -3,10 +3,6 @@
   align-items: center;
   gap: var(--ui-space);
 }
-.toggle[aria-pressed="true"] {
-  background: var(--ui-selected);
-  color: var(--ui-shade-255);
-}
 .error {
   display: block;
   max-width: 240px;
