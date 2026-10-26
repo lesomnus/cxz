@@ -19,7 +19,10 @@ test("conversation file links preview the session container without navigating t
   ).toBeVisible({
     timeout: 45000,
   });
-  const editor = page.getByRole("complementary", { name: "Workspace editor" });
+  const editor = page.getByRole("complementary", {
+    name: "Workspace editor",
+    includeHidden: true,
+  });
   await expect(editor).toHaveCount(0);
   const original = page.url();
   const message =
@@ -42,12 +45,22 @@ test("conversation file links preview the session container without navigating t
       editor.getByRole("tab", { name: filename, exact: true }),
     ).toHaveAttribute("aria-selected", "true");
     await expect(editor.locator(".file-content")).toContainText(text);
+    await expect(editor).toHaveCSS("opacity", "1");
+    await expect(editor).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+    const drawer = (await editor.boundingBox())!;
+    const workspace = (await page.locator(".session-workspace").boundingBox())!;
+    expect(drawer.x).toBeCloseTo(workspace.x, 1);
+    expect(drawer.y).toBeCloseTo(workspace.y, 1);
+    expect(drawer.width).toBeCloseTo(workspace.width, 1);
+    expect(drawer.height).toBeLessThan(workspace.height);
+    await editor.evaluate((el) => el.setAttribute("data-drawer-state", "keep"));
     expect(page.url()).toBe(original);
     expect(context.pages()).toHaveLength(1);
     await editor
       .getByRole("button", { name: "Close file preview", exact: true })
       .click();
     await expect(editor).toBeHidden();
+    await expect(editor).toHaveAttribute("data-drawer-state", "keep");
   }
 });
 

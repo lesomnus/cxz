@@ -133,17 +133,19 @@ function SessionWorkspace({
                 className="session-divider"
                 label={t("Resize workspace editor")}
               />
-              <ProjectEditorPane
-                key={Array.from(project.id).join("-")}
-                c={c}
-                projectId={project.id}
-                requestedFile={requestedFile}
-                closePreview={
-                  requestedFile && !wide
-                    ? () => setFileRequest(undefined)
-                    : undefined
-                }
-              />
+              <div className="workspace-editor-layer">
+                <ProjectEditorPane
+                  key={Array.from(project.id).join("-")}
+                  c={c}
+                  projectId={project.id}
+                  requestedFile={requestedFile}
+                  closePreview={
+                    requestedFile && !wide
+                      ? () => setFileRequest(undefined)
+                      : undefined
+                  }
+                />
+              </div>
             </>
           )}
         </div>
