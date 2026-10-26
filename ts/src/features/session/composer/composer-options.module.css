@@ -3,9 +3,6 @@
   align-items: center;
   gap: var(--ui-space);
 }
-.toggle.toggle {
-  width: 28px;
-}
 .toggle[aria-pressed="true"] {
   background: var(--ui-selected);
   color: var(--ui-shade-255);
