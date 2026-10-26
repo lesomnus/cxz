@@ -2,7 +2,7 @@ import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { formatOffsetDateTime } from "#src/shared/components/date-time-format.ts";
 import { useEffect, useState } from "react";
-import { Button, Card } from "@lesomnus/nox";
+import { Button, Card, Popover } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import { TaskStatus, type Task } from "#gen/cxz/task_pb";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -56,21 +56,22 @@ function TaskCard({
                 {task.assignee ? "Session unavailable" : "Unassigned"}
               </span>
             )}
-            {relative ? (
-              <time
-                dateTime={date.toISOString()}
-                title={`Updated ${formatOffsetDateTime(date)}`}
-              >
-                {relative}
-              </time>
-            ) : (
-              <DateTime
-                value={date.getTime()}
-                title={`Updated ${formatOffsetDateTime(date)}`}
-              />
-            )}
+            <Popover
+              content={<DateTime value={date.getTime()} />}
+              placement="top-end"
+            >
+              <span aria-label={`Updated ${formatOffsetDateTime(date)}`}>
+                {relative ? (
+                  <time dateTime={date.toISOString()}>{relative}</time>
+                ) : (
+                  <DateTime value={date.getTime()} />
+                )}
+              </span>
+            </Popover>
           </div>
-          {issue && <span className={styles.ownerIssue}>{issue}</span>}
+          {issue && issue !== "Previous run" && (
+            <span className={styles.ownerIssue}>{issue}</span>
+          )}
         </>
       }
     >
