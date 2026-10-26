@@ -2,17 +2,18 @@ import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { formatOffsetDateTime } from "#src/shared/components/date-time-format.ts";
 import { useEffect, useState } from "react";
-import { Button } from "@lesomnus/nox";
+import { Button, LinkButton } from "@lesomnus/nox";
+import { createLink } from "@tanstack/react-router";
 import type { Session } from "#gen/cxz/session_pb";
 import { TaskStatus, type Task } from "#gen/cxz/task_pb";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { relativeMessageTime } from "#src/features/session/conversation/message-time.ts";
 import { boardTasks, ownerIssue, taskTime, taskKey } from "./task-model";
 import styles from "./tasks.module.css";
 
 const priorityLabels = ["Highest", "High", "Normal", "Low", "Lowest"];
+const OwnerLink = createLink(LinkButton);
 
 function TaskCard({
   task,
@@ -53,14 +54,17 @@ function TaskCard({
       </Button>
       <div className={styles.cardMeta}>
         {owner ? (
-          <RouteLink
+          <OwnerLink
             className={styles.owner}
             {...sessionLocation(owner)}
             title={owner.name || owner.alias}
+            trailing={null}
           >
-            <AgentBrand agent={owner.agent} />
-            <span>{owner.alias}</span>
-          </RouteLink>
+            <span className={styles.ownerLabel}>
+              <AgentBrand agent={owner.agent} />
+              <span>{owner.alias}</span>
+            </span>
+          </OwnerLink>
         ) : (
           <span className={styles.quiet}>
             {task.assignee ? "Session unavailable" : "Unassigned"}

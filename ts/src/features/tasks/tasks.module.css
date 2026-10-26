@@ -86,11 +86,21 @@
   --ui-scroll-area-background: var(--shade-22);
 }
 .card {
+  --task-card-radius: max(
+    0px,
+    calc(var(--wrapper-radius) - var(--control-inset))
+  );
+  --task-card-heading-height: 12px;
+  --task-card-dot-size: 6px;
   background: var(--shade-27);
   border: 1px solid var(--shade-40);
-  border-radius: max(0px, calc(var(--wrapper-radius) - var(--control-inset)));
+  border-radius: var(--task-card-radius);
   margin-bottom: var(--space);
   padding: var(--space);
+  padding-top: max(
+    0px,
+    calc(var(--task-card-radius) - 1px - var(--task-card-heading-height) / 2)
+  );
   min-width: 0;
 }
 .card:hover,
@@ -101,7 +111,7 @@
   width: 100%;
   text-align: left;
   display: block;
-  padding: var(--space);
+  padding: 0 0 var(--space);
   background: transparent;
 }
 .cardMain > :global(.button-content) {
@@ -121,8 +131,17 @@
   gap: calc(1.5 * var(--space));
   min-width: 0;
   max-width: 100%;
+  height: var(--task-card-heading-height);
+  padding-left: max(
+    0px,
+    calc(
+      var(--task-card-radius) - 1px - var(--space) - var(--task-card-dot-size) /
+        2
+    )
+  );
 }
 .cardHeading .alias {
+  transform: translateY(-1px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -146,7 +165,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space);
-  padding: var(--space);
+  padding: 0;
   color: var(--muted);
   font-size: 0.7rem;
 }
@@ -159,8 +178,9 @@
   color: var(--muted);
   text-decoration: none;
   font-family: var(--ui-font-mono);
+  border-radius: max(0px, calc(var(--task-card-radius) - 1px - var(--space)));
 }
-.owner > :global(.button-content) {
+.ownerLabel {
   display: flex;
   align-items: center;
   gap: var(--space);
@@ -168,7 +188,8 @@
 .owner:hover {
   color: var(--shade-237);
 }
-.owner span:not(:global(.agent-brand)) {
+.ownerLabel > span:last-child {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -180,8 +201,8 @@
 }
 .priority {
   flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
+  width: var(--task-card-dot-size);
+  height: var(--task-card-dot-size);
   border-radius: 50%;
   background: var(--muted);
 }
