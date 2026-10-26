@@ -62,9 +62,19 @@ function FileLinksPreview() {
   const [path, openFile] = useState("");
   return (
     <MarkdownFileLinks.Provider value={openFile}>
-      <Markdown text="[Report](/tmp/report.md) · [File with spaces](/tmp/a%20report.md) · [External documentation](https://example.com/)" />
+      <Markdown text="[Report](/tmp/report.md) · [Source line](/workspace/file.ts:42) · [File URI](file:///workspace/file.ts) · [File with spaces](file:///tmp/a%20report.md) · [External documentation](https://example.com/) · [Network URL](//example.com/docs) · [Unsafe link](javascript:alert%281%29)" />
       <output aria-label="Opened file">{path || "Select a file link."}</output>
     </MarkdownFileLinks.Provider>
   );
 }
-export const FileLinks: Story = { render: () => <FileLinksPreview /> };
+export const FileLinks: Story = {
+  render: () => <FileLinksPreview />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Session pages open absolute container paths, source references with line/column suffixes, and local file URIs in the workspace editor through the session's project API. The browser's resolved link preview is not used as a web navigation URL. This preview displays the path passed to that callback. External websites still open in a new tab; other URI schemes retain the sanitizer's restrictions.",
+      },
+    },
+  },
+};

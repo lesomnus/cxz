@@ -3,6 +3,14 @@ import { workspaceFilePath } from "./file-links";
 
 it.each([
   ["/tmp/report.md", "/tmp/report.md"],
+  ["/workspace/file.ts:42", "/workspace/file.ts"],
+  ["/workspace/file.ts:42:3#L42", "/workspace/file.ts"],
+  ["/tmp/file%3A42", "/tmp/file:42"],
+  ["file:///workspace/file.ts", "/workspace/file.ts"],
+  ["file:///workspace/file.ts:42:3", "/workspace/file.ts"],
+  ["file://localhost/workspace/a%20file.ts", "/workspace/a file.ts"],
+  ["file://other-host/workspace/file.ts", undefined],
+  ["file:///tmp/%00report", undefined],
   [
     "/workspace/%ED%95%9C%EA%B8%80%20report.md#L10",
     "/workspace/한글 report.md",

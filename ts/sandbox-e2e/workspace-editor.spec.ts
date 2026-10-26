@@ -8,6 +8,49 @@ test.use({
   deviceScaleFactor: 1,
 });
 
+test("conversation file links preview the session container without navigating the browser", async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/sandbox.html");
+  await expect(
+    page.getByRole("heading", { name: "Current status" }),
+  ).toBeVisible({
+    timeout: 45000,
+  });
+  const editor = page.getByRole("complementary", { name: "Workspace editor" });
+  await expect(editor).toHaveCount(0);
+  const original = page.url();
+  const message =
+    "[Container README](/workspace/README.md) · [Source line](/workspace/src/main.go:2) · [Container file URI](file:///workspace/.devcontainer/devcontainer.json)";
+  await page
+    .getByRole("textbox", { name: "Message", exact: true })
+    .fill(message);
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  for (const [label, filename, text] of [
+    ["Container README", "README.md", "project-1"],
+    ["Source line", "main.go", "package"],
+    ["Container file URI", "devcontainer.json", "Sandbox workspace"],
+  ]) {
+    await page
+      .locator(".input .markdown")
+      .getByRole("link", { name: label, exact: true })
+      .click();
+    await expect(editor).toBeVisible();
+    await expect(
+      editor.getByRole("tab", { name: filename, exact: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(editor.locator(".file-content")).toContainText(text);
+    expect(page.url()).toBe(original);
+    expect(context.pages()).toHaveLength(1);
+    await editor
+      .getByRole("button", { name: "Close file preview", exact: true })
+      .click();
+    await expect(editor).toBeHidden();
+  }
+});
+
 test("workspace split, readonly files and simulated connections keep project state across resize", async ({
   page,
 }) => {

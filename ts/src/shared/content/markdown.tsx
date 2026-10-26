@@ -21,6 +21,20 @@ export const MarkdownFileLinks = createContext<
 // Keep conversation link behavior scoped to this sanitizer instance.
 function purifier(fileLinks: boolean) {
   const instance = DOMPurify();
+  if (fileLinks)
+    instance.addHook("beforeSanitizeAttributes", (node) => {
+      if (node.localName !== "a") return;
+      const href = node.getAttribute("href") ?? "";
+      if (!/^file:/i.test(href)) return;
+      const path = workspaceFilePath(href);
+      if (path === undefined) return;
+      // Keep DOMPurify's protocol policy intact; only verified container files
+      // become absolute-path links handled by the same click callback.
+      node.setAttribute(
+        "href",
+        path.split("/").map(encodeURIComponent).join("/"),
+      );
+    });
   instance.addHook("afterSanitizeAttributes", (node) => {
     if (node.localName === "a" && node.hasAttribute("href")) {
       if (

@@ -3,6 +3,38 @@ import { expect, test } from "@playwright/test";
 const snippet =
   "const greeting = '<script>alert(1)</script>';\nconsole.log(greeting);\n";
 
+test("container links call the file opener without web navigation and external links retain new-tab behavior", async ({
+  page,
+  context,
+}) => {
+  await page.goto(
+    "/iframe.html?id=content-markdown--file-links&viewMode=story",
+  );
+  const original = page.url();
+  const output = page.getByRole("status");
+  for (const [name, path] of [
+    ["Report", "/tmp/report.md"],
+    ["Source line", "/workspace/file.ts"],
+    ["File URI", "/workspace/file.ts"],
+    ["File with spaces", "/tmp/a report.md"],
+  ]) {
+    const link = page.getByRole("link", { name, exact: true });
+    await expect(link).not.toHaveAttribute("target", "_blank");
+    await link.click();
+    await expect(output).toHaveText(path);
+    expect(page.url()).toBe(original);
+    expect(context.pages()).toHaveLength(1);
+  }
+  for (const name of ["External documentation", "Network URL"]) {
+    const link = page.getByRole("link", { name, exact: true });
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  }
+  await expect(page.locator('a:has-text("Unsafe link")')).not.toHaveAttribute(
+    "href",
+  );
+});
+
 test("code controls reveal on hover, choose highlighting, and copy literal code", async ({
   page,
   context,
