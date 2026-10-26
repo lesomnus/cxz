@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Button } from "@lesomnus/nox";
+import { BorderTrailButton } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./background-jobs-indicator.module.css";
@@ -25,9 +25,10 @@ export function BackgroundJobsIndicator({
         );
   return (
     <span className="meta-popover">
-      <Button
+      <BorderTrailButton
         type="button"
-        pressTarget={`.${styles.count}`}
+        active={active}
+        segments={Math.max(1, count ?? 0)}
         className={`toolbar-button ${styles.indicator}`}
         aria-label={label}
         aria-describedby={hint}
@@ -35,20 +36,10 @@ export function BackgroundJobsIndicator({
         data-active={active}
         onClick={open}
       >
-        <svg className={styles.border} aria-hidden="true">
-          <rect className={styles.rail} x="0.5" y="0.5" pathLength="8" />
-          <rect
-            className={styles.glow}
-            x="0.5"
-            y="0.5"
-            pathLength="8"
-            strokeDasharray={`${Math.min(count ?? 0, 8)} ${8 - Math.min(count ?? 0, 8)}`}
-          />
-        </svg>
         <span className={styles.count}>
           {count === undefined ? "—" : count > 999 ? "999+" : count}
         </span>
-      </Button>
+      </BorderTrailButton>
       <span id={hint} className="meta-tooltip" role="tooltip">
         {label}
       </span>

@@ -12,12 +12,8 @@
 .indicator:global(.toolbar-button)[data-active="false"] {
   color: var(--shade-65);
 }
-.indicator[data-active="false"] .rail {
-  stroke: var(--composer-toolbar-background);
-}
-.indicator.indicator :global(.button-content) {
-  position: static;
-  transform: none;
+.indicator[data-active="false"] {
+  --ui-border-trail-track-color: var(--composer-toolbar-background);
 }
 .indicator:global(.toolbar-button):not(:disabled):hover {
   background: transparent;
@@ -30,75 +26,4 @@
   font-size: 11px;
   font-family: var(--ui-font-mono, monospace);
   font-variant-numeric: tabular-nums;
-  transition: transform 120ms ease;
-}
-.indicator:active .count {
-  transform: scale(var(--press-scale, 0.95));
-  transition-duration: 60ms;
-}
-.border {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  overflow: hidden;
-  border-radius: inherit;
-}
-.border rect {
-  width: calc(100% - 1px);
-  height: calc(100% - 1px);
-  rx: max(0px, calc(var(--toolbar-button-radius) - 0.5px));
-  fill: none;
-  stroke-width: 1px;
-}
-.rail {
-  stroke: var(--shade-54);
-  transition: stroke 180ms ease;
-}
-.glow {
-  stroke: var(--ui-brand-color);
-  opacity: 0;
-  stroke-linecap: round;
-  transition:
-    opacity 500ms ease,
-    stroke-dasharray 500ms ease;
-}
-.indicator[data-active="true"] .glow {
-  opacity: 0.8;
-  animation:
-    border-drift 13s linear infinite,
-    border-breathe 7s ease-in-out infinite;
-}
-@keyframes border-drift {
-  to {
-    stroke-dashoffset: -8;
-  }
-}
-@keyframes border-breathe {
-  0%,
-  100% {
-    stroke-opacity: 0.6;
-    stroke-width: 1px;
-  }
-  27% {
-    stroke-opacity: 1;
-    stroke-width: 1.6px;
-  }
-  58% {
-    stroke-opacity: 0.7;
-    stroke-width: 1.1px;
-  }
-  81% {
-    stroke-opacity: 0.9;
-    stroke-width: 1.4px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .indicator[data-active="true"] .glow {
-    animation: none;
-  }
-  .glow {
-    transition: none;
-  }
 }
