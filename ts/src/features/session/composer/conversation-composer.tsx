@@ -1,5 +1,7 @@
 import {
   useId,
+  useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEventHandler,
@@ -91,6 +93,21 @@ export function ConversationComposer({
   const theme = useTheme();
   const inkTone = theme === "light" ? 0 : 1;
   const sendHint = useId();
+  const surface = useRef<HTMLDivElement>(null);
+  useImperativeHandle(inputRef, () => surface.current!, []);
+  const [inkCenterX, setInkCenterX] = useState<number>();
+  useLayoutEffect(() => {
+    if (!sending) {
+      setInkCenterX(undefined);
+      return;
+    }
+    const node = surface.current!;
+    const measure = () => setInkCenterX(node.clientWidth / 2);
+    measure();
+    const resize = new ResizeObserver(measure);
+    resize.observe(node);
+    return () => resize.disconnect();
+  }, [sending]);
   const editor = useRef<ComposerEditorHandle>(null);
   const { snapshot } = useSettings();
   const language =
@@ -236,16 +253,16 @@ export function ConversationComposer({
         </div>
         <div
           className="composer-input"
-          ref={inputRef}
+          ref={surface}
           data-sending={sending}
           aria-busy={sending}
         >
-          {sending && (
+          {sending && inkCenterX !== undefined && (
             <InkSparkle
               className="composer-pending-ink"
               loop
               duration={2400}
-              origin={[-24, -24]}
+              origin={[inkCenterX, -24]}
               centerMotion="fixed"
               color={[inkTone, inkTone, inkTone, 0.06]}
               sparkleColor={[inkTone, inkTone, inkTone, 0.2]}
