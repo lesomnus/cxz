@@ -75,14 +75,31 @@ function TaskCard({
       }
     >
       <Button
-        className={styles.cardMain}
+        className={styles.cardOpen}
         type="button"
         onClick={() => open(task)}
         aria-label={`Open task: ${task.name}`}
+        aria-haspopup="dialog"
+        title="Open task details"
       >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" />
+        </svg>
+      </Button>
+      <div className={styles.cardMain}>
         <strong className={styles.cardTitle}>{task.name}</strong>
         <span className={styles.cardDescription}>{task.desc}</span>
-      </Button>
+      </div>
     </Card>
   );
 }

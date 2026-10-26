@@ -100,6 +100,7 @@
 .card.card.card :global(.card-heading) {
   min-height: 0;
   padding: 8px;
+  padding-right: 32px;
   justify-content: flex-start;
   gap: calc(1.5 * var(--space));
 }
@@ -117,23 +118,26 @@
   font: 0.75rem var(--ui-font-mono);
   line-height: 12px;
 }
+.card .cardOpen {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 3px;
+  border-radius: var(--space);
+  color: var(--muted);
+}
 .cardMain {
   width: 100%;
   text-align: left;
-  display: block;
-  padding: 0;
-  background: transparent;
-}
-.cardMain > :global(.button-content) {
   display: grid;
   justify-content: stretch;
   justify-items: start;
   align-items: start;
   gap: calc(2 * var(--space));
   min-width: 0;
-}
-.card .cardMain:not(:disabled):hover {
-  background: transparent;
 }
 .cardTitle {
   display: -webkit-box;
