@@ -87,6 +87,7 @@
 }
 .card {
   background: var(--shade-27);
+  border: 1px solid var(--shade-40);
   border-radius: max(0px, calc(var(--wrapper-radius) - var(--control-inset)));
   margin-bottom: var(--space);
   padding: var(--space);
@@ -114,7 +115,27 @@
 .card .cardMain:not(:disabled):hover {
   background: transparent;
 }
-.cardMain strong {
+.cardHeading {
+  display: flex;
+  align-items: center;
+  gap: calc(1.5 * var(--space));
+  min-width: 0;
+  max-width: 100%;
+}
+.cardHeading .alias {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cardTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.5;
+  height: 3em;
+  width: 100%;
   font-size: 0.85rem;
   font-weight: 500;
   overflow-wrap: anywhere;
@@ -151,15 +172,33 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ownerIssue,
-.priority {
+.ownerIssue {
   display: block;
   padding: var(--space);
   font-size: 0.7rem;
   color: var(--shade-180, var(--shade-237));
 }
 .priority {
-  color: var(--muted);
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.priority[data-priority="0"] {
+  background: #e87979;
+}
+.priority[data-priority="1"] {
+  background: #e6a15c;
+}
+.priority[data-priority="2"] {
+  background: #d4be70;
+}
+.priority[data-priority="3"] {
+  background: #7ea8ce;
+}
+.priority[data-priority="4"] {
+  background: #90969e;
 }
 .empty,
 .message {
