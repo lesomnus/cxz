@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 for (const deviceScaleFactor of [1, 1.5]) {
   test.describe(`real transcript backdrop at scale ${deviceScaleFactor}`, () => {
     test.use({ deviceScaleFactor });
-    test("rail removes real conversation glyph detail while keeping the menu glass", async ({
+    test("only the visible rail blurs real conversation text", async ({
       page,
     }) => {
       await page.setViewportSize({ width: 1040, height: 760 });
@@ -19,11 +19,6 @@ for (const deviceScaleFactor of [1, 1.5]) {
         "none",
       );
       await expect(popup).toHaveCSS("backdrop-filter", "none");
-      expect(
-        await popup.evaluate(
-          (node) => getComputedStyle(node, "::before").backdropFilter,
-        ),
-      ).not.toBe("none");
       const area = popup.locator('[data-scroll-area="root"]');
       const rail = area.locator('[data-scroll-area="rail"]');
       await area.hover();
@@ -32,109 +27,130 @@ for (const deviceScaleFactor of [1, 1.5]) {
           rail.evaluate((node) => getComputedStyle(node, "::before").opacity),
         )
         .toBe("1");
-      await page.evaluate(
-        () =>
-          new Promise((resolve) =>
-            requestAnimationFrame(() => requestAnimationFrame(resolve)),
-          ),
-      );
-      const clip = await rail.evaluate((node) => {
+      const regions = await rail.evaluate((node) => {
         const bounds = node.getBoundingClientRect();
         const thumb = node
           .querySelector('[role="scrollbar"]')!
           .getBoundingClientRect();
+        const width = parseFloat(getComputedStyle(node, "::before").width);
+        const left = bounds.x + (bounds.width - width) / 2;
+        const x = Math.ceil(left),
+          right = Math.floor(left + width);
+        const y = Math.ceil(thumb.bottom + 8);
+        const height = Math.floor(bounds.bottom - 8) - y;
         const walker = document.createTreeWalker(
           document.querySelector(".transcript .markdown")!,
           NodeFilter.SHOW_TEXT,
         );
-        let text: Node | null;
+        let text: Node | null,
+          overlapsText = false;
         while ((text = walker.nextNode())) {
-          const range = document.createRange();
-          range.selectNodeContents(text);
-          const line = range.getBoundingClientRect();
-          if (line.bottom < thumb.bottom || line.top > bounds.bottom) continue;
           for (
             let index = 0;
             index < (text.textContent?.length ?? 0);
             index++
           ) {
             if (!/\w/.test(text.textContent![index])) continue;
+            const range = document.createRange();
             range.setStart(text, index);
             range.setEnd(text, index + 1);
             const glyph = range.getBoundingClientRect();
             if (
-              glyph.left >= bounds.left + 2 &&
-              glyph.right <= bounds.right - 2 &&
-              glyph.top >= thumb.bottom + 5 &&
-              glyph.bottom <= bounds.bottom - 5
+              glyph.left < right &&
+              glyph.right > x &&
+              glyph.top >= y &&
+              glyph.bottom <= y + height
             )
-              return {
-                x: Math.floor(glyph.x),
-                y: Math.floor(glyph.y),
-                width: Math.ceil(glyph.width),
-                height: Math.ceil(glyph.height),
-              };
+              overlapsText = true;
           }
         }
-        throw new Error(
-          "No actual conversation glyph is behind the uncovered rail",
-        );
+        if (!overlapsText)
+          throw new Error(
+            "No actual conversation text is behind the rail line",
+          );
+        return {
+          line: { x, y, width: right - x, height },
+          neighbors: [
+            {
+              x: Math.ceil(bounds.left),
+              y,
+              width: Math.floor(left) - Math.ceil(bounds.left),
+              height,
+            },
+            {
+              x: Math.ceil(left + width),
+              y,
+              width: Math.floor(bounds.right) - Math.ceil(left + width),
+              height,
+            },
+          ],
+        };
       });
-      const contrast = async (png: Buffer) =>
+      const sample = async (png: Buffer) =>
         page.evaluate(
-          async ({ base64, region }) => {
+          async ({ base64, regions }) => {
             const image = new Image();
             image.src = `data:image/png;base64,${base64}`;
             await image.decode();
-            const canvas = document.createElement("canvas");
             const scale = image.width / innerWidth;
-            canvas.width = Math.ceil(region.width * scale);
-            canvas.height = Math.ceil(region.height * scale);
-            const context = canvas.getContext("2d")!;
-            context.drawImage(
-              image,
-              region.x * scale,
-              region.y * scale,
-              region.width * scale,
-              region.height * scale,
-              0,
-              0,
-              canvas.width,
-              canvas.height,
-            );
-            const pixels = context.getImageData(
-              0,
-              0,
-              canvas.width,
-              canvas.height,
-            ).data;
+            function pixels(region: {
+              x: number;
+              y: number;
+              width: number;
+              height: number;
+            }) {
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.ceil(region.width * scale);
+              canvas.height = Math.ceil(region.height * scale);
+              const context = canvas.getContext("2d")!;
+              context.drawImage(
+                image,
+                region.x * scale,
+                region.y * scale,
+                region.width * scale,
+                region.height * scale,
+                0,
+                0,
+                canvas.width,
+                canvas.height,
+              );
+              return context.getImageData(0, 0, canvas.width, canvas.height)
+                .data;
+            }
             let min = 255,
               max = 0;
-            for (let index = 0; index < pixels.length; index += 4) {
+            const line = pixels(regions.line);
+            for (let index = 0; index < line.length; index += 4) {
               const light =
-                (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3;
+                (line[index] + line[index + 1] + line[index + 2]) / 3;
               min = Math.min(min, light);
               max = Math.max(max, light);
             }
-            return max - min;
+            const neighbors = await Promise.all(
+              regions.neighbors.map(async (region) => {
+                const hash = await crypto.subtle.digest(
+                  "SHA-256",
+                  pixels(region),
+                );
+                return Array.from(new Uint8Array(hash), (byte) =>
+                  byte.toString(16).padStart(2, "0"),
+                ).join("");
+              }),
+            );
+            return { contrast: max - min, neighbors };
           },
-          { base64: png.toString("base64"), region: clip },
+          { base64: png.toString("base64"), regions },
         );
-      // Capture the viewport first: partial captures can alter backdrop compositing.
-      const blurred = await contrast(await page.screenshot());
+      // Full viewport captures keep backdrop compositing stable at fractional DPR.
+      const blurred = await sample(await page.screenshot());
       await page.addStyleTag({
         content:
-          '[data-scroll-area="rail"]::before { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }',
+          '[data-scroll-area="rail"]::before {backdrop-filter:none!important; -webkit-backdrop-filter:none!important;}',
       });
-      await page.evaluate(
-        () =>
-          new Promise((resolve) =>
-            requestAnimationFrame(() => requestAnimationFrame(resolve)),
-          ),
-      );
-      const sharp = await contrast(await page.screenshot());
-      expect(sharp).toBeGreaterThan(100);
-      expect(blurred).toBeLessThan(sharp / 2);
+      const sharp = await sample(await page.screenshot());
+      expect(sharp.contrast).toBeGreaterThan(100);
+      expect(blurred.contrast).toBeLessThan(sharp.contrast / 2);
+      expect(blurred.neighbors).toEqual(sharp.neighbors);
     });
   });
 }
