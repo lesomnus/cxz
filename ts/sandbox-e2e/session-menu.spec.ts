@@ -49,7 +49,6 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     "Stop",
     "Restart",
     "Fork",
-    "Purge",
     "Insert secret",
     "Shared memory",
     "Auxiliary AI",
@@ -65,7 +64,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
       .getByRole("menuitem")
       .or(menu.getByRole("menuitemcheckbox"))
       .locator("svg"),
-  ).toHaveCount(8);
+  ).toHaveCount(7);
   await expect(menu.getByText("Information", { exact: true })).toHaveCount(0);
   await expect(
     menu.getByRole("menuitem", { name: "Copy session link" }),
@@ -199,37 +198,49 @@ test("Stop and Resume toggle, while Restart requires confirmation and preserves 
     message,
   );
 });
-test("Purge previews without deleting, cancels, then removes only the confirmed session", async ({
+test("lifecycle actions share one scrolling row and Purge is absent", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 480 });
   await ready(page);
-  // Counted rather than hardcoded: what this verifies is that exactly one
-  // session goes, not how many the fixture happens to seed.
-  const listed = page.locator(".resource-panel .tree-session");
-  const before = await listed.count();
-  expect(before).toBeGreaterThan(1);
-  await choose(page, "Purge");
-  const dialog = page.getByRole("dialog", { name: "Purge session" });
-  await expect(dialog).toContainText("/sandbox/session-1/journal");
-  await expect(dialog).toContainText("Project workspace");
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  const popup = page.locator(".action-menu-popup");
+  await popup.evaluate(async (el) =>
+    Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
+  );
+  const menu = page.getByRole("menu", { name: "Session menu", exact: true });
+  const row = menu.getByRole("group", { name: "Controls", exact: true });
+  const actions = row.getByRole("menuitem");
+  await expect(actions).toHaveText(["Stop", "Restart", "Fork"]);
   await expect(
-    page.getByRole("button", { name: "Session menu", exact: true }),
-  ).toBeEnabled();
-  await choose(page, "Purge");
-  await page
-    .getByRole("button", { name: "Purge permanently", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Sessions", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page
-      .locator(".resource-panel .tree-session")
-      .filter({ hasText: "session-1" }),
+    popup.getByRole("menuitem", { name: "Purge", exact: true }),
   ).toHaveCount(0);
-  await expect(listed).toHaveCount(before - 1);
+  const boxes = await actions.evaluateAll((elements) =>
+    elements.map((el) => {
+      const { x, y, width } = el.getBoundingClientRect();
+      return { x, y, width };
+    }),
+  );
+  for (const box of boxes) {
+    expect(box.y).toBe(boxes[0].y);
+    expect(box.width).toBeCloseTo(boxes[0].width, 1);
+  }
+  await actions.nth(0).press("ArrowRight");
+  await expect(actions.nth(1)).toBeFocused();
+  await actions.nth(1).press("ArrowRight");
+  await expect(actions.nth(2)).toBeFocused();
+  const footer = popup.locator('[data-menu-fixed="footer"]');
+  const viewport = menu.locator('[data-scroll-area="viewport"]');
+  const fixed = await footer.boundingBox();
+  const top = (await row.boundingBox())!.y;
+  await viewport.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  expect((await row.boundingBox())!.y).toBeLessThan(top);
+  expect(await footer.boundingBox()).toEqual(fixed);
+  await expect(
+    footer.getByRole("radiogroup", { name: "Tab input" }),
+  ).toBeVisible();
 });
 
 test("Details edits title and alias while keeping conversation identity and updating the alias address", async ({

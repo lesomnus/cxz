@@ -229,15 +229,16 @@ test("composer menu toggles stay open, preserve text and selection, and persist 
   await expect
     .poll(() =>
       trigger.evaluate((button) => {
-        const toolbar = button
-          .closest(".composer-toolbar")!
+        // SessionMenu mirrors the trigger inset from the wrapper's outer border.
+        const wrapper = button
+          .closest(".composer-wrapper")!
           .getBoundingClientRect();
         const anchor = button.getBoundingClientRect();
         const popup = document
           .querySelector(".action-menu-popup")!
           .getBoundingClientRect();
         return Math.abs(
-          anchor.top - popup.bottom - 2 * (anchor.top - toolbar.top),
+          anchor.top - popup.bottom - 2 * (anchor.top - wrapper.top),
         );
       }),
     )
