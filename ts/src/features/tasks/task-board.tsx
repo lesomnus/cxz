@@ -33,7 +33,7 @@ function TaskCard({
   const relative = relativeMessageTime(date, new Date(now));
   return (
     <Card
-      className={styles.card}
+      className={`${styles.card} ${styles.taskHeader}`}
       data-task-alias={task.alias}
       data-priority={task.priority}
       data-previous-run={issue === "Previous run" || undefined}
