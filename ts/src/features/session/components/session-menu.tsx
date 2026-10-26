@@ -82,7 +82,7 @@ export function SessionMenu({
         footer={<ComposerOptions />}
         groups={[
           {
-            label: t("Controls"),
+            label: "",
             layout: "row",
             items: [
               {
