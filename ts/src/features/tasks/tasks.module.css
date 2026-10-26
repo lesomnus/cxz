@@ -136,14 +136,21 @@
   border-radius: var(--toolbar-button-radius);
 }
 .card .cardOpen {
+  --task-open-inset: 2px;
   position: absolute;
-  top: 2px;
-  right: 4px;
+  top: var(--task-open-inset);
+  right: var(--task-open-inset);
   width: var(--toolbar-button-width);
   height: var(--toolbar-button-height);
   min-height: var(--toolbar-button-height);
   padding: 3px 6px;
-  border-radius: var(--toolbar-button-radius);
+  border-radius: max(
+    0px,
+    calc(
+      var(--ui-dialog-radius) - var(--card-border-width) -
+        var(--task-open-inset)
+    )
+  );
   color: var(--muted);
 }
 .card .cardOpen:not(:disabled):hover {
