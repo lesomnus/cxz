@@ -1,0 +1,16 @@
+.hint {
+  position: fixed;
+  z-index: 1000;
+  width: max-content;
+  max-width: min(620px, calc(100vw - 4 * var(--ui-space)));
+  padding: calc(2 * var(--ui-space));
+  pointer-events: none;
+}
+.path {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.size {
+  display: block;
+  color: var(--ui-muted);
+}

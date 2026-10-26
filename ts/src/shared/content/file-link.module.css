@@ -5,15 +5,13 @@
   padding: 0 calc(1.5 * var(--ui-space));
   padding-inline-start: calc(var(--ui-icon-size-small) + 2 * var(--ui-space));
   border-radius: var(--ui-space);
+  border: 1px solid currentColor;
   background: var(--ui-shade-32);
-  color: var(--ui-shade-181);
-  font-family: var(--ui-font-mono);
-  font-size: 0.9em;
+  color: inherit;
+  font: inherit;
   text-decoration: none;
   overflow-wrap: anywhere;
-  transition:
-    background-color 120ms,
-    color 120ms;
+  transition: background-color 120ms;
 }
 :global(.markdown) a.link::before {
   content: "";
@@ -35,7 +33,6 @@
 :global(.markdown) a.link:hover,
 :global(.markdown) a.link:focus-visible {
   background: var(--ui-shade-48);
-  color: var(--ui-shade-237);
 }
 @media (prefers-reduced-motion: reduce) {
   :global(.markdown) a.link {

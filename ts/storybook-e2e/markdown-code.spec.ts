@@ -25,11 +25,32 @@ test("container links call the file opener without web navigation and external l
     expect(
       await link.evaluate((el) => getComputedStyle(el, "::before").maskImage),
     ).not.toBe("none");
+    const textStyle = await link.evaluate((el) => {
+      const chip = getComputedStyle(el);
+      const body = getComputedStyle(el.parentElement!);
+      return {
+        chip: [chip.fontFamily, chip.fontSize, chip.lineHeight, chip.color],
+        body: [body.fontFamily, body.fontSize, body.lineHeight, body.color],
+        border: chip.borderTopColor,
+        color: chip.color,
+      };
+    });
+    expect(textStyle.chip).toEqual(textStyle.body);
+    expect(textStyle.border).toBe(textStyle.color);
+    await link.hover();
+    const hint = page.getByRole("tooltip");
+    await expect(hint).toContainText(path);
+    await expect(hint).toContainText("12,345 bytes");
     await link.click();
+    await expect(hint).toHaveCount(0);
     await expect(output).toHaveText(path);
     expect(page.url()).toBe(original);
     expect(context.pages()).toHaveLength(1);
   }
+  await page.getByRole("link", { name: "Report", exact: true }).focus();
+  await expect(page.getByRole("tooltip")).toContainText("/tmp/report.md");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
   for (const name of ["External documentation", "Network URL"]) {
     const link = page.getByRole("link", { name, exact: true });
     await expect(link).toHaveAttribute("target", "_blank");

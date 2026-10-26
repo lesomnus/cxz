@@ -222,6 +222,8 @@ export const messages = {
   "Permanently deletes this session and its stored data. This cannot be undone.":
     "Permanently deletes this session and its stored data. This cannot be undone.",
   "{files} files · {bytes} bytes": "{files} files · {bytes} bytes",
+  "{size} bytes": "{size} bytes",
+  "Size unavailable": "Size unavailable",
   "Retained: {items}": "Retained: {items}",
   "Action failed. Check session status before retrying.":
     "Action failed. Check session status before retrying.",

@@ -36,10 +36,17 @@ test("conversation file links preview the session container without navigating t
     ["Source line", "main.go", "package"],
     ["Container file URI", "devcontainer.json", "Sandbox workspace"],
   ]) {
-    await page
+    const link = page
       .locator(".input .markdown")
-      .getByRole("link", { name: label, exact: true })
-      .click();
+      .getByRole("link", { name: label, exact: true });
+    await link.hover();
+    const fileHint = page
+      .getByRole("tooltip")
+      .filter({ hasText: "/workspace/" });
+    await expect(fileHint).toBeVisible();
+    await expect(fileHint).toContainText(/[\d,]+ bytes/);
+    await expect(editor).toBeHidden();
+    await link.click();
     await expect(editor).toBeVisible();
     await expect(
       editor.getByRole("tab", { name: filename, exact: true }),

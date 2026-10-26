@@ -61,7 +61,9 @@ export const Streaming: Story = { render: () => <StreamingPreview /> };
 function FileLinksPreview() {
   const [path, openFile] = useState("");
   return (
-    <MarkdownFileLinks.Provider value={openFile}>
+    <MarkdownFileLinks.Provider
+      value={{ open: openFile, size: async () => 12345n }}
+    >
       <Markdown text="[Report](/tmp/report.md) · [Source line](/workspace/file.ts:42) · [File URI](file:///workspace/file.ts) · [File with spaces](file:///tmp/a%20report.md) · [External documentation](https://example.com/) · [Network URL](//example.com/docs) · [Unsafe link](javascript:alert%281%29)" />
       <output aria-label="Opened file">{path || "Select a file link."}</output>
     </MarkdownFileLinks.Provider>
@@ -73,7 +75,7 @@ export const FileLinks: Story = {
     docs: {
       description: {
         story:
-          "Container file links appear as compact chips with a small file icon, distinct from ordinary underlined web links. Session pages open absolute container paths, source references with line/column suffixes, and local file URIs in the workspace editor through the session's project API. The browser's resolved link preview is not used as a web navigation URL. This preview displays the path passed to that callback. External websites still open in a new tab; other URI schemes retain the sanitizer's restrictions.",
+          "Container file chips inherit body typography and color, with a matching border and small file icon. Hover or keyboard focus shows the full container path and byte size in a portaled tooltip. Size lookup is lazy and the session caches successful results briefly; production reads only the download size header before canceling. This story simulates file sizes. Session pages open absolute container paths, source references with line/column suffixes, and local file URIs in the workspace editor through the session's project API. External websites retain ordinary hyperlinks and open in a new tab; other URI schemes retain the sanitizer's restrictions.",
       },
     },
   },

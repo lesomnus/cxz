@@ -223,6 +223,8 @@ export const messages = {
   "Permanently deletes this session and its stored data. This cannot be undone.":
     "이 세션과 저장된 데이터를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
   "{files} files · {bytes} bytes": "파일 {files}개 · {bytes}바이트",
+  "{size} bytes": "{size}바이트",
+  "Size unavailable": "크기 확인 불가",
   "Retained: {items}": "유지되는 항목: {items}",
   "Action failed. Check session status before retrying.":
     "작업에 실패했습니다. 다시 시도하기 전에 세션 상태를 확인하세요.",
