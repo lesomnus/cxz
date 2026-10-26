@@ -17,9 +17,6 @@
   --composer-radius: 15px;
   --composer-editor-height: 110px;
   --composer-resize-duration: 300ms;
-  --composer-pending-glow: color-mix(in srgb, var(--shade-65) 35%, transparent);
-  --composer-pending-pulse-duration: 2400ms;
-  --composer-pending-pulse-delay: 500ms;
   --fine-grain-texture: url("../../shared/assets/textures/fine-grain.svg");
   --send-exit-duration: 180ms;
   --send-enter-duration: 240ms;
@@ -1467,37 +1464,12 @@ pre {
 .composer-input[data-sending="true"] {
   background-color: var(--shade-20);
 }
-.composer-input::before {
-  content: "";
+.composer-pending-ink {
   position: absolute;
   inset: 0;
+  z-index: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% 0%,
-    var(--composer-pending-glow),
-    transparent 75%
-  );
-  opacity: 0;
-}
-.composer-input[data-sending="true"]::before {
-  animation: composer-pending-pulse var(--composer-pending-pulse-duration)
-    ease-in-out var(--composer-pending-pulse-delay) infinite;
-}
-@keyframes composer-pending-pulse {
-  0%,
-  100% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .composer-input[data-sending="true"]::before {
-    animation: none;
-    opacity: 0.5;
-  }
 }
 .composer-input:focus-within {
   border-color: var(--shade-115);
