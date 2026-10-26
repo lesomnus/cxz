@@ -2,7 +2,7 @@ import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { formatOffsetDateTime } from "#src/shared/components/date-time-format.ts";
 import { useEffect, useState } from "react";
-import { Button } from "@lesomnus/nox";
+import { Button, Card } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import { TaskStatus, type Task } from "#gen/cxz/task_pb";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -32,56 +32,58 @@ function TaskCard({
   const date = new Date(taskTime(task));
   const relative = relativeMessageTime(date, new Date(now));
   return (
-    <article className={styles.card} data-task-alias={task.alias}>
+    <Card
+      className={styles.card}
+      data-task-alias={task.alias}
+      data-priority={task.priority}
+      title={task.alias}
+      aria-label={`${priorityLabels[task.priority] ?? "Unknown"} priority: ${task.alias}`}
+      bodyPadding="calc(2 * var(--space))"
+      footer={
+        <>
+          <div className={styles.cardMeta}>
+            {owner ? (
+              <RouteLink
+                className={styles.owner}
+                {...sessionLocation(owner)}
+                title={owner.name || owner.alias}
+              >
+                <AgentBrand agent={owner.agent} />
+                <span>{owner.alias}</span>
+              </RouteLink>
+            ) : (
+              <span className={styles.quiet}>
+                {task.assignee ? "Session unavailable" : "Unassigned"}
+              </span>
+            )}
+            {relative ? (
+              <time
+                dateTime={date.toISOString()}
+                title={`Updated ${formatOffsetDateTime(date)}`}
+              >
+                {relative}
+              </time>
+            ) : (
+              <DateTime
+                value={date.getTime()}
+                title={`Updated ${formatOffsetDateTime(date)}`}
+              />
+            )}
+          </div>
+          {issue && <span className={styles.ownerIssue}>{issue}</span>}
+        </>
+      }
+    >
       <Button
         className={styles.cardMain}
         type="button"
         onClick={() => open(task)}
         aria-label={`Open task: ${task.name}`}
       >
-        <span className={styles.cardHeading}>
-          <span
-            className={styles.priority}
-            data-priority={task.priority}
-            role="img"
-            aria-label={`${priorityLabels[task.priority] ?? "Unknown"} priority`}
-            title={`${priorityLabels[task.priority] ?? "Unknown"} priority`}
-          />
-          <small className={styles.alias}>{task.alias}</small>
-        </span>
         <strong className={styles.cardTitle}>{task.name}</strong>
+        <span className={styles.cardDescription}>{task.desc}</span>
       </Button>
-      <div className={styles.cardMeta}>
-        {owner ? (
-          <RouteLink
-            className={styles.owner}
-            {...sessionLocation(owner)}
-            title={owner.name || owner.alias}
-          >
-            <AgentBrand agent={owner.agent} />
-            <span>{owner.alias}</span>
-          </RouteLink>
-        ) : (
-          <span className={styles.quiet}>
-            {task.assignee ? "Session unavailable" : "Unassigned"}
-          </span>
-        )}
-        {relative ? (
-          <time
-            dateTime={date.toISOString()}
-            title={`Updated ${formatOffsetDateTime(date)}`}
-          >
-            {relative}
-          </time>
-        ) : (
-          <DateTime
-            value={date.getTime()}
-            title={`Updated ${formatOffsetDateTime(date)}`}
-          />
-        )}
-      </div>
-      {issue && <span className={styles.ownerIssue}>{issue}</span>}
-    </article>
+    </Card>
   );
 }
 
