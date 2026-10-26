@@ -8,7 +8,22 @@ export type WorkGroup = {
   events: SessionEvent[];
   hasBoundary: boolean;
   durationMs?: number;
+  services: Record<"cxz_memory" | "cxz_tasks", number>;
 };
+
+function workService(event: SessionEvent) {
+  if (!event.toolSummary && event.kind !== "tool_call") return;
+  const server = event.toolSummary?.mcpServer;
+  if (server)
+    return server === "cxz_memory" || server === "cxz_tasks"
+      ? server
+      : undefined;
+  // Older Claude rows already carry the server in their native tool name.
+  const name = event.toolSummary?.name || event.text;
+  const match =
+    /^(?:mcp__(cxz_memory|cxz_tasks)__|(cxz_memory|cxz_tasks)[._])/.exec(name);
+  return (match?.[1] ?? match?.[2]) as "cxz_memory" | "cxz_tasks" | undefined;
+}
 // Keep conversation and actionable/important notices visible. Everything else
 // belongs in the work dialog, including provider-specific and future work kinds.
 const conversationKinds = new Set([
@@ -43,6 +58,7 @@ export function workGroups(events: SessionEvent[]) {
           anchor: event,
           events: [],
           hasBoundary: boundaries.has(event.runId),
+          services: { cxz_memory: 0, cxz_tasks: 0 },
         };
         active.set(event.runId, group);
         groups.set(group.id, group);
@@ -50,6 +66,8 @@ export function workGroups(events: SessionEvent[]) {
         rows.push(event);
       }
       group.events.push(event);
+      const service = workService(event);
+      if (service) group.services[service]++;
     } else rows.push(event);
     if (["input", "assistant", "turn_end"].includes(event.kind)) {
       const group = active.get(event.runId);

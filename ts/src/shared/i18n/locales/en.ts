@@ -244,6 +244,8 @@ export const messages = {
   "Use the default model": "Use the default model",
   "Set reasoning effort to {effort}": "Set reasoning effort to {effort}",
   "Stop response": "Stop response",
+  "Memory calls": "Memory calls",
+  "Task calls": "Task calls",
   "Response elapsed time": "Response elapsed time",
   "Repeat within 3 seconds to stop": "Repeat within 3 seconds to stop",
   "Click twice or press Esc twice within 3 seconds":

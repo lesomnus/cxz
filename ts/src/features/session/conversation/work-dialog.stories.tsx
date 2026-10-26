@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { create } from "@bufbuild/protobuf";
+import { SessionEventSchema, ToolSummarySchema } from "#gen/cxz/session_pb";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 import {
@@ -17,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Work between conversation replies is summarized on the right of the reading column. The elapsed time between the surrounding replies precedes the task count; the first batch uses the input timestamp. Missing history boundaries leave the duration hidden. View details opens a full-height dialog with outer gaps, sliding from the right inside the conversation. Only the conversation is dimmed; neighboring panes stay uncovered. The list is virtualized and details load on demand. Close with the button, Escape or the dimmed backdrop.",
+          "Work between conversation replies is summarized in one line: fixed-width cxz_memory and cxz_tasks call counts sit on the left, with elapsed time and the total work count on the right. Counts use projected executions, so output/completion updates do not add calls. Zero values stay dim and preserve the layout. A + marks an incomplete history range. The elapsed time between the surrounding replies precedes the task count; the first batch uses the input timestamp. Missing history boundaries leave the duration hidden. View details opens a full-height dialog with outer gaps, sliding from the right inside the conversation. Only the conversation is dimmed; neighboring panes stay uncovered. The list is virtualized and details load on demand. Close with the button, Escape or the dimmed backdrop.",
       },
     },
   },
@@ -172,5 +174,49 @@ export const MixedActivity: Story = {
         "Work is recorded in the task dialog; the error remains visible.",
       ),
     ],
+  },
+};
+
+const mcpCall = (seq: number, server: string, tool: string) =>
+  create(SessionEventSchema, {
+    ...storyEvent(seq, "tool_call", "mcpToolCall"),
+    requestId: `mcp-${seq}`,
+    toolSummary: create(ToolSummarySchema, {
+      name: `${server}.${tool}`,
+      mcpServer: server,
+      state: "completed",
+    }),
+  });
+export const MemoryAndTaskCalls: Story = {
+  args: {
+    events: [
+      storyEvent(
+        1,
+        "input",
+        "Review shared memory and coordinate the project tasks.",
+      ),
+      storyEvent(
+        2,
+        "assistant",
+        "I'll read the project notes and check the current tasks.",
+      ),
+      mcpCall(3, "cxz_memory", "memory_read"),
+      mcpCall(4, "cxz_memory", "memory_search"),
+      mcpCall(5, "cxz_tasks", "task_list"),
+      { ...toolEvents()[0], seq: 6n, requestId: "shell-check" },
+      storyEvent(
+        7,
+        "assistant",
+        "The notes are clear. I'll register the next step and update memory.",
+      ),
+      mcpCall(8, "cxz_memory", "memory_update"),
+      mcpCall(9, "cxz_tasks", "task_add"),
+      mcpCall(10, "cxz_tasks", "task_claim"),
+      responseEvent(
+        11,
+        "codex",
+        "The follow-up work is registered and the shared notes are updated.",
+      ),
+    ].map((e) => ({ ...e, timeMs: 1710000000000n + e.seq * 2000n })),
   },
 };

@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
 import {
   SessionEventSchema,
+  ToolSummarySchema,
   ResponseMetadataSchema,
 } from "#gen/cxz/session_pb";
 import { transcriptRows } from "./tool-activity";
@@ -192,4 +193,72 @@ describe("work between conversation responses", () => {
       ),
     ).toEqual([[2n, 3n, 4n, 8n], [9n]]);
   });
+});
+
+it("counts MCP services within each reply boundary and keeps concurrent runs separate", () => {
+  const mcp = (seq: number, server: string, runId = "run") =>
+    create(SessionEventSchema, {
+      ...event(seq, "tool_call", `call-${seq}`, runId),
+      toolSummary: create(ToolSummarySchema, {
+        name: "mcpToolCall",
+        state: "completed",
+        mcpServer: server,
+      }),
+    });
+  const projected = workGroups([
+    event(1, "input"),
+    mcp(2, "cxz_memory"),
+    mcp(3, "cxz_tasks"),
+    event(4, "input", "", "other"),
+    mcp(5, "cxz_memory", "other"),
+    mcp(6, "external"),
+    event(7, "assistant"),
+    mcp(8, "cxz_tasks"),
+    mcp(9, "cxz_tasks"),
+    event(10, "assistant"),
+    event(11, "assistant", "", "other"),
+  ]);
+  expect([...projected.groups.values()].map((g) => g.services)).toEqual([
+    { cxz_memory: 1, cxz_tasks: 1 },
+    { cxz_memory: 1, cxz_tasks: 0 },
+    { cxz_memory: 0, cxz_tasks: 2 },
+  ]);
+  expect([...projected.groups.values()].map((g) => g.events.length)).toEqual([
+    3, 1, 2,
+  ]);
+});
+
+it("counts legacy names and summarized orphan results without parsing large payloads or double counting output records", () => {
+  const legacy = (seq: number, name: string, kind = "tool_call") => ({
+    ...event(seq, kind),
+    text: name,
+  });
+  const explicit = create(SessionEventSchema, {
+    ...event(5, "tool_result", "orphan"),
+    toolSummary: create(ToolSummarySchema, {
+      name: "mcpToolCall",
+      mcpServer: "cxz_tasks",
+      state: "completed",
+    }),
+  });
+  const external = create(SessionEventSchema, {
+    ...event(6, "tool_call"),
+    toolSummary: create(ToolSummarySchema, {
+      name: "mcp__cxz_memory__memory_read",
+      mcpServer: "external",
+    }),
+  });
+  const group = [
+    ...workGroups([
+      legacy(1, "mcp__cxz_memory__memory_read"),
+      legacy(2, "cxz_tasks.task_list"),
+      legacy(3, "cxz_memory_search"),
+      legacy(4, "mcp__cxz_memory__memory_read", "tool_output"),
+      explicit,
+      external,
+      legacy(7, "echo cxz_memory_read"),
+      legacy(8, "mcp__cxz_memory_extra__memory_read"),
+    ]).groups.values(),
+  ][0];
+  expect(group.services).toEqual({ cxz_memory: 2, cxz_tasks: 2 });
 });

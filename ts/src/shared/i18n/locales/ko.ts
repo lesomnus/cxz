@@ -234,6 +234,8 @@ export const messages = {
   "Use the default model": "기본 모델 사용",
   "Set reasoning effort to {effort}": "추론 강도를 {effort}로 변경",
   "Stop response": "응답 정지",
+  "Memory calls": "메모리 호출",
+  "Task calls": "작업 API 호출",
   "Response elapsed time": "응답 경과 시간",
   "Repeat within 3 seconds to stop": "3초 이내 한 번 더 누르면 정지",
   "Click twice or press Esc twice within 3 seconds":
