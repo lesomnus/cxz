@@ -219,7 +219,7 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
   ).toHaveCount(0);
 });
 
-test("work batches split at assistant replies and summaries align right", async ({
+test("work batches split at assistant replies with counts left and elapsed time right", async ({
   page,
 }) => {
   await page.goto(
@@ -239,10 +239,20 @@ test("work batches split at assistant replies and summaries align right", async 
     await summaries.first().evaluate((node) => {
       const time = node.querySelector(".elapsed-time")!.getBoundingClientRect();
       const button = node.querySelector("button")!.getBoundingClientRect();
-      return time.right <= button.left;
+      return button.right <= time.left;
     }),
   ).toBe(true);
   await expect(summaries.first()).toHaveCSS("justify-content", "flex-end");
+  const zeroIcons = summaries.first().locator('[data-empty="true"] svg');
+  await expect(zeroIcons).toHaveCount(2);
+  const activeColor = await summaries
+    .first()
+    .getByRole("button")
+    .locator("svg")
+    .evaluate((icon) => getComputedStyle(icon).color);
+  for (const icon of await zeroIcons.all()) {
+    await expect(icon).not.toHaveCSS("color", activeColor);
+  }
   await summaries.first().getByRole("button").click();
   const dialog = page.getByRole("dialog", {
     name: "Tasks between responses",
@@ -266,7 +276,7 @@ test("work batches split at assistant replies and summaries align right", async 
   );
 });
 
-test("MCP counts share reply boundaries, align left and keep the total details control on the right", async ({
+test("all work counts share reply boundaries and align left of elapsed time", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -320,9 +330,9 @@ test("MCP counts share reply boundaries, align left and keep the total details c
     });
     expect(bounds.memory.x).toBeGreaterThanOrEqual(bounds.left);
     expect(bounds.memory.right).toBeLessThanOrEqual(bounds.tasks.x);
-    expect(bounds.tasks.right).toBeLessThanOrEqual(bounds.duration.x);
-    expect(bounds.duration.right).toBeLessThanOrEqual(bounds.button.x);
-    expect(bounds.button.right).toBeLessThanOrEqual(bounds.right);
+    expect(bounds.tasks.right).toBeLessThanOrEqual(bounds.button.x);
+    expect(bounds.button.right).toBeLessThanOrEqual(bounds.duration.x);
+    expect(bounds.duration.right).toBeLessThanOrEqual(bounds.right);
   }
   const memory = summaries
     .first()

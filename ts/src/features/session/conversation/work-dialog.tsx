@@ -84,7 +84,7 @@ export function WorkSummary({
   );
   return (
     <div className={styles.summary} data-work-summary={id}>
-      <div className={styles.services}>
+      <div className={styles.counters}>
         <ServiceCount
           service="cxz_memory"
           count={services.cxz_memory}
@@ -95,6 +95,26 @@ export function WorkSummary({
           count={services.cxz_tasks}
           partial={partial}
         />
+        <span className="meta-popover">
+          <Button
+            type="button"
+            aria-label={t("View details")}
+            aria-describedby={tooltip}
+            aria-expanded={expanded}
+            aria-controls={expanded ? "work-dialog" : undefined}
+            data-empty={count === 0 || undefined}
+            onClick={(event) => open(event.currentTarget)}
+          >
+            <CategoryIcon />
+            <span className={styles.count} aria-hidden="true">
+              <CompactNumber value={count} mode="integer" digits={3} />
+              <span className={styles.countSuffix}>{partial ? "+" : ""}</span>
+            </span>
+          </Button>
+          <span id={tooltip} className="meta-tooltip" role="tooltip">
+            {countLabel} · {t("View details")}
+          </span>
+        </span>
       </div>
       {durationMs !== undefined && (
         <ElapsedTime
@@ -102,25 +122,6 @@ export function WorkSummary({
           label={t("Response elapsed time")}
         />
       )}
-      <span className="meta-popover">
-        <Button
-          type="button"
-          aria-label={t("View details")}
-          aria-describedby={tooltip}
-          aria-expanded={expanded}
-          aria-controls={expanded ? "work-dialog" : undefined}
-          onClick={(event) => open(event.currentTarget)}
-        >
-          <CategoryIcon />
-          <span className={styles.count} aria-hidden="true">
-            <CompactNumber value={count} mode="integer" digits={3} />
-            <span className={styles.countSuffix}>{partial ? "+" : ""}</span>
-          </span>
-        </Button>
-        <span id={tooltip} className="meta-tooltip" role="tooltip">
-          {countLabel} · {t("View details")}
-        </span>
-      </span>
     </div>
   );
 }

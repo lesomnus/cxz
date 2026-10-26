@@ -19,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Work between conversation replies is summarized in one line: fixed-width cxz_memory and cxz_tasks call counts sit on the left, with elapsed time and the total work count on the right. Counts use projected executions, so output/completion updates do not add calls. Zero values stay dim and preserve the layout. A + marks an incomplete history range. The elapsed time between the surrounding replies precedes the task count; the first batch uses the input timestamp. Missing history boundaries leave the duration hidden. View details opens a full-height dialog with outer gaps, sliding from the right inside the conversation. Only the conversation is dimmed; neighboring panes stay uncovered. The list is virtualized and details load on demand. Close with the button, Escape or the dimmed backdrop.",
+          "Work between conversation replies is summarized in one line: fixed-width cxz_memory, cxz_tasks and total work counts sit on the left, with elapsed time on the right. Counts use projected executions, so output/completion updates do not add calls. Zero-count icons stay dim and counts preserve the layout. A + marks an incomplete history range. Elapsed time measures the gap between surrounding replies; the first batch uses the input timestamp. Missing history boundaries leave the duration hidden. View details opens a full-height dialog with outer gaps, sliding from the right inside the conversation. Only the conversation is dimmed; neighboring panes stay uncovered. The list is virtualized and details load on demand. Close with the button, Escape or the dimmed backdrop.",
       },
     },
   },

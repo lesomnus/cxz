@@ -11,7 +11,7 @@
   min-height: 0;
   padding: var(--space) calc(2 * var(--space));
 }
-.services {
+.counters {
   display: flex;
   align-items: center;
   gap: var(--space);
@@ -24,8 +24,8 @@
   gap: var(--space);
   padding: var(--space) 0;
 }
-.service[data-empty="true"] {
-  color: var(--shade-80);
+.counters [data-empty="true"] svg {
+  color: var(--shade-72);
 }
 .count {
   display: inline-flex;
