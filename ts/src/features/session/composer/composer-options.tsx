@@ -25,6 +25,27 @@ export function ComposerOptions() {
   return (
     <>
       <div className={styles.footer}>
+        <SegmentedControl
+          label={t("Tab input")}
+          size="compact"
+          iconOnly
+          value={editorSettings.insertSpaces ? "spaces" : "tab"}
+          options={[
+            {
+              value: "tab",
+              label: t("Tab character"),
+              icon: <EditorOptionIcon option="indent" pressed={false} />,
+            },
+            {
+              value: "spaces",
+              label: t("Spaces"),
+              icon: <EditorOptionIcon option="indent" pressed />,
+            },
+          ]}
+          onChange={(value) =>
+            toggle("session.editor.insertSpaces", value === "spaces")
+          }
+        />
         <div
           className={styles.toolbar}
           role="toolbar"
@@ -84,27 +105,6 @@ export function ComposerOptions() {
             )}
           </ToggleButton>
         </div>
-        <SegmentedControl
-          label={t("Tab input")}
-          size="compact"
-          iconOnly
-          value={editorSettings.insertSpaces ? "spaces" : "tab"}
-          options={[
-            {
-              value: "tab",
-              label: t("Tab character"),
-              icon: <EditorOptionIcon option="indent" pressed={false} />,
-            },
-            {
-              value: "spaces",
-              label: t("Spaces"),
-              icon: <EditorOptionIcon option="indent" pressed />,
-            },
-          ]}
-          onChange={(value) =>
-            toggle("session.editor.insertSpaces", value === "spaces")
-          }
-        />
       </div>
       {error && (
         <small className={styles.error} role="alert">
