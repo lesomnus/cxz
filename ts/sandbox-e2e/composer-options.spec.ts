@@ -6,7 +6,7 @@ test.use({
   permissions: ["clipboard-read", "clipboard-write"],
 });
 
-test("Tab mode toggle inherits settings, preserves drafts and switches native indentation", async ({
+test("Tab mode segments inherit settings, preserve drafts and switch native indentation", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -35,18 +35,22 @@ test("Tab mode toggle inherits settings, preserves drafts and switches native in
     name: "Editor options",
     exact: true,
   });
-  const toggle = options.getByRole("button", {
-    name: "Insert spaces with Tab",
+  const segments = page.getByRole("radiogroup", {
+    name: "Tab input",
     exact: true,
   });
+  const tab = segments.getByRole("radio", {
+    name: "Tab character",
+    exact: true,
+  });
+  const spaces = segments.getByRole("radio", { name: "Spaces", exact: true });
   await trigger.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await expect(toggle).toHaveAttribute("title", "Insert a tab character");
-  const tabIcon = await toggle.locator("svg").innerHTML();
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", "true");
-  await expect(toggle).toHaveAttribute("title", "Indent 4 spaces");
-  expect(await toggle.locator("svg").innerHTML()).not.toBe(tabIcon);
+  await expect(tab).toBeChecked();
+  await expect(spaces).not.toBeChecked();
+  await expect(segments).toHaveAttribute("data-size", "compact");
+  expect((await segments.boundingBox())!.height).toBe(24);
+  await spaces.check();
+  await expect(spaces).toBeChecked();
   await expect(input).toHaveValue("keep draft");
   expect(
     await input.evaluate((el: HTMLTextAreaElement) => [
@@ -55,13 +59,13 @@ test("Tab mode toggle inherits settings, preserves drafts and switches native in
     ]),
   ).toEqual([0, 4]);
   await expect(options).toBeVisible();
-  await toggle.press("ArrowLeft");
-  await expect(
-    options.getByRole("button", { name: "Word wrap", exact: true }),
-  ).toBeFocused();
-  await page.keyboard.press("End");
-  await expect(toggle).toBeFocused();
-  await toggle.press("Escape");
+  await spaces.press("ArrowLeft");
+  await expect(tab).toBeFocused();
+  await expect(tab).toBeChecked();
+  await tab.press("ArrowRight");
+  await expect(spaces).toBeFocused();
+  await expect(spaces).toBeChecked();
+  await spaces.press("Escape");
   await expect(trigger).toBeFocused();
   await input.focus();
   await input.press("Home");
@@ -71,9 +75,9 @@ test("Tab mode toggle inherits settings, preserves drafts and switches native in
   await input.press("Shift+Tab");
   await expect(input).toHaveValue("keep draft");
   await trigger.click();
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await toggle.press("Escape");
+  await tab.check();
+  await expect(tab).toBeChecked();
+  await tab.press("Escape");
   await input.focus();
   await input.press("Home");
   await input.press("Tab");
@@ -89,8 +93,8 @@ test("Tab mode toggle inherits settings, preserves drafts and switches native in
   await page.reload();
   await expect(input).toHaveValue("\tkeep draft");
   await trigger.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await toggle.press("Escape");
+  await expect(tab).toBeChecked();
+  await tab.press("Escape");
   await input.focus();
   await input.press("Home");
   await input.press("Shift+Tab");

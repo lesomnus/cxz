@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ToggleButton } from "@lesomnus/nox";
+import { SegmentedControl, ToggleButton } from "@lesomnus/nox";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import { resolveEditorSettings } from "#src/shared/settings/editor-settings.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -24,84 +24,87 @@ export function ComposerOptions() {
   }
   return (
     <>
-      <div
-        className={styles.toolbar}
-        role="toolbar"
-        aria-label={t("Editor options")}
-        onKeyDown={(event) => {
-          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
-            return;
-          const buttons = [
-            ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
-              "button:not(:disabled)",
-            ),
-          ];
-          const index = buttons.indexOf(
-            document.activeElement as HTMLButtonElement,
-          );
-          const next =
-            event.key === "Home"
-              ? 0
-              : event.key === "End"
-                ? buttons.length - 1
-                : (index +
-                    (event.key === "ArrowLeft" ? -1 : 1) +
-                    buttons.length) %
-                  buttons.length;
-          event.preventDefault();
-          buttons[next]?.focus();
-        }}
-      >
-        <ToggleButton
-          type="button"
-          variant="toolbar"
-          aria-label={t("Show control characters")}
-          title={t("Show control characters")}
-          pressed={controls}
-          tabIndex={focused === 0 ? 0 : -1}
-          onFocus={() => setFocused(0)}
-          onPressedChange={(pressed) =>
-            toggle("composer.showControlCharacters", pressed)
-          }
+      <div className={styles.footer}>
+        <div
+          className={styles.toolbar}
+          role="toolbar"
+          aria-label={t("Editor options")}
+          onKeyDown={(event) => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
+              return;
+            const buttons = [
+              ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                "button:not(:disabled)",
+              ),
+            ];
+            const index = buttons.indexOf(
+              document.activeElement as HTMLButtonElement,
+            );
+            const next =
+              event.key === "Home"
+                ? 0
+                : event.key === "End"
+                  ? buttons.length - 1
+                  : (index +
+                      (event.key === "ArrowLeft" ? -1 : 1) +
+                      buttons.length) %
+                    buttons.length;
+            event.preventDefault();
+            buttons[next]?.focus();
+          }}
         >
-          {({ pressed }) => (
-            <EditorOptionIcon option="controls" pressed={pressed} />
-          )}
-        </ToggleButton>
-        <ToggleButton
-          type="button"
-          variant="toolbar"
-          aria-label={t("Word wrap")}
-          title={t("Word wrap")}
-          pressed={wrap}
-          tabIndex={focused === 1 ? 0 : -1}
-          onFocus={() => setFocused(1)}
-          onPressedChange={(pressed) => toggle("composer.wordWrap", pressed)}
-        >
-          {({ pressed }) => (
-            <EditorOptionIcon option="wrap" pressed={pressed} />
-          )}
-        </ToggleButton>
-        <ToggleButton
-          type="button"
-          variant="toolbar"
-          aria-label={t("Insert spaces with Tab")}
-          title={
-            editorSettings.insertSpaces
-              ? t("Indent {count} spaces", { count: editorSettings.indentSize })
-              : t("Insert a tab character")
+          <ToggleButton
+            type="button"
+            variant="toolbar"
+            aria-label={t("Show control characters")}
+            title={t("Show control characters")}
+            pressed={controls}
+            tabIndex={focused === 0 ? 0 : -1}
+            onFocus={() => setFocused(0)}
+            onPressedChange={(pressed) =>
+              toggle("composer.showControlCharacters", pressed)
+            }
+          >
+            {({ pressed }) => (
+              <EditorOptionIcon option="controls" pressed={pressed} />
+            )}
+          </ToggleButton>
+          <ToggleButton
+            type="button"
+            variant="toolbar"
+            aria-label={t("Word wrap")}
+            title={t("Word wrap")}
+            pressed={wrap}
+            tabIndex={focused === 1 ? 0 : -1}
+            onFocus={() => setFocused(1)}
+            onPressedChange={(pressed) => toggle("composer.wordWrap", pressed)}
+          >
+            {({ pressed }) => (
+              <EditorOptionIcon option="wrap" pressed={pressed} />
+            )}
+          </ToggleButton>
+        </div>
+        <SegmentedControl
+          label={t("Tab input")}
+          size="compact"
+          iconOnly
+          value={editorSettings.insertSpaces ? "spaces" : "tab"}
+          options={[
+            {
+              value: "tab",
+              label: t("Tab character"),
+              icon: <EditorOptionIcon option="indent" pressed={false} />,
+            },
+            {
+              value: "spaces",
+              label: t("Spaces"),
+              icon: <EditorOptionIcon option="indent" pressed />,
+            },
+          ]}
+          onChange={(value) =>
+            toggle("session.editor.insertSpaces", value === "spaces")
           }
-          pressed={editorSettings.insertSpaces}
-          tabIndex={focused === 2 ? 0 : -1}
-          onFocus={() => setFocused(2)}
-          onPressedChange={(pressed) =>
-            toggle("session.editor.insertSpaces", pressed)
-          }
-        >
-          {({ pressed }) => (
-            <EditorOptionIcon option="indent" pressed={pressed} />
-          )}
-        </ToggleButton>
+        />
       </div>
       {error && (
         <small className={styles.error} role="alert">
