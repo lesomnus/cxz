@@ -48,8 +48,7 @@ test("container links call the file opener without web navigation and external l
     await expect(size).toHaveText("12.3K");
     const sizeBounds = (await size.boundingBox())!;
     const pathBounds = (await hint
-      .locator(":scope > span")
-      .last()
+      .getByText(path, { exact: true })
       .boundingBox())!;
     expect(sizeBounds.x + sizeBounds.width).toBeLessThan(pathBounds.x);
     expect(sizeBounds.y + sizeBounds.height / 2).toBeCloseTo(

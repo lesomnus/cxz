@@ -7,6 +7,7 @@
   padding-inline-start: calc(
     var(--ui-icon-size-small) + 3 * var(--ui-space) + 1px
   );
+  padding-inline-end: calc(1 * var(--ui-space));
   border-radius: var(--ui-space);
   border: 1px solid var(--file-link-border);
   background: transparent;

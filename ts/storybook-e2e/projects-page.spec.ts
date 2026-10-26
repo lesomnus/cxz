@@ -448,9 +448,7 @@ test("full ID hints escape clipped containers and remain inside the viewport", a
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 600 });
-  await page.goto(
-    "/iframe.html?id=components-overflowhint--default&viewMode=story",
-  );
+  await page.goto("/iframe.html?id=components-popover--default&viewMode=story");
   const trigger = page.locator("[tabindex='0']");
   await trigger.hover();
   const hint = page.getByRole("tooltip");
@@ -498,7 +496,7 @@ test("in-place ID overlays keep the text origin and baseline with inherited typo
 }) => {
   await page.setViewportSize({ width: 390, height: 600 });
   await page.goto(
-    "/iframe.html?id=components-overflowhint--in-place&viewMode=story",
+    "/iframe.html?id=components-popover--in-place&viewMode=story",
   );
   const trigger = page.locator("[tabindex='0']");
   await trigger.hover();
