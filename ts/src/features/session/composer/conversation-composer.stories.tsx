@@ -177,7 +177,7 @@ export const PendingSend: Story = {
     docs: {
       description: {
         story:
-          "The editor has a subtle, static monochrome grain for a matte surface. The read-only editor dims while Send awaits acknowledgement. If it takes longer, a subdued gray radial glow breathes from the top center until the request settles. Reduced motion uses a steady glow instead.",
+          "The editor has a subtle, static monochrome grain for a matte surface. The read-only editor dims while Send awaits acknowledgement. A subtle Nox InkSparkle sweep repeats across the input until the request settles. Its theme-aware ink stays behind the text and never intercepts input. Reduced motion keeps a static frame.",
       },
     },
   },

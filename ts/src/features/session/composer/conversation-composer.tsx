@@ -8,7 +8,8 @@ import {
 } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { AudioWaveform, Button } from "@lesomnus/nox";
+import { AudioWaveform, Button, InkSparkle } from "@lesomnus/nox";
+import { useTheme } from "#src/shared/theme/theme.tsx";
 import { ComposerAurora } from "./composer-aurora";
 import { TurnControls } from "./turn-controls";
 import { BackgroundJobsIndicator } from "./background-jobs-indicator";
@@ -87,6 +88,8 @@ export function ConversationComposer({
   onSelectionChange?: (selection: EditorSelection) => void;
 }) {
   useLocale();
+  const theme = useTheme();
+  const inkTone = theme === "light" ? 0 : 1;
   const sendHint = useId();
   const editor = useRef<ComposerEditorHandle>(null);
   const { snapshot } = useSettings();
@@ -237,6 +240,17 @@ export function ConversationComposer({
           data-sending={sending}
           aria-busy={sending}
         >
+          {sending && (
+            <InkSparkle
+              className="composer-pending-ink"
+              loop
+              duration={2400}
+              origin={[-24, -24]}
+              centerMotion="fixed"
+              color={[inkTone, inkTone, inkTone, 0.06]}
+              sparkleColor={[inkTone, inkTone, inkTone, 0.2]}
+            />
+          )}
           <div
             className={microphoneStyles.visualization}
             data-voice-waveform={meter.status}
