@@ -35,7 +35,7 @@
   top: 21%;
 }
 .microphone[aria-pressed="true"] {
-  background: var(--shade-54);
+  background: var(--ui-button-hover-background);
   color: var(--shade-221);
 }
 .hint {

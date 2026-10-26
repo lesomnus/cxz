@@ -2207,7 +2207,7 @@ pre {
 }
 .composer .toolbar-button:not(:disabled):is(:hover, [aria-expanded="true"]),
 .card-close:not(:disabled):hover {
-  background: var(--shade-54);
+  background: var(--ui-button-hover-background);
 }
 .latest-slot {
   position: absolute;
