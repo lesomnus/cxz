@@ -1,5 +1,15 @@
 import { expect, test, type Locator } from "@playwright/test";
 
+async function finishQuestionSlide(question: Locator) {
+  await question.locator(".question-panels").evaluate(async (viewport) => {
+    await Promise.all(
+      [...viewport.children]
+        .flatMap((page) => page.getAnimations())
+        .map((animation) => animation.finished.catch(() => undefined)),
+    );
+  });
+}
+
 async function finishEntrance(dialog: Locator) {
   await dialog.evaluate(async (node) => {
     await Promise.all(
@@ -333,6 +343,72 @@ test("async free-text questions submit structured native keys and only explicit 
   await expect(page.getByRole("status")).toHaveText("Denied");
 });
 
+test("question bodies slide inside a stable card and respect reduced motion", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--long-questions&viewMode=story",
+  );
+  const question = page.getByRole("region", { name: "Question", exact: true });
+  const header = question.locator(".question-header");
+  const footer = question.locator(".question-footer");
+  const original = await question.boundingBox();
+  const headerBefore = await header.boundingBox();
+  const footerBefore = await footer.boundingBox();
+  const motion = await question.evaluate(async (card) => {
+    const viewport = card.querySelector<HTMLElement>(".question-panels")!;
+    card.querySelector<HTMLButtonElement>('[role="tab"]:nth-child(2)')!.click();
+    await new Promise(requestAnimationFrame);
+    const pages = [...viewport.children];
+    const animations = pages
+      .flatMap((page) => page.getAnimations())
+      .filter(
+        (animation) =>
+          animation instanceof CSSTransition &&
+          animation.transitionProperty === "transform",
+      );
+    for (const animation of animations) {
+      animation.pause();
+      animation.currentTime =
+        Number(animation.effect!.getComputedTiming().duration) / 2;
+    }
+    const offset = (index: number) =>
+      new DOMMatrixReadOnly(getComputedStyle(pages[index]).transform).m41;
+    return {
+      animations: animations.length,
+      width: pages[0].getBoundingClientRect().width,
+      outgoing: offset(0),
+      incoming: offset(1),
+      inert: pages.map((page) => page.hasAttribute("inert")),
+    };
+  });
+  expect(motion.animations).toBe(2);
+  expect(motion.outgoing).toBeLessThan(0);
+  expect(motion.outgoing).toBeGreaterThan(-motion.width);
+  expect(motion.incoming).toBeGreaterThan(0);
+  expect(motion.incoming).toBeLessThan(motion.width);
+  expect(motion.inert).toEqual([true, false, true]);
+  expect(await question.boundingBox()).toEqual(original);
+  expect(await header.boundingBox()).toEqual(headerBefore);
+  expect(await footer.boundingBox()).toEqual(footerBefore);
+  await question.locator(".question-page").evaluateAll((pages) => {
+    for (const page of pages)
+      for (const animation of page.getAnimations()) animation.play();
+  });
+  await finishQuestionSlide(question);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await question.getByRole("tab", { name: "Q3", exact: true }).click();
+  await finishQuestionSlide(question);
+  expect(await question.boundingBox()).toEqual(original);
+  expect(
+    await question
+      .locator(".question-page")
+      .evaluateAll(
+        (pages) => pages.flatMap((page) => page.getAnimations()).length,
+      ),
+  ).toBe(0);
+});
+
 test("question tabs preserve choices, draft and undo and submit all steps together", async ({
   page,
 }) => {
@@ -370,6 +446,7 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
     iconBefore!.y + iconBefore!.height / 2,
   );
   await tabs.getByRole("tab", { name: "Q2", exact: true }).click();
+  await finishQuestionSlide(question);
   const answer = question.getByRole("textbox", {
     name: "Answer: Describe any additional changes.",
     exact: true,
@@ -492,6 +569,7 @@ test("question layout keeps the longest height, fixed Other/footer, and option-o
   );
   await next.click();
   await expect(tab("Q2")).toHaveAttribute("aria-selected", "true");
+  await finishQuestionSlide(question);
   expect((await question.boundingBox())!.height).toBeCloseTo(initial.height, 0);
   const options = question.locator(
     '.question-group[data-active="true"] .question-options',

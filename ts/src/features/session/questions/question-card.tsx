@@ -2,7 +2,7 @@ import { useId, useRef, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { Button } from "@lesomnus/nox";
+import { Button, SlidingPages, SlidingPage } from "@lesomnus/nox";
 import { ConfirmButton } from "@lesomnus/nox";
 import {
   FloatingCard,
@@ -136,110 +136,79 @@ export function QuestionCard({
           </Button>
         </header>
       )}
-      <div
+      <SlidingPages
+        value={qs[activeStep]?.key ?? ""}
+        resize="none"
         className={`question-panels ${qs.length ? "question-body" : ""}`}
         id={panel}
         role={qs.length ? "tabpanel" : undefined}
         aria-labelledby={qs.length ? `${prefix}-${activeStep}` : undefined}
       >
         {qs.map((q, index) => (
-          <fieldset
-            key={q.key}
-            className="question-group"
-            aria-labelledby={`${prefix}-question-${index}`}
-            data-active={index === activeStep}
-            aria-hidden={index !== activeStep}
-            inert={index !== activeStep}
-            disabled={busy}
-          >
-            <div className="question-text" id={`${prefix}-question-${index}`}>
-              <Markdown text={q.text} />
-            </div>
-            <ScrollFade viewportClassName="question-options">
-              {q.options.map((o) => (
-                <div
-                  key={o.label}
-                  className="question-option-card"
-                  data-selected={(selected[q.key] ?? []).includes(o.label)}
-                >
-                  <label
-                    className="question-option"
+          <SlidingPage key={q.key} value={q.key} className="question-page">
+            <fieldset
+              className="question-group"
+              aria-labelledby={`${prefix}-question-${index}`}
+              data-active={index === activeStep}
+              disabled={busy}
+            >
+              <div className="question-text" id={`${prefix}-question-${index}`}>
+                <Markdown text={q.text} />
+              </div>
+              <ScrollFade viewportClassName="question-options">
+                {q.options.map((o) => (
+                  <div
+                    key={o.label}
+                    className="question-option-card"
                     data-selected={(selected[q.key] ?? []).includes(o.label)}
                   >
-                    <input
-                      type={q.multi ? "checkbox" : "radio"}
-                      name={`${e.requestId}:${q.key}`}
-                      checked={(selected[q.key] ?? []).includes(o.label)}
-                      onChange={(event) => {
-                        if (!q.multi)
-                          setOther((old) => ({ ...old, [q.key]: "" }));
-                        setSelected((old) => ({
-                          ...old,
-                          [q.key]: q.multi
-                            ? event.target.checked
-                              ? [...(old[q.key] ?? []), o.label]
-                              : (old[q.key] ?? []).filter((x) => x !== o.label)
-                            : [o.label],
-                        }));
-                      }}
-                    />
-                    <span className="question-option-text">
-                      <strong>{o.label}</strong>
-                      {o.description && <small>{o.description}</small>}
-                    </span>
-                  </label>
-                  {o.preview && (
-                    <div className="question-option-preview">
-                      <Markdown text={o.preview} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </ScrollFade>
-            {q.other && (
-              <div
-                className="question-other"
-                data-selected={!!otherAnswer(q.key).trim()}
-              >
-                <span className="question-other-label">
-                  {q.options.length ? t("Other") : t("Answer")}
-                </span>
-                {q.secret ? (
-                  <input
-                    aria-label={t(
-                      q.options.length
-                        ? "Other answer: {question}"
-                        : "Answer: {question}",
-                      {
-                        question: q.text,
-                      },
+                    <label
+                      className="question-option"
+                      data-selected={(selected[q.key] ?? []).includes(o.label)}
+                    >
+                      <input
+                        type={q.multi ? "checkbox" : "radio"}
+                        name={`${e.requestId}:${q.key}`}
+                        checked={(selected[q.key] ?? []).includes(o.label)}
+                        onChange={(event) => {
+                          if (!q.multi)
+                            setOther((old) => ({ ...old, [q.key]: "" }));
+                          setSelected((old) => ({
+                            ...old,
+                            [q.key]: q.multi
+                              ? event.target.checked
+                                ? [...(old[q.key] ?? []), o.label]
+                                : (old[q.key] ?? []).filter(
+                                    (x) => x !== o.label,
+                                  )
+                              : [o.label],
+                          }));
+                        }}
+                      />
+                      <span className="question-option-text">
+                        <strong>{o.label}</strong>
+                        {o.description && <small>{o.description}</small>}
+                      </span>
+                    </label>
+                    {o.preview && (
+                      <div className="question-option-preview">
+                        <Markdown text={o.preview} />
+                      </div>
                     )}
-                    type="password"
-                    value={other[q.key] ?? ""}
-                    onKeyDown={(event) => {
-                      if (
-                        event.ctrlKey &&
-                        event.key === "Enter" &&
-                        !event.nativeEvent.isComposing
-                      ) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        if (!event.repeat) answerShortcut();
-                      }
-                    }}
-                    onChange={(event) => {
-                      if (!q.multi)
-                        setSelected((old) => ({ ...old, [q.key]: [] }));
-                      setOther((old) => ({
-                        ...old,
-                        [q.key]: event.target.value,
-                      }));
-                    }}
-                  />
-                ) : (
-                  <div className="question-other-editor">
-                    <ComposerEditor
-                      ariaLabel={t(
+                  </div>
+                ))}
+              </ScrollFade>
+              {q.other && (
+                <div
+                  className="question-other"
+                  data-selected={!!otherAnswer(q.key).trim()}
+                >
+                  <span className="question-other-label">
+                    {q.options.length ? t("Other") : t("Answer")}
+                  </span>
+                  {q.secret ? (
+                    <input
+                      aria-label={t(
                         q.options.length
                           ? "Other answer: {question}"
                           : "Answer: {question}",
@@ -247,23 +216,57 @@ export function QuestionCard({
                           question: q.text,
                         },
                       )}
-                      placeholder={t("Type your answer…")}
+                      type="password"
                       value={other[q.key] ?? ""}
-                      pastes={pastes}
-                      onSubmitShortcut={answerShortcut}
-                      onChange={(value) => {
+                      onKeyDown={(event) => {
+                        if (
+                          event.ctrlKey &&
+                          event.key === "Enter" &&
+                          !event.nativeEvent.isComposing
+                        ) {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          if (!event.repeat) answerShortcut();
+                        }
+                      }}
+                      onChange={(event) => {
                         if (!q.multi)
                           setSelected((old) => ({ ...old, [q.key]: [] }));
-                        setOther((old) => ({ ...old, [q.key]: value }));
+                        setOther((old) => ({
+                          ...old,
+                          [q.key]: event.target.value,
+                        }));
                       }}
                     />
-                  </div>
-                )}
-              </div>
-            )}
-          </fieldset>
+                  ) : (
+                    <div className="question-other-editor">
+                      <ComposerEditor
+                        ariaLabel={t(
+                          q.options.length
+                            ? "Other answer: {question}"
+                            : "Answer: {question}",
+                          {
+                            question: q.text,
+                          },
+                        )}
+                        placeholder={t("Type your answer…")}
+                        value={other[q.key] ?? ""}
+                        pastes={pastes}
+                        onSubmitShortcut={answerShortcut}
+                        onChange={(value) => {
+                          if (!q.multi)
+                            setSelected((old) => ({ ...old, [q.key]: [] }));
+                          setOther((old) => ({ ...old, [q.key]: value }));
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </fieldset>
+          </SlidingPage>
         ))}
-      </div>
+      </SlidingPages>
       {requiresForm && (
         <p>
           {t(

@@ -3016,8 +3016,8 @@ summary:hover {
   display: none;
 }
 
-/* All question panels occupy the same grid cell so the longest question sizes
-   the card. Inactive panels keep their editors mounted without receiving focus. */
+/* Keep every sliding page in one grid cell so the tallest question reserves
+   the card's height. SlidingPages owns transitions and inactive-page access. */
 .question-cards > .question-card {
   max-height: min(var(--question-max-height, 50dvh), var(--card-max-height));
   flex-shrink: 0;
@@ -3060,16 +3060,19 @@ summary:hover {
   grid-template-rows: minmax(0, 1fr);
   min-height: 0;
 }
+.question-card .question-panels > .question-page {
+  position: relative;
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: auto;
+}
 .question-card .question-group {
   grid-area: 1 / 1;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: 0;
   margin: 0;
-}
-.question-group[data-active="false"] {
-  visibility: hidden;
-  pointer-events: none;
 }
 .question-text {
   margin: 0 0 var(--space);
