@@ -1,17 +1,20 @@
 :global(.markdown) a.link {
+  --file-link-border: var(--ui-shade-65);
   position: relative;
   display: inline-block;
   max-width: 100%;
   padding: 0 calc(1.5 * var(--ui-space));
-  padding-inline-start: calc(var(--ui-icon-size-small) + 2 * var(--ui-space));
+  padding-inline-start: calc(
+    var(--ui-icon-size-small) + 3 * var(--ui-space) + 1px
+  );
   border-radius: var(--ui-space);
-  border: 1px solid currentColor;
-  background: var(--ui-shade-32);
+  border: 1px solid var(--file-link-border);
+  background: transparent;
   color: inherit;
   font: inherit;
   text-decoration: none;
   overflow-wrap: anywhere;
-  transition: background-color 120ms;
+  transition: border-color 120ms;
 }
 :global(.markdown) a.link::before {
   content: "";
@@ -30,9 +33,17 @@
   background: transparent;
   font: inherit;
 }
+:global(.markdown) a.link::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(var(--ui-icon-size-small) + 2 * var(--ui-space));
+  inset-block: var(--ui-space);
+  width: 1px;
+  background: var(--file-link-border);
+}
 :global(.markdown) a.link:hover,
 :global(.markdown) a.link:focus-visible {
-  background: var(--ui-shade-48);
+  border-color: var(--ui-shade-115);
 }
 @media (prefers-reduced-motion: reduce) {
   :global(.markdown) a.link {

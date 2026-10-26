@@ -75,7 +75,7 @@ export const FileLinks: Story = {
     docs: {
       description: {
         story:
-          "Container file chips inherit body typography and color, with a matching border and small file icon. Hover or keyboard focus shows the full container path and byte size in a portaled tooltip. Size lookup is lazy and the session caches successful results briefly; production reads only the download size header before canceling. This story simulates file sizes. Session pages open absolute container paths, source references with line/column suffixes, and local file URIs in the workspace editor through the session's project API. External websites retain ordinary hyperlinks and open in a new tab; other URI schemes retain the sanitizer's restrictions.",
+          "Container file chips inherit body typography and text color, with a transparent background, muted outline and vertical separator between file icon and label. The one-line tooltip uses Nox MenuSurface and shows a fixed-width CompactNumber byte size before the container path on hover or keyboard focus. Size lookup is lazy and the session caches successful results briefly; production reads only the download size header before canceling. This story simulates file sizes. Session pages open absolute container paths, source references with line/column suffixes, and local file URIs in the workspace editor through the session's project API. External websites retain ordinary hyperlinks and open in a new tab; other URI schemes retain the sanitizer's restrictions.",
       },
     },
   },

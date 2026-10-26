@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { MenuSurface } from "@lesomnus/nox";
+import { CompactNumber, MenuSurface } from "@lesomnus/nox";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { FileSizeReader } from "./file-size";
@@ -90,14 +90,22 @@ export function FileLinkHint({
         lineHeight: 1.5,
       }}
     >
-      <span className={styles.path}>{path}</span>
-      <span className={styles.size}>
-        {size !== undefined
-          ? t("{size} bytes", { size: size.toLocaleString(locale) })
-          : failed
-            ? t("Size unavailable")
-            : t("Loading…")}
+      <span className={styles.size} aria-busy={size === undefined && !failed}>
+        <CompactNumber
+          value={size === undefined ? NaN : Number(size)}
+          label={
+            size !== undefined
+              ? t("{size} bytes", { size: size.toLocaleString(locale) })
+              : failed
+                ? t("Size unavailable")
+                : t("Loading…")
+          }
+        />
+        <span className={styles.unit} aria-hidden="true">
+          B
+        </span>
       </span>
+      <span className={styles.path}>{path}</span>
     </MenuSurface>
   );
 }

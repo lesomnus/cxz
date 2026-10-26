@@ -21,7 +21,7 @@ test("container links call the file opener without web navigation and external l
     const link = page.getByRole("link", { name, exact: true });
     await expect(link).not.toHaveAttribute("target", "_blank");
     await expect(link).toHaveCSS("text-decoration-line", "none");
-    await expect(link).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(link).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     expect(
       await link.evaluate((el) => getComputedStyle(el, "::before").maskImage),
     ).not.toBe("none");
@@ -31,16 +31,31 @@ test("container links call the file opener without web navigation and external l
       return {
         chip: [chip.fontFamily, chip.fontSize, chip.lineHeight, chip.color],
         body: [body.fontFamily, body.fontSize, body.lineHeight, body.color],
-        border: chip.borderTopColor,
+        border: chip.borderTopWidth,
+        borderColor: chip.borderTopColor,
+        separator: getComputedStyle(el, "::after").backgroundColor,
         color: chip.color,
       };
     });
     expect(textStyle.chip).toEqual(textStyle.body);
-    expect(textStyle.border).toBe(textStyle.color);
+    expect(textStyle.border).toBe("1px");
+    expect(textStyle.separator).toBe(textStyle.borderColor);
+    expect(textStyle.separator).not.toBe(textStyle.color);
     await link.hover();
     const hint = page.getByRole("tooltip");
     await expect(hint).toContainText(path);
-    await expect(hint).toContainText("12,345 bytes");
+    const size = hint.getByRole("img", { name: "12,345 bytes", exact: true });
+    await expect(size).toHaveText("12.3K");
+    const sizeBounds = (await size.boundingBox())!;
+    const pathBounds = (await hint
+      .locator(":scope > span")
+      .last()
+      .boundingBox())!;
+    expect(sizeBounds.x + sizeBounds.width).toBeLessThan(pathBounds.x);
+    expect(sizeBounds.y + sizeBounds.height / 2).toBeCloseTo(
+      pathBounds.y + pathBounds.height / 2,
+      0,
+    );
     await link.click();
     await expect(hint).toHaveCount(0);
     await expect(output).toHaveText(path);

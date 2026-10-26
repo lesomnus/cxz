@@ -1,16 +1,25 @@
 .hint {
   position: fixed;
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
   z-index: 1000;
   width: max-content;
-  max-width: min(620px, calc(100vw - 4 * var(--ui-space)));
+  max-width: calc(100vw - 4 * var(--ui-space));
   padding: calc(2 * var(--ui-space));
   pointer-events: none;
 }
 .path {
-  display: block;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .size {
-  display: block;
-  color: var(--ui-muted);
+  display: inline-flex;
+  flex: none;
+  white-space: nowrap;
+}
+.unit {
+  color: var(--ui-text-separator);
 }

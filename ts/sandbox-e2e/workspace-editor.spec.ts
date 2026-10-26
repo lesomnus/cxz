@@ -44,7 +44,9 @@ test("conversation file links preview the session container without navigating t
       .getByRole("tooltip")
       .filter({ hasText: "/workspace/" });
     await expect(fileHint).toBeVisible();
-    await expect(fileHint).toContainText(/[\d,]+ bytes/);
+    await expect(
+      fileHint.getByRole("img", { name: /^[\d,]+ bytes$/ }),
+    ).toBeVisible();
     await expect(editor).toBeHidden();
     await link.click();
     await expect(editor).toBeVisible();
