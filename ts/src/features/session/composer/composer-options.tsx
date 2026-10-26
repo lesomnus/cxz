@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ToggleButton } from "@lesomnus/nox";
 import { useSettings } from "#src/shared/settings/settings.ts";
+import { resolveEditorSettings } from "#src/shared/settings/editor-settings.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./composer-options.module.css";
@@ -12,6 +13,7 @@ export function ComposerOptions() {
   const [focused, setFocused] = useState(0);
   const controls = snapshot.document["composer.showControlCharacters"] === true;
   const wrap = snapshot.document["composer.wordWrap"] !== false;
+  const editorSettings = resolveEditorSettings(snapshot.document, "session");
   function toggle(key: string, value: boolean) {
     try {
       store.set(key, value);
@@ -80,6 +82,26 @@ export function ComposerOptions() {
             <EditorOptionIcon option="wrap" pressed={pressed} />
           )}
         </ToggleButton>
+        <ToggleButton
+          type="button"
+          variant="toolbar"
+          aria-label={t("Insert spaces with Tab")}
+          title={
+            editorSettings.insertSpaces
+              ? t("Indent {count} spaces", { count: editorSettings.indentSize })
+              : t("Insert a tab character")
+          }
+          pressed={editorSettings.insertSpaces}
+          tabIndex={focused === 2 ? 0 : -1}
+          onFocus={() => setFocused(2)}
+          onPressedChange={(pressed) =>
+            toggle("session.editor.insertSpaces", pressed)
+          }
+        >
+          {({ pressed }) => (
+            <EditorOptionIcon option="indent" pressed={pressed} />
+          )}
+        </ToggleButton>
       </div>
       {error && (
         <small className={styles.error} role="alert">
@@ -94,7 +116,7 @@ function EditorOptionIcon({
   option,
   pressed,
 }: {
-  option: "controls" | "wrap";
+  option: "controls" | "wrap" | "indent";
   pressed: boolean;
 }) {
   return (
@@ -114,6 +136,24 @@ function EditorOptionIcon({
           <path d="M11 16V4H8a3 3 0 0 0 0 6h3m3-6v12M8 4h8" />
           {!pressed && <path d="m3 3 14 14" />}
         </>
+      ) : option === "indent" ? (
+        pressed ? (
+          <>
+            <path d="M3 5v10m14-10v10" />
+            {[6, 10, 14].map((x) => (
+              <circle
+                key={x}
+                cx={x}
+                cy="10"
+                r="0.8"
+                fill="currentColor"
+                stroke="none"
+              />
+            ))}
+          </>
+        ) : (
+          <path d="M3 10h11m-4-4 4 4-4 4m7-10v12" />
+        )
       ) : pressed ? (
         <path d="M3 4h14M3 9h11a3 3 0 0 1 0 6h-4m3-3-3 3 3 3M3 14h3" />
       ) : (

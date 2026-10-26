@@ -6,6 +6,97 @@ test.use({
   permissions: ["clipboard-read", "clipboard-write"],
 });
 
+test("Tab mode toggle inherits settings, preserves drafts and switches native indentation", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    // Seed only once, so a reload checks the override saved by the toggle.
+    if (!localStorage.getItem("settings")) {
+      localStorage.setItem(
+        "settings",
+        JSON.stringify({
+          "editor.insertSpaces": false,
+          "editor.indentSize": 4,
+          "editor.tabSize": 8,
+        }),
+      );
+    }
+  });
+  await page.goto("/sandbox.html#/sessions/session-1");
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await expect(input).toBeEditable({ timeout: 45000 });
+  await input.fill("keep draft");
+  await input.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(0, 4));
+  const trigger = page.getByRole("button", {
+    name: "Session menu",
+    exact: true,
+  });
+  const options = page.getByRole("toolbar", {
+    name: "Editor options",
+    exact: true,
+  });
+  const toggle = options.getByRole("button", {
+    name: "Insert spaces with Tab",
+    exact: true,
+  });
+  await trigger.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await expect(toggle).toHaveAttribute("title", "Insert a tab character");
+  const tabIcon = await toggle.locator("svg").innerHTML();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await expect(toggle).toHaveAttribute("title", "Indent 4 spaces");
+  expect(await toggle.locator("svg").innerHTML()).not.toBe(tabIcon);
+  await expect(input).toHaveValue("keep draft");
+  expect(
+    await input.evaluate((el: HTMLTextAreaElement) => [
+      el.selectionStart,
+      el.selectionEnd,
+    ]),
+  ).toEqual([0, 4]);
+  await expect(options).toBeVisible();
+  await toggle.press("ArrowLeft");
+  await expect(
+    options.getByRole("button", { name: "Word wrap", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(toggle).toBeFocused();
+  await toggle.press("Escape");
+  await expect(trigger).toBeFocused();
+  await input.focus();
+  await input.press("Home");
+  await input.press("Tab");
+  await expect(input).toHaveValue("    keep draft");
+  await expect(input).toHaveCSS("tab-size", "8");
+  await input.press("Shift+Tab");
+  await expect(input).toHaveValue("keep draft");
+  await trigger.click();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await toggle.press("Escape");
+  await input.focus();
+  await input.press("Home");
+  await input.press("Tab");
+  await expect(input).toHaveValue("\tkeep draft");
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem("settings")!)),
+  ).toEqual({
+    "editor.insertSpaces": false,
+    "editor.indentSize": 4,
+    "editor.tabSize": 8,
+    "session.editor.insertSpaces": false,
+  });
+  await page.reload();
+  await expect(input).toHaveValue("\tkeep draft");
+  await trigger.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await toggle.press("Escape");
+  await input.focus();
+  await input.press("Home");
+  await input.press("Shift+Tab");
+  await expect(input).toHaveValue("keep draft");
+});
+
 for (const wordWrap of [true, false]) {
   test(`control characters remain visible through Korean IME composition (wrap=${wordWrap})`, async ({
     page,
