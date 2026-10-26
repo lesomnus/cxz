@@ -86,10 +86,7 @@
   --ui-scroll-area-background: var(--shade-22);
 }
 .card {
-  --task-card-radius: max(
-    0px,
-    calc(var(--wrapper-radius) - var(--control-inset))
-  );
+  --task-card-radius: max(0px, calc(var(--wrapper-radius) + var(--space) / 2));
   --task-card-heading-height: 12px;
   --task-card-dot-size: 6px;
   background: var(--shade-27);
@@ -178,9 +175,8 @@
   color: var(--muted);
   text-decoration: none;
   font-family: var(--ui-font-mono);
-  border-radius: max(0px, calc(var(--task-card-radius) - 1px - var(--space)));
 }
-.ownerLabel {
+.owner > :global(.button-content) {
   display: flex;
   align-items: center;
   gap: var(--space);
@@ -188,7 +184,7 @@
 .owner:hover {
   color: var(--shade-237);
 }
-.ownerLabel > span:last-child {
+.owner span:not(:global(.agent-brand)) {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
