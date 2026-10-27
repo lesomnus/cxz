@@ -28,15 +28,12 @@ function ServiceCount({
   count: number;
   partial: boolean;
 }) {
-  const tooltip = useId();
   const label = t(service === "cxz_memory" ? "Memory calls" : "Task calls");
   return (
-    <span
-      className={`meta-popover ${styles.service}`}
-      tabIndex={0}
-      role="img"
+    <Button
+      type="button"
+      className={styles.service}
       aria-label={`${label}: ${count}${partial ? "+" : ""}`}
-      aria-describedby={tooltip}
       data-work-service={service}
       data-empty={count === 0 || undefined}
     >
@@ -47,11 +44,7 @@ function ServiceCount({
         <CompactNumber value={count} mode="integer" digits={3} />
         <span className={styles.countSuffix}>{partial ? "+" : ""}</span>
       </span>
-      <span id={tooltip} className="meta-tooltip" role="tooltip">
-        {service} · {count}
-        {partial ? "+" : ""}
-      </span>
-    </span>
+    </Button>
   );
 }
 
@@ -73,7 +66,6 @@ export function WorkSummary({
   partial?: boolean;
 }) {
   useLocale();
-  const tooltip = useId();
   const countLabel = t(
     partial
       ? "{count}+ tasks performed"
@@ -85,26 +77,21 @@ export function WorkSummary({
   return (
     <div className={styles.summary} data-work-summary={id}>
       <div className={styles.counters}>
-        <span className="meta-popover">
-          <Button
-            type="button"
-            aria-label={t("View details")}
-            aria-describedby={tooltip}
-            aria-expanded={expanded}
-            aria-controls={expanded ? "work-dialog" : undefined}
-            data-empty={count === 0 || undefined}
-            onClick={(event) => open(event.currentTarget)}
-          >
-            <CategoryIcon />
-            <span className={styles.count} aria-hidden="true">
-              <CompactNumber value={count} mode="integer" digits={3} />
-              <span className={styles.countSuffix}>{partial ? "+" : ""}</span>
-            </span>
-          </Button>
-          <span id={tooltip} className="meta-tooltip" role="tooltip">
-            {countLabel} · {t("View details")}
+        <Button
+          type="button"
+          aria-label={t("View details")}
+          aria-description={countLabel}
+          aria-expanded={expanded}
+          aria-controls={expanded ? "work-dialog" : undefined}
+          data-empty={count === 0 || undefined}
+          onClick={(event) => open(event.currentTarget)}
+        >
+          <CategoryIcon />
+          <span className={styles.count} aria-hidden="true">
+            <CompactNumber value={count} mode="integer" digits={3} />
+            <span className={styles.countSuffix}>{partial ? "+" : ""}</span>
           </span>
-        </span>
+        </Button>
         <ServiceCount
           service="cxz_memory"
           count={services.cxz_memory}

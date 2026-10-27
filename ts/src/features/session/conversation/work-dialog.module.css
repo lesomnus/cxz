@@ -19,10 +19,6 @@
 }
 .service {
   --ui-icon-size: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space);
-  padding: var(--space) 0;
 }
 .counters [data-empty="true"] svg {
   color: var(--shade-72);
@@ -34,14 +30,6 @@
 }
 .countSuffix {
   width: 1ch;
-}
-.counters :global(.meta-tooltip) {
-  left: 0;
-  right: auto;
-}
-.summary :global(.meta-popover):focus-within :global(.meta-tooltip) {
-  opacity: 1;
-  visibility: visible;
 }
 .layout {
   --ui-scroll-area-background: var(--ui-dialog-body-background);

@@ -53,7 +53,10 @@ test("task details and replacing paste previews preserve the transcript and draf
   await input.pressSequentially(" ");
   await paste(page, "another\npaste\nbody\nhere");
   const draft = await input.inputValue();
-  const trigger = page.locator("[data-work-summary] button").last();
+  const trigger = page
+    .locator("[data-work-summary]")
+    .getByRole("button", { name: "View details", exact: true })
+    .last();
   const geometry = () =>
     page
       .locator(".transcript")
