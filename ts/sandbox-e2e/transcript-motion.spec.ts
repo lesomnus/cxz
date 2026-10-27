@@ -183,7 +183,10 @@ test("live additions glide existing rows and reveal new cards faster without cha
     previous!,
   );
   await expect(page.locator(".transcript .tool-activity")).toHaveCount(0);
-  await summaries.last().getByRole("button").click();
+  await summaries
+    .last()
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
   await expect(dialog.locator(".tool-activity").last()).toBeVisible();
   await expect(dialog.locator(".tool-activity").last()).toHaveCSS(
