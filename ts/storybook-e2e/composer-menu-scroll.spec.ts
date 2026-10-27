@@ -160,7 +160,7 @@ for (const deviceScaleFactor of [1, 1.5]) {
 }
 
 for (const width of [1280, 390]) {
-  test(`composer menu scrollbar stays close to its border at width ${width}`, async ({
+  test(`composer menu scrollbar stays outside its visible border at width ${width}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 400 });
@@ -191,13 +191,14 @@ for (const width of [1280, 390]) {
       1,
     );
     const bar = (await handle.boundingBox())!;
-    const areaBox = (await area.boundingBox())!;
-    expect(bar.x + bar.width / 2 - areaBox.x - areaBox.width).toBeCloseTo(1, 1);
+    expect(bar.x).toBeGreaterThan(frame.x + frame.width);
     expect(bar.x + bar.width).toBeLessThan(width);
     const footer = popup.locator('[data-menu-fixed="footer"]');
     const fixed = await footer.boundingBox();
     await page.mouse.move(bar.x + bar.width / 2, bar.y + bar.height / 2);
     await expect(handle).toHaveCSS("opacity", "1");
+    const expanded = (await handle.boundingBox())!;
+    expect(expanded.x - frame.x - frame.width).toBeCloseTo(1, 1);
     expect(
       await handle.evaluate((node) => {
         const box = node.getBoundingClientRect();
