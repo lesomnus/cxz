@@ -1046,18 +1046,15 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
           )
         }
         onReadingMove={(delta) => {
-          if (followRef.current) return;
+          if (followRef.current || latestTravel.current.shown) return;
           const travel = latestTravel.current;
-          // Measure from the furthest position in the opposite direction. Small
-          // reversals consume the accumulated distance instead of toggling UI.
-          travel.distance = Math.max(
-            0,
-            travel.distance + (travel.shown ? delta : -delta),
-          );
+          // Reveal after deliberate upward reading. Once shown, keep the jump
+          // available through direction changes until bottom-follow resets it.
+          travel.distance = Math.max(0, travel.distance - delta);
           if (travel.distance < 96) return;
-          travel.shown = !travel.shown;
+          travel.shown = true;
           travel.distance = 0;
-          setLatestShown(travel.shown);
+          setLatestShown(true);
         }}
         onTension={(stretch) => {
           tension.current = stretch;
