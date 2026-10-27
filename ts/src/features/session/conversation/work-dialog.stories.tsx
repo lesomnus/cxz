@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { create } from "@bufbuild/protobuf";
+import { SessionEventSchema, ToolSummarySchema } from "#gen/cxz/session_pb";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 import {
@@ -17,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Work between conversation replies is summarized on the right of the reading column. The elapsed time between the surrounding replies precedes the task count; the first batch uses the input timestamp. Missing history boundaries leave the duration hidden. View details opens a full-height dialog with outer gaps, sliding from the right inside the conversation. Only the conversation is dimmed; neighboring panes stay uncovered. The list is virtualized and details load on demand. Close with the button, Escape or the dimmed backdrop.",
+          "Work between conversation replies is summarized in one line: fixed-width total work, cxz_memory and cxz_tasks counts sit on the left in that order, with elapsed time on the right. All three counters share the same button surface without popovers. Only total work opens details; Memory and Tasks buttons have no action. Counts use projected executions, so output/completion updates do not add calls. Zero-count icons stay dim and counts preserve the layout. A + marks an incomplete history range. Elapsed time measures the gap between surrounding replies; the first batch uses the input timestamp. Missing history boundaries leave the duration hidden. View details opens a full-height dialog with outer gaps, sliding from the right inside the conversation. Only the conversation is dimmed; neighboring panes stay uncovered. The list is virtualized and details load on demand. Close with the button, Escape or the dimmed backdrop.",
       },
     },
   },
@@ -170,6 +172,92 @@ export const MixedActivity: Story = {
         9,
         "codex",
         "Work is recorded in the task dialog; the error remains visible.",
+      ),
+    ],
+  },
+};
+
+const mcpCall = (seq: number, server: string, tool: string) =>
+  create(SessionEventSchema, {
+    ...storyEvent(seq, "tool_call", "mcpToolCall"),
+    requestId: `mcp-${seq}`,
+    toolSummary: create(ToolSummarySchema, {
+      name: `${server}.${tool}`,
+      mcpServer: server,
+      state: "completed",
+    }),
+  });
+export const MemoryAndTaskCalls: Story = {
+  args: {
+    events: [
+      storyEvent(
+        1,
+        "input",
+        "Review shared memory and coordinate the project tasks.",
+      ),
+      storyEvent(
+        2,
+        "assistant",
+        "I'll read the project notes and check the current tasks.",
+      ),
+      mcpCall(3, "cxz_memory", "memory_read"),
+      mcpCall(4, "cxz_memory", "memory_search"),
+      mcpCall(5, "cxz_tasks", "task_list"),
+      { ...toolEvents()[0], seq: 6n, requestId: "shell-check" },
+      storyEvent(
+        7,
+        "assistant",
+        "The notes are clear. I'll register the next step and update memory.",
+      ),
+      mcpCall(8, "cxz_memory", "memory_update"),
+      mcpCall(9, "cxz_tasks", "task_add"),
+      mcpCall(10, "cxz_tasks", "task_claim"),
+      responseEvent(
+        11,
+        "codex",
+        "The follow-up work is registered and the shared notes are updated.",
+      ),
+    ].map((e) => ({ ...e, timeMs: 1710000000000n + e.seq * 2000n })),
+  },
+};
+
+// Real Codex permission history: these requests can be the only recorded trace
+// of a builtin MCP call, rather than mcpToolCall rows with a ToolSummary.
+const mcpPermission = (
+  seq: number,
+  server: string,
+  state?: string,
+  toolCheck = true,
+) =>
+  storyEvent(seq, "approval", "mcpServer/elicitation/request", {
+    method: "mcpServer/elicitation/request",
+    params: {
+      serverName: server,
+      mode: "form",
+      _meta: toolCheck ? { codex_approval_kind: "mcp_tool_call" } : {},
+      message: `Allow ${server} to run a tool?`,
+      requestedSchema: { type: "object", properties: {} },
+    },
+    ...(state ? { cxz_resolution: { state } } : {}),
+  });
+
+export const McpPermissionHistory: Story = {
+  args: {
+    events: [
+      storyEvent(
+        1,
+        "input",
+        "Read project notes and coordinate the next task.",
+      ),
+      mcpPermission(2, "cxz_memory", "allowed"),
+      mcpPermission(3, "cxz_tasks", "allowed"),
+      mcpPermission(4, "external", "allowed"),
+      mcpPermission(5, "cxz_memory", "allowed", false),
+      mcpPermission(6, "cxz_tasks"),
+      responseEvent(
+        7,
+        "codex",
+        "The builtin tool checks are grouped; other decisions remain visible.",
       ),
     ],
   },

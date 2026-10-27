@@ -1,5 +1,4 @@
 .summary {
-  --work-count-width: 3ch;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -12,23 +11,25 @@
   min-height: 0;
   padding: var(--space) calc(2 * var(--space));
 }
+.counters {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  margin-inline-end: auto;
+}
+.service {
+  --ui-icon-size: 16px;
+}
+.counters [data-empty="true"] svg {
+  color: var(--shade-72);
+}
 .count {
   display: inline-flex;
   font-family: var(--ui-font-mono);
   font-variant-numeric: tabular-nums;
 }
-.countValue {
-  width: var(--work-count-width);
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .countSuffix {
   width: 1ch;
-}
-.summary :global(.meta-popover):focus-within :global(.meta-tooltip) {
-  opacity: 1;
-  visibility: visible;
 }
 .layout {
   --ui-scroll-area-background: var(--ui-dialog-body-background);

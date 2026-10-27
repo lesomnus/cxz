@@ -1,5 +1,5 @@
 import type { SessionEvent } from "#gen/cxz/session_pb";
-import { isTranscriptEvent } from "./journal";
+import { isTranscriptEvent, payload } from "./journal";
 import { isDiagnosticEvent } from "./event-diagnostic";
 
 export type WorkGroup = {
@@ -8,7 +8,44 @@ export type WorkGroup = {
   events: SessionEvent[];
   hasBoundary: boolean;
   durationMs?: number;
+  services: Record<"cxz_memory" | "cxz_tasks", number>;
 };
+
+// Codex also records MCP tool permission checks as elicitations, without a
+// corresponding tool row. Only settled tool checks belong in task history;
+// pending decisions and genuine MCP forms/URL requests stay in the conversation.
+function resolvedMcpService(event: SessionEvent) {
+  if (
+    event.kind !== "approval" ||
+    event.text !== "mcpServer/elicitation/request"
+  )
+    return;
+  const data = payload(event);
+  if (
+    data.params?.mode !== "form" ||
+    data.params?._meta?.codex_approval_kind !== "mcp_tool_call" ||
+    !["allowed", "denied", "canceled"].includes(data.cxz_resolution?.state)
+  )
+    return;
+  const server: unknown = data.params?.serverName;
+  return server === "cxz_memory" || server === "cxz_tasks" ? server : undefined;
+}
+
+function workService(event: SessionEvent) {
+  const service = resolvedMcpService(event);
+  if (service) return service;
+  if (!event.toolSummary && event.kind !== "tool_call") return;
+  const server = event.toolSummary?.mcpServer;
+  if (server)
+    return server === "cxz_memory" || server === "cxz_tasks"
+      ? server
+      : undefined;
+  // Older Claude rows already carry the server in their native tool name.
+  const name = event.toolSummary?.name || event.text;
+  const match =
+    /^(?:mcp__(cxz_memory|cxz_tasks)__|(cxz_memory|cxz_tasks)[._])/.exec(name);
+  return (match?.[1] ?? match?.[2]) as "cxz_memory" | "cxz_tasks" | undefined;
+}
 // Keep conversation and actionable/important notices visible. Everything else
 // belongs in the work dialog, including provider-specific and future work kinds.
 const conversationKinds = new Set([
@@ -19,7 +56,7 @@ const conversationKinds = new Set([
 ]);
 export const isWorkEvent = (event: SessionEvent) =>
   isTranscriptEvent(event) &&
-  !conversationKinds.has(event.kind) &&
+  (!conversationKinds.has(event.kind) || !!resolvedMcpService(event)) &&
   !isDiagnosticEvent(event) &&
   !(
     event.kind === "turn_end" && ["failed", "interrupted"].includes(event.text)
@@ -43,6 +80,7 @@ export function workGroups(events: SessionEvent[]) {
           anchor: event,
           events: [],
           hasBoundary: boundaries.has(event.runId),
+          services: { cxz_memory: 0, cxz_tasks: 0 },
         };
         active.set(event.runId, group);
         groups.set(group.id, group);
@@ -50,6 +88,8 @@ export function workGroups(events: SessionEvent[]) {
         rows.push(event);
       }
       group.events.push(event);
+      const service = workService(event);
+      if (service) group.services[service]++;
     } else rows.push(event);
     if (["input", "assistant", "turn_end"].includes(event.kind)) {
       const group = active.get(event.runId);

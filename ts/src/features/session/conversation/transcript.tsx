@@ -141,6 +141,7 @@ export function Transcript({
         <WorkSummary
           id={group.id}
           count={group.events.length}
+          services={group.services}
           durationMs={group.durationMs}
           expanded={activeWork === group && !workClosing}
           partial={!group.hasBoundary && !!workHistory?.hasOlder}

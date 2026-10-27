@@ -41,10 +41,9 @@ test("background count follows native job lifecycle independently of the foregro
   await expect(
     page.getByRole("button", { name: "Stop response", exact: true }),
   ).toBeDisabled();
-  await expect(indicator.locator("svg rect").nth(1)).toHaveAttribute(
-    "stroke-dasharray",
-    "2 6",
-  );
+  const segments = indicator.locator('[data-border-trail="segment"]');
+  await expect(segments).toHaveCount(1);
+  await expect(indicator.locator('[data-border-trail="sheen"]')).toHaveCount(1);
   const send = page.getByRole("button", { name: "Send", exact: true });
   const before = (await indicator.boundingBox())!;
   const sendBox = (await send.boundingBox())!;
@@ -53,6 +52,17 @@ test("background count follows native job lifecycle independently of the foregro
   const border = (await indicator.locator("svg").boundingBox())!;
   expect(border.width).toBe(before.width);
   expect(border.height).toBe(before.height);
+  const content = indicator.locator(".button-content");
+  const contentWidth = (await content.boundingBox())!.width;
+  await indicator.hover();
+  await page.mouse.down();
+  await expect
+    .poll(async () => (await content.boundingBox())!.width)
+    .toBeLessThan(contentWidth);
+  expect(await indicator.locator("svg").boundingBox()).toEqual(border);
+  expect(await indicator.boundingBox()).toEqual(before);
+  await page.mouse.move(before.x - 10, before.y - 10);
+  await page.mouse.up();
   expect(
     await indicator.evaluate((node) => getComputedStyle(node).borderRadius),
   ).toBe(await send.evaluate((node) => getComputedStyle(node).borderRadius));
@@ -105,10 +115,11 @@ test("unknown status stays distinct from zero and reduced motion stops the lumin
   await page.goto(
     "/iframe.html?id=conversation-backgroundjobs--active&viewMode=story",
   );
-  await expect(page.locator("[data-background-jobs] rect").nth(1)).toHaveCSS(
-    "animation-name",
-    "none",
-  );
+  await expect(
+    page
+      .locator('[data-background-jobs] [data-border-trail="segment"]')
+      .first(),
+  ).toHaveCSS("animation-name", "none");
 });
 test("Codex snapshots replace the count and unavailable reads recover", async ({
   page,

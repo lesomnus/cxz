@@ -1,12 +1,6 @@
 .page {
   grid-column: 2 / -1;
 }
-.cards {
-  width: min(100%, 600px);
-  margin-inline: auto;
-  display: grid;
-  gap: calc(8 * var(--space));
-}
 .header {
   display: flex;
   justify-content: flex-end;

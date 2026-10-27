@@ -281,3 +281,18 @@ it("accepts persisted theme preferences and rejects unsupported values without o
   store.set("ui.theme", undefined);
   expect(store.snapshot().document["ui.theme"]).toBeUndefined();
 });
+
+it("persists composer display preferences and rejects non-boolean values without losing settings", () => {
+  const { store, file } = fixture('{"editor.tabSize":8}');
+  for (const key of ["composer.showControlCharacters", "composer.wordWrap"]) {
+    for (const value of [true, false]) {
+      store.set(key, value);
+      expect(parseSettings(file()!)[key]).toBe(value);
+    }
+    const saved = file();
+    for (const invalid of [1, "false", null])
+      expect(() => store.set(key, invalid)).toThrow();
+    expect(file()).toBe(saved);
+  }
+  expect(parseSettings(file()!)["editor.tabSize"]).toBe(8);
+});

@@ -1,0 +1,23 @@
+.footer,
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+}
+.toolbar {
+  margin-left: auto;
+}
+.footer svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.toolbar svg {
+  width: 12px;
+  height: 12px;
+}
+.error {
+  display: block;
+  max-width: 240px;
+  white-space: normal;
+}

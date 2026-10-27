@@ -49,7 +49,7 @@
   padding: 6px 10px;
 
   border-radius: 6px;
-  background: transparent;
+  background: color-mix(in srgb, var(--shade-20) 20%, transparent);
   backdrop-filter: blur(12px);
   color: var(--shade-237);
   font-family: var(--ui-font-mono);

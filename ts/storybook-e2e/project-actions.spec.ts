@@ -9,18 +9,44 @@ test("bottom-left Erase action requires confirmation and leaves other projects i
   const sections = actions.locator("..").locator(":scope > section");
   await expect(sections.last()).toHaveAttribute("aria-label", "Actions");
   const description = actions.getByText(
-    "Permanently delete this project and its owned data.",
+    "Erase this project and its owned data permanently.",
     { exact: true },
   );
   const trigger = actions.getByRole("button", { name: "Erase", exact: true });
   const descriptionBox = (await description.boundingBox())!;
   const buttonBox = (await trigger.boundingBox())!;
-  expect(buttonBox.x).toBeGreaterThan(descriptionBox.x + descriptionBox.width);
-  await trigger.click();
+  await expect(actions.locator('[data-section-layout="layout"]')).toHaveCount(
+    1,
+  );
+  await expect(actions.locator('[data-section-layout="group"]')).toHaveCount(1);
+  const sectionSurfaces = actions.locator('[data-section-layout="section"]');
+  await expect(sectionSurfaces).toHaveCount(5);
+  await expect(
+    sectionSurfaces
+      .first()
+      .getByRole("heading", { name: "Actions", exact: true }),
+  ).toBeVisible();
+  await expect(sectionSurfaces.first()).toHaveJSProperty("tagName", "SECTION");
+  for (const name of ["Stop", "Start", "Remove", "Erase"]) {
+    const action = actions.getByRole("button", { name, exact: true });
+    await expect(action.locator("strong")).toHaveText(name);
+    await expect(action.locator("h2, h3")).toHaveCount(0);
+  }
+  await expect(actions.getByRole("button")).toHaveCount(4);
+  await expect(trigger).toHaveAttribute("data-section-layout", "section");
+  await expect(trigger).toHaveAttribute("data-effect", "sparkle");
+  await expect(trigger.locator("button")).toHaveCount(0);
+  expect(descriptionBox.x).toBeGreaterThanOrEqual(buttonBox.x);
+  expect(descriptionBox.x + descriptionBox.width).toBeLessThanOrEqual(
+    buttonBox.x + buttonBox.width,
+  );
+  await description.click();
   const dialog = page.getByRole("dialog", {
     name: "Erase project",
     exact: true,
   });
+  await expect(dialog.locator(".floating-card")).toHaveCSS("opacity", "1");
+  await expect(dialog.locator(".floating-card")).toHaveCSS("transform", "none");
   await expect(dialog).toContainText("This cannot be undone.");
   await expect(dialog).toContainText(
     "Workspace source files and shared accounts are preserved.",
@@ -35,7 +61,9 @@ test("bottom-left Erase action requires confirmation and leaves other projects i
   await expect(
     page.getByRole("combobox", { name: "Select project", exact: true }),
   ).toHaveText("Web workspace");
-  await trigger.click();
+  await trigger.click({
+    position: { x: buttonBox.width - 4, y: buttonBox.height / 2 },
+  });
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await trigger.click();

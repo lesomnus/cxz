@@ -180,7 +180,7 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   expect(currentBefore.x - (await model.boundingBox())!.x).toBe(6);
   await expect(page.locator("form.composer")).toHaveCSS("padding-top", "0px");
   await model.click();
-  const choices = page.getByRole("listbox", { name: "Model choices" });
+  const choices = page.locator(".setting-menu");
   await expect(choices).toBeVisible();
   await expect(choices).toHaveCSS("padding", "2px");
   const currentAfter = (await choices
@@ -268,7 +268,16 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await message.fill("Hover test");
   const send = page.getByRole("button", { name: "Send", exact: true });
   await send.hover();
-  await expect(send).toHaveCSS("background-color", "rgb(54, 54, 54)");
+  const hover = await send.evaluate((node) => {
+    const probe = document.createElement("i");
+    probe.style.cssText =
+      "display:none;background:var(--ui-button-hover-background)";
+    node.append(probe);
+    const color = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return color;
+  });
+  await expect(send).toHaveCSS("background-color", hover);
   await page.mouse.move(1000, 20);
   await expect(send).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await page.getByLabel("Pace", { exact: true }).selectOption("1200");

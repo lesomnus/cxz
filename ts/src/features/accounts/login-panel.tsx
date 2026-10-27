@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@lesomnus/nox";
+import { Button, Section } from "@lesomnus/nox";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";
@@ -93,7 +93,7 @@ export function LoginPanel({
     };
   }, [c, target.account, target.project, target.key, attempt]);
   return (
-    <section className={styles.section} aria-label="Provider login">
+    <Section aria-label="Provider login">
       <strong>Log in · {target.account}</strong>
       <div className={styles.status}>
         <Markdown text={output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "")} />
@@ -131,6 +131,6 @@ export function LoginPanel({
           Cancel
         </Button>
       </div>
-    </section>
+    </Section>
   );
 }

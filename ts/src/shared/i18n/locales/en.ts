@@ -1,5 +1,9 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Editor options": "Editor options",
+  "Show control characters": "Show control characters",
+  "Word wrap": "Word wrap",
+
   Logs: "Logs",
   "Diagnostics observed by this browser":
     "Diagnostics observed by this browser",
@@ -34,8 +38,8 @@ export const messages = {
   "The project remains listed and can be started again.":
     "The project remains listed and can be started again.",
 
-  "Permanently delete this project and its owned data.":
-    "Permanently delete this project and its owned data.",
+  "Erase this project and its owned data permanently.":
+    "Erase this project and its owned data permanently.",
   "Purge project": "Purge project",
   "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
     "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.",
@@ -222,6 +226,8 @@ export const messages = {
   "Permanently deletes this session and its stored data. This cannot be undone.":
     "Permanently deletes this session and its stored data. This cannot be undone.",
   "{files} files · {bytes} bytes": "{files} files · {bytes} bytes",
+  "{size} bytes": "{size} bytes",
+  "Size unavailable": "Size unavailable",
   "Retained: {items}": "Retained: {items}",
   "Action failed. Check session status before retrying.":
     "Action failed. Check session status before retrying.",
@@ -244,6 +250,8 @@ export const messages = {
   "Use the default model": "Use the default model",
   "Set reasoning effort to {effort}": "Set reasoning effort to {effort}",
   "Stop response": "Stop response",
+  "Memory calls": "Memory calls",
+  "Task calls": "Task calls",
   "Response elapsed time": "Response elapsed time",
   "Repeat within 3 seconds to stop": "Repeat within 3 seconds to stop",
   "Click twice or press Esc twice within 3 seconds":

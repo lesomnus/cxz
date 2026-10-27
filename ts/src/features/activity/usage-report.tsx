@@ -1,4 +1,4 @@
-import { Button } from "@lesomnus/nox";
+import { Button, Section } from "@lesomnus/nox";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
@@ -29,7 +29,7 @@ export function UsageReport({
   );
   const total = stats.data?.total;
   return (
-    <section className={styles.section}>
+    <Section>
       <div className={styles.row}>
         <strong>Conversation usage</strong>
         <Button onClick={stats.reload}>Refresh</Button>
@@ -84,6 +84,6 @@ export function UsageReport({
           </details>
         </>
       )}
-    </section>
+    </Section>
   );
 }

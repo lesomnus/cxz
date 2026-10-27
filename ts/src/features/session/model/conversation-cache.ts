@@ -46,6 +46,7 @@ export const eventBytes = (e: SessionEvent) => {
       tool.shell.length +
       tool.command.length +
       tool.state.length +
+      tool.mcpServer.length +
       tool.files.reduce(
         (n, file) =>
           n +

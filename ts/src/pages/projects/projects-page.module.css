@@ -38,6 +38,11 @@
   background: var(--ui-shade-24);
   border-radius: var(--ui-dialog-radius);
 }
+.actions {
+  min-width: 0;
+  display: grid;
+  gap: var(--ui-space);
+}
 .section.sessionSection {
   padding-top: 0;
   padding-inline: 0;

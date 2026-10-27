@@ -1,4 +1,3 @@
-import { resourceLocation } from "#src/shared/navigation/resource-route.ts";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import {
   projectId as projectUUID,
@@ -1047,18 +1046,15 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
           )
         }
         onReadingMove={(delta) => {
-          if (followRef.current) return;
+          if (followRef.current || latestTravel.current.shown) return;
           const travel = latestTravel.current;
-          // Measure from the furthest position in the opposite direction. Small
-          // reversals consume the accumulated distance instead of toggling UI.
-          travel.distance = Math.max(
-            0,
-            travel.distance + (travel.shown ? delta : -delta),
-          );
+          // Reveal after deliberate upward reading. Once shown, keep the jump
+          // available through direction changes until bottom-follow resets it.
+          travel.distance = Math.max(0, travel.distance - delta);
           if (travel.distance < 96) return;
-          travel.shown = !travel.shown;
+          travel.shown = true;
           travel.distance = 0;
-          setLatestShown(travel.shown);
+          setLatestShown(true);
         }}
         onTension={(stretch) => {
           tension.current = stretch;
@@ -1275,32 +1271,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                     throw error;
                   await openSessionLogin(run);
                 }
-              })
-            }
-            previewPurge={async () => {
-              let plan;
-              await action(async () => {
-                plan = await c.sessions.purge(
-                  { ref: ref(id), dryRun: true },
-                  { timeoutMs: 20_000 },
-                );
-              });
-              return plan;
-            }}
-            purge={() =>
-              action(async (session) => {
-                await c.sessions.purge(
-                  { ref: ref(id) },
-                  { timeoutMs: 120_000 },
-                );
-                c.store.apply("cxz.Session", [{ id: session.id }]);
-                c.drafts.delete(id);
-                c.attention.reset(id);
-                c.conversations.delete(id);
-                await navigate({
-                  ...resourceLocation("sessions"),
-                  replace: true,
-                });
               })
             }
           />

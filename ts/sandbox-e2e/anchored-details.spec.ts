@@ -140,7 +140,11 @@ test("grouped tool details fit short viewports and isolate editor scrolling", as
     "aria-description",
     /idle/,
   );
-  await page.locator("[data-work-summary] button").last().click();
+  await page
+    .locator("[data-work-summary]")
+    .getByRole("button", { name: "View details", exact: true })
+    .last()
+    .click();
   const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
   const tool = dialog.locator(".tool-activity").last();
   await expect(tool).toHaveAttribute("data-state", "completed");

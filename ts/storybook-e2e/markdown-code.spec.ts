@@ -3,6 +3,79 @@ import { expect, test } from "@playwright/test";
 const snippet =
   "const greeting = '<script>alert(1)</script>';\nconsole.log(greeting);\n";
 
+test("container links call the file opener without web navigation and external links retain new-tab behavior", async ({
+  page,
+  context,
+}) => {
+  await page.goto(
+    "/iframe.html?id=content-markdown--file-links&viewMode=story",
+  );
+  const original = page.url();
+  const output = page.getByRole("status");
+  for (const [name, path] of [
+    ["Report", "/tmp/report.md"],
+    ["Source line", "/workspace/file.ts"],
+    ["File URI", "/workspace/file.ts"],
+    ["File with spaces", "/tmp/a report.md"],
+  ]) {
+    const link = page.getByRole("link", { name, exact: true });
+    await expect(link).not.toHaveAttribute("target", "_blank");
+    await expect(link).toHaveCSS("text-decoration-line", "none");
+    await expect(link).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    expect(
+      await link.evaluate((el) => getComputedStyle(el, "::before").maskImage),
+    ).not.toBe("none");
+    const textStyle = await link.evaluate((el) => {
+      const chip = getComputedStyle(el);
+      const body = getComputedStyle(el.parentElement!);
+      return {
+        chip: [chip.fontFamily, chip.fontSize, chip.lineHeight, chip.color],
+        body: [body.fontFamily, body.fontSize, body.lineHeight, body.color],
+        border: chip.borderTopWidth,
+        borderColor: chip.borderTopColor,
+        separator: getComputedStyle(el, "::after").backgroundColor,
+        color: chip.color,
+      };
+    });
+    expect(textStyle.chip).toEqual(textStyle.body);
+    expect(textStyle.border).toBe("1px");
+    expect(textStyle.separator).toBe(textStyle.borderColor);
+    expect(textStyle.separator).not.toBe(textStyle.color);
+    await link.hover();
+    const hint = page.getByRole("tooltip");
+    await expect(hint).toContainText(path);
+    const size = hint.getByRole("img", { name: "12,345 bytes", exact: true });
+    await expect(size).toHaveText("12.3K");
+    const sizeBounds = (await size.boundingBox())!;
+    const pathBounds = (await hint
+      .getByText(path, { exact: true })
+      .boundingBox())!;
+    expect(sizeBounds.x + sizeBounds.width).toBeLessThan(pathBounds.x);
+    expect(sizeBounds.y + sizeBounds.height / 2).toBeCloseTo(
+      pathBounds.y + pathBounds.height / 2,
+      0,
+    );
+    await link.click();
+    await expect(hint).toHaveCount(0);
+    await expect(output).toHaveText(path);
+    expect(page.url()).toBe(original);
+    expect(context.pages()).toHaveLength(1);
+  }
+  await page.getByRole("link", { name: "Report", exact: true }).focus();
+  await expect(page.getByRole("tooltip")).toContainText("/tmp/report.md");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  for (const name of ["External documentation", "Network URL"]) {
+    const link = page.getByRole("link", { name, exact: true });
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(link).not.toHaveAttribute("data-container-file");
+  }
+  await expect(page.locator('a:has-text("Unsafe link")')).not.toHaveAttribute(
+    "href",
+  );
+});
+
 test("code controls reveal on hover, choose highlighting, and copy literal code", async ({
   page,
   context,

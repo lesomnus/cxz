@@ -1,5 +1,9 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Editor options": "입력창 설정",
+  "Show control characters": "제어문자 표시",
+  "Word wrap": "자동 줄바꿈",
+
   Logs: "로그",
   "Diagnostics observed by this browser": "이 브라우저에서 관측한 진단 기록",
   "Live updates": "실시간 갱신",
@@ -33,7 +37,7 @@ export const messages = {
   "The project remains listed and can be started again.":
     "프로젝트는 목록에 유지되며 다시 시작할 수 있습니다.",
 
-  "Permanently delete this project and its owned data.":
+  "Erase this project and its owned data permanently.":
     "이 프로젝트와 소유 데이터를 영구 삭제합니다.",
   "Purge project": "프로젝트 영구 삭제",
   "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
@@ -223,6 +227,8 @@ export const messages = {
   "Permanently deletes this session and its stored data. This cannot be undone.":
     "이 세션과 저장된 데이터를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
   "{files} files · {bytes} bytes": "파일 {files}개 · {bytes}바이트",
+  "{size} bytes": "{size}바이트",
+  "Size unavailable": "크기 확인 불가",
   "Retained: {items}": "유지되는 항목: {items}",
   "Action failed. Check session status before retrying.":
     "작업에 실패했습니다. 다시 시도하기 전에 세션 상태를 확인하세요.",
@@ -234,6 +240,8 @@ export const messages = {
   "Use the default model": "기본 모델 사용",
   "Set reasoning effort to {effort}": "추론 강도를 {effort}로 변경",
   "Stop response": "응답 정지",
+  "Memory calls": "메모리 호출",
+  "Task calls": "작업 API 호출",
   "Response elapsed time": "응답 경과 시간",
   "Repeat within 3 seconds to stop": "3초 이내 한 번 더 누르면 정지",
   "Click twice or press Esc twice within 3 seconds":

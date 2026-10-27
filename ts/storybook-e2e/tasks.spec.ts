@@ -14,7 +14,15 @@ test("task board creates and edits work, and releases a stopped owner's task onl
   await expect(
     page.getByText("Session stopped", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Previous run", { exact: true })).toBeVisible();
+  await expect(page.getByText("Previous run", { exact: true })).toHaveCount(0);
+  const updated = page.locator('[data-task-alias="task-1"] footer time');
+  await updated.hover();
+  await expect(page.getByRole("tooltip").locator("time")).toHaveAttribute(
+    "datetime",
+    (await updated.getAttribute("datetime"))!,
+  );
+  await page.mouse.move(0, 0);
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
   await expect(page.getByRole("link", { name: /elm/ })).toHaveAttribute(
     "href",
     "/c/_/session/elm",

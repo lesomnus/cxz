@@ -87,6 +87,8 @@ message ToolSummary {
   // description, or a Skill with its arguments. Empty otherwise, and a reader
   // falls back to `name` rather than this repeating it.
   string description = 8;
+  // MCP origin retained when provider payloads are omitted from transcript rows.
+  string mcp_server = 9;
 }
 // Counts describe recorded diff hunks or submitted content/replacement spans.
 // An unknown measure never implies zero changes.

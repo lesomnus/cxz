@@ -12,3 +12,10 @@ func TestStructuredFileSummaryRoundTrip(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestMCPOriginRoundTrip(t *testing.T) {
+	e := &api.Event{SessionId: "s", Seq: 1, Kind: "tool_call", ToolSummary: &api.ToolSummary{Name: "mcpToolCall", McpServer: "cxz_memory"}}
+	if got := FromResource("s", ToResource(e)); !proto.Equal(got, e) {
+		t.Fatal("MCP server was lost at the resource boundary", got)
+	}
+}

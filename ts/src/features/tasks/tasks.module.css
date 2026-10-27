@@ -54,6 +54,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  padding-inline: 2px;
   background: var(--shade-22);
   border-radius: var(--wrapper-radius);
   overflow: hidden;
@@ -86,53 +87,127 @@
   --ui-scroll-area-background: var(--shade-22);
 }
 .card {
-  background: var(--shade-27);
-  border-radius: max(0px, calc(var(--wrapper-radius) - var(--control-inset)));
   margin-bottom: var(--space);
-  padding: var(--space);
   min-width: 0;
 }
-.card:hover,
-.card:focus-within {
-  background: var(--shade-32);
+.card.card {
+  border-color: var(--shade-40);
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.card.card.card :global(.card-body) {
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+.taskHeader.taskHeader.taskHeader :global(.card-heading) {
+  min-height: 0;
+  padding: 8px;
+  padding-right: calc(var(--toolbar-button-width) + 8px);
+  justify-content: flex-start;
+  gap: calc(1.5 * var(--space));
+}
+.taskHeader :global(.card-heading)::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--task-priority-color, var(--muted));
+}
+.taskHeader[data-previous-run] :global(.card-heading)::before {
+  border: 1.5px solid var(--task-priority-color, var(--muted));
+  background: transparent;
+}
+.taskHeader :global(.card-heading) strong {
+  transform: translateY(-1px);
+  color: var(--muted);
+  font: 0.75rem var(--ui-font-mono);
+  line-height: 12px;
+}
+.taskHeader :global(.card-close),
+.card .cardOpen {
+  --task-open-inset: 2px;
+  position: absolute;
+  top: var(--task-open-inset);
+  right: var(--task-open-inset);
+  width: var(--toolbar-button-width);
+  height: var(--toolbar-button-height);
+  min-height: var(--toolbar-button-height);
+  padding: 3px 6px;
+  border-radius: max(
+    0px,
+    calc(
+      var(--ui-dialog-radius) - var(--card-border-width) -
+        var(--task-open-inset)
+    )
+  );
+  color: var(--muted);
+}
+.card .cardOpen:not(:disabled):hover {
+  background: var(--shade-54);
+  color: var(--shade-237);
 }
 .cardMain {
   width: 100%;
   text-align: left;
-  display: block;
-  padding: var(--space);
-  background: transparent;
-}
-.cardMain > :global(.button-content) {
   display: grid;
   justify-content: stretch;
   justify-items: start;
   align-items: start;
-  gap: var(--space);
+  gap: calc(2 * var(--space));
   min-width: 0;
 }
-.card .cardMain:not(:disabled):hover {
-  background: transparent;
-}
-.cardMain strong {
+.cardTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.5;
+  height: 3em;
+  width: 100%;
   font-size: 0.85rem;
   font-weight: 500;
   overflow-wrap: anywhere;
 }
+.cardDescription {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  width: 100%;
+  height: 4.5em;
+  line-height: 1.5;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .cardMeta {
+  --task-owner-height: 20px;
   display: flex;
+  min-height: var(--task-owner-height);
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space);
-  padding: var(--space);
+  padding: 0;
   color: var(--muted);
   font-size: 0.7rem;
 }
 .cardMeta time {
   white-space: nowrap;
 }
-.owner {
+.card .owner {
+  --agent-logo-size: 14px;
+  height: var(--task-owner-height);
+  min-height: var(--task-owner-height);
+  padding: 2px 6px;
+  line-height: 14px;
   min-width: 0;
   max-width: 100%;
   color: var(--muted);
@@ -144,22 +219,39 @@
   align-items: center;
   gap: var(--space);
 }
+.owner :global(.agent-brand) {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+}
 .owner:hover {
   color: var(--shade-237);
 }
 .owner span:not(:global(.agent-brand)) {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ownerIssue,
-.priority {
+.ownerIssue {
   display: block;
   padding: var(--space);
   font-size: 0.7rem;
   color: var(--shade-180, var(--shade-237));
 }
-.priority {
-  color: var(--muted);
+.taskHeader[data-priority="0"] {
+  --task-priority-color: #e87979;
+}
+.taskHeader[data-priority="1"] {
+  --task-priority-color: #e6a15c;
+}
+.taskHeader[data-priority="2"] {
+  --task-priority-color: #d4be70;
+}
+.taskHeader[data-priority="3"] {
+  --task-priority-color: #7ea8ce;
+}
+.taskHeader[data-priority="4"] {
+  --task-priority-color: #90969e;
 }
 .empty,
 .message {

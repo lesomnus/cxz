@@ -6,7 +6,7 @@ test.use({
   hasTouch: false,
 });
 
-test("Latest slides into the toolbar overlay and switches after 96px of actual reading movement", async ({
+test("Latest reveals after 96px of reading movement and stays visible until the bottom", async ({
   page,
 }) => {
   await page.goto("/sandbox.html");
@@ -75,10 +75,10 @@ test("Latest slides into the toolbar overlay and switches after 96px of actual r
   expect(sendBox.width).toBe(48);
   expect(sendBox.height).toBe(latestBox.height);
   await latest.hover();
-  await expect(latest).toHaveCSS("background-color", "rgb(54, 54, 54)");
+  await expect(latest).toHaveCSS("background-color", "rgb(48, 48, 48)");
   await expect(latest).toHaveCSS("border-radius", "7px");
   await send.hover();
-  await expect(send).toHaveCSS("background-color", "rgb(54, 54, 54)");
+  await expect(send).toHaveCSS("background-color", "rgb(48, 48, 48)");
   // Occupy the same toolbar position with an ordinary future control. Latest
   // keeps its own layer without shifting either the input or Send.
   await page.locator(".composer-toolbar").evaluate((el) => {
@@ -116,15 +116,15 @@ test("Latest slides into the toolbar overlay and switches after 96px of actual r
   await move(35);
   await expect(slot).toHaveAttribute("data-visible", "true");
   await move(2);
-  await expect(slot).toHaveAttribute("data-visible", "false");
-  await expect(slot).toHaveAttribute("inert", "");
+  await expect(slot).toHaveAttribute("data-visible", "true");
+  await expect(slot).not.toHaveAttribute("inert", "");
   expect(
     await pane.evaluate(
       (el) => el.scrollHeight - el.clientHeight - el.scrollTop,
     ),
   ).toBeGreaterThan(100);
   await move(-80);
-  await expect(slot).toHaveAttribute("data-visible", "false");
+  await expect(slot).toHaveAttribute("data-visible", "true");
   await move(-20);
   await expect(slot).toHaveAttribute("data-visible", "true");
   await expect(button).toHaveCSS("opacity", "1");
@@ -138,6 +138,16 @@ test("Latest slides into the toolbar overlay and switches after 96px of actual r
       pane.evaluate((el) => el.scrollHeight - el.clientHeight - el.scrollTop),
     )
     .toBeLessThan(1);
+  await expect(slot).toHaveAttribute("data-visible", "false");
+  // Ordinary downward scrolling, rather than clicking Latest, also resets it.
+  await move(-110);
+  await expect(slot).toHaveAttribute("data-visible", "true");
+  await pane.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  await expect(slot).toHaveAttribute("data-visible", "false");
+  await expect(slot).toHaveAttribute("inert", "");
+  await move(-80);
   await expect(slot).toHaveAttribute("data-visible", "false");
   await expect(input).toHaveValue("Keep this draft");
 });

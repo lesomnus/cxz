@@ -40,7 +40,9 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await trigger.focus();
   await trigger.press("ArrowDown");
   const menu = page.getByRole("menu", { name: "Session menu" });
-  await expect(menu.getByRole("group", { name: "Controls" })).toBeVisible();
+  const popup = page.locator(".action-menu-popup");
+  await expect(menu.locator('[data-action-menu-layout="row"]')).toBeVisible();
+  await expect(menu.getByText("Controls", { exact: true })).toHaveCount(0);
   await expect(
     page.getByRole("menuitem", { name: "Stop", exact: true }),
   ).toBeFocused();
@@ -48,7 +50,6 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     "Stop",
     "Restart",
     "Fork",
-    "Purge",
     "Insert secret",
     "Shared memory",
     "Auxiliary AI",
@@ -64,27 +65,27 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
       .getByRole("menuitem")
       .or(menu.getByRole("menuitemcheckbox"))
       .locator("svg"),
-  ).toHaveCount(8);
+  ).toHaveCount(7);
   await expect(menu.getByText("Information", { exact: true })).toHaveCount(0);
   await expect(
     menu.getByRole("menuitem", { name: "Copy session link" }),
   ).toHaveCount(0);
-  await menu.evaluate(async (el) => {
+  await popup.evaluate(async (el) => {
     await Promise.all(
       el.getAnimations({ subtree: true }).map((a) => a.finished),
     );
   });
-  const bounds = (await menu.boundingBox())!;
+  const bounds = (await popup.boundingBox())!;
 
   const triggerBounds = (await trigger.boundingBox())!;
-  const toolbarBounds = (await page
-    .locator(".composer-toolbar")
+  const containerBounds = (await page
+    .locator(".composer-wrapper")
     .boundingBox())!;
-  const inset = triggerBounds.y - toolbarBounds.y;
-  expect(toolbarBounds.y - (bounds.y + bounds.height)).toBeCloseTo(inset, 0);
+  const inset = triggerBounds.y - containerBounds.y;
+  expect(containerBounds.y - (bounds.y + bounds.height)).toBeCloseTo(inset, 0);
   // Measure in the same frame, before ResizeObserver can repair stale coordinates.
   expect(
-    await menu.evaluate((el) => {
+    await popup.evaluate((el) => {
       const trigger = document.querySelector(
         '[aria-label="Session menu"][aria-haspopup="menu"]',
       )!;
@@ -122,7 +123,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   await expect(trigger).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
   await trigger.click();
-  const mobile = (await menu.boundingBox())!;
+  const mobile = (await popup.boundingBox())!;
   expect(mobile.x).toBeGreaterThanOrEqual(0);
   expect(mobile.x + mobile.width).toBeLessThanOrEqual(390);
   expect(mobile.y).toBeGreaterThanOrEqual(0);
@@ -198,37 +199,49 @@ test("Stop and Resume toggle, while Restart requires confirmation and preserves 
     message,
   );
 });
-test("Purge previews without deleting, cancels, then removes only the confirmed session", async ({
+test("lifecycle actions share one scrolling row and Purge is absent", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 480 });
   await ready(page);
-  // Counted rather than hardcoded: what this verifies is that exactly one
-  // session goes, not how many the fixture happens to seed.
-  const listed = page.locator(".resource-panel .tree-session");
-  const before = await listed.count();
-  expect(before).toBeGreaterThan(1);
-  await choose(page, "Purge");
-  const dialog = page.getByRole("dialog", { name: "Purge session" });
-  await expect(dialog).toContainText("/sandbox/session-1/journal");
-  await expect(dialog).toContainText("Project workspace");
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  const popup = page.locator(".action-menu-popup");
+  await popup.evaluate(async (el) =>
+    Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
+  );
+  const menu = page.getByRole("menu", { name: "Session menu", exact: true });
+  const row = menu.locator('[data-action-menu-layout="row"]');
+  const actions = row.getByRole("menuitem");
+  await expect(actions).toHaveText(["Stop", "Restart", "Fork"]);
   await expect(
-    page.getByRole("button", { name: "Session menu", exact: true }),
-  ).toBeEnabled();
-  await choose(page, "Purge");
-  await page
-    .getByRole("button", { name: "Purge permanently", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Sessions", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page
-      .locator(".resource-panel .tree-session")
-      .filter({ hasText: "session-1" }),
+    popup.getByRole("menuitem", { name: "Purge", exact: true }),
   ).toHaveCount(0);
-  await expect(listed).toHaveCount(before - 1);
+  const boxes = await actions.evaluateAll((elements) =>
+    elements.map((el) => {
+      const { x, y, width } = el.getBoundingClientRect();
+      return { x, y, width };
+    }),
+  );
+  for (const box of boxes) {
+    expect(box.y).toBe(boxes[0].y);
+    expect(box.width).toBeCloseTo(boxes[0].width, 1);
+  }
+  await actions.nth(0).press("ArrowRight");
+  await expect(actions.nth(1)).toBeFocused();
+  await actions.nth(1).press("ArrowRight");
+  await expect(actions.nth(2)).toBeFocused();
+  const footer = popup.locator('[data-menu-fixed="footer"]');
+  const viewport = menu.locator('[data-scroll-area="viewport"]');
+  const fixed = await footer.boundingBox();
+  const top = (await row.boundingBox())!.y;
+  await viewport.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  expect((await row.boundingBox())!.y).toBeLessThan(top);
+  expect(await footer.boundingBox()).toEqual(fixed);
+  await expect(
+    footer.getByRole("radiogroup", { name: "Tab input" }),
+  ).toBeVisible();
 });
 
 test("Details edits title and alias while keeping conversation identity and updating the alias address", async ({

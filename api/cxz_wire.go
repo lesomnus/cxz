@@ -1323,6 +1323,7 @@ type ToolSummary struct {
 	OmittedFiles  uint32                 `protobuf:"varint,6,opt,name=omitted_files,json=omittedFiles,proto3" json:"omitted_files,omitempty"`
 	Kind          string                 `protobuf:"bytes,7,opt,name=kind,proto3" json:"kind,omitempty"`
 	Description   string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	McpServer     string                 `protobuf:"bytes,9,opt,name=mcp_server,json=mcpServer,proto3" json:"mcp_server,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1409,6 +1410,13 @@ func (x *ToolSummary) GetKind() string {
 func (x *ToolSummary) GetDescription() string {
 	if x != nil {
 		return x.Description
+	}
+	return ""
+}
+
+func (x *ToolSummary) GetMcpServer() string {
+	if x != nil {
+		return x.McpServer
 	}
 	return ""
 }
@@ -7280,7 +7288,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\bresponse\x18\t \x01(\v2\x1d.cxz.runtime.ResponseMetadataR\bresponse\x12;\n" +
 	"\ftool_summary\x18\n" +
 	" \x01(\v2\x18.cxz.runtime.ToolSummaryR\vtoolSummary\x12\x1c\n" +
-	"\theartbeat\x18\v \x01(\bR\theartbeat\"\xf6\x01\n" +
+	"\theartbeat\x18\v \x01(\bR\theartbeat\"\x95\x02\n" +
 	"\vToolSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05shell\x18\x02 \x01(\tR\x05shell\x12\x18\n" +
@@ -7289,7 +7297,9 @@ const file_cxz_proto_rawDesc = "" +
 	"\x05files\x18\x05 \x03(\v2\x1c.cxz.runtime.ToolFileSummaryR\x05files\x12#\n" +
 	"\romitted_files\x18\x06 \x01(\rR\fomittedFiles\x12\x12\n" +
 	"\x04kind\x18\a \x01(\tR\x04kind\x12 \n" +
-	"\vdescription\x18\b \x01(\tR\vdescription\"\xd7\x01\n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\x12\x1d\n" +
+	"\n" +
+	"mcp_server\x18\t \x01(\tR\tmcpServer\"\xd7\x01\n" +
 	"\x0fToolFileSummary\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x1b\n" +
 	"\tmove_path\x18\x02 \x01(\tR\bmovePath\x12\x16\n" +

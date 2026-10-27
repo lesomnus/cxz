@@ -21,7 +21,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Active provider-reported background jobs. Each job lights another section of the border, up to a full perimeter. The exact count stays visible. The luminous outline drifts and breathes without a JavaScript animation loop or blur filter. Unknown telemetry is a dash, not a guessed zero.",
+          "Active provider-reported background jobs grow a colored trail. Once that color nearly fills the perimeter, the next color starts growing over it. A soft highlight periodically travels within each segment while the outline drifts. The exact count stays visible. Both effects use the shared Nox BorderTrailButton without a JavaScript frame loop or surrounding glow. Unknown telemetry is a dash, not a guessed zero.",
       },
     },
   },

@@ -1,5 +1,54 @@
 import { expect, test } from "@playwright/test";
 
+test("resolved builtin MCP permissions enter Turn Tasks without standalone cards", async ({
+  page,
+}) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto(
+    "/iframe.html?id=conversation-workdialog--mcp-permission-history&viewMode=story",
+  );
+  const transcript = page.locator(".transcript");
+  const summary = transcript.locator("[data-work-summary]");
+  await expect(summary).toHaveCount(1);
+  await expect(
+    summary.getByRole("button", { name: "View details", exact: true }),
+  ).toHaveText("002");
+  await expect(
+    summary.getByRole("button", { name: "Memory calls: 1", exact: true }),
+  ).toBeVisible();
+  await expect(
+    summary.getByRole("button", { name: "Task calls: 1", exact: true }),
+  ).toBeVisible();
+  for (const seq of [2, 3]) {
+    await expect(
+      transcript.locator(`.event-detail[data-seq="${seq}"]`),
+    ).toHaveCount(0);
+  }
+  for (const seq of [4, 5, 6]) {
+    await expect(
+      transcript.locator(`.event-detail[data-seq="${seq}"]`),
+    ).toBeVisible();
+  }
+  await summary
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Tasks between responses",
+    exact: true,
+  });
+  await expect(dialog.locator("button[data-seq]")).toHaveCount(2);
+  await dialog.locator('button[data-seq="2"]').click();
+  await dialog.getByRole("tab", { name: "Result", exact: true }).click();
+  // The editor virtualizes long JSON; copy reads the entire recorded payload.
+  await dialog.getByRole("button", { name: "Copy", exact: true }).click();
+  const detail = JSON.parse(
+    await page.evaluate(() => navigator.clipboard.readText()),
+  );
+  expect(detail.params.serverName).toBe("cxz_memory");
+  expect(detail.cxz_resolution.state).toBe("allowed");
+  expect(detail.params._meta.codex_approval_kind).toBe("mcp_tool_call");
+});
+
 test("all work kinds live in the task dialog while important errors remain readable in the transcript", async ({
   page,
 }) => {
@@ -11,7 +60,9 @@ test("all work kinds live in the task dialog while important errors remain reada
   const transcript = page.locator(".transcript");
   const summary = transcript.locator("[data-work-summary]");
   await expect(summary).toHaveCount(1);
-  await expect(summary.getByRole("button")).toHaveText("4");
+  await expect(
+    summary.getByRole("button", { name: "View details", exact: true }),
+  ).toHaveText("004");
   await expect(transcript.locator(".tool-activity")).toHaveCount(0);
   await expect(transcript).not.toContainText("Context compacted");
   await expect(transcript).not.toContainText("Agent update applied");
@@ -26,7 +77,9 @@ test("all work kinds live in the task dialog while important errors remain reada
     "1",
   );
   await expect(page.locator(".activity-card-preview")).toHaveCount(0);
-  await summary.getByRole("button").click();
+  await summary
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   const dialog = page.getByRole("dialog", {
     name: "Tasks between responses",
     exact: true,
@@ -60,33 +113,58 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   );
   const summaries = page.locator("[data-work-summary]");
   await expect(summaries).toHaveCount(2);
-  await expect(summaries.first().getByRole("button")).toHaveText("4");
-  const icon = summaries.first().getByRole("button").locator("svg");
+  await expect(
+    summaries
+      .first()
+      .getByRole("button", { name: "View details", exact: true }),
+  ).toHaveText("004");
+  const icon = summaries
+    .first()
+    .getByRole("button", { name: "View details", exact: true })
+    .locator("svg");
   await expect(icon).toBeVisible();
   await expect(icon.locator("path")).toBeVisible();
   await expect(icon).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   expect(await icon.evaluate((node) => node.getAttribute("fill"))).toBe(
     "currentColor",
   );
-  const count = summaries.first().locator(".button-content > span");
-  expect((await count.boundingBox())!.x).toBeLessThan(
+  const count = summaries
+    .first()
+    .getByRole("button", { name: "View details", exact: true })
+    .locator(".button-content > span");
+  expect((await count.boundingBox())!.x).toBeGreaterThan(
     (await icon.boundingBox())!.x,
   );
   expect(
-    (await summaries.first().getByRole("button").boundingBox())!.width,
-  ).toBe((await summaries.nth(1).getByRole("button").boundingBox())!.width);
-  const tooltip = summaries.first().getByRole("tooltip");
-  await expect(tooltip).toBeHidden();
-  await summaries.first().getByRole("button").hover();
-  await expect(tooltip).toContainText("4 tasks performed · View details");
-  await expect(tooltip).toBeVisible();
+    (await summaries
+      .first()
+      .getByRole("button", { name: "View details", exact: true })
+      .boundingBox())!.width,
+  ).toBe(
+    (await summaries
+      .nth(1)
+      .getByRole("button", { name: "View details", exact: true })
+      .boundingBox())!.width,
+  );
+  const counters = summaries.first();
+  await expect(counters.getByRole("button")).toHaveCount(3);
+  for (const button of await counters.getByRole("button").all()) {
+    await button.hover();
+    await button.focus();
+    await expect(
+      counters.locator('[role="tooltip"], .meta-tooltip, [title]'),
+    ).toHaveCount(0);
+  }
   await expect(page.locator(".transcript .tool-activity")).toHaveCount(0);
   const pane = page.locator(".transcript");
   const before = await pane.evaluate((node) => ({
     top: node.scrollTop,
     height: node.scrollHeight,
   }));
-  await summaries.first().getByRole("button").click();
+  await summaries
+    .first()
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   const dialog = page.getByRole("dialog", {
     name: "Tasks between responses",
     exact: true,
@@ -123,8 +201,15 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
     .getByRole("button", { name: "Close task dialog", exact: true })
     .click();
   await expect(dialog).toHaveCount(0);
-  await expect(summaries.first().getByRole("button")).toBeFocused();
-  await summaries.nth(1).getByRole("button").click();
+  await expect(
+    summaries
+      .first()
+      .getByRole("button", { name: "View details", exact: true }),
+  ).toBeFocused();
+  await summaries
+    .nth(1)
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   await expect(dialog.locator(".tool-activity")).toHaveCount(1);
   await dialog
     .getByRole("button", { name: "Close task dialog", exact: true })
@@ -140,7 +225,9 @@ test("long task lists remain virtualized and scroll independently", async ({
     "/iframe.html?id=conversation-workdialog--long-turn&viewMode=story",
   );
   await expect(
-    page.locator("[data-work-summary]").getByRole("button"),
+    page
+      .locator("[data-work-summary]")
+      .getByRole("button", { name: "View details", exact: true }),
   ).toHaveText("600");
   await page.getByRole("button", { name: "View details", exact: true }).click();
   const dialog = page.getByRole("dialog", {
@@ -185,9 +272,13 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
     "/iframe.html?id=conversation-workdialog--paged-turn&viewMode=story",
   );
   await expect(
-    page.locator("[data-work-summary]").getByRole("button"),
-  ).toHaveText("1+");
-  const summary = page.locator("[data-work-summary]").getByRole("button");
+    page
+      .locator("[data-work-summary]")
+      .getByRole("button", { name: "View details", exact: true }),
+  ).toHaveText("001+");
+  const summary = page
+    .locator("[data-work-summary]")
+    .getByRole("button", { name: "View details", exact: true });
   const summaryWidth = (await summary.boundingBox())!.width;
   const iconX = (await summary.locator("svg").boundingBox())!.x;
   await page.getByRole("button", { name: "View details", exact: true }).click();
@@ -204,8 +295,10 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
     .getByRole("button", { name: "Load earlier tasks", exact: true })
     .click();
   await expect(
-    page.locator("[data-work-summary]").getByRole("button"),
-  ).toHaveText("2");
+    page
+      .locator("[data-work-summary]")
+      .getByRole("button", { name: "View details", exact: true }),
+  ).toHaveText("002");
   await expect(dialog.locator(".tool-activity")).toHaveCount(2);
   expect((await summary.boundingBox())!.width).toBe(summaryWidth);
   expect((await summary.locator("svg").boundingBox())!.x).toBe(iconX);
@@ -215,7 +308,7 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
   ).toHaveCount(0);
 });
 
-test("work batches split at assistant replies and summaries align right", async ({
+test("work batches split at assistant replies with counts left and elapsed time right", async ({
   page,
 }) => {
   await page.goto(
@@ -223,8 +316,14 @@ test("work batches split at assistant replies and summaries align right", async 
   );
   const summaries = page.locator("[data-work-summary]");
   await expect(summaries).toHaveCount(2);
-  await expect(summaries.first().getByRole("button")).toHaveText("1");
-  await expect(summaries.nth(1).getByRole("button")).toHaveText("2");
+  await expect(
+    summaries
+      .first()
+      .getByRole("button", { name: "View details", exact: true }),
+  ).toHaveText("001");
+  await expect(
+    summaries.nth(1).getByRole("button", { name: "View details", exact: true }),
+  ).toHaveText("002");
   await expect(summaries.first().locator(".elapsed-time")).toHaveText(
     "00:00:06",
   );
@@ -235,11 +334,24 @@ test("work batches split at assistant replies and summaries align right", async 
     await summaries.first().evaluate((node) => {
       const time = node.querySelector(".elapsed-time")!.getBoundingClientRect();
       const button = node.querySelector("button")!.getBoundingClientRect();
-      return time.right <= button.left;
+      return button.right <= time.left;
     }),
   ).toBe(true);
   await expect(summaries.first()).toHaveCSS("justify-content", "flex-end");
-  await summaries.first().getByRole("button").click();
+  const zeroIcons = summaries.first().locator('[data-empty="true"] svg');
+  await expect(zeroIcons).toHaveCount(2);
+  const activeColor = await summaries
+    .first()
+    .getByRole("button", { name: "View details", exact: true })
+    .locator("svg")
+    .evaluate((icon) => getComputedStyle(icon).color);
+  for (const icon of await zeroIcons.all()) {
+    await expect(icon).not.toHaveCSS("color", activeColor);
+  }
+  await summaries
+    .first()
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   const dialog = page.getByRole("dialog", {
     name: "Tasks between responses",
     exact: true,
@@ -249,7 +361,10 @@ test("work batches split at assistant replies and summaries align right", async 
     .getByRole("button", { name: "Close task dialog", exact: true })
     .click();
   await expect(dialog).toHaveCount(0);
-  await summaries.nth(1).getByRole("button").click();
+  await summaries
+    .nth(1)
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
   await expect(dialog.locator(".tool-activity")).toHaveCount(2);
   expect(
     await dialog.evaluate(
@@ -260,4 +375,100 @@ test("work batches split at assistant replies and summaries align right", async 
     "background-color",
     "rgba(0, 0, 0, 0)",
   );
+});
+
+test("all work counts share reply boundaries and align left of elapsed time", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(
+    "/iframe.html?id=conversation-workdialog--memory-and-task-calls&viewMode=story",
+  );
+  const summaries = page.locator("[data-work-summary]");
+  await expect(summaries).toHaveCount(2);
+  for (const [index, memory, tasks, total] of [
+    [0, 2, 1, 4],
+    [1, 1, 2, 3],
+  ]) {
+    const summary = summaries.nth(index);
+    await expect(
+      summary.getByRole("button", {
+        name: `Memory calls: ${memory}`,
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      summary.getByRole("button", {
+        name: `Task calls: ${tasks}`,
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      summary.getByRole("button", { name: "View details", exact: true }),
+    ).toHaveText(String(total).padStart(3, "0"));
+  }
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const first = summaries.first();
+    await first.scrollIntoViewIfNeeded();
+    const bounds = await first.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const memory = el
+        .querySelector('[data-work-service="cxz_memory"]')!
+        .getBoundingClientRect();
+      const tasks = el
+        .querySelector('[data-work-service="cxz_tasks"]')!
+        .getBoundingClientRect();
+      const duration = el
+        .querySelector(".elapsed-time")!
+        .getBoundingClientRect();
+      const button = el.querySelector("button")!.getBoundingClientRect();
+      return {
+        left: box.left,
+        right: box.right,
+        memory: memory.toJSON(),
+        tasks: tasks.toJSON(),
+        duration: duration.toJSON(),
+        button: button.toJSON(),
+      };
+    });
+    expect(bounds.button.x).toBeGreaterThanOrEqual(bounds.left);
+    expect(bounds.button.right).toBeLessThanOrEqual(bounds.memory.x);
+    expect(bounds.memory.right).toBeLessThanOrEqual(bounds.tasks.x);
+    expect(bounds.tasks.right).toBeLessThanOrEqual(bounds.duration.x);
+    expect(bounds.duration.right).toBeLessThanOrEqual(bounds.right);
+  }
+  const buttons = summaries.first().getByRole("button");
+  const detailButton = summaries
+    .first()
+    .getByRole("button", { name: "View details", exact: true });
+  const reference = (await detailButton.boundingBox())!;
+  for (const name of ["Memory calls: 2", "Task calls: 1"]) {
+    const button = summaries.first().getByRole("button", { name, exact: true });
+    const box = (await button.boundingBox())!;
+    expect(box.width).toBeCloseTo(reference.width, 1);
+    expect(box.height).toBe(reference.height);
+    await button.hover();
+    await button.focus();
+    await button.click();
+    await expect(
+      page.getByRole("dialog", {
+        name: "Tasks between responses",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+  }
+  await expect(buttons).toHaveCount(3);
+  await expect(
+    summaries.first().locator('[role="tooltip"], .meta-tooltip, [title]'),
+  ).toHaveCount(0);
+  await summaries
+    .first()
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Tasks between responses",
+    exact: true,
+  });
+  await expect(dialog.locator(".tool-activity")).toHaveCount(4);
 });

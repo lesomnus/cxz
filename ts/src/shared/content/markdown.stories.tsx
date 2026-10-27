@@ -61,10 +61,22 @@ export const Streaming: Story = { render: () => <StreamingPreview /> };
 function FileLinksPreview() {
   const [path, openFile] = useState("");
   return (
-    <MarkdownFileLinks.Provider value={openFile}>
-      <Markdown text="[Report](/tmp/report.md) · [File with spaces](/tmp/a%20report.md) · [External documentation](https://example.com/)" />
+    <MarkdownFileLinks.Provider
+      value={{ open: openFile, size: async () => 12345n }}
+    >
+      <Markdown text="[Report](/tmp/report.md) · [Source line](/workspace/file.ts:42) · [File URI](file:///workspace/file.ts) · [File with spaces](file:///tmp/a%20report.md) · [External documentation](https://example.com/) · [Network URL](//example.com/docs) · [Unsafe link](javascript:alert%281%29)" />
       <output aria-label="Opened file">{path || "Select a file link."}</output>
     </MarkdownFileLinks.Provider>
   );
 }
-export const FileLinks: Story = { render: () => <FileLinksPreview /> };
+export const FileLinks: Story = {
+  render: () => <FileLinksPreview />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Container file chips inherit body typography and text color, with a transparent background, muted outline and vertical separator between file icon and label. The one-line tooltip uses Nox Popover and shows a fixed-width CompactNumber byte size before the container path on hover or keyboard focus. Size lookup is lazy and the session caches successful results briefly; production reads only the download size header before canceling. This story simulates file sizes. Session pages open absolute container paths, source references with line/column suffixes, and local file URIs in the workspace editor through the session's project API. External websites retain ordinary hyperlinks and open in a new tab; other URI schemes retain the sanitizer's restrictions.",
+      },
+    },
+  },
+};

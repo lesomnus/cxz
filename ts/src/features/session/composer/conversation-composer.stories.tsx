@@ -41,6 +41,30 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const MenuOverTranscript: Story = {
+  args: {
+    uploadMode: "ready",
+    events: [
+      responseEvent(
+        2,
+        "codex",
+        Array.from(
+          { length: 24 },
+          (_, index) =>
+            `Conversation paragraph ${index + 1}. Open the session menu over this actual response to inspect the scroll rail backdrop. Text, numbers 0123456789 and punctuation stay in the transcript's normal paint layers.`,
+        ).join("\n\n"),
+      ),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Open the Session menu over a real transcript response. The external rail sits above ordinary conversation text; no synthetic background or extra foreground layer is used.",
+      },
+    },
+  },
+};
 export const CursorMemory: Story = {
   render: function CursorMemory() {
     const [drafts] = useState(
@@ -177,7 +201,7 @@ export const PendingSend: Story = {
     docs: {
       description: {
         story:
-          "The editor has a subtle, static monochrome grain for a matte surface. The read-only editor dims while Send awaits acknowledgement. If it takes longer, a subdued gray radial glow breathes from the top center until the request settles. Reduced motion uses a steady glow instead.",
+          "The editor has a subtle, static monochrome grain for a matte surface. The read-only editor dims while Send awaits acknowledgement. A subtle Nox InkSparkle sweep repeats across the input until the request settles. Its theme-aware ink stays behind the text and never intercepts input. Reduced motion keeps a static frame.",
       },
     },
   },

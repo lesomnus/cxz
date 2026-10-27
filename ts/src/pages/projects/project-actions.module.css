@@ -1,47 +1,34 @@
-.rows {
-  display: grid;
-  gap: var(--ui-space);
-}
-.row {
+.content {
   display: flex;
-  align-items: stretch;
-  gap: calc(2 * var(--ui-space));
-  margin: var(--ui-space) calc(-1 * var(--ui-space)) calc(-1 * var(--ui-space));
-  padding: var(--ui-space) var(--ui-space) var(--ui-space)
-    calc(3 * var(--ui-space));
-  border: 1px solid var(--ui-shade-54);
-  border-radius: calc(var(--ui-dialog-radius) - var(--ui-space));
-}
-.row p {
-  display: flex;
+  width: 100%;
   align-items: center;
+  gap: calc(2 * var(--ui-space));
+}
+.description {
+  display: block;
   flex: 1;
   min-width: 0;
-  min-height: 2lh;
-  margin: var(--ui-space) 0;
-  color: var(--ui-muted);
-  font-size: 12px;
   line-height: 1.5;
 }
-.action {
-  --action-button-size: calc(
-    var(--ui-icon-size) + 2 * var(--ui-control-inline-inset)
-  );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-  flex: none;
-  height: var(--action-button-size);
-  min-height: var(--action-button-size);
-  min-width: calc(var(--ui-toolbar-button-width) + 8 * var(--ui-space));
-  margin-inline-end: var(--ui-control-inline-inset);
-  padding: 0;
-  border-radius: calc(var(--ui-dialog-radius) - 2 * var(--ui-space) - 1px);
-  font-size: 12px;
+.description strong {
+  font-weight: 500;
 }
-.action > :global(.button-content) {
-  width: 100%;
+.detail {
+  color: var(--ui-muted);
+}
+.header {
+  --ui-section-padding: calc(4 * var(--ui-space));
+}
+.header h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+.action {
+  --ui-section-padding: calc(2 * var(--ui-space));
+  --button-hover-background: var(--ui-confirm-button-background);
+  height: 64px;
+  font-size: 12px;
 }
 .icon {
   display: grid;
@@ -54,9 +41,6 @@
 .icon svg {
   width: var(--ui-icon-size-small);
   height: var(--ui-icon-size-small);
-}
-.row .action:not(:disabled):hover {
-  background: var(--ui-confirm-button-background);
 }
 .findings {
   display: grid;

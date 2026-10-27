@@ -2,6 +2,9 @@ import { defaultClientConditions, defaultServerConditions } from "vite";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+const editorEntry = "packages/nox/src/editor/code-editor.ts";
+export const noxDevServer = { warmup: { clientFiles: [editorEntry] } };
+
 function clientRevision() {
   try {
     return execFileSync("git", ["rev-parse", "--short=12", "HEAD"], {
@@ -44,9 +47,7 @@ export function noxConfig(command) {
       // Entries replace discovery rather than adding to it, so the html roots
       // are named too. Reading the list from the editor's source means a new
       // monaco language in nox needs nothing here. See cxz#232.
-      ...(command === "serve"
-        ? { entries: ["*.html", "packages/nox/src/editor/code-editor.ts"] }
-        : {}),
+      ...(command === "serve" ? { entries: ["*.html", editorEntry] } : {}),
     },
     ...(command === "serve"
       ? {

@@ -2,7 +2,7 @@ import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { formatOffsetDateTime } from "#src/shared/components/date-time-format.ts";
 import { useEffect, useState } from "react";
-import { Button } from "@lesomnus/nox";
+import { Button, Card, Popover } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import { TaskStatus, type Task } from "#gen/cxz/task_pb";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -11,6 +11,8 @@ import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { relativeMessageTime } from "#src/features/session/conversation/message-time.ts";
 import { boardTasks, ownerIssue, taskTime, taskKey } from "./task-model";
 import styles from "./tasks.module.css";
+
+const priorityLabels = ["Highest", "High", "Normal", "Low", "Lowest"];
 
 function TaskCard({
   task,
@@ -30,52 +32,77 @@ function TaskCard({
   const date = new Date(taskTime(task));
   const relative = relativeMessageTime(date, new Date(now));
   return (
-    <article className={styles.card} data-task-alias={task.alias}>
+    <Card
+      className={`${styles.card} ${styles.taskHeader}`}
+      data-task-alias={task.alias}
+      data-priority={task.priority}
+      data-previous-run={issue === "Previous run" || undefined}
+      title={task.alias}
+      aria-label={`${priorityLabels[task.priority] ?? "Unknown"} priority: ${task.alias}${issue === "Previous run" ? " (previous run)" : ""}`}
+      bodyPadding="calc(2 * var(--space))"
+      footer={
+        <>
+          <div className={styles.cardMeta}>
+            {owner ? (
+              <RouteLink
+                className={styles.owner}
+                {...sessionLocation(owner)}
+                title={owner.name || owner.alias}
+              >
+                <AgentBrand agent={owner.agent} />
+                <span>{owner.alias}</span>
+              </RouteLink>
+            ) : (
+              <span className={styles.quiet}>
+                {task.assignee ? "Session unavailable" : "Unassigned"}
+              </span>
+            )}
+            <Popover
+              content={<DateTime value={date.getTime()} />}
+              placement="top-end"
+            >
+              <span aria-label={`Updated ${formatOffsetDateTime(date)}`}>
+                {relative ? (
+                  <time dateTime={date.toISOString()}>{relative}</time>
+                ) : (
+                  <DateTime value={date.getTime()} />
+                )}
+              </span>
+            </Popover>
+          </div>
+          {issue && issue !== "Previous run" && (
+            <span className={styles.ownerIssue}>{issue}</span>
+          )}
+        </>
+      }
+    >
       <Button
-        className={styles.cardMain}
+        className={styles.cardOpen}
         type="button"
         onClick={() => open(task)}
         aria-label={`Open task: ${task.name}`}
+        aria-haspopup="dialog"
+        title="Open task details"
       >
-        <strong>{task.name}</strong>
-        <small className={styles.alias}>{task.alias}</small>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" />
+        </svg>
       </Button>
-      <div className={styles.cardMeta}>
-        {owner ? (
-          <RouteLink
-            className={styles.owner}
-            {...sessionLocation(owner)}
-            title={owner.name || owner.alias}
-          >
-            <AgentBrand agent={owner.agent} />
-            <span>{owner.alias}</span>
-          </RouteLink>
-        ) : (
-          <span className={styles.quiet}>
-            {task.assignee ? "Session unavailable" : "Unassigned"}
-          </span>
-        )}
-        {relative ? (
-          <time
-            dateTime={date.toISOString()}
-            title={`Updated ${formatOffsetDateTime(date)}`}
-          >
-            {relative}
-          </time>
-        ) : (
-          <DateTime
-            value={date.getTime()}
-            title={`Updated ${formatOffsetDateTime(date)}`}
-          />
-        )}
+      <div className={styles.cardMain}>
+        <strong className={styles.cardTitle}>{task.name}</strong>
+        <span className={styles.cardDescription}>{task.desc}</span>
       </div>
-      {issue && <span className={styles.ownerIssue}>{issue}</span>}
-      {task.priority < 2 && (
-        <span className={styles.priority}>
-          {task.priority === 0 ? "Highest priority" : "High priority"}
-        </span>
-      )}
-    </article>
+    </Card>
   );
 }
 

@@ -3,6 +3,9 @@ import { expect, test, devices, type Page } from "@playwright/test";
 test.use({
   ...devices["Desktop Chrome"],
   viewport: { width: 1440, height: 1000 },
+  launchOptions: {
+    args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+  },
 });
 
 async function ready(page: Page) {
@@ -198,6 +201,8 @@ test("pending sends lock native and custom edits until confirmation", async ({
   const text = "- Pending draft\n```js\nconst n = 1;\n```";
   await input.fill(text);
   const surface = page.locator(".composer-input");
+  const ink = surface.locator("canvas.composer-pending-ink");
+  await expect(ink).toHaveCount(0);
   const idleBackground = await surface.evaluate(
     (el) => getComputedStyle(el).backgroundColor,
   );
@@ -235,6 +240,46 @@ test("pending sends lock native and custom edits until confirmation", async ({
     "departing",
   );
   await expect(surface).toHaveAttribute("aria-busy", "true");
+  await expect(ink).toHaveAttribute("aria-hidden", "true");
+  await expect(ink).toHaveCSS("pointer-events", "none");
+  await expect(ink).toHaveAttribute("data-renderer", "webgl2");
+  const centered = () =>
+    ink.evaluate((canvas: HTMLCanvasElement) => {
+      const gl = canvas.getContext("webgl2")!;
+      const program = gl.getParameter(gl.CURRENT_PROGRAM) as WebGLProgram;
+      const center = gl.getUniform(
+        program,
+        gl.getUniformLocation(program, "u_center")!,
+      ) as Float32Array;
+      return (
+        Math.abs(center[0] - canvas.clientWidth / 2) + Math.abs(center[1] + 24)
+      );
+    });
+  await expect.poll(centered).toBeLessThan(0.01);
+  const width = await ink.evaluate((el) => el.clientWidth);
+  await page.setViewportSize({ width: 700, height: 1000 });
+  await expect.poll(() => ink.evaluate((el) => el.clientWidth)).not.toBe(width);
+  await expect.poll(centered).toBeLessThan(0.01);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect.poll(centered).toBeLessThan(0.01);
+  await expect
+    .poll(() =>
+      ink.evaluate((canvas: HTMLCanvasElement) => {
+        const gl = canvas.getContext("webgl2")!;
+        const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+        gl.readPixels(
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          pixels,
+        );
+        return pixels.some((v, i) => i % 4 === 3 && v > 0);
+      }),
+    )
+    .toBe(true);
   await expect
     .poll(() => surface.evaluate((el) => getComputedStyle(el).backgroundColor))
     .not.toBe(idleBackground);
@@ -263,6 +308,7 @@ test("pending sends lock native and custom edits until confirmation", async ({
   await expect(input).toBeEditable();
   await expect(input).toHaveValue("");
   await expect(surface).toHaveAttribute("aria-busy", "false");
+  await expect(ink).toHaveCount(0);
   await expect
     .poll(() => surface.evaluate((el) => getComputedStyle(el).backgroundColor))
     .toBe(idleBackground);

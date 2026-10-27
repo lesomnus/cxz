@@ -3,6 +3,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -27,6 +28,8 @@ import {
   uuid,
 } from "#src/shared/navigation/resource-route.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
+import { createFileSizeReader } from "#src/shared/content/file-size.ts";
+import { projectId } from "#src/shared/api/project-id.ts";
 export function SessionsPage({
   c,
   id,
@@ -112,8 +115,18 @@ function SessionWorkspace({
     return () => observer.disconnect();
   }, []);
   const project = current.data?.project;
+  const projectKey = project?.id.length ? projectId(project) : "";
+  const readSize = useMemo(
+    () =>
+      projectKey ? createFileSizeReader(c.projects, projectKey) : undefined,
+    [c, projectKey],
+  );
+  const fileLinks = useMemo(
+    () => ({ open: openFile, size: readSize }),
+    [openFile, readSize],
+  );
   return (
-    <MarkdownFileLinks.Provider value={openFile}>
+    <MarkdownFileLinks.Provider value={fileLinks}>
       <div
         className="session-workspace"
         ref={area}
@@ -133,17 +146,19 @@ function SessionWorkspace({
                 className="session-divider"
                 label={t("Resize workspace editor")}
               />
-              <ProjectEditorPane
-                key={Array.from(project.id).join("-")}
-                c={c}
-                projectId={project.id}
-                requestedFile={requestedFile}
-                closePreview={
-                  requestedFile && !wide
-                    ? () => setFileRequest(undefined)
-                    : undefined
-                }
-              />
+              <div className="workspace-editor-layer">
+                <ProjectEditorPane
+                  key={Array.from(project.id).join("-")}
+                  c={c}
+                  projectId={project.id}
+                  requestedFile={requestedFile}
+                  closePreview={
+                    requestedFile && !wide
+                      ? () => setFileRequest(undefined)
+                      : undefined
+                  }
+                />
+              </div>
             </>
           )}
         </div>

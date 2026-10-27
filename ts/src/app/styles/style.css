@@ -17,9 +17,6 @@
   --composer-radius: 15px;
   --composer-editor-height: 110px;
   --composer-resize-duration: 300ms;
-  --composer-pending-glow: color-mix(in srgb, var(--shade-65) 35%, transparent);
-  --composer-pending-pulse-duration: 2400ms;
-  --composer-pending-pulse-delay: 500ms;
   --fine-grain-texture: url("../../shared/assets/textures/fine-grain.svg");
   --send-exit-duration: 180ms;
   --send-enter-duration: 240ms;
@@ -72,6 +69,7 @@
   --file-pane-width: 180px;
   --file-pane-min-width: 120px;
   --file-other-min-width: 240px;
+  --workspace-preview-drawer-height: 70%;
   --scroll-handle-color: var(--shade-122);
   --scroll-handle-hover-color: color-mix(
     in srgb,
@@ -541,18 +539,55 @@ header strong {
   overflow: hidden;
   flex-direction: column;
 }
+.workspace-editor-layer {
+  display: contents;
+}
 .session-divider {
   display: none;
 }
 @container (width < 1600px) {
-  .session-workspace[data-file-open="true"] .workspace-editor {
-    display: flex;
+  .workspace-editor-layer {
+    display: block;
     position: absolute;
-    inset: 0 0 0 auto;
-    width: min(100%, var(--conversation-width));
+    inset: 0;
+    overflow: clip;
     z-index: 10;
+    pointer-events: none;
+  }
+  .workspace-editor-layer > .workspace-editor {
+    display: flex;
+    width: 100%;
+    height: var(--workspace-preview-drawer-height);
+    visibility: hidden;
+    transform: translateY(-100%);
+    opacity: 0;
+    transition:
+      transform var(--ui-dialog-enter-duration) var(--ui-dialog-enter-easing),
+      opacity var(--ui-dialog-enter-duration) ease-out,
+      visibility var(--ui-dialog-enter-duration);
     background: var(--background);
-    border-left: 1px solid var(--shade-36);
+    border-bottom: 1px solid var(--shade-36);
+  }
+  .session-workspace[data-file-open="true"]
+    .workspace-editor-layer
+    > .workspace-editor {
+    visibility: visible;
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  @starting-style {
+    .session-workspace[data-file-open="true"]
+      .workspace-editor-layer
+      > .workspace-editor {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-editor-layer > .workspace-editor {
+    transition: none;
   }
 }
 @container (min-width: 1600px) {
@@ -1418,6 +1453,7 @@ pre {
 }
 .composer-input {
   z-index: 2;
+  background-color: var(--shade-24);
   border: 1px solid var(--shade-58);
   width: calc(100% + 2px + 2 * var(--composer-overhang));
   margin: calc(-1 * var(--composer-toolbar-overlap))
@@ -1426,39 +1462,14 @@ pre {
   transition: background-color 150ms ease-out;
 }
 .composer-input[data-sending="true"] {
-  background-color: var(--shade-27);
+  background-color: var(--shade-20);
 }
-.composer-input::before {
-  content: "";
+.composer-pending-ink {
   position: absolute;
   inset: 0;
+  z-index: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% 0%,
-    var(--composer-pending-glow),
-    transparent 75%
-  );
-  opacity: 0;
-}
-.composer-input[data-sending="true"]::before {
-  animation: composer-pending-pulse var(--composer-pending-pulse-duration)
-    ease-in-out var(--composer-pending-pulse-delay) infinite;
-}
-@keyframes composer-pending-pulse {
-  0%,
-  100% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .composer-input[data-sending="true"]::before {
-    animation: none;
-    opacity: 0.5;
-  }
 }
 .composer-input:focus-within {
   border-color: var(--shade-115);
@@ -1534,9 +1545,12 @@ pre {
   line-height: 1.5;
 }
 .composer-editor textarea,
-.editor-mirror {
+.editor-mirror,
+.editor-control-mirror {
   font-kerning: none;
   font-variant-ligatures: none;
+  /* Preserve every space's advance across soft wraps in native and mirror text. */
+  white-space: break-spaces;
 }
 .editor-gutter {
   position: relative;
@@ -1659,7 +1673,6 @@ pre {
 }
 .editor-mirror {
   position: relative;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .editor-line {
@@ -1867,7 +1880,7 @@ pre {
 .question-cards[data-covered="true"] .approval::after {
   opacity: 1;
 }
-.floating-card {
+:where(.floating-card-host, .anchored-detail-layer) .floating-card {
   position: absolute;
   bottom: var(--card-gap);
   left: var(--card-shadow-left);
@@ -1880,14 +1893,17 @@ pre {
     transform 180ms ease-out,
     opacity 180ms ease-out;
 }
-.floating-card[data-entered="true"] {
+:where(.floating-card-host, .anchored-detail-layer)
+  .floating-card[data-entered="true"] {
   transform: translateY(0) scale(1);
   opacity: 1;
 }
-.floating-card[data-active="true"] {
+:where(.floating-card-host, .anchored-detail-layer)
+  .floating-card[data-active="true"] {
   pointer-events: auto;
 }
-.floating-card[data-closing="true"] {
+:where(.floating-card-host, .anchored-detail-layer)
+  .floating-card[data-closing="true"] {
   transform: translateY(8px) scale(0.99);
   opacity: 0;
 }
@@ -2160,7 +2176,7 @@ pre {
   border-color: var(--shade-54);
 }
 @media (prefers-reduced-motion: reduce) {
-  .floating-card {
+  :where(.floating-card-host, .anchored-detail-layer) .floating-card {
     transition: none;
   }
   .question-cards,
@@ -2192,7 +2208,7 @@ pre {
 }
 .composer .toolbar-button:not(:disabled):is(:hover, [aria-expanded="true"]),
 .card-close:not(:disabled):hover {
-  background: var(--shade-54);
+  background: var(--ui-button-hover-background);
 }
 .latest-slot {
   position: absolute;
@@ -3001,8 +3017,8 @@ summary:hover {
   display: none;
 }
 
-/* All question panels occupy the same grid cell so the longest question sizes
-   the card. Inactive panels keep their editors mounted without receiving focus. */
+/* Keep every sliding page in one grid cell so the tallest question reserves
+   the card's height. SlidingPages owns transitions and inactive-page access. */
 .question-cards > .question-card {
   max-height: min(var(--question-max-height, 50dvh), var(--card-max-height));
   flex-shrink: 0;
@@ -3045,6 +3061,13 @@ summary:hover {
   grid-template-rows: minmax(0, 1fr);
   min-height: 0;
 }
+.question-card .question-panels > .question-page {
+  position: relative;
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: auto;
+}
 .question-card .question-group {
   grid-area: 1 / 1;
   display: grid;
@@ -3052,14 +3075,19 @@ summary:hover {
   min-height: 0;
   margin: 0;
 }
-.question-group[data-active="false"] {
-  visibility: hidden;
-  pointer-events: none;
-}
 .question-text {
   margin: 0 0 var(--space);
   padding: calc(2 * var(--space));
   font-size: 12px;
+}
+.question-text > .markdown {
+  padding-inline: 0;
+}
+.question-text > .markdown > :first-child {
+  margin-top: 0;
+}
+.question-text > .markdown > :last-child {
+  margin-bottom: 0;
 }
 .question-card .question-options {
   min-height: 0;
@@ -3267,4 +3295,52 @@ summary:hover {
 .question-other[data-selected="true"] > :is(.question-other-editor, input) {
   outline: 1px solid var(--shade-144);
   outline-offset: -1px;
+}
+
+/* Separate, non-interactive markers leave native text, caret and selection intact. */
+.editor-controls-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 12px 9px;
+  overflow: hidden;
+  scrollbar-gutter: stable;
+  pointer-events: none;
+  user-select: none;
+}
+.editor-control-mirror {
+  position: relative;
+  color: transparent;
+  overflow-wrap: anywhere;
+}
+.editor-control-line {
+  min-height: 1.5em;
+}
+.editor-control-character {
+  position: relative;
+}
+.editor-control-character::after {
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: attr(data-symbol);
+  color: var(--shade-119);
+}
+.editor-line-end {
+  display: inline;
+}
+.composer-editor[data-word-wrap="false"]
+  :is(textarea, .editor-mirror, .editor-control-mirror) {
+  white-space: pre;
+  overflow-wrap: normal;
+}
+.composer-editor[data-word-wrap="false"]
+  :is(.editor-mirror, .editor-control-mirror) {
+  width: max-content;
+  min-width: 100%;
+}
+
+.composer-send-ghost .editor-controls-surface,
+.composer-input[data-send-exiting] .editor-controls-surface {
+  visibility: hidden;
 }

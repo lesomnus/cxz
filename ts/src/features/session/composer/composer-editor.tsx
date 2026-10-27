@@ -28,7 +28,11 @@ import {
   inlineCodeRanges,
   listNewlineEdit,
 } from "./composer-markdown";
-import { useEditorSettings } from "#src/shared/settings/settings.ts";
+import { controlCharacters } from "./control-characters";
+import {
+  useSettings,
+  useEditorSettings,
+} from "#src/shared/settings/settings.ts";
 import { paletteVariables } from "#src/shared/settings/editor-settings.ts";
 import {
   codeBlocks,
@@ -112,6 +116,11 @@ export function ComposerEditor({
   const input = useRef<HTMLTextAreaElement>(null);
   const theme = useTheme();
   const editorSettings = useEditorSettings("session");
+  const { snapshot: preferences } = useSettings();
+  const wordWrap = preferences.document["composer.wordWrap"] !== false;
+  const showControls =
+    preferences.document["composer.showControlCharacters"] === true;
+  const controlMirror = useRef<HTMLDivElement>(null);
   const mirror = useRef<HTMLDivElement>(null);
   const gutter = useRef<HTMLDivElement>(null);
   const openCard = useFloatingCard();
@@ -356,6 +365,10 @@ export function ComposerEditor({
     // chips can paint above the textarea without a transformed stacking context.
     mirror.current!.style.left = `${-el.scrollLeft}px`;
     mirror.current!.style.top = `${-el.scrollTop}px`;
+    if (controlMirror.current) {
+      controlMirror.current.style.left = `${-el.scrollLeft}px`;
+      controlMirror.current.style.top = `${-el.scrollTop}px`;
+    }
     gutter.current!.style.transform = `translateY(${-el.scrollTop}px)`;
   }
   function measure() {
@@ -409,6 +422,8 @@ export function ComposerEditor({
     composition,
     editorSettings.tabSize,
     editorSettings.fontFamily,
+    wordWrap,
+    showControls,
   ]);
   useEffect(() => {
     const observer = new ResizeObserver(measure);
@@ -553,6 +568,7 @@ export function ComposerEditor({
         className="composer-editor"
         data-composing={composition}
         data-decorated={decorated}
+        data-word-wrap={wordWrap}
         data-command-open={hints.open}
         data-path-open={pathHints.open}
         data-file-drag={dragging}
@@ -616,7 +632,7 @@ export function ComposerEditor({
             spellCheck={false}
             autoCapitalize="off"
             autoCorrect="off"
-            wrap="soft"
+            wrap={wordWrap ? "soft" : "off"}
             onFocus={updateSuggestions}
             onBlur={() => {
               rememberSelection();
@@ -1101,6 +1117,26 @@ export function ComposerEditor({
               })}
             </div>
           </div>
+          {showControls && (
+            <div className="editor-controls-surface" aria-hidden="true">
+              <div className="editor-control-mirror" ref={controlMirror}>
+                {lines.map((line, index) => (
+                  <div className="editor-control-line" key={index}>
+                    {controlCharacters(line)}
+                    {index < lines.length - 1 && (
+                      <span
+                        className="editor-control-character editor-line-end"
+                        data-symbol="¶"
+                      >
+                        {"\u200b"}
+                      </span>
+                    )}
+                    {!line && "\u200b"}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {notice && (

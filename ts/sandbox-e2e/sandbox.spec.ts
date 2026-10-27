@@ -22,7 +22,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   const modelValue = page.locator(".model-field .setting-trigger .meta-value");
   const before = (await modelValue.boundingBox())!;
   await page.getByRole("combobox", { name: "Model", exact: true }).click();
-  const menu = page.getByRole("listbox", { name: "Model choices" });
+  const menu = page.locator(".setting-menu");
   await expect(menu).toBeVisible();
   const selectedValue = (await menu
     .locator(".setting-current .meta-value")
