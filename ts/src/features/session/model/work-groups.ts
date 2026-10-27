@@ -1,5 +1,5 @@
 import type { SessionEvent } from "#gen/cxz/session_pb";
-import { isTranscriptEvent } from "./journal";
+import { isTranscriptEvent, payload } from "./journal";
 import { isDiagnosticEvent } from "./event-diagnostic";
 
 export type WorkGroup = {
@@ -11,7 +11,29 @@ export type WorkGroup = {
   services: Record<"cxz_memory" | "cxz_tasks", number>;
 };
 
+// Codex also records MCP tool permission checks as elicitations, without a
+// corresponding tool row. Only settled tool checks belong in task history;
+// pending decisions and genuine MCP forms/URL requests stay in the conversation.
+function resolvedMcpService(event: SessionEvent) {
+  if (
+    event.kind !== "approval" ||
+    event.text !== "mcpServer/elicitation/request"
+  )
+    return;
+  const data = payload(event);
+  if (
+    data.params?.mode !== "form" ||
+    data.params?._meta?.codex_approval_kind !== "mcp_tool_call" ||
+    !["allowed", "denied", "canceled"].includes(data.cxz_resolution?.state)
+  )
+    return;
+  const server: unknown = data.params?.serverName;
+  return server === "cxz_memory" || server === "cxz_tasks" ? server : undefined;
+}
+
 function workService(event: SessionEvent) {
+  const service = resolvedMcpService(event);
+  if (service) return service;
   if (!event.toolSummary && event.kind !== "tool_call") return;
   const server = event.toolSummary?.mcpServer;
   if (server)
@@ -34,7 +56,7 @@ const conversationKinds = new Set([
 ]);
 export const isWorkEvent = (event: SessionEvent) =>
   isTranscriptEvent(event) &&
-  !conversationKinds.has(event.kind) &&
+  (!conversationKinds.has(event.kind) || !!resolvedMcpService(event)) &&
   !isDiagnosticEvent(event) &&
   !(
     event.kind === "turn_end" && ["failed", "interrupted"].includes(event.text)

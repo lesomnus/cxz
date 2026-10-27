@@ -6,10 +6,85 @@ import {
   ResponseMetadataSchema,
 } from "#gen/cxz/session_pb";
 import { transcriptRows } from "./tool-activity";
-import { workGroups, selectedWorkGroup } from "./work-groups";
+import { workGroups, selectedWorkGroup, isWorkEvent } from "./work-groups";
 
 const event = (seq: number, kind: string, requestId = "", runId = "run") =>
   create(SessionEventSchema, { seq: BigInt(seq), kind, requestId, runId });
+
+const mcpPermission = (
+  seq: number,
+  server: string,
+  state?: string,
+  approvalKind = "mcp_tool_call",
+  mode = "form",
+) =>
+  create(SessionEventSchema, {
+    ...event(seq, "approval", `mcp-permission-${seq}`),
+    text: "mcpServer/elicitation/request",
+    payload: new TextEncoder().encode(
+      JSON.stringify({
+        method: "mcpServer/elicitation/request",
+        params: {
+          serverName: server,
+          mode,
+          _meta: { codex_approval_kind: approvalKind },
+          message: `Allow ${server} to run a tool?`,
+          requestedSchema: { type: "object", properties: {} },
+        },
+        ...(state ? { cxz_resolution: { state } } : {}),
+      }),
+    ),
+  });
+
+it("groups resolved builtin MCP tool checks with work and activates existing service counters", () => {
+  const input = event(1, "input");
+  const memory = mcpPermission(2, "cxz_memory", "allowed");
+  const tasks = mcpPermission(3, "cxz_tasks", "allowed");
+  const failed = mcpPermission(4, "cxz_tasks", "denied");
+  const reply = event(5, "assistant");
+  const next = mcpPermission(6, "cxz_memory", "canceled");
+  const result = workGroups([input, memory, tasks, failed, reply, next]);
+  expect(result.events).toEqual([input, memory, reply, next]);
+  const groups = [...result.groups.values()];
+  expect(groups[0].events).toEqual([memory, tasks, failed]);
+  expect(groups[0].services).toEqual({ cxz_memory: 1, cxz_tasks: 2 });
+  expect(groups[1].services).toEqual({ cxz_memory: 1, cxz_tasks: 0 });
+  // Preserve the original approval and recorded resolution for the detail pane.
+  expect(groups[0].events[0]).toBe(memory);
+});
+
+it("keeps pending decisions, external MCP requests and real elicitation forms visible", () => {
+  for (const permission of [
+    mcpPermission(1, "cxz_memory"),
+    mcpPermission(2, "cxz_tasks"),
+    mcpPermission(3, "external", "allowed"),
+    mcpPermission(4, "cxz_memory", "allowed", ""),
+    mcpPermission(5, "cxz_tasks", "allowed", "form"),
+    mcpPermission(6, "cxz_memory", "invalid"),
+    mcpPermission(7, "cxz_memory", "allowed", "mcp_tool_call", "url"),
+  ]) {
+    expect(isWorkEvent(permission)).toBe(false);
+    const result = workGroups([permission]);
+    expect(result.groups.size).toBe(0);
+    expect(result.events).toEqual([permission]);
+  }
+});
+
+it("moves a settled MCP check into its task group without adding another event", () => {
+  const input = event(1, "input");
+  const pending = mcpPermission(2, "cxz_memory");
+  expect(workGroups([input, pending]).groups.size).toBe(0);
+  const settled = mcpPermission(2, "cxz_memory", "allowed");
+  for (const snapshot of [
+    [input, settled],
+    [input, { ...settled }],
+  ]) {
+    const result = workGroups(snapshot);
+    const group = [...result.groups.values()][0];
+    expect(group.events).toHaveLength(1);
+    expect(group.services.cxz_memory).toBe(1);
+  }
+});
 
 describe("work between conversation responses", () => {
   const timed = (seq: number, kind: string, timeMs: number, runId = "run") => ({

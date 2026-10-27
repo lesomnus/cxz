@@ -220,3 +220,45 @@ export const MemoryAndTaskCalls: Story = {
     ].map((e) => ({ ...e, timeMs: 1710000000000n + e.seq * 2000n })),
   },
 };
+
+// Real Codex permission history: these requests can be the only recorded trace
+// of a builtin MCP call, rather than mcpToolCall rows with a ToolSummary.
+const mcpPermission = (
+  seq: number,
+  server: string,
+  state?: string,
+  toolCheck = true,
+) =>
+  storyEvent(seq, "approval", "mcpServer/elicitation/request", {
+    method: "mcpServer/elicitation/request",
+    params: {
+      serverName: server,
+      mode: "form",
+      _meta: toolCheck ? { codex_approval_kind: "mcp_tool_call" } : {},
+      message: `Allow ${server} to run a tool?`,
+      requestedSchema: { type: "object", properties: {} },
+    },
+    ...(state ? { cxz_resolution: { state } } : {}),
+  });
+
+export const McpPermissionHistory: Story = {
+  args: {
+    events: [
+      storyEvent(
+        1,
+        "input",
+        "Read project notes and coordinate the next task.",
+      ),
+      mcpPermission(2, "cxz_memory", "allowed"),
+      mcpPermission(3, "cxz_tasks", "allowed"),
+      mcpPermission(4, "external", "allowed"),
+      mcpPermission(5, "cxz_memory", "allowed", false),
+      mcpPermission(6, "cxz_tasks"),
+      responseEvent(
+        7,
+        "codex",
+        "The builtin tool checks are grouped; other decisions remain visible.",
+      ),
+    ],
+  },
+};
