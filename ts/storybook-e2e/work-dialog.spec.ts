@@ -1,5 +1,54 @@
 import { expect, test } from "@playwright/test";
 
+test("resolved builtin MCP permissions enter Turn Tasks without standalone cards", async ({
+  page,
+}) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto(
+    "/iframe.html?id=conversation-workdialog--mcp-permission-history&viewMode=story",
+  );
+  const transcript = page.locator(".transcript");
+  const summary = transcript.locator("[data-work-summary]");
+  await expect(summary).toHaveCount(1);
+  await expect(
+    summary.getByRole("button", { name: "View details", exact: true }),
+  ).toHaveText("002");
+  await expect(
+    summary.getByRole("img", { name: "Memory calls: 1", exact: true }),
+  ).toBeVisible();
+  await expect(
+    summary.getByRole("img", { name: "Task calls: 1", exact: true }),
+  ).toBeVisible();
+  for (const seq of [2, 3]) {
+    await expect(
+      transcript.locator(`.event-detail[data-seq="${seq}"]`),
+    ).toHaveCount(0);
+  }
+  for (const seq of [4, 5, 6]) {
+    await expect(
+      transcript.locator(`.event-detail[data-seq="${seq}"]`),
+    ).toBeVisible();
+  }
+  await summary
+    .getByRole("button", { name: "View details", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Tasks between responses",
+    exact: true,
+  });
+  await expect(dialog.locator("button[data-seq]")).toHaveCount(2);
+  await dialog.locator('button[data-seq="2"]').click();
+  await dialog.getByRole("tab", { name: "Result", exact: true }).click();
+  // The editor virtualizes long JSON; copy reads the entire recorded payload.
+  await dialog.getByRole("button", { name: "Copy", exact: true }).click();
+  const detail = JSON.parse(
+    await page.evaluate(() => navigator.clipboard.readText()),
+  );
+  expect(detail.params.serverName).toBe("cxz_memory");
+  expect(detail.cxz_resolution.state).toBe("allowed");
+  expect(detail.params._meta.codex_approval_kind).toBe("mcp_tool_call");
+});
+
 test("all work kinds live in the task dialog while important errors remain readable in the transcript", async ({
   page,
 }) => {
