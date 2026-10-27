@@ -75,7 +75,7 @@ export function SessionMenu({
         label={t("Session menu")}
         placement="above"
         gap={toolbarMenuGap}
-        scrollbarOffset={6}
+        scrollbarOffset={1}
         motion={{ from: "bottom-right", effect: "reveal" }}
         disabled={!session}
         status={session?.status?.state}
