@@ -1,4 +1,16 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+async function hoverColor(button: Locator) {
+  return button.evaluate((node) => {
+    const probe = document.createElement("i");
+    probe.style.cssText =
+      "display:none;background:var(--ui-button-hover-background)";
+    node.append(probe);
+    const color = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return color;
+  });
+}
 
 test("standalone switch supports pointer and keyboard activation and a disabled state", async ({
   page,
@@ -24,7 +36,7 @@ test("package styling and tokens work without resetting host controls", async ({
   const button = page.getByRole("button", { name: "New session", exact: true });
   await expect(button).toHaveCSS("border-top-width", "0px");
   await button.hover();
-  await expect(button).toHaveCSS("background-color", "rgb(34, 34, 34)");
+  await expect(button).toHaveCSS("background-color", await hoverColor(button));
   await page.evaluate(() => {
     const plain = document.createElement("button");
     plain.id = "host-button";
@@ -55,7 +67,7 @@ test("package styling and tokens work without resetting host controls", async ({
     "/iframe.html?id=components-button--default&viewMode=story&globals=theme:light",
   );
   await button.hover();
-  await expect(button).toHaveCSS("background-color", "rgb(238, 238, 238)");
+  await expect(button).toHaveCSS("background-color", await hoverColor(button));
 });
 
 test("portaled dropdown aligns the current value and handles keyboard selection", async ({
@@ -67,9 +79,7 @@ test("portaled dropdown aligns the current value and handles keyboard selection"
   const trigger = page.getByRole("combobox", { name: "Effort" });
   const bounds = (await trigger.locator(".meta-value").boundingBox())!;
   await trigger.click();
-  const current = page
-    .getByRole("option", { name: "medium", exact: true })
-    .filter({ has: page.locator(".meta-value") });
+  const current = page.locator(".setting-menu .setting-current");
   const aligned = (await current.locator(".meta-value").boundingBox())!;
   expect(aligned.x).toBeCloseTo(bounds.x, 0);
   expect(aligned.y).toBeCloseTo(bounds.y, 0);

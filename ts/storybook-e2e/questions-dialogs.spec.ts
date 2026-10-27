@@ -22,7 +22,7 @@ async function finishEntrance(dialog: Locator) {
   await expect(dialog.locator(".floating-card")).toHaveCSS("transform", "none");
 }
 
-for (const action of ["Restart", "Purge"]) {
+for (const action of ["Restart", "Stop"]) {
   test(`${action} opens centrally without a foreground menu trigger`, async ({
     page,
   }) => {
@@ -32,6 +32,9 @@ for (const action of ["Restart", "Purge"]) {
     await page
       .getByRole("button", { name: "Session menu", exact: true })
       .click();
+    await expect(
+      page.getByRole("menuitem", { name: "Purge", exact: true }),
+    ).toHaveCount(0);
     await page.getByRole("menuitem", { name: action, exact: true }).click();
     const dialog = page.getByRole("dialog", {
       name: `${action} session`,

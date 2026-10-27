@@ -814,7 +814,7 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await expect(search).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(
     page.getByRole("option", { name: "Demo project", exact: true }),
-  ).toHaveCount(0);
+  ).toHaveAttribute("aria-selected", "true");
   await expect(
     page.getByRole("option", { name: "Docs playground", exact: true }),
   ).toBeVisible();
@@ -841,7 +841,7 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await search.fill("");
   await expect(
     page.getByRole("option", { name: "Docs playground", exact: true }),
-  ).toHaveCount(0);
+  ).toHaveAttribute("aria-selected", "true");
   await expect(
     page.getByRole("option", { name: "Demo project", exact: true }),
   ).toBeVisible();

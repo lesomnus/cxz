@@ -270,46 +270,50 @@ test("slash commands and Markdown editing use the shared editor behavior", async
   expect(errors).toEqual([]);
 });
 
-test("major component stories render without runtime errors", async ({
-  page,
-  request,
-}) => {
-  test.setTimeout(90000);
-  const index = await (await request.get("/index.json")).json();
-  const entries = Object.values(index.entries) as {
-    id: string;
-    type: string;
-  }[];
-  for (const entry of entries.filter((entry) => entry.type === "story")) {
-    const errors = await story(page, entry.id);
-    // Wait for component mount rather than just Storybook's loading shell.
-    await expect(page.locator("#storybook-root"), entry.id).toBeVisible();
-    if (entry.id.startsWith("editor-sourceeditor--")) {
-      await expect(page.locator(".monaco-editor"), entry.id).toBeVisible();
-      await expect
-        .poll(
-          () =>
-            page
-              .locator(".code-editor")
-              .evaluate(
-                (el) => el.clientHeight / el.parentElement!.clientHeight,
-              ),
-          { message: entry.id },
-        )
-        .toBeGreaterThan(0.95);
+for (const batch of [0, 1, 2, 3]) {
+  test(`major component stories render without runtime errors (batch ${batch + 1}/4)`, async ({
+    page,
+    request,
+  }) => {
+    test.setTimeout(90000);
+    const index = await (await request.get("/index.json")).json();
+    const entries = Object.values(index.entries) as {
+      id: string;
+      type: string;
+    }[];
+    for (const entry of entries
+      .filter((entry) => entry.type === "story")
+      .filter((_, index) => index % 4 === batch)) {
+      const errors = await story(page, entry.id);
+      // Wait for component mount rather than just Storybook's loading shell.
+      await expect(page.locator("#storybook-root"), entry.id).toBeVisible();
+      if (entry.id.startsWith("editor-sourceeditor--")) {
+        await expect(page.locator(".monaco-editor"), entry.id).toBeVisible();
+        await expect
+          .poll(
+            () =>
+              page
+                .locator(".code-editor")
+                .evaluate(
+                  (el) => el.clientHeight / el.parentElement!.clientHeight,
+                ),
+            { message: entry.id },
+          )
+          .toBeGreaterThan(0.95);
+      }
+      if (entry.id.startsWith("components-floatingcard--")) {
+        await expect(page.locator(".floating-card"), entry.id).toHaveCSS(
+          "opacity",
+          "1",
+        );
+        await expect(page.locator(".floating-card"), entry.id).toBeInViewport();
+      }
+      await expect(page.locator(".sb-errordisplay"), entry.id).toBeHidden();
+      expect(errors, entry.id).toEqual([]);
+      page.removeAllListeners("pageerror");
     }
-    if (entry.id.startsWith("components-floatingcard--")) {
-      await expect(page.locator(".floating-card"), entry.id).toHaveCSS(
-        "opacity",
-        "1",
-      );
-      await expect(page.locator(".floating-card"), entry.id).toBeInViewport();
-    }
-    await expect(page.locator(".sb-errordisplay"), entry.id).toBeHidden();
-    expect(errors, entry.id).toEqual([]);
-    page.removeAllListeners("pageerror");
-  }
-});
+  });
+}
 
 test("double Escape stops the simulated response without retaining the accepted draft", async ({
   page,

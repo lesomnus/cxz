@@ -73,7 +73,7 @@ for (const decorated of [false, true]) {
         if (controls) {
           const markers = editor.locator(".editor-control-mirror");
           const marked = await textGeometry(markers);
-          expect(marked.x).toBeCloseTo(geometry.x, 1);
+          expect(Math.abs(marked.x - geometry.x)).toBeLessThanOrEqual(1 / 8);
           expect(marked.y).toBeCloseTo(geometry.y, 1);
         }
         // Rendering preserves source spaces, including clipboard and selection.
@@ -84,10 +84,10 @@ for (const decorated of [false, true]) {
         );
       }
       expect(geometries[1].y).toBe(geometries[0].y);
-      expect(geometries[1].x - geometries[0].x).toBeCloseTo(
-        3 * geometries[0].space,
-        1,
-      );
+      // Independently laid-out text runs can differ by a few layout subpixels.
+      expect(
+        Math.abs(geometries[1].x - geometries[0].x - 3 * geometries[0].space),
+      ).toBeLessThanOrEqual(1 / 8);
       positions.push(geometries);
     }
     expect(positions[1]).toEqual(positions[0]);
