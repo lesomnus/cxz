@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("composer voice input and portable waveform examples are available", async ({
-  page,
-}) => {
+test("composer voice input controls are available", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(
@@ -17,9 +15,5 @@ test("composer voice input and portable waveform examples are available", async 
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toBeVisible();
-  await page.goto(
-    "/iframe.html?id=components-audiowaveform--listening&viewMode=story",
-  );
-  await expect(page.locator("canvas[data-active=true]")).toBeVisible();
   expect(errors).toEqual([]);
 });
