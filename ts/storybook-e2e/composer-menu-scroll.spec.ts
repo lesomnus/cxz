@@ -6,7 +6,7 @@ for (const deviceScaleFactor of [1, 1.5]) {
     test("only the visible rail blurs real conversation text", async ({
       page,
     }) => {
-      await page.setViewportSize({ width: 1040, height: 760 });
+      await page.setViewportSize({ width: 1040, height: 400 });
       await page.goto(
         "/iframe.html?id=conversation-composer--menu-over-transcript&viewMode=story",
       );
@@ -159,7 +159,7 @@ for (const width of [1280, 390]) {
   test(`composer menu scrollbar stays outside its border at width ${width}`, async ({
     page,
   }) => {
-    await page.setViewportSize({ width, height: 620 });
+    await page.setViewportSize({ width, height: 400 });
     await page.goto(
       "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
     );
