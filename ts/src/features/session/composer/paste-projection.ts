@@ -29,7 +29,7 @@ export class PasteProjection {
       const presentation =
         frozen?.get(range.paste.token) ?? presentPaste(range.paste);
       const start = text.length;
-      text += fileChipText(presentation.label);
+      text += fileChipText(presentation.label, presentation.prefix);
       this.ranges.push({
         start,
         end: text.length,

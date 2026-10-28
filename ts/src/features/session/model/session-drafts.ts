@@ -32,7 +32,14 @@ export class SessionDrafts extends Map<string, string> {
       const saved = JSON.parse(raw);
       if (typeof saved.text !== "string" || !Array.isArray(saved.pastes))
         return undefined;
-      for (const p of saved.pastes as SavedPaste[]) {
+      for (const savedPaste of saved.pastes as SavedPaste[]) {
+        const p = {
+          ...savedPaste,
+          sendAs:
+            savedPaste.sendAs === "text" || savedPaste.sendAs === "file"
+              ? savedPaste.sendAs
+              : undefined,
+        };
         if (
           typeof p.token !== "string" ||
           typeof p.body !== "string" ||
@@ -131,6 +138,7 @@ export class SessionDrafts extends Map<string, string> {
           body: p.body,
           lines: p.lines,
           bytes: p.bytes,
+          sendAs: p.sendAs,
           secret: p.secret,
           attachment: p.attachment && {
             name: p.attachment.name,

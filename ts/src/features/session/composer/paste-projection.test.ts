@@ -1,3 +1,4 @@
+import { PASTE_CHIP_PREFIX } from "./paste-chip-layout";
 import { expect, test } from "vitest";
 import { fileChipText } from "@lesomnus/nox";
 import { createPaste, createFileChip } from "./composer-pastes";
@@ -14,11 +15,11 @@ test("textarea text reserves decoration space and keeps five size cells", () => 
   const source = `한 ${small.token} ${large.token} 뒤`;
   const projection = new PasteProjection(source, pastes);
   expect(projection.text).toBe(
-    `한 ${fileChipText("0055B")} ${fileChipText("1.23K")} 뒤`,
+    `한 ${pasteText("0055B")} ${pasteText("1.23K")} 뒤`,
   );
   expect(projection.ranges.map((r) => r.end - r.start)).toEqual([
-    fileChipText("0055B").length,
-    fileChipText("1.23K").length,
+    pasteText("0055B").length,
+    pasteText("1.23K").length,
   ]);
   expect(presentPaste(small).leading).toBe("00");
   for (const range of projection.ranges) {
@@ -38,7 +39,7 @@ test("identical labels retain their own bodies when either chip is deleted or ed
     [second.token, second],
   ]);
   const projection = new PasteProjection(first.token + second.token, pastes);
-  const label = fileChipText("0005B");
+  const label = pasteText("0005B");
   const width = label.length;
   expect(projection.text).toBe(label + label);
   expect(projection.edit(label, 0)).toBe(second.token);
@@ -48,7 +49,7 @@ test("identical labels retain their own bodies when either chip is deleted or ed
   expect(projection.edit(label + "!" + label, width + 1)).toBe(
     first.token + "!" + second.token,
   );
-  expect(projection.edit(fileChipText("0095B") + label, 12)).toBeUndefined();
+  expect(projection.edit(pasteText("0095B") + label, 12)).toBeUndefined();
 });
 
 test("progress and failure widths map selection back to the stable reference", () => {
@@ -85,3 +86,7 @@ test("native undo and redo restore exact references even with identical labels",
   expect(history.restore(initial.text, "historyUndo")).toBe(initial.source);
   expect(history.restore(remaining.text, "historyRedo")).toBe(second.token);
 });
+
+function pasteText(label: string) {
+  return fileChipText(label, PASTE_CHIP_PREFIX);
+}

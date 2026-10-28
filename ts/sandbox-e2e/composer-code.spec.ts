@@ -1,3 +1,4 @@
+import { inspectPaste } from "../test-support/paste-chip";
 import { expect, test } from "@playwright/test";
 
 test.use({
@@ -172,7 +173,7 @@ test("multiple blocks, paste chips, highlighting and native line geometry stay a
       .getByRole("combobox", { name: "Code syntax 1" })
       .locator("option:checked"),
   ).toHaveText("Auto · json");
-  await page.locator(".paste-chip").click();
+  await inspectPaste(page, page.locator(".paste-chip"));
   await expect(
     page.getByRole("dialog", { name: "Paste source" }).locator("pre"),
   ).toHaveText(body);

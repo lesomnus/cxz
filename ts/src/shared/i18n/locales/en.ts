@@ -1,5 +1,8 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Text: "Text",
+  "Pasted text": "Pasted text",
+  "Send pasted content as": "Send pasted content as",
   "Editor options": "Editor options",
   "Show control characters": "Show control characters",
   "Word wrap": "Word wrap",

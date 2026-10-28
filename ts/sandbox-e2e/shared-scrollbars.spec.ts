@@ -1,3 +1,4 @@
+import { inspectPaste } from "../test-support/paste-chip";
 import {
   expect,
   test,
@@ -129,7 +130,7 @@ test("composer and detail cards share handle-only hover styling without shifting
   );
   await input.focus();
   await input.press("Control+v");
-  await page.locator(".paste-chip").click();
+  await inspectPaste(page, page.locator(".paste-chip"));
   const card = page.getByRole("dialog", { name: "Paste source" });
   const body = card.locator(".card-body");
   await expect

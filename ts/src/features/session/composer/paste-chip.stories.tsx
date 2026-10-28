@@ -23,6 +23,18 @@ const meta = {
   title: "Composer/Upload chips",
   component: PasteChip,
   args: { paste: file, onOpen: () => {} },
+  render: function Chip(args) {
+    const [paste, setPaste] = useState(args.paste);
+    useEffect(() => setPaste(args.paste), [args.paste]);
+    return (
+      <PasteChip
+        {...args}
+        paste={paste}
+        canSendFile
+        onSendModeChange={(mode) => setPaste({ ...paste, sendAs: mode })}
+      />
+    );
+  },
   parameters: {
     docs: {
       description: {
@@ -52,7 +64,7 @@ export const Interactive: Story = {
     docs: {
       description: {
         story:
-          "Paste multiline or long text, or drop files and folders into the real conversation editor. Chips show upload progress, then their size; click one to preview its contents or remove it. Session menu also provides file and folder pickers. Native paste/drop and the production composer run normally; only upload acknowledgement is simulated, so no files leave the browser.",
+          "Paste multiline or long text, or drop files and folders into the real conversation editor. Pasted chips use Text/File segments to choose inline content or an attachment, and hover shows a short excerpt. Clicking their label selects the chip without opening a dialog; Backspace/Delete removes it. Ctrl+P remains available for full source inspection. Ordinary file chips retain attachment dialogs. Native paste/drop runs normally; only upload acknowledgement is simulated, so no files leave the browser.",
       },
     },
   },
@@ -72,6 +84,7 @@ export const UploadTransition: Story = {
   render: function Transition() {
     const [progress, setProgress] = useState(0);
     const [attempt, setAttempt] = useState(0);
+    const [sendAs, setSendAs] = useState<"text" | "file">("file");
     useEffect(() => {
       const timer = window.setInterval(
         () =>
@@ -92,6 +105,7 @@ export const UploadTransition: Story = {
             <PasteChip
               paste={{
                 ...paste,
+                sendAs: paste.body ? sendAs : undefined,
                 attachment: {
                   ...paste.attachment!,
                   progress,
@@ -99,6 +113,8 @@ export const UploadTransition: Story = {
                 },
               }}
               onOpen={() => {}}
+              canSendFile
+              onSendModeChange={setSendAs}
             />
           </div>
         ))}

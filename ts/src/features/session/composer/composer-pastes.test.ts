@@ -6,9 +6,32 @@ import {
   partialPasteEdit,
   pasteRanges,
   wholePasteSelection,
+  attachmentsReady,
 } from "./composer-pastes";
 
 describe("composer paste chips", () => {
+  it("sends the selected inline body or file path and gates only file delivery", () => {
+    const paste = createPaste("original\r\ntext", "1234abcd");
+    paste.attachment = { name: "paste.txt", state: "uploading" };
+    const pastes = new Map([[paste.token, paste]]);
+    expect(attachmentsReady(paste.token, pastes)).toBe(false);
+    paste.sendAs = "text";
+    expect(attachmentsReady(paste.token, pastes)).toBe(true);
+    expect(expandPastes(paste.token, pastes)).toBe(paste.body);
+    paste.attachment.path = "/cxz/assets/paste.txt";
+    paste.attachment.state = "ready";
+    expect(expandPastes(paste.token, pastes)).toBe(paste.body);
+    paste.sendAs = "file";
+    expect(attachmentsReady(paste.token, pastes)).toBe(true);
+    expect(expandPastes(paste.token, pastes)).toBe(
+      "[Attached file: /cxz/assets/paste.txt — read this file for the full content]",
+    );
+    expect(expandPastes(paste.token, pastes, false)).toBe(paste.body);
+    paste.attachment.state = "error";
+    expect(attachmentsReady(paste.token, pastes)).toBe(false);
+    paste.sendAs = "text";
+    expect(attachmentsReady(paste.token, pastes)).toBe(true);
+  });
   it("matches TUI thresholds using Unicode characters and original UTF-8 bytes", () => {
     expect(needsPasteChip("😀".repeat(800))).toBe(false);
     expect(needsPasteChip("😀".repeat(801))).toBe(true);

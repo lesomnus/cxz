@@ -1,3 +1,4 @@
+import { PASTE_CHIP_PREFIX } from "../src/features/session/composer/paste-chip-layout";
 import { fileChipText } from "../packages/nox/src/components/file-chip/file-chip-text";
 import { expect, test } from "@playwright/test";
 
@@ -128,7 +129,7 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   }, text);
   const chip = page.locator(".composer .paste-chip");
   const label = chip.locator(".paste-chip-label");
-  await expect(chip).toHaveAccessibleName("000%");
+  await expect(chip).toHaveAccessibleName("Pasted text");
   await expect(label).toHaveText(" 000%");
   await expect(chip.locator(".paste-chip-token")).toHaveCount(0);
   await expect(label).toHaveText(" 012%");
@@ -153,8 +154,8 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   expect(bytes).toBe(34500);
   await expect(label).toHaveText("34.5K");
   await expect(label.locator('[data-mode="compact"]')).toHaveText("34.5K");
-  await expect(chip).toHaveAccessibleName("34.5K");
-  await expect(chip).toHaveAttribute("title", /34,500 B/);
+  await expect(chip).toHaveAccessibleName("Pasted text");
+  await expect(chip).toHaveAttribute("aria-description", /34,500 B/);
   await expect(input).toHaveValue(before.replace(/ \d{3}%/, "34.5K"));
   expect(
     await input.evaluate((node: HTMLTextAreaElement) => node.selectionStart),
@@ -167,8 +168,10 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   await page.screenshot({
     path: testInfo.outputPath("file-chip-composer.png"),
   });
-  await chip.click();
-  await expect(page.getByRole("dialog")).toContainText(text.trim());
+  await chip.locator(".paste-chip-label").click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await chip.hover();
+  await expect(page.getByRole("tooltip")).toHaveText("한글😀 한글😀 한글…");
 });
 
 test("upload acknowledgement during IME does not interrupt composition or expose references", async ({
@@ -190,7 +193,7 @@ test("upload acknowledgement during IME does not interrupt composition or expose
       }),
     );
   });
-  await expect(input).toHaveValue(fileChipText(" 000%"));
+  await expect(input).toHaveValue(pasteText(" 000%"));
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Input.imeSetComposition", {
     text: "하",
@@ -201,11 +204,15 @@ test("upload acknowledgement during IME does not interrupt composition or expose
     "data-upload-state",
     "ready",
   );
-  await expect(input).toHaveValue(fileChipText(" 000%") + "하");
+  await expect(input).toHaveValue(pasteText(" 000%") + "하");
   await expect(page.locator(".paste-chip-label")).toHaveText(" 000%");
   await cdp.send("Input.insertText", { text: "한" });
-  await expect(input).toHaveValue(fileChipText("0900B") + "한");
+  await expect(input).toHaveValue(pasteText("0900B") + "한");
   await expect(
     page.locator(".paste-chip-label [data-mode] > span").first(),
   ).toHaveText("0");
 });
+
+function pasteText(label: string) {
+  return fileChipText(label, PASTE_CHIP_PREFIX);
+}

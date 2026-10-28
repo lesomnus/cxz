@@ -1,3 +1,4 @@
+import { inspectPaste } from "../test-support/paste-chip";
 import { expect, test, type Page } from "@playwright/test";
 
 test.use({
@@ -112,8 +113,8 @@ test("paste files preserve source and session drafts while sending the uploaded 
     "ready",
   );
   const draft = await input.inputValue();
-  expect(draft).toMatch(/^앞 \u2002{4}[0-9.]{4}[BKMT]\u2005 뒤$/);
-  await page.locator(".paste-chip").click();
+  expect(draft).toMatch(/^앞 \u2007{6}[0-9.]{4}[BKMT]\u2005 뒤$/);
+  await inspectPaste(page, page.locator(".paste-chip"));
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toBeVisible();
   expect(await preview.locator("pre").textContent()).toBe(body);
@@ -190,7 +191,7 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
     "ready",
   );
   await expect(input).toHaveValue(`${token}\n${token}`);
-  await page.locator(".paste-chip").nth(1).click();
+  await inspectPaste(page, page.locator(".paste-chip").nth(1));
   await page
     .getByRole("button", { name: "Expand source", exact: true })
     .click();
@@ -201,7 +202,7 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   await expect(page.locator(".paste-chip")).toHaveCount(1);
   await input.press("Control+z");
   await expect(input).toHaveValue(`${token}\n${token}`);
-  await page.locator(".paste-chip").first().click();
+  await inspectPaste(page, page.locator(".paste-chip").first());
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(input).toHaveValue(`\n${token}`);
   await input.evaluate((el: HTMLTextAreaElement) => {

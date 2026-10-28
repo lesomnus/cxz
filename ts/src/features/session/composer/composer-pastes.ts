@@ -3,6 +3,7 @@ export type ComposerPaste = {
   body: string;
   lines: number;
   bytes: number;
+  sendAs?: "text" | "file";
   secret?: { session: string; run: string; path: string };
   attachment?: {
     file?: File;
@@ -22,6 +23,13 @@ export type PasteRange = {
 };
 export const MAX_PASTE_BYTES = 1024 * 1024;
 export const MAX_PASTE_CACHE_BYTES = 32 * MAX_PASTE_BYTES;
+
+export function isTextPaste(paste: ComposerPaste) {
+  return !paste.secret && !!paste.body;
+}
+export function pasteSendMode(paste: ComposerPaste): "text" | "file" {
+  return paste.sendAs ?? (paste.attachment ? "file" : "text");
+}
 
 export function needsPasteChip(text: string) {
   let characters = 0,
@@ -71,7 +79,9 @@ export function expandPastes(
   for (const range of pasteRanges(text, pastes)) {
     const attachment = range.paste.attachment;
     const body =
-      attachmentPaths && attachment?.path
+      attachmentPaths &&
+      attachment?.path &&
+      !(isTextPaste(range.paste) && pasteSendMode(range.paste) === "text")
         ? attachment.directory
           ? `[Attached directory archive: ${attachment.path} — extract this tar archive to read the directory contents]`
           : `[Attached file: ${attachment.path} — read this file for the full content]`
@@ -86,8 +96,11 @@ export function attachmentsReady(
   text: string,
   pastes: Map<string, ComposerPaste>,
 ) {
-  return pasteRanges(text, pastes).every(
-    ({ paste }) => !paste.attachment || paste.attachment.state === "ready",
+  return pasteRanges(text, pastes).every(({ paste }) =>
+    isTextPaste(paste)
+      ? pasteSendMode(paste) === "text" ||
+        (paste.attachment?.state === "ready" && !!paste.attachment.path)
+      : !paste.attachment || paste.attachment.state === "ready",
   );
 }
 

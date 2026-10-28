@@ -154,6 +154,7 @@ it("restores paste bodies and completed attachment paths without serializing fil
     state: "ready",
     path: "/cxz/assets/paste.txt",
   };
+  paste.sendAs = "text";
   pastes.set(paste.token, paste);
   const drafts = new SessionDrafts("host", pastes, () => file);
   const text = `Before ${paste.token} after`;
@@ -163,6 +164,9 @@ it("restores paste bodies and completed attachment paths without serializing fil
   expect(reload.get("one")).toBe(text);
   expect(restored.get(paste.token)?.body).toBe(paste.body);
   expect(attachmentsReady(text, restored)).toBe(true);
+  expect(restored.get(paste.token)?.sendAs).toBe("text");
+  expect(expandPastes(text, restored)).toBe("Before " + paste.body + " after");
+  restored.get(paste.token)!.sendAs = "file";
   expect(expandPastes(text, restored)).toContain("/cxz/assets/paste.txt");
 });
 it("keeps interrupted file chips blocked instead of uploading an empty restored file", () => {

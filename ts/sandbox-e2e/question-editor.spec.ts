@@ -1,3 +1,4 @@
+import { inspectPaste } from "../test-support/paste-chip";
 import { expect, test } from "@playwright/test";
 
 test.use({
@@ -69,7 +70,7 @@ test("option cards and Other share native selection and multiline paste editing"
   await expect(chip).toHaveCount(1);
   await expect(page.locator(".composer .paste-chip")).toHaveCount(0);
   const compact = await other.inputValue();
-  await chip.click();
+  await inspectPaste(page, chip);
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview.locator("pre")).toHaveText(body);
   await expect(page.locator(".question-cards")).toHaveJSProperty("inert", true);

@@ -1,6 +1,11 @@
 import { formatCompactNumber } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
-import type { ComposerPaste } from "./composer-pastes";
+import {
+  isTextPaste,
+  pasteSendMode,
+  type ComposerPaste,
+} from "./composer-pastes";
+import { PASTE_CHIP_PREFIX } from "./paste-chip-layout";
 
 export type PastePresentation = {
   label: string;
@@ -9,15 +14,18 @@ export type PastePresentation = {
   after: string;
   bytes?: number;
   progress?: number;
+  prefix?: string;
 };
 
 export function presentPaste(paste: ComposerPaste): PastePresentation {
   const attachment = paste.attachment;
-  const text = !paste.secret && (!attachment || !!paste.body);
+  const text = isTextPaste(paste) || (!paste.secret && !attachment);
   if (paste.secret)
     return { label: paste.token, before: paste.token, leading: "", after: "" };
   const before = text ? "" : `${attachment!.name} · `;
-  if (attachment?.state === "uploading") {
+  const prefix = text ? PASTE_CHIP_PREFIX : undefined;
+  const asText = text && pasteSendMode(paste) === "text";
+  if (!asText && attachment?.state === "uploading") {
     const progress = Math.max(
       0,
       Math.min(100, Math.floor(attachment.progress ?? 0)),
@@ -30,9 +38,10 @@ export function presentPaste(paste: ComposerPaste): PastePresentation {
       leading,
       after: `${digits}%`,
       progress,
+      prefix,
     };
   }
-  if (attachment?.state !== "error") {
+  if (asText || attachment?.state !== "error") {
     const size = formatCompactNumber(paste.bytes);
     const after = size.digits + (size.unit === "·" ? "B" : size.unit);
     return {
@@ -41,8 +50,9 @@ export function presentPaste(paste: ComposerPaste): PastePresentation {
       leading: size.leading,
       after,
       bytes: paste.bytes,
+      prefix,
     };
   }
   const label = before + t("Upload failed.");
-  return { label, before: label, leading: "", after: "" };
+  return { label, before: label, leading: "", after: "", prefix };
 }

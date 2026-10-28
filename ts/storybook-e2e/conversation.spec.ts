@@ -1,3 +1,5 @@
+import { inspectPaste } from "../test-support/paste-chip";
+import { PASTE_CHIP_PREFIX } from "../src/features/session/composer/paste-chip-layout";
 import { fileChipText } from "../packages/nox/src/components/file-chip/file-chip-text";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -85,7 +87,7 @@ test("paste chips preview and send their expanded contents", async ({
     );
   }, text);
   await expect(editor).toHaveValue(/[0-9.]{4}[BKMT]/);
-  await page.locator(".paste-chip").click();
+  await inspectPaste(page, page.locator(".paste-chip"));
   await expect(page.getByRole("dialog")).toContainText("const three = 3;");
   await page.getByRole("button", { name: "Close paste preview" }).click();
   await page.getByRole("button", { name: "Send", exact: true }).click();
@@ -122,7 +124,7 @@ test("same-size chips use exact visible widths and keep distinct sources through
   await input.press("Space");
   await paste(bravo);
   await expect(input).toHaveValue(
-    fileChipText("0024B") + " " + fileChipText("0024B"),
+    pasteText("0024B") + " " + pasteText("0024B"),
   );
   const chips = page.locator(".paste-chip");
   await expect(chips).toHaveCount(2);
@@ -143,15 +145,15 @@ test("same-size chips use exact visible widths and keep distinct sources through
   await expect(chips.first().locator("[data-mode] > span").first()).toHaveText(
     "00",
   );
-  await chips.first().click();
+  await inspectPaste(page, chips.first());
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
   await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await expect(input).toHaveValue(" " + fileChipText("0024B"));
+  await expect(input).toHaveValue(" " + pasteText("0024B"));
   await input.press("Control+z");
   await expect(input).toHaveValue(
-    fileChipText("0024B") + " " + fileChipText("0024B"),
+    pasteText("0024B") + " " + pasteText("0024B"),
   );
-  await chips.first().click();
+  await inspectPaste(page, chips.first());
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
   const copied = await input.evaluate((node) => {
     const clipboardData = new DataTransfer();
@@ -166,7 +168,7 @@ test("same-size chips use exact visible widths and keep distinct sources through
   });
   expect(copied).toBe(alpha);
   await page.getByRole("button", { name: "Close paste preview" }).click();
-  await chips.last().click();
+  await inspectPaste(page, chips.last());
   await expect(page.getByRole("dialog")).toContainText(bravo.trim());
   await page.getByRole("button", { name: "Close paste preview" }).click();
   await page.getByRole("button", { name: "Send", exact: true }).click();
@@ -474,3 +476,7 @@ test("a pending summary says it is coming and a failed one says why", async ({
   await expect(failed).toHaveClass(/error/);
   expect(errors).toEqual([]);
 });
+
+function pasteText(label: string) {
+  return fileChipText(label, PASTE_CHIP_PREFIX);
+}

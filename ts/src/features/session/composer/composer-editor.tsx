@@ -52,6 +52,7 @@ import {
   needsPasteChip,
   wholePasteSelection,
   expandPastes,
+  isTextPaste,
   type ComposerPaste,
 } from "./composer-pastes";
 import {
@@ -224,6 +225,28 @@ export function ComposerEditor({
         changedUploads(paste);
       }
     });
+  }
+  function changePasteMode(paste: ComposerPaste, mode: "text" | "file") {
+    if (readOnly || !isTextPaste(paste)) return;
+    if (mode === "file" && !upload && !paste.attachment?.path) return;
+    paste.sendAs = mode;
+    if (mode === "file" && !paste.attachment) {
+      const name = `paste-${paste.token.slice(7, 15)}.txt`;
+      paste.attachment = {
+        file: new File([paste.body], name, { type: "text/plain" }),
+        name,
+        state: "uploading",
+      };
+    }
+    if (
+      mode === "file" &&
+      paste.attachment?.state !== "ready" &&
+      upload &&
+      paste.attachment?.file &&
+      !jobs.current.has(paste.token)
+    )
+      startUpload(paste);
+    else changedUploads(paste);
   }
   async function insertPicked(picking: Promise<PickedFile[]> | PickedFile[]) {
     try {
@@ -1043,6 +1066,18 @@ export function ComposerEditor({
                       paste={range.paste}
                       presentation={range.presentation}
                       onOpen={() => showPreview(range)}
+                      onSelect={() => {
+                        input.current!.focus({ preventScroll: true });
+                        input.current!.setSelectionRange(
+                          range.start,
+                          range.end,
+                        );
+                      }}
+                      onSendModeChange={(mode) =>
+                        changePasteMode(range.paste, mode)
+                      }
+                      canSendFile={!!upload || !!range.paste.attachment?.path}
+                      readOnly={readOnly || composition}
                     />,
                   ];
                 });
