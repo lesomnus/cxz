@@ -6,7 +6,8 @@ test.use({
 });
 test("Tasks routes and versioned forms work against the real WASM Task service", async ({
   page,
-}) => {
+}, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/sandbox.html#/c/_/session/session-1");
@@ -34,6 +35,29 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
     name: "Task details",
     exact: true,
   });
+  const fields = detail.getByRole("group", { name: "Task fields" });
+  await expect(fields.locator(":scope > div > span")).toHaveText([
+    "Priority",
+    "Status",
+  ]);
+  const priority = detail.getByRole("combobox", {
+    name: "Priority",
+    exact: true,
+  });
+  const status = detail.getByRole("combobox", { name: "Status", exact: true });
+  const left = (await priority.boundingBox())!;
+  const right = (await status.boundingBox())!;
+  expect(left.y).toBe(right.y);
+  expect(left.width).toBe(right.width);
+  expect(right.x).toBeGreaterThan(left.x + left.width);
+  const title = (await detail
+    .getByRole("textbox", { name: "Title", exact: true })
+    .boundingBox())!;
+  expect(title.y).toBeGreaterThan(left.y + left.height);
+  expect(title.height).toBe(left.height);
+  await detail.screenshot({ path: testInfo.outputPath("task-details.png") });
+  await priority.click();
+  await page.getByRole("option", { name: "High", exact: true }).click();
   await detail
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("WASM task verified");

@@ -2,7 +2,14 @@ import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useEffect, useId, useRef, useState } from "react";
-import { Button, CardActions, Card } from "@lesomnus/nox";
+import {
+  Button,
+  CardActions,
+  Card,
+  Form,
+  FormField,
+  ValueMenu,
+} from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Project } from "#gen/cxz/project_pb";
@@ -12,7 +19,6 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
-import { ResourceValue } from "#src/shared/components/resource-value.tsx";
 import { AgentIdentity } from "#src/shared/components/agent-identity.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
@@ -23,7 +29,6 @@ import {
   taskStatuses,
   ownerIssue,
 } from "./task-model";
-import surface from "#src/shared/components/resource-surface.module.css";
 import styles from "./tasks.module.css";
 
 function TaskEditor({
@@ -201,60 +206,74 @@ function TaskEditor({
             </CardActions>
           }
         >
-          <fieldset className={styles.form} disabled={busy}>
-            <label className={surface.field}>
-              Title
+          <Form
+            as="fieldset"
+            columns={2}
+            disabled={busy}
+            aria-label="Task fields"
+          >
+            <FormField label="Priority">
+              <ValueMenu
+                label="Priority"
+                value={String(priority)}
+                options={["Highest", "High", "Normal", "Low", "Lowest"].map(
+                  (label, value) => ({ value: String(value), label }),
+                )}
+                choose={(value) => setPriority(Number(value))}
+                disabled={busy}
+              />
+            </FormField>
+            {task && (
+              <FormField label="Status">
+                <ValueMenu
+                  label="Status"
+                  value={String(status)}
+                  options={[
+                    ...statusOptions.map((item) => ({
+                      value: String(item.value),
+                      label: item.label,
+                    })),
+                    { value: String(TaskStatus.CANCELED), label: "Canceled" },
+                  ]}
+                  choose={(value) => setStatus(Number(value) as TaskStatus)}
+                  disabled={busy}
+                />
+              </FormField>
+            )}
+            <FormField label="Title" htmlFor={`${id}-title`} fullWidth>
               <input
+                id={`${id}-title`}
                 autoFocus
                 required
                 maxLength={256}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
-            </label>
-            <label className={surface.field}>
-              Alias
+            </FormField>
+            <FormField label="Alias" htmlFor={`${id}-alias`} fullWidth>
               <input
+                id={`${id}-alias`}
                 maxLength={63}
                 value={alias}
                 placeholder={task ? undefined : "Generated automatically"}
                 onChange={(event) => setAlias(event.target.value)}
               />
-            </label>
-            <label className={surface.field}>
-              Description
+            </FormField>
+            <FormField
+              label="Description"
+              htmlFor={`${id}-description`}
+              fullWidth
+            >
               <textarea
+                id={`${id}-description`}
+                className={styles.description}
                 rows={5}
                 maxLength={65536}
                 value={desc}
                 onChange={(event) => setDesc(event.target.value)}
               />
-            </label>
-            <ResourceValue
-              label="Priority"
-              value={String(priority)}
-              options={["Highest", "High", "Normal", "Low", "Lowest"].map(
-                (label, value) => ({ value: String(value), label }),
-              )}
-              choose={(value) => setPriority(Number(value))}
-              disabled={busy}
-            />
-            {task && (
-              <ResourceValue
-                label="Status"
-                value={String(status)}
-                options={[
-                  ...statusOptions.map((item) => ({
-                    value: String(item.value),
-                    label: item.label,
-                  })),
-                  { value: String(TaskStatus.CANCELED), label: "Canceled" },
-                ]}
-                choose={(value) => setStatus(Number(value) as TaskStatus)}
-                disabled={busy}
-              />
-            )}
-          </fieldset>
+            </FormField>
+          </Form>
           {task && (
             <div className={styles.details}>
               <div>
