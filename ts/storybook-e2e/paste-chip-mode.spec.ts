@@ -36,11 +36,16 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
       .getBoundingClientRect();
     return {
       gap: reserved.width - control.width,
+      inset: control.left - node.getBoundingClientRect().left,
+      border: parseFloat(
+        getComputedStyle(node).getPropertyValue("--ui-file-chip-border-width"),
+      ),
       space: parseFloat(getComputedStyle(node).getPropertyValue("--ui-space")),
     };
   });
   expect(leading.gap).toBeGreaterThanOrEqual(leading.space * 0.5);
   expect(leading.gap).toBeLessThanOrEqual(leading.space * 2);
+  expect(leading.inset).toBe(leading.border);
   await chip.hover();
   await expect(page.getByRole("tooltip")).toHaveText("first line…");
   expect(
