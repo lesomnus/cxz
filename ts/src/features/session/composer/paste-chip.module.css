@@ -3,11 +3,16 @@
   visibility: visible;
   pointer-events: auto;
 }
-.leading {
-  color: var(--ui-text-leading);
+/* Native textarea text owns advances and wrapping in this overlay. */
+.chip .number[data-mode] {
+  display: inline;
+  width: auto;
+  white-space: inherit;
+  font-family: inherit;
+  font-variant-numeric: inherit;
 }
-.chip[data-upload-state="uploading"] {
-  color: var(--ui-file-chip-muted);
+.progress {
+  color: var(--ui-text-separator);
 }
 .chip[data-upload-state="error"] {
   --ui-file-chip-border: var(--ui-shade-120);

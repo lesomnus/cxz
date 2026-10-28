@@ -14,11 +14,11 @@ test("textarea text reserves decoration space and keeps five size cells", () => 
   const source = `한 ${small.token} ${large.token} 뒤`;
   const projection = new PasteProjection(source, pastes);
   expect(projection.text).toBe(
-    `한 ${fileChipText("[Text 0055B]")} ${fileChipText("[Text 1.23K]")} 뒤`,
+    `한 ${fileChipText("0055B")} ${fileChipText("1.23K")} 뒤`,
   );
   expect(projection.ranges.map((r) => r.end - r.start)).toEqual([
-    fileChipText("[Text 0055B]").length,
-    fileChipText("[Text 1.23K]").length,
+    fileChipText("0055B").length,
+    fileChipText("1.23K").length,
   ]);
   expect(presentPaste(small).leading).toBe("00");
   for (const range of projection.ranges) {
@@ -38,7 +38,7 @@ test("identical labels retain their own bodies when either chip is deleted or ed
     [second.token, second],
   ]);
   const projection = new PasteProjection(first.token + second.token, pastes);
-  const label = fileChipText("[Text 0005B]");
+  const label = fileChipText("0005B");
   const width = label.length;
   expect(projection.text).toBe(label + label);
   expect(projection.edit(label, 0)).toBe(second.token);
@@ -48,9 +48,7 @@ test("identical labels retain their own bodies when either chip is deleted or ed
   expect(projection.edit(label + "!" + label, width + 1)).toBe(
     first.token + "!" + second.token,
   );
-  expect(
-    projection.edit(fileChipText("[Text 0095B]") + label, 12),
-  ).toBeUndefined();
+  expect(projection.edit(fileChipText("0095B") + label, 12)).toBeUndefined();
 });
 
 test("progress and failure widths map selection back to the stable reference", () => {
@@ -61,7 +59,7 @@ test("progress and failure widths map selection back to the stable reference", (
   const caret = pending.toSource(pending.text.length);
   paste.attachment!.state = "ready";
   const ready = new PasteProjection(source, pastes);
-  expect(ready.text).toBe(fileChipText("sample.txt · 5 B") + " tail");
+  expect(ready.text).toBe(fileChipText("sample.txt · 0005B") + " tail");
   expect(ready.toDisplay(caret)).toBe(ready.text.length);
 });
 

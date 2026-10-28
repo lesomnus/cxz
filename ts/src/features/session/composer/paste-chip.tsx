@@ -1,5 +1,5 @@
 import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
-import { FileChip } from "@lesomnus/nox";
+import { CompactNumber, FileChip } from "@lesomnus/nox";
 import type { ComposerPaste } from "./composer-pastes";
 import styles from "./paste-chip.module.css";
 import { presentPaste, type PastePresentation } from "./paste-presentation";
@@ -15,7 +15,7 @@ export function PasteChip({
 }) {
   const attachment = paste.attachment;
   const bytes = `${paste.bytes.toLocaleString(currentLocale())} B`;
-  const { label, before, leading, after } = presentation;
+  const { label, before } = presentation;
   return (
     <FileChip
       className={`paste-chip ${styles.chip}`}
@@ -24,7 +24,7 @@ export function PasteChip({
       data-upload-state={attachment?.state}
       role="button"
       tabIndex={0}
-      aria-label={paste.secret ? "Secret file reference" : label}
+      aria-label={paste.secret ? "Secret file reference" : label.trim()}
       title={
         attachment?.error ??
         (attachment?.state === "uploading"
@@ -40,11 +40,34 @@ export function PasteChip({
       }}
     >
       <span className="paste-chip-label" aria-hidden="true">
-        {before}
-        <span className={styles.leading} data-paste-leading>
-          {leading}
-        </span>
-        {after}
+        {presentation.progress !== undefined ? (
+          <>
+            {before}
+            <span className={styles.progress}>
+              {" "}
+              <CompactNumber
+                className={styles.number}
+                value={presentation.progress}
+                mode="integer"
+                digits={3}
+                muted
+              />
+              %
+            </span>
+          </>
+        ) : presentation.bytes !== undefined ? (
+          <>
+            {before}
+            <CompactNumber
+              className={styles.number}
+              value={presentation.bytes}
+              baseUnit="B"
+              label={bytes}
+            />
+          </>
+        ) : (
+          label
+        )}
       </span>
     </FileChip>
   );

@@ -1,5 +1,5 @@
 import { formatCompactNumber } from "@lesomnus/nox";
-import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
 import type { ComposerPaste } from "./composer-pastes";
 
 export type PastePresentation = {
@@ -7,12 +7,17 @@ export type PastePresentation = {
   before: string;
   leading: string;
   after: string;
+  bytes?: number;
+  progress?: number;
 };
 
 export function presentPaste(paste: ComposerPaste): PastePresentation {
   const attachment = paste.attachment;
   const text = !paste.secret && (!attachment || !!paste.body);
-  if (text && attachment?.state === "uploading") {
+  if (paste.secret)
+    return { label: paste.token, before: paste.token, leading: "", after: "" };
+  const before = text ? "" : `${attachment!.name} · `;
+  if (attachment?.state === "uploading") {
     const progress = Math.max(
       0,
       Math.min(100, Math.floor(attachment.progress ?? 0)),
@@ -20,32 +25,24 @@ export function presentPaste(paste: ComposerPaste): PastePresentation {
     const digits = String(progress);
     const leading = "0".repeat(3 - digits.length);
     return {
-      label: `[Paste ${leading}${digits}%]`,
-      before: "[Paste ",
+      label: `${before} ${leading}${digits}%`,
+      before,
       leading,
-      after: `${digits}%]`,
+      after: `${digits}%`,
+      progress,
     };
   }
-  if (text && attachment?.state !== "error") {
+  if (attachment?.state !== "error") {
     const size = formatCompactNumber(paste.bytes);
-    const after = size.digits + (size.unit === "·" ? "B" : size.unit) + "]";
+    const after = size.digits + (size.unit === "·" ? "B" : size.unit);
     return {
-      label: `[Text ${size.leading}${after}`,
-      before: "[Text ",
+      label: before + size.leading + after,
+      before,
       leading: size.leading,
       after,
+      bytes: paste.bytes,
     };
   }
-  const status =
-    attachment?.state === "uploading"
-      ? t("Uploading…")
-      : attachment?.state === "error"
-        ? t("Upload failed.")
-        : `${paste.bytes.toLocaleString(currentLocale())} B`;
-  const label = paste.secret
-    ? paste.token
-    : text
-      ? `[Paste ${t("Failed")}]`
-      : `${attachment!.name} · ${status}`;
+  const label = before + t("Upload failed.");
   return { label, before: label, leading: "", after: "" };
 }

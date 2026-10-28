@@ -84,7 +84,7 @@ test("paste chips preview and send their expanded contents", async ({
       }),
     );
   }, text);
-  await expect(editor).toHaveValue(/\[Text [0-9.]{4}[BKMT]\]/);
+  await expect(editor).toHaveValue(/[0-9.]{4}[BKMT]/);
   await page.locator(".paste-chip").click();
   await expect(page.getByRole("dialog")).toContainText("const three = 3;");
   await page.getByRole("button", { name: "Close paste preview" }).click();
@@ -122,7 +122,7 @@ test("same-size chips use exact visible widths and keep distinct sources through
   await input.press("Space");
   await paste(bravo);
   await expect(input).toHaveValue(
-    fileChipText("[Text 0024B]") + " " + fileChipText("[Text 0024B]"),
+    fileChipText("0024B") + " " + fileChipText("0024B"),
   );
   const chips = page.locator(".paste-chip");
   await expect(chips).toHaveCount(2);
@@ -140,14 +140,16 @@ test("same-size chips use exact visible widths and keep distinct sources through
     });
     expect(Math.abs(width.chip - width.text)).toBeLessThan(0.1);
   }
-  await expect(chips.first().locator("[data-paste-leading]")).toHaveText("00");
+  await expect(chips.first().locator("[data-mode] > span").first()).toHaveText(
+    "00",
+  );
   await chips.first().click();
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
   await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await expect(input).toHaveValue(" " + fileChipText("[Text 0024B]"));
+  await expect(input).toHaveValue(" " + fileChipText("0024B"));
   await input.press("Control+z");
   await expect(input).toHaveValue(
-    fileChipText("[Text 0024B]") + " " + fileChipText("[Text 0024B]"),
+    fileChipText("0024B") + " " + fileChipText("0024B"),
   );
   await chips.first().click();
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
