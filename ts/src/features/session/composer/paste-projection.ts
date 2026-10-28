@@ -4,6 +4,7 @@ import {
   type PasteRange,
 } from "./composer-pastes";
 import { presentPaste, type PastePresentation } from "./paste-presentation";
+import { fileChipText } from "@lesomnus/nox";
 
 export type ProjectedPasteRange = PasteRange & {
   sourceStart: number;
@@ -28,7 +29,7 @@ export class PasteProjection {
       const presentation =
         frozen?.get(range.paste.token) ?? presentPaste(range.paste);
       const start = text.length;
-      text += presentation.label;
+      text += fileChipText(presentation.label);
       this.ranges.push({
         start,
         end: text.length,

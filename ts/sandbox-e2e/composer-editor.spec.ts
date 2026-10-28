@@ -112,7 +112,7 @@ test("paste files preserve source and session drafts while sending the uploaded 
     "ready",
   );
   const draft = await input.inputValue();
-  expect(draft).toMatch(/^앞 \[Text [0-9.]{4}[BKMT]\] 뒤$/);
+  expect(draft).toMatch(/^앞 \u2002{4}\[Text [0-9.]{4}[BKMT]\]\u2002 뒤$/);
   await page.locator(".paste-chip").click();
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toBeVisible();

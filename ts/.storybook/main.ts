@@ -10,6 +10,7 @@ const config: StorybookConfig = {
     "../packages/nox/src/components/page-toolbar/*.stories.tsx",
     "../packages/nox/src/components/icon-value-menu/*.stories.tsx",
     "../packages/nox/src/components/card/*.stories.tsx",
+    "../packages/nox/src/components/file-chip/*.stories.tsx",
     "../packages/nox/src/components/compact-number/*.stories.tsx",
     "../packages/nox/src/components/duration-display/*.stories.tsx",
     "../packages/nox/src/components/suggestion-grid/*.stories.tsx",

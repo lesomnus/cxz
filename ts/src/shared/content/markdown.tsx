@@ -1,6 +1,7 @@
 import { Renderer } from "marked";
 import { conversationMarkdown } from "./markdown-parser";
 import DOMPurify from "dompurify";
+import { fileChipClassName } from "@lesomnus/nox";
 import {
   createContext,
   useContext,
@@ -13,7 +14,6 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { MarkdownCodeBlock } from "./markdown-code-block";
 import styles from "./markdown-code-block.module.css";
 import { workspaceFilePath } from "./file-links";
-import fileLinkStyles from "./file-link.module.css";
 import { FileLinkHint } from "./file-link-hint";
 import type { FileSizeReader } from "./file-size";
 
@@ -46,7 +46,8 @@ function purifier(fileLinks: boolean) {
       ) {
         node.removeAttribute("target");
         node.removeAttribute("rel");
-        node.classList.add(fileLinkStyles.link);
+        node.classList.add(fileChipClassName);
+        node.setAttribute("data-file-chip", "");
         node.setAttribute("data-container-file", "true");
         return;
       }

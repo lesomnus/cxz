@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("upload chips shimmer and fade into solid chips on completion", async ({
+test("upload chips shimmer and fade into outlined chips on completion", async ({
   page,
 }) => {
   await page.goto(
@@ -8,20 +8,26 @@ test("upload chips shimmer and fade into solid chips on completion", async ({
   );
   const chips = page.locator(".paste-chip");
   await expect(chips).toHaveCount(2);
-  // The shimmer must paint above the opaque inline chip background.
+  // Shared activity paints behind the label and never covers the caret.
   expect(
     await chips
       .first()
-      .evaluate((el) => getComputedStyle(el, "::before").zIndex),
-  ).toBe("0");
-  await expect(chips.first().locator(".paste-chip-label")).toHaveCSS(
+      .evaluate(
+        (el) =>
+          getComputedStyle(el.querySelector("[data-file-chip-activity]")!)
+            .zIndex,
+      ),
+  ).toBe("auto");
+  await expect(chips.first().locator("[data-file-chip-label]")).toHaveCSS(
     "z-index",
     "1",
   );
   await expect(chips.first()).toHaveAttribute("aria-busy", "true");
   const effect = () =>
     chips.first().evaluate((el) => {
-      const style = getComputedStyle(el, "::before");
+      const style = getComputedStyle(
+        el.querySelector("[data-file-chip-activity]")!,
+      );
       return {
         opacity: style.opacity,
         playState: style.animationPlayState,
@@ -47,6 +53,10 @@ test("upload chips shimmer and fade into solid chips on completion", async ({
   expect(
     await chips
       .first()
-      .evaluate((el) => getComputedStyle(el, "::before").animationName),
+      .evaluate(
+        (el) =>
+          getComputedStyle(el.querySelector("[data-file-chip-activity]")!)
+            .animationName,
+      ),
   ).toBe("none");
 });

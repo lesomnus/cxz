@@ -1,3 +1,4 @@
+import { fileChipText } from "../packages/nox/src/components/file-chip/file-chip-text";
 import { expect, test, type Page } from "@playwright/test";
 
 async function story(page: Page, id: string, globals = "") {
@@ -120,13 +121,18 @@ test("same-size chips use exact visible widths and keep distinct sources through
   await paste(alpha);
   await input.press("Space");
   await paste(bravo);
-  await expect(input).toHaveValue("[Text 0024B] [Text 0024B]");
+  await expect(input).toHaveValue(
+    fileChipText("[Text 0024B]") + " " + fileChipText("[Text 0024B]"),
+  );
   const chips = page.locator(".paste-chip");
   await expect(chips).toHaveCount(2);
   for (const chip of await chips.all()) {
     const width = await chip.evaluate((node) => {
       const range = document.createRange();
-      range.selectNodeContents(node.querySelector(".paste-chip-label")!);
+      const prefix = node.querySelector("[data-file-chip-prefix]")!.firstChild!;
+      const suffix = node.querySelector("[data-file-chip-suffix]")!.firstChild!;
+      range.setStart(prefix, 0);
+      range.setEnd(suffix, suffix.textContent!.length);
       return {
         chip: node.getBoundingClientRect().width,
         text: range.getBoundingClientRect().width,
@@ -138,9 +144,11 @@ test("same-size chips use exact visible widths and keep distinct sources through
   await chips.first().click();
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
   await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await expect(input).toHaveValue(" [Text 0024B]");
+  await expect(input).toHaveValue(" " + fileChipText("[Text 0024B]"));
   await input.press("Control+z");
-  await expect(input).toHaveValue("[Text 0024B] [Text 0024B]");
+  await expect(input).toHaveValue(
+    fileChipText("[Text 0024B]") + " " + fileChipText("[Text 0024B]"),
+  );
   await chips.first().click();
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
   const copied = await input.evaluate((node) => {

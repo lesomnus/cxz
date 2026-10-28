@@ -1,82 +1,14 @@
 .chip {
-  position: relative;
   z-index: 2;
   visibility: visible;
-  /* Reserve the last pixel for the native caret; no outward shadow covers it. */
-  --chip-background: var(--shade-24);
-  background: linear-gradient(
-    to left,
-    transparent 1px,
-    var(--chip-background) 1px
-  );
-  border-radius: 4px;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  transition: color 450ms ease-out;
-  cursor: pointer;
   pointer-events: auto;
 }
-.chip:hover,
-.chip:focus-visible {
-  --chip-background: var(--shade-32);
-  outline: none;
-  color: var(--shade-255);
-}
 .leading {
-  color: var(--shade-65);
+  color: var(--ui-text-leading);
 }
 .chip[data-upload-state="uploading"] {
-  color: var(--shade-150);
+  color: var(--ui-file-chip-muted);
 }
 .chip[data-upload-state="error"] {
-  outline: 1px solid var(--shade-120);
-  outline-offset: -1px;
-}
-
-/* A separate paint layer fades away without changing chip or caret geometry. */
-.chip::before {
-  content: "";
-  position: absolute;
-  inset: 0 1px 0 0;
-  z-index: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(
-    105deg,
-    transparent 30%,
-    color-mix(in srgb, var(--shade-255) 16%, transparent) 50%,
-    transparent 70%
-  );
-  background-size: 250% 100%;
-  opacity: 0;
-  transition: opacity 450ms ease-out;
-  animation: upload-shimmer 1.8s linear infinite;
-  animation-play-state: paused;
-}
-.chip[data-upload-state="uploading"]::before {
-  opacity: 1;
-  animation-play-state: running;
-}
-@keyframes upload-shimmer {
-  from {
-    background-position: 150% 0;
-  }
-  to {
-    background-position: -50% 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .chip {
-    transition: none;
-  }
-  .chip::before {
-    animation: none;
-    transition: none;
-    background-position: 50% 0;
-  }
-}
-
-.label {
-  position: relative;
-  z-index: 1;
+  --ui-file-chip-border: var(--ui-shade-120);
 }

@@ -1097,7 +1097,7 @@ pre {
   padding: 0;
   overflow-wrap: normal;
 }
-.markdown a {
+.markdown a:not([data-container-file]) {
   color: var(--shade-237);
   text-underline-offset: 3px;
 }

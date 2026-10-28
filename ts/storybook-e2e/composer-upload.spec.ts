@@ -1,10 +1,11 @@
+import { fileChipText } from "../packages/nox/src/components/file-chip/file-chip-text";
 import { expect, test } from "@playwright/test";
 
 test("pending uploads block send without moving the caret and deletion releases the blocker", async ({
   page,
 }) => {
   await page.goto(
-    "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
+    "/iframe.html?id=composer-upload-chips--interactive&viewMode=story",
   );
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   const send = page.getByRole("button", { name: "Send", exact: true });
@@ -37,7 +38,9 @@ test("pending uploads block send without moving the caret and deletion releases 
     ),
   ).toBe(true);
   await expect(send).toBeEnabled();
-  await expect(input).toHaveValue(/^Before sample.txt · 5 B typing after$/);
+  await expect(input).toHaveValue(
+    "Before " + fileChipText("sample.txt · 5 B") + " typing after",
+  );
   await chip.click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(input).toHaveValue("Before  typing after");
@@ -77,7 +80,7 @@ test("failed uploads retry in place and deleting a pending chip cancels it", asy
   await expect(
     page.getByRole("dialog", { name: "Attachment", exact: true }),
   ).toContainText("/cxz/assets/storybook/upload/retry.txt");
-  await expect(input).toHaveValue("retry.txt · 5 B");
+  await expect(input).toHaveValue(fileChipText("retry.txt · 5 B"));
   await expect(send).toBeEnabled();
   await page.keyboard.press("Escape");
   await input.fill("keep");
@@ -102,9 +105,9 @@ test("failed uploads retry in place and deleting a pending chip cancels it", asy
 
 test("large pasted text shows upload status then UTF-8 bytes without internal names", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.goto(
-    "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
+    "/iframe.html?id=composer-upload-chips--interactive&viewMode=story",
   );
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   const text = "한글😀\n".repeat(3000) + "x".repeat(1500);
@@ -157,6 +160,9 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   // subpixels. Still reject any visible movement or change in chip size.
   for (const key of ["x", "y", "width", "height"] as const)
     expect(Math.abs(readyBounds[key] - bounds![key])).toBeLessThan(0.1);
+  await page.screenshot({
+    path: testInfo.outputPath("file-chip-composer.png"),
+  });
   await chip.click();
   await expect(page.getByRole("dialog")).toContainText(text.trim());
 });
@@ -180,7 +186,7 @@ test("upload acknowledgement during IME does not interrupt composition or expose
       }),
     );
   });
-  await expect(input).toHaveValue("[Paste 000%]");
+  await expect(input).toHaveValue(fileChipText("[Paste 000%]"));
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Input.imeSetComposition", {
     text: "하",
@@ -191,9 +197,9 @@ test("upload acknowledgement during IME does not interrupt composition or expose
     "data-upload-state",
     "ready",
   );
-  await expect(input).toHaveValue("[Paste 000%]하");
+  await expect(input).toHaveValue(fileChipText("[Paste 000%]") + "하");
   await expect(page.locator(".paste-chip-label")).toHaveText("[Paste 000%]");
   await cdp.send("Input.insertText", { text: "한" });
-  await expect(input).toHaveValue("[Text 0900B]한");
+  await expect(input).toHaveValue(fileChipText("[Text 0900B]") + "한");
   await expect(page.locator("[data-paste-leading]")).toHaveText("0");
 });

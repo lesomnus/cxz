@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { PasteChip } from "./paste-chip";
 import type { ComposerPaste } from "./composer-pastes";
+import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 
 const file: ComposerPaste = {
   token: "[File 12345678 · archive.zip]",
@@ -26,7 +27,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "File uploads and large pastes shimmer while uploading, then fade into solid chips. Replay the simulated upload to inspect completion. Respects reduced motion.",
+          "File uploads and large pastes share Nox FileChip's transparent outlined design with conversation file links. Uploads shimmer until acknowledged. Replay the simulated upload to inspect completion. Respects reduced motion.",
       },
     },
   },
@@ -38,6 +39,33 @@ export const UploadingPaste: Story = { args: { paste: text } };
 export const Ready: Story = {
   args: {
     paste: { ...file, attachment: { ...file.attachment!, state: "ready" } },
+  },
+};
+export const ReadyPaste: Story = {
+  args: {
+    paste: { ...text, attachment: { ...text.attachment!, state: "ready" } },
+  },
+};
+export const Interactive: Story = {
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Paste multiline or long text, or drop files and folders into the real conversation editor. Chips show upload progress, then their size; click one to preview its contents or remove it. Session menu also provides file and folder pickers. Native paste/drop and the production composer run normally; only upload acknowledgement is simulated, so no files leave the browser.",
+      },
+    },
+  },
+  render: function Interactive() {
+    const [value, setValue] = useState("");
+    return (
+      <ComponentPreview
+        value={value}
+        onChange={setValue}
+        uploadMode="slow"
+        autoFocus
+      />
+    );
   },
 };
 export const UploadTransition: Story = {
