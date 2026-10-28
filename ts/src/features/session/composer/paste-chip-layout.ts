@@ -1,5 +1,5 @@
 // Figure spaces reserve an indivisible numeric-width area in native text.
-export const PASTE_CHIP_PREFIX = "\u2007".repeat(6);
+export const PASTE_CHIP_PREFIX = "\u2007".repeat(5);
 
 const characters = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 export function pasteExcerpt(body: string, limit = 10) {

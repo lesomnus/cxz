@@ -27,6 +27,20 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
   ).toBeChecked();
   await expect(chip.getByText("Text", { exact: true })).toHaveCount(0);
   await expect(chip.getByText("File", { exact: true })).toHaveCount(0);
+  const leading = await chip.evaluate((node) => {
+    const reserved = node
+      .querySelector("[data-file-chip-prefix]")!
+      .getBoundingClientRect();
+    const control = node
+      .querySelector('[role="radiogroup"]')!
+      .getBoundingClientRect();
+    return {
+      gap: reserved.width - control.width,
+      space: parseFloat(getComputedStyle(node).getPropertyValue("--ui-space")),
+    };
+  });
+  expect(leading.gap).toBeGreaterThanOrEqual(leading.space * 0.5);
+  expect(leading.gap).toBeLessThanOrEqual(leading.space * 2);
   await chip.hover();
   await expect(page.getByRole("tooltip")).toHaveText("first line…");
   expect(
