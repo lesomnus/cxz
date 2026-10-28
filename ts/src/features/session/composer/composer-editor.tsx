@@ -409,7 +409,9 @@ export function ComposerEditor({
       parseFloat(style.paddingRight);
     el.closest<HTMLElement>(".composer-editor")!.style.setProperty(
       "--editor-chip-max-width",
-      `${Math.max(0, Math.floor(contentWidth - 2 * parseFloat(style.getPropertyValue("--ui-file-chip-caret-gap"))))}px`,
+      // Leave a native character cell for rounding a reservation upward, so
+      // the longest chip and its caret still fit on a single wrapped line.
+      `max(0px, round(down, calc(${Math.floor(contentWidth - 2 * parseFloat(style.getPropertyValue("--ui-file-chip-caret-gap")))}px - 1ch), 1px))`,
     );
     const baseline = parseFloat(
       style.getPropertyValue("--composer-editor-height"),

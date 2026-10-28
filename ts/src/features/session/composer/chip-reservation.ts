@@ -49,7 +49,10 @@ export function reserveChip(parent: HTMLElement, width: number) {
     const key = JSON.stringify([target, base, coins.map((coin) => coin.width)]);
     const cached = reservations.get(key);
     if (cached) return cached;
-    const limit = budget;
+    // A monospace font can give every candidate the same advance. Reserving
+    // the closest smaller sum would put the native caret inside the chip.
+    const smallest = Math.min(...coins.map((coin) => coin.width));
+    const limit = budget + smallest;
     const count = new Uint16Array(limit + 1).fill(65535);
     const previous = new Int16Array(limit + 1).fill(-1);
     count[0] = 0;
@@ -61,22 +64,22 @@ export function reserveChip(parent: HTMLElement, width: number) {
           previous[total] = i;
         }
       }
-    let best = 0;
-    for (let total = 1; total <= limit; total++)
-      if (
-        count[total] < 65535 &&
-        (Math.abs(total - budget) < Math.abs(best - budget) ||
-          (Math.abs(total - budget) === Math.abs(best - budget) &&
-            count[total] < count[best]))
-      )
-        best = total;
+    let best = budget;
+    while (count[best] === 65535) best++;
     let padding = "";
     while (best > 0) {
       const coin = coins[previous[best]];
       padding += coin.text;
       best -= coin.width;
     }
-    const result = boundary + padding + divider + boundary;
+    let result = boundary + padding + divider + boundary;
+    // Verify the complete run, rather than assuming separately rounded glyph
+    // advances add up identically after shaping and browser zoom.
+    const minimum = coins.find((coin) => coin.width === smallest)!;
+    while (measure(result) < target) {
+      padding += minimum.text;
+      result = boundary + padding + divider + boundary;
+    }
     reservations.set(key, result);
     if (reservations.size > 500)
       reservations.delete(reservations.keys().next().value!);
