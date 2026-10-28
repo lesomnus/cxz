@@ -1,4 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
+import { caretPosition } from "../src/features/session/composer/editor-caret";
+import {
+  fractionalChipBrowser,
+  fractionalChipFont,
+} from "../packages/nox/e2e/fractional-chip-font";
+
+test.use(fractionalChipBrowser);
 
 test("paste chips use icon modes and a ten-character flattened hover preview without opening a dialog", async ({
   page,
@@ -7,6 +15,28 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
     "/iframe.html?id=composer-upload-chips--interactive&viewMode=story",
   );
   const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await fractionalChipFont(page);
+  await page.addStyleTag({
+    content:
+      ".composer-editor { font-family: ChipFractionalFixture !important; }",
+  });
+  const fractional = await input.evaluate((el) => {
+    const probe = document.createElement("span");
+    Object.assign(probe.style, {
+      position: "fixed",
+      visibility: "hidden",
+      fontFamily: "ChipFractionalFixture",
+      fontSize: "14px",
+    });
+    probe.textContent = "\u2007".repeat(5);
+    el.after(probe);
+    const range = document.createRange();
+    range.selectNodeContents(probe);
+    const width = range.getBoundingClientRect().width;
+    probe.remove();
+    return width;
+  });
+  expect(Number.isInteger(fractional)).toBe(false);
   await input.evaluate((node) => {
     const clipboardData = new DataTransfer();
     clipboardData.setData(
@@ -41,6 +71,19 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
     body: JSON.stringify(layout, null, 2),
     contentType: "application/json",
   });
+  await writeFile(
+    testInfo.outputPath("chip-layout.json"),
+    JSON.stringify(layout, null, 2),
+  );
+  for (const item of layout) {
+    const width = parseFloat(item.width);
+    if (Number.isFinite(width))
+      expect(Number.isInteger(width), JSON.stringify(item)).toBe(true);
+  }
+  await expect(chip.locator("[data-file-chip-prefix]")).toHaveCSS(
+    "width",
+    "37px",
+  );
   await expect(
     chip.getByRole("radio", { name: "File", exact: true }),
   ).toBeChecked();
@@ -82,6 +125,22 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
   expect(controlBounds.y + controlBounds.height).toBeLessThanOrEqual(
     chipBounds.y + chipBounds.height - leading.border,
   );
+  await input.press("Control+End");
+  const selection = await input.evaluate(
+    (el: HTMLTextAreaElement) => el.selectionStart,
+  );
+  const point = await input.evaluate(caretPosition, selection);
+  const inputBounds = (await input.boundingBox())!;
+  const gap = await chip.evaluate((el) =>
+    parseFloat(
+      getComputedStyle(el).getPropertyValue("--ui-file-chip-caret-gap"),
+    ),
+  );
+  expect(
+    Math.abs(
+      inputBounds.x + point.left - chipBounds.x - chipBounds.width - gap,
+    ),
+  ).toBeLessThan(0.1);
   await chip.hover();
   await expect(page.getByRole("tooltip")).toHaveText("first line…");
   expect(
@@ -105,4 +164,65 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
   await chip.getByRole("radio", { name: "File", exact: true }).focus();
   await page.keyboard.press("ArrowLeft");
   await expect(chip).toHaveAttribute("data-send-as", "text");
+});
+
+test("long file chips keep integer boxes and leave their native caret outside the frame", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(
+    "/iframe.html?id=composer-upload-chips--interactive&viewMode=story",
+  );
+  await fractionalChipFont(page);
+  await page.addStyleTag({
+    content:
+      ".composer-editor { font-family: ChipFractionalFixture !important; }",
+  });
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.evaluate((el) => {
+    el.focus();
+    const data = new DataTransfer();
+    data.items.add(
+      new File(["hello"], `long-${"한글".repeat(12)}${"x".repeat(140)}.txt`),
+    );
+    el.dispatchEvent(
+      new DragEvent("drop", {
+        dataTransfer: data,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+  const chip = page.locator(".paste-chip");
+  await expect(chip).toHaveAttribute("data-upload-state", "ready");
+  const widths = await chip.evaluate((el) =>
+    [el, ...el.querySelectorAll("*")].map((node) => ({
+      tag: node.tagName,
+      width: getComputedStyle(node).width,
+    })),
+  );
+  for (const item of widths) {
+    const width = parseFloat(item.width);
+    if (Number.isFinite(width))
+      expect(Number.isInteger(width), JSON.stringify(item)).toBe(true);
+  }
+  await expect
+    .poll(() =>
+      chip.evaluate(
+        (el) =>
+          el
+            .closest("[data-chip-reservation]")!
+            .querySelector("[data-native-chip-text]")!
+            .getClientRects().length,
+      ),
+    )
+    .toBe(1);
+  await input.press("Control+End");
+  const caret = await input.evaluate(
+    (el: HTMLTextAreaElement) => el.selectionStart,
+  );
+  const point = await input.evaluate(caretPosition, caret);
+  const field = (await input.boundingBox())!;
+  const frame = (await chip.boundingBox())!;
+  expect(field.x + point.left).toBeGreaterThan(frame.x + frame.width);
 });

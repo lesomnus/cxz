@@ -64,6 +64,7 @@ import type { PastePresentation } from "./paste-presentation";
 import { droppedFiles, pickedFiles, type PickedFile } from "./composer-files";
 import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
 import { PasteChip } from "./paste-chip";
+import { reserveChip } from "./chip-reservation";
 import {
   restoreEditorSelection,
   type EditorSelection,
@@ -139,6 +140,7 @@ export function ComposerEditor({
   const notify = useRef(onUploadChange);
   notify.current = onUploadChange;
   const [tabMovesFocus, setTabMovesFocus] = useState(false);
+  // Source offsets survive changes to a chip's measured textarea reservation.
   const cursor = useRef<
     | { start: number; end: number; direction: "forward" | "backward" | "none" }
     | undefined
@@ -147,10 +149,14 @@ export function ComposerEditor({
     undefined,
   );
   const followOnEdit = useRef(false);
+  const [chipLayouts, setChipLayouts] = useState(
+    new Map<string, { label: string; text: string }>(),
+  );
   const projection = new PasteProjection(
     source,
     pastes,
     frozenPresentations.current,
+    chipLayouts,
   );
   const value = projection.text;
   const ranges = projection.ranges;
@@ -397,6 +403,14 @@ export function ComposerEditor({
   function measure() {
     const el = input.current!;
     const style = getComputedStyle(el);
+    const contentWidth =
+      el.clientWidth -
+      parseFloat(style.paddingLeft) -
+      parseFloat(style.paddingRight);
+    el.closest<HTMLElement>(".composer-editor")!.style.setProperty(
+      "--editor-chip-max-width",
+      `${Math.max(0, Math.floor(contentWidth - 2 * parseFloat(style.getPropertyValue("--ui-file-chip-caret-gap"))))}px`,
+    );
     const baseline = parseFloat(
       style.getPropertyValue("--composer-editor-height"),
     );
@@ -417,8 +431,8 @@ export function ComposerEditor({
   useLayoutEffect(() => {
     if (cursor.current !== undefined) {
       input.current!.setSelectionRange(
-        cursor.current.start,
-        cursor.current.end,
+        projection.toDisplay(cursor.current.start),
+        projection.toDisplay(cursor.current.end),
         cursor.current.direction,
       );
       cursor.current = undefined;
@@ -508,7 +522,12 @@ export function ComposerEditor({
     // Edit with native LF line breaks; untouched chips retain their original bytes.
     text = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
     const nextSource = projection.splice(start, end, text);
-    text = new PasteProjection(text, pastes, frozenPresentations.current).text;
+    text = new PasteProjection(
+      text,
+      pastes,
+      frozenPresentations.current,
+      chipLayouts,
+    ).text;
     caret ??= start + text.length;
     selectionEnd ??= caret;
     const el = input.current!;
@@ -516,17 +535,38 @@ export function ComposerEditor({
     expectedEdit.current = { text: next, source: nextSource };
     // Native input can commit React synchronously, including async file drops.
     // Stage the caret before that commit so it cannot rewind the next keystroke.
-    cursor.current = { start: caret, end: selectionEnd, direction };
+    const staged = new PasteProjection(
+      nextSource,
+      pastes,
+      frozenPresentations.current,
+      chipLayouts,
+    );
+    const sourceCaret = staged.toSource(caret);
+    const sourceEnd = staged.toSource(selectionEnd);
+    cursor.current = { start: sourceCaret, end: sourceEnd, direction };
     el.focus({ preventScroll: true });
     el.setSelectionRange(start, end);
     // Native insertion preserves the browser's undo stack and selection behavior.
     // setRangeText is the fallback for engines without insertText support.
     document.execCommand("insertText", false, text);
-    if (el.value !== next) {
+    // React can install the measured view before insertText returns.
+    const accepted = latest.current.projection;
+    if (
+      el.value !== next &&
+      !(accepted.source === nextSource && el.value === accepted.text)
+    ) {
       el.setRangeText(text, start, end, "end");
       commit(nextSource, next);
     }
-    el.setSelectionRange(caret, selectionEnd, direction);
+    const committed =
+      latest.current.projection.source === nextSource
+        ? latest.current.projection
+        : staged;
+    el.setSelectionRange(
+      committed.toDisplay(sourceCaret),
+      committed.toDisplay(sourceEnd),
+      direction,
+    );
     expectedEdit.current = undefined;
   }
   function changeSyntax(block: CodeBlock, syntax: string) {
@@ -585,6 +625,7 @@ export function ComposerEditor({
     });
   }
   let lineOffset = 0;
+  let controlOffset = 0;
   return (
     <>
       <div
@@ -1065,6 +1106,21 @@ export function ComposerEditor({
                       key={range.start}
                       paste={range.paste}
                       presentation={range.presentation}
+                      nativeText={value.slice(range.start, range.end)}
+                      fontKey={editorSettings.fontFamily}
+                      onLayout={(label, width) => {
+                        const text = reserveChip(mirror.current!, width);
+                        setChipLayouts((previous) => {
+                          const old = previous.get(range.paste.token);
+                          if (old?.label === label && old.text === text)
+                            return previous;
+                          const next = new Map(previous);
+                          next.set(range.paste.token, { label, text });
+                          if (next.size > 200)
+                            next.delete(next.keys().next().value!);
+                          return next;
+                        });
+                      }}
                       onOpen={() => showPreview(range)}
                       onSelect={() => {
                         input.current!.focus({ preventScroll: true });
@@ -1155,20 +1211,34 @@ export function ComposerEditor({
           {showControls && (
             <div className="editor-controls-surface" aria-hidden="true">
               <div className="editor-control-mirror" ref={controlMirror}>
-                {lines.map((line, index) => (
-                  <div className="editor-control-line" key={index}>
-                    {controlCharacters(line)}
-                    {index < lines.length - 1 && (
-                      <span
-                        className="editor-control-character editor-line-end"
-                        data-symbol="¶"
-                      >
-                        {"\u200b"}
-                      </span>
-                    )}
-                    {!line && "\u200b"}
-                  </div>
-                ))}
+                {lines.map((line, index) => {
+                  const start = controlOffset;
+                  controlOffset += line.length + 1;
+                  const hidden = ranges
+                    .filter(
+                      (range) =>
+                        range.start >= start &&
+                        range.end <= start + line.length,
+                    )
+                    .map((range) => ({
+                      start: range.start - start,
+                      end: range.end - start,
+                    }));
+                  return (
+                    <div className="editor-control-line" key={index}>
+                      {controlCharacters(line, hidden)}
+                      {index < lines.length - 1 && (
+                        <span
+                          className="editor-control-character editor-line-end"
+                          data-symbol="¶"
+                        >
+                          {"\u200b"}
+                        </span>
+                      )}
+                      {!line && "\u200b"}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -21,15 +21,21 @@ export class PasteProjection {
     readonly source: string,
     readonly pastes: Map<string, ComposerPaste>,
     frozen?: ReadonlyMap<string, PastePresentation>,
+    layouts?: ReadonlyMap<string, { label: string; text: string }>,
   ) {
     let text = "",
       offset = 0;
     for (const range of pasteRanges(source, pastes)) {
       text += source.slice(offset, range.start);
-      const presentation =
+      let presentation =
         frozen?.get(range.paste.token) ?? presentPaste(range.paste);
+      const layout = layouts?.get(range.paste.token);
+      if (!presentation.layoutText && layout?.label === presentation.label)
+        presentation = { ...presentation, layoutText: layout.text };
       const start = text.length;
-      text += fileChipText(presentation.label, presentation.prefix);
+      text +=
+        presentation.layoutText ??
+        fileChipText(presentation.label, presentation.prefix);
       this.ranges.push({
         start,
         end: text.length,

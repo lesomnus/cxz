@@ -118,7 +118,7 @@ async function wrapping(
       const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
       let node: Node | null, lastTop: number | undefined;
       while ((node = walker.nextNode())) {
-        if (node.parentElement?.closest("[data-file-chip-control]")) continue;
+        if (node.parentElement?.closest("[data-file-chip]")) continue;
         for (let i = 0; i < node.textContent!.length; i++) {
           const range = document.createRange();
           range.setStart(node, i);

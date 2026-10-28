@@ -3,11 +3,30 @@
   visibility: visible;
   pointer-events: auto;
 }
-/* Native textarea text owns advances and wrapping in this overlay. */
-.chip .number[data-mode] {
+.reservation {
   display: inline;
-  width: auto;
-  white-space: inherit;
+  position: relative;
+  vertical-align: baseline;
+}
+.native {
+  visibility: hidden;
+}
+.reservation .chip[data-send-as] > [data-file-chip-label] {
+  width: calc(5 * round(up, 1ch, 1px));
+}
+.reservation .chip[data-send-as] .label {
+  width: 100%;
+  text-align: end;
+}
+.reservation:has(.native) > .chip {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: var(--editor-chip-max-width, 600px);
+}
+/* FileChip owns the boxes; the editor supplies their typography. */
+.chip .number[data-mode] {
   font-family: inherit;
   font-variant-numeric: inherit;
 }

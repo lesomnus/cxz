@@ -1,4 +1,5 @@
 import { inspectPaste } from "../test-support/paste-chip";
+import { readChipDisplay } from "../test-support/chip-display";
 import { expect, test, type Page } from "@playwright/test";
 
 test.use({
@@ -113,7 +114,7 @@ test("paste files preserve source and session drafts while sending the uploaded 
     "ready",
   );
   const draft = await input.inputValue();
-  expect(draft).toMatch(/^앞 \u2007{5}[0-9.]{4}[BKMT]\u2005 뒤$/);
+  expect(await readChipDisplay(input)).toMatch(/^앞 [0-9.]{4}[BKMT] 뒤$/);
   await inspectPaste(page, page.locator(".paste-chip"));
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toBeVisible();

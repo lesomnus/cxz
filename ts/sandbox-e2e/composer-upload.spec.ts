@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { fileChipText } from "../packages/nox/src/components/file-chip/file-chip-text";
+import { expectChipDisplay } from "../test-support/chip-display";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -76,9 +76,7 @@ test("file drop preserves the caret and surrounding text, then sends an uploaded
   });
   const chip = page.locator(".composer .paste-chip");
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
-  await expect(input).toHaveValue(
-    "Before " + fileChipText("한글 report.txt · 0014B") + " after",
-  );
+  await expectChipDisplay(input, "Before 한글 report.txt · 0014B after");
   await chip.click();
   const card = page.getByRole("dialog", { name: "Attachment", exact: true });
   const path = await card.locator(".attachment-info code").textContent();

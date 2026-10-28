@@ -1,5 +1,8 @@
-import { PASTE_CHIP_PREFIX } from "../src/features/session/composer/paste-chip-layout";
-import { fileChipText } from "../packages/nox/src/components/file-chip/file-chip-text";
+import {
+  readChipDisplay,
+  expectChipDisplay,
+} from "../test-support/chip-display";
+import { caretPosition } from "../src/features/session/composer/editor-caret";
 import { expect, test } from "@playwright/test";
 
 test("pending uploads block send without moving the caret and deletion releases the blocker", async ({
@@ -39,9 +42,7 @@ test("pending uploads block send without moving the caret and deletion releases 
     ),
   ).toBe(true);
   await expect(send).toBeEnabled();
-  await expect(input).toHaveValue(
-    "Before " + fileChipText("sample.txt · 0005B") + " typing after",
-  );
+  await expectChipDisplay(input, "Before sample.txt · 0005B typing after");
   await chip.click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(input).toHaveValue("Before  typing after");
@@ -81,7 +82,7 @@ test("failed uploads retry in place and deleting a pending chip cancels it", asy
   await expect(
     page.getByRole("dialog", { name: "Attachment", exact: true }),
   ).toContainText("/cxz/assets/storybook/upload/retry.txt");
-  await expect(input).toHaveValue(fileChipText("retry.txt · 0005B"));
+  await expectChipDisplay(input, "retry.txt · 0005B");
   await expect(send).toBeEnabled();
   await page.keyboard.press("Escape");
   await input.fill("keep");
@@ -145,21 +146,25 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
       .evaluate((node) => getComputedStyle(node).color),
   ).not.toBe(await label.evaluate((node) => getComputedStyle(node).color));
   await input.pressSequentially(" typing");
-  const before = await input.inputValue();
+  const before = await readChipDisplay(input);
   const selection = await input.evaluate(
     (node: HTMLTextAreaElement) => node.selectionStart,
   );
   const bounds = await chip.boundingBox();
+  const beforeCaret = await input.evaluate(caretPosition, selection);
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
   expect(bytes).toBe(34500);
   await expect(label).toHaveText("34.5K");
   await expect(label.locator('[data-mode="compact"]')).toHaveText("34.5K");
   await expect(chip).toHaveAccessibleName("Pasted text");
   await expect(chip).toHaveAttribute("aria-description", /34,500 B/);
-  await expect(input).toHaveValue(before.replace(/ \d{3}%/, "34.5K"));
-  expect(
-    await input.evaluate((node: HTMLTextAreaElement) => node.selectionStart),
-  ).toBe(selection);
+  await expectChipDisplay(input, before.replace(/ \d{3}%/, "34.5K"));
+  const afterCaret = await input.evaluate(
+    (node: HTMLTextAreaElement) => node.selectionStart,
+  );
+  const point = await input.evaluate(caretPosition, afterCaret);
+  expect(Math.abs(point.left - beforeCaret.left)).toBeLessThan(0.1);
+  expect(Math.abs(point.top - beforeCaret.top)).toBeLessThan(0.1);
   const readyBounds = (await chip.boundingBox())!;
   // Different colored text runs can round their advances to neighboring
   // subpixels. Still reject any visible movement or change in chip size.
@@ -194,7 +199,7 @@ test("upload acknowledgement during IME does not interrupt composition or expose
       }),
     );
   });
-  await expect(input).toHaveValue(pasteText(" 000%"));
+  await expectChipDisplay(input, " 000%");
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Input.imeSetComposition", {
     text: "하",
@@ -205,15 +210,11 @@ test("upload acknowledgement during IME does not interrupt composition or expose
     "data-upload-state",
     "ready",
   );
-  await expect(input).toHaveValue(pasteText(" 000%") + "하");
+  await expectChipDisplay(input, " 000%하");
   await expect(page.locator(".paste-chip-label")).toHaveText(" 000%");
   await cdp.send("Input.insertText", { text: "한" });
-  await expect(input).toHaveValue(pasteText("0900B") + "한");
+  await expectChipDisplay(input, "0900B한");
   await expect(
     page.locator(".paste-chip-label [data-mode] > span").first(),
   ).toHaveText("0");
 });
-
-function pasteText(label: string) {
-  return fileChipText(label, PASTE_CHIP_PREFIX);
-}

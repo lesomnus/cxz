@@ -15,6 +15,7 @@ export type PastePresentation = {
   bytes?: number;
   progress?: number;
   prefix?: string;
+  layoutText?: string;
 };
 
 export function presentPaste(paste: ComposerPaste): PastePresentation {

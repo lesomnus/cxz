@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
 import {
   CompactNumber,
@@ -23,6 +23,9 @@ export function PasteChip({
   canSendFile = false,
   readOnly = false,
   presentation = presentPaste(paste),
+  nativeText,
+  fontKey,
+  onLayout,
 }: {
   paste: ComposerPaste;
   onOpen: () => void;
@@ -31,6 +34,9 @@ export function PasteChip({
   canSendFile?: boolean;
   readOnly?: boolean;
   presentation?: PastePresentation;
+  nativeText?: string;
+  fontKey?: string;
+  onLayout?: (label: string, width: number) => void;
 }) {
   const attachment = paste.attachment;
   const textPaste = isTextPaste(paste);
@@ -40,6 +46,30 @@ export function PasteChip({
   const [anchor, setAnchor] = useState<HTMLSpanElement | null>(null);
   const [open, setOpen] = useState(false);
   const preview = useMemo(() => pasteExcerpt(paste.body), [paste.body]);
+  const layout = useRef(onLayout);
+  layout.current = onLayout;
+  useLayoutEffect(() => {
+    if (!anchor || !layout.current) return;
+    const measure = () => {
+      const bounds = anchor.getBoundingClientRect();
+      const style = getComputedStyle(anchor);
+      const scale = bounds.width / parseFloat(style.width);
+      const gap = parseFloat(
+        style.getPropertyValue("--ui-file-chip-caret-gap"),
+      );
+      layout.current?.(presentation.label, bounds.width + gap * scale);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(anchor);
+    document.fonts.addEventListener("loadingdone", measure);
+    window.addEventListener("resize", measure);
+    measure();
+    return () => {
+      observer.disconnect();
+      document.fonts.removeEventListener("loadingdone", measure);
+      window.removeEventListener("resize", measure);
+    };
+  }, [anchor, presentation.label, fontKey]);
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
@@ -47,12 +77,20 @@ export function PasteChip({
     return () => document.removeEventListener("keydown", close, true);
   }, [open]);
   return (
-    <>
+    <span className={styles.reservation} data-chip-reservation>
+      {nativeText !== undefined && (
+        <span
+          className={styles.native}
+          data-native-chip-text
+          aria-hidden="true"
+        >
+          {nativeText}
+        </span>
+      )}
       <FileChip
-        ref={textPaste ? setAnchor : undefined}
+        ref={setAnchor}
         className={`paste-chip ${styles.chip}`}
-        textLayout
-        textPrefix={presentation.prefix}
+        pixelLayout
         leading={
           textPaste ? (
             <SegmentedControl
@@ -128,7 +166,7 @@ export function PasteChip({
           }
         }}
       >
-        <span className="paste-chip-label" aria-hidden="true">
+        <span className={`paste-chip-label ${styles.label}`} aria-hidden="true">
           {presentation.progress !== undefined ? (
             <>
               {before}
@@ -168,7 +206,7 @@ export function PasteChip({
           placement="top-start"
         />
       )}
-    </>
+    </span>
   );
 }
 

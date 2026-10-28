@@ -90,3 +90,28 @@ test("native undo and redo restore exact references even with identical labels",
 function pasteText(label: string) {
   return fileChipText(label, PASTE_CHIP_PREFIX);
 }
+
+test("measured chip reservations preserve atomic edits and frozen IME views", () => {
+  const paste = createPaste("hello", "11111111");
+  const pastes = new Map([[paste.token, paste]]);
+  const text = "\u200b\u2007\u2063measured\u200b";
+  const layouts = new Map([[paste.token, { label: "0005B", text }]]);
+  const source = `앞 ${paste.token} 뒤`;
+  const projection = new PasteProjection(source, pastes, undefined, layouts);
+  expect(projection.text).toBe(`앞 ${text} 뒤`);
+  const range = projection.ranges[0];
+  expect(projection.splice(range.start, range.end, "")).toBe("앞  뒤");
+  expect(projection.toSource(range.end)).toBe(range.sourceEnd);
+  expect(projection.edit(`앞 ${text}! 뒤`, range.end + 1)).toBe(
+    `앞 ${paste.token}! 뒤`,
+  );
+  const frozen = new Map([[paste.token, range.presentation]]);
+  layouts.set(paste.token, { label: "0005B", text: "different geometry" });
+  expect(new PasteProjection(source, pastes, frozen, layouts).text).toBe(
+    projection.text,
+  );
+  layouts.set(paste.token, { label: "old label", text: "stale geometry" });
+  expect(
+    new PasteProjection(source, pastes, undefined, layouts).text,
+  ).not.toContain("stale geometry");
+});
