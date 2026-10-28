@@ -46,6 +46,10 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
   expect(leading.gap).toBeGreaterThanOrEqual(leading.space * 0.5);
   expect(leading.gap).toBeLessThanOrEqual(leading.space * 2);
   expect(leading.inset).toBe(leading.border);
+  const control = chip.getByRole("radiogroup");
+  await expect(control).toHaveCSS("width", "34px");
+  for (const label of await control.locator("label").all())
+    await expect(label).toHaveCSS("width", "16px");
   await chip.hover();
   await expect(page.getByRole("tooltip")).toHaveText("first line…");
   expect(
