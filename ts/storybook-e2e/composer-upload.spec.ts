@@ -170,6 +170,7 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   });
   await chip.locator(".paste-chip-label").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.mouse.move(0, 0);
   await chip.hover();
   await expect(page.getByRole("tooltip")).toHaveText("한글😀 한글😀 한글…");
 });
