@@ -104,7 +104,7 @@ test("paste files preserve source and session drafts while sending the uploaded 
   await expect(input).toHaveValue("one\ntwo\nthree");
   await expect(page.locator(".paste-chip")).toHaveCount(0);
   await input.fill("앞 ");
-  const body = "한글 😀\n  two\nthree\nfour\n";
+  const body = "한글 😀\n  two\nthree\nfour\n".repeat(4);
   await paste(page, body);
   await expect(page.locator(".paste-chip")).toHaveCount(1);
   await input.press("End");
@@ -154,7 +154,7 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   page,
 }) => {
   const input = await openEditor(page);
-  const body = "one\ntwo\nthree\nfour";
+  const body = "one\ntwo\nthree\nfour".repeat(4);
   await paste(page, body);
   await expect(page.locator(".paste-chip")).toHaveAttribute(
     "data-upload-state",

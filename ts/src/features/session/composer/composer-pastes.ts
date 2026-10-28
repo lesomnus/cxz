@@ -32,12 +32,16 @@ export function pasteSendMode(paste: ComposerPaste): "text" | "file" {
 }
 
 export function needsPasteChip(text: string) {
-  let characters = 0,
-    newlines = 0;
-  for (const character of text) {
-    if (++characters > 800 || (character === "\n" && ++newlines >= 3))
-      return true;
-  }
+  return exceedsCharacters(text, 32);
+}
+
+export function defaultPasteSendMode(text: string): "text" | "file" {
+  return exceedsCharacters(text, 64) ? "file" : "text";
+}
+
+function exceedsCharacters(text: string, limit: number) {
+  let characters = 0;
+  for (const _ of text) if (++characters > limit) return true;
   return false;
 }
 

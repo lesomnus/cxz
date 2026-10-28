@@ -7,6 +7,7 @@ import {
   pasteRanges,
   wholePasteSelection,
   attachmentsReady,
+  defaultPasteSendMode,
 } from "./composer-pastes";
 
 describe("composer paste chips", () => {
@@ -32,11 +33,21 @@ describe("composer paste chips", () => {
     paste.sendAs = "text";
     expect(attachmentsReady(paste.token, pastes)).toBe(true);
   });
-  it("matches TUI thresholds using Unicode characters and original UTF-8 bytes", () => {
-    expect(needsPasteChip("😀".repeat(800))).toBe(false);
-    expect(needsPasteChip("😀".repeat(801))).toBe(true);
+  it("keeps short pastes inline and chooses chip delivery using Unicode characters", () => {
+    for (const character of ["a", "한", "😀"]) {
+      expect(needsPasteChip(character.repeat(32))).toBe(false);
+      expect(needsPasteChip(character.repeat(33))).toBe(true);
+      expect(defaultPasteSendMode(character.repeat(33))).toBe("text");
+      expect(defaultPasteSendMode(character.repeat(64))).toBe("text");
+      expect(defaultPasteSendMode(character.repeat(65))).toBe("file");
+    }
     expect(needsPasteChip("one\ntwo\nthree")).toBe(false);
-    expect(needsPasteChip("one\ntwo\nthree\n")).toBe(true);
+    expect(needsPasteChip("one\ntwo\nthree\n")).toBe(false);
+    expect(needsPasteChip("\n".repeat(32))).toBe(false);
+    expect(needsPasteChip("\n".repeat(33))).toBe(true);
+  });
+
+  it("preserves the original UTF-8 bytes and line count", () => {
     const paste = createPaste("한\r\n글\nthree\nlast", "1234abcd");
     expect(paste.lines).toBe(4);
     expect(paste.bytes).toBe(new TextEncoder().encode(paste.body).length);

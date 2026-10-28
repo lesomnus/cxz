@@ -346,7 +346,7 @@ test("sending a paste chip hides its original paint layer while the snapshot mov
   await input.fill("Before ");
   await input.evaluate((node) => {
     const data = new DataTransfer();
-    data.setData("text/plain", "one\ntwo\nthree\nfour\nfive\n");
+    data.setData("text/plain", "one\ntwo\nthree\nfour\nfive\n".repeat(4));
     node.dispatchEvent(
       new ClipboardEvent("paste", {
         clipboardData: data,

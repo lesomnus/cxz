@@ -102,7 +102,7 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await expect(
     page.locator("article.input").filter({ hasText: "keep draft" }),
   ).toHaveCount(0);
-  const pasted = "one\ntwo\nthree\nfour";
+  const pasted = "one\ntwo\nthree\nfour".repeat(4);
   await input.fill("");
   await page.evaluate((text) => navigator.clipboard.writeText(text), pasted);
   await input.press("Control+v");

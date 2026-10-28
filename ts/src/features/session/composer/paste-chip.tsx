@@ -223,7 +223,7 @@ function TextModeIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M4 5h16M12 5v14M8 19h8" />
+      <path d="M4 8V5h16v3M12 5v14M8 19h8" />
     </svg>
   );
 }

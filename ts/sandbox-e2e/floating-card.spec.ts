@@ -49,10 +49,10 @@ test("task details and replacing paste previews preserve the transcript and draf
   page,
 }) => {
   const input = await open(page);
-  await paste(page, "first\nsecond\nthird\nfourth");
+  await paste(page, "first\nsecond\nthird\nfourth".repeat(4));
   await input.press("End");
   await input.pressSequentially(" ");
-  await paste(page, "another\npaste\nbody\nhere");
+  await paste(page, "another\npaste\nbody\nhere".repeat(4));
   const draft = await input.inputValue();
   const trigger = page
     .locator("[data-work-summary]")
@@ -82,11 +82,13 @@ test("task details and replacing paste previews preserve the transcript and draf
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(preview.locator("pre")).toHaveText(
-    "first\nsecond\nthird\nfourth",
+    "first\nsecond\nthird\nfourth".repeat(4),
   );
   const firstPreviewId = await preview.getAttribute("data-card");
   await inspectPaste(page, page.locator(".paste-chip").nth(1));
-  await expect(preview.locator("pre")).toHaveText("another\npaste\nbody\nhere");
+  await expect(preview.locator("pre")).toHaveText(
+    "another\npaste\nbody\nhere".repeat(4),
+  );
   await expect(page.locator(`[data-card="${firstPreviewId}"]`)).toHaveCount(0);
   await expect(page.locator(".floating-card")).toHaveCount(1);
   await expect(input).toHaveValue(draft);
@@ -108,7 +110,7 @@ test.describe("rendered backdrop", () => {
     page,
   }) => {
     await open(page);
-    await paste(page, "blur\npreview\nbody\nhere");
+    await paste(page, "blur\npreview\nbody\nhere".repeat(4));
     await inspectPaste(page, page.locator(".paste-chip"));
     const card = page.locator(".floating-card");
     await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
@@ -216,7 +218,7 @@ test("only the transcript's empty side margins dismiss the floating card", async
   await expect(
     page.getByText("History item 2100", { exact: false }),
   ).toBeVisible();
-  await paste(page, "first\nsecond\nthird\nfourth");
+  await paste(page, "first\nsecond\nthird\nfourth".repeat(4));
   const draft = await input.inputValue();
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await inspectPaste(page, page.locator(".paste-chip"));
@@ -319,7 +321,10 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await expect(other).toHaveValue("Keep my answer\n");
 
   await input.fill("");
-  await paste(page, "small\npreview\nbody\nhere");
+  await paste(
+    page,
+    "small preview body text without newlines, kept compact inside the card",
+  );
   const draft = await input.inputValue();
   await inspectPaste(page, page.locator(".paste-chip"));
   const short = page.getByRole("dialog", { name: "Paste source" });

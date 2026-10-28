@@ -107,8 +107,8 @@ test("same-size chips use exact visible widths and keep distinct sources through
 }) => {
   await story(page, "conversation-playground--interactive");
   const input = page.getByRole("textbox", { name: "Message", exact: true });
-  const alpha = "alpha\n".repeat(4);
-  const bravo = "bravo\n".repeat(4);
+  const alpha = "alpha\n".repeat(6);
+  const bravo = "bravo\n".repeat(6);
   const paste = (body: string) =>
     input.evaluate((node, body) => {
       const clipboardData = new DataTransfer();
@@ -125,7 +125,7 @@ test("same-size chips use exact visible widths and keep distinct sources through
   await paste(alpha);
   await input.press("Space");
   await paste(bravo);
-  await expectChipDisplay(input, "0024B 0024B");
+  await expectChipDisplay(input, "0036B 0036B");
   const chips = page.locator(".paste-chip");
   await expect(chips).toHaveCount(2);
   for (const chip of await chips.all()) {
@@ -152,9 +152,9 @@ test("same-size chips use exact visible widths and keep distinct sources through
   await inspectPaste(page, chips.first());
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
   await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await expectChipDisplay(input, " 0024B");
+  await expectChipDisplay(input, " 0036B");
   await input.press("Control+z");
-  await expectChipDisplay(input, "0024B 0024B");
+  await expectChipDisplay(input, "0036B 0036B");
   await inspectPaste(page, chips.first());
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
   const copied = await input.evaluate((node) => {

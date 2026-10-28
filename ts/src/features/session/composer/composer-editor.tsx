@@ -50,6 +50,7 @@ import {
   MAX_PASTE_BYTES,
   MAX_PASTE_CACHE_BYTES,
   needsPasteChip,
+  defaultPasteSendMode,
   wholePasteSelection,
   expandPastes,
   isTextPaste,
@@ -797,7 +798,8 @@ export function ComposerEditor({
                 setNotice("Paste storage has reached 32 MiB.");
                 return;
               }
-              if (upload) {
+              paste.sendAs = upload ? defaultPasteSendMode(text) : "text";
+              if (upload && paste.sendAs === "file") {
                 const id = paste.token.slice(7, 15);
                 const file = new File([text], `paste-${id}.txt`, {
                   type: "text/plain",
@@ -807,12 +809,13 @@ export function ComposerEditor({
                   token: paste.token,
                   body: text,
                   lines: paste.lines,
+                  sendAs: paste.sendAs,
                 };
               }
               pastes.set(paste.token, paste);
               setNotice("");
               replace(selection.start, selection.end, paste.token);
-              if (upload) startUpload(paste);
+              if (paste.attachment) startUpload(paste);
             }}
             onCopy={(event) => {
               const selection = normalizedSelection();
