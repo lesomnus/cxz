@@ -83,6 +83,7 @@ import { Transcript } from "./transcript";
 import { ConversationLoading } from "./conversation-loading";
 import { atScrollBottom } from "./scroll-physics";
 import { uploadFile } from "#src/features/session/composer/composer-upload.ts";
+import { secretFiles } from "#src/features/session/composer/secret-paste.ts";
 import { attachmentsReady } from "#src/features/session/composer/composer-pastes.ts";
 import { QueuedMessage } from "#src/features/session/components/queued-message.tsx";
 import { AuxiliaryControls } from "#src/features/auxiliary/auxiliary-controls.tsx";
@@ -1137,6 +1138,11 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         inputRef={composerInput}
         draft={draft}
         onDraftAssetsChange={() => c.drafts.persist(id)}
+        secretFiles={
+          projectId && s?.status?.runId
+            ? secretFiles(c, projectId, id, s.status.runId)
+            : undefined
+        }
         pastes={c.pastes}
         onChange={setDraft}
         onSubmit={send}

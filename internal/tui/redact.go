@@ -55,6 +55,49 @@ type secretFiles interface {
 	DeleteSecret(context.Context, context.Context, *api.Project, string) error
 }
 
+// Like /@redact, an automatically recognized token lives outside the ordinary
+// paste bodies, editor history and drafts. The existing send path writes only
+// its temporary file reference to the journal.
+func (m *model) captureSecretPaste(text, kind string) {
+	if len(text) > wisp.MaxSecretBytes {
+		m.notice = "Secret limit: 64 KiB"
+		return
+	}
+	if len(m.redactions) >= 16 {
+		m.notice = "At most 16 pending secrets; remove a chip first"
+		return
+	}
+	s := m.current()
+	if s == nil || s.RunId == "" {
+		m.notice = "Secret paste requires an active session."
+		return
+	}
+	if m.pastes == nil {
+		m.pastes = map[string]*pastedText{}
+	}
+	token := "[Redacted]"
+	for n := 2; m.pastes[token] != nil; n++ {
+		token = fmt.Sprintf("[Redacted %d]", n)
+	}
+	before := m.input.Value()
+	m.prepareEditor()
+	err := m.input.InsertText(token)
+	if err != nil || !strings.Contains(m.input.Value(), token) || partialPasteEdit(before, m.input.Value(), m.pastes) {
+		if m.input.Value() != before {
+			m.input.Undo()
+		}
+		m.notice = "Could not insert secret chip at this position; original draft retained."
+		return
+	}
+	if m.redactions == nil {
+		m.redactions = map[string]*redaction{}
+	}
+	m.redactions[token] = &redaction{body: []byte(text), id: s.Id, run: s.RunId}
+	m.pastes[token] = &pastedText{token: token, owner: s.Id, secret: true}
+	m.notice = kind + " detected · inserted a secret file reference"
+	m.resize()
+}
+
 func (m *model) openRedact() {
 	if len(m.redactions) >= 16 {
 		m.notice = "At most 16 pending secrets; remove a chip first"

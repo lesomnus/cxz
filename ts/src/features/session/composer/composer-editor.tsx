@@ -62,6 +62,8 @@ import {
 import type { PastePresentation } from "./paste-presentation";
 import { droppedFiles, pickedFiles, type PickedFile } from "./composer-files";
 import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
+import { detectSecretPaste } from "#src/shared/content/secret-paste.ts";
+import { prepareSecretPaste, type SecretFiles } from "./secret-paste";
 import { PasteChip } from "./paste-chip";
 import {
   restoreEditorSelection,
@@ -87,6 +89,8 @@ export function ComposerEditor({
   placeholder = t("Continue the conversation…"),
   editorRef,
   upload,
+  secretFiles,
+  detectSecrets = false,
   onUploadChange,
   mentions,
   autoFocus = false,
@@ -106,6 +110,8 @@ export function ComposerEditor({
   placeholder?: string;
   editorRef?: Ref<ComposerEditorHandle>;
   upload?: UploadFile;
+  secretFiles?: SecretFiles;
+  detectSecrets?: boolean;
   onUploadChange?: () => void;
   mentions?: MentionContext;
   autoFocus?: boolean;
@@ -177,6 +183,7 @@ export function ComposerEditor({
   }
   function changedUploads(paste: ComposerPaste, persist = true) {
     paste.attachment?.listeners?.forEach((listener) => listener());
+    paste.secret?.listeners?.forEach((listener) => listener());
     if (!mounted.current) return;
     refreshUploads((v) => v + 1);
     if (persist) notify.current?.();
@@ -530,13 +537,18 @@ export function ComposerEditor({
     input.current!.setSelectionRange(range.start, range.end);
     openCard({
       kind: "paste",
-      label: () => t(range.paste.body ? "Paste source" : "Attachment"),
+      label: () =>
+        range.paste.secret
+          ? "Secret"
+          : t(range.paste.body ? "Paste source" : "Attachment"),
       title: () =>
-        range.paste.attachment?.name ??
-        t("Paste · {lines} lines · {bytes}B", {
-          lines: range.paste.lines,
-          bytes: range.paste.bytes.toLocaleString(currentLocale()),
-        }),
+        range.paste.secret
+          ? "Secret"
+          : (range.paste.attachment?.name ??
+            t("Paste · {lines} lines · {bytes}B", {
+              lines: range.paste.lines,
+              bytes: range.paste.bytes.toLocaleString(currentLocale()),
+            })),
       content: (close) => (
         <PastePreview
           paste={range.paste}
@@ -705,6 +717,25 @@ export function ComposerEditor({
               }
               if (!text) return;
               const selection = normalizedSelection();
+              const secretKind = detectSecrets && detectSecretPaste(text);
+              if (secretKind) {
+                event.preventDefault();
+                const { paste, save } = prepareSecretPaste(
+                  text,
+                  secretKind,
+                  secretFiles,
+                );
+                pastes.set(paste.token, paste);
+                const controller = new AbortController();
+                jobs.current.set(paste.token, controller);
+                replace(selection.start, selection.end, paste.token);
+                setNotice("");
+                void save(controller.signal).finally(() => {
+                  jobs.current.delete(paste.token);
+                  changedUploads(paste);
+                });
+                return;
+              }
               if (!needsPasteChip(text)) return;
               event.preventDefault();
               let paste = createPaste(
@@ -1175,8 +1206,9 @@ function PastePreview({
   const [stale, setStale] = useState(false);
   const [, refresh] = useState(0);
   useEffect(() => {
-    if (!paste.attachment) return;
-    const listeners = (paste.attachment.listeners ??= new Set());
+    const state = paste.secret ?? paste.attachment;
+    if (!state) return;
+    const listeners = (state.listeners ??= new Set());
     const listener = () => refresh((v) => v + 1);
     listeners.add(listener);
     return () => {
@@ -1207,7 +1239,16 @@ function PastePreview({
       )}
       {paste.secret && (
         <p className="attachment-info">
-          Secret file · <code>{paste.secret.path}</code>
+          {paste.secret.kind && <>{paste.secret.kind} detected · </>}
+          {paste.secret.state === "uploading" ? (
+            <span role="status">Preparing secret file…</span>
+          ) : paste.secret.error ? (
+            <span role="alert">{paste.secret.error}</span>
+          ) : (
+            <>
+              Secret file · <code>{paste.secret.path}</code>
+            </>
+          )}
         </p>
       )}
       {!paste.secret && paste.body && <pre>{paste.body}</pre>}
@@ -1221,7 +1262,7 @@ function PastePreview({
             {t("Retry upload")}
           </Button>
         )}
-        {paste.body && (
+        {!paste.secret && paste.body && (
           <Button
             type="button"
             disabled={stale}

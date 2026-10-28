@@ -41,6 +41,47 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const AutomaticSecretPaste: Story = {
+  render: function AutomaticSecretPaste() {
+    const [value, setValue] = useState("");
+    const [failure, setFailure] = useState(false);
+    const [writes, setWrites] = useState(0);
+    const [deletes, setDeletes] = useState(0);
+    return (
+      <>
+        <Button onClick={() => setFailure(!failure)}>
+          {failure ? "Fail secret writes: on" : "Fail secret writes: off"}
+        </Button>
+        <output aria-label="Secret writes">{writes}</output>
+        <output aria-label="Deleted secret files">{deletes}</output>
+        <ComponentPreview
+          value={value}
+          onChange={setValue}
+          uploadMode="ready"
+          secretFiles={{
+            session: "storybook",
+            run: "run",
+            put: async (_bytes, _signal) => {
+              setWrites((count) => count + 1);
+              await new Promise((resolve) => setTimeout(resolve, 600));
+              if (failure) throw new Error("Simulated secret write failure");
+              return "/cxz/secrets/storybook/value";
+            },
+            remove: async () => setDeletes((count) => count + 1),
+          }}
+        />
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Paste a complete GitHub token or signed JWT to insert a Secret chip before normal paste handling. File preparation blocks Send; a failed chip can be inspected and deleted. This preview simulates secret file writes and never contacts a server. Prose, environment assignments and code containing tokens remain ordinary pastes.",
+      },
+    },
+  },
+};
 export const MenuOverTranscript: Story = {
   args: {
     uploadMode: "ready",

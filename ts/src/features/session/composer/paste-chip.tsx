@@ -13,21 +13,25 @@ export function PasteChip({
   presentation?: PastePresentation;
 }) {
   const attachment = paste.attachment;
+  const state = paste.secret ?? attachment;
   const bytes = `${paste.bytes.toLocaleString(currentLocale())} B`;
   const { label, before, leading, after } = presentation;
   return (
     <span
       className={`paste-chip ${styles.chip}`}
-      data-upload-state={attachment?.state}
-      aria-busy={attachment?.state === "uploading"}
+      data-upload-state={state?.state}
+      aria-busy={state?.state === "uploading"}
       role="button"
       tabIndex={0}
       aria-label={paste.secret ? "Secret file reference" : label}
       title={
-        attachment?.error ??
-        (attachment?.state === "uploading"
-          ? t("Uploading…")
-          : `${bytes} · ${t("View source · Ctrl+P")}`)
+        paste.secret
+          ? (paste.secret.error ??
+            `${paste.secret.kind ?? "Secret"} · ${paste.secret.state === "uploading" ? "Preparing secret file…" : "Secret file reference"}`)
+          : (attachment?.error ??
+            (attachment?.state === "uploading"
+              ? t("Uploading…")
+              : `${bytes} · ${t("View source · Ctrl+P")}`))
       }
       onClick={onOpen}
       onKeyDown={(event) => {

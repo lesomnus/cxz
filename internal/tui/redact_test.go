@@ -155,3 +155,60 @@ func TestRedactMissingContainerFailsBeforeSend(t *testing.T) {
 		t.Fatal("failed send retained secret")
 	}
 }
+
+func TestAutomaticSecretPaste(t *testing.T) {
+	for _, multi := range []bool{false, true} {
+		m := conversationModel()
+		m.input.SetValue("before after")
+		m.input.SetCursor(7)
+		if multi {
+			m.input.AddCursor(0)
+		}
+		body := " \tghp_" + strings.Repeat("aB12", 9) + "\n"
+		m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(body), Paste: true})
+		if len(m.redactions) != 1 || len(m.pastes) != 1 || m.redactDialog != nil {
+			t.Fatal("token did not become a secret chip")
+		}
+		for token, secret := range m.redactions {
+			if !strings.Contains(m.input.Value(), token) || string(secret.body) != body || m.pastes[token].body != "" || !m.pastes[token].secret {
+				t.Fatal("unsafe secret paste")
+			}
+		}
+		if strings.Contains(m.View(), "ghp_") || strings.Contains(m.input.Value(), "ghp_") {
+			t.Fatal("secret entered the editor")
+		}
+		c, files := &recordingClient{}, &fakeSecretFiles{}
+		m.client, m.redactStore = c, files
+		msg := m.sendRedactions(m.input.Value())().(redactSent)
+		if msg.err != nil || len(files.bodies) != 1 || files.bodies[0] != body || len(c.inputs) != 1 || strings.Contains(c.inputs[0].Text, "ghp_") || !strings.Contains(c.inputs[0].Text, "/cxz/secrets/fixture/value") {
+			t.Fatal("secret did not use the redacted send path", msg.err)
+		}
+	}
+}
+
+func TestAutomaticSecretPasteBoundaries(t *testing.T) {
+	for _, body := range []string{
+		"ghp_short",
+		"TOKEN=ghp_" + strings.Repeat("a", 36),
+		"use ghp_" + strings.Repeat("a", 36) + " here",
+	} {
+		m := conversationModel()
+		m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(body), Paste: true})
+		if m.input.Value() != body || len(m.redactions) != 0 {
+			t.Fatal("classified a substring")
+		}
+	}
+	for _, body := range []string{
+		"ghp_" + strings.Repeat("a", 65536),
+		"ghp_" + strings.Repeat("a", 36),
+	} {
+		m := conversationModel()
+		if len(body) < 65536 {
+			m.sessions[0].RunId = ""
+		}
+		m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(body), Paste: true})
+		if m.input.Value() != "" || len(m.redactions) != 0 || m.notice == "" {
+			t.Fatal("refused secret fell back to plaintext")
+		}
+	}
+}
