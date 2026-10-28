@@ -56,6 +56,25 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
   expect(title.y).toBeGreaterThan(left.y + left.height);
   expect(title.height).toBe(left.height);
   await detail.screenshot({ path: testInfo.outputPath("task-details.png") });
+  for (const trigger of [priority, status]) {
+    const anchor = (await trigger.locator(".meta-value").boundingBox())!;
+    await trigger.click();
+    const popup = page.locator(".setting-menu");
+    await expect(popup).toHaveAttribute("data-item-alignment", "selected");
+    const selected = popup.locator(
+      '[aria-selected="true"] .setting-match-label',
+    );
+    await expect
+      .poll(async () => {
+        const box = (await selected.boundingBox())!;
+        return Math.max(
+          Math.abs(box.x - anchor.x),
+          Math.abs(box.y + box.height / 2 - anchor.y - anchor.height / 2),
+        );
+      })
+      .toBeLessThan(0.5);
+    await page.keyboard.press("Escape");
+  }
   await priority.click();
   await page.getByRole("option", { name: "High", exact: true }).click();
   await detail

@@ -215,6 +215,7 @@ function TaskEditor({
             <FormField label="Priority">
               <ValueMenu
                 label="Priority"
+                alignItemWithTrigger
                 value={String(priority)}
                 options={["Highest", "High", "Normal", "Low", "Lowest"].map(
                   (label, value) => ({ value: String(value), label }),
@@ -227,6 +228,7 @@ function TaskEditor({
               <FormField label="Status">
                 <ValueMenu
                   label="Status"
+                  alignItemWithTrigger
                   value={String(status)}
                   options={[
                     ...statusOptions.map((item) => ({
