@@ -22,6 +22,25 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
     );
   });
   const chip = page.locator(".paste-chip");
+  await expect(chip).toBeVisible();
+  const layout = await chip.evaluate((el) =>
+    [el, ...el.querySelectorAll("*")].map((node) => {
+      const bounds = node.getBoundingClientRect();
+      const style = getComputedStyle(node);
+      return {
+        tag: node.tagName,
+        className: node.getAttribute("class"),
+        width: style.width,
+        height: style.height,
+        renderedWidth: bounds.width,
+        renderedHeight: bounds.height,
+      };
+    }),
+  );
+  await testInfo.attach("chip-layout", {
+    body: JSON.stringify(layout, null, 2),
+    contentType: "application/json",
+  });
   await expect(
     chip.getByRole("radio", { name: "File", exact: true }),
   ).toBeChecked();
@@ -47,6 +66,10 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
   expect(leading.gap).toBeLessThanOrEqual(leading.space * 2);
   expect(leading.inset).toBe(leading.border);
   const control = chip.getByRole("radiogroup");
+  await expect(chip.locator("[data-file-chip-control]")).toHaveCSS(
+    "width",
+    "34px",
+  );
   await expect(control).toHaveCSS("width", "34px");
   await expect(control).toHaveCSS("height", "18px");
   for (const label of await control.locator("label").all()) {
