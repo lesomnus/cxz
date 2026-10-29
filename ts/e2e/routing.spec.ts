@@ -188,10 +188,13 @@ test("alias and UUID URLs open the same session and preserve its draft", async (
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("Same session, two readable locators");
   const response = await page.request.post("/cxz.SessionService/Get", {
-    headers: { "Connect-Protocol-Version": "1" },
+    headers: {
+      Origin: "https://127.0.0.1:18081",
+      "Connect-Protocol-Version": "1",
+    },
     data: { ref: { alias: "demo-chat" } },
   });
-  expect(response.ok()).toBe(true);
+  expect(response.ok(), await response.text()).toBe(true);
   const hex = Buffer.from((await response.json()).id, "base64").toString("hex");
   const id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
   await page.goto(`/c/_/session/${id}`);
