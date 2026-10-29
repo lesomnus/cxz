@@ -387,6 +387,7 @@ export const messages = {
   "Effort: {value} ({source})": "Effort: {value} ({source})",
   "Entire turn": "Entire turn",
   "Expand source": "Expand source",
+  Expand: "Expand",
   Export: "Export",
   "Fake agent · no accounts or real tasks":
     "Fake agent · no accounts or real tasks",
@@ -448,6 +449,7 @@ export const messages = {
   Output: "Output",
   Pace: "Pace",
   "Paste source": "Paste source",
+  "View pasted text": "View pasted text",
   "Paste storage has reached 32 MiB.": "Paste storage has reached 32 MiB.",
   "Paste · {lines} lines · {bytes}B": "Paste · {lines} lines · {bytes}B",
   "Pastes are limited to 1 MiB.": "Pastes are limited to 1 MiB.",

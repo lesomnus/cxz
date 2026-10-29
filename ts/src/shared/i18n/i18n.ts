@@ -63,7 +63,7 @@ export class LocaleStore {
     }
   }
   translate(message: Message, values: Record<string, string | number> = {}) {
-    return (this.pack[message] ?? messages[message]).replace(
+    return (this.pack[message] ?? messages[message] ?? message).replace(
       /\{(\w+)\}/g,
       (placeholder, name: string) => String(values[name] ?? placeholder),
     );

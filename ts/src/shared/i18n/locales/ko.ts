@@ -389,6 +389,7 @@ export const messages = {
   "Effort: {value} ({source})": "추론 강도: {value} ({source})",
   "Entire turn": "턴 전체",
   "Expand source": "원문 펼치기",
+  Expand: "펼치기",
   Export: "내보내기",
   "Fake agent · no accounts or real tasks":
     "모의 에이전트 · 실제 계정이나 작업 없음",
@@ -449,6 +450,7 @@ export const messages = {
   Output: "출력",
   Pace: "속도",
   "Paste source": "붙여넣기 원문",
+  "View pasted text": "붙여넣은 텍스트 보기",
   "Paste storage has reached 32 MiB.":
     "붙여넣기 보관 공간이 32 MiB에 도달했습니다.",
   "Paste · {lines} lines · {bytes}B": "붙여넣기 · {lines}줄 · {bytes}B",
