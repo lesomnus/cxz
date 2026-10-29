@@ -9,4 +9,5 @@
   font-family: var(--ui-font-mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  word-break: break-all;
 }

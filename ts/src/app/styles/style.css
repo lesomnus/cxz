@@ -96,6 +96,12 @@ textarea,
 select {
   font: inherit;
 }
+/* Editable text breaks at any character by default, including long tokens. */
+input,
+textarea,
+[contenteditable]:not([contenteditable="false"]) {
+  word-break: break-all;
+}
 a.route-link,
 input,
 textarea,
@@ -958,6 +964,7 @@ header strong {
   padding: 0;
   white-space: normal;
   overflow-wrap: anywhere;
+  word-break: break-all;
   margin: 0;
 }
 .input-box .message-body > .markdown {
@@ -1551,6 +1558,7 @@ pre {
   font-variant-ligatures: none;
   /* Preserve every space's advance across soft wraps in native and mirror text. */
   white-space: break-spaces;
+  word-break: break-all;
 }
 .editor-gutter {
   position: relative;
