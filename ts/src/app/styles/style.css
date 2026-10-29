@@ -1773,9 +1773,27 @@ pre {
   color: var(--code-attr, #a18b7c);
 }
 .composer-editor[data-file-drag="true"] {
-  background: var(--shade-40);
-  outline: 1px solid var(--shade-120);
-  outline-offset: -1px;
+  border-radius: inherit;
+}
+.composer-file-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--shade-122);
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--shade-32) 90%, transparent);
+  color: var(--shade-237);
+  font-family: Inter, system-ui, sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+.composer-file-drop-overlay svg {
+  flex-shrink: 0;
 }
 .attachment-info {
   overflow-wrap: anywhere;

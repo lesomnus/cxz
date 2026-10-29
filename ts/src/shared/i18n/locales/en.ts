@@ -169,6 +169,7 @@ export const messages = {
   "Clipboard access failed. Use the terminal context menu to copy.":
     "Clipboard access failed. Use the terminal context menu to copy.",
   "Upload files": "Upload files",
+  "Drop files or folders here": "Drop files or folders here",
   "Upload folder": "Upload folder",
   Attachment: "Attachment",
   "Uploading…": "Uploading…",
