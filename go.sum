@@ -145,8 +145,8 @@ github.com/lesomnus/bed v0.0.0-20261007123751-97238b06cc29 h1:NQ51Dx+PtK0ggouSCZ
 github.com/lesomnus/bed v0.0.0-20261007123751-97238b06cc29/go.mod h1:1UnJBe/wvYZaK2hv9wQWUGftrn788SP0z9HKaYveKwc=
 github.com/lesomnus/flob v0.0.0-20261010120939-21f89e60609e h1:1McF2PA9Lqp63JLipKOcTzgYxHK7t9SCOOBTz28/VnE=
 github.com/lesomnus/flob v0.0.0-20261010120939-21f89e60609e/go.mod h1:fZCkpUttk+/7q+nAuwnVZkbBWjcq3cWniWtz4lY8Dig=
-github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1 h1:/FdFRitFIIBbvwIpMx9ra161VNNdpfkXm04kCBBMiH8=
-github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1/go.mod h1:VY6bugvBCYkwrDxanNUkVBxNm/bWbUoj3T5ZGgt0ZZE=
+github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f h1:9nbBqBxxNk8rVtY1q2tUIA9FPcIZ0PMapR2yFVwU0pY=
+github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f/go.mod h1:VY6bugvBCYkwrDxanNUkVBxNm/bWbUoj3T5ZGgt0ZZE=
 github.com/lesomnus/mkot v0.0.0-20261013182918-46d8b05a79b3 h1:5BGqjEg5NmTlh6O6/2rFosONn1CODt41Gxpx8ePYx40=
 github.com/lesomnus/mkot v0.0.0-20261013182918-46d8b05a79b3/go.mod h1:g5UbjQTLO4FPAqekFLHPhoKupAJoM7AVqlz3qYfhePA=
 github.com/lesomnus/mkot/mkotx v0.0.0-20261013182918-46d8b05a79b3 h1:lx23mtt9FD3fhJhQGEsD2Q+kvTyX494XyqM66ZP76IQ=

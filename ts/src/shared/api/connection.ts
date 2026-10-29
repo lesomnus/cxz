@@ -1,3 +1,4 @@
+import { createRegistry } from "@bufbuild/protobuf";
 import { createClient, type Transport } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { Store } from "@lesomnus/payday/store";
@@ -5,7 +6,11 @@ import { Queries } from "@lesomnus/payday/query";
 import { entities } from "#gen/entities";
 import { InstallationService } from "#gen/cxz/installation_pb";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
-import { SessionService } from "#gen/cxz/session_svc_pb";
+import {
+  SessionService,
+  SessionNotificationSchema,
+} from "#gen/cxz/session_svc_pb";
+import { NotificationService } from "#gen/cxz/payday/notification_pb";
 import { AccountService } from "#gen/cxz/account_svc_pb";
 import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
@@ -39,6 +44,7 @@ export class Connection {
   // installation is files on the manager. See docs/plans/service-boundaries.md.
   readonly installation;
   readonly sessions;
+  readonly notifications;
   readonly accounts;
   readonly bindings;
   readonly tasks;
@@ -60,6 +66,13 @@ export class Connection {
     readonly transfer?: Transfer,
   ) {
     this.inProcess = !!transport;
+    try {
+      sessionStorage.removeItem(
+        `cxz.attention.v1:${encodeURIComponent(baseUrl)}`,
+      );
+    } catch {
+      /* Legacy tab-local read state is no longer authoritative. */
+    }
     this.drafts = new SessionDrafts(baseUrl, this.pastes);
     this.transport = transport ?? this.httpTransport(rpcFetch);
     this.store = Store.open(entities, {
@@ -74,7 +87,8 @@ export class Connection {
     this.bindings = createClient(AuthBindingService, this.transport);
     this.tasks = createClient(TaskService, this.transport);
     this.taskCatalog = new TaskCatalog(this.tasks);
-    this.attention = new SessionAttention(this.sessions, baseUrl);
+    this.notifications = createClient(NotificationService, this.transport);
+    this.attention = new SessionAttention(this.sessions, this.notifications);
     this.conversations = new ConversationCache(this);
     this.inventory = new ResourceInventory(
       this.projects,
@@ -90,6 +104,7 @@ export class Connection {
   private httpTransport(fetcher: typeof fetch) {
     return createConnectTransport({
       baseUrl: this.baseUrl,
+      jsonOptions: { registry: createRegistry(SessionNotificationSchema) },
       fetch: fetcher,
       interceptors: [
         rpcDiagnostics(this.baseUrl, {

@@ -4,13 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/lesomnus/cxz/internal/core"
 	"os"
 	"path/filepath"
+
+	"github.com/lesomnus/cxz/internal/assets"
+	"github.com/lesomnus/cxz/internal/core"
 )
 
 // Fork metadata survives display-history retention and project restarts.
 func (m *Manager) NotificationBoundary(ctx context.Context, id string) (uint64, error) {
+	if !assets.ValidID(id) {
+		return 0, errors.New("invalid session ID")
+	}
 	p, err := m.sessionProject(ctx, id)
 	if err != nil {
 		return 0, err

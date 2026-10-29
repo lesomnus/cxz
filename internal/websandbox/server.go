@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/internal/resourceid"
 	"math/rand/v2"
 	"slices"
 	"strings"
@@ -42,6 +43,7 @@ type Server struct {
 	uploads        map[string]sandboxAttachment
 	uploadSequence uint64
 	uploadBytes    int64
+	notifications  *sandboxNotifications
 }
 type session struct {
 	forkSource string
@@ -82,7 +84,7 @@ func New(seed uint64, delay time.Duration) *Server {
 		if i == 7 {
 			project = s.projects[1]
 		}
-		st.value = resource.Session_builder{Id: []byte(fmt.Sprintf("session-%08d", i+1)), RuntimeId: id, Alias: id, Name: name, Agent: agent, Model: "sandbox-" + agent, Listed: true, Project: project, Status: resource.SessionStatus_builder{State: "idle", RunId: id + "-run-1", PermissionMode: "default"}.Build()}.Build()
+		st.value = resource.Session_builder{Id: resourceid.Bytes(8, id), RuntimeId: id, Alias: id, Name: name, Agent: agent, Model: "sandbox-" + agent, Listed: true, Project: project, Status: resource.SessionStatus_builder{State: "idle", RunId: id + "-run-1", PermissionMode: "default"}.Build()}.Build()
 		s.sessions = append(s.sessions, st)
 		s.telemetry(st)
 		s.event(st, "input", "Show the current state of this project.", "", nil)
@@ -112,6 +114,7 @@ func New(seed uint64, delay time.Duration) *Server {
 			s.skillActivity(st, "seeded-skill")
 		}
 	}
+	s.notifications = newSandboxNotifications(s)
 	return s
 }
 
@@ -158,6 +161,7 @@ func (s *Server) Register(r grpc.ServiceRegistrar) {
 	resource.RegisterSessionServiceServer(r, s.Sessions())
 	resource.RegisterTaskServiceServer(r, s.Tasks())
 	resource.RegisterTaskLinkServiceServer(r, s.TaskLinks())
+	resource.RegisterNotificationServiceServer(r, s.notifications)
 }
 
 // Sessions is also what receives file bodies, which do not arrive as calls.
@@ -180,6 +184,9 @@ func (s *Server) event(st *session, kind, text, request string, payload []byte) 
 		st.events = append([]*resource.SessionEvent(nil), st.events[len(st.events)-maxEvents:]...)
 	}
 	st.value.GetStatus().SetLastSeq(seq)
+	if s.notifications != nil {
+		s.notifications.record(st, e)
+	}
 	s.rev++
 }
 func (s *Server) state(st *session, state string) {

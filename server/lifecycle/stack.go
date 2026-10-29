@@ -4,7 +4,6 @@ package lifecycle
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/assets"
@@ -12,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/migrate"
 	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/internal/resourceid"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/cxz/server/bare"
 	"github.com/lesomnus/cxz/server/pd"
@@ -156,12 +156,7 @@ func (s Layer) Connection() resource.ConnectionServiceServer {
 
 func ptr[T any](v T) *T { return &v }
 func resourceID(domain byte, runtimeID string) []byte {
-	h := sha256.Sum256([]byte("cxz.resource:" + runtimeID))
-	id := append([]byte(nil), h[:16]...)
-	id[6] = (id[6] & 15) | 0x80
-	id[8] = (id[8] & 63) | 0x80
-	id[9] = domain
-	return id
+	return resourceid.Bytes(domain, runtimeID)
 }
 func projectRef(id string) *resource.ProjectRef {
 	return projectid.Ref(id)

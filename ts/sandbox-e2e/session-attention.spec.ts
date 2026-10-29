@@ -83,12 +83,14 @@ test("new Questions receive tab attention and a sound; the settings switch can s
   await expect(
     page
       .getByRole("link", { name: /Approval question/ })
-      .getByRole("img", { name: "Awaiting answer" }),
+      .getByRole("img", { name: "Unread response" }),
   ).toBeVisible();
   await expect.poll(() => page.title()).toMatch(/^\(\d+\)/);
   await expect
     .poll(() => page.evaluate(() => (window as any).soundStarts.length))
     .toBeGreaterThan(0);
+  await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
+  await expect(question).toBeVisible();
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   const sound = page.getByRole("switch", { name: "Notification sounds" });

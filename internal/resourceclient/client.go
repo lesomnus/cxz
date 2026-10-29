@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/internal/sessionalias"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
+	"sync"
 )
 
 type Client struct {
@@ -23,6 +24,10 @@ type Client struct {
 	Accounts      resource.AccountServiceClient
 	Bindings      resource.AuthBindingServiceClient
 	uploads       *attachmenthttp.Client
+	notifications resource.NotificationServiceClient
+	readMu        sync.Mutex
+	readStates    map[string]*resource.SessionReadState
+	connection    grpc.ClientConnInterface
 }
 
 func New(conn grpc.ClientConnInterface, uploads ...*attachmenthttp.Client) *Client {
@@ -35,6 +40,9 @@ func New(conn grpc.ClientConnInterface, uploads ...*attachmenthttp.Client) *Clie
 		mcpConnection: resource.NewMcpConnectionServiceClient(conn),
 		Accounts:      resource.NewAccountServiceClient(conn),
 		Bindings:      resource.NewAuthBindingServiceClient(conn),
+		notifications: resource.NewNotificationServiceClient(conn),
+		readStates:    map[string]*resource.SessionReadState{},
+		connection:    conn,
 	}
 	if len(uploads) > 0 {
 		c.uploads = uploads[0]

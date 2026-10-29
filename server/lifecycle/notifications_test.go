@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/lesomnus/payday/config"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 type notificationFixture struct {
@@ -205,5 +207,144 @@ func TestNotificationKindsExcludeToolFailuresAndInterruptions(t *testing.T) {
 	question := &api.Event{Kind: "approval", Text: "item/tool/requestUserInput", Payload: []byte(`{"params":{"questions":[{"id":"answer","question":"What next?","options":[]}]}}`)}
 	if notificationKind("codex", question) != SessionQuestion {
 		t.Fatal("free-form question was not recognized")
+	}
+}
+
+func TestNotificationsPurgeRemovesReadAndReceiptData(t *testing.T) {
+	f := notificationTestFixture()
+	ctx, db, stack, layer := notificationTestStack(t, filepath.Join(t.TempDir(), "resources.db"), f)
+	if err := layer.CollectNotifications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	f.append("turn_end", "completed")
+	if err := layer.CollectNotifications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	state, err := stack.Session().ReadState(ctx, resource.SessionReadStateRequest_builder{Ref: sessionRef(f.s.Id)}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = stack.Session().MarkRead(ctx, resource.SessionMarkReadRequest_builder{Ref: sessionRef(f.s.Id), Generation: state.GetGeneration(), ThroughSeq: 1}.Build()); err != nil {
+		t.Fatal(err)
+	}
+	session, err := stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: sessionRef(f.s.Id)}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = layer.purgeSessionAttention(ctx, session.GetId()); err != nil {
+		t.Fatal(err)
+	}
+	for _, table := range []string{"sessionread", "session_notification_cursor", "notificationrecord", "notificationreceiptrecord"} {
+		var count int
+		if err = db.QueryRowContext(ctx, "SELECT count(*) FROM "+table).Scan(&count); err != nil || count != 0 {
+			t.Fatal(table, count, err)
+		}
+	}
+}
+
+func TestNotificationForkBoundaryAndGenerationReset(t *testing.T) {
+	f := notificationTestFixture()
+	ctx, db, stack, layer := notificationTestStack(t, filepath.Join(t.TempDir(), "resources.db"), f)
+	if err := layer.CollectNotifications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM session_notification_cursor`); err != nil {
+		t.Fatal(err)
+	}
+	f.append("input", "copied")
+	f.append("turn_end", "completed")
+	f.floor = 2
+	if err := layer.CollectNotifications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if len(notificationPage(t, ctx, stack, layer, true).GetItems()) != 0 {
+		t.Fatal("forked history replayed notifications")
+	}
+	f.append("turn_end", "completed")
+	if err := layer.CollectNotifications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	old, err := stack.Session().ReadState(ctx, resource.SessionReadStateRequest_builder{Ref: sessionRef(f.s.Id)}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.s.LastSeq = 0
+	f.events = nil
+	f.floor = 0
+	if err = layer.CollectNotifications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	current, err := stack.Session().ReadState(ctx, resource.SessionReadStateRequest_builder{Ref: sessionRef(f.s.Id)}.Build())
+	if err != nil || current.GetGeneration() == old.GetGeneration() || current.GetThroughSeq() != 0 {
+		t.Fatal("generation not rotated", current, err)
+	}
+	f.append("turn_end", "completed")
+	if err = layer.CollectNotifications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	page := notificationPage(t, ctx, stack, layer, true)
+	if len(page.GetItems()) != 1 {
+		t.Fatal("old generation still unread", page)
+	}
+	payload := &resource.SessionNotification{}
+	if err = page.GetItems()[0].GetNotification().GetPayload().UnmarshalTo(payload); err != nil || payload.GetGeneration() != current.GetGeneration() {
+		t.Fatal("wrong generation", payload, err)
+	}
+}
+
+type partialNotificationFixture struct {
+	*notificationFixture
+	second *api.Session
+	broken bool
+}
+
+func (f *partialNotificationFixture) ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error) {
+	return &api.ProjectList{Projects: []*api.Project{f.p}}, &api.SessionList{Sessions: []*api.Session{f.s, f.second}}, nil
+}
+func (f *partialNotificationFixture) NotificationHead(_ context.Context, id string) (uint64, error) {
+	if id == f.s.Id && f.broken {
+		return 0, errors.New("broken conversation")
+	}
+	if id == f.second.Id {
+		return f.second.LastSeq, nil
+	}
+	return f.s.LastSeq, nil
+}
+func (f *partialNotificationFixture) History(ctx context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
+	if r.SessionId == f.second.Id {
+		return &api.EventBatch{Events: []*api.Event{{SessionId: r.SessionId, Seq: 1, Kind: "turn_end", Text: "completed"}}}, nil
+	}
+	return f.notificationFixture.History(ctx, r)
+}
+func TestNotificationCollectionIsolatesUnavailableConversations(t *testing.T) {
+	f := notificationTestFixture()
+	other := proto.Clone(f.s).(*api.Session)
+	other.Id = "333333333333333333333333"
+	other.CreateId = "second"
+	other.CreatedAt += 1000
+	runtime := &partialNotificationFixture{notificationFixture: f, second: other}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	stack, err := Build(ctx, db, runtime, nil, Options{Notifications: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	layer, _ := resource.Find[Layer](stack)
+	if err = layer.CollectNotifications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	runtime.broken = true
+	other.LastSeq = 1
+	if err = layer.CollectNotifications(ctx); err == nil {
+		t.Fatal("source failure was not reported")
+	}
+	page := notificationPage(t, ctx, stack, layer, true)
+	if len(page.GetItems()) != 1 {
+		t.Fatal("unavailable session blocked another session", page)
 	}
 }

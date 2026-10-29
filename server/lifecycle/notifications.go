@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -391,12 +392,14 @@ func (s Layer) CollectNotifications(ctx context.Context) error {
 		return err
 	}
 	first := initialized == 0
+	var failures []error
 	after := ""
 	for {
 		page, err := s.Next().Session().List(ctx, resource.SessionListRequest_builder{Size: 200, After: after}.Build())
 		if err != nil {
 			return err
 		}
+	sessionLoop:
 		for _, session := range page.GetItems() {
 			if !session.GetListed() || session.GetProject() == nil {
 				continue
@@ -409,13 +412,15 @@ func (s Layer) CollectNotifications(ctx context.Context) error {
 			c, err := n.cursor(ctx, session, baseline)
 			n.mu.Unlock()
 			if err != nil {
-				return err
+				failures = append(failures, fmt.Errorf("session %s: %w", session.GetRuntimeId(), err))
+				continue
 			}
 			end := session.GetStatus().GetLastSeq()
 			if direct {
 				end, err = head.NotificationHead(ctx, session.GetRuntimeId())
 				if err != nil {
-					return err
+					failures = append(failures, fmt.Errorf("session %s: %w", session.GetRuntimeId(), err))
+					continue
 				}
 			}
 			if end < c.seq {
@@ -427,13 +432,15 @@ func (s Layer) CollectNotifications(ctx context.Context) error {
 				}
 				n.mu.Unlock()
 				if err != nil {
-					return err
+					failures = append(failures, fmt.Errorf("session %s: %w", session.GetRuntimeId(), err))
+					continue
 				}
 			}
 			for pages := 0; c.seq < end && pages < 16; pages++ {
 				batch, err := s.shared.runtime.History(ctx, &api.WatchRequest{SessionId: session.GetRuntimeId(), AfterSeq: c.seq, Limit: 1024})
 				if err != nil {
-					return err
+					failures = append(failures, fmt.Errorf("session %s: %w", session.GetRuntimeId(), err))
+					continue sessionLoop
 				}
 				if len(batch.GetEvents()) == 0 {
 					break
@@ -444,7 +451,8 @@ func (s Layer) CollectNotifications(ctx context.Context) error {
 						continue
 					}
 					if err := n.publish(ctx, session, c, e); err != nil {
-						return err
+						failures = append(failures, fmt.Errorf("session %s: %w", session.GetRuntimeId(), err))
+						continue sessionLoop
 					}
 					c.seq = e.Seq
 				}
@@ -452,7 +460,8 @@ func (s Layer) CollectNotifications(ctx context.Context) error {
 					break
 				}
 				if _, err = s.shared.db.ExecContext(ctx, `UPDATE session_notification_cursor SET seq=? WHERE session_id=? AND generation=?`, c.seq, session.GetId(), c.generation); err != nil {
-					return err
+					failures = append(failures, fmt.Errorf("session %s: %w", session.GetRuntimeId(), err))
+					continue sessionLoop
 				}
 			}
 		}
@@ -464,12 +473,14 @@ func (s Layer) CollectNotifications(ctx context.Context) error {
 	if first {
 		_, err = s.shared.db.ExecContext(ctx, `INSERT OR IGNORE INTO notification_meta VALUES('initialized',X'01')`)
 	}
-	return err
+	return errors.Join(append(failures, err)...)
 }
 
 func (s Layer) RunNotifications(ctx context.Context, report func(error)) {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
+	lastError := ""
+	var reported time.Time
 	for {
 		select {
 		case <-ctx.Done():
@@ -479,8 +490,12 @@ func (s Layer) RunNotifications(ctx context.Context, report func(error)) {
 		work, cancel := context.WithTimeout(ctx, 10*time.Second)
 		err := s.CollectNotifications(work)
 		cancel()
-		if err != nil && ctx.Err() == nil {
+		if err == nil {
+			lastError = ""
+		} else if ctx.Err() == nil && (err.Error() != lastError || time.Since(reported) > time.Minute) {
 			report(err)
+			lastError = err.Error()
+			reported = time.Now()
 		}
 	}
 }

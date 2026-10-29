@@ -23,7 +23,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/lesomnus/bed v0.0.0-20261007123751-97238b06cc29
 	github.com/lesomnus/flob v0.0.0-20261010120939-21f89e60609e
-	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1
+	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
 	github.com/lesomnus/otx v0.0.0-20261013182912-d2af55df512e
 	github.com/lesomnus/payday v0.0.0-20261029194350-5d634e2c4c1d
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
@@ -39,6 +39,7 @@ require (
 	github.com/yuin/goldmark v1.7.8
 	golang.org/x/mod v0.41.0
 	golang.org/x/net v0.60.0
+	golang.org/x/sync v0.23.0
 	golang.org/x/sys v0.48.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc
 	google.golang.org/grpc v1.83.2
@@ -123,7 +124,6 @@ require (
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
