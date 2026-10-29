@@ -46,17 +46,16 @@ test("short whole tokens immediately become secret chips and remain editable aro
   // The current editor reserves the measured chip width with invisible text.
   // Its source token belongs to the chip, not the textarea's displayed value.
   await expect(input).toHaveValue(/^Before [\s\S]+more  after$/);
-  await expect(chip).toContainText(/\[Secret [0-9a-f]{8}\]/);
+  await expect(chip.locator(".paste-chip-label")).toHaveText("Secret");
   expect(await input.inputValue()).not.toContain(token);
   await expect(send).toBeEnabled();
   await expect(page.locator("body")).not.toContainText(token);
   await chip.click();
   const dialog = page.getByRole("dialog", { name: "Secret", exact: true });
-  await expect(dialog).toContainText("GitHub token detected");
-  await expect(dialog).toContainText("/cxz/secrets/storybook/value");
+  await expect(dialog.getByLabel("Secret value")).toHaveText(token);
   await expect(
-    dialog.getByRole("button", { name: /^Expand(?: source)?$/ }),
-  ).toHaveCount(0);
+    dialog.getByRole("button", { name: "Expand", exact: true }),
+  ).toBeEnabled();
   await expect(page.getByLabel("Secret writes")).toHaveText("1");
 });
 
@@ -133,6 +132,122 @@ test("embedded and incomplete tokens retain ordinary paste handling; JWT header 
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
   await chip.click();
   await expect(
-    page.getByRole("dialog", { name: "Secret", exact: true }),
-  ).toContainText("JWT detected");
+    page
+      .getByRole("dialog", { name: "Secret", exact: true })
+      .getByLabel("Secret value"),
+  ).toHaveText(jwt);
+});
+
+test("Secret upload shows measured percentages until acknowledgement, then only its name", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const recorded: string[] = [];
+    const observer = new MutationObserver(() => {
+      const label = document.querySelector(".paste-chip-label")?.textContent;
+      if (label && recorded.at(-1) !== label) recorded.push(label);
+    });
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+    Reflect.set(window, "secretProgressRecorder", { recorded, observer });
+  });
+  await paste(page, token);
+  const chip = page.getByRole("button", {
+    name: "Secret file reference",
+    exact: true,
+  });
+  await expect(chip).toHaveAttribute("data-upload-state", "ready");
+  await expect(chip.locator(".paste-chip-label")).toHaveText("Secret");
+  const recorded = await page.evaluate(() => {
+    const { recorded, observer } = Reflect.get(
+      window,
+      "secretProgressRecorder",
+    ) as { recorded: string[]; observer: MutationObserver };
+    observer.disconnect();
+    return recorded;
+  });
+  expect(recorded).toEqual(
+    expect.arrayContaining(["Secret 000%", "Secret 099%", "Secret"]),
+  );
+  expect(
+    recorded.some((label) => /^Secret 0(?:12|25|50|75)%$/.test(label)),
+  ).toBe(true);
+  expect(recorded).not.toContain("Secret 100%");
+});
+
+test("the value-only Secret body reveals during selection and Expand requires confirmation", async ({
+  page,
+}) => {
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await paste(page, token);
+  const chip = page.getByRole("button", {
+    name: "Secret file reference",
+    exact: true,
+  });
+  await expect(chip).toHaveAttribute("data-upload-state", "ready");
+  await chip.click();
+  const dialog = page.getByRole("dialog", { name: "Secret", exact: true });
+  await expect(dialog).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+  const value = dialog.getByLabel("Secret value");
+  await expect(value).toHaveText(token);
+  expect(await dialog.locator(".card-body").textContent()).toBe(token);
+  await expect(value).toHaveCSS("filter", "blur(5px)");
+  const bounds = (await value.boundingBox())!;
+  await page.mouse.move(bounds.x + 2, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    bounds.x + Math.min(150, bounds.width - 2),
+    bounds.y + bounds.height / 2,
+    { steps: 8 },
+  );
+  await expect(value).toHaveCSS("filter", "blur(0px)");
+  await page.mouse.up();
+  await page.evaluate(() => window.getSelection()?.removeAllRanges());
+  await expect(value).toHaveCSS("filter", "blur(5px)");
+  const expand = dialog.getByRole("button", { name: "Expand", exact: true });
+  const close = dialog.getByRole("button", {
+    name: "Close paste preview",
+    exact: true,
+  });
+  expect((await expand.boundingBox())!.x).toBeLessThan(
+    (await close.boundingBox())!.x,
+  );
+  await expand.click();
+  await expect(dialog.locator(".confirm-button")).toHaveAttribute(
+    "data-confirming",
+    "true",
+  );
+  expect(await input.inputValue()).not.toContain(token);
+  await expect(chip).toHaveCount(1);
+  await dialog
+    .getByRole("button", { name: "Expand secret as plain text", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await expect(chip).toHaveCount(0);
+  await expect(input).toHaveValue(token);
+});
+
+test("confirmed expansion cannot overwrite an edited draft", async ({
+  page,
+}) => {
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await paste(page, token);
+  const chip = page.getByRole("button", {
+    name: "Secret file reference",
+    exact: true,
+  });
+  await expect(chip).toHaveAttribute("data-upload-state", "ready");
+  await chip.click();
+  const dialog = page.getByRole("dialog", { name: "Secret", exact: true });
+  await expect(dialog.getByLabel("Secret value")).toHaveText(token);
+  await input.fill("new draft");
+  await dialog.getByRole("button", { name: "Expand", exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "Expand secret as plain text", exact: true })
+    .click();
+  await expect(input).toHaveValue("new draft");
+  await expect(dialog.getByRole("status")).toContainText("input has changed");
 });

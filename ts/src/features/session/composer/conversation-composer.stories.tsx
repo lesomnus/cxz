@@ -47,6 +47,7 @@ export const AutomaticSecretPaste: Story = {
     const [failure, setFailure] = useState(false);
     const [writes, setWrites] = useState(0);
     const [deletes, setDeletes] = useState(0);
+    const [values] = useState(() => new Map<string, Uint8Array>());
     return (
       <>
         <Button onClick={() => setFailure(!failure)}>
@@ -61,13 +62,32 @@ export const AutomaticSecretPaste: Story = {
           secretFiles={{
             session: "storybook",
             run: "run",
-            put: async (_bytes, _signal) => {
+            put: async (bytes, _signal, progress) => {
               setWrites((count) => count + 1);
-              await new Promise((resolve) => setTimeout(resolve, 600));
-              if (failure) throw new Error("Simulated secret write failure");
-              return "/cxz/secrets/storybook/value";
+              const value = bytes.slice();
+              for (const ratio of [0, 0.12, 0.25, 0.5, 0.75, 1]) {
+                progress?.(Math.ceil(bytes.length * ratio), bytes.length);
+                await new Promise((resolve) => setTimeout(resolve, 250));
+              }
+              if (failure) {
+                value.fill(0);
+                throw new Error("Simulated secret write failure");
+              }
+              const path = `/cxz/secrets/${crypto.randomUUID().slice(0, 8)}/value`;
+              values.set(path, value);
+              return path;
             },
-            remove: async () => setDeletes((count) => count + 1),
+            read: async (path, signal) => {
+              signal.throwIfAborted();
+              const value = values.get(path);
+              if (!value) throw new Error("Secret expired");
+              return value.slice();
+            },
+            remove: async (path) => {
+              values.get(path)?.fill(0);
+              values.delete(path);
+              setDeletes((count) => count + 1);
+            },
           }}
         />
       </>

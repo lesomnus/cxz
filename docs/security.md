@@ -92,11 +92,29 @@ against a remote service. Format-matching expired or example tokens are still
 treated as secrets.
 
 Browser preparation immediately inserts a safe placeholder and blocks Send until
-the secret file is ready. Failure, cancellation or an unavailable session never
+the secret file is ready. The chip shows `Secret` and measured upload percentage
+while preparing, capped at 99% until the server acknowledges storage. It uses the
+same authenticated Connect RPC with XHR for upload progress. Ready chips show
+only `Secret`; internal IDs remain internal. Failure, cancellation or an
+unavailable session never
 falls back to a normal upload or plaintext draft: remove the failed chip and
 paste again. Refresh interrupts pending preparation; a ready file reference can
 be restored for the same run. The existing 64 KiB secret limit and session/run
 binding apply. TUI secrets are kept in memory until Send, like `/@redact`.
+
+Opening a browser Secret card reads the temporary file through the existing
+project Download API, with a 64 KiB limit and the same session/run binding.
+The body contains only its value, blurred until dragged/selected. Clearing the
+selection or losing window focus conceals it again. Blur is a visual privacy
+affordance; the open card holds its plaintext in memory. Closing the card aborts
+pending reads and drops its transient value; previewing does not persist it in
+drafts or ordinary attachment storage. Expired files show an error.
+
+The card's Expand button requires a second confirmation click. Confirming
+explicitly converts that occurrence into ordinary editable text: the raw value
+then enters the draft and, if sent, the prompt and conversation record. Closing
+the card or canceling confirmation keeps the file reference. An edited draft
+cannot be overwritten by a stale preview.
 
 Format references:
 

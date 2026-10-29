@@ -8,10 +8,11 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type Ref,
 } from "react";
 import { flushSync } from "react-dom";
-import { Button, CardActions } from "@lesomnus/nox";
+import { Button, CardActions, ConfirmButton } from "@lesomnus/nox";
 import previewStyles from "./paste-preview.module.css";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { indentEdit } from "./composer-indent";
@@ -68,6 +69,8 @@ import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
 import { useFileDrag } from "./use-file-drag";
 import { detectSecretPaste } from "#src/shared/content/secret-paste.ts";
 import { prepareSecretPaste, type SecretFiles } from "./secret-paste";
+import { SecretPreview } from "./secret-preview";
+import { SecretPreviewBody } from "./secret-preview-body";
 import { PasteChip } from "./paste-chip";
 import { reserveChip } from "./chip-reservation";
 import {
@@ -606,6 +609,9 @@ export function ComposerEditor({
     const retry = () => {
       if (!latest.current.readOnly) startUpload(range.paste);
     };
+    const secretPreview = range.paste.secret
+      ? new SecretPreview(range.paste, secretFiles)
+      : undefined;
     openCard({
       kind: "paste",
       label: () =>
@@ -620,10 +626,16 @@ export function ComposerEditor({
               lines: range.paste.lines,
               bytes: range.paste.bytes.toLocaleString(currentLocale()),
             })),
-      content: () => <PastePreview paste={range.paste} retry={retry} />,
+      content: () =>
+        secretPreview ? (
+          <SecretPreviewBody preview={secretPreview} />
+        ) : (
+          <PastePreview paste={range.paste} retry={retry} />
+        ),
       footer: (close) => (
         <PastePreviewActions
           paste={range.paste}
+          secretPreview={secretPreview}
           retry={retry}
           close={close}
           apply={(text) => {
@@ -814,7 +826,9 @@ export function ComposerEditor({
                 jobs.current.set(paste.token, controller);
                 replace(selection.start, selection.end, paste.token);
                 setNotice("");
-                void save(controller.signal).finally(() => {
+                void save(controller.signal, () =>
+                  changedUploads(paste, false),
+                ).finally(() => {
                   jobs.current.delete(paste.token);
                   changedUploads(paste);
                 });
@@ -1394,11 +1408,13 @@ function AttachmentPreview({
 
 function PastePreviewActions({
   paste,
+  secretPreview,
   retry,
   apply,
   close,
 }: {
   paste: ComposerPaste;
+  secretPreview?: SecretPreview;
   retry: () => void;
   apply: (text: string) => boolean;
   close: () => void;
@@ -1408,6 +1424,13 @@ function PastePreviewActions({
   return (
     <>
       <CardActions>
+        {secretPreview && (
+          <SecretExpand
+            preview={secretPreview}
+            disabled={stale}
+            apply={(value) => setStale(!apply(value))}
+          />
+        )}
         {paste.body && !paste.secret && (
           <Button
             className={previewStyles.expand}
@@ -1442,5 +1465,28 @@ function PastePreviewActions({
         </p>
       )}
     </>
+  );
+}
+
+function SecretExpand({
+  preview,
+  disabled,
+  apply,
+}: {
+  preview: SecretPreview;
+  disabled: boolean;
+  apply: (value: string) => void;
+}) {
+  const snapshot = useSyncExternalStore(preview.subscribe, preview.getSnapshot);
+  return (
+    <ConfirmButton
+      className={previewStyles.expand}
+      type="button"
+      disabled={disabled || snapshot.state !== "ready"}
+      confirmationLabel="Expand secret as plain text"
+      onConfirm={() => apply(snapshot.value)}
+    >
+      {t("Expand")}
+    </ConfirmButton>
   );
 }
