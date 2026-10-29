@@ -148,7 +148,7 @@ func TestInventorySnapshotCompletion(t *testing.T) {
 		t.Run(string(rune('0'+pages)), func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			broker, err := (config.WatchConfig{Broker: config.BrokerMemory}).Build(config.DbConfig{Driver: "sqlite3"})
+			broker, err := (config.WatchConfig{Broker: config.BrokerMemory}).Build(t.Context(), config.DbConfig{Driver: "sqlite3"})
 			if err != nil {
 				t.Fatal(err)
 			}

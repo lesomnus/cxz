@@ -35,18 +35,35 @@ func (Audit) Fields() []ent.Field {
 			Nillable().
 			Optional(),
 		field.Uint32("domain").
+			Optional().
+			Default(0),
+		field.Json("fields", []uint32{}).
+			Optional(),
+		field.Bytes("digest").
+			Optional(),
+		field.Json("digest_fields", []uint32{}).
 			Optional(),
 	}
 }
 
 func (Audit) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("object_id"),
-		index.Fields("tenant_id", "date_created"),
-		index.Fields("actor_tenant_id", "date_created"),
-		index.Fields("counterpart_tenant_id", "date_created"),
-		index.Fields("domain", "date_created"),
-		index.Fields("actor_id", "date_created"),
+		index.Fields("object_id").
+			StorageKey("audit_object"),
+		index.Fields("tenant_id", "date_created").
+			StorageKey("audit_trail"),
+		index.Fields("actor_tenant_id", "date_created").
+			StorageKey("audit_by_actor_tenant"),
+		index.Fields("counterpart_tenant_id", "date_created").
+			StorageKey("audit_by_counterpart"),
+		index.Fields("domain", "date_created").
+			StorageKey("audit_by_domain"),
+		index.Fields("tenant_id", "domain", "date_created").
+			StorageKey("audit_by_tenant_domain"),
+		index.Fields("actor_id", "date_created").
+			StorageKey("audit_by_actor"),
+		index.Fields("date_created", "id").
+			StorageKey("audit_by_time"),
 	}
 }
 

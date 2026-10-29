@@ -1,0 +1,175 @@
+edition = "2023";
+
+package cxz;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// Access is one call that read or wrote somebody's personal data: who made it,
+// in which tenant, from where, what it was, whose data it carried, and how it
+// ended (payday#111).
+//
+// It is the access record an app keeps of its processing of personal data --
+// Korea's PIPA safety measures ask for one, with the account, the time, where
+// from, whose data and what was done, kept for a year or two and reviewed each
+// month -- and it is what the trail is not. The trail holds writes, without
+// where they came from, and its `object_id` is the row that changed rather
+// than the person a page showed.
+//
+// # Written by what happened
+//
+// The `access` interceptor writes it, and the generated `AccessRecorder` at a
+// write's commit, from what each call carried: the keys of the messages in its
+// answer that hold a `personal` field, what the app said it showed
+// (`access.Saw`), the rows a write wrote, the rows a refused request named. A
+// call that carried nobody's data leaves nothing. Nobody else writes it;
+// `AccessService` answers a Get and a List, and has no write to offer.
+//
+// # Kept as the trail is
+//
+// A kind of the trail's archive, `access`: the generated `TrailStore` reads
+// these rows beside the trail's own, so the same passes archive, seal,
+// checkpoint and purge them with their tenant, under the kind's own window
+// (`audit.by.access`).
+message Access {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // The tenant the data the call carried is in, which is whose record this
+  // is: a call that carried two tenants' people is a row in each.
+  bytes tenant_id = 2 [(orm.field) = {type: TYPE_UUID}];
+
+  // Who made it, as the frame named them, and the tenant they are held by.
+  bytes actor_id = 8 [(orm.field) = {type: TYPE_UUID}];
+
+  // The trace the call belonged to, empty if it was not traced: what puts
+  // this beside the call's log and its rows of the trail.
+  bytes trace_id = 9;
+
+  // The RPC, as gRPC dispatched it.
+  string action = 10;
+
+  // What was done to the data of the people it names: `write`, `download`, or
+  // `read` for anything else a call carried -- what it showed, or what a
+  // request it was refused named.
+  string kind = 11;
+
+  // `ok`, or the status code the call was refused with.
+  string result = 12;
+
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  bytes actor_tenant_id = 16 [(orm.field) = {type: TYPE_UUID}];
+
+  // An `AccessDetail`, marshalled: where the call came from, what a read or a
+  // download asked for, and a download's reason. One column, so that the
+  // archive seals it as it seals the trail's `value`.
+  bytes value = 17;
+
+  // The domain of this entity, which is what the archive files a row as: the
+  // kind `access`.
+  uint32 domain = 19 [(orm.field) = {default: ""}];
+
+  // Whose personal data the call carried, by identifier, at most a thousand of
+  // them -- and how many there were.
+  repeated bytes subjects = 20;
+  uint32 subject_count = 21;
+
+  option (orm.message) = {
+    rpc: {get: {}}
+    indexes: [
+      {
+        name: "access"
+        refs: [
+          {
+            name: "tenant_id"
+            number: 2
+          },
+          {
+            name: "date_created"
+            number: 15
+          }
+        ]
+      },
+      {
+        name: "by_actor_tenant"
+        refs: [
+          {
+            name: "actor_tenant_id"
+            number: 16
+          },
+          {
+            name: "date_created"
+            number: 15
+          }
+        ]
+      },
+      {
+        name: "by_actor"
+        refs: [
+          {
+            name: "actor_id"
+            number: 8
+          },
+          {
+            name: "date_created"
+            number: 15
+          }
+        ]
+      },
+      // The record read by time alone, as the trail's `by_time` is: a pass
+      // over the whole deployment reads these rows beside the trail's, oldest
+      // first and narrowed by no tenant (payday#157).
+      {
+        name: "by_time"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    own: OWN_ACCESS
+
+    // 6 in every app but one whose own entity held 6 before this did, which
+    // gives this a number of its own -- `option (payday.app) = {domains:
+    // {access: ...}}` -- and `pd gen` writes it over this line (payday#163).
+    domain: 6
+    erase: {hard: {}}
+    tenanted: {
+      field: "tenant_id"
+      field: "actor_tenant_id"
+    }
+    list: {
+      order: [
+        {field: {name: "date_created"}, desc: true},
+        {field: {name: "id"}, desc: true}
+      ]
+      by: [
+        {name: "actor_id"},
+        {name: "tenant_id"},
+        {name: "actor_tenant_id"},
+        {name: "kind"}
+      ]
+      size: 50
+      max: 200
+    }
+  };
+}

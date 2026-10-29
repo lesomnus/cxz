@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/payday/audit_svc.g.proto.
  */
 export const file_cxz_payday_audit_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChxjeHovcGF5ZGF5L2F1ZGl0X3N2Yy5nLnByb3RvEgNjeHoixwIKD0F1ZGl0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIYCgl0ZW5hbnRfaWQYAiABKAxCBaoBAggCEhcKCGFjdG9yX2lkGAggASgMQgWqAQIIAhIXCgh0cmFjZV9pZBgJIAEoDEIFqgECCAISFQoGYWN0aW9uGAogASgJQgWqAQIIAhIYCglvYmplY3RfaWQYCyABKAxCBaoBAggCEhQKBXBhdGNoGAwgASgMQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KD2FjdG9yX3RlbmFudF9pZBgQIAEoDEIFqgECCAISFAoFdmFsdWUYESABKAxCBaoBAggCEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgSIAEoDBIOCgZkb21haW4YEyABKA0iTwoPQXVkaXRHZXRSZXF1ZXN0EhoKA3JlZhgBIAEoCzINLmN4ei5BdWRpdFJlZhIgCgZzZWxlY3QYAiABKAsyEC5jeHouQXVkaXRTZWxlY3QiHwoIQXVkaXRSZWYSDAoCaWQYASABKAxIAEIFCgNrZXki8AEKC0F1ZGl0U2VsZWN0EgsKA2FsbBgBIAEoCBIRCgl0ZW5hbnRfaWQYAiABKAgSEAoIYWN0b3JfaWQYCCABKAgSEAoIdHJhY2VfaWQYCSABKAgSDgoGYWN0aW9uGAogASgIEhEKCW9iamVjdF9pZBgLIAEoCBINCgVwYXRjaBgMIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSFwoPYWN0b3JfdGVuYW50X2lkGBAgASgIEg0KBXZhbHVlGBEgASgIEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgSIAEoCBIOCgZkb21haW4YEyABKAgikwIKEUF1ZGl0UGF0Y2hSZXF1ZXN0EhoKA3JlZhgBIAEoCzINLmN4ei5BdWRpdFJlZhIRCgl0ZW5hbnRfaWQYBCABKAwSEAoIYWN0b3JfaWQYECABKAwSEAoIdHJhY2VfaWQYEiABKAwSDgoGYWN0aW9uGBQgASgJEhEKCW9iamVjdF9pZBgWIAEoDBINCgVwYXRjaBgYIAEoDBIXCg9hY3Rvcl90ZW5hbnRfaWQYICABKAwSDQoFdmFsdWUYIiABKAwSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGCQgASgMEiIKGmNvdW50ZXJwYXJ0X3RlbmFudF9pZF9udWxsGCUgASgIEg4KBmRvbWFpbhgmIAEoDSJMChFBdWRpdEFwcGx5UmVxdWVzdBIaCgNyZWYYASABKAsyDS5jeHouQXVkaXRSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIkChJBdWRpdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIImAKEEF1ZGl0TGlzdFJlcXVlc3QSIQoHZmlsdGVycxgBIAMoCzIQLmN4ei5BdWRpdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiQwoRQXVkaXRMaXN0UmVzcG9uc2USGQoFaXRlbXMYASADKAsyCi5jeHouQXVkaXQSEwoEbmV4dBgCIAEoCUIFqgECCAIifQoLQXVkaXRGaWx0ZXISEQoJb2JqZWN0X2lkGAEgASgMEhAKCGFjdG9yX2lkGAIgASgMEhEKCXRlbmFudF9pZBgDIAEoDBIXCg9hY3Rvcl90ZW5hbnRfaWQYBCABKAwSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGAUgASgMMqICCgxBdWRpdFNlcnZpY2USJwoDQWRkEhQuY3h6LkF1ZGl0QWRkUmVxdWVzdBoKLmN4ei5BdWRpdBInCgNHZXQSFC5jeHouQXVkaXRHZXRSZXF1ZXN0GgouY3h6LkF1ZGl0EisKBVBhdGNoEhYuY3h6LkF1ZGl0UGF0Y2hSZXF1ZXN0GgouY3h6LkF1ZGl0EisKBUFwcGx5EhYuY3h6LkF1ZGl0QXBwbHlSZXF1ZXN0GgouY3h6LkF1ZGl0Ei8KBUVyYXNlEg0uY3h6LkF1ZGl0UmVmGhcuY3h6LkF1ZGl0RXJhc2VSZXNwb25zZRI1CgRMaXN0EhUuY3h6LkF1ZGl0TGlzdFJlcXVlc3QaFi5jeHouQXVkaXRMaXN0UmVzcG9uc2VCIlogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2ViCGVkaXRpb25zcOgH", [file_cxz_payday_audit, file_google_protobuf_timestamp, file_patch_patch]);
+  fileDesc("ChxjeHovcGF5ZGF5L2F1ZGl0X3N2Yy5nLnByb3RvEgNjeHoi/gIKD0F1ZGl0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIYCgl0ZW5hbnRfaWQYAiABKAxCBaoBAggCEhcKCGFjdG9yX2lkGAggASgMQgWqAQIIAhIXCgh0cmFjZV9pZBgJIAEoDEIFqgECCAISFQoGYWN0aW9uGAogASgJQgWqAQIIAhIYCglvYmplY3RfaWQYCyABKAxCBaoBAggCEhQKBXBhdGNoGAwgASgMQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KD2FjdG9yX3RlbmFudF9pZBgQIAEoDEIFqgECCAISFAoFdmFsdWUYESABKAxCBaoBAggCEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgSIAEoDBIOCgZkb21haW4YEyABKA0SDgoGZmllbGRzGBQgAygNEg4KBmRpZ2VzdBgVIAEoDBIVCg1kaWdlc3RfZmllbGRzGBYgAygNIk8KD0F1ZGl0R2V0UmVxdWVzdBIaCgNyZWYYASABKAsyDS5jeHouQXVkaXRSZWYSIAoGc2VsZWN0GAIgASgLMhAuY3h6LkF1ZGl0U2VsZWN0Ih8KCEF1ZGl0UmVmEgwKAmlkGAEgASgMSABCBQoDa2V5IqcCCgtBdWRpdFNlbGVjdBILCgNhbGwYASABKAgSEQoJdGVuYW50X2lkGAIgASgIEhAKCGFjdG9yX2lkGAggASgIEhAKCHRyYWNlX2lkGAkgASgIEg4KBmFjdGlvbhgKIAEoCBIRCglvYmplY3RfaWQYCyABKAgSDQoFcGF0Y2gYDCABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEhcKD2FjdG9yX3RlbmFudF9pZBgQIAEoCBINCgV2YWx1ZRgRIAEoCBIdChVjb3VudGVycGFydF90ZW5hbnRfaWQYEiABKAgSDgoGZG9tYWluGBMgASgIEg4KBmZpZWxkcxgUIAEoCBIOCgZkaWdlc3QYFSABKAgSFQoNZGlnZXN0X2ZpZWxkcxgWIAEoCCLKAgoRQXVkaXRQYXRjaFJlcXVlc3QSGgoDcmVmGAEgASgLMg0uY3h6LkF1ZGl0UmVmEhEKCXRlbmFudF9pZBgEIAEoDBIQCghhY3Rvcl9pZBgQIAEoDBIQCgh0cmFjZV9pZBgSIAEoDBIOCgZhY3Rpb24YFCABKAkSEQoJb2JqZWN0X2lkGBYgASgMEg0KBXBhdGNoGBggASgMEhcKD2FjdG9yX3RlbmFudF9pZBggIAEoDBINCgV2YWx1ZRgiIAEoDBIdChVjb3VudGVycGFydF90ZW5hbnRfaWQYJCABKAwSIgoaY291bnRlcnBhcnRfdGVuYW50X2lkX251bGwYJSABKAgSDgoGZG9tYWluGCYgASgNEg4KBmZpZWxkcxgoIAMoDRIOCgZkaWdlc3QYKiABKAwSFQoNZGlnZXN0X2ZpZWxkcxgsIAMoDSJMChFBdWRpdEFwcGx5UmVxdWVzdBIaCgNyZWYYASABKAsyDS5jeHouQXVkaXRSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIkChJBdWRpdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIngKEEF1ZGl0TGlzdFJlcXVlc3QSIQoHZmlsdGVycxgBIAMoCzIQLmN4ei5BdWRpdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiQwoRQXVkaXRMaXN0UmVzcG9uc2USGQoFaXRlbXMYASADKAsyCi5jeHouQXVkaXQSEwoEbmV4dBgCIAEoCUIFqgECCAIifQoLQXVkaXRGaWx0ZXISEQoJb2JqZWN0X2lkGAEgASgMEhAKCGFjdG9yX2lkGAIgASgMEhEKCXRlbmFudF9pZBgDIAEoDBIXCg9hY3Rvcl90ZW5hbnRfaWQYBCABKAwSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGAUgASgMMqICCgxBdWRpdFNlcnZpY2USJwoDQWRkEhQuY3h6LkF1ZGl0QWRkUmVxdWVzdBoKLmN4ei5BdWRpdBInCgNHZXQSFC5jeHouQXVkaXRHZXRSZXF1ZXN0GgouY3h6LkF1ZGl0EisKBVBhdGNoEhYuY3h6LkF1ZGl0UGF0Y2hSZXF1ZXN0GgouY3h6LkF1ZGl0EisKBUFwcGx5EhYuY3h6LkF1ZGl0QXBwbHlSZXF1ZXN0GgouY3h6LkF1ZGl0Ei8KBUVyYXNlEg0uY3h6LkF1ZGl0UmVmGhcuY3h6LkF1ZGl0RXJhc2VSZXNwb25zZRI1CgRMaXN0EhUuY3h6LkF1ZGl0TGlzdFJlcXVlc3QaFi5jeHouQXVkaXRMaXN0UmVzcG9uc2VCIlogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2ViCGVkaXRpb25zcOgH", [file_cxz_payday_audit, file_google_protobuf_timestamp, file_patch_patch]);
 
 /**
  * @generated from message cxz.AuditAddRequest
@@ -81,6 +81,21 @@ export type AuditAddRequest = Message<"cxz.AuditAddRequest"> & {
    * @generated from field: uint32 domain = 19;
    */
   domain: number;
+
+  /**
+   * @generated from field: repeated uint32 fields = 20;
+   */
+  fields: number[];
+
+  /**
+   * @generated from field: bytes digest = 21;
+   */
+  digest: Uint8Array;
+
+  /**
+   * @generated from field: repeated uint32 digest_fields = 22;
+   */
+  digestFields: number[];
 };
 
 /**
@@ -198,6 +213,21 @@ export type AuditSelect = Message<"cxz.AuditSelect"> & {
    * @generated from field: bool domain = 19;
    */
   domain: boolean;
+
+  /**
+   * @generated from field: bool fields = 20;
+   */
+  fields: boolean;
+
+  /**
+   * @generated from field: bool digest = 21;
+   */
+  digest: boolean;
+
+  /**
+   * @generated from field: bool digest_fields = 22;
+   */
+  digestFields: boolean;
 };
 
 /**
@@ -275,6 +305,21 @@ export type AuditPatchRequest = Message<"cxz.AuditPatchRequest"> & {
    * @generated from field: uint32 domain = 38;
    */
   domain: number;
+
+  /**
+   * @generated from field: repeated uint32 fields = 40;
+   */
+  fields: number[];
+
+  /**
+   * @generated from field: bytes digest = 42;
+   */
+  digest: Uint8Array;
+
+  /**
+   * @generated from field: repeated uint32 digest_fields = 44;
+   */
+  digestFields: number[];
 };
 
 /**
@@ -359,6 +404,16 @@ export type AuditListRequest = Message<"cxz.AuditListRequest"> & {
    * @generated from field: string after = 3 [features.field_presence = IMPLICIT];
    */
   after: string;
+
+  /**
+   * Read the order the other way round, every column of it at once -- newest
+   * first where it is oldest first -- which the index the order walks walks
+   * from the other end. A cursor is of the way it was read, so the next page
+   * carries on that way, and one of the other way is refused.
+   *
+   * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
+   */
+  reverse: boolean;
 };
 
 /**

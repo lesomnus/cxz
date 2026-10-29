@@ -37,7 +37,8 @@ func (Connection) Fields() []ent.Field {
 
 func (Connection) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("name", "id"),
+		index.Fields("name", "id").
+			StorageKey("connection_page"),
 		index.Fields("name").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

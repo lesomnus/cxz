@@ -12,8 +12,12 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Access is the client for interacting with the Access builders.
+	Access *AccessClient
 	// Account is the client for interacting with the Account builders.
 	Account *AccountClient
+	// Archived is the client for interacting with the Archived builders.
+	Archived *ArchivedClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
 	// AuthBinding is the client for interacting with the AuthBinding builders.
@@ -22,12 +26,24 @@ type Tx struct {
 	Connection *ConnectionClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
+	// NotificationReceiptRecord is the client for interacting with the NotificationReceiptRecord builders.
+	NotificationReceiptRecord *NotificationReceiptRecordClient
+	// NotificationRecord is the client for interacting with the NotificationRecord builders.
+	NotificationRecord *NotificationRecordClient
+	// Operator is the client for interacting with the Operator builders.
+	Operator *OperatorClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
+	// Owed is the client for interacting with the Owed builders.
+	Owed *OwedClient
 	// Project is the client for interacting with the Project builders.
 	Project *ProjectClient
+	// RowSeal is the client for interacting with the RowSeal builders.
+	RowSeal *RowSealClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
+	// SessionRead is the client for interacting with the SessionRead builders.
+	SessionRead *SessionReadClient
 	// Task is the client for interacting with the Task builders.
 	Task *TaskClient
 	// TaskLink is the client for interacting with the TaskLink builders.
@@ -165,14 +181,22 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Access = NewAccessClient(tx.config)
 	tx.Account = NewAccountClient(tx.config)
+	tx.Archived = NewArchivedClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
 	tx.AuthBinding = NewAuthBindingClient(tx.config)
 	tx.Connection = NewConnectionClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
+	tx.NotificationReceiptRecord = NewNotificationReceiptRecordClient(tx.config)
+	tx.NotificationRecord = NewNotificationRecordClient(tx.config)
+	tx.Operator = NewOperatorClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
+	tx.Owed = NewOwedClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
+	tx.RowSeal = NewRowSealClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
+	tx.SessionRead = NewSessionReadClient(tx.config)
 	tx.Task = NewTaskClient(tx.config)
 	tx.TaskLink = NewTaskLinkClient(tx.config)
 	tx.Tenant = NewTenantClient(tx.config)
@@ -185,7 +209,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Account.QueryXXX(), the query will be executed
+// applies a query, for example: Access.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/payday/holder.proto.
  */
 export const file_cxz_payday_holder: GenFile = /*@__PURE__*/
-  fileDesc("ChdjeHovcGF5ZGF5L2hvbGRlci5wcm90bxIDY3h6IusDCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiMKBnRlbmFudBgCIAEoCzILLmN4ei5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSJwoGbGFiZWxzGAcgAygLMhcuY3h6LkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATpuyvwVJRICEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxZBCAIyOQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaCAoGbGFiZWxzIBQoZDoASAJCJ1ogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2WSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday, file_cxz_payday_tenant]);
+  fileDesc("ChdjeHovcGF5ZGF5L2hvbGRlci5wcm90bxIDY3h6IroECgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiMKBnRlbmFudBgCIAEoCzILLmN4ei5UZW5hbnRCBvKCFgJAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgBEhQKBG5hbWUYBSABKAlCBqrBFgIYARIUCgRkZXNjGAYgASgJQgaqwRYCGAESLwoGbGFiZWxzGAcgAygLMhcuY3h6LkhvbGRlci5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOpwByvwVUxICEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWQQgCMjkKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50GggKBmxhYmVscyAUKGQ6AEgCQidaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlkgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday, file_cxz_payday_tenant]);
 
 /**
  * Holder is who a request is from.
@@ -51,6 +51,13 @@ export type Holder = Message<"cxz.Holder"> & {
   /**
    * Alias is what a person writes this holder as, within its tenant:
    * `@acme/admin`. It is unique inside a tenant and not across the deployment.
+   *
+   * It and the three after it are **personal** (#92): a holder is somebody, and
+   * what they are called, what is said of them and what is labelled on them are
+   * theirs. The trail records that one of them was set, and never what to --
+   * the row is where a person is corrected and erased, and the trail is the
+   * copy nothing rewrites. Who a line of the trail is about stays on it: that
+   * is `actor_id` and `object_id`, which are identifiers.
    *
    * @generated from field: string alias = 4;
    */

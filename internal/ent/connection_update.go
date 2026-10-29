@@ -183,23 +183,44 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(connection.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldName); ok {
+		_spec.SetField(connection.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Target(); ok {
 		_spec.SetField(connection.FieldTarget, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldTarget); ok {
+		_spec.SetField(connection.FieldTarget, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Transport(); ok {
 		_spec.SetField(connection.FieldTransport, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldTransport); ok {
+		_spec.SetField(connection.FieldTransport, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.IsDefault(); ok {
 		_spec.SetField(connection.FieldIsDefault, field.TypeBool, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldIsDefault); ok {
+		_spec.SetField(connection.FieldIsDefault, field.TypeBool, e)
 	}
 	if value, ok := _u.mutation.ReadOnly(); ok {
 		_spec.SetField(connection.FieldReadOnly, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldReadOnly); ok {
+		_spec.SetField(connection.FieldReadOnly, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDateUpdated); ok {
+		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(connection.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDateErased); ok {
+		_spec.SetField(connection.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(connection.FieldDateErased, field.TypeTime)
@@ -413,23 +434,44 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(connection.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldName); ok {
+		_spec.SetField(connection.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Target(); ok {
 		_spec.SetField(connection.FieldTarget, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldTarget); ok {
+		_spec.SetField(connection.FieldTarget, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Transport(); ok {
 		_spec.SetField(connection.FieldTransport, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldTransport); ok {
+		_spec.SetField(connection.FieldTransport, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.IsDefault(); ok {
 		_spec.SetField(connection.FieldIsDefault, field.TypeBool, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldIsDefault); ok {
+		_spec.SetField(connection.FieldIsDefault, field.TypeBool, e)
 	}
 	if value, ok := _u.mutation.ReadOnly(); ok {
 		_spec.SetField(connection.FieldReadOnly, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldReadOnly); ok {
+		_spec.SetField(connection.FieldReadOnly, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDateUpdated); ok {
+		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(connection.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDateErased); ok {
+		_spec.SetField(connection.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(connection.FieldDateErased, field.TypeTime)

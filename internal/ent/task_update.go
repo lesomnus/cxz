@@ -248,14 +248,26 @@ func (_u *TaskUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(task.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldAlias); ok {
+		_spec.SetField(task.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(task.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldName); ok {
+		_spec.SetField(task.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(task.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldDesc); ok {
+		_spec.SetField(task.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(task.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldLabels); ok {
+		_spec.SetField(task.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(task.FieldLabels, field.TypeJson)
@@ -263,8 +275,14 @@ func (_u *TaskUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(task.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldDateUpdated); ok {
+		_spec.SetField(task.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(task.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldDateErased); ok {
+		_spec.SetField(task.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(task.FieldDateErased, field.TypeTime)
@@ -275,11 +293,17 @@ func (_u *TaskUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(task.FieldStatus, field.TypeInt32, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldStatus); ok {
+		_spec.SetField(task.FieldStatus, field.TypeInt32, e)
+	}
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(task.FieldStatus, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.Priority(); ok {
 		_spec.SetField(task.FieldPriority, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldPriority); ok {
+		_spec.SetField(task.FieldPriority, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedPriority(); ok {
 		_spec.AddField(task.FieldPriority, field.TypeInt32, value)
@@ -287,8 +311,14 @@ func (_u *TaskUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Assignee(); ok {
 		_spec.SetField(task.FieldAssignee, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldAssignee); ok {
+		_spec.SetField(task.FieldAssignee, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.AssigneeRun(); ok {
 		_spec.SetField(task.FieldAssigneeRun, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldAssigneeRun); ok {
+		_spec.SetField(task.FieldAssigneeRun, field.TypeString, e)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -561,14 +591,26 @@ func (_u *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(task.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldAlias); ok {
+		_spec.SetField(task.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(task.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldName); ok {
+		_spec.SetField(task.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(task.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldDesc); ok {
+		_spec.SetField(task.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(task.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldLabels); ok {
+		_spec.SetField(task.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(task.FieldLabels, field.TypeJson)
@@ -576,8 +618,14 @@ func (_u *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(task.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldDateUpdated); ok {
+		_spec.SetField(task.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(task.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldDateErased); ok {
+		_spec.SetField(task.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(task.FieldDateErased, field.TypeTime)
@@ -588,11 +636,17 @@ func (_u *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) {
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(task.FieldStatus, field.TypeInt32, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldStatus); ok {
+		_spec.SetField(task.FieldStatus, field.TypeInt32, e)
+	}
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(task.FieldStatus, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.Priority(); ok {
 		_spec.SetField(task.FieldPriority, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldPriority); ok {
+		_spec.SetField(task.FieldPriority, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedPriority(); ok {
 		_spec.AddField(task.FieldPriority, field.TypeInt32, value)
@@ -600,8 +654,14 @@ func (_u *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) {
 	if value, ok := _u.mutation.Assignee(); ok {
 		_spec.SetField(task.FieldAssignee, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldAssignee); ok {
+		_spec.SetField(task.FieldAssignee, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.AssigneeRun(); ok {
 		_spec.SetField(task.FieldAssigneeRun, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(task.FieldAssigneeRun); ok {
+		_spec.SetField(task.FieldAssigneeRun, field.TypeString, e)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Task{config: _u.config}

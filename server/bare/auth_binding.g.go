@@ -14,12 +14,16 @@ import (
 	resource "github.com/lesomnus/cxz/resource"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -82,34 +86,74 @@ func (s AuthBindingServiceServer) narrow(ctx context.Context, p predicate.AuthBi
 	return AuthBindingNarrow(ctx, s.Scope, p)
 }
 
-func (s AuthBindingServiceServer) Add(ctx context.Context, req *resource.AuthBindingAddRequest) (*resource.AuthBinding, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s AuthBindingServiceServer) snapshot(ctx context.Context, p predicate.AuthBinding, lock bool) (*ent.AuthBinding, error) {
+	q := s.Db.AuthBinding.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s AuthBindingServiceServer) image(v *resource.AuthBinding) *resource.AuthBinding {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*resource.AuthBinding)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(9)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st AuthBindingServiceServer) create(ctx context.Context, req *resource.AuthBindingAddRequest) (*ent.AuthBindingCreate, []func(v *resource.AuthBinding), error) {
 	ds := make([]func(v *resource.AuthBinding), 0, 2)
 	q := st.Db.AuthBinding.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "cxz.AuthBinding", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "cxz.AuthBinding", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	q.SetBindingId(req.GetBindingId())
 	if k, err := AccountGetKey(ctx, st.Db, req.GetAccount()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetAccountId(k)
 		ds = append(ds, func(v *resource.AuthBinding) {
@@ -118,7 +162,7 @@ func (s AuthBindingServiceServer) Add(ctx context.Context, req *resource.AuthBin
 	}
 	if req.HasProject() {
 		if k, err := ProjectGetKey(ctx, st.Db, req.GetProject()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetProjectId(k)
 			ds = append(ds, func(v *resource.AuthBinding) {
@@ -135,7 +179,30 @@ func (s AuthBindingServiceServer) Add(ctx context.Context, req *resource.AuthBin
 	} else {
 		q.SetDateCreated(st.now())
 	}
+	return q, ds, nil
+}
 
+func (s AuthBindingServiceServer) Add(ctx context.Context, req *resource.AuthBindingAddRequest) (*resource.AuthBinding, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.AuthBinding
+	if snapshotOptions(s.Rec, resource.AuthBindingService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -149,9 +216,18 @@ func (s AuthBindingServiceServer) Add(ctx context.Context, req *resource.AuthBin
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *resource.AuthBinding
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  resource.AuthBindingService_Add_FullMethodName,
-		Key: u.Id,
+		By:    resource.AuthBindingService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -159,11 +235,39 @@ func (s AuthBindingServiceServer) Add(ctx context.Context, req *resource.AuthBin
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// AuthBindingAddRule is what a layer in front says about one row an Add of AuthBinding
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type AuthBindingAddRule func(ctx context.Context, req *resource.AuthBindingAddRequest) (*resource.AuthBindingAddRequest, error)
+
+// AuthBindingWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func AuthBindingWithAddRule(next resource.AuthBindingServiceServer, rule AuthBindingAddRule) resource.AuthBindingServiceServer {
+	return authBindingAddRuled{next, rule}
+}
+
+type authBindingAddRuled struct {
+	resource.AuthBindingServiceServer
+	rule AuthBindingAddRule
+}
+
+func (s authBindingAddRuled) Add(ctx context.Context, req *resource.AuthBindingAddRequest) (*resource.AuthBinding, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.AuthBindingServiceServer.Add(ctx, r)
 }
 
 func (s AuthBindingServiceServer) Get(ctx context.Context, req *resource.AuthBindingGetRequest) (*resource.AuthBinding, error) {
@@ -249,9 +353,6 @@ func AuthBindingSelect(q *ent.AuthBindingQuery, m *resource.AuthBindingSelect) {
 func AuthBindingSelectInit(q *ent.AuthBindingQuery, m *resource.AuthBindingSelect) {
 	if m != nil {
 		AuthBindingSelect(q, m)
-	} else {
-		q.WithAccount(selectAccountKey)
-		q.WithProject(selectProjectKey)
 	}
 }
 
@@ -352,6 +453,18 @@ func (s AuthBindingServiceServer) apply(ctx context.Context, ref *resource.AuthB
 		return nil, err
 	}
 
+	var previous *resource.AuthBinding
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.AuthBinding.Query().Where(p)
 		if pred != nil {
@@ -378,6 +491,7 @@ func (s AuthBindingServiceServer) apply(ctx context.Context, ref *resource.AuthB
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -400,20 +514,25 @@ func (s AuthBindingServiceServer) apply(ctx context.Context, ref *resource.AuthB
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *resource.AuthBinding
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -440,8 +559,16 @@ func (s AuthBindingServiceServer) Erase(ctx context.Context, req *resource.AuthB
 	st.Db = tx.Db
 
 	var k any
+	var previous *resource.AuthBinding
 	if s.Rec != nil {
-		v, err := st.Db.AuthBinding.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, resource.AuthBindingService_Erase_FullMethodName)
+		var v *ent.AuthBinding
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.AuthBinding.Query().Where(p).Select(authbinding.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &resource.AuthBindingEraseResponse{}, nil
@@ -449,10 +576,14 @@ func (s AuthBindingServiceServer) Erase(ctx context.Context, req *resource.AuthB
 			return nil, err
 		}
 
-		k = v
-		p = authbinding.And(p, authbinding.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = authbinding.And(p, authbinding.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.AuthBinding.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -462,8 +593,9 @@ func (s AuthBindingServiceServer) Erase(ctx context.Context, req *resource.AuthB
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  resource.AuthBindingService_Erase_FullMethodName,
-			Key: k,
+			By:       resource.AuthBindingService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

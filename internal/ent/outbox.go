@@ -31,7 +31,9 @@ type Outbox struct {
 	// Patch holds the value of the "patch" field.
 	Patch []byte `json:"patch,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
-	DateCreated  time.Time `json:"date_created,omitempty"`
+	DateCreated time.Time `json:"date_created,omitempty"`
+	// Event holds the value of the "event" field.
+	Event        *[]byte `json:"event,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -40,7 +42,7 @@ func (*Outbox) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case outbox.FieldPatch:
+		case outbox.FieldPatch, outbox.FieldEvent:
 			values[i] = new([]byte)
 		case outbox.FieldMethod, outbox.FieldBy:
 			values[i] = new(sql.NullString)
@@ -114,6 +116,12 @@ func (_m *Outbox) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
+		case outbox.FieldEvent:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field event", values[i])
+			} else if value != nil {
+				_m.Event = value
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -170,6 +178,11 @@ func (_m *Outbox) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("date_created=")
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
+	builder.WriteString(", ")
+	if v := _m.Event; v != nil {
+		builder.WriteString("event=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

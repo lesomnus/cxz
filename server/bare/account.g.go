@@ -12,12 +12,15 @@ import (
 	resource "github.com/lesomnus/cxz/resource"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	uuid "uuid"
 )
 
@@ -80,27 +83,39 @@ func (s AccountServiceServer) narrow(ctx context.Context, p predicate.Account) (
 	return AccountNarrow(ctx, s.Scope, p)
 }
 
-func (s AccountServiceServer) Add(ctx context.Context, req *resource.AccountAddRequest) (*resource.Account, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s AccountServiceServer) snapshot(ctx context.Context, p predicate.Account, lock bool) (*ent.Account, error) {
+	q := s.Db.Account.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s AccountServiceServer) image(v *resource.Account) *resource.Account {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*resource.Account)
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st AccountServiceServer) create(ctx context.Context, req *resource.AccountAddRequest) (*ent.AccountCreate, []func(v *resource.Account), error) {
+	var ds []func(v *resource.Account)
 	q := st.Db.Account.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "cxz.Account", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "cxz.Account", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -115,7 +130,30 @@ func (s AccountServiceServer) Add(ctx context.Context, req *resource.AccountAddR
 	} else {
 		q.SetDateCreated(st.now())
 	}
+	return q, ds, nil
+}
 
+func (s AccountServiceServer) Add(ctx context.Context, req *resource.AccountAddRequest) (*resource.Account, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Account
+	if snapshotOptions(s.Rec, resource.AccountService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -129,9 +167,18 @@ func (s AccountServiceServer) Add(ctx context.Context, req *resource.AccountAddR
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *resource.Account
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  resource.AccountService_Add_FullMethodName,
-		Key: u.Id,
+		By:    resource.AccountService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -139,7 +186,39 @@ func (s AccountServiceServer) Add(ctx context.Context, req *resource.AccountAddR
 		return nil, err
 	}
 
-	return u.Proto(), nil
+	return v, nil
+}
+
+// AccountAddRule is what a layer in front says about one row an Add of Account
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type AccountAddRule func(ctx context.Context, req *resource.AccountAddRequest) (*resource.AccountAddRequest, error)
+
+// AccountWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func AccountWithAddRule(next resource.AccountServiceServer, rule AccountAddRule) resource.AccountServiceServer {
+	return accountAddRuled{next, rule}
+}
+
+type accountAddRuled struct {
+	resource.AccountServiceServer
+	rule AccountAddRule
+}
+
+func (s accountAddRuled) Add(ctx context.Context, req *resource.AccountAddRequest) (*resource.Account, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.AccountServiceServer.Add(ctx, r)
 }
 
 func (s AccountServiceServer) Get(ctx context.Context, req *resource.AccountGetRequest) (*resource.Account, error) {
@@ -216,7 +295,6 @@ func AccountSelect(q *ent.AccountQuery, m *resource.AccountSelect) {
 func AccountSelectInit(q *ent.AccountQuery, m *resource.AccountSelect) {
 	if m != nil {
 		AccountSelect(q, m)
-	} else {
 	}
 }
 
@@ -317,6 +395,18 @@ func (s AccountServiceServer) apply(ctx context.Context, ref *resource.AccountRe
 		return nil, err
 	}
 
+	var previous *resource.Account
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Account.Query().Where(p)
 		if pred != nil {
@@ -343,6 +433,7 @@ func (s AccountServiceServer) apply(ctx context.Context, ref *resource.AccountRe
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -365,20 +456,25 @@ func (s AccountServiceServer) apply(ctx context.Context, ref *resource.AccountRe
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *resource.Account
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -405,8 +501,16 @@ func (s AccountServiceServer) Erase(ctx context.Context, req *resource.AccountRe
 	st.Db = tx.Db
 
 	var k any
+	var previous *resource.Account
 	if s.Rec != nil {
-		v, err := st.Db.Account.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, resource.AccountService_Erase_FullMethodName)
+		var v *ent.Account
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Account.Query().Where(p).Select(account.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &resource.AccountEraseResponse{}, nil
@@ -414,10 +518,14 @@ func (s AccountServiceServer) Erase(ctx context.Context, req *resource.AccountRe
 			return nil, err
 		}
 
-		k = v
-		p = account.And(p, account.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = account.And(p, account.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Account.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -427,8 +535,9 @@ func (s AccountServiceServer) Erase(ctx context.Context, req *resource.AccountRe
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  resource.AccountService_Erase_FullMethodName,
-			Key: k,
+			By:       resource.AccountService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

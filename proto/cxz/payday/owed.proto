@@ -1,0 +1,80 @@
+edition = "2023";
+
+package cxz;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// Owed is an erasure owed: the archive's half of forgetting one object, which
+// an app decided in a transaction of its own and which is paid once that has
+// committed (payday#115). See `trail.Policy.Forget` and `trail.Policy.Pay`.
+//
+// # Why
+//
+// An app erases a person in its own transaction -- pseudonymizes them, ends
+// their memberships -- and the trail's erasure belongs in it: the rows of the
+// trail about them are blanked by the statement that blanks the rest, or not
+// at all. But the archive takes no part in a transaction. Written as the
+// erasure goes, a rollback would leave it after an erasure that never
+// happened, and its account and its checkpoints with it; written after the
+// commit by the process that committed, a crash in between would lose its
+// half without a word.
+//
+// So the database's half is done in the transaction, and the archive's half is
+// written down there as owed, by a row of this: the rollback takes the row
+// with it, and the commit keeps it for whatever pays it -- the next pass, or
+// the app straight after its commit. It is the shape `Outbox` has for the same
+// reason: what has to happen after a commit, written in it.
+//
+// # Paid, or kept
+//
+// A row is removed once both halves are done, and not before: a process that
+// stops part of the way leaves it for the next pass, and paying twice changes
+// nothing the first did not. A legal hold that keeps part of the erasure keeps
+// the row, and the pass that finds the hold lifted finishes it; `held_by` says
+// whose holds kept it the last time it was asked.
+message Owed {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // The object to forget, as `trail.Policy.Forget` was asked of it: the
+  // identifier of a row of any kind, and of no tenant in particular.
+  bytes object = 8 [(orm.field) = {type: TYPE_UUID}];
+
+  // The tenants whose legal holds kept part of its erasure when it was last
+  // paid, and nothing until then: what an operator reads to see what is owed
+  // under a hold.
+  repeated bytes held_by = 9;
+
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  // No RPCs, for the reason `Archived` has none: a caller that could write
+  // one could make the trail forget, and one that could remove one could
+  // keep it from forgetting. A queue, read oldest first, and read by its key.
+  option (orm.message) = {
+    indexes: [
+      {
+        name: "owed"
+        refs: [{name: "date_created", number: 15}, {name: "id", number: 1}]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    own: OWN_OWED
+
+    // Down from 255 with what payday adds, below `RowSeal`.
+    domain: 254
+    erase: {hard: {}}
+    global: {}
+  };
+}

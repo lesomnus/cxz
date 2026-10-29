@@ -46,7 +46,8 @@ func (Session) Fields() []ent.Field {
 		field.Json("status", &resource.SessionStatus{}).ValueScanner(entpb.ValueScanner[*resource.SessionStatus]{}).
 			Optional(),
 		field.Bool("listed").
-			Optional(),
+			Optional().
+			Default(true),
 		field.Uuid("project_id").
 			Immutable(),
 		field.Uuid("account_id").
@@ -78,7 +79,8 @@ func (Session) Edges() []ent.Edge {
 
 func (Session) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("session_page"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

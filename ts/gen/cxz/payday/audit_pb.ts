@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/payday/audit.proto.
  */
 export const file_cxz_payday_audit: GenFile = /*@__PURE__*/
-  fileDesc("ChZjeHovcGF5ZGF5L2F1ZGl0LnByb3RvEgNjeHoiqAYKBUF1ZGl0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIZCgl0ZW5hbnRfaWQYAiABKAxCBuqCFgIQQBIYCghhY3Rvcl9pZBgIIAEoDEIG6oIWAhBAEhAKCHRyYWNlX2lkGAkgASgMEg4KBmFjdGlvbhgKIAEoCRIZCglvYmplY3RfaWQYCyABKAxCBuqCFgIQQBINCgVwYXRjaBgMIAEoDBI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHwoPYWN0b3JfdGVuYW50X2lkGBAgASgMQgbqghYCEEASDQoFdmFsdWUYESABKAwSJwoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgMQgjqghYEEEA4ARIXCgZkb21haW4YEyABKA1CB+qCFgOCAQA61QPK/BWXAhICEAEaFxIGb2JqZWN0Gg0KCW9iamVjdF9pZBALGigSBXRyYWlsGg0KCXRlbmFudF9pZBACGhAKDGRhdGVfY3JlYXRlZBAPGjgSD2J5X2FjdG9yX3RlbmFudBoTCg9hY3Rvcl90ZW5hbnRfaWQQEBoQCgxkYXRlX2NyZWF0ZWQQDxo9Eg5ieV9jb3VudGVycGFydBoZChVjb3VudGVycGFydF90ZW5hbnRfaWQQEhoQCgxkYXRlX2NyZWF0ZWQQDxopEglieV9kb21haW4aCgoGZG9tYWluEBMaEAoMZGF0ZV9jcmVhdGVkEA8aKhIIYnlfYWN0b3IaDAoIYWN0b3JfaWQQCBoQCgxkYXRlX2NyZWF0ZWQQD4q7FrQBCAMydQoSCg4KDGRhdGVfY3JlYXRlZBABCggKBAoCaWQQARoLCglvYmplY3RfaWQaCgoIYWN0b3JfaWQaCwoJdGVuYW50X2lkGhEKD2FjdG9yX3RlbmFudF9pZBoXChVjb3VudGVycGFydF90ZW5hbnRfaWQgMijIAUICCgBIAyIzEgl0ZW5hbnRfaWQSD2FjdG9yX3RlbmFudF9pZBIVY291bnRlcnBhcnRfdGVuYW50X2lkQidaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlkgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChZjeHovcGF5ZGF5L2F1ZGl0LnByb3RvEgNjeHoizgcKBUF1ZGl0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIZCgl0ZW5hbnRfaWQYAiABKAxCBuqCFgIQQBIYCghhY3Rvcl9pZBgIIAEoDEIG6oIWAhBAEhAKCHRyYWNlX2lkGAkgASgMEg4KBmFjdGlvbhgKIAEoCRIZCglvYmplY3RfaWQYCyABKAxCBuqCFgIQQBINCgVwYXRjaBgMIAEoDBI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHwoPYWN0b3JfdGVuYW50X2lkGBAgASgMQgbqghYCEEASDQoFdmFsdWUYESABKAwSJwoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgMQgjqghYEEEA4ARIXCgZkb21haW4YEyABKA1CB+qCFgOCAQASDgoGZmllbGRzGBQgAygNEhcKBmRpZ2VzdBgVIAEoDEIH6oIWA4IBABIVCg1kaWdlc3RfZmllbGRzGBYgAygNOrsEyvwV/QISAhABGhcSBm9iamVjdBoNCglvYmplY3RfaWQQCxooEgV0cmFpbBoNCgl0ZW5hbnRfaWQQAhoQCgxkYXRlX2NyZWF0ZWQQDxo4Eg9ieV9hY3Rvcl90ZW5hbnQaEwoPYWN0b3JfdGVuYW50X2lkEBAaEAoMZGF0ZV9jcmVhdGVkEA8aPRIOYnlfY291bnRlcnBhcnQaGQoVY291bnRlcnBhcnRfdGVuYW50X2lkEBIaEAoMZGF0ZV9jcmVhdGVkEA8aKRIJYnlfZG9tYWluGgoKBmRvbWFpbhATGhAKDGRhdGVfY3JlYXRlZBAPGj8SEGJ5X3RlbmFudF9kb21haW4aDQoJdGVuYW50X2lkEAIaCgoGZG9tYWluEBMaEAoMZGF0ZV9jcmVhdGVkEA8aKhIIYnlfYWN0b3IaDAoIYWN0b3JfaWQQCBoQCgxkYXRlX2NyZWF0ZWQQDxojEgdieV90aW1lGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxa0AQgDMnUKEgoOCgxkYXRlX2NyZWF0ZWQQAQoICgQKAmlkEAEaCwoJb2JqZWN0X2lkGgoKCGFjdG9yX2lkGgsKCXRlbmFudF9pZBoRCg9hY3Rvcl90ZW5hbnRfaWQaFwoVY291bnRlcnBhcnRfdGVuYW50X2lkIDIoyAFCAgoASAMiMxIJdGVuYW50X2lkEg9hY3Rvcl90ZW5hbnRfaWQSFWNvdW50ZXJwYXJ0X3RlbmFudF9pZEInWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZZIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Audit is one write that happened, and who made it.
@@ -134,9 +134,19 @@ export type Audit = Message<"cxz.Audit"> & {
   objectId: Uint8Array;
 
   /**
-   * The patch document the write was compiled from, as it was marshaled, and
-   * empty for a write that was not one -- an Add or an Erase says everything it
-   * did in `action` and `object_id`.
+   * The patch document the write was compiled from, as it was marshaled -- and
+   * for an Add, the row it made as a patch from the empty row: an entry for
+   * every field the row holds, and an edge by the key of the row it names, as a
+   * Patch of the same fields says it (#92). An Add had no document once, and
+   * `value` was the whole record of what it made; at the default content level
+   * this is that record, and `value` is the one a deployment asks for.
+   *
+   * Empty for a write that was not one -- an Erase says everything it did in
+   * `action` and `object_id` -- and at the `fields` content level, which keeps
+   * which fields a write set and nothing they were set to. What a field
+   * declared `secret` or `personal` was set to is never in it, at any level:
+   * its entries are taken out before the document is kept, and its number is
+   * in `fields`.
    *
    * Stored as bytes rather than read back as a document, because that is what a
    * trail is for: written once, read by somebody asking what happened, and
@@ -170,7 +180,18 @@ export type Audit = Message<"cxz.Audit"> & {
 
   /**
    * The row this happened to, marshaled, as it was when the event was over --
-   * an Erase included. An entity erased softly keeps its row, so the value of
+   * an Erase included -- and kept only where a deployment asked for it: the
+   * `value` content level, for the whole trail or for one kind of thing
+   * (`audit.content`, `audit.by.<kind>.content`). Empty at the others, of which
+   * `patch` is the default (#92). A field declared `secret` or `personal` is
+   * cleared out of it before it is kept.
+   *
+   * It is not the default because it is the whole row on every write, and the
+   * trail is the one table nothing rewrites: a write that changed a person's
+   * team copied their address in again, and erasing them meant blanking every
+   * copy, in the database and in the archive. The patch is what was written,
+   * and the row in its own table is what it became.
+   * An entity erased softly keeps its row, so the value of
    * its Erase is the whole of that row with the erase stamp on: everything of
    * the moment before, plus what the erase wrote -- the stamp, and the version
    * column beside it for an entity that carries one, since an erase is a write
@@ -179,11 +200,12 @@ export type Audit = Message<"cxz.Audit"> & {
    * exists, and a copy taken earlier could be stale by the time the stamp
    * lands.
    *
-   * `patch` is the delta and this is the state, and the trail needs both for a
-   * reason each of them cannot answer alone. A patch says what changed and not
-   * what it became; and an Add and an Erase have no patch at all, so without
-   * this the two events that matter most -- what was created, what was
-   * destroyed -- record nothing but their own names.
+   * `patch` is the delta and this is the state, and a deployment that asks for
+   * both has a reason each cannot answer alone. A patch says what changed and
+   * not what it became: the version stamp, a default, a stamped field are the
+   * server's and in no document. An Add's patch says what it made, and an
+   * Erase's row is in its own table while the erase is soft -- the two events
+   * the trail once had nothing else to record for.
    *
    * The hard Erase is the one with nothing to read: the row is gone before the
    * recorder runs, so the value is **empty** and the record is filed under the
@@ -204,9 +226,10 @@ export type Audit = Message<"cxz.Audit"> & {
    * version upgrade is not the right thing to decide how long somebody's
    * evidence lasts.
    *
-   * What it does **not** answer is erasing one person from the trail. That is
-   * about a subject rather than about age, and what it should blank is a
-   * decision an app's obligations make and payday cannot.
+   * Erasing one person from the trail is about a subject rather than about age,
+   * and is what `personal` is for: a field that holds them is never on the
+   * trail as a value. What no declaration reaches -- free text, and rows written
+   * before #92 -- `trail.Policy.Forget` still blanks.
    *
    * @generated from field: bytes value = 17;
    */
@@ -298,6 +321,75 @@ export type Audit = Message<"cxz.Audit"> & {
    * @generated from field: uint32 domain = 19;
    */
   domain: number;
+
+  /**
+   * The numbers of the fields the write set, each once and in order: the first
+   * segment of every entry of its document, read before anything is taken out
+   * of it -- for an Add, the fields of the row it made (#92).
+   *
+   * It is what says a field was set when the trail may not say what to. A field
+   * declared `personal` or `secret` is never here as a value, so without this
+   * the record of somebody changing a person's address is a write to the person
+   * and nothing more -- and an entry with its value taken out has no shape a
+   * document can hold (see the recorder's `hidden`). It is kept at every content
+   * level, and at `fields` it is all a row says beyond who, what and when.
+   *
+   * Numbers rather than names, as everywhere else the trail names a field: a
+   * name is a label, and a field renamed is the same column.
+   *
+   * @generated from field: repeated uint32 fields = 20;
+   */
+  fields: number[];
+
+  /**
+   * A keyed digest of the row this write left (payday#102): HMAC-SHA256,
+   * under the deployment's `audit.digest.key`, of the row with a field
+   * declared `personal` cleared -- a `secret` is covered (payday#115) --
+   * restricted to the fields in `digest_fields`, and of which thing it is and
+   * of that list. It is what says a live row is the one the last write the
+   * trail recorded left: digest the row again, and one somebody changed in the
+   * database past the servers does not match. The personal fields are the
+   * row's seal's to vouch for (`RowSeal`), which lives beside the row and not
+   * on the trail.
+   *
+   * Keyed, because a row of the trail in the database is not signed until a
+   * pass archives it, and a digest anybody can compute is one whoever can
+   * write the database computes again for the row they changed. The key is a
+   * file the process is given, not a row anything reads.
+   *
+   * A byte of version, a byte of flags, and two halves of eight bytes of a
+   * key's fingerprint -- so a digest made before a rotation is checked with
+   * the key it was made under -- and an HMAC each (payday#115). The first is
+   * this line's own: of its flags, its `id`, its `date_created` to the
+   * microsecond, its `action` and the thing it is about, and of the second,
+   * so that a digest copied onto another line is not that line's. The second
+   * is the row's. The flags say whether the write sealed the row, so a row
+   * whose seal was taken off is told from a row from before seals. An erase
+   * that took its row keeps the first alone, which says the row went; one that
+   * left it, the row as it stamped it. Version 2 is the same with no flags,
+   * and version 1 the row's half alone, bound to no line; both are still
+   * checked. Empty for a deployment with no key, and for a row written before
+   * this.
+   *
+   * Defaulted, for the reason `domain` gives: the recorder is not the only
+   * writer of this table, and a column another writer must fill in is one it
+   * learns about from a refusal at run time.
+   *
+   * @generated from field: bytes digest = 21;
+   */
+  digest: Uint8Array;
+
+  /**
+   * The fields `digest` covers, by number: the entity's fields as the build
+   * that wrote it knew them, less what it cleared. So a column a later
+   * migration adds is outside every digest made before it, and an old row
+   * still matches; a column it covers that a migration rewrote does not,
+   * which is the point. A digest from before payday#115 left a `secret` out,
+   * and says so here.
+   *
+   * @generated from field: repeated uint32 digest_fields = 22;
+   */
+  digestFields: number[];
 };
 
 /**

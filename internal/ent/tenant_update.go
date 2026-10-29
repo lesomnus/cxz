@@ -147,20 +147,35 @@ func (_u *TenantUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(tenant.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldAlias); ok {
+		_spec.SetField(tenant.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(tenant.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldName); ok {
+		_spec.SetField(tenant.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(tenant.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldDesc); ok {
+		_spec.SetField(tenant.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(tenant.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldLabels); ok {
+		_spec.SetField(tenant.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(tenant.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(tenant.FieldDateUpdated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldDateUpdated); ok {
+		_spec.SetField(tenant.FieldDateUpdated, field.TypeTime, e)
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(tenant.FieldDateCreated, field.TypeTime)
@@ -335,20 +350,35 @@ func (_u *TenantUpdateOne) sqlSave(ctx context.Context) (_node *Tenant, err erro
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(tenant.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldAlias); ok {
+		_spec.SetField(tenant.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(tenant.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldName); ok {
+		_spec.SetField(tenant.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(tenant.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldDesc); ok {
+		_spec.SetField(tenant.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(tenant.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldLabels); ok {
+		_spec.SetField(tenant.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(tenant.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(tenant.FieldDateUpdated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(tenant.FieldDateUpdated); ok {
+		_spec.SetField(tenant.FieldDateUpdated, field.TypeTime, e)
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(tenant.FieldDateCreated, field.TypeTime)

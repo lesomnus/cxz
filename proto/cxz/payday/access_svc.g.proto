@@ -1,0 +1,83 @@
+edition = "2023";
+package cxz;
+
+import "cxz/payday/access.proto";
+
+option go_package = "github.com/lesomnus/cxz/resource";
+
+service AccessService {
+  // Get retrieves a Access
+  rpc Get(AccessGetRequest) returns (Access);
+  // List reads Accesss a page at a time.
+  rpc List(AccessListRequest) returns (AccessListResponse);
+}
+
+message AccessGetRequest {
+  AccessRef ref = 1;
+  AccessSelect select = 2;
+}
+
+message AccessRef {
+  oneof key {
+    bytes id = 1;
+  }
+}
+
+message AccessSelect {
+  bool all = 1;
+  bool tenant_id = 2;
+  bool actor_id = 8;
+  bool trace_id = 9;
+  bool action = 10;
+  bool kind = 11;
+  bool result = 12;
+  bool date_created = 15;
+  bool actor_tenant_id = 16;
+  bool value = 17;
+  bool domain = 19;
+  bool subjects = 20;
+  bool subject_count = 21;
+}
+
+message AccessListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated AccessFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message AccessListResponse {
+  repeated Access items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message AccessFilter {
+  bytes actor_id = 1;
+  bytes tenant_id = 2;
+  bytes actor_tenant_id = 3;
+  string kind = 4;
+}

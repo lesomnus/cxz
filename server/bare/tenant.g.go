@@ -12,12 +12,15 @@ import (
 	resource "github.com/lesomnus/cxz/resource"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	uuid "uuid"
 )
 
@@ -76,27 +79,39 @@ func (s TenantServiceServer) narrow(ctx context.Context, p predicate.Tenant) (pr
 	return TenantNarrow(ctx, s.Scope, p)
 }
 
-func (s TenantServiceServer) Add(ctx context.Context, req *resource.TenantAddRequest) (*resource.Tenant, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s TenantServiceServer) snapshot(ctx context.Context, p predicate.Tenant, lock bool) (*ent.Tenant, error) {
+	q := s.Db.Tenant.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s TenantServiceServer) image(v *resource.Tenant) *resource.Tenant {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*resource.Tenant)
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st TenantServiceServer) create(ctx context.Context, req *resource.TenantAddRequest) (*ent.TenantCreate, []func(v *resource.Tenant), error) {
+	var ds []func(v *resource.Tenant)
 	q := st.Db.Tenant.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "cxz.Tenant", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "cxz.Tenant", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -112,7 +127,30 @@ func (s TenantServiceServer) Add(ctx context.Context, req *resource.TenantAddReq
 	} else {
 		q.SetDateCreated(st.now())
 	}
+	return q, ds, nil
+}
 
+func (s TenantServiceServer) Add(ctx context.Context, req *resource.TenantAddRequest) (*resource.Tenant, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Tenant
+	if snapshotOptions(s.Rec, resource.TenantService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -126,9 +164,18 @@ func (s TenantServiceServer) Add(ctx context.Context, req *resource.TenantAddReq
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *resource.Tenant
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  resource.TenantService_Add_FullMethodName,
-		Key: u.Id,
+		By:    resource.TenantService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -136,7 +183,39 @@ func (s TenantServiceServer) Add(ctx context.Context, req *resource.TenantAddReq
 		return nil, err
 	}
 
-	return u.Proto(), nil
+	return v, nil
+}
+
+// TenantAddRule is what a layer in front says about one row an Add of Tenant
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type TenantAddRule func(ctx context.Context, req *resource.TenantAddRequest) (*resource.TenantAddRequest, error)
+
+// TenantWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func TenantWithAddRule(next resource.TenantServiceServer, rule TenantAddRule) resource.TenantServiceServer {
+	return tenantAddRuled{next, rule}
+}
+
+type tenantAddRuled struct {
+	resource.TenantServiceServer
+	rule TenantAddRule
+}
+
+func (s tenantAddRuled) Add(ctx context.Context, req *resource.TenantAddRequest) (*resource.Tenant, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.TenantServiceServer.Add(ctx, r)
 }
 
 func (s TenantServiceServer) Get(ctx context.Context, req *resource.TenantGetRequest) (*resource.Tenant, error) {
@@ -207,7 +286,6 @@ func TenantSelect(q *ent.TenantQuery, m *resource.TenantSelect) {
 func TenantSelectInit(q *ent.TenantQuery, m *resource.TenantSelect) {
 	if m != nil {
 		TenantSelect(q, m)
-	} else {
 	}
 }
 
@@ -308,6 +386,18 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *resource.TenantRef,
 		return nil, err
 	}
 
+	var previous *resource.Tenant
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Tenant.Query().Where(p)
 		if pred != nil {
@@ -334,6 +424,7 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *resource.TenantRef,
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -356,20 +447,25 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *resource.TenantRef,
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *resource.Tenant
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -396,8 +492,16 @@ func (s TenantServiceServer) Erase(ctx context.Context, req *resource.TenantRef)
 	st.Db = tx.Db
 
 	var k any
+	var previous *resource.Tenant
 	if s.Rec != nil {
-		v, err := st.Db.Tenant.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, resource.TenantService_Erase_FullMethodName)
+		var v *ent.Tenant
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Tenant.Query().Where(p).Select(tenant.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &resource.TenantEraseResponse{}, nil
@@ -405,18 +509,23 @@ func (s TenantServiceServer) Erase(ctx context.Context, req *resource.TenantRef)
 			return nil, err
 		}
 
-		k = v
-		p = tenant.And(p, tenant.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = tenant.And(p, tenant.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	n, err := st.Db.Tenant.Delete().Where(p).Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  resource.TenantService_Erase_FullMethodName,
-			Key: k,
+			By:       resource.TenantService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

@@ -36,6 +36,9 @@ service SessionService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(SessionWatchRequest) returns (stream SessionWatchResponse);
+  // Records only the conversation range actually read by this operator.
+  rpc MarkRead(SessionMarkReadRequest) returns (SessionReadState);
+  rpc ReadState(SessionReadStateRequest) returns (SessionReadState);
   // Read retained conversation statistics, never account billing or lifetime totals.
   rpc ConversationStats(ConversationStatsRequest) returns (ConversationStatsReply);
   rpc Restore(SessionRef) returns (Session);
@@ -244,6 +247,12 @@ message SessionListRequest {
   // ahead of the page does not shift it and a caller reading through never sees
   // one twice or misses one.
   string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
 }
 
 message SessionListResponse {
@@ -314,6 +323,22 @@ message SessionWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message SessionMarkReadRequest {
+  SessionRef ref = 1;
+  string generation = 2 [features.field_presence = IMPLICIT];
+  uint64 through_seq = 3 [features.field_presence = IMPLICIT];
+}
+
+message SessionReadState {
+  bytes reader_id = 1 [features.field_presence = IMPLICIT];
+  string generation = 2 [features.field_presence = IMPLICIT];
+  uint64 through_seq = 3 [features.field_presence = IMPLICIT];
+}
+
+message SessionReadStateRequest {
+  SessionRef ref = 1;
 }
 
 // Omit both refs for all listed sessions; refs are mutually exclusive.
@@ -939,6 +964,13 @@ message SessionMcpRequest {
 message SessionMcpLogsReply {
   string text = 1;
   string message = 2;
+}
+
+message SessionNotification {
+  string runtime_id = 1 [features.field_presence = IMPLICIT];
+  string generation = 2 [features.field_presence = IMPLICIT];
+  uint64 seq = 3 [features.field_presence = IMPLICIT];
+  string request_id = 4 [features.field_presence = IMPLICIT];
 }
 
 message SessionLibraryRequest {

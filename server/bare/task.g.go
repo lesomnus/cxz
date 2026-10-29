@@ -13,12 +13,16 @@ import (
 	resource "github.com/lesomnus/cxz/resource"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -81,28 +85,54 @@ func (s TaskServiceServer) narrow(ctx context.Context, p predicate.Task) (predic
 	return TaskNarrow(ctx, s.Scope, p)
 }
 
-func (s TaskServiceServer) Add(ctx context.Context, req *resource.TaskAddRequest) (*resource.Task, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s TaskServiceServer) snapshot(ctx context.Context, p predicate.Task, lock bool) (*ent.Task, error) {
+	q := s.Db.Task.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s TaskServiceServer) image(v *resource.Task) *resource.Task {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*resource.Task)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st TaskServiceServer) create(ctx context.Context, req *resource.TaskAddRequest) (*ent.TaskCreate, []func(v *resource.Task), error) {
 	ds := make([]func(v *resource.Task), 0, 1)
 	q := st.Db.Task.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "cxz.Task", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "cxz.Task", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -119,7 +149,7 @@ func (s TaskServiceServer) Add(ctx context.Context, req *resource.TaskAddRequest
 		q.SetDateCreated(st.now())
 	}
 	if k, err := ProjectGetKey(ctx, st.Db, req.GetProject()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetProjectId(k)
 		ds = append(ds, func(v *resource.Task) {
@@ -134,7 +164,30 @@ func (s TaskServiceServer) Add(ctx context.Context, req *resource.TaskAddRequest
 	q.SetSourceSession(req.GetSourceSession())
 	q.SetSourceRun(req.GetSourceRun())
 	q.SetSourceSeq(req.GetSourceSeq())
+	return q, ds, nil
+}
 
+func (s TaskServiceServer) Add(ctx context.Context, req *resource.TaskAddRequest) (*resource.Task, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Task
+	if snapshotOptions(s.Rec, resource.TaskService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -148,9 +201,18 @@ func (s TaskServiceServer) Add(ctx context.Context, req *resource.TaskAddRequest
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *resource.Task
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  resource.TaskService_Add_FullMethodName,
-		Key: u.Id,
+		By:    resource.TaskService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -158,11 +220,39 @@ func (s TaskServiceServer) Add(ctx context.Context, req *resource.TaskAddRequest
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// TaskAddRule is what a layer in front says about one row an Add of Task
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type TaskAddRule func(ctx context.Context, req *resource.TaskAddRequest) (*resource.TaskAddRequest, error)
+
+// TaskWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func TaskWithAddRule(next resource.TaskServiceServer, rule TaskAddRule) resource.TaskServiceServer {
+	return taskAddRuled{next, rule}
+}
+
+type taskAddRuled struct {
+	resource.TaskServiceServer
+	rule TaskAddRule
+}
+
+func (s taskAddRuled) Add(ctx context.Context, req *resource.TaskAddRequest) (*resource.Task, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.TaskServiceServer.Add(ctx, r)
 }
 
 func (s TaskServiceServer) Get(ctx context.Context, req *resource.TaskGetRequest) (*resource.Task, error) {
@@ -266,8 +356,6 @@ func TaskSelect(q *ent.TaskQuery, m *resource.TaskSelect) {
 func TaskSelectInit(q *ent.TaskQuery, m *resource.TaskSelect) {
 	if m != nil {
 		TaskSelect(q, m)
-	} else {
-		q.WithProject(selectProjectKey)
 	}
 }
 
@@ -368,6 +456,18 @@ func (s TaskServiceServer) apply(ctx context.Context, ref *resource.TaskRef, doc
 		return nil, err
 	}
 
+	var previous *resource.Task
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Task.Query().Where(p)
 		if pred != nil {
@@ -394,6 +494,7 @@ func (s TaskServiceServer) apply(ctx context.Context, ref *resource.TaskRef, doc
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -416,20 +517,25 @@ func (s TaskServiceServer) apply(ctx context.Context, ref *resource.TaskRef, doc
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *resource.Task
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -456,8 +562,16 @@ func (s TaskServiceServer) Erase(ctx context.Context, req *resource.TaskRef) (*r
 	st.Db = tx.Db
 
 	var k any
+	var previous *resource.Task
 	if s.Rec != nil {
-		v, err := st.Db.Task.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, resource.TaskService_Erase_FullMethodName)
+		var v *ent.Task
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Task.Query().Where(p).Select(task.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &resource.TaskEraseResponse{}, nil
@@ -465,10 +579,14 @@ func (s TaskServiceServer) Erase(ctx context.Context, req *resource.TaskRef) (*r
 			return nil, err
 		}
 
-		k = v
-		p = task.And(p, task.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = task.And(p, task.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Task.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -478,8 +596,9 @@ func (s TaskServiceServer) Erase(ctx context.Context, req *resource.TaskRef) (*r
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  resource.TaskService_Erase_FullMethodName,
-			Key: k,
+			By:       resource.TaskService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

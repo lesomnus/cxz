@@ -42,7 +42,8 @@ func (Project) Fields() []ent.Field {
 
 func (Project) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("project_page"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

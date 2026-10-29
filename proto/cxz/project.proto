@@ -5,7 +5,9 @@ import "orm.proto";
 import "payday.proto";
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/cxz/resource";
-option (payday.app) = {};
+option (payday.app) = {
+  notify: {notification: 14, receipt: 15, global: {}}
+};
 
 // A registered workspace, independent of whether its container is running.
 // No tenant: project-local capability checks remain a separate trust boundary.

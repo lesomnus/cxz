@@ -117,10 +117,17 @@ func (s ProjectServer) resolveSession(ctx context.Context, handle string) (*reso
 func (s ProjectServer) eraseRecord(ctx context.Context, ref *resource.SessionRef) error {
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
-	_, err := s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Name: ptr("purged"), AliasNull: ptr(true), StatusNull: ptr(true), Listed: ptr(false), DateUpdatedForce: ptr(true)}.Build())
+	v, err := s.Next().Session().Get(ctx, resource.SessionGetRequest_builder{Ref: ref}.Build())
+	if err != nil {
+		return err
+	}
+	_, err = s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Name: ptr("purged"), AliasNull: ptr(true), StatusNull: ptr(true), Listed: ptr(false), DateUpdatedForce: ptr(true)}.Build())
 	if err != nil {
 		return err
 	}
 	_, err = s.Next().Session().Erase(ctx, ref)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.purgeSessionAttention(ctx, v.GetId())
 }

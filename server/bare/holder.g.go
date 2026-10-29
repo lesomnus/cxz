@@ -12,12 +12,16 @@ import (
 	resource "github.com/lesomnus/cxz/resource"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -80,33 +84,59 @@ func (s HolderServiceServer) narrow(ctx context.Context, p predicate.Holder) (pr
 	return HolderNarrow(ctx, s.Scope, p)
 }
 
-func (s HolderServiceServer) Add(ctx context.Context, req *resource.HolderAddRequest) (*resource.Holder, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s HolderServiceServer) snapshot(ctx context.Context, p predicate.Holder, lock bool) (*ent.Holder, error) {
+	q := s.Db.Holder.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s HolderServiceServer) image(v *resource.Holder) *resource.Holder {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*resource.Holder)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st HolderServiceServer) create(ctx context.Context, req *resource.HolderAddRequest) (*ent.HolderCreate, []func(v *resource.Holder), error) {
 	ds := make([]func(v *resource.Holder), 0, 1)
 	q := st.Db.Holder.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "cxz.Holder", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "cxz.Holder", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *resource.Holder) {
@@ -125,7 +155,30 @@ func (s HolderServiceServer) Add(ctx context.Context, req *resource.HolderAddReq
 	} else {
 		q.SetDateCreated(st.now())
 	}
+	return q, ds, nil
+}
 
+func (s HolderServiceServer) Add(ctx context.Context, req *resource.HolderAddRequest) (*resource.Holder, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Holder
+	if snapshotOptions(s.Rec, resource.HolderService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -139,9 +192,18 @@ func (s HolderServiceServer) Add(ctx context.Context, req *resource.HolderAddReq
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *resource.Holder
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  resource.HolderService_Add_FullMethodName,
-		Key: u.Id,
+		By:    resource.HolderService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -149,11 +211,39 @@ func (s HolderServiceServer) Add(ctx context.Context, req *resource.HolderAddReq
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// HolderAddRule is what a layer in front says about one row an Add of Holder
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type HolderAddRule func(ctx context.Context, req *resource.HolderAddRequest) (*resource.HolderAddRequest, error)
+
+// HolderWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func HolderWithAddRule(next resource.HolderServiceServer, rule HolderAddRule) resource.HolderServiceServer {
+	return holderAddRuled{next, rule}
+}
+
+type holderAddRuled struct {
+	resource.HolderServiceServer
+	rule HolderAddRule
+}
+
+func (s holderAddRuled) Add(ctx context.Context, req *resource.HolderAddRequest) (*resource.Holder, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.HolderServiceServer.Add(ctx, r)
 }
 
 func (s HolderServiceServer) Get(ctx context.Context, req *resource.HolderGetRequest) (*resource.Holder, error) {
@@ -232,8 +322,6 @@ func HolderSelect(q *ent.HolderQuery, m *resource.HolderSelect) {
 func HolderSelectInit(q *ent.HolderQuery, m *resource.HolderSelect) {
 	if m != nil {
 		HolderSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
 	}
 }
 
@@ -334,6 +422,18 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *resource.HolderRef,
 		return nil, err
 	}
 
+	var previous *resource.Holder
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Holder.Query().Where(p)
 		if pred != nil {
@@ -360,6 +460,7 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *resource.HolderRef,
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -382,20 +483,25 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *resource.HolderRef,
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *resource.Holder
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -422,8 +528,16 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *resource.HolderRef)
 	st.Db = tx.Db
 
 	var k any
+	var previous *resource.Holder
 	if s.Rec != nil {
-		v, err := st.Db.Holder.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, resource.HolderService_Erase_FullMethodName)
+		var v *ent.Holder
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Holder.Query().Where(p).Select(holder.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &resource.HolderEraseResponse{}, nil
@@ -431,10 +545,14 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *resource.HolderRef)
 			return nil, err
 		}
 
-		k = v
-		p = holder.And(p, holder.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = holder.And(p, holder.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Holder.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -444,8 +562,9 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *resource.HolderRef)
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  resource.HolderService_Erase_FullMethodName,
-			Key: k,
+			By:       resource.HolderService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

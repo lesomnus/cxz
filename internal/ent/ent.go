@@ -9,14 +9,22 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/lesomnus/cxz/internal/ent/access"
 	"github.com/lesomnus/cxz/internal/ent/account"
+	"github.com/lesomnus/cxz/internal/ent/archived"
 	"github.com/lesomnus/cxz/internal/ent/audit"
 	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/connection"
 	"github.com/lesomnus/cxz/internal/ent/holder"
+	"github.com/lesomnus/cxz/internal/ent/notificationreceiptrecord"
+	"github.com/lesomnus/cxz/internal/ent/notificationrecord"
+	"github.com/lesomnus/cxz/internal/ent/operator"
 	"github.com/lesomnus/cxz/internal/ent/outbox"
+	"github.com/lesomnus/cxz/internal/ent/owed"
 	"github.com/lesomnus/cxz/internal/ent/project"
+	"github.com/lesomnus/cxz/internal/ent/rowseal"
 	"github.com/lesomnus/cxz/internal/ent/session"
+	"github.com/lesomnus/cxz/internal/ent/sessionread"
 	"github.com/lesomnus/cxz/internal/ent/task"
 	"github.com/lesomnus/cxz/internal/ent/tasklink"
 	"github.com/lesomnus/cxz/internal/ent/tenant"
@@ -83,17 +91,25 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			account.Table:     account.ValidColumn,
-			audit.Table:       audit.ValidColumn,
-			authbinding.Table: authbinding.ValidColumn,
-			connection.Table:  connection.ValidColumn,
-			holder.Table:      holder.ValidColumn,
-			outbox.Table:      outbox.ValidColumn,
-			project.Table:     project.ValidColumn,
-			session.Table:     session.ValidColumn,
-			task.Table:        task.ValidColumn,
-			tasklink.Table:    tasklink.ValidColumn,
-			tenant.Table:      tenant.ValidColumn,
+			access.Table:                    access.ValidColumn,
+			account.Table:                   account.ValidColumn,
+			archived.Table:                  archived.ValidColumn,
+			audit.Table:                     audit.ValidColumn,
+			authbinding.Table:               authbinding.ValidColumn,
+			connection.Table:                connection.ValidColumn,
+			holder.Table:                    holder.ValidColumn,
+			notificationreceiptrecord.Table: notificationreceiptrecord.ValidColumn,
+			notificationrecord.Table:        notificationrecord.ValidColumn,
+			operator.Table:                  operator.ValidColumn,
+			outbox.Table:                    outbox.ValidColumn,
+			owed.Table:                      owed.ValidColumn,
+			project.Table:                   project.ValidColumn,
+			rowseal.Table:                   rowseal.ValidColumn,
+			session.Table:                   session.ValidColumn,
+			sessionread.Table:               sessionread.ValidColumn,
+			task.Table:                      task.ValidColumn,
+			tasklink.Table:                  tasklink.ValidColumn,
+			tenant.Table:                    tenant.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

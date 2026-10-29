@@ -53,6 +53,14 @@ func (s SessionServer) Erase(ctx context.Context, ref *resource.SessionRef) (*re
 			}
 		}
 	}
+	if n := s.shared.notifications; n != nil {
+		n.mu.Lock()
+		err := n.markThrough(ctx, v, "", 0)
+		n.mu.Unlock()
+		if err != nil {
+			return nil, err
+		}
+	}
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
 	_, err = s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Listed: ptr(false), AliasNull: ptr(true), DateUpdatedForce: ptr(true)}.Build())
@@ -139,7 +147,15 @@ func (s ProjectServer) Erase(ctx context.Context, ref *resource.ProjectRef) (*re
 		return nil, err
 	}
 	defer tx.Rollback()
+	if s.shared.notifications != nil {
+		if _, err = tx.ExecContext(ctx, "DELETE FROM session_notification_cursor WHERE session_id IN (SELECT id FROM session WHERE project_id=?)", projectid.String(p.GetId())); err != nil {
+			return nil, err
+		}
+	}
 	for _, query := range []string{
+		"DELETE FROM notificationreceiptrecord WHERE notification_id IN (SELECT id FROM notificationrecord WHERE source_id IN (SELECT id FROM session WHERE project_id=?))",
+		"DELETE FROM notificationrecord WHERE source_id IN (SELECT id FROM session WHERE project_id=?)",
+		"DELETE FROM sessionread WHERE session_id IN (SELECT id FROM session WHERE project_id IN (SELECT id FROM project WHERE id=?))",
 		"DELETE FROM audit WHERE object_id IN (SELECT id FROM session WHERE project_id IN (SELECT id FROM project WHERE id=?))",
 		"DELETE FROM audit WHERE object_id IN (SELECT id FROM authbinding WHERE project_id IN (SELECT id FROM project WHERE id=?))",
 		"DELETE FROM audit WHERE object_id IN (SELECT id FROM project WHERE id=?)",

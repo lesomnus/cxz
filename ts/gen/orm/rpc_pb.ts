@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file orm/rpc.proto.
  */
 export const file_orm_rpc: GenFile = /*@__PURE__*/
-  fileDesc("Cg1vcm0vcnBjLnByb3RvEgNvcm0iGgoGUnBjQWRkEhAKCGRpc2FibGVkGAEgASgIIhoKBlJwY0dldBIQCghkaXNhYmxlZBgBIAEoCCIcCghScGNQYXRjaBIQCghkaXNhYmxlZBgBIAEoCCIcCghScGNFcmFzZRIQCghkaXNhYmxlZBgBIAEoCEIsWipnaXRodWIuY29tL3Byb3RvYnVmLW9ybS9wcm90b2J1Zi1vcm0vb3JtcGJiCGVkaXRpb25zcOgH");
+  fileDesc("Cg1vcm0vcnBjLnByb3RvEgNvcm0iOQoGUnBjQWRkEhAKCGRpc2FibGVkGAEgASgIEh0KBG1hbnkYAiABKAsyDy5vcm0uUnBjQWRkTWFueSIZCgpScGNBZGRNYW55EgsKA21heBgBIAEoDSIaCgZScGNHZXQSEAoIZGlzYWJsZWQYASABKAgiHAoIUnBjUGF0Y2gSEAoIZGlzYWJsZWQYASABKAgiHAoIUnBjRXJhc2USEAoIZGlzYWJsZWQYASABKAhCLFoqZ2l0aHViLmNvbS9wcm90b2J1Zi1vcm0vcHJvdG9idWYtb3JtL29ybXBiYghlZGl0aW9uc3DoBw");
 
 /**
  * @generated from message orm.RpcAdd
@@ -20,6 +20,14 @@ export type RpcAdd = Message<"orm.RpcAdd"> & {
    * @generated from field: bool disabled = 1;
    */
   disabled: boolean;
+
+  /**
+   * Many enables AddMany beside Add. Unset is no AddMany, and so is an Add
+   * that is disabled: the one is the other many times.
+   *
+   * @generated from field: orm.RpcAddMany many = 2;
+   */
+  many?: RpcAddMany | undefined;
 };
 
 /**
@@ -28,6 +36,38 @@ export type RpcAdd = Message<"orm.RpcAdd"> & {
  */
 export const RpcAddSchema: GenMessage<RpcAdd> = /*@__PURE__*/
   messageDesc(file_orm_rpc, 0);
+
+/**
+ * RpcAddMany is AddMany, which adds many rows of the entity in one call.
+ *
+ * Its request is a list of the entity's Add requests and its answer is the rows
+ * they added, in the same order. Each item is added as Add would add it, and
+ * the call is one transaction: all of the rows or none of them. What it saves
+ * is the round trip -- a call that writes a thousand rows is otherwise a
+ * thousand Adds, each a statement of its own.
+ *
+ * @generated from message orm.RpcAddMany
+ */
+export type RpcAddMany = Message<"orm.RpcAddMany"> & {
+  /**
+   * Max is the most items one call may carry. A call with more is refused
+   * rather than cut, since a caller that sent rows expects them all written or
+   * to be told. Zero is 1000.
+   *
+   * It bounds one transaction, not what can be written: a caller with more
+   * makes more calls.
+   *
+   * @generated from field: uint32 max = 1;
+   */
+  max: number;
+};
+
+/**
+ * Describes the message orm.RpcAddMany.
+ * Use `create(RpcAddManySchema)` to create a new message.
+ */
+export const RpcAddManySchema: GenMessage<RpcAddMany> = /*@__PURE__*/
+  messageDesc(file_orm_rpc, 1);
 
 /**
  * @generated from message orm.RpcGet
@@ -44,7 +84,7 @@ export type RpcGet = Message<"orm.RpcGet"> & {
  * Use `create(RpcGetSchema)` to create a new message.
  */
 export const RpcGetSchema: GenMessage<RpcGet> = /*@__PURE__*/
-  messageDesc(file_orm_rpc, 1);
+  messageDesc(file_orm_rpc, 2);
 
 /**
  * @generated from message orm.RpcPatch
@@ -61,7 +101,7 @@ export type RpcPatch = Message<"orm.RpcPatch"> & {
  * Use `create(RpcPatchSchema)` to create a new message.
  */
 export const RpcPatchSchema: GenMessage<RpcPatch> = /*@__PURE__*/
-  messageDesc(file_orm_rpc, 2);
+  messageDesc(file_orm_rpc, 3);
 
 /**
  * @generated from message orm.RpcErase
@@ -78,5 +118,5 @@ export type RpcErase = Message<"orm.RpcErase"> & {
  * Use `create(RpcEraseSchema)` to create a new message.
  */
 export const RpcEraseSchema: GenMessage<RpcErase> = /*@__PURE__*/
-  messageDesc(file_orm_rpc, 3);
+  messageDesc(file_orm_rpc, 4);
 

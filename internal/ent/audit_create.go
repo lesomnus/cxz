@@ -20,6 +20,7 @@ type AuditCreate struct {
 	config
 	mutation *AuditMutation
 	hooks    []Hook
+	stored   **Audit
 }
 
 // SetTenantId sets the "tenant_id" field.
@@ -112,6 +113,24 @@ func (_c *AuditCreate) SetNillableDomain(v *uint32) *AuditCreate {
 	return _c
 }
 
+// SetFields sets the "fields" field.
+func (_c *AuditCreate) SetFields(v []uint32) *AuditCreate {
+	_c.mutation.SetFields(v)
+	return _c
+}
+
+// SetDigest sets the "digest" field.
+func (_c *AuditCreate) SetDigest(v []byte) *AuditCreate {
+	_c.mutation.SetDigest(v)
+	return _c
+}
+
+// SetDigestFields sets the "digest_fields" field.
+func (_c *AuditCreate) SetDigestFields(v []uint32) *AuditCreate {
+	_c.mutation.SetDigestFields(v)
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *AuditCreate) SetId(v uuid.UUID) *AuditCreate {
 	_c.mutation.SetId(v)
@@ -125,6 +144,7 @@ func (_c *AuditCreate) Mutation() *AuditMutation {
 
 // Save creates the Audit in the database.
 func (_c *AuditCreate) Save(ctx context.Context) (*Audit, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -150,8 +170,21 @@ func (_c *AuditCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *AuditCreate) defaults() {
+	if _, ok := _c.mutation.Domain(); !ok {
+		if _, ok := _c.mutation.FieldExpr(audit.FieldDomain); !ok {
+			v := audit.DefaultDomain
+			_c.mutation.SetDomain(v)
+		}
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *AuditCreate) check() error {
+	if fs := _c.mutation.ExprFields(); len(fs) > 0 {
+		return &ValidationError{Name: fs[0], err: fmt.Errorf(`ent: field "Audit.%s" was assigned an expression, which only an update writes`, fs[0])}
+	}
 	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Audit.tenant_id"`)}
 	}
@@ -211,6 +244,18 @@ func (_c *AuditCreate) createSpec() (*Audit, *sqlgraph.CreateSpec) {
 		_node = &Audit{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(audit.Table, sqlgraph.NewFieldSpec(audit.FieldId, field.TypeUuid))
 	)
+	if _c.stored != nil {
+		_stored := &Audit{config: _c.config}
+		_spec.Returning = audit.Columns
+		_spec.ScanValues = _stored.scanValues
+		_spec.Assign = func(columns []string, values []any) error {
+			if err := _stored.assignValues(columns, values); err != nil {
+				return err
+			}
+			*_c.stored = _stored
+			return nil
+		}
+	}
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
@@ -259,7 +304,45 @@ func (_c *AuditCreate) createSpec() (*Audit, *sqlgraph.CreateSpec) {
 		_spec.SetField(audit.FieldDomain, field.TypeUint32, value)
 		_node.Domain = value
 	}
+	if value, ok := _c.mutation.GetFields(); ok {
+		_spec.SetField(audit.FieldFields, field.TypeJson, value)
+		_node.Fields = value
+	}
+	if value, ok := _c.mutation.Digest(); ok {
+		_spec.SetField(audit.FieldDigest, field.TypeBytes, value)
+		_node.Digest = value
+	}
+	if value, ok := _c.mutation.DigestFields(); ok {
+		_spec.SetField(audit.FieldDigestFields, field.TypeJson, value)
+		_node.DigestFields = value
+	}
 	return _node, _spec
+}
+
+// Stored has Save read the Audit back, into `v`, as the database stored
+// it: at the precision of its columns, with the defaults the database filled
+// in and what a trigger before the write made of it. Save itself answers with
+// the Audit as this builder had it.
+//
+// The INSERT reads it, with RETURNING, where the dialect has it, so that the
+// row and the reading of it are one statement. MySQL has none, and an INSERT
+// with a conflict clause may have written nothing, so for those it is a query
+// by the Id just after the INSERT. Either way it is read on the driver the
+// INSERT ran on, so inside a transaction it is that transaction's row. Its
+// edges are not loaded.
+//
+// In a CreateBulk, the Stored of each builder is honoured and the batch's one
+// INSERT reads all of their rows back: each is matched to its builder by the
+// Id the builder was given, or by its place when the database made the Ids up.
+// A column some builders of a batch set and others do not is NULL for the
+// others, as it is in any batch; the database's default is for a column no
+// builder sets.
+//
+// `v` is written only by a Save that wrote the row: one that failed, or that a
+// hook answered without writing, leaves it as it was.
+func (_c *AuditCreate) Stored(v **Audit) *AuditCreate {
+	_c.stored = v
+	return _c
 }
 
 // AuditCreateBulk is the builder for creating many Audit entities in bulk.
@@ -280,6 +363,7 @@ func (_c *AuditCreateBulk) Save(ctx context.Context) ([]*Audit, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*AuditMutation)
 				if !ok {

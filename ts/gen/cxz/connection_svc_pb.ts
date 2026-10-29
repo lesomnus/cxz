@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/connection_svc.g.proto.
  */
 export const file_cxz_connection_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChpjeHovY29ubmVjdGlvbl9zdmMuZy5wcm90bxIDY3h6ImoKFUNvbm5lY3Rpb25MaXN0UmVxdWVzdBImCgdmaWx0ZXJzGAEgAygLMhUuY3h6LkNvbm5lY3Rpb25GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIk0KFkNvbm5lY3Rpb25MaXN0UmVzcG9uc2USHgoFaXRlbXMYASADKAsyDy5jeHouQ29ubmVjdGlvbhITCgRuZXh0GAIgASgJQgWqAQIIAiISChBDb25uZWN0aW9uRmlsdGVyMlQKEUNvbm5lY3Rpb25TZXJ2aWNlEj8KBExpc3QSGi5jeHouQ29ubmVjdGlvbkxpc3RSZXF1ZXN0GhsuY3h6LkNvbm5lY3Rpb25MaXN0UmVzcG9uc2VCIlogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2ViCGVkaXRpb25zcOgH", [file_cxz_connection]);
+  fileDesc("ChpjeHovY29ubmVjdGlvbl9zdmMuZy5wcm90bxIDY3h6IoIBChVDb25uZWN0aW9uTGlzdFJlcXVlc3QSJgoHZmlsdGVycxgBIAMoCzIVLmN4ei5Db25uZWN0aW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJNChZDb25uZWN0aW9uTGlzdFJlc3BvbnNlEh4KBWl0ZW1zGAEgAygLMg8uY3h6LkNvbm5lY3Rpb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiEgoQQ29ubmVjdGlvbkZpbHRlcjJUChFDb25uZWN0aW9uU2VydmljZRI/CgRMaXN0EhouY3h6LkNvbm5lY3Rpb25MaXN0UmVxdWVzdBobLmN4ei5Db25uZWN0aW9uTGlzdFJlc3BvbnNlQiJaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlYghlZGl0aW9uc3DoBw", [file_cxz_connection]);
 
 /**
  * @generated from message cxz.ConnectionListRequest
@@ -44,6 +44,16 @@ export type ConnectionListRequest = Message<"cxz.ConnectionListRequest"> & {
    * @generated from field: string after = 3 [features.field_presence = IMPLICIT];
    */
   after: string;
+
+  /**
+   * Read the order the other way round, every column of it at once -- newest
+   * first where it is oldest first -- which the index the order walks walks
+   * from the other end. A cursor is of the way it was read, so the next page
+   * carries on that way, and one of the other way is refused.
+   *
+   * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
+   */
+  reverse: boolean;
 };
 
 /**

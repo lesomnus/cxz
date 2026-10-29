@@ -7,15 +7,23 @@ import (
 	errors "errors"
 	fmt "fmt"
 	ent "github.com/lesomnus/cxz/internal/ent"
+	access "github.com/lesomnus/cxz/internal/ent/access"
 	account "github.com/lesomnus/cxz/internal/ent/account"
+	archived "github.com/lesomnus/cxz/internal/ent/archived"
 	audit "github.com/lesomnus/cxz/internal/ent/audit"
 	authbinding "github.com/lesomnus/cxz/internal/ent/authbinding"
 	connection "github.com/lesomnus/cxz/internal/ent/connection"
 	holder "github.com/lesomnus/cxz/internal/ent/holder"
+	notificationreceiptrecord "github.com/lesomnus/cxz/internal/ent/notificationreceiptrecord"
+	notificationrecord "github.com/lesomnus/cxz/internal/ent/notificationrecord"
+	operator "github.com/lesomnus/cxz/internal/ent/operator"
 	outbox "github.com/lesomnus/cxz/internal/ent/outbox"
+	owed "github.com/lesomnus/cxz/internal/ent/owed"
 	predicate "github.com/lesomnus/cxz/internal/ent/predicate"
 	project "github.com/lesomnus/cxz/internal/ent/project"
+	rowseal "github.com/lesomnus/cxz/internal/ent/rowseal"
 	session "github.com/lesomnus/cxz/internal/ent/session"
+	sessionread "github.com/lesomnus/cxz/internal/ent/sessionread"
 	task "github.com/lesomnus/cxz/internal/ent/task"
 	tasklink "github.com/lesomnus/cxz/internal/ent/tasklink"
 	tenant "github.com/lesomnus/cxz/internal/ent/tenant"
@@ -23,9 +31,12 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
+	errdetails "google.golang.org/genproto/googleapis/rpc/errdetails"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoadapt "google.golang.org/protobuf/protoadapt"
 	time "time"
 	uuid "uuid"
 )
@@ -181,8 +192,9 @@ type Change struct {
 	//
 	// It says which entity and which kind of write without a field for
 	// either: a service is named for the entity it is about, and it is
-	// always one of the four this server has -- an Add adds and an Erase
-	// erases, and Patch and Apply are one write by two roads.
+	// always one of the five this server has -- an Add adds and an Erase
+	// erases, an AddMany adds a row each it is told about, and Patch and
+	// Apply are one write by two roads.
 	//
 	// So the two answer different questions and a recorder wants the one it
 	// is for. A trail is read by somebody asking what was asked for, and
@@ -206,6 +218,13 @@ type Change struct {
 	// on itself is not in it: the version stamp of an Apply, and the key and
 	// the timestamps an Add makes up for a request that left them out.
 	Patch *patchpb.Patch
+	// Previous and Value are optional images requested by SnapshotRecorder.
+	// By default neither is captured. Add has no Previous; Erase has no
+	// Value. A missing image does not identify the operation; use By instead.
+	// Treat both as read-only.
+	// References contain keys, as in a Get without an explicit selection.
+	Previous proto.Message
+	Value    proto.Message
 }
 
 // Recorder is told about every write, inside the transaction that makes
@@ -239,6 +258,28 @@ type Recorder interface {
 	Record(ctx context.Context, s Server, c Change) error
 }
 
+// SnapshotOptions selects images for one generated write method. The zero
+// value preserves the ordinary recorder's query and locking behavior.
+type SnapshotOptions struct{ Previous, Value bool }
+
+// SnapshotRecorder opts into image capture before the write. Previous reads
+// and locks the root row until transaction completion (except SQLite, whose
+// writes are serialized by the database). Value is the row an Add's, or an AddMany's, INSERT
+// reads back -- in the same statement, where the dialect has RETURNING -- and
+// the read-back Patch/Apply make anyway. Relations contain keys only.
+// method is the generated operation (Change.By), not the outer RPC.
+type SnapshotRecorder interface {
+	Recorder
+	Snapshots(method string) SnapshotOptions
+}
+
+func snapshotOptions(rec Recorder, method string) SnapshotOptions {
+	if r, ok := rec.(SnapshotRecorder); ok {
+		return r.Snapshots(method)
+	}
+	return SnapshotOptions{}
+}
+
 // Recorders is told about a write in the order they are written, and
 // stops at the first one that refuses. [WithRecorder] builds one of these
 // as soon as it is given a second recorder.
@@ -254,6 +295,16 @@ type Recorder interface {
 // whoever assembled the server.
 type Recorders []Recorder
 
+// Snapshots unions the requirements so each image is captured at most once.
+func (rs Recorders) Snapshots(method string) SnapshotOptions {
+	var out SnapshotOptions
+	for _, r := range rs {
+		v := snapshotOptions(r, method)
+		out.Previous = out.Previous || v.Previous
+		out.Value = out.Value || v.Value
+	}
+	return out
+}
 func (rs Recorders) Record(ctx context.Context, s Server, c Change) error {
 	for _, r := range rs {
 		if err := r.Record(ctx, s, c); err != nil {
@@ -288,10 +339,19 @@ func record(ctx context.Context, rec Recorder, db *ent.Client, c Change) error {
 	} else {
 		c.Method = c.By
 	}
+	c.Previous = snapshotOrNil(c.Previous)
+	c.Value = snapshotOrNil(c.Value)
 	if err := rec.Record(ctx, Server{Store: Store{Db: db}}, c); err != nil {
 		return status.Errorf(codes.Internal, "record the write by %s: %s", c.By, err)
 	}
 	return nil
+}
+
+func snapshotOrNil(v proto.Message) proto.Message {
+	if v == nil || !v.ProtoReflect().IsValid() {
+		return nil
+	}
+	return v
 }
 
 // Scope narrows what the servers of a [Server] can see, one entity at a
@@ -322,11 +382,19 @@ type Scope interface {
 	ProjectScope(ctx context.Context) (predicate.Project, error)
 	AuthBindingScope(ctx context.Context) (predicate.AuthBinding, error)
 	ConnectionScope(ctx context.Context) (predicate.Connection, error)
+	OperatorScope(ctx context.Context) (predicate.Operator, error)
+	AccessScope(ctx context.Context) (predicate.Access, error)
+	ArchivedScope(ctx context.Context) (predicate.Archived, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
+	NotificationRecordScope(ctx context.Context) (predicate.NotificationRecord, error)
+	NotificationReceiptRecordScope(ctx context.Context) (predicate.NotificationReceiptRecord, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
+	OwedScope(ctx context.Context) (predicate.Owed, error)
+	RowSealScope(ctx context.Context) (predicate.RowSeal, error)
 	SessionScope(ctx context.Context) (predicate.Session, error)
+	SessionReadScope(ctx context.Context) (predicate.SessionRead, error)
 	TaskScope(ctx context.Context) (predicate.Task, error)
 	TaskLinkScope(ctx context.Context) (predicate.TaskLink, error)
 }
@@ -355,6 +423,15 @@ func (Unscoped) AuthBindingScope(_ context.Context) (predicate.AuthBinding, erro
 func (Unscoped) ConnectionScope(_ context.Context) (predicate.Connection, error) {
 	return nil, nil
 }
+func (Unscoped) OperatorScope(_ context.Context) (predicate.Operator, error) {
+	return nil, nil
+}
+func (Unscoped) AccessScope(_ context.Context) (predicate.Access, error) {
+	return nil, nil
+}
+func (Unscoped) ArchivedScope(_ context.Context) (predicate.Archived, error) {
+	return nil, nil
+}
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
 	return nil, nil
 }
@@ -364,10 +441,25 @@ func (Unscoped) TenantScope(_ context.Context) (predicate.Tenant, error) {
 func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
+func (Unscoped) NotificationRecordScope(_ context.Context) (predicate.NotificationRecord, error) {
+	return nil, nil
+}
+func (Unscoped) NotificationReceiptRecordScope(_ context.Context) (predicate.NotificationReceiptRecord, error) {
+	return nil, nil
+}
 func (Unscoped) OutboxScope(_ context.Context) (predicate.Outbox, error) {
 	return nil, nil
 }
+func (Unscoped) OwedScope(_ context.Context) (predicate.Owed, error) {
+	return nil, nil
+}
+func (Unscoped) RowSealScope(_ context.Context) (predicate.RowSeal, error) {
+	return nil, nil
+}
 func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
+	return nil, nil
+}
+func (Unscoped) SessionReadScope(_ context.Context) (predicate.SessionRead, error) {
 	return nil, nil
 }
 func (Unscoped) TaskScope(_ context.Context) (predicate.Task, error) {
@@ -476,6 +568,66 @@ func (ss Scopes) ConnectionScope(ctx context.Context) (predicate.Connection, err
 	return connection.And(ps...), nil
 }
 
+func (ss Scopes) OperatorScope(ctx context.Context) (predicate.Operator, error) {
+	ps := make([]predicate.Operator, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.OperatorScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return operator.And(ps...), nil
+}
+
+func (ss Scopes) AccessScope(ctx context.Context) (predicate.Access, error) {
+	ps := make([]predicate.Access, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.AccessScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return access.And(ps...), nil
+}
+
+func (ss Scopes) ArchivedScope(ctx context.Context) (predicate.Archived, error) {
+	ps := make([]predicate.Archived, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.ArchivedScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return archived.And(ps...), nil
+}
+
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	ps := make([]predicate.Audit, 0, len(ss))
 	for _, s := range ss {
@@ -536,6 +688,46 @@ func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	return holder.And(ps...), nil
 }
 
+func (ss Scopes) NotificationRecordScope(ctx context.Context) (predicate.NotificationRecord, error) {
+	ps := make([]predicate.NotificationRecord, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.NotificationRecordScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return notificationrecord.And(ps...), nil
+}
+
+func (ss Scopes) NotificationReceiptRecordScope(ctx context.Context) (predicate.NotificationReceiptRecord, error) {
+	ps := make([]predicate.NotificationReceiptRecord, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.NotificationReceiptRecordScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return notificationreceiptrecord.And(ps...), nil
+}
+
 func (ss Scopes) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	ps := make([]predicate.Outbox, 0, len(ss))
 	for _, s := range ss {
@@ -556,6 +748,46 @@ func (ss Scopes) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	return outbox.And(ps...), nil
 }
 
+func (ss Scopes) OwedScope(ctx context.Context) (predicate.Owed, error) {
+	ps := make([]predicate.Owed, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.OwedScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return owed.And(ps...), nil
+}
+
+func (ss Scopes) RowSealScope(ctx context.Context) (predicate.RowSeal, error) {
+	ps := make([]predicate.RowSeal, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.RowSealScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return rowseal.And(ps...), nil
+}
+
 func (ss Scopes) SessionScope(ctx context.Context) (predicate.Session, error) {
 	ps := make([]predicate.Session, 0, len(ss))
 	for _, s := range ss {
@@ -574,6 +806,26 @@ func (ss Scopes) SessionScope(ctx context.Context) (predicate.Session, error) {
 	}
 
 	return session.And(ps...), nil
+}
+
+func (ss Scopes) SessionReadScope(ctx context.Context) (predicate.SessionRead, error) {
+	ps := make([]predicate.SessionRead, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.SessionReadScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return sessionread.And(ps...), nil
 }
 
 func (ss Scopes) TaskScope(ctx context.Context) (predicate.Task, error) {
@@ -687,6 +939,61 @@ func (s Store) now() time.Time {
 	return s.Now().UTC()
 }
 
+// ItemError is `err`, about the item at `i` of a call that carries many --
+// an AddMany -- said so that its caller can tell which: in the code `err`
+// had, after `items[i]: ` in the message, and, for an InvalidArgument, with
+// every field of its google.rpc.BadRequest under `items[i]` -- or one that
+// names the item, when it had none. A layer that refuses one item of many
+// answers with this, as the generated AddMany does.
+func ItemError(i int, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	at := fmt.Sprintf("items[%d]", i)
+	st := status.Convert(err)
+	out := status.New(st.Code(), at+": "+st.Message())
+
+	details := []protoadapt.MessageV1{}
+	named := false
+	for _, d := range st.Details() {
+		if b, ok := d.(*errdetails.BadRequest); ok {
+			vs := make([]*errdetails.BadRequest_FieldViolation, len(b.GetFieldViolations()))
+			for k, v := range b.GetFieldViolations() {
+				field := at
+				switch f := v.GetField(); {
+				case f == "":
+				case f[0] == '[':
+					field += f
+				default:
+					field += "." + f
+				}
+				vs[k] = &errdetails.BadRequest_FieldViolation{Field: field, Description: v.GetDescription()}
+			}
+			details = append(details, &errdetails.BadRequest{FieldViolations: vs})
+			named = true
+			continue
+		}
+		if m, ok := d.(protoadapt.MessageV1); ok {
+			details = append(details, m)
+		}
+	}
+	if !named && st.Code() == codes.InvalidArgument {
+		details = append(details, &errdetails.BadRequest{
+			FieldViolations: []*errdetails.BadRequest_FieldViolation{{Field: at, Description: st.Message()}},
+		})
+	}
+	if len(details) == 0 {
+		return out.Err()
+	}
+
+	with, err := out.WithDetails(details...)
+	if err != nil {
+		return out.Err()
+	}
+	return with.Err()
+}
+
 // NewServer refuses a client whose dialect this backend does not write
 // SQL for.
 //
@@ -742,12 +1049,30 @@ func (s Server) AuthBinding() resource.AuthBindingServiceServer {
 func (s Server) Connection() resource.ConnectionServiceServer {
 	return ConnectionServiceServer{Store: s.Store}
 }
-func (s Server) Audit() resource.AuditServiceServer     { return AuditServiceServer{Store: s.Store} }
-func (s Server) Tenant() resource.TenantServiceServer   { return TenantServiceServer{Store: s.Store} }
-func (s Server) Holder() resource.HolderServiceServer   { return HolderServiceServer{Store: s.Store} }
+func (s Server) Operator() resource.OperatorServiceServer {
+	return OperatorServiceServer{Store: s.Store}
+}
+func (s Server) Access() resource.AccessServiceServer { return AccessServiceServer{Store: s.Store} }
+func (s Server) Archived() resource.ArchivedServiceServer {
+	return ArchivedServiceServer{Store: s.Store}
+}
+func (s Server) Audit() resource.AuditServiceServer   { return AuditServiceServer{Store: s.Store} }
+func (s Server) Tenant() resource.TenantServiceServer { return TenantServiceServer{Store: s.Store} }
+func (s Server) Holder() resource.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
+func (s Server) NotificationRecord() resource.NotificationRecordServiceServer {
+	return NotificationRecordServiceServer{Store: s.Store}
+}
+func (s Server) NotificationReceiptRecord() resource.NotificationReceiptRecordServiceServer {
+	return NotificationReceiptRecordServiceServer{Store: s.Store}
+}
 func (s Server) Outbox() resource.OutboxServiceServer   { return OutboxServiceServer{Store: s.Store} }
+func (s Server) Owed() resource.OwedServiceServer       { return OwedServiceServer{Store: s.Store} }
+func (s Server) RowSeal() resource.RowSealServiceServer { return RowSealServiceServer{Store: s.Store} }
 func (s Server) Session() resource.SessionServiceServer { return SessionServiceServer{Store: s.Store} }
-func (s Server) Task() resource.TaskServiceServer       { return TaskServiceServer{Store: s.Store} }
+func (s Server) SessionRead() resource.SessionReadServiceServer {
+	return SessionReadServiceServer{Store: s.Store}
+}
+func (s Server) Task() resource.TaskServiceServer { return TaskServiceServer{Store: s.Store} }
 func (s Server) TaskLink() resource.TaskLinkServiceServer {
 	return TaskLinkServiceServer{Store: s.Store}
 }

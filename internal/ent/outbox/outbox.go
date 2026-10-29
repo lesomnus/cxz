@@ -25,6 +25,8 @@ const (
 	FieldPatch = "patch"
 	// FieldDateCreated holds the string denoting the date_created field in the database.
 	FieldDateCreated = "date_created"
+	// FieldEvent holds the string denoting the event field in the database.
+	FieldEvent = "event"
 	// Table holds the table name of the outbox in the database.
 	Table = "outbox"
 )
@@ -39,6 +41,7 @@ var Columns = []string{
 	FieldObjectId,
 	FieldPatch,
 	FieldDateCreated,
+	FieldEvent,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

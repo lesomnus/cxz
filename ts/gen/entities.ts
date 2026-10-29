@@ -13,28 +13,54 @@
 
 import type { EntityDesc } from '@lesomnus/payday/store'
 
+import { AccessSchema } from './cxz/payday/access_pb.js'
 import { AccountSchema } from './cxz/account_pb.js'
+import { ArchivedSchema } from './cxz/payday/archived_pb.js'
 import { AuditSchema } from './cxz/payday/audit_pb.js'
 import { AuthBindingSchema } from './cxz/auth_binding_pb.js'
 import { ConnectionSchema } from './cxz/connection_pb.js'
 import { HolderSchema } from './cxz/payday/holder_pb.js'
+import { NotificationReceiptRecordSchema } from './cxz/payday/notification_receipt_pb.js'
+import { NotificationRecordSchema } from './cxz/payday/notification_pb.js'
+import { OperatorSchema } from './cxz/operator_pb.js'
 import { OutboxSchema } from './cxz/payday/outbox_pb.js'
+import { OwedSchema } from './cxz/payday/owed_pb.js'
 import { ProjectSchema } from './cxz/project_pb.js'
+import { RowSealSchema } from './cxz/payday/rowseal_pb.js'
 import { SessionSchema } from './cxz/session_pb.js'
+import { SessionReadSchema } from './cxz/session_read_pb.js'
 import { TaskSchema } from './cxz/task_pb.js'
 import { TaskLinkSchema } from './cxz/task_link_pb.js'
 import { TenantSchema } from './cxz/payday/tenant_pb.js'
+import { AccessService } from './cxz/payday/access_svc_pb.js'
 import { AccountService } from './cxz/account_svc_pb.js'
+import { ArchivedService } from './cxz/payday/archived_svc_pb.js'
 import { AuditService } from './cxz/payday/audit_svc_pb.js'
 import { AuthBindingService } from './cxz/auth_binding_svc_pb.js'
 import { ConnectionService } from './cxz/connection_svc_pb.js'
 import { HolderService } from './cxz/payday/holder_svc_pb.js'
+import { NotificationReceiptRecordService } from './cxz/payday/notification_receipt_svc_pb.js'
+import { NotificationRecordService } from './cxz/payday/notification_svc_pb.js'
+import { OperatorService } from './cxz/operator_svc_pb.js'
 import { OutboxService } from './cxz/payday/outbox_svc_pb.js'
+import { OwedService } from './cxz/payday/owed_svc_pb.js'
 import { ProjectService } from './cxz/project_svc_pb.js'
+import { RowSealService } from './cxz/payday/rowseal_svc_pb.js'
 import { SessionService } from './cxz/session_svc_pb.js'
+import { SessionReadService } from './cxz/session_read_svc_pb.js'
 import { TaskService } from './cxz/task_svc_pb.js'
 import { TaskLinkService } from './cxz/task_link_svc_pb.js'
 import { TenantService } from './cxz/payday/tenant_svc_pb.js'
+
+/** cxz.Access, as the store holds it. */
+export const Access = {
+	typeName: "cxz.Access",
+	schema: AccessSchema,
+	domain: 6,
+	key: "id",
+	ids: ["id", "tenantId", "actorId", "actorTenantId"],
+	service: AccessService,
+} as const satisfies EntityDesc
 
 /** cxz.Account, as the store holds it. */
 export const Account = {
@@ -46,6 +72,17 @@ export const Account = {
 	key: "id",
 	ids: ["id"],
 	service: AccountService,
+} as const satisfies EntityDesc
+
+/** cxz.Archived, as the store holds it. */
+export const Archived = {
+	typeName: "cxz.Archived",
+	schema: ArchivedSchema,
+	domain: 5,
+	version: "dateUpdated",
+	key: "id",
+	ids: ["id"],
+	service: ArchivedService,
 } as const satisfies EntityDesc
 
 /** cxz.Audit, as the store holds it. */
@@ -94,6 +131,41 @@ export const Holder = {
 	service: HolderService,
 } as const satisfies EntityDesc
 
+/** cxz.NotificationReceiptRecord, as the store holds it. */
+export const NotificationReceiptRecord = {
+	typeName: "cxz.NotificationReceiptRecord",
+	schema: NotificationReceiptRecordSchema,
+	domain: 15,
+	version: "dateUpdated",
+	key: "id",
+	ids: ["id", "notificationId", "readerId"],
+	service: NotificationReceiptRecordService,
+} as const satisfies EntityDesc
+
+/** cxz.NotificationRecord, as the store holds it. */
+export const NotificationRecord = {
+	typeName: "cxz.NotificationRecord",
+	schema: NotificationRecordSchema,
+	domain: 14,
+	version: "dateUpdated",
+	key: "id",
+	ids: ["id", "sourceId"],
+	secrets: ["payloadValue"],
+	service: NotificationRecordService,
+} as const satisfies EntityDesc
+
+/** cxz.Operator, as the store holds it. */
+export const Operator = {
+	typeName: "cxz.Operator",
+	schema: OperatorSchema,
+	domain: 16,
+	version: "dateUpdated",
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
+	service: OperatorService,
+} as const satisfies EntityDesc
+
 /** cxz.Outbox, as the store holds it. */
 export const Outbox = {
 	typeName: "cxz.Outbox",
@@ -102,6 +174,16 @@ export const Outbox = {
 	key: "id",
 	ids: ["id", "tenantId", "actorId", "objectId"],
 	service: OutboxService,
+} as const satisfies EntityDesc
+
+/** cxz.Owed, as the store holds it. */
+export const Owed = {
+	typeName: "cxz.Owed",
+	schema: OwedSchema,
+	domain: 254,
+	key: "id",
+	ids: ["id", "object"],
+	service: OwedService,
 } as const satisfies EntityDesc
 
 /** cxz.Project, as the store holds it. */
@@ -116,6 +198,16 @@ export const Project = {
 	service: ProjectService,
 } as const satisfies EntityDesc
 
+/** cxz.RowSeal, as the store holds it. */
+export const RowSeal = {
+	typeName: "cxz.RowSeal",
+	schema: RowSealSchema,
+	domain: 255,
+	key: "id",
+	ids: ["id", "tenantId"],
+	service: RowSealService,
+} as const satisfies EntityDesc
+
 /** cxz.Session, as the store holds it. */
 export const Session = {
 	typeName: "cxz.Session",
@@ -127,6 +219,18 @@ export const Session = {
 	key: "id",
 	ids: ["id"],
 	service: SessionService,
+} as const satisfies EntityDesc
+
+/** cxz.SessionRead, as the store holds it. */
+export const SessionRead = {
+	typeName: "cxz.SessionRead",
+	schema: SessionReadSchema,
+	domain: 17,
+	version: "dateUpdated",
+	refs: [{ field: "session", to: "cxz.Session" }],
+	key: "id",
+	ids: ["id", "readerId"],
+	service: SessionReadService,
 } as const satisfies EntityDesc
 
 /** cxz.Task, as the store holds it. */
@@ -167,5 +271,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Account, Audit, AuthBinding, Connection, Holder, Outbox, Project, Session, Task, TaskLink, Tenant] as const
+export const entities = [Access, Account, Archived, Audit, AuthBinding, Connection, Holder, NotificationReceiptRecord, NotificationRecord, Operator, Outbox, Owed, Project, RowSeal, Session, SessionRead, Task, TaskLink, Tenant] as const
 

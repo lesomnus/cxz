@@ -1,0 +1,330 @@
+edition = "2023";
+
+package cxz;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// NotificationService belongs to an app that opts into notifications. The
+// application supplies authorization and reader identity; payday supplies
+// persistence, lazy receipts and live invalidation. No recipient expansion or
+// durable subscription is implied by a Topic or a Listen call.
+// All reads require a server-resolved persistent reader; publishing requires
+// a server-established producer, which need not be a persistent reader.
+service NotificationService {
+  // Add publishes one immutable notification. Its id and dates are server-set;
+  // retrying the same producer-scoped key returns that notification unchanged.
+  rpc Add(NotificationAddRequest) returns (Notification);
+
+  // Get reads a notification, with NotFound for both absent and inaccessible
+  // records. It returns the shared entity, without a reader's receipt.
+  rpc Get(NotificationGetRequest) returns (Notification);
+
+  // List reads shared notifications in explicit topics. Its item type remains
+  // Notification, as in a generated entity list; Read is the reader projection.
+  rpc List(NotificationListRequest) returns (NotificationListResponse);
+
+  // Read projects notifications with only the resolved reader's receipt. It
+  // creates no receipt; a missing receipt means unread for an authorized reader.
+  rpc Read(NotificationReadRequest) returns (NotificationReadResponse);
+
+  // Count aggregates the entire authorized reader selection, without paging.
+  rpc Count(NotificationCountRequest) returns (NotificationCountResponse);
+
+  // Mark atomically records this reader's first read of 1–100 distinct refs.
+  // Retries preserve receipts and their first-read times; order follows refs.
+  rpc Mark(NotificationMarkRequest) returns (NotificationMarkResponse);
+
+  // Listen first sends ready once its live subscription is installed, then
+  // invalidation hints. Call Read after ready and after invalidation. There is
+  // no snapshot, message delivery acknowledgment or replay cursor on this RPC.
+  rpc Listen(NotificationListenRequest) returns (stream NotificationListenResponse);
+}
+
+// NotificationTopic identifies an interest, not its audience or receipt owner.
+// Both variants use the app's configured notification scope. Resource identifiers
+// already carry their domain; names need not correspond to database resources.
+message NotificationTopic {
+  // Exactly one nonempty value is required. The variants have distinct identity
+  // even when a name is the textual spelling of a resource identifier.
+  oneof key {
+    // A nonzero payday ID. Its domain is checked against the app's registry;
+    // existence, relationships and access are decisions of the app's policy.
+    bytes resource_id = 1;
+    // An exact, case-sensitive key of 1 to 256 UTF-8 bytes. No path syntax,
+    // normalization or relationship to a database resource is prescribed.
+    string name = 2;
+  }
+}
+
+// Notification is shared by every authorized reader of its topic. Reader state
+// is kept separately so a broadcast does not create one row per possible reader.
+message Notification {
+  bytes id = 1;
+  bytes tenant_id = 2;
+
+  // A stable application event kind of 1 to 128 UTF-8 bytes, not a unique
+  // occurrence or a topic name.
+  string kind = 8;
+  NotificationTopic topic = 9;
+
+  // An optional resource this notification concerns, independent of its topic.
+  bytes source_id = 10;
+
+  // Application data, independent of routing. Binary clients preserve unknown
+  // Any values without decoding them; kind/type compatibility is app policy.
+  google.protobuf.Any payload = 11;
+
+  // The immutable notification's entity version is unchanged by receipt writes
+  // and is not a version of an inbox.
+  google.protobuf.Timestamp date_updated = 13;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+// NotificationReceipt exists only after Mark. The reader can be a Holder,
+// Robot or another persistent app identity resolved by server-side policy.
+message NotificationReceipt {
+  bytes id = 1;
+  bytes tenant_id = 2;
+  bytes notification_id = 8;
+  bytes reader_id = 9;
+  google.protobuf.Timestamp data_read = 10;
+  google.protobuf.Timestamp date_updated = 13;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+// NotificationReadItem is a reader projection, not a modified Notification
+// entity. Notification and receipt retain independent identities and versions.
+// A stale response with no receipt must not erase an already observed receipt
+// for this tenant, reader and notification: reads are monotonic in this contract.
+message NotificationReadItem {
+  Notification notification = 1;
+  NotificationReceipt receipt = 2;
+}
+
+// NotificationRef is identifier-only: notification names are server-minted,
+// while the key used to retry Add belongs to a producer and is not a public ref.
+message NotificationRef {
+  bytes id = 1;
+}
+
+message NotificationAddRequest {
+  bytes tenant_id = 2;
+  string kind = 8;
+  NotificationTopic topic = 9;
+  bytes source_id = 10;
+  google.protobuf.Any payload = 11;
+
+  // Required, 1 to 256 UTF-8 bytes. Identity is (tenant, server-established
+  // producer, key), excluding the topic's current readers. A different body
+  // under that identity returns AlreadyExists. Keys are compared exactly,
+  // without trimming or case folding.
+  string idempotency_key = 16;
+}
+
+message NotificationGetRequest {
+  NotificationRef ref = 1;
+}
+
+message NotificationListRequest {
+  // One to 100 distinct topics. All must be authorized before the query runs.
+  // An empty set is invalid, not a request for all topics the reader may access.
+  repeated NotificationTopic topics = 1;
+
+  // Zero selects 50; values above 100 are capped; negative values are invalid.
+  int32 size = 2;
+
+  // The previous response's next. Bound to this RPC, tenant, caller, reader and
+  // topic set; a different context or malformed cursor returns InvalidArgument.
+  string cursor = 3;
+  bytes tenant_id = 4;
+}
+
+message NotificationListResponse {
+  // Newest first by (date_created, id). The order is not a commit sequence.
+  repeated Notification items = 1;
+  string next = 2;
+}
+
+message NotificationReadRequest {
+  // Filters apply before paging. No reader identifier
+  // is accepted from the request; the server resolves it from the caller.
+  repeated NotificationTopic topics = 1;
+  // Zero selects 50; values above 100 are capped; negative values are invalid.
+  int32 size = 2;
+  // Bound to this RPC and its complete read scope. List cursors are not accepted.
+  string cursor = 3;
+  bytes tenant_id = 4;
+  NotificationReadFilter filter = 5;
+}
+
+message NotificationReadResponse {
+  // The same newest-first order as List. Missing receipts must not undo an
+  // already observed Mark result for the same reader and notification.
+  repeated NotificationReadItem items = 1;
+  string next = 2;
+
+  // The server-resolved identity shared by this page's receipts, including when
+  // the page has no receipts. Cache projections under this tenant and reader.
+  bytes reader_id = 3;
+}
+
+message NotificationReadFilter {
+  // Empty lists are unrestricted; choices within each list use OR. Each list
+  // accepts at most 100 distinct valid selectors. Predicates combine with AND.
+  repeated string kinds = 1;
+  repeated bytes source_ids = 2;
+  bool unread_only = 3;
+}
+
+message NotificationCountRequest {
+  repeated NotificationTopic topics = 1;
+  bytes tenant_id = 4;
+  NotificationReadFilter filter = 5;
+}
+
+message NotificationCountResponse {
+  uint64 count = 1;
+  // Distinct nonempty source IDs across all requested Topics, not the sum of
+  // per-Topic source counts. Source-less notifications count only toward count.
+  uint64 source_count = 2;
+  // Request order, including zeros. All counts share one database snapshot.
+  repeated NotificationTopicCount topics = 3;
+  bytes reader_id = 4;
+}
+
+message NotificationTopicCount {
+  NotificationTopic topic = 1;
+  uint64 count = 2;
+  uint64 source_count = 3;
+}
+
+message NotificationMarkRequest {
+  // 1–100 distinct explicit refs; all must be accessible in this namespace.
+  // Concurrent arrivals are not marked by this request. Failure writes none.
+  repeated NotificationRef refs = 1;
+  bytes tenant_id = 2;
+}
+
+message NotificationMarkResponse {
+  // Request order; retries preserve existing receipt IDs and first-read times.
+  repeated NotificationReceipt items = 1;
+  bytes reader_id = 2;
+}
+
+message NotificationListenRequest {
+  // One to 100 distinct topics, authorized as a whole. Interest lasts only for
+  // this stream; reconnecting does not restore notifications missed offline.
+  repeated NotificationTopic topics = 1;
+  bytes tenant_id = 2;
+}
+
+message NotificationListenResponse {
+  oneof event {
+    // Exactly the first response. Observe this before starting the initial
+    // Read query so changes between subscription and query can be reconciled.
+    NotificationListenReady ready = 1;
+    NotificationInvalidation invalidated = 2;
+  }
+}
+
+message NotificationListenReady {
+  // Fixed for the stream. A change to the resolved identity ends the stream;
+  // existing receipt state must never silently become another reader's state.
+  bytes reader_id = 1;
+}
+
+// NotificationInvalidation carries no notification body, unread count, other
+// reader's receipt or ordering token. It is a reason to query durable state.
+message NotificationInvalidation {
+  // A nonempty subset of the requested topics, without duplicates. Signals may
+  // be repeated or coalesced. Notification writes, this reader's receipt writes
+  // and application policy changes can all invalidate a topic.
+  repeated NotificationTopic topics = 1;
+}
+
+// NotificationRecord is the internal indexed representation of the public
+// Notification. Opaque payload bytes stay off ordinary CRUD and resource
+// streams; the notification service applies the app's policy before unpacking.
+message NotificationRecord {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  string kind = 8;
+  string topic_key = 9;
+  bytes source_id = 10 [(orm.field) = {
+    type: TYPE_UUID
+    nullable: true
+  }];
+  string payload_type = 11;
+  bytes payload_value = 12 [
+    (orm.field) = {default: ""},
+    (payday.field) = {secret: true}
+  ];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {
+    version: {}
+  }];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+  string producer = 16;
+  string idempotency_key = 17;
+  bool payload_present = 18;
+
+  option (orm.message) = {
+    rpc: {
+      add: {}
+      get: {}
+    }
+    indexes: [
+      {
+        name: "publication"
+        refs: [
+          {
+            name: "producer"
+            number: 16
+          },
+          {
+            name: "idempotency_key"
+            number: 17
+          }
+        ]
+        unique: true
+      },
+      {
+        name: "page"
+        refs: [
+          {
+            name: "topic_key"
+            number: 9
+          },
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    own: OWN_NOTIFICATION
+    name: "notification"
+    domain: 14
+    global: {}
+    erase: {
+      hard: {}
+    }
+  };
+}

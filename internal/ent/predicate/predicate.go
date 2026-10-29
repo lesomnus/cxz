@@ -6,8 +6,14 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
+// Access is the predicate function for access builders.
+type Access func(*sql.Selector)
+
 // Account is the predicate function for account builders.
 type Account func(*sql.Selector)
+
+// Archived is the predicate function for archived builders.
+type Archived func(*sql.Selector)
 
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
@@ -21,8 +27,20 @@ type Connection func(*sql.Selector)
 // Holder is the predicate function for holder builders.
 type Holder func(*sql.Selector)
 
+// NotificationReceiptRecord is the predicate function for notificationreceiptrecord builders.
+type NotificationReceiptRecord func(*sql.Selector)
+
+// NotificationRecord is the predicate function for notificationrecord builders.
+type NotificationRecord func(*sql.Selector)
+
+// Operator is the predicate function for operator builders.
+type Operator func(*sql.Selector)
+
 // Outbox is the predicate function for outbox builders.
 type Outbox func(*sql.Selector)
+
+// Owed is the predicate function for owed builders.
+type Owed func(*sql.Selector)
 
 // Project is the predicate function for project builders.
 type Project func(*sql.Selector)
@@ -38,6 +56,9 @@ func ProjectOrErr(p Project, err error) Project {
 	}
 }
 
+// RowSeal is the predicate function for rowseal builders.
+type RowSeal func(*sql.Selector)
+
 // Session is the predicate function for session builders.
 type Session func(*sql.Selector)
 
@@ -51,6 +72,9 @@ func SessionOrErr(p Session, err error) Session {
 		p(s)
 	}
 }
+
+// SessionRead is the predicate function for sessionread builders.
+type SessionRead func(*sql.Selector)
 
 // Task is the predicate function for task builders.
 type Task func(*sql.Selector)

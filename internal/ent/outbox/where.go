@@ -90,6 +90,11 @@ func DateCreated(v time.Time) predicate.Outbox {
 	return predicate.Outbox(sql.FieldEQ(FieldDateCreated, v))
 }
 
+// Event applies equality check predicate on the "event" field. It's identical to EventEQ.
+func Event(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldEQ(FieldEvent, v))
+}
+
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.Outbox {
 	return predicate.Outbox(sql.FieldEQ(FieldTenantId, v))
@@ -428,6 +433,56 @@ func DateCreatedIsNil() predicate.Outbox {
 // DateCreatedNotNil applies the NotNil predicate on the "date_created" field.
 func DateCreatedNotNil() predicate.Outbox {
 	return predicate.Outbox(sql.FieldNotNull(FieldDateCreated))
+}
+
+// EventEQ applies the EQ predicate on the "event" field.
+func EventEQ(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldEQ(FieldEvent, v))
+}
+
+// EventNEQ applies the NEQ predicate on the "event" field.
+func EventNEQ(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldNEQ(FieldEvent, v))
+}
+
+// EventIn applies the In predicate on the "event" field.
+func EventIn(vs ...[]byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldIn(FieldEvent, vs...))
+}
+
+// EventNotIn applies the NotIn predicate on the "event" field.
+func EventNotIn(vs ...[]byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldNotIn(FieldEvent, vs...))
+}
+
+// EventGT applies the GT predicate on the "event" field.
+func EventGT(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldGT(FieldEvent, v))
+}
+
+// EventGTE applies the GTE predicate on the "event" field.
+func EventGTE(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldGTE(FieldEvent, v))
+}
+
+// EventLT applies the LT predicate on the "event" field.
+func EventLT(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldLT(FieldEvent, v))
+}
+
+// EventLTE applies the LTE predicate on the "event" field.
+func EventLTE(v []byte) predicate.Outbox {
+	return predicate.Outbox(sql.FieldLTE(FieldEvent, v))
+}
+
+// EventIsNil applies the IsNil predicate on the "event" field.
+func EventIsNil() predicate.Outbox {
+	return predicate.Outbox(sql.FieldIsNull(FieldEvent))
+}
+
+// EventNotNil applies the NotNil predicate on the "event" field.
+func EventNotNil() predicate.Outbox {
+	return predicate.Outbox(sql.FieldNotNull(FieldEvent))
 }
 
 // And groups predicates with the AND operator between them.

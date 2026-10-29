@@ -9,6 +9,18 @@ import (
 	"github.com/lesomnus/cxz/internal/ent"
 )
 
+// The AccessFunc type is an adapter to allow the use of ordinary
+// function as Access mutator.
+type AccessFunc func(context.Context, *ent.AccessMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AccessFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AccessMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AccessMutation", m)
+}
+
 // The AccountFunc type is an adapter to allow the use of ordinary
 // function as Account mutator.
 type AccountFunc func(context.Context, *ent.AccountMutation) (ent.Value, error)
@@ -19,6 +31,18 @@ func (f AccountFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AccountMutation", m)
+}
+
+// The ArchivedFunc type is an adapter to allow the use of ordinary
+// function as Archived mutator.
+type ArchivedFunc func(context.Context, *ent.ArchivedMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ArchivedFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ArchivedMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ArchivedMutation", m)
 }
 
 // The AuditFunc type is an adapter to allow the use of ordinary
@@ -69,6 +93,42 @@ func (f HolderFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HolderMutation", m)
 }
 
+// The NotificationReceiptRecordFunc type is an adapter to allow the use of ordinary
+// function as NotificationReceiptRecord mutator.
+type NotificationReceiptRecordFunc func(context.Context, *ent.NotificationReceiptRecordMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f NotificationReceiptRecordFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.NotificationReceiptRecordMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NotificationReceiptRecordMutation", m)
+}
+
+// The NotificationRecordFunc type is an adapter to allow the use of ordinary
+// function as NotificationRecord mutator.
+type NotificationRecordFunc func(context.Context, *ent.NotificationRecordMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f NotificationRecordFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.NotificationRecordMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NotificationRecordMutation", m)
+}
+
+// The OperatorFunc type is an adapter to allow the use of ordinary
+// function as Operator mutator.
+type OperatorFunc func(context.Context, *ent.OperatorMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f OperatorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.OperatorMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OperatorMutation", m)
+}
+
 // The OutboxFunc type is an adapter to allow the use of ordinary
 // function as Outbox mutator.
 type OutboxFunc func(context.Context, *ent.OutboxMutation) (ent.Value, error)
@@ -79,6 +139,18 @@ func (f OutboxFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OutboxMutation", m)
+}
+
+// The OwedFunc type is an adapter to allow the use of ordinary
+// function as Owed mutator.
+type OwedFunc func(context.Context, *ent.OwedMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f OwedFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.OwedMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OwedMutation", m)
 }
 
 // The ProjectFunc type is an adapter to allow the use of ordinary
@@ -93,6 +165,18 @@ func (f ProjectFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProjectMutation", m)
 }
 
+// The RowSealFunc type is an adapter to allow the use of ordinary
+// function as RowSeal mutator.
+type RowSealFunc func(context.Context, *ent.RowSealMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RowSealFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RowSealMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RowSealMutation", m)
+}
+
 // The SessionFunc type is an adapter to allow the use of ordinary
 // function as Session mutator.
 type SessionFunc func(context.Context, *ent.SessionMutation) (ent.Value, error)
@@ -103,6 +187,18 @@ func (f SessionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SessionMutation", m)
+}
+
+// The SessionReadFunc type is an adapter to allow the use of ordinary
+// function as SessionRead mutator.
+type SessionReadFunc func(context.Context, *ent.SessionReadMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SessionReadFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SessionReadMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SessionReadMutation", m)
 }
 
 // The TaskFunc type is an adapter to allow the use of ordinary

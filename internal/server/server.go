@@ -238,9 +238,24 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	// Every RPC this manager serves, kept where a client can read it back.
 	watching := observe.New(root)
 	defer watching.Close()
-	resources, e := lifecycle.Build(ctx, resourceDB, s, watching)
+	resources, e := lifecycle.Build(ctx, resourceDB, s, watching, lifecycle.Options{Notifications: os.Getenv("CXZ_PROJECT_ID") == ""})
 	if e != nil {
 		return fmt.Errorf("build payday resource server: %w", e)
+	}
+	if os.Getenv("CXZ_PROJECT_ID") == "" {
+		layer, _ := resource.Find[lifecycle.Layer](resources)
+		initial, cancelInitial := context.WithTimeout(ctx, 10*time.Second)
+		if err := layer.CollectNotifications(initial); err != nil {
+			fmt.Fprintln(os.Stderr, "notification reconciliation:", err)
+		}
+		cancelInitial()
+		notifyCtx, stopNotify := context.WithCancel(ctx)
+		notifyDone := make(chan struct{})
+		go func() {
+			defer close(notifyDone)
+			layer.RunNotifications(notifyCtx, func(err error) { fmt.Fprintln(os.Stderr, "notification reconciliation:", err) })
+		}()
+		defer func() { stopNotify(); <-notifyDone }()
 	}
 	if s.manager != nil {
 		registry, err := conversation.StartRegistry(conversation.Socket, s.manager.AuthorizeConversation, func(ctx context.Context, project string) ([]conversation.Session, error) {
@@ -942,4 +957,7 @@ func registerInstallation(g grpc.ServiceRegistrar, resources resource.Server) {
 	resource.RegisterSkillServiceServer(g, layer.Skill())
 	resource.RegisterMcpServerServiceServer(g, layer.McpServer())
 	resource.RegisterMcpConnectionServiceServer(g, layer.McpConnection())
+	if notifications := layer.Notifications(); notifications != nil {
+		resource.RegisterNotificationServiceServer(g, notifications)
+	}
 }

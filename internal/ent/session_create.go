@@ -24,6 +24,7 @@ type SessionCreate struct {
 	config
 	mutation *SessionMutation
 	hooks    []Hook
+	stored   **Session
 }
 
 // SetAlias sets the "alias" field.
@@ -176,6 +177,7 @@ func (_c *SessionCreate) Mutation() *SessionMutation {
 
 // Save creates the Session in the database.
 func (_c *SessionCreate) Save(ctx context.Context) (*Session, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -201,8 +203,21 @@ func (_c *SessionCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *SessionCreate) defaults() {
+	if _, ok := _c.mutation.Listed(); !ok {
+		if _, ok := _c.mutation.FieldExpr(session.FieldListed); !ok {
+			v := session.DefaultListed
+			_c.mutation.SetListed(v)
+		}
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *SessionCreate) check() error {
+	if fs := _c.mutation.ExprFields(); len(fs) > 0 {
+		return &ValidationError{Name: fs[0], err: fmt.Errorf(`ent: field "Session.%s" was assigned an expression, which only an update writes`, fs[0])}
+	}
 	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Session.name"`)}
 	}
@@ -280,6 +295,18 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec, error) {
 		_node = &Session{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(session.Table, sqlgraph.NewFieldSpec(session.FieldId, field.TypeUuid))
 	)
+	if _c.stored != nil {
+		_stored := &Session{config: _c.config}
+		_spec.Returning = session.Columns
+		_spec.ScanValues = _stored.scanValues
+		_spec.Assign = func(columns []string, values []any) error {
+			if err := _stored.assignValues(columns, values); err != nil {
+				return err
+			}
+			*_c.stored = _stored
+			return nil
+		}
+	}
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
@@ -393,6 +420,32 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec, error) {
 	return _node, _spec, nil
 }
 
+// Stored has Save read the Session back, into `v`, as the database stored
+// it: at the precision of its columns, with the defaults the database filled
+// in and what a trigger before the write made of it. Save itself answers with
+// the Session as this builder had it.
+//
+// The INSERT reads it, with RETURNING, where the dialect has it, so that the
+// row and the reading of it are one statement. MySQL has none, and an INSERT
+// with a conflict clause may have written nothing, so for those it is a query
+// by the Id just after the INSERT. Either way it is read on the driver the
+// INSERT ran on, so inside a transaction it is that transaction's row. Its
+// edges are not loaded.
+//
+// In a CreateBulk, the Stored of each builder is honoured and the batch's one
+// INSERT reads all of their rows back: each is matched to its builder by the
+// Id the builder was given, or by its place when the database made the Ids up.
+// A column some builders of a batch set and others do not is NULL for the
+// others, as it is in any batch; the database's default is for a column no
+// builder sets.
+//
+// `v` is written only by a Save that wrote the row: one that failed, or that a
+// hook answered without writing, leaves it as it was.
+func (_c *SessionCreate) Stored(v **Session) *SessionCreate {
+	_c.stored = v
+	return _c
+}
+
 // SessionCreateBulk is the builder for creating many Session entities in bulk.
 type SessionCreateBulk struct {
 	config
@@ -411,6 +464,7 @@ func (_c *SessionCreateBulk) Save(ctx context.Context) ([]*Session, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*SessionMutation)
 				if !ok {
