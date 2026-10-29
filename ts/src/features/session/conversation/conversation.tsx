@@ -82,7 +82,10 @@ import { transcriptRows } from "#src/features/session/model/tool-activity.ts";
 import { Transcript } from "./transcript";
 import { ConversationLoading } from "./conversation-loading";
 import { atScrollBottom } from "./scroll-physics";
-import { uploadFile } from "#src/features/session/composer/composer-upload.ts";
+import {
+  uploadFile,
+  type UploadProgress,
+} from "#src/features/session/composer/composer-upload.ts";
 import { secretFiles } from "#src/features/session/composer/secret-paste.ts";
 import { attachmentsReady } from "#src/features/session/composer/composer-pastes.ts";
 import { QueuedMessage } from "#src/features/session/components/queued-message.tsx";
@@ -498,6 +501,17 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     s?.project?.id &&
     projects.find((project) => key(project.id) === key(s.project!.id));
   const projectId = projectUUID(sessionProject) ?? "";
+  const inputFiles = useMemo(() => {
+    const run = s?.status?.runId;
+    return {
+      upload: run
+        ? (file: File, signal: AbortSignal, progress?: UploadProgress) =>
+            uploadFile(c, id, run, file, signal, progress)
+        : undefined,
+      secretFiles:
+        projectId && run ? secretFiles(c, projectId, id, run) : undefined,
+    };
+  }, [c, id, projectId, s?.status?.runId]);
   const lookupPaths = useCallback<LookupPaths>(
     async (path, signal) => {
       const entries = [];
@@ -1082,6 +1096,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             e={e}
             agent={s?.agent ?? ""}
             pastes={c.pastes}
+            {...inputFiles}
             busy={busy}
             reply={reply}
           />
@@ -1138,11 +1153,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         inputRef={composerInput}
         draft={draft}
         onDraftAssetsChange={() => c.drafts.persist(id)}
-        secretFiles={
-          projectId && s?.status?.runId
-            ? secretFiles(c, projectId, id, s.status.runId)
-            : undefined
-        }
+        {...inputFiles}
         pastes={c.pastes}
         onChange={setDraft}
         onSubmit={send}
@@ -1190,12 +1201,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }
         latestVisible={!follow && latestShown}
         onLatest={() => void loadHistory("newer", true)}
-        upload={
-          s?.status?.runId
-            ? (file, signal, progress) =>
-                uploadFile(c, id, s.status!.runId, file, signal, progress)
-            : undefined
-        }
         menu={(pick) => (
           <SessionMenu
             session={s && { ...s, project: sessionProject ?? s.project }}
