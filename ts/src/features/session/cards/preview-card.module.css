@@ -1,0 +1,13 @@
+:global(.floating-card-host) > .preview:global(.floating-card) {
+  position: absolute;
+  bottom: var(--card-gap);
+  left: var(--card-shadow-left);
+  width: calc(100% - var(--card-shadow-left) - var(--card-shadow-right));
+  max-height: var(--card-preview-max-height);
+}
+.preview > :global(.card-body) {
+  font-family: var(--ui-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}

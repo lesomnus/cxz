@@ -1,3 +1,4 @@
+import { inspectPaste } from "../test-support/paste-chip";
 import { test, expect, devices, type Page } from "@playwright/test";
 
 test.use({
@@ -122,6 +123,10 @@ test("session drafts and paste source survive refresh and accepted sends remove 
     );
   });
   await expect(page.locator(".paste-chip")).toHaveCount(1);
+  await page
+    .locator(".paste-chip")
+    .getByRole("radio", { name: "File", exact: true })
+    .check();
   await expect(page.locator(".paste-chip")).toHaveAttribute(
     "data-upload-state",
     "ready",
@@ -130,7 +135,7 @@ test("session drafts and paste source survive refresh and accepted sends remove 
   await page.reload();
   await expect(input).toHaveValue(text, { timeout: 45000 });
   await expect(page.locator(".paste-chip")).toHaveCount(1);
-  await page.locator(".paste-chip").click();
+  await inspectPaste(page, page.locator(".paste-chip"));
   await expect(
     page.getByRole("dialog", { name: "Paste source" }),
   ).toContainText("Saved paste source");

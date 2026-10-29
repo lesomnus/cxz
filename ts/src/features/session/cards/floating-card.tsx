@@ -15,7 +15,8 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { FloatingCard } from "@lesomnus/nox";
+import { Card as CardSurface, FloatingCard } from "@lesomnus/nox";
+import styles from "./preview-card.module.css";
 export { FloatingCard } from "@lesomnus/nox";
 import { AnchoredDetail } from "#src/features/session/conversation/anchored-detail.tsx";
 
@@ -25,6 +26,7 @@ type Card = {
   label?: string | (() => string);
   kind?: "paste";
   content: (close: () => void) => ReactNode;
+  footer?: (close: () => void) => ReactNode;
   origin: HTMLElement | null;
   onClose?: () => void;
   anchor?: HTMLElement;
@@ -34,9 +36,24 @@ type Card = {
 };
 type CardRequest = Pick<
   Card,
-  "title" | "label" | "content" | "kind" | "anchor" | "surface" | "onClose"
+  | "title"
+  | "label"
+  | "content"
+  | "footer"
+  | "kind"
+  | "anchor"
+  | "surface"
+  | "onClose"
 >;
 const OpenCard = createContext<(card: CardRequest) => void>(() => {});
+const PreviewSurface = createContext<RefObject<HTMLElement | null> | undefined>(
+  undefined,
+);
+
+// Preview content can use the shared Card body without adding another DOM box.
+export function usePreviewSurface() {
+  return useContext(PreviewSurface);
+}
 const CardState = createContext<{
   card?: Card;
   close: (id: number, restoreFocus?: boolean) => void;
@@ -460,7 +477,7 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
         setEntered(true);
         if (root.current?.dataset.active === "true")
           root.current
-            .querySelector<HTMLElement>(".card-close")
+            .querySelector<HTMLElement>(".card-close, [data-preview-close]")
             ?.focus({ preventScroll: true });
       });
     });
@@ -469,24 +486,31 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
       cancelAnimationFrame(second);
     };
   }, []);
+  const paste = card.kind === "paste";
+  const Surface = paste ? CardSurface : FloatingCard;
   return (
-    <FloatingCard
-      ref={root}
-      title={title}
-      close={close}
-      closeLabel={
-        card.kind === "paste" ? t("Close paste preview") : t("Close details")
-      }
-      role="dialog"
-      aria-label={label ?? title}
-      aria-hidden={!active}
-      inert={!active}
-      data-card={card.id}
-      data-active={active}
-      data-entered={entered}
-      data-closing={!!card.closing}
-    >
-      {card.content(close)}
-    </FloatingCard>
+    <PreviewSurface.Provider value={root}>
+      <Surface
+        ref={root}
+        title={title}
+        hideHeading={paste}
+        className={paste ? styles.preview : undefined}
+        footer={card.footer?.(close)}
+        close={close}
+        closeLabel={
+          card.kind === "paste" ? t("Close paste preview") : t("Close details")
+        }
+        role="dialog"
+        aria-label={label ?? title}
+        aria-hidden={!active}
+        inert={!active}
+        data-card={card.id}
+        data-active={active}
+        data-entered={entered}
+        data-closing={!!card.closing}
+      >
+        {card.content(close)}
+      </Surface>
+    </PreviewSurface.Provider>
   );
 }

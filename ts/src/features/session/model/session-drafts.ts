@@ -4,7 +4,8 @@ import {
   type EditorSelection,
 } from "#src/features/session/composer/editor-selection.ts";
 
-type SavedPaste = Omit<ComposerPaste, "attachment"> & {
+type SavedPaste = Omit<ComposerPaste, "attachment" | "secret"> & {
+  secret?: Omit<NonNullable<ComposerPaste["secret"]>, "listeners">;
   attachment?: Pick<
     NonNullable<ComposerPaste["attachment"]>,
     "name" | "directory" | "path" | "state"
@@ -32,7 +33,14 @@ export class SessionDrafts extends Map<string, string> {
       const saved = JSON.parse(raw);
       if (typeof saved.text !== "string" || !Array.isArray(saved.pastes))
         return undefined;
-      for (const p of saved.pastes as SavedPaste[]) {
+      for (const savedPaste of saved.pastes as SavedPaste[]) {
+        const p = {
+          ...savedPaste,
+          sendAs:
+            savedPaste.sendAs === "text" || savedPaste.sendAs === "file"
+              ? savedPaste.sendAs
+              : undefined,
+        };
         if (
           typeof p.token !== "string" ||
           typeof p.body !== "string" ||
@@ -58,7 +66,16 @@ export class SessionDrafts extends Map<string, string> {
                 : "Upload interrupted. Remove this chip and select the file again.",
             },
           });
-        } else this.pastes.set(p.token, p);
+        } else {
+          if (p.secret?.state === "uploading")
+            p.secret = {
+              ...p.secret,
+              state: "error",
+              error:
+                "Secret preparation interrupted. Remove this chip and paste again.",
+            };
+          this.pastes.set(p.token, p);
+        }
       }
       super.set(id, saved.text);
       return saved.text;
@@ -131,7 +148,15 @@ export class SessionDrafts extends Map<string, string> {
           body: p.body,
           lines: p.lines,
           bytes: p.bytes,
-          secret: p.secret,
+          sendAs: p.sendAs,
+          secret: p.secret && {
+            session: p.secret.session,
+            run: p.secret.run,
+            path: p.secret.path,
+            kind: p.secret.kind,
+            state: p.secret.state,
+            error: p.secret.error,
+          },
           attachment: p.attachment && {
             name: p.attachment.name,
             directory: p.attachment.directory,

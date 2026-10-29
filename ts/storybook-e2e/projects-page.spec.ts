@@ -1,24 +1,15 @@
 import { expect, test, type Locator } from "@playwright/test";
 
-test("project page and shared toolbar stories render their selector and states", async ({
+test("project page stories render their selector and states", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(
-    "/iframe.html?id=layout-pagetoolbar--project-selector&viewMode=story",
-  );
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const picker = page.getByRole("combobox", {
     name: "Select project",
     exact: true,
   });
-  await expect(picker).toHaveText("Web workspace");
-  await picker.click();
-  await page
-    .getByRole("option", { name: "API workspace", exact: true })
-    .click();
-  await expect(picker).toHaveText("API workspace");
-  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   await expect(
     page.getByRole("table", { name: "Sessions", exact: true }),
   ).toBeVisible();
@@ -444,28 +435,6 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
   ).toBeVisible();
 });
 
-test("full ID hints escape clipped containers and remain inside the viewport", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 600 });
-  await page.goto("/iframe.html?id=components-popover--default&viewMode=story");
-  const trigger = page.locator("[tabindex='0']");
-  await trigger.hover();
-  const hint = page.getByRole("tooltip");
-  await expect(hint).toHaveText("1a2b3c4d-5e6f-7788-9900-aabbccddeeff");
-  const card = (await trigger.locator("..").boundingBox())!;
-  const bounds = (await hint.boundingBox())!;
-  expect(bounds.x + bounds.width).toBeGreaterThan(card.x + card.width);
-  expect(bounds.x).toBeGreaterThanOrEqual(0);
-  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
-  expect(bounds.y + bounds.height).toBeLessThanOrEqual(600);
-  expect(await hint.evaluate((el) => el.parentElement === document.body)).toBe(
-    true,
-  );
-  await page.mouse.move(0, 0);
-  await expect(hint).toHaveCount(0);
-});
-
 async function expectAlignedText(trigger: Locator) {
   const boxes = await trigger.evaluate((element) => {
     function firstCharacters(target: Element) {
@@ -490,32 +459,6 @@ async function expectAlignedText(trigger: Locator) {
       0.25,
     );
 }
-
-test("in-place ID overlays keep the text origin and baseline with inherited typography", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 600 });
-  await page.goto(
-    "/iframe.html?id=components-popover--in-place&viewMode=story",
-  );
-  const trigger = page.locator("[tabindex='0']");
-  await trigger.hover();
-  const hint = page.getByRole("tooltip");
-  await expect(hint).toBeVisible();
-  await expectAlignedText(trigger);
-  await expect(hint).toHaveCSS("font-size", "18px");
-  await expect(hint).toHaveCSS("line-height", "36px");
-  await page.mouse.move(0, 0);
-  await expect(hint).toHaveCount(0);
-  await trigger.hover();
-  await expect(hint).toBeVisible();
-  await expectAlignedText(trigger);
-  const frame = (await hint.boundingBox())!;
-  expect(frame.x + frame.width).toBeLessThanOrEqual(390);
-  expect(await hint.evaluate((el) => el.parentElement === document.body)).toBe(
-    true,
-  );
-});
 
 for (const scale of [1, 1.25, 1.5, 2]) {
   test.describe(`in-place text at device scale ${scale}`, () => {

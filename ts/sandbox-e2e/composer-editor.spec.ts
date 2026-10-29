@@ -1,3 +1,5 @@
+import { inspectPaste } from "../test-support/paste-chip";
+import { readChipDisplay } from "../test-support/chip-display";
 import { expect, test, type Page } from "@playwright/test";
 
 test.use({
@@ -102,7 +104,7 @@ test("paste files preserve source and session drafts while sending the uploaded 
   await expect(input).toHaveValue("one\ntwo\nthree");
   await expect(page.locator(".paste-chip")).toHaveCount(0);
   await input.fill("앞 ");
-  const body = "한글 😀\n  two\nthree\nfour\n";
+  const body = "한글 😀\n  two\nthree\nfour\n".repeat(4);
   await paste(page, body);
   await expect(page.locator(".paste-chip")).toHaveCount(1);
   await input.press("End");
@@ -112,15 +114,12 @@ test("paste files preserve source and session drafts while sending the uploaded 
     "ready",
   );
   const draft = await input.inputValue();
-  expect(draft).toMatch(/^앞 \[Text [0-9.]{4}[BKMT]\] 뒤$/);
-  await page.locator(".paste-chip").click();
+  expect(await readChipDisplay(input)).toMatch(/^앞 [0-9.]{4}[BKMT] 뒤$/);
+  await inspectPaste(page, page.locator(".paste-chip"));
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toBeVisible();
-  expect(await preview.locator("pre").textContent()).toBe(body);
-  const path = await preview.locator(".attachment-info code").textContent();
-  expect(path).toMatch(
-    /^\/cxz\/assets\/session-1\/upload-\d+\/paste-[0-9a-f]{8}\.txt$/,
-  );
+  expect(await preview.locator(".card-body").textContent()).toBe(body);
+  await expect(preview.locator(".attachment-info, pre, code")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(preview).not.toBeVisible();
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-2");
@@ -137,22 +136,20 @@ test("paste files preserve source and session drafts while sending the uploaded 
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(input).toHaveValue("");
   await expect(page.locator("article.input .message-body").last()).toHaveText(
-    `앞 [Attached file: ${path} — read this file for the full content] 뒤`,
+    /^앞 \[Attached file: \/cxz\/assets\/session-1\/upload-\d+\/paste-[0-9a-f]{8}\.txt — read this file for the full content\] 뒤\s*$/,
   );
   expect(
     (
       await page.locator("article.input .message-body").last().textContent()
     )?.trim(),
-  ).toBe(
-    `앞 [Attached file: ${path} — read this file for the full content] 뒤`,
-  );
+  ).not.toContain(body);
 });
 
 test("chips are atomic, undoable, previewable and expandable one occurrence at a time", async ({
   page,
 }) => {
   const input = await openEditor(page);
-  const body = "one\ntwo\nthree\nfour";
+  const body = "one\ntwo\nthree\nfour".repeat(4);
   await paste(page, body);
   await expect(page.locator(".paste-chip")).toHaveAttribute(
     "data-upload-state",
@@ -190,10 +187,8 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
     "ready",
   );
   await expect(input).toHaveValue(`${token}\n${token}`);
-  await page.locator(".paste-chip").nth(1).click();
-  await page
-    .getByRole("button", { name: "Expand source", exact: true })
-    .click();
+  await inspectPaste(page, page.locator(".paste-chip").nth(1));
+  await page.getByRole("button", { name: "Expand", exact: true }).click();
   await expect(input).toHaveValue(`${token}\n${body}`);
   expect(
     await input.evaluate((el: HTMLTextAreaElement) => el.selectionStart),
@@ -201,8 +196,11 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   await expect(page.locator(".paste-chip")).toHaveCount(1);
   await input.press("Control+z");
   await expect(input).toHaveValue(`${token}\n${token}`);
-  await page.locator(".paste-chip").first().click();
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await inspectPaste(page, page.locator(".paste-chip").first());
+  await page
+    .getByRole("button", { name: "Close paste preview", exact: true })
+    .click();
+  await input.press("Backspace");
   await expect(input).toHaveValue(`\n${token}`);
   await input.evaluate((el: HTMLTextAreaElement) => {
     el.setSelectionRange(5, 10);

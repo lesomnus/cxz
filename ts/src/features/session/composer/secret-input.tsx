@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@lesomnus/nox";
-import { Connection, ref } from "#src/shared/api/connection.ts";
+import type { Connection } from "#src/shared/api/connection.ts";
+import { secretFiles } from "./secret-paste";
 import type { ComposerPaste } from "./composer-pastes";
 import styles from "#src/shared/components/resource-surface.module.css";
 export function SecretInput({
@@ -21,6 +22,7 @@ export function SecretInput({
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [progress, setProgress] = useState(0);
   return (
     <section className={styles.section}>
       <label className={styles.field}>
@@ -48,18 +50,21 @@ export function SecretInput({
             return;
           }
           setBusy(true);
+          setProgress(0);
           setError("");
           let path = "";
           try {
-            const saved = await c.projects.putSecretFile(
-              {
-                ref: ref(project),
-                session: `${session}/${run}`,
-                secret: bytes,
+            path = await secretFiles(c, project, session, run).put(
+              bytes,
+              AbortSignal.timeout(30000),
+              (loaded, total) => {
+                setProgress(
+                  total > 0
+                    ? Math.min(99, Math.floor((loaded / total) * 100))
+                    : 0,
+                );
               },
-              { timeoutMs: 30000 },
             );
-            path = saved.path;
             if (!path) throw new Error("Secret path unavailable");
             insert({
               token: `[Secret ${crypto.randomUUID().replaceAll("-", "").slice(0, 8)}]`,
@@ -72,11 +77,8 @@ export function SecretInput({
             close();
           } catch (error) {
             if (path)
-              await c.projects
-                .deleteSecretFile(
-                  { ref: ref(project), path },
-                  { timeoutMs: 5000 },
-                )
+              await secretFiles(c, project, session, run)
+                .remove(path)
                 .catch(() => {});
             setError(String(error));
           } finally {
@@ -85,7 +87,9 @@ export function SecretInput({
           }
         }}
       >
-        Insert secret chip
+        {busy
+          ? `Uploading ${String(progress).padStart(3, "0")}%`
+          : "Insert secret chip"}
       </Button>
     </section>
   );

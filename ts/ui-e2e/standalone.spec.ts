@@ -128,6 +128,13 @@ test("optional editor entry loads Monaco workers without an app settings store",
     "/iframe.html?id=editor-sourceeditor--settings-json&viewMode=story",
   );
   await expect(page.locator(".monaco-editor")).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .locator(".code-editor")
+        .evaluate((el) => el.clientHeight / el.parentElement!.clientHeight),
+    )
+    .toBeGreaterThan(0.95);
   await page.locator(".monaco-editor").click({ position: { x: 130, y: 24 } });
   await expect(
     page.getByRole("textbox", { name: "File preview" }),

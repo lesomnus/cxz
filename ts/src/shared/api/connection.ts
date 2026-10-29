@@ -11,13 +11,17 @@ import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
 import { TaskCatalog } from "#src/features/tasks/task-catalog.ts";
 import type { ComposerPaste } from "#src/features/session/composer/composer-pastes.ts";
-import type { Transfer } from "#src/features/session/composer/composer-upload.ts";
+import type {
+  Transfer,
+  UploadProgress,
+} from "#src/features/session/composer/composer-upload.ts";
 import type { EditorState } from "#src/features/workspace/editor/workspace-editor.tsx";
 import { ResourceInventory } from "./resource-inventory";
 import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { ConversationCache } from "#src/features/session/model/conversation-cache.ts";
 import { SessionAttention } from "#src/features/session/model/session-attention.ts";
 import { rpcFetch } from "./stream-fetch";
+import { uploadFetch } from "./upload-fetch";
 import {
   publicUUID,
   rpcDiagnostics,
@@ -57,30 +61,7 @@ export class Connection {
   ) {
     this.inProcess = !!transport;
     this.drafts = new SessionDrafts(baseUrl, this.pastes);
-    this.transport =
-      transport ??
-      createConnectTransport({
-        baseUrl,
-        fetch: rpcFetch,
-        interceptors: [
-          rpcDiagnostics(baseUrl, {
-            resolve: (kind, ref): string | undefined => {
-              const rows =
-                kind === "session"
-                  ? this.inventory?.snapshot().sessions
-                  : this.inventory?.snapshot().projects;
-              const resource = rows?.find((row) =>
-                ref.key?.case === "runtimeId" && "runtimeId" in row
-                  ? row.runtimeId === ref.key.value
-                  : ref.key?.case === "alias" && row.alias === ref.key.value,
-              );
-              return resource
-                ? publicUUID({ key: { case: "id", value: resource.id } })
-                : undefined;
-            },
-          }),
-        ],
-      });
+    this.transport = transport ?? this.httpTransport(rpcFetch);
     this.store = Store.open(entities, {
       name: "cxz",
       identity: crypto.randomUUID(),
@@ -100,6 +81,35 @@ export class Connection {
       this.sessions,
       this.store,
     );
+  }
+  uploadTransport(progress?: UploadProgress): Transport {
+    return progress && !this.inProcess
+      ? this.httpTransport(uploadFetch(progress))
+      : this.transport;
+  }
+  private httpTransport(fetcher: typeof fetch) {
+    return createConnectTransport({
+      baseUrl: this.baseUrl,
+      fetch: fetcher,
+      interceptors: [
+        rpcDiagnostics(this.baseUrl, {
+          resolve: (kind, ref): string | undefined => {
+            const rows =
+              kind === "session"
+                ? this.inventory?.snapshot().sessions
+                : this.inventory?.snapshot().projects;
+            const resource = rows?.find((row) =>
+              ref.key?.case === "runtimeId" && "runtimeId" in row
+                ? row.runtimeId === ref.key.value
+                : ref.key?.case === "alias" && row.alias === ref.key.value,
+            );
+            return resource
+              ? publicUUID({ key: { case: "id", value: resource.id } })
+              : undefined;
+          },
+        }),
+      ],
+    });
   }
   dispose() {
     this.taskCatalog.dispose();

@@ -1,5 +1,8 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  Text: "텍스트",
+  "Pasted text": "붙여넣은 텍스트",
+  "Send pasted content as": "붙여넣은 내용 전송 방식",
   "Editor options": "입력창 설정",
   "Show control characters": "제어문자 표시",
   "Word wrap": "자동 줄바꿈",
@@ -167,6 +170,7 @@ export const messages = {
   "Clipboard access failed. Use the terminal context menu to copy.":
     "클립보드에 접근하지 못했습니다. 터미널 우클릭 메뉴에서 복사하세요.",
   "Upload files": "파일 업로드",
+  "Drop files or folders here": "파일이나 폴더를 여기에 놓으세요",
   "Upload folder": "폴더 업로드",
   Attachment: "첨부 파일",
   "Uploading…": "업로드 중…",
@@ -386,6 +390,7 @@ export const messages = {
   "Effort: {value} ({source})": "추론 강도: {value} ({source})",
   "Entire turn": "턴 전체",
   "Expand source": "원문 펼치기",
+  Expand: "펼치기",
   Export: "내보내기",
   "Fake agent · no accounts or real tasks":
     "모의 에이전트 · 실제 계정이나 작업 없음",
@@ -446,6 +451,7 @@ export const messages = {
   Output: "출력",
   Pace: "속도",
   "Paste source": "붙여넣기 원문",
+  "View pasted text": "붙여넣은 텍스트 보기",
   "Paste storage has reached 32 MiB.":
     "붙여넣기 보관 공간이 32 MiB에 도달했습니다.",
   "Paste · {lines} lines · {bytes}B": "붙여넣기 · {lines}줄 · {bytes}B",

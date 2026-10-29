@@ -57,7 +57,7 @@ test("sidebar and session links render ink while preserving routing and new tabs
   await visibleInk(projects);
   expect(await projects.boundingBox()).toEqual(box);
   await page.mouse.up();
-  await expect(page).toHaveURL(/#\/c\/_\/project$/);
+  await expect(page).toHaveURL(/#\/c\/_\/project\/project-1$/);
   await expect(projects.locator("canvas[data-ink-sparkle]")).toHaveCount(0);
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Session list" });

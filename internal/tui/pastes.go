@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/secretpaste"
 )
 
 type pastedText struct {
@@ -379,6 +380,12 @@ func (m *model) capturePaste(k tea.KeyMsg) bool {
 		}
 	} else if m.focusList || m.focusApproval || m.report != nil || m.modelPicker != nil || m.restartConfirm != nil {
 		return false
+	}
+	if d == nil {
+		if kind := secretpaste.Detect(text); kind != "" {
+			m.captureSecretPaste(text, kind)
+			return true
+		}
 	}
 	if utf8.RuneCountInString(text) <= 800 && strings.Count(text, "\n") < 3 {
 		return false

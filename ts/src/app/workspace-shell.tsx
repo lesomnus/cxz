@@ -24,6 +24,7 @@ import { useResourceInventory } from "#src/shared/api/resource-inventory.ts";
 import { key } from "@lesomnus/payday/store";
 import { RouteLink, PanelLink } from "#src/shared/navigation/route-link.tsx";
 import { useWorkspaceRoute } from "./router";
+import { useWorkspaceProject } from "./use-workspace-project";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { WorkspaceContext } from "./workspace-context";
 import { useSessionAttention } from "#src/features/session/model/use-session-attention.ts";
@@ -31,8 +32,10 @@ import { resumableStates } from "#src/features/session/model/session-actions.ts"
 import { useSettings } from "#src/shared/settings/settings.ts";
 import {
   matchesResource,
+  projectLocation,
   resourceLocation,
   sessionLocation,
+  taskLocation,
 } from "#src/shared/navigation/resource-route.ts";
 export function Workspace({
   connection: c,
@@ -52,6 +55,12 @@ export function Workspace({
   const inventory = useResourceInventory(c);
   const selectedSession = inventory.sessions.find((s) =>
     matchesResource(s, route.session),
+  );
+  const currentProject = useWorkspaceProject(
+    c,
+    inventory.projects,
+    route,
+    selectedSession,
   );
   const session = selectedSession?.runtimeId ?? route.session;
   const hasResourcePanel = !["accounts", "tasks", "projects"].includes(
@@ -134,7 +143,7 @@ export function Workspace({
             >
               <RouteLink
                 {...(view === "projects"
-                  ? resourceLocation("projects")
+                  ? projectLocation(currentProject)
                   : lastSession.current
                     ? sessionLocation(lastSession.current)
                     : resourceLocation("sessions"))}
@@ -171,7 +180,14 @@ export function Workspace({
               }
             >
               <RouteLink
-                {...resourceLocation(view)}
+                {...(view === "tasks"
+                  ? taskLocation({ project: currentProject })
+                  : view === "memory"
+                    ? {
+                        ...resourceLocation("memory"),
+                        search: { project: currentProject },
+                      }
+                    : resourceLocation(view))}
                 className={`resource-link ${resource === view ? "active" : ""}`}
                 aria-label={
                   view === "auxiliary"

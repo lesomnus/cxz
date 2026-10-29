@@ -6,14 +6,48 @@ import {
   partialPasteEdit,
   pasteRanges,
   wholePasteSelection,
+  attachmentsReady,
+  defaultPasteSendMode,
 } from "./composer-pastes";
 
 describe("composer paste chips", () => {
-  it("matches TUI thresholds using Unicode characters and original UTF-8 bytes", () => {
-    expect(needsPasteChip("😀".repeat(800))).toBe(false);
-    expect(needsPasteChip("😀".repeat(801))).toBe(true);
+  it("sends the selected inline body or file path and gates only file delivery", () => {
+    const paste = createPaste("original\r\ntext", "1234abcd");
+    paste.attachment = { name: "paste.txt", state: "uploading" };
+    const pastes = new Map([[paste.token, paste]]);
+    expect(attachmentsReady(paste.token, pastes)).toBe(false);
+    paste.sendAs = "text";
+    expect(attachmentsReady(paste.token, pastes)).toBe(true);
+    expect(expandPastes(paste.token, pastes)).toBe(paste.body);
+    paste.attachment.path = "/cxz/assets/paste.txt";
+    paste.attachment.state = "ready";
+    expect(expandPastes(paste.token, pastes)).toBe(paste.body);
+    paste.sendAs = "file";
+    expect(attachmentsReady(paste.token, pastes)).toBe(true);
+    expect(expandPastes(paste.token, pastes)).toBe(
+      "[Attached file: /cxz/assets/paste.txt — read this file for the full content]",
+    );
+    expect(expandPastes(paste.token, pastes, false)).toBe(paste.body);
+    paste.attachment.state = "error";
+    expect(attachmentsReady(paste.token, pastes)).toBe(false);
+    paste.sendAs = "text";
+    expect(attachmentsReady(paste.token, pastes)).toBe(true);
+  });
+  it("keeps short pastes inline and chooses chip delivery using Unicode characters", () => {
+    for (const character of ["a", "한", "😀"]) {
+      expect(needsPasteChip(character.repeat(32))).toBe(false);
+      expect(needsPasteChip(character.repeat(33))).toBe(true);
+      expect(defaultPasteSendMode(character.repeat(33))).toBe("text");
+      expect(defaultPasteSendMode(character.repeat(64))).toBe("text");
+      expect(defaultPasteSendMode(character.repeat(65))).toBe("file");
+    }
     expect(needsPasteChip("one\ntwo\nthree")).toBe(false);
-    expect(needsPasteChip("one\ntwo\nthree\n")).toBe(true);
+    expect(needsPasteChip("one\ntwo\nthree\n")).toBe(false);
+    expect(needsPasteChip("\n".repeat(32))).toBe(false);
+    expect(needsPasteChip("\n".repeat(33))).toBe(true);
+  });
+
+  it("preserves the original UTF-8 bytes and line count", () => {
     const paste = createPaste("한\r\n글\nthree\nlast", "1234abcd");
     expect(paste.lines).toBe(4);
     expect(paste.bytes).toBe(new TextEncoder().encode(paste.body).length);

@@ -8,10 +8,12 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type Ref,
 } from "react";
 import { flushSync } from "react-dom";
-import { Button } from "@lesomnus/nox";
+import { Button, CardActions, ConfirmButton } from "@lesomnus/nox";
+import previewStyles from "./paste-preview.module.css";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { indentEdit } from "./composer-indent";
 import { useCommandSuggestions } from "./command-suggestions";
@@ -50,8 +52,10 @@ import {
   MAX_PASTE_BYTES,
   MAX_PASTE_CACHE_BYTES,
   needsPasteChip,
+  defaultPasteSendMode,
   wholePasteSelection,
   expandPastes,
+  isTextPaste,
   type ComposerPaste,
 } from "./composer-pastes";
 import {
@@ -62,7 +66,13 @@ import {
 import type { PastePresentation } from "./paste-presentation";
 import { droppedFiles, pickedFiles, type PickedFile } from "./composer-files";
 import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
+import { useFileDrag } from "./use-file-drag";
+import { detectSecretPaste } from "#src/shared/content/secret-paste.ts";
+import { prepareSecretPaste, type SecretFiles } from "./secret-paste";
+import { SecretPreview } from "./secret-preview";
+import { SecretPreviewBody } from "./secret-preview-body";
 import { PasteChip } from "./paste-chip";
+import { reserveChip } from "./chip-reservation";
 import {
   restoreEditorSelection,
   type EditorSelection,
@@ -87,6 +97,8 @@ export function ComposerEditor({
   placeholder = t("Continue the conversation…"),
   editorRef,
   upload,
+  secretFiles,
+  detectSecrets = false,
   onUploadChange,
   mentions,
   autoFocus = false,
@@ -106,6 +118,8 @@ export function ComposerEditor({
   placeholder?: string;
   editorRef?: Ref<ComposerEditorHandle>;
   upload?: UploadFile;
+  secretFiles?: SecretFiles;
+  detectSecrets?: boolean;
   onUploadChange?: () => void;
   mentions?: MentionContext;
   autoFocus?: boolean;
@@ -116,7 +130,7 @@ export function ComposerEditor({
   const input = useRef<HTMLTextAreaElement>(null);
   const theme = useTheme();
   const editorSettings = useEditorSettings("session");
-  const { snapshot: preferences } = useSettings();
+  const { store: settings, snapshot: preferences } = useSettings();
   const wordWrap = preferences.document["composer.wordWrap"] !== false;
   const showControls =
     preferences.document["composer.showControlCharacters"] === true;
@@ -130,7 +144,7 @@ export function ComposerEditor({
     Map<string, PastePresentation> | undefined
   >(undefined);
   const [notice, setNotice] = useState("");
-  const [dragging, setDragging] = useState(false);
+  const dragging = useFileDrag(!!upload && !readOnly);
   const [, refreshUploads] = useState(0);
   const jobs = useRef(new Map<string, AbortController>());
   const queue = useRef(Promise.resolve());
@@ -138,6 +152,7 @@ export function ComposerEditor({
   const notify = useRef(onUploadChange);
   notify.current = onUploadChange;
   const [tabMovesFocus, setTabMovesFocus] = useState(false);
+  // Source offsets survive changes to a chip's measured textarea reservation.
   const cursor = useRef<
     | { start: number; end: number; direction: "forward" | "backward" | "none" }
     | undefined
@@ -146,10 +161,14 @@ export function ComposerEditor({
     undefined,
   );
   const followOnEdit = useRef(false);
+  const [chipLayouts, setChipLayouts] = useState(
+    new Map<string, { label: string; text: string }>(),
+  );
   const projection = new PasteProjection(
     source,
     pastes,
     frozenPresentations.current,
+    chipLayouts,
   );
   const value = projection.text;
   const ranges = projection.ranges;
@@ -177,6 +196,7 @@ export function ComposerEditor({
   }
   function changedUploads(paste: ComposerPaste, persist = true) {
     paste.attachment?.listeners?.forEach((listener) => listener());
+    paste.secret?.listeners?.forEach((listener) => listener());
     if (!mounted.current) return;
     refreshUploads((v) => v + 1);
     if (persist) notify.current?.();
@@ -224,6 +244,28 @@ export function ComposerEditor({
         changedUploads(paste);
       }
     });
+  }
+  function changePasteMode(paste: ComposerPaste, mode: "text" | "file") {
+    if (readOnly || !isTextPaste(paste)) return;
+    if (mode === "file" && !upload && !paste.attachment?.path) return;
+    paste.sendAs = mode;
+    if (mode === "file" && !paste.attachment) {
+      const name = `paste-${paste.token.slice(7, 15)}.txt`;
+      paste.attachment = {
+        file: new File([paste.body], name, { type: "text/plain" }),
+        name,
+        state: "uploading",
+      };
+    }
+    if (
+      mode === "file" &&
+      paste.attachment?.state !== "ready" &&
+      upload &&
+      paste.attachment?.file &&
+      !jobs.current.has(paste.token)
+    )
+      startUpload(paste);
+    else changedUploads(paste);
   }
   async function insertPicked(picking: Promise<PickedFile[]> | PickedFile[]) {
     try {
@@ -374,6 +416,16 @@ export function ComposerEditor({
   function measure() {
     const el = input.current!;
     const style = getComputedStyle(el);
+    const contentWidth =
+      el.clientWidth -
+      parseFloat(style.paddingLeft) -
+      parseFloat(style.paddingRight);
+    el.closest<HTMLElement>(".composer-editor")!.style.setProperty(
+      "--editor-chip-max-width",
+      // Leave a native character cell for rounding a reservation upward, so
+      // the longest chip and its caret still fit on a single wrapped line.
+      `max(0px, round(down, calc(${Math.floor(contentWidth - 2 * parseFloat(style.getPropertyValue("--ui-file-chip-caret-gap")))}px - 1ch), 1px))`,
+    );
     const baseline = parseFloat(
       style.getPropertyValue("--composer-editor-height"),
     );
@@ -394,8 +446,8 @@ export function ComposerEditor({
   useLayoutEffect(() => {
     if (cursor.current !== undefined) {
       input.current!.setSelectionRange(
-        cursor.current.start,
-        cursor.current.end,
+        projection.toDisplay(cursor.current.start),
+        projection.toDisplay(cursor.current.end),
         cursor.current.direction,
       );
       cursor.current = undefined;
@@ -485,7 +537,12 @@ export function ComposerEditor({
     // Edit with native LF line breaks; untouched chips retain their original bytes.
     text = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
     const nextSource = projection.splice(start, end, text);
-    text = new PasteProjection(text, pastes, frozenPresentations.current).text;
+    text = new PasteProjection(
+      text,
+      pastes,
+      frozenPresentations.current,
+      chipLayouts,
+    ).text;
     caret ??= start + text.length;
     selectionEnd ??= caret;
     const el = input.current!;
@@ -493,17 +550,38 @@ export function ComposerEditor({
     expectedEdit.current = { text: next, source: nextSource };
     // Native input can commit React synchronously, including async file drops.
     // Stage the caret before that commit so it cannot rewind the next keystroke.
-    cursor.current = { start: caret, end: selectionEnd, direction };
+    const staged = new PasteProjection(
+      nextSource,
+      pastes,
+      frozenPresentations.current,
+      chipLayouts,
+    );
+    const sourceCaret = staged.toSource(caret);
+    const sourceEnd = staged.toSource(selectionEnd);
+    cursor.current = { start: sourceCaret, end: sourceEnd, direction };
     el.focus({ preventScroll: true });
     el.setSelectionRange(start, end);
     // Native insertion preserves the browser's undo stack and selection behavior.
     // setRangeText is the fallback for engines without insertText support.
     document.execCommand("insertText", false, text);
-    if (el.value !== next) {
+    // React can install the measured view before insertText returns.
+    const accepted = latest.current.projection;
+    if (
+      el.value !== next &&
+      !(accepted.source === nextSource && el.value === accepted.text)
+    ) {
       el.setRangeText(text, start, end, "end");
       commit(nextSource, next);
     }
-    el.setSelectionRange(caret, selectionEnd, direction);
+    const committed =
+      latest.current.projection.source === nextSource
+        ? latest.current.projection
+        : staged;
+    el.setSelectionRange(
+      committed.toDisplay(sourceCaret),
+      committed.toDisplay(sourceEnd),
+      direction,
+    );
     expectedEdit.current = undefined;
   }
   function changeSyntax(block: CodeBlock, syntax: string) {
@@ -528,21 +606,38 @@ export function ComposerEditor({
   function showPreview(range: ProjectedPasteRange) {
     input.current!.focus({ preventScroll: true });
     input.current!.setSelectionRange(range.start, range.end);
+    const retry = () => {
+      if (!latest.current.readOnly) startUpload(range.paste);
+    };
+    const secretPreview = range.paste.secret
+      ? new SecretPreview(range.paste, secretFiles)
+      : undefined;
     openCard({
       kind: "paste",
-      label: () => t(range.paste.body ? "Paste source" : "Attachment"),
+      label: () =>
+        range.paste.secret
+          ? "Secret"
+          : t(range.paste.body ? "Paste source" : "Attachment"),
       title: () =>
-        range.paste.attachment?.name ??
-        t("Paste · {lines} lines · {bytes}B", {
-          lines: range.paste.lines,
-          bytes: range.paste.bytes.toLocaleString(currentLocale()),
-        }),
-      content: (close) => (
-        <PastePreview
+        range.paste.secret
+          ? "Secret"
+          : (range.paste.attachment?.name ??
+            t("Paste · {lines} lines · {bytes}B", {
+              lines: range.paste.lines,
+              bytes: range.paste.bytes.toLocaleString(currentLocale()),
+            })),
+      content: () =>
+        secretPreview ? (
+          <SecretPreviewBody preview={secretPreview} />
+        ) : (
+          <PastePreview paste={range.paste} retry={retry} />
+        ),
+      footer: (close) => (
+        <PastePreviewActions
           paste={range.paste}
-          retry={() => {
-            if (!latest.current.readOnly) startUpload(range.paste);
-          }}
+          secretPreview={secretPreview}
+          retry={retry}
+          close={close}
           apply={(text) => {
             // Cards are non-modal: editing behind a preview must never replace a
             // different occurrence at a stale offset.
@@ -562,6 +657,7 @@ export function ComposerEditor({
     });
   }
   let lineOffset = 0;
+  let controlOffset = 0;
   return (
     <>
       <div
@@ -576,16 +672,10 @@ export function ComposerEditor({
           if (!event.dataTransfer.types.includes("Files")) return;
           event.preventDefault();
           event.dataTransfer.dropEffect = upload && !readOnly ? "copy" : "none";
-          setDragging(!!upload && !readOnly);
-        }}
-        onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null))
-            setDragging(false);
         }}
         onDrop={(event) => {
           if (!event.dataTransfer.types.includes("Files")) return;
           event.preventDefault();
-          setDragging(false);
           if (!readOnly && upload)
             void insertPicked(droppedFiles(event.dataTransfer));
         }}
@@ -595,6 +685,24 @@ export function ComposerEditor({
           ...paletteVariables(editorSettings.colorPalette, theme),
         }}
       >
+        {dragging && (
+          <div className="composer-file-drop-overlay" role="status">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 15V3m-4 4 4-4 4 4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" />
+            </svg>
+            <span>{t("Drop files or folders here")}</span>
+          </div>
+        )}
         <div
           className="editor-gutter"
           aria-hidden="true"
@@ -705,6 +813,27 @@ export function ComposerEditor({
               }
               if (!text) return;
               const selection = normalizedSelection();
+              const secretKind = detectSecrets && detectSecretPaste(text);
+              if (secretKind) {
+                event.preventDefault();
+                const { paste, save } = prepareSecretPaste(
+                  text,
+                  secretKind,
+                  secretFiles,
+                );
+                pastes.set(paste.token, paste);
+                const controller = new AbortController();
+                jobs.current.set(paste.token, controller);
+                replace(selection.start, selection.end, paste.token);
+                setNotice("");
+                void save(controller.signal, () =>
+                  changedUploads(paste, false),
+                ).finally(() => {
+                  jobs.current.delete(paste.token);
+                  changedUploads(paste);
+                });
+                return;
+              }
               if (!needsPasteChip(text)) return;
               event.preventDefault();
               let paste = createPaste(
@@ -731,7 +860,8 @@ export function ComposerEditor({
                 setNotice("Paste storage has reached 32 MiB.");
                 return;
               }
-              if (upload) {
+              paste.sendAs = upload ? defaultPasteSendMode(text) : "text";
+              if (upload && paste.sendAs === "file") {
                 const id = paste.token.slice(7, 15);
                 const file = new File([text], `paste-${id}.txt`, {
                   type: "text/plain",
@@ -741,12 +871,13 @@ export function ComposerEditor({
                   token: paste.token,
                   body: text,
                   lines: paste.lines,
+                  sendAs: paste.sendAs,
                 };
               }
               pastes.set(paste.token, paste);
               setNotice("");
               replace(selection.start, selection.end, paste.token);
-              if (upload) startUpload(paste);
+              if (paste.attachment) startUpload(paste);
             }}
             onCopy={(event) => {
               const selection = normalizedSelection();
@@ -782,6 +913,22 @@ export function ComposerEditor({
             onKeyDown={(event) => {
               if (readOnly) return;
               if (event.nativeEvent.isComposing || composing.current) return;
+              if (
+                event.altKey &&
+                !event.ctrlKey &&
+                !event.metaKey &&
+                !event.shiftKey &&
+                (event.code === "KeyZ" || event.key.toLowerCase() === "z")
+              ) {
+                event.preventDefault();
+                if (event.repeat) return;
+                try {
+                  settings.set("composer.wordWrap", !wordWrap);
+                } catch (error) {
+                  setNotice(String(error));
+                }
+                return;
+              }
               if (hints.key(event)) return;
               const el = event.currentTarget;
               if (
@@ -1042,7 +1189,27 @@ export function ComposerEditor({
                       key={range.start}
                       paste={range.paste}
                       presentation={range.presentation}
+                      nativeText={value.slice(range.start, range.end)}
+                      fontKey={editorSettings.fontFamily}
+                      onLayout={(label, width) => {
+                        const text = reserveChip(mirror.current!, width);
+                        setChipLayouts((previous) => {
+                          const old = previous.get(range.paste.token);
+                          if (old?.label === label && old.text === text)
+                            return previous;
+                          const next = new Map(previous);
+                          next.set(range.paste.token, { label, text });
+                          if (next.size > 200)
+                            next.delete(next.keys().next().value!);
+                          return next;
+                        });
+                      }}
                       onOpen={() => showPreview(range)}
+                      onSendModeChange={(mode) =>
+                        changePasteMode(range.paste, mode)
+                      }
+                      canSendFile={!!upload || !!range.paste.attachment?.path}
+                      readOnly={readOnly || composition}
                     />,
                   ];
                 });
@@ -1120,20 +1287,34 @@ export function ComposerEditor({
           {showControls && (
             <div className="editor-controls-surface" aria-hidden="true">
               <div className="editor-control-mirror" ref={controlMirror}>
-                {lines.map((line, index) => (
-                  <div className="editor-control-line" key={index}>
-                    {controlCharacters(line)}
-                    {index < lines.length - 1 && (
-                      <span
-                        className="editor-control-character editor-line-end"
-                        data-symbol="¶"
-                      >
-                        {"\u200b"}
-                      </span>
-                    )}
-                    {!line && "\u200b"}
-                  </div>
-                ))}
+                {lines.map((line, index) => {
+                  const start = controlOffset;
+                  controlOffset += line.length + 1;
+                  const hidden = ranges
+                    .filter(
+                      (range) =>
+                        range.start >= start &&
+                        range.end <= start + line.length,
+                    )
+                    .map((range) => ({
+                      start: range.start - start,
+                      end: range.end - start,
+                    }));
+                  return (
+                    <div className="editor-control-line" key={index}>
+                      {controlCharacters(line, hidden)}
+                      {index < lines.length - 1 && (
+                        <span
+                          className="editor-control-character editor-line-end"
+                          data-symbol="¶"
+                        >
+                          {"\u200b"}
+                        </span>
+                      )}
+                      {!line && "\u200b"}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1164,25 +1345,38 @@ function tokenSpans(tokens: CodeToken[], start: number, end: number) {
 
 function PastePreview({
   paste,
-  apply,
   retry,
 }: {
   paste: ComposerPaste;
-  apply: (text: string) => boolean;
   retry: () => void;
 }) {
-  useLocale();
-  const [stale, setStale] = useState(false);
+  if (!paste.secret && paste.body) return paste.body;
+  return <AttachmentPreview paste={paste} retry={retry} />;
+}
+
+function usePasteAttachment(paste: ComposerPaste, enabled = true) {
   const [, refresh] = useState(0);
+  const attachment = paste.secret ?? paste.attachment;
   useEffect(() => {
-    if (!paste.attachment) return;
-    const listeners = (paste.attachment.listeners ??= new Set());
+    if (!enabled || !attachment) return;
+    const listeners = (attachment.listeners ??= new Set());
     const listener = () => refresh((v) => v + 1);
     listeners.add(listener);
     return () => {
       listeners.delete(listener);
     };
-  }, [paste]);
+  }, [attachment, enabled]);
+}
+
+function AttachmentPreview({
+  paste,
+  retry,
+}: {
+  paste: ComposerPaste;
+  retry: () => void;
+}) {
+  useLocale();
+  usePasteAttachment(paste);
   return (
     <>
       {paste.attachment && (
@@ -1207,12 +1401,63 @@ function PastePreview({
       )}
       {paste.secret && (
         <p className="attachment-info">
-          Secret file · <code>{paste.secret.path}</code>
+          {paste.secret.kind && <>{paste.secret.kind} detected · </>}
+          {paste.secret.state === "uploading" ? (
+            <span role="status">Preparing secret file…</span>
+          ) : paste.secret.error ? (
+            <span role="alert">{paste.secret.error}</span>
+          ) : (
+            <>
+              Secret file · <code>{paste.secret.path}</code>
+            </>
+          )}
         </p>
       )}
-      {!paste.secret && paste.body && <pre>{paste.body}</pre>}
-      <div className="buttons">
-        {paste.attachment?.state === "error" && (
+      {paste.attachment?.state === "error" && (
+        <Button type="button" onClick={retry} disabled={!paste.attachment.file}>
+          {t("Retry upload")}
+        </Button>
+      )}
+    </>
+  );
+}
+
+function PastePreviewActions({
+  paste,
+  secretPreview,
+  retry,
+  apply,
+  close,
+}: {
+  paste: ComposerPaste;
+  secretPreview?: SecretPreview;
+  retry: () => void;
+  apply: (text: string) => boolean;
+  close: () => void;
+}) {
+  const [stale, setStale] = useState(false);
+  usePasteAttachment(paste, !!paste.body);
+  return (
+    <>
+      <CardActions>
+        {secretPreview && (
+          <SecretExpand
+            preview={secretPreview}
+            disabled={stale}
+            apply={(value) => setStale(!apply(value))}
+          />
+        )}
+        {paste.body && !paste.secret && (
+          <Button
+            className={previewStyles.expand}
+            type="button"
+            disabled={stale}
+            onClick={() => setStale(!apply(paste.body))}
+          >
+            {t("Expand")}
+          </Button>
+        )}
+        {!!paste.body && paste.attachment?.state === "error" && (
           <Button
             type="button"
             onClick={retry}
@@ -1221,28 +1466,43 @@ function PastePreview({
             {t("Retry upload")}
           </Button>
         )}
-        {paste.body && (
-          <Button
-            type="button"
-            disabled={stale}
-            onClick={() => setStale(!apply(paste.body))}
-          >
-            {t("Expand source")}
-          </Button>
-        )}
         <Button
           type="button"
-          disabled={stale}
-          onClick={() => setStale(!apply(""))}
+          data-preview-close
+          aria-label={t("Close paste preview")}
+          onClick={close}
         >
-          {t("Delete")}
+          {t("Close")}
         </Button>
-      </div>
+      </CardActions>
       {stale && (
         <p role="status" className="muted">
           {t("The input has changed. Reopen the chip.")}
         </p>
       )}
     </>
+  );
+}
+
+function SecretExpand({
+  preview,
+  disabled,
+  apply,
+}: {
+  preview: SecretPreview;
+  disabled: boolean;
+  apply: (value: string) => void;
+}) {
+  const snapshot = useSyncExternalStore(preview.subscribe, preview.getSnapshot);
+  return (
+    <ConfirmButton
+      className={previewStyles.expand}
+      type="button"
+      disabled={disabled || snapshot.state !== "ready"}
+      confirmationLabel="Expand secret as plain text"
+      onConfirm={() => apply(snapshot.value)}
+    >
+      {t("Expand")}
+    </ConfirmButton>
   );
 }

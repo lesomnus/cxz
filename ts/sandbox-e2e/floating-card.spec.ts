@@ -1,3 +1,8 @@
+import { inspectPaste } from "../test-support/paste-chip";
+import {
+  readChipDisplay,
+  expectChipDisplay,
+} from "../test-support/chip-display";
 import { expect, test, type Page } from "@playwright/test";
 
 test.use({
@@ -48,11 +53,11 @@ test("task details and replacing paste previews preserve the transcript and draf
   page,
 }) => {
   const input = await open(page);
-  await paste(page, "first\nsecond\nthird\nfourth");
+  await paste(page, "first\nsecond\nthird\nfourth".repeat(4));
   await input.press("End");
   await input.pressSequentially(" ");
-  await paste(page, "another\npaste\nbody\nhere");
-  const draft = await input.inputValue();
+  await paste(page, "another\npaste\nbody\nhere".repeat(4));
+  const draft = await readChipDisplay(input);
   const trigger = page
     .locator("[data-work-summary]")
     .getByRole("button", { name: "View details", exact: true })
@@ -77,19 +82,24 @@ test("task details and replacing paste previews preserve the transcript and draf
     dialog.getByRole("region", { name: "Task details" }),
   ).toHaveCount(0);
   await dialog.getByRole("button", { name: "Close task dialog" }).click();
-  await page.locator(".paste-chip").first().click();
+  await inspectPaste(page, page.locator(".paste-chip").first());
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-  await expect(preview.locator("pre")).toHaveText(
-    "first\nsecond\nthird\nfourth",
+  await expect(preview.locator(".card-body")).toHaveText(
+    "first\nsecond\nthird\nfourth".repeat(4),
   );
   const firstPreviewId = await preview.getAttribute("data-card");
-  await page.locator(".paste-chip").nth(1).click();
-  await expect(preview.locator("pre")).toHaveText("another\npaste\nbody\nhere");
+  await inspectPaste(page, page.locator(".paste-chip").nth(1));
+  await expect(preview.locator(".card-body")).toHaveText(
+    "another\npaste\nbody\nhere".repeat(4),
+  );
   await expect(page.locator(`[data-card="${firstPreviewId}"]`)).toHaveCount(0);
   await expect(page.locator(".floating-card")).toHaveCount(1);
-  await expect(input).toHaveValue(draft);
-  await expect(preview).toHaveCSS("backdrop-filter", "blur(48px)");
+  await expectChipDisplay(input, draft);
+  const blur = await preview.evaluate((el) =>
+    getComputedStyle(el).getPropertyValue("--ui-dialog-blur").trim(),
+  );
+  await expect(preview).toHaveCSS("backdrop-filter", `blur(${blur})`);
   expect(await geometry()).toEqual(before);
   await page.screenshot({
     path: "test-results/floating-card.png",
@@ -98,7 +108,7 @@ test("task details and replacing paste previews preserve the transcript and draf
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(input).toBeFocused();
-  await expect(input).toHaveValue(draft);
+  await expectChipDisplay(input, draft);
 });
 
 test.describe("rendered backdrop", () => {
@@ -107,12 +117,13 @@ test.describe("rendered backdrop", () => {
     page,
   }) => {
     await open(page);
-    await paste(page, "blur\npreview\nbody\nhere");
-    await page.locator(".paste-chip").click();
+    await paste(page, "blur\npreview\nbody\nhere".repeat(4));
+    await inspectPaste(page, page.locator(".paste-chip"));
     const card = page.locator(".floating-card");
     await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
     await expect(card).toHaveCSS("opacity", "1");
     const bounds = (await card.boundingBox())!;
+    const footer = (await card.locator(".card-footer").boundingBox())!;
     // A real background in the conversation must be sampled across the composer
     // and host ancestors. A computed blur value alone misses backdrop isolation.
     await page.evaluate((box) => {
@@ -125,7 +136,7 @@ test.describe("rendered backdrop", () => {
       // the pixels needed by the filter, particularly at higher pixel density.
       const png = await page.screenshot();
       return page.evaluate(
-        async ({ base64, box }) => {
+        async ({ base64, box, sampleY }) => {
           const image = new Image();
           image.src = `data:image/png;base64,${base64}`;
           await image.decode();
@@ -139,7 +150,7 @@ test.describe("rendered backdrop", () => {
           const height = Math.floor(4 * scale);
           const pixels = context.getImageData(
             Math.floor((box.x + 100) * scale),
-            Math.floor((box.y + 30) * scale),
+            Math.floor(sampleY * scale),
             width,
             height,
           ).data;
@@ -155,7 +166,11 @@ test.describe("rendered backdrop", () => {
           }
           return greatestStep;
         },
-        { base64: png.toString("base64"), box: bounds },
+        {
+          base64: png.toString("base64"),
+          box: bounds,
+          sampleY: footer.y + footer.height / 2 - 2,
+        },
       );
     };
     expect(await edgeContrast()).toBeLessThan(5);
@@ -174,7 +189,7 @@ test("mobile cards stay inside the conversation and stale previews cannot replac
   const body = "a\nb\nc\nd\n".repeat(100);
   await paste(page, body);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator(".paste-chip").click();
+  await inspectPaste(page, page.locator(".paste-chip"));
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   const bounds = (await preview.boundingBox())!;
@@ -192,9 +207,7 @@ test("mobile cards stay inside the conversation and stale previews cannot replac
     page.getByRole("button", { name: "Send", exact: true }),
   ).toBeVisible();
   await input.fill("edited while the preview is open");
-  await preview
-    .getByRole("button", { name: "Expand source", exact: true })
-    .click();
+  await preview.getByRole("button", { name: "Expand", exact: true }).click();
   await expect(preview.getByRole("status")).toContainText(
     "The input has changed",
   );
@@ -215,12 +228,12 @@ test("only the transcript's empty side margins dismiss the floating card", async
   await expect(
     page.getByText("History item 2100", { exact: false }),
   ).toBeVisible();
-  await paste(page, "first\nsecond\nthird\nfourth");
-  const draft = await input.inputValue();
+  await paste(page, "first\nsecond\nthird\nfourth".repeat(4));
+  const draft = await readChipDisplay(input);
   const preview = page.getByRole("dialog", { name: "Paste source" });
-  await page.locator(".paste-chip").click();
+  await inspectPaste(page, page.locator(".paste-chip"));
   await expect(preview).toHaveCSS("opacity", "1");
-  await preview.locator("pre").click();
+  await preview.locator(".card-body").click();
   await expect(preview).toBeVisible();
   await input.click();
   await expect(preview).toBeVisible();
@@ -237,14 +250,14 @@ test("only the transcript's empty side margins dismiss the floating card", async
   const scroll = await pane.evaluate((el) => el.scrollTop);
   await page.mouse.click(column.x - 20, area.y + 40);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(input).toHaveValue(draft);
+  await expectChipDisplay(input, draft);
   expect(await pane.evaluate((el) => el.scrollTop)).toBeCloseTo(scroll, 0);
-  await page.locator(".paste-chip").click();
+  await inspectPaste(page, page.locator(".paste-chip"));
   await expect(preview).toHaveCSS("opacity", "1");
   await page.mouse.click(column.x + column.width + 20, area.y + 40);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator(".floating-card")).toHaveCount(0);
-  await expect(input).toHaveValue(draft);
+  await expectChipDisplay(input, draft);
 });
 
 test("pending questions stay dimmed behind previews and only lift for a taller card", async ({
@@ -282,7 +295,7 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await input.fill("");
   await paste(page, "preview source line\n".repeat(80));
   const details = page.locator(".composer .paste-chip");
-  await details.click();
+  await inspectPaste(page, details);
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(layer).toHaveAttribute("data-covered", "true");
@@ -318,9 +331,12 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await expect(other).toHaveValue("Keep my answer\n");
 
   await input.fill("");
-  await paste(page, "small\npreview\nbody\nhere");
-  const draft = await input.inputValue();
-  await page.locator(".paste-chip").click();
+  await paste(
+    page,
+    "small preview body text without newlines, kept compact inside the card",
+  );
+  const draft = await readChipDisplay(input);
+  await inspectPaste(page, page.locator(".paste-chip"));
   const short = page.getByRole("dialog", { name: "Paste source" });
   await expect(short).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   expect((await short.boundingBox())!.height).toBeLessThan(original.height);
@@ -340,7 +356,7 @@ test("pending questions stay dimmed behind previews and only lift for a taller c
   await expect(layer).toHaveJSProperty("inert", false);
   await expect(layer).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(choice).not.toBeChecked();
-  await expect(input).toHaveValue(draft);
+  await expectChipDisplay(input, draft);
   expect(
     await page
       .locator(".transcript")
@@ -370,7 +386,7 @@ test.describe("touch questions", () => {
       question.getByText("Which environment?", { exact: true }),
     ).toBeVisible();
     await paste(page, "preview source line\n".repeat(80));
-    await page.locator(".composer .paste-chip").click();
+    await inspectPaste(page, page.locator(".composer .paste-chip"));
     const layer = page.locator(".question-cards");
     const preview = page.getByRole("dialog", { name: "Paste source" });
     await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");

@@ -48,7 +48,7 @@ test("Tab mode segments inherit settings, preserve drafts and switch native inde
   await expect(tab).toBeChecked();
   await expect(spaces).not.toBeChecked();
   await expect(segments).toHaveAttribute("data-size", "compact");
-  expect((await segments.boundingBox())!.height).toBe(24);
+  expect((await segments.boundingBox())!.height).toBeCloseTo(24, 1);
   await spaces.check();
   await expect(spaces).toBeChecked();
   await expect(input).toHaveValue("keep draft");

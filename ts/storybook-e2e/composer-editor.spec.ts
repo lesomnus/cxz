@@ -3,6 +3,64 @@ import { expect, test } from "@playwright/test";
 const sentence =
   "composer toolbar에서 터미널 버튼 왼쪽에 메뉴 버튼 추가해줘. 메뉴에는 세션 상태 관리 그룹: 정지(or 재개), 재시작, purge 버튼을 추가해줘. 세션 정보 상세보기 기 ";
 
+for (const wordWrap of [true, false]) {
+  test(`input defaults and mirror wrapping use break-all (wrap=${wordWrap})`, async ({
+    page,
+  }) => {
+    await page.addInitScript((wordWrap) => {
+      localStorage.setItem(
+        "settings",
+        JSON.stringify({
+          "composer.wordWrap": wordWrap,
+          "composer.showControlCharacters": true,
+        }),
+      );
+    }, wordWrap);
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.goto(
+      "/iframe.html?id=conversation-composer--empty&viewMode=story",
+    );
+    const input = page.getByRole("textbox", { name: "Message", exact: true });
+    const editor = page.locator(".composer-editor");
+    await expect(editor).toHaveAttribute("data-word-wrap", String(wordWrap));
+    await input.fill(
+      "alpha beta " + "abcdefghijklmnopqrstuvwx".repeat(12) + " last words",
+    );
+    for (const selector of [
+      "textarea",
+      ".editor-mirror",
+      ".editor-control-mirror",
+    ]) {
+      await expect(editor.locator(selector)).toHaveCSS(
+        "word-break",
+        "break-all",
+      );
+    }
+    const rows = await wrapping(input, page);
+    expect(rows.mirrored).toEqual(rows.native);
+    if (wordWrap) expect(rows.native.length).toBeGreaterThan(1);
+    else {
+      expect(rows.native).toEqual([0]);
+      await expect(input).toHaveCSS("white-space", "pre");
+      expect(
+        await input.evaluate((node) => node.scrollWidth > node.clientWidth),
+      ).toBe(true);
+    }
+    const defaults = await page.evaluate(() => {
+      const input = document.createElement("input");
+      const textarea = document.createElement("textarea");
+      const editable = document.createElement("div");
+      editable.contentEditable = "true";
+      const nodes = [input, textarea, editable];
+      nodes.forEach((node) => document.body.append(node));
+      const values = nodes.map((node) => getComputedStyle(node).wordBreak);
+      nodes.forEach((node) => node.remove());
+      return values;
+    });
+    expect(defaults).toEqual(["break-all", "break-all", "break-all"]);
+  });
+}
+
 test("plain Korean drafts keep native text and caret together during composition", async ({
   page,
 }) => {
@@ -118,6 +176,7 @@ async function wrapping(
       const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
       let node: Node | null, lastTop: number | undefined;
       while ((node = walker.nextNode())) {
+        if (node.parentElement?.closest("[data-file-chip]")) continue;
         for (let i = 0; i < node.textContent!.length; i++) {
           const range = document.createRange();
           range.setStart(node, i);
@@ -328,7 +387,19 @@ test("the native caret remains visible immediately after a paste chip", async ({
   });
   await input.press("Control+End");
   const chip = page.locator(".paste-chip");
-  const bounds = (await chip.boundingBox())!;
+  const bounds = await chip.evaluate((node) => {
+    const range = document.createRange();
+    range.selectNodeContents(
+      node
+        .closest("[data-chip-reservation]")!
+        .querySelector("[data-native-chip-text]")!,
+    );
+    return {
+      chip: node.getBoundingClientRect().toJSON(),
+      reserve: range.getBoundingClientRect().toJSON(),
+    };
+  });
+  expect(bounds.reserve.right).toBeGreaterThan(bounds.chip.right);
   let visible = false;
   for (let attempt = 0; attempt < 5 && !visible; attempt++) {
     await input.evaluate((node) => {
@@ -338,10 +409,10 @@ test("the native caret remains visible immediately after a paste chip", async ({
     const image = await page.screenshot({
       caret: "initial",
       clip: {
-        x: Math.floor(bounds.x + bounds.width) - 3,
-        y: Math.floor(bounds.y),
+        x: Math.floor(bounds.reserve.right) - 2,
+        y: Math.floor(bounds.chip.y),
         width: 6,
-        height: Math.ceil(bounds.height),
+        height: Math.ceil(bounds.chip.height),
       },
     });
     const count = await page.evaluate(async (base64) => {

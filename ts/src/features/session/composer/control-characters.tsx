@@ -1,6 +1,30 @@
+import type { ReactNode } from "react";
+
 // Keep the original character as text. Markers are CSS pseudo-elements, so they
 // add no editable/copied text and do not change tab stops or line wrapping.
-export function controlCharacters(line: string) {
+export function controlCharacters(
+  line: string,
+  hidden: readonly { start: number; end: number }[] = [],
+): ReactNode[] {
+  if (hidden.length) {
+    let offset = 0;
+    const parts = hidden.flatMap(({ start, end }) => {
+      const before = (
+        <span key={`before-${start}`}>
+          {controlCharacters(line.slice(offset, start))}
+        </span>
+      );
+      offset = end;
+      return [
+        before,
+        <span key={`chip-${start}`}>{line.slice(start, end)}</span>,
+      ];
+    });
+    return [
+      ...parts,
+      <span key="tail">{controlCharacters(line.slice(offset))}</span>,
+    ];
+  }
   return line
     .split(/([ \u0000-\u001f\u007f\u00a0\u200b])/u)
     .map((part, index) => {

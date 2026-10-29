@@ -1,51 +1,74 @@
 import { formatCompactNumber } from "@lesomnus/nox";
-import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
-import type { ComposerPaste } from "./composer-pastes";
+import { t } from "#src/shared/i18n/i18n.ts";
+import {
+  isTextPaste,
+  pasteSendMode,
+  type ComposerPaste,
+} from "./composer-pastes";
+import { PASTE_CHIP_PREFIX } from "./paste-chip-layout";
 
 export type PastePresentation = {
   label: string;
   before: string;
   leading: string;
   after: string;
+  bytes?: number;
+  progress?: number;
+  prefix?: string;
+  layoutText?: string;
 };
 
 export function presentPaste(paste: ComposerPaste): PastePresentation {
   const attachment = paste.attachment;
-  const text = !paste.secret && (!attachment || !!paste.body);
-  if (text && attachment?.state === "uploading") {
+  const text = isTextPaste(paste) || (!paste.secret && !attachment);
+  if (paste.secret) {
+    const before = "Secret";
+    if (paste.secret.state === "uploading") {
+      const progress = Math.max(
+        0,
+        Math.min(99, Math.floor(paste.secret.progress ?? 0)),
+      );
+      return {
+        label: `  ${String(progress).padStart(3, "0")}%`,
+        before: " ",
+        leading: "",
+        after: "",
+        progress,
+      };
+    }
+    return { label: before, before, leading: "", after: "" };
+  }
+  const before = text ? "" : `${attachment!.name} · `;
+  const prefix = text ? PASTE_CHIP_PREFIX : undefined;
+  const asText = text && pasteSendMode(paste) === "text";
+  if (!asText && attachment?.state === "uploading") {
     const progress = Math.max(
       0,
-      Math.min(100, Math.floor(attachment.progress ?? 0)),
+      Math.min(99, Math.floor(attachment.progress ?? 0)),
     );
     const digits = String(progress);
     const leading = "0".repeat(3 - digits.length);
     return {
-      label: `[Paste ${leading}${digits}%]`,
-      before: "[Paste ",
+      label: `${before} ${leading}${digits}%`,
+      before,
       leading,
-      after: `${digits}%]`,
+      after: `${digits}%`,
+      progress,
+      prefix,
     };
   }
-  if (text && attachment?.state !== "error") {
+  if (asText || attachment?.state !== "error") {
     const size = formatCompactNumber(paste.bytes);
-    const after = size.digits + (size.unit === "·" ? "B" : size.unit) + "]";
+    const after = size.digits + (size.unit === "·" ? "B" : size.unit);
     return {
-      label: `[Text ${size.leading}${after}`,
-      before: "[Text ",
+      label: before + size.leading + after,
+      before,
       leading: size.leading,
       after,
+      bytes: paste.bytes,
+      prefix,
     };
   }
-  const status =
-    attachment?.state === "uploading"
-      ? t("Uploading…")
-      : attachment?.state === "error"
-        ? t("Upload failed.")
-        : `${paste.bytes.toLocaleString(currentLocale())} B`;
-  const label = paste.secret
-    ? paste.token
-    : text
-      ? `[Paste ${t("Failed")}]`
-      : `${attachment!.name} · ${status}`;
-  return { label, before: label, leading: "", after: "" };
+  const label = before + t("Upload failed.");
+  return { label, before: label, leading: "", after: "", prefix };
 }

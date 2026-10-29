@@ -1,3 +1,4 @@
+import { inspectPaste } from "../test-support/paste-chip";
 import { expect, test } from "@playwright/test";
 
 test.use({
@@ -167,14 +168,22 @@ test("multiple blocks, paste chips, highlighting and native line geometry stay a
   await input.focus();
   await input.press("Control+v");
   await expect(page.locator(".paste-chip")).toHaveCount(1);
+  await page
+    .locator(".paste-chip")
+    .getByRole("radio", { name: "File", exact: true })
+    .check();
+  await expect(page.locator(".paste-chip")).toHaveAttribute(
+    "data-upload-state",
+    "ready",
+  );
   await expect(
     page
       .getByRole("combobox", { name: "Code syntax 1" })
       .locator("option:checked"),
   ).toHaveText("Auto · json");
-  await page.locator(".paste-chip").click();
+  await inspectPaste(page, page.locator(".paste-chip"));
   await expect(
-    page.getByRole("dialog", { name: "Paste source" }).locator("pre"),
+    page.getByRole("dialog", { name: "Paste source" }).locator(".card-body"),
   ).toHaveText(body);
   await page.keyboard.press("Escape");
   const draft = await input.inputValue();

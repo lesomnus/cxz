@@ -31,6 +31,14 @@ project-scoped, so task links include a project reference. With several projects
 a task address lacking that scope asks the user to choose a project. Collection
 addresses omit the resource reference.
 
+The workspace sidebar carries the currently viewed project into Projects, Tasks
+and Shared memory links. A session's project becomes current when its
+conversation is opened; choosing a project on another page updates that scope.
+The workspace remembers its stable ID while visiting Accounts or Settings, and
+generates links using its latest alias. Explicit addresses and browser history
+still determine the displayed selection. An unscoped task detail still requires
+a project choice when several projects exist.
+
 Browser-wide settings live at `/setting/general`, `/setting/editor` and
 `/setting/connection`, outside the connection namespace. `/` opens
 `/c/_/session`.

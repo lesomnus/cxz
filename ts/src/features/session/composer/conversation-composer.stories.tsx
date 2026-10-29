@@ -41,6 +41,67 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
+export const AutomaticSecretPaste: Story = {
+  render: function AutomaticSecretPaste() {
+    const [value, setValue] = useState("");
+    const [failure, setFailure] = useState(false);
+    const [writes, setWrites] = useState(0);
+    const [deletes, setDeletes] = useState(0);
+    const [values] = useState(() => new Map<string, Uint8Array>());
+    return (
+      <>
+        <Button onClick={() => setFailure(!failure)}>
+          {failure ? "Fail secret writes: on" : "Fail secret writes: off"}
+        </Button>
+        <output aria-label="Secret writes">{writes}</output>
+        <output aria-label="Deleted secret files">{deletes}</output>
+        <ComponentPreview
+          value={value}
+          onChange={setValue}
+          uploadMode="ready"
+          secretFiles={{
+            session: "storybook",
+            run: "run",
+            put: async (bytes, _signal, progress) => {
+              setWrites((count) => count + 1);
+              const value = bytes.slice();
+              for (const ratio of [0, 0.12, 0.25, 0.5, 0.75, 1]) {
+                progress?.(Math.ceil(bytes.length * ratio), bytes.length);
+                await new Promise((resolve) => setTimeout(resolve, 250));
+              }
+              if (failure) {
+                value.fill(0);
+                throw new Error("Simulated secret write failure");
+              }
+              const path = `/cxz/secrets/${crypto.randomUUID().slice(0, 8)}/value`;
+              values.set(path, value);
+              return path;
+            },
+            read: async (path, signal) => {
+              signal.throwIfAborted();
+              const value = values.get(path);
+              if (!value) throw new Error("Secret expired");
+              return value.slice();
+            },
+            remove: async (path) => {
+              values.get(path)?.fill(0);
+              values.delete(path);
+              setDeletes((count) => count + 1);
+            },
+          }}
+        />
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Paste a complete GitHub token or signed JWT to insert a Secret chip before normal paste handling. File preparation blocks Send; a failed chip can be inspected and deleted. This preview simulates secret file writes and never contacts a server. Prose, environment assignments and code containing tokens remain ordinary pastes.",
+      },
+    },
+  },
+};
 export const MenuOverTranscript: Story = {
   args: {
     uploadMode: "ready",
@@ -245,7 +306,7 @@ export const FileUploads: Story = {
     docs: {
       description: {
         story:
-          "Drop files or folders into the editor, or open Session menu → Upload files / Upload folder. Folders retain their tree in a tar archive. Large pastes show [Paste 012%] while transferring, with dark leading zeros, then a compact UTF-8 byte count such as [Text 34.5K] after acknowledgement. Picked files retain their names beside the status or size. The textarea contains exactly the visible chip label; sizes occupy a fixed field with dark leading zeros, and internal references stay in the draft model. Logical selections follow those references through progress, completion, copying and undo. Chips and code-block controls remain visible while composing with an IME. Send stays disabled until every attachment finishes. Click a chip to inspect its path or remove it. This preview simulates upload progress and acknowledgement; no server file is written and Send does not start a turn. The connected WASM sandbox exercises the real Upload RPC with in-memory files.",
+          "Dragging files or folders into the screen immediately reveals a drop target over the editor. Drop there to attach, or open Session menu → Upload files / Upload folder. Leaving the screen or canceling hides the target; dropping elsewhere does not attach or navigate away. Folders retain their tree in a tar archive. Pasted text has inline Text/File segments and a short hover excerpt. Text sends the original contents and is ready immediately; File sends the uploaded path and waits for acknowledgement. Selection is saved with the draft. Chips use CompactNumber sizes and muted upload percentages. Their reserved control area and logical selections stay aligned with the native textarea through progress, completion, IME, copying and undo. Ordinary file chips still open attachment details. Ctrl+P explicitly opens full source inspection. This preview simulates upload progress and acknowledgement; no server file is written and Send does not start a turn.",
       },
     },
   },

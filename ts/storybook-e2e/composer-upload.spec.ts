@@ -1,10 +1,15 @@
+import {
+  readChipDisplay,
+  expectChipDisplay,
+} from "../test-support/chip-display";
+import { caretPosition } from "../src/features/session/composer/editor-caret";
 import { expect, test } from "@playwright/test";
 
 test("pending uploads block send without moving the caret and deletion releases the blocker", async ({
   page,
 }) => {
   await page.goto(
-    "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
+    "/iframe.html?id=composer-upload-chips--interactive&viewMode=story",
   );
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   const send = page.getByRole("button", { name: "Send", exact: true });
@@ -26,20 +31,29 @@ test("pending uploads block send without moving the caret and deletion releases 
   });
   const chip = page.locator(".composer .paste-chip");
   await expect(chip).toHaveAttribute("data-upload-state", "uploading");
-  await expect(chip).toHaveAccessibleName("sample.txt · Uploading…");
+  await expect(chip).toHaveAccessibleName("sample.txt · 000%");
   await expect(send).toBeDisabled();
   await input.pressSequentially(" typing");
+  // The acknowledgement wait lasts 500ms. Default assertion backoff can skip
+  // that entire state after observing several earlier progress updates.
+  await expect
+    .poll(() => chip.getAttribute("aria-label"), { intervals: [50] })
+    .toMatch(/sample\.txt ·\s+099%$/);
+  await expect(send).toBeDisabled();
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
-  await expect(chip).toHaveAccessibleName("sample.txt · 5 B");
+  await expect(chip).toHaveAccessibleName("sample.txt · 0005B");
   expect(
     await input.evaluate((node: HTMLTextAreaElement) =>
       node.value.slice(0, node.selectionStart).endsWith(" typing"),
     ),
   ).toBe(true);
   await expect(send).toBeEnabled();
-  await expect(input).toHaveValue(/^Before sample.txt · 5 B typing after$/);
+  await expectChipDisplay(input, "Before sample.txt · 0005B typing after");
   await chip.click();
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Close paste preview", exact: true })
+    .click();
+  await input.press("Backspace");
   await expect(input).toHaveValue("Before  typing after");
   await expect(send).toBeEnabled();
 });
@@ -73,11 +87,11 @@ test("failed uploads retry in place and deleting a pending chip cancels it", asy
   await chip.click();
   await page.getByRole("button", { name: "Retry upload", exact: true }).click();
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
-  await expect(chip).toHaveAccessibleName("retry.txt · 5 B");
+  await expect(chip).toHaveAccessibleName("retry.txt · 0005B");
   await expect(
     page.getByRole("dialog", { name: "Attachment", exact: true }),
   ).toContainText("/cxz/assets/storybook/upload/retry.txt");
-  await expect(input).toHaveValue("retry.txt · 5 B");
+  await expectChipDisplay(input, "retry.txt · 0005B");
   await expect(send).toBeEnabled();
   await page.keyboard.press("Escape");
   await input.fill("keep");
@@ -102,9 +116,9 @@ test("failed uploads retry in place and deleting a pending chip cancels it", asy
 
 test("large pasted text shows upload status then UTF-8 bytes without internal names", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.goto(
-    "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
+    "/iframe.html?id=composer-upload-chips--interactive&viewMode=story",
   );
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   const text = "한글😀\n".repeat(3000) + "x".repeat(1500);
@@ -125,40 +139,67 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   }, text);
   const chip = page.locator(".composer .paste-chip");
   const label = chip.locator(".paste-chip-label");
-  await expect(chip).toHaveAccessibleName("[Paste 000%]");
-  await expect(label).toHaveText("[Paste 000%]");
+  await expect(chip).toHaveAccessibleName("Pasted text");
+  await expect(label).toHaveText(" 000%");
   await expect(chip.locator(".paste-chip-token")).toHaveCount(0);
-  await expect(label).toHaveText("[Paste 012%]");
-  await expect(label.locator("[data-paste-leading]")).toHaveText("0");
+  await expect(label).toHaveText(" 012%");
+  await expect(label.locator('[data-mode="integer"]')).toHaveAttribute(
+    "data-muted",
+    "true",
+  );
+  await expect(label.locator("[data-mode] > span").first()).toHaveText("0");
   expect(
     await label
-      .locator("[data-paste-leading]")
+      .locator("[data-mode] > span")
+      .first()
       .evaluate((node) => getComputedStyle(node).color),
   ).not.toBe(await label.evaluate((node) => getComputedStyle(node).color));
   await input.pressSequentially(" typing");
-  const before = await input.inputValue();
+  const before = await readChipDisplay(input);
   const selection = await input.evaluate(
     (node: HTMLTextAreaElement) => node.selectionStart,
   );
   const bounds = await chip.boundingBox();
+  const beforeCaret = await input.evaluate(caretPosition, selection);
+  await expect
+    .poll(() => label.textContent(), { intervals: [50] })
+    .toMatch(/099%$/);
+  await expect(chip).toHaveAttribute("data-upload-state", "uploading");
+  await expect(
+    page.getByRole("button", { name: "Send", exact: true }),
+  ).toBeDisabled();
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
   expect(bytes).toBe(34500);
-  await expect(label).toHaveText("[Text 34.5K]");
-  await expect(chip).toHaveAccessibleName("[Text 34.5K]");
-  await expect(chip).toHaveAttribute("title", /34,500 B/);
-  await expect(input).toHaveValue(
-    before.replace(/\[Paste \d{3}%\]/, "[Text 34.5K]"),
+  await expect(label).toHaveText("34.5K");
+  await expect(label.locator('[data-mode="compact"]')).toHaveText("34.5K");
+  await expect(
+    page.getByRole("button", { name: "Send", exact: true }),
+  ).toBeEnabled();
+  await expect(chip).toHaveAccessibleName("Pasted text");
+  await expect(chip).toHaveAttribute("aria-description", /34,500 B/);
+  await expectChipDisplay(input, before.replace(/ \d{3}%/, "34.5K"));
+  const afterCaret = await input.evaluate(
+    (node: HTMLTextAreaElement) => node.selectionStart,
   );
-  expect(
-    await input.evaluate((node: HTMLTextAreaElement) => node.selectionStart),
-  ).toBe(selection);
+  const point = await input.evaluate(caretPosition, afterCaret);
+  expect(Math.abs(point.left - beforeCaret.left)).toBeLessThan(0.1);
+  expect(Math.abs(point.top - beforeCaret.top)).toBeLessThan(0.1);
   const readyBounds = (await chip.boundingBox())!;
   // Different colored text runs can round their advances to neighboring
   // subpixels. Still reject any visible movement or change in chip size.
   for (const key of ["x", "y", "width", "height"] as const)
     expect(Math.abs(readyBounds[key] - bounds![key])).toBeLessThan(0.1);
-  await chip.click();
-  await expect(page.getByRole("dialog")).toContainText(text.trim());
+  await page.screenshot({
+    path: testInfo.outputPath("file-chip-composer.png"),
+  });
+  await chip.locator(".paste-chip-label").click();
+  const preview = page.getByRole("dialog", { name: "Paste source" });
+  expect(await preview.locator(".card-body").textContent()).toBe(text);
+  await preview.getByRole("button", { name: "Close paste preview" }).click();
+  await expect(preview).toHaveCount(0);
+  await page.mouse.move(0, 0);
+  await chip.hover();
+  await expect(page.getByRole("tooltip")).toHaveText("한글😀 한글😀 한글…");
 });
 
 test("upload acknowledgement during IME does not interrupt composition or expose references", async ({
@@ -180,7 +221,7 @@ test("upload acknowledgement during IME does not interrupt composition or expose
       }),
     );
   });
-  await expect(input).toHaveValue("[Paste 000%]");
+  await expectChipDisplay(input, " 000%");
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Input.imeSetComposition", {
     text: "하",
@@ -191,9 +232,11 @@ test("upload acknowledgement during IME does not interrupt composition or expose
     "data-upload-state",
     "ready",
   );
-  await expect(input).toHaveValue("[Paste 000%]하");
-  await expect(page.locator(".paste-chip-label")).toHaveText("[Paste 000%]");
+  await expectChipDisplay(input, " 000%하");
+  await expect(page.locator(".paste-chip-label")).toHaveText(" 000%");
   await cdp.send("Input.insertText", { text: "한" });
-  await expect(input).toHaveValue("[Text 0900B]한");
-  await expect(page.locator("[data-paste-leading]")).toHaveText("0");
+  await expectChipDisplay(input, "0900B한");
+  await expect(
+    page.locator(".paste-chip-label [data-mode] > span").first(),
+  ).toHaveText("0");
 });

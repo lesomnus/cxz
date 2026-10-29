@@ -1,5 +1,8 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Text: "Text",
+  "Pasted text": "Pasted text",
+  "Send pasted content as": "Send pasted content as",
   "Editor options": "Editor options",
   "Show control characters": "Show control characters",
   "Word wrap": "Word wrap",
@@ -166,6 +169,7 @@ export const messages = {
   "Clipboard access failed. Use the terminal context menu to copy.":
     "Clipboard access failed. Use the terminal context menu to copy.",
   "Upload files": "Upload files",
+  "Drop files or folders here": "Drop files or folders here",
   "Upload folder": "Upload folder",
   Attachment: "Attachment",
   "Uploading…": "Uploading…",
@@ -384,6 +388,7 @@ export const messages = {
   "Effort: {value} ({source})": "Effort: {value} ({source})",
   "Entire turn": "Entire turn",
   "Expand source": "Expand source",
+  Expand: "Expand",
   Export: "Export",
   "Fake agent · no accounts or real tasks":
     "Fake agent · no accounts or real tasks",
@@ -445,6 +450,7 @@ export const messages = {
   Output: "Output",
   Pace: "Pace",
   "Paste source": "Paste source",
+  "View pasted text": "View pasted text",
   "Paste storage has reached 32 MiB.": "Paste storage has reached 32 MiB.",
   "Paste · {lines} lines · {bytes}B": "Paste · {lines} lines · {bytes}B",
   "Pastes are limited to 1 MiB.": "Pastes are limited to 1 MiB.",

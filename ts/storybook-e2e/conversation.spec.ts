@@ -1,3 +1,8 @@
+import { inspectPaste } from "../test-support/paste-chip";
+import {
+  readChipDisplay,
+  expectChipDisplay,
+} from "../test-support/chip-display";
 import { expect, test, type Page } from "@playwright/test";
 
 async function story(page: Page, id: string, globals = "") {
@@ -83,8 +88,8 @@ test("paste chips preview and send their expanded contents", async ({
       }),
     );
   }, text);
-  await expect(editor).toHaveValue(/\[Text [0-9.]{4}[BKMT]\]/);
-  await page.locator(".paste-chip").click();
+  await expect.poll(() => readChipDisplay(editor)).toMatch(/[0-9.]{4}[BKMT]/);
+  await inspectPaste(page, page.locator(".paste-chip"));
   await expect(page.getByRole("dialog")).toContainText("const three = 3;");
   await page.getByRole("button", { name: "Close paste preview" }).click();
   await page.getByRole("button", { name: "Send", exact: true }).click();
@@ -97,13 +102,13 @@ test("paste chips preview and send their expanded contents", async ({
   expect(errors).toEqual([]);
 });
 
-test("same-size chips use exact visible widths and keep distinct sources through delete, undo and send", async ({
+test("same-size chips reserve native caret space and keep distinct sources through delete, undo and send", async ({
   page,
 }) => {
   await story(page, "conversation-playground--interactive");
   const input = page.getByRole("textbox", { name: "Message", exact: true });
-  const alpha = "alpha\n".repeat(4);
-  const bravo = "bravo\n".repeat(4);
+  const alpha = "alpha\n".repeat(6);
+  const bravo = "bravo\n".repeat(6);
   const paste = (body: string) =>
     input.evaluate((node, body) => {
       const clipboardData = new DataTransfer();
@@ -120,28 +125,50 @@ test("same-size chips use exact visible widths and keep distinct sources through
   await paste(alpha);
   await input.press("Space");
   await paste(bravo);
-  await expect(input).toHaveValue("[Text 0024B] [Text 0024B]");
+  await expectChipDisplay(input, "0036B 0036B");
   const chips = page.locator(".paste-chip");
   await expect(chips).toHaveCount(2);
   for (const chip of await chips.all()) {
     const width = await chip.evaluate((node) => {
+      const native = node
+        .closest("[data-chip-reservation]")!
+        .querySelector("[data-native-chip-text]")!;
       const range = document.createRange();
-      range.selectNodeContents(node.querySelector(".paste-chip-label")!);
+      range.selectNodeContents(native);
+      const text = range.getBoundingClientRect().width;
+      const cell = document.createElement("span");
+      cell.style.cssText = "position:absolute;display:block;width:1ch";
+      native.append(cell);
+      const advance = cell.getBoundingClientRect().width;
+      cell.remove();
       return {
         chip: node.getBoundingClientRect().width,
-        text: range.getBoundingClientRect().width,
+        text,
+        advance,
+        gap: parseFloat(
+          getComputedStyle(node).getPropertyValue("--ui-file-chip-caret-gap"),
+        ),
       };
     });
-    expect(Math.abs(width.chip - width.text)).toBeLessThan(0.1);
+    // Some fonts give every spacing glyph one cell, so reservation must round up.
+    expect(width.text).toBeGreaterThanOrEqual(width.chip + width.gap - 1 / 64);
+    expect(width.text).toBeLessThan(
+      width.chip + width.gap + width.advance + 1 / 64,
+    );
   }
-  await expect(chips.first().locator("[data-paste-leading]")).toHaveText("00");
-  await chips.first().click();
+  await expect(chips.first().locator("[data-mode] > span").first()).toHaveText(
+    "00",
+  );
+  await inspectPaste(page, chips.first());
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await expect(input).toHaveValue(" [Text 0024B]");
+  await page
+    .getByRole("button", { name: "Close paste preview", exact: true })
+    .click();
+  await input.press("Backspace");
+  await expectChipDisplay(input, " 0036B");
   await input.press("Control+z");
-  await expect(input).toHaveValue("[Text 0024B] [Text 0024B]");
-  await chips.first().click();
+  await expectChipDisplay(input, "0036B 0036B");
+  await inspectPaste(page, chips.first());
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
   const copied = await input.evaluate((node) => {
     const clipboardData = new DataTransfer();
@@ -156,7 +183,7 @@ test("same-size chips use exact visible widths and keep distinct sources through
   });
   expect(copied).toBe(alpha);
   await page.getByRole("button", { name: "Close paste preview" }).click();
-  await chips.last().click();
+  await inspectPaste(page, chips.last());
   await expect(page.getByRole("dialog")).toContainText(bravo.trim());
   await page.getByRole("button", { name: "Close paste preview" }).click();
   await page.getByRole("button", { name: "Send", exact: true }).click();
@@ -271,7 +298,7 @@ test("slash commands and Markdown editing use the shared editor behavior", async
 });
 
 for (const batch of [0, 1, 2, 3]) {
-  test(`major component stories render without runtime errors (batch ${batch + 1}/4)`, async ({
+  test(`cxz integration stories render without runtime errors (batch ${batch + 1}/4)`, async ({
     page,
     request,
   }) => {
@@ -280,28 +307,19 @@ for (const batch of [0, 1, 2, 3]) {
     const entries = Object.values(index.entries) as {
       id: string;
       type: string;
+      importPath: string;
     }[];
+    expect(
+      entries.filter((entry) => entry.importPath.includes("/packages/nox/")),
+      "Standalone Nox stories belong to the Nox catalog",
+    ).toEqual([]);
     for (const entry of entries
       .filter((entry) => entry.type === "story")
       .filter((_, index) => index % 4 === batch)) {
       const errors = await story(page, entry.id);
       // Wait for component mount rather than just Storybook's loading shell.
       await expect(page.locator("#storybook-root"), entry.id).toBeVisible();
-      if (entry.id.startsWith("editor-sourceeditor--")) {
-        await expect(page.locator(".monaco-editor"), entry.id).toBeVisible();
-        await expect
-          .poll(
-            () =>
-              page
-                .locator(".code-editor")
-                .evaluate(
-                  (el) => el.clientHeight / el.parentElement!.clientHeight,
-                ),
-            { message: entry.id },
-          )
-          .toBeGreaterThan(0.95);
-      }
-      if (entry.id.startsWith("components-floatingcard--")) {
+      if (entry.id.startsWith("conversation-taskdetails--")) {
         await expect(page.locator(".floating-card"), entry.id).toHaveCSS(
           "opacity",
           "1",
@@ -362,54 +380,18 @@ test("long conversation uses virtual rows and the real transcript scrollbar", as
   expect(errors).toEqual([]);
 });
 
-test("standalone floating cards are opaque, readable and interactive", async ({
+test("task detail tabs remain readable and interactive inside their floating card", async ({
   page,
 }) => {
-  const errors = await story(page, "components-floatingcard--paste-preview");
-  const card = page.locator(".floating-card");
-  await expect(card).toHaveCSS("opacity", "1");
-  await expect(card).toBeInViewport();
-  await expect(card.getByText("Paste preview", { exact: true })).toBeVisible();
-  await expect(card.locator("pre")).toContainText("export const ready = true;");
-  await expect(
-    card.getByRole("button", { name: "Close paste preview" }),
-  ).toBeEnabled();
-  await page.goto(
-    "/iframe.html?id=components-floatingcard--editor-tabs&viewMode=story",
-  );
+  const errors = await story(page, "conversation-taskdetails--editor-tabs");
   await expect(page.locator(".floating-card")).toHaveCSS("opacity", "1");
+  await expect(page.locator(".floating-card")).toBeInViewport();
   const viewport = page.locator(".detail-editor");
   await expect
     .poll(() => viewport.evaluate((el) => el.clientHeight))
     .toBeGreaterThan(100);
   await page.getByRole("tab", { name: "Output", exact: true }).click();
   await expect(page.getByRole("tabpanel")).toContainText("main");
-  expect(errors).toEqual([]);
-});
-
-test("source editor fills its preview and accepts edits", async ({ page }) => {
-  const errors = await story(page, "editor-sourceeditor--settings-json");
-  await expect(page.locator(".monaco-editor")).toBeVisible();
-  const editor = page.locator(".code-editor");
-  await expect
-    .poll(() =>
-      editor.evaluate((el) => el.clientHeight / el.parentElement!.clientHeight),
-    )
-    .toBeGreaterThan(0.95);
-  await expect(page.locator(".view-lines")).toContainText('"editor.tabSize"');
-  // Monaco's visible text layer receives clicks above its native textarea.
-  await page.locator(".monaco-editor").click({ position: { x: 130, y: 24 } });
-  await expect(
-    page.getByRole("textbox", { name: "Settings file", exact: true }),
-  ).toBeFocused();
-  await page.keyboard.press("Control+A");
-  // Clear the selection before typing delimiters, which would wrap it.
-  await page.keyboard.press("Backspace");
-  await page.keyboard.type('{"editor.tabSize": 6}');
-  await expect(page.locator(".view-lines")).toContainText(
-    '"editor.tabSize": 6',
-  );
-  await expect(page.locator(".view-line")).toHaveText('{"editor.tabSize": 6}');
   expect(errors).toEqual([]);
 });
 

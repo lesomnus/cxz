@@ -1,9 +1,11 @@
+import { PASTE_CHIP_PREFIX } from "./paste-chip-layout";
 import { expect, test } from "vitest";
+import { fileChipText } from "@lesomnus/nox";
 import { createPaste, createFileChip } from "./composer-pastes";
 import { presentPaste } from "./paste-presentation";
 import { PasteEditHistory, PasteProjection } from "./paste-projection";
 
-test("textarea text and chip width use only the presentation with five size cells", () => {
+test("textarea text reserves decoration space and keeps five size cells", () => {
   const small = createPaste("x".repeat(55), "11111111");
   const large = createPaste("x".repeat(1230), "22222222");
   const pastes = new Map([
@@ -12,8 +14,13 @@ test("textarea text and chip width use only the presentation with five size cell
   ]);
   const source = `한 ${small.token} ${large.token} 뒤`;
   const projection = new PasteProjection(source, pastes);
-  expect(projection.text).toBe("한 [Text 0055B] [Text 1.23K] 뒤");
-  expect(projection.ranges.map((r) => r.end - r.start)).toEqual([12, 12]);
+  expect(projection.text).toBe(
+    `한 ${pasteText("0055B")} ${pasteText("1.23K")} 뒤`,
+  );
+  expect(projection.ranges.map((r) => r.end - r.start)).toEqual([
+    pasteText("0055B").length,
+    pasteText("1.23K").length,
+  ]);
   expect(presentPaste(small).leading).toBe("00");
   for (const range of projection.ranges) {
     expect(projection.toSource(range.start)).toBe(range.sourceStart);
@@ -32,15 +39,17 @@ test("identical labels retain their own bodies when either chip is deleted or ed
     [second.token, second],
   ]);
   const projection = new PasteProjection(first.token + second.token, pastes);
-  expect(projection.text).toBe("[Text 0005B][Text 0005B]");
-  expect(projection.edit("[Text 0005B]", 0)).toBe(second.token);
-  expect(projection.edit("[Text 0005B]", 12)).toBe(first.token);
-  expect(projection.splice(0, 12, "")).toBe(second.token);
-  expect(projection.splice(12, 24, "")).toBe(first.token);
-  expect(projection.edit("[Text 0005B]![Text 0005B]", 13)).toBe(
+  const label = pasteText("0005B");
+  const width = label.length;
+  expect(projection.text).toBe(label + label);
+  expect(projection.edit(label, 0)).toBe(second.token);
+  expect(projection.edit(label, width)).toBe(first.token);
+  expect(projection.splice(0, width, "")).toBe(second.token);
+  expect(projection.splice(width, 2 * width, "")).toBe(first.token);
+  expect(projection.edit(label + "!" + label, width + 1)).toBe(
     first.token + "!" + second.token,
   );
-  expect(projection.edit("[Text 0095B][Text 0005B]", 9)).toBeUndefined();
+  expect(projection.edit(pasteText("0095B") + label, 12)).toBeUndefined();
 });
 
 test("progress and failure widths map selection back to the stable reference", () => {
@@ -51,7 +60,7 @@ test("progress and failure widths map selection back to the stable reference", (
   const caret = pending.toSource(pending.text.length);
   paste.attachment!.state = "ready";
   const ready = new PasteProjection(source, pastes);
-  expect(ready.text).toBe("sample.txt · 5 B tail");
+  expect(ready.text).toBe(fileChipText("sample.txt · 0005B") + " tail");
   expect(ready.toDisplay(caret)).toBe(ready.text.length);
 });
 
@@ -76,4 +85,33 @@ test("native undo and redo restore exact references even with identical labels",
   history.record(typingUndo, remaining.text);
   expect(history.restore(initial.text, "historyUndo")).toBe(initial.source);
   expect(history.restore(remaining.text, "historyRedo")).toBe(second.token);
+});
+
+function pasteText(label: string) {
+  return fileChipText(label, PASTE_CHIP_PREFIX);
+}
+
+test("measured chip reservations preserve atomic edits and frozen IME views", () => {
+  const paste = createPaste("hello", "11111111");
+  const pastes = new Map([[paste.token, paste]]);
+  const text = "\u200b\u2007\u2063measured\u200b";
+  const layouts = new Map([[paste.token, { label: "0005B", text }]]);
+  const source = `앞 ${paste.token} 뒤`;
+  const projection = new PasteProjection(source, pastes, undefined, layouts);
+  expect(projection.text).toBe(`앞 ${text} 뒤`);
+  const range = projection.ranges[0];
+  expect(projection.splice(range.start, range.end, "")).toBe("앞  뒤");
+  expect(projection.toSource(range.end)).toBe(range.sourceEnd);
+  expect(projection.edit(`앞 ${text}! 뒤`, range.end + 1)).toBe(
+    `앞 ${paste.token}! 뒤`,
+  );
+  const frozen = new Map([[paste.token, range.presentation]]);
+  layouts.set(paste.token, { label: "0005B", text: "different geometry" });
+  expect(new PasteProjection(source, pastes, frozen, layouts).text).toBe(
+    projection.text,
+  );
+  layouts.set(paste.token, { label: "old label", text: "stale geometry" });
+  expect(
+    new PasteProjection(source, pastes, undefined, layouts).text,
+  ).not.toContain("stale geometry");
 });

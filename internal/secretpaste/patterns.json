@@ -1,0 +1,19 @@
+[
+  {
+    "name": "GitHub token",
+    "pattern": "gh[pour]_[A-Za-z0-9_]{20,}"
+  },
+  {
+    "name": "GitHub fine-grained token",
+    "pattern": "github_pat_[A-Za-z0-9_]{20,}"
+  },
+  {
+    "name": "GitHub installation token",
+    "pattern": "ghs_[A-Za-z0-9_.-]{20,}"
+  },
+  {
+    "name": "JWT",
+    "pattern": "[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+",
+    "validator": "jwt"
+  }
+]

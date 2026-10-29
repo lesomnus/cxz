@@ -1,3 +1,4 @@
+import { inspectPaste } from "../test-support/paste-chip";
 import { expect, test } from "@playwright/test";
 
 test.use({
@@ -69,13 +70,11 @@ test("option cards and Other share native selection and multiline paste editing"
   await expect(chip).toHaveCount(1);
   await expect(page.locator(".composer .paste-chip")).toHaveCount(0);
   const compact = await other.inputValue();
-  await chip.click();
+  await inspectPaste(page, chip);
   const preview = page.getByRole("dialog", { name: "Paste source" });
-  await expect(preview.locator("pre")).toHaveText(body);
+  await expect(preview.locator(".card-body")).toHaveText(body);
   await expect(page.locator(".question-cards")).toHaveJSProperty("inert", true);
-  await preview
-    .getByRole("button", { name: "Expand source", exact: true })
-    .click();
+  await preview.getByRole("button", { name: "Expand", exact: true }).click();
   await expect(preview).toHaveCount(0);
   // Native textarea values normalize CRLF; raw chip submission retains it.
   const expanded = "prefix\n" + body.replaceAll("\r\n", "\n");

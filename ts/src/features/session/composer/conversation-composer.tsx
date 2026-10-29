@@ -21,6 +21,7 @@ import type { ComposerCommand } from "./composer-commands";
 import type { LookupPaths } from "./composer-paths";
 import { attachmentsReady, type ComposerPaste } from "./composer-pastes";
 import type { UploadFile } from "./composer-upload";
+import type { SecretFiles } from "./secret-paste";
 import { useSpeechInput } from "#src/shared/browser/use-speech-input.ts";
 import { MicrophoneControl } from "./microphone-control";
 import { useMicrophoneLevel } from "#src/shared/browser/use-microphone-level.ts";
@@ -53,6 +54,7 @@ export function ConversationComposer({
   onLatest,
   menu,
   upload,
+  secretFiles,
   onDraftAssetsChange,
   queued,
   children,
@@ -82,6 +84,7 @@ export function ConversationComposer({
   onLatest?: () => void;
   menu?: ReactNode | ((pick: (directory?: boolean) => void) => ReactNode);
   upload?: UploadFile;
+  secretFiles?: SecretFiles;
   onDraftAssetsChange?: () => void;
   queued?: ReactNode;
   children?: ReactNode;
@@ -298,6 +301,8 @@ export function ConversationComposer({
             workspace={workspace}
             editorRef={editor}
             upload={upload}
+            secretFiles={secretFiles}
+            detectSecrets
             onUploadChange={() => {
               refreshUploads((value) => value + 1);
               onDraftAssetsChange?.();

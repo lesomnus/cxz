@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { PasteChip } from "./paste-chip";
 import type { ComposerPaste } from "./composer-pastes";
+import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 
 const file: ComposerPaste = {
   token: "[File 12345678 · archive.zip]",
@@ -22,11 +23,23 @@ const meta = {
   title: "Composer/Upload chips",
   component: PasteChip,
   args: { paste: file, onOpen: () => {} },
+  render: function Chip(args) {
+    const [paste, setPaste] = useState(args.paste);
+    useEffect(() => setPaste(args.paste), [args.paste]);
+    return (
+      <PasteChip
+        {...args}
+        paste={paste}
+        canSendFile
+        onSendModeChange={(mode) => setPaste({ ...paste, sendAs: mode })}
+      />
+    );
+  },
   parameters: {
     docs: {
       description: {
         component:
-          "File uploads and large pastes shimmer while uploading, then fade into solid chips. Replay the simulated upload to inspect completion. Respects reduced motion.",
+          "File uploads and large pastes share Nox FileChip's transparent outlined design with conversation file links. Uploads shimmer until acknowledged. Replay the simulated upload to inspect completion. Respects reduced motion.",
       },
     },
   },
@@ -40,10 +53,38 @@ export const Ready: Story = {
     paste: { ...file, attachment: { ...file.attachment!, state: "ready" } },
   },
 };
+export const ReadyPaste: Story = {
+  args: {
+    paste: { ...text, attachment: { ...text.attachment!, state: "ready" } },
+  },
+};
+export const Interactive: Story = {
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Paste up to 32 characters as ordinary text, 33–64 as a Text chip, and longer text as a File chip by default. Text chips upload only when switched to File. You can also drop files and folders into the real conversation editor. Hover shows a short excerpt. Clicking a paste label opens its complete source in a headerless Card above the composer, with Expand on the left and Close on the right. Delivery controls only change Text/File mode. Backspace/Delete removes a selected chip, and Ctrl+P also opens its preview. Native paste/drop runs normally; only upload acknowledgement is simulated, so no files leave the browser.",
+      },
+    },
+  },
+  render: function Interactive() {
+    const [value, setValue] = useState("");
+    return (
+      <ComponentPreview
+        value={value}
+        onChange={setValue}
+        uploadMode="slow"
+        autoFocus
+      />
+    );
+  },
+};
 export const UploadTransition: Story = {
   render: function Transition() {
     const [progress, setProgress] = useState(0);
     const [attempt, setAttempt] = useState(0);
+    const [sendAs, setSendAs] = useState<"text" | "file">("file");
     useEffect(() => {
       const timer = window.setInterval(
         () =>
@@ -64,6 +105,7 @@ export const UploadTransition: Story = {
             <PasteChip
               paste={{
                 ...paste,
+                sendAs: paste.body ? sendAs : undefined,
                 attachment: {
                   ...paste.attachment!,
                   progress,
@@ -71,6 +113,8 @@ export const UploadTransition: Story = {
                 },
               }}
               onOpen={() => {}}
+              canSendFile
+              onSendModeChange={setSendAs}
             />
           </div>
         ))}

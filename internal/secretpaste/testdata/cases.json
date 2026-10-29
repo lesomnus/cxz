@@ -1,0 +1,172 @@
+[
+  {
+    "name": "classic",
+    "text": "ghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12",
+    "kind": "GitHub token"
+  },
+  {
+    "name": "fine grained",
+    "text": "github_pat_aB12_aB12_aB12_aB12_aB12_aB12_aB12_aB12_aB12_aB12_aB12_aB12_aB12_aB12_",
+    "kind": "GitHub fine-grained token"
+  },
+  {
+    "name": "gho",
+    "text": "gho_aB12aB12aB12aB12aB12aB12aB12aB12aB12",
+    "kind": "GitHub token"
+  },
+  {
+    "name": "ghu",
+    "text": "ghu_aB12aB12aB12aB12aB12aB12aB12aB12aB12",
+    "kind": "GitHub token"
+  },
+  {
+    "name": "ghr",
+    "text": "ghr_aB12aB12aB12aB12aB12aB12aB12aB12aB12",
+    "kind": "GitHub token"
+  },
+  {
+    "name": "installation",
+    "text": "ghs_aB12aB12aB12aB12aB12aB12aB12aB12aB12",
+    "kind": "GitHub installation token"
+  },
+  {
+    "name": "stateless installation",
+    "text": "ghs_12345_eyJhbGciOiJSUzI1NiIsImtpZCI6ImZpeHR1cmUifQ.eyJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6ZGVmYXVsdDpmaXh0dXJlIiwiZXhwIjoxfQ.c2lnbmF0dXJl",
+    "kind": "GitHub installation token"
+  },
+  {
+    "name": "kubernetes jwt",
+    "text": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImZpeHR1cmUifQ.eyJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6ZGVmYXVsdDpmaXh0dXJlIiwiZXhwIjoxfQ.c2lnbmF0dXJl",
+    "kind": "JWT"
+  },
+  {
+    "name": "reordered jwt",
+    "text": "eyJraWQiOiJmaXh0dXJlIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.e30.c2lnbmF0dXJl",
+    "kind": "JWT"
+  },
+  {
+    "name": "surrounding whitespace",
+    "text": "\ufeff \tghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12\r\n",
+    "kind": "GitHub token"
+  },
+  {
+    "name": "internal newline",
+    "text": "ghp_aB12aB12aB12\naB12aB12aB12aB12aB12aB12",
+    "kind": ""
+  },
+  {
+    "name": "plain text",
+    "text": "hello world",
+    "kind": ""
+  },
+  {
+    "name": "prefix only",
+    "text": "ghp_",
+    "kind": ""
+  },
+  {
+    "name": "short suffix",
+    "text": "ghp_short",
+    "kind": ""
+  },
+  {
+    "name": "uppercase prefix",
+    "text": "GHP_aB12aB12aB12aB12aB12aB12aB12aB12aB12",
+    "kind": ""
+  },
+  {
+    "name": "prose",
+    "text": "use ghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12 please",
+    "kind": ""
+  },
+  {
+    "name": "environment assignment",
+    "text": "TOKEN=ghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12",
+    "kind": ""
+  },
+  {
+    "name": "json",
+    "text": "{\"token\": \"ghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12\"}",
+    "kind": ""
+  },
+  {
+    "name": "code",
+    "text": "`ghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12`",
+    "kind": ""
+  },
+  {
+    "name": "quotes",
+    "text": "\"ghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12\"",
+    "kind": ""
+  },
+  {
+    "name": "two tokens",
+    "text": "ghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12\neyJhbGciOiJSUzI1NiIsImtpZCI6ImZpeHR1cmUifQ.eyJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6ZGVmYXVsdDpmaXh0dXJlIiwiZXhwIjoxfQ.c2lnbmF0dXJl",
+    "kind": ""
+  },
+  {
+    "name": "header prefix only",
+    "text": "eyJhbGciOiJSUzI1NiJ9",
+    "kind": ""
+  },
+  {
+    "name": "not json jwt",
+    "text": "aGVsbG8.e30.c2lnbmF0dXJl",
+    "kind": ""
+  },
+  {
+    "name": "array header",
+    "text": "W10.e30.c2lnbmF0dXJl",
+    "kind": ""
+  },
+  {
+    "name": "array payload",
+    "text": "eyJhbGciOiJSUzI1NiJ9.W10.c2lnbmF0dXJl",
+    "kind": ""
+  },
+  {
+    "name": "null payload",
+    "text": "eyJhbGciOiJSUzI1NiJ9.bnVsbA.c2lnbmF0dXJl",
+    "kind": ""
+  },
+  {
+    "name": "missing algorithm",
+    "text": "eyJ0eXAiOiJKV1QifQ.e30.c2lnbmF0dXJl",
+    "kind": ""
+  },
+  {
+    "name": "invalid algorithm",
+    "text": "eyJhbGciOm51bGx9.e30.c2lnbmF0dXJl",
+    "kind": ""
+  },
+  {
+    "name": "invalid encoding",
+    "text": "eyJhbGciOiJSUzI1NiJ9.e30.a",
+    "kind": ""
+  },
+  {
+    "name": "empty signature",
+    "text": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImZpeHR1cmUifQ.eyJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6ZGVmYXVsdDpmaXh0dXJlIiwiZXhwIjoxfQ.",
+    "kind": ""
+  },
+  {
+    "name": "punctuation",
+    "text": "ghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12!",
+    "kind": ""
+  },
+  {
+    "name": "ordinary base64",
+    "text": "dGhpcyBpcyBub3QgYSB0b2tlbg",
+    "kind": ""
+  },
+  {
+    "name": "invalid utf8",
+    "text": "eyJhbGciOiJSUzI1NiIsIngiOiL_In0.e30.c2lnbmF0dXJl",
+    "kind": ""
+  },
+  {
+    "name": "non javascript whitespace",
+    "text": "\u0085ghp_aB12aB12aB12aB12aB12aB12aB12aB12aB12",
+    "kind": ""
+  }
+]

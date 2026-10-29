@@ -3,7 +3,17 @@ export type ComposerPaste = {
   body: string;
   lines: number;
   bytes: number;
-  secret?: { session: string; run: string; path: string };
+  sendAs?: "text" | "file";
+  secret?: {
+    session: string;
+    run: string;
+    path: string;
+    kind?: string;
+    state?: "uploading" | "ready" | "error";
+    progress?: number;
+    error?: string;
+    listeners?: Set<() => void>;
+  };
   attachment?: {
     file?: File;
     name: string;
@@ -23,13 +33,24 @@ export type PasteRange = {
 export const MAX_PASTE_BYTES = 1024 * 1024;
 export const MAX_PASTE_CACHE_BYTES = 32 * MAX_PASTE_BYTES;
 
+export function isTextPaste(paste: ComposerPaste) {
+  return !paste.secret && !!paste.body;
+}
+export function pasteSendMode(paste: ComposerPaste): "text" | "file" {
+  return paste.sendAs ?? (paste.attachment ? "file" : "text");
+}
+
 export function needsPasteChip(text: string) {
-  let characters = 0,
-    newlines = 0;
-  for (const character of text) {
-    if (++characters > 800 || (character === "\n" && ++newlines >= 3))
-      return true;
-  }
+  return exceedsCharacters(text, 32);
+}
+
+export function defaultPasteSendMode(text: string): "text" | "file" {
+  return exceedsCharacters(text, 64) ? "file" : "text";
+}
+
+function exceedsCharacters(text: string, limit: number) {
+  let characters = 0;
+  for (const _ of text) if (++characters > limit) return true;
   return false;
 }
 
@@ -70,8 +91,13 @@ export function expandPastes(
     offset = 0;
   for (const range of pasteRanges(text, pastes)) {
     const attachment = range.paste.attachment;
-    const body =
-      attachmentPaths && attachment?.path
+    const body = range.paste.secret
+      ? range.paste.secret.path
+        ? `(secret placed at ${range.paste.secret.path})`
+        : range.paste.token
+      : attachmentPaths &&
+          attachment?.path &&
+          !(isTextPaste(range.paste) && pasteSendMode(range.paste) === "text")
         ? attachment.directory
           ? `[Attached directory archive: ${attachment.path} — extract this tar archive to read the directory contents]`
           : `[Attached file: ${attachment.path} — read this file for the full content]`
@@ -86,8 +112,14 @@ export function attachmentsReady(
   text: string,
   pastes: Map<string, ComposerPaste>,
 ) {
-  return pasteRanges(text, pastes).every(
-    ({ paste }) => !paste.attachment || paste.attachment.state === "ready",
+  return pasteRanges(text, pastes).every(({ paste }) =>
+    paste.secret
+      ? !!paste.secret.path &&
+        (!paste.secret.state || paste.secret.state === "ready")
+      : isTextPaste(paste)
+        ? pasteSendMode(paste) === "text" ||
+          (paste.attachment?.state === "ready" && !!paste.attachment.path)
+        : !paste.attachment || paste.attachment.state === "ready",
   );
 }
 

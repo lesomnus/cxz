@@ -1,3 +1,4 @@
+import { inspectPaste } from "../test-support/paste-chip";
 import { expect, test } from "@playwright/test";
 
 test.use({
@@ -101,7 +102,7 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await expect(
     page.locator("article.input").filter({ hasText: "keep draft" }),
   ).toHaveCount(0);
-  const pasted = "one\ntwo\nthree\nfour";
+  const pasted = "one\ntwo\nthree\nfour".repeat(4);
   await input.fill("");
   await page.evaluate((text) => navigator.clipboard.writeText(text), pasted);
   await input.press("Control+v");
@@ -121,9 +122,9 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await expect(input).toHaveValue("  " + token);
   await input.press("Control+z");
   await expect(input).toHaveValue("    " + token);
-  await page.locator(".paste-chip").click();
+  await inspectPaste(page, page.locator(".paste-chip"));
   await expect(
-    page.getByRole("dialog", { name: "Paste source" }).locator("pre"),
+    page.getByRole("dialog", { name: "Paste source" }).locator(".card-body"),
   ).toHaveText(pasted);
   await page.keyboard.press("Escape");
   await input.press("Control+Enter");

@@ -287,15 +287,7 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--space);
 }
-.form {
-  display: grid;
-  gap: calc(2 * var(--space));
-  border: 0;
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-}
-.form textarea {
+.description {
   resize: vertical;
   min-height: 6lh;
   max-height: 25dvh;

@@ -3,23 +3,9 @@ import { noxConfig } from "../scripts/nox-vite.mjs";
 import type { StorybookConfig } from "@storybook/react-vite";
 
 const config: StorybookConfig = {
-  stories: [
-    "../src/**/*.stories.@(ts|tsx)",
-    "../packages/nox/src/components/action-menu/*.stories.tsx",
-    "../packages/nox/src/components/panel-item/*.stories.tsx",
-    "../packages/nox/src/components/page-toolbar/*.stories.tsx",
-    "../packages/nox/src/components/icon-value-menu/*.stories.tsx",
-    "../packages/nox/src/components/card/*.stories.tsx",
-    "../packages/nox/src/components/compact-number/*.stories.tsx",
-    "../packages/nox/src/components/duration-display/*.stories.tsx",
-    "../packages/nox/src/components/suggestion-grid/*.stories.tsx",
-    "../packages/nox/src/components/split-layout/*.stories.tsx",
-    "../packages/nox/src/components/resize-handle/*.stories.tsx",
-    "../packages/nox/src/components/audio-waveform/*.stories.tsx",
-    "../packages/nox/src/components/badged-icon/*.stories.tsx",
-    "../packages/nox/src/components/popover/*.stories.tsx",
-    "../packages/nox/src/terminal/*.stories.tsx",
-  ],
+  // Nox's standalone catalog belongs to .storybook-ui. This catalog only
+  // exercises cxz components and their product-specific integrations.
+  stories: ["../src/**/*.stories.@(ts|tsx)"],
   viteFinal: (config) => mergeConfig(config, noxConfig("serve")),
   addons: ["@storybook/addon-docs"],
   framework: "@storybook/react-vite",

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { LocaleStore, resolveLocale } from "./i18n";
-import { messages as en } from "#src/shared/i18n/locales/en.ts";
+import { messages as en, type Message } from "#src/shared/i18n/locales/en.ts";
 import { messages as ko } from "#src/shared/i18n/locales/ko.ts";
 import { parseSettings } from "#src/shared/settings/editor-settings.ts";
 
@@ -14,6 +14,19 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 describe("language packs", () => {
+  it("keeps rendering when a runtime message is absent from an older catalog", async () => {
+    const store = new LocaleStore({ ko: async () => ko });
+    const newerMessage = "New runtime message: {value}" as Message;
+    expect(store.translate(newerMessage, { value: "ready" })).toBe(
+      "New runtime message: ready",
+    );
+    await store.activate("ko");
+    expect(store.translate(newerMessage, { value: "ready" })).toBe(
+      "New runtime message: ready",
+    );
+    expect(store.translate("View pasted text")).toBe("붙여넣은 텍스트 보기");
+    expect(store.translate("Expand")).toBe("펼치기");
+  });
   it("defaults to English without fetching and only prepares a pack on demand", async () => {
     const request = deferred();
     const load = vi.fn(() => request.promise);

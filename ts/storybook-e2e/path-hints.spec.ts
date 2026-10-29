@@ -159,31 +159,6 @@ test("path matrix navigates spatially, scrolls candidates and stays outside the 
   await expect(grid).toHaveCount(0);
 });
 
-test("reusable suggestion grid previews retain host focus", async ({
-  page,
-}) => {
-  await page.goto(
-    "/iframe.html?id=components-suggestiongrid--candidates&viewMode=story",
-  );
-  const input = page.getByRole("textbox", { name: "Query" });
-  const grid = page.getByRole("grid", { name: "Candidates" });
-  await expect(grid.getByRole("gridcell")).toHaveCount(24);
-  await input.focus();
-  await input.press("ArrowRight");
-  await expect(grid.locator('[aria-selected="true"]')).toHaveAttribute(
-    "aria-label",
-    "candidate-2",
-  );
-  await grid
-    .getByRole("gridcell", { name: "candidate-4", exact: true })
-    .click();
-  await expect(input).toBeFocused();
-  await expect(grid.locator('[aria-selected="true"]')).toHaveAttribute(
-    "aria-label",
-    "candidate-4",
-  );
-});
-
 test("radial hints follow horizontal caret motion and reverse the anchor when opening below", async ({
   page,
 }) => {

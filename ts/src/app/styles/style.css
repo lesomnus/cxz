@@ -96,6 +96,12 @@ textarea,
 select {
   font: inherit;
 }
+/* Editable text breaks at any character by default, including long tokens. */
+input,
+textarea,
+[contenteditable]:not([contenteditable="false"]) {
+  word-break: break-all;
+}
 a.route-link,
 input,
 textarea,
@@ -958,6 +964,7 @@ header strong {
   padding: 0;
   white-space: normal;
   overflow-wrap: anywhere;
+  word-break: break-all;
   margin: 0;
 }
 .input-box .message-body > .markdown {
@@ -1097,7 +1104,7 @@ pre {
   padding: 0;
   overflow-wrap: normal;
 }
-.markdown a {
+.markdown a:not([data-container-file]) {
   color: var(--shade-237);
   text-underline-offset: 3px;
 }
@@ -1551,6 +1558,7 @@ pre {
   font-variant-ligatures: none;
   /* Preserve every space's advance across soft wraps in native and mirror text. */
   white-space: break-spaces;
+  word-break: break-all;
 }
 .editor-gutter {
   position: relative;
@@ -1773,9 +1781,27 @@ pre {
   color: var(--code-attr, #a18b7c);
 }
 .composer-editor[data-file-drag="true"] {
-  background: var(--shade-40);
-  outline: 1px solid var(--shade-120);
-  outline-offset: -1px;
+  border-radius: inherit;
+}
+.composer-file-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--shade-122);
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--shade-32) 90%, transparent);
+  color: var(--shade-237);
+  font-family: Inter, system-ui, sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+.composer-file-drop-overlay svg {
+  flex-shrink: 0;
 }
 .attachment-info {
   overflow-wrap: anywhere;
@@ -1818,6 +1844,7 @@ pre {
     0px,
     calc(var(--card-space, 50dvh) - var(--card-reserve))
   );
+  --card-preview-max-height: min(360px, var(--card-max-height));
   position: absolute;
   bottom: calc(100% + 1px);
   left: calc(-1px - var(--card-shadow-left));
@@ -1836,7 +1863,7 @@ pre {
   --card-reserve: 0px;
 }
 .floating-card-host > .floating-card {
-  max-height: min(360px, var(--card-max-height));
+  max-height: var(--card-preview-max-height);
 }
 .question-cards {
   position: absolute;
