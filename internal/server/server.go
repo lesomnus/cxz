@@ -832,6 +832,16 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 		lastFrame = time.Now()
 		return stream.Send(&api.Event{Heartbeat: true})
 	}
+	// One connection for the whole stream, because a stream reads one file for
+	// its whole life. Opening it is not opening a file: this driver is a wasm
+	// sqlite, so each connection instantiates a module with a memory
+	// reservation and a page cache of its own -- around 251MB of address space
+	// and hundreds of kilobytes resident. Taken per read, as this loop used to,
+	// a runtime grew by about 29MB a minute and a session watched for a morning
+	// reached ten gigabytes. See cxz#314.
+	var conversation *sql.DB
+	closeConversation := func() {}
+	defer func() { closeConversation() }()
 	for {
 		// Legacy watchers cannot report input activity. Treat them as busy
 		// until disconnected rather than restarting underneath an old TUI.
@@ -862,12 +872,23 @@ func (s *Server) Watch(r *api.WatchRequest, stream grpc.ServerStreamingServer[ap
 			return e
 		}
 		lastConversation, lastJournalRefresh = conversationFence{size, mtime}, time.Now()
-		db, release := s.conversationFor(ctx, m)
+		db := conversation
+		if db == nil {
+			var release func()
+			db, release = s.conversationFor(ctx, m)
+			// statErr says the store is there, so that is the session's own and
+			// it is kept. A session that has recorded nothing is answered from
+			// this server's own empty table, whose closer does nothing, and its
+			// store is looked for again on the next tick rather than this
+			// answer being kept for the life of the stream.
+			if statErr == nil {
+				conversation, closeConversation = db, release
+			}
+		}
 		rows, e := db.QueryContext(ctx, "SELECT data FROM events WHERE session_id=? AND seq>? ORDER BY seq LIMIT 256", m.ID, cursor)
 		if e != nil {
 			return e
 		}
-		defer release()
 		var batch []core.Event
 		for rows.Next() {
 			var b []byte

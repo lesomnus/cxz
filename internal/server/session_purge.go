@@ -116,6 +116,13 @@ func (s *Server) forgetSession(ctx context.Context, id string) error {
 	if p != nil {
 		p.mu.Lock()
 		defer p.mu.Unlock()
+		// The projection held this session's store open. The map entry is gone,
+		// so nothing will ask for it again and the connection goes with it
+		// rather than staying for the life of the process. See cxz#314.
+		if p.store != nil {
+			_ = p.store.Close()
+			p.store = nil
+		}
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
