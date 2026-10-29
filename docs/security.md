@@ -92,8 +92,9 @@ against a remote service. Format-matching expired or example tokens are still
 treated as secrets.
 
 Browser preparation immediately inserts a safe placeholder and blocks Send until
-the secret file is ready. The chip shows `Secret` and measured upload percentage
-while preparing, capped at 99% until the server acknowledges storage. It uses the
+the secret file is ready. The chip uses a fixed six-character slot, showing a
+CompactNumber percentage such as `  099%` while preparing and `Secret` afterward.
+Progress is capped at 99% until the server acknowledges storage. It uses the
 same authenticated Connect RPC with XHR for upload progress. Ready chips show
 only `Secret`; internal IDs remain internal. Failure, cancellation or an
 unavailable session never

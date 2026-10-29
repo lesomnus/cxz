@@ -115,6 +115,7 @@ export function PasteChip({
           state?.state === "uploading" && (!textPaste || mode === "file")
         }
         data-upload-state={state?.state}
+        data-secret={paste.secret ? true : undefined}
         aria-busy={state?.state === "uploading"}
         data-paste-token={paste.token}
         data-send-as={textPaste ? mode : undefined}

@@ -18,6 +18,14 @@
   width: 100%;
   text-align: end;
 }
+/* Progress (two spaces, three numeric cells and %) and Secret share one slot. */
+.reservation .chip[data-secret] > [data-file-chip-label] {
+  width: calc(6 * round(up, 1ch, 1px));
+}
+.reservation .chip[data-secret] .label {
+  width: 100%;
+  text-align: end;
+}
 .label[role="button"] {
   cursor: pointer;
 }
