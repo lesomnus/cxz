@@ -34,6 +34,8 @@ test("pending uploads block send without moving the caret and deletion releases 
   await expect(chip).toHaveAccessibleName("sample.txt · 000%");
   await expect(send).toBeDisabled();
   await input.pressSequentially(" typing");
+  await expect(chip).toHaveAccessibleName("sample.txt · 099%");
+  await expect(send).toBeDisabled();
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
   await expect(chip).toHaveAccessibleName("sample.txt · 0005B");
   expect(
@@ -155,10 +157,18 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   );
   const bounds = await chip.boundingBox();
   const beforeCaret = await input.evaluate(caretPosition, selection);
+  await expect(label).toHaveText(" 099%");
+  await expect(chip).toHaveAttribute("data-upload-state", "uploading");
+  await expect(
+    page.getByRole("button", { name: "Send", exact: true }),
+  ).toBeDisabled();
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
   expect(bytes).toBe(34500);
   await expect(label).toHaveText("34.5K");
   await expect(label.locator('[data-mode="compact"]')).toHaveText("34.5K");
+  await expect(
+    page.getByRole("button", { name: "Send", exact: true }),
+  ).toBeEnabled();
   await expect(chip).toHaveAccessibleName("Pasted text");
   await expect(chip).toHaveAttribute("aria-description", /34,500 B/);
   await expectChipDisplay(input, before.replace(/ \d{3}%/, "34.5K"));

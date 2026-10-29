@@ -29,7 +29,7 @@ export function presentPaste(paste: ComposerPaste): PastePresentation {
   if (!asText && attachment?.state === "uploading") {
     const progress = Math.max(
       0,
-      Math.min(100, Math.floor(attachment.progress ?? 0)),
+      Math.min(99, Math.floor(attachment.progress ?? 0)),
     );
     const digits = String(progress);
     const leading = "0".repeat(3 - digits.length);
