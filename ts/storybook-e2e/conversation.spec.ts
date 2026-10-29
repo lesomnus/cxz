@@ -102,7 +102,7 @@ test("paste chips preview and send their expanded contents", async ({
   expect(errors).toEqual([]);
 });
 
-test("same-size chips use exact visible widths and keep distinct sources through delete, undo and send", async ({
+test("same-size chips reserve native caret space and keep distinct sources through delete, undo and send", async ({
   page,
 }) => {
   await story(page, "conversation-playground--interactive");
@@ -130,21 +130,31 @@ test("same-size chips use exact visible widths and keep distinct sources through
   await expect(chips).toHaveCount(2);
   for (const chip of await chips.all()) {
     const width = await chip.evaluate((node) => {
+      const native = node
+        .closest("[data-chip-reservation]")!
+        .querySelector("[data-native-chip-text]")!;
       const range = document.createRange();
-      range.selectNodeContents(
-        node
-          .closest("[data-chip-reservation]")!
-          .querySelector("[data-native-chip-text]")!,
-      );
+      range.selectNodeContents(native);
+      const text = range.getBoundingClientRect().width;
+      const cell = document.createElement("span");
+      cell.style.cssText = "position:absolute;display:block;width:1ch";
+      native.append(cell);
+      const advance = cell.getBoundingClientRect().width;
+      cell.remove();
       return {
         chip: node.getBoundingClientRect().width,
-        text: range.getBoundingClientRect().width,
+        text,
+        advance,
         gap: parseFloat(
           getComputedStyle(node).getPropertyValue("--ui-file-chip-caret-gap"),
         ),
       };
     });
-    expect(Math.abs(width.chip + width.gap - width.text)).toBeLessThan(0.1);
+    // Some fonts give every spacing glyph one cell, so reservation must round up.
+    expect(width.text).toBeGreaterThanOrEqual(width.chip + width.gap - 1 / 64);
+    expect(width.text).toBeLessThan(
+      width.chip + width.gap + width.advance + 1 / 64,
+    );
   }
   await expect(chips.first().locator("[data-mode] > span").first()).toHaveText(
     "00",

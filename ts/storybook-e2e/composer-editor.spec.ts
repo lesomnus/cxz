@@ -387,7 +387,19 @@ test("the native caret remains visible immediately after a paste chip", async ({
   });
   await input.press("Control+End");
   const chip = page.locator(".paste-chip");
-  const bounds = (await chip.boundingBox())!;
+  const bounds = await chip.evaluate((node) => {
+    const range = document.createRange();
+    range.selectNodeContents(
+      node
+        .closest("[data-chip-reservation]")!
+        .querySelector("[data-native-chip-text]")!,
+    );
+    return {
+      chip: node.getBoundingClientRect().toJSON(),
+      reserve: range.getBoundingClientRect().toJSON(),
+    };
+  });
+  expect(bounds.reserve.right).toBeGreaterThan(bounds.chip.right);
   let visible = false;
   for (let attempt = 0; attempt < 5 && !visible; attempt++) {
     await input.evaluate((node) => {
@@ -397,10 +409,10 @@ test("the native caret remains visible immediately after a paste chip", async ({
     const image = await page.screenshot({
       caret: "initial",
       clip: {
-        x: Math.floor(bounds.x + bounds.width) - 3,
-        y: Math.floor(bounds.y),
+        x: Math.floor(bounds.reserve.right) - 2,
+        y: Math.floor(bounds.chip.y),
         width: 6,
-        height: Math.ceil(bounds.height),
+        height: Math.ceil(bounds.chip.height),
       },
     });
     const count = await page.evaluate(async (base64) => {

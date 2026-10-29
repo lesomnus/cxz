@@ -123,6 +123,10 @@ test("session drafts and paste source survive refresh and accepted sends remove 
     );
   });
   await expect(page.locator(".paste-chip")).toHaveCount(1);
+  await page
+    .locator(".paste-chip")
+    .getByRole("radio", { name: "File", exact: true })
+    .check();
   await expect(page.locator(".paste-chip")).toHaveAttribute(
     "data-upload-state",
     "ready",

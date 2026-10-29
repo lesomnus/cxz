@@ -124,7 +124,7 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await expect(input).toHaveValue("    " + token);
   await inspectPaste(page, page.locator(".paste-chip"));
   await expect(
-    page.getByRole("dialog", { name: "Paste source" }).locator("pre"),
+    page.getByRole("dialog", { name: "Paste source" }).locator(".card-body"),
   ).toHaveText(pasted);
   await page.keyboard.press("Escape");
   await input.press("Control+Enter");

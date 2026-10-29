@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { projectFixture } from "../test-support/projects.ts";
+import { expectChipDisplay } from "../test-support/chip-display.ts";
 test.use({
   viewport: { width: 1280, height: 900 },
   isMobile: false,
@@ -398,7 +399,11 @@ test("inline session mentions and secret chips preserve the prompt and storage b
     .locator("input[type=password]")
     .fill("synthetic-private-value");
   await page.getByRole("button", { name: "Insert secret chip" }).click();
-  await expect(input).toHaveValue(/pass \[Secret [a-f0-9]{8}\]/);
+  await expect(
+    page.getByRole("button", { name: "Secret file reference", exact: true }),
+  ).toBeVisible();
+  await expectChipDisplay(input, "pass Secret");
+  expect(await input.inputValue()).not.toContain("synthetic-private-value");
   expect(
     await page.evaluate(() =>
       JSON.stringify({ ...sessionStorage, ...localStorage }),

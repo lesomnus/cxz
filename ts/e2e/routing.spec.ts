@@ -54,20 +54,20 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   ).toBeVisible();
   await popup.close();
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
-  await expect(page).toHaveURL(/\/c\/_\/project$/);
+  await expect(page).toHaveURL(/\/c\/_\/project\/demo$/);
   // Row selection keeps the project dashboard open.
   const workspace = page.getByRole("main", { name: "Project workspace" });
   await expect(workspace).toBeVisible();
   await expect(
     workspace.getByRole("combobox", { name: "Select project", exact: true }),
-  ).toBeVisible();
+  ).toHaveText("Demo project");
   await workspace
     .getByRole("region", { name: "Session list", exact: true })
     .locator("tbody tr")
     .first()
     .getByRole("checkbox")
     .click();
-  await expect(page).toHaveURL(/\/c\/_\/project$/);
+  await expect(page).toHaveURL(/\/c\/_\/project\/demo$/);
   await expect(
     workspace.getByRole("checkbox", {
       name: "Select all sessions",
