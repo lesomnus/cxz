@@ -65,6 +65,7 @@ import {
 import type { PastePresentation } from "./paste-presentation";
 import { droppedFiles, pickedFiles, type PickedFile } from "./composer-files";
 import { MAX_UPLOAD_BYTES, type UploadFile } from "./composer-upload";
+import { useFileDrag } from "./use-file-drag";
 import { detectSecretPaste } from "#src/shared/content/secret-paste.ts";
 import { prepareSecretPaste, type SecretFiles } from "./secret-paste";
 import { PasteChip } from "./paste-chip";
@@ -140,7 +141,7 @@ export function ComposerEditor({
     Map<string, PastePresentation> | undefined
   >(undefined);
   const [notice, setNotice] = useState("");
-  const [dragging, setDragging] = useState(false);
+  const dragging = useFileDrag(!!upload && !readOnly);
   const [, refreshUploads] = useState(0);
   const jobs = useRef(new Map<string, AbortController>());
   const queue = useRef(Promise.resolve());
@@ -659,16 +660,10 @@ export function ComposerEditor({
           if (!event.dataTransfer.types.includes("Files")) return;
           event.preventDefault();
           event.dataTransfer.dropEffect = upload && !readOnly ? "copy" : "none";
-          setDragging(!!upload && !readOnly);
-        }}
-        onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null))
-            setDragging(false);
         }}
         onDrop={(event) => {
           if (!event.dataTransfer.types.includes("Files")) return;
           event.preventDefault();
-          setDragging(false);
           if (!readOnly && upload)
             void insertPicked(droppedFiles(event.dataTransfer));
         }}
@@ -678,6 +673,24 @@ export function ComposerEditor({
           ...paletteVariables(editorSettings.colorPalette, theme),
         }}
       >
+        {dragging && (
+          <div className="composer-file-drop-overlay" role="status">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 15V3m-4 4 4-4 4 4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" />
+            </svg>
+            <span>{t("Drop files or folders here")}</span>
+          </div>
+        )}
         <div
           className="editor-gutter"
           aria-hidden="true"

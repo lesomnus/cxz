@@ -170,6 +170,7 @@ export const messages = {
   "Clipboard access failed. Use the terminal context menu to copy.":
     "클립보드에 접근하지 못했습니다. 터미널 우클릭 메뉴에서 복사하세요.",
   "Upload files": "파일 업로드",
+  "Drop files or folders here": "파일이나 폴더를 여기에 놓으세요",
   "Upload folder": "폴더 업로드",
   Attachment: "첨부 파일",
   "Uploading…": "업로드 중…",

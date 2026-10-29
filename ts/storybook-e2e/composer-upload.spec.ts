@@ -34,7 +34,11 @@ test("pending uploads block send without moving the caret and deletion releases 
   await expect(chip).toHaveAccessibleName("sample.txt · 000%");
   await expect(send).toBeDisabled();
   await input.pressSequentially(" typing");
-  await expect(chip).toHaveAccessibleName("sample.txt · 099%");
+  // The acknowledgement wait lasts 500ms. Default assertion backoff can skip
+  // that entire state after observing several earlier progress updates.
+  await expect
+    .poll(() => chip.getAttribute("aria-label"), { intervals: [50] })
+    .toMatch(/sample\.txt ·\s+099%$/);
   await expect(send).toBeDisabled();
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
   await expect(chip).toHaveAccessibleName("sample.txt · 0005B");
@@ -157,7 +161,9 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   );
   const bounds = await chip.boundingBox();
   const beforeCaret = await input.evaluate(caretPosition, selection);
-  await expect(label).toHaveText(" 099%");
+  await expect
+    .poll(() => label.textContent(), { intervals: [50] })
+    .toMatch(/099%$/);
   await expect(chip).toHaveAttribute("data-upload-state", "uploading");
   await expect(
     page.getByRole("button", { name: "Send", exact: true }),
