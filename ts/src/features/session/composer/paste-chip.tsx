@@ -37,6 +37,7 @@ export function PasteChip({
   onLayout?: (label: string, width: number) => void;
 }) {
   const attachment = paste.attachment;
+  const state = paste.secret ?? attachment;
   const textPaste = isTextPaste(paste);
   const mode = pasteSendMode(paste);
   const bytes = `${paste.bytes.toLocaleString(currentLocale())} B`;
@@ -111,9 +112,10 @@ export function PasteChip({
           ) : undefined
         }
         loading={
-          attachment?.state === "uploading" && (!textPaste || mode === "file")
+          state?.state === "uploading" && (!textPaste || mode === "file")
         }
-        data-upload-state={attachment?.state}
+        data-upload-state={state?.state}
+        aria-busy={state?.state === "uploading"}
         data-paste-token={paste.token}
         data-send-as={textPaste ? mode : undefined}
         role={textPaste ? "group" : "button"}
@@ -127,12 +129,15 @@ export function PasteChip({
         }
         aria-description={textPaste ? bytes : undefined}
         title={
-          textPaste
-            ? undefined
-            : (attachment?.error ??
-              (attachment?.state === "uploading"
-                ? t("Uploading…")
-                : `${bytes} · ${t("View source · Ctrl+P")}`))
+          paste.secret
+            ? (paste.secret.error ??
+              `${paste.secret.kind ?? "Secret"} · ${paste.secret.state === "uploading" ? "Preparing secret file…" : "Secret file reference"}`)
+            : textPaste
+              ? undefined
+              : (attachment?.error ??
+                (attachment?.state === "uploading"
+                  ? t("Uploading…")
+                  : `${bytes} · ${t("View source · Ctrl+P")}`))
         }
         onPointerEnter={(event) => {
           if (textPaste && event.pointerType !== "touch") setOpen(true);

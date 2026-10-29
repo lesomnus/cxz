@@ -47,8 +47,9 @@ func (m *model) composerKey(k tea.KeyMsg) (bool, tea.Cmd) {
 	if !m.composerAvailable() || m.panelFocus || m.focusList || m.focusApproval {
 		return false, nil
 	}
-	// Large pastes must pass through cxz's chip capture before bed broadcasts.
-	if k.Paste && m.multiComposer() && m.capturePaste(k) {
+	// Capture secret tokens and large pastes before bed can put raw text in
+	// the editor or broadcast it to multiple cursors.
+	if k.Paste && m.capturePaste(k) {
 		return true, nil
 	}
 	if !k.Paste && (k.String() == "tab" || k.String() == "shift+tab") {

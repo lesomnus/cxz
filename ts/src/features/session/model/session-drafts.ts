@@ -4,7 +4,8 @@ import {
   type EditorSelection,
 } from "#src/features/session/composer/editor-selection.ts";
 
-type SavedPaste = Omit<ComposerPaste, "attachment"> & {
+type SavedPaste = Omit<ComposerPaste, "attachment" | "secret"> & {
+  secret?: Omit<NonNullable<ComposerPaste["secret"]>, "listeners">;
   attachment?: Pick<
     NonNullable<ComposerPaste["attachment"]>,
     "name" | "directory" | "path" | "state"
@@ -65,7 +66,16 @@ export class SessionDrafts extends Map<string, string> {
                 : "Upload interrupted. Remove this chip and select the file again.",
             },
           });
-        } else this.pastes.set(p.token, p);
+        } else {
+          if (p.secret?.state === "uploading")
+            p.secret = {
+              ...p.secret,
+              state: "error",
+              error:
+                "Secret preparation interrupted. Remove this chip and paste again.",
+            };
+          this.pastes.set(p.token, p);
+        }
       }
       super.set(id, saved.text);
       return saved.text;
@@ -139,7 +149,14 @@ export class SessionDrafts extends Map<string, string> {
           lines: p.lines,
           bytes: p.bytes,
           sendAs: p.sendAs,
-          secret: p.secret,
+          secret: p.secret && {
+            session: p.secret.session,
+            run: p.secret.run,
+            path: p.secret.path,
+            kind: p.secret.kind,
+            state: p.secret.state,
+            error: p.secret.error,
+          },
           attachment: p.attachment && {
             name: p.attachment.name,
             directory: p.attachment.directory,

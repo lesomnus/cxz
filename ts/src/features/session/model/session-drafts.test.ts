@@ -7,6 +7,7 @@ import {
   attachmentsReady,
   type ComposerPaste,
 } from "../composer/composer-pastes";
+import { prepareSecretPaste } from "../composer/secret-paste";
 
 function storage() {
   const data = new Map<string, string>();
@@ -25,6 +26,27 @@ function storage() {
     clear: () => data.clear(),
   } satisfies Storage;
 }
+
+it("persists only a secret placeholder and restores interrupted preparation as unsendable", () => {
+  const file = storage();
+  const raw = `ghp_${"aB12".repeat(9)}`;
+  const { paste } = prepareSecretPaste(raw, "GitHub token");
+  paste.secret!.listeners = new Set([() => {}]);
+  const drafts = new SessionDrafts(
+    "host",
+    new Map([[paste.token, paste]]),
+    () => file,
+  );
+  drafts.set("one", paste.token);
+  const saved = file.getItem("cxz.draft.v1:host:one")!;
+  expect(saved).not.toContain(raw);
+  expect(saved).not.toContain("listeners");
+  const restored = new Map<string, ComposerPaste>();
+  const text = new SessionDrafts("host", restored, () => file).get("one")!;
+  expect(text).toBe(paste.token);
+  expect(restored.get(paste.token)?.secret?.state).toBe("error");
+  expect(attachmentsReady(text, restored)).toBe(false);
+});
 it("restores tab-local cursor ranges per host/session without rewriting draft contents", () => {
   const file = storage();
   const drafts = new SessionDrafts("cursor-host", new Map(), () => file);

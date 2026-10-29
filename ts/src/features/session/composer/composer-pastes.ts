@@ -4,7 +4,15 @@ export type ComposerPaste = {
   lines: number;
   bytes: number;
   sendAs?: "text" | "file";
-  secret?: { session: string; run: string; path: string };
+  secret?: {
+    session: string;
+    run: string;
+    path: string;
+    kind?: string;
+    state?: "uploading" | "ready" | "error";
+    error?: string;
+    listeners?: Set<() => void>;
+  };
   attachment?: {
     file?: File;
     name: string;
@@ -82,10 +90,13 @@ export function expandPastes(
     offset = 0;
   for (const range of pasteRanges(text, pastes)) {
     const attachment = range.paste.attachment;
-    const body =
-      attachmentPaths &&
-      attachment?.path &&
-      !(isTextPaste(range.paste) && pasteSendMode(range.paste) === "text")
+    const body = range.paste.secret
+      ? range.paste.secret.path
+        ? `(secret placed at ${range.paste.secret.path})`
+        : range.paste.token
+      : attachmentPaths &&
+          attachment?.path &&
+          !(isTextPaste(range.paste) && pasteSendMode(range.paste) === "text")
         ? attachment.directory
           ? `[Attached directory archive: ${attachment.path} — extract this tar archive to read the directory contents]`
           : `[Attached file: ${attachment.path} — read this file for the full content]`
@@ -101,10 +112,13 @@ export function attachmentsReady(
   pastes: Map<string, ComposerPaste>,
 ) {
   return pasteRanges(text, pastes).every(({ paste }) =>
-    isTextPaste(paste)
-      ? pasteSendMode(paste) === "text" ||
-        (paste.attachment?.state === "ready" && !!paste.attachment.path)
-      : !paste.attachment || paste.attachment.state === "ready",
+    paste.secret
+      ? !!paste.secret.path &&
+        (!paste.secret.state || paste.secret.state === "ready")
+      : isTextPaste(paste)
+        ? pasteSendMode(paste) === "text" ||
+          (paste.attachment?.state === "ready" && !!paste.attachment.path)
+        : !paste.attachment || paste.attachment.state === "ready",
   );
 }
 

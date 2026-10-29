@@ -5,6 +5,7 @@ COPY ts/package.json ts/package-lock.json ./
 COPY ts/packages/nox/package.json ./packages/nox/package.json
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY ts/ ./
+COPY internal/secretpaste/patterns.json /src/internal/secretpaste/patterns.json
 RUN npm run build
 
 # Compile both architectures natively; no emulation is needed for Go builds.

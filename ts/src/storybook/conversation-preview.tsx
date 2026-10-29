@@ -34,6 +34,7 @@ import { storySession } from "./fixtures";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
 import type { EditorSelection } from "#src/features/session/composer/editor-selection.ts";
 import type { UploadProgress } from "#src/features/session/composer/composer-upload.ts";
+import type { SecretFiles } from "#src/features/session/composer/secret-paste.ts";
 import { create } from "@bufbuild/protobuf";
 import type { SessionInfo } from "#src/features/session/model/session-info.ts";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
@@ -180,6 +181,7 @@ export function ComponentPreview({
   backgroundReport,
   sessionStopped = false,
   uploadMode,
+  secretFiles,
   lookupPaths,
   loadDetails,
   children,
@@ -199,6 +201,7 @@ export function ComponentPreview({
   backgroundReport?: ReactNode;
   sessionStopped?: boolean;
   uploadMode?: "ready" | "slow" | "retry";
+  secretFiles?: SecretFiles;
   lookupPaths?: LookupPaths;
   loadDetails?: LoadEventDetails;
   children?: ReactNode;
@@ -291,6 +294,7 @@ export function ComponentPreview({
         onSubmit={(e) => e.preventDefault()}
         canSend={!!uploadMode && !!value.trim() && !sending}
         upload={uploadMode ? previewUpload : undefined}
+        secretFiles={secretFiles}
         sending={sending}
         busy={sending}
         turn={

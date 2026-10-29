@@ -73,6 +73,37 @@ transcript show abbreviated views; `cxz session events` does not.
 
 ## /@redact
 
+Pasting a complete recognized GitHub token or signed JWT into the conversation
+composer automatically inserts a Secret chip, including short tokens that would
+otherwise remain inline. Detection runs locally before draft persistence or
+ordinary attachment upload. Only surrounding whitespace is ignored for matching;
+the secret file preserves the original pasted bytes. Text containing a token
+inside prose, code, JSON or an environment assignment is not detected. Question
+answer fields and file uploads retain their existing behavior.
+
+The browser and TUI share `internal/secretpaste/patterns.json`. Add portable
+regular expressions there; both clients require a whole-string match. GitHub
+rules check the documented prefixes, token character sets and a minimum suffix
+length rather than pinning a total length. JWT recognition also decodes the
+header and payload as JSON objects and requires a nonempty string `alg` header.
+It covers Kubernetes ServiceAccount tokens without relying on the incidental
+`eyJhbG` prefix. Recognition does not verify signatures, expiry or credentials
+against a remote service. Format-matching expired or example tokens are still
+treated as secrets.
+
+Browser preparation immediately inserts a safe placeholder and blocks Send until
+the secret file is ready. Failure, cancellation or an unavailable session never
+falls back to a normal upload or plaintext draft: remove the failed chip and
+paste again. Refresh interrupts pending preparation; a ready file reference can
+be restored for the same run. The existing 64 KiB secret limit and session/run
+binding apply. TUI secrets are kept in memory until Send, like `/@redact`.
+
+Format references:
+
+- [GitHub token formats](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats)
+- [Kubernetes ServiceAccount tokens](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#service-account-tokens)
+- [JWT format](https://www.rfc-editor.org/rfc/rfc7519.html#section-3)
+
 `/@redact` keeps a secret out of the journal. You reference a value, the helper
 writes it to a temporary file inside the container with the remote user's
 permissions, and the journal records the reference — not the value.
