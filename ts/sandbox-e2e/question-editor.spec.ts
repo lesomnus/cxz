@@ -72,7 +72,7 @@ test("option cards and Other share native selection and multiline paste editing"
   const compact = await other.inputValue();
   await inspectPaste(page, chip);
   const preview = page.getByRole("dialog", { name: "Paste source" });
-  await expect(preview.locator("pre")).toHaveText(body);
+  await expect(preview.locator(".card-body")).toHaveText(body);
   await expect(page.locator(".question-cards")).toHaveJSProperty("inert", true);
   await preview.getByRole("button", { name: "Expand", exact: true }).click();
   await expect(preview).toHaveCount(0);

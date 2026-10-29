@@ -595,6 +595,9 @@ export function ComposerEditor({
   function showPreview(range: ProjectedPasteRange) {
     input.current!.focus({ preventScroll: true });
     input.current!.setSelectionRange(range.start, range.end);
+    const retry = () => {
+      if (!latest.current.readOnly) startUpload(range.paste);
+    };
     openCard({
       kind: "paste",
       label: () => t(range.paste.body ? "Paste source" : "Attachment"),
@@ -604,17 +607,11 @@ export function ComposerEditor({
           lines: range.paste.lines,
           bytes: range.paste.bytes.toLocaleString(currentLocale()),
         }),
-      content: () => (
-        <PastePreview
-          paste={range.paste}
-          retry={() => {
-            if (!latest.current.readOnly) startUpload(range.paste);
-          }}
-        />
-      ),
+      content: () => <PastePreview paste={range.paste} retry={retry} />,
       footer: (close) => (
         <PastePreviewActions
           paste={range.paste}
+          retry={retry}
           close={close}
           apply={(text) => {
             // Cards are non-modal: editing behind a preview must never replace a
@@ -1279,17 +1276,33 @@ function PastePreview({
   paste: ComposerPaste;
   retry: () => void;
 }) {
-  useLocale();
+  if (!paste.secret && paste.body) return paste.body;
+  return <AttachmentPreview paste={paste} retry={retry} />;
+}
+
+function usePasteAttachment(paste: ComposerPaste, enabled = true) {
   const [, refresh] = useState(0);
+  const attachment = paste.attachment;
   useEffect(() => {
-    if (!paste.attachment) return;
-    const listeners = (paste.attachment.listeners ??= new Set());
+    if (!enabled || !attachment) return;
+    const listeners = (attachment.listeners ??= new Set());
     const listener = () => refresh((v) => v + 1);
     listeners.add(listener);
     return () => {
       listeners.delete(listener);
     };
-  }, [paste]);
+  }, [attachment, enabled]);
+}
+
+function AttachmentPreview({
+  paste,
+  retry,
+}: {
+  paste: ComposerPaste;
+  retry: () => void;
+}) {
+  useLocale();
+  usePasteAttachment(paste);
   return (
     <>
       {paste.attachment && (
@@ -1317,7 +1330,6 @@ function PastePreview({
           Secret file · <code>{paste.secret.path}</code>
         </p>
       )}
-      {!paste.secret && paste.body && <pre>{paste.body}</pre>}
       {paste.attachment?.state === "error" && (
         <Button type="button" onClick={retry} disabled={!paste.attachment.file}>
           {t("Retry upload")}
@@ -1329,14 +1341,17 @@ function PastePreview({
 
 function PastePreviewActions({
   paste,
+  retry,
   apply,
   close,
 }: {
   paste: ComposerPaste;
+  retry: () => void;
   apply: (text: string) => boolean;
   close: () => void;
 }) {
   const [stale, setStale] = useState(false);
+  usePasteAttachment(paste, !!paste.body);
   return (
     <>
       <CardActions>
@@ -1348,6 +1363,15 @@ function PastePreviewActions({
             onClick={() => setStale(!apply(paste.body))}
           >
             {t("Expand")}
+          </Button>
+        )}
+        {!!paste.body && paste.attachment?.state === "error" && (
+          <Button
+            type="button"
+            onClick={retry}
+            disabled={!paste.attachment.file}
+          >
+            {t("Retry upload")}
           </Button>
         )}
         <Button

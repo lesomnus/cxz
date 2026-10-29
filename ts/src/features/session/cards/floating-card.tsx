@@ -486,7 +486,6 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
       title={title}
       hideHeading={paste}
       className={paste ? styles.preview : undefined}
-      {...(paste ? { bodyPadding: "var(--ui-space)" } : {})}
       footer={card.footer?.(close)}
       close={close}
       closeLabel={

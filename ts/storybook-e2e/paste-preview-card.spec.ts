@@ -39,7 +39,14 @@ for (const [mode, body] of [
     });
     await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
     await expect(card.locator(".card-heading")).toHaveCount(0);
-    expect(await card.locator("pre").textContent()).toBe(body);
+    const source = card.locator(".card-body");
+    expect(await source.textContent()).toBe(body);
+    expect(await source.evaluate((el) => el.childElementCount)).toBe(0);
+    await expect(source).toHaveCSS("white-space", "pre-wrap");
+    expect(
+      await source.evaluate((el) => getComputedStyle(el).fontFamily),
+    ).toContain("monospace");
+    await expect(card.locator(".attachment-info, pre, code")).toHaveCount(0);
     const footer = card.locator(".card-footer");
     await expect(footer.getByRole("button")).toHaveText(["Expand", "Close"]);
     const expand = footer.getByRole("button", { name: "Expand", exact: true });

@@ -178,7 +178,7 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
   });
   await chip.locator(".paste-chip-label").click();
   const preview = page.getByRole("dialog", { name: "Paste source" });
-  expect(await preview.locator("pre").textContent()).toBe(text);
+  expect(await preview.locator(".card-body").textContent()).toBe(text);
   await preview.getByRole("button", { name: "Close paste preview" }).click();
   await expect(preview).toHaveCount(0);
   await page.mouse.move(0, 0);

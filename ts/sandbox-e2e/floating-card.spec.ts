@@ -85,12 +85,12 @@ test("task details and replacing paste previews preserve the transcript and draf
   await inspectPaste(page, page.locator(".paste-chip").first());
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-  await expect(preview.locator("pre")).toHaveText(
+  await expect(preview.locator(".card-body")).toHaveText(
     "first\nsecond\nthird\nfourth".repeat(4),
   );
   const firstPreviewId = await preview.getAttribute("data-card");
   await inspectPaste(page, page.locator(".paste-chip").nth(1));
-  await expect(preview.locator("pre")).toHaveText(
+  await expect(preview.locator(".card-body")).toHaveText(
     "another\npaste\nbody\nhere".repeat(4),
   );
   await expect(page.locator(`[data-card="${firstPreviewId}"]`)).toHaveCount(0);
@@ -233,7 +233,7 @@ test("only the transcript's empty side margins dismiss the floating card", async
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await inspectPaste(page, page.locator(".paste-chip"));
   await expect(preview).toHaveCSS("opacity", "1");
-  await preview.locator("pre").click();
+  await preview.locator(".card-body").click();
   await expect(preview).toBeVisible();
   await input.click();
   await expect(preview).toBeVisible();
