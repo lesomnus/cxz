@@ -10,6 +10,7 @@ export type ComposerPaste = {
     path: string;
     kind?: string;
     state?: "uploading" | "ready" | "error";
+    progress?: number;
     error?: string;
     listeners?: Set<() => void>;
   };

@@ -1,3 +1,21 @@
 .expand {
   margin-inline-end: auto;
 }
+.secret {
+  margin: 0;
+  font: inherit;
+  font-family: var(--ui-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  filter: blur(5px);
+  transition: filter 120ms ease;
+}
+.secret[data-revealed="true"] {
+  filter: blur(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .secret {
+    transition: none;
+  }
+}

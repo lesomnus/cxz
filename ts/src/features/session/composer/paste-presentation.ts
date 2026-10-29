@@ -21,8 +21,23 @@ export type PastePresentation = {
 export function presentPaste(paste: ComposerPaste): PastePresentation {
   const attachment = paste.attachment;
   const text = isTextPaste(paste) || (!paste.secret && !attachment);
-  if (paste.secret)
-    return { label: paste.token, before: paste.token, leading: "", after: "" };
+  if (paste.secret) {
+    const before = "Secret";
+    if (paste.secret.state === "uploading") {
+      const progress = Math.max(
+        0,
+        Math.min(99, Math.floor(paste.secret.progress ?? 0)),
+      );
+      return {
+        label: `${before} ${String(progress).padStart(3, "0")}%`,
+        before,
+        leading: "",
+        after: "",
+        progress,
+      };
+    }
+    return { label: before, before, leading: "", after: "" };
+  }
   const before = text ? "" : `${attachment!.name} · `;
   const prefix = text ? PASTE_CHIP_PREFIX : undefined;
   const asText = text && pasteSendMode(paste) === "text";
