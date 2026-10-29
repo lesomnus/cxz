@@ -43,6 +43,7 @@ for (const [mode, body] of [
     expect(await source.textContent()).toBe(body);
     expect(await source.evaluate((el) => el.childElementCount)).toBe(0);
     await expect(source).toHaveCSS("white-space", "pre-wrap");
+    await expect(source).toHaveCSS("word-break", "break-all");
     expect(
       await source.evaluate((el) => getComputedStyle(el).fontFamily),
     ).toContain("monospace");

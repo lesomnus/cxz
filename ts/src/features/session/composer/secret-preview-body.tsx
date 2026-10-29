@@ -1,12 +1,41 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { SecretPreview } from "./secret-preview";
+import { usePreviewSurface } from "#src/features/session/cards/floating-card.tsx";
 import styles from "./paste-preview.module.css";
 
 export function SecretPreviewBody({ preview }: { preview: SecretPreview }) {
   const snapshot = useSyncExternalStore(preview.subscribe, preview.getSnapshot);
-  const node = useRef<HTMLPreElement>(null);
+  const surface = usePreviewSurface();
+  const node = useRef<HTMLElement | null>(null);
   const [revealed, reveal] = useState(false);
   useEffect(preview.connect, [preview]);
+  useLayoutEffect(() => {
+    if (snapshot.state !== "ready") return;
+    const body = surface?.current?.querySelector<HTMLElement>(
+      ":scope > .card-body",
+    );
+    if (!body) return;
+    node.current = body;
+    const label = body.getAttribute("aria-label");
+    body.setAttribute("aria-label", "Secret value");
+    body.classList.add(styles.secret);
+    return () => {
+      body.classList.remove(styles.secret);
+      if (label === null) body.removeAttribute("aria-label");
+      else body.setAttribute("aria-label", label);
+      delete body.dataset.revealed;
+      node.current = null;
+    };
+  }, [surface, snapshot.state]);
+  useLayoutEffect(() => {
+    if (node.current) node.current.dataset.revealed = String(revealed);
+  }, [snapshot.state, revealed]);
   useEffect(() => {
     let start: { x: number; y: number } | undefined;
     let dragging = false;
@@ -71,14 +100,5 @@ export function SecretPreviewBody({ preview }: { preview: SecretPreview }) {
   }, [snapshot.state]);
   if (snapshot.state === "error") return <p role="alert">{snapshot.error}</p>;
   if (snapshot.state !== "ready") return <p role="status">Loading secret…</p>;
-  return (
-    <pre
-      ref={node}
-      className={styles.secret}
-      data-revealed={revealed}
-      aria-label="Secret value"
-    >
-      {snapshot.value}
-    </pre>
-  );
+  return snapshot.value;
 }

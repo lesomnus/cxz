@@ -210,6 +210,14 @@ test("the value-only Secret body reveals during selection and Expand requires co
   await expect(dialog).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   const value = dialog.getByLabel("Secret value");
   await expect(value).toHaveText(token);
+  await expect(value).toHaveClass(/card-body/);
+  expect(await value.evaluate((node) => node.childElementCount)).toBe(0);
+  await expect(dialog.locator("pre")).toHaveCount(0);
+  await expect(value).toHaveCSS("word-break", "break-all");
+  await expect(value).toHaveCSS("white-space", "pre-wrap");
+  expect(
+    await value.evaluate((node) => getComputedStyle(node).fontFamily),
+  ).toContain("monospace");
   expect(await dialog.locator(".card-body").textContent()).toBe(token);
   await expect(value).toHaveCSS("filter", "blur(5px)");
   const bounds = (await value.boundingBox())!;

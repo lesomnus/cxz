@@ -46,6 +46,14 @@ type CardRequest = Pick<
   | "onClose"
 >;
 const OpenCard = createContext<(card: CardRequest) => void>(() => {});
+const PreviewSurface = createContext<RefObject<HTMLElement | null> | undefined>(
+  undefined,
+);
+
+// Preview content can use the shared Card body without adding another DOM box.
+export function usePreviewSurface() {
+  return useContext(PreviewSurface);
+}
 const CardState = createContext<{
   card?: Card;
   close: (id: number, restoreFocus?: boolean) => void;
@@ -481,26 +489,28 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
   const paste = card.kind === "paste";
   const Surface = paste ? CardSurface : FloatingCard;
   return (
-    <Surface
-      ref={root}
-      title={title}
-      hideHeading={paste}
-      className={paste ? styles.preview : undefined}
-      footer={card.footer?.(close)}
-      close={close}
-      closeLabel={
-        card.kind === "paste" ? t("Close paste preview") : t("Close details")
-      }
-      role="dialog"
-      aria-label={label ?? title}
-      aria-hidden={!active}
-      inert={!active}
-      data-card={card.id}
-      data-active={active}
-      data-entered={entered}
-      data-closing={!!card.closing}
-    >
-      {card.content(close)}
-    </Surface>
+    <PreviewSurface.Provider value={root}>
+      <Surface
+        ref={root}
+        title={title}
+        hideHeading={paste}
+        className={paste ? styles.preview : undefined}
+        footer={card.footer?.(close)}
+        close={close}
+        closeLabel={
+          card.kind === "paste" ? t("Close paste preview") : t("Close details")
+        }
+        role="dialog"
+        aria-label={label ?? title}
+        aria-hidden={!active}
+        inert={!active}
+        data-card={card.id}
+        data-active={active}
+        data-entered={entered}
+        data-closing={!!card.closing}
+      >
+        {card.content(close)}
+      </Surface>
+    </PreviewSurface.Provider>
   );
 }
