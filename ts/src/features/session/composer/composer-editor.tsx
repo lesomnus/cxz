@@ -130,7 +130,7 @@ export function ComposerEditor({
   const input = useRef<HTMLTextAreaElement>(null);
   const theme = useTheme();
   const editorSettings = useEditorSettings("session");
-  const { snapshot: preferences } = useSettings();
+  const { store: settings, snapshot: preferences } = useSettings();
   const wordWrap = preferences.document["composer.wordWrap"] !== false;
   const showControls =
     preferences.document["composer.showControlCharacters"] === true;
@@ -913,6 +913,22 @@ export function ComposerEditor({
             onKeyDown={(event) => {
               if (readOnly) return;
               if (event.nativeEvent.isComposing || composing.current) return;
+              if (
+                event.altKey &&
+                !event.ctrlKey &&
+                !event.metaKey &&
+                !event.shiftKey &&
+                (event.code === "KeyZ" || event.key.toLowerCase() === "z")
+              ) {
+                event.preventDefault();
+                if (event.repeat) return;
+                try {
+                  settings.set("composer.wordWrap", !wordWrap);
+                } catch (error) {
+                  setNotice(String(error));
+                }
+                return;
+              }
               if (hints.key(event)) return;
               const el = event.currentTarget;
               if (

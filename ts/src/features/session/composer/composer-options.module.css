@@ -6,6 +6,7 @@
 }
 .toolbar {
   margin-left: auto;
+  --ui-toolbar-button-width: 24px;
 }
 .footer svg {
   width: 16px;

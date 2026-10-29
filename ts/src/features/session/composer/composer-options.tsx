@@ -94,7 +94,8 @@ export function ComposerOptions() {
             type="button"
             variant="toolbar"
             aria-label={t("Word wrap")}
-            title={t("Word wrap")}
+            aria-keyshortcuts="Alt+Z"
+            title={`${t("Word wrap")} · Alt+Z`}
             pressed={wrap}
             tabIndex={focused === 1 ? 0 : -1}
             onFocus={() => setFocused(1)}

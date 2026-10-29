@@ -247,10 +247,15 @@ topic navigation and JSON undo/draft retention through folding and resizing.
 
 ## Conversation input display
 
-The session menu's fixed bottom toolbar provides **Show control characters** and
-**Word wrap** toggles. They stay visible while the actions scroll, and toggling
+The session menu's fixed bottom toolbar provides 24px square **Show control
+characters** and **Word wrap** toggles. They stay visible while the actions scroll, and toggling
 one leaves the menu open. Left/Right and Home/End move focus between the toggles;
 Escape closes the menu and restores focus to its trigger.
+
+With the conversation input focused, **Alt+Z** toggles the same Word wrap setting
+without changing the draft, selection or native Undo/Redo history. The shortcut
+ignores key repeat, active IME composition and additional Ctrl/Meta/Shift
+modifiers; the physical Z key also works on layouts where Alt changes its value.
 
 `composer.showControlCharacters` defaults to `false`; `composer.wordWrap` defaults
 to `true`. Both accept booleans in the existing localStorage settings document,
