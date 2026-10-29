@@ -11,7 +11,8 @@ import {
   type Ref,
 } from "react";
 import { flushSync } from "react-dom";
-import { Button } from "@lesomnus/nox";
+import { Button, CardActions } from "@lesomnus/nox";
+import previewStyles from "./paste-preview.module.css";
 import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { indentEdit } from "./composer-indent";
 import { useCommandSuggestions } from "./command-suggestions";
@@ -603,12 +604,18 @@ export function ComposerEditor({
           lines: range.paste.lines,
           bytes: range.paste.bytes.toLocaleString(currentLocale()),
         }),
-      content: (close) => (
+      content: () => (
         <PastePreview
           paste={range.paste}
           retry={() => {
             if (!latest.current.readOnly) startUpload(range.paste);
           }}
+        />
+      ),
+      footer: (close) => (
+        <PastePreviewActions
+          paste={range.paste}
+          close={close}
           apply={(text) => {
             // Cards are non-modal: editing behind a preview must never replace a
             // different occurrence at a stale offset.
@@ -1127,13 +1134,6 @@ export function ComposerEditor({
                         });
                       }}
                       onOpen={() => showPreview(range)}
-                      onSelect={() => {
-                        input.current!.focus({ preventScroll: true });
-                        input.current!.setSelectionRange(
-                          range.start,
-                          range.end,
-                        );
-                      }}
                       onSendModeChange={(mode) =>
                         changePasteMode(range.paste, mode)
                       }
@@ -1274,15 +1274,12 @@ function tokenSpans(tokens: CodeToken[], start: number, end: number) {
 
 function PastePreview({
   paste,
-  apply,
   retry,
 }: {
   paste: ComposerPaste;
-  apply: (text: string) => boolean;
   retry: () => void;
 }) {
   useLocale();
-  const [stale, setStale] = useState(false);
   const [, refresh] = useState(0);
   useEffect(() => {
     if (!paste.attachment) return;
@@ -1321,33 +1318,47 @@ function PastePreview({
         </p>
       )}
       {!paste.secret && paste.body && <pre>{paste.body}</pre>}
-      <div className="buttons">
-        {paste.attachment?.state === "error" && (
+      {paste.attachment?.state === "error" && (
+        <Button type="button" onClick={retry} disabled={!paste.attachment.file}>
+          {t("Retry upload")}
+        </Button>
+      )}
+    </>
+  );
+}
+
+function PastePreviewActions({
+  paste,
+  apply,
+  close,
+}: {
+  paste: ComposerPaste;
+  apply: (text: string) => boolean;
+  close: () => void;
+}) {
+  const [stale, setStale] = useState(false);
+  return (
+    <>
+      <CardActions>
+        {paste.body && !paste.secret && (
           <Button
-            type="button"
-            onClick={retry}
-            disabled={!paste.attachment.file}
-          >
-            {t("Retry upload")}
-          </Button>
-        )}
-        {paste.body && (
-          <Button
+            className={previewStyles.expand}
             type="button"
             disabled={stale}
             onClick={() => setStale(!apply(paste.body))}
           >
-            {t("Expand source")}
+            {t("Expand")}
           </Button>
         )}
         <Button
           type="button"
-          disabled={stale}
-          onClick={() => setStale(!apply(""))}
+          data-preview-close
+          aria-label={t("Close paste preview")}
+          onClick={close}
         >
-          {t("Delete")}
+          {t("Close")}
         </Button>
-      </div>
+      </CardActions>
       {stale && (
         <p role="status" className="muted">
           {t("The input has changed. Reopen the chip.")}

@@ -18,7 +18,6 @@ import { pasteExcerpt } from "./paste-chip-layout";
 export function PasteChip({
   paste,
   onOpen,
-  onSelect,
   onSendModeChange,
   canSendFile = false,
   readOnly = false,
@@ -29,7 +28,6 @@ export function PasteChip({
 }: {
   paste: ComposerPaste;
   onOpen: () => void;
-  onSelect?: () => void;
   onSendModeChange?: (mode: "text" | "file") => void;
   canSendFile?: boolean;
   readOnly?: boolean;
@@ -51,13 +49,13 @@ export function PasteChip({
   useLayoutEffect(() => {
     if (!anchor || !layout.current) return;
     const measure = () => {
-      const bounds = anchor.getBoundingClientRect();
       const style = getComputedStyle(anchor);
-      const scale = bounds.width / parseFloat(style.width);
+      const width = parseFloat(style.width);
+      if (!(width > 0) || !(anchor.getBoundingClientRect().width > 0)) return;
       const gap = parseFloat(
         style.getPropertyValue("--ui-file-chip-caret-gap"),
       );
-      layout.current?.(presentation.label, bounds.width + gap * scale);
+      layout.current?.(presentation.label, width + gap);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(anchor);
@@ -151,12 +149,20 @@ export function PasteChip({
           if (textPaste) {
             setOpen(false);
             if (!(event.target as Element).closest("[data-file-chip-control]"))
-              onSelect?.();
+              onOpen();
           } else onOpen();
         }}
         onKeyDown={(event) => {
           if (textPaste) {
-            if (event.key === "Enter") {
+            const control = (event.target as Element).closest(
+              "[data-file-chip-control]",
+            );
+            if (!control && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              event.stopPropagation();
+              setOpen(false);
+              onOpen();
+            } else if (event.key === "Enter") {
               event.preventDefault();
               event.stopPropagation();
             }
@@ -166,7 +172,13 @@ export function PasteChip({
           }
         }}
       >
-        <span className={`paste-chip-label ${styles.label}`} aria-hidden="true">
+        <span
+          className={`paste-chip-label ${styles.label}`}
+          aria-hidden={textPaste ? undefined : true}
+          role={textPaste ? "button" : undefined}
+          tabIndex={textPaste ? 0 : undefined}
+          aria-label={textPaste ? t("View pasted text") : undefined}
+        >
           {presentation.progress !== undefined ? (
             <>
               {before}

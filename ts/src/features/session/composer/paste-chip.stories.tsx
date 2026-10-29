@@ -64,7 +64,7 @@ export const Interactive: Story = {
     docs: {
       description: {
         story:
-          "Paste up to 32 characters as ordinary text, 33–64 as a Text chip, and longer text as a File chip by default. Text chips upload only when switched to File. You can also drop files and folders into the real conversation editor. Hover shows a short excerpt. Clicking a paste label selects the chip without opening a dialog; Backspace/Delete removes it. Ctrl+P remains available for full source inspection. Ordinary file chips retain attachment dialogs. Native paste/drop runs normally; only upload acknowledgement is simulated, so no files leave the browser.",
+          "Paste up to 32 characters as ordinary text, 33–64 as a Text chip, and longer text as a File chip by default. Text chips upload only when switched to File. You can also drop files and folders into the real conversation editor. Hover shows a short excerpt. Clicking a paste label opens its complete source in a headerless Card above the composer, with Expand on the left and Close on the right. Delivery controls only change Text/File mode. Backspace/Delete removes a selected chip, and Ctrl+P also opens its preview. Native paste/drop runs normally; only upload acknowledgement is simulated, so no files leave the browser.",
       },
     },
   },

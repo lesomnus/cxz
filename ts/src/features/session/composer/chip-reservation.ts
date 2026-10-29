@@ -17,6 +17,7 @@ const reservations = new Map<string, string>();
 // The visible chip owns its layout. Only its measured advance belongs in the
 // textarea; these nonbreaking spaces reproduce that advance in the same font.
 export function reserveChip(parent: HTMLElement, width: number) {
+  const probeWidth = 100;
   const probe = document.createElement("span");
   Object.assign(probe.style, {
     position: "fixed",
@@ -24,16 +25,19 @@ export function reserveChip(parent: HTMLElement, width: number) {
     top: "0",
     visibility: "hidden",
     display: "inline-block",
-    width: "max-content",
+    width: `${probeWidth}px`,
     whiteSpace: "pre",
     pointerEvents: "none",
   });
   parent.append(probe);
+  // Covered Questions animate their scale. Keep reservation text in CSS pixels
+  // so a visual transform cannot change the textarea's native undo positions.
+  const scale = probe.getBoundingClientRect().width / probeWidth;
   const measure = (text: string) => {
     probe.textContent = text;
     const range = document.createRange();
     range.selectNodeContents(probe);
-    return Math.round(range.getBoundingClientRect().width * 64);
+    return Math.round((range.getBoundingClientRect().width / scale) * 64);
   };
   try {
     const target = Math.round(width * 64);

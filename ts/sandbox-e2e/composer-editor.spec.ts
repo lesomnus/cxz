@@ -193,9 +193,7 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   );
   await expect(input).toHaveValue(`${token}\n${token}`);
   await inspectPaste(page, page.locator(".paste-chip").nth(1));
-  await page
-    .getByRole("button", { name: "Expand source", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Expand", exact: true }).click();
   await expect(input).toHaveValue(`${token}\n${body}`);
   expect(
     await input.evaluate((el: HTMLTextAreaElement) => el.selectionStart),
@@ -204,7 +202,10 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   await input.press("Control+z");
   await expect(input).toHaveValue(`${token}\n${token}`);
   await inspectPaste(page, page.locator(".paste-chip").first());
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Close paste preview", exact: true })
+    .click();
+  await input.press("Backspace");
   await expect(input).toHaveValue(`\n${token}`);
   await input.evaluate((el: HTMLTextAreaElement) => {
     el.setSelectionRange(5, 10);

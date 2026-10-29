@@ -151,7 +151,10 @@ test("same-size chips use exact visible widths and keep distinct sources through
   );
   await inspectPaste(page, chips.first());
   await expect(page.getByRole("dialog")).toContainText(alpha.trim());
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Close paste preview", exact: true })
+    .click();
+  await input.press("Backspace");
   await expectChipDisplay(input, " 0036B");
   await input.press("Control+z");
   await expectChipDisplay(input, "0036B 0036B");

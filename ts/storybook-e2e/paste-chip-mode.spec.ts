@@ -8,7 +8,7 @@ import {
 
 test.use(fractionalChipBrowser);
 
-test("paste chips use icon modes and a ten-character flattened hover preview without opening a dialog", async ({
+test("paste chips use icon modes, a short hover hint and a source card on body click", async ({
   page,
 }, testInfo) => {
   await page.goto(
@@ -148,7 +148,11 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
   ).toBe(0);
   await page.screenshot({ path: testInfo.outputPath("paste-chip-hint.png") });
   await chip.locator(".paste-chip-label").click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const card = page.getByRole("dialog", { name: "Paste source" });
+  await expect(card).toBeVisible();
+  await expect(card.locator(".card-heading")).toHaveCount(0);
+  await card.getByRole("button", { name: "Close paste preview" }).click();
+  await expect(card).toHaveCount(0);
   const bounds = (await chip.boundingBox())!;
   await chip.getByRole("radio", { name: "Text", exact: true }).check();
   await expect(chip).toHaveAttribute("data-send-as", "text");
@@ -157,6 +161,7 @@ test("paste chips use icon modes and a ten-character flattened hover preview wit
   ).toBeEnabled();
   await expect(chip.locator(".paste-chip-label")).not.toContainText("%");
   await chip.getByRole("radio", { name: "File", exact: true }).check();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(chip).toHaveAttribute("data-send-as", "file");
   await expect(chip).toHaveAttribute("data-upload-state", "ready");
   const after = (await chip.boundingBox())!;

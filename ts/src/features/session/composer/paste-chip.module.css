@@ -18,6 +18,13 @@
   width: 100%;
   text-align: end;
 }
+.label[role="button"] {
+  cursor: pointer;
+}
+.label[role="button"]:focus-visible {
+  outline: 1px solid var(--ui-shade-160);
+  outline-offset: 1px;
+}
 .reservation:has(.native) > .chip {
   position: absolute;
   inset-inline-start: 0;

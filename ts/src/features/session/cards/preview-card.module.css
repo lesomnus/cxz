@@ -1,0 +1,7 @@
+:global(.floating-card-host) > .preview:global(.floating-card) {
+  position: absolute;
+  bottom: var(--card-gap);
+  left: var(--card-shadow-left);
+  width: calc(100% - var(--card-shadow-left) - var(--card-shadow-right));
+  max-height: var(--card-preview-max-height);
+}

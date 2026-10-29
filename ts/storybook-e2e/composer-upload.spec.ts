@@ -44,7 +44,10 @@ test("pending uploads block send without moving the caret and deletion releases 
   await expect(send).toBeEnabled();
   await expectChipDisplay(input, "Before sample.txt · 0005B typing after");
   await chip.click();
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Close paste preview", exact: true })
+    .click();
+  await input.press("Backspace");
   await expect(input).toHaveValue("Before  typing after");
   await expect(send).toBeEnabled();
 });
@@ -174,7 +177,10 @@ test("large pasted text shows upload status then UTF-8 bytes without internal na
     path: testInfo.outputPath("file-chip-composer.png"),
   });
   await chip.locator(".paste-chip-label").click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const preview = page.getByRole("dialog", { name: "Paste source" });
+  expect(await preview.locator("pre").textContent()).toBe(text);
+  await preview.getByRole("button", { name: "Close paste preview" }).click();
+  await expect(preview).toHaveCount(0);
   await page.mouse.move(0, 0);
   await chip.hover();
   await expect(page.getByRole("tooltip")).toHaveText("한글😀 한글😀 한글…");

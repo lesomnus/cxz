@@ -74,9 +74,7 @@ test("option cards and Other share native selection and multiline paste editing"
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview.locator("pre")).toHaveText(body);
   await expect(page.locator(".question-cards")).toHaveJSProperty("inert", true);
-  await preview
-    .getByRole("button", { name: "Expand source", exact: true })
-    .click();
+  await preview.getByRole("button", { name: "Expand", exact: true }).click();
   await expect(preview).toHaveCount(0);
   // Native textarea values normalize CRLF; raw chip submission retains it.
   const expanded = "prefix\n" + body.replaceAll("\r\n", "\n");

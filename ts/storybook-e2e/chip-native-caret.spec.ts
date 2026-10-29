@@ -1,6 +1,45 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
+test("visual scale changes preserve native chip reservations", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=composer-upload-chips--interactive&viewMode=story",
+  );
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.evaluate((el) => {
+    el.focus();
+    const data = new DataTransfer();
+    data.setData("text/plain", "A pasted message with enough text for a chip.");
+    el.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData: data,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+  await expect(page.locator(".paste-chip")).toHaveAttribute(
+    "data-send-as",
+    "text",
+  );
+  const reservation = await input.inputValue();
+  for (const scale of [0.97, 0.84, 1]) {
+    await page.locator(".composer").evaluate((el, value) => {
+      el.style.transform = `scale(${value})`;
+      window.dispatchEvent(new Event("resize"));
+    }, scale);
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    await expect(input).toHaveValue(reservation);
+  }
+});
+
 for (const scenario of [
   { name: "system font", uniform: false, zoom: 1, longFile: false },
   { name: "uniform spacing font", uniform: true, zoom: 1, longFile: false },

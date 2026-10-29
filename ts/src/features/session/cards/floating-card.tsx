@@ -15,7 +15,8 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { FloatingCard } from "@lesomnus/nox";
+import { Card as CardSurface, FloatingCard } from "@lesomnus/nox";
+import styles from "./preview-card.module.css";
 export { FloatingCard } from "@lesomnus/nox";
 import { AnchoredDetail } from "#src/features/session/conversation/anchored-detail.tsx";
 
@@ -25,6 +26,7 @@ type Card = {
   label?: string | (() => string);
   kind?: "paste";
   content: (close: () => void) => ReactNode;
+  footer?: (close: () => void) => ReactNode;
   origin: HTMLElement | null;
   onClose?: () => void;
   anchor?: HTMLElement;
@@ -34,7 +36,14 @@ type Card = {
 };
 type CardRequest = Pick<
   Card,
-  "title" | "label" | "content" | "kind" | "anchor" | "surface" | "onClose"
+  | "title"
+  | "label"
+  | "content"
+  | "footer"
+  | "kind"
+  | "anchor"
+  | "surface"
+  | "onClose"
 >;
 const OpenCard = createContext<(card: CardRequest) => void>(() => {});
 const CardState = createContext<{
@@ -460,7 +469,7 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
         setEntered(true);
         if (root.current?.dataset.active === "true")
           root.current
-            .querySelector<HTMLElement>(".card-close")
+            .querySelector<HTMLElement>(".card-close, [data-preview-close]")
             ?.focus({ preventScroll: true });
       });
     });
@@ -469,10 +478,16 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
       cancelAnimationFrame(second);
     };
   }, []);
+  const paste = card.kind === "paste";
+  const Surface = paste ? CardSurface : FloatingCard;
   return (
-    <FloatingCard
+    <Surface
       ref={root}
       title={title}
+      hideHeading={paste}
+      className={paste ? styles.preview : undefined}
+      {...(paste ? { bodyPadding: "var(--ui-space)" } : {})}
+      footer={card.footer?.(close)}
       close={close}
       closeLabel={
         card.kind === "paste" ? t("Close paste preview") : t("Close details")
@@ -487,6 +502,6 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
       data-closing={!!card.closing}
     >
       {card.content(close)}
-    </FloatingCard>
+    </Surface>
   );
 }
