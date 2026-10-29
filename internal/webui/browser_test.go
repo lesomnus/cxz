@@ -43,6 +43,7 @@ func TestBrowserFixture(t *testing.T) {
 	setupTranscriptReplay(t, f)
 	resource.RegisterProjectServiceServer(g, &fixtureProjects{probe: os.Getenv("CXZ_EDITOR_PROBE_CONTAINER")})
 	resource.RegisterSessionServiceServer(g, f)
+	resource.RegisterNotificationServiceServer(g, fixtureNotifications{})
 	go g.Serve(ln)
 	defer g.Stop()
 	conn, err := grpc.NewClient("passthrough:///fixture", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return ln.Dial() }))
@@ -188,6 +189,27 @@ func (*fixtureProjects) Watch(_ *resource.ProjectWatchRequest, s grpc.ServerStre
 	}
 	<-s.Context().Done()
 	return s.Context().Err()
+}
+
+type fixtureNotifications struct {
+	resource.UnimplementedNotificationServiceServer
+}
+
+func (fixtureNotifications) Read(context.Context, *resource.NotificationReadRequest) (*resource.NotificationReadResponse, error) {
+	return resource.NotificationReadResponse_builder{ReaderId: resourceid.Bytes(16, "operator")}.Build(), nil
+}
+func (fixtureNotifications) Listen(_ *resource.NotificationListenRequest, stream grpc.ServerStreamingServer[resource.NotificationListenResponse]) error {
+	if err := stream.Send(resource.NotificationListenResponse_builder{Ready: resource.NotificationListenReady_builder{ReaderId: resourceid.Bytes(16, "operator")}.Build()}.Build()); err != nil {
+		return err
+	}
+	<-stream.Context().Done()
+	return stream.Context().Err()
+}
+func (f *browserFixture) ReadState(context.Context, *resource.SessionReadStateRequest) (*resource.SessionReadState, error) {
+	return resource.SessionReadState_builder{ReaderId: resourceid.Bytes(16, "operator"), Generation: "fixture"}.Build(), nil
+}
+func (f *browserFixture) MarkRead(_ context.Context, r *resource.SessionMarkReadRequest) (*resource.SessionReadState, error) {
+	return resource.SessionReadState_builder{ReaderId: resourceid.Bytes(16, "operator"), Generation: "fixture", ThroughSeq: r.GetThroughSeq()}.Build(), nil
 }
 
 type browserFixture struct {

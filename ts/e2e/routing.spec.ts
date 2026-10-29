@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { expect, test, devices } from "@playwright/test";
 
 test.use({
@@ -186,8 +187,13 @@ test("alias and UUID URLs open the same session and preserve its draft", async (
   await page.goto("/c/_/session/demo-chat");
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("Same session, two readable locators");
-  // The fixture uses these sixteen bytes as its resource ID.
-  const id = "61626364-6566-6768-696a-6b6c6d6e6f70";
+  const response = await page.request.post("/cxz.SessionService/Get", {
+    headers: { "Connect-Protocol-Version": "1" },
+    data: { ref: { alias: "demo-chat" } },
+  });
+  expect(response.ok()).toBe(true);
+  const hex = Buffer.from((await response.json()).id, "base64").toString("hex");
+  const id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
   await page.goto(`/c/_/session/${id}`);
   await expect(input).toHaveValue("Same session, two readable locators");
   await expect(page).toHaveURL(new RegExp(`/c/_/session/${id}$`));
