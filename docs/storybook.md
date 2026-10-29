@@ -1,6 +1,8 @@
 # Storybook
 
 앱의 실제 React 컴포넌트와 CSS를 서버 연결 없이 확인합니다. 기본 언어는 영어입니다.
+cxz Storybook은 제품 화면과 앱 연동 예제만 등록합니다. Nox 기본 컴포넌트는
+별도 Nox Storybook에서 확인하며, 같은 스토리를 두 카탈로그에 등록하지 않습니다.
 
 ```sh
 cd ts
@@ -12,13 +14,12 @@ npm run storybook
 6006 포트를 로컬로 포워딩합니다. `npm run dev`는 Vite와 이 Storybook을 함께
 실행하며, Ctrl+C로 둘 다 종료합니다. Vite만 실행하려면 `npm run dev:app`을 사용합니다.
 
-- `Components`: 버튼, 에이전트 로고, 설정 드롭다운·슬라이더·분할 선택, floating card, 타이머와 Monaco 상세 탭.
-- `Settings/SettingField`: 제목·설정 ID·요약·컨트롤·선택적 상세설명을 배치하는 공통 설정 항목.
+- `Components/AgentBrand`: cxz가 지원하는 에이전트의 로고와 이름.
 - `Components/FontFamilyControl`: 로컬 글꼴과 Google Fonts 선택, 적용 후 저장되는 메타데이터. Google Fonts는 Apply font를 누를 때만 다운로드합니다.
 - `Components/ConfirmationDialog`: 배경 조작과 포커스를 제한하는 확인창. 취소, 실행 대기, 실패 후 재시도, Purge 상태를 확인합니다.
 - `Components/EditableValue`: 값 영역 그대로 편집하는 입력과 취소·확인 오버레이. Alias/Title, 저장 대기, 실패 후 수정·재시도를 확인합니다.
 - `Components/SessionDetails`: 고정폭 key·value와 Title·Alias 편집. 편집 가능한 행의 hover 배경 안에서 값 영역은 더 밝은 둥근 표면을 유지하며, 외곽과 내부 모서리는 같은 중심을 갖습니다. Title은 `Session.name`이고 alias와 별개이며, 둘 다 `Session.Patch`로 저장합니다. 이름 변경은 수동 제목으로 기록하고 진행 중인 자동 제목 생성을 취소하며, 보조 AI를 실행하지 않습니다.
-- `Editor/SourceEditor`: 파일 미리보기와 편집 가능한 settings JSON.
+- `Conversation/TaskDetails`: 작업의 Input/Output/Result를 cxz `DetailTabs`와 Monaco로 표시하는 floating card 연동 예제. 기본 Card와 SourceEditor 자체 예제는 Nox에 있습니다.
 - `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤.
 - `Resources/Tasks`: 프로젝트 선택과 상태별 작업 보드. `ProjectBoard`, `ManyTasks`, `EmptyProject`, `OlderRuntime`에서 등록·수정, 담당 세션 이동, 정지/이전 run 경고와 Release 확인을 확인합니다. `Simulate agent update`는 열린 편집 내용을 보존하면서 원격 갱신·alias 변경과 저장 충돌을 재현합니다. 실제 Connect 클라이언트와 메모리 서비스 fixture를 사용하며 서버의 Task는 변경하지 않습니다.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
@@ -46,8 +47,10 @@ Details의 Title·Alias를 클릭하면 주변이 어두워지고 값 위치 그
 Storybook의 관리 동작은 미리보기 내부 상태만 변경하며 실제 세션이나 파일을 변경하지 않습니다.
 입력창은 별도 `ComposerEditor` 컴포넌트이지만, 이 Story에서는 상단 바와 하단 상태 영역을
 함께 표시합니다. Toolbar와 Status bar는 현재 `ConversationComposer` 내부 영역입니다.
-이 영역에 들어가는 버튼, 선택 메뉴, 타이머 같은 재사용 컴포넌트는 `Components`에서
-별도 Story로 확인할 수 있습니다. 작성·전송·응답 생성이 이어지는 흐름은
+이 영역에 들어가는 버튼, 선택 메뉴, 타이머 같은 재사용 컴포넌트는 Nox Storybook에서
+별도 Story로 확인할 수 있습니다. cxz의 세션 검증 규칙을 사용하는 `Components/EditableValue`와
+실행·실패·재시도 정책을 가진 `Components/ConfirmationDialog`는 앱 연동 예제로 남깁니다.
+작성·전송·응답 생성이 이어지는 흐름은
 `Conversation/Playground`에서 확인합니다.
 
 Playground에서 메시지를 작성하고 화살표 버튼이나 Ctrl+Enter로 전송합니다.
@@ -79,9 +82,9 @@ Controls에서 props를 바꾸거나 컴포넌트를 직접 클릭해 동작을 
 Docs에서 컴포넌트의 props와 여러 상태를 함께 확인합니다.
 
 스토리는 `ts/src/**/*.stories.tsx`, 공통 설정은 `ts/.storybook/`에 있습니다.
-새 컴포넌트는 같은 위치에 `컴포넌트명.stories.tsx`를 추가하면 자동으로 표시됩니다.
-선택 메뉴와 슬라이더 스토리는 `useArgs`로 선택 값을 Controls와 동기화합니다.
-Monaco 텍스트 편집 예제는 로컬 React 상태를 사용해 입력을 즉시 반영합니다.
+새 cxz 컴포넌트는 같은 위치에 `컴포넌트명.stories.tsx`를 추가하면 자동으로 표시됩니다.
+Nox 컴포넌트의 기본 상태·props 예제를 cxz의 `src`에 복제하지 않습니다.
+앱 Storybook에는 cxz 데이터·검증·설정·RPC를 연결하거나 제품 화면 안에서 조합하는 예제를 둡니다.
 미리보기 전용 프레임과 합성 데이터는 `ts/src/storybook/`에 있으며 앱 번들에서는 사용하지 않습니다.
 
 정적 빌드와 브라우저 검증:
@@ -105,6 +108,22 @@ npm run storybook:ui
 ```
 
 별도의 UI Storybook은 앱 전역 CSS와 설정·언어 저장소 없이 패키지를 검증합니다. 앱 Storybook은 실제 제품 화면 안에서의 조합을 검증합니다. 패키지 설치·테마·번역·에디터 사용법은 [UI README](https://github.com/lesomnus/nox/blob/main/README.md)를 참조하세요. 배포용 CSS와 타입 선언은 빌드 결과이며 git에 저장하지 않습니다.
+
+Nox Storybook은 <http://localhost:6008>에서 열립니다. `ts/.storybook-ui`가
+`ts/packages/nox/src/**/*.stories.tsx`를 등록하므로 Button, Checkbox, Switch,
+ValueMenu, FieldLabel, IdentifierValue, DateTime, ElapsedTime, SettingSlider,
+SegmentedControl, Card, Drawer, SourceEditor 등은 여기서 확인합니다.
+cxz의 `ts/.storybook/main.ts`에는 Nox 소스 경로를 직접 등록하지 않습니다.
+
+기본 컴포넌트 브라우저 검증은 `ts/ui-e2e`에서 Nox 카탈로그를 대상으로 실행합니다.
+제품 연동 검증은 `ts/storybook-e2e`에서 cxz 카탈로그만 사용합니다. 한 테스트에서
+두 카탈로그의 스토리를 오가지 않습니다.
+
+```sh
+cd ts
+npm run build-storybook:ui
+npm run test:ui
+```
 
 `Components/ScrollArea`는 중앙 레일·핸들·본문 배경색의 그림자를 가진 재사용 세로 스크롤입니다.
 `LongList`, `ShortOverflow`, `NoOverflow`, `GrowingContent`에서 내용 길이에 따른 레일 변화,

@@ -112,18 +112,6 @@ test("response metric values precede their icons and do not move them across val
   );
   await page.waitForTimeout(1100);
   await expect(page.locator('[data-metric="duration"]')).toHaveText("01:39:59");
-  await page.goto(
-    "/iframe.html?id=components-elapsedtime--running&viewMode=story",
-  );
-  const timer = page.getByRole("timer", {
-    name: "Response elapsed time",
-    exact: true,
-  });
-  await expect(timer).toBeVisible();
-  const initial = await timer.textContent();
-  await expect
-    .poll(() => timer.textContent(), { timeout: 3000 })
-    .not.toBe(initial);
   expect(errors).toEqual([]);
 });
 
