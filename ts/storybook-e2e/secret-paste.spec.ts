@@ -142,10 +142,19 @@ test("Secret upload shows measured percentages until acknowledgement, then only 
   page,
 }) => {
   await page.evaluate(() => {
-    const recorded: string[] = [];
+    const recorded: { label: string; width: number; input: string }[] = [];
     const observer = new MutationObserver(() => {
-      const label = document.querySelector(".paste-chip-label")?.textContent;
-      if (label && recorded.at(-1) !== label) recorded.push(label);
+      const chip = document.querySelector(".paste-chip");
+      const label = chip?.querySelector(".paste-chip-label")?.textContent;
+      const input = document.querySelector<HTMLTextAreaElement>(
+        'textarea[aria-label="Message"]',
+      );
+      if (chip && label && recorded.at(-1)?.label !== label)
+        recorded.push({
+          label,
+          width: chip.getBoundingClientRect().width,
+          input: input?.value ?? "",
+        });
     });
     observer.observe(document.body, {
       subtree: true,
@@ -165,17 +174,25 @@ test("Secret upload shows measured percentages until acknowledgement, then only 
     const { recorded, observer } = Reflect.get(
       window,
       "secretProgressRecorder",
-    ) as { recorded: string[]; observer: MutationObserver };
+    ) as {
+      recorded: { label: string; width: number; input: string }[];
+      observer: MutationObserver;
+    };
     observer.disconnect();
     return recorded;
   });
-  expect(recorded).toEqual(
-    expect.arrayContaining(["Secret 000%", "Secret 099%", "Secret"]),
+  const labels = recorded.map((entry) => entry.label);
+  expect(labels).toEqual(
+    expect.arrayContaining(["  000%", "  099%", "Secret"]),
   );
-  expect(
-    recorded.some((label) => /^Secret 0(?:12|25|50|75)%$/.test(label)),
-  ).toBe(true);
-  expect(recorded).not.toContain("Secret 100%");
+  expect(labels.some((label) => /^  0(?:12|25|50|75)%$/.test(label))).toBe(
+    true,
+  );
+  expect(labels).not.toContain("  100%");
+  expect(new Set(recorded.map((entry) => entry.width)).size).toBe(1);
+  expect(recorded[0].width).toBeGreaterThan(0);
+  expect(new Set(recorded.map((entry) => entry.input)).size).toBe(1);
+  await expect(chip.locator('[data-mode="integer"]')).toHaveCount(0);
 });
 
 test("the value-only Secret body reveals during selection and Expand requires confirmation", async ({

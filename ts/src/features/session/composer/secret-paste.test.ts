@@ -124,7 +124,7 @@ it("reports real progress below 100 until the file is acknowledged and hides int
   const pending = save(new AbortController().signal, changed);
   expect(paste.secret?.progress).toBe(99);
   expect(presentPaste(paste)).toMatchObject({
-    label: "Secret 099%",
+    label: "  099%",
     progress: 99,
   });
   expect(changed).toHaveBeenCalledTimes(2);

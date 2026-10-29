@@ -29,8 +29,8 @@ export function presentPaste(paste: ComposerPaste): PastePresentation {
         Math.min(99, Math.floor(paste.secret.progress ?? 0)),
       );
       return {
-        label: `${before} ${String(progress).padStart(3, "0")}%`,
-        before,
+        label: `  ${String(progress).padStart(3, "0")}%`,
+        before: " ",
         leading: "",
         after: "",
         progress,
