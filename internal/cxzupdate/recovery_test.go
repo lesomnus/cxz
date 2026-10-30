@@ -34,7 +34,7 @@ func TestRecoveryBackoffPersistsAndBoundsDispatches(t *testing.T) {
 			t.Fatalf("attempt %d: %+v, %v, %v", attempt, r, ran, err)
 		}
 		if attempt == RecoveryAttempts {
-			if r.Status != "stopped" || r.Code != "attempt_limit" || !r.NextAttempt.IsZero() {
+			if r.Status != "stopped" || r.Code != "attempt_limit" || !r.NextAttempt.IsZero() || r.LastFailure == nil || r.LastFailure.Code != "recovery_failed" {
 				t.Fatalf("budget did not stop: %+v", r)
 			}
 			break
@@ -54,6 +54,27 @@ func TestRecoveryBackoffPersistsAndBoundsDispatches(t *testing.T) {
 	_, ran, err := RunRecovery(t.Context(), path, o, clock, run)
 	if err != nil || ran || calls != RecoveryAttempts {
 		t.Fatal("stopped recovery restarted automatically", ran, err, calls)
+	}
+}
+
+func TestRecoveryRestartAfterLeaseDeadlineDoesNotDispatch(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "recovery.json")
+	now := time.Now()
+	if err := core.WriteJSON(path, Recovery{Project: "p", Container: "c", Transaction: "tx", Phase: "rolling_back", Status: "retrying", Attempts: 1, NextAttempt: now.Add(-time.Minute), LeaseUntil: now.Add(-time.Second)}); err != nil {
+		t.Fatal(err)
+	}
+	r, ran, err := RunRecovery(t.Context(), path, RecoveryObservation{Project: "p", Container: "c", Transaction: "tx"}, func() time.Time { return now }, func(bool) RecoveryResult {
+		t.Fatal("expired ownership was dispatched after Manager restart")
+		return RecoveryResult{}
+	})
+	if err != nil || ran || r.Status != "stopped" || r.Code != "lease_expiring" || r.Attempts != 1 {
+		t.Fatalf("expired deadline was ignored: %+v, %v", r, err)
+	}
+	// Explicit retry discards the cached deadline, not the real lease. The
+	// helper must be allowed to re-read ownership after the cause is fixed.
+	r, err = ResetRecovery(path)
+	if err != nil || !r.LeaseUntil.IsZero() || r.Attempts != 0 {
+		t.Fatalf("manual retry retained stale scheduling metadata: %+v, %v", r, err)
 	}
 }
 

@@ -98,3 +98,44 @@ func TestMaintenancePreservesTypedReadinessFailures(t *testing.T) {
 		t.Fatalf("broken readiness inspection was mistaken for an idle wait: %+v", failure)
 	}
 }
+
+func TestCompletionOnlyReleasesLeaseAfterHealthyCheckpoint(t *testing.T) {
+	root, target, release := runtimeFixture(t)
+	tx := prepareRuntimeFixture(t, root, target, release)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+	defer cancel()
+	if err := stopRuntime(ctx, tx.Old); err != nil {
+		t.Fatal(err)
+	}
+	tx.State = "starting"
+	if err := core.WriteJSON(runtimeTxPath(root), tx); err != nil {
+		t.Fatal(err)
+	}
+	if err := startRuntime(root, target, target, tx.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := waitHealth(ctx, root, release.Revision); err != nil {
+		t.Fatal(err)
+	}
+	// Simulate the helper dying after its completion checkpoint, before release.
+	tx, err := readRuntimeTransaction(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx.State = "healthy"
+	if err := core.WriteJSON(runtimeTxPath(root), tx); err != nil {
+		t.Fatal(err)
+	}
+	h, err := Call(ctx, root, "health", "")
+	if err != nil || RuntimeFinalizationKey(h) == "" {
+		t.Fatal("completed checkpoint hid a surviving owned lease", err)
+	}
+	fixtureBusy(t, root)
+	if err := FinalizeRuntime(ctx, root); err != nil {
+		t.Fatal(err)
+	}
+	after, err := Call(ctx, root, "health", "")
+	if err != nil || after.Lease != "" || after.Build.PID != h.Build.PID || after.Start != h.Start {
+		t.Fatalf("release restarted the runtime or retained admission: %+v, %v", after, err)
+	}
+}

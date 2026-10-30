@@ -27,9 +27,9 @@ func FinalizeRuntime(ctx context.Context, root string) error {
 		return err
 	}
 	switch tx.State {
-	case "starting":
+	case "starting", "healthy":
 		return finishRuntime(ctx, root, &tx)
-	case "rolling_back":
+	case "rolling_back", "rolled_back":
 		return finishRuntimeRollback(ctx, root, &tx)
 	default:
 		return RecoveryWaiting("not_finalizable", "runtime transaction is not awaiting finalization")
@@ -67,9 +67,9 @@ func RuntimeFinalizationKey(h Health) string {
 	}
 	var revision string
 	switch tx.State {
-	case "starting":
+	case "starting", "healthy":
 		revision = tx.Revision
-	case "rolling_back":
+	case "rolling_back", "rolled_back":
 		revision = tx.Old.Build.Revision
 	default:
 		return ""

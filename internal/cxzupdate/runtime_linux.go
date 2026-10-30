@@ -142,7 +142,7 @@ func replaceRuntime(ctx context.Context, root, target string, r Release, recover
 	defer lock.Close()
 	tx, e := readRuntimeTransaction(root)
 	if e != nil && !os.IsNotExist(e) {
-		return e
+		return RecoveryBlocked("transaction_unreadable", fmt.Sprintf("runtime transaction unreadable: %v", e))
 	}
 	if tx.Pending() {
 		// Recovery finishes the captured transaction, even if upstream has moved.
@@ -156,7 +156,7 @@ func replaceRuntime(ctx context.Context, root, target string, r Release, recover
 				return RecoveryBlocked("manifest_unavailable", fmt.Sprintf("runtime recovery manifest unavailable: %v", err))
 			}
 			if err = json.Unmarshal(b, &r); err != nil {
-				return err
+				return RecoveryBlocked("manifest_invalid", fmt.Sprintf("runtime recovery manifest invalid: %v", err))
 			}
 		}
 		if r.Revision != tx.Revision {

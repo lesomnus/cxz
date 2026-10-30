@@ -54,21 +54,22 @@ type RecoveryResult struct {
 // project/container/transaction. It remains readable when the runtime is dead
 // and survives Manager replacement, release checks, and channel changes.
 type Recovery struct {
-	Project      string    `json:"project"`
-	Name         string    `json:"name,omitempty"`
-	Container    string    `json:"container"`
-	Transaction  string    `json:"transaction,omitempty"`
-	Phase        string    `json:"phase,omitempty"`
-	Available    bool      `json:"runtime_available"`
-	Status       string    `json:"status"`
-	Attempts     int       `json:"attempts"`
-	MaxAttempts  int       `json:"max_attempts"`
-	LastAttempt  time.Time `json:"last_attempt,omitempty"`
-	NextAttempt  time.Time `json:"next_attempt,omitempty"`
-	LeaseUntil   time.Time `json:"lease_until,omitempty"`
-	Code         string    `json:"code,omitempty"`
-	Reason       string    `json:"reason,omitempty"`
-	FinalizeSeen string    `json:"finalize_seen,omitempty"`
+	Project      string           `json:"project"`
+	Name         string           `json:"name,omitempty"`
+	Container    string           `json:"container"`
+	Transaction  string           `json:"transaction,omitempty"`
+	Phase        string           `json:"phase,omitempty"`
+	Available    bool             `json:"runtime_available"`
+	Status       string           `json:"status"`
+	Attempts     int              `json:"attempts"`
+	MaxAttempts  int              `json:"max_attempts"`
+	LastAttempt  time.Time        `json:"last_attempt,omitempty"`
+	NextAttempt  time.Time        `json:"next_attempt,omitempty"`
+	LeaseUntil   time.Time        `json:"lease_until,omitempty"`
+	Code         string           `json:"code,omitempty"`
+	Reason       string           `json:"reason,omitempty"`
+	FinalizeSeen string           `json:"finalize_seen,omitempty"`
+	LastFailure  *RecoveryFailure `json:"last_failure,omitempty"`
 }
 
 type RecoveryObservation struct {
@@ -168,7 +169,9 @@ func RunRecovery(ctx context.Context, path string, o RecoveryObservation, now fu
 	if err := save(); err != nil {
 		return r, false, err
 	}
-	result := run(finalize)
+	// Even a subsequent budgeted retry must remain completion-only when the
+	// observed runtime already has the expected identity.
+	result := run(o.Finalize != "")
 	if result.Transaction != "" {
 		r.Transaction, r.Phase = result.Transaction, result.Phase
 	}
@@ -178,12 +181,16 @@ func RunRecovery(ctx context.Context, path string, o RecoveryObservation, now fu
 	}
 	if result.Failure == nil {
 		r.Status, r.Code, r.Reason = "completed", "", ""
+		r.LastFailure = nil
 		r.NextAttempt = time.Time{}
 	} else {
 		f := result.Failure
 		r.Code, r.Reason = f.Code, f.Reason
 		if len(r.Reason) > reasonLimit {
 			r.Reason = string([]rune(r.Reason)[:min(reasonLimit, len([]rune(r.Reason)))])
+		}
+		if f.Class != "waiting" {
+			r.LastFailure = &RecoveryFailure{Class: f.Class, Code: f.Code, Reason: r.Reason}
 		}
 		switch f.Class {
 		case "operator_required":
@@ -225,6 +232,7 @@ func ResetRecovery(path string) (Recovery, error) {
 		return r, fmt.Errorf("no runtime recovery recorded for this project")
 	}
 	r.Status, r.Attempts = "retrying", 0
+	r.MaxAttempts = RecoveryAttempts
 	r.Code, r.Reason, r.FinalizeSeen = "", "manual retry requested; safety checks remain required", ""
 	r.NextAttempt = time.Time{}
 	r.LeaseUntil = time.Time{} // Re-read real ownership; never reuse a stale cached deadline.
