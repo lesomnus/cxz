@@ -109,6 +109,7 @@ async function fixture({
   loginStatus = 204,
   publicToken = false,
   streamRPC = false,
+  identity,
 } = {}) {
   const dir = await temp();
   const tokenFile = join(
@@ -127,9 +128,13 @@ async function fixture({
       body: Buffer.concat(parts).toString(),
     });
     if (req.url === "/auth/status") {
+      if (identity && req.headers.cookie === "test-session=valid")
+        res.setHeader("Payday-Identity", identity);
       res.writeHead(req.headers.cookie === "test-session=valid" ? 204 : 401);
       res.end();
     } else if (req.url === "/auth/login") {
+      if (identity && loginStatus === 204)
+        res.setHeader("Payday-Identity", identity);
       res.writeHead(
         loginStatus,
         loginStatus === 204
@@ -258,12 +263,13 @@ describe("Vite against a real HTTP gateway", () => {
       expect(await r.text()).not.toContain(token);
     }
   });
-  it("signs in server-side and forwards only the session cookie", async () => {
+  it("signs in server-side and supplies a cache identity for older gateways without exposing the token", async () => {
     const f = await fixture();
     const r = await fetch(`${f.url}/auth/status`);
     expect(r.status).toBe(204);
     expect(r.headers.get("set-cookie")).toContain("HttpOnly");
     expect(r.headers.get("cache-control")).toBe("no-store");
+    expect(r.headers.get("payday-identity")).toMatch(/^[0-9a-f]{32}$/);
     expect(await r.text()).not.toContain(token);
     expect(JSON.stringify([...r.headers])).not.toContain(token);
     expect(f.calls.map((c) => c.path)).toEqual(["/auth/status", "/auth/login"]);
@@ -294,12 +300,26 @@ describe("Vite against a real HTTP gateway", () => {
 
   it("reuses an authenticated cookie without creating another session", async () => {
     const f = await fixture();
+    const first = await fetch(`${f.url}/auth/status`);
+    f.calls.splice(0);
     const r = await fetch(`${f.url}/auth/status`, {
       headers: { Cookie: "test-session=valid" },
     });
     expect(r.status).toBe(204);
     expect(r.headers.get("set-cookie")).toBeNull();
+    expect(r.headers.get("payday-identity")).toBe(
+      first.headers.get("payday-identity"),
+    );
     expect(f.calls).toHaveLength(1);
+  });
+
+  it("preserves the authenticated identity returned by an updated gateway", async () => {
+    const f = await fixture({ identity: "gateway-authority" });
+    for (const headers of [{}, { Cookie: "test-session=valid" }]) {
+      const response = await fetch(`${f.url}/auth/status`, { headers });
+      expect(response.status).toBe(204);
+      expect(response.headers.get("payday-identity")).toBe("gateway-authority");
+    }
   });
 
   it("reads a rotated token on the next sign-in", async () => {
@@ -314,6 +334,7 @@ describe("Vite against a real HTTP gateway", () => {
     const f = await fixture({ loginStatus: 403 });
     const r = await fetch(`${f.url}/auth/status`);
     expect(r.status).toBe(403);
+    expect(r.headers.get("payday-identity")).toBeNull();
     expect(await r.text()).not.toContain(token);
   });
 

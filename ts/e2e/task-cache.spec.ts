@@ -53,6 +53,7 @@ test("Tasks survive reload while Watch is pending, reconcile remote changes and 
     id: Buffer.from("0000000000008000800b000000000001", "hex"),
     alias: "cached-work",
     name: "Task saved before reload",
+    desc: "Full description restored from the cached Watch row.",
     priority: 2,
     status: TaskStatus.TODO,
     project: { id: Buffer.from(project.id, "base64") },
@@ -62,6 +63,16 @@ test("Tasks survive reload while Watch is pending, reconcile remote changes and 
     release!: () => void;
   const pending = new Promise<void>((resolve) => {
     release = resolve;
+  });
+  let getCalls = 0,
+    releaseGet!: () => void;
+  const getPending = new Promise<void>((resolve) => {
+    releaseGet = resolve;
+  });
+  await page.route("**/cxz.TaskService/Get", async (route) => {
+    getCalls++;
+    await getPending;
+    await route.fulfill({ json: toJson(TaskSchema, value) });
   });
   await page.route("**/cxz.TaskService/Watch", async (route) => {
     if (hold) await pending;
@@ -115,7 +126,41 @@ test("Tasks survive reload while Watch is pending, reconcile remote changes and 
         exact: true,
       }),
     ).toHaveCount(0);
+    await page
+      .getByRole("button", {
+        name: "Open task: Task saved before reload",
+        exact: true,
+      })
+      .click();
+    const detail = page.getByRole("dialog", {
+      name: "Task details",
+      exact: true,
+    });
+    const title = detail.getByRole("textbox", { name: "Title", exact: true });
+    await expect(title).toHaveValue("Task saved before reload");
+    await expect(
+      detail.getByRole("textbox", { name: "Description", exact: true }),
+    ).toHaveValue("Full description restored from the cached Watch row.");
+    await expect(
+      detail.getByText("Loading task…", { exact: true }),
+    ).toHaveCount(0);
+    expect(getCalls).toBe(0);
+    await title.fill("Keep this draft while the server updates");
     release();
+    await expect(
+      detail.getByText(
+        "This task was updated elsewhere. Reload to edit its latest version.",
+      ),
+    ).toBeVisible();
+    await expect(title).toHaveValue("Keep this draft while the server updates");
+    await detail
+      .getByRole("button", { name: "Reload latest task", exact: true })
+      .click();
+    await expect.poll(() => getCalls).toBe(1);
+    await expect(title).toHaveValue("Keep this draft while the server updates");
+    releaseGet();
+    await expect(title).toHaveValue("Task updated while the browser was away");
+    await detail.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(
       page.getByRole("button", {
         name: "Open task: Task updated while the browser was away",
@@ -134,6 +179,7 @@ test("Tasks survive reload while Watch is pending, reconcile remote changes and 
     await expect.poll(() => cachedRows(page)).toBe(0);
   } finally {
     release();
+    releaseGet();
   }
 });
 
