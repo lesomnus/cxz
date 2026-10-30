@@ -45,6 +45,7 @@ for (const story of ["ready-image", "restored-image"]) {
       await dialog.evaluate((node) => !!node.closest(".floating-card-host")),
     ).toBe(true);
     await expect(page.locator("dialog[open]")).toHaveCount(0);
+    await expect(dialog).toHaveAttribute("data-entered", "true");
     await dialog.evaluate(async (node) => {
       await Promise.all(
         node
@@ -267,6 +268,7 @@ test("small images open at their original size without automatic enlargement", a
   const card = page.getByRole("dialog", { name: "Image preview", exact: true });
   const image = card.locator("img");
   await expect(image).toBeVisible();
+  await expect(card).toHaveAttribute("data-entered", "true");
   await card.evaluate(async (node) => {
     await Promise.all(
       node
