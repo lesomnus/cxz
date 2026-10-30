@@ -38,7 +38,26 @@ func locked(path string, fn func() (bool, error)) (bool, error) {
 	if !PlainPath(filepath.Dir(path)) {
 		return false, nil
 	}
-	l := flock.New(path)
+	// A Manager may create this in a remote user's private directory. Readers
+	// can take an exclusive flock without O_RDWR; keep the empty lease readable
+	// so future runtime maintenance is not blocked by a root-owned lock file.
+	if _, err := os.Lstat(path); os.IsNotExist(err) {
+		f, e := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+		if e != nil && !os.IsExist(e) {
+			return false, e
+		}
+		if e == nil {
+			f.Close()
+		}
+	}
+	return lockedExisting(path, fn)
+}
+
+func lockedExisting(path string, fn func() (bool, error)) (bool, error) {
+	if !PlainPath(path) {
+		return false, nil
+	}
+	l := flock.New(path, flock.SetFlag(os.O_RDONLY))
 	defer l.Close()
 	ok, err := l.TryLock()
 	if err != nil || !ok {
@@ -252,7 +271,7 @@ func ProfileCandidates(root string, p Policy, now time.Time, pressure bool) ([]C
 			continue
 		}
 		lock := filepath.Join(profile, "login.lock")
-		_, err = locked(lock, func() (bool, error) {
+		_, err = lockedExisting(lock, func() (bool, error) {
 			marker := filepath.Join(profile, "maintenance-idle")
 			st, err := os.Stat(marker)
 			if os.IsNotExist(err) {
@@ -267,7 +286,7 @@ func ProfileCandidates(root string, p Policy, now time.Time, pressure bool) ([]C
 			idleSince := st.ModTime()
 			add := func(path string, kind Kind, age time.Time) {
 				out = append(out, Candidate{Path: path, Kind: kind, Age: age, Remove: func(ctx context.Context) (bool, error) {
-					return locked(lock, func() (bool, error) {
+					return lockedExisting(lock, func() (bool, error) {
 						if !PlainPath(path) {
 							return false, nil
 						}
@@ -353,6 +372,43 @@ func LocalFiles(root string) Collect {
 	}, func(_ context.Context, p Policy, now time.Time, pressure bool) ([]Candidate, error) {
 		return ProfileCandidates(root, p, now, pressure)
 	})
+}
+
+// LegacyJournals shares the same writer lock in a runtime and in its Manager's
+// view of a stopped project's state. Verification belongs to the session store.
+func LegacyJournals(root string, remove func(context.Context, string, string) (bool, error)) Collect {
+	return func(ctx context.Context, _ Policy, _ time.Time, _ bool) ([]Candidate, error) {
+		paths, err := filepath.Glob(filepath.Join(root, "sessions", "*", "events.jsonl"))
+		if err != nil {
+			return nil, err
+		}
+		var out []Candidate
+		for _, path := range paths {
+			if err := ctx.Err(); err != nil {
+				return out, err
+			}
+			st, err := os.Lstat(path)
+			if err != nil || !st.Mode().IsRegular() || !PlainPath(path) {
+				continue
+			}
+			dir := filepath.Dir(path)
+			if !PlainPath(filepath.Join(dir, "supervisor.lock")) {
+				continue
+			}
+			if held, err := lockHeld(filepath.Join(dir, "supervisor.lock")); err != nil || held {
+				continue
+			}
+			out = append(out, Candidate{Path: path, Kind: Residue, Age: st.ModTime(), Remove: func(ctx context.Context) (bool, error) {
+				return lockedExisting(filepath.Join(dir, "supervisor.lock"), func() (bool, error) {
+					if !PlainPath(path) {
+						return false, nil
+					}
+					return remove(ctx, dir, filepath.Base(dir))
+				})
+			}})
+		}
+		return out, nil
+	}
 }
 
 // StagingCandidates knows the installer's temporary naming scheme. Taking its

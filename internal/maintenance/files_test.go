@@ -53,6 +53,12 @@ func TestProfilesProtectRunningAgentsCredentialsAndSymlinkTargets(t *testing.T) 
 	}
 	secret := filepath.Join(profile, "config", "auth.json")
 	os.WriteFile(secret, []byte("fixture credential"), 0600)
+	if cs, err := ProfileCandidates(root, Default(), time.Now(), true); err != nil || len(cs) != 0 {
+		t.Fatal("profile without a known process lease was cleaned", cs, err)
+	}
+	if _, err := os.Stat(filepath.Join(profile, "login.lock")); !os.IsNotExist(err) {
+		t.Fatal("cleanup created another user's process lease", err)
+	}
 	guard, err := core.Lock(filepath.Join(profile, "login.lock"))
 	if err != nil {
 		t.Fatal(err)

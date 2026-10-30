@@ -108,6 +108,12 @@ Priority is:
    preserving the recent-version reserve and every known reference.
 5. Reproducible Go, pip and npm caches in stopped session profiles.
 
+The Manager also inspects accessible shared project state during pressure,
+including projects whose container/runtime is stopped. It uses the same file
+and process leases, respects each project's disabled/pressure policy and skips
+unknown activity. A project does not have to be started just to reclaim its
+disposable files. Legacy state volumes remain outside this direct scan.
+
 Recheck actual available space before each pressure action and after each
 filesystem pass. Cache cleanup requires the same profile lock as an agent;
 even an idle live agent is protected. Arbitrary HOME caches, credentials,

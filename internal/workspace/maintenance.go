@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/maintenance"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 )
 
 func (m *Manager) maintenanceRoots(ctx context.Context) ([]string, error) {
@@ -30,6 +32,64 @@ func (m *Manager) maintenanceRoots(ctx context.Context) ([]string, error) {
 		roots = append(roots, root)
 	}
 	return roots, nil
+}
+
+// A stopped project has no runtime to recover its disk space. The Manager can
+// reach shared state without booting a container; per-file/process leases remain
+// the authority even when a runtime and this collector run at the same time.
+func (m *Manager) MaintenanceFiles(ctx context.Context, p maintenance.Policy, now time.Time, pressure bool) ([]maintenance.Candidate, error) {
+	return m.maintenanceFiles(ctx, "/cxz/tools", p, now, pressure)
+}
+func (m *Manager) maintenanceFiles(ctx context.Context, tools string, global maintenance.Policy, now time.Time, pressure bool) ([]maintenance.Candidate, error) {
+	if !pressure || global.Disabled {
+		return nil, nil
+	}
+	projects, err := m.all(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []maintenance.Candidate
+	var errs []error
+	for _, project := range projects {
+		if err := ctx.Err(); err != nil {
+			return out, err
+		}
+		if project.Volume != "" {
+			continue
+		}
+		state, _ := m.projectState(project.storageID())
+		root := filepath.Join(state, "data")
+		if !maintenance.PlainPath(root) {
+			continue
+		}
+		p, err := maintenance.Load(root)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if p.Disabled || p.PressureLowPercent == 0 && p.MinimumFreeMiB == 0 {
+			continue
+		}
+		refs := func(ctx context.Context) (maintenance.References, error) {
+			return maintenance.ReadReferences(ctx, []string{root}, tools)
+		}
+		if _, err = refs(ctx); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		versions := func(ctx context.Context, p maintenance.Policy, now time.Time, force bool) ([]maintenance.Candidate, error) {
+			return maintenance.VersionCandidates(ctx, []string{filepath.Join(root, "runtime-binaries")}, maintenance.VersionLock(root), refs, p, now, force)
+		}
+		staging := func(_ context.Context, p maintenance.Policy, now time.Time, force bool) ([]maintenance.Candidate, error) {
+			return maintenance.StagingCandidates([]string{filepath.Join(root, "runtime-binaries", "*", "*", ".pin-*")}, maintenance.VersionLock(root), p, now, force)
+		}
+		cs, err := maintenance.Combine(maintenance.LocalFiles(root), maintenance.LegacyJournals(root, sessionstore.RemoveConvertedJournal), staging, versions)(ctx, p, now, true)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		out = append(out, cs...)
+	}
+	return out, errors.Join(errs...)
 }
 
 // Only the Manager can see the installation's complete reference set and write

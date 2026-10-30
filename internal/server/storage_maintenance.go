@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/gofrs/flock"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/editor"
@@ -26,40 +25,7 @@ func (s *Server) maintenanceCollector() maintenance.Collect {
 		}
 		return maintenance.VersionCandidates(ctx, []string{filepath.Join(s.root, "runtime-binaries")}, maintenance.VersionLock(s.root), refs, p, now, pressure)
 	}
-	residue := func(ctx context.Context, p maintenance.Policy, now time.Time, pressure bool) ([]maintenance.Candidate, error) {
-		paths, err := filepath.Glob(filepath.Join(s.root, "sessions", "*", "events.jsonl"))
-		if err != nil {
-			return nil, err
-		}
-		var out []maintenance.Candidate
-		for _, path := range paths {
-			st, err := os.Lstat(path)
-			if err != nil || !st.Mode().IsRegular() {
-				continue
-			}
-			dir := filepath.Dir(path)
-			id := filepath.Base(dir)
-			probe := flock.New(filepath.Join(dir, "supervisor.lock"))
-			ok, err := probe.TryLock()
-			probe.Close()
-			if err != nil || !ok {
-				continue
-			}
-			out = append(out, maintenance.Candidate{Path: path, Kind: maintenance.Residue, Age: st.ModTime(), Remove: func(ctx context.Context) (bool, error) {
-				if !maintenance.PlainPath(path) {
-					return false, nil
-				}
-				lock := flock.New(filepath.Join(dir, "supervisor.lock"))
-				defer lock.Close()
-				ok, err := lock.TryLock()
-				if err != nil || !ok {
-					return false, err
-				}
-				return sessionstore.RemoveConvertedJournal(ctx, dir, id)
-			}})
-		}
-		return out, nil
-	}
+	residue := maintenance.LegacyJournals(s.root, sessionstore.RemoveConvertedJournal)
 	staging := func(_ context.Context, p maintenance.Policy, now time.Time, pressure bool) ([]maintenance.Candidate, error) {
 		return maintenance.StagingCandidates([]string{filepath.Join(s.root, "runtime-binaries", "*", "*", ".pin-*")}, maintenance.VersionLock(s.root), p, now, pressure)
 	}
@@ -72,7 +38,7 @@ func (s *Server) maintenanceCollector() maintenance.Collect {
 		}
 	}
 	if s.manager != nil {
-		collectors = append(collectors, s.manager.MaintenanceVersions)
+		collectors = append(collectors, s.manager.MaintenanceVersions, s.manager.MaintenanceFiles)
 	}
 	return maintenance.Combine(collectors...)
 }
