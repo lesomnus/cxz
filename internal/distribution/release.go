@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/gofrs/flock"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/maintenance"
 	"io"
 	"net/http"
 	"os"
@@ -174,6 +175,11 @@ func ResolveAgent(root, kind, arch string, musl bool, registered string) (string
 }
 
 func EnsureVersion(ctx context.Context, root, kind, arch string, musl bool, version string) (string, error) {
+	release, err := maintenance.VersionLease(ctx, root)
+	if err != nil {
+		return "", err
+	}
+	defer release()
 	r, e := agentLayout(root, kind, arch, musl, version)
 	if e != nil {
 		return "", e

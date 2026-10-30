@@ -16,9 +16,10 @@ type Runner struct {
 	Engine Engine
 	// Retain is for age-based database cleanup. It runs outside pressure
 	// recovery, since deleting rows need not return space to the filesystem.
-	Retain func(context.Context, Policy, time.Time) error
-	Error  func(error)
-	wake   chan struct{}
+	Retain    func(context.Context, Policy, time.Time) error
+	Configure func(context.Context, Policy) error
+	Error     func(error)
+	wake      chan struct{}
 }
 
 func NewRunner(root string, engine Engine) *Runner {
@@ -35,9 +36,25 @@ func (r *Runner) Run(ctx context.Context) {
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 	var last time.Time
+	var fingerprint string
 	pending := true
 	for {
+		current := ""
+		for _, name := range []string{"cxz-update.json", "runtime-update.json", "../runtime.json"} {
+			if st, err := os.Stat(filepath.Join(r.Root, name)); err == nil {
+				current += fmt.Sprint(st.ModTime().UnixNano(), "/")
+			}
+		}
+		if current != fingerprint {
+			fingerprint = current
+			pending = true
+		}
 		p, err := Load(r.Root)
+		if err == nil && r.Configure != nil {
+			sync, cancel := context.WithTimeout(ctx, 5*time.Second)
+			err = r.Configure(sync, p)
+			cancel()
+		}
 		if err != nil {
 			r.report(err)
 		} else if !p.Disabled {
@@ -46,7 +63,7 @@ func (r *Runner) Run(ctx context.Context) {
 			// Cheap probes only between ordinary maintenance opportunities.
 			if !due && now.Sub(last) >= time.Minute {
 				for _, path := range r.Engine.Roots {
-					if s, e := DiskSpace(path); e == nil && s.low(p) {
+					if s, e := DiskSpace(path); e == nil && (s.low(p) || r.Engine.pressured[s.Device] && !s.recovered(p)) {
 						due = true
 						break
 					}
@@ -82,7 +99,11 @@ func (r *Runner) once(ctx context.Context, p Policy, now time.Time) {
 		return
 	}
 	result := r.Engine.Pass(ctx, p, now)
-	if ctx.Err() == nil && r.Retain != nil {
+	pressured := false
+	for _, v := range result.Volumes {
+		pressured = pressured || v.Pressure
+	}
+	if ctx.Err() == nil && !pressured && r.Retain != nil {
 		if err = r.Retain(ctx, p, now); err != nil {
 			result.Errors = append(result.Errors, err.Error())
 		}

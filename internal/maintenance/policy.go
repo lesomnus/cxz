@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -42,10 +43,17 @@ func Load(root string) (Policy, error) {
 	if err != nil {
 		return p, err
 	}
+	if !bytes.HasPrefix(bytes.TrimSpace(b), []byte("{")) {
+		return p, fmt.Errorf("maintenance policy must be one JSON object")
+	}
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.DisallowUnknownFields()
 	if err = d.Decode(&p); err != nil {
 		return p, err
+	}
+	var extra any
+	if err = d.Decode(&extra); err != io.EOF {
+		return p, fmt.Errorf("maintenance policy must be one JSON object")
 	}
 	return p, p.Validate()
 }

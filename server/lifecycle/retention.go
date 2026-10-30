@@ -36,6 +36,11 @@ func (s Layer) RetainNotifications(ctx context.Context, now time.Time, days int)
 	}
 	n.mu.Lock()
 	defer n.mu.Unlock()
+	// The generated topic-page index cannot answer the source/kind successor
+	// lookup. Without this index coalescing a long unread history is quadratic.
+	if _, err := s.shared.db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS cxz_notification_retention_source ON notificationrecord(source_id,kind,topic_key,date_created,id)`); err != nil {
+		return 0, err
+	}
 	tx, err := s.shared.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err

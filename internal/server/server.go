@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/cxz/internal/conversation"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/eventview"
+	"github.com/lesomnus/cxz/internal/maintenance"
 	"github.com/lesomnus/cxz/internal/mcpruntime"
 	"net"
 	"net/url"
@@ -29,8 +30,8 @@ import (
 	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/sessionstore"
-	"github.com/lesomnus/cxz/internal/sqlitetime"
 	"github.com/lesomnus/cxz/internal/settings"
+	"github.com/lesomnus/cxz/internal/sqlitetime"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"github.com/lesomnus/cxz/internal/transcripthistory"
 	"github.com/lesomnus/cxz/internal/transport"
@@ -51,6 +52,7 @@ type Server struct {
 	mcpRuntime   *mcpruntime.Runtime
 	updateGate   *cxzupdate.Gate
 	updateQueued map[string]string
+	maintenance  *maintenance.Runner
 	api.UnimplementedSessionsServer
 	mu                     sync.Mutex
 	projectionMu           sync.Mutex
@@ -248,6 +250,8 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	if e != nil {
 		return fmt.Errorf("build payday resource server: %w", e)
 	}
+	stopMaintenance := s.startMaintenance(ctx, resources)
+	defer stopMaintenance()
 	if os.Getenv("CXZ_PROJECT_ID") == "" {
 		layer, _ := resource.Find[lifecycle.Layer](resources)
 		initial, cancelInitial := context.WithTimeout(ctx, 10*time.Second)
@@ -284,6 +288,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 				if err := layer.RefreshSession(work, id); err != nil && observeCtx.Err() == nil {
 					fmt.Fprintln(os.Stderr, "session projection:", err)
 				}
+				s.maintenance.Wake()
 			}); err != nil && observeCtx.Err() == nil {
 				fmt.Fprintln(os.Stderr, "journal observer:", err)
 			}
@@ -480,6 +485,16 @@ func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, erro
 			return nil, authCheckError(err, m.AuthBackend, m.CreateID)
 		}
 	}
+	release, err := maintenance.VersionLease(ctx, s.root)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	toolsRelease, err := maintenance.VersionLease(ctx, "/cxz/tools")
+	if err != nil {
+		return nil, err
+	}
+	defer toolsRelease()
 	if err := s.awaitSessionRelease(ctx, m); err != nil {
 		return nil, err
 	}

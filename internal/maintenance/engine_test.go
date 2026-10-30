@@ -88,7 +88,7 @@ func TestPolicyDefaultsExplicitDisableAndValidation(t *testing.T) {
 	if err != nil || p.AuditDays != 0 || p.TrashDays != 7 || p.RecentVersions != 2 {
 		t.Fatal(p, err)
 	}
-	for _, body := range []string{`{"interval_minutes":0}`, `{"pressure_low_percent":10,"pressure_high_percent":5}`, `{"audit_mib":128}`, `{"audit_days":-1}`} {
+	for _, body := range []string{`{"interval_minutes":0}`, `{"pressure_low_percent":10,"pressure_high_percent":5}`, `{"audit_mib":128}`, `{"audit_days":-1}`, `null`, `{} {}`} {
 		os.WriteFile(path, []byte(body), 0600)
 		if _, err = Load(root); err == nil {
 			t.Fatalf("accepted invalid policy %s", body)

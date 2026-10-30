@@ -42,8 +42,10 @@ func (s Space) recovered(p Policy) bool {
 
 type Volume struct {
 	Space
-	Path     string `json:"path"`
-	Pressure bool   `json:"pressure"`
+	Path            string `json:"path"`
+	Pressure        bool   `json:"pressure"`
+	TargetAvailable uint64 `json:"target_available"`
+	Shortfall       uint64 `json:"shortfall"`
 }
 type Report struct {
 	Started  time.Time `json:"started"`
@@ -145,7 +147,15 @@ func (e *Engine) Pass(ctx context.Context, p Policy, now time.Time) Report {
 			pressure = !s.recovered(p)
 		}
 		e.pressured[s.Device] = pressure
-		r.Volumes = append(r.Volumes, Volume{Space: s, Path: root, Pressure: pressure})
+		target := uint64(p.MinimumFreeMiB) << 20
+		if p.PressureLowPercent > 0 {
+			target = max(target, uint64(float64(s.Total)*float64(p.PressureHighPercent)/100))
+		}
+		shortfall := uint64(0)
+		if pressure && target > s.Available {
+			shortfall = target - s.Available
+		}
+		r.Volumes = append(r.Volumes, Volume{Space: s, Path: root, Pressure: pressure, TargetAvailable: target, Shortfall: shortfall})
 	}
 	if err := ctx.Err(); err != nil && !errors.Is(err, context.Canceled) {
 		addErr(err)

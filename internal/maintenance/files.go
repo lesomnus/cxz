@@ -153,12 +153,13 @@ func Rotate(path string, limit int64, files int) (bool, error) {
 			return false, err
 		}
 	}
-	return true, f.Truncate(0)
+	err = f.Truncate(0)
+	return err == nil, err
 }
 
 func LogCandidates(root string, p Policy, now time.Time, pressure bool) ([]Candidate, error) {
 	paths := map[string]int{filepath.Join(root, "runtime.log"): 4}
-	for _, pattern := range []string{"sessions/*/supervisor.log", "sessions/*/agent.stderr.log", "projects/*/provision.log", "editor/server.log"} {
+	for _, pattern := range []string{"sessions/*/supervisor.log", "sessions/*/agent.stderr.log", "sessions/*/mcp-*.stderr.log", "projects/*/provision.log"} {
 		matches, err := filepath.Glob(filepath.Join(root, pattern))
 		if err != nil {
 			return nil, err
@@ -167,10 +168,18 @@ func LogCandidates(root string, p Policy, now time.Time, pressure bool) ([]Candi
 			paths[path] = 3
 		}
 	}
+	return logCandidates(paths, filepath.Join(root, "runtime.log"), p, pressure)
+}
+
+func ComponentLogCandidates(path string, p Policy, pressure bool) ([]Candidate, error) {
+	return logCandidates(map[string]int{path: 3}, "", p, pressure)
+}
+
+func logCandidates(paths map[string]int, runtimePath string, p Policy, pressure bool) ([]Candidate, error) {
 	var out []Candidate
 	for path, files := range paths {
 		limit := int64(p.ComponentLogMiB) << 20
-		if path == filepath.Join(root, "runtime.log") {
+		if path == runtimePath {
 			limit = int64(p.RuntimeLogMiB) << 20
 		}
 		st, err := os.Lstat(path)
@@ -319,4 +328,38 @@ func LocalFiles(root string) Collect {
 	}, func(_ context.Context, p Policy, now time.Time, pressure bool) ([]Candidate, error) {
 		return ProfileCandidates(root, p, now, pressure)
 	})
+}
+
+// StagingCandidates knows the installer's temporary naming scheme. Taking its
+// exclusive publication lease proves no new installer is still using the data.
+func StagingCandidates(patterns []string, lock string, p Policy, now time.Time, pressure bool) ([]Candidate, error) {
+	if p.TemporaryHours <= 0 {
+		return nil, nil
+	}
+	var out []Candidate
+	for _, pattern := range patterns {
+		paths, err := filepath.Glob(pattern)
+		if err != nil {
+			return out, err
+		}
+		for _, path := range paths {
+			st, err := os.Lstat(path)
+			if err != nil || st.Mode()&os.ModeSymlink != 0 {
+				continue
+			}
+			if !pressure && now.Sub(st.ModTime()) < time.Duration(p.TemporaryHours)*time.Hour {
+				continue
+			}
+			out = append(out, Candidate{Path: path, Kind: Temporary, Age: st.ModTime(), Remove: func(ctx context.Context) (bool, error) {
+				return locked(lock, func() (bool, error) {
+					if !PlainPath(path) {
+						return false, nil
+					}
+					err := RemoveTree(ctx, path)
+					return err == nil, err
+				})
+			}})
+		}
+	}
+	return out, nil
 }
