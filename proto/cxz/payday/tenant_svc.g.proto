@@ -104,6 +104,12 @@ message TenantListRequest {
   // ahead of the page does not shift it and a caller reading through never sees
   // one twice or misses one.
   string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
 }
 
 message TenantListResponse {

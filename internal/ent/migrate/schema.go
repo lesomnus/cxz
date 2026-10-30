@@ -9,6 +9,50 @@ import (
 )
 
 var (
+	// AccessColumns holds the columns for the "access" table.
+	AccessColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "actor_id", Type: field.TypeUuid},
+		{Name: "trace_id", Type: field.TypeBytes},
+		{Name: "action", Type: field.TypeString},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "result", Type: field.TypeString},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "actor_tenant_id", Type: field.TypeUuid},
+		{Name: "value", Type: field.TypeBytes},
+		{Name: "domain", Type: field.TypeUint32, Nullable: true, Default: 0},
+		{Name: "subjects", Type: field.TypeJson, Nullable: true},
+		{Name: "subject_count", Type: field.TypeUint32},
+	}
+	// AccessTable holds the schema information for the "access" table.
+	AccessTable = &schema.Table{
+		Name:       "access",
+		Columns:    AccessColumns,
+		PrimaryKey: []*schema.Column{AccessColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "access_access",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[1], AccessColumns[7]},
+			},
+			{
+				Name:    "access_by_actor_tenant",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[8], AccessColumns[7]},
+			},
+			{
+				Name:    "access_by_actor",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[2], AccessColumns[7]},
+			},
+			{
+				Name:    "access_by_time",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[7], AccessColumns[0]},
+			},
+		},
+	}
 	// AccountColumns holds the columns for the "account" table.
 	AccountColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -37,6 +81,39 @@ var (
 			},
 		},
 	}
+	// ArchivedColumns holds the columns for the "archived" table.
+	ArchivedColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "namespace", Type: field.TypeString},
+		{Name: "digest", Type: field.TypeString},
+		{Name: "intent", Type: field.TypeString},
+		{Name: "state", Type: field.TypeString},
+		{Name: "since", Type: field.TypeUint32},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "gone", Type: field.TypeUint32},
+		{Name: "signature", Type: field.TypeBytes, Nullable: true},
+		{Name: "signed_by", Type: field.TypeBytes, Nullable: true},
+	}
+	// ArchivedTable holds the schema information for the "archived" table.
+	ArchivedTable = &schema.Table{
+		Name:       "archived",
+		Columns:    ArchivedColumns,
+		PrimaryKey: []*schema.Column{ArchivedColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "archived_blob",
+				Unique:  false,
+				Columns: []*schema.Column{ArchivedColumns[2], ArchivedColumns[3]},
+			},
+			{
+				Name:    "archived_state",
+				Unique:  false,
+				Columns: []*schema.Column{ArchivedColumns[5]},
+			},
+		},
+	}
 	// AuditColumns holds the columns for the "audit" table.
 	AuditColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -50,7 +127,10 @@ var (
 		{Name: "actor_tenant_id", Type: field.TypeUuid},
 		{Name: "value", Type: field.TypeBytes},
 		{Name: "counterpart_tenant_id", Type: field.TypeUuid, Nullable: true},
-		{Name: "domain", Type: field.TypeUint32, Nullable: true},
+		{Name: "domain", Type: field.TypeUint32, Nullable: true, Default: 0},
+		{Name: "fields", Type: field.TypeJson, Nullable: true},
+		{Name: "digest", Type: field.TypeBytes, Nullable: true},
+		{Name: "digest_fields", Type: field.TypeJson, Nullable: true},
 	}
 	// AuditTable holds the schema information for the "audit" table.
 	AuditTable = &schema.Table{
@@ -59,34 +139,44 @@ var (
 		PrimaryKey: []*schema.Column{AuditColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "audit_object_id",
+				Name:    "audit_object",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[5]},
 			},
 			{
-				Name:    "audit_tenant_id_date_created",
+				Name:    "audit_trail",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[1], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_actor_tenant_id_date_created",
+				Name:    "audit_by_actor_tenant",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[8], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_counterpart_tenant_id_date_created",
+				Name:    "audit_by_counterpart",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[10], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_domain_date_created",
+				Name:    "audit_by_domain",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[11], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_actor_id_date_created",
+				Name:    "audit_by_tenant_domain",
+				Unique:  false,
+				Columns: []*schema.Column{AuditColumns[1], AuditColumns[11], AuditColumns[7]},
+			},
+			{
+				Name:    "audit_by_actor",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[2], AuditColumns[7]},
+			},
+			{
+				Name:    "audit_by_time",
+				Unique:  false,
+				Columns: []*schema.Column{AuditColumns[7], AuditColumns[0]},
 			},
 		},
 	}
@@ -152,7 +242,7 @@ var (
 		PrimaryKey: []*schema.Column{ConnectionColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "connection_name_id",
+				Name:    "connection_page",
 				Unique:  false,
 				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[0]},
 			},
@@ -193,14 +283,91 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "holder_alias_tenant_id",
+				Name:    "holder_slug",
 				Unique:  true,
 				Columns: []*schema.Column{HolderColumns[1], HolderColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
 			},
+			{
+				Name:    "holder_page",
+				Unique:  false,
+				Columns: []*schema.Column{HolderColumns[8], HolderColumns[7], HolderColumns[0]},
+			},
 		},
+	}
+	// NotificationreceiptrecordColumns holds the columns for the "notificationreceiptrecord" table.
+	NotificationreceiptrecordColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "notification_id", Type: field.TypeUuid},
+		{Name: "reader_id", Type: field.TypeUuid},
+		{Name: "data_read", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+	}
+	// NotificationreceiptrecordTable holds the schema information for the "notificationreceiptrecord" table.
+	NotificationreceiptrecordTable = &schema.Table{
+		Name:       "notificationreceiptrecord",
+		Columns:    NotificationreceiptrecordColumns,
+		PrimaryKey: []*schema.Column{NotificationreceiptrecordColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "notificationreceiptrecord_receipt",
+				Unique:  true,
+				Columns: []*schema.Column{NotificationreceiptrecordColumns[1], NotificationreceiptrecordColumns[2]},
+			},
+			{
+				Name:    "notificationreceiptrecord_reader",
+				Unique:  false,
+				Columns: []*schema.Column{NotificationreceiptrecordColumns[2], NotificationreceiptrecordColumns[1]},
+			},
+		},
+	}
+	// NotificationrecordColumns holds the columns for the "notificationrecord" table.
+	NotificationrecordColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "topic_key", Type: field.TypeString},
+		{Name: "source_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "payload_type", Type: field.TypeString},
+		{Name: "payload_value", Type: field.TypeBytes, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "producer", Type: field.TypeString},
+		{Name: "idempotency_key", Type: field.TypeString},
+		{Name: "payload_present", Type: field.TypeBool},
+	}
+	// NotificationrecordTable holds the schema information for the "notificationrecord" table.
+	NotificationrecordTable = &schema.Table{
+		Name:       "notificationrecord",
+		Columns:    NotificationrecordColumns,
+		PrimaryKey: []*schema.Column{NotificationrecordColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "notificationrecord_publication",
+				Unique:  true,
+				Columns: []*schema.Column{NotificationrecordColumns[8], NotificationrecordColumns[9]},
+			},
+			{
+				Name:    "notificationrecord_page",
+				Unique:  false,
+				Columns: []*schema.Column{NotificationrecordColumns[2], NotificationrecordColumns[7], NotificationrecordColumns[0]},
+			},
+		},
+	}
+	// OperatorColumns holds the columns for the "operator" table.
+	OperatorColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString, Unique: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+	}
+	// OperatorTable holds the schema information for the "operator" table.
+	OperatorTable = &schema.Table{
+		Name:       "operator",
+		Columns:    OperatorColumns,
+		PrimaryKey: []*schema.Column{OperatorColumns[0]},
 	}
 	// OutboxColumns holds the columns for the "outbox" table.
 	OutboxColumns = []*schema.Column{
@@ -212,6 +379,7 @@ var (
 		{Name: "object_id", Type: field.TypeUuid},
 		{Name: "patch", Type: field.TypeBytes},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "event", Type: field.TypeBytes, Nullable: true},
 	}
 	// OutboxTable holds the schema information for the "outbox" table.
 	OutboxTable = &schema.Table{
@@ -220,9 +388,29 @@ var (
 		PrimaryKey: []*schema.Column{OutboxColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "outbox_id",
+				Name:    "outbox_queue",
 				Unique:  false,
 				Columns: []*schema.Column{OutboxColumns[0]},
+			},
+		},
+	}
+	// OwedColumns holds the columns for the "owed" table.
+	OwedColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "object", Type: field.TypeUuid},
+		{Name: "held_by", Type: field.TypeJson, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+	}
+	// OwedTable holds the schema information for the "owed" table.
+	OwedTable = &schema.Table{
+		Name:       "owed",
+		Columns:    OwedColumns,
+		PrimaryKey: []*schema.Column{OwedColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "owed_owed",
+				Unique:  false,
+				Columns: []*schema.Column{OwedColumns[3], OwedColumns[0]},
 			},
 		},
 	}
@@ -246,7 +434,7 @@ var (
 		PrimaryKey: []*schema.Column{ProjectColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "project_date_created_id",
+				Name:    "project_page",
 				Unique:  false,
 				Columns: []*schema.Column{ProjectColumns[8], ProjectColumns[0]},
 			},
@@ -268,6 +456,19 @@ var (
 			},
 		},
 	}
+	// RowsealColumns holds the columns for the "rowseal" table.
+	RowsealColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "sum", Type: field.TypeBytes},
+		{Name: "fields", Type: field.TypeJson, Nullable: true},
+	}
+	// RowsealTable holds the schema information for the "rowseal" table.
+	RowsealTable = &schema.Table{
+		Name:       "rowseal",
+		Columns:    RowsealColumns,
+		PrimaryKey: []*schema.Column{RowsealColumns[0]},
+	}
 	// SessionColumns holds the columns for the "session" table.
 	SessionColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -282,7 +483,7 @@ var (
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "status", Type: field.TypeJson, Nullable: true},
-		{Name: "listed", Type: field.TypeBool, Nullable: true},
+		{Name: "listed", Type: field.TypeBool, Nullable: true, Default: true},
 		{Name: "project_id", Type: field.TypeUuid},
 		{Name: "account_id", Type: field.TypeUuid},
 		{Name: "auth_binding_id", Type: field.TypeUuid},
@@ -314,7 +515,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "session_date_created_id",
+				Name:    "session_page",
 				Unique:  false,
 				Columns: []*schema.Column{SessionColumns[10], SessionColumns[0]},
 			},
@@ -341,6 +542,37 @@ var (
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
+			},
+		},
+	}
+	// SessionreadColumns holds the columns for the "sessionread" table.
+	SessionreadColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "reader_id", Type: field.TypeUuid},
+		{Name: "generation", Type: field.TypeString},
+		{Name: "through_seq", Type: field.TypeUint64},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "session_id", Type: field.TypeUuid},
+	}
+	// SessionreadTable holds the schema information for the "sessionread" table.
+	SessionreadTable = &schema.Table{
+		Name:       "sessionread",
+		Columns:    SessionreadColumns,
+		PrimaryKey: []*schema.Column{SessionreadColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "sessionread_session_session",
+				Columns:    []*schema.Column{SessionreadColumns[6]},
+				RefColumns: []*schema.Column{SessionColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "sessionread_reader_session",
+				Unique:  true,
+				Columns: []*schema.Column{SessionreadColumns[1], SessionreadColumns[6]},
 			},
 		},
 	}
@@ -379,7 +611,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "task_date_created_id",
+				Name:    "task_page",
 				Unique:  false,
 				Columns: []*schema.Column{TaskColumns[7], TaskColumns[0]},
 			},
@@ -440,7 +672,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "tasklink_date_created_id",
+				Name:    "tasklink_page",
 				Unique:  false,
 				Columns: []*schema.Column{TasklinkColumns[3], TasklinkColumns[0]},
 			},
@@ -469,17 +701,32 @@ var (
 		Name:       "tenant",
 		Columns:    TenantColumns,
 		PrimaryKey: []*schema.Column{TenantColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "tenant_page",
+				Unique:  false,
+				Columns: []*schema.Column{TenantColumns[6], TenantColumns[0]},
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AccessTable,
 		AccountTable,
+		ArchivedTable,
 		AuditTable,
 		AuthbindingTable,
 		ConnectionTable,
 		HolderTable,
+		NotificationreceiptrecordTable,
+		NotificationrecordTable,
+		OperatorTable,
 		OutboxTable,
+		OwedTable,
 		ProjectTable,
+		RowsealTable,
 		SessionTable,
+		SessionreadTable,
 		TaskTable,
 		TasklinkTable,
 		TenantTable,
@@ -487,8 +734,14 @@ var (
 )
 
 func init() {
+	AccessTable.Annotation = &entsql.Annotation{
+		Table: "access",
+	}
 	AccountTable.Annotation = &entsql.Annotation{
 		Table: "account",
+	}
+	ArchivedTable.Annotation = &entsql.Annotation{
+		Table: "archived",
 	}
 	AuditTable.Annotation = &entsql.Annotation{
 		Table: "audit",
@@ -505,17 +758,36 @@ func init() {
 	HolderTable.Annotation = &entsql.Annotation{
 		Table: "holder",
 	}
+	NotificationreceiptrecordTable.Annotation = &entsql.Annotation{
+		Table: "notificationreceiptrecord",
+	}
+	NotificationrecordTable.Annotation = &entsql.Annotation{
+		Table: "notificationrecord",
+	}
+	OperatorTable.Annotation = &entsql.Annotation{
+		Table: "operator",
+	}
 	OutboxTable.Annotation = &entsql.Annotation{
 		Table: "outbox",
 	}
+	OwedTable.Annotation = &entsql.Annotation{
+		Table: "owed",
+	}
 	ProjectTable.Annotation = &entsql.Annotation{
 		Table: "project",
+	}
+	RowsealTable.Annotation = &entsql.Annotation{
+		Table: "rowseal",
 	}
 	SessionTable.ForeignKeys[0].RefTable = ProjectTable
 	SessionTable.ForeignKeys[1].RefTable = AccountTable
 	SessionTable.ForeignKeys[2].RefTable = AuthbindingTable
 	SessionTable.Annotation = &entsql.Annotation{
 		Table: "session",
+	}
+	SessionreadTable.ForeignKeys[0].RefTable = SessionTable
+	SessionreadTable.Annotation = &entsql.Annotation{
+		Table: "sessionread",
 	}
 	TaskTable.ForeignKeys[0].RefTable = ProjectTable
 	TaskTable.Annotation = &entsql.Annotation{

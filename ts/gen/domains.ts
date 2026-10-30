@@ -12,8 +12,14 @@
 
 import { pdid } from '@lesomnus/payday'
 
+/** The domain identifiers of cxz.Access carry. */
+export const AccessDomain = 6
+
 /** The domain identifiers of cxz.Account carry. */
 export const AccountDomain = 9
+
+/** The domain identifiers of cxz.Archived carry. */
+export const ArchivedDomain = 5
 
 /** The domain identifiers of cxz.Audit carry. */
 export const AuditDomain = 3
@@ -27,14 +33,32 @@ export const ConnectionDomain = 12
 /** The domain identifiers of cxz.Holder carry. */
 export const HolderDomain = 2
 
+/** The domain identifiers of cxz.NotificationReceiptRecord carry. */
+export const NotificationReceiptRecordDomain = 15
+
+/** The domain identifiers of cxz.NotificationRecord carry. */
+export const NotificationRecordDomain = 14
+
+/** The domain identifiers of cxz.Operator carry. */
+export const OperatorDomain = 16
+
 /** The domain identifiers of cxz.Outbox carry. */
 export const OutboxDomain = 4
+
+/** The domain identifiers of cxz.Owed carry. */
+export const OwedDomain = 254
 
 /** The domain identifiers of cxz.Project carry. */
 export const ProjectDomain = 7
 
+/** The domain identifiers of cxz.RowSeal carry. */
+export const RowSealDomain = 255
+
 /** The domain identifiers of cxz.Session carry. */
 export const SessionDomain = 8
+
+/** The domain identifiers of cxz.SessionRead carry. */
+export const SessionReadDomain = 17
 
 /** The domain identifiers of cxz.Task carry. */
 export const TaskDomain = 11
@@ -47,14 +71,22 @@ export const TenantDomain = 1
 
 // Registered as this module is loaded, which is why importing it is the
 // whole of what an app does with it.
+pdid.register("cxz.Access", AccessDomain, "access")
 pdid.register("cxz.Account", AccountDomain, "account")
+pdid.register("cxz.Archived", ArchivedDomain, "archived")
 pdid.register("cxz.Audit", AuditDomain, "audit")
 pdid.register("cxz.AuthBinding", AuthBindingDomain, "auth-binding")
 pdid.register("cxz.Connection", ConnectionDomain, "connection")
 pdid.register("cxz.Holder", HolderDomain, "holder")
+pdid.register("cxz.NotificationReceiptRecord", NotificationReceiptRecordDomain, "notification-receipt")
+pdid.register("cxz.NotificationRecord", NotificationRecordDomain, "notification")
+pdid.register("cxz.Operator", OperatorDomain, "operator")
 pdid.register("cxz.Outbox", OutboxDomain, "outbox")
+pdid.register("cxz.Owed", OwedDomain, "owed")
 pdid.register("cxz.Project", ProjectDomain, "project")
+pdid.register("cxz.RowSeal", RowSealDomain, "row-seal")
 pdid.register("cxz.Session", SessionDomain, "session")
+pdid.register("cxz.SessionRead", SessionReadDomain, "session-read")
 pdid.register("cxz.Task", TaskDomain, "task")
 pdid.register("cxz.TaskLink", TaskLinkDomain, "task-link")
 pdid.register("cxz.Tenant", TenantDomain, "tenant")

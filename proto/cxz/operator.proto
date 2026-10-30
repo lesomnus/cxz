@@ -1,0 +1,17 @@
+edition = "2023";
+package cxz;
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// The human using this installation, independent of provider accounts.
+message Operator {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  string alias = 4 [(orm.field) = {unique: true}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  option (orm.message) = {rpc: {add: {}, get: {}}};
+  option (payday.entity) = {domain: 16, global: {}, erase: {hard: {}}};
+}

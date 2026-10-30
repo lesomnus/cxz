@@ -182,20 +182,38 @@ func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(project.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldAlias); ok {
+		_spec.SetField(project.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(project.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldName); ok {
+		_spec.SetField(project.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(project.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldDesc); ok {
+		_spec.SetField(project.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldConfig); ok {
+		_spec.SetField(project.FieldConfig, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(project.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldDateUpdated); ok {
+		_spec.SetField(project.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(project.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldDateErased); ok {
+		_spec.SetField(project.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(project.FieldDateErased, field.TypeTime)
@@ -212,6 +230,9 @@ func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			return 0, err
 		}
 		_spec.SetField(project.FieldStatus, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldStatus); ok {
+		_spec.SetField(project.FieldStatus, field.TypeJson, e)
 	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(project.FieldStatus, field.TypeJson)
@@ -420,20 +441,38 @@ func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err er
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(project.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldAlias); ok {
+		_spec.SetField(project.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(project.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldName); ok {
+		_spec.SetField(project.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(project.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldDesc); ok {
+		_spec.SetField(project.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldConfig); ok {
+		_spec.SetField(project.FieldConfig, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(project.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldDateUpdated); ok {
+		_spec.SetField(project.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(project.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldDateErased); ok {
+		_spec.SetField(project.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(project.FieldDateErased, field.TypeTime)
@@ -450,6 +489,9 @@ func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err er
 			return nil, err
 		}
 		_spec.SetField(project.FieldStatus, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldStatus); ok {
+		_spec.SetField(project.FieldStatus, field.TypeJson, e)
 	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(project.FieldStatus, field.TypeJson)

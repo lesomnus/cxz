@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/lesomnus/cxz/internal/resourceid"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -44,7 +45,7 @@ func (x *Sessions) Fork(_ context.Context, r *resource.SessionControl) (*resourc
 	}
 	child := &session{value: proto.Clone(source.value).(*resource.Session), effort: source.effort, scenario: source.scenario, seen: map[string]bool{}, generation: 1, forkSource: source.value.GetRuntimeId(), forkRun: r.GetRunId()}
 	id := fmt.Sprintf("session-fork-%d", s.rev+1)
-	child.value.SetId([]byte(fmt.Sprintf("fork-%011d", s.rev+1)))
+	child.value.SetId(resourceid.Bytes(8, id))
 	child.value.SetRuntimeId(id)
 	child.value.SetAlias(id)
 	child.value.SetClientId(r.GetClientId())

@@ -33,6 +33,12 @@ const (
 	FieldCounterpartTenantId = "counterpart_tenant_id"
 	// FieldDomain holds the string denoting the domain field in the database.
 	FieldDomain = "domain"
+	// FieldFields holds the string denoting the fields field in the database.
+	FieldFields = "fields"
+	// FieldDigest holds the string denoting the digest field in the database.
+	FieldDigest = "digest"
+	// FieldDigestFields holds the string denoting the digest_fields field in the database.
+	FieldDigestFields = "digest_fields"
 	// Table holds the table name of the audit in the database.
 	Table = "audit"
 )
@@ -51,6 +57,9 @@ var Columns = []string{
 	FieldValue,
 	FieldCounterpartTenantId,
 	FieldDomain,
+	FieldFields,
+	FieldDigest,
+	FieldDigestFields,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -62,6 +71,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultDomain holds the default value on creation for the "domain" field.
+	DefaultDomain uint32
+)
 
 // OrderOption defines the ordering options for the Audit queries.
 type OrderOption func(*sql.Selector)

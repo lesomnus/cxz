@@ -211,20 +211,35 @@ func (_u *SessionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(session.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldAlias); ok {
+		_spec.SetField(session.FieldAlias, field.TypeString, e)
+	}
 	if _u.mutation.AliasCleared() {
 		_spec.ClearField(session.FieldAlias, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(session.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldName); ok {
+		_spec.SetField(session.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(session.FieldDesc, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldDesc); ok {
+		_spec.SetField(session.FieldDesc, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(session.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldDateUpdated); ok {
+		_spec.SetField(session.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(session.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldDateErased); ok {
+		_spec.SetField(session.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(session.FieldDateErased, field.TypeTime)
@@ -242,11 +257,17 @@ func (_u *SessionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(session.FieldStatus, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldStatus); ok {
+		_spec.SetField(session.FieldStatus, field.TypeJson, e)
+	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(session.FieldStatus, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Listed(); ok {
 		_spec.SetField(session.FieldListed, field.TypeBool, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldListed); ok {
+		_spec.SetField(session.FieldListed, field.TypeBool, e)
 	}
 	if _u.mutation.ListedCleared() {
 		_spec.ClearField(session.FieldListed, field.TypeBool)
@@ -484,20 +505,35 @@ func (_u *SessionUpdateOne) sqlSave(ctx context.Context) (_node *Session, err er
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(session.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldAlias); ok {
+		_spec.SetField(session.FieldAlias, field.TypeString, e)
+	}
 	if _u.mutation.AliasCleared() {
 		_spec.ClearField(session.FieldAlias, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(session.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldName); ok {
+		_spec.SetField(session.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(session.FieldDesc, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldDesc); ok {
+		_spec.SetField(session.FieldDesc, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(session.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldDateUpdated); ok {
+		_spec.SetField(session.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(session.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldDateErased); ok {
+		_spec.SetField(session.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(session.FieldDateErased, field.TypeTime)
@@ -515,11 +551,17 @@ func (_u *SessionUpdateOne) sqlSave(ctx context.Context) (_node *Session, err er
 		}
 		_spec.SetField(session.FieldStatus, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldStatus); ok {
+		_spec.SetField(session.FieldStatus, field.TypeJson, e)
+	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(session.FieldStatus, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Listed(); ok {
 		_spec.SetField(session.FieldListed, field.TypeBool, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(session.FieldListed); ok {
+		_spec.SetField(session.FieldListed, field.TypeBool, e)
 	}
 	if _u.mutation.ListedCleared() {
 		_spec.ClearField(session.FieldListed, field.TypeBool)

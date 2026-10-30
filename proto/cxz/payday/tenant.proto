@@ -35,11 +35,29 @@ message Tenant {
 
   // Alias is what a person writes this tenant as, and it is unique across the
   // deployment: `@acme/arm-01` says which tenant before it says which row.
-  string alias = 4 [(orm.field) = {unique: true}];
+  //
+  // It and the three after it are **not personal** (#92, #105): a tenant is an
+  // organisation, and what it is called, what is said of it and what is
+  // labelled on it are its own, which the trail keeps -- who renamed which
+  // tenant to what is the record. Said rather than left unsaid because an app
+  // whose overlay declares a field of its tenant personal -- why one was
+  // closed, in somebody's words -- has made it an entity that holds people,
+  // and `pd doctor` asks about each field of free text on it, these too, which
+  // no overlay may declare.
+  //
+  // So an app writes nobody into them. One that would name a tenant after a
+  // person -- the one somebody is given when they sign up -- leaves the name
+  // empty and says it where it is read, after whoever has the tenant now: a
+  // name written here is on the trail as a value, where nothing that forgets
+  // the person reaches it.
+  string alias = 4 [
+    (orm.field) = {unique: true},
+    (payday.field) = {personal: false}
+  ];
 
-  string name = 5;
-  string desc = 6;
-  map<string, string> labels = 7;
+  string name = 5 [(payday.field) = {personal: false}];
+  string desc = 6 [(payday.field) = {personal: false}];
+  map<string, string> labels = 7 [(payday.field) = {personal: false}];
 
   // DateUpdated is stamped by the server on every write and refused to a patch
   // document, so it is a version and not a field.
@@ -59,7 +77,27 @@ message Tenant {
   // trail: every row of it names the Holder that acted, so a deleted Holder
   // would leave the trail saying who while nobody could find out who. Nothing
   // names a tenant that way, so there is nothing for its row to outlive.
-  option (orm.message) = {rpc: {crud: true}};
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      // The order its list reads in. Small next to anything a tenant holds,
+      // and still the table a deployment of many customers grows: without it
+      // every page of them is the whole table, sorted.
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
+  };
   option (payday.entity) = {
     // payday's own, so that generation finds it whatever an app called the
     // proto package. An app never writes this; see `Own` in entity.proto.

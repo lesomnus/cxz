@@ -48,6 +48,7 @@ message Connection {
   option (payday.entity) = {
     domain: 12
     global: {}
+    trail: {off: {why: "Connection settings belong to each client, not the Manager database."}}
     list: {order: [{field: {name: "name"}}, {field: {name: "id"}}], size: 100, max: 500}
   };
 }

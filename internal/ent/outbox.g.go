@@ -18,5 +18,8 @@ func (e *Outbox) Proto() *resource.Outbox {
 	x.SetObjectId(e.ObjectId[:])
 	x.SetPatch(e.Patch)
 	x.SetDateCreated(timestamppb.New(e.DateCreated))
+	if e.Event != nil {
+		x.SetEvent(*e.Event)
+	}
 	return x
 }

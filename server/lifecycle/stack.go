@@ -4,7 +4,6 @@ package lifecycle
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/assets"
@@ -12,9 +11,11 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/migrate"
 	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/internal/resourceid"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/cxz/server/bare"
 	"github.com/lesomnus/cxz/server/pd"
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/watch"
 	"github.com/protobuf-orm/ent/dialect"
@@ -44,16 +45,17 @@ type shared struct {
 	// linkMu serializes the read-check-write a task link needs: two sessions
 	// adding opposite blocking edges at once would otherwise both read a graph
 	// without the other's edge and both pass the cycle check.
-	linkMu      sync.Mutex
-	snapshotMu  sync.Mutex
-	initialMu   sync.Mutex
-	initialized bool
-	observedMu  sync.Mutex
-	observedAt  time.Time
-	watchers    atomic.Int64
-	watch       *watch.Watch
-	runtime     Runtime
-	observe     *observe.Log
+	linkMu        sync.Mutex
+	snapshotMu    sync.Mutex
+	initialMu     sync.Mutex
+	initialized   bool
+	observedMu    sync.Mutex
+	observedAt    time.Time
+	watchers      atomic.Int64
+	watch         *watch.Watch
+	runtime       Runtime
+	observe       *observe.Log
+	notifications *notificationState
 }
 
 // Reconcile is a low-frequency safety net for changes made outside cxz.
@@ -74,7 +76,9 @@ func (b builder) Build(next resource.Server) (resource.Server, error) {
 
 // A separate database keeps the rc.1 registry/journal untouched. Resource
 // projections can be rebuilt from runtime manifests, without changing vendor IDs.
-func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log) (resource.Server, error) {
+type Options struct{ Notifications bool }
+
+func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log, options ...Options) (resource.Server, error) {
 	if err := migrateProjectSchema(ctx, db); err != nil {
 		return nil, err
 	}
@@ -83,17 +87,29 @@ func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log) (resource
 	if err := migrate.NewSchema(driver).Create(ctx); err != nil {
 		return nil, err
 	}
-	broker, err := (config.WatchConfig{Broker: config.BrokerMemory}).Build(config.DbConfig{Driver: "sqlite3"})
+	broker, err := (config.WatchConfig{Broker: config.BrokerMemory}).Build(ctx, config.DbConfig{Driver: "sqlite3"})
 	if err != nil {
 		return nil, err
 	}
 	w := watch.New(broker)
-	sink, err := pd.NewSink(client, bare.WithMinter(pd.Minter()), bare.WithScope(pd.Wall()), bare.WithRecorder(bare.Recorders{pd.Recorder(), pd.WatchRecorder(w)}))
+	sink, err := pd.NewSink(client, bare.WithMinter(pd.Minter()), bare.WithScope(pd.Wall()), bare.WithRecorder(bare.Recorders{pd.Recorder(audit.Contents{}), pd.WatchRecorder(w)}))
 	if err != nil {
 		return nil, err
 	}
 	// Publish each committed Sink call, including background projection writes.
-	return resource.Build(sessionNamingSink{sink.WithWatch(w)}, pd.InterceptBuild([]grpc.UnaryServerInterceptor{projectReferencesUnary, taskWatchUnary(w)}, []grpc.StreamServerInterceptor{projectReferencesStream}), builder{&shared{runtime: r, db: db, watch: w, observe: o}}, pd.AuditBuild(), pd.GateBuild())
+	shared := &shared{runtime: r, db: db, watch: w, observe: o}
+	stack, err := resource.Build(sessionNamingSink{sink.WithWatch(w)}, pd.InterceptBuild([]grpc.UnaryServerInterceptor{projectReferencesUnary, taskWatchUnary(w)}, []grpc.StreamServerInterceptor{projectReferencesStream}), builder{shared}, pd.AuditBuild(), pd.GateBuild())
+	if err != nil {
+		return nil, err
+	}
+	if len(options) > 0 && options[0].Notifications {
+		layer, _ := resource.Find[Layer](stack)
+		shared.notifications, err = newNotifications(ctx, layer, stack, driver, w)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return stack, nil
 }
 func (s Layer) WithDriver(d dialect.Driver) (resource.Server, error) {
 	next, err := enttx.Rebind(s.Next(), d)
@@ -140,12 +156,7 @@ func (s Layer) Connection() resource.ConnectionServiceServer {
 
 func ptr[T any](v T) *T { return &v }
 func resourceID(domain byte, runtimeID string) []byte {
-	h := sha256.Sum256([]byte("cxz.resource:" + runtimeID))
-	id := append([]byte(nil), h[:16]...)
-	id[6] = (id[6] & 15) | 0x80
-	id[8] = (id[8] & 63) | 0x80
-	id[9] = domain
-	return id
+	return resourceid.Bytes(domain, runtimeID)
 }
 func projectRef(id string) *resource.ProjectRef {
 	return projectid.Ref(id)

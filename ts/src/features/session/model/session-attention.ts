@@ -1,61 +1,66 @@
+import { fromBinary } from "@bufbuild/protobuf";
+import { Code, ConnectError, type Client } from "@connectrpc/connect";
 import type { Session, SessionEvent } from "#gen/cxz/session_pb";
-import type { Client } from "@connectrpc/connect";
+import { SessionNotificationSchema } from "#gen/cxz/session_svc_pb";
 import type { SessionService } from "#gen/cxz/session_svc_pb";
-import { questions } from "./journal";
+import type {
+  NotificationService,
+  NotificationReadItem,
+} from "#gen/cxz/payday/notification_pb";
 
 export type SessionAlert = "complete" | "question" | "error";
-type Activity = {
-  run: string;
-  last: bigint;
-  done: bigint;
-  failed: bigint;
-  seen: bigint;
-  notified: bigint;
-  pending: Set<string>;
+const kinds = ["session.completed", "session.failed", "session.question"];
+const key = (id: Uint8Array) =>
+  Array.from(id, (b) => b.toString(16).padStart(2, "0")).join("");
+type Note = {
+  id: string;
+  session: string;
+  generation: string;
+  seq: bigint;
+  kind: SessionAlert;
 };
-const working = (state: string) =>
-  ["working", "running", "waiting_input", "waiting"].includes(state);
+type Group = {
+  topics: { key: { case: "resourceId"; value: Uint8Array } }[];
+  abort: AbortController;
+  unread: Note[];
+  loading: boolean;
+  dirty: boolean;
+  announce: boolean;
+  known: Set<string>;
+  receipted: Set<string>;
+};
+type Ack = {
+  wanted: bigint;
+  confirmed: bigint;
+  generation: string;
+  busy: boolean;
+  abort: AbortController;
+  timer?: ReturnType<typeof setTimeout>;
+  last: number;
+};
 
-// Consume the shared resource catalog, never open a live stream per session.
-// Confirm turn outcomes against native history; diagnostics/settings are silent.
+// The Manager owns occurrences and read state. This is a connection-local view
+// of durable receipts, plus sound deduplication for the current browser tab.
 export class SessionAttention {
-  private activities = new Map<string, Activity>();
-  private restored = new Set<string>();
+  private sessions = new Map<string, Session>();
+  private groups: Group[] = [];
+  private topology = "";
+  private reader = "";
+  private acks = new Map<string, Ack>();
   private listeners = new Set<() => void>();
   private alerts = new Set<(kind: SessionAlert) => void>();
-  private checks = new Map<string, AbortController>();
-  private queued = new Map<string, Session>();
   private reading = { id: "", through: 0n };
   private value = new Set<string>();
   private errors = new Set<string>();
-  private storageKey: string;
   private stopped = false;
+  private unsupported = false;
   constructor(
-    private api: Pick<Client<typeof SessionService>, "history">,
-    scope: string,
-    private storage: () => Storage = () => sessionStorage,
-  ) {
-    this.storageKey = `cxz.attention.v1:${encodeURIComponent(scope)}`;
-    try {
-      for (const [id, a] of Object.entries(
-        JSON.parse(this.storage().getItem(this.storageKey) ?? "{}"),
-      ) as [string, Record<string, string>][]) {
-        this.activities.set(id, {
-          run: a.run,
-          last: BigInt(a.last),
-          done: BigInt(a.done),
-          failed: BigInt(a.failed ?? "0"),
-          seen: BigInt(a.seen),
-          notified: BigInt(a.notified),
-          pending: new Set(JSON.parse(a.pending)),
-        });
-        this.restored.add(id);
-      }
-    } catch {
-      this.activities.clear();
-    }
-    this.publish();
-  }
+    private api: Pick<Client<typeof SessionService>, "readState" | "markRead">,
+    private notifications: Pick<
+      Client<typeof NotificationService>,
+      "read" | "listen"
+    >,
+  ) {}
   snapshot = () => this.value;
   errorSnapshot = () => this.errors;
   subscribe = (fn: () => void) => {
@@ -71,251 +76,326 @@ export class SessionAttention {
     };
   };
   private publish() {
-    const next = new Set(
-      [...this.activities]
-        .filter(([, a]) => a.done > a.seen || a.failed > a.seen)
-        .map(([id]) => id),
-    );
+    const unread = this.groups
+      .flatMap((g) => g.unread.filter((n) => !g.receipted.has(n.id)))
+      .filter((n) => {
+        if (!this.sessions.has(n.session)) return false;
+        const ack = this.acks.get(n.session);
+        if (ack?.generation === n.generation) {
+          const through =
+            this.reading.id === n.session
+              ? this.reading.through
+              : ack.confirmed;
+          if (n.seq <= through) return false;
+        }
+        return true;
+      });
+    const next = new Set(unread.map((n) => n.session));
     const errors = new Set(
-      [...this.activities]
-        .filter(([, a]) => a.failed > a.seen)
-        .map(([id]) => id),
+      unread.filter((n) => n.kind === "error").map((n) => n.session),
     );
     if (
-      errors.size !== this.errors.size ||
-      [...errors].some((id) => !this.errors.has(id)) ||
-      next.size !== this.value.size ||
-      [...next].some((id) => !this.value.has(id))
-    ) {
-      this.value = next;
-      this.errors = errors;
-      this.listeners.forEach((fn) => fn());
+      next.size === this.value.size &&
+      [...next].every((id) => this.value.has(id)) &&
+      errors.size === this.errors.size &&
+      [...errors].every((id) => this.errors.has(id))
+    )
+      return;
+    this.value = next;
+    this.errors = errors;
+    this.listeners.forEach((fn) => fn());
+  }
+  observe(sessions: Session[]) {
+    if (this.stopped || this.unsupported) return;
+    this.sessions = new Map(sessions.map((s) => [s.runtimeId, s]));
+    const topics = new Map<string, Uint8Array>();
+    for (const s of sessions)
+      if (s.project?.id.length) topics.set(key(s.project.id), s.project.id);
+    const sorted = [...topics].sort(([a], [b]) => a.localeCompare(b));
+    const topology = sorted.map(([id]) => id).join("/");
+    if (topology !== this.topology) {
+      this.groups.forEach((g) => g.abort.abort());
+      this.topology = topology;
+      this.groups = [];
+      for (let i = 0; i < sorted.length; i += 100) {
+        const group: Group = {
+          topics: sorted
+            .slice(i, i + 100)
+            .map(([, value]) => ({ key: { case: "resourceId", value } })),
+          abort: new AbortController(),
+          unread: [],
+          loading: false,
+          dirty: false,
+          announce: false,
+          known: new Set(),
+          receipted: new Set(),
+        };
+        this.groups.push(group);
+        void this.watch(group);
+      }
     }
+    this.publish();
+  }
+  private acceptReader(id: Uint8Array) {
+    const reader = key(id);
+    if (this.reader && reader !== this.reader) {
+      this.acks.forEach((a) => {
+        a.abort.abort();
+        clearTimeout(a.timer);
+      });
+      this.acks.clear();
+      this.groups.forEach((g) => {
+        g.unread = [];
+        g.known.clear();
+        g.receipted.clear();
+      });
+    }
+    this.reader = reader;
+  }
+  private unavailable(error: unknown) {
+    if (ConnectError.from(error).code !== Code.Unimplemented) return false;
+    this.unsupported = true;
+    this.clear();
+    return true;
+  }
+  private async watch(group: Group) {
+    let delay = 1000;
+    while (!group.abort.signal.aborted) {
+      try {
+        for await (const frame of this.notifications.listen(
+          { topics: group.topics },
+          { signal: group.abort.signal },
+        )) {
+          if (frame.event.case === "ready") {
+            this.acceptReader(frame.event.value.readerId);
+            delay = 1000;
+            await this.refresh(group, false);
+          } else if (frame.event.case === "invalidated") {
+            void this.refresh(group, true);
+          }
+        }
+      } catch (error) {
+        if (this.unavailable(error)) return;
+        /* Reconcile durable state after reconnect; hints carry no history. */
+      }
+      if (group.abort.signal.aborted) return;
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(done, delay);
+        function done() {
+          clearTimeout(timer);
+          group.abort.signal.removeEventListener("abort", done);
+          resolve();
+        }
+        group.abort.signal.addEventListener("abort", done, { once: true });
+      });
+      delay = Math.min(delay * 2, 30000);
+    }
+  }
+  private note(item: NotificationReadItem): Note | undefined {
+    const value = item.notification;
+    if (
+      !value?.payload ||
+      !kinds.includes(value.kind) ||
+      value.payload.typeUrl !== "type.googleapis.com/cxz.SessionNotification"
+    )
+      return;
     try {
-      this.storage().setItem(
-        this.storageKey,
-        JSON.stringify(
-          Object.fromEntries(
-            [...this.activities].map(([id, a]) => [
-              id,
-              {
-                run: a.run,
-                last: String(a.last),
-                done: String(a.done),
-                failed: String(a.failed),
-                seen: String(a.seen),
-                notified: String(a.notified),
-                pending: JSON.stringify([...a.pending]),
-              },
-            ]),
-          ),
-        ),
+      const payload = fromBinary(
+        SessionNotificationSchema,
+        value.payload.value,
       );
+      return {
+        id: key(value.id),
+        session: payload.runtimeId,
+        generation: payload.generation,
+        seq: payload.seq,
+        kind:
+          value.kind === "session.failed"
+            ? "error"
+            : value.kind === "session.question"
+              ? "question"
+              : "complete",
+      };
     } catch {
-      /* optional browser storage */
+      return;
+    }
+  }
+  private async refresh(group: Group, announce: boolean) {
+    if (group.abort.signal.aborted) return;
+    group.dirty = true;
+    group.announce ||= announce;
+    if (group.loading) return;
+    group.loading = true;
+    try {
+      while (group.dirty && !group.abort.signal.aborted) {
+        const sound = group.announce;
+        group.dirty = group.announce = false;
+        const reader = this.reader;
+        const options = { signal: group.abort.signal, timeoutMs: 5000 };
+        const unread: Note[] = [];
+        let cursor = "";
+        do {
+          const page = await this.notifications.read(
+            {
+              topics: group.topics,
+              filter: { kinds, unreadOnly: true },
+              size: 100,
+              cursor,
+            },
+            options,
+          );
+          if (key(page.readerId) !== reader || group.abort.signal.aborted)
+            return;
+          for (const item of page.items) {
+            const n = this.note(item);
+            if (n) unread.push(n);
+          }
+          cursor = page.next;
+        } while (cursor);
+        // Include recent receipts: a live completion can already be read when
+        // its hint arrives, and must still play its sound once.
+        const recent = await this.notifications.read(
+          { topics: group.topics, filter: { kinds }, size: 100 },
+          options,
+        );
+        if (key(recent.readerId) !== reader || group.abort.signal.aborted)
+          return;
+        const arrivals = new Map<string, Note>();
+        const receipted = new Set<string>();
+        for (const item of recent.items) {
+          const n = this.note(item);
+          if (!n) continue;
+          arrivals.set(n.id, n);
+          if (item.receipt) receipted.add(n.id);
+        }
+        unread.forEach((n) => arrivals.set(n.id, n));
+        for (const n of arrivals.values()) {
+          if (sound && !group.known.has(n.id) && this.sessions.has(n.session))
+            this.alerts.forEach((fn) => fn(n.kind));
+        }
+        for (const n of unread)
+          if (group.receipted.has(n.id)) receipted.add(n.id);
+        group.known = new Set(arrivals.keys());
+        group.receipted = receipted;
+        group.unread = unread;
+        this.publish();
+        if (this.reading.id)
+          this.queueAck(this.reading.id, this.reading.through);
+      }
+    } catch (error) {
+      if (this.unavailable(error)) return;
+      // Failed reads retain the last successful projection.
+      if (!group.abort.signal.aborted)
+        setTimeout(() => {
+          if (!group.abort.signal.aborted) void this.refresh(group, false);
+        }, 2000);
+    } finally {
+      group.loading = false;
     }
   }
   setReading(id: string, through = 0n) {
     this.reading = { id, through };
-    const a = this.activities.get(id);
-    if (a && a.seen < through) {
-      a.seen = through;
-      this.publish();
-    }
-  }
-  private complete(
-    id: string,
-    a: Activity,
-    seq: bigint,
-    kind: "complete" | "error" = "complete",
-  ) {
-    if (seq <= a.notified) return;
-    a.notified = seq;
-    if (kind === "error") a.failed = seq;
-    else a.done = seq;
-    if (this.reading.id === id && this.reading.through >= seq) a.seen = seq;
+    if (id) this.queueAck(id, through);
     this.publish();
-    this.alerts.forEach((fn) => fn(kind));
   }
   event(id: string, event: SessionEvent) {
-    const a = this.activities.get(id);
-    if (!a || a.run !== event.runId) return;
-    if (event.kind === "turn_end") {
-      if (event.text === "completed") this.complete(id, a, event.seq);
-      else if (event.text === "failed")
-        this.complete(id, a, event.seq, "error");
-    }
+    if (event.kind === "turn_end" && this.reading.id === id)
+      this.queueAck(id, this.reading.through);
   }
-  observe(sessions: Session[]) {
-    if (this.stopped) return;
-    for (const s of sessions) {
-      const status = s.status;
-      if (!status) continue;
-      const id = s.runtimeId;
-      const pending = new Set(
-        status.pending
-          .filter(
-            (e) =>
-              (!e.runId || e.runId === status.runId) &&
-              questions(s.agent, e).length > 0,
-          )
-          .map((e) => `${e.runId}/${e.requestId || e.seq}`),
-      );
-      let a = this.activities.get(id);
-      if (!a) {
-        // Initial snapshots establish a baseline instead of replaying old alerts.
-        a = {
-          run: status.runId,
-          last: status.lastSeq,
-          done: 0n,
-          failed: 0n,
-          seen: status.lastSeq,
-          notified: status.lastSeq,
-          pending,
-        };
-        this.activities.set(id, a);
-        continue;
-      }
-      const restored = this.restored.delete(id);
-      if (status.lastSeq < a.last) {
-        if (restored) {
-          // A purge or an ephemeral sandbox reset can restart its journal.
-          a.last = a.seen = a.notified = status.lastSeq;
-          a.done = a.failed = 0n;
-          a.run = status.runId;
-          a.pending = pending;
-        }
-        continue;
-      }
-      if (a.run !== status.runId) {
-        this.queued.delete(id);
-        this.checks.get(id)?.abort();
-        this.checks.delete(id);
-        a.run = status.runId;
-        a.pending.clear();
-      }
-      if ([...pending].some((key) => !a!.pending.has(key)))
-        this.alerts.forEach((fn) => fn("question"));
-      a.pending = pending;
-      if (
-        ["idle", "failed", "error", "stopped"].includes(status.state) &&
-        status.lastSeq > a.last &&
-        status.lastSeq > a.notified
-      ) {
-        this.queued.set(id, s);
-      } else if (
-        !this.checks.has(id) &&
-        !this.queued.has(id) &&
-        working(status.state)
-      ) {
-        // Keep the starting cursor for the completion check at the next idle.
-        a.last = status.lastSeq;
-      }
+  private queueAck(id: string, through: bigint) {
+    if (!through || this.stopped || this.unsupported || !this.sessions.has(id))
+      return;
+    let ack = this.acks.get(id);
+    if (!ack) {
+      ack = {
+        wanted: 0n,
+        confirmed: 0n,
+        generation: "",
+        busy: false,
+        abort: new AbortController(),
+        last: 0,
+      };
+      this.acks.set(id, ack);
     }
-    this.publish();
-    this.pump();
+    ack.wanted = through > ack.wanted ? through : ack.wanted;
+    if (ack.busy || ack.timer || ack.wanted <= ack.confirmed) return;
+    ack.timer = setTimeout(
+      () => {
+        ack.timer = undefined;
+        void this.acknowledge(id, ack);
+      },
+      Math.max(150, 1000 - (Date.now() - ack.last)),
+    );
   }
-  private pump() {
-    if (this.stopped) return;
-    for (const [id, session] of this.queued) {
-      if (this.checks.size >= 4) break;
-      if (this.checks.has(id)) continue;
-      this.queued.delete(id);
-      const controller = new AbortController();
-      this.checks.set(id, controller);
-      void this.check(session, controller).finally(() => {
-        if (this.checks.get(id) === controller) this.checks.delete(id);
-        this.pump();
-      });
-    }
-  }
-  private async check(s: Session, controller: AbortController) {
-    const id = s.runtimeId,
-      run = s.status!.runId,
-      end = s.status!.lastSeq;
-    const a = this.activities.get(id)!;
-    const from = a.last;
-    const timeout = setTimeout(() => controller.abort(), 5000);
+  private async acknowledge(id: string, ack: Ack) {
+    ack.busy = true;
     try {
-      // Usually one request near the tail; older servers may page more narrowly.
-      let done = 0n;
-      let failed = 0n;
-      for (let before = end; before > from; ) {
-        const floor = before - from > 512n ? before - 512n : from;
-        let cursor = floor;
-        while (cursor < before) {
-          const batch = await this.api.history(
-            {
-              ref: { key: { case: "runtimeId", value: id } },
-              afterSeq: cursor,
-              limit: 512,
-            },
-            { signal: controller.signal },
-          );
-          if (controller.signal.aborted || a.run !== run) return;
-          if (!batch.events.length) break;
-          let next = cursor;
-          for (const e of batch.events) {
-            if (e.seq > next) next = e.seq;
-            if (
-              e.runId === run &&
-              e.seq > from &&
-              e.seq <= end &&
-              e.kind === "turn_end" &&
-              ["completed", "failed"].includes(e.text)
-            ) {
-              if (e.text === "failed" && e.seq > failed) failed = e.seq;
-              if (e.text === "completed" && e.seq > done) done = e.seq;
-            }
-          }
-          if (next <= cursor) break;
-          cursor = next;
-        }
-        // Retain unseen failures even when a later turn succeeded. Scan the
-        // entire new range, including earlier pages, before publishing.
-        before = floor;
+      const options = { signal: ack.abort.signal, timeoutMs: 5000 };
+      const ref = { key: { case: "runtimeId" as const, value: id } };
+      if (!ack.generation) {
+        const state = await this.api.readState({ ref }, options);
+        if (ack.abort.signal.aborted) return;
+        ack.generation = state.generation;
+        ack.confirmed = state.throughSeq;
       }
-      if (!controller.signal.aborted && a.run === run) {
-        if (failed > a.failed) a.failed = failed;
-        if (done > a.done) a.done = done;
-        const outcome = a.failed > a.notified ? "error" : "complete";
-        const latest = a.failed > a.done ? a.failed : a.done;
-        if (latest > a.notified) {
-          a.notified = latest;
-          if (this.reading.id === id && this.reading.through >= latest)
-            a.seen = latest;
-          this.publish();
-          this.alerts.forEach((fn) => fn(outcome));
-        }
-        a.last = end;
-        this.publish();
+      if (ack.wanted > ack.confirmed) {
+        const state = await this.api.markRead(
+          { ref, generation: ack.generation, throughSeq: ack.wanted },
+          options,
+        );
+        if (ack.abort.signal.aborted) return;
+        ack.confirmed =
+          state.throughSeq > ack.confirmed ? state.throughSeq : ack.confirmed;
+        ack.generation = state.generation;
       }
-    } catch {
-      /* A subsequent catalog update can retry without a false alarm. */
+      this.publish();
+    } catch (error) {
+      if (this.unavailable(error)) return;
+      if (
+        error instanceof ConnectError &&
+        [Code.FailedPrecondition, Code.OutOfRange, Code.NotFound].includes(
+          error.code,
+        )
+      ) {
+        ack.generation = "";
+        ack.wanted = ack.confirmed = 0n;
+      }
     } finally {
-      clearTimeout(timeout);
+      ack.busy = false;
+      ack.last = Date.now();
+      if (!ack.abort.signal.aborted && ack.wanted > ack.confirmed)
+        this.queueAck(id, ack.wanted);
     }
-  }
-  dispose() {
-    this.stopped = true;
-    this.checks.forEach((c) => c.abort());
-    this.queued.clear();
-    this.alerts.clear();
-    this.listeners.clear();
   }
   reset(id: string) {
-    this.checks.get(id)?.abort();
-    this.queued.delete(id);
-    this.activities.delete(id);
-    this.restored.delete(id);
+    const ack = this.acks.get(id);
+    if (ack) {
+      ack.abort.abort();
+      clearTimeout(ack.timer);
+      this.acks.delete(id);
+    }
+    this.groups.forEach((g) => {
+      g.unread = g.unread.filter((n) => n.session !== id);
+    });
+    if (this.reading.id === id) this.reading = { id: "", through: 0n };
     this.publish();
   }
   clear() {
-    this.dispose();
-    try {
-      this.storage().removeItem(this.storageKey);
-    } catch {
-      /* unavailable */
-    }
+    this.groups.forEach((g) => g.abort.abort());
+    this.groups = [];
+    this.topology = "";
+    this.acks.forEach((a) => {
+      a.abort.abort();
+      clearTimeout(a.timer);
+    });
+    this.acks.clear();
+    this.sessions.clear();
+    this.reader = "";
+    this.reading = { id: "", through: 0n };
+    this.publish();
+  }
+  dispose() {
+    this.stopped = true;
+    this.clear();
   }
 }

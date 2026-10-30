@@ -263,7 +263,9 @@ selected options use an inset outline without shifting layout, while hover and f
 without default border, margin or padding. Ordinary Other answers reuse ComposerEditor
 with multiline text, monospace line numbers, atomic chips and native Undo/Redo.
 Answer editors and composer have independent values but share the connection's
-bounded paste cache. Submit expands chips to original text in answersJson; Enter
+bounded paste cache and the same run-bound upload and secret-file clients.
+Submit expands Text chips to original text and File/Secret chips to file
+references in answersJson; pending or failed uploads block submission. Enter
 inserts a line and Ctrl+Enter never sends the conversation draft from an answer.
 In Answer/Other, Ctrl+Enter advances to Next while answers remain incomplete;
 when Submit is enabled it only focuses Submit, requiring a separate activation.
@@ -354,8 +356,8 @@ transform, keeping those layers in the same stacking context. During IME
 composition, native text is visible and code backgrounds remain in place.
 
 Line numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
-800 Unicode characters or containing at least three newlines become inline
-chips, matching the TUI threshold. Click a chip, select it with Left/Right and
+32 Unicode characters become chips; text over 64 characters defaults to File
+when uploads are available, while shorter chips default to Text. Click a chip, select it with Left/Right and
 press Enter, or use Ctrl+P to preview the original; the preview can remove that
 occurrence or expand it into editable text. Backspace/Delete removes a whole
 chip. If the draft changes while its preview is open, expansion/deletion is
@@ -368,9 +370,11 @@ Directory traversal drains all `readEntries` pages. The native folder picker
 provides the files and relative paths exposed by the browser. Uploaded chips
 expand to attachment paths with an instruction to read the file or unpack the
 directory archive; the original bytes are not embedded again in the prompt.
-Short pastes remain ordinary text. Question Other editors retain their inline
-paste expansion because they submit textual answers rather than conversation
-attachments.
+Short pastes remain ordinary text. Question Answer/Other editors use the same
+Text/File defaults, file/folder drops, pasted files, upload progress and retry
+controls. A complete recognized token becomes a run-bound Secret chip before
+ordinary paste handling, with the same concealed preview and confirmed expansion.
+Plain password fields requested by an agent remain masked native controls.
 
 Uploads are queued, and Send is blocked while a referenced chip is pending or
 failed. Preview a chip to inspect its path, retry a failed upload, delete that

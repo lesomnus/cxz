@@ -16,7 +16,12 @@ import {
   detail,
 } from "#src/features/session/model/journal.ts";
 import { ComposerEditor } from "#src/features/session/composer/composer-editor.tsx";
-import type { ComposerPaste } from "#src/features/session/composer/composer-pastes.ts";
+import {
+  attachmentsReady,
+  type ComposerPaste,
+} from "#src/features/session/composer/composer-pastes.ts";
+import type { UploadFile } from "#src/features/session/composer/composer-upload.ts";
+import type { SecretFiles } from "#src/features/session/composer/secret-paste.ts";
 import { composerPrompt } from "#src/features/session/composer/composer-code.ts";
 import { TabList } from "#src/shared/components/tab-list.tsx";
 import { Markdown } from "#src/shared/content/markdown.tsx";
@@ -26,12 +31,16 @@ export function QuestionCard({
   e,
   agent,
   pastes,
+  upload,
+  secretFiles,
   busy,
   reply,
 }: {
   e: SessionEvent;
   agent: string;
   pastes: Map<string, ComposerPaste>;
+  upload?: UploadFile;
+  secretFiles?: SecretFiles;
   busy: boolean;
   reply: (e: SessionEvent, allow: boolean, answers?: string) => Promise<void>;
 }) {
@@ -41,10 +50,12 @@ export function QuestionCard({
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [other, setOther] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
+  const [, refreshUploads] = useState(0);
   const submit = useRef<HTMLButtonElement>(null);
   const next = useRef<HTMLButtonElement>(null);
   const answerShortcut = () => {
-    if (busy || !qs[activeStep] || !answered(qs[activeStep].key)) return;
+    if (busy || !ready || !qs[activeStep] || !answered(qs[activeStep].key))
+      return;
     if (!submit.current?.disabled)
       submit.current?.focus({ preventScroll: true });
     else if (!next.current?.disabled) next.current?.click();
@@ -56,6 +67,7 @@ export function QuestionCard({
   const otherAnswer = (key: string) => composerPrompt(other[key] ?? "", pastes);
   const answered = (key: string) =>
     !!(selected[key]?.length || otherAnswer(key).trim());
+  const ready = qs.every((q) => attachmentsReady(other[q.key] ?? "", pastes));
   const title = qs.length ? t("Question") : approvalTitle(e);
   const elicitation = e.text === "mcpServer/elicitation/request";
   const p = payload(e);
@@ -252,6 +264,13 @@ export function QuestionCard({
                         placeholder={t("Type your answer…")}
                         value={other[q.key] ?? ""}
                         pastes={pastes}
+                        readOnly={busy}
+                        upload={upload}
+                        secretFiles={secretFiles}
+                        detectSecrets
+                        onUploadChange={() =>
+                          refreshUploads((value) => value + 1)
+                        }
                         onSubmitShortcut={answerShortcut}
                         onChange={(value) => {
                           if (!q.multi)
@@ -290,7 +309,9 @@ export function QuestionCard({
         )}
         <Button
           ref={submit}
-          disabled={busy || !!requiresForm || qs.some((q) => !answered(q.key))}
+          disabled={
+            busy || !ready || !!requiresForm || qs.some((q) => !answered(q.key))
+          }
           onClick={() =>
             reply(
               e,

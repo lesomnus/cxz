@@ -5,6 +5,7 @@ import { pendingAfter } from "#src/features/session/model/journal.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { QuestionCard } from "./question-card";
 import { Button } from "@lesomnus/nox";
+import type { UploadProgress } from "#src/features/session/composer/composer-upload.ts";
 import {
   ComponentPreview,
   previewPastes,
@@ -20,14 +21,41 @@ import {
 function QuestionPreview({
   busy = false,
   example = "choice",
+  uploadMode,
+  secretFailure = false,
+  uploadDelay = 1000,
 }: {
   busy?: boolean;
   example?: QuestionExample;
+  uploadMode?: "ready" | "retry";
+  secretFailure?: boolean;
+  uploadDelay?: number;
 }) {
   const [answer, setAnswer] = useState<string>();
+  const [draft, setDraft] = useState("");
   const pastes = useRef(previewPastes());
+  const [uploads, setUploads] = useState(0);
+  const [writes, setWrites] = useState(0);
+  const [deletes, setDeletes] = useState(0);
+  const values = useRef(new Map<string, Uint8Array>());
+  const attempts = useRef(new Set<string>());
+  useEffect(() => () => values.current.forEach((value) => value.fill(0)), []);
+  const transfer = async (
+    size: number,
+    signal: AbortSignal,
+    progress?: UploadProgress,
+  ) => {
+    for (const ratio of [0, 0.25, 0.5, 0.75, 1]) {
+      signal.throwIfAborted();
+      progress?.(Math.ceil(size * ratio), size);
+      await new Promise((resolve) => setTimeout(resolve, uploadDelay / 5));
+    }
+    signal.throwIfAborted();
+  };
   return (
     <ComponentPreview
+      value={draft}
+      onChange={setDraft}
       events={
         example === "long"
           ? Array.from({ length: 25 }, (_, index) =>
@@ -40,11 +68,64 @@ function QuestionPreview({
           : toolEvents()
       }
     >
+      {uploadMode && (
+        <div aria-label="Upload activity">
+          <output aria-label="File uploads">{uploads}</output>
+          <output aria-label="Secret writes">{writes}</output>
+          <output aria-label="Deleted secret files">{deletes}</output>
+        </div>
+      )}
       {answer === undefined ? (
         <QuestionCard
           e={questionEvent(example)}
           agent={example === "previews" ? "claude" : "codex"}
           pastes={pastes.current}
+          upload={
+            uploadMode
+              ? async (file, signal, progress) => {
+                  setUploads((count) => count + 1);
+                  await transfer(file.size, signal, progress);
+                  if (
+                    uploadMode === "retry" &&
+                    !attempts.current.has(file.name)
+                  ) {
+                    attempts.current.add(file.name);
+                    throw new Error(
+                      "Simulated upload failure. Retry from the chip.",
+                    );
+                  }
+                  return `/cxz/assets/storybook/upload/${file.name}`;
+                }
+              : undefined
+          }
+          secretFiles={
+            uploadMode
+              ? {
+                  session: "storybook",
+                  run: "run",
+                  put: async (bytes, signal, progress) => {
+                    setWrites((count) => count + 1);
+                    await transfer(bytes.length, signal, progress);
+                    if (secretFailure)
+                      throw new Error("Simulated secret failure");
+                    const path = `/cxz/secrets/${crypto.randomUUID()}/value`;
+                    values.current.set(path, bytes.slice());
+                    return path;
+                  },
+                  read: async (path, signal) => {
+                    signal.throwIfAborted();
+                    const value = values.current.get(path);
+                    if (!value) throw new Error("Secret expired");
+                    return value.slice();
+                  },
+                  remove: async (path) => {
+                    values.current.get(path)?.fill(0);
+                    values.current.delete(path);
+                    setDeletes((count) => count + 1);
+                  },
+                }
+              : undefined
+          }
           busy={busy}
           reply={async (_, allow, answers) =>
             setAnswer(allow ? answers || "Allowed" : "Denied")
@@ -65,7 +146,7 @@ const meta = {
   title: "Conversation/QuestionCard",
   component: QuestionPreview,
   tags: ["autodocs"],
-  args: { busy: false, example: "choice" },
+  args: { busy: false, example: "choice", uploadDelay: 1000 },
   parameters: {
     layout: "fullscreen",
     docs: {
@@ -86,6 +167,24 @@ export const MarkdownBody: Story = { args: { example: "markdown" } };
 export const Steps: Story = { args: { example: "steps" } };
 export const AsyncSteps: Story = { args: { example: "async-steps" } };
 export const OptionPreviews: Story = { args: { example: "previews" } };
+
+export const Attachments: Story = {
+  args: { example: "free-text", uploadMode: "ready" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Question answers use the conversation editor's file/folder drop, pasted file uploads, Text/File paste modes, whole-value secret detection and chip previews. Progress blocks Submit until every referenced upload is acknowledged. This preview simulates files in memory without contacting a server.",
+      },
+    },
+  },
+};
+export const FailedUpload: Story = {
+  args: { example: "free-text", uploadMode: "retry" },
+};
+export const FailedSecret: Story = {
+  args: { example: "free-text", uploadMode: "ready", secretFailure: true },
+};
 
 export const LongQuestions: Story = { args: { example: "long" } };
 

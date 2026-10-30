@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/payday/tenant.proto.
  */
 export const file_cxz_payday_tenant: GenFile = /*@__PURE__*/
-  fileDesc("ChdjeHovcGF5ZGF5L3RlbmFudC5wcm90bxIDY3h6IuMCCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEicKBmxhYmVscxgHIAMoCzIXLmN4ei5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATo9yvwVBBICEAGKuxYxCAEyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRCAgoASAEaAEInWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZZIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChdjeHovcGF5ZGF5L3RlbmFudC5wcm90bxIDY3h6IqMDCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhsKBWFsaWFzGAQgASgJQgzqghYCMAGqwRYCGAASFAoEbmFtZRgFIAEoCUIGqsEWAhgAEhQKBGRlc2MYBiABKAlCBqrBFgIYABIvCgZsYWJlbHMYByADKAsyFy5jeHouVGVuYW50LkxhYmVsc0VudHJ5QgaqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATpfyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWMQgBMiUKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYgFChkQgIKAEgBGgBCJ1ogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2WSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Tenant is the wall an app is divided by.
@@ -42,6 +42,21 @@ export type Tenant = Message<"cxz.Tenant"> & {
   /**
    * Alias is what a person writes this tenant as, and it is unique across the
    * deployment: `@acme/arm-01` says which tenant before it says which row.
+   *
+   * It and the three after it are **not personal** (#92, #105): a tenant is an
+   * organisation, and what it is called, what is said of it and what is
+   * labelled on it are its own, which the trail keeps -- who renamed which
+   * tenant to what is the record. Said rather than left unsaid because an app
+   * whose overlay declares a field of its tenant personal -- why one was
+   * closed, in somebody's words -- has made it an entity that holds people,
+   * and `pd doctor` asks about each field of free text on it, these too, which
+   * no overlay may declare.
+   *
+   * So an app writes nobody into them. One that would name a tenant after a
+   * person -- the one somebody is given when they sign up -- leaves the name
+   * empty and says it where it is read, after whoever has the tenant now: a
+   * name written here is on the trail as a value, where nothing that forgets
+   * the person reaches it.
    *
    * @generated from field: string alias = 4;
    */

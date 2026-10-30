@@ -34,11 +34,18 @@ message Holder {
 
   // Alias is what a person writes this holder as, within its tenant:
   // `@acme/admin`. It is unique inside a tenant and not across the deployment.
-  string alias = 4;
+  //
+  // It and the three after it are **personal** (#92): a holder is somebody, and
+  // what they are called, what is said of them and what is labelled on them are
+  // theirs. The trail records that one of them was set, and never what to --
+  // the row is where a person is corrected and erased, and the trail is the
+  // copy nothing rewrites. Who a line of the trail is about stays on it: that
+  // is `actor_id` and `object_id`, which are identifiers.
+  string alias = 4 [(payday.field) = {personal: true}];
 
-  string name = 5;
-  string desc = 6;
-  map<string, string> labels = 7;
+  string name = 5 [(payday.field) = {personal: true}];
+  string desc = 6 [(payday.field) = {personal: true}];
+  map<string, string> labels = 7 [(payday.field) = {personal: true}];
 
   // See [Tenant.date_updated].
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
@@ -80,6 +87,27 @@ message Holder {
           }
         ]
         unique: true
+      },
+      // The order its list reads in, the tenant first: every read of the
+      // people is narrowed to the tenants a caller may see, so an index that
+      // began with the time would read every tenant's people to find one's
+      // (lesomnus/rove#122).
+      {
+        name: "page"
+        refs: [
+          {
+            name: "tenant"
+            number: 2
+          },
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
       }
     ]
   };
@@ -97,8 +125,9 @@ message Holder {
     // (`global: {}`) is the thing that has to be written.
 
     // Watchable, which is here and not in an app because an app cannot add it:
-    // an overlay merges **fields** and not the entity option, so a deployment
-    // has no way to declare payday's own entity streamable.
+    // an overlay may add fields and indexes to payday's entity and not to this
+    // option, so a deployment has no way to declare payday's own entity
+    // streamable.
     //
     // It earns the RPC. A product app anchors an identifier and a tenant --
     // neither of which changes -- so the one fact about somebody that has to

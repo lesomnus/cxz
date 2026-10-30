@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"net"
 	"net/http/httptest"
@@ -22,6 +21,8 @@ import (
 	"github.com/lesomnus/cxz/internal/attachmenthttp"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/editor"
+	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/internal/resourceid"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -42,6 +43,7 @@ func TestBrowserFixture(t *testing.T) {
 	setupTranscriptReplay(t, f)
 	resource.RegisterProjectServiceServer(g, &fixtureProjects{probe: os.Getenv("CXZ_EDITOR_PROBE_CONTAINER")})
 	resource.RegisterSessionServiceServer(g, f)
+	resource.RegisterNotificationServiceServer(g, fixtureNotifications{})
 	go g.Serve(ln)
 	defer g.Stop()
 	conn, err := grpc.NewClient("passthrough:///fixture", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return ln.Dial() }))
@@ -189,6 +191,27 @@ func (*fixtureProjects) Watch(_ *resource.ProjectWatchRequest, s grpc.ServerStre
 	return s.Context().Err()
 }
 
+type fixtureNotifications struct {
+	resource.UnimplementedNotificationServiceServer
+}
+
+func (fixtureNotifications) Read(context.Context, *resource.NotificationReadRequest) (*resource.NotificationReadResponse, error) {
+	return resource.NotificationReadResponse_builder{ReaderId: resourceid.Bytes(16, "operator")}.Build(), nil
+}
+func (fixtureNotifications) Listen(_ *resource.NotificationListenRequest, stream grpc.ServerStreamingServer[resource.NotificationListenResponse]) error {
+	if err := stream.Send(resource.NotificationListenResponse_builder{Ready: resource.NotificationListenReady_builder{ReaderId: resourceid.Bytes(16, "operator")}.Build()}.Build()); err != nil {
+		return err
+	}
+	<-stream.Context().Done()
+	return stream.Context().Err()
+}
+func (f *browserFixture) ReadState(context.Context, *resource.SessionReadStateRequest) (*resource.SessionReadState, error) {
+	return resource.SessionReadState_builder{ReaderId: resourceid.Bytes(16, "operator"), Generation: "fixture"}.Build(), nil
+}
+func (f *browserFixture) MarkRead(_ context.Context, r *resource.SessionMarkReadRequest) (*resource.SessionReadState, error) {
+	return resource.SessionReadState_builder{ReaderId: resourceid.Bytes(16, "operator"), Generation: "fixture", ThroughSeq: r.GetThroughSeq()}.Build(), nil
+}
+
 type browserFixture struct {
 	resource.UnimplementedSessionServiceServer
 	mu           sync.Mutex
@@ -224,7 +247,7 @@ func (f *browserFixture) snapshot() *resource.Session {
 	if !f.resolved {
 		pending = append(pending, resource.SessionEvent_builder{Seq: 3, RunId: "run", Kind: "approval", Text: "AskUserQuestion", RequestId: "q", Payload: []byte(`{"input":{"questions":[{"question":"Which environment?","options":[{"label":"Development","description":"Use a disposable environment"},{"label":"Production"}]}]}}`)}.Build())
 	}
-	return resource.Session_builder{Id: []byte("abcdefghijklmnop"), RuntimeId: "session", Alias: "demo-chat", Name: "Demo conversation", Agent: "claude", Project: fixtureProject, Status: resource.SessionStatus_builder{RunId: "run", State: "idle", LastSeq: 3, Pending: pending}.Build()}.Build()
+	return resource.Session_builder{Id: resourceid.Bytes(8, "session"), RuntimeId: "session", Alias: "demo-chat", Name: "Demo conversation", Agent: "claude", Project: fixtureProject, Status: resource.SessionStatus_builder{RunId: "run", State: "idle", LastSeq: 3, Pending: pending}.Build()}.Build()
 }
 func (f *browserFixture) Get(context.Context, *resource.SessionGetRequest) (*resource.Session, error) {
 	f.mu.Lock()

@@ -63,7 +63,8 @@ func (TaskLink) Edges() []ent.Edge {
 
 func (TaskLink) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("tasklink_page"),
 		index.Fields("client_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

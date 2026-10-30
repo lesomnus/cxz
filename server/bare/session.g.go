@@ -15,12 +15,16 @@ import (
 	resource "github.com/lesomnus/cxz/resource"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -83,28 +87,82 @@ func (s SessionServiceServer) narrow(ctx context.Context, p predicate.Session) (
 	return SessionNarrow(ctx, s.Scope, p)
 }
 
-func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddRequest) (*resource.Session, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s SessionServiceServer) snapshot(ctx context.Context, p predicate.Session, lock bool) (*ent.Session, error) {
+	q := s.Db.Session.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s SessionServiceServer) image(v *resource.Session) *resource.Session {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*resource.Session)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(18)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(19)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st SessionServiceServer) create(ctx context.Context, req *resource.SessionAddRequest) (*ent.SessionCreate, []func(v *resource.Session), error) {
 	ds := make([]func(v *resource.Session), 0, 3)
 	q := st.Db.Session.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "cxz.Session", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "cxz.Session", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -114,7 +172,7 @@ func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddR
 	q.SetName(req.GetName())
 	q.SetDesc(req.GetDesc())
 	if k, err := ProjectGetKey(ctx, st.Db, req.GetProject()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetProjectId(k)
 		ds = append(ds, func(v *resource.Session) {
@@ -137,10 +195,10 @@ func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddR
 	if req.HasListed() {
 		q.SetListed(req.GetListed())
 	} else {
-		q.SetListed(false)
+		q.SetListed(true)
 	}
 	if k, err := AccountGetKey(ctx, st.Db, req.GetAccount()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetAccountId(k)
 		ds = append(ds, func(v *resource.Session) {
@@ -148,14 +206,37 @@ func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddR
 		})
 	}
 	if k, err := AuthBindingGetKey(ctx, st.Db, req.GetAuthBinding()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetAuthBindingId(k)
 		ds = append(ds, func(v *resource.Session) {
 			v.SetAuthBinding(resource.AuthBinding_builder{Id: k[:]}.Build())
 		})
 	}
+	return q, ds, nil
+}
 
+func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddRequest) (*resource.Session, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Session
+	if snapshotOptions(s.Rec, resource.SessionService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -169,9 +250,18 @@ func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddR
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *resource.Session
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  resource.SessionService_Add_FullMethodName,
-		Key: u.Id,
+		By:    resource.SessionService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -179,11 +269,39 @@ func (s SessionServiceServer) Add(ctx context.Context, req *resource.SessionAddR
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// SessionAddRule is what a layer in front says about one row an Add of Session
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type SessionAddRule func(ctx context.Context, req *resource.SessionAddRequest) (*resource.SessionAddRequest, error)
+
+// SessionWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func SessionWithAddRule(next resource.SessionServiceServer, rule SessionAddRule) resource.SessionServiceServer {
+	return sessionAddRuled{next, rule}
+}
+
+type sessionAddRuled struct {
+	resource.SessionServiceServer
+	rule SessionAddRule
+}
+
+func (s sessionAddRuled) Add(ctx context.Context, req *resource.SessionAddRequest) (*resource.Session, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.SessionServiceServer.Add(ctx, r)
 }
 
 func (s SessionServiceServer) Get(ctx context.Context, req *resource.SessionGetRequest) (*resource.Session, error) {
@@ -290,10 +408,6 @@ func SessionSelect(q *ent.SessionQuery, m *resource.SessionSelect) {
 func SessionSelectInit(q *ent.SessionQuery, m *resource.SessionSelect) {
 	if m != nil {
 		SessionSelect(q, m)
-	} else {
-		q.WithProject(selectProjectKey)
-		q.WithAccount(selectAccountKey)
-		q.WithAuthBinding(selectAuthBindingKey)
 	}
 }
 
@@ -394,6 +508,18 @@ func (s SessionServiceServer) apply(ctx context.Context, ref *resource.SessionRe
 		return nil, err
 	}
 
+	var previous *resource.Session
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Session.Query().Where(p)
 		if pred != nil {
@@ -420,6 +546,7 @@ func (s SessionServiceServer) apply(ctx context.Context, ref *resource.SessionRe
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -442,20 +569,25 @@ func (s SessionServiceServer) apply(ctx context.Context, ref *resource.SessionRe
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *resource.Session
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -482,8 +614,16 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *resource.SessionRe
 	st.Db = tx.Db
 
 	var k any
+	var previous *resource.Session
 	if s.Rec != nil {
-		v, err := st.Db.Session.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, resource.SessionService_Erase_FullMethodName)
+		var v *ent.Session
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Session.Query().Where(p).Select(session.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &resource.SessionEraseResponse{}, nil
@@ -491,10 +631,14 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *resource.SessionRe
 			return nil, err
 		}
 
-		k = v
-		p = session.And(p, session.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = session.And(p, session.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Session.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -504,8 +648,9 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *resource.SessionRe
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  resource.SessionService_Erase_FullMethodName,
-			Key: k,
+			By:       resource.SessionService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

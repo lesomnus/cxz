@@ -30,11 +30,19 @@ type Server interface {
 	Project() ProjectServiceServer
 	AuthBinding() AuthBindingServiceServer
 	Connection() ConnectionServiceServer
+	Operator() OperatorServiceServer
+	Access() AccessServiceServer
+	Archived() ArchivedServiceServer
 	Audit() AuditServiceServer
 	Tenant() TenantServiceServer
 	Holder() HolderServiceServer
+	NotificationRecord() NotificationRecordServiceServer
+	NotificationReceiptRecord() NotificationReceiptRecordServiceServer
 	Outbox() OutboxServiceServer
+	Owed() OwedServiceServer
+	RowSeal() RowSealServiceServer
 	Session() SessionServiceServer
+	SessionRead() SessionReadServiceServer
 	Task() TaskServiceServer
 	TaskLink() TaskLinkServiceServer
 }
@@ -48,27 +56,43 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterProjectServiceServer(g, s.Project())
 	RegisterAuthBindingServiceServer(g, s.AuthBinding())
 	RegisterConnectionServiceServer(g, s.Connection())
+	RegisterOperatorServiceServer(g, s.Operator())
+	RegisterAccessServiceServer(g, s.Access())
+	RegisterArchivedServiceServer(g, s.Archived())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterTenantServiceServer(g, s.Tenant())
 	RegisterHolderServiceServer(g, s.Holder())
+	RegisterNotificationRecordServiceServer(g, s.NotificationRecord())
+	RegisterNotificationReceiptRecordServiceServer(g, s.NotificationReceiptRecord())
 	RegisterOutboxServiceServer(g, s.Outbox())
+	RegisterOwedServiceServer(g, s.Owed())
+	RegisterRowSealServiceServer(g, s.RowSeal())
 	RegisterSessionServiceServer(g, s.Session())
+	RegisterSessionReadServiceServer(g, s.SessionRead())
 	RegisterTaskServiceServer(g, s.Task())
 	RegisterTaskLinkServiceServer(g, s.TaskLink())
 }
 
 type UnimplementedServer struct {
-	AccountServer     AccountServiceServer
-	ProjectServer     ProjectServiceServer
-	AuthBindingServer AuthBindingServiceServer
-	ConnectionServer  ConnectionServiceServer
-	AuditServer       AuditServiceServer
-	TenantServer      TenantServiceServer
-	HolderServer      HolderServiceServer
-	OutboxServer      OutboxServiceServer
-	SessionServer     SessionServiceServer
-	TaskServer        TaskServiceServer
-	TaskLinkServer    TaskLinkServiceServer
+	AccountServer                   AccountServiceServer
+	ProjectServer                   ProjectServiceServer
+	AuthBindingServer               AuthBindingServiceServer
+	ConnectionServer                ConnectionServiceServer
+	OperatorServer                  OperatorServiceServer
+	AccessServer                    AccessServiceServer
+	ArchivedServer                  ArchivedServiceServer
+	AuditServer                     AuditServiceServer
+	TenantServer                    TenantServiceServer
+	HolderServer                    HolderServiceServer
+	NotificationRecordServer        NotificationRecordServiceServer
+	NotificationReceiptRecordServer NotificationReceiptRecordServiceServer
+	OutboxServer                    OutboxServiceServer
+	OwedServer                      OwedServiceServer
+	RowSealServer                   RowSealServiceServer
+	SessionServer                   SessionServiceServer
+	SessionReadServer               SessionReadServiceServer
+	TaskServer                      TaskServiceServer
+	TaskLinkServer                  TaskLinkServiceServer
 }
 
 func (UnimplementedServer) Account() AccountServiceServer { return UnimplementedAccountServiceServer{} }
@@ -79,39 +103,77 @@ func (UnimplementedServer) AuthBinding() AuthBindingServiceServer {
 func (UnimplementedServer) Connection() ConnectionServiceServer {
 	return UnimplementedConnectionServiceServer{}
 }
-func (UnimplementedServer) Audit() AuditServiceServer     { return UnimplementedAuditServiceServer{} }
-func (UnimplementedServer) Tenant() TenantServiceServer   { return UnimplementedTenantServiceServer{} }
-func (UnimplementedServer) Holder() HolderServiceServer   { return UnimplementedHolderServiceServer{} }
+func (UnimplementedServer) Operator() OperatorServiceServer {
+	return UnimplementedOperatorServiceServer{}
+}
+func (UnimplementedServer) Access() AccessServiceServer { return UnimplementedAccessServiceServer{} }
+func (UnimplementedServer) Archived() ArchivedServiceServer {
+	return UnimplementedArchivedServiceServer{}
+}
+func (UnimplementedServer) Audit() AuditServiceServer   { return UnimplementedAuditServiceServer{} }
+func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
+func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
+func (UnimplementedServer) NotificationRecord() NotificationRecordServiceServer {
+	return UnimplementedNotificationRecordServiceServer{}
+}
+func (UnimplementedServer) NotificationReceiptRecord() NotificationReceiptRecordServiceServer {
+	return UnimplementedNotificationReceiptRecordServiceServer{}
+}
 func (UnimplementedServer) Outbox() OutboxServiceServer   { return UnimplementedOutboxServiceServer{} }
+func (UnimplementedServer) Owed() OwedServiceServer       { return UnimplementedOwedServiceServer{} }
+func (UnimplementedServer) RowSeal() RowSealServiceServer { return UnimplementedRowSealServiceServer{} }
 func (UnimplementedServer) Session() SessionServiceServer { return UnimplementedSessionServiceServer{} }
-func (UnimplementedServer) Task() TaskServiceServer       { return UnimplementedTaskServiceServer{} }
+func (UnimplementedServer) SessionRead() SessionReadServiceServer {
+	return UnimplementedSessionReadServiceServer{}
+}
+func (UnimplementedServer) Task() TaskServiceServer { return UnimplementedTaskServiceServer{} }
 func (UnimplementedServer) TaskLink() TaskLinkServiceServer {
 	return UnimplementedTaskLinkServiceServer{}
 }
 
 type StaticServer struct {
-	AccountServer     AccountServiceServer
-	ProjectServer     ProjectServiceServer
-	AuthBindingServer AuthBindingServiceServer
-	ConnectionServer  ConnectionServiceServer
-	AuditServer       AuditServiceServer
-	TenantServer      TenantServiceServer
-	HolderServer      HolderServiceServer
-	OutboxServer      OutboxServiceServer
-	SessionServer     SessionServiceServer
-	TaskServer        TaskServiceServer
-	TaskLinkServer    TaskLinkServiceServer
+	AccountServer                   AccountServiceServer
+	ProjectServer                   ProjectServiceServer
+	AuthBindingServer               AuthBindingServiceServer
+	ConnectionServer                ConnectionServiceServer
+	OperatorServer                  OperatorServiceServer
+	AccessServer                    AccessServiceServer
+	ArchivedServer                  ArchivedServiceServer
+	AuditServer                     AuditServiceServer
+	TenantServer                    TenantServiceServer
+	HolderServer                    HolderServiceServer
+	NotificationRecordServer        NotificationRecordServiceServer
+	NotificationReceiptRecordServer NotificationReceiptRecordServiceServer
+	OutboxServer                    OutboxServiceServer
+	OwedServer                      OwedServiceServer
+	RowSealServer                   RowSealServiceServer
+	SessionServer                   SessionServiceServer
+	SessionReadServer               SessionReadServiceServer
+	TaskServer                      TaskServiceServer
+	TaskLinkServer                  TaskLinkServiceServer
 }
 
 func (s StaticServer) Account() AccountServiceServer         { return s.AccountServer }
 func (s StaticServer) Project() ProjectServiceServer         { return s.ProjectServer }
 func (s StaticServer) AuthBinding() AuthBindingServiceServer { return s.AuthBindingServer }
 func (s StaticServer) Connection() ConnectionServiceServer   { return s.ConnectionServer }
+func (s StaticServer) Operator() OperatorServiceServer       { return s.OperatorServer }
+func (s StaticServer) Access() AccessServiceServer           { return s.AccessServer }
+func (s StaticServer) Archived() ArchivedServiceServer       { return s.ArchivedServer }
 func (s StaticServer) Audit() AuditServiceServer             { return s.AuditServer }
 func (s StaticServer) Tenant() TenantServiceServer           { return s.TenantServer }
 func (s StaticServer) Holder() HolderServiceServer           { return s.HolderServer }
+func (s StaticServer) NotificationRecord() NotificationRecordServiceServer {
+	return s.NotificationRecordServer
+}
+func (s StaticServer) NotificationReceiptRecord() NotificationReceiptRecordServiceServer {
+	return s.NotificationReceiptRecordServer
+}
 func (s StaticServer) Outbox() OutboxServiceServer           { return s.OutboxServer }
+func (s StaticServer) Owed() OwedServiceServer               { return s.OwedServer }
+func (s StaticServer) RowSeal() RowSealServiceServer         { return s.RowSealServer }
 func (s StaticServer) Session() SessionServiceServer         { return s.SessionServer }
+func (s StaticServer) SessionRead() SessionReadServiceServer { return s.SessionReadServer }
 func (s StaticServer) Task() TaskServiceServer               { return s.TaskServer }
 func (s StaticServer) TaskLink() TaskLinkServiceServer       { return s.TaskLinkServer }
 
@@ -120,54 +182,88 @@ type Client interface {
 	Project() ProjectServiceClient
 	AuthBinding() AuthBindingServiceClient
 	Connection() ConnectionServiceClient
+	Operator() OperatorServiceClient
+	Access() AccessServiceClient
+	Archived() ArchivedServiceClient
 	Audit() AuditServiceClient
 	Tenant() TenantServiceClient
 	Holder() HolderServiceClient
+	NotificationRecord() NotificationRecordServiceClient
+	NotificationReceiptRecord() NotificationReceiptRecordServiceClient
 	Outbox() OutboxServiceClient
+	Owed() OwedServiceClient
+	RowSeal() RowSealServiceClient
 	Session() SessionServiceClient
+	SessionRead() SessionReadServiceClient
 	Task() TaskServiceClient
 	TaskLink() TaskLinkServiceClient
 }
 
 func NewClient(c *grpc.ClientConn) Client {
 	return &client{
-		_Account:     NewAccountServiceClient(c),
-		_Project:     NewProjectServiceClient(c),
-		_AuthBinding: NewAuthBindingServiceClient(c),
-		_Connection:  NewConnectionServiceClient(c),
-		_Audit:       NewAuditServiceClient(c),
-		_Tenant:      NewTenantServiceClient(c),
-		_Holder:      NewHolderServiceClient(c),
-		_Outbox:      NewOutboxServiceClient(c),
-		_Session:     NewSessionServiceClient(c),
-		_Task:        NewTaskServiceClient(c),
-		_TaskLink:    NewTaskLinkServiceClient(c),
+		_Account:                   NewAccountServiceClient(c),
+		_Project:                   NewProjectServiceClient(c),
+		_AuthBinding:               NewAuthBindingServiceClient(c),
+		_Connection:                NewConnectionServiceClient(c),
+		_Operator:                  NewOperatorServiceClient(c),
+		_Access:                    NewAccessServiceClient(c),
+		_Archived:                  NewArchivedServiceClient(c),
+		_Audit:                     NewAuditServiceClient(c),
+		_Tenant:                    NewTenantServiceClient(c),
+		_Holder:                    NewHolderServiceClient(c),
+		_NotificationRecord:        NewNotificationRecordServiceClient(c),
+		_NotificationReceiptRecord: NewNotificationReceiptRecordServiceClient(c),
+		_Outbox:                    NewOutboxServiceClient(c),
+		_Owed:                      NewOwedServiceClient(c),
+		_RowSeal:                   NewRowSealServiceClient(c),
+		_Session:                   NewSessionServiceClient(c),
+		_SessionRead:               NewSessionReadServiceClient(c),
+		_Task:                      NewTaskServiceClient(c),
+		_TaskLink:                  NewTaskLinkServiceClient(c),
 	}
 }
 
 type client struct {
-	_Account     AccountServiceClient
-	_Project     ProjectServiceClient
-	_AuthBinding AuthBindingServiceClient
-	_Connection  ConnectionServiceClient
-	_Audit       AuditServiceClient
-	_Tenant      TenantServiceClient
-	_Holder      HolderServiceClient
-	_Outbox      OutboxServiceClient
-	_Session     SessionServiceClient
-	_Task        TaskServiceClient
-	_TaskLink    TaskLinkServiceClient
+	_Account                   AccountServiceClient
+	_Project                   ProjectServiceClient
+	_AuthBinding               AuthBindingServiceClient
+	_Connection                ConnectionServiceClient
+	_Operator                  OperatorServiceClient
+	_Access                    AccessServiceClient
+	_Archived                  ArchivedServiceClient
+	_Audit                     AuditServiceClient
+	_Tenant                    TenantServiceClient
+	_Holder                    HolderServiceClient
+	_NotificationRecord        NotificationRecordServiceClient
+	_NotificationReceiptRecord NotificationReceiptRecordServiceClient
+	_Outbox                    OutboxServiceClient
+	_Owed                      OwedServiceClient
+	_RowSeal                   RowSealServiceClient
+	_Session                   SessionServiceClient
+	_SessionRead               SessionReadServiceClient
+	_Task                      TaskServiceClient
+	_TaskLink                  TaskLinkServiceClient
 }
 
-func (c *client) Account() AccountServiceClient         { return c._Account }
-func (c *client) Project() ProjectServiceClient         { return c._Project }
-func (c *client) AuthBinding() AuthBindingServiceClient { return c._AuthBinding }
-func (c *client) Connection() ConnectionServiceClient   { return c._Connection }
-func (c *client) Audit() AuditServiceClient             { return c._Audit }
-func (c *client) Tenant() TenantServiceClient           { return c._Tenant }
-func (c *client) Holder() HolderServiceClient           { return c._Holder }
+func (c *client) Account() AccountServiceClient                       { return c._Account }
+func (c *client) Project() ProjectServiceClient                       { return c._Project }
+func (c *client) AuthBinding() AuthBindingServiceClient               { return c._AuthBinding }
+func (c *client) Connection() ConnectionServiceClient                 { return c._Connection }
+func (c *client) Operator() OperatorServiceClient                     { return c._Operator }
+func (c *client) Access() AccessServiceClient                         { return c._Access }
+func (c *client) Archived() ArchivedServiceClient                     { return c._Archived }
+func (c *client) Audit() AuditServiceClient                           { return c._Audit }
+func (c *client) Tenant() TenantServiceClient                         { return c._Tenant }
+func (c *client) Holder() HolderServiceClient                         { return c._Holder }
+func (c *client) NotificationRecord() NotificationRecordServiceClient { return c._NotificationRecord }
+func (c *client) NotificationReceiptRecord() NotificationReceiptRecordServiceClient {
+	return c._NotificationReceiptRecord
+}
 func (c *client) Outbox() OutboxServiceClient           { return c._Outbox }
+func (c *client) Owed() OwedServiceClient               { return c._Owed }
+func (c *client) RowSeal() RowSealServiceClient         { return c._RowSeal }
 func (c *client) Session() SessionServiceClient         { return c._Session }
+func (c *client) SessionRead() SessionReadServiceClient { return c._SessionRead }
 func (c *client) Task() TaskServiceClient               { return c._Task }
 func (c *client) TaskLink() TaskLinkServiceClient       { return c._TaskLink }
 

@@ -130,8 +130,14 @@ func (_u *TaskLinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(tasklink.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(tasklink.FieldDateUpdated); ok {
+		_spec.SetField(tasklink.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(tasklink.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(tasklink.FieldDateErased); ok {
+		_spec.SetField(tasklink.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(tasklink.FieldDateErased, field.TypeTime)
@@ -292,8 +298,14 @@ func (_u *TaskLinkUpdateOne) sqlSave(ctx context.Context) (_node *TaskLink, err 
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(tasklink.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(tasklink.FieldDateUpdated); ok {
+		_spec.SetField(tasklink.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(tasklink.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(tasklink.FieldDateErased); ok {
+		_spec.SetField(tasklink.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(tasklink.FieldDateErased, field.TypeTime)

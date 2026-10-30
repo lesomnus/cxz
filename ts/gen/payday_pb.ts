@@ -10,12 +10,14 @@ import type { App } from "./payday/app_pb.js";
 import { file_payday_app } from "./payday/app_pb.js";
 import type { Entity, Field } from "./payday/entity_pb.js";
 import { file_payday_entity } from "./payday/entity_pb.js";
+import type { EventMessage } from "./payday/past_pb.js";
+import { file_payday_past } from "./payday/past_pb.js";
 
 /**
  * Describes the file payday.proto.
  */
 export const file_payday: GenFile = /*@__PURE__*/
-  fileDesc("CgxwYXlkYXkucHJvdG8SBnBheWRheTpJCgZlbnRpdHkSHy5nb29nbGUucHJvdG9idWYuTWVzc2FnZU9wdGlvbnMYsecCIAEoCzIOLnBheWRheS5FbnRpdHlSBmVudGl0eTpECgVmaWVsZBIdLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE9wdGlvbnMYlegCIAEoCzINLnBheWRheS5GaWVsZFIFZmllbGQ6PQoDYXBwEhwuZ29vZ2xlLnByb3RvYnVmLkZpbGVPcHRpb25zGPnoAiABKAsyCy5wYXlkYXkuQXBwUgNhcHBCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9wYXlkYXkvcGRwYmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_descriptor, file_payday_app, file_payday_entity]);
+  fileDesc("CgxwYXlkYXkucHJvdG8SBnBheWRheTpJCgZlbnRpdHkSHy5nb29nbGUucHJvdG9idWYuTWVzc2FnZU9wdGlvbnMYsecCIAEoCzIOLnBheWRheS5FbnRpdHlSBmVudGl0eTpNCgVldmVudBIfLmdvb2dsZS5wcm90b2J1Zi5NZXNzYWdlT3B0aW9ucxiy5wIgASgLMhQucGF5ZGF5LkV2ZW50TWVzc2FnZVIFZXZlbnQ6RAoFZmllbGQSHS5nb29nbGUucHJvdG9idWYuRmllbGRPcHRpb25zGJXoAiABKAsyDS5wYXlkYXkuRmllbGRSBWZpZWxkOj0KA2FwcBIcLmdvb2dsZS5wcm90b2J1Zi5GaWxlT3B0aW9ucxj56AIgASgLMgsucGF5ZGF5LkFwcFIDYXBwQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcGF5ZGF5L3BkcGJiCGVkaXRpb25zcOgH", [file_google_protobuf_descriptor, file_payday_app, file_payday_entity, file_payday_past]);
 
 /**
  * @generated from extension: payday.Entity entity = 46001;
@@ -24,14 +26,25 @@ export const entity: GenExtension<MessageOptions, Entity> = /*@__PURE__*/
   extDesc(file_payday, 0);
 
 /**
+ * What a message is when it is not an entity but what the app's events of
+ * one or more kinds hold (payday#151): `option (payday.event) = {kinds:
+ * "robot.move"};`. The next number of the message block. See
+ * [EventMessage] for what is refused of one.
+ *
+ * @generated from extension: payday.EventMessage event = 46002;
+ */
+export const event: GenExtension<MessageOptions, EventMessage> = /*@__PURE__*/
+  extDesc(file_payday, 1);
+
+/**
  * @generated from extension: payday.Field field = 46101;
  */
 export const field: GenExtension<FieldOptions, Field> = /*@__PURE__*/
-  extDesc(file_payday, 1);
+  extDesc(file_payday, 2);
 
 /**
  * @generated from extension: payday.App app = 46201;
  */
 export const app: GenExtension<FileOptions, App> = /*@__PURE__*/
-  extDesc(file_payday, 2);
+  extDesc(file_payday, 3);
 

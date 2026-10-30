@@ -10,14 +10,15 @@ import (
 	"github.com/lesomnus/cxz/internal/notification"
 )
 
-// Read state belongs to this frontend, keyed by the full connection/session ID.
-// Opening the TUI establishes a baseline, not hundreds of historical alerts.
+// Legacy runtime connections keep frontend-only indicators. Resource clients
+// use the Manager's durable read state through server_attention.go.
 type sessionActivity struct {
 	run, state          string
 	lastSeq, done, seen uint64
 	checking            bool
 	notified            uint64
 	pendingAlerts       map[pendingAlertKey]bool
+	serverQuestion      bool
 }
 
 type completionChecked struct {
@@ -81,6 +82,9 @@ func (m *model) pendingQuestion(s *api.Session) bool {
 }
 
 func (m *model) observeSessions(sessions []*api.Session) tea.Cmd {
+	if backend, ok := m.attentionBackend(); ok {
+		return m.observeServerAttention(backend, sessions)
+	}
 	if m.sessionActivity == nil {
 		m.sessionActivity = map[string]*sessionActivity{}
 	}
@@ -197,7 +201,7 @@ func (m *model) sessionIndicator(s *api.Session) string {
 	}
 
 	// Blink at the same rate as the composer cursor: one second on, one off.
-	if m.pendingQuestion(s) {
+	if a := m.sessionActivity[s.Id]; m.pendingQuestion(s) || a != nil && a.serverQuestion {
 		if m.pulse%10 < 5 {
 			return warning.Render("?")
 		}
@@ -224,11 +228,15 @@ func (m *model) sessionIndicator(s *api.Session) string {
 // overlay is visible. Scrolling older messages does not acknowledge a new reply.
 func (m *model) acknowledgeSession() {
 	s := m.current()
-	if s == nil || m.projectView || m.accountView || m.creating || m.panelFocus ||
+	if s == nil || m.blurred || m.projectView || m.accountView || m.creating || m.panelFocus ||
 		m.settingsPage != nil || (m.memoryPage != nil || m.library != nil) || m.workflow != nil ||
 		!m.previewInteraction() || m.errorFocused() || m.terminalFocused() || m.focusApproval ||
 		m.focusList || m.selectingTools() || (m.previewVisible() && m.filePreview.focused) ||
 		!m.view.AtBottom() || m.historyOpening[s.Id] {
+		return
+	}
+	if _, ok := m.attentionBackend(); ok {
+		m.queueAttentionRead(s.Id, m.cursor[s.Id])
 		return
 	}
 	if a := m.sessionActivity[s.Id]; a != nil {

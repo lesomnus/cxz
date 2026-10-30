@@ -106,6 +106,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultListed holds the default value on creation for the "listed" field.
+	DefaultListed bool
 	// ValueScanner of all Session fields.
 	ValueScanner struct {
 		Status field.TypeValueScanner[*resource.SessionStatus]

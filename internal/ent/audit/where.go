@@ -110,6 +110,11 @@ func Domain(v uint32) predicate.Audit {
 	return predicate.Audit(sql.FieldEQ(FieldDomain, v))
 }
 
+// Digest applies equality check predicate on the "digest" field. It's identical to DigestEQ.
+func Digest(v []byte) predicate.Audit {
+	return predicate.Audit(sql.FieldEQ(FieldDigest, v))
+}
+
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.Audit {
 	return predicate.Audit(sql.FieldEQ(FieldTenantId, v))
@@ -603,6 +608,76 @@ func DomainIsNil() predicate.Audit {
 // DomainNotNil applies the NotNil predicate on the "domain" field.
 func DomainNotNil() predicate.Audit {
 	return predicate.Audit(sql.FieldNotNull(FieldDomain))
+}
+
+// FieldsIsNil applies the IsNil predicate on the "fields" field.
+func FieldsIsNil() predicate.Audit {
+	return predicate.Audit(sql.FieldIsNull(FieldFields))
+}
+
+// FieldsNotNil applies the NotNil predicate on the "fields" field.
+func FieldsNotNil() predicate.Audit {
+	return predicate.Audit(sql.FieldNotNull(FieldFields))
+}
+
+// DigestEQ applies the EQ predicate on the "digest" field.
+func DigestEQ(v []byte) predicate.Audit {
+	return predicate.Audit(sql.FieldEQ(FieldDigest, v))
+}
+
+// DigestNEQ applies the NEQ predicate on the "digest" field.
+func DigestNEQ(v []byte) predicate.Audit {
+	return predicate.Audit(sql.FieldNEQ(FieldDigest, v))
+}
+
+// DigestIn applies the In predicate on the "digest" field.
+func DigestIn(vs ...[]byte) predicate.Audit {
+	return predicate.Audit(sql.FieldIn(FieldDigest, vs...))
+}
+
+// DigestNotIn applies the NotIn predicate on the "digest" field.
+func DigestNotIn(vs ...[]byte) predicate.Audit {
+	return predicate.Audit(sql.FieldNotIn(FieldDigest, vs...))
+}
+
+// DigestGT applies the GT predicate on the "digest" field.
+func DigestGT(v []byte) predicate.Audit {
+	return predicate.Audit(sql.FieldGT(FieldDigest, v))
+}
+
+// DigestGTE applies the GTE predicate on the "digest" field.
+func DigestGTE(v []byte) predicate.Audit {
+	return predicate.Audit(sql.FieldGTE(FieldDigest, v))
+}
+
+// DigestLT applies the LT predicate on the "digest" field.
+func DigestLT(v []byte) predicate.Audit {
+	return predicate.Audit(sql.FieldLT(FieldDigest, v))
+}
+
+// DigestLTE applies the LTE predicate on the "digest" field.
+func DigestLTE(v []byte) predicate.Audit {
+	return predicate.Audit(sql.FieldLTE(FieldDigest, v))
+}
+
+// DigestIsNil applies the IsNil predicate on the "digest" field.
+func DigestIsNil() predicate.Audit {
+	return predicate.Audit(sql.FieldIsNull(FieldDigest))
+}
+
+// DigestNotNil applies the NotNil predicate on the "digest" field.
+func DigestNotNil() predicate.Audit {
+	return predicate.Audit(sql.FieldNotNull(FieldDigest))
+}
+
+// DigestFieldsIsNil applies the IsNil predicate on the "digest_fields" field.
+func DigestFieldsIsNil() predicate.Audit {
+	return predicate.Audit(sql.FieldIsNull(FieldDigestFields))
+}
+
+// DigestFieldsNotNil applies the NotNil predicate on the "digest_fields" field.
+func DigestFieldsNotNil() predicate.Audit {
+	return predicate.Audit(sql.FieldNotNull(FieldDigestFields))
 }
 
 // And groups predicates with the AND operator between them.

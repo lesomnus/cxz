@@ -12,6 +12,9 @@ message SessionWatchResponse {
 }
 
 service SessionService {
+  // Records only the conversation range actually read by this operator.
+  rpc MarkRead(SessionMarkReadRequest) returns (SessionReadState);
+  rpc ReadState(SessionReadStateRequest) returns (SessionReadState);
   // Read retained conversation statistics, never account billing or lifetime totals.
   rpc ConversationStats(ConversationStatsRequest) returns (ConversationStatsReply);
   rpc Restore(SessionRef) returns (Session);
@@ -106,6 +109,27 @@ service SessionService {
   rpc GetHistoryFloor(SessionHistoryFloorRequest) returns (SessionHistoryFloorReply);
   rpc McpLogs(SessionMcpRequest) returns (SessionMcpLogsReply);
   rpc RestartMcp(SessionMcpRequest) returns (SessionReceipt);
+}
+
+message SessionMarkReadRequest {
+  SessionRef ref = 1;
+  string generation = 2 [features.field_presence = IMPLICIT];
+  uint64 through_seq = 3 [features.field_presence = IMPLICIT];
+}
+
+message SessionReadStateRequest { SessionRef ref = 1; }
+
+message SessionReadState {
+  bytes reader_id = 1 [features.field_presence = IMPLICIT];
+  string generation = 2 [features.field_presence = IMPLICIT];
+  uint64 through_seq = 3 [features.field_presence = IMPLICIT];
+}
+
+message SessionNotification {
+  string runtime_id = 1 [features.field_presence = IMPLICIT];
+  string generation = 2 [features.field_presence = IMPLICIT];
+  uint64 seq = 3 [features.field_presence = IMPLICIT];
+  string request_id = 4 [features.field_presence = IMPLICIT];
 }
 
 // A window is half-open, [since, until), so the windows a client walks back

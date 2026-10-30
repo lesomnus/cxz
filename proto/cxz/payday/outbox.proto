@@ -90,6 +90,9 @@ message Outbox {
     default: ""
   }];
 
+  // Packed WatchEvent, absent on legacy key-only entries. Contains public data.
+  bytes event = 16 [(orm.field) = {nullable: true}];
+
   // No RPCs. Nothing outside the deployment reads or writes this: it is a queue
   // between the transaction and the loop that drains it, and an entity whose
   // rows a caller could add would be one where anybody can publish an event

@@ -29,12 +29,16 @@ func (Outbox) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
+		field.Bytes("event").
+			Nillable().
+			Optional(),
 	}
 }
 
 func (Outbox) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("id"),
+		index.Fields("id").
+			StorageKey("outbox_queue"),
 	}
 }
 

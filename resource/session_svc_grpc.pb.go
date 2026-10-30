@@ -26,6 +26,8 @@ const (
 	SessionService_Erase_FullMethodName                  = "/cxz.SessionService/Erase"
 	SessionService_List_FullMethodName                   = "/cxz.SessionService/List"
 	SessionService_Watch_FullMethodName                  = "/cxz.SessionService/Watch"
+	SessionService_MarkRead_FullMethodName               = "/cxz.SessionService/MarkRead"
+	SessionService_ReadState_FullMethodName              = "/cxz.SessionService/ReadState"
 	SessionService_ConversationStats_FullMethodName      = "/cxz.SessionService/ConversationStats"
 	SessionService_Restore_FullMethodName                = "/cxz.SessionService/Restore"
 	SessionService_Resume_FullMethodName                 = "/cxz.SessionService/Resume"
@@ -104,6 +106,9 @@ type SessionServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *SessionWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SessionWatchResponse], error)
+	// Records only the conversation range actually read by this operator.
+	MarkRead(ctx context.Context, in *SessionMarkReadRequest, opts ...grpc.CallOption) (*SessionReadState, error)
+	ReadState(ctx context.Context, in *SessionReadStateRequest, opts ...grpc.CallOption) (*SessionReadState, error)
 	// Read retained conversation statistics, never account billing or lifetime totals.
 	ConversationStats(ctx context.Context, in *ConversationStatsRequest, opts ...grpc.CallOption) (*ConversationStatsReply, error)
 	Restore(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
@@ -286,6 +291,26 @@ func (c *sessionServiceClient) Watch(ctx context.Context, in *SessionWatchReques
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_WatchClient = grpc.ServerStreamingClient[SessionWatchResponse]
+
+func (c *sessionServiceClient) MarkRead(ctx context.Context, in *SessionMarkReadRequest, opts ...grpc.CallOption) (*SessionReadState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionReadState)
+	err := c.cc.Invoke(ctx, SessionService_MarkRead_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) ReadState(ctx context.Context, in *SessionReadStateRequest, opts ...grpc.CallOption) (*SessionReadState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionReadState)
+	err := c.cc.Invoke(ctx, SessionService_ReadState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 func (c *sessionServiceClient) ConversationStats(ctx context.Context, in *ConversationStatsRequest, opts ...grpc.CallOption) (*ConversationStatsReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -831,6 +856,9 @@ type SessionServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*SessionWatchRequest, grpc.ServerStreamingServer[SessionWatchResponse]) error
+	// Records only the conversation range actually read by this operator.
+	MarkRead(context.Context, *SessionMarkReadRequest) (*SessionReadState, error)
+	ReadState(context.Context, *SessionReadStateRequest) (*SessionReadState, error)
 	// Read retained conversation statistics, never account billing or lifetime totals.
 	ConversationStats(context.Context, *ConversationStatsRequest) (*ConversationStatsReply, error)
 	Restore(context.Context, *SessionRef) (*Session, error)
@@ -955,6 +983,12 @@ func (UnimplementedSessionServiceServer) List(context.Context, *SessionListReque
 }
 func (UnimplementedSessionServiceServer) Watch(*SessionWatchRequest, grpc.ServerStreamingServer[SessionWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedSessionServiceServer) MarkRead(context.Context, *SessionMarkReadRequest) (*SessionReadState, error) {
+	return nil, status.Error(codes.Unimplemented, "method MarkRead not implemented")
+}
+func (UnimplementedSessionServiceServer) ReadState(context.Context, *SessionReadStateRequest) (*SessionReadState, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReadState not implemented")
 }
 func (UnimplementedSessionServiceServer) ConversationStats(context.Context, *ConversationStatsRequest) (*ConversationStatsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ConversationStats not implemented")
@@ -1239,6 +1273,42 @@ func _SessionService_Watch_Handler(srv interface{}, stream grpc.ServerStream) er
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SessionService_WatchServer = grpc.ServerStreamingServer[SessionWatchResponse]
+
+func _SessionService_MarkRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionMarkReadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).MarkRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_MarkRead_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).MarkRead(ctx, req.(*SessionMarkReadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_ReadState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionReadStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).ReadState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_ReadState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).ReadState(ctx, req.(*SessionReadStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 func _SessionService_ConversationStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConversationStatsRequest)
@@ -2106,6 +2176,14 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _SessionService_List_Handler,
+		},
+		{
+			MethodName: "MarkRead",
+			Handler:    _SessionService_MarkRead_Handler,
+		},
+		{
+			MethodName: "ReadState",
+			Handler:    _SessionService_ReadState_Handler,
 		},
 		{
 			MethodName: "ConversationStats",

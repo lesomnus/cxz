@@ -62,7 +62,8 @@ func (Task) Edges() []ent.Edge {
 
 func (Task) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("task_page"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

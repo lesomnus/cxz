@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
+	"github.com/protobuf-orm/ent/dialect/sql/sqljson"
 	"github.com/protobuf-orm/ent/schema/field"
 )
 
@@ -164,6 +165,54 @@ func (_u *AuditUpdate) ClearDomain() *AuditUpdate {
 	return _u
 }
 
+// SetFields sets the "fields" field.
+func (_u *AuditUpdate) SetFields(v []uint32) *AuditUpdate {
+	_u.mutation.SetFields(v)
+	return _u
+}
+
+// AppendFields appends value to the "fields" field.
+func (_u *AuditUpdate) AppendFields(v []uint32) *AuditUpdate {
+	_u.mutation.AppendFields(v)
+	return _u
+}
+
+// ClearFields clears the value of the "fields" field.
+func (_u *AuditUpdate) ClearFields() *AuditUpdate {
+	_u.mutation.ClearFields()
+	return _u
+}
+
+// SetDigest sets the "digest" field.
+func (_u *AuditUpdate) SetDigest(v []byte) *AuditUpdate {
+	_u.mutation.SetDigest(v)
+	return _u
+}
+
+// ClearDigest clears the value of the "digest" field.
+func (_u *AuditUpdate) ClearDigest() *AuditUpdate {
+	_u.mutation.ClearDigest()
+	return _u
+}
+
+// SetDigestFields sets the "digest_fields" field.
+func (_u *AuditUpdate) SetDigestFields(v []uint32) *AuditUpdate {
+	_u.mutation.SetDigestFields(v)
+	return _u
+}
+
+// AppendDigestFields appends value to the "digest_fields" field.
+func (_u *AuditUpdate) AppendDigestFields(v []uint32) *AuditUpdate {
+	_u.mutation.AppendDigestFields(v)
+	return _u
+}
+
+// ClearDigestFields clears the value of the "digest_fields" field.
+func (_u *AuditUpdate) ClearDigestFields() *AuditUpdate {
+	_u.mutation.ClearDigestFields()
+	return _u
+}
+
 // Mutation returns the AuditMutation object of the builder.
 func (_u *AuditUpdate) Mutation() *AuditMutation {
 	return _u.mutation
@@ -214,20 +263,38 @@ func (_u *AuditUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.TenantId(); ok {
 		_spec.SetField(audit.FieldTenantId, field.TypeUuid, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldTenantId); ok {
+		_spec.SetField(audit.FieldTenantId, field.TypeUuid, e)
+	}
 	if value, ok := _u.mutation.ActorId(); ok {
 		_spec.SetField(audit.FieldActorId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldActorId); ok {
+		_spec.SetField(audit.FieldActorId, field.TypeUuid, e)
 	}
 	if value, ok := _u.mutation.TraceId(); ok {
 		_spec.SetField(audit.FieldTraceId, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldTraceId); ok {
+		_spec.SetField(audit.FieldTraceId, field.TypeBytes, e)
+	}
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(audit.FieldAction, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldAction); ok {
+		_spec.SetField(audit.FieldAction, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.ObjectId(); ok {
 		_spec.SetField(audit.FieldObjectId, field.TypeUuid, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldObjectId); ok {
+		_spec.SetField(audit.FieldObjectId, field.TypeUuid, e)
+	}
 	if value, ok := _u.mutation.Patch(); ok {
 		_spec.SetField(audit.FieldPatch, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldPatch); ok {
+		_spec.SetField(audit.FieldPatch, field.TypeBytes, e)
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(audit.FieldDateCreated, field.TypeTime)
@@ -235,11 +302,20 @@ func (_u *AuditUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.ActorTenantId(); ok {
 		_spec.SetField(audit.FieldActorTenantId, field.TypeUuid, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldActorTenantId); ok {
+		_spec.SetField(audit.FieldActorTenantId, field.TypeUuid, e)
+	}
 	if value, ok := _u.mutation.Value(); ok {
 		_spec.SetField(audit.FieldValue, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldValue); ok {
+		_spec.SetField(audit.FieldValue, field.TypeBytes, e)
+	}
 	if value, ok := _u.mutation.CounterpartTenantId(); ok {
 		_spec.SetField(audit.FieldCounterpartTenantId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldCounterpartTenantId); ok {
+		_spec.SetField(audit.FieldCounterpartTenantId, field.TypeUuid, e)
 	}
 	if _u.mutation.CounterpartTenantIdCleared() {
 		_spec.ClearField(audit.FieldCounterpartTenantId, field.TypeUuid)
@@ -247,11 +323,51 @@ func (_u *AuditUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Domain(); ok {
 		_spec.SetField(audit.FieldDomain, field.TypeUint32, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldDomain); ok {
+		_spec.SetField(audit.FieldDomain, field.TypeUint32, e)
+	}
 	if value, ok := _u.mutation.AddedDomain(); ok {
 		_spec.AddField(audit.FieldDomain, field.TypeUint32, value)
 	}
 	if _u.mutation.DomainCleared() {
 		_spec.ClearField(audit.FieldDomain, field.TypeUint32)
+	}
+	if value, ok := _u.mutation.GetFields(); ok {
+		_spec.SetField(audit.FieldFields, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldFields); ok {
+		_spec.SetField(audit.FieldFields, field.TypeJson, e)
+	}
+	if value, ok := _u.mutation.AppendedFields(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, audit.FieldFields, value)
+		})
+	}
+	if _u.mutation.FieldsCleared() {
+		_spec.ClearField(audit.FieldFields, field.TypeJson)
+	}
+	if value, ok := _u.mutation.Digest(); ok {
+		_spec.SetField(audit.FieldDigest, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldDigest); ok {
+		_spec.SetField(audit.FieldDigest, field.TypeBytes, e)
+	}
+	if _u.mutation.DigestCleared() {
+		_spec.ClearField(audit.FieldDigest, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.DigestFields(); ok {
+		_spec.SetField(audit.FieldDigestFields, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldDigestFields); ok {
+		_spec.SetField(audit.FieldDigestFields, field.TypeJson, e)
+	}
+	if value, ok := _u.mutation.AppendedDigestFields(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, audit.FieldDigestFields, value)
+		})
+	}
+	if _u.mutation.DigestFieldsCleared() {
+		_spec.ClearField(audit.FieldDigestFields, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -410,6 +526,54 @@ func (_u *AuditUpdateOne) ClearDomain() *AuditUpdateOne {
 	return _u
 }
 
+// SetFields sets the "fields" field.
+func (_u *AuditUpdateOne) SetFields(v []uint32) *AuditUpdateOne {
+	_u.mutation.SetFields(v)
+	return _u
+}
+
+// AppendFields appends value to the "fields" field.
+func (_u *AuditUpdateOne) AppendFields(v []uint32) *AuditUpdateOne {
+	_u.mutation.AppendFields(v)
+	return _u
+}
+
+// ClearFields clears the value of the "fields" field.
+func (_u *AuditUpdateOne) ClearFields() *AuditUpdateOne {
+	_u.mutation.ClearFields()
+	return _u
+}
+
+// SetDigest sets the "digest" field.
+func (_u *AuditUpdateOne) SetDigest(v []byte) *AuditUpdateOne {
+	_u.mutation.SetDigest(v)
+	return _u
+}
+
+// ClearDigest clears the value of the "digest" field.
+func (_u *AuditUpdateOne) ClearDigest() *AuditUpdateOne {
+	_u.mutation.ClearDigest()
+	return _u
+}
+
+// SetDigestFields sets the "digest_fields" field.
+func (_u *AuditUpdateOne) SetDigestFields(v []uint32) *AuditUpdateOne {
+	_u.mutation.SetDigestFields(v)
+	return _u
+}
+
+// AppendDigestFields appends value to the "digest_fields" field.
+func (_u *AuditUpdateOne) AppendDigestFields(v []uint32) *AuditUpdateOne {
+	_u.mutation.AppendDigestFields(v)
+	return _u
+}
+
+// ClearDigestFields clears the value of the "digest_fields" field.
+func (_u *AuditUpdateOne) ClearDigestFields() *AuditUpdateOne {
+	_u.mutation.ClearDigestFields()
+	return _u
+}
+
 // Mutation returns the AuditMutation object of the builder.
 func (_u *AuditUpdateOne) Mutation() *AuditMutation {
 	return _u.mutation
@@ -490,20 +654,38 @@ func (_u *AuditUpdateOne) sqlSave(ctx context.Context) (_node *Audit, err error)
 	if value, ok := _u.mutation.TenantId(); ok {
 		_spec.SetField(audit.FieldTenantId, field.TypeUuid, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldTenantId); ok {
+		_spec.SetField(audit.FieldTenantId, field.TypeUuid, e)
+	}
 	if value, ok := _u.mutation.ActorId(); ok {
 		_spec.SetField(audit.FieldActorId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldActorId); ok {
+		_spec.SetField(audit.FieldActorId, field.TypeUuid, e)
 	}
 	if value, ok := _u.mutation.TraceId(); ok {
 		_spec.SetField(audit.FieldTraceId, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldTraceId); ok {
+		_spec.SetField(audit.FieldTraceId, field.TypeBytes, e)
+	}
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(audit.FieldAction, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldAction); ok {
+		_spec.SetField(audit.FieldAction, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.ObjectId(); ok {
 		_spec.SetField(audit.FieldObjectId, field.TypeUuid, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldObjectId); ok {
+		_spec.SetField(audit.FieldObjectId, field.TypeUuid, e)
+	}
 	if value, ok := _u.mutation.Patch(); ok {
 		_spec.SetField(audit.FieldPatch, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldPatch); ok {
+		_spec.SetField(audit.FieldPatch, field.TypeBytes, e)
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(audit.FieldDateCreated, field.TypeTime)
@@ -511,11 +693,20 @@ func (_u *AuditUpdateOne) sqlSave(ctx context.Context) (_node *Audit, err error)
 	if value, ok := _u.mutation.ActorTenantId(); ok {
 		_spec.SetField(audit.FieldActorTenantId, field.TypeUuid, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldActorTenantId); ok {
+		_spec.SetField(audit.FieldActorTenantId, field.TypeUuid, e)
+	}
 	if value, ok := _u.mutation.Value(); ok {
 		_spec.SetField(audit.FieldValue, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldValue); ok {
+		_spec.SetField(audit.FieldValue, field.TypeBytes, e)
+	}
 	if value, ok := _u.mutation.CounterpartTenantId(); ok {
 		_spec.SetField(audit.FieldCounterpartTenantId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldCounterpartTenantId); ok {
+		_spec.SetField(audit.FieldCounterpartTenantId, field.TypeUuid, e)
 	}
 	if _u.mutation.CounterpartTenantIdCleared() {
 		_spec.ClearField(audit.FieldCounterpartTenantId, field.TypeUuid)
@@ -523,11 +714,51 @@ func (_u *AuditUpdateOne) sqlSave(ctx context.Context) (_node *Audit, err error)
 	if value, ok := _u.mutation.Domain(); ok {
 		_spec.SetField(audit.FieldDomain, field.TypeUint32, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldDomain); ok {
+		_spec.SetField(audit.FieldDomain, field.TypeUint32, e)
+	}
 	if value, ok := _u.mutation.AddedDomain(); ok {
 		_spec.AddField(audit.FieldDomain, field.TypeUint32, value)
 	}
 	if _u.mutation.DomainCleared() {
 		_spec.ClearField(audit.FieldDomain, field.TypeUint32)
+	}
+	if value, ok := _u.mutation.GetFields(); ok {
+		_spec.SetField(audit.FieldFields, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldFields); ok {
+		_spec.SetField(audit.FieldFields, field.TypeJson, e)
+	}
+	if value, ok := _u.mutation.AppendedFields(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, audit.FieldFields, value)
+		})
+	}
+	if _u.mutation.FieldsCleared() {
+		_spec.ClearField(audit.FieldFields, field.TypeJson)
+	}
+	if value, ok := _u.mutation.Digest(); ok {
+		_spec.SetField(audit.FieldDigest, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldDigest); ok {
+		_spec.SetField(audit.FieldDigest, field.TypeBytes, e)
+	}
+	if _u.mutation.DigestCleared() {
+		_spec.ClearField(audit.FieldDigest, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.DigestFields(); ok {
+		_spec.SetField(audit.FieldDigestFields, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(audit.FieldDigestFields); ok {
+		_spec.SetField(audit.FieldDigestFields, field.TypeJson, e)
+	}
+	if value, ok := _u.mutation.AppendedDigestFields(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, audit.FieldDigestFields, value)
+		})
+	}
+	if _u.mutation.DigestFieldsCleared() {
+		_spec.ClearField(audit.FieldDigestFields, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Audit{config: _u.config}

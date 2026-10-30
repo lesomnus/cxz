@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"github.com/lesomnus/cxz/internal/ent/access"
+	"github.com/lesomnus/cxz/internal/ent/audit"
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/schema"
 	"github.com/lesomnus/cxz/internal/ent/session"
@@ -15,6 +17,18 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	accessFields := schema.Access{}.Fields()
+	_ = accessFields
+	// accessDescDomain is the schema descriptor for domain field.
+	accessDescDomain := accessFields[10].Descriptor()
+	// access.DefaultDomain holds the default value on creation for the domain field.
+	access.DefaultDomain = accessDescDomain.Default.(uint32)
+	auditFields := schema.Audit{}.Fields()
+	_ = auditFields
+	// auditDescDomain is the schema descriptor for domain field.
+	auditDescDomain := auditFields[11].Descriptor()
+	// audit.DefaultDomain holds the default value on creation for the domain field.
+	audit.DefaultDomain = auditDescDomain.Default.(uint32)
 	projectFields := schema.Project{}.Fields()
 	_ = projectFields
 	// projectDescStatus is the schema descriptor for status field.
@@ -25,4 +39,8 @@ func init() {
 	// sessionDescStatus is the schema descriptor for status field.
 	sessionDescStatus := sessionFields[11].Descriptor()
 	session.ValueScanner.Status = sessionDescStatus.ValueScanner.(field.TypeValueScanner[*resource.SessionStatus])
+	// sessionDescListed is the schema descriptor for listed field.
+	sessionDescListed := sessionFields[12].Descriptor()
+	// session.DefaultListed holds the default value on creation for the listed field.
+	session.DefaultListed = sessionDescListed.Default.(bool)
 }

@@ -50,10 +50,12 @@ func (Holder) Edges() []ent.Edge {
 
 func (Holder) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("alias").
-			Edges("tenant").
+		index.Fields("alias", "tenant_id").
+			StorageKey("holder_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("holder_page"),
 	}
 }
 

@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file payday/entity.proto.
  */
 export const file_payday_entity: GenFile = /*@__PURE__*/
-  fileDesc("ChNwYXlkYXkvZW50aXR5LnByb3RvEgZwYXlkYXkihwUKBkVudGl0eRIOCgZkb21haW4YASABKA0SDAoEbmFtZRgCIAEoCRInCgZ0ZW5hbnQYAyABKAsyFS5wYXlkYXkuRW50aXR5LlRlbmFudEgAEisKCHRlbmFudGVkGAQgASgLMhcucGF5ZGF5LkVudGl0eS5UZW5hbnRlZEgAEicKBmdsb2JhbBgFIAEoCzIVLnBheWRheS5FbnRpdHkuR2xvYmFsSAASIQoEbGlzdBgGIAEoCzITLnBheWRheS5FbnRpdHkuTGlzdBIjCgV3YXRjaBgHIAEoCzIULnBheWRheS5FbnRpdHkuV2F0Y2gSIwoFZXJhc2UYCCABKAsyFC5wYXlkYXkuRW50aXR5LkVyYXNlEhgKA293bhgJIAEoDjILLnBheWRheS5Pd24aCAoGVGVuYW50GkUKCFRlbmFudGVkEgsKA3ZpYRgBIAEoCRINCgVmaWVsZBgCIAMoCRINCgVzdGFtcBgDIAEoCRIOCgZhZ3JlZXMYBCADKAkaCAoGR2xvYmFsGioKBUVyYXNlEiEKBGhhcmQYASABKAsyEy5wYXlkYXkuRW50aXR5LkhhcmQaBgoESGFyZBqFAQoETGlzdBIjCgVvcmRlchgBIAMoCzIULnBheWRheS5FbnRpdHkuT3JkZXISFgoEd2l0aBgCIAMoCzIILm9ybS5SZWYSFAoCYnkYAyADKAsyCC5vcm0uUmVmEgwKBHNpemUYBCABKA0SCwoDbWF4GAUgASgNEg8KB2ZpbHRlcnMYBiABKA0aBwoFV2F0Y2gaLgoFT3JkZXISFwoFZmllbGQYASABKAsyCC5vcm0uUmVmEgwKBGRlc2MYAiABKAhCCQoHdGVuYW5jeSIoCgVGaWVsZBIOCgZzZWNyZXQYASABKAgSDwoHc3RhbXBlZBgCIAEoCCpZCgNPd24SEwoPT1dOX1VOU1BFQ0lGSUVEEAASDgoKT1dOX1RFTkFOVBABEg4KCk9XTl9IT0xERVIQAhINCglPV05fQVVESVQQAxIOCgpPV05fT1VUQk9YEARCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9wYXlkYXkvcGRwYpIDAggCYghlZGl0aW9uc3DoBw", [file_orm_ref]);
+  fileDesc("ChNwYXlkYXkvZW50aXR5LnByb3RvEgZwYXlkYXkipQcKBkVudGl0eRIOCgZkb21haW4YASABKA0SDAoEbmFtZRgCIAEoCRInCgZ0ZW5hbnQYAyABKAsyFS5wYXlkYXkuRW50aXR5LlRlbmFudEgAEisKCHRlbmFudGVkGAQgASgLMhcucGF5ZGF5LkVudGl0eS5UZW5hbnRlZEgAEicKBmdsb2JhbBgFIAEoCzIVLnBheWRheS5FbnRpdHkuR2xvYmFsSAASIQoEbGlzdBgGIAEoCzITLnBheWRheS5FbnRpdHkuTGlzdBIjCgV3YXRjaBgHIAEoCzIULnBheWRheS5FbnRpdHkuV2F0Y2gSIwoFZXJhc2UYCCABKAsyFC5wYXlkYXkuRW50aXR5LkVyYXNlEhgKA293bhgJIAEoDjILLnBheWRheS5Pd24SIwoFdHJhaWwYCiABKAsyFC5wYXlkYXkuRW50aXR5LlRyYWlsGggKBlRlbmFudBpFCghUZW5hbnRlZBILCgN2aWEYASABKAkSDQoFZmllbGQYAiADKAkSDQoFc3RhbXAYAyABKAkSDgoGYWdyZWVzGAQgAygJGooBCgVUcmFpbBIxCghyZWNvcmRlZBgBIAEoCzIdLnBheWRheS5FbnRpdHkuVHJhaWwuUmVjb3JkZWRIABInCgNvZmYYAiABKAsyGC5wYXlkYXkuRW50aXR5LlRyYWlsLk9mZkgAGgoKCFJlY29yZGVkGhIKA09mZhILCgN3aHkYASABKAlCBQoDaG93GggKBkdsb2JhbBoqCgVFcmFzZRIhCgRoYXJkGAEgASgLMhMucGF5ZGF5LkVudGl0eS5IYXJkGgYKBEhhcmQasAEKBExpc3QSIwoFb3JkZXIYASADKAsyFC5wYXlkYXkuRW50aXR5Lk9yZGVyEhYKBHdpdGgYAiADKAsyCC5vcm0uUmVmEhQKAmJ5GAMgAygLMggub3JtLlJlZhIMCgRzaXplGAQgASgNEgsKA21heBgFIAEoDRIPCgdmaWx0ZXJzGAYgASgNEikKBm9yZGVycxgHIAMoCzIZLnBheWRheS5FbnRpdHkuTmFtZWRPcmRlcho/CgpOYW1lZE9yZGVyEgwKBG5hbWUYASABKAkSIwoFb3JkZXIYAiADKAsyFC5wYXlkYXkuRW50aXR5Lk9yZGVyGgcKBVdhdGNoGi4KBU9yZGVyEhcKBWZpZWxkGAEgASgLMggub3JtLlJlZhIMCgRkZXNjGAIgASgIQgkKB3RlbmFuY3kiYgoFRmllbGQSDgoGc2VjcmV0GAEgASgIEg8KB3N0YW1wZWQYAiABKAgSFwoIcGVyc29uYWwYAyABKAhCBaoBAggBEg0KBWV2ZW50GAUgASgISgQIBBAFUgppbXBlcnNvbmFsKuwBCgNPd24SEwoPT1dOX1VOU1BFQ0lGSUVEEAASDgoKT1dOX1RFTkFOVBABEg4KCk9XTl9IT0xERVIQAhINCglPV05fQVVESVQQAxIOCgpPV05fT1VUQk9YEAQSEAoMT1dOX0FSQ0hJVkVEEAUSDgoKT1dOX0FDQ0VTUxAGEhAKDE9XTl9ST1dfU0VBTBAHEgwKCE9XTl9PV0VEEAgSDQoJT1dOX0VWRU5UEAkSDAoIT1dOX0ZBQ1QQChIUChBPV05fTk9USUZJQ0FUSU9OEAsSHAoYT1dOX05PVElGSUNBVElPTl9SRUNFSVBUEAxCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9wYXlkYXkvcGRwYpIDAggCYghlZGl0aW9uc3DoBw", [file_orm_ref]);
 
 /**
  * Entity is what payday has to be told about a message that `orm` already
@@ -171,6 +171,33 @@ export type Entity = Message<"payday.Entity"> & {
    * @generated from field: payday.Own own = 9;
    */
   own: Own;
+
+  /**
+   * Trail says how the writes of an entity **no server writes** reach the
+   * trail (payday#108), and it is said only for one: an entity with an `Add`,
+   * an `AddMany` or a `Patch` is written through its servers, and the recorder
+   * puts every such write on the trail already. `pd gen` refuses it there.
+   *
+   * # Why it is said at all
+   *
+   * A check of the rows against the trail (`pd.Digests`) reads **every** kind
+   * but the ones that say `off`, so that a row nothing on the trail accounts
+   * for is a finding: that is what a row somebody added in the database past
+   * the servers looks like. A kind the app writes through ent is such a row,
+   * row after row, unless its writes are recorded -- so `pd gen` refuses an
+   * entity with no write a server makes and nothing said here. Leaving a kind
+   * out of the check is the dangerous answer, and it is the one written down,
+   * with a reason; a kind added to the schema cannot arrive without somebody
+   * having decided.
+   *
+   * It is not about RPCs. Whether an entity has any is what its API offers;
+   * this is whether a record of each write is kept, and the two used to be one
+   * rule -- "no write a server makes, so not checked" -- which left a consent,
+   * a record kept to prove something, out of the check for having no RPC.
+   *
+   * @generated from field: payday.Entity.Trail trail = 10;
+   */
+  trail?: Entity_Trail | undefined;
 };
 
 /**
@@ -262,8 +289,8 @@ export type Entity_Tenanted = Message<"payday.Entity.Tenanted"> & {
    *
    * A `via` of more than one step is a subquery in the wall, on every read:
    *
-   * 	identity.HasHolderWith(holder.TenantIDIn(vs...))   // via "holder.tenant"
-   * 	role.TenantIDIn(vs...)                             // a direct edge
+   * 	identity.HasHolderWith(holder.TenantIdIn(vs...))   // via "holder.tenant"
+   * 	role.TenantIdIn(vs...)                             // a direct edge
    *
    * With a stamp the second line is what an entity gets whatever its path is.
    * It is also what makes `list: {by: [{name: "tenant"}]}` possible at all --
@@ -296,18 +323,18 @@ export type Entity_Tenanted = Message<"payday.Entity.Tenanted"> & {
    *
    * # What it adds to what is already refused
    *
-   * The generated gate reads part of an `Add` **through the wall**: the first
-   * hop of the `via` path, and the field-3 set edge where an app declared
-   * one. Those are where the row itself lands, and they are free. Every other
-   * edge is read by nothing -- that a row points at another row is
-   * referential rather than tenancy, and asking it would be a read per edge
-   * on every write.
+   * The generated gate reads every edge of an `Add` **through the wall**, and
+   * every edge a `Patch` moves: the first hop of the `via` path and the
+   * field-3 set edge because that is where the row itself lands, and every
+   * other edge because an edge is a read -- one pointing out of the caller's
+   * scope is a way through the wall one hop later.
    *
-   * A second path to a tenant is one of those, so it is looked at by nothing
-   * until it is named here. And even the hop that is read is not a
+   * What it asks of each is "may this caller see it", and that is not a
    * comparison: a caller who can see both tenants passes it with one edge in
    * each -- an operator whose scope is several -- as does a deployment
-   * writing through a server the wall was never installed on.
+   * writing through a server the wall was never installed on. So a second
+   * path to a tenant is checked against the first by nothing until it is
+   * named here.
    *
    * Each is a path like `via` -- an edge, or a dotted one. What is compared
    * is the tenant each reaches.
@@ -323,6 +350,81 @@ export type Entity_Tenanted = Message<"payday.Entity.Tenanted"> & {
  */
 export const Entity_TenantedSchema: GenMessage<Entity_Tenanted> = /*@__PURE__*/
   messageDesc(file_payday_entity, 0, 1);
+
+/**
+ * Trail is one of the two answers. See [Entity.trail].
+ *
+ * @generated from message payday.Entity.Trail
+ */
+export type Entity_Trail = Message<"payday.Entity.Trail"> & {
+  /**
+   * @generated from oneof payday.Entity.Trail.how
+   */
+  how: {
+    /**
+     * Recorded is written by the app's own code, and each write is put on
+     * the trail as the act it is -- `pd.Record`, in the transaction that
+     * wrote it. A check reads it as any kind, and a write that was not
+     * recorded is a row nothing on the trail is about.
+     *
+     * @generated from field: payday.Entity.Trail.Recorded recorded = 1;
+     */
+    value: Entity_Trail_Recorded;
+    case: "recorded";
+  } | {
+    /**
+     * Off is written by the app's own code and kept off the trail: a
+     * session's idle clock, which moves on every request; a lock; a queue a
+     * loop empties within seconds. A check does not read it, and
+     * `pd.Record` passes over it.
+     *
+     * @generated from field: payday.Entity.Trail.Off off = 2;
+     */
+    value: Entity_Trail_Off;
+    case: "off";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message payday.Entity.Trail.
+ * Use `create(Entity_TrailSchema)` to create a new message.
+ */
+export const Entity_TrailSchema: GenMessage<Entity_Trail> = /*@__PURE__*/
+  messageDesc(file_payday_entity, 0, 2);
+
+/**
+ * @generated from message payday.Entity.Trail.Recorded
+ */
+export type Entity_Trail_Recorded = Message<"payday.Entity.Trail.Recorded"> & {
+};
+
+/**
+ * Describes the message payday.Entity.Trail.Recorded.
+ * Use `create(Entity_Trail_RecordedSchema)` to create a new message.
+ */
+export const Entity_Trail_RecordedSchema: GenMessage<Entity_Trail_Recorded> = /*@__PURE__*/
+  messageDesc(file_payday_entity, 0, 2, 0);
+
+/**
+ * @generated from message payday.Entity.Trail.Off
+ */
+export type Entity_Trail_Off = Message<"payday.Entity.Trail.Off"> & {
+  /**
+   * Why says what the rows are and why no record of each write is wanted.
+   * Required, and the schema is where it is read: it is the one place a
+   * kind is said not to be checked.
+   *
+   * @generated from field: string why = 1;
+   */
+  why: string;
+};
+
+/**
+ * Describes the message payday.Entity.Trail.Off.
+ * Use `create(Entity_Trail_OffSchema)` to create a new message.
+ */
+export const Entity_Trail_OffSchema: GenMessage<Entity_Trail_Off> = /*@__PURE__*/
+  messageDesc(file_payday_entity, 0, 2, 1);
 
 /**
  * Global is an entity that is not behind the wall -- a table the whole
@@ -342,7 +444,7 @@ export type Entity_Global = Message<"payday.Entity.Global"> & {
  * Use `create(Entity_GlobalSchema)` to create a new message.
  */
 export const Entity_GlobalSchema: GenMessage<Entity_Global> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 2);
+  messageDesc(file_payday_entity, 0, 3);
 
 /**
  * Erase says the row goes. See [Entity.erase].
@@ -385,7 +487,7 @@ export type Entity_Erase = Message<"payday.Entity.Erase"> & {
  * Use `create(Entity_EraseSchema)` to create a new message.
  */
 export const Entity_EraseSchema: GenMessage<Entity_Erase> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 3);
+  messageDesc(file_payday_entity, 0, 4);
 
 /**
  * @generated from message payday.Entity.Hard
@@ -398,7 +500,7 @@ export type Entity_Hard = Message<"payday.Entity.Hard"> & {
  * Use `create(Entity_HardSchema)` to create a new message.
  */
 export const Entity_HardSchema: GenMessage<Entity_Hard> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 4);
+  messageDesc(file_payday_entity, 0, 5);
 
 /**
  * List is how this entity is read a page at a time.
@@ -485,6 +587,26 @@ export type Entity_List = Message<"payday.Entity.List"> & {
    * @generated from field: uint32 filters = 6;
    */
   filters: number;
+
+  /**
+   * Orders are the other orders a request may read the list in, each by its
+   * name: the request's `order` names one, and `order` above is what one
+   * that names none gets.
+   *
+   * Declared rather than asked for, column by column, at the request,
+   * because an order is a walk of an index and a request does not know
+   * which indexes there are. Each is held to what `order` is held to -- the
+   * last column is the key -- and each wants an index that begins with its
+   * columns, in its directions or all of them the other way, or reading a
+   * page is a scan and a sort.
+   *
+   * Any order can also be read backwards, every column the other way round
+   * at once (the request's `reverse`), which the same index walks from the
+   * other end; that one needs declaring nowhere.
+   *
+   * @generated from field: repeated payday.Entity.NamedOrder orders = 7;
+   */
+  orders: Entity_NamedOrder[];
 };
 
 /**
@@ -492,7 +614,33 @@ export type Entity_List = Message<"payday.Entity.List"> & {
  * Use `create(Entity_ListSchema)` to create a new message.
  */
 export const Entity_ListSchema: GenMessage<Entity_List> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 5);
+  messageDesc(file_payday_entity, 0, 6);
+
+/**
+ * NamedOrder is an order of a list a request names.
+ *
+ * @generated from message payday.Entity.NamedOrder
+ */
+export type Entity_NamedOrder = Message<"payday.Entity.NamedOrder"> & {
+  /**
+   * Name is what a request names it by: lower case, words joined by `_`.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: repeated payday.Entity.Order order = 2;
+   */
+  order: Entity_Order[];
+};
+
+/**
+ * Describes the message payday.Entity.NamedOrder.
+ * Use `create(Entity_NamedOrderSchema)` to create a new message.
+ */
+export const Entity_NamedOrderSchema: GenMessage<Entity_NamedOrder> = /*@__PURE__*/
+  messageDesc(file_payday_entity, 0, 7);
 
 /**
  * Watch is how this entity is read as it changes.
@@ -514,7 +662,7 @@ export type Entity_Watch = Message<"payday.Entity.Watch"> & {
  * Use `create(Entity_WatchSchema)` to create a new message.
  */
 export const Entity_WatchSchema: GenMessage<Entity_Watch> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 6);
+  messageDesc(file_payday_entity, 0, 8);
 
 /**
  * Order is one column of a list's order.
@@ -552,7 +700,7 @@ export type Entity_Order = Message<"payday.Entity.Order"> & {
  * Use `create(Entity_OrderSchema)` to create a new message.
  */
 export const Entity_OrderSchema: GenMessage<Entity_Order> = /*@__PURE__*/
-  messageDesc(file_payday_entity, 0, 7);
+  messageDesc(file_payday_entity, 0, 9);
 
 /**
  * Field is what payday adds to one field of an entity.
@@ -563,6 +711,11 @@ export const Entity_OrderSchema: GenMessage<Entity_Order> = /*@__PURE__*/
  * generated service off its server. That works, is checkable, and is said in
  * the app that happens to hold the field rather than beside the field. The next
  * app storing a verifier rediscovers the whole argument.
+ *
+ * It is read on an entity's own columns and nowhere else, and generation refuses
+ * it anywhere else: on a field of a message a column holds, which is withheld or
+ * kept as the column it is in, it would be a declaration nothing reads
+ * (payday#115).
  *
  * @generated from message payday.Field
  */
@@ -657,6 +810,131 @@ export type Field = Message<"payday.Field"> & {
    * @generated from field: bool stamped = 2;
    */
   stamped: boolean;
+
+  /**
+   * Personal marks a field that says something about a person: a name, an
+   * address, a phone number. It is answered with like any other field, and the
+   * trail never holds what it was set to (#92).
+   *
+   * # What it does
+   *
+   * The trail records **that** the field was set and not what it was set to.
+   * Its entries are taken out of `Audit.patch` and it is cleared out of
+   * `Audit.value`, at every content level, as a `secret` is; its number stays
+   * in `Audit.fields`, so who changed whose address, and when, is still on the
+   * record.
+   *
+   * # Why the trail and nothing else
+   *
+   * Because the trail is the one copy of a row that nothing rewrites. The row
+   * itself is the person's to correct and erase, and whatever erases a person
+   * erases them there; the trail is appended to, signed and archived, and a
+   * value in it outlives every correction made to the row. Before this, the
+   * only way to take a person out of it was to blank what it held of them
+   * (`trail.Policy.Forget`) -- in the database and in the archive both,
+   * rewriting chunks somebody had signed -- and every write to a person's row
+   * copied the whole of it in again: a change of team carried their address.
+   *
+   * So the person's values have one home, which is the row, and the trail
+   * keeps who did what to it.
+   *
+   * # How it differs from `secret`
+   *
+   * A secret is never answered with, to anybody; a personal field is read like
+   * any other, by whoever may read the row -- a screen shows it and a mail goes
+   * to it. What the two share is the trail: neither is ever on it as a value.
+   * A field is one or the other, and generation refuses both on one field:
+   * `secret` already says everything `personal` would.
+   *
+   * # What it is for, and what it is not
+   *
+   * A value that identifies or describes somebody: what they are called, how
+   * they are reached, what another system calls them, a picture of them, what
+   * is written about them. **Not** what they may do or where they stand -- a
+   * role, a suspension, a date they leave. Those are about a person too, and
+   * they are what a trail is kept to say with their values: who made somebody
+   * an administrator, and when, is the record, and a trail that kept only
+   * "role set" would be keeping the wrong half.
+   *
+   * # What it does not decide
+   *
+   * Whether a value is about a person, which is the schema's to say and which
+   * payday cannot tell from a type. An entity that holds people and things in
+   * one table declares the shared field personal: a field that is sometimes
+   * about a person is about a person, as far as an obligation to erase one
+   * goes, and there is no declaration that depends on the row -- a condition
+   * read at the moment of the write is one more thing to get right forever.
+   *
+   * Nor what the trail does with a value nobody declared. Free text is the
+   * case no declaration reaches -- a name typed into a description -- and
+   * `trail.Policy.Forget` is still what takes it out.
+   *
+   * An edge, and the key, cannot be personal: they are identifiers, which is
+   * the one thing the trail is made of.
+   *
+   * # Saying a field is not personal
+   *
+   * `personal: false` says the field was looked at and is about no one in
+   * particular: a role, a state, a kind, the name of a provider. The trail
+   * keeps its values, as it keeps those of a field nobody declared; what the
+   * declaration adds is that the schema decided, which is what `pd doctor` asks
+   * of each field of free text on an entity that holds people, and of a field
+   * anywhere whose name is about somebody. So this field has presence where
+   * the rest of the message has none: unset and false are different
+   * statements, and the doctor has to tell them apart.
+   *
+   * @generated from field: bool personal = 3 [features.field_presence = EXPLICIT];
+   */
+  personal: boolean;
+
+  /**
+   * Event marks a column that names an event of the app's past (payday#151):
+   * the operation that wrote the row, or the one that replaced it.
+   *
+   *   bytes event_id = 19 [
+   *     (orm.field) = {type: TYPE_UUID},
+   *     (payday.field) = {event: true}
+   *   ];
+   *
+   * # What it does
+   *
+   * It keeps the event. A tenant's past expires by the tenant's window, and an
+   * event goes once nothing that stays still names it: a row that stays says
+   * what it is with the operation that wrote it, and that operation's event is
+   * how it says so. The expiry asks every column marked this, and `pd gen`
+   * lists them for it -- the past's own, a fact's event and the event that
+   * superseded it and an event's cause, which payday's templates mark, and an
+   * app's: a time row's, a stock movement's.
+   *
+   * # Why a declaration
+   *
+   * Because nothing else says it. A `TYPE_UUID` column is an identifier of
+   * anything, and the identifier's domain is a property of the row, not of the
+   * column: one that names an event today is not, to anything reading the
+   * schema, one that names an event. An expiry that guessed from a name --
+   * `*_event_id` -- would take an event a column it did not guess still names,
+   * and that is a row whose history is gone with nothing having failed.
+   *
+   * # What it may be on
+   *
+   * A `bytes` column of `TYPE_UUID` of an entity, one identifier to a row, in
+   * an app that declares a past: a list holds identifiers no index finds, an
+   * edge is to a row and not to an event, and an app with no past has no
+   * events to keep. Of payday's Event, only its cause: an event an event names
+   * stays while that one does, and the expiry follows that by the one column it
+   * knows. Generation refuses it anywhere else.
+   *
+   * # What it does not do
+   *
+   * Make the identifier an edge. Nothing checks that the event is there -- the
+   * row is written in the operation's transaction, beside it -- and nothing is
+   * deleted with it. Nor does it index the column, which is the schema's to
+   * say: give it an index that begins with it, or every expiry reads the whole
+   * table for each event it asks about.
+   *
+   * @generated from field: bool event = 5;
+   */
+  event: boolean;
 };
 
 /**
@@ -673,7 +951,7 @@ export const FieldSchema: GenMessage<Field> = /*@__PURE__*/
  * The numbers are of the same kind as a field number: chosen once and never
  * given to something else. They are **not** domains -- a domain is what an
  * identifier carries and an app declares, and these are what payday declares
- * about its own four.
+ * about its own.
  *
  * @generated from enum payday.Own
  */
@@ -704,6 +982,67 @@ export enum Own {
    * @generated from enum value: OWN_OUTBOX = 4;
    */
   OUTBOX = 4,
+
+  /**
+   * The trail archive's manifest: what the archive holds, as the database
+   * keeps the account of it. See `trail.Manifest`.
+   *
+   * @generated from enum value: OWN_ARCHIVED = 5;
+   */
+  ARCHIVED = 5,
+
+  /**
+   * The access record: who read or wrote whose personal data, from where
+   * (payday#111). See the `access` package.
+   *
+   * @generated from enum value: OWN_ACCESS = 6;
+   */
+  ACCESS = 6,
+
+  /**
+   * A row's seal: the MAC of a row whose kind declares a field personal,
+   * kept beside it for as long as it is (payday#115). See `audit.Digest.Seal`.
+   *
+   * @generated from enum value: OWN_ROW_SEAL = 7;
+   */
+  ROW_SEAL = 7,
+
+  /**
+   * An erasure owed: the archive's half of forgetting an object, decided in
+   * an app's transaction and paid after it commits (payday#115). See
+   * `trail.Policy.Forget` and `trail.Policy.Pay`.
+   *
+   * @generated from enum value: OWN_OWED = 8;
+   */
+  OWED = 8,
+
+  /**
+   * An app's past (payday#151): an event for each of its operations, and a
+   * fact for each field of a resource from a moment on. These two are copied
+   * only into an app that declares them, at the domains it chose -- see
+   * `payday.Past`. Notifications below are optional as well.
+   *
+   * @generated from enum value: OWN_EVENT = 9;
+   */
+  EVENT = 9,
+
+  /**
+   * @generated from enum value: OWN_FACT = 10;
+   */
+  FACT = 10,
+
+  /**
+   * Notification storage is optional and numbered by App.notify. The public
+   * notification values are projections rather than these internal records.
+   *
+   * @generated from enum value: OWN_NOTIFICATION = 11;
+   */
+  NOTIFICATION = 11,
+
+  /**
+   * @generated from enum value: OWN_NOTIFICATION_RECEIPT = 12;
+   */
+  NOTIFICATION_RECEIPT = 12,
 }
 
 /**

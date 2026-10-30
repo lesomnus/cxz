@@ -14,12 +14,16 @@ import (
 	resource "github.com/lesomnus/cxz/resource"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -82,28 +86,82 @@ func (s TaskLinkServiceServer) narrow(ctx context.Context, p predicate.TaskLink)
 	return TaskLinkNarrow(ctx, s.Scope, p)
 }
 
-func (s TaskLinkServiceServer) Add(ctx context.Context, req *resource.TaskLinkAddRequest) (*resource.TaskLink, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s TaskLinkServiceServer) snapshot(ctx context.Context, p predicate.TaskLink, lock bool) (*ent.TaskLink, error) {
+	q := s.Db.TaskLink.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s TaskLinkServiceServer) image(v *resource.TaskLink) *resource.TaskLink {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*resource.TaskLink)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(9)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(10)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st TaskLinkServiceServer) create(ctx context.Context, req *resource.TaskLinkAddRequest) (*ent.TaskLinkCreate, []func(v *resource.TaskLink), error) {
 	ds := make([]func(v *resource.TaskLink), 0, 3)
 	q := st.Db.TaskLink.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "cxz.TaskLink", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "cxz.TaskLink", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -114,7 +172,7 @@ func (s TaskLinkServiceServer) Add(ctx context.Context, req *resource.TaskLinkAd
 		q.SetDateCreated(st.now())
 	}
 	if k, err := ProjectGetKey(ctx, st.Db, req.GetProject()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetProjectId(k)
 		ds = append(ds, func(v *resource.TaskLink) {
@@ -122,7 +180,7 @@ func (s TaskLinkServiceServer) Add(ctx context.Context, req *resource.TaskLinkAd
 		})
 	}
 	if k, err := TaskGetKey(ctx, st.Db, req.GetSource()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetSourceId(k)
 		ds = append(ds, func(v *resource.TaskLink) {
@@ -130,7 +188,7 @@ func (s TaskLinkServiceServer) Add(ctx context.Context, req *resource.TaskLinkAd
 		})
 	}
 	if k, err := TaskGetKey(ctx, st.Db, req.GetTarget()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTargetId(k)
 		ds = append(ds, func(v *resource.TaskLink) {
@@ -139,7 +197,30 @@ func (s TaskLinkServiceServer) Add(ctx context.Context, req *resource.TaskLinkAd
 	}
 	q.SetKind(int32(req.GetKind()))
 	q.SetClientId(req.GetClientId())
+	return q, ds, nil
+}
 
+func (s TaskLinkServiceServer) Add(ctx context.Context, req *resource.TaskLinkAddRequest) (*resource.TaskLink, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.TaskLink
+	if snapshotOptions(s.Rec, resource.TaskLinkService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -153,9 +234,18 @@ func (s TaskLinkServiceServer) Add(ctx context.Context, req *resource.TaskLinkAd
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *resource.TaskLink
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  resource.TaskLinkService_Add_FullMethodName,
-		Key: u.Id,
+		By:    resource.TaskLinkService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -163,11 +253,39 @@ func (s TaskLinkServiceServer) Add(ctx context.Context, req *resource.TaskLinkAd
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// TaskLinkAddRule is what a layer in front says about one row an Add of TaskLink
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type TaskLinkAddRule func(ctx context.Context, req *resource.TaskLinkAddRequest) (*resource.TaskLinkAddRequest, error)
+
+// TaskLinkWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func TaskLinkWithAddRule(next resource.TaskLinkServiceServer, rule TaskLinkAddRule) resource.TaskLinkServiceServer {
+	return taskLinkAddRuled{next, rule}
+}
+
+type taskLinkAddRuled struct {
+	resource.TaskLinkServiceServer
+	rule TaskLinkAddRule
+}
+
+func (s taskLinkAddRuled) Add(ctx context.Context, req *resource.TaskLinkAddRequest) (*resource.TaskLink, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.TaskLinkServiceServer.Add(ctx, r)
 }
 
 func (s TaskLinkServiceServer) Get(ctx context.Context, req *resource.TaskLinkGetRequest) (*resource.TaskLink, error) {
@@ -253,10 +371,6 @@ func TaskLinkSelect(q *ent.TaskLinkQuery, m *resource.TaskLinkSelect) {
 func TaskLinkSelectInit(q *ent.TaskLinkQuery, m *resource.TaskLinkSelect) {
 	if m != nil {
 		TaskLinkSelect(q, m)
-	} else {
-		q.WithProject(selectProjectKey)
-		q.WithSource(selectTaskKey)
-		q.WithTarget(selectTaskKey)
 	}
 }
 
@@ -357,6 +471,18 @@ func (s TaskLinkServiceServer) apply(ctx context.Context, ref *resource.TaskLink
 		return nil, err
 	}
 
+	var previous *resource.TaskLink
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.TaskLink.Query().Where(p)
 		if pred != nil {
@@ -383,6 +509,7 @@ func (s TaskLinkServiceServer) apply(ctx context.Context, ref *resource.TaskLink
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -405,20 +532,25 @@ func (s TaskLinkServiceServer) apply(ctx context.Context, ref *resource.TaskLink
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *resource.TaskLink
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -445,8 +577,16 @@ func (s TaskLinkServiceServer) Erase(ctx context.Context, req *resource.TaskLink
 	st.Db = tx.Db
 
 	var k any
+	var previous *resource.TaskLink
 	if s.Rec != nil {
-		v, err := st.Db.TaskLink.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, resource.TaskLinkService_Erase_FullMethodName)
+		var v *ent.TaskLink
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.TaskLink.Query().Where(p).Select(tasklink.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &resource.TaskLinkEraseResponse{}, nil
@@ -454,10 +594,14 @@ func (s TaskLinkServiceServer) Erase(ctx context.Context, req *resource.TaskLink
 			return nil, err
 		}
 
-		k = v
-		p = tasklink.And(p, tasklink.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = tasklink.And(p, tasklink.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.TaskLink.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -467,8 +611,9 @@ func (s TaskLinkServiceServer) Erase(ctx context.Context, req *resource.TaskLink
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  resource.TaskLinkService_Erase_FullMethodName,
-			Key: k,
+			By:       resource.TaskLinkService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

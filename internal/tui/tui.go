@@ -65,6 +65,11 @@ type model struct {
 	contextStatusCache      *contextStatusCache
 	errorDialog             *errorDialog
 	sessionActivity         map[string]*sessionActivity
+	attentionKey            string
+	attentionEpoch          uint64
+	attentionCancel         context.CancelFunc
+	attentionReads          map[string]*attentionRead
+	attentionUnsupported    bool
 	sessionBackground       map[string]*sessionBackgroundCheck
 	backgroundStateCache    map[string]backgroundStateCache
 	textSelection           *transcriptSelection
@@ -1687,7 +1692,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.refresh()
 	case pulseTick:
 		m.pulse++
-		return m, pulseTimer()
+		return m, tea.Batch(pulseTimer(), m.flushAttentionReads())
+	case serverAttentionMessage:
+		return m, m.receiveServerAttention(v)
+	case serverReadRecorded:
+		return m, m.receiveServerRead(v)
 	case permissionResult:
 		delete(m.permissionUpdating, v.id)
 		if current := m.current(); current != nil && current.Id == v.id && current.RunId == v.run {

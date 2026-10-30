@@ -1,0 +1,75 @@
+edition = "2023";
+
+package cxz;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// NotificationReceiptRecord is created only on the reader's first Mark. Its
+// reader identifier is polymorphic: it need not name a Holder.
+message NotificationReceiptRecord {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  bytes notification_id = 8 [(orm.field) = {type: TYPE_UUID}];
+  bytes reader_id = 9 [(orm.field) = {type: TYPE_UUID}];
+  google.protobuf.Timestamp data_read = 10 [(orm.field) = {default: ""}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {
+    version: {}
+  }];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {
+      add: {}
+      get: {}
+    }
+    indexes: [
+      {
+        name: "receipt"
+        refs: [
+          {
+            name: "notification_id"
+            number: 8
+          },
+          {
+            name: "reader_id"
+            number: 9
+          }
+        ]
+        unique: true
+      },
+      {
+        name: "reader"
+        refs: [
+          {
+            name: "reader_id"
+            number: 9
+          },
+          {
+            name: "notification_id"
+            number: 8
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    own: OWN_NOTIFICATION_RECEIPT
+    name: "notification-receipt"
+    domain: 15
+    global: {}
+    erase: {
+      hard: {}
+    }
+  };
+}

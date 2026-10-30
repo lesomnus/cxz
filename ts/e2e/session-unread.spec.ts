@@ -1,4 +1,7 @@
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
+import { fromBinary } from "@bufbuild/protobuf";
+import { SessionMarkReadRequestSchema } from "../gen/cxz/session_svc_pb";
 import { expect, test } from "@playwright/test";
 import { browserProject } from "../test-support/projects";
 
@@ -15,25 +18,72 @@ test("unread response uses the left indicator and Sessions icon count clears whe
     headers: { Origin: "https://127.0.0.1:18081" },
     data: { token: "a".repeat(32) },
   });
-  await page.addInitScript(() => {
-    sessionStorage.setItem(
-      `cxz.attention.v1:${encodeURIComponent(location.origin)}`,
-      JSON.stringify({
-        session: {
-          run: "run",
-          last: "3",
-          done: "3",
-          seen: "0",
-          notified: "3",
-          pending: "[]",
-        },
-      }),
-    );
+  const id = (domain: number, name: string) => {
+    const value = createHash("sha256")
+      .update(`cxz.resource:${name}`)
+      .digest()
+      .subarray(0, 16);
+    value[6] = (value[6]! & 15) | 0x80;
+    value[8] = (value[8]! & 63) | 0x80;
+    value[9] = domain;
+    return value.toString("base64");
+  };
+  const readerId = id(16, "operator");
+  let throughSeq = "0";
+  const state = () => ({ readerId, generation: "fixture", throughSeq });
+  await page.route("**/cxz.SessionService/ReadState", (route) =>
+    route.fulfill({ json: state() }),
+  );
+  await page.route("**/cxz.SessionService/MarkRead", async (route) => {
+    const req = route.request();
+    const body = /application\/proto/.test(req.headers()["content-type"] ?? "")
+      ? fromBinary(SessionMarkReadRequestSchema, req.postDataBuffer()!)
+      : req.postDataJSON();
+    throughSeq = String(body.throughSeq);
+    await route.fulfill({ json: state() });
+  });
+  await page.route("**/cxz.NotificationService/Read", (route) =>
+    route.fulfill({
+      json: {
+        readerId,
+        items: [
+          {
+            notification: {
+              id: id(14, "completed"),
+              kind: "session.completed",
+              sourceId: id(8, "session"),
+              payload: {
+                "@type": "type.googleapis.com/cxz.SessionNotification",
+                runtimeId: "session",
+                generation: "fixture",
+                seq: "3",
+              },
+            },
+            ...(BigInt(throughSeq) >= 3n
+              ? { receipt: { id: id(15, "read"), readerId } }
+              : {}),
+          },
+        ],
+      },
+    }),
+  );
+  await page.route("**/cxz.NotificationService/Listen", async (route) => {
+    const body = Buffer.from(JSON.stringify({ ready: { readerId } }));
+    const header = Buffer.alloc(5);
+    header.writeUInt32BE(body.length, 1);
+    await route.fulfill({
+      contentType: "application/connect+json",
+      body: Buffer.concat([
+        header,
+        body,
+        Buffer.from([2, 0, 0, 0, 2, 123, 125]),
+      ]),
+    });
   });
   // Other tests may resolve the fixture's question. Seed every catalog path
   // consistently so this case does not depend on test order.
   const session = {
-    id: Buffer.from("abcdefghijklmnop").toString("base64"),
+    id: id(8, "session"),
     runtimeId: "session",
     alias: "demo-chat",
     name: "Demo conversation",

@@ -1,0 +1,28 @@
+edition = "2023";
+package cxz;
+import "cxz/session.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+message SessionRead {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  Session session = 8 [(orm.edge) = {immutable: true}];
+  bytes reader_id = 9 [(orm.field) = {type: TYPE_UUID, immutable: true}];
+  string generation = 10;
+  uint64 through_seq = 11;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  option (orm.message) = {
+    rpc: {add: {}, get: {}, patch: {}}
+    indexes: [{name: "reader_session", refs: [{name: "reader_id", number: 9}, {name: "session", number: 8}], unique: true}]
+  };
+  option (payday.entity) = {
+    domain: 17
+    global: {}
+    list: {order: [{field: {name: "id"}}], by: [{name: "session"}, {name: "reader_id"}], size: 200, max: 1000}
+    erase: {hard: {}}
+  };
+}

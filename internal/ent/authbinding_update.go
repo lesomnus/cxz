@@ -124,8 +124,14 @@ func (_u *AuthBindingUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(authbinding.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(authbinding.FieldDateUpdated); ok {
+		_spec.SetField(authbinding.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(authbinding.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(authbinding.FieldDateErased); ok {
+		_spec.SetField(authbinding.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(authbinding.FieldDateErased, field.TypeTime)
@@ -280,8 +286,14 @@ func (_u *AuthBindingUpdateOne) sqlSave(ctx context.Context) (_node *AuthBinding
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(authbinding.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(authbinding.FieldDateUpdated); ok {
+		_spec.SetField(authbinding.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(authbinding.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(authbinding.FieldDateErased); ok {
+		_spec.SetField(authbinding.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(authbinding.FieldDateErased, field.TypeTime)

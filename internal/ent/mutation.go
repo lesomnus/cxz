@@ -10,14 +10,22 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/cxz/internal/ent/access"
 	"github.com/lesomnus/cxz/internal/ent/account"
+	"github.com/lesomnus/cxz/internal/ent/archived"
 	"github.com/lesomnus/cxz/internal/ent/audit"
 	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/connection"
 	"github.com/lesomnus/cxz/internal/ent/holder"
+	"github.com/lesomnus/cxz/internal/ent/notificationreceiptrecord"
+	"github.com/lesomnus/cxz/internal/ent/notificationrecord"
+	"github.com/lesomnus/cxz/internal/ent/operator"
 	"github.com/lesomnus/cxz/internal/ent/outbox"
+	"github.com/lesomnus/cxz/internal/ent/owed"
 	"github.com/lesomnus/cxz/internal/ent/project"
+	"github.com/lesomnus/cxz/internal/ent/rowseal"
 	"github.com/lesomnus/cxz/internal/ent/session"
+	"github.com/lesomnus/cxz/internal/ent/sessionread"
 	"github.com/lesomnus/cxz/internal/ent/task"
 	"github.com/lesomnus/cxz/internal/ent/tasklink"
 	"github.com/lesomnus/cxz/internal/ent/tenant"
@@ -34,18 +42,374 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAccount     = "Account"
-	TypeAudit       = "Audit"
-	TypeAuthBinding = "AuthBinding"
-	TypeConnection  = "Connection"
-	TypeHolder      = "Holder"
-	TypeOutbox      = "Outbox"
-	TypeProject     = "Project"
-	TypeSession     = "Session"
-	TypeTask        = "Task"
-	TypeTaskLink    = "TaskLink"
-	TypeTenant      = "Tenant"
+	TypeAccess                    = "Access"
+	TypeAccount                   = "Account"
+	TypeArchived                  = "Archived"
+	TypeAudit                     = "Audit"
+	TypeAuthBinding               = "AuthBinding"
+	TypeConnection                = "Connection"
+	TypeHolder                    = "Holder"
+	TypeNotificationReceiptRecord = "NotificationReceiptRecord"
+	TypeNotificationRecord        = "NotificationRecord"
+	TypeOperator                  = "Operator"
+	TypeOutbox                    = "Outbox"
+	TypeOwed                      = "Owed"
+	TypeProject                   = "Project"
+	TypeRowSeal                   = "RowSeal"
+	TypeSession                   = "Session"
+	TypeSessionRead               = "SessionRead"
+	TypeTask                      = "Task"
+	TypeTaskLink                  = "TaskLink"
+	TypeTenant                    = "Tenant"
 )
+
+// AccessMutation represents an operation that mutates the Access nodes in the graph.
+type AccessMutation struct {
+	access.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*Access, error)
+}
+
+var _ ent.Mutation = (*AccessMutation)(nil)
+
+// accessOption allows management of the mutation configuration using functional options.
+type accessOption func(*AccessMutation)
+
+// newAccessMutation creates new mutation for the Access entity.
+func newAccessMutation(c config, op Op, opts ...accessOption) *AccessMutation {
+	m := &AccessMutation{
+		Mutation: *access.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of Access entities.
+func (m *AccessMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AccessMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withAccessId sets the Id field of the mutation.
+func withAccessId(id uuid.UUID) accessOption {
+	return func(m *AccessMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Access
+		)
+		m.oldValue = func(ctx context.Context) (*Access, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Access.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAccess sets the old Access of the mutation.
+func withAccess(node *Access) accessOption {
+	return func(m *AccessMutation) {
+		m.oldValue = func(context.Context) (*Access, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AccessMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AccessMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AccessMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().Access.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldTenantId returns the old "tenant_id" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldTenantId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldTenantId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldTenantId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantId: %w", err)
+	}
+	return oldValue.TenantId, nil
+}
+
+// OldActorId returns the old "actor_id" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldActorId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldActorId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldActorId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActorId: %w", err)
+	}
+	return oldValue.ActorId, nil
+}
+
+// OldTraceId returns the old "trace_id" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldTraceId(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldTraceId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldTraceId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTraceId: %w", err)
+	}
+	return oldValue.TraceId, nil
+}
+
+// OldAction returns the old "action" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldAction(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAction is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAction requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAction: %w", err)
+	}
+	return oldValue.Action, nil
+}
+
+// OldKind returns the old "kind" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldKind requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// OldResult returns the old "result" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldResult(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldResult is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldResult requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResult: %w", err)
+	}
+	return oldValue.Result, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldActorTenantId returns the old "actor_tenant_id" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldActorTenantId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldActorTenantId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldActorTenantId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActorTenantId: %w", err)
+	}
+	return oldValue.ActorTenantId, nil
+}
+
+// OldValue returns the old "value" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldValue(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldValue is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldValue requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValue: %w", err)
+	}
+	return oldValue.Value, nil
+}
+
+// OldDomain returns the old "domain" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldDomain(ctx context.Context) (v uint32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDomain is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDomain requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDomain: %w", err)
+	}
+	return oldValue.Domain, nil
+}
+
+// OldSubjects returns the old "subjects" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldSubjects(ctx context.Context) (v [][]uint8, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSubjects is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSubjects requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubjects: %w", err)
+	}
+	return oldValue.Subjects, nil
+}
+
+// OldSubjectCount returns the old "subject_count" field's value of the Access entity.
+// If the Access object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessMutation) OldSubjectCount(ctx context.Context) (v uint32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSubjectCount is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSubjectCount requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubjectCount: %w", err)
+	}
+	return oldValue.SubjectCount, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AccessMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case access.FieldTenantId:
+		return m.OldTenantId(ctx)
+	case access.FieldActorId:
+		return m.OldActorId(ctx)
+	case access.FieldTraceId:
+		return m.OldTraceId(ctx)
+	case access.FieldAction:
+		return m.OldAction(ctx)
+	case access.FieldKind:
+		return m.OldKind(ctx)
+	case access.FieldResult:
+		return m.OldResult(ctx)
+	case access.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case access.FieldActorTenantId:
+		return m.OldActorTenantId(ctx)
+	case access.FieldValue:
+		return m.OldValue(ctx)
+	case access.FieldDomain:
+		return m.OldDomain(ctx)
+	case access.FieldSubjects:
+		return m.OldSubjects(ctx)
+	case access.FieldSubjectCount:
+		return m.OldSubjectCount(ctx)
+	}
+	return nil, fmt.Errorf("unknown Access field %s", name)
+}
 
 // AccountMutation represents an operation that mutates the Account nodes in the graph.
 type AccountMutation struct {
@@ -317,6 +681,335 @@ func (m *AccountMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldDateCreated(ctx)
 	}
 	return nil, fmt.Errorf("unknown Account field %s", name)
+}
+
+// ArchivedMutation represents an operation that mutates the Archived nodes in the graph.
+type ArchivedMutation struct {
+	archived.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*Archived, error)
+}
+
+var _ ent.Mutation = (*ArchivedMutation)(nil)
+
+// archivedOption allows management of the mutation configuration using functional options.
+type archivedOption func(*ArchivedMutation)
+
+// newArchivedMutation creates new mutation for the Archived entity.
+func newArchivedMutation(c config, op Op, opts ...archivedOption) *ArchivedMutation {
+	m := &ArchivedMutation{
+		Mutation: *archived.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of Archived entities.
+func (m *ArchivedMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ArchivedMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withArchivedId sets the Id field of the mutation.
+func withArchivedId(id uuid.UUID) archivedOption {
+	return func(m *ArchivedMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Archived
+		)
+		m.oldValue = func(ctx context.Context) (*Archived, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Archived.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withArchived sets the old Archived of the mutation.
+func withArchived(node *Archived) archivedOption {
+	return func(m *ArchivedMutation) {
+		m.oldValue = func(context.Context) (*Archived, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ArchivedMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ArchivedMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ArchivedMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().Archived.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldLabels returns the old "labels" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// OldNamespace returns the old "namespace" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// OldDigest returns the old "digest" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldDigest(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDigest is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDigest requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDigest: %w", err)
+	}
+	return oldValue.Digest, nil
+}
+
+// OldIntent returns the old "intent" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldIntent(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldIntent is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldIntent requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIntent: %w", err)
+	}
+	return oldValue.Intent, nil
+}
+
+// OldState returns the old "state" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldState(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldState requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// OldSince returns the old "since" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldSince(ctx context.Context) (v uint32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSince is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSince requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSince: %w", err)
+	}
+	return oldValue.Since, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldGone returns the old "gone" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldGone(ctx context.Context) (v uint32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldGone is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldGone requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGone: %w", err)
+	}
+	return oldValue.Gone, nil
+}
+
+// OldSignature returns the old "signature" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldSignature(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSignature is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSignature requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSignature: %w", err)
+	}
+	return oldValue.Signature, nil
+}
+
+// OldSignedBy returns the old "signed_by" field's value of the Archived entity.
+// If the Archived object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchivedMutation) OldSignedBy(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSignedBy is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSignedBy requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSignedBy: %w", err)
+	}
+	return oldValue.SignedBy, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ArchivedMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case archived.FieldLabels:
+		return m.OldLabels(ctx)
+	case archived.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case archived.FieldDigest:
+		return m.OldDigest(ctx)
+	case archived.FieldIntent:
+		return m.OldIntent(ctx)
+	case archived.FieldState:
+		return m.OldState(ctx)
+	case archived.FieldSince:
+		return m.OldSince(ctx)
+	case archived.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case archived.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case archived.FieldGone:
+		return m.OldGone(ctx)
+	case archived.FieldSignature:
+		return m.OldSignature(ctx)
+	case archived.FieldSignedBy:
+		return m.OldSignedBy(ctx)
+	}
+	return nil, fmt.Errorf("unknown Archived field %s", name)
 }
 
 // AuditMutation represents an operation that mutates the Audit nodes in the graph.
@@ -617,6 +1310,57 @@ func (m *AuditMutation) OldDomain(ctx context.Context) (v uint32, err error) {
 	return oldValue.Domain, nil
 }
 
+// OldFields returns the old "fields" field's value of the Audit entity.
+// If the Audit object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuditMutation) OldFields(ctx context.Context) (v []uint32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldFields is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldFields requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFields: %w", err)
+	}
+	return oldValue.Fields, nil
+}
+
+// OldDigest returns the old "digest" field's value of the Audit entity.
+// If the Audit object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuditMutation) OldDigest(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDigest is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDigest requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDigest: %w", err)
+	}
+	return oldValue.Digest, nil
+}
+
+// OldDigestFields returns the old "digest_fields" field's value of the Audit entity.
+// If the Audit object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuditMutation) OldDigestFields(ctx context.Context) (v []uint32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDigestFields is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDigestFields requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDigestFields: %w", err)
+	}
+	return oldValue.DigestFields, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -644,6 +1388,12 @@ func (m *AuditMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldCounterpartTenantId(ctx)
 	case audit.FieldDomain:
 		return m.OldDomain(ctx)
+	case audit.FieldFields:
+		return m.OldFields(ctx)
+	case audit.FieldDigest:
+		return m.OldDigest(ctx)
+	case audit.FieldDigestFields:
+		return m.OldDigestFields(ctx)
 	}
 	return nil, fmt.Errorf("unknown Audit field %s", name)
 }
@@ -1483,6 +2233,708 @@ func (m *HolderMutation) OldField(ctx context.Context, name string) (ent.Value, 
 	return nil, fmt.Errorf("unknown Holder field %s", name)
 }
 
+// NotificationReceiptRecordMutation represents an operation that mutates the NotificationReceiptRecord nodes in the graph.
+type NotificationReceiptRecordMutation struct {
+	notificationreceiptrecord.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*NotificationReceiptRecord, error)
+}
+
+var _ ent.Mutation = (*NotificationReceiptRecordMutation)(nil)
+
+// notificationreceiptrecordOption allows management of the mutation configuration using functional options.
+type notificationreceiptrecordOption func(*NotificationReceiptRecordMutation)
+
+// newNotificationReceiptRecordMutation creates new mutation for the NotificationReceiptRecord entity.
+func newNotificationReceiptRecordMutation(c config, op Op, opts ...notificationreceiptrecordOption) *NotificationReceiptRecordMutation {
+	m := &NotificationReceiptRecordMutation{
+		Mutation: *notificationreceiptrecord.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of NotificationReceiptRecord entities.
+func (m *NotificationReceiptRecordMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *NotificationReceiptRecordMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withNotificationReceiptRecordId sets the Id field of the mutation.
+func withNotificationReceiptRecordId(id uuid.UUID) notificationreceiptrecordOption {
+	return func(m *NotificationReceiptRecordMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *NotificationReceiptRecord
+		)
+		m.oldValue = func(ctx context.Context) (*NotificationReceiptRecord, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().NotificationReceiptRecord.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withNotificationReceiptRecord sets the old NotificationReceiptRecord of the mutation.
+func withNotificationReceiptRecord(node *NotificationReceiptRecord) notificationreceiptrecordOption {
+	return func(m *NotificationReceiptRecordMutation) {
+		m.oldValue = func(context.Context) (*NotificationReceiptRecord, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m NotificationReceiptRecordMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m NotificationReceiptRecordMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *NotificationReceiptRecordMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().NotificationReceiptRecord.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldNotificationId returns the old "notification_id" field's value of the NotificationReceiptRecord entity.
+// If the NotificationReceiptRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationReceiptRecordMutation) OldNotificationId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldNotificationId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldNotificationId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotificationId: %w", err)
+	}
+	return oldValue.NotificationId, nil
+}
+
+// OldReaderId returns the old "reader_id" field's value of the NotificationReceiptRecord entity.
+// If the NotificationReceiptRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationReceiptRecordMutation) OldReaderId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldReaderId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldReaderId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReaderId: %w", err)
+	}
+	return oldValue.ReaderId, nil
+}
+
+// OldDataRead returns the old "data_read" field's value of the NotificationReceiptRecord entity.
+// If the NotificationReceiptRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationReceiptRecordMutation) OldDataRead(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDataRead is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDataRead requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDataRead: %w", err)
+	}
+	return oldValue.DataRead, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the NotificationReceiptRecord entity.
+// If the NotificationReceiptRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationReceiptRecordMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the NotificationReceiptRecord entity.
+// If the NotificationReceiptRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationReceiptRecordMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *NotificationReceiptRecordMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case notificationreceiptrecord.FieldNotificationId:
+		return m.OldNotificationId(ctx)
+	case notificationreceiptrecord.FieldReaderId:
+		return m.OldReaderId(ctx)
+	case notificationreceiptrecord.FieldDataRead:
+		return m.OldDataRead(ctx)
+	case notificationreceiptrecord.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case notificationreceiptrecord.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	}
+	return nil, fmt.Errorf("unknown NotificationReceiptRecord field %s", name)
+}
+
+// NotificationRecordMutation represents an operation that mutates the NotificationRecord nodes in the graph.
+type NotificationRecordMutation struct {
+	notificationrecord.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*NotificationRecord, error)
+}
+
+var _ ent.Mutation = (*NotificationRecordMutation)(nil)
+
+// notificationrecordOption allows management of the mutation configuration using functional options.
+type notificationrecordOption func(*NotificationRecordMutation)
+
+// newNotificationRecordMutation creates new mutation for the NotificationRecord entity.
+func newNotificationRecordMutation(c config, op Op, opts ...notificationrecordOption) *NotificationRecordMutation {
+	m := &NotificationRecordMutation{
+		Mutation: *notificationrecord.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of NotificationRecord entities.
+func (m *NotificationRecordMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *NotificationRecordMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withNotificationRecordId sets the Id field of the mutation.
+func withNotificationRecordId(id uuid.UUID) notificationrecordOption {
+	return func(m *NotificationRecordMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *NotificationRecord
+		)
+		m.oldValue = func(ctx context.Context) (*NotificationRecord, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().NotificationRecord.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withNotificationRecord sets the old NotificationRecord of the mutation.
+func withNotificationRecord(node *NotificationRecord) notificationrecordOption {
+	return func(m *NotificationRecordMutation) {
+		m.oldValue = func(context.Context) (*NotificationRecord, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m NotificationRecordMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m NotificationRecordMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *NotificationRecordMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().NotificationRecord.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldKind returns the old "kind" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldKind requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// OldTopicKey returns the old "topic_key" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldTopicKey(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldTopicKey is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldTopicKey requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTopicKey: %w", err)
+	}
+	return oldValue.TopicKey, nil
+}
+
+// OldSourceId returns the old "source_id" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldSourceId(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSourceId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSourceId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceId: %w", err)
+	}
+	return oldValue.SourceId, nil
+}
+
+// OldPayloadType returns the old "payload_type" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldPayloadType(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadType is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPayloadType requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadType: %w", err)
+	}
+	return oldValue.PayloadType, nil
+}
+
+// OldPayloadValue returns the old "payload_value" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldPayloadValue(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadValue is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPayloadValue requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadValue: %w", err)
+	}
+	return oldValue.PayloadValue, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldProducer returns the old "producer" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldProducer(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldProducer is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldProducer requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProducer: %w", err)
+	}
+	return oldValue.Producer, nil
+}
+
+// OldIdempotencyKey returns the old "idempotency_key" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldIdempotencyKey(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldIdempotencyKey is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldIdempotencyKey requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIdempotencyKey: %w", err)
+	}
+	return oldValue.IdempotencyKey, nil
+}
+
+// OldPayloadPresent returns the old "payload_present" field's value of the NotificationRecord entity.
+// If the NotificationRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationRecordMutation) OldPayloadPresent(ctx context.Context) (v bool, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadPresent is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPayloadPresent requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadPresent: %w", err)
+	}
+	return oldValue.PayloadPresent, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *NotificationRecordMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case notificationrecord.FieldKind:
+		return m.OldKind(ctx)
+	case notificationrecord.FieldTopicKey:
+		return m.OldTopicKey(ctx)
+	case notificationrecord.FieldSourceId:
+		return m.OldSourceId(ctx)
+	case notificationrecord.FieldPayloadType:
+		return m.OldPayloadType(ctx)
+	case notificationrecord.FieldPayloadValue:
+		return m.OldPayloadValue(ctx)
+	case notificationrecord.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case notificationrecord.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case notificationrecord.FieldProducer:
+		return m.OldProducer(ctx)
+	case notificationrecord.FieldIdempotencyKey:
+		return m.OldIdempotencyKey(ctx)
+	case notificationrecord.FieldPayloadPresent:
+		return m.OldPayloadPresent(ctx)
+	}
+	return nil, fmt.Errorf("unknown NotificationRecord field %s", name)
+}
+
+// OperatorMutation represents an operation that mutates the Operator nodes in the graph.
+type OperatorMutation struct {
+	operator.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*Operator, error)
+}
+
+var _ ent.Mutation = (*OperatorMutation)(nil)
+
+// operatorOption allows management of the mutation configuration using functional options.
+type operatorOption func(*OperatorMutation)
+
+// newOperatorMutation creates new mutation for the Operator entity.
+func newOperatorMutation(c config, op Op, opts ...operatorOption) *OperatorMutation {
+	m := &OperatorMutation{
+		Mutation: *operator.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of Operator entities.
+func (m *OperatorMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *OperatorMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withOperatorId sets the Id field of the mutation.
+func withOperatorId(id uuid.UUID) operatorOption {
+	return func(m *OperatorMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Operator
+		)
+		m.oldValue = func(ctx context.Context) (*Operator, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Operator.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withOperator sets the old Operator of the mutation.
+func withOperator(node *Operator) operatorOption {
+	return func(m *OperatorMutation) {
+		m.oldValue = func(context.Context) (*Operator, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m OperatorMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m OperatorMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *OperatorMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().Operator.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldAlias returns the old "alias" field's value of the Operator entity.
+// If the Operator object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OperatorMutation) OldAlias(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAlias is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAlias requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAlias: %w", err)
+	}
+	return oldValue.Alias, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the Operator entity.
+// If the Operator object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OperatorMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Operator entity.
+// If the Operator object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OperatorMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *OperatorMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case operator.FieldAlias:
+		return m.OldAlias(ctx)
+	case operator.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case operator.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	}
+	return nil, fmt.Errorf("unknown Operator field %s", name)
+}
+
 // OutboxMutation represents an operation that mutates the Outbox nodes in the graph.
 type OutboxMutation struct {
 	outbox.Mutation
@@ -1713,6 +3165,23 @@ func (m *OutboxMutation) OldDateCreated(ctx context.Context) (v time.Time, err e
 	return oldValue.DateCreated, nil
 }
 
+// OldEvent returns the old "event" field's value of the Outbox entity.
+// If the Outbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OutboxMutation) OldEvent(ctx context.Context) (v *[]byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldEvent is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldEvent requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEvent: %w", err)
+	}
+	return oldValue.Event, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -1732,8 +3201,187 @@ func (m *OutboxMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldPatch(ctx)
 	case outbox.FieldDateCreated:
 		return m.OldDateCreated(ctx)
+	case outbox.FieldEvent:
+		return m.OldEvent(ctx)
 	}
 	return nil, fmt.Errorf("unknown Outbox field %s", name)
+}
+
+// OwedMutation represents an operation that mutates the Owed nodes in the graph.
+type OwedMutation struct {
+	owed.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*Owed, error)
+}
+
+var _ ent.Mutation = (*OwedMutation)(nil)
+
+// owedOption allows management of the mutation configuration using functional options.
+type owedOption func(*OwedMutation)
+
+// newOwedMutation creates new mutation for the Owed entity.
+func newOwedMutation(c config, op Op, opts ...owedOption) *OwedMutation {
+	m := &OwedMutation{
+		Mutation: *owed.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of Owed entities.
+func (m *OwedMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *OwedMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withOwedId sets the Id field of the mutation.
+func withOwedId(id uuid.UUID) owedOption {
+	return func(m *OwedMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Owed
+		)
+		m.oldValue = func(ctx context.Context) (*Owed, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Owed.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withOwed sets the old Owed of the mutation.
+func withOwed(node *Owed) owedOption {
+	return func(m *OwedMutation) {
+		m.oldValue = func(context.Context) (*Owed, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m OwedMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m OwedMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *OwedMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().Owed.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldObject returns the old "object" field's value of the Owed entity.
+// If the Owed object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OwedMutation) OldObject(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldObject is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldObject requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldObject: %w", err)
+	}
+	return oldValue.Object, nil
+}
+
+// OldHeldBy returns the old "held_by" field's value of the Owed entity.
+// If the Owed object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OwedMutation) OldHeldBy(ctx context.Context) (v [][]uint8, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldHeldBy is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldHeldBy requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHeldBy: %w", err)
+	}
+	return oldValue.HeldBy, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Owed entity.
+// If the Owed object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OwedMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *OwedMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case owed.FieldObject:
+		return m.OldObject(ctx)
+	case owed.FieldHeldBy:
+		return m.OldHeldBy(ctx)
+	case owed.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	}
+	return nil, fmt.Errorf("unknown Owed field %s", name)
 }
 
 // ProjectMutation represents an operation that mutates the Project nodes in the graph.
@@ -2025,6 +3673,183 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldStatus(ctx)
 	}
 	return nil, fmt.Errorf("unknown Project field %s", name)
+}
+
+// RowSealMutation represents an operation that mutates the RowSeal nodes in the graph.
+type RowSealMutation struct {
+	rowseal.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*RowSeal, error)
+}
+
+var _ ent.Mutation = (*RowSealMutation)(nil)
+
+// rowsealOption allows management of the mutation configuration using functional options.
+type rowsealOption func(*RowSealMutation)
+
+// newRowSealMutation creates new mutation for the RowSeal entity.
+func newRowSealMutation(c config, op Op, opts ...rowsealOption) *RowSealMutation {
+	m := &RowSealMutation{
+		Mutation: *rowseal.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of RowSeal entities.
+func (m *RowSealMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RowSealMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withRowSealId sets the Id field of the mutation.
+func withRowSealId(id uuid.UUID) rowsealOption {
+	return func(m *RowSealMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RowSeal
+		)
+		m.oldValue = func(ctx context.Context) (*RowSeal, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RowSeal.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRowSeal sets the old RowSeal of the mutation.
+func withRowSeal(node *RowSeal) rowsealOption {
+	return func(m *RowSealMutation) {
+		m.oldValue = func(context.Context) (*RowSeal, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RowSealMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RowSealMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RowSealMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().RowSeal.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldTenantId returns the old "tenant_id" field's value of the RowSeal entity.
+// If the RowSeal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RowSealMutation) OldTenantId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldTenantId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldTenantId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantId: %w", err)
+	}
+	return oldValue.TenantId, nil
+}
+
+// OldSum returns the old "sum" field's value of the RowSeal entity.
+// If the RowSeal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RowSealMutation) OldSum(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSum is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSum requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSum: %w", err)
+	}
+	return oldValue.Sum, nil
+}
+
+// OldFields returns the old "fields" field's value of the RowSeal entity.
+// If the RowSeal object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RowSealMutation) OldFields(ctx context.Context) (v []uint32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldFields is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldFields requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFields: %w", err)
+	}
+	return oldValue.Fields, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RowSealMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case rowseal.FieldTenantId:
+		return m.OldTenantId(ctx)
+	case rowseal.FieldSum:
+		return m.OldSum(ctx)
+	case rowseal.FieldFields:
+		return m.OldFields(ctx)
+	}
+	return nil, fmt.Errorf("unknown RowSeal field %s", name)
 }
 
 // SessionMutation represents an operation that mutates the Session nodes in the graph.
@@ -2430,6 +4255,240 @@ func (m *SessionMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldAuthBindingId(ctx)
 	}
 	return nil, fmt.Errorf("unknown Session field %s", name)
+}
+
+// SessionReadMutation represents an operation that mutates the SessionRead nodes in the graph.
+type SessionReadMutation struct {
+	sessionread.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*SessionRead, error)
+}
+
+var _ ent.Mutation = (*SessionReadMutation)(nil)
+
+// sessionreadOption allows management of the mutation configuration using functional options.
+type sessionreadOption func(*SessionReadMutation)
+
+// newSessionReadMutation creates new mutation for the SessionRead entity.
+func newSessionReadMutation(c config, op Op, opts ...sessionreadOption) *SessionReadMutation {
+	m := &SessionReadMutation{
+		Mutation: *sessionread.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of SessionRead entities.
+func (m *SessionReadMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SessionReadMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withSessionReadId sets the Id field of the mutation.
+func withSessionReadId(id uuid.UUID) sessionreadOption {
+	return func(m *SessionReadMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *SessionRead
+		)
+		m.oldValue = func(ctx context.Context) (*SessionRead, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().SessionRead.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSessionRead sets the old SessionRead of the mutation.
+func withSessionRead(node *SessionRead) sessionreadOption {
+	return func(m *SessionReadMutation) {
+		m.oldValue = func(context.Context) (*SessionRead, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SessionReadMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SessionReadMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SessionReadMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().SessionRead.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldReaderId returns the old "reader_id" field's value of the SessionRead entity.
+// If the SessionRead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SessionReadMutation) OldReaderId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldReaderId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldReaderId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReaderId: %w", err)
+	}
+	return oldValue.ReaderId, nil
+}
+
+// OldGeneration returns the old "generation" field's value of the SessionRead entity.
+// If the SessionRead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SessionReadMutation) OldGeneration(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldGeneration is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldGeneration requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGeneration: %w", err)
+	}
+	return oldValue.Generation, nil
+}
+
+// OldThroughSeq returns the old "through_seq" field's value of the SessionRead entity.
+// If the SessionRead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SessionReadMutation) OldThroughSeq(ctx context.Context) (v uint64, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldThroughSeq is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldThroughSeq requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldThroughSeq: %w", err)
+	}
+	return oldValue.ThroughSeq, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the SessionRead entity.
+// If the SessionRead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SessionReadMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the SessionRead entity.
+// If the SessionRead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SessionReadMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldSessionId returns the old "session_id" field's value of the SessionRead entity.
+// If the SessionRead object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SessionReadMutation) OldSessionId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSessionId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSessionId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSessionId: %w", err)
+	}
+	return oldValue.SessionId, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SessionReadMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case sessionread.FieldReaderId:
+		return m.OldReaderId(ctx)
+	case sessionread.FieldGeneration:
+		return m.OldGeneration(ctx)
+	case sessionread.FieldThroughSeq:
+		return m.OldThroughSeq(ctx)
+	case sessionread.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case sessionread.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case sessionread.FieldSessionId:
+		return m.OldSessionId(ctx)
+	}
+	return nil, fmt.Errorf("unknown SessionRead field %s", name)
 }
 
 // TaskMutation represents an operation that mutates the Task nodes in the graph.

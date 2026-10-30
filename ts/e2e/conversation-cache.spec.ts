@@ -37,6 +37,7 @@ test("switching views retains one native stream and returns cached offscreen res
   const held = gate();
   const auxHeld = gate();
   let deliveredAux = 0;
+  let completed = false;
   const auxStreams: string[] = [];
   const project = await browserProject(page.request);
   const sessions = ["alpha", "beta"].map((id) => ({
@@ -165,6 +166,36 @@ test("switching views retains one native stream and returns cached offscreen res
     }
     return route.continue();
   });
+  await page.route("**/cxz.NotificationService/Listen", (route) =>
+    route.fulfill({
+      contentType: "application/connect+json",
+      body: frames([{ ready: { readerId: b64("operator") } }]),
+    }),
+  );
+  await page.route("**/cxz.NotificationService/Read", (route) =>
+    route.fulfill({
+      json: {
+        readerId: b64("operator"),
+        items: completed
+          ? [
+              {
+                notification: {
+                  id: b64("completed-alpha"),
+                  kind: "session.completed",
+                  sourceId: sessions[0]!.id,
+                  payload: {
+                    "@type": "type.googleapis.com/cxz.SessionNotification",
+                    runtimeId: "alpha",
+                    generation: "fixture",
+                    seq: "3",
+                  },
+                },
+              },
+            ]
+          : [],
+      },
+    }),
+  );
   try {
     await page.goto("/c/_/session/alpha");
     await expect(page.locator(".transcript")).toContainText(
@@ -178,6 +209,7 @@ test("switching views retains one native stream and returns cached offscreen res
     await expect(page.locator(".transcript")).toContainText(
       "Cached beta response",
     );
+    completed = true;
     held.release();
     auxHeld.release();
     // The mocked stream ends after each frame; its next reconnect delivers an
@@ -240,6 +272,7 @@ test("switching views retains one native stream and returns cached offscreen res
     );
     expect(storage).not.toContain("Response produced while beta is open");
   } finally {
+    completed = true;
     held.release();
     auxHeld.release();
     await page.unrouteAll({ behavior: "ignoreErrors" });
