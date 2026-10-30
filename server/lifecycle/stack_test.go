@@ -142,7 +142,8 @@ func TestResourceStack(t *testing.T) {
 		t.Fatalf("status mutation bypass: %v", err)
 	}
 	var audits, tenants int
-	if err = db.QueryRowContext(ctx, "SELECT count(*) FROM audit").Scan(&audits); err != nil || audits < 2 {
+	// Bootstrap and runtime projections do not add management audit rows.
+	if err = db.QueryRowContext(ctx, "SELECT count(*) FROM audit").Scan(&audits); err != nil || audits != 1 {
 		t.Fatalf("payday audit recorder: %d %v", audits, err)
 	}
 	if err = db.QueryRowContext(ctx, "SELECT count(*) FROM tenant").Scan(&tenants); err != nil || tenants != 0 {

@@ -266,7 +266,10 @@ func (s SessionServer) Activity(ctx context.Context, r *resource.SessionActivity
 	return receipt(s.shared.runtime.Activity(ctx, &api.ActivityInput{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId(), Busy: r.GetBusy()}))
 }
 func (s SessionServer) UpdateAgent(ctx context.Context, r *resource.SessionUpdateRequest) (*resource.SessionUpdateStatus, error) {
-	v, e := s.resolve(ctx, r.GetRef())
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	v, e := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if e != nil {
 		return nil, e
 	}
