@@ -40,6 +40,33 @@ func (c *codexProtocol) consume(raw []byte) {
 		s.event("diagnostic", "invalid Codex JSON", "", nil, nil)
 		return
 	}
+	var p struct {
+		ThreadID string `json:"threadId"`
+		Turn     struct {
+			ID         string `json:"id"`
+			Status     string `json:"status"`
+			DurationMS *int64 `json:"durationMs"`
+		} `json:"turn"`
+		Item struct {
+			ID      string `json:"id"`
+			Type    string `json:"type"`
+			Text    string `json:"text"`
+			Phase   string `json:"phase"`
+			Command string `json:"command"`
+			Output  string `json:"aggregatedOutput"`
+		} `json:"item"`
+	}
+	_ = json.Unmarshal(v.Params, &p)
+	if len(v.ID) == 0 && v.Method != "" {
+		// Other threads and late completions remain in the raw journal, but
+		// cannot finish this turn or reset its progress and response tracking.
+		if p.ThreadID != "" && p.ThreadID != s.snap.VendorID {
+			return
+		}
+		if v.Method == "turn/completed" && (c.turn == "" || p.Turn.ID != c.turn) {
+			return
+		}
+	}
 	c.observeProgress(v.Method, v.Params, time.Now())
 	id := string(v.ID)
 	if c.consumeBackground(id, v.Result, v.Error, time.Now()) {
@@ -202,22 +229,6 @@ func (c *codexProtocol) consume(raw []byte) {
 		}
 		return
 	}
-	var p struct {
-		Turn struct {
-			ID         string `json:"id"`
-			Status     string `json:"status"`
-			DurationMS *int64 `json:"durationMs"`
-		} `json:"turn"`
-		Item struct {
-			ID      string `json:"id"`
-			Type    string `json:"type"`
-			Text    string `json:"text"`
-			Phase   string `json:"phase"`
-			Command string `json:"command"`
-			Output  string `json:"aggregatedOutput"`
-		} `json:"item"`
-	}
-	_ = json.Unmarshal(v.Params, &p)
 	switch v.Method {
 	case "serverRequest/resolved":
 		var resolved struct {

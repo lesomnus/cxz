@@ -64,6 +64,7 @@ func TestCodexBackgroundPaginatedLifecycle(t *testing.T) {
 	if len(backgroundEvents(t, s)) != 1 {
 		t.Fatal("unchanged list published")
 	}
+	s.consume([]byte(`{"method":"turn/started","params":{"turn":{"id":"turn"}}}`))
 	s.consume([]byte(`{"method":"turn/completed","params":{"turn":{"id":"turn","status":"completed"}}}`))
 	backgroundReply(t, s, map[string]any{"data": []any{}})
 	events := backgroundEvents(t, s)
