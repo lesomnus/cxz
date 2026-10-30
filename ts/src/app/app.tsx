@@ -21,7 +21,15 @@ export function App({ children }: PropsWithChildren) {
   useEffect(() => {
     fetch("/auth/status")
       .then((r) => {
-        if (r.ok) setConnection(new Connection());
+        if (r.ok)
+          setConnection(
+            new Connection(
+              location.origin,
+              undefined,
+              undefined,
+              r.headers.get("payday-identity") ?? undefined,
+            ),
+          );
       })
       .catch((error: unknown) => {
         recordClientError(error, "Cannot reach cxz");
@@ -32,9 +40,11 @@ export function App({ children }: PropsWithChildren) {
     e.preventDefault();
     setBusy(true);
     try {
-      await authenticate(token);
+      const identity = await authenticate(token);
       setToken("");
-      setConnection(new Connection());
+      setConnection(
+        new Connection(location.origin, undefined, undefined, identity),
+      );
       setError("");
     } catch (e) {
       setError(String(e));
@@ -47,6 +57,7 @@ export function App({ children }: PropsWithChildren) {
     if (!r.ok) throw Error(t("Sign out failed"));
     connection?.drafts.clear();
     connection?.attention.clear();
+    await connection?.forgetCachedTasks();
     connection?.dispose();
     setConnection(undefined);
   }

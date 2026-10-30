@@ -4,6 +4,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import type { Task } from "#gen/cxz/task_pb";
 import type { TaskService } from "#gen/cxz/task_svc_pb";
 import { key } from "@lesomnus/payday/store";
+import type { TaskCache } from "./task-cache";
 
 type Snapshot = { tasks: Task[]; loading: boolean; error: string };
 type TaskClient = Pick<Client<typeof TaskService>, "watch">;
@@ -14,11 +15,28 @@ export class ProjectTasks {
   private rows = new Map<string, Task>();
   private listeners = new Set<() => void>();
   private controller?: AbortController;
+  private cache?: TaskCache;
+  private changed = false;
+  private disposed = false;
   constructor(
     private client: TaskClient,
     readonly project: string,
+    cache?: Promise<TaskCache | undefined>,
   ) {
     this.state = { tasks: [], loading: !!project, error: "" };
+    void cache?.then((value) => {
+      if (this.disposed || !value) return;
+      this.cache = value;
+      if (this.changed) {
+        value.write(this.project, [...this.rows.values()]);
+        return;
+      }
+      const tasks = value.read(this.project);
+      if (tasks) {
+        this.rows = new Map(tasks.map((task) => [key(task.id), task]));
+        this.publish(false, this.state.error);
+      }
+    });
   }
   snapshot = () => this.state;
   subscribe = (listener: () => void) => {
@@ -34,12 +52,15 @@ export class ProjectTasks {
     this.listeners.forEach((listener) => listener());
   }
   apply(task: Task) {
+    if (this.disposed) return;
+    this.changed = true;
     this.rows.set(key(task.id), task);
+    this.cache?.write(this.project, [...this.rows.values()]);
     this.publish(false, this.state.error);
   }
   refresh = () => {
     this.stop();
-    if (!this.listeners.size || !this.project) return;
+    if (this.disposed || !this.listeners.size || !this.project) return;
     const controller = new AbortController();
     this.controller = controller;
     this.publish(true);
@@ -48,6 +69,10 @@ export class ProjectTasks {
   stop() {
     this.controller?.abort();
     this.controller = undefined;
+  }
+  dispose() {
+    this.disposed = true;
+    this.stop();
   }
   private async watch(signal: AbortSignal) {
     let retry = 0;
@@ -66,6 +91,8 @@ export class ProjectTasks {
             if (item.value) this.rows.set(key(item.id), item.value);
             else this.rows.delete(key(item.id));
           }
+          this.changed = true;
+          this.cache?.write(this.project, [...this.rows.values()]);
           this.publish(false);
         }
         throw new Error("Task subscription disconnected.");
@@ -102,17 +129,23 @@ export class ProjectTasks {
 
 export class TaskCatalog {
   private projects = new Map<string, ProjectTasks>();
-  constructor(private client: TaskClient) {}
+  private disposed = false;
+  constructor(
+    private client: TaskClient,
+    private cache?: Promise<TaskCache | undefined>,
+  ) {}
   forProject(project: string) {
     let state = this.projects.get(project);
     if (!state) {
-      state = new ProjectTasks(this.client, project);
+      state = new ProjectTasks(this.client, project, this.cache);
+      if (this.disposed) state.dispose();
       this.projects.set(project, state);
     }
     return state;
   }
   dispose() {
-    for (const state of this.projects.values()) state.stop();
+    this.disposed = true;
+    for (const state of this.projects.values()) state.dispose();
     this.projects.clear();
   }
 }

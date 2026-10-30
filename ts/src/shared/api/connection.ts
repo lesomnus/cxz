@@ -15,6 +15,10 @@ import { AccountService } from "#gen/cxz/account_svc_pb";
 import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
 import { TaskCatalog } from "#src/features/tasks/task-catalog.ts";
+import {
+  openTaskCache,
+  type TaskCache,
+} from "#src/features/tasks/task-cache.ts";
 import type { ComposerPaste } from "#src/features/session/composer/composer-pastes.ts";
 import type {
   Transfer,
@@ -57,6 +61,7 @@ export class Connection {
   readonly drafts;
   readonly editors = new Map<string, EditorState>();
   readonly inProcess: boolean;
+  private taskCache?: Promise<TaskCache | undefined>;
   constructor(
     readonly baseUrl = location.origin,
     transport?: Transport,
@@ -64,6 +69,7 @@ export class Connection {
     // server is not at the end of a socket. Absent means the request goes out
     // as itself; see composer-upload's Transfer.
     readonly transfer?: Transfer,
+    cacheIdentity?: string,
   ) {
     this.inProcess = !!transport;
     try {
@@ -86,7 +92,11 @@ export class Connection {
     this.accounts = createClient(AccountService, this.transport);
     this.bindings = createClient(AuthBindingService, this.transport);
     this.tasks = createClient(TaskService, this.transport);
-    this.taskCatalog = new TaskCatalog(this.tasks);
+    if (!this.inProcess && cacheIdentity)
+      this.taskCache = openTaskCache(baseUrl, cacheIdentity).catch(
+        () => undefined,
+      );
+    this.taskCatalog = new TaskCatalog(this.tasks, this.taskCache);
     this.notifications = createClient(NotificationService, this.transport);
     this.attention = new SessionAttention(this.sessions, this.notifications);
     this.conversations = new ConversationCache(this);
@@ -130,6 +140,11 @@ export class Connection {
     this.taskCatalog.dispose();
     this.conversations.dispose();
     this.attention.dispose();
+    void this.taskCache?.then((cache) => cache?.close()).catch(() => {});
+  }
+  async forgetCachedTasks() {
+    this.taskCatalog.dispose();
+    await this.taskCache?.then((cache) => cache?.forget()).catch(() => {});
   }
 }
 export const ref = (id: string) => ({
@@ -142,4 +157,5 @@ export async function authenticate(token: string) {
     body: JSON.stringify({ token }),
   });
   if (!r.ok) throw new Error(await r.text());
+  return r.headers.get("payday-identity") ?? undefined;
 }

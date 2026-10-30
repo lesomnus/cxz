@@ -177,6 +177,7 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 			defer stop()
 			r = r.WithContext(ctx)
 			if r.URL.Path == "/auth/status" {
+				w.Header().Set("Payday-Identity", a.identity())
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
@@ -245,7 +246,15 @@ func (a *browserAuth) login(w http.ResponseWriter, r *http.Request) {
 	a.sessions[sha256.Sum256([]byte(value))] = browserSession{sessionCtx, cancel}
 	a.mu.Unlock()
 	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: value, Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: int(lifetime.Seconds())})
+	w.Header().Set("Payday-Identity", a.identity())
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// Browser cookies name renewable sessions. The cache instead names their
+// authority: this installation's whole-access credential, never the cookie.
+func (a *browserAuth) identity() string {
+	digest := sha256.Sum256(append([]byte("cxz.web.cache:"), a.token[:]...))
+	return hex.EncodeToString(digest[:16])
 }
 
 func Serve(ctx context.Context, c Config, conn grpc.ClientConnInterface, assets fs.FS, rpc http.Handler) error {

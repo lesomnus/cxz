@@ -23,6 +23,25 @@ The WASM sandbox registers the same service with an in-memory storage adapter
 and the same validation/claim policy. Resetting the sandbox resets its Tasks.
 No Docker, provider account or external database is needed there.
 
+## Browser cache
+
+The Web Tasks view restores the last observed project membership from Payday's
+IndexedDB mirror, then replaces it with the current Watch snapshot and applies
+live changes. The runtime database remains authoritative; the mirror does not
+queue offline edits. A slow cache restore cannot overwrite newer Watch data.
+
+Payday persistence is opt-in: `openDisk`, `Store.open({ disk })` and `hydrate`
+enable it. Task rows use the generated entity descriptors; project membership
+is stored alongside them because Task Watch requires its custom project scope.
+The SDK handles schema invalidation and expires unused cache entries.
+
+Mirrors are scoped to the connection origin and the authenticated authority.
+The gateway supplies an opaque `Payday-Identity` header on login and status
+responses; renewing a browser cookie keeps that identity, while changing the
+access credential changes it. No credential is written to IndexedDB. Signing
+out clears the mirror. Sandbox, older gateways without this header, and browsers
+where storage cannot open continue with the in-memory catalog.
+
 ## Resource
 
 | Field | Meaning |
