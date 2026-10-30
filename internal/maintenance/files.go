@@ -140,7 +140,7 @@ func Rotate(path string, limit int64, files int) (bool, error) {
 	}
 	if files > 1 {
 		// Retain a bounded tail even when upgrading from a very large log.
-		tmp, err := os.CreateTemp(filepath.Dir(path), ".log-rotate-")
+		tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".rotate-")
 		if err != nil {
 			return false, err
 		}
@@ -172,16 +172,34 @@ func LogCandidates(root string, p Policy, now time.Time, pressure bool) ([]Candi
 			paths[path] = 3
 		}
 	}
-	return logCandidates(paths, filepath.Join(root, "runtime.log"), p, pressure)
+	return logCandidates(paths, filepath.Join(root, "runtime.log"), p, now, pressure)
 }
 
 func ComponentLogCandidates(path string, p Policy, pressure bool) ([]Candidate, error) {
-	return logCandidates(map[string]int{path: 3}, "", p, pressure)
+	return logCandidates(map[string]int{path: 3}, "", p, time.Now(), pressure)
 }
 
-func logCandidates(paths map[string]int, runtimePath string, p Policy, pressure bool) ([]Candidate, error) {
+func logCandidates(paths map[string]int, runtimePath string, p Policy, now time.Time, pressure bool) ([]Candidate, error) {
 	var out []Candidate
 	for path, files := range paths {
+		if p.TemporaryHours > 0 {
+			temps, _ := filepath.Glob(filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+".rotate-*"))
+			for _, temp := range temps {
+				st, err := os.Lstat(temp)
+				if err != nil || !st.Mode().IsRegular() || !pressure && now.Sub(st.ModTime()) < time.Duration(p.TemporaryHours)*time.Hour {
+					continue
+				}
+				out = append(out, Candidate{Path: temp, Kind: Temporary, Age: st.ModTime(), Remove: func(context.Context) (bool, error) {
+					return locked(path+".rotation.lock", func() (bool, error) {
+						if !PlainPath(temp) {
+							return false, nil
+						}
+						err := os.Remove(temp)
+						return err == nil, err
+					})
+				}})
+			}
+		}
 		limit := int64(p.ComponentLogMiB) << 20
 		if path == runtimePath {
 			limit = int64(p.RuntimeLogMiB) << 20

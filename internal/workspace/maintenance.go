@@ -63,7 +63,7 @@ func (m *Manager) maintenanceVersions(ctx context.Context, tools string, p maint
 	if err != nil {
 		return nil, err
 	}
-	staging, err := maintenance.StagingCandidates([]string{filepath.Join(tools, "claude", "*", ".download-*"), filepath.Join(tools, "codex", "*", ".download-*"), filepath.Join(tools, "gh", "*", ".gh-*"), filepath.Join(tools, ".cxz-*"), filepath.Join(tools, "cxz-builds", "releases", "*", "*", ".cxz-*"), filepath.Join(tools, "cxz-builds", "releases", "*", "*", "*", ".cxz-*")}, maintenance.VersionLock(tools), p, now, pressure)
+	staging, err := maintenance.StagingCandidates([]string{filepath.Join(tools, "claude", "*", ".download-*"), filepath.Join(tools, "codex", "*", ".download-*"), filepath.Join(tools, "gh", "*", ".gh-*"), filepath.Join(tools, ".cxz-[0-9]*"), filepath.Join(tools, "cxz-builds", "releases", "*", "*", ".cxz-*"), filepath.Join(tools, "cxz-builds", "releases", "*", "*", "*", ".cxz-*")}, maintenance.VersionLock(tools), p, now, pressure)
 	return append(versions, staging...), err
 }
 
