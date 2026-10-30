@@ -8,6 +8,7 @@ import {
 } from "@lesomnus/nox";
 import {
   isTextPaste,
+  isImagePaste,
   pasteSendMode,
   type ComposerPaste,
 } from "./composer-pastes";
@@ -39,6 +40,7 @@ export function PasteChip({
   const attachment = paste.attachment;
   const state = paste.secret ?? attachment;
   const textPaste = isTextPaste(paste);
+  const imagePaste = isImagePaste(paste);
   const mode = pasteSendMode(paste);
   const bytes = `${paste.bytes.toLocaleString(currentLocale())} B`;
   const { label, before } = presentation;
@@ -116,6 +118,7 @@ export function PasteChip({
         }
         data-upload-state={state?.state}
         data-secret={paste.secret ? true : undefined}
+        data-image={imagePaste || undefined}
         aria-busy={state?.state === "uploading"}
         data-paste-token={paste.token}
         data-send-as={textPaste ? mode : undefined}
@@ -126,9 +129,11 @@ export function PasteChip({
             ? "Secret file reference"
             : textPaste
               ? t("Pasted text")
-              : label.trim()
+              : imagePaste
+                ? t("Image attachment")
+                : label.trim()
         }
-        aria-description={textPaste ? bytes : undefined}
+        aria-description={textPaste || imagePaste ? bytes : undefined}
         title={
           paste.secret
             ? (paste.secret.error ??

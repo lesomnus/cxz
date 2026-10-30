@@ -19,6 +19,18 @@ const text: ComposerPaste = {
   bytes: 4800,
   attachment: { name: "paste.txt", state: "uploading", progress: 35 },
 };
+const image: ComposerPaste = {
+  token: "[File 87654321 · image.png]",
+  body: "",
+  lines: 0,
+  bytes: 2500000,
+  attachment: {
+    name: "image.png",
+    mediaType: "image/png",
+    state: "uploading",
+    progress: 35,
+  },
+};
 const meta = {
   title: "Composer/Upload chips",
   component: PasteChip,
@@ -48,6 +60,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const UploadingFile: Story = {};
 export const UploadingPaste: Story = { args: { paste: text } };
+export const UploadingImage: Story = { args: { paste: image } };
+export const ReadyImage: Story = {
+  args: {
+    paste: { ...image, attachment: { ...image.attachment!, state: "ready" } },
+  },
+};
 export const Ready: Story = {
   args: {
     paste: { ...file, attachment: { ...file.attachment!, state: "ready" } },
@@ -100,7 +118,7 @@ export const UploadTransition: Story = {
     return (
       <div style={{ display: "grid", gap: 24, padding: 24 }}>
         <p>{progress < 100 ? `Uploading · ${progress}%` : "Upload complete"}</p>
-        {[file, text].map((paste) => (
+        {[file, text, image].map((paste) => (
           <div key={paste.token} style={{ fontFamily: "var(--ui-font-mono)" }}>
             <PasteChip
               paste={{

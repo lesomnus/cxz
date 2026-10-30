@@ -2,6 +2,7 @@
 export const messages = {
   Text: "Text",
   "Pasted text": "Pasted text",
+  "Image attachment": "Image attachment",
   "Send pasted content as": "Send pasted content as",
   "Editor options": "Editor options",
   "Show control characters": "Show control characters",

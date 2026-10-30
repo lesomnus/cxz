@@ -2,6 +2,7 @@ import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
   Text: "텍스트",
   "Pasted text": "붙여넣은 텍스트",
+  "Image attachment": "첨부 이미지",
   "Send pasted content as": "붙여넣은 내용 전송 방식",
   "Editor options": "입력창 설정",
   "Show control characters": "제어문자 표시",
