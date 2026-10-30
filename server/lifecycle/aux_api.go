@@ -119,7 +119,7 @@ func (s SessionServer) auxState(ctx context.Context, ref *resource.SessionRef, o
 			return nil, err
 		}
 		if current.GetName() != out.Title {
-			if _, err := s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{
+			if _, err := s.Next().Session().Patch(projectionContext(ctx), resource.SessionPatchRequest_builder{
 				Ref: ref, Name: ptr(out.Title), DateUpdatedForce: ptr(true),
 			}.Build()); err != nil {
 				return nil, err
