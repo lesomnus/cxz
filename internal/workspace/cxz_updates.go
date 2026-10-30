@@ -25,6 +25,22 @@ func (m *Manager) projectHealth(ctx context.Context, p *Project, action, tx stri
 	return cxzupdate.ContainerHealth(ctx, p.ContainerID, p.RemoteUser, "/cxz/state/data", action, tx)
 }
 
+func (m *Manager) runtimeUpdater(ctx context.Context, p *Project, r cxzupdate.Release, platform string) (string, error) {
+	binary, err := cxzupdate.Stage(ctx, "/cxz/tools/cxz-builds", r, platform)
+	if err != nil {
+		return "", err
+	}
+	b, err := dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_build-info")
+	if err != nil {
+		return "", err
+	}
+	var build cxzupdate.Build
+	if json.Unmarshal(b, &build) != nil || build.Revision != r.Revision || build.Platform != platform || build.Protocol != r.Protocol || build.Schema != r.Schema || !build.Managed() {
+		return "", fmt.Errorf("candidate identity mismatch")
+	}
+	return binary, nil
+}
+
 // quietSweep bounds the whole sweep, and quietSweepProjects how many projects
 // are asked at once. Each answer costs a container inspect and a round trip
 // into that project's runtime, which asks every session it holds -- so asking
@@ -215,19 +231,17 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 		m.noteUpdateStop("waiting", "no release known for the selected channel")
 		return
 	}
+	var pausedState, pausedReason string
 	if !s.RetryAllowed() {
-		m.noteUpdateStop("rolled_back", fmt.Sprintf("%s failed at %s; retrying after %s",
-			s.FailedRevision[:min(12, len(s.FailedRevision))], s.FailedAt.UTC().Format(time.RFC3339), s.FailedAt.Add(cxzupdate.Interval).UTC().Format(time.RFC3339)))
-		return
+		pausedState = "rolled_back"
+		pausedReason = fmt.Sprintf("%s failed at %s; retrying after %s",
+			s.FailedRevision[:min(12, len(s.FailedRevision))], s.FailedAt.UTC().Format(time.RFC3339), s.FailedAt.Add(cxzupdate.Interval).UTC().Format(time.RFC3339))
 	}
 	// A refusal is an answer: the server said it was not ready, and asking
 	// again every tick re-runs the readiness sweep across every session for a
 	// rollout that is about to be refused again. See cxz#210.
-	if a, refused := cxzupdate.Refused(m.Root, time.Now()); refused {
-		s.State = "waiting"
-		s.Reason = a.Reason
-		_ = cxzupdate.Save(m.Root, s)
-		return
+	if a, refused := cxzupdate.Refused(m.Root, time.Now()); refused && pausedReason == "" {
+		pausedState, pausedReason = "waiting", a.Reason
 	}
 	r := *s.Release
 	if !r.CanReplace(cxzupdate.Current()) {
@@ -236,20 +250,7 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 		_ = cxzupdate.Save(m.Root, s)
 		return
 	}
-	if r.Revision != cxzupdate.Current().Revision {
-		// The independent helper acquires rollout.lock after this step returns.
-		// Never forced on the tick: forcing is something a person asks for.
-		e = cxzupdate.ScheduleManager(work, m.Root, m.Container, m.Owner, r, false)
-		if e != nil {
-			s.State = "waiting"
-			s.Reason = e.Error()
-		} else {
-			s.State = "applying"
-			s.Reason = "manager helper scheduled"
-		}
-		_ = cxzupdate.Save(m.Root, s)
-		return
-	}
+	managerBehind := r.Revision != cxzupdate.Current().Revision
 	s.State = "healthy"
 	s.Reason = ""
 	ps, e := m.all(work)
@@ -285,18 +286,40 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 		if !v.State.Running {
 			continue
 		}
-		h, err := m.projectHealth(work, p, "status", "")
-		if err != nil {
-			s.State = "waiting"
-			s.Reason = "project runtime bootstrap required: " + p.ID
-			continue
+		// Existing transactions take priority over a newer Manager rollout and
+		// its retry backoff. A busy but already healthy target must be finalized
+		// before that busy session can veto the next Manager update.
+		action := "status"
+		if managerBehind || pausedReason != "" {
+			action = "health" // Do not repeat a refused readiness sweep every tick.
 		}
-		if !h.Build.Managed() || !r.CanReplace(h.Build) {
+		h, err := m.projectHealth(work, p, action, "")
+		if err != nil {
+			// A dead runtime cannot report its transaction. Ask the verified
+			// helper to recover durable state, never to begin a fresh update.
+			binary, err := m.runtimeUpdater(work, p, r, cxzupdate.Current().Platform)
+			if err == nil {
+				_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_recover-runtime", "/cxz/state/data")
+			}
+			s.State = "waiting"
+			if err != nil {
+				s.Reason = "project runtime recovery: " + p.ID + ": " + err.Error()
+				continue
+			}
+			s.State = "applying"
+			s.Reason = "project runtime recovered: " + p.ID
+			_ = cxzupdate.Save(m.Root, s)
+			return
+		}
+		recoverRuntime := h.Runtime != nil && h.Runtime.Pending()
+		if !recoverRuntime && (managerBehind || pausedReason != "") {
+			continue // New project updates still follow the Manager and its backoff.
+		}
+		if !h.Build.Managed() || !recoverRuntime && !r.CanReplace(h.Build) {
 			s.State = "waiting"
 			s.Reason = "project runtime is unmanaged or newer than edge: " + p.ID
 			continue
 		}
-		recoverRuntime := h.Runtime != nil && h.Runtime.State != "healthy" && h.Runtime.State != "rolled_back"
 		if h.Lease != "" && (!recoverRuntime || h.Lease != h.Runtime.ID) {
 			s.State = "applying"
 			s.Reason = "project maintenance: " + p.ID
@@ -311,21 +334,24 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			_ = cxzupdate.Save(m.Root, s)
 			return
 		}
-		binary, err := cxzupdate.Stage(work, "/cxz/tools/cxz-builds", r, h.Build.Platform)
+		// Completing a healthy launch or restoring the old runtime needs no
+		// idle wait. A prepared forward replacement still does, and the helper
+		// rechecks it under admission immediately before stopping the runtime.
+		// An owned lease may have survived an interrupted prepare. Let the
+		// serialized helper recheck and release it on refusal, so waiting for
+		// idle does not also keep ordinary input blocked for ten minutes.
+		if recoverRuntime && h.Runtime.State == "prepared" && action == "status" && !h.Ready && h.Lease == "" {
+			s.State = "waiting"
+			s.Reason = "project " + p.ID + ": " + h.Reason
+			continue
+		}
+		binary, err := m.runtimeUpdater(work, p, r, h.Build.Platform)
 		if cxzupdate.EdgeAssetMissing(r, err) {
 			// Refresh before the next rollout tick. A newer manager must be scheduled
 			// before any project runtime can move to the new release.
 			_, _ = cxzupdate.Check(work, m.Root, true)
 			m.noteUpdateStop("waiting", "release assets are not published yet: "+p.ID)
 			return
-		}
-		if err == nil {
-			var b []byte
-			b, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_build-info")
-			var build cxzupdate.Build
-			if err == nil && (json.Unmarshal(b, &build) != nil || build.Revision != r.Revision || build.Platform != h.Build.Platform || build.Protocol != r.Protocol || build.Schema != r.Schema || !build.Managed()) {
-				err = fmt.Errorf("candidate identity mismatch")
-			}
 		}
 		if err != nil {
 			s.State = "waiting"
@@ -338,12 +364,16 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			if !h.Ready && !recoverRuntime {
 				continue
 			}
-			manifest := filepath.Join("/cxz/tools/cxz-builds/releases", r.Revision, "manifest.json")
-			if err = core.WriteJSON(manifest, r); err == nil {
-				err = os.Chmod(manifest, 0644)
-			}
-			if err == nil {
-				_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_update-runtime", "/cxz/state/data", binary, manifest)
+			if recoverRuntime {
+				_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_recover-runtime", "/cxz/state/data")
+			} else {
+				manifest := filepath.Join("/cxz/tools/cxz-builds/releases", r.Revision, "manifest.json")
+				if err = core.WriteJSON(manifest, r); err == nil {
+					err = os.Chmod(manifest, 0644)
+				}
+				if err == nil {
+					_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_update-runtime", "/cxz/state/data", binary, manifest)
+				}
 			}
 			if err != nil {
 				s.Reason = err.Error()
@@ -423,6 +453,23 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			_ = cxzupdate.Save(m.Root, s)
 			return
 		}
+	}
+	if pausedReason != "" {
+		s.State, s.Reason = pausedState, pausedReason
+		_ = cxzupdate.Save(m.Root, s)
+		return
+	}
+	if managerBehind {
+		// The independent helper acquires rollout.lock after this step returns.
+		// Never forced on the tick: forcing is something a person asks for.
+		e = cxzupdate.ScheduleManager(work, m.Root, m.Container, m.Owner, r, false)
+		if e != nil {
+			s.State, s.Reason = "waiting", e.Error()
+		} else {
+			s.State, s.Reason = "applying", "manager helper scheduled"
+		}
+		_ = cxzupdate.Save(m.Root, s)
+		return
 	}
 	if s.State == "healthy" && networkErr != nil {
 		s.State = "waiting"
