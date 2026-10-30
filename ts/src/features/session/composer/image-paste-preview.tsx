@@ -1,16 +1,16 @@
-import { useCallback } from "react";
-import { ImagePreviewDialog } from "#src/shared/components/image-preview-dialog.tsx";
+import { useCallback, type ReactNode } from "react";
+import { ImagePreviewProvider } from "#src/shared/components/image-preview.tsx";
 import type { ComposerPaste } from "./composer-pastes";
 import type { DownloadAttachment } from "./composer-download";
 
 export function ImagePastePreview({
   paste,
   download,
-  close,
+  children,
 }: {
   paste: ComposerPaste;
   download?: DownloadAttachment;
-  close: () => void;
+  children: ReactNode;
 }) {
   const load = useCallback(
     async (signal: AbortSignal) => {
@@ -31,10 +31,8 @@ export function ImagePastePreview({
     [paste, download],
   );
   return (
-    <ImagePreviewDialog
-      name={paste.attachment!.name}
-      load={load}
-      close={close}
-    />
+    <ImagePreviewProvider name={paste.attachment!.name} load={load}>
+      {children}
+    </ImagePreviewProvider>
   );
 }

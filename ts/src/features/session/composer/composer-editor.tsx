@@ -74,6 +74,10 @@ import { SecretPreview } from "./secret-preview";
 import { SecretPreviewBody } from "./secret-preview-body";
 import { PasteChip } from "./paste-chip";
 import { ImagePastePreview } from "./image-paste-preview";
+import {
+  ImagePreviewBody,
+  ImagePreviewActions,
+} from "#src/shared/components/image-preview.tsx";
 import type { DownloadAttachment } from "./composer-download";
 import { reserveChip } from "./chip-reservation";
 import {
@@ -622,13 +626,13 @@ export function ComposerEditor({
       openCard({
         kind: "image",
         title: () => t("Image preview"),
-        content: (close) => (
-          <ImagePastePreview
-            paste={range.paste}
-            download={downloadAttachment}
-            close={close}
-          />
+        wrap: (children) => (
+          <ImagePastePreview paste={range.paste} download={downloadAttachment}>
+            {children}
+          </ImagePastePreview>
         ),
+        content: () => <ImagePreviewBody />,
+        footer: (close) => <ImagePreviewActions close={close} />,
       });
       return;
     }

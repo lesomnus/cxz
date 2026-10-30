@@ -1,13 +1,9 @@
-.dialog.dialog {
-  width: min(960px, calc(100vw - 4 * var(--ui-space)));
-  --card-body-padding: 0;
-}
-.dialog :global(.floating-card) {
-  height: min(78dvh, 720px);
-}
-.dialog :global(.floating-card) :global(.card-body).viewport {
+.viewport {
   position: relative;
   flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background: conic-gradient(
       var(--ui-shade-40) 25%,

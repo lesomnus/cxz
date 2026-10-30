@@ -41,6 +41,10 @@ for (const story of ["ready-image", "restored-image"]) {
     const viewport = dialog.locator("[data-image-viewport]");
     const image = dialog.locator("img");
     await expect(image).toBeVisible();
+    expect(
+      await dialog.evaluate((node) => !!node.closest(".floating-card-host")),
+    ).toBe(true);
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
     await dialog.evaluate(async (node) => {
       await Promise.all(
         node
@@ -50,6 +54,13 @@ for (const story of ["ready-image", "restored-image"]) {
       );
     });
     const box = (await viewport.boundingBox())!;
+    const frame = (await dialog.boundingBox())!;
+    const composer = (await page.locator(".composer-wrapper").boundingBox())!;
+    expect(frame.y + frame.height).toBeLessThan(composer.y);
+    const input = page.getByRole("textbox", { name: "Message", exact: true });
+    await input.focus();
+    await expect(input).toBeFocused();
+    await expect(dialog).toBeVisible();
     const initial = (await image.boundingBox())!;
     expect(initial.x).toBeGreaterThanOrEqual(box.x - 1);
     expect(initial.y).toBeGreaterThanOrEqual(box.y - 1);
@@ -114,7 +125,19 @@ for (const story of ["ready-image", "restored-image"]) {
 
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
-    await expect(chip).toBeFocused();
+    await expect(input).toBeFocused();
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const urls = (
+            window as typeof window & {
+              imageUrls: { created: string[]; revoked: string[] };
+            }
+          ).imageUrls;
+          return urls.revoked.length;
+        }),
+      )
+      .toBe(1);
     const urls = await page.evaluate(
       () =>
         (

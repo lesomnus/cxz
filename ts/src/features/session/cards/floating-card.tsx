@@ -27,6 +27,7 @@ type Card = {
   kind?: "paste" | "image";
   content: (close: () => void) => ReactNode;
   footer?: (close: () => void) => ReactNode;
+  wrap?: (children: ReactNode) => ReactNode;
   origin: HTMLElement | null;
   onClose?: () => void;
   anchor?: HTMLElement;
@@ -40,6 +41,7 @@ type CardRequest = Pick<
   | "label"
   | "content"
   | "footer"
+  | "wrap"
   | "kind"
   | "anchor"
   | "surface"
@@ -434,9 +436,7 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
         </div>
         <div className="question-scroll-fade" aria-hidden="true" />
         {card &&
-          (card.kind === "image" ? (
-            !card.closing && card.content(() => close(card.id))
-          ) : card.anchor ? (
+          (card.anchor ? (
             <AnchoredDetail
               key={card.id}
               anchor={card.anchor}
@@ -488,31 +488,37 @@ function PreviewCard({ card, close }: { card: Card; close: () => void }) {
       cancelAnimationFrame(second);
     };
   }, []);
-  const paste = card.kind === "paste";
+  const image = card.kind === "image";
+  const paste = card.kind === "paste" || image;
   const Surface = paste ? CardSurface : FloatingCard;
+  const surface = (
+    <Surface
+      ref={root}
+      title={title}
+      hideHeading={paste}
+      className={
+        paste ? `${styles.preview} ${image ? styles.image : ""}` : undefined
+      }
+      footer={card.footer?.(close)}
+      close={close}
+      closeLabel={
+        card.kind === "paste" ? t("Close paste preview") : t("Close details")
+      }
+      role="dialog"
+      aria-label={label ?? title}
+      aria-hidden={!active}
+      inert={!active}
+      data-card={card.id}
+      data-active={active}
+      data-entered={entered}
+      data-closing={!!card.closing}
+    >
+      {card.content(close)}
+    </Surface>
+  );
   return (
     <PreviewSurface.Provider value={root}>
-      <Surface
-        ref={root}
-        title={title}
-        hideHeading={paste}
-        className={paste ? styles.preview : undefined}
-        footer={card.footer?.(close)}
-        close={close}
-        closeLabel={
-          card.kind === "paste" ? t("Close paste preview") : t("Close details")
-        }
-        role="dialog"
-        aria-label={label ?? title}
-        aria-hidden={!active}
-        inert={!active}
-        data-card={card.id}
-        data-active={active}
-        data-entered={entered}
-        data-closing={!!card.closing}
-      >
-        {card.content(close)}
-      </Surface>
+      {card.wrap ? card.wrap(surface) : surface}
     </PreviewSurface.Provider>
   );
 }
