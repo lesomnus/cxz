@@ -101,7 +101,12 @@ func (s *Server) sessionQuiet(ctx context.Context, m core.Session) (a struct {
 		return a
 	}
 	if !p.Ready || p.Protocol != cxzupdate.Protocol {
-		a.blocked = fmt.Errorf("session %s: %s (protocol %d)", m.ID, p.Reason, p.Protocol)
+		reason := fmt.Sprintf("session %s: %s (protocol %d)", m.ID, p.Reason, p.Protocol)
+		if p.Protocol != cxzupdate.Protocol {
+			a.blocked = cxzupdate.RecoveryBlocked("protocol_mismatch", reason)
+		} else {
+			a.blocked = cxzupdate.RecoveryWaiting("not_idle", reason)
+		}
 	}
 	return a
 }
