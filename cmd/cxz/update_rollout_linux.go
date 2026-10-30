@@ -23,6 +23,11 @@ import (
 // /proc/locks. Asking one command is the point. See cxz#253.
 func rolloutDetail(ctx context.Context, root string) map[string]any {
 	out := map[string]any{}
+	if recoveries, err := cxzupdate.ReadRecoveries(root); err == nil {
+		out["runtime_recoveries"] = recoveries
+	} else {
+		out["runtime_recovery_error"] = err.Error()
+	}
 	if tx, err := cxzupdate.ReadManagerTransaction(root); err == nil && tx.ID != "" {
 		d := map[string]any{"id": tx.ID, "state": tx.State, "revision": tx.Release.Revision, "old_container": tx.OldID}
 		if tx.Error != "" {

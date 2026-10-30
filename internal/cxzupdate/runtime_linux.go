@@ -104,10 +104,10 @@ func stopRuntime(ctx context.Context, h Health) error {
 		return e
 	}
 	if start != h.Start {
-		return fmt.Errorf("runtime PID was reused")
+		return RecoveryBlocked("process_identity_changed", "runtime PID was reused")
 	}
 	if h.Build.PID <= 1 {
-		return fmt.Errorf("cannot replace container init process")
+		return RecoveryBlocked("container_init", "cannot replace container init process")
 	}
 	if e = syscall.Kill(h.Build.PID, syscall.SIGTERM); e != nil && e != syscall.ESRCH {
 		return e
@@ -137,12 +137,12 @@ func RecoverRuntime(ctx context.Context, root string) error {
 func replaceRuntime(ctx context.Context, root, target string, r Release, recoveryOnly bool) error {
 	lock, e := core.Lock(filepath.Join(root, "runtime-update.lock"))
 	if e != nil {
-		return e
+		return RecoveryWaiting("helper_running", e.Error())
 	}
 	defer lock.Close()
 	tx, e := readRuntimeTransaction(root)
 	if e != nil && !os.IsNotExist(e) {
-		return e
+		return RecoveryBlocked("transaction_unreadable", fmt.Sprintf("runtime transaction unreadable: %v", e))
 	}
 	if tx.Pending() {
 		// Recovery finishes the captured transaction, even if upstream has moved.
@@ -153,21 +153,24 @@ func replaceRuntime(ctx context.Context, root, target string, r Release, recover
 		} else if r.Revision != tx.Revision || target != tx.Target {
 			b, err := os.ReadFile(filepath.Join("/cxz/tools/cxz-builds/releases", tx.Revision, "manifest.json"))
 			if err != nil {
-				return fmt.Errorf("runtime recovery manifest unavailable: %w", err)
+				return RecoveryBlocked("manifest_unavailable", fmt.Sprintf("runtime recovery manifest unavailable: %v", err))
 			}
 			if err = json.Unmarshal(b, &r); err != nil {
-				return err
+				return RecoveryBlocked("manifest_invalid", fmt.Sprintf("runtime recovery manifest invalid: %v", err))
 			}
 		}
 		if r.Revision != tx.Revision {
-			return fmt.Errorf("runtime recovery release identity changed")
+			return RecoveryBlocked("release_identity_changed", "runtime recovery release identity changed")
 		}
 		target = tx.Target
 	} else if recoveryOnly {
-		return fmt.Errorf("no pending runtime update; runtime bootstrap required")
+		return RecoveryBlocked("bootstrap_required", "no pending runtime update; runtime bootstrap required")
 	}
 	if e = CheckBinary(ctx, target, r, Current().Platform); e != nil {
-		return e
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return RecoveryBlocked("candidate_invalid", fmt.Sprintf("runtime candidate verification failed: %v", e))
 	}
 	if tx.Pending() && tx.Release == nil {
 		tx.Release = &r
@@ -219,7 +222,7 @@ func replaceRuntime(ctx context.Context, root, target string, r Release, recover
 		if err == nil {
 			if h.Build.PID != tx.Old.Build.PID || h.Start != tx.Old.Start || h.Build.Revision != tx.Old.Build.Revision || h.Binary != tx.Old.Binary {
 				_, _ = Call(ctx, root, "release", tx.ID)
-				return fmt.Errorf("runtime identity changed")
+				return RecoveryBlocked("process_identity_changed", "runtime identity changed")
 			}
 			// The previous lease may have expired while this helper was down.
 			// Fresh admission and idle proof make the current runs the baseline.
@@ -236,7 +239,7 @@ func replaceRuntime(ctx context.Context, root, target string, r Release, recover
 			start, processErr := ProcessStart(tx.Old.Build.PID)
 			if processErr == nil {
 				if start != tx.Old.Start {
-					return fmt.Errorf("runtime PID was reused")
+					return RecoveryBlocked("process_identity_changed", "runtime PID was reused")
 				}
 				return fmt.Errorf("runtime readiness unavailable: %w", err)
 			}
@@ -247,7 +250,7 @@ func replaceRuntime(ctx context.Context, root, target string, r Release, recover
 			// version while its agents may still be working. Restore the known
 			// runtime first; a later forward update must obtain fresh admission.
 			if !leaseOwned(root, tx.ID) {
-				return fmt.Errorf("runtime lease expired; operator recovery required")
+				return RecoveryBlocked("lease_expired", "runtime lease expired; operator recovery required")
 			}
 			tx.Error = "runtime disappeared before readiness was confirmed; restoring previous runtime"
 			tx.New = Health{}
@@ -258,7 +261,7 @@ func replaceRuntime(ctx context.Context, root, target string, r Release, recover
 	}
 	if tx.State == "prepared" {
 		if !leaseOwned(root, tx.ID) {
-			return fmt.Errorf("runtime lease expired; operator recovery required")
+			return RecoveryBlocked("lease_expired", "runtime lease expired; operator recovery required")
 		}
 		stop, cancel := context.WithTimeout(ctx, 30*time.Second)
 		e = stopRuntime(stop, tx.Old)
@@ -315,7 +318,7 @@ func replaceRuntime(ctx context.Context, root, target string, r Release, recover
 		}
 	}
 	if tx.State != "rolling_back" {
-		return fmt.Errorf("invalid runtime transaction state")
+		return RecoveryBlocked("invalid_transaction", "invalid runtime transaction state")
 	}
 	finished, e := prepareRuntimeRollback(ctx, root, launcher, &tx)
 	if e != nil || finished {
@@ -351,28 +354,28 @@ func prepareRuntimeRollback(ctx context.Context, root, launcher string, tx *Runt
 		return false, e
 	}
 	if latest.ID != tx.ID || latest.State != "rolling_back" {
-		return false, fmt.Errorf("runtime rollback transaction changed")
+		return false, RecoveryBlocked("transaction_changed", "runtime rollback transaction changed")
 	}
 	*tx = latest
 	if !leaseOwned(root, tx.ID) {
-		return false, fmt.Errorf("runtime lease expired; refusing automatic rollback")
+		return false, RecoveryBlocked("lease_expired", "runtime lease expired; refusing automatic rollback")
 	}
 	if h, err := Call(ctx, root, "health", ""); err == nil {
 		if h.Lease != tx.ID {
-			return false, fmt.Errorf("runtime lease changed")
+			return false, RecoveryBlocked("foreign_lease", "runtime lease changed")
 		}
 		if h.Build.Revision == tx.Old.Build.Revision {
 			return true, finishRuntimeRollback(ctx, root, tx)
 		}
 		if h.Build.PID != tx.New.Build.PID || h.Start != tx.New.Start {
-			return false, fmt.Errorf("runtime process changed")
+			return false, RecoveryBlocked("process_identity_changed", "runtime process changed")
 		}
 	}
 	if tx.New.Binary == tx.Old.Binary && tx.New.Build.PID != 0 {
 		start, err := ProcessStart(tx.New.Build.PID)
 		if err == nil {
 			if start != tx.New.Start {
-				return false, fmt.Errorf("runtime PID was reused")
+				return false, RecoveryBlocked("process_identity_changed", "runtime PID was reused")
 			}
 			return false, nil // The recorded rollback child is still starting.
 		}
@@ -395,7 +398,7 @@ func prepareRuntimeRollback(ctx context.Context, root, launcher string, tx *Runt
 		}
 	}
 	if e = CheckSupervisor(ctx, root, tx.Old.Binary); e != nil {
-		return false, fmt.Errorf("rollback binary unavailable: %w", e)
+		return false, RecoveryBlocked("rollback_binary_unavailable", fmt.Sprintf("rollback binary unavailable: %v", e))
 	}
 	return false, startRuntime(root, launcher, tx.Old.Binary, tx.ID)
 }
@@ -409,7 +412,7 @@ func finishRuntimeRollback(ctx context.Context, root string, tx *RuntimeTransact
 		expected = tx.New
 	}
 	if h.Build.Revision != tx.Old.Build.Revision || h.Build.PID != expected.Build.PID || h.Start != expected.Start || h.Lease != tx.ID || !reflect.DeepEqual(h.Sessions, tx.Old.Sessions) {
-		return fmt.Errorf("rollback session identity mismatch")
+		return RecoveryBlocked("session_identity_changed", "rollback session identity mismatch")
 	}
 	tx.State = "rolled_back"
 	tx.FailedAt = time.Now()
@@ -425,7 +428,7 @@ func finishRuntime(ctx context.Context, root string, tx *RuntimeTransaction) err
 		return e
 	}
 	if h.Build.Revision != tx.Revision || h.Build.PID != tx.New.Build.PID || h.Start != tx.New.Start || h.Lease != tx.ID || !reflect.DeepEqual(h.Sessions, tx.Old.Sessions) {
-		return fmt.Errorf("runtime update changed live session identity")
+		return RecoveryBlocked("session_identity_changed", "runtime update changed live session identity")
 	}
 	tx.State = "healthy"
 	if e = core.WriteJSON(runtimeTxPath(root), tx); e != nil {

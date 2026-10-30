@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 					}
 				}
 				if _, err := os.Stat(filepath.Join(root, "fixture-busy")); err == nil {
-					return runs, fmt.Errorf("session is working")
+					return runs, RecoveryWaiting("not_idle", "session is working")
 				}
 				return runs, nil
 			})

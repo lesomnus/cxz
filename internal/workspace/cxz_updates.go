@@ -36,7 +36,7 @@ func (m *Manager) runtimeUpdater(ctx context.Context, p *Project, r cxzupdate.Re
 	}
 	var build cxzupdate.Build
 	if json.Unmarshal(b, &build) != nil || build.Revision != r.Revision || build.Platform != platform || build.Protocol != r.Protocol || build.Schema != r.Schema || !build.Managed() {
-		return "", fmt.Errorf("candidate identity mismatch")
+		return "", cxzupdate.RecoveryBlocked("candidate_invalid", "candidate identity mismatch")
 	}
 	return binary, nil
 }
@@ -293,25 +293,46 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 		if managerBehind || pausedReason != "" {
 			action = "health" // Do not repeat a refused readiness sweep every tick.
 		}
+		recovery, err := cxzupdate.LoadRecovery(m.runtimeRecoveryPath(p))
+		if err != nil {
+			s.State, s.Reason = "waiting", "runtime recovery state unreadable: "+err.Error()
+			continue
+		}
+		if recovery.Container == p.ContainerID && (recovery.Status == "stopped" || time.Now().Before(recovery.NextAttempt)) {
+			action = "health" // Backoff must precede staging and readiness work.
+		}
 		h, err := m.projectHealth(work, p, action, "")
 		if err != nil {
 			// A dead runtime cannot report its transaction. Ask the verified
 			// helper to recover durable state, never to begin a fresh update.
-			binary, err := m.runtimeUpdater(work, p, r, cxzupdate.Current().Platform)
-			if err == nil {
-				_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_recover-runtime", "/cxz/state/data")
+			recovery, attempted, err := m.recoverRuntime(work, p, r, h, false, false)
+			// Staging may have refreshed an incomplete edge publication. Do not
+			// overwrite that new release with this pass's older snapshot.
+			if fresh, e := cxzupdate.Load(m.Root); e == nil {
+				s = fresh
 			}
 			s.State = "waiting"
 			if err != nil {
 				s.Reason = "project runtime recovery: " + p.ID + ": " + err.Error()
 				continue
 			}
-			s.State = "applying"
-			s.Reason = "project runtime recovered: " + p.ID
-			_ = cxzupdate.Save(m.Root, s)
-			return
+			s.Reason = recoveryReason(recovery)
+			if recovery.Status == "completed" {
+				s.State = "applying"
+			}
+			if attempted {
+				_ = cxzupdate.Save(m.Root, s)
+				return
+			}
+			continue
 		}
-		recoverRuntime := h.Runtime != nil && h.Runtime.Pending()
+		recoverRuntime := h.Runtime != nil && (h.Runtime.Pending() || cxzupdate.RuntimeFinalizationKey(h) != "")
+		if !recoverRuntime && recovery.Project != "" {
+			if err := os.Remove(m.runtimeRecoveryPath(p)); err != nil && !os.IsNotExist(err) {
+				s.State, s.Reason = "waiting", "runtime recovery state cleanup: "+err.Error()
+				continue
+			}
+		}
 		if !recoverRuntime && (managerBehind || pausedReason != "") {
 			continue // New project updates still follow the Manager and its backoff.
 		}
@@ -326,6 +347,26 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			_ = cxzupdate.Save(m.Root, s)
 			return
 		}
+		if recoverRuntime {
+			recovery, attempted, err := m.recoverRuntime(work, p, r, h, true, action == "status")
+			if fresh, e := cxzupdate.Load(m.Root); e == nil {
+				s = fresh
+			}
+			s.State = "waiting"
+			if err != nil {
+				s.Reason = "project runtime recovery: " + p.ID + ": " + err.Error()
+				continue
+			}
+			s.Reason = recoveryReason(recovery)
+			if recovery.Status == "completed" {
+				s.State = "applying"
+			}
+			if attempted {
+				_ = cxzupdate.Save(m.Root, s)
+				return
+			}
+			continue
+		}
 		if h.Runtime != nil && h.Runtime.Revision == r.Revision && h.Runtime.State == "rolled_back" && time.Since(h.Runtime.FailedAt) < cxzupdate.Interval {
 			s.State = "rolled_back"
 			s.Reason = h.Runtime.Error
@@ -333,17 +374,6 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			s.FailedRevision = r.Revision
 			_ = cxzupdate.Save(m.Root, s)
 			return
-		}
-		// Completing a healthy launch or restoring the old runtime needs no
-		// idle wait. A prepared forward replacement still does, and the helper
-		// rechecks it under admission immediately before stopping the runtime.
-		// An owned lease may have survived an interrupted prepare. Let the
-		// serialized helper recheck and release it on refusal, so waiting for
-		// idle does not also keep ordinary input blocked for ten minutes.
-		if recoverRuntime && h.Runtime.State == "prepared" && action == "status" && !h.Ready && h.Lease == "" {
-			s.State = "waiting"
-			s.Reason = "project " + p.ID + ": " + h.Reason
-			continue
 		}
 		binary, err := m.runtimeUpdater(work, p, r, h.Build.Platform)
 		if cxzupdate.EdgeAssetMissing(r, err) {
@@ -358,22 +388,18 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 			s.Reason = err.Error()
 			continue
 		}
-		if h.Build.Revision != r.Revision || recoverRuntime {
+		if h.Build.Revision != r.Revision {
 			s.State = "waiting"
 			s.Reason = "project " + p.ID + ": " + h.Reason
-			if !h.Ready && !recoverRuntime {
+			if !h.Ready {
 				continue
 			}
-			if recoverRuntime {
-				_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_recover-runtime", "/cxz/state/data")
-			} else {
-				manifest := filepath.Join("/cxz/tools/cxz-builds/releases", r.Revision, "manifest.json")
-				if err = core.WriteJSON(manifest, r); err == nil {
-					err = os.Chmod(manifest, 0644)
-				}
-				if err == nil {
-					_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_update-runtime", "/cxz/state/data", binary, manifest)
-				}
+			manifest := filepath.Join("/cxz/tools/cxz-builds/releases", r.Revision, "manifest.json")
+			if err = core.WriteJSON(manifest, r); err == nil {
+				err = os.Chmod(manifest, 0644)
+			}
+			if err == nil {
+				_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_update-runtime", "/cxz/state/data", binary, manifest)
 			}
 			if err != nil {
 				s.Reason = err.Error()
