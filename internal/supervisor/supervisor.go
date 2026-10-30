@@ -171,6 +171,9 @@ func Run(ctx context.Context, root, id string) error {
 		return e
 	}
 	defer profileLock.Close()
+	// A later maintenance pass must give this run's interrupted temporary
+	// files a fresh grace period after the process-group guard releases them.
+	_ = os.Remove(filepath.Join(accounts.Dir(profile, session.Account), "maintenance-idle"))
 	l, e := sessionstore.OpenLog(ctx, dir, session.ID)
 	if e != nil {
 		return e

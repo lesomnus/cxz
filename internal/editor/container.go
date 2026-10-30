@@ -33,6 +33,16 @@ func directory() (string, error) {
 	return dir, err
 }
 
+// LogPath locates only this user's cxz-managed editor log; unlike directory it
+// does not create anything while the runtime inventories maintenance targets.
+func LogPath() (string, error) {
+	account, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(account.HomeDir, ".cache", "cxz-editor", "server.log"), nil
+}
+
 func Installed() bool {
 	dir, err := directory()
 	if err != nil {

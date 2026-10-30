@@ -459,6 +459,10 @@ func (s *Store) Do(ctx context.Context, q Request) (Reply, error) {
 			if q.Revision != revision(b) {
 				return out, fmt.Errorf("memory changed; reload before deleting")
 			}
+			now := time.Now()
+			if e = r.Chtimes(dir+"/"+q.Document, now, now); e != nil {
+				return out, e
+			}
 			e = r.Rename(dir+"/"+q.Document, dir+"/.trash-"+core.ID()+"-"+q.Document)
 			return out, e
 		}
@@ -467,6 +471,10 @@ func (s *Store) Do(ctx context.Context, q Request) (Reply, error) {
 		}
 		if _, e = r.Stat("trash/" + q.ID); e == nil {
 			return out, fmt.Errorf("a deleted memory with this ID already exists; restore it first")
+		}
+		now := time.Now()
+		if e = r.Chtimes(dir, now, now); e != nil {
+			return out, e
 		}
 		return out, r.Rename(dir, "trash/"+q.ID)
 	case "restore":

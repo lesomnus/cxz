@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/maintenance"
 	"io"
 	"os"
 	"os/exec"
@@ -36,6 +37,11 @@ func PinSelf(root string) (string, error) {
 	if !b.Managed() {
 		return os.Executable()
 	}
+	release, err := maintenance.VersionLease(context.Background(), root)
+	if err != nil {
+		return "", err
+	}
+	defer release()
 	sum, e := mappedDigest()
 	if e != nil {
 		return "", e

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/maintenance"
 	"io"
 	"net/http"
 	"os"
@@ -190,6 +191,15 @@ func Verify(path, checksum string) error {
 	return nil
 }
 func Stage(ctx context.Context, root string, r Release, platform string) (string, error) {
+	leaseRoot := root
+	if filepath.Base(root) == "cxz-builds" {
+		leaseRoot = filepath.Dir(root)
+	}
+	release, err := maintenance.VersionLease(ctx, leaseRoot)
+	if err != nil {
+		return "", err
+	}
+	defer release()
 	if e := r.Validate(); e != nil {
 		return "", e
 	}
