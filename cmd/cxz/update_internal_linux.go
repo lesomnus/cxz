@@ -37,6 +37,13 @@ func updateInternal(args []string) (bool, error) {
 			return true, fmt.Errorf("invalid runtime child arguments")
 		}
 		return true, cxzupdate.RuntimeChild(args[1], args[2], args[3])
+	case "_recover-runtime":
+		if len(args) != 2 {
+			return true, fmt.Errorf("invalid runtime recovery arguments")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		return true, cxzupdate.RecoverRuntime(ctx, args[1])
 	case "_update-policy":
 		if len(args) != 3 {
 			return true, fmt.Errorf("invalid update policy arguments")
