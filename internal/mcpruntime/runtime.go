@@ -192,7 +192,9 @@ func (r *Runtime) serve(c net.Conn) {
 	if def.Kind != "stdio" {
 		return
 	}
-	log, e := os.OpenFile(filepath.Join(core.Dir(r.root, h.Session), "mcp-"+h.Server+".stderr.log"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	// Append mode keeps a live stderr descriptor at the new end after the
+	// maintenance worker truncates the current log during rotation.
+	log, e := os.OpenFile(filepath.Join(core.Dir(r.root, h.Session), "mcp-"+h.Server+".stderr.log"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_APPEND, 0600)
 	if e != nil {
 		return
 	}

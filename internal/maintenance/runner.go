@@ -36,6 +36,7 @@ func (r *Runner) Run(ctx context.Context) {
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 	var last time.Time
+	var lastProbe time.Time
 	var fingerprint string
 	pending := true
 	for {
@@ -61,7 +62,8 @@ func (r *Runner) Run(ctx context.Context) {
 			now := time.Now()
 			due := last.IsZero() || now.Sub(last) >= p.Interval() || pending && now.Sub(last) >= 5*time.Minute
 			// Cheap probes only between ordinary maintenance opportunities.
-			if !due && now.Sub(last) >= time.Minute {
+			if !due && now.Sub(last) >= time.Minute && now.Sub(lastProbe) >= time.Minute {
+				lastProbe = now
 				for _, path := range r.Engine.Roots {
 					if s, e := DiskSpace(path); e == nil && (s.low(p) || r.Engine.pressured[s.Device] && !s.recovered(p)) {
 						due = true
@@ -71,6 +73,7 @@ func (r *Runner) Run(ctx context.Context) {
 			}
 			if due {
 				last = now
+				lastProbe = now
 				pending = false
 				pass, cancel := context.WithTimeout(ctx, 20*time.Second)
 				r.once(pass, p, now)

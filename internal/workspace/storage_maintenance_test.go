@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -67,5 +68,61 @@ func TestMaintenanceUsesEveryProjectReferenceAndPropagatesDisabledPolicy(t *test
 	}
 	if _, err = m.maintenanceVersions(ctx, tools, maintenance.Default(), time.Now(), true); err == nil {
 		t.Fatal("deleted tools with an unknown legacy project reference set")
+	}
+}
+
+func TestPressureReclaimsStoppedProjectCacheWithoutStartingItsRuntime(t *testing.T) {
+	ctx := t.Context()
+	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "registry.db"), MaxOpenConns: 1}).Open(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	m, err := New(db, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	project := &Project{ID: projectid.New(), Workspace: "/offline"}
+	if err = m.save(ctx, project); err != nil {
+		t.Fatal(err)
+	}
+	state, _ := m.projectState(project.storageID())
+	root := filepath.Join(state, "data")
+	profile := filepath.Join(root, "session-profiles", strings.Repeat("a", 32), "accounts", "work")
+	cache := filepath.Join(profile, "home", ".cache", "go-build")
+	os.MkdirAll(cache, 0700)
+	os.WriteFile(filepath.Join(cache, "object"), []byte("reproducible"), 0600)
+	credential := filepath.Join(profile, "config", "auth.json")
+	os.MkdirAll(filepath.Dir(credential), 0700)
+	os.WriteFile(credential, []byte("fixture credential"), 0600)
+	tools := t.TempDir()
+	guard, err := core.Lock(filepath.Join(profile, "login.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cs, err := m.maintenanceFiles(ctx, tools, maintenance.Default(), time.Now(), true); err != nil || len(cs) != 0 {
+		t.Fatal("live profile exposed to Manager cleanup", cs, err)
+	}
+	guard.Close()
+	cs, err := m.maintenanceFiles(ctx, tools, maintenance.Default(), time.Now(), true)
+	if err != nil || len(cs) != 1 || cs[0].Kind != maintenance.Cache {
+		t.Fatal(cs, err)
+	}
+	if ok, err := cs[0].Remove(ctx); err != nil || !ok {
+		t.Fatal(ok, err)
+	}
+	if _, err = os.Stat(cache); !os.IsNotExist(err) {
+		t.Fatal("offline cache retained", err)
+	}
+	if _, err = os.Stat(credential); err != nil {
+		t.Fatal("provider state removed", err)
+	}
+	os.MkdirAll(cache, 0700)
+	if err = core.WriteJSON(filepath.Join(root, "maintenance.json"), map[string]bool{"disabled": true}); err != nil {
+		t.Fatal(err)
+	}
+	if cs, err = m.maintenanceFiles(ctx, tools, maintenance.Default(), time.Now(), true); err != nil || len(cs) != 0 {
+		t.Fatal("disabled project was cleaned", cs, err)
 	}
 }
