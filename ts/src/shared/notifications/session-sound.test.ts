@@ -50,10 +50,11 @@ it("uses a distinct error cue, interrupts queued cues, and respects mute", async
   );
   let enabled = true;
   const sound = sessionSound(() => enabled);
+  expect(sound.play("complete")).toBe(false);
   listeners.get("pointerdown")!();
   await vi.waitFor(() => expect(decoded).toBe(3));
-  sound.play("complete");
-  sound.play("question");
+  expect(sound.play("complete")).toBe(true);
+  expect(sound.play("question")).toBe(true);
   sound.play("error");
   expect(sources).toHaveLength(3);
   expect(sources[0].stop).toHaveBeenCalled();
@@ -61,7 +62,7 @@ it("uses a distinct error cue, interrupts queued cues, and respects mute", async
   expect(sources[2].buffer.cue).not.toBe(sources[0].buffer.cue);
   expect(sources[2].start).toHaveBeenCalledWith(0);
   enabled = false;
-  sound.play("error");
+  expect(sound.play("error")).toBe(false);
   expect(sources).toHaveLength(3);
   sound.dispose();
   expect(listeners.size).toBe(0);

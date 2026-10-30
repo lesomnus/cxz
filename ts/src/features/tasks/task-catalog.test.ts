@@ -8,6 +8,9 @@ import {
   type TaskWatchResponse,
 } from "#gen/cxz/task_svc_pb";
 import { TaskCatalog } from "./task-catalog";
+import { TaskCache } from "./task-cache";
+import { Store } from "@lesomnus/payday/store";
+import { Task as TaskEntity, Project } from "#gen/entities";
 
 class Feed {
   values: TaskWatchResponse[] = [];
@@ -46,6 +49,83 @@ const tick = async () => {
 afterEach(() => vi.useRealTimers());
 
 describe("project task subscriptions", () => {
+  const cache = () =>
+    new TaskCache(
+      Store.open([TaskEntity, Project], { name: "test", identity: "reader" }),
+    );
+
+  it("restores cached membership before Watch answers, then replaces and persists the server snapshot", async () => {
+    vi.useFakeTimers();
+    const saved = cache();
+    saved.write("P", [task(1), task(2)]);
+    saved.write("Q", [task(3)]);
+    const feed = new Feed();
+    const catalog = new TaskCatalog(
+      { watch: (_r, opts) => feed.read(opts?.signal) },
+      Promise.resolve(saved),
+    );
+    const project = catalog.forProject("P");
+    const off = project.subscribe(() => {});
+    await tick();
+    expect(project.snapshot()).toMatchObject({
+      loading: false,
+      tasks: [{ name: "Task 1" }, { name: "Task 2" }],
+    });
+    feed.push(frame(task(2, "Updated remotely")));
+    await tick();
+    expect(saved.read("P")?.map((t) => t.name)).toEqual(["Updated remotely"]);
+    expect(saved.store.get(TaskEntity.typeName, task(1).id)).toBeUndefined();
+    expect(saved.read("Q")?.map((t) => t.name)).toEqual(["Task 3"]);
+    feed.push(create(TaskWatchResponseSchema, { items: [{ id: task(2).id }] }));
+    await tick();
+    expect(saved.read("P")).toEqual([]);
+    off();
+    catalog.dispose();
+  });
+
+  it("never overwrites fresh Watch data when disk hydration finishes later", async () => {
+    vi.useFakeTimers();
+    const saved = cache();
+    saved.write("P", [task(1, "Old disk value")]);
+    let resolve!: (cache: TaskCache) => void;
+    const disk = new Promise<TaskCache>((r) => {
+      resolve = r;
+    });
+    const feed = new Feed();
+    const catalog = new TaskCatalog(
+      { watch: (_r, opts) => feed.read(opts?.signal) },
+      disk,
+    );
+    const project = catalog.forProject("P");
+    const off = project.subscribe(() => {});
+    feed.push(frame(task(1, "Fresh server value")));
+    await tick();
+    resolve(saved);
+    await tick();
+    expect(project.snapshot().tasks[0].name).toBe("Fresh server value");
+    expect(saved.read("P")?.[0].name).toBe("Fresh server value");
+    off();
+    catalog.dispose();
+  });
+
+  it("keeps loading from Watch when browser storage is unavailable and ignores work after disposal", async () => {
+    vi.useFakeTimers();
+    const feed = new Feed();
+    const catalog = new TaskCatalog(
+      { watch: (_r, opts) => feed.read(opts?.signal) },
+      Promise.resolve(undefined),
+    );
+    const project = catalog.forProject("P");
+    project.subscribe(() => {});
+    feed.push(frame(task(1)));
+    await tick();
+    expect(project.snapshot().tasks).toHaveLength(1);
+    catalog.dispose();
+    const after = catalog.forProject("P");
+    after.apply(task(2));
+    expect(after.snapshot().tasks).toEqual([]);
+  });
+
   it("shares one watch, merges snapshot pages and changes, and cancels only after the last consumer leaves", async () => {
     vi.useFakeTimers();
     const feed = new Feed();

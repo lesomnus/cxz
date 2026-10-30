@@ -53,6 +53,14 @@ SQLite holds projections built from journals — the runtime registry and event 
 in `cxz.db`, resources and audit rows in `resources.db`. Projections can be rebuilt
 from journals; resource metadata and audit history cannot. Back up the volumes.
 
+Audit retains explicit resource-management changes, including session creation,
+manual metadata edits, archiving and restoration. Conversation sends and reads,
+live output, runtime reconciliation, automatic titles, update-readiness probes,
+notification delivery and read cursors do not create audit rows. These operational
+facts remain in their journals or state stores. Audit filtering is independent of
+the resource Watch recorder, so clients still receive state changes. Existing
+audit rows are retained; conversation-history retention does not trim this table.
+
 Journal reads are incremental: the runtime remembers the byte offset and sequence it
 last projected and reads only complete appended records, so loading a long history
 never replays the whole file. The cursor advances only after the database

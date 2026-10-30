@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/maintenance"
 	"io"
 	"os"
 	"os/exec"
@@ -36,6 +37,11 @@ func PinSelf(root string) (string, error) {
 	if !b.Managed() {
 		return os.Executable()
 	}
+	release, err := maintenance.VersionLease(context.Background(), root)
+	if err != nil {
+		return "", err
+	}
+	defer release()
 	sum, e := mappedDigest()
 	if e != nil {
 		return "", e
@@ -106,6 +112,11 @@ func PublishTools() error {
 	if !Current().Managed() {
 		return fmt.Errorf("unmanaged tools build")
 	}
+	release, err := maintenance.VersionLease(context.Background(), "/cxz/tools")
+	if err != nil {
+		return err
+	}
+	defer release()
 	lock, e := core.Lock("/cxz/tools/.cxz.update.lock")
 	if e != nil {
 		return e

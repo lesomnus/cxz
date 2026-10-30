@@ -5,6 +5,7 @@ import { sessionSound } from "#src/shared/notifications/session-sound.ts";
 import { tabAttention } from "#src/shared/notifications/tab-attention.ts";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import { questions } from "./journal";
+import { clientLogs, recordClientError } from "#src/shared/logs/client-logs.ts";
 
 export function useSessionAttention(
   c: Connection,
@@ -30,7 +31,26 @@ export function useSessionAttention(
     window.addEventListener("blur", update);
     document.addEventListener("visibilitychange", update);
     const sound = sessionSound(() => enabled.current);
-    const stop = c.attention.onAlert((kind) => sound.play(kind));
+    const stop = c.attention.onAlert((kind, note) => {
+      try {
+        if (!sound.play(kind)) return;
+        clientLogs().write({
+          level: "info",
+          category: "client",
+          connection: c.baseUrl,
+          session: note.session,
+          message: "Notification sound scheduled",
+          details: {
+            notificationId: note.id,
+            kind,
+            generation: note.generation,
+            seq: String(note.seq),
+          },
+        });
+      } catch (error) {
+        recordClientError(error, "Notification sound failed");
+      }
+    });
     badge.current = tabAttention();
     return () => {
       window.removeEventListener("focus", update);

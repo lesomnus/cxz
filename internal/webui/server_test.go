@@ -44,6 +44,49 @@ func TestBrowserFontPolicy(t *testing.T) {
 	}
 }
 
+func TestBrowserCacheIdentity(t *testing.T) {
+	a := &browserAuth{origin: "https://cxz.test", token: sha256.Sum256([]byte(strings.Repeat("a", 32))), sessions: map[[32]byte]browserSession{}}
+	defer func() {
+		for key := range a.sessions {
+			a.revoke(key)
+		}
+	}()
+	login := func() *httptest.ResponseRecorder {
+		r := httptest.NewRequest("POST", a.origin+"/auth/login", strings.NewReader(`{"token":"`+strings.Repeat("a", 32)+`"}`))
+		r.Header.Set("Origin", a.origin)
+		w := httptest.NewRecorder()
+		a.wrap(http.NotFoundHandler()).ServeHTTP(w, r)
+		if w.Code != http.StatusNoContent {
+			t.Fatal(w.Code, w.Body)
+		}
+		return w
+	}
+	one, two := login(), login()
+	identity := one.Header().Get("Payday-Identity")
+	if len(identity) != 32 || identity != two.Header().Get("Payday-Identity") {
+		t.Fatal("cache identity followed the renewable cookie")
+	}
+	if one.Result().Cookies()[0].Value == two.Result().Cookies()[0].Value {
+		t.Fatal("test did not renew the cookie")
+	}
+	r := httptest.NewRequest("GET", a.origin+"/auth/status", nil)
+	w := httptest.NewRecorder()
+	a.wrap(http.NotFoundHandler()).ServeHTTP(w, r)
+	if w.Code != http.StatusUnauthorized || w.Header().Get("Payday-Identity") != "" {
+		t.Fatal("identity exposed without authentication")
+	}
+	r.AddCookie(two.Result().Cookies()[0])
+	w = httptest.NewRecorder()
+	a.wrap(http.NotFoundHandler()).ServeHTTP(w, r)
+	if w.Code != http.StatusNoContent || w.Header().Get("Payday-Identity") != identity {
+		t.Fatal("reload changed cache identity")
+	}
+	other := &browserAuth{token: sha256.Sum256([]byte(strings.Repeat("b", 32)))}
+	if other.identity() == identity {
+		t.Fatal("different access credentials shared a cache")
+	}
+}
+
 func (*testSessions) Send(_ context.Context, r *resource.SessionSendRequest) (*resource.SessionReceipt, error) {
 	return resource.SessionReceipt_builder{ClientId: proto.String(r.GetClientId()), Status: proto.String(r.GetText())}.Build(), nil
 }

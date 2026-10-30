@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { devRPCStreams } from "./rpc-stream.mjs";
@@ -201,6 +202,7 @@ async function signIn(req, res, gateway) {
     });
     await status.arrayBuffer();
     if (status.status !== 401) {
+      await cacheIdentity(res, status, gateway);
       res.writeHead(status.status);
       res.end(
         status.ok ? undefined : `cxz gateway returned HTTP ${status.status}`,
@@ -209,16 +211,18 @@ async function signIn(req, res, gateway) {
     }
     // The access token never enters a browser response, Vite's source graph or
     // client storage. Only the gateway's HttpOnly session cookie is forwarded.
+    const token = await readToken(gateway.tokenFile);
     const login = await fetch(`${gateway.origin}/auth/login`, {
       method: "POST",
       headers: { Origin: gateway.origin, "Content-Type": "application/json" },
-      body: JSON.stringify({ token: await readToken(gateway.tokenFile) }),
+      body: JSON.stringify({ token }),
       redirect: "error",
       signal: AbortSignal.timeout(5000),
     });
     await login.arrayBuffer();
     if (login.ok) {
       res.setHeader("Set-Cookie", login.headers.getSetCookie());
+      await cacheIdentity(res, login, gateway, token);
     }
     res.writeHead(login.status);
     res.end(
@@ -230,4 +234,24 @@ async function signIn(req, res, gateway) {
       "Cannot sign in to cxz. Check cxz web status and the configured token file.",
     );
   }
+}
+
+async function cacheIdentity(res, response, gateway, token) {
+  if (!response.ok) return;
+  let identity = response.headers.get("payday-identity");
+  if (!identity) {
+    try {
+      const digest = createHash("sha256")
+        .update(token ?? (await readToken(gateway.tokenFile)))
+        .digest();
+      identity = createHash("sha256")
+        .update("cxz.web.cache:")
+        .update(digest)
+        .digest("hex")
+        .slice(0, 32);
+    } catch {
+      return;
+    }
+  }
+  res.setHeader("Payday-Identity", identity);
 }

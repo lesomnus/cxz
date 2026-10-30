@@ -31,10 +31,23 @@ test("unread response uses the left indicator and Sessions icon count clears whe
   const readerId = id(16, "operator");
   let throughSeq = "0";
   const state = () => ({ readerId, generation: "fixture", throughSeq });
-  await page.route("**/cxz.SessionService/ReadState", (route) =>
-    route.fulfill({ json: state() }),
-  );
+  let stateCalls = 0,
+    markCalls = 0;
+  let releaseState!: () => void, releaseMark!: () => void;
+  const statePending = new Promise<void>((resolve) => {
+    releaseState = resolve;
+  });
+  const markPending = new Promise<void>((resolve) => {
+    releaseMark = resolve;
+  });
+  await page.route("**/cxz.SessionService/ReadState", async (route) => {
+    stateCalls++;
+    await statePending;
+    await route.fulfill({ json: state() });
+  });
   await page.route("**/cxz.SessionService/MarkRead", async (route) => {
+    markCalls++;
+    await markPending;
     const req = route.request();
     const body = /application\/proto/.test(req.headers()["content-type"] ?? "")
       ? fromBinary(SessionMarkReadRequestSchema, req.postDataBuffer()!)
@@ -138,36 +151,60 @@ test("unread response uses the left indicator and Sessions icon count clears whe
       ]),
     });
   });
-  await page.goto("/c/_/session");
-  const row = page.locator(".tree-session").first();
-  const unread = row
-    .locator(".session-indicator")
-    .getByRole("img", { name: "Unread response", exact: true });
-  await expect(unread).toBeVisible();
-  await expect(unread.locator("circle")).toHaveCSS("fill", "rgb(217, 255, 48)");
-  await expect(row.locator(".session-unread")).toHaveCount(0);
-  const tab = page.getByRole("link", { name: "Sessions view", exact: true });
-  const count = tab.getByRole("img", {
-    name: "1 unread sessions",
-    exact: true,
-  });
-  await expect(count).toBeVisible();
-  await expect(count).toHaveText("1");
-  await expect(count).toHaveCSS("background-color", "rgb(217, 255, 48)");
-  const favicon = await page
-    .locator("link[data-session-attention]")
-    .getAttribute("href");
-  expect(decodeURIComponent(favicon!)).toContain('fill="#d9ff30"');
-  await row.click();
-  await expect(page.locator(".transcript")).toHaveAttribute(
-    "aria-busy",
-    "false",
-  );
-  await expect(unread).toHaveCount(0);
-  await expect(count).toHaveCount(0);
-  // A pending question retains its own status indicator once unread clears.
-  await expect(row.locator(".session-indicator")).toHaveAttribute(
-    "aria-label",
-    "Awaiting answer",
-  );
+  try {
+    await page.goto("/c/_/session");
+    const row = page.locator(".tree-session").first();
+    const unread = row
+      .locator(".session-indicator")
+      .getByRole("img", { name: "Unread response", exact: true });
+    await expect(unread).toBeVisible();
+    await expect(unread.locator("circle")).toHaveCSS(
+      "fill",
+      "rgb(217, 255, 48)",
+    );
+    await expect(row.locator(".session-unread")).toHaveCount(0);
+    const tab = page.getByRole("link", { name: "Sessions view", exact: true });
+    const count = tab.getByRole("img", {
+      name: "1 unread sessions",
+      exact: true,
+    });
+    await expect(count).toBeVisible();
+    await expect(count).toHaveText("1");
+    await expect(count).toHaveCSS("background-color", "rgb(217, 255, 48)");
+    const favicon = await page
+      .locator("link[data-session-attention]")
+      .getAttribute("href");
+    expect(decodeURIComponent(favicon!)).toContain('fill="#d9ff30"');
+    await row.click();
+    await expect(page.locator(".transcript")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+    await expect(unread).toHaveCount(0);
+    await expect(count).toHaveCount(0);
+    // A pending question retains its own status indicator once unread clears.
+    await expect(row.locator(".session-indicator")).toHaveAttribute(
+      "aria-label",
+      "Awaiting answer",
+    );
+    await expect.poll(() => stateCalls).toBeGreaterThan(0);
+    expect(markCalls).toBe(0);
+    await page
+      .getByRole("link", { name: "Projects view", exact: true })
+      .click();
+    await expect(count).toHaveCount(0);
+    await page
+      .getByRole("link", { name: "Sessions view", exact: true })
+      .click();
+    await expect(row).toBeVisible();
+    await expect(unread).toHaveCount(0);
+    releaseState();
+    await expect.poll(() => markCalls).toBeGreaterThan(0);
+    await expect(count).toHaveCount(0);
+    await expect(unread).toHaveCount(0);
+    releaseMark();
+  } finally {
+    releaseState();
+    releaseMark();
+  }
 });

@@ -9,7 +9,14 @@ import type {
 } from "#gen/cxz/payday/notification_pb";
 
 export type SessionAlert = "complete" | "question" | "error";
+export type SessionAlertDetails = {
+  id: string;
+  session: string;
+  generation: string;
+  seq: bigint;
+};
 const kinds = ["session.completed", "session.failed", "session.question"];
+const seenLimit = 4096;
 const key = (id: Uint8Array) =>
   Array.from(id, (b) => b.toString(16).padStart(2, "0")).join("");
 type Note = {
@@ -33,6 +40,8 @@ type Ack = {
   wanted: bigint;
   confirmed: bigint;
   generation: string;
+  optimistic: Map<string, bigint>;
+  rejected: bigint;
   busy: boolean;
   abort: AbortController;
   timer?: ReturnType<typeof setTimeout>;
@@ -48,7 +57,10 @@ export class SessionAttention {
   private reader = "";
   private acks = new Map<string, Ack>();
   private listeners = new Set<() => void>();
-  private alerts = new Set<(kind: SessionAlert) => void>();
+  private alerts = new Set<
+    (kind: SessionAlert, note: SessionAlertDetails) => void
+  >();
+  private seen = new Map<string, true>();
   private reading = { id: "", through: 0n };
   private value = new Set<string>();
   private errors = new Set<string>();
@@ -69,7 +81,7 @@ export class SessionAttention {
       this.listeners.delete(fn);
     };
   };
-  onAlert = (fn: (kind: SessionAlert) => void) => {
+  onAlert = (fn: (kind: SessionAlert, note: SessionAlertDetails) => void) => {
     this.alerts.add(fn);
     return () => {
       this.alerts.delete(fn);
@@ -81,13 +93,10 @@ export class SessionAttention {
       .filter((n) => {
         if (!this.sessions.has(n.session)) return false;
         const ack = this.acks.get(n.session);
-        if (ack?.generation === n.generation) {
-          const through =
-            this.reading.id === n.session
-              ? this.reading.through
-              : ack.confirmed;
-          if (n.seq <= through) return false;
-        }
+        if (ack && n.seq <= (ack.optimistic.get(n.generation) ?? 0n))
+          return false;
+        if (ack?.generation === n.generation && n.seq <= ack.confirmed)
+          return false;
         return true;
       });
     const next = new Set(unread.map((n) => n.session));
@@ -144,6 +153,7 @@ export class SessionAttention {
         clearTimeout(a.timer);
       });
       this.acks.clear();
+      this.seen.clear();
       this.groups.forEach((g) => {
         g.unread = [];
         g.known.clear();
@@ -269,18 +279,27 @@ export class SessionAttention {
           if (item.receipt) receipted.add(n.id);
         }
         unread.forEach((n) => arrivals.set(n.id, n));
+        const sounds: Note[] = [];
         for (const n of arrivals.values()) {
-          if (sound && !group.known.has(n.id) && this.sessions.has(n.session))
-            this.alerts.forEach((fn) => fn(n.kind));
+          const known = group.known.has(n.id) || this.seen.has(n.id);
+          // Query membership changes when a receipt is written or the recent
+          // window moves. Remember handling separately, before any callbacks.
+          this.seen.delete(n.id);
+          this.seen.set(n.id, true);
+          if (this.seen.size > seenLimit)
+            this.seen.delete(this.seen.keys().next().value!);
+          if (sound && !known && this.sessions.has(n.session)) sounds.push(n);
         }
         for (const n of unread)
           if (group.receipted.has(n.id)) receipted.add(n.id);
         group.known = new Set(arrivals.keys());
         group.receipted = receipted;
         group.unread = unread;
-        this.publish();
         if (this.reading.id)
           this.queueAck(this.reading.id, this.reading.through);
+        this.publish();
+        for (const note of sounds)
+          this.alerts.forEach((fn) => fn(note.kind, note));
       }
     } catch (error) {
       if (this.unavailable(error)) return;
@@ -294,6 +313,10 @@ export class SessionAttention {
     }
   }
   setReading(id: string, through = 0n) {
+    if (id && id !== this.reading.id) {
+      const ack = this.acks.get(id);
+      if (ack) ack.rejected = 0n;
+    }
     this.reading = { id, through };
     if (id) this.queueAck(id, through);
     this.publish();
@@ -311,13 +334,31 @@ export class SessionAttention {
         wanted: 0n,
         confirmed: 0n,
         generation: "",
+        optimistic: new Map(),
+        rejected: 0n,
         busy: false,
         abort: new AbortController(),
         last: 0,
       };
       this.acks.set(id, ack);
     }
+    if (through <= ack.rejected) return;
     ack.wanted = through > ack.wanted ? through : ack.wanted;
+    // Payload generations let the UI project a read before even ReadState
+    // answers. Keep the projection while navigating away or retrying offline.
+    if (ack.generation) {
+      if (ack.wanted > ack.confirmed)
+        ack.optimistic.set(ack.generation, ack.wanted);
+    } else {
+      for (const group of this.groups)
+        for (const note of group.unread)
+          if (
+            note.session === id &&
+            note.seq <= through &&
+            through > (ack.optimistic.get(note.generation) ?? 0n)
+          )
+            ack.optimistic.set(note.generation, through);
+    }
     if (ack.busy || ack.timer || ack.wanted <= ack.confirmed) return;
     ack.timer = setTimeout(
       () => {
@@ -337,6 +378,12 @@ export class SessionAttention {
         if (ack.abort.signal.aborted) return;
         ack.generation = state.generation;
         ack.confirmed = state.throughSeq;
+        for (const generation of ack.optimistic.keys())
+          if (generation !== state.generation)
+            ack.optimistic.delete(generation);
+        if (ack.wanted > ack.confirmed)
+          ack.optimistic.set(state.generation, ack.wanted);
+        this.publish();
       }
       if (ack.wanted > ack.confirmed) {
         const state = await this.api.markRead(
@@ -348,17 +395,33 @@ export class SessionAttention {
           state.throughSeq > ack.confirmed ? state.throughSeq : ack.confirmed;
         ack.generation = state.generation;
       }
+      for (const [generation, through] of ack.optimistic)
+        if (generation !== ack.generation || through <= ack.confirmed)
+          ack.optimistic.delete(generation);
       this.publish();
     } catch (error) {
       if (this.unavailable(error)) return;
+      const code = ConnectError.from(error).code;
       if (
-        error instanceof ConnectError &&
-        [Code.FailedPrecondition, Code.OutOfRange, Code.NotFound].includes(
-          error.code,
-        )
+        [Code.FailedPrecondition, Code.OutOfRange, Code.NotFound].includes(code)
       ) {
         ack.generation = "";
-        ack.wanted = ack.confirmed = 0n;
+        ack.confirmed = 0n;
+      }
+      if (
+        [
+          Code.Unauthenticated,
+          Code.PermissionDenied,
+          Code.InvalidArgument,
+          Code.FailedPrecondition,
+          Code.OutOfRange,
+          Code.NotFound,
+        ].includes(code)
+      ) {
+        ack.rejected = ack.wanted;
+        ack.wanted = ack.confirmed;
+        ack.optimistic.clear();
+        this.publish();
       }
     } finally {
       ack.busy = false;
@@ -389,6 +452,7 @@ export class SessionAttention {
       clearTimeout(a.timer);
     });
     this.acks.clear();
+    this.seen.clear();
     this.sessions.clear();
     this.reader = "";
     this.reading = { id: "", through: 0n };

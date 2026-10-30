@@ -11,7 +11,7 @@ test("sign in over loopback http, stay signed in, sign out", async ({
 }) => {
   await disableTerminalWebGL(page);
   const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("pageerror", (e) => errors.push(e.stack ?? e.message));
   await page.goto("/");
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
@@ -54,5 +54,12 @@ test("sign in over loopback http, stay signed in, sign out", async ({
     page.getByRole("button", { name: "Connect", exact: true }),
   ).toBeVisible();
   expect(await named()).toBeUndefined();
+  // Flush delivered resize callbacks after the composer refs are detached.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
   expect(errors).toEqual([]);
 });

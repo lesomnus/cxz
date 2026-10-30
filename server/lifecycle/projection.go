@@ -35,6 +35,7 @@ func (s Layer) sync(ctx context.Context) error {
 	if s.bound {
 		return nil
 	}
+	ctx = projectionContext(ctx)
 	s.shared.snapshotMu.Lock()
 	defer s.shared.snapshotMu.Unlock()
 	// No DB transaction or global mutex is held across Docker/RPC calls.
@@ -125,7 +126,7 @@ func (s Layer) observeStatus(ctx context.Context, v *api.Project) error {
 	if proto.Equal(old.GetStatus(), state) {
 		return nil
 	}
-	_, err = srv.Patch(ctx, resource.ProjectPatchRequest_builder{Ref: ref, Status: state, DateUpdatedForce: ptr(true)}.Build())
+	_, err = srv.Patch(projectionContext(ctx), resource.ProjectPatchRequest_builder{Ref: ref, Status: state, DateUpdatedForce: ptr(true)}.Build())
 	return err
 }
 
@@ -147,6 +148,7 @@ func (s Layer) ensureSnapshot(ctx context.Context) error {
 
 // RefreshSession projects one local journal change without scanning inventory.
 func (s Layer) RefreshSession(ctx context.Context, id string) error {
+	ctx = projectionContext(ctx)
 	s.shared.snapshotMu.Lock()
 	defer s.shared.snapshotMu.Unlock()
 	v, err := s.shared.runtime.Get(ctx, &api.SessionRef{Id: id})
@@ -226,6 +228,9 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 	if !old.GetListed() {
 		return old, nil
 	}
+	// Existing sessions are updated here only from runtime state. Explicit
+	// metadata edits, archive and restore write through their own handlers.
+	ctx = projectionContext(ctx)
 	if old.GetAlias() == "" {
 		alias, e := s.newSessionAlias(ctx)
 		if e != nil {

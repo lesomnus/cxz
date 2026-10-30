@@ -41,6 +41,7 @@ function TaskEditor({
   close,
   setBusy,
   reload,
+  reloadError,
 }: {
   c: Connection;
   project: Project;
@@ -51,6 +52,7 @@ function TaskEditor({
   close: () => void;
   setBusy: (busy: boolean) => void;
   reload: () => void;
+  reloadError?: string;
 }) {
   const id = useId();
   const [name, setName] = useState(task?.name ?? "");
@@ -76,8 +78,10 @@ function TaskEditor({
   const changed =
     !!task &&
     !!latest &&
-    (task.dateUpdated?.seconds !== latest.dateUpdated?.seconds ||
-      task.dateUpdated?.nanos !== latest.dateUpdated?.nanos);
+    ((latest.dateUpdated?.seconds ?? 0n) > (task.dateUpdated?.seconds ?? 0n) ||
+      ((latest.dateUpdated?.seconds ?? 0n) ===
+        (task.dateUpdated?.seconds ?? 0n) &&
+        (latest.dateUpdated?.nanos ?? 0) > (task.dateUpdated?.nanos ?? 0)));
   const owned = !!task?.assignee;
   const executable =
     owned &&
@@ -343,8 +347,8 @@ function TaskEditor({
               version.
             </p>
           )}
-          {error && <p role="alert">{error}</p>}
-          {task && (changed || conflict) && (
+          {(reloadError || error) && <p role="alert">{reloadError || error}</p>}
+          {task && (changed || conflict || reloadError) && (
             <Button type="button" disabled={busy} onClick={reload}>
               Reload latest task
             </Button>
@@ -388,18 +392,34 @@ export function TaskDialog({
   saved: (task: Task) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [task, setTask] = useState(latest);
+  const [editRevision, setEditRevision] = useState(0);
+  const forceReload = useRef(false);
+  useEffect(() => {
+    setTask((current) => current ?? latest);
+  }, [latest]);
   const detail = useRemote(
-    (signal) =>
-      selected
-        ? c.tasks.get(
-            {
-              ref: taskLookup(project, selected),
-              select: { all: true },
-            },
-            { signal, timeoutMs: 10000 },
-          )
-        : Promise.resolve(undefined),
-    [c, projectId(project), selected],
+    async (signal) => {
+      const force = forceReload.current;
+      forceReload.current = false;
+      const value = selected
+        ? !force && latest
+          ? latest
+          : await c.tasks.get(
+              {
+                ref: taskLookup(project, selected),
+                select: { all: true },
+              },
+              { signal, timeoutMs: 10000 },
+            )
+        : undefined;
+      if (!signal.aborted) {
+        setTask((current) => (!current || force ? value : current));
+        if (force) setEditRevision((value) => value + 1);
+      }
+      return value;
+    },
+    [c, projectId(project), selected, !!latest],
   );
   return (
     <AnchoredDialog
@@ -408,22 +428,26 @@ export function TaskDialog({
       close={close}
       busy={busy}
     >
-      {!selected || detail.data ? (
+      {!selected || task ? (
         <TaskEditor
           key={
-            detail.data
-              ? `${detail.data.dateUpdated?.seconds}:${detail.data.dateUpdated?.nanos}`
+            task
+              ? `${editRevision}:${task.dateUpdated?.seconds}:${task.dateUpdated?.nanos}`
               : "add"
           }
           c={c}
           project={project}
-          task={detail.data}
-          latest={latest}
+          task={task}
+          latest={latest ?? detail.data}
           sessions={sessions}
           close={close}
           saved={saved}
           setBusy={setBusy}
-          reload={detail.reload}
+          reloadError={detail.error}
+          reload={() => {
+            forceReload.current = true;
+            detail.reload();
+          }}
         />
       ) : (
         <Card title="Task details" close={close} closeLabel="Close">

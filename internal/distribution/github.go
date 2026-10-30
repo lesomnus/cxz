@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/maintenance"
 )
 
 const GitHubVersion = "2.100.0"
@@ -16,6 +17,11 @@ func EnsureGitHub(ctx context.Context, root, arch string) (string, error) {
 	return EnsureGitHubVersion(ctx, root, arch, SelectedVersion(root, "gh", GitHubVersion))
 }
 func EnsureGitHubVersion(ctx context.Context, root, arch, version string) (string, error) {
+	release, err := maintenance.VersionLease(ctx, root)
+	if err != nil {
+		return "", err
+	}
+	defer release()
 	if !ValidVersion(version) {
 		return "", fmt.Errorf("invalid gh release version")
 	}

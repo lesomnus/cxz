@@ -90,7 +90,10 @@ func (s InstallationServer) Version(ctx context.Context, _ *resource.EngineReque
 // A manager asks a project runtime how far it has trimmed, over this API,
 // because this is what the connection between them speaks.
 func (s SessionServer) GetHistoryFloor(ctx context.Context, r *resource.SessionHistoryFloorRequest) (*resource.SessionHistoryFloorReply, error) {
-	v, err := s.resolve(ctx, r.GetRef())
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	v, err := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
