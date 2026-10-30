@@ -35,6 +35,15 @@ and reconnect snapshots are silent. No completion History probes or tab-local
 read-state storage remain. The UI keeps only current unread and recent sound
 deduplication state in memory.
 
+Sound handling keeps a bounded recent-ID history separately from query
+membership. A receipt, page-window change or topic regroup cannot make a
+recently handled Notification ID new again. IDs are recorded before callbacks,
+including silent baseline snapshots, and cleared when the reader changes or
+the connection ends. Local optimistic read projection does not emit sounds.
+Client logs record successful Web Audio scheduling as `Notification sound
+scheduled`, including `notificationId`, kind, generation and sequence, so two
+different notifications can be distinguished from replay of one ID.
+
 An open, focused conversation acknowledges replies only when its latest history
 is visible. Reading older messages, switching away, hiding the tab or focusing
 the workspace terminal leaves the new reply unread. `SessionService.ReadState`

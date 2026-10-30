@@ -9,7 +9,14 @@ import type {
 } from "#gen/cxz/payday/notification_pb";
 
 export type SessionAlert = "complete" | "question" | "error";
+export type SessionAlertDetails = {
+  id: string;
+  session: string;
+  generation: string;
+  seq: bigint;
+};
 const kinds = ["session.completed", "session.failed", "session.question"];
+const seenLimit = 4096;
 const key = (id: Uint8Array) =>
   Array.from(id, (b) => b.toString(16).padStart(2, "0")).join("");
 type Note = {
@@ -50,7 +57,10 @@ export class SessionAttention {
   private reader = "";
   private acks = new Map<string, Ack>();
   private listeners = new Set<() => void>();
-  private alerts = new Set<(kind: SessionAlert) => void>();
+  private alerts = new Set<
+    (kind: SessionAlert, note: SessionAlertDetails) => void
+  >();
+  private seen = new Map<string, true>();
   private reading = { id: "", through: 0n };
   private value = new Set<string>();
   private errors = new Set<string>();
@@ -71,7 +81,7 @@ export class SessionAttention {
       this.listeners.delete(fn);
     };
   };
-  onAlert = (fn: (kind: SessionAlert) => void) => {
+  onAlert = (fn: (kind: SessionAlert, note: SessionAlertDetails) => void) => {
     this.alerts.add(fn);
     return () => {
       this.alerts.delete(fn);
@@ -143,6 +153,7 @@ export class SessionAttention {
         clearTimeout(a.timer);
       });
       this.acks.clear();
+      this.seen.clear();
       this.groups.forEach((g) => {
         g.unread = [];
         g.known.clear();
@@ -268,9 +279,16 @@ export class SessionAttention {
           if (item.receipt) receipted.add(n.id);
         }
         unread.forEach((n) => arrivals.set(n.id, n));
+        const sounds: Note[] = [];
         for (const n of arrivals.values()) {
-          if (sound && !group.known.has(n.id) && this.sessions.has(n.session))
-            this.alerts.forEach((fn) => fn(n.kind));
+          const known = group.known.has(n.id) || this.seen.has(n.id);
+          // Query membership changes when a receipt is written or the recent
+          // window moves. Remember handling separately, before any callbacks.
+          this.seen.delete(n.id);
+          this.seen.set(n.id, true);
+          if (this.seen.size > seenLimit)
+            this.seen.delete(this.seen.keys().next().value!);
+          if (sound && !known && this.sessions.has(n.session)) sounds.push(n);
         }
         for (const n of unread)
           if (group.receipted.has(n.id)) receipted.add(n.id);
@@ -280,6 +298,8 @@ export class SessionAttention {
         if (this.reading.id)
           this.queueAck(this.reading.id, this.reading.through);
         this.publish();
+        for (const note of sounds)
+          this.alerts.forEach((fn) => fn(note.kind, note));
       }
     } catch (error) {
       if (this.unavailable(error)) return;
@@ -432,6 +452,7 @@ export class SessionAttention {
       clearTimeout(a.timer);
     });
     this.acks.clear();
+    this.seen.clear();
     this.sessions.clear();
     this.reader = "";
     this.reading = { id: "", through: 0n };

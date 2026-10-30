@@ -285,13 +285,82 @@ it("sounds once for each live completion, error and question", async () => {
   ] as const) {
     f.add(seq, kind);
     f.invalidate();
-    await vi.waitFor(() => expect(alert).toHaveBeenCalledWith(sound));
+    await vi.waitFor(() =>
+      expect(alert).toHaveBeenCalledWith(
+        sound,
+        expect.objectContaining({
+          id: seq.toString(16).padStart(2, "0"),
+          seq: BigInt(seq),
+        }),
+      ),
+    );
   }
   f.invalidate();
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(alert).toHaveBeenCalledTimes(3);
   expect(t.errorSnapshot().has("one")).toBe(true);
 });
+
+it.each([
+  { history: false, regroup: false },
+  { history: true, regroup: false },
+  { history: false, regroup: true },
+  { history: true, regroup: true },
+])(
+  "does not replay a handled ID after reading it and leaving (history: $history, regroup: $regroup)",
+  async ({ history, regroup }) => {
+    const f = fixture();
+    if (history) f.add(4);
+    const tracker = f.tracker(),
+      sound = vi.fn();
+    tracker.onAlert(sound);
+    await f.settled();
+    const heard = history ? 0 : 1;
+    if (!history) {
+      f.add(4);
+      f.invalidate();
+      await vi.waitFor(() => expect(sound).toHaveBeenCalledTimes(heard));
+    }
+    const read = f.notifications.read.getMockImplementation()!;
+    let hidden = true;
+    f.notifications.read.mockImplementation(async (request) =>
+      hidden
+        ? create(NotificationReadResponseSchema, {
+            readerId: new Uint8Array([16]),
+          })
+        : read(request),
+    );
+    f.invalidate();
+    await vi.waitFor(() => expect(tracker.snapshot().size).toBe(0));
+    tracker.setReading("one", 4n);
+    await vi.waitFor(() => expect(f.api.markRead).toHaveBeenCalled());
+    tracker.setReading("");
+    if (regroup) {
+      const before = f.notifications.read.mock.calls.length;
+      tracker.observe([
+        ...f.sessions,
+        create(SessionSchema, {
+          runtimeId: "two",
+          project: { id: new Uint8Array([8]) },
+        }),
+      ]);
+      await vi.waitFor(() =>
+        expect(f.notifications.read.mock.calls.length).toBeGreaterThan(before),
+      );
+    }
+    const calls = f.notifications.read.mock.calls.length;
+    hidden = false;
+    f.invalidate();
+    await vi.waitFor(() =>
+      expect(f.notifications.read.mock.calls.length).toBeGreaterThan(calls),
+    );
+    expect(sound).toHaveBeenCalledTimes(heard);
+    f.add(5);
+    f.invalidate();
+    await vi.waitFor(() => expect(sound).toHaveBeenCalledTimes(heard + 1));
+    expect(sound.mock.calls.at(-1)?.[1].id).toBe("05");
+  },
+);
 it("persists only the visible range and shares receipts with another window", async () => {
   const f = fixture();
   f.add(9);
@@ -320,7 +389,12 @@ it("sounds for an already-read live completion without leaving a badge", async (
   await f.settled();
   f.add(4, "session.completed", true);
   f.invalidate();
-  await vi.waitFor(() => expect(alert).toHaveBeenCalledWith("complete"));
+  await vi.waitFor(() =>
+    expect(alert).toHaveBeenCalledWith(
+      "complete",
+      expect.objectContaining({ id: "04", seq: 4n }),
+    ),
+  );
   expect(t.snapshot().size).toBe(0);
 });
 it("does not acknowledge background sessions merely because they are listed", async () => {

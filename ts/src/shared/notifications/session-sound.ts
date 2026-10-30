@@ -46,7 +46,7 @@ export function sessionSound(enabled: () => boolean) {
     play(kind: SessionAlert) {
       const buffer = buffers[kind];
       if (!enabled() || disposed || context?.state !== "running" || !buffer)
-        return;
+        return false;
       // Serialize a small burst, then drop excess alerts instead of building a
       // long sound queue when several sessions finish together.
       if (kind === "error") {
@@ -54,7 +54,7 @@ export function sessionSound(enabled: () => boolean) {
         for (const source of playing) source.stop();
         playing.clear();
         nextTime = context.currentTime;
-      } else if (nextTime > context.currentTime + 1) return;
+      } else if (nextTime > context.currentTime + 1) return false;
       const source = context.createBufferSource();
       const gain = context.createGain();
       source.buffer = buffer;
@@ -69,6 +69,7 @@ export function sessionSound(enabled: () => boolean) {
         source.disconnect();
         gain.disconnect();
       };
+      return true;
     },
     dispose() {
       disposed = true;
