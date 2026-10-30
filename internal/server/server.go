@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -490,11 +491,13 @@ func (s *Server) launch(ctx context.Context, m core.Session) (*api.Session, erro
 		return nil, err
 	}
 	defer release()
-	toolsRelease, err := maintenance.VersionLease(ctx, "/cxz/tools")
-	if err != nil {
-		return nil, err
+	if strings.HasPrefix(m.Agent, "/cxz/tools/") || strings.HasPrefix(m.Supervisor, "/cxz/tools/") {
+		toolsRelease, err := maintenance.VersionLease(ctx, "/cxz/tools")
+		if err != nil {
+			return nil, err
+		}
+		defer toolsRelease()
 	}
-	defer toolsRelease()
 	if err := s.awaitSessionRelease(ctx, m); err != nil {
 		return nil, err
 	}

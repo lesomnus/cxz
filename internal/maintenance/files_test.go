@@ -93,3 +93,31 @@ func TestProfilesProtectRunningAgentsCredentialsAndSymlinkTargets(t *testing.T) 
 		t.Fatal("credentials removed", err)
 	}
 }
+
+func TestRotationResidueSharesItsWritersLock(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "runtime.log")
+	os.WriteFile(path, []byte("current"), 0600)
+	orphan := filepath.Join(root, ".runtime.log.rotate-123")
+	os.WriteFile(orphan, []byte("old interrupted copy"), 0600)
+	old := time.Now().Add(-48 * time.Hour)
+	os.Chtimes(orphan, old, old)
+	cs, err := LogCandidates(root, Default(), time.Now(), false)
+	if err != nil || len(cs) != 1 || cs[0].Kind != Temporary {
+		t.Fatal(cs, err)
+	}
+	writer, err := core.Lock(path + ".rotation.lock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if removed, err := cs[0].Remove(t.Context()); err != nil || removed {
+		t.Fatal("live log rotation removed", removed, err)
+	}
+	writer.Close()
+	if removed, err := cs[0].Remove(t.Context()); err != nil || !removed {
+		t.Fatal(removed, err)
+	}
+	if b, err := os.ReadFile(path); err != nil || string(b) != "current" {
+		t.Fatal("current log changed", string(b), err)
+	}
+}

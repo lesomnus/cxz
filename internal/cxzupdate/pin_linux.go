@@ -112,6 +112,11 @@ func PublishTools() error {
 	if !Current().Managed() {
 		return fmt.Errorf("unmanaged tools build")
 	}
+	release, err := maintenance.VersionLease(context.Background(), "/cxz/tools")
+	if err != nil {
+		return err
+	}
+	defer release()
 	lock, e := core.Lock("/cxz/tools/.cxz.update.lock")
 	if e != nil {
 		return e
