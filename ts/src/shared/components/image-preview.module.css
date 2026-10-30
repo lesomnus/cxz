@@ -51,6 +51,9 @@
 }
 .zoomValue {
   flex: none;
+  width: 7ch;
+  text-align: end;
   font-family: var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

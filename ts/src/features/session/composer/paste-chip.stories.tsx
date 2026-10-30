@@ -94,7 +94,7 @@ export const RestoredImage: Story = {
     docs: {
       description: {
         story:
-          "The File is absent, like a restored draft. Opening reads the container path through the same download callback used by the live composer; this story supplies an in-browser fixture. 100% fits the image, and the footer slider zooms around its center. Drag or use arrow keys in the image viewport to pan when enlarged.",
+          "The File is absent, like a restored draft. Opening reads the container path through the same download callback used by the live composer; this story supplies an in-browser fixture. 100% is the intrinsic image size. Larger images start at their fit percentage, without upscaling small images; the footer slider zooms around the center. Drag or use arrow keys in the image viewport to pan when enlarged.",
       },
     },
   },

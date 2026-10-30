@@ -86,13 +86,43 @@ for (const story of ["ready-image", "restored-image"]) {
       });
 
     const slider = dialog.getByRole("slider", { name: "Image zoom" });
+    const nativeSize = await image.evaluate((node: HTMLImageElement) => ({
+      width: node.naturalWidth,
+      height: node.naturalHeight,
+    }));
+    const fittedZoom = Number(await slider.inputValue());
+    expect(fittedZoom).toBeLessThanOrEqual(100);
+    expect(
+      Math.abs(initial.width - (nativeSize.width * fittedZoom) / 100),
+    ).toBeLessThan(1);
+    const gaps = await dialog.evaluate((node) => {
+      const outer = node.getBoundingClientRect();
+      const inner = node.querySelector(".card-body")!.getBoundingClientRect();
+      return { top: inner.top - outer.top, left: inner.left - outer.left };
+    });
+    expect(gaps.top).toBeGreaterThan(0);
+    expect(gaps.top).toBeCloseTo(gaps.left, 4);
+    await slider.evaluate((node: HTMLInputElement) => {
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )!.set!.call(node, "100");
+      node.dispatchEvent(new Event("input", { bubbles: true }));
+    });
     await expect(slider).toHaveValue("100");
+    await expect
+      .poll(async () => (await image.boundingBox())!.width)
+      .toBeCloseTo(nativeSize.width, 1);
+    expect((await image.boundingBox())!.height).toBeCloseTo(
+      nativeSize.height,
+      1,
+    );
     await slider.focus();
     await slider.press("End");
     await expect(slider).toHaveValue("400");
     await expect(viewport).toHaveAttribute("data-can-pan", "true");
     const enlarged = (await image.boundingBox())!;
-    expect(Math.abs(enlarged.width / initial.width - 4)).toBeLessThan(0.01);
+    expect(Math.abs(enlarged.width / nativeSize.width - 4)).toBeLessThan(0.01);
     const x = box.x + box.width / 2,
       y = box.y + box.height / 2;
     await page.mouse.move(x, y);
@@ -117,7 +147,7 @@ for (const story of ["ready-image", "restored-image"]) {
 
     await slider.focus();
     await slider.press("Home");
-    await expect(slider).toHaveValue("25");
+    await expect(slider).toHaveValue("1");
     await expect(viewport).not.toHaveAttribute("data-can-pan");
     const small = (await image.boundingBox())!;
     expect(Math.abs(small.x + small.width / 2 - x)).toBeLessThan(1);
@@ -194,6 +224,7 @@ test("pasted PNG opens immediately before upload finishes and reopens with zoom 
   ).toEqual([800, 600]);
   await expect(chip).toHaveAttribute("data-upload-state", "uploading");
   const slider = dialog.getByRole("slider", { name: "Image zoom" });
+  const fittedZoom = await slider.inputValue();
   await slider.press("End");
   await expect(slider).toHaveValue("400");
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
@@ -201,9 +232,57 @@ test("pasted PNG opens immediately before upload finishes and reopens with zoom 
   await expect(input).toBeFocused();
   await chip.click();
   await expect(image).toBeVisible();
-  await expect(slider).toHaveValue("100");
+  await expect(slider).toHaveValue(fittedZoom);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
+});
+
+test("small images open at their original size without automatic enlargement", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=composer-upload-chips--interactive&viewMode=story",
+  );
+  await page
+    .getByRole("textbox", { name: "Message", exact: true })
+    .evaluate(async (node) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 16;
+      canvas.height = 12;
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((blob) => resolve(blob!), "image/png"),
+      );
+      const data = new DataTransfer();
+      data.items.add(new File([blob], "small.png", { type: "image/png" }));
+      node.focus();
+      node.dispatchEvent(
+        new ClipboardEvent("paste", {
+          clipboardData: data,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+  await page.locator('.paste-chip[data-image="true"]').click();
+  const card = page.getByRole("dialog", { name: "Image preview", exact: true });
+  const image = card.locator("img");
+  await expect(image).toBeVisible();
+  await card.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) => animation.effect?.getTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
+  await expect(card.getByRole("slider", { name: "Image zoom" })).toHaveValue(
+    "100",
+  );
+  const box = (await image.boundingBox())!;
+  expect(box.width).toBeCloseTo(16, 1);
+  expect(box.height).toBeCloseTo(12, 1);
 });
 
 test("invalid image bytes show a recoverable error and keep zoom disabled", async ({

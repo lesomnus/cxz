@@ -15,7 +15,7 @@ import {
   SliderControl,
   SliderValue,
 } from "@lesomnus/nox";
-import { t } from "#src/shared/i18n/i18n.ts";
+import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./image-preview.module.css";
 
@@ -58,7 +58,7 @@ export function ImagePreviewProvider({
     "loading",
   );
   const [attempt, setAttempt] = useState(0);
-  const [zoom, setZoom] = useState(100);
+  const [chosenZoom, setZoom] = useState<number>();
   const [pan, setPan] = useState<Point>(center);
   const [panning, setPanning] = useState(false);
   const drag = useRef<
@@ -80,7 +80,7 @@ export function ImagePreviewProvider({
     setUrl("");
     setNatural({ width: 0, height: 0 });
     setStatus("loading");
-    setZoom(100);
+    setZoom(undefined);
     setPan(center);
     void Promise.resolve()
       .then(() => load(controller.signal))
@@ -109,11 +109,21 @@ export function ImagePreviewProvider({
   }, []);
 
   const fit =
-    natural.width && natural.height
-      ? Math.min(box.width / natural.width, box.height / natural.height)
-      : 0;
-  const width = (natural.width * fit * zoom) / 100;
-  const height = (natural.height * fit * zoom) / 100;
+    natural.width && natural.height && box.width && box.height
+      ? Math.min(
+          100,
+          (100 * box.width) / natural.width,
+          (100 * box.height) / natural.height,
+        )
+      : 100;
+  const initialZoom = Math.max(0.01, Math.floor(fit * 100) / 100);
+  const zoom = chosenZoom ?? initialZoom;
+  const minimumZoom = Math.min(1, initialZoom);
+  const zoomLabel = zoom.toLocaleString(currentLocale(), {
+    maximumFractionDigits: 2,
+  });
+  const width = (natural.width * zoom) / 100;
+  const height = (natural.height * zoom) / 100;
   const limitX = Math.max(0, (width - box.width) / 2);
   const limitY = Math.max(0, (height - box.height) / 2);
   const position = { x: clamp(pan.x, limitX), y: clamp(pan.y, limitY) };
@@ -238,36 +248,38 @@ export function ImagePreviewProvider({
         className={styles.zoom}
         label={t("Image zoom")}
         value={zoom}
-        min={25}
+        min={minimumZoom}
         max={400}
-        step={5}
+        step="any"
         disabled={status !== "ready"}
-        onChange={(next) => {
+        onChange={(value) => {
+          const next = Math.max(minimumZoom, Math.round(value * 100) / 100);
           endDrag();
           setZoom(next);
           setPan({
             x: clamp(
               position.x,
-              Math.max(0, ((natural.width * fit * next) / 100 - box.width) / 2),
+              Math.max(0, ((natural.width * next) / 100 - box.width) / 2),
             ),
             y: clamp(
               position.y,
-              Math.max(
-                0,
-                ((natural.height * fit * next) / 100 - box.height) / 2,
-              ),
+              Math.max(0, ((natural.height * next) / 100 - box.height) / 2),
             ),
           });
         }}
       >
-        <SliderControl aria-valuetext={`${zoom}%`} />
+        <SliderControl aria-valuetext={`${zoomLabel}%`} />
         <SliderValue className={styles.zoomValue}>
-          <CompactNumber
-            value={zoom}
-            mode="integer"
-            digits={3}
-            label={`${zoom}%`}
-          />
+          {Number.isInteger(zoom) ? (
+            <CompactNumber
+              value={zoom}
+              mode="integer"
+              digits={3}
+              label={`${zoom}%`}
+            />
+          ) : (
+            zoomLabel
+          )}
           %
         </SliderValue>
       </SliderRoot>
