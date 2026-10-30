@@ -29,6 +29,14 @@ test("images show only progress then size with an image icon and unchanged label
       .locator("[data-file-chip-label]")
       .evaluate((node) => node.getBoundingClientRect().width),
   ).toBe(width);
+  await image.click();
+  const preview = page.getByRole("dialog", {
+    name: "Image preview",
+    exact: true,
+  });
+  await expect(preview.locator("img")).toBeVisible();
+  await preview.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(preview).toHaveCount(0);
 });
 
 test("pasting an actual image uses the compact chip and leaves the caret after it", async ({

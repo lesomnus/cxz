@@ -24,7 +24,7 @@ type Card = {
   id: number;
   title: string | (() => string);
   label?: string | (() => string);
-  kind?: "paste";
+  kind?: "paste" | "image";
   content: (close: () => void) => ReactNode;
   footer?: (close: () => void) => ReactNode;
   origin: HTMLElement | null;
@@ -434,7 +434,9 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
         </div>
         <div className="question-scroll-fade" aria-hidden="true" />
         {card &&
-          (card.anchor ? (
+          (card.kind === "image" ? (
+            !card.closing && card.content(() => close(card.id))
+          ) : card.anchor ? (
             <AnchoredDetail
               key={card.id}
               anchor={card.anchor}

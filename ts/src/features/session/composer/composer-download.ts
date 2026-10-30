@@ -2,6 +2,11 @@ import { projectRef } from "#src/shared/api/project-id.ts";
 import { ref, type Connection } from "#src/shared/api/connection.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 
+export type DownloadAttachment = (
+  path: string,
+  signal: AbortSignal,
+) => Promise<Blob>;
+
 export async function containerDownload(
   client: Pick<Connection["projects"], "download">,
   project: string,

@@ -2,7 +2,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { PasteChip } from "./paste-chip";
-import type { ComposerPaste } from "./composer-pastes";
+import { isImagePaste, type ComposerPaste } from "./composer-pastes";
+import { ImagePastePreview } from "./image-paste-preview";
+import {
+  previewImage,
+  readPreviewImage,
+} from "#src/storybook/image-preview-fixture.ts";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 
 const file: ComposerPaste = {
@@ -20,13 +25,14 @@ const text: ComposerPaste = {
   attachment: { name: "paste.txt", state: "uploading", progress: 35 },
 };
 const image: ComposerPaste = {
-  token: "[File 87654321 · image.png]",
+  token: "[File 87654321 · image.svg]",
   body: "",
   lines: 0,
   bytes: 2500000,
   attachment: {
-    name: "image.png",
-    mediaType: "image/png",
+    name: "image.svg",
+    file: previewImage(),
+    mediaType: "image/svg+xml",
     state: "uploading",
     progress: 35,
   },
@@ -37,14 +43,28 @@ const meta = {
   args: { paste: file, onOpen: () => {} },
   render: function Chip(args) {
     const [paste, setPaste] = useState(args.paste);
+    const [preview, setPreview] = useState(false);
     useEffect(() => setPaste(args.paste), [args.paste]);
     return (
-      <PasteChip
-        {...args}
-        paste={paste}
-        canSendFile
-        onSendModeChange={(mode) => setPaste({ ...paste, sendAs: mode })}
-      />
+      <>
+        <PasteChip
+          {...args}
+          paste={paste}
+          canSendFile
+          onSendModeChange={(mode) => setPaste({ ...paste, sendAs: mode })}
+          onOpen={() => {
+            args.onOpen();
+            if (isImagePaste(paste)) setPreview(true);
+          }}
+        />
+        {preview && (
+          <ImagePastePreview
+            paste={paste}
+            download={readPreviewImage}
+            close={() => setPreview(false)}
+          />
+        )}
+      </>
     );
   },
   parameters: {
@@ -64,6 +84,27 @@ export const UploadingImage: Story = { args: { paste: image } };
 export const ReadyImage: Story = {
   args: {
     paste: { ...image, attachment: { ...image.attachment!, state: "ready" } },
+  },
+};
+export const RestoredImage: Story = {
+  args: {
+    paste: {
+      ...image,
+      attachment: {
+        ...image.attachment!,
+        file: undefined,
+        path: "/cxz/assets/storybook/upload/image.svg",
+        state: "ready",
+      },
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The File is absent, like a restored draft. Opening reads the container path through the same download callback used by the live composer; this story supplies an in-browser fixture. 100% fits the image, and the footer slider zooms around its center. Drag or use arrow keys in the image viewport to pan when enlarged.",
+      },
+    },
   },
 };
 export const Ready: Story = {
@@ -103,6 +144,7 @@ export const UploadTransition: Story = {
     const [progress, setProgress] = useState(0);
     const [attempt, setAttempt] = useState(0);
     const [sendAs, setSendAs] = useState<"text" | "file">("file");
+    const [preview, setPreview] = useState<ComposerPaste>();
     useEffect(() => {
       const timer = window.setInterval(
         () =>
@@ -130,7 +172,9 @@ export const UploadTransition: Story = {
                   state: progress < 100 ? "uploading" : "ready",
                 },
               }}
-              onOpen={() => {}}
+              onOpen={() => {
+                if (isImagePaste(paste)) setPreview(paste);
+              }}
               canSendFile
               onSendModeChange={setSendAs}
             />
@@ -144,6 +188,13 @@ export const UploadTransition: Story = {
         >
           Replay upload
         </Button>
+        {preview && (
+          <ImagePastePreview
+            paste={preview}
+            download={readPreviewImage}
+            close={() => setPreview(undefined)}
+          />
+        )}
       </div>
     );
   },

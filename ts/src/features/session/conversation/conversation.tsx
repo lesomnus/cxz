@@ -510,6 +510,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         : undefined,
       secretFiles:
         projectId && run ? secretFiles(c, projectId, id, run) : undefined,
+      downloadAttachment: projectId
+        ? (path: string, signal: AbortSignal) =>
+            containerDownload(c.projects, projectId, path, signal)
+        : undefined,
     };
   }, [c, id, projectId, s?.status?.runId]);
   const lookupPaths = useCallback<LookupPaths>(
