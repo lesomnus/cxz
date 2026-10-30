@@ -56,6 +56,7 @@ import {
   wholePasteSelection,
   expandPastes,
   isTextPaste,
+  isImagePaste,
   type ComposerPaste,
 } from "./composer-pastes";
 import {
@@ -72,6 +73,12 @@ import { prepareSecretPaste, type SecretFiles } from "./secret-paste";
 import { SecretPreview } from "./secret-preview";
 import { SecretPreviewBody } from "./secret-preview-body";
 import { PasteChip } from "./paste-chip";
+import { ImagePastePreview } from "./image-paste-preview";
+import {
+  ImagePreviewBody,
+  ImagePreviewActions,
+} from "#src/shared/components/image-preview.tsx";
+import type { DownloadAttachment } from "./composer-download";
 import { reserveChip } from "./chip-reservation";
 import {
   restoreEditorSelection,
@@ -98,6 +105,7 @@ export function ComposerEditor({
   editorRef,
   upload,
   secretFiles,
+  downloadAttachment,
   detectSecrets = false,
   onUploadChange,
   mentions,
@@ -119,6 +127,7 @@ export function ComposerEditor({
   editorRef?: Ref<ComposerEditorHandle>;
   upload?: UploadFile;
   secretFiles?: SecretFiles;
+  downloadAttachment?: DownloadAttachment;
   detectSecrets?: boolean;
   onUploadChange?: () => void;
   mentions?: MentionContext;
@@ -613,6 +622,20 @@ export function ComposerEditor({
   function showPreview(range: ProjectedPasteRange) {
     input.current!.focus({ preventScroll: true });
     input.current!.setSelectionRange(range.start, range.end);
+    if (isImagePaste(range.paste)) {
+      openCard({
+        kind: "image",
+        title: () => t("Image preview"),
+        wrap: (children) => (
+          <ImagePastePreview paste={range.paste} download={downloadAttachment}>
+            {children}
+          </ImagePastePreview>
+        ),
+        content: () => <ImagePreviewBody />,
+        footer: (close) => <ImagePreviewActions close={close} />,
+      });
+      return;
+    }
     const retry = () => {
       if (!latest.current.readOnly) startUpload(range.paste);
     };

@@ -3,6 +3,8 @@ import { SessionDrafts } from "./session-drafts";
 import { restoreEditorSelection } from "#src/features/session/composer/editor-selection.ts";
 import {
   createPaste,
+  createFileChip,
+  isImagePaste,
   expandPastes,
   attachmentsReady,
   type ComposerPaste,
@@ -215,6 +217,48 @@ it("keeps interrupted file chips blocked instead of uploading an empty restored 
   expect(paste.attachment?.state).toBe("error");
   expect(paste.attachment?.file).toBeUndefined();
   expect(attachmentsReady(paste.token, restored)).toBe(false);
+});
+
+it("preserves image type after reload without persisting the file blob or requiring an extension", () => {
+  const file = storage();
+  const image = createFileChip(
+    new File(["image bytes"], "clipboard", { type: "image/png" }),
+    "clipboard",
+  );
+  image.attachment!.state = "ready";
+  image.attachment!.path = "/cxz/assets/clipboard";
+  const drafts = new SessionDrafts(
+    "host",
+    new Map([[image.token, image]]),
+    () => file,
+  );
+  drafts.set("one", image.token);
+  const restored = new Map<string, ComposerPaste>();
+  const reload = new SessionDrafts("host", restored, () => file);
+  expect(reload.get("one")).toBe(image.token);
+  const paste = restored.get(image.token)!;
+  expect(paste.attachment?.file).toBeUndefined();
+  expect(paste.attachment?.mediaType).toBe("image/png");
+  expect(isImagePaste(paste)).toBe(true);
+  expect(expandPastes(image.token, restored)).toContain(
+    "/cxz/assets/clipboard",
+  );
+  expect(
+    isImagePaste({
+      ...paste,
+      attachment: {
+        ...paste.attachment!,
+        mediaType: undefined,
+        name: "IMAGE.PNG",
+      },
+    }),
+  ).toBe(true);
+  expect(
+    isImagePaste({
+      ...paste,
+      attachment: { ...paste.attachment!, directory: true },
+    }),
+  ).toBe(false);
 });
 it("storage denial does not break in-memory editing", () => {
   const drafts = new SessionDrafts("host", new Map(), () => {

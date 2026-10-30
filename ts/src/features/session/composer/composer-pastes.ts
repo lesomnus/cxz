@@ -17,6 +17,7 @@ export type ComposerPaste = {
   attachment?: {
     file?: File;
     name: string;
+    mediaType?: string;
     directory?: boolean;
     state: "uploading" | "ready" | "error";
     progress?: number;
@@ -35,6 +36,21 @@ export const MAX_PASTE_CACHE_BYTES = 32 * MAX_PASTE_BYTES;
 
 export function isTextPaste(paste: ComposerPaste) {
   return !paste.secret && !!paste.body;
+}
+export function isImagePaste(paste: ComposerPaste) {
+  const attachment = paste.attachment;
+  if (paste.secret || isTextPaste(paste) || !attachment || attachment.directory)
+    return false;
+  const mediaType = attachment.mediaType ?? attachment.file?.type;
+  if (
+    typeof mediaType === "string" &&
+    mediaType &&
+    mediaType.toLowerCase() !== "application/octet-stream"
+  )
+    return mediaType.toLowerCase().startsWith("image/");
+  return /\.(?:apng|avif|bmp|gif|heic|heif|ico|jpe?g|jxl|png|svg|tiff?|webp)$/i.test(
+    attachment.name,
+  );
 }
 export function pasteSendMode(paste: ComposerPaste): "text" | "file" {
   return paste.sendAs ?? (paste.attachment ? "file" : "text");
@@ -135,7 +151,13 @@ export function createFileChip(
     body: "",
     lines: 0,
     bytes: file.size,
-    attachment: { file, name, directory, state: "uploading" },
+    attachment: {
+      file,
+      name,
+      mediaType: file.type || undefined,
+      directory,
+      state: "uploading",
+    },
   };
 }
 

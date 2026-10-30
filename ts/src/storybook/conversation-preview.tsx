@@ -182,6 +182,8 @@ export function ComponentPreview({
   sessionStopped = false,
   uploadMode,
   secretFiles,
+  pastes: suppliedPastes,
+  downloadAttachment,
   lookupPaths,
   loadDetails,
   children,
@@ -202,6 +204,8 @@ export function ComponentPreview({
   sessionStopped?: boolean;
   uploadMode?: "ready" | "slow" | "retry";
   secretFiles?: SecretFiles;
+  pastes?: Map<string, ComposerPaste>;
+  downloadAttachment?: import("#src/features/session/composer/composer-download.ts").DownloadAttachment;
   lookupPaths?: LookupPaths;
   loadDetails?: LoadEventDetails;
   children?: ReactNode;
@@ -287,7 +291,7 @@ export function ComponentPreview({
         onSelectionChange={onSelectionChange}
         draft={value}
         onChange={onChange ?? noop}
-        pastes={pastes.current}
+        pastes={suppliedPastes ?? pastes.current}
         commands={sessionCommands(agent)}
         lookupPaths={lookupPaths}
         workspace="/workspace"
@@ -295,6 +299,7 @@ export function ComponentPreview({
         canSend={!!uploadMode && !!value.trim() && !sending}
         upload={uploadMode ? previewUpload : undefined}
         secretFiles={secretFiles}
+        downloadAttachment={downloadAttachment}
         sending={sending}
         busy={sending}
         turn={

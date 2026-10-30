@@ -21,6 +21,7 @@ import {
   type ComposerPaste,
 } from "#src/features/session/composer/composer-pastes.ts";
 import type { UploadFile } from "#src/features/session/composer/composer-upload.ts";
+import type { DownloadAttachment } from "#src/features/session/composer/composer-download.ts";
 import type { SecretFiles } from "#src/features/session/composer/secret-paste.ts";
 import { composerPrompt } from "#src/features/session/composer/composer-code.ts";
 import { TabList } from "#src/shared/components/tab-list.tsx";
@@ -33,6 +34,7 @@ export function QuestionCard({
   pastes,
   upload,
   secretFiles,
+  downloadAttachment,
   busy,
   reply,
 }: {
@@ -41,6 +43,7 @@ export function QuestionCard({
   pastes: Map<string, ComposerPaste>;
   upload?: UploadFile;
   secretFiles?: SecretFiles;
+  downloadAttachment?: DownloadAttachment;
   busy: boolean;
   reply: (e: SessionEvent, allow: boolean, answers?: string) => Promise<void>;
 }) {
@@ -267,6 +270,7 @@ export function QuestionCard({
                         readOnly={busy}
                         upload={upload}
                         secretFiles={secretFiles}
+                        downloadAttachment={downloadAttachment}
                         detectSecrets
                         onUploadChange={() =>
                           refreshUploads((value) => value + 1)

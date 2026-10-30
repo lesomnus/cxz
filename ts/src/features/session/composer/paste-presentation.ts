@@ -2,6 +2,7 @@ import { formatCompactNumber } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
 import {
   isTextPaste,
+  isImagePaste,
   pasteSendMode,
   type ComposerPaste,
 } from "./composer-pastes";
@@ -38,7 +39,7 @@ export function presentPaste(paste: ComposerPaste): PastePresentation {
     }
     return { label: before, before, leading: "", after: "" };
   }
-  const before = text ? "" : `${attachment!.name} · `;
+  const before = text || isImagePaste(paste) ? "" : `${attachment!.name} · `;
   const prefix = text ? PASTE_CHIP_PREFIX : undefined;
   const asText = text && pasteSendMode(paste) === "text";
   if (!asText && attachment?.state === "uploading") {

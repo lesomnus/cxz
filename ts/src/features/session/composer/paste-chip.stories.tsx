@@ -1,8 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { PasteChip } from "./paste-chip";
-import type { ComposerPaste } from "./composer-pastes";
+import { isImagePaste, type ComposerPaste } from "./composer-pastes";
+import {
+  previewImage,
+  readPreviewImage,
+} from "#src/storybook/image-preview-fixture.ts";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 
 const file: ComposerPaste = {
@@ -19,6 +23,19 @@ const text: ComposerPaste = {
   bytes: 4800,
   attachment: { name: "paste.txt", state: "uploading", progress: 35 },
 };
+const image: ComposerPaste = {
+  token: "[File 87654321 · image.svg]",
+  body: "",
+  lines: 0,
+  bytes: 2500000,
+  attachment: {
+    name: "image.svg",
+    file: previewImage(),
+    mediaType: "image/svg+xml",
+    state: "uploading",
+    progress: 35,
+  },
+};
 const meta = {
   title: "Composer/Upload chips",
   component: PasteChip,
@@ -26,6 +43,8 @@ const meta = {
   render: function Chip(args) {
     const [paste, setPaste] = useState(args.paste);
     useEffect(() => setPaste(args.paste), [args.paste]);
+    if (isImagePaste(paste))
+      return <ImageChipPreview key={paste.token} paste={paste} />;
     return (
       <PasteChip
         {...args}
@@ -48,6 +67,38 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const UploadingFile: Story = {};
 export const UploadingPaste: Story = { args: { paste: text } };
+export const UploadingImage: Story = {
+  args: { paste: image },
+  parameters: { layout: "fullscreen" },
+};
+export const ReadyImage: Story = {
+  parameters: { layout: "fullscreen" },
+  args: {
+    paste: { ...image, attachment: { ...image.attachment!, state: "ready" } },
+  },
+};
+export const RestoredImage: Story = {
+  args: {
+    paste: {
+      ...image,
+      attachment: {
+        ...image.attachment!,
+        file: undefined,
+        path: "/cxz/assets/storybook/upload/image.svg",
+        state: "ready",
+      },
+    },
+  },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "The File is absent, like a restored draft. Opening reads the container path through the same download callback used by the live composer; this story supplies an in-browser fixture. 100% is the intrinsic image size. Larger images start at their fit percentage, without upscaling small images; the footer slider zooms around the center. Drag or use arrow keys in the image viewport to pan when enlarged.",
+      },
+    },
+  },
+};
 export const Ready: Story = {
   args: {
     paste: { ...file, attachment: { ...file.attachment!, state: "ready" } },
@@ -80,11 +131,37 @@ export const Interactive: Story = {
     );
   },
 };
+function ImageChipPreview({ paste }: { paste: ComposerPaste }) {
+  const [value, setValue] = useState(paste.token);
+  return (
+    <ComponentPreview
+      value={value}
+      onChange={setValue}
+      pastes={new Map([[paste.token, paste]])}
+      downloadAttachment={readPreviewImage}
+    />
+  );
+}
+
 export const UploadTransition: Story = {
+  parameters: { layout: "fullscreen" },
   render: function Transition() {
     const [progress, setProgress] = useState(0);
     const [attempt, setAttempt] = useState(0);
-    const [sendAs, setSendAs] = useState<"text" | "file">("file");
+    const original = [file, text, image].map((p) => p.token).join(" ");
+    const [value, setValue] = useState(original);
+    const pastes = useRef(
+      new Map(
+        [file, text, image].map((paste) => [
+          paste.token,
+          { ...paste, attachment: { ...paste.attachment! } },
+        ]),
+      ),
+    );
+    for (const paste of pastes.current.values()) {
+      paste.attachment.progress = progress;
+      paste.attachment.state = progress < 100 ? "uploading" : "ready";
+    }
     useEffect(() => {
       const timer = window.setInterval(
         () =>
@@ -98,35 +175,24 @@ export const UploadTransition: Story = {
       return () => window.clearInterval(timer);
     }, [attempt]);
     return (
-      <div style={{ display: "grid", gap: 24, padding: 24 }}>
-        <p>{progress < 100 ? `Uploading · ${progress}%` : "Upload complete"}</p>
-        {[file, text].map((paste) => (
-          <div key={paste.token} style={{ fontFamily: "var(--ui-font-mono)" }}>
-            <PasteChip
-              paste={{
-                ...paste,
-                sendAs: paste.body ? sendAs : undefined,
-                attachment: {
-                  ...paste.attachment!,
-                  progress,
-                  state: progress < 100 ? "uploading" : "ready",
-                },
-              }}
-              onOpen={() => {}}
-              canSendFile
-              onSendModeChange={setSendAs}
-            />
-          </div>
-        ))}
+      <>
+        <ComponentPreview
+          value={value}
+          onChange={setValue}
+          pastes={pastes.current}
+          downloadAttachment={readPreviewImage}
+        />
         <Button
+          style={{ position: "absolute", top: 16, left: 16, zIndex: 1 }}
           onClick={() => {
+            setValue(original);
             setProgress(0);
             setAttempt((value) => value + 1);
           }}
         >
           Replay upload
         </Button>
-      </div>
+      </>
     );
   },
 };

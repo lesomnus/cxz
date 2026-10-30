@@ -11,3 +11,14 @@
   overflow-wrap: anywhere;
   word-break: break-all;
 }
+.image:global(.floating-card) {
+  height: var(--card-preview-max-height);
+  --card-body-padding: 0;
+}
+.image > :global(.card-body) {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  white-space: normal;
+}

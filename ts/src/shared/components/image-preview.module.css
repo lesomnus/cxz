@@ -1,0 +1,59 @@
+.viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: conic-gradient(
+      var(--ui-shade-40) 25%,
+      var(--ui-shade-24) 0 50%,
+      var(--ui-shade-40) 0 75%,
+      var(--ui-shade-24) 0
+    )
+    0 0 / calc(6 * var(--ui-space)) calc(6 * var(--ui-space));
+  user-select: none;
+}
+.viewport[data-can-pan] {
+  cursor: grab;
+  touch-action: none;
+}
+.viewport[data-panning] {
+  cursor: grabbing;
+}
+.image {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: none;
+  max-height: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--ui-space);
+  padding: calc(2 * var(--ui-space));
+}
+.status p {
+  margin: 0;
+}
+.zoom.zoom {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
+  width: min(260px, 55vw);
+  margin-inline-end: auto;
+}
+.zoomValue {
+  flex: none;
+  width: 7ch;
+  text-align: end;
+  font-family: var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

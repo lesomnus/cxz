@@ -2,6 +2,13 @@
 export const messages = {
   Text: "Text",
   "Pasted text": "Pasted text",
+  "Image attachment": "Image attachment",
+  "Image preview": "Image preview",
+  "Image zoom": "Image zoom",
+  "Loading image…": "Loading image…",
+  "The image could not be loaded.": "The image could not be loaded.",
+  "Drag to move the image when zoomed in.":
+    "Drag to move the image when zoomed in.",
   "Send pasted content as": "Send pasted content as",
   "Editor options": "Editor options",
   "Show control characters": "Show control characters",

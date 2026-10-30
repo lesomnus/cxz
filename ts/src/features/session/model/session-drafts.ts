@@ -8,7 +8,7 @@ type SavedPaste = Omit<ComposerPaste, "attachment" | "secret"> & {
   secret?: Omit<NonNullable<ComposerPaste["secret"]>, "listeners">;
   attachment?: Pick<
     NonNullable<ComposerPaste["attachment"]>,
-    "name" | "directory" | "path" | "state"
+    "name" | "mediaType" | "directory" | "path" | "state"
   >;
 };
 
@@ -159,6 +159,7 @@ export class SessionDrafts extends Map<string, string> {
           },
           attachment: p.attachment && {
             name: p.attachment.name,
+            mediaType: p.attachment.mediaType ?? p.attachment.file?.type,
             directory: p.attachment.directory,
             path: p.attachment.path,
             state: p.attachment.state,

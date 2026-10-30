@@ -64,6 +64,30 @@ test("progress and failure widths map selection back to the stable reference", (
   expect(ready.toDisplay(caret)).toBe(ready.text.length);
 });
 
+test("image progress and size share text-paste labels without exposing file references", () => {
+  const image = createFileChip(
+    new File(["hello"], "image.png", { type: "image/png" }),
+    "image.png",
+  );
+  const pastes = new Map([[image.token, image]]);
+  const source = image.token + " tail";
+  image.attachment!.progress = 100;
+  const uploading = new PasteProjection(source, pastes);
+  expect(presentPaste(image)).toMatchObject({
+    label: " 099%",
+    progress: 99,
+    before: "",
+  });
+  expect(uploading.text).toBe(fileChipText(" 099%") + " tail");
+  image.attachment!.state = "ready";
+  const ready = new PasteProjection(source, pastes);
+  expect(presentPaste(image)).toMatchObject({ label: "0005B", bytes: 5 });
+  expect(ready.text).toBe(fileChipText("0005B") + " tail");
+  expect(ready.text.length).toBe(uploading.text.length);
+  expect(ready.toSource(ready.text.length)).toBe(source.length);
+  expect(ready.source).toContain("image.png");
+});
+
 test("native undo and redo restore exact references even with identical labels", () => {
   const first = createPaste("first", "11111111");
   const second = createPaste("other", "22222222");

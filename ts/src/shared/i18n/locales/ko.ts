@@ -2,6 +2,13 @@ import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
   Text: "텍스트",
   "Pasted text": "붙여넣은 텍스트",
+  "Image attachment": "첨부 이미지",
+  "Image preview": "이미지 미리보기",
+  "Image zoom": "이미지 배율",
+  "Loading image…": "이미지 불러오는 중…",
+  "The image could not be loaded.": "이미지를 불러오지 못했습니다.",
+  "Drag to move the image when zoomed in.":
+    "확대된 이미지를 드래그하여 이동할 수 있습니다.",
   "Send pasted content as": "붙여넣은 내용 전송 방식",
   "Editor options": "입력창 설정",
   "Show control characters": "제어문자 표시",
