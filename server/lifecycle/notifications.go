@@ -330,7 +330,7 @@ func notificationKind(agent string, e *api.Event) string {
 			return SessionFailed
 		}
 	}
-	if e.Kind == "approval" {
+	if e.Kind == "approval" && !agentview.AutomaticApproval(e.Text, e.Payload) {
 		if qs, err := agentview.Questions(agent, e.Text, e.Payload); err == nil && len(qs) > 0 {
 			return SessionQuestion
 		}

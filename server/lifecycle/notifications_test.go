@@ -210,6 +210,48 @@ func TestNotificationKindsExcludeToolFailuresAndInterruptions(t *testing.T) {
 	}
 }
 
+func TestNotificationsMCPPermissionPromptsDoNotAddQuestionAlerts(t *testing.T) {
+	f := notificationTestFixture()
+	ctx, _, stack, layer := notificationTestStack(t, filepath.Join(t.TempDir(), "resources.db"), f)
+	if err := layer.CollectNotifications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, server := range []string{"cxz_memory", "cxz_tasks"} {
+		f.append("approval", "mcpServer/elicitation/request")
+		e := f.events[len(f.events)-1]
+		e.RequestId = server
+		e.Payload = []byte(`{"params":{"serverName":"` + server + `","mode":"form","message":"Allow this tool?","_meta":{"codex_approval_kind":"mcp_tool_call"},"requestedSchema":{"type":"object","properties":{}}}}`)
+		// A live hint can arrive before the supervisor's automatic reply.
+		if err := layer.CollectNotifications(ctx); err != nil {
+			t.Fatal(err)
+		}
+		f.append("approval_resolved", "allowed")
+		f.events[len(f.events)-1].RequestId = server
+	}
+	f.append("turn_end", "completed")
+	for range 2 {
+		if err := layer.CollectNotifications(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	items := notificationPage(t, ctx, stack, layer, false).GetItems()
+	if len(items) != 1 || items[0].GetNotification().GetKind() != SessionCompleted {
+		t.Fatalf("permission prompts added alerts to one completion: %v", items)
+	}
+}
+
+func TestNotificationKindsPreserveMCPFormsAndURLFlows(t *testing.T) {
+	for _, payload := range []string{
+		`{"params":{"serverName":"external","mode":"form","message":"Which workspace?","requestedSchema":{"type":"object","properties":{"workspace":{"type":"string"}},"required":["workspace"]}}}`,
+		`{"params":{"serverName":"external","mode":"url","message":"Sign in","url":"https://example.com/login"}}`,
+	} {
+		e := &api.Event{Kind: "approval", Text: "mcpServer/elicitation/request", Payload: []byte(payload)}
+		if got := notificationKind("codex", e); got != SessionQuestion {
+			t.Fatalf("MCP input requiring user action lost its alert: %s", payload)
+		}
+	}
+}
+
 func TestNotificationsPurgeRemovesReadAndReceiptData(t *testing.T) {
 	f := notificationTestFixture()
 	ctx, db, stack, layer := notificationTestStack(t, filepath.Join(t.TempDir(), "resources.db"), f)
