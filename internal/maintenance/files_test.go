@@ -45,7 +45,7 @@ func TestRotationKeepsInheritedAppendDescriptorAndBoundedArchives(t *testing.T) 
 
 func TestProfilesProtectRunningAgentsCredentialsAndSymlinkTargets(t *testing.T) {
 	root := t.TempDir()
-	profile := filepath.Join(root, "session-profiles", "session", "accounts", "work")
+	profile := filepath.Join(root, "session-profiles", strings.Repeat("a", 32), "accounts", "work")
 	for _, rel := range []string{"tmp/work", "home/.cache/go-build", "config"} {
 		if err := os.MkdirAll(filepath.Join(profile, rel), 0700); err != nil {
 			t.Fatal(err)

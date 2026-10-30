@@ -70,6 +70,8 @@ and memory retention use their own bounded batches within that time budget.
   also remain. Publication/launch leases serialize new references with GC;
   references are checked again before removal. A Manager with inaccessible
   legacy project state skips shared-tool GC rather than assuming it is unused.
+  A live older runtime without an immutable identity, or a live session without
+  a supervisor reference, also blocks executable cleanup until it is updated.
 - **Notifications:** retain recent read history for 30 days and the latest
   unread notification per session/kind. Completion, failure and question remain
   separate. Retention preserves source/read cursors and pending questions,

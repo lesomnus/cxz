@@ -73,6 +73,16 @@ func ReadReferences(ctx context.Context, roots []string, tools string) (Referenc
 		if err := ctx.Err(); err != nil {
 			return err
 		}
+		st, err := os.Lstat(path)
+		if os.IsNotExist(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if !st.Mode().IsRegular() || !PlainPath(path) {
+			return fmt.Errorf("unsafe executable reference metadata %s", path)
+		}
 		f, err := os.Open(path)
 		if os.IsNotExist(err) {
 			return nil
@@ -101,11 +111,25 @@ func ReadReferences(ctx context.Context, roots []string, tools string) (Referenc
 			if id == "" {
 				return fmt.Errorf("session identity missing in executable reference metadata %s", path)
 			}
+			if supervisor, _ := object["supervisor"].(string); supervisor == "" {
+				if busy, err := lockHeld(filepath.Join(filepath.Dir(path), "supervisor.lock")); err != nil {
+					return err
+				} else if busy {
+					return fmt.Errorf("active session has no immutable supervisor reference: %s", path)
+				}
+			}
 		}
 		visit(value, "", root)
 		return nil
 	}
 	for _, root := range roots {
+		if busy, err := lockHeld(filepath.Join(root, "daemon.lock")); err != nil {
+			return r, err
+		} else if busy {
+			if _, err = os.Stat(filepath.Join(root, "run", "maintenance-binary.json")); err != nil {
+				return r, fmt.Errorf("running runtime identity unavailable in %s; executable cleanup waits for its update", root)
+			}
+		}
 		for _, name := range []string{"runtime-update.json", "manager-update.json", "cxz-update.json", "version-pin.json", "run/maintenance-binary.json", "../runtime.json"} {
 			if err := read(filepath.Join(root, name), root); err != nil {
 				return r, err

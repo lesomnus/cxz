@@ -74,6 +74,24 @@ func TestPassBudgetAndCancellation(t *testing.T) {
 	}
 }
 
+func TestOrdinaryReclaimPreservesPressureRecoveryTarget(t *testing.T) {
+	available := uint64(4)
+	forced := 0
+	e := Engine{Roots: []string{"disk"}, Probe: func(string) (Space, error) { return Space{Device: "disk", Total: 100, Available: available}, nil }, Collect: func(_ context.Context, _ Policy, _ time.Time, pressure bool) ([]Candidate, error) {
+		return []Candidate{{Path: "disk", Remove: func(context.Context) (bool, error) {
+			available += 3
+			if pressure {
+				forced++
+			}
+			return true, nil
+		}}}, nil
+	}}
+	r := e.Pass(t.Context(), Default(), time.Now())
+	if available != 10 || forced != 1 || r.Volumes[0].Pressure {
+		t.Fatal(available, forced, r)
+	}
+}
+
 func TestPolicyDefaultsExplicitDisableAndValidation(t *testing.T) {
 	root := t.TempDir()
 	p, err := Load(root)

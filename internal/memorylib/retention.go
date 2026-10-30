@@ -2,6 +2,7 @@ package memorylib
 
 import (
 	"context"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"time"
@@ -13,6 +14,16 @@ import (
 // from trash without deletion timestamps receives a full grace period first.
 func SweepTrash(ctx context.Context, root string, now time.Time, days int) (int, error) {
 	if days <= 0 {
+		return 0, nil
+	}
+	base, err := os.Lstat(filepath.Join(root, "memories"))
+	if os.IsNotExist(err) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if !base.IsDir() {
 		return 0, nil
 	}
 	projects, err := os.ReadDir(filepath.Join(root, "memories"))
@@ -28,6 +39,12 @@ func SweepTrash(ctx context.Context, root string, now time.Time, days int) (int,
 			return removed, err
 		}
 		if !project.IsDir() {
+			continue
+		}
+		if len(project.Name()) != 24 {
+			continue
+		}
+		if _, err := hex.DecodeString(project.Name()); err != nil {
 			continue
 		}
 		library := filepath.Join(root, "memories", project.Name())

@@ -7,11 +7,15 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/gofrs/flock"
 )
+
+var profileName = regexp.MustCompile(`^[a-f0-9]{32}$`)
+var profileAccount = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
 
 // PlainPath rejects symlinks in every component. Cleanup must not follow an
 // agent-created cache symlink into credentials, a workspace or another volume.
@@ -223,6 +227,9 @@ func ProfileCandidates(root string, p Policy, now time.Time, pressure bool) ([]C
 	}
 	var out []Candidate
 	for _, profile := range profiles {
+		if !profileName.MatchString(filepath.Base(filepath.Dir(filepath.Dir(profile)))) || !profileAccount.MatchString(filepath.Base(profile)) {
+			continue
+		}
 		if !PlainPath(profile) {
 			continue
 		}

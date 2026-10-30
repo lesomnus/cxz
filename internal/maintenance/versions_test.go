@@ -77,3 +77,15 @@ func TestReferenceCensusMapsProjectPathsAndRejectsMalformedMetadata(t *testing.T
 		t.Fatal("unknown rollback references ignored")
 	}
 }
+
+func TestBusyRuntimeWithoutIdentityPreventsExecutableCleanup(t *testing.T) {
+	root := t.TempDir()
+	daemon := flock.New(filepath.Join(root, "daemon.lock"))
+	if err := daemon.Lock(); err != nil {
+		t.Fatal(err)
+	}
+	defer daemon.Close()
+	if _, err := ReadReferences(t.Context(), []string{root}, t.TempDir()); err == nil {
+		t.Fatal("old live runtime incorrectly treated as unreferenced")
+	}
+}

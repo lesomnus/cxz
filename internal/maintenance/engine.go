@@ -82,6 +82,13 @@ func (e *Engine) Pass(ctx context.Context, p Policy, now time.Time) Report {
 			r.Errors = append(r.Errors, err.Error())
 		}
 	}
+	// Enter pressure before ordinary expiry can partially improve free space.
+	// Otherwise a 4% -> 7% ordinary pass would forget the 10% recovery target.
+	for _, root := range e.Roots {
+		if s, err := e.Probe(root); err == nil && s.low(p) {
+			e.pressured[s.Device] = true
+		}
+	}
 	run := func(pressure bool, device string) {
 		if r.Examined >= 128 || ctx.Err() != nil {
 			return
