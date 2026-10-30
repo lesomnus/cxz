@@ -44,6 +44,13 @@ cursor backwards. A completion published after its range was read receives a
 receipt too. These rules close the read/publication race and synchronize other
 windows and the TUI. Purge removes that session's read and notification records.
 
+The reading tab removes matching unread markers immediately, before ReadState
+or MarkRead answers. This optimistic projection remains during navigation and
+transient retries; other clients still follow committed server receipts. A
+rejected read restores the markers without retrying indefinitely. Reopening the
+conversation permits another attempt. Projection is limited to the observed
+generation and read range, so newer replies remain unread.
+
 Both completion and a new Question play the TUI's local PCM cues, even when the
 active conversation is visible. A click or keypress unlocks browser audio; alerts
 that occurred before audio was available are not replayed later. Simultaneous
