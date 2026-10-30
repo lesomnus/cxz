@@ -47,3 +47,16 @@ An exhausted pass records the remaining shortage and backs off.
 The implementation documentation records the supported configuration and any
 conservatively skipped candidates. Actual row deletion and filesystem reclaim
 are separate; freeing database pages does not itself shrink a SQLite file.
+
+## Implementation and validation
+
+Stages 1–3 are implemented. Configuration, operation, deployment and conservative
+skip conditions are documented in [storage-maintenance.md](../storage-maintenance.md).
+The file-count/time budgets bound opportunistic passes; database byte quotas and
+recursive cache inventories remain excluded.
+
+Validated with `TMPDIR=/tmp go test ./...`, `go vet ./...`, `go tool pd gen --check .`,
+targeted race tests for maintenance/retention and protected data, and Windows
+frontend/WASM sandbox builds. The short TMPDIR avoids Unix socket path limits in
+the session profile's default temporary directory. Stage 4 tracks CI and merge in
+the workspace PR.
