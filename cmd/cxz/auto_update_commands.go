@@ -40,16 +40,20 @@ func holdRollout(ctx context.Context, root string) (func(), error) {
 
 func automaticUpdateCommands() xli.Commands {
 	var commands xli.Commands
-	for _, name := range []string{"status", "check", "enable", "disable", "apply"} {
+	for _, name := range []string{"status", "check", "enable", "disable", "apply", "retry"} {
 		server := false
 		force := false
+		project := ""
 		flags := flg.Flags{&flg.Switch{Name: "server", Brief: "Operate on the locally installed manager instead of this frontend", Default: &server}}
 		if name == "apply" {
 			// Waiting for the next tick, and then for every session to look
 			// quiet, is what makes testing an update cost twenty minutes.
 			flags = append(flags, &flg.Switch{Name: "force", Brief: "Replace the manager without waiting for sessions to look idle", Default: &force})
 		}
-		commands = append(commands, &xli.Command{Name: name, Brief: map[string]string{"status": "Print cxz automatic update state", "check": "Check the selected release channel without restarting", "enable": "Enable cxz automatic updates", "disable": "Pause cxz automatic updates", "apply": "Roll the installed manager out now instead of on the next tick"}[name], Flags: flags, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
+		if name == "retry" {
+			flags = append(flags, &flg.String{Name: "project", Brief: "Project ID, name, or workspace path whose runtime recovery should retry", Default: &project})
+		}
+		commands = append(commands, &xli.Command{Name: name, Brief: map[string]string{"status": "Print cxz automatic update state", "check": "Check the selected release channel without restarting", "enable": "Enable cxz automatic updates", "disable": "Pause cxz automatic updates", "apply": "Roll the installed manager out now instead of on the next tick", "retry": "Reset a project's runtime recovery budget; all safety checks remain required"}[name], Flags: flags, Handler: xli.OnRun(func(ctx context.Context, c *xli.Command, _ xli.Next) error {
 			root := c
 			for root.HasParent() {
 				root = root.Parent()
@@ -61,6 +65,17 @@ func automaticUpdateCommands() xli.Commands {
 			action := c.Name
 			if action == "apply" && flg.MustGet[bool](c, "force") {
 				action = "apply-force"
+			}
+			if action == "retry" {
+				if !flg.MustGet[bool](c, "server") || flg.MustGet[string](c, "project") == "" {
+					return fmt.Errorf("runtime recovery retry requires --server --project <project>")
+				}
+				b, err := serverRetryRuntime(ctx, state, flg.MustGet[string](c, "project"))
+				if err != nil {
+					return err
+				}
+				_, err = c.Writer.Write(b)
+				return err
 			}
 			if flg.MustGet[bool](c, "server") {
 				b, e := serverUpdateCommand(ctx, state, action)

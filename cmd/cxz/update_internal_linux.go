@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/networkservices"
+	"github.com/lesomnus/cxz/internal/workspace"
 	"os"
 	"time"
 )
@@ -15,6 +16,22 @@ func updateInternal(args []string) (bool, error) {
 		return false, nil
 	}
 	switch args[0] {
+	case "_runtime-recovery-retry":
+		if len(args) != 3 || args[2] == "" {
+			return true, fmt.Errorf("invalid runtime retry arguments")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		release, err := holdRollout(ctx, args[1])
+		if err != nil {
+			return true, err
+		}
+		defer release()
+		r, err := workspace.RetryRuntimeRecovery(args[1], args[2])
+		if err != nil {
+			return true, err
+		}
+		return true, json.NewEncoder(os.Stdout).Encode(r)
 	case "_recover-network-services", "_refresh-network-services":
 		if len(args) != 4 {
 			return true, fmt.Errorf("invalid network service arguments")
@@ -37,6 +54,22 @@ func updateInternal(args []string) (bool, error) {
 			return true, fmt.Errorf("invalid runtime child arguments")
 		}
 		return true, cxzupdate.RuntimeChild(args[1], args[2], args[3])
+	case "_recover-runtime", "_finalize-runtime":
+		if len(args) != 2 && (len(args) != 3 || args[2] != "--json") {
+			return true, fmt.Errorf("invalid runtime recovery arguments")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		var err error
+		if args[0] == "_finalize-runtime" {
+			err = cxzupdate.FinalizeRuntime(ctx, args[1])
+		} else {
+			err = cxzupdate.RecoverRuntime(ctx, args[1])
+		}
+		if len(args) == 3 {
+			return true, json.NewEncoder(os.Stdout).Encode(cxzupdate.RuntimeRecoveryResult(ctx, args[1], err))
+		}
+		return true, err
 	case "_update-policy":
 		if len(args) != 3 {
 			return true, fmt.Errorf("invalid update policy arguments")

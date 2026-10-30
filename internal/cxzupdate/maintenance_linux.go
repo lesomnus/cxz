@@ -21,14 +21,16 @@ import (
 )
 
 type Health struct {
-	Build    Build               `json:"build"`
-	Binary   string              `json:"binary"`
-	Start    string              `json:"start"`
-	Ready    bool                `json:"ready"`
-	Reason   string              `json:"reason,omitempty"`
-	Sessions map[string]string   `json:"sessions,omitempty"`
-	Runtime  *RuntimeTransaction `json:"runtime_update,omitempty"`
-	Lease    string              `json:"lease,omitempty"`
+	Build      Build               `json:"build"`
+	Binary     string              `json:"binary"`
+	Start      string              `json:"start"`
+	Ready      bool                `json:"ready"`
+	Reason     string              `json:"reason,omitempty"`
+	Sessions   map[string]string   `json:"sessions,omitempty"`
+	Runtime    *RuntimeTransaction `json:"runtime_update,omitempty"`
+	Lease      string              `json:"lease,omitempty"`
+	LeaseUntil time.Time           `json:"lease_until,omitempty"`
+	Failure    *RecoveryFailure    `json:"failure,omitempty"`
 }
 type lease struct {
 	ID    string
@@ -125,16 +127,16 @@ func (g *Gate) Stream(srv any, stream grpc.ServerStream, info *grpc.StreamServer
 // input by itself, and refusing is an answer a client can act on. See cxz#204.
 func (g *Gate) hold(id string, check func() error) error {
 	if len(id) != 24 || strings.ContainsAny(id, "/\\ \n") {
-		return fmt.Errorf("invalid update transaction")
+		return RecoveryBlocked("invalid_transaction", "invalid update transaction")
 	}
 	g.mu.Lock()
 	if g.err != nil {
 		g.mu.Unlock()
-		return fmt.Errorf("invalid maintenance lease: %w", g.err)
+		return RecoveryBlocked("invalid_lease", fmt.Sprintf("invalid maintenance lease: %v", g.err))
 	}
 	if g.blocked() && g.held.ID != id {
 		g.mu.Unlock()
-		return fmt.Errorf("another update owns this server")
+		return RecoveryBlocked("foreign_lease", "another update owns this server")
 	}
 	l := lease{ID: id, Until: time.Now().Add(10 * time.Minute)}
 	if e := core.WriteJSON(filepath.Join(g.root, "run", "update-lease.json"), l); e != nil {
@@ -260,10 +262,12 @@ func Maintenance(ctx context.Context, root string, g *Gate, check func(context.C
 		g.mu.RLock()
 		if g.blocked() && g.err == nil {
 			h.Lease = g.held.ID
+			h.LeaseUntil = g.held.Until
 		}
 		g.mu.RUnlock()
 		if e != nil {
 			h.Reason = e.Error()
+			h.Failure = RecoveryProblem(e)
 			if q.Action != "status" {
 				w.WriteHeader(409)
 			}
@@ -295,6 +299,9 @@ func Call(ctx context.Context, root, action, transaction string) (Health, error)
 		return h, e
 	}
 	if res.StatusCode != 200 {
+		if h.Failure != nil {
+			return h, h.Failure
+		}
 		return h, fmt.Errorf("maintenance: %s", h.Reason)
 	}
 	return h, nil

@@ -27,3 +27,14 @@ func serverUpdateCommand(ctx context.Context, root, action string) ([]byte, erro
 	}
 	return dockerx.Run(ctx, "exec", v.Container, "/usr/local/bin/cxz", "_update-policy", "/var/lib/cxz", action)
 }
+
+func serverRetryRuntime(ctx context.Context, root, project string) ([]byte, error) {
+	v, err := transport.Load(root)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := dockerx.Owned(ctx, v.Container, v.Owner, ""); err != nil {
+		return nil, err
+	}
+	return dockerx.Run(ctx, "exec", v.Container, "/usr/local/bin/cxz", "_runtime-recovery-retry", "/var/lib/cxz", project)
+}
