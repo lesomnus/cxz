@@ -402,19 +402,26 @@ export function ComposerEditor({
     lines.some((line) => inlineCodeRanges(line).length > 0);
 
   function syncScroll() {
-    const el = input.current!;
+    const el = input.current,
+      mirrored = mirror.current,
+      numbers = gutter.current;
+    if (!el || !mirrored || !numbers) return;
     // Keep code backgrounds behind the native caret, while header controls and
     // chips can paint above the textarea without a transformed stacking context.
-    mirror.current!.style.left = `${-el.scrollLeft}px`;
-    mirror.current!.style.top = `${-el.scrollTop}px`;
+    mirrored.style.left = `${-el.scrollLeft}px`;
+    mirrored.style.top = `${-el.scrollTop}px`;
     if (controlMirror.current) {
       controlMirror.current.style.left = `${-el.scrollLeft}px`;
       controlMirror.current.style.top = `${-el.scrollTop}px`;
     }
-    gutter.current!.style.transform = `translateY(${-el.scrollTop}px)`;
+    numbers.style.transform = `translateY(${-el.scrollTop}px)`;
   }
   function measure() {
-    const el = input.current!;
+    const el = input.current,
+      mirrored = mirror.current,
+      numbered = gutter.current;
+    // A delivered resize can outlive the DOM refs during navigation/sign-out.
+    if (!el || !mirrored || !numbered) return;
     const style = getComputedStyle(el);
     const contentWidth =
       el.clientWidth -
@@ -431,13 +438,13 @@ export function ComposerEditor({
     );
     // These sizes become CSS lengths; screen-space bounds would apply zoom twice.
     const contentHeight =
-      parseFloat(getComputedStyle(mirror.current!).height) +
+      parseFloat(getComputedStyle(mirrored).height) +
       parseFloat(style.paddingTop) +
       parseFloat(style.paddingBottom);
     const expanded = String(contentHeight > baseline + 1);
     if (el.dataset.expanded !== expanded) el.dataset.expanded = expanded;
-    const numbers = gutter.current!.children;
-    Array.from(mirror.current!.children).forEach((line, index) => {
+    const numbers = numbered.children;
+    Array.from(mirrored.children).forEach((line, index) => {
       (numbers[index] as HTMLElement).style.height =
         getComputedStyle(line).height;
     });
@@ -477,7 +484,7 @@ export function ComposerEditor({
     wordWrap,
     showControls,
   ]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const observer = new ResizeObserver(measure);
     observer.observe(input.current!);
     observer.observe(mirror.current!);
