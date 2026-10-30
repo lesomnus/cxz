@@ -12,6 +12,21 @@ unrelated settings or usage records do not create notifications. Projects are
 resource Topics; Sessions are sources. The app uses Payday's global tenancy
 declaration because these resources have no Tenant.
 
+For Codex, the supervisor accepts completion only for the active turn of its
+own thread. Foreign-thread notifications and stale or duplicate completions
+remain in the raw journal without producing a normalized `turn_end`, changing
+session state, clearing approvals or resetting current response tracking.
+The Manager does not infer completion from an assistant message or a changed
+turn ID.
+
+Response metrics are a separate projection: a successful completion must name
+the final assistant response it summarizes. An explicit `final_answer` phase
+selects that response; phase-less legacy responses can fall back to the last
+assistant message. `commentary` and `partial_answer` alone do not qualify.
+The Web card shows only the completion metadata attached to that response,
+and hides its footer when no duration or recognized metric is available.
+A missing footer therefore does not prove that the provider turn is running.
+
 An installation has a persistent Operator identity, independent of provider
 Accounts. Authenticated Web and TUI clients use that same reader. The Manager
 stores notification receipts and conversation read cursors in `resources.db`;
