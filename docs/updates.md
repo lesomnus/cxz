@@ -50,6 +50,39 @@ Add `--server` **on the Linux host** for the manager's own policy. Attaching a
 remote frontend does not change server policy, and a frontend update does not carry
 a server-side fix.
 
+An interrupted project-runtime update resumes its captured transaction. If the
+old runtime disappeared before readiness was confirmed, recovery restores the
+old binary first. An already healthy recorded replacement is finalized without
+another restart, and rollback does not wait for idle. Fresh forward replacement
+still requires idle admission; supervisors and agents are not restarted by this
+runtime recovery.
+
+Automatic recovery has a persistent budget of five attempts: after transient
+failures it waits 30 seconds, one minute, two minutes, then four minutes. The
+Manager stores this budget beside each project manifest, associated with the
+container and transaction, so replacing the Manager or checking another release
+does not reset it. A Manager interrupted during dispatch leaves its attempt
+counted and reserves up to five minutes for the interrupted pass to finish.
+Readiness waiting does not consume failure attempts. Invalid ownership,
+expired leases and identity/verification failures stop automatic recovery;
+retries also stop when no safe window remains within the maintenance lease.
+Completion-only acknowledgement of a newly observed healthy recorded runtime
+can still run after the repair budget stops, but cannot launch or stop a process.
+
+`cxz self-update status --server` includes `runtime_recoveries`, with each
+project's phase, last observed runtime availability, attempt count/limit, last
+and next attempt, and error code/reason. After resolving the cause, on the
+**Linux installation host**:
+
+```sh
+cxz self-update retry --server --project PROJECT
+```
+
+`PROJECT` accepts a project ID, unambiguous name, or workspace path. This resets
+only that project's scheduling budget for the next rollout pass. It does not
+clear the runtime transaction, renew a lease, bypass idle or identity checks, or
+restart agents. Unknown and ambiguous project references are refused.
+
 What waits for what:
 
 | | Replaced when |

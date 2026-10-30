@@ -249,6 +249,7 @@ cxz use @edge | @stable | vX.Y.Z
 cxz use --unpin
 cxz self-update [--ref REF] [--client-only]
 cxz self-update status|check|enable|disable [--server]
+cxz self-update retry --server --project PROJECT
 cxz manager update IMAGE            # explicit tag or digest, never latest
 cxz manager rollback                # the recorded previous image
 ```
