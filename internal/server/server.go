@@ -29,6 +29,7 @@ import (
 	"github.com/lesomnus/cxz/internal/observe"
 	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/sessionstore"
+	"github.com/lesomnus/cxz/internal/sqlitetime"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/supervisor"
 	"github.com/lesomnus/cxz/internal/transcripthistory"
@@ -233,6 +234,11 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	}
 	defer resourceDB.Close()
 	if e = os.Chmod(filepath.Join(root, "resources.db"), 0600); e != nil {
+		return e
+	}
+	// Before anything reads it: times written before the driver stored them as
+	// integers cannot be read back as times. See internal/sqlitetime.
+	if e = sqlitetime.Migrate(ctx, resourceDB); e != nil {
 		return e
 	}
 	// Every RPC this manager serves, kept where a client can read it back.
