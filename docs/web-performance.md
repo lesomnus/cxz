@@ -23,6 +23,12 @@ positions or column width for a live-arrival effect. Those measurements remain
 available while following new responses. Equal viewport and pinned-prompt values
 must not schedule redundant updates.
 
+Mounted rows keep a stable ref and ResizeObserver subscription while the visible
+window moves. The observer reuses delivered border-box dimensions and content
+padding instead of reading each row's client rectangle again. Cached row heights
+and reading knots are pruned when the event window changes, rather than on every
+height correction.
+
 React development builds record changed props in Performance Tracks. Those
 diagnostics have CPU and memory costs and can fail while cloning large details;
 they are not conversation events or server responses. See
@@ -63,3 +69,9 @@ scroll and work-dialog behavior remains covered by the existing Storybook tests.
 timings with other builds and tests idle; parallel compilation distorts browser
 frame times. Synthetic measurements do not establish the exact cause of an OOM
 in a user's browser without its stack and memory profile.
+
+Use `/test-support/transcript-performance.html?count=8192&content=mixed` for many
+short replies and resolved question cards. The scroll regressions verify that a
+retained row is not observed again and that delivered resize measurements avoid
+per-row rectangle reads. Storybook's Conversation / EventCards / Long Mixed
+Conversation provides the same mix for manual handle-drag checks.

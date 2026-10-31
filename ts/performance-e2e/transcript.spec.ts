@@ -118,3 +118,70 @@ test("reading a full loaded history avoids animation position reads across rail 
     2;
   expect(result.maxMarkers).toBeLessThanOrEqual(budget);
 });
+
+for (const content of ["plain", "mixed"]) {
+  test(`${content} scroll windows retain row observers and consume delivered resize measurements`, async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(
+      `/test-support/transcript-performance.html?count=8192&content=${content}`,
+    );
+    await expect(page.locator(".response-heading").first()).toBeVisible();
+    if (content === "mixed")
+      await expect(page.locator(".question-history").first()).toBeAttached();
+    await page
+      .getByRole("scrollbar", { name: "Conversation scroll" })
+      .press("PageUp");
+    const result = await page.evaluate(async () => {
+      const pane = document.querySelector<HTMLElement>(".transcript")!;
+      const originalObserve = ResizeObserver.prototype.observe;
+      const originalUnobserve = ResizeObserver.prototype.unobserve;
+      const originalRect = Element.prototype.getBoundingClientRect;
+      let observations = 0,
+        unobservations = 0,
+        rowRectReads = 0;
+      const nodes = new Set<Element>();
+      ResizeObserver.prototype.observe = function (node, ...options) {
+        if (node.hasAttribute("data-row")) {
+          observations++;
+          nodes.add(node);
+        }
+        return originalObserve.call(this, node, ...options);
+      };
+      ResizeObserver.prototype.unobserve = function (node) {
+        if (node.hasAttribute("data-row")) unobservations++;
+        return originalUnobserve.call(this, node);
+      };
+      Element.prototype.getBoundingClientRect = function () {
+        if (this.hasAttribute("data-row")) rowRectReads++;
+        return originalRect.call(this);
+      };
+      try {
+        for (let index = 0; index < 80; index++) {
+          pane.scrollTop = Math.max(
+            0,
+            pane.scrollHeight - pane.clientHeight - 600 - index * 120,
+          );
+          await new Promise(requestAnimationFrame);
+        }
+        return {
+          observations,
+          uniqueNodes: nodes.size,
+          unobservations,
+          rowRectReads,
+        };
+      } finally {
+        ResizeObserver.prototype.observe = originalObserve;
+        ResizeObserver.prototype.unobserve = originalUnobserve;
+        Element.prototype.getBoundingClientRect = originalRect;
+      }
+    });
+    expect(result.uniqueNodes).toBeGreaterThan(20);
+    expect(result.observations).toBe(result.uniqueNodes);
+    expect(result.unobservations).toBeGreaterThan(0);
+    expect(result.rowRectReads).toBe(0);
+    expect(errors).toEqual([]);
+  });
+}

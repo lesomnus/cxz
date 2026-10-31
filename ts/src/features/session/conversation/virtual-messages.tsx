@@ -3,6 +3,7 @@ import React, {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useCallback,
   useRef,
   useState,
 } from "react";
@@ -77,6 +78,13 @@ export const VirtualMessages = React.memo(function VirtualMessages({
   );
   const jumpAnchor = useRef<{ id: string; top: number } | null>(null);
   const observer = useRef<ResizeObserver | null>(null);
+  // Retained rows keep their observer subscription while their top position or
+  // the visible window changes. A fresh ref re-observes every row on each commit.
+  const observeRow = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    observer.current?.observe(node);
+    return () => observer.current?.unobserve(node);
+  }, []);
   const width = useRef(cache?.width ?? 0);
   const lastPrompt = useRef<SessionEvent | undefined>(undefined);
 
@@ -120,9 +128,7 @@ export const VirtualMessages = React.memo(function VirtualMessages({
       // Ignore already queued measurements instead of touching its removed DOM.
       if (!root.current?.isConnected || !pane.current?.isConnected) return;
       let dirty = false;
-      const mountedRow = root.current!.querySelector<HTMLElement>("[data-row]");
-      if (mountedRow)
-        setRowPadding(parseFloat(getComputedStyle(mountedRow).paddingTop));
+      let measuredPadding: number | undefined;
       // The centered reading column can keep its width while the pane resizes.
       // Clearing heights then loses mounted measurements: those rows did not
       // resize, so ResizeObserver has no replacement entries to deliver.
@@ -138,7 +144,12 @@ export const VirtualMessages = React.memo(function VirtualMessages({
       for (const entry of entries) {
         const node = entry.target as HTMLElement;
         if (!node.dataset.row) continue;
-        const height = node.getBoundingClientRect().height;
+        measuredPadding ??= entry.contentRect.y;
+        // ResizeObserver already reports layout dimensions, including padding.
+        // Reading client rectangles here forces layout again after every commit.
+        const height =
+          entry.borderBoxSize?.[0]?.blockSize ??
+          node.getBoundingClientRect().height;
         if (
           height > 0 &&
           Math.abs((sizes.current.get(node.dataset.row) ?? 0) - height) > 0.5
@@ -147,6 +158,7 @@ export const VirtualMessages = React.memo(function VirtualMessages({
           dirty = true;
         }
       }
+      if (measuredPadding !== undefined) setRowPadding(measuredPadding);
       if (dirty) setRevision((n) => n + 1);
       else if (entries.some((entry) => entry.target === el)) remember();
     });
@@ -181,6 +193,15 @@ export const VirtualMessages = React.memo(function VirtualMessages({
       el.removeEventListener("reading-move", remember);
     };
   }, []);
+  // Cached measurements only become obsolete when records leave the window,
+  // not whenever another row is measured while scrolling.
+  useLayoutEffect(() => {
+    const active = new Set(events.map((event) => event.seq.toString()));
+    for (const id of sizes.current.keys())
+      if (!active.has(id)) sizes.current.delete(id);
+    for (const id of knots.current.keys())
+      if (!active.has(id)) knots.current.delete(id);
+  }, [events]);
   useLayoutEffect(() => {
     const el = pane.current;
     if (!el) return;
@@ -202,11 +223,6 @@ export const VirtualMessages = React.memo(function VirtualMessages({
         el.dispatchEvent(new CustomEvent("history-shift", { detail: delta }));
       previous.current = layout;
     }
-    const active = new Set(layout.rows.map((row) => row.id));
-    for (const id of sizes.current.keys())
-      if (!active.has(id)) sizes.current.delete(id);
-    for (const id of knots.current.keys())
-      if (!active.has(id)) knots.current.delete(id);
     // Preserve the reading fraction when its row is measured or reflows. A
     // monotonic piecewise map keeps both ends exact and dragging invertible.
     if (oldMap && beforeMapped !== undefined && !follow.current) {
@@ -317,13 +333,7 @@ export const VirtualMessages = React.memo(function VirtualMessages({
             data-latest-activity={start + index === latestActivity}
             className="transcript-row"
             style={{ top: layout.rows[start + index].top }}
-            ref={(node) => {
-              if (!node) return;
-              observer.current?.observe(node);
-              return () => {
-                observer.current?.unobserve(node);
-              };
-            }}
+            ref={observeRow}
           >
             <ActivityCardUnfolded
               value={
@@ -337,7 +347,16 @@ export const VirtualMessages = React.memo(function VirtualMessages({
           </div>
         );
       }),
-    [events, start, end, foldActivities, latestActivity, layout, render],
+    [
+      events,
+      start,
+      end,
+      foldActivities,
+      latestActivity,
+      layout,
+      render,
+      observeRow,
+    ],
   );
   return (
     <div
