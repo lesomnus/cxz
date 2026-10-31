@@ -16,14 +16,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type purgeFixture struct {
+type eraseFixture struct {
 	deletionFixture
 	purged        []sessionpurge.Request
 	eraseErr      error
 	erasedSession bool
 }
 
-func (f *purgeFixture) EraseSession(_ context.Context, r *api.SessionEraseInput) (*api.SessionEraseReply, error) {
+func (f *eraseFixture) EraseSession(_ context.Context, r *api.SessionEraseInput) (*api.SessionEraseReply, error) {
 	if f.eraseErr != nil {
 		return nil, f.eraseErr
 	}
@@ -35,14 +35,14 @@ func (f *purgeFixture) EraseSession(_ context.Context, r *api.SessionEraseInput)
 	}, nil
 }
 
-func purgeStack(t *testing.T) (*purgeFixture, resource.Server, *sql.DB, func()) {
+func eraseStack(t *testing.T) (*eraseFixture, resource.Server, *sql.DB, func()) {
 	t.Helper()
 	ctx := context.Background()
 	db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &purgeFixture{deletionFixture: deletionFixture{fixture: fixture{
+	f := &eraseFixture{deletionFixture: deletionFixture{fixture: fixture{
 		p: &api.Project{Id: "project", Workspace: "/work", Name: "work"},
 		s: &api.Session{Id: "session", ProjectId: "project", Workspace: "/work", Title: "secrets in the title", Agent: "claude", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, State: "idle", RunId: "run", CreateId: "create"},
 	}}}
@@ -57,7 +57,7 @@ func purgeStack(t *testing.T) (*purgeFixture, resource.Server, *sql.DB, func()) 
 	return f, stack, db, func() { db.Close() }
 }
 
-func (f *purgeFixture) ResourceSnapshot(ctx context.Context) (*api.ProjectList, *api.SessionList, error) {
+func (f *eraseFixture) ResourceSnapshot(ctx context.Context) (*api.ProjectList, *api.SessionList, error) {
 	if f.erasedSession {
 		return &api.ProjectList{Projects: []*api.Project{f.p}}, &api.SessionList{}, nil
 	}
@@ -66,7 +66,7 @@ func (f *purgeFixture) ResourceSnapshot(ctx context.Context) (*api.ProjectList, 
 func TestEraseDeletesByEverySessionHandle(t *testing.T) {
 	for _, kind := range []string{"runtime", "alias", "uuid"} {
 		t.Run(kind, func(t *testing.T) {
-			f, stack, db, done := purgeStack(t)
+			f, stack, db, done := eraseStack(t)
 			defer done()
 			ctx := t.Context()
 			v, err := stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: sessionRef("session"), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
@@ -111,7 +111,7 @@ func TestEraseDeletesByEverySessionHandle(t *testing.T) {
 	}
 }
 func TestEraseFailureLeavesRecordAndAliasForRetry(t *testing.T) {
-	f, stack, _, done := purgeStack(t)
+	f, stack, _, done := eraseStack(t)
 	defer done()
 	ctx := t.Context()
 	f.eraseErr = errors.New("cleanup failed")
@@ -128,7 +128,7 @@ func TestEraseFailureLeavesRecordAndAliasForRetry(t *testing.T) {
 	}
 }
 func TestSessionListingMigrationRetainsPreviouslyHiddenRecords(t *testing.T) {
-	f, stack, db, done := purgeStack(t)
+	f, stack, db, done := eraseStack(t)
 	defer done()
 	ctx := t.Context()
 	before, err := stack.Session().List(ctx, &resource.SessionListRequest{})

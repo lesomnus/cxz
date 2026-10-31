@@ -144,8 +144,8 @@ minute; a stopped session is checked when it resumes.
 Removal is on turn boundaries, so a conversation never loses half an exchange.
 Nothing is removed while a turn is in flight.
 
-Retention trims a journal; it never unlinks one. Deleting a session does not
-either. The one command that does is `cxz session purge` — see
+Retention trims a journal; it never unlinks one. `cxz session erase --yes`
+permanently deletes one session and its journal — see
 [deleting a session](projects.md#deleting-a-session).
 
 ### The client window

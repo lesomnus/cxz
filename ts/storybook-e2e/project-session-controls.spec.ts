@@ -204,7 +204,7 @@ test("failed erase preserves its target and selection for retry", async ({
     .check();
   await openBulk(page, "Erase");
   const dialog = page.getByRole("dialog", {
-    name: "Erase sessions",
+    name: /^Erase sessions?$/,
     exact: true,
   });
   await expect(rows(page)).toHaveCount(2);

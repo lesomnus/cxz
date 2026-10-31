@@ -66,7 +66,7 @@ identifies the conversation generation; `MarkRead` records the range actually
 shown, rejects stale generations and future sequences, and never moves a read
 cursor backwards. A completion published after its range was read receives a
 receipt too. These rules close the read/publication race and synchronize other
-windows and the TUI. Purge removes that session's read and notification records.
+windows and the TUI. Erase removes that session's read and notification records.
 
 The reading tab removes matching unread markers immediately, before ReadState
 or MarkRead answers. This optimistic projection remains during navigation and
@@ -89,7 +89,7 @@ editor. Plain Markdown, paste-chip source and completed attachment paths are
 restored; uploaded files remain in the project attachment storage. File blobs
 are not copied into browser storage. An interrupted file upload is shown as a
 failed chip that must be removed and selected again, rather than silently sending
-an empty file. Drafts are removed after an accepted send, on purge and on sign-out;
+an empty file. Drafts are removed after an accepted send, on erasure and on sign-out;
 a rejected send preserves the draft. Restricted or full browser storage still
 allows in-memory editing.
 

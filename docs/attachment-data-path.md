@@ -32,7 +32,7 @@ version-switch and update-maintenance stream guards for the entire operation.
 The private socket keeps its existing owner-only permissions. The web gateway
 retains cookie authentication, exact origin checking, body limits and logout
 cancellation. No client can supply a project or destination filesystem path.
-The resulting hard link is immutable and existing session purge reclaims it.
+The resulting hard link is immutable and existing session erasure reclaims it.
 
 There are no upload tickets, resumable offsets, sidecar files or extra public
 ports. Small legacy paste attachments sent through the separate `Attach` RPC

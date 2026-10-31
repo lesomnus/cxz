@@ -393,7 +393,7 @@ the same request and carries it over the worker's message channel to the same
 handler, where the fake service stores simulated files only in memory; Download
 can read them in the owning project, and Purge releases them. Real uploads use
 the existing container-readable `/cxz/assets` attachment mount and survive until
-session purge. Uploads do not alter workspace files or add transcript events.
+session erasure. Uploads do not alter workspace files or add transcript events.
 Implementation limits live in `composer-files.ts`, `composer-pastes.ts`,
 `composer-upload.ts` and the server attachment implementation.
 See [Attachment data path](attachment-data-path.md) for discovery, cancellation,

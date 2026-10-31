@@ -70,8 +70,7 @@ cxz project recreate --yes @all     # rebuild every running owned project
 cxz project stop PROJECT            # stop the container, keep it
 cxz project start PROJECT           # start the container it already has
 cxz project remove PROJECT          # remove the container, keep everything else
-cxz project purge PROJECT              # preview permanent removal
-cxz project purge --yes PROJECT        # delete this project and its owned data
+cxz project erase --yes PROJECT        # delete this project and its owned data
 cxz project ls                      # owned and foreign projects
 cxz project logs PROJECT            # provisioning output
 cxz project shell PROJECT
@@ -297,16 +296,16 @@ See [remote access](remote.md).
 ## Destructive
 
 ```sh
-cxz session purge --dry-run SESSION
-cxz session purge --yes SESSION
+cxz session erase --yes SESSION
 cxz purge --dry-run
 cxz purge --yes [--groups containers,projects,state,tools,networks,local]
 ```
 
-The only two commands that delete conversations. `session purge` destroys one —
-journal, agent profile, uploads, memories and the record itself; deleting a session
-keeps all of that. `purge` does the whole installation, credentials included. Both
-refuse to run without `--yes`, and `--dry-run` reports the exact targets. See
+`session erase --yes` permanently deletes one session and its history, profile,
+attachments, published memory and resource record. It stops the agent first.
+`purge` deletes the whole installation, credentials included. Both require
+`--yes`; only installation-wide purge supports `--dry-run`. Session visibility
+is a client filter, not a recoverable server deletion. See
 [projects and sessions](projects.md#deleting-a-session).
 
 ## Development

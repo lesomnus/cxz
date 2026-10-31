@@ -5,9 +5,9 @@ available through the existing Connect web transport. No CLI/TUI/web screen is
 added. It does not start an agent or generate an auxiliary AI task.
 
 Request:
-- `session`: SessionRef (UUID, alias, or runtime ID), for one listed session.
-- `project`: ProjectRef, for listed sessions in one project.
-- Omit both to include all listed sessions on this server. Supplying both is invalid.
+- `session`: SessionRef (UUID, alias, or runtime ID), for one unerased session.
+- `project`: ProjectRef, for unerased sessions in one project.
+- Omit both to include all unerased sessions on this server. Supplying both is invalid.
 - `from_ms`, `to_ms`: UTC half-open interval. End defaults to now; start defaults
   to 30 days before end. Maximum interval is 366 days. Negative/empty/reversed
   intervals are invalid. A zero value means default.
@@ -41,7 +41,7 @@ Response:
 The supervisor journal is authoritative; SQLite is a projection and Manager
 history may fall back to a partial cache when a project is offline. Retention
 can remove older events. These are statistics of available retained history,
-not a permanent lifetime ledger. Removed/unlisted sessions are excluded.
+not a permanent lifetime ledger. Removed/ununerased sessions are excluded.
 
 Each session uses its captured resource tail as a cutoff; this is not a global
 transactional snapshot across projects. In-progress usage is only counted when

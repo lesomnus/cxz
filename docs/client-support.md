@@ -32,7 +32,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | SES-01 | Supported: `session new`, account flow | Supported: new-session account/login flow | Not implemented |
 | SES-02 | Partial: `project add/set`, creation-time session metadata; no standalone session rename command | Partial: session alias rename; no project metadata editor | Not implemented |
 | SES-03 | Partial: `session interrupt/stop/resume`; restart requires explicit stop then resume | Supported: lifecycle controls, `/stop`, `/restart`, detach; pending resume indicator | Not implemented |
-| SES-04 | Partial: `session purge` with preview/confirmation; no ordinary removal command | Partial: stop/delete and retained journal; permanent purge remains CLI | Not implemented |
+| SES-04 | Supported: `session erase --yes` | Supported: confirmed permanent erasure | Supported: confirmed single/bulk erasure; client-side stopped-session filtering |
 | PRJ-01 | Supported: `project add/up/down/recreate/purge` | Partial: provisioning through session creation; no complete project lifecycle menu | Not implemented |
 | PRJ-02 | Supported: host configuration, `devcontainer render/docker-compose` | Partial: consumes provisioning configuration; no template editor/render command | Not implemented |
 

@@ -69,12 +69,13 @@ to the owned project container and its remote user. File previews retain their
 frontend size limit; downloads use the full file stream.
 
 The browser shares project and session inventories across navigation. Each entity
-type has a bounded initial List and a single Watch spanning all listed projects;
+type has a bounded initial List and a single Watch spanning all unerased projects;
 project groups use this shared state instead of opening their own requests. The
 Watch snapshot streams the full inventory, followed by row additions, updates and
 removals. Disconnected streams reconnect with backoff, and signing out cancels
 both subscriptions. On the Manager API, empty List or Watch filters default to
-all listed resources; explicit filters still allow narrower or archived scopes.
+all unerased resources; explicit filters can narrow by project or account.
+Stopped-session visibility is filtered by the client.
 Older Managers that require individual IDs for Watch retain a paginated static
 list and show an update message instead of repeatedly retrying the unsupported
 subscription. The Manager must be updated to use shared live subscriptions.
@@ -353,14 +354,14 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 
 | Area | Web support |
 | --- | --- |
-| Projects and sessions | Shared inventories and watches, creating/opening sessions, archive/restore, editable titles and aliases |
+| Projects and sessions | Shared inventories and watches, creating/opening sessions, client-side visibility filters, editable titles and aliases |
 | Accounts | Profile registration, central Codex login, isolated Claude session login and helper login |
 | Search | Indexed server search, project/date/match filters, result paging and event navigation |
 | Shared memory | Project library, revision-checked documents, snapshots, forks, merge, import, rename and trash controls |
 | Conversation | Virtualized paged history, live events, Markdown, highlighted code, model/effort snapshots, response metrics and copy |
 | Drafts | Per-session drafts and paste chips survive navigation and reload in tab-local sessionStorage |
 | Sending | Explicit Send or Ctrl+Enter; mutation IDs; no automatic replay after ambiguous failure |
-| Session control | Interrupt, stop/resume, restart, fork with inherited account/settings/history, purge with dry-run review and confirmation; queued-message cancel/recall |
+| Session control | Interrupt, stop/resume, restart, fork with inherited account/settings/history, permanent erasure with confirmation; queued-message cancel/recall |
 | Approval | Allow/deny and full tool input/output/approval inspection |
 | Questions | Claude choices/free text/previews; Codex requestUserInput and asynchronous questions; recorded replies |
 | MCP | Basic request display; schema-based elicitation forms still require the TUI |
@@ -408,7 +409,7 @@ metadata pass through to the Manager.
 The frontend still owns UI files, browser authentication and the HTTP/WebSocket
 bridges for terminals, uploads and OpenVSCode. `POST /editor/connect` prepares the
 workbench bridge and keeps its connection token server-side. Ordinary resource
-RPCs, including `Session.Patch`, `Session.Purge` and `Session.AuxEvents`, go
+RPCs, including `Session.Patch`, `Session.Erase` and `Session.AuxEvents`, go
 directly to the registered Manager handlers. The browser uses generated
 protobuf-es descriptors, Connect transport and payday Store/Queries; journal
 Events is a separate ordered stream from resource Watch.

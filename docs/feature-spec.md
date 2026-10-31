@@ -19,7 +19,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | SES-01 | Session creation | Choose workspace, account and supported model; complete required provider authentication before starting a session. |
 | SES-02 | Names and aliases | Change supported project/session metadata without changing resource identity. Validate aliases and report ambiguous targets. |
 | SES-03 | Session lifecycle | Distinguish interrupting a turn, stopping an agent, resuming, confirmed restart, and client detach. Detach must leave server work running. Interactive clients show when a resume request is pending. |
-| SES-04 | Session removal | Distinguish ordinary session removal/archive from permanent purge; explain retained data and confirm destructive scope. |
+| SES-04 | Session removal | Stop retains data; Erase permanently deletes one session with confirmation. Clients decide visibility; there is no server archive/restore state. |
 | PRJ-01 | Project lifecycle | Register, provision, start, down, recreate and purge owned projects with explicit workspace, container and data consequences. |
 | PRJ-02 | Devcontainer configuration | Resolve project configuration, default templates and project-name variables; expose the effective rendered configuration. |
 
@@ -44,7 +44,7 @@ linked guides explain existing behavior; correct these documents when code chang
 | FILE-02 | File downloads | Download a regular container file, report transfer progress and allow cancellation. Destination handling is client-specific. |
 | INPUT-05 | Secret input | Collect a secret separately from ordinary prompt text and send a protected file reference. Enforce transport rules; do not degrade silently to plain prompt text. |
 | INPUT-06 | External text input | Accept text produced by OS keyboard/dictation facilities where the environment supports them. cxz does not promise its own STT engine. |
-| INPUT-07 | Session mentions | Discover other listed sessions within the current project, filter by alias and insert a plain-text mention without sending the draft or reading conversation bodies. |
+| INPUT-07 | Session mentions | Discover other unerased sessions within the current project, filter by alias and insert a plain-text mention without sending the draft or reading conversation bodies. |
 
 ## Approvals, questions, and authentication
 

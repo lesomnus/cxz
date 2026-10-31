@@ -52,7 +52,7 @@ func TestSessionDeleteConfirmationVisibleAndExpires(t *testing.T) {
 		m := deleteModel()
 		m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
 		m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
-		if view := ansi.Strip(m.View()); !strings.Contains(view, "Ctrl+X again · delete (3s)") {
+		if view := ansi.Strip(m.View()); !strings.Contains(view, "Ctrl+X again · erase! (3s)") {
 			t.Fatal("confirmation hidden behind focused panel border", width, view)
 		}
 		m.updateDeleteConfirmation(pulseTick{}, m.deleteConfirm.until)

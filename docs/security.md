@@ -166,10 +166,9 @@ it — the exclusions are deliberate, but the file is still about your session.
 `cxz uninstall` removes the manager only. Projects, volumes, conversations and
 credentials stay.
 
-Deleting a session stops listing it and keeps its journal. `cxz session purge`
-destroys one session for real: journal, agent profile and credentials, uploads,
+`cxz session erase --yes` permanently deletes one session: journal, agent profile and credentials, uploads,
 published memories and the record with its title. It runs from the host client only
-— an agent inside a project cannot purge the history it can read.
+— an agent inside a project cannot erase the history it can read.
 
 `cxz purge` is the installation-wide one, and deletes every conversation and
 credential. Neither revokes tokens at the provider — do that yourself. See
