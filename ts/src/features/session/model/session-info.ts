@@ -30,6 +30,7 @@ export type SessionInfo = {
   remaining?: number;
   reset?: number;
   quotaLabel?: string;
+  quotaKey?: string;
   quotas?: QuotaWindow[];
   contextUsed?: number;
   contextWindow?: number;
@@ -228,6 +229,7 @@ export function sessionInfo(
   info.remaining = quota?.remaining;
   info.reset = quota?.reset;
   info.quotaLabel = quota?.label;
+  info.quotaKey = quota?.key;
   return info;
 }
 

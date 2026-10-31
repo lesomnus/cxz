@@ -50,6 +50,7 @@ describe("composer session information", () => {
     expect(info.model).toBe("confirmed");
     expect(info.effort).toBe("");
     expect(info.remaining).toBe(10);
+    expect(info.quotaKey).toBe("codex/secondary");
     expect(info.reset).toBe(1900500000000);
     expect(info.quotas).toMatchObject([
       { key: "codex/primary", remaining: 80, reset: 1900000000000 },
@@ -95,6 +96,7 @@ describe("composer session information", () => {
     });
     const info = sessionInfo(session(), [usage]);
     expect(info.remaining).toBe(40);
+    expect(info.quotaKey).toBe("codex/secondary");
     expect(info.quotas).toMatchObject([
       { key: "codex/primary", bucket: "codex", period: "5h", remaining: 80 },
       {

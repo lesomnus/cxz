@@ -141,6 +141,9 @@ export function UsageInfo({ info }: { info: SessionInfo; agent: string }) {
                   className={styles.quotaRow}
                   role="row"
                   data-quota-window={window.key}
+                  data-selected={
+                    windows.length > 1 && window.key === info.quotaKey
+                  }
                   data-quota-level={quotaLevel(window.remaining)}
                 >
                   <span className={styles.period} role="cell">
