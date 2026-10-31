@@ -29,7 +29,7 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
-	if r.HasAlias() || r.HasId() || r.GetRuntimeId() != "" || r.HasStatus() || r.HasDateCreated() || (r.HasListed() && !r.GetListed()) {
+	if r.HasAlias() || r.HasId() || r.GetRuntimeId() != "" || r.HasStatus() || r.HasDateCreated() {
 		return nil, closed()
 	}
 	if r.GetClientId() == "" {
@@ -83,19 +83,10 @@ func (s SessionServer) Get(ctx context.Context, r *resource.SessionGetRequest) (
 	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
 	}
-	v, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
-	if err == nil && !v.GetListed() {
-		return nil, status.Error(codes.NotFound, "session deleted")
-	}
-	if err != nil {
-		return nil, err
-	}
+
 	return s.SessionServiceServer.Get(ctx, r)
 }
 func (s SessionServer) List(ctx context.Context, r *resource.SessionListRequest) (*resource.SessionListResponse, error) {
-	if len(r.GetFilters()) == 0 {
-		r.SetFilters([]*resource.SessionFilter{resource.SessionFilter_builder{Listed: ptr(true)}.Build()})
-	}
 	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
 	}
@@ -115,10 +106,7 @@ func (s SessionServer) List(ctx context.Context, r *resource.SessionListRequest)
 	return page, nil
 }
 func (s SessionServer) Watch(r *resource.SessionWatchRequest, stream grpc.ServerStreamingServer[resource.SessionWatchResponse]) error {
-	// No project constraint means every listed session, just like List.
-	if len(r.GetFilters()) == 0 {
-		r.SetFilters([]*resource.SessionFilter{resource.SessionFilter_builder{Listed: ptr(true)}.Build()})
-	}
+	// An unconstrained watch includes every unerased session, just like List.
 	s.shared.watchers.Add(1)
 	defer s.shared.watchers.Add(-1)
 	if err := s.ensureSnapshot(stream.Context()); err != nil {
@@ -160,9 +148,6 @@ func (s SessionServer) Patch(ctx context.Context, r *resource.SessionPatchReques
 	if err != nil {
 		return nil, err
 	}
-	if !v.GetListed() {
-		return nil, status.Error(codes.NotFound, "session deleted")
-	}
 	if r.HasAlias() {
 		owner, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{Alias: ptr(r.GetAlias())}.Build()}.Build())
 		if err != nil && status.Code(err) != codes.NotFound {
@@ -193,9 +178,6 @@ func (s SessionServer) resolve(ctx context.Context, ref *resource.SessionRef) (*
 		return nil, err
 	}
 	v, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: ref, Select: resource.SessionSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
-	if err == nil && !v.GetListed() {
-		return nil, status.Error(codes.NotFound, "session deleted")
-	}
 	return v, err
 }
 func (s SessionServer) Resume(ctx context.Context, r *resource.SessionControl) (*resource.Session, error) {

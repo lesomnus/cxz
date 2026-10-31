@@ -99,7 +99,7 @@ type searchDebounced struct {
 func (m *model) searchAvailable() bool {
 	return m.search == nil && m.workflow == nil && m.report == nil && m.redactDialog == nil &&
 		m.pasteDialog == nil && m.restartConfirm == nil && m.modelPicker == nil &&
-		m.settingsPage == nil && m.library == nil && m.memoryPage == nil && m.sessionArchive == nil &&
+		m.settingsPage == nil && m.library == nil && m.memoryPage == nil &&
 		!m.accountView && !m.creating && !m.renaming && !m.errorFocused() && !m.terminalFocused() &&
 		!m.questionFocused() && !m.selectingTools()
 }

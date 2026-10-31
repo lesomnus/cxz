@@ -66,7 +66,7 @@ func TestUploadsPreserveBytesAndEnforceRunSizeAndProjectScope(t *testing.T) {
 	if _, err := x.UploadAttachment(ctx, in("session-1-run-1", 0), strings.NewReader("")); err == nil {
 		t.Fatal("cancelled upload committed")
 	}
-	if _, err := x.Purge(t.Context(), resource.SessionPurgeRequest_builder{Ref: resource.SessionRef_builder{RuntimeId: proto.String("session-1")}.Build()}.Build()); err != nil || s.uploadBytes != 0 || len(s.uploads) != 0 {
+	if _, err := x.Erase(t.Context(), resource.SessionRef_builder{RuntimeId: proto.String("session-1")}.Build()); err != nil || s.uploadBytes != 0 || len(s.uploads) != 0 {
 		t.Fatal("purge retained uploads", err)
 	}
 }

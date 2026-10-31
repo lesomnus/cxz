@@ -45,9 +45,6 @@ func (Session) Fields() []ent.Field {
 			Optional(),
 		field.Json("status", &resource.SessionStatus{}).ValueScanner(entpb.ValueScanner[*resource.SessionStatus]{}).
 			Optional(),
-		field.Bool("listed").
-			Optional().
-			Default(true),
 		field.Uuid("project_id").
 			Immutable(),
 		field.Uuid("account_id").

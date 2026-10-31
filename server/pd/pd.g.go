@@ -3272,9 +3272,6 @@ func filterSession(f *resource.SessionFilter) (predicate.Session, error) {
 			ps = append(ps, entSession.HasAccountWith(q))
 		}
 	}
-	if f.HasListed() {
-		ps = append(ps, entSession.ListedEQ(f.GetListed()))
-	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
 	}
@@ -8028,11 +8025,6 @@ func (s interceptSession) ConversationStats(ctx context.Context, req *resource.C
 		resource.SessionService_ConversationStats_FullMethodName, req, s.SessionServiceServer.ConversationStats)
 }
 
-func (s interceptSession) Restore(ctx context.Context, req *resource.SessionRef) (*resource.Session, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_Restore_FullMethodName, req, s.SessionServiceServer.Restore)
-}
-
 func (s interceptSession) Resume(ctx context.Context, req *resource.SessionControl) (*resource.Session, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Resume_FullMethodName, req, s.SessionServiceServer.Resume)
@@ -8241,11 +8233,6 @@ func (s interceptSession) AuxPrefer(ctx context.Context, req *resource.AuxPrefer
 func (s interceptSession) AuxCancel(ctx context.Context, req *resource.AuxCancelRequest) (*resource.AuxState, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_AuxCancel_FullMethodName, req, s.SessionServiceServer.AuxCancel)
-}
-
-func (s interceptSession) Purge(ctx context.Context, req *resource.SessionPurgeRequest) (*resource.SessionPurgeReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_Purge_FullMethodName, req, s.SessionServiceServer.Purge)
 }
 
 func (s interceptSession) GetHistoryFloor(ctx context.Context, req *resource.SessionHistoryFloorRequest) (*resource.SessionHistoryFloorReply, error) {
@@ -10687,8 +10674,6 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.SessionReadStateRequest{}
 	case resource.SessionService_ConversationStats_FullMethodName:
 		v = &resource.ConversationStatsRequest{}
-	case resource.SessionService_Restore_FullMethodName:
-		v = &resource.SessionRef{}
 	case resource.SessionService_Resume_FullMethodName:
 		v = &resource.SessionControl{}
 	case resource.SessionService_Fork_FullMethodName:
@@ -10765,8 +10750,6 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.AuxPreferRequest{}
 	case resource.SessionService_AuxCancel_FullMethodName:
 		v = &resource.AuxCancelRequest{}
-	case resource.SessionService_Purge_FullMethodName:
-		v = &resource.SessionPurgeRequest{}
 	case resource.SessionService_GetHistoryFloor_FullMethodName:
 		v = &resource.SessionHistoryFloorRequest{}
 	case resource.SessionService_McpLogs_FullMethodName:
@@ -10951,8 +10934,6 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.Session().ReadState(ctx, v.(*resource.SessionReadStateRequest))
 	case resource.SessionService_ConversationStats_FullMethodName:
 		res, err = s.Session().ConversationStats(ctx, v.(*resource.ConversationStatsRequest))
-	case resource.SessionService_Restore_FullMethodName:
-		res, err = s.Session().Restore(ctx, v.(*resource.SessionRef))
 	case resource.SessionService_Resume_FullMethodName:
 		res, err = s.Session().Resume(ctx, v.(*resource.SessionControl))
 	case resource.SessionService_Fork_FullMethodName:
@@ -11029,8 +11010,6 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.Session().AuxPrefer(ctx, v.(*resource.AuxPreferRequest))
 	case resource.SessionService_AuxCancel_FullMethodName:
 		res, err = s.Session().AuxCancel(ctx, v.(*resource.AuxCancelRequest))
-	case resource.SessionService_Purge_FullMethodName:
-		res, err = s.Session().Purge(ctx, v.(*resource.SessionPurgeRequest))
 	case resource.SessionService_GetHistoryFloor_FullMethodName:
 		res, err = s.Session().GetHistoryFloor(ctx, v.(*resource.SessionHistoryFloorRequest))
 	case resource.SessionService_McpLogs_FullMethodName:
@@ -11423,7 +11402,6 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 13, Name: entSession.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entSession.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: entSession.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
-				{Number: 17, Name: entSession.FieldListed, Type: 8, Nullable: false, Key: 0},
 				{Number: 18, Name: entSession.AccountColumn, Type: 64, Nullable: false, Key: 1},
 				{Number: 19, Name: entSession.AuthBindingColumn, Type: 64, Nullable: false, Key: 1},
 			}, v)

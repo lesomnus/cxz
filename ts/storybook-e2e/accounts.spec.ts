@@ -389,7 +389,7 @@ test("account sessions use compact read-only identities and keep selection scope
     page.getByRole("menuitem", { name: "Open conversation", exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("menuitem", { name: "Purge", exact: true }),
+    page.getByRole("menuitem", { name: "Erase", exact: true }),
   ).toHaveCSS(
     "font-weight",
     await page

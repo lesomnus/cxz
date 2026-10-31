@@ -40,7 +40,6 @@ type Session struct {
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Status      *SessionStatus         `protobuf:"bytes,16,opt,name=status"`
-	xxx_hidden_Listed      bool                   `protobuf:"varint,17,opt,name=listed"`
 	xxx_hidden_Account     *Account               `protobuf:"bytes,18,opt,name=account"`
 	xxx_hidden_AuthBinding *AuthBinding           `protobuf:"bytes,19,opt,name=auth_binding,json=authBinding"`
 	unknownFields          protoimpl.UnknownFields
@@ -163,13 +162,6 @@ func (x *Session) GetStatus() *SessionStatus {
 	return nil
 }
 
-func (x *Session) GetListed() bool {
-	if x != nil {
-		return x.xxx_hidden_Listed
-	}
-	return false
-}
-
 func (x *Session) GetAccount() *Account {
 	if x != nil {
 		return x.xxx_hidden_Account
@@ -237,10 +229,6 @@ func (x *Session) SetDateCreated(v *timestamppb.Timestamp) {
 
 func (x *Session) SetStatus(v *SessionStatus) {
 	x.xxx_hidden_Status = v
-}
-
-func (x *Session) SetListed(v bool) {
-	x.xxx_hidden_Listed = v
 }
 
 func (x *Session) SetAccount(v *Account) {
@@ -345,7 +333,6 @@ type Session_builder struct {
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
 	Status      *SessionStatus
-	Listed      bool
 	Account     *Account
 	AuthBinding *AuthBinding
 }
@@ -367,7 +354,6 @@ func (b0 Session_builder) Build() *Session {
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Status = b.Status
-	x.xxx_hidden_Listed = b.Listed
 	x.xxx_hidden_Account = b.Account
 	x.xxx_hidden_AuthBinding = b.AuthBinding
 	return m0
@@ -1221,7 +1207,7 @@ var File_cxz_session_proto protoreflect.FileDescriptor
 
 const file_cxz_session_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/session.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x11cxz/account.proto\x1a\x16cxz/auth_binding.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbe\x06\n" +
+	"\x11cxz/session.proto\x12\x03cxz\x1a\x11cxz/project.proto\x1a\x11cxz/account.proto\x1a\x16cxz/auth_binding.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x9d\x06\n" +
 	"\aSession\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1e\n" +
 	"\x05alias\x18\x04 \x01(\tB\b\xea\x82\x16\x040\x018\x01R\x05alias\x12\x12\n" +
@@ -1238,12 +1224,11 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12*\n" +
-	"\x06status\x18\x10 \x01(\v2\x12.cxz.SessionStatusR\x06status\x12#\n" +
-	"\x06listed\x18\x11 \x01(\bB\v\xea\x82\x16\a\x82\x01\x04trueR\x06listed\x12.\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.SessionStatusR\x06status\x12.\n" +
 	"\aaccount\x18\x12 \x01(\v2\f.cxz.AccountB\x06\xf2\x82\x16\x02@\x01R\aaccount\x12;\n" +
-	"\fauth_binding\x18\x13 \x01(\v2\x10.cxz.AuthBindingB\x06\xf2\x82\x16\x02@\x01R\vauthBinding:|\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fauth_binding\x18\x13 \x01(\v2\x10.cxz.AuthBindingB\x06\xf2\x82\x16\x02@\x01R\vauthBinding:r\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
-	"\x02id\x10\x01\x8a\xbb\x16N\b\b2F\n" +
+	"\x02id\x10\x01\x8a\xbb\x16D\b\b2<\n" +
 	"\x10\n" +
 	"\x0e\n" +
 	"\fdate_created\n" +
@@ -1252,8 +1237,7 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\t\n" +
 	"\aproject\x1a\t\n" +
-	"\aaccount\x1a\b\n" +
-	"\x06listed 2(\xc8\x01:\x00*\x00\"\xe2\x01\n" +
+	"\aaccount 2(\xc8\x01:\x00*\x00J\x04\b\x11\x10\x12R\x06listed\"\xe2\x01\n" +
 	"\rSessionStatus\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +

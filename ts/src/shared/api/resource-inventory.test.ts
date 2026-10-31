@@ -57,7 +57,6 @@ const session = (i: number, p = project(i)) =>
     id: new TextEncoder().encode(`session-${String(i).padStart(8, "0")}`),
     runtimeId: `session-${i}`,
     project: p,
-    listed: true,
   });
 function fixture(empty = false) {
   const p = new Feed<
@@ -167,10 +166,7 @@ describe("shared resource inventory", () => {
       expect(f.projects.list).toHaveBeenCalledTimes(1);
       expect(f.projects.watch).toHaveBeenCalledTimes(1);
       expect(f.sessions.list).toHaveBeenCalledTimes(1);
-      expect(f.sessions.watch).toHaveBeenCalledWith(
-        { filters: [{ listed: true }] },
-        expect.anything(),
-      );
+      expect(f.sessions.watch).toHaveBeenCalledWith({}, expect.anything());
       // Moving to another project and adding/removing rows changes membership
       // immediately, without revalidating a list for each affected group.
       const moved = create(SessionSchema, {

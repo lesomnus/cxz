@@ -42,7 +42,7 @@ export function UsageReport({
       </div>
       <small className={styles.muted}>
         {account
-          ? "Recorded conversation usage for this account's listed sessions over the last 30 days. Provider billing and remaining quota are not included."
+          ? "Recorded conversation usage for this account's sessions over the last 30 days. Provider billing and remaining quota are not included."
           : "Retained conversation statistics for the last 30 days. These are reported token and cost metrics, not account billing or lifetime totals."}
       </small>
       {stats.error && <p role="alert">{stats.error}</p>}

@@ -401,7 +401,7 @@ func (s Layer) CollectNotifications(ctx context.Context) error {
 		}
 	sessionLoop:
 		for _, session := range page.GetItems() {
-			if !session.GetListed() || session.GetProject() == nil {
+			if session.GetProject() == nil {
 				continue
 			}
 			baseline := uint64(0)

@@ -5,7 +5,6 @@ import {
   canControl,
   controlTarget,
   performSessionControl,
-  previewSessionPurge,
   settleSessions,
   type SessionControlConnection,
 } from "./session-control-batch";
@@ -21,7 +20,7 @@ function fixture() {
   const mocks = {
     sessions: {
       get: vi.fn().mockResolvedValue(session),
-      purge: vi.fn().mockResolvedValue({ targets: [], retained: [] }),
+      erase: vi.fn().mockResolvedValue({ targets: [], retained: [] }),
       stop: vi.fn().mockResolvedValue(session),
       resume: vi.fn().mockResolvedValue(session),
     },
@@ -50,7 +49,7 @@ describe("project session control batches", () => {
       expect(canControl(s, "restart")).toBe(true);
     }
     expect(canControl(create(SessionSchema), "restart")).toBe(false);
-    expect(canControl(create(SessionSchema), "purge")).toBe(true);
+    expect(canControl(create(SessionSchema), "erase")).toBe(true);
   });
 
   it("freezes the run and identity used by a confirmation", () => {
@@ -62,14 +61,15 @@ describe("project session control batches", () => {
     expect(target.id[0]).toBe(1);
   });
 
-  it("previews without cleanup, then cleans caches only after confirmed purge succeeds", async () => {
+  it("cleans caches only after confirmed erase succeeds", async () => {
     const { session, mocks, c } = fixture(),
       target = controlTarget(session);
-    await previewSessionPurge(c, target);
-    expect(mocks.sessions.purge.mock.calls[0][0].dryRun).toBe(true);
     expect(mocks.store.apply).not.toHaveBeenCalled();
-    await performSessionControl(c, target, "purge");
-    expect(mocks.sessions.purge.mock.calls[1][0].dryRun).not.toBe(true);
+    await performSessionControl(c, target, "erase");
+    expect(mocks.sessions.erase).toHaveBeenCalledExactlyOnceWith(
+      { key: { case: "id", value: target.id } },
+      { timeoutMs: 120_000 },
+    );
     expect(mocks.store.apply).toHaveBeenCalledWith("cxz.Session", [
       { id: target.id },
     ]);
@@ -85,19 +85,19 @@ describe("project session control batches", () => {
       if (change === "run") session.status!.runId = "other-run";
       if (change === "id") session.id[0] = 2;
       if (change === "creation") session.clientId = "other-creation";
-      await expect(performSessionControl(c, target, "purge")).rejects.toThrow(
+      await expect(performSessionControl(c, target, "erase")).rejects.toThrow(
         "Session run changed",
       );
-      expect(mocks.sessions.purge).not.toHaveBeenCalled();
+      expect(mocks.sessions.erase).not.toHaveBeenCalled();
       expect(mocks.store.apply).not.toHaveBeenCalled();
     }
   });
 
-  it("does not discard local data after an unsuccessful purge", async () => {
+  it("does not discard local data after an unsuccessful erase", async () => {
     const { session, mocks, c } = fixture();
-    mocks.sessions.purge.mockRejectedValue(new Error("disconnected"));
+    mocks.sessions.erase.mockRejectedValue(new Error("disconnected"));
     await expect(
-      performSessionControl(c, controlTarget(session), "purge"),
+      performSessionControl(c, controlTarget(session), "erase"),
     ).rejects.toThrow("disconnected");
     expect(mocks.store.apply).not.toHaveBeenCalled();
     expect(mocks.drafts.delete).not.toHaveBeenCalled();

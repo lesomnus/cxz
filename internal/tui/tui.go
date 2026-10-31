@@ -169,7 +169,6 @@ type model struct {
 	// are one lookup rather than two, and a live `models` event replaces it.
 	modelCatalogs       map[string]*modelCatalog
 	settingsPage        *settingsPage
-	sessionArchive      *sessionArchive
 	memoryPage          *memoryPage
 	report              *reportOverlay
 	contextCapture      *contextCapture
@@ -1277,17 +1276,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 	}
-	if m.sessionArchive != nil {
-		switch v := msg.(type) {
-		case tea.KeyMsg:
-			if v.Type == tea.KeyCtrlD && !v.Paste {
-				return m, tea.Quit
-			}
-			return m, m.sessionArchiveKey(v)
-		case tea.MouseMsg:
-			return m, nil
-		}
-	}
 	if k, ok := msg.(tea.KeyMsg); ok && !k.Paste && !m.terminalFocused() {
 		switch k.String() {
 		case "ctrl+d":
@@ -1456,27 +1444,6 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			v.session.Close()
 		}
 		return m, nil
-	case archiveLoaded:
-		if m.sessionArchive == v.page {
-			v.page.loading = false
-			v.page.items = v.items
-			if v.err != nil {
-				v.page.message = v.err.Error()
-			}
-		}
-		return m, nil
-	case archiveRestored:
-		if m.sessionArchive != v.page {
-			return m, m.refresh()
-		}
-		v.page.busy = false
-		if v.err != nil {
-			v.page.message = v.err.Error()
-			return m, nil
-		}
-		m.sessionArchive = nil
-		m.accountView, m.accountChoosing = false, false
-		return m.update(result{sessionID: v.session.Id, text: "Session restored; resume to continue"})
 	case terminalChanged:
 		m.closeSuccessfulTerminal(v.id)
 		return m, nil
@@ -2539,9 +2506,6 @@ func (m *model) View() (out string) {
 	// terminalFocus still runs on the change itself, to repaint the widgets that
 	// hold a copy of the style instead of reading it.
 	keyboardStep(m.blurred)
-	if m.sessionArchive != nil {
-		return m.sessionArchiveScreen()
-	}
 	if m.library != nil {
 		return m.libraryScreen()
 	}

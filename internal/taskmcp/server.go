@@ -151,7 +151,7 @@ func (t tools) active(ctx context.Context) error {
 		return err
 	}
 	state := s.GetStatus().GetState()
-	if !s.GetListed() || !projectid.Same(projectid.String(s.GetProject().GetId()), t.binding.Project) || s.GetStatus().GetRunId() != t.binding.Run || (state != "idle" && state != "working" && state != "waiting_input") {
+	if !projectid.Same(projectid.String(s.GetProject().GetId()), t.binding.Project) || s.GetStatus().GetRunId() != t.binding.Run || (state != "idle" && state != "working" && state != "waiting_input") {
 		return status.Error(codes.FailedPrecondition, "MCP launch run is stale or inactive; restart the agent")
 	}
 	return nil

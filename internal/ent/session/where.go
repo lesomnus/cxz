@@ -106,11 +106,6 @@ func DateCreated(v time.Time) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldDateCreated, v))
 }
 
-// Listed applies equality check predicate on the "listed" field. It's identical to ListedEQ.
-func Listed(v bool) predicate.Session {
-	return predicate.Session(sql.FieldEQ(FieldListed, v))
-}
-
 // ProjectId applies equality check predicate on the "project_id" field. It's identical to ProjectIdEQ.
 func ProjectId(v uuid.UUID) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldProjectId, v))
@@ -739,26 +734,6 @@ func StatusIsNil() predicate.Session {
 // StatusNotNil applies the NotNil predicate on the "status" field.
 func StatusNotNil() predicate.Session {
 	return predicate.Session(sql.FieldNotNull(FieldStatus))
-}
-
-// ListedEQ applies the EQ predicate on the "listed" field.
-func ListedEQ(v bool) predicate.Session {
-	return predicate.Session(sql.FieldEQ(FieldListed, v))
-}
-
-// ListedNEQ applies the NEQ predicate on the "listed" field.
-func ListedNEQ(v bool) predicate.Session {
-	return predicate.Session(sql.FieldNEQ(FieldListed, v))
-}
-
-// ListedIsNil applies the IsNil predicate on the "listed" field.
-func ListedIsNil() predicate.Session {
-	return predicate.Session(sql.FieldIsNull(FieldListed))
-}
-
-// ListedNotNil applies the NotNil predicate on the "listed" field.
-func ListedNotNil() predicate.Session {
-	return predicate.Session(sql.FieldNotNull(FieldListed))
 }
 
 // ProjectIdEQ applies the EQ predicate on the "project_id" field.

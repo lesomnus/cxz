@@ -7,6 +7,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/historypolicy"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/sessionpurge"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,11 +21,11 @@ import (
 // rebuilds them from the manifests still on disk -- so dropping them first
 // stops this process from serving a session whose journal is about to vanish,
 // and a purge interrupted after that point is simply run again.
-func (s *Server) PurgeSession(ctx context.Context, in *api.SessionPurgeInput) (*api.SessionPurgeReply, error) {
+func (s *Server) EraseSession(ctx context.Context, in *api.SessionEraseInput) (*api.SessionEraseReply, error) {
 	// With a manager above it, the manager owns the order the two roots are
 	// purged in; this process is then only asked for its own.
 	if s.manager != nil {
-		return s.manager.PurgeSession(ctx, in)
+		return s.manager.EraseSession(ctx, in)
 	}
 	out, err := s.purgeSession(ctx, in)
 	if err != nil {
@@ -35,26 +36,36 @@ func (s *Server) PurgeSession(ctx context.Context, in *api.SessionPurgeInput) (*
 
 // purgeReply carries the plan as the API states it. kind travels so a caller
 // can describe what would go without knowing the layout it would go from.
-func purgeReply(v sessionpurge.Reply) *api.SessionPurgeReply {
-	out := &api.SessionPurgeReply{SessionId: v.Session, DryRun: v.DryRun, Retained: v.Retained}
+func purgeReply(v sessionpurge.Reply) *api.SessionEraseReply {
+	out := &api.SessionEraseReply{SessionId: v.Session, DryRun: v.DryRun, Retained: v.Retained}
 	for _, t := range v.Targets {
-		out.Targets = append(out.Targets, &api.SessionPurgeTarget{
+		out.Targets = append(out.Targets, &api.SessionEraseTarget{
 			Kind: t.Kind, Path: t.Path, Files: int32(t.Files), Bytes: t.Bytes,
 		})
 	}
 	return out
 }
 
-func (s *Server) purgeSession(ctx context.Context, in *api.SessionPurgeInput) (sessionpurge.Reply, error) {
+func (s *Server) purgeSession(ctx context.Context, in *api.SessionEraseInput) (sessionpurge.Reply, error) {
 	r := sessionpurge.Request{Session: in.SessionId, DryRun: in.DryRun}
 	if err := s.requireManagerAuthority(ctx, "purge a session from the host client, not from inside a project"); err != nil {
 		return sessionpurge.Reply{}, err
 	}
 	m, err := s.manifest(ctx, r.Session)
+	subject := sessionpurge.Subject{Session: r.Session, CreateID: in.CreateId, Project: in.ProjectId}
 	if err != nil {
-		return sessionpurge.Reply{}, err
+		if status.Code(err) != codes.NotFound || in.ProjectId == "" {
+			return sessionpurge.Reply{}, err
+		}
+	} else {
+		if in.ProjectId != "" && !projectid.Same(in.ProjectId, m.ProjectID) {
+			return sessionpurge.Reply{}, status.Error(codes.FailedPrecondition, "session project changed")
+		}
+		subject = sessionpurge.Subject{Session: m.ID, CreateID: m.CreateID, Project: m.ProjectID}
 	}
-	subject := sessionpurge.Subject{Session: m.ID, CreateID: m.CreateID, Project: m.ProjectID}
+	if s.insideProject() && in.ProjectId != "" && !projectid.Same(os.Getenv("CXZ_PROJECT_ID"), in.ProjectId) {
+		return sessionpurge.Reply{}, status.Error(codes.FailedPrecondition, "session belongs to another project")
+	}
 	// A project runtime holds the conversation while the manager holds the
 	// uploads, and each purges its own root. A standalone server has no manager
 	// above it, so there it is one root and both scopes belong to this pass.
@@ -63,11 +74,11 @@ func (s *Server) purgeSession(ctx context.Context, in *api.SessionPurgeInput) (s
 		scopes = append(scopes, sessionpurge.Manager)
 	}
 	if !r.DryRun {
-		if err := s.forgetSession(ctx, m.ID); err != nil {
+		if err := s.forgetSession(ctx, r.Session); err != nil {
 			return sessionpurge.Reply{}, err
 		}
 	}
-	out := sessionpurge.Reply{Session: m.ID, DryRun: r.DryRun}
+	out := sessionpurge.Reply{Session: r.Session, DryRun: r.DryRun}
 	for _, scope := range scopes {
 		step := sessionpurge.Execute
 		if r.DryRun {

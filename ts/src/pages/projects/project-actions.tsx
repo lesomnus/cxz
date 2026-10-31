@@ -25,11 +25,11 @@ type Action = "stop" | "start" | "remove" | "erase";
 // keeps everything else, and purging is the one that deletes data.
 // See docs/plans/project-lifecycle-api.md.
 // Each action's glyph. Erasing borrows the trash: it is the one that deletes.
-const icons: Record<Action, "stop" | "resume" | "remove" | "purge"> = {
+const icons: Record<Action, "stop" | "resume" | "remove" | "erase"> = {
   stop: "stop",
   start: "resume",
   remove: "remove",
-  erase: "purge",
+  erase: "erase",
 };
 
 const copy: Record<

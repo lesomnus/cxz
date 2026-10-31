@@ -66,7 +66,7 @@ const (
 	Sessions_AuxSetConfig_FullMethodName           = "/cxz.runtime.Sessions/AuxSetConfig"
 	Sessions_AuxModels_FullMethodName              = "/cxz.runtime.Sessions/AuxModels"
 	Sessions_AuxLoginInfo_FullMethodName           = "/cxz.runtime.Sessions/AuxLoginInfo"
-	Sessions_PurgeSession_FullMethodName           = "/cxz.runtime.Sessions/PurgeSession"
+	Sessions_EraseSession_FullMethodName           = "/cxz.runtime.Sessions/EraseSession"
 	Sessions_GetHistoryPolicy_FullMethodName       = "/cxz.runtime.Sessions/GetHistoryPolicy"
 	Sessions_SetHistoryPolicy_FullMethodName       = "/cxz.runtime.Sessions/SetHistoryPolicy"
 	Sessions_GetHistoryFloor_FullMethodName        = "/cxz.runtime.Sessions/GetHistoryFloor"
@@ -143,7 +143,7 @@ type SessionsClient interface {
 	AuxSetConfig(ctx context.Context, in *AuxSetConfigInput, opts ...grpc.CallOption) (*AuxConfigReply, error)
 	AuxModels(ctx context.Context, in *AuxModelsInput, opts ...grpc.CallOption) (*AuxModelsReply, error)
 	AuxLoginInfo(ctx context.Context, in *AuxLoginInfoInput, opts ...grpc.CallOption) (*AuxLoginInfoReply, error)
-	PurgeSession(ctx context.Context, in *SessionPurgeInput, opts ...grpc.CallOption) (*SessionPurgeReply, error)
+	EraseSession(ctx context.Context, in *SessionEraseInput, opts ...grpc.CallOption) (*SessionEraseReply, error)
 	GetHistoryPolicy(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HistoryPolicy, error)
 	SetHistoryPolicy(ctx context.Context, in *HistoryPolicy, opts ...grpc.CallOption) (*HistoryPolicy, error)
 	GetHistoryFloor(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*HistoryFloorReply, error)
@@ -683,10 +683,10 @@ func (c *sessionsClient) AuxLoginInfo(ctx context.Context, in *AuxLoginInfoInput
 	return out, nil
 }
 
-func (c *sessionsClient) PurgeSession(ctx context.Context, in *SessionPurgeInput, opts ...grpc.CallOption) (*SessionPurgeReply, error) {
+func (c *sessionsClient) EraseSession(ctx context.Context, in *SessionEraseInput, opts ...grpc.CallOption) (*SessionEraseReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SessionPurgeReply)
-	err := c.cc.Invoke(ctx, Sessions_PurgeSession_FullMethodName, in, out, cOpts...)
+	out := new(SessionEraseReply)
+	err := c.cc.Invoke(ctx, Sessions_EraseSession_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -974,7 +974,7 @@ type SessionsServer interface {
 	AuxSetConfig(context.Context, *AuxSetConfigInput) (*AuxConfigReply, error)
 	AuxModels(context.Context, *AuxModelsInput) (*AuxModelsReply, error)
 	AuxLoginInfo(context.Context, *AuxLoginInfoInput) (*AuxLoginInfoReply, error)
-	PurgeSession(context.Context, *SessionPurgeInput) (*SessionPurgeReply, error)
+	EraseSession(context.Context, *SessionEraseInput) (*SessionEraseReply, error)
 	GetHistoryPolicy(context.Context, *Empty) (*HistoryPolicy, error)
 	SetHistoryPolicy(context.Context, *HistoryPolicy) (*HistoryPolicy, error)
 	GetHistoryFloor(context.Context, *SessionRef) (*HistoryFloorReply, error)
@@ -1149,8 +1149,8 @@ func (UnimplementedSessionsServer) AuxModels(context.Context, *AuxModelsInput) (
 func (UnimplementedSessionsServer) AuxLoginInfo(context.Context, *AuxLoginInfoInput) (*AuxLoginInfoReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxLoginInfo not implemented")
 }
-func (UnimplementedSessionsServer) PurgeSession(context.Context, *SessionPurgeInput) (*SessionPurgeReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method PurgeSession not implemented")
+func (UnimplementedSessionsServer) EraseSession(context.Context, *SessionEraseInput) (*SessionEraseReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method EraseSession not implemented")
 }
 func (UnimplementedSessionsServer) GetHistoryPolicy(context.Context, *Empty) (*HistoryPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetHistoryPolicy not implemented")
@@ -2060,20 +2060,20 @@ func _Sessions_AuxLoginInfo_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Sessions_PurgeSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SessionPurgeInput)
+func _Sessions_EraseSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionEraseInput)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SessionsServer).PurgeSession(ctx, in)
+		return srv.(SessionsServer).EraseSession(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Sessions_PurgeSession_FullMethodName,
+		FullMethod: Sessions_EraseSession_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionsServer).PurgeSession(ctx, req.(*SessionPurgeInput))
+		return srv.(SessionsServer).EraseSession(ctx, req.(*SessionEraseInput))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2672,8 +2672,8 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Sessions_AuxLoginInfo_Handler,
 		},
 		{
-			MethodName: "PurgeSession",
-			Handler:    _Sessions_PurgeSession_Handler,
+			MethodName: "EraseSession",
+			Handler:    _Sessions_EraseSession_Handler,
 		},
 		{
 			MethodName: "GetHistoryPolicy",

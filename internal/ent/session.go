@@ -44,8 +44,6 @@ type Session struct {
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// Status holds the value of the "status" field.
 	Status *resource.SessionStatus `json:"status,omitempty"`
-	// Listed holds the value of the "listed" field.
-	Listed bool `json:"listed,omitempty"`
 	// ProjectId holds the value of the "project_id" field.
 	ProjectId uuid.UUID `json:"project_id,omitempty"`
 	// AccountId holds the value of the "account_id" field.
@@ -109,8 +107,6 @@ func (*Session) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case session.FieldListed:
-			values[i] = new(sql.NullBool)
 		case session.FieldAlias, session.FieldName, session.FieldDesc, session.FieldAgent, session.FieldModel, session.FieldRuntimeId, session.FieldClientId:
 			values[i] = new(sql.NullString)
 		case session.FieldDateUpdated, session.FieldDateErased, session.FieldDateCreated:
@@ -207,12 +203,6 @@ func (_m *Session) assignValues(columns []string, values []any) error {
 				return err
 			} else {
 				_m.Status = value
-			}
-		case session.FieldListed:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field listed", values[i])
-			} else if value.Valid {
-				_m.Listed = value.Bool
 			}
 		case session.FieldProjectId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -319,9 +309,6 @@ func (_m *Session) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
-	builder.WriteString(", ")
-	builder.WriteString("listed=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Listed))
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ProjectId))

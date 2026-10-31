@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -61,10 +62,10 @@ func (f *deletionFixture) Get(context.Context, *api.SessionRef) (*api.Session, e
 	return f.s, nil
 }
 
-func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
-	for _, kind := range []string{"session", "project", "project-failure"} {
-		t.Run(kind, func(t *testing.T) {
-			ctx := context.Background()
+func TestProjectEraseSurvivesSnapshots(t *testing.T) {
+	for _, fail := range []bool{false, true} {
+		t.Run(fmt.Sprint(fail), func(t *testing.T) {
+			ctx := t.Context()
 			db, _, err := (config.DbConfig{Driver: "sqlite3", Dsn: "file:" + filepath.Join(t.TempDir(), "resources.db"), MaxOpenConns: 1}).Open(ctx)
 			if err != nil {
 				t.Fatal(err)
@@ -79,100 +80,39 @@ func TestDeletionTombstonesSurviveSnapshots(t *testing.T) {
 			if _, err = stack.Session().List(ctx, &resource.SessionListRequest{}); err != nil {
 				t.Fatal(err)
 			}
-			if kind == "project-failure" {
+			if fail {
 				f.removeErr = errors.New("cannot stop owned containers")
-				if _, err = stack.Project().Erase(ctx, projectRef("project")); err == nil {
+			}
+			_, err = stack.Project().Erase(ctx, projectRef("project"))
+			if fail {
+				if err == nil {
 					t.Fatal("ignored cleanup failure")
 				}
-				ps, err := stack.Project().List(ctx, &resource.ProjectListRequest{})
-				if err != nil || len(ps.GetItems()) != 1 {
-					t.Fatal("lost project on failed deletion", err)
+				ps, e := stack.Project().List(ctx, &resource.ProjectListRequest{})
+				if e != nil || len(ps.GetItems()) != 1 {
+					t.Fatal("lost project after failed cleanup", e)
 				}
 				return
 			}
-			if kind == "session" {
-				out, err := stack.Session().Erase(ctx, sessionRef("session"))
-				if err != nil || !out.GetErased() || f.stops != 1 {
-					t.Fatal(out, err, f.stops)
-				}
-				again, err := stack.Session().Erase(ctx, sessionRef("session"))
-				if err != nil || again.GetErased() || f.stops != 1 {
-					t.Fatal("non-idempotent deletion", err)
-				}
-			} else {
-				if _, err := stack.Project().Erase(ctx, projectRef("project")); err != nil || f.erasures != 1 {
-					t.Fatal(err, f.erasures)
-				}
+			if err != nil || f.erasures != 1 {
+				t.Fatal(err, f.erasures)
 			}
 			for i := 0; i < 2; i++ {
 				stack, err = Build(ctx, db, f, nil)
 				if err != nil {
 					t.Fatal(err)
 				}
-				var retainedAliases int
-				if err = db.QueryRowContext(ctx, "SELECT count(*) FROM session WHERE listed=false AND alias IS NOT NULL").Scan(&retainedAliases); err != nil || retainedAliases != 0 {
-					t.Fatal("deleted session retained alias", retainedAliases, err)
+				ss, e := stack.Session().List(ctx, &resource.SessionListRequest{})
+				if e != nil || len(ss.GetItems()) != 0 {
+					t.Fatal("sessions resurrected", e)
 				}
-				ss, err := stack.Session().List(ctx, &resource.SessionListRequest{})
-				if err != nil || len(ss.GetItems()) != 0 {
-					t.Fatal("session resurrected", ss, err)
-				}
-				if _, err = stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: sessionRef("session")}.Build()); status.Code(err) != codes.NotFound {
-					t.Fatal("deleted session accessible", err)
-				}
-				if _, err = stack.Session().Resume(ctx, resource.SessionControl_builder{Ref: sessionRef("session")}.Build()); status.Code(err) != codes.NotFound {
-					t.Fatal("deleted session resumed", err)
-				}
-				ps, err := stack.Project().List(ctx, &resource.ProjectListRequest{})
-				if err != nil {
-					t.Fatal(err)
-				}
-				if kind == "project" && len(ps.GetItems()) != 0 {
-					t.Fatal("project resurrected")
-				}
-				if kind == "session" && len(ps.GetItems()) != 1 {
-					t.Fatal("session deletion removed project")
+				ps, e := stack.Project().List(ctx, &resource.ProjectListRequest{})
+				if e != nil || len(ps.GetItems()) != 0 {
+					t.Fatal("project resurrected", e)
 				}
 			}
-			if kind == "project" {
-				// Erasing a project deletes its sessions with it, so there is
-				// nothing left to restore -- not an archived row that refuses.
-				if _, err = stack.Session().Restore(ctx, sessionRef("session")); status.Code(err) != codes.NotFound {
-					t.Fatal("a session survived its project being erased", err)
-				}
-				if _, err = stack.Project().Add(ctx, resource.ProjectAddRequest_builder{Workspace: "/work"}.Build()); err != nil {
-					t.Fatal("cannot register removed workspace", err)
-				}
-				ss, err := stack.Session().List(ctx, &resource.SessionListRequest{})
-				if err != nil || len(ss.GetItems()) != 0 {
-					t.Fatal("old sessions reappeared", err)
-				}
-			}
-			if kind != "session" {
-				return
-			}
-			// Session archive and restore are unchanged by the project
-			// lifecycle work: erasing a session still keeps its row.
-			archived, err := stack.Session().List(ctx, resource.SessionListRequest_builder{Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Listed: ptr(false), Project: projectRef("project")}.Build()}}.Build())
-			if err != nil || len(archived.GetItems()) != 1 {
-				t.Fatal("archive not listed", archived, err)
-			}
-			old := archived.GetItems()[0]
-			restored, err := stack.Session().Restore(ctx, sessionRef("session"))
-			if err != nil || !restored.GetListed() || restored.GetRuntimeId() != old.GetRuntimeId() || restored.GetClientId() != old.GetClientId() || restored.GetAlias() == "" || restored.GetStatus().GetRunId() != old.GetStatus().GetRunId() {
-				t.Fatal("restore lost durable identity", restored, err)
-			}
-			again, err := stack.Session().Restore(ctx, sessionRef("session"))
-			if err != nil || again.GetAlias() != restored.GetAlias() {
-				t.Fatal("restore not idempotent", err)
-			}
-			stack, err = Build(ctx, db, f, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			live, err := stack.Session().List(ctx, &resource.SessionListRequest{})
-			if err != nil || len(live.GetItems()) != 1 {
-				t.Fatal("restore did not survive restart", err)
+			if _, err = stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: sessionRef("session")}.Build()); status.Code(err) != codes.NotFound {
+				t.Fatal("deleted session accessible", err)
 			}
 		})
 	}

@@ -6,10 +6,10 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/memoryview"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/status"
 	"os"
@@ -429,7 +429,7 @@ func TestLifecycle(t *testing.T) {
 			t.Fatal("resume forked again", resumed)
 		}
 		child = resumed
-		if _, err := client.PurgeSession(ctx, &api.SessionPurgeInput{SessionId: child.Id}); err != nil {
+		if _, err := client.EraseSession(ctx, &api.SessionEraseInput{SessionId: child.Id}); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -914,8 +914,8 @@ func TestLifecycle(t *testing.T) {
 	if e = client.DeleteSession(ctx, second.Id); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = os.Stat(filepath.Join(core.Dir(state, id), "session.json")); e != nil {
-		t.Fatal("deleted recoverable manifest", e)
+	if _, e = os.Stat(filepath.Join(core.Dir(state, id), "session.json")); !os.IsNotExist(e) {
+		t.Fatal("permanent erase retained the session manifest", e)
 	}
 	killDaemon()
 	start()

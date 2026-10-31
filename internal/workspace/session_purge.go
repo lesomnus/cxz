@@ -5,29 +5,36 @@ import (
 	"fmt"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/sessionpurge"
 )
 
-// PurgeSession destroys a session everywhere cxz keeps it. The project runtime
+// EraseSession destroys a session everywhere cxz keeps it. The project runtime
 // goes first because the conversation is the part nothing can reconstruct; the
 // manager's own leftovers are small and survive a re-run, so a failure between
 // the two loses the journal and nothing else.
-func (m *Manager) PurgeSession(ctx context.Context, in *api.SessionPurgeInput) (*api.SessionPurgeReply, error) {
+func (m *Manager) EraseSession(ctx context.Context, in *api.SessionEraseInput) (*api.SessionEraseReply, error) {
 	r := sessionpurge.Request{Session: in.SessionId, DryRun: in.DryRun}
 	project, err := m.projectOf(ctx, r.Session)
+	if err != nil && in.ProjectId != "" {
+		project, err = m.resolve(ctx, in.ProjectId)
+	}
 	if err != nil {
 		return nil, err
+	}
+	if in.ProjectId != "" && !projectid.Same(in.ProjectId, project.ID) {
+		return nil, fmt.Errorf("session belongs to another project")
 	}
 	conn, client, err := m.client(ctx, project)
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
-	reply, err := client.PurgeSession(ctx, in)
+	reply, err := client.EraseSession(ctx, in)
 	if err != nil {
 		return nil, err
 	}
-	subject := sessionpurge.Subject{Session: r.Session, Project: project.ID}
+	subject := sessionpurge.Subject{Session: r.Session, Project: project.ID, CreateID: in.CreateId}
 	local := sessionpurge.Execute
 	if r.DryRun {
 		local = sessionpurge.Plan
@@ -37,7 +44,7 @@ func (m *Manager) PurgeSession(ctx context.Context, in *api.SessionPurgeInput) (
 		return nil, err
 	}
 	for _, t := range here.Targets {
-		reply.Targets = append(reply.Targets, &api.SessionPurgeTarget{
+		reply.Targets = append(reply.Targets, &api.SessionEraseTarget{
 			Kind: t.Kind, Path: t.Path, Files: int32(t.Files), Bytes: t.Bytes,
 		})
 	}

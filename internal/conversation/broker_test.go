@@ -36,7 +36,7 @@ func TestRegistryAuthorizationAndProjectFilter(t *testing.T) {
 	}
 }
 func TestCanonicalRegistryPagination(t *testing.T) {
-	yes := true
+
 	alias := "seal"
 	id := uuid.New()
 	calls := 0
@@ -50,7 +50,7 @@ func TestCanonicalRegistryPagination(t *testing.T) {
 			next = ""
 			alias = "otter"
 		}
-		return resource.SessionListResponse_builder{Next: next, Items: []*resource.Session{resource.Session_builder{Id: id[:], Alias: alias, Listed: yes, RuntimeId: "runtime", Project: resource.Project_builder{Id: projectid.Bytes("p")}.Build()}.Build(), resource.Session_builder{Id: id[:], Alias: "other", Listed: yes, Project: resource.Project_builder{Id: projectid.Bytes("other")}.Build()}.Build()}}.Build(), nil
+		return resource.SessionListResponse_builder{Next: next, Items: []*resource.Session{resource.Session_builder{Id: id[:], Alias: alias, RuntimeId: "runtime", Project: resource.Project_builder{Id: projectid.Bytes("p")}.Build()}.Build(), resource.Session_builder{Id: id[:], Alias: "other", Project: resource.Project_builder{Id: projectid.Bytes("other")}.Build()}.Build()}}.Build(), nil
 	}
 	got, err := RegistryFromResources(t.Context(), "p", list)
 	if err != nil || calls != 2 || len(got) != 2 || got[0].ID != id.String() {

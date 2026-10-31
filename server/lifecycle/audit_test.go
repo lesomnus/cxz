@@ -201,20 +201,12 @@ func TestAuditExplicitManagementIsRetained(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertAuditCount(t, ctx, db, 2)
-	if _, err := client.Erase(ctx, ref); err != nil {
-		t.Fatal(err)
-	}
-	assertAuditCount(t, ctx, db, 3)
-	if _, err := client.Restore(ctx, ref); err != nil {
-		t.Fatal(err)
-	}
-	assertAuditCount(t, ctx, db, 4)
 	rows, err := db.QueryContext(ctx, "SELECT action,length(patch) FROM audit ORDER BY date_created")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer rows.Close()
-	for _, want := range []string{"/cxz.SessionService/Add", "/cxz.SessionService/Patch", "/cxz.SessionService/Erase", "/cxz.SessionService/Restore"} {
+	for _, want := range []string{"/cxz.SessionService/Add", "/cxz.SessionService/Patch"} {
 		var got string
 		var patchBytes int
 		if !rows.Next() {

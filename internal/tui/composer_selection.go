@@ -126,7 +126,7 @@ func (m *model) composerScrollbar(view string) string {
 }
 
 func (m *model) composerAvailable() bool {
-	return !m.projectView && !m.accountView && !m.creating && !m.renaming && m.settingsPage == nil && m.library == nil && m.memoryPage == nil && m.workflow == nil && m.pasteDialog == nil && m.redactDialog == nil && m.restartConfirm == nil && m.report == nil && m.modelPicker == nil && m.sessionArchive == nil && !m.errorFocused() && !m.questionFocused() && !m.terminalFocused() && !m.selectingTools() && !(m.previewVisible() && m.filePreview.focused)
+	return !m.projectView && !m.accountView && !m.creating && !m.renaming && m.settingsPage == nil && m.library == nil && m.memoryPage == nil && m.workflow == nil && m.pasteDialog == nil && m.redactDialog == nil && m.restartConfirm == nil && m.report == nil && m.modelPicker == nil && !m.errorFocused() && !m.questionFocused() && !m.terminalFocused() && !m.selectingTools() && !(m.previewVisible() && m.filePreview.focused)
 }
 func (m *model) composerSession() string {
 	if s := m.current(); s != nil {

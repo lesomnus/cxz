@@ -50,7 +50,6 @@ export const messages = {
 
   "Erase this project and its owned data permanently.":
     "Erase this project and its owned data permanently.",
-  "Purge project": "Purge project",
   "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
     "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.",
   "Workspace source files and shared accounts are preserved.":
@@ -197,9 +196,9 @@ export const messages = {
   Resume: "Resume",
   "Restart session": "Restart session",
   Restart: "Restart",
+  "Erase session": "Erase session",
+  "Erase sessions": "Erase sessions",
   Purge: "Purge",
-  "Purge session": "Purge session",
-  "Purge permanently": "Purge permanently",
   "Session details": "Session details",
   Cancel: "Cancel",
   "Confirm cancel": "Confirm cancel",
@@ -766,7 +765,6 @@ export const messages = {
   "{count} selected": "{count} selected",
   "Selected session actions": "Selected session actions",
   "Controls for {name}": "Controls for {name}",
-  "Purge sessions": "Purge sessions",
   "Restart sessions": "Restart sessions",
   "Stop sessions": "Stop sessions",
   "{count} sessions will be affected.": "{count} sessions will be affected.",

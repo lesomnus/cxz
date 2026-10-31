@@ -1,11 +1,9 @@
 import { useRef, useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
-import type { SessionPurgeReply } from "#gen/cxz/session_svc_pb";
 import {
   canControl,
   controlTarget,
   performSessionControl,
-  previewSessionPurge,
   settleSessions,
   type SessionControlConnection,
   type SessionControlKind,
@@ -16,7 +14,6 @@ export type ControlFailure = { target: SessionTarget; error: string };
 export type ControlConfirmation = {
   kind: Exclude<SessionControlKind, "resume">;
   targets: SessionTarget[];
-  plans: Map<string, SessionPurgeReply>;
   failures: ControlFailure[];
 };
 
@@ -80,30 +77,8 @@ export function useSessionControls(
       await execute(kind, targets);
       return;
     }
-    const plans = new Map<string, SessionPurgeReply>();
-    if (kind === "purge") {
-      if (!acquire(targets.length)) return;
-      try {
-        const results = await settleSessions(
-          targets,
-          (target) => previewSessionPurge(c, target),
-          tick,
-        );
-        const failures = results
-          .filter((r) => !r.ok)
-          .map((r) => ({ target: r.target, error: r.error }));
-        if (failures.length) {
-          setErrors(failures);
-          return;
-        }
-        for (const result of results)
-          if (result.ok) plans.set(result.target.runtimeId, result.value);
-      } finally {
-        release();
-      }
-    }
     setErrors([]);
-    setConfirmation({ kind, targets, plans, failures: [] });
+    setConfirmation({ kind, targets, failures: [] });
   }
   return {
     busy,

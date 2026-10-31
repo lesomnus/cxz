@@ -44,8 +44,8 @@ export function mentionMatches(
     sessions
       .filter(
         (s) =>
+          !s.dateErased &&
           s.runtimeId !== current.runtimeId &&
-          s.listed &&
           s.alias &&
           current.project?.id &&
           s.project?.id &&

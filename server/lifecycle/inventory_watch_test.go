@@ -57,9 +57,6 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := layer.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: resource.SessionRef_builder{Id: archived.GetId()}.Build(), Listed: ptr(false), DateUpdatedForce: ptr(true)}.Build()); err != nil {
-		t.Fatal(err)
-	}
 
 	ln := bufconn.Listen(1 << 20)
 	g := grpc.NewServer()
@@ -78,7 +75,7 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 		t.Fatalf("all listed projects: %v %v", ps, err)
 	}
 	ss, err := sessions.List(ctx, &resource.SessionListRequest{})
-	if err != nil || len(ss.GetItems()) != 2 {
+	if err != nil || len(ss.GetItems()) != 3 {
 		t.Fatalf("sessions across both projects: %v %v", ss, err)
 	}
 	pw, err := projects.Watch(ctx, &resource.ProjectWatchRequest{})
@@ -94,13 +91,8 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	sb, err := sw.Recv()
-	if err != nil || len(sb.GetItems()) != 2 || !sb.HasSnapshotComplete() || !sb.GetSnapshotComplete() {
+	if err != nil || len(sb.GetItems()) != 3 || !sb.HasSnapshotComplete() || !sb.GetSnapshotComplete() {
 		t.Fatalf("unscoped session snapshot: %v %v", sb, err)
-	}
-	for _, item := range sb.GetItems() {
-		if string(item.GetId()) == string(archived.GetId()) {
-			t.Fatal("default watch exposed archived session")
-		}
 	}
 	added, err := seedSession("new-session")
 	if err != nil {
@@ -125,15 +117,15 @@ func TestUnscopedInventoryListAndWatch(t *testing.T) {
 	if err != nil || len(sb.GetItems()) != 1 || sb.GetItems()[0].GetValue().GetName() != "renamed" {
 		t.Fatalf("live change in second project: %v %v", sb, err)
 	}
-	if _, err := layer.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: resource.SessionRef_builder{Id: live.GetId()}.Build(), Listed: ptr(false), DateUpdatedForce: ptr(true)}.Build()); err != nil {
+	if _, err := layer.Next().Session().Erase(ctx, resource.SessionRef_builder{Id: live.GetId()}.Build()); err != nil {
 		t.Fatal(err)
 	}
 	sb, err = sw.Recv()
 	if err != nil || len(sb.GetItems()) != 1 || sb.GetItems()[0].GetValue() != nil {
 		t.Fatalf("removal from default inventory: %v %v", sb, err)
 	}
-	// Explicit archived/narrow scopes continue to work.
-	aw, err := sessions.Watch(ctx, resource.SessionWatchRequest_builder{Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Ref: resource.SessionRef_builder{Id: archived.GetId()}.Build(), Listed: ptr(false)}.Build()}}.Build())
+	// Explicit resource scopes continue to work.
+	aw, err := sessions.Watch(ctx, resource.SessionWatchRequest_builder{Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Ref: resource.SessionRef_builder{Id: archived.GetId()}.Build()}.Build()}}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}

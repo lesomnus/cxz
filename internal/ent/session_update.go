@@ -124,26 +124,6 @@ func (_u *SessionUpdate) ClearStatus() *SessionUpdate {
 	return _u
 }
 
-// SetListed sets the "listed" field.
-func (_u *SessionUpdate) SetListed(v bool) *SessionUpdate {
-	_u.mutation.SetListed(v)
-	return _u
-}
-
-// SetNillableListed sets the "listed" field if the given value is not nil.
-func (_u *SessionUpdate) SetNillableListed(v *bool) *SessionUpdate {
-	if v != nil {
-		_u.SetListed(*v)
-	}
-	return _u
-}
-
-// ClearListed clears the value of the "listed" field.
-func (_u *SessionUpdate) ClearListed() *SessionUpdate {
-	_u.mutation.ClearListed()
-	return _u
-}
-
 // Mutation returns the SessionMutation object of the builder.
 func (_u *SessionUpdate) Mutation() *SessionMutation {
 	return _u.mutation
@@ -263,15 +243,6 @@ func (_u *SessionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(session.FieldStatus, field.TypeJson)
 	}
-	if value, ok := _u.mutation.Listed(); ok {
-		_spec.SetField(session.FieldListed, field.TypeBool, value)
-	}
-	if e, ok := _u.mutation.FieldExpr(session.FieldListed); ok {
-		_spec.SetField(session.FieldListed, field.TypeBool, e)
-	}
-	if _u.mutation.ListedCleared() {
-		_spec.ClearField(session.FieldListed, field.TypeBool)
-	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -385,26 +356,6 @@ func (_u *SessionUpdateOne) SetStatus(v *resource.SessionStatus) *SessionUpdateO
 // ClearStatus clears the value of the "status" field.
 func (_u *SessionUpdateOne) ClearStatus() *SessionUpdateOne {
 	_u.mutation.ClearStatus()
-	return _u
-}
-
-// SetListed sets the "listed" field.
-func (_u *SessionUpdateOne) SetListed(v bool) *SessionUpdateOne {
-	_u.mutation.SetListed(v)
-	return _u
-}
-
-// SetNillableListed sets the "listed" field if the given value is not nil.
-func (_u *SessionUpdateOne) SetNillableListed(v *bool) *SessionUpdateOne {
-	if v != nil {
-		_u.SetListed(*v)
-	}
-	return _u
-}
-
-// ClearListed clears the value of the "listed" field.
-func (_u *SessionUpdateOne) ClearListed() *SessionUpdateOne {
-	_u.mutation.ClearListed()
 	return _u
 }
 
@@ -556,15 +507,6 @@ func (_u *SessionUpdateOne) sqlSave(ctx context.Context) (_node *Session, err er
 	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(session.FieldStatus, field.TypeJson)
-	}
-	if value, ok := _u.mutation.Listed(); ok {
-		_spec.SetField(session.FieldListed, field.TypeBool, value)
-	}
-	if e, ok := _u.mutation.FieldExpr(session.FieldListed); ok {
-		_spec.SetField(session.FieldListed, field.TypeBool, e)
-	}
-	if _u.mutation.ListedCleared() {
-		_spec.ClearField(session.FieldListed, field.TypeBool)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Session{config: _u.config}

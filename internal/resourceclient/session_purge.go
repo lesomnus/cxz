@@ -6,24 +6,19 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func (c *Client) PurgeSession(ctx context.Context, r *api.SessionPurgeInput, opts ...grpc.CallOption) (*api.SessionPurgeReply, error) {
-	v, err := c.sessions.Purge(ctx, resource.SessionPurgeRequest_builder{
-		Ref: sr(r.SessionId), DryRun: &r.DryRun,
-	}.Build(), opts...)
+func (c *Client) EraseSession(ctx context.Context, r *api.SessionEraseInput, opts ...grpc.CallOption) (*api.SessionEraseReply, error) {
+	if r.DryRun {
+		return nil, status.Error(codes.Unimplemented, "session erase does not support dry-run")
+	}
+	_, err := c.sessions.Erase(ctx, sr(r.SessionId), opts...)
 	if err != nil {
 		return nil, err
 	}
-	out := &api.SessionPurgeReply{
-		SessionId: r.SessionId, DryRun: v.GetDryRun(), Retained: v.GetRetained(),
-	}
-	for _, t := range v.GetTargets() {
-		out.Targets = append(out.Targets, &api.SessionPurgeTarget{
-			Kind: t.GetKind(), Path: t.GetPath(), Files: t.GetFiles(), Bytes: t.GetBytes(),
-		})
-	}
-	return out, nil
+	return &api.SessionEraseReply{SessionId: r.SessionId}, nil
 }
 
 func (c *Client) GetHistoryPolicy(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.HistoryPolicy, error) {

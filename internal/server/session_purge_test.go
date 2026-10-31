@@ -11,14 +11,14 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/sessionpurge"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func purgeIn(id string, dry bool) *api.SessionPurgeInput {
-	return &api.SessionPurgeInput{SessionId: id, DryRun: dry}
+func purgeIn(id string, dry bool) *api.SessionEraseInput {
+	return &api.SessionEraseInput{SessionId: id, DryRun: dry}
 }
 
 func rows(t *testing.T, s *Server, query, id string) int {
@@ -44,7 +44,7 @@ func TestPurgeDropsTheDerivedProjectionAndTheJournal(t *testing.T) {
 	if _, err := os.Stat(sessionstore.Path(core.Dir(s.root, m.ID))); err != nil {
 		t.Fatal("the fixture never recorded a conversation:", err)
 	}
-	out, err := s.PurgeSession(ctx, purgeIn(m.ID, false))
+	out, err := s.EraseSession(ctx, purgeIn(m.ID, false))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,8 +64,28 @@ func TestPurgeDropsTheDerivedProjectionAndTheJournal(t *testing.T) {
 		t.Fatal("journal survived", err)
 	}
 	// The session is gone, so a second purge has nothing to find and says so.
-	if _, err = s.PurgeSession(ctx, purgeIn(m.ID, false)); status.Code(err) != codes.NotFound {
+	if _, err = s.EraseSession(ctx, purgeIn(m.ID, false)); status.Code(err) != codes.NotFound {
 		t.Fatal("purging a purged session did not report it missing", err)
+	}
+}
+
+func TestEraseCanResumeCleanupAfterTheManifestIsGone(t *testing.T) {
+	t.Setenv("CXZ_PROJECT_ID", "")
+	s, manifest, _ := projectionFixture(t)
+	manifest.ProjectID = strings.Repeat("b", 24)
+	encoded, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec("UPDATE sessions SET manifest=? WHERE id=?", encoded, manifest.ID); err != nil {
+		t.Fatal(err)
+	}
+	request := &api.SessionEraseInput{SessionId: manifest.ID, ProjectId: manifest.ProjectID, CreateId: manifest.CreateID}
+	if _, err := s.EraseSession(t.Context(), request); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.EraseSession(t.Context(), request); err != nil {
+		t.Fatal("cleanup retry depends on the erased manifest", err)
 	}
 }
 
@@ -80,7 +100,7 @@ func TestPurgeDryRunLeavesTheProjectionAndJournalAlone(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.projections[m.ID].mu.Unlock()
-	out, err := s.PurgeSession(ctx, purgeIn(m.ID, true))
+	out, err := s.EraseSession(ctx, purgeIn(m.ID, true))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +119,7 @@ func TestPurgeDryRunLeavesTheProjectionAndJournalAlone(t *testing.T) {
 	}
 }
 
-func TestPurgeSessionCreatedWithAWebUUID(t *testing.T) {
+func TestEraseSessionCreatedWithAWebUUID(t *testing.T) {
 	ctx := context.Background()
 	t.Setenv("CXZ_PROJECT_ID", "")
 	s, m, l := projectionFixture(t)
@@ -127,7 +147,7 @@ func TestPurgeSessionCreatedWithAWebUUID(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	plan, err := s.PurgeSession(ctx, purgeIn(m.ID, true))
+	plan, err := s.EraseSession(ctx, purgeIn(m.ID, true))
 	if err != nil {
 		t.Fatal("UUID creation key refused during preview", err)
 	}
@@ -146,7 +166,7 @@ func TestPurgeSessionCreatedWithAWebUUID(t *testing.T) {
 	if rows(t, s, "SELECT count(*) FROM sessions WHERE id=?", m.ID) != 1 {
 		t.Fatal("preview deleted the session projection")
 	}
-	done, err := s.PurgeSession(ctx, purgeIn(m.ID, false))
+	done, err := s.EraseSession(ctx, purgeIn(m.ID, false))
 	if err != nil {
 		t.Fatal("UUID creation key refused during purge", err)
 	}
@@ -173,7 +193,7 @@ func TestPurgeRefusesToRunFromInsideAProject(t *testing.T) {
 	ctx := context.Background()
 	s, m, _ := projectionFixture(t)
 	t.Setenv("CXZ_PROJECT_ID", "project")
-	if _, err := s.PurgeSession(ctx, purgeIn(m.ID, false)); status.Code(err) != codes.PermissionDenied {
+	if _, err := s.EraseSession(ctx, purgeIn(m.ID, false)); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("a call on the in-container socket was allowed to purge", err)
 	}
 	if rows(t, s, "SELECT count(*) FROM sessions WHERE id=?", m.ID) != 1 {
@@ -183,7 +203,7 @@ func TestPurgeRefusesToRunFromInsideAProject(t *testing.T) {
 		t.Fatal("a refused purge still deleted the journal", err)
 	}
 	authorized := context.WithValue(ctx, managerAuthorityKey{}, true)
-	if _, err := s.PurgeSession(authorized, purgeIn(m.ID, false)); err != nil {
+	if _, err := s.EraseSession(authorized, purgeIn(m.ID, false)); err != nil {
 		t.Fatal("the manager's own channel was refused", err)
 	}
 }
@@ -196,7 +216,7 @@ func TestPurgeRefusesAMalformedRequest(t *testing.T) {
 	t.Setenv("CXZ_PROJECT_ID", "")
 	s, _, _ := projectionFixture(t)
 	for _, id := range []string{"", "../../etc", "not-hex", strings.Repeat("a", sessionpurge.MaxSpec)} {
-		if _, err := s.PurgeSession(ctx, purgeIn(id, false)); err == nil {
+		if _, err := s.EraseSession(ctx, purgeIn(id, false)); err == nil {
 			t.Fatal("accepted", id)
 		}
 	}

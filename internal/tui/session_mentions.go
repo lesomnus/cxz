@@ -20,7 +20,7 @@ func (m *model) mentionContext() *inlineToken {
 	if m.multiComposer() {
 		return nil
 	}
-	if m.errorDialog != nil || m.sessionArchive != nil || m.panelFocus || m.questionFocused() || m.pasteDialog != nil || m.pathHints != nil || m.terminalFocused() || m.settingsPage != nil || m.memoryPage != nil || m.library != nil {
+	if m.errorDialog != nil || m.panelFocus || m.questionFocused() || m.pasteDialog != nil || m.pathHints != nil || m.terminalFocused() || m.settingsPage != nil || m.memoryPage != nil || m.library != nil {
 		return nil
 	}
 	s := m.current()

@@ -139,10 +139,7 @@ export class ResourceInventory {
     const stalled = `The ${
       kind === "sessions" ? "session" : "project"
     } list stopped loading.`;
-    // Sessions keep an archived half, so listing them says which half it wants.
-    // Projects do not: a project is registered or erased, and the default list
-    // is every registered one. See cxz#274.
-    const request = kind === "sessions" ? { filters: [{ listed: true }] } : {};
+    const request = {};
     const completion =
       kind === "projects"
         ? ProjectWatchResponseSchema.field.snapshotComplete

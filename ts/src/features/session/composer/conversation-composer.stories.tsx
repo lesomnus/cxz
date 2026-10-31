@@ -290,7 +290,7 @@ export const StoppedSession: Story = {
     docs: {
       description: {
         story:
-          "Open Session menu to resume the simulated stopped session, restart it, inspect session details or review a fake purge plan. These actions affect only this preview; no server or filesystem is used.",
+          "Open Session menu to resume the simulated stopped session, restart it, inspect session details or review a session erasure confirmation. These actions affect only this preview; no server or filesystem is used.",
       },
     },
   },

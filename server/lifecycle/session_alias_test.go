@@ -86,7 +86,7 @@ func TestSessionAliasPersistenceAndMigration(t *testing.T) {
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatal("invalid rename", err)
 	}
-	_, err = stack.Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: sessionRef("second"), Alias: ptr("cedar"), Listed: ptr(false)}.Build())
+	_, err = stack.Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: sessionRef("second"), Alias: ptr("cedar"), StatusNull: ptr(true)}.Build())
 	if status.Code(err) != codes.PermissionDenied {
 		t.Fatal("metadata bypass", err)
 	}

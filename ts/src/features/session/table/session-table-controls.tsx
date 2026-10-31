@@ -24,13 +24,13 @@ export function SessionTableMenu({
   disabled?: boolean;
 }) {
   const operations: SessionControlKind[] = bulk
-    ? ["stop", "resume", "restart", "purge"]
+    ? ["stop", "resume", "restart", "erase"]
     : [
         resumableStates.has(sessions[0]?.status?.state ?? "")
           ? "resume"
           : "stop",
         "restart",
-        "purge",
+        "erase",
       ];
   return (
     <ActionMenu
@@ -64,9 +64,9 @@ export function SessionTableMenu({
                   ? t("Resume")
                   : kind === "restart"
                     ? t("Restart")
-                    : t("Purge"),
+                    : t("Erase"),
             icon: <SessionActionIcon action={kind} />,
-            danger: kind === "purge",
+            danger: kind === "erase",
             disabled: !sessions.some((s) => canControl(s, kind)),
             run: () => void controls.request(kind, sessions),
           })),
@@ -83,10 +83,10 @@ export function SessionTableConfirmation({ controls }: { controls: Controls }) {
   return (
     <ConfirmationDialog
       title={
-        pending.kind === "purge"
+        pending.kind === "erase"
           ? single
-            ? t("Purge session")
-            : t("Purge sessions")
+            ? t("Erase session")
+            : t("Erase sessions")
           : pending.kind === "restart"
             ? single
               ? t("Restart session")
@@ -96,8 +96,8 @@ export function SessionTableConfirmation({ controls }: { controls: Controls }) {
               : t("Stop sessions")
       }
       confirmLabel={
-        pending.kind === "purge"
-          ? t("Purge permanently")
+        pending.kind === "erase"
+          ? t("Erase")
           : pending.kind === "restart"
             ? t("Restart")
             : t("Stop")
@@ -116,7 +116,7 @@ export function SessionTableConfirmation({ controls }: { controls: Controls }) {
             })}
       </p>
       <p>
-        {pending.kind === "purge"
+        {pending.kind === "erase"
           ? single
             ? t(
                 "Permanently deletes this session and its stored data. This cannot be undone.",
@@ -142,27 +142,6 @@ export function SessionTableConfirmation({ controls }: { controls: Controls }) {
         {pending.targets.map((target) => (
           <li key={target.runtimeId}>
             <strong>{target.name}</strong>
-            {pending.plans.get(target.runtimeId)?.targets.map((item, i) => (
-              <div className={styles.purgeTarget} key={i}>
-                <span>{item.kind}</span>
-                <code>{item.path}</code>
-                <small>
-                  {t("{files} files · {bytes} bytes", {
-                    files: item.files,
-                    bytes: item.bytes.toString(),
-                  })}
-                </small>
-              </div>
-            ))}
-            {!!pending.plans.get(target.runtimeId)?.retained.length && (
-              <p className="muted">
-                {t("Retained: {items}", {
-                  items: pending.plans
-                    .get(target.runtimeId)!
-                    .retained.join(", "),
-                })}
-              </p>
-            )}
           </li>
         ))}
       </ul>

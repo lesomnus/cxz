@@ -8,9 +8,9 @@ async function openBulk(page: Page, action: string) {
   await page
     .getByRole("button", { name: /^\d+ selected$/, exact: true })
     .click();
-  if (action === "Purge")
+  if (action === "Erase")
     await expect(
-      page.getByRole("menuitem", { name: "Purge", exact: true }),
+      page.getByRole("menuitem", { name: "Erase", exact: true }),
     ).toHaveCSS(
       "font-weight",
       await page
@@ -143,28 +143,26 @@ test("mixed-state bulk stop skips sessions already stopped", async ({
   ).toBeEnabled();
 });
 
-test("purge previews can be canceled and confirmed batch purge removes only its targets", async ({
+test("erase confirmation can be canceled and only erases selected targets", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
-  await openRow(page, "Purge");
+  await openRow(page, "Erase");
   const single = page.getByRole("dialog", {
-    name: "Purge session",
+    name: "Erase session",
     exact: true,
   });
-  await expect(single).toContainText("/storybook/web-0/journal");
-  await expect(single).toContainText("Account settings");
+  await expect(single).toContainText("Plan the next release");
+  await expect(single).toContainText("This cannot be undone.");
   await single.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(rows(page)).toHaveCount(2);
   await table(page)
     .getByRole("checkbox", { name: "Select all sessions", exact: true })
     .check();
-  await openBulk(page, "Purge");
-  const all = page.getByRole("dialog", { name: "Purge sessions", exact: true });
-  await expect(all).toContainText("/storybook/web-1/journal");
-  await all
-    .getByRole("button", { name: "Purge permanently", exact: true })
-    .click();
+  await openBulk(page, "Erase");
+  const all = page.getByRole("dialog", { name: "Erase sessions", exact: true });
+  await expect(all).toContainText("Review changes");
+  await all.getByRole("button", { name: "Erase", exact: true }).click();
   await expect(all).toHaveCount(0);
   await expect(rows(page)).toHaveCount(0);
   await expect(page.getByText("No sessions", { exact: true })).toBeVisible();
@@ -195,25 +193,26 @@ test("partial failures keep only failed targets in the confirmation and selectio
   ).toBeVisible();
 });
 
-test("a failed purge preview prevents all deletion", async ({ page }) => {
+test("failed erase preserves its target and selection for retry", async ({
+  page,
+}) => {
   await page.goto(
-    "/iframe.html?id=pages-projects--purge-preview-failure&viewMode=story",
+    "/iframe.html?id=pages-projects--erase-failure&viewMode=story",
   );
   await table(page)
     .getByRole("checkbox", { name: "Select all sessions", exact: true })
     .check();
-  await openBulk(page, "Purge");
-  await expect(page.getByRole("alert")).toContainText(
-    "Simulated session action failure",
-  );
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await openBulk(page, "Erase");
+  const dialog = page.getByRole("dialog", {
+    name: "Erase sessions",
+    exact: true,
+  });
   await expect(rows(page)).toHaveCount(2);
-  await expect(
-    table(page).getByRole("checkbox", {
-      name: "Select all sessions",
-      exact: true,
-    }),
-  ).toBeChecked();
+  await dialog.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(dialog).toContainText("Simulated session action failure");
+  await expect(rows(page)).toHaveCount(1);
+  await expect(rows(page).first().getByRole("checkbox")).toBeChecked();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
 });
 
 test("session names and aliases edit in place without changing row selection or layout", async ({

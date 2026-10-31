@@ -153,7 +153,7 @@ func (c *Client) List(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption
 	out := &api.SessionList{}
 	after := ""
 	for {
-		page, err := c.sessions.List(ctx, resource.SessionListRequest_builder{Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Listed: ptr(true)}.Build()}, Size: 200, After: after}.Build(), opts...)
+		page, err := c.sessions.List(ctx, resource.SessionListRequest_builder{Size: 200, After: after}.Build(), opts...)
 		if err != nil {
 			return nil, err
 		}

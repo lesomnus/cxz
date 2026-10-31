@@ -113,7 +113,7 @@ func (m *model) sessionNavigationKey(k tea.KeyMsg) (bool, tea.Cmd) {
 		return false, nil
 	}
 	// Do not discard in-progress forms or steal shell editing shortcuts.
-	if m.renaming || m.settingsPage != nil && (m.settingsPage.confirm != "" || m.settingsPage.busy) || m.library != nil || m.memoryPage != nil && m.memoryPage.copy != nil || m.terminalFocused() || m.workflow != nil || m.creating || m.accountView || m.pasteDialog != nil || m.redactDialog != nil || m.restartConfirm != nil || m.sessionArchive != nil || m.errorFocused() {
+	if m.renaming || m.settingsPage != nil && (m.settingsPage.confirm != "" || m.settingsPage.busy) || m.library != nil || m.memoryPage != nil && m.memoryPage.copy != nil || m.terminalFocused() || m.workflow != nil || m.creating || m.accountView || m.pasteDialog != nil || m.redactDialog != nil || m.restartConfirm != nil || m.errorFocused() {
 		return false, nil
 	}
 	direction := -1
