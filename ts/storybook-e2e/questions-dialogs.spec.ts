@@ -252,9 +252,10 @@ test("pending dialogs prevent dismissal and failed actions stay open for retry",
   await expect(
     dialog.getByRole("button", { name: "Cancel", exact: true }),
   ).toBeDisabled();
-  await expect(
-    dialog.getByRole("button", { name: "Working…", exact: true }),
-  ).toBeDisabled();
+  const confirm = dialog.getByRole("button", { name: "Stop", exact: true });
+  await expect(confirm).toBeDisabled();
+  await expect(confirm).toHaveAttribute("aria-busy", "true");
+  await expect(confirm).toHaveAttribute("data-loading", "true");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveCount(0);

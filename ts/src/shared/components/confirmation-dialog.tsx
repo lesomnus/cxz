@@ -80,8 +80,13 @@ export function ConfirmationDialog({
         )}
       </DialogBody>
       <DialogFooter>
-        <Button type="button" disabled={busy} onClick={() => void submit()}>
-          {busy ? t("Working…") : confirmLabel}
+        <Button
+          type="button"
+          loading={busy}
+          disabled={busy}
+          onClick={() => void submit()}
+        >
+          {confirmLabel}
         </Button>
         <Button ref={cancel} type="button" disabled={busy} onClick={close}>
           {t("Cancel")}
