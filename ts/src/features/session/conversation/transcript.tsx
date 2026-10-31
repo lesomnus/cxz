@@ -9,6 +9,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   clamp,
   edgePull,
+  dragPullDistance,
   scrollRange,
   markerRangeStart,
   resumeRange,
@@ -727,40 +728,40 @@ export function Transcript({
     const travel = Math.max(1, g.height - g.thumb);
     const raw = d.pointer - rail.getBoundingClientRect().top - d.offset;
     const bounded = clamp(raw, 0, travel);
-    const outside = raw - bounded;
-    const pull = edgePull(outside, g.viewport);
+    const distance = dragPullDistance(raw, travel);
+    const pull = edgePull(distance, g.viewport);
     d.stretch = pull.stretch;
     setStretch(pull.stretch);
     callbacks.current.onTension(pull.stretch);
     const dt = Math.min(32, time - d.lastTime) / 1000;
     d.lastTime = time;
-    if (outside) {
-      if (d.edge !== Math.sign(outside))
-        el.scrollTop =
-          mapping.current?.toNative(
-            d.range.start + (outside > 0 ? d.range.span : 0),
-          ) ?? 0;
-      el.scrollTop += pull.speed * dt;
-    } else {
-      if (d.edge)
-        d.range = resumeRange(
-          mapping.current?.toLogical(el.scrollTop) ?? el.scrollTop,
-          bounded / travel,
-          d.range.span,
-        );
-      const target = clamp(
-        mapping.current?.toNative(
-          d.range.start + (bounded / travel) * d.range.span,
-        ) ?? 0,
-        0,
-        g.max,
+    if (!distance && d.edge)
+      d.range = resumeRange(
+        mapping.current?.toLogical(el.scrollTop) ?? el.scrollTop,
+        bounded / travel,
+        d.range.span,
       );
-      el.scrollTop = window.matchMedia("(prefers-reduced-motion: reduce)")
-        .matches
-        ? target
-        : smoothStep(el.scrollTop, target, dt * 1000, 12);
+    const target = clamp(
+      mapping.current?.toNative(
+        d.range.start + (bounded / travel) * d.range.span,
+      ) ?? 0,
+      0,
+      g.max,
+    );
+    el.scrollTop = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? target
+      : smoothStep(el.scrollTop, target, dt * 1000, 12);
+    if (distance) {
+      const before = el.scrollTop;
+      el.scrollTop += pull.speed * dt;
+      const after = el.scrollTop;
+      // Shift only by achieved auto-scroll, keeping direct pointer movement
+      // continuous at the quarter boundary and respecting actual history ends.
+      const map = mapping.current;
+      d.range.start +=
+        (map?.toLogical(after) ?? after) - (map?.toLogical(before) ?? before);
     }
-    d.edge = Math.sign(outside);
+    d.edge = Math.sign(distance);
     scrolled();
     raf.current = requestAnimationFrame(animate);
   }
