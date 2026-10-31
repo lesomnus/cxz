@@ -27,6 +27,8 @@ them.
 - **History limits** — the client scroll window. See
   [history and retention](history.md).
 - **Docker** — the shared engine's mode. See [containers and Docker](docker.md).
+- **Telemetry** — installation-owned usage collection, retention and queue size.
+  See [managed telemetry](managed-telemetry.md). Applied on installation/recreation.
 - **File mappings** — below.
 
 Two directories sit beside `settings.jsonc` rather than inside it: `share/`

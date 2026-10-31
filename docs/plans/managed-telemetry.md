@@ -1,6 +1,7 @@
 # Managed agent telemetry
 
-Status: implementing in `feat/managed-agent-telemetry`.
+Status: implemented in the isolated `feat/managed-agent-telemetry` worktree.
+Operational behavior and limits: [managed telemetry](../managed-telemetry.md).
 
 The installation owns one ClickHouse and one minimal OCB Collector. Both are
 independent of Manager and session processes. Collector components are pinned
@@ -50,3 +51,28 @@ Run focused Go tests/races, isolated Docker integration and server builds.
 Checkpoint meaningful stages in commits. Existing user servers and agent
 sessions are preserved. Existing running processes take instrumentation on their
 next normal launch; no active work is interrupted to enable metrics.
+
+## Implemented decisions and checks
+
+The common usage parser is shared by history statistics and Supervisor OTLP.
+Native usage is selected once per process (Claude 2.x; Codex 0.164+), while
+auxiliary task results are attributed to their selected account and parent
+session. Stream metadata is aggregated at durable turn/state boundaries.
+Statistics use independent retention, nanosecond timestamp storage and retry
+identity deduplication; they explicitly report best effort coverage.
+
+Collector configuration/image changes replace only that service. Image IDs are
+checked even for mutable tags, pulls precede replacement, shutdown is graceful,
+and startup removes a stale socket left by a crash. The socket directory is
+shared rather than mounting a socket inode. ClickHouse data survives Manager
+and Collector replacement; existing conversations are not backfilled.
+
+Validation includes actual OCB compilation and identity-processor tests, an
+isolated Docker Collector/ClickHouse pipeline, native cumulative sums and delta
+histograms, retry deduplication, read-only non-root UDS ingestion, queue recovery
+with the database unavailable, erasure exclusions, and image/mutable-tag updates.
+The integration fixture exercises the minimum retention/queue settings. Unit
+checks reject foreign ownership and failed pulls before any service removal.
+Server/client builds cover Linux amd64/arm64, Windows amd64 and WASM; Go tests,
+focused race tests, generated-code checks and script tests are also run.
+Native payload tests replay metric formats without paid model calls.

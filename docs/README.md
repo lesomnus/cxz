@@ -41,6 +41,7 @@ start. This is the map of everything else.
 | | |
 |---|---|
 | [updates.md](updates.md) | Channels, what waits for what, pinning, recovering a failed switch |
+| [managed-telemetry.md](managed-telemetry.md) | Local Collector/ClickHouse, native and fallback usage, retention and outages |
 | [history.md](history.md) | Journals, the two retention budgets, compaction, backups |
 | [security.md](security.md) | What cxz protects you from and what it does not |
 
