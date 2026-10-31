@@ -830,6 +830,18 @@ test("reading tucks the question into the composer fade and approaching restores
   await page.goto(
     "/iframe.html?id=conversation-questioncard--long-questions&viewMode=story",
   );
+  const fade = page.locator(".transcript-fade-bottom");
+  await expect(page.locator(".question-card")).toBeVisible();
+  await fade.evaluate((el) =>
+    (el as HTMLElement).style.setProperty("--bottom-fade-height", "123px"),
+  );
+  await expect(page.locator(".floating-card-host")).toHaveCSS(
+    "--question-fade-height",
+    "123px",
+  );
+  await fade.evaluate((el) =>
+    (el as HTMLElement).style.removeProperty("--bottom-fade-height"),
+  );
   const question = page.getByRole("region", { name: "Question", exact: true });
   const layer = page.locator(".question-cards");
   const host = page.locator(".floating-card-host");

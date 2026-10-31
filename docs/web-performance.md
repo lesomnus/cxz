@@ -29,6 +29,15 @@ padding instead of reading each row's client rectangle again. Cached row heights
 and reading knots are pruned when the event window changes, rather than on every
 height correction.
 
+The real conversation also paints top/bottom fades during scrolling and elastic
+pulls. Keep their changing CSS variables on the fade elements: placing inherited
+variables on the transcript area invalidates every message/card subtree's style.
+Read composer geometry before writing either fade. Floating question cards
+observe the bottom fade directly and reuse its inline height without forcing
+computed-style resolution on the common ancestor. Component-only previews omit
+this paint path; the real-app performance fixture verifies fade behavior and
+that scroll values do not inherit through messages.
+
 React development builds record changed props in Performance Tracks. Those
 diagnostics have CPU and memory costs and can fail while cloning large details;
 they are not conversation events or server responses. See
