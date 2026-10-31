@@ -342,7 +342,7 @@ for (const destination of ["conversation", "project"] as const) {
       ).toBeVisible();
     } else {
       const link = table.getByRole("link", {
-        name: "Demo workspace",
+        name: "Demo workspace workspace",
         exact: true,
       });
       await expect(link).toHaveAttribute("href", "/c/_/project/workspace");

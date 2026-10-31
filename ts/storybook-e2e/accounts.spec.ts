@@ -252,12 +252,43 @@ test("account sessions use compact read-only identities and keep selection scope
       .getByRole("link", { name: "Web account layout oak", exact: true }),
   ).toHaveAttribute("href", "/c/_/session/oak");
   await expect(
-    rows.first().getByRole("link", { name: "Web workspace", exact: true }),
+    rows.first().getByRole("link", { name: "Web workspace web", exact: true }),
   ).toHaveAttribute("href", "/c/_/project/web");
   await expect(
-    rows.nth(1).getByRole("link", { name: "API workspace", exact: true }),
+    rows.nth(1).getByRole("link", { name: "API workspace api", exact: true }),
   ).toHaveAttribute("href", "/c/_/project/api");
+  const projectTitle = rows.first().getByText("Web workspace", { exact: true });
+  const projectAlias = rows.first().getByText("web", { exact: true });
+  const projectTitleBounds = (await projectTitle.boundingBox())!;
+  const projectAliasBounds = (await projectAlias.boundingBox())!;
+  expect(projectAliasBounds.x).toBe(projectTitleBounds.x);
+  expect(projectAliasBounds.y).toBeGreaterThanOrEqual(
+    projectTitleBounds.y + projectTitleBounds.height,
+  );
+  expect(
+    await projectAlias.evaluate((node) =>
+      parseFloat(getComputedStyle(node).fontSize),
+    ),
+  ).toBeLessThan(
+    await projectTitle.evaluate((node) =>
+      parseFloat(getComputedStyle(node).fontSize),
+    ),
+  );
   for (const link of await rows.first().getByRole("link").all()) {
+    const spacing = await link.evaluate((node) => {
+      const cell = node.closest("td")!;
+      const style = getComputedStyle(cell);
+      const outer = cell.getBoundingClientRect();
+      const inner = node.getBoundingClientRect();
+      return {
+        top: inner.top - outer.top,
+        bottom: outer.bottom - inner.bottom,
+        paddingTop: style.paddingTop,
+        paddingBottom: style.paddingBottom,
+      };
+    });
+    expect(spacing.paddingTop).toBe(spacing.paddingBottom);
+    expect(spacing.top).toBeCloseTo(spacing.bottom, 1);
     await expect(link).toHaveCSS("border-top-width", "0px");
     await expect(link).toHaveCSS("box-shadow", "none");
     const background = await link.evaluate(
@@ -285,12 +316,12 @@ test("account sessions use compact read-only identities and keep selection scope
   await expect(
     personal.getByRole("button", { name: "0 selected", exact: true }),
   ).toBeDisabled();
-  const border = await rows
+  const divider = await rows
     .first()
     .locator("td")
     .first()
-    .evaluate((node) => getComputedStyle(node).borderBottomColor);
-  expect(border).not.toBe("rgba(0, 0, 0, 0)");
+    .evaluate((node) => getComputedStyle(node).boxShadow);
+  expect(divider).not.toBe("none");
   const before = await rows
     .nth(1)
     .evaluate((node) => getComputedStyle(node).backgroundColor);

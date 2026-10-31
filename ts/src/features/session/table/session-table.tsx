@@ -278,7 +278,12 @@ export function SessionTable({
                           className={styles.navigationButton}
                           title={projectName}
                         >
-                          <span className={styles.title}>{projectName}</span>
+                          <span className={styles.identity}>
+                            <span className={styles.title}>{projectName}</span>
+                            <span className={styles.subtitle}>
+                              {projectResource?.alias}
+                            </span>
+                          </span>
                           <OpenArrow />
                         </RouteLink>
                       ) : (

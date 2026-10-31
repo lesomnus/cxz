@@ -137,12 +137,12 @@
 }
 .table td {
   height: calc(var(--session-row-height) + var(--session-row-gap));
-  padding: 0 var(--ui-space) calc(var(--session-row-gap) - 1px);
-  border-bottom: 1px solid transparent;
+  padding: 0 var(--ui-space);
+  border-bottom: 0;
   vertical-align: middle;
 }
 .table tbody tr:not(:last-child) td {
-  border-bottom-color: var(--ui-shade-36);
+  box-shadow: inset 0 -1px 0 var(--ui-shade-36);
 }
 .table tbody tr[data-selected] {
   background: var(--ui-selected);
@@ -170,8 +170,7 @@
   height: auto;
 }
 .table td.cardCell {
-  padding: var(--ui-control-inset) var(--ui-control-inset)
-    calc(var(--session-row-gap) + var(--ui-control-inset) - 1px);
+  padding: var(--ui-control-inset);
 }
 .account {
   color: var(--ui-muted);
