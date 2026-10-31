@@ -425,7 +425,7 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
     name: "Submit",
     exact: true,
   });
-  await expect(tabs.getByRole("tab")).toHaveText(["Q1○", "Q2○", "Q3○"]);
+  await expect(tabs.getByRole("tab")).toHaveText(["01", "02", "03"]);
   const tabBefore = await tabs
     .getByRole("tab", { name: "Q1", exact: true })
     .boundingBox();
@@ -433,6 +433,18 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
     .getByRole("tab", { name: "Q1", exact: true })
     .locator(".tab-answered")
     .boundingBox();
+  const number = tabs
+    .getByRole("tab", { name: "Q1", exact: true })
+    .getByRole("img", { name: "1", exact: true });
+  await expect(number).toHaveAttribute("data-mode", "integer");
+  expect(iconBefore!.x + iconBefore!.width).toBeLessThanOrEqual(
+    (await number.boundingBox())!.x,
+  );
+  await expect(
+    tabs
+      .getByRole("tab", { name: "Q1", exact: true })
+      .locator(".tab-answered path"),
+  ).toHaveCount(0);
   await question.getByRole("radio", { name: "Compact", exact: true }).check();
   expect(
     await tabs.getByRole("tab", { name: "Q1", exact: true }).boundingBox(),
@@ -441,7 +453,12 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
     .getByRole("tab", { name: "Q1", exact: true })
     .locator(".tab-answered")
     .boundingBox())!;
-  // Different glyphs have different heights; their allocated width and center stay fixed.
+  await expect(
+    tabs
+      .getByRole("tab", { name: "Q1", exact: true })
+      .locator(".tab-answered path"),
+  ).toHaveCount(1);
+  // Completion changes the drawing without moving either allocated slot.
   expect(iconAfter.width).toBe(iconBefore!.width);
   expect(iconAfter.x + iconAfter.width / 2).toBe(
     iconBefore!.x + iconBefore!.width / 2,

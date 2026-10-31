@@ -3027,7 +3027,7 @@ summary:hover {
   color: inherit;
 }
 .tab-answered {
-  margin-left: var(--space);
+  margin-right: var(--space);
   color: var(--muted);
 }
 .question-option-card {
@@ -3257,6 +3257,7 @@ summary:hover {
   --question-blur: var(--ui-dialog-blur);
   --question-tab-width: 64px;
   --question-tab-icon-width: 20px;
+  --question-tab-check-color: var(--aurora-green);
   border: var(--card-border-width) solid var(--shade-54);
   background: var(--question-background);
   -webkit-backdrop-filter: blur(var(--question-blur));
@@ -3308,11 +3309,13 @@ summary:hover {
 }
 .question-card .tab-list .button-content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--question-tab-icon-width);
+  grid-template-columns: var(--question-tab-icon-width) minmax(0, 1fr);
   align-items: center;
   width: 100%;
 }
 .question-card .tab-label {
+  display: flex;
+  justify-content: center;
   text-align: center;
 }
 .question-card .tab-answered {
@@ -3320,6 +3323,9 @@ summary:hover {
   place-items: center;
   width: var(--question-tab-icon-width);
   margin: 0;
+}
+.question-card .tab-answered path {
+  stroke: var(--question-tab-check-color);
 }
 .question-other[data-selected="true"] > :is(.question-other-editor, input) {
   outline: 1px solid var(--shade-144);
