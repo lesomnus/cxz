@@ -18,9 +18,7 @@ type Departure = {
 };
 
 export const approvalBacks = (requests: readonly SessionEvent[]) =>
-  requests.length > 3
-    ? [requests[1], requests[requests.length - 1]]
-    : requests.slice(1, 3);
+  requests.slice(1, 3);
 
 export function useApprovalPresence(
   requests: readonly SessionEvent[],
@@ -31,6 +29,7 @@ export function useApprovalPresence(
   const current = visible[0];
   const [leaving, setLeaving] = useState<Departure | null>(null);
   const [entryDepth, setEntryDepth] = useState(0);
+  const [promotionKey, setPromotionKey] = useState("");
   const previous = useRef({ requests: empty, height: 0 });
 
   useLayoutEffect(() => {
@@ -41,6 +40,7 @@ export function useApprovalPresence(
         (event) => approvalKey(event) === approvalKey(current),
       );
       setEntryDepth(Math.max(0, Math.min(2, depth)));
+      setPromotionKey(depth > 0 ? approvalKey(current) : "");
       setLeaving((old) => {
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
           return null;
@@ -71,6 +71,13 @@ export function useApprovalPresence(
 
   const finish = (key: string) =>
     setLeaving((old) => (approvalKey(old?.event) === key ? null : old));
+  const finishPromotion = (key: string) =>
+    setPromotionKey((old) => (old === key ? "" : old));
+  useEffect(() => {
+    if (!promotionKey) return;
+    const timer = window.setTimeout(() => finishPromotion(promotionKey), 1000);
+    return () => window.clearTimeout(timer);
+  }, [promotionKey]);
   useEffect(() => {
     if (!leaving) return;
     // Also remove inert departures if an animation is canceled or motion changes.
@@ -81,5 +88,13 @@ export function useApprovalPresence(
     return () => window.clearTimeout(timer);
   }, [leaving]);
 
-  return { current, visible, leaving, entryDepth, finish };
+  return {
+    current,
+    visible,
+    leaving,
+    entryDepth,
+    finish,
+    promotionKey,
+    finishPromotion,
+  };
 }

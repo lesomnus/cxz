@@ -59,7 +59,12 @@ export function observeApprovalOcclusion(
   const children = new MutationObserver(schedule);
   observer.observe(stack);
   observer.observe(composer);
-  children.observe(stack, { childList: true, subtree: true });
+  children.observe(stack, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["data-motion", "data-back-motion", "data-closing"],
+  });
   stack.addEventListener("animationstart", schedule);
   stack.addEventListener("transitionrun", schedule);
   refresh();

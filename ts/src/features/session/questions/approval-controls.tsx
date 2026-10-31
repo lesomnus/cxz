@@ -41,11 +41,15 @@ export function ApprovalControls({
   const [deciding, setDeciding] = useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
-  const { current, visible, leaving, entryDepth, finish } = useApprovalPresence(
-    requests,
-    open,
-    front,
-  );
+  const {
+    current,
+    visible,
+    leaving,
+    entryDepth,
+    finish,
+    promotionKey,
+    finishPromotion,
+  } = useApprovalPresence(requests, open, front);
   const key = approvalKey(current);
   const leavingKey = approvalKey(leaving?.event);
   const backRequests = current
@@ -245,28 +249,15 @@ export function ApprovalControls({
             onFocusCapture={focus}
             onBlurCapture={closeSoon}
           >
-            {backRequests.map((event, index) => {
-              const depth = index + 1;
-              return (
-                <div
-                  key={approvalKey(event)}
-                  inert
-                  aria-hidden="true"
-                  data-approval-back={depth}
-                  className={styles.backClip}
-                  style={{ "--approval-depth": depth } as CSSProperties}
-                >
-                  <div className={`${styles.surface} ${styles.back}`}>
-                    <ScrollArea
-                      className={styles.scroll}
-                      scrollbarLabel={t("Request details")}
-                    >
-                      <ApprovalContent event={event} />
-                    </ScrollArea>
-                  </div>
-                </div>
-              );
-            })}
+            {backRequests.map((event, index) => (
+              <QueuedApproval
+                key={approvalKey(event)}
+                event={event}
+                depth={index + 1}
+                refill={!!current && promotionKey === key}
+                closing={!current}
+              />
+            ))}
             {current && (
               <div
                 ref={front}
@@ -280,6 +271,10 @@ export function ApprovalControls({
                 aria-label={approvalTitle(current)}
                 aria-live="polite"
                 data-request-id={current.requestId}
+                onAnimationEnd={(event) => {
+                  if (event.target === event.currentTarget)
+                    finishPromotion(key);
+                }}
               >
                 <ScrollArea
                   className={styles.scroll}
@@ -326,6 +321,61 @@ export function ApprovalControls({
           host,
         )}
     </>
+  );
+}
+
+function QueuedApproval({
+  event,
+  depth,
+  refill,
+  closing,
+}: {
+  event: SessionEvent;
+  depth: number;
+  refill: boolean;
+  closing: boolean;
+}) {
+  const before = useRef({ depth, closing });
+  const [motion, setMotion] = useState({
+    kind: refill ? "refill" : "arrive",
+    from: depth,
+  });
+  useLayoutEffect(() => {
+    const old = before.current;
+    if (old.closing && !closing) setMotion({ kind: "arrive", from: depth });
+    else if (old.depth > depth) setMotion({ kind: "advance", from: old.depth });
+    else if (refill && !closing)
+      setMotion((value) =>
+        value.kind === "arrive" ? { kind: "refill", from: depth } : value,
+      );
+    before.current = { depth, closing };
+  }, [depth, refill, closing]);
+  return (
+    <div
+      inert
+      aria-hidden="true"
+      data-approval-back={depth}
+      data-request-id={event.requestId}
+      className={styles.backClip}
+      style={
+        {
+          "--approval-depth": depth,
+          "--approval-from-depth": motion.from,
+        } as CSSProperties
+      }
+    >
+      <div
+        className={`${styles.surface} ${styles.back}`}
+        data-back-motion={motion.kind}
+      >
+        <ScrollArea
+          className={styles.scroll}
+          scrollbarLabel={t("Request details")}
+        >
+          <ApprovalContent event={event} />
+        </ScrollArea>
+      </div>
+    </div>
   );
 }
 

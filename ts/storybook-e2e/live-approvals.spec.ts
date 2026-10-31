@@ -451,6 +451,13 @@ test("approval queue respects reduced motion", async ({ page }) => {
   await group.getByRole("button", { name: "Allow", exact: true }).click();
   await expect(group).toHaveAttribute("data-pending-count", "1");
   await expect(page.locator("[data-approval-exiting]")).toHaveCount(0);
+  expect(
+    await page
+      .locator("[data-motion], [data-approval-back] > div")
+      .evaluateAll(
+        (nodes) => nodes.flatMap((node) => node.getAnimations()).length,
+      ),
+  ).toBe(0);
 });
 
 test("approval shortcut is documented and isolated inside the full Storybook manager", async ({
@@ -837,4 +844,111 @@ test("full queued cards remain above Question and uncover their bodies while clo
   await expect(stack).toHaveCount(0);
   await expect(question).toBeVisible();
   await expect(group).toHaveAttribute("data-pending-count", "3");
+});
+
+test("queued approvals advance one slot in sequence and refill from the next FIFO request", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--live-approvals&viewMode=story",
+  );
+  await page
+    .getByRole("button", { name: "Request approval", exact: true })
+    .click();
+  for (let i = 0; i < 4; i++) await page.keyboard.press("Control+Alt+n");
+  const group = page.getByRole("group", {
+    name: "Pending approvals",
+    exact: true,
+  });
+  await expect(group).toHaveAttribute("data-pending-count", "5");
+  await group.hover();
+  const stack = page.locator("[data-approval-stack]");
+  await expect(stack.locator("[data-approval-back='1']")).toHaveAttribute(
+    "data-request-id",
+    "request-102",
+  );
+  await expect(stack.locator("[data-approval-back='2']")).toHaveAttribute(
+    "data-request-id",
+    "request-103",
+  );
+  const third = await stack
+    .locator("[data-request-id='request-103']")
+    .elementHandle();
+  await group.getByRole("button", { name: "Allow", exact: true }).click();
+  await expect(group).toHaveAttribute("data-pending-count", "4");
+  await expect(stack.locator("[data-motion]")).toHaveAttribute(
+    "data-request-id",
+    "request-102",
+  );
+  const shifted = stack.locator("[data-approval-back='1']");
+  await expect(shifted).toHaveAttribute("data-request-id", "request-103");
+  expect(
+    await shifted.evaluate((node, previous) => node === previous, third),
+  ).toBe(true);
+  await expect(shifted.locator(":scope > div")).toHaveAttribute(
+    "data-back-motion",
+    "advance",
+  );
+  const refill = stack.locator("[data-approval-back='2']");
+  await expect(refill).toHaveAttribute("data-request-id", "request-104");
+  await expect(refill.locator(":scope > div")).toHaveAttribute(
+    "data-back-motion",
+    "refill",
+  );
+  const delays = await stack.evaluate((node) =>
+    [
+      node.querySelector("[data-motion]")!,
+      node.querySelector("[data-back-motion='advance']")!,
+      node.querySelector("[data-back-motion='refill']")!,
+    ].map((face) => {
+      const effect = face.getAnimations()[0].effect as KeyframeEffect;
+      return {
+        delay: Number(effect.getTiming().delay),
+        frames: effect.getKeyframes(),
+      };
+    }),
+  );
+  expect(delays[1].delay).toBeGreaterThan(delays[0].delay);
+  expect(delays[2].delay).toBe(delays[1].delay);
+  expect(delays[1].frames[0].transform).not.toBe(
+    delays[1].frames.at(-1)!.transform,
+  );
+  const fourth = await refill.elementHandle();
+  await stack.evaluate(async (node) => {
+    await Promise.all(
+      [...node.querySelectorAll("[data-motion], [data-approval-back] > div")]
+        .flatMap((face) => face.getAnimations())
+        .map((a) => a.finished.catch(() => {})),
+    );
+  });
+  await group.getByRole("button", { name: "Allow", exact: true }).click();
+  await expect(group).toHaveAttribute("data-pending-count", "3");
+  await expect(stack.locator("[data-motion]")).toHaveAttribute(
+    "data-request-id",
+    "request-103",
+  );
+  await expect(stack.locator("[data-approval-back='1']")).toHaveAttribute(
+    "data-request-id",
+    "request-104",
+  );
+  expect(
+    await stack
+      .locator("[data-approval-back='1']")
+      .evaluate((node, previous) => node === previous, fourth),
+  ).toBe(true);
+  await expect(stack.locator("[data-approval-back='2']")).toHaveAttribute(
+    "data-request-id",
+    "request-105",
+  );
+  await expect(stack.locator("[data-approval-back='2'] > div")).toHaveAttribute(
+    "data-back-motion",
+    "refill",
+  );
+  await group.getByRole("button", { name: "Deny", exact: true }).click();
+  await expect(group).toHaveAttribute("data-pending-count", "2");
+  await expect(stack.locator("[data-approval-back]")).toHaveCount(1);
+  await expect(stack.locator("[data-approval-back='1']")).toHaveAttribute(
+    "data-request-id",
+    "request-105",
+  );
 });
