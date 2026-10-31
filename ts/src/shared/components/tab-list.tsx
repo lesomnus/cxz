@@ -65,7 +65,7 @@ export function TabList({
               >
                 <circle cx="7" cy="9" r="4" strokeWidth="1" />
                 {item.answered && (
-                  <path d="m4 8.5 3.2 3 7.3-8" strokeWidth="2.2" />
+                  <path d="m2 8.5 3.2 3 7.3-8" strokeWidth="2.6" />
                 )}
               </svg>
             </span>

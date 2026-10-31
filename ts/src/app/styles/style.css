@@ -3257,6 +3257,7 @@ summary:hover {
   --question-blur: var(--ui-dialog-blur);
   --question-tab-width: 64px;
   --question-tab-icon-width: 20px;
+  --question-tab-circle-color: var(--shade-115);
   --question-tab-check-color: color-mix(
     in srgb,
     var(--aurora-green) 60%,
@@ -3327,6 +3328,9 @@ summary:hover {
   place-items: center;
   width: var(--question-tab-icon-width);
   margin: 0;
+}
+.question-card .tab-answered circle {
+  stroke: var(--question-tab-circle-color);
 }
 .question-card .tab-answered path {
   stroke: var(--question-tab-check-color);
