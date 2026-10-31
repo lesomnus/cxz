@@ -69,10 +69,19 @@
   gap: 10px;
 }
 .quotaRow {
+  position: relative;
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
   align-items: center;
+}
+.quotaRow[data-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -3px -6px;
+  border: 1px solid var(--shade-65);
+  border-radius: 4px;
+  pointer-events: none;
 }
 .period,
 .time {

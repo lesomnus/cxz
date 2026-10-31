@@ -20,6 +20,7 @@ test("quota hover opens above the stationary outlined graph with stable columns"
     await expect(tooltip).toHaveCSS("filter", "none");
     await expect(tooltip).toHaveAttribute("data-enter-effect", "reveal-frame");
     const content = tooltip.locator('[data-enter-effect="reveal"]');
+    await expect(tooltip.locator('[data-selected="true"]')).toHaveCount(0);
     await expect(content).toHaveAttribute(
       "data-enter-from",
       "from-bottom-right",
@@ -104,6 +105,15 @@ test("quota hover shows session and weekly in separate aligned rows with indepen
   );
   await expect(rows.nth(0)).toHaveAttribute("data-quota-level", "normal");
   await expect(rows.nth(1)).toHaveAttribute("data-quota-level", "critical");
+  await expect(tooltip.locator('[data-selected="true"]')).toHaveAttribute(
+    "data-quota-window",
+    "codex/secondary",
+  );
+  expect(
+    await rows
+      .nth(1)
+      .evaluate((row) => getComputedStyle(row, "::after").borderTopWidth),
+  ).toBe("1px");
   const colors = await rows.evaluateAll((rows) =>
     rows.map((row) => getComputedStyle(row.lastElementChild!).color),
   );

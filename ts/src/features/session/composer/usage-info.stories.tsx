@@ -24,6 +24,7 @@ const meta = {
       effort: "",
       remaining: 100,
       quotaLabel: "codex · 5h",
+      quotaKey: "codex/primary",
       reset: Date.now() + 5 * 3600_000,
       contextUsed: 48000,
       contextWindow: 200000,
@@ -50,6 +51,7 @@ export const Weekly: Story = {
       ...meta.args.info,
       remaining: 72,
       quotaLabel: "codex · weekly",
+      quotaKey: "codex/secondary",
       reset: Date.now() + 7 * 24 * 3600_000,
     },
   },
@@ -60,6 +62,7 @@ export const SessionAndWeekly: Story = {
       ...meta.args.info,
       remaining: 8,
       quotaLabel: "codex · weekly",
+      quotaKey: "codex/secondary",
       reset: Date.now() + 6.5 * 24 * 3600_000,
       quotas: [
         {
@@ -117,6 +120,7 @@ export const ClaudeWindows: Story = {
       ...meta.args.info,
       remaining: 15,
       quotaLabel: "seven day opus",
+      quotaKey: "seven_day_opus",
       quotas: [
         {
           key: "five_hour",
