@@ -28,7 +28,7 @@ test("automatic approvals do not flash cards; unresolved approvals and questions
     (window as any).approvalFlashes = seen;
     const observer = new MutationObserver(() => {
       for (const card of document.querySelectorAll(
-        ".question-cards .approval, [data-approval-stack], [role='group'][data-pending-count]:not([data-pending-count='0'])",
+        ".question-cards .approval, [data-card-stack], [role='group'][data-pending-count]:not([data-pending-count='0'])",
       ))
         seen.push(card.getAttribute("aria-label") ?? "approval");
     });
@@ -48,7 +48,7 @@ test("automatic approvals do not flash cards; unresolved approvals and questions
     .getByRole("button", { name: "Request approval", exact: true })
     .click();
   await expect(group).toHaveAttribute("data-pending-count", "1");
-  await expect(page.locator("[data-approval-stack]")).toHaveCount(0);
+  await expect(page.locator("[data-card-stack]")).toHaveCount(0);
   await group.hover();
   await expect(
     page.getByRole("region", {
@@ -64,7 +64,7 @@ test("automatic approvals do not flash cards; unresolved approvals and questions
     .getByRole("button", { name: "Resolve request", exact: true })
     .click();
   await expect(page.locator(".question-cards .approval")).toHaveCount(0);
-  await expect(page.locator("[data-approval-stack]")).toHaveCount(0);
+  await expect(page.locator("[data-card-stack]")).toHaveCount(0);
   await expect(
     group.getByRole("button", { name: "Deny", exact: true }),
   ).toBeDisabled();
@@ -103,7 +103,7 @@ for (const width of [1280, 390]) {
       name: "Pending approvals",
       exact: true,
     });
-    const stack = page.locator("[data-approval-stack]");
+    const stack = page.locator("[data-card-stack]");
     const current = page.getByRole("region", {
       name: "item/commandExecution/requestApproval",
       exact: true,
@@ -111,7 +111,7 @@ for (const width of [1280, 390]) {
     await expect(group).toHaveAttribute("data-pending-count", "3");
     await group.hover();
     await expect(stack).toHaveAttribute("data-positioned", "true");
-    await expect(stack.locator("[data-approval-back]")).toHaveCount(2);
+    await expect(stack.locator("[data-card-stack-back]")).toHaveCount(2);
     await expect(current).toContainText("git status --short");
     await expect(current).toContainText("/workspace");
     await expect(current.locator(".card-heading, .card-footer")).toHaveCount(0);
@@ -170,7 +170,7 @@ for (const width of [1280, 390]) {
     await group.getByRole("button", { name: "Deny", exact: true }).click();
     await expect(group).toHaveAttribute("data-pending-count", "1");
     await expect(current).toContainText("git diff --stat");
-    await expect(stack.locator("[data-approval-back]")).toHaveCount(0);
+    await expect(stack.locator("[data-card-stack-back]")).toHaveCount(0);
     await group.getByRole("button", { name: "Allow", exact: true }).focus();
     await page.keyboard.press("Enter");
     await expect(group).toHaveAttribute("data-pending-count", "0");
@@ -327,7 +327,7 @@ test("approval count stays visible while request cards open on hover and keyboar
       expect(button.center, measurement.font).toBeCloseTo(0, 5);
     }
   }
-  const stack = page.locator("[data-approval-stack]");
+  const stack = page.locator("[data-card-stack]");
   await expect(stack).toHaveCount(0);
   await controls.hover();
   const current = page.getByRole("region", {
@@ -358,12 +358,12 @@ test("approval queue animates arrival, promotion and departure without keeping s
     (window as any).approvalMotions = motions;
     new MutationObserver(() => {
       for (const node of document.querySelectorAll(
-        "[data-approval-stack] [data-motion], [data-approval-exiting], [data-approval-back] > div",
+        "[data-card-stack] [data-motion], [data-card-stack-exiting], [data-card-stack-back] > div",
       )) {
         if (seen.has(node)) continue;
         seen.add(node);
         motions.push({
-          kind: node.hasAttribute("data-approval-exiting")
+          kind: node.hasAttribute("data-card-stack-exiting")
             ? "depart"
             : (node.getAttribute("data-motion") ?? "back"),
           frames: node
@@ -387,7 +387,7 @@ test("approval queue animates arrival, promotion and departure without keeping s
   });
   await expect(group).toHaveAttribute("data-pending-count", "1");
   await group.hover();
-  await expect(page.locator("[data-approval-stack]")).toBeVisible();
+  await expect(page.locator("[data-card-stack]")).toBeVisible();
   // The demo shortcut appends requests without moving the pointer away.
   await page.keyboard.press("Control+Alt+n");
   await expect(group).toHaveAttribute("data-pending-count", "2");
@@ -421,8 +421,8 @@ test("approval queue animates arrival, promotion and departure without keeping s
   await expect(group).toHaveAttribute("data-pending-count", "1");
   await group.getByRole("button", { name: "Allow", exact: true }).click();
   await expect(group).toHaveAttribute("data-pending-count", "0");
-  await expect(page.locator("[data-approval-stack]")).toHaveCount(0);
-  await expect(page.locator("[data-approval-exiting]")).toHaveCount(0);
+  await expect(page.locator("[data-card-stack]")).toHaveCount(0);
+  await expect(page.locator("[data-card-stack-exiting]")).toHaveCount(0);
 });
 
 test("approval queue respects reduced motion", async ({ page }) => {
@@ -442,7 +442,7 @@ test("approval queue respects reduced motion", async ({ page }) => {
   });
   await expect(group).toHaveAttribute("data-pending-count", "2");
   await group.hover();
-  await expect(page.locator("[data-approval-stack]")).toBeVisible();
+  await expect(page.locator("[data-card-stack]")).toBeVisible();
   expect(
     await page
       .locator("[data-motion]")
@@ -450,10 +450,10 @@ test("approval queue respects reduced motion", async ({ page }) => {
   ).toBe(0);
   await group.getByRole("button", { name: "Allow", exact: true }).click();
   await expect(group).toHaveAttribute("data-pending-count", "1");
-  await expect(page.locator("[data-approval-exiting]")).toHaveCount(0);
+  await expect(page.locator("[data-card-stack-exiting]")).toHaveCount(0);
   expect(
     await page
-      .locator("[data-motion], [data-approval-back] > div")
+      .locator("[data-motion], [data-card-stack-back] > div")
       .evaluateAll(
         (nodes) => nodes.flatMap((node) => node.getAnimations()).length,
       ),
@@ -524,7 +524,7 @@ test("departing approvals stay opaque behind the composer before the next card c
     const seen = new WeakSet<Element>();
     const observer = new MutationObserver(() => {
       for (const node of document.querySelectorAll(
-        "[data-approval-exiting], [data-motion='promote']",
+        "[data-card-stack-exiting], [data-motion='promote']",
       )) {
         if (seen.has(node)) continue;
         seen.add(node);
@@ -544,12 +544,12 @@ test("departing approvals stay opaque behind the composer before the next card c
   await expect(group).toHaveAttribute("data-pending-count", "1");
   const sample = await page.evaluate(() => {
     const outgoing = document.querySelector<HTMLElement>(
-      "[data-approval-exiting]",
+      "[data-card-stack-exiting]",
     )!;
     const incoming = document.querySelector<HTMLElement>(
       "[data-motion='promote']",
     )!;
-    const stack = document.querySelector<HTMLElement>("[data-approval-stack]")!;
+    const stack = document.querySelector<HTMLElement>("[data-card-stack]")!;
     const composer = document.querySelector<HTMLElement>(".composer")!;
     const input = composer.querySelector<HTMLElement>(".composer-input")!;
     const departure = outgoing.getAnimations()[0];
@@ -603,7 +603,7 @@ test("departing approvals stay opaque behind the composer before the next card c
   expect(sample.end.opacity).toBe("1");
   expect(sample.end.top).toBeGreaterThanOrEqual(sample.end.inputTop);
   expect(sample.end.clipBottom).toBeLessThanOrEqual(sample.end.inputBottom + 1);
-  await expect(page.locator("[data-approval-exiting]")).toHaveCount(0);
+  await expect(page.locator("[data-card-stack-exiting]")).toHaveCount(0);
   await expect(
     page.getByRole("region", {
       name: "item/commandExecution/requestApproval",
@@ -632,7 +632,7 @@ test("hover enters from the front and dismisses from the back with the front las
     const seen = new WeakSet<Animation>();
     const observer = new MutationObserver(() => {
       for (const node of document.querySelectorAll(
-        "[data-motion], [data-approval-exiting], [data-approval-back] > div",
+        "[data-motion], [data-card-stack-exiting], [data-card-stack-back] > div",
       )) {
         for (const animation of node.getAnimations()) {
           if (seen.has(animation)) continue;
@@ -651,12 +651,12 @@ test("hover enters from the front and dismisses from the back with the front las
     (window as any).approvalCascadeObserver = observer;
   });
   await group.hover();
-  const stack = page.locator("[data-approval-stack]");
+  const stack = page.locator("[data-card-stack]");
   await expect(stack).toHaveAttribute("data-closing", "false");
   const opening = await stack.evaluate((node) => {
     const cards = [
       node.querySelector("[data-motion]")!,
-      ...node.querySelectorAll("[data-approval-back] > div"),
+      ...node.querySelectorAll("[data-card-stack-back] > div"),
     ];
     const timing = cards.map((card) =>
       card.getAnimations()[0].effect!.getTiming(),
@@ -671,8 +671,8 @@ test("hover enters from the front and dismisses from the back with the front las
   await expect(stack).toHaveAttribute("data-closing", "true");
   const closing = await stack.evaluate((node) => {
     const cards = [
-      node.querySelector("[data-approval-exiting]")!,
-      ...node.querySelectorAll("[data-approval-back] > div"),
+      node.querySelector("[data-card-stack-exiting]")!,
+      ...node.querySelectorAll("[data-card-stack-back] > div"),
     ];
     return cards.map((card) => {
       const t = card.getAnimations()[0].effect!.getTiming();
@@ -688,15 +688,15 @@ test("hover enters from the front and dismisses from the back with the front las
   expect(closing[1].end).toBeLessThan(closing[0].end);
   expect(closing[2].end).toBeLessThan(closing[1].end);
   await stack
-    .locator("[data-approval-back='2'] > div")
+    .locator("[data-card-stack-back='2'] > div")
     .evaluate((node) => node.getAnimations().forEach((a) => a.finish()));
   await expect(stack).toBeVisible();
   await stack
-    .locator("[data-approval-back='1'] > div")
+    .locator("[data-card-stack-back='1'] > div")
     .evaluate((node) => node.getAnimations().forEach((a) => a.finish()));
   await expect(stack).toBeVisible();
   await stack
-    .locator("[data-approval-exiting]")
+    .locator("[data-card-stack-exiting]")
     .evaluate((node) => node.getAnimations().forEach((a) => a.finish()));
   await expect(stack).toHaveCount(0);
   await expect(group).toHaveAttribute("data-pending-count", "3");
@@ -732,24 +732,24 @@ test("full queued cards remain above Question and uncover their bodies while clo
   });
   await expect(group).toHaveAttribute("data-pending-count", "3");
   await group.hover();
-  const stack = page.locator("[data-approval-stack]");
+  const stack = page.locator("[data-card-stack]");
   await stack.evaluate(async (node) => {
     await Promise.all(
-      [...node.querySelectorAll("[data-motion], [data-approval-back] > div")]
+      [...node.querySelectorAll("[data-motion], [data-card-stack-back] > div")]
         .flatMap((n) => n.getAnimations())
         .map((a) => a.finished.catch(() => {})),
     );
   });
-  await expect(stack.locator("[data-approval-back='1']")).toContainText(
+  await expect(stack.locator("[data-card-stack-back='1']")).toContainText(
     "npm run build",
   );
-  await expect(stack.locator("[data-approval-back='2']")).toContainText(
+  await expect(stack.locator("[data-card-stack-back='2']")).toContainText(
     "git diff --stat",
   );
   const before = await stack.evaluate((node) => ({
     layer: getComputedStyle(node).zIndex,
     backHeight: node
-      .querySelector("[data-approval-back] > div")!
+      .querySelector("[data-card-stack-back] > div")!
       .getBoundingClientRect().height,
     frontHeight: node.querySelector("[data-motion]")!.getBoundingClientRect()
       .height,
@@ -758,10 +758,10 @@ test("full queued cards remain above Question and uncover their bodies while clo
   await page.evaluate(() => {
     const seen = new WeakSet<Animation>();
     const observer = new MutationObserver(() => {
-      if (!document.querySelector("[data-approval-stack][data-closing='true']"))
+      if (!document.querySelector("[data-card-stack][data-closing='true']"))
         return;
       for (const node of document.querySelectorAll(
-        "[data-approval-exiting], [data-approval-back] > div",
+        "[data-card-stack-exiting], [data-card-stack-back] > div",
       ))
         for (const animation of node.getAnimations()) {
           if (seen.has(animation)) continue;
@@ -782,10 +782,10 @@ test("full queued cards remain above Question and uncover their bodies while clo
   await expect(stack).toHaveAttribute("data-closing", "true");
   const sample = await stack.evaluate(async (node) => {
     const departure = node.querySelector<HTMLElement>(
-      "[data-approval-exiting]",
+      "[data-card-stack-exiting]",
     )!;
     const backs = [
-      ...node.querySelectorAll<HTMLElement>("[data-approval-back] > div"),
+      ...node.querySelectorAll<HTMLElement>("[data-card-stack-back] > div"),
     ];
     // Hold the deeper face before retreat to inspect its full uncovered body.
     for (const [index, face] of backs.entries())
@@ -837,7 +837,7 @@ test("full queued cards remain above Question and uncover their bodies while clo
   await stack.evaluate((node) => {
     (window as any).approvalFullBackObserver.disconnect();
     for (const face of node.querySelectorAll(
-      "[data-approval-exiting], [data-approval-back] > div",
+      "[data-card-stack-exiting], [data-card-stack-back] > div",
     ))
       for (const a of face.getAnimations()) a.finish();
   });
@@ -862,12 +862,12 @@ test("queued approvals advance one slot in sequence and refill from the next FIF
   });
   await expect(group).toHaveAttribute("data-pending-count", "5");
   await group.hover();
-  const stack = page.locator("[data-approval-stack]");
-  await expect(stack.locator("[data-approval-back='1']")).toHaveAttribute(
+  const stack = page.locator("[data-card-stack]");
+  await expect(stack.locator("[data-card-stack-back='1']")).toHaveAttribute(
     "data-request-id",
     "request-102",
   );
-  await expect(stack.locator("[data-approval-back='2']")).toHaveAttribute(
+  await expect(stack.locator("[data-card-stack-back='2']")).toHaveAttribute(
     "data-request-id",
     "request-103",
   );
@@ -880,7 +880,7 @@ test("queued approvals advance one slot in sequence and refill from the next FIF
     "data-request-id",
     "request-102",
   );
-  const shifted = stack.locator("[data-approval-back='1']");
+  const shifted = stack.locator("[data-card-stack-back='1']");
   await expect(shifted).toHaveAttribute("data-request-id", "request-103");
   expect(
     await shifted.evaluate((node, previous) => node === previous, third),
@@ -889,7 +889,7 @@ test("queued approvals advance one slot in sequence and refill from the next FIF
     "data-back-motion",
     "advance",
   );
-  const refill = stack.locator("[data-approval-back='2']");
+  const refill = stack.locator("[data-card-stack-back='2']");
   await expect(refill).toHaveAttribute("data-request-id", "request-104");
   await expect(refill.locator(":scope > div")).toHaveAttribute(
     "data-back-motion",
@@ -916,7 +916,7 @@ test("queued approvals advance one slot in sequence and refill from the next FIF
   const fourth = await refill.elementHandle();
   await stack.evaluate(async (node) => {
     await Promise.all(
-      [...node.querySelectorAll("[data-motion], [data-approval-back] > div")]
+      [...node.querySelectorAll("[data-motion], [data-card-stack-back] > div")]
         .flatMap((face) => face.getAnimations())
         .map((a) => a.finished.catch(() => {})),
     );
@@ -927,27 +927,26 @@ test("queued approvals advance one slot in sequence and refill from the next FIF
     "data-request-id",
     "request-103",
   );
-  await expect(stack.locator("[data-approval-back='1']")).toHaveAttribute(
+  await expect(stack.locator("[data-card-stack-back='1']")).toHaveAttribute(
     "data-request-id",
     "request-104",
   );
   expect(
     await stack
-      .locator("[data-approval-back='1']")
+      .locator("[data-card-stack-back='1']")
       .evaluate((node, previous) => node === previous, fourth),
   ).toBe(true);
-  await expect(stack.locator("[data-approval-back='2']")).toHaveAttribute(
+  await expect(stack.locator("[data-card-stack-back='2']")).toHaveAttribute(
     "data-request-id",
     "request-105",
   );
-  await expect(stack.locator("[data-approval-back='2'] > div")).toHaveAttribute(
-    "data-back-motion",
-    "refill",
-  );
+  await expect(
+    stack.locator("[data-card-stack-back='2'] > div"),
+  ).toHaveAttribute("data-back-motion", "refill");
   await group.getByRole("button", { name: "Deny", exact: true }).click();
   await expect(group).toHaveAttribute("data-pending-count", "2");
-  await expect(stack.locator("[data-approval-back]")).toHaveCount(1);
-  await expect(stack.locator("[data-approval-back='1']")).toHaveAttribute(
+  await expect(stack.locator("[data-card-stack-back]")).toHaveCount(1);
+  await expect(stack.locator("[data-card-stack-back='1']")).toHaveAttribute(
     "data-request-id",
     "request-105",
   );

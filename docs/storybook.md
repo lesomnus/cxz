@@ -27,6 +27,8 @@ npm run storybook
   `QuestionHistoryInConversation`은 사용자·에이전트 대화 중간에 답변 완료된 Question 기록을 표시합니다.
   질문 카드를 더블클릭하면 선택한 항목과 Markdown·코드가 포함된 주관식 답변 전문을 확인합니다.
 - `Conversation/QuestionCard/LiveApprovals`: `Request approval` 또는 예제 안의 `Ctrl+Alt+N`으로 작업 허용 요청을 추가합니다.
+  스택 배치·전진·보충·퇴장·가려짐 처리는 Nox `CardStack`을 사용합니다. 독립적인 재사용 예제는
+  Nox Storybook의 `Components/CardStack`에 있습니다. 승인 응답과 요청 내용 렌더링은 cxz가 담당합니다.
   toolbar 더보기 왼쪽의 테두리가 있는 X·체크 그룹은 요청이 없어도 비활성 상태로 유지됩니다.
   요청이 없으면 아이콘과 반투명 테두리는 아주 희미하게 표시됩니다. 평소에는 배경 없이 어두운
   적색·녹색 아이콘을 표시하고, hover 시 밝아진 아이콘과 해당 색 배경을 표시합니다.

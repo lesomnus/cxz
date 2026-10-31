@@ -1,25 +1,11 @@
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
-import { createPortal } from "react-dom";
-import { Button, CompactNumber, ScrollArea } from "@lesomnus/nox";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { Button, CardStack, CompactNumber } from "@lesomnus/nox";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { approvalTitle, payload } from "#src/features/session/model/journal.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./approval-controls.module.css";
-import { observeApprovalOcclusion } from "./approval-occlusion";
-import {
-  approvalBacks,
-  approvalKey,
-  useApprovalPresence,
-} from "./use-approval-presence";
 
 export function ApprovalControls({
   requests,
@@ -35,26 +21,12 @@ export function ApprovalControls({
   const id = useId();
   const controls = useRef<HTMLDivElement>(null);
   const stack = useRef<HTMLDivElement>(null);
-  const front = useRef<HTMLDivElement>(null);
   const closeTimer = useRef(0);
   const locked = useRef(false);
   const [deciding, setDeciding] = useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
-  const {
-    current,
-    visible,
-    leaving,
-    entryDepth,
-    finish,
-    promotionKey,
-    finishPromotion,
-  } = useApprovalPresence(requests, open, front);
-  const key = approvalKey(current);
-  const leavingKey = approvalKey(leaving?.event);
-  const backRequests = current
-    ? approvalBacks(visible)
-    : (leaving?.backs ?? []);
+  const key = active ? `${active.runId}:${active.requestId}:${active.seq}` : "";
   const show = () => {
     window.clearTimeout(closeTimer.current);
     setOpen(true);
@@ -78,66 +50,6 @@ export function ApprovalControls({
   useLayoutEffect(() => {
     setHost(controls.current?.closest<HTMLElement>(".conversation") ?? null);
   }, [key]);
-  useLayoutEffect(() => {
-    const anchor = controls.current;
-    const cards = stack.current;
-    if (!host || !anchor || !cards) return;
-    const position = () => {
-      const bounds = host.getBoundingClientRect();
-      const button = anchor.getBoundingClientRect();
-      const gap = parseFloat(getComputedStyle(cards).columnGap) || 8;
-      cards.style.setProperty(
-        "--approval-card-space",
-        `${Math.max(0, button.top - bounds.top - gap * 3)}px`,
-      );
-      const input = anchor
-        .closest(".composer")
-        ?.querySelector<HTMLElement>(".composer-input");
-      if (input) {
-        const box = input.getBoundingClientRect();
-        cards.style.setProperty(
-          "--approval-composer-offset",
-          `${Math.max(0, box.top - button.top + gap)}px`,
-        );
-        cards.style.setProperty(
-          "--approval-input-radius",
-          getComputedStyle(input).borderTopLeftRadius,
-        );
-      }
-      const box = cards.getBoundingClientRect();
-      cards.style.setProperty("--approval-body-height", `${box.height}px`);
-      const surface = anchor.closest<HTMLElement>(".composer-wrapper");
-      if (surface)
-        cards.style.setProperty(
-          "--approval-occlusion-offset",
-          `${Math.max(0, surface.getBoundingClientRect().top - button.top + gap)}px`,
-        );
-      const left = Math.max(
-        bounds.left + gap,
-        Math.min(
-          button.left + button.width / 2 - box.width / 2,
-          bounds.right - gap - box.width,
-        ),
-      );
-      cards.style.left = `${left - bounds.left - host.clientLeft + host.scrollLeft}px`;
-      cards.style.top = `${button.top - bounds.top - host.clientTop + host.scrollTop - gap - box.height}px`;
-      cards.dataset.positioned = "true";
-    };
-    position();
-    const surface = anchor.closest<HTMLElement>(".composer-wrapper");
-    const stopOcclusion = surface
-      ? observeApprovalOcclusion(cards, surface)
-      : undefined;
-    const observer = new ResizeObserver(position);
-    for (const element of [host, anchor, cards, anchor.closest(".composer")])
-      if (element) observer.observe(element);
-    window.addEventListener("resize", position);
-    return () => {
-      observer.disconnect();
-      stopOcclusion?.();
-      window.removeEventListener("resize", position);
-    };
-  }, [host, key, leavingKey, requests.length]);
   const data = active ? payload(active) : {};
   const unsupported = !!(
     active?.text === "mcpServer/elicitation/request" &&
@@ -163,7 +75,7 @@ export function ApprovalControls({
         role="group"
         aria-label={t("Pending approvals")}
         aria-description={`${t("Pending approvals")}: ${requests.length}`}
-        aria-controls={current ? id : undefined}
+        aria-controls={open && active ? id : undefined}
         aria-busy={busy || deciding}
         data-approval-controls
         data-pending-count={requests.length}
@@ -227,157 +139,57 @@ export function ApprovalControls({
           </svg>
         </Button>
       </div>
-      {(current || leaving) &&
-        host &&
-        createPortal(
-          <div
-            ref={stack}
-            id={id}
-            className={styles.stack}
-            data-approval-stack
-            data-departing={!!leaving}
-            data-closing={!current && !!leaving}
-            data-pending-count={requests.length}
-            style={
-              {
-                "--approval-back-count": backRequests.length,
-                ...(!current && leaving ? { height: leaving.height } : {}),
-              } as CSSProperties
-            }
-            onPointerEnter={show}
-            onPointerLeave={closeSoon}
-            onFocusCapture={focus}
-            onBlurCapture={closeSoon}
-          >
-            {backRequests.map((event, index) => (
-              <QueuedApproval
-                key={approvalKey(event)}
-                event={event}
-                depth={index + 1}
-                refill={!!current && promotionKey === key}
-                closing={!current}
-              />
-            ))}
-            {current && (
-              <div
-                ref={front}
-                key={key}
-                className={`${styles.surface} ${styles.request}`}
-                data-motion={entryDepth ? "promote" : "arrive"}
-                style={
-                  { "--approval-entry-depth": entryDepth } as CSSProperties
-                }
-                role="region"
-                aria-label={approvalTitle(current)}
-                aria-live="polite"
-                data-request-id={current.requestId}
-                onAnimationEnd={(event) => {
-                  if (event.target === event.currentTarget)
-                    finishPromotion(key);
-                }}
-              >
-                <ScrollArea
-                  className={styles.scroll}
-                  viewportClassName={styles.viewport}
-                  scrollbarLabel={t("Request details")}
-                >
-                  <ApprovalContent event={current} />
-                  {unsupported && (
-                    <p className={styles.notice}>
-                      {t(
-                        "This request form is not supported in the web client yet. Complete it in the TUI.",
-                      )}
-                    </p>
-                  )}
-                </ScrollArea>
-              </div>
-            )}
-            {leaving && (
-              <div
-                key={`leaving:${leavingKey}`}
-                className={styles.departureClip}
-                style={
-                  {
-                    "--approval-leaving-height": `${leaving.height}px`,
-                  } as CSSProperties
-                }
-                inert
-                aria-hidden="true"
-              >
-                <div
-                  className={`${styles.surface} ${styles.request} ${styles.leaving}`}
-                  style={{ height: leaving.height }}
-                  data-approval-exiting
-                  onAnimationEnd={(event) => {
-                    if (event.target === event.currentTarget)
-                      finish(leavingKey);
-                  }}
-                >
-                  <ApprovalContent event={leaving.event} />
-                </div>
-              </div>
-            )}
-          </div>,
-          host,
+      <CardStack
+        ref={stack}
+        id={id}
+        items={requests}
+        getKey={requestKey}
+        open={open}
+        anchor={controls.current}
+        container={host}
+        occlusionBoundary={controls.current?.closest<HTMLElement>(
+          ".composer-wrapper",
         )}
+        exitTarget={controls.current
+          ?.closest(".composer")
+          ?.querySelector<HTMLElement>(".composer-input")}
+        scrollbarLabel={t("Request details")}
+        getItemProps={(event, state) =>
+          ({
+            role: "region",
+            "aria-label": approvalTitle(event),
+            "aria-live": state.active ? "polite" : undefined,
+            "data-request-id": event.requestId,
+          }) as React.HTMLAttributes<HTMLDivElement>
+        }
+        renderItem={(event) => (
+          <>
+            <ApprovalContent event={event} />
+            {unsupportedRequest(event) && (
+              <p className={styles.notice}>
+                {t(
+                  "This request form is not supported in the web client yet. Complete it in the TUI.",
+                )}
+              </p>
+            )}
+          </>
+        )}
+        onPointerEnter={show}
+        onPointerLeave={closeSoon}
+        onFocusCapture={focus}
+        onBlurCapture={closeSoon}
+      />
     </>
   );
 }
 
-function QueuedApproval({
-  event,
-  depth,
-  refill,
-  closing,
-}: {
-  event: SessionEvent;
-  depth: number;
-  refill: boolean;
-  closing: boolean;
-}) {
-  const before = useRef({ depth, closing });
-  const [motion, setMotion] = useState({
-    kind: refill ? "refill" : "arrive",
-    from: depth,
-  });
-  useLayoutEffect(() => {
-    const old = before.current;
-    if (old.closing && !closing) setMotion({ kind: "arrive", from: depth });
-    else if (old.depth > depth) setMotion({ kind: "advance", from: old.depth });
-    else if (refill && !closing)
-      setMotion((value) =>
-        value.kind === "arrive" ? { kind: "refill", from: depth } : value,
-      );
-    before.current = { depth, closing };
-  }, [depth, refill, closing]);
-  return (
-    <div
-      inert
-      aria-hidden="true"
-      data-approval-back={depth}
-      data-request-id={event.requestId}
-      className={styles.backClip}
-      style={
-        {
-          "--approval-depth": depth,
-          "--approval-from-depth": motion.from,
-        } as CSSProperties
-      }
-    >
-      <div
-        className={`${styles.surface} ${styles.back}`}
-        data-back-motion={motion.kind}
-      >
-        <ScrollArea
-          className={styles.scroll}
-          scrollbarLabel={t("Request details")}
-        >
-          <ApprovalContent event={event} />
-        </ScrollArea>
-      </div>
-    </div>
+const requestKey = (event: SessionEvent) =>
+  `${event.runId}:${event.requestId}:${event.seq}`;
+const unsupportedRequest = (event: SessionEvent) =>
+  !!(
+    event.text === "mcpServer/elicitation/request" &&
+    payload(event).params?.requestedSchema
   );
-}
 
 function ApprovalContent({ event }: { event: SessionEvent }) {
   const root = payload(event);
