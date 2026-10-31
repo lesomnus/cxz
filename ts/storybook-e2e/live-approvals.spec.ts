@@ -8,13 +8,27 @@ test("automatic approvals do not flash cards; unresolved approvals and questions
   await page.goto(
     "/iframe.html?id=conversation-questioncard--live-approvals&viewMode=story",
   );
+  const group = page.getByRole("group", {
+    name: "Pending approvals",
+    exact: true,
+  });
+  await expect(group).toBeVisible();
+  await expect(group).toHaveAttribute("data-pending-count", "0");
+  await expect(group).toHaveAttribute("aria-busy", "false");
+  await expect(
+    group.getByRole("button", { name: "Deny", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    group.getByRole("button", { name: "Allow", exact: true }),
+  ).toBeDisabled();
+  const idleBounds = await group.boundingBox();
   await page.locator(".question-cards").waitFor({ state: "attached" });
   await page.evaluate(() => {
     const seen: string[] = [];
     (window as any).approvalFlashes = seen;
     const observer = new MutationObserver(() => {
       for (const card of document.querySelectorAll(
-        ".question-cards .approval, [data-approval-stack], [role='group'][data-pending-count]",
+        ".question-cards .approval, [data-approval-stack], [role='group'][data-pending-count]:not([data-pending-count='0'])",
       ))
         seen.push(card.getAttribute("aria-label") ?? "approval");
     });
@@ -39,6 +53,7 @@ test("automatic approvals do not flash cards; unresolved approvals and questions
       exact: true,
     }),
   ).toBeVisible();
+  expect(await group.boundingBox()).toEqual(idleBounds);
   await expect(
     page.getByRole("group", { name: "Pending approvals", exact: true }),
   ).toBeVisible();
@@ -47,6 +62,12 @@ test("automatic approvals do not flash cards; unresolved approvals and questions
     .click();
   await expect(page.locator(".question-cards .approval")).toHaveCount(0);
   await expect(page.locator("[data-approval-stack]")).toHaveCount(0);
+  await expect(
+    group.getByRole("button", { name: "Deny", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    group.getByRole("button", { name: "Allow", exact: true }),
+  ).toBeDisabled();
   await page.getByRole("button", { name: "Ask question", exact: true }).click();
   await expect(
     page.getByRole("region", { name: "Question", exact: true }),
@@ -148,7 +169,13 @@ for (const width of [1280, 390]) {
     await expect(stack.locator(":scope > [aria-hidden='true']")).toHaveCount(0);
     await group.getByRole("button", { name: "Allow", exact: true }).focus();
     await page.keyboard.press("Enter");
-    await expect(group).toHaveCount(0);
+    await expect(group).toHaveAttribute("data-pending-count", "0");
+    await expect(
+      group.getByRole("button", { name: "Allow", exact: true }),
+    ).toBeDisabled();
+    await expect(
+      group.getByRole("button", { name: "Deny", exact: true }),
+    ).toBeDisabled();
     await expect(stack).toHaveCount(0);
     expect(
       await page.evaluate(
@@ -177,11 +204,12 @@ test("permission decisions preserve a separate pending Question", async ({
   const question = page.getByRole("region", { name: "Question", exact: true });
   await expect(question).toBeVisible();
   await group.getByRole("button", { name: "Allow", exact: true }).click();
-  await expect(group).toHaveCount(0);
+  await expect(group).toHaveAttribute("data-pending-count", "0");
+  await expect(
+    group.getByRole("button", { name: "Allow", exact: true }),
+  ).toBeDisabled();
   await expect(question).toBeVisible();
-  await question
-    .getByRole("radio", { name: /^Conversation / })
-    .check();
+  await question.getByRole("radio", { name: /^Conversation / }).check();
   await question.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(question).toHaveCount(0);
 });

@@ -6,7 +6,7 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
-import { Button, Card, ScrollArea } from "@lesomnus/nox";
+import { Button, ScrollArea } from "@lesomnus/nox";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { approvalTitle, payload } from "#src/features/session/model/journal.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
@@ -69,13 +69,12 @@ export function ApprovalControls({
       window.removeEventListener("resize", position);
     };
   }, [host, key, requests.length]);
-  if (!active) return null;
-  const data = payload(active);
+  const data = active ? payload(active) : {};
   const unsupported = !!(
-    active.text === "mcpServer/elicitation/request" &&
+    active?.text === "mcpServer/elicitation/request" &&
     data.params?.requestedSchema
   );
-  const disabled = busy || deciding;
+  const disabled = !active || busy || deciding;
   async function decide(allow: boolean) {
     if (disabled || locked.current || !active) return;
     locked.current = true;
@@ -95,13 +94,14 @@ export function ApprovalControls({
         role="group"
         aria-label={t("Pending approvals")}
         aria-description={`${t("Pending approvals")}: ${requests.length}`}
-        aria-controls={id}
-        aria-busy={disabled}
+        aria-controls={active ? id : undefined}
+        aria-busy={busy || deciding}
         data-pending-count={requests.length}
       >
         <Button
           type="button"
-          className={styles.decision}
+          effect="none"
+          className={`${styles.decision} ${styles.deny}`}
           aria-label={t("Deny")}
           title={t("Deny")}
           disabled={disabled}
@@ -122,7 +122,8 @@ export function ApprovalControls({
         </Button>
         <Button
           type="button"
-          className={styles.decision}
+          effect="none"
+          className={`${styles.decision} ${styles.allow}`}
           aria-label={t("Allow")}
           title={t("Allow")}
           disabled={disabled || unsupported}
@@ -143,7 +144,8 @@ export function ApprovalControls({
           </svg>
         </Button>
       </div>
-      {host &&
+      {active &&
+        host &&
         createPortal(
           <div
             ref={stack}
@@ -155,23 +157,17 @@ export function ApprovalControls({
             {[2, 1]
               .filter((depth) => depth < requests.length)
               .map((depth) => (
-                <Card
+                <div
                   key={depth}
-                  title=""
-                  hideHeading
                   inert
                   aria-hidden="true"
-                  className={styles.back}
+                  className={`${styles.surface} ${styles.back}`}
                   style={{ "--approval-depth": depth } as CSSProperties}
-                >
-                  <span />
-                </Card>
+                />
               ))}
-            <Card
+            <div
               key={key}
-              title=""
-              hideHeading
-              className={styles.request}
+              className={`${styles.surface} ${styles.request}`}
               role="region"
               aria-label={approvalTitle(active)}
               aria-live="polite"
@@ -191,7 +187,7 @@ export function ApprovalControls({
                   </p>
                 )}
               </ScrollArea>
-            </Card>
+            </div>
           </div>,
           host,
         )}
