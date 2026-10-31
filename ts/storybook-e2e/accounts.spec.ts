@@ -71,13 +71,42 @@ for (const width of [1280, 390]) {
     ).toContainText("Web account layout");
     await expect(work).not.toContainText("Claude project");
     await expect(personal).toContainText("Claude project");
-    await expect(personal).toContainText("Session-scoped login");
+    const personalAuth = personal.getByRole("region", {
+      name: "Authentication",
+      exact: true,
+    });
+    await expect(personalAuth).toContainText("Login belongs to each session.");
+    await expect(personalAuth.getByRole("button")).toHaveCount(0);
+    await expect(personalAuth).not.toContainText("Session-scoped login");
     await expect(
       work.getByRole("button", { name: "Log in", exact: true }),
-    ).toBeDisabled();
+    ).toHaveCount(0);
     await expect(
       work.getByRole("button", { name: "Log out", exact: true }),
     ).toBeEnabled();
+    const authentication = work.getByRole("region", {
+      name: "Authentication",
+      exact: true,
+    });
+    const row = [
+      authentication.getByText("Authentication", { exact: true }),
+      authentication.getByText("Signed in", { exact: true }),
+      authentication.getByRole("button", {
+        name: "Refresh status",
+        exact: true,
+      }),
+      authentication.getByRole("button", { name: "Log out", exact: true }),
+    ];
+    const boxes = await Promise.all(row.map((item) => item.boundingBox()));
+    for (let index = 1; index < boxes.length; index++) {
+      expect(boxes[index]!.x).toBeGreaterThanOrEqual(
+        boxes[index - 1]!.x + boxes[index - 1]!.width,
+      );
+      expect(boxes[index]!.y + boxes[index]!.height / 2).toBeCloseTo(
+        boxes[0]!.y + boxes[0]!.height / 2,
+        0,
+      );
+    }
     const main = (await page.getByRole("main").boundingBox())!;
     const card = (await work.boundingBox())!;
     const add = (await page
@@ -217,6 +246,9 @@ for (const theme of ["dark", "light"]) {
 
 test("logout needs confirmation and then enables login", async ({ page }) => {
   await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
+  const actionBefore = (await page
+    .getByRole("button", { name: "Log out", exact: true })
+    .boundingBox())!;
   await page.getByRole("button", { name: "Log out", exact: true }).click();
   const dialog = page.getByRole("dialog", {
     name: "Log out · Work",
@@ -232,5 +264,10 @@ test("logout needs confirmation and then enables login", async ({ page }) => {
   ).toBeEnabled();
   await expect(
     page.getByRole("button", { name: "Log out", exact: true }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
+  const actionAfter = (await page
+    .getByRole("button", { name: "Log in", exact: true })
+    .boundingBox())!;
+  expect(actionAfter.width).toBe(actionBefore.width);
+  expect(actionAfter.x).toBe(actionBefore.x);
 });

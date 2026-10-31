@@ -1,7 +1,7 @@
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useState } from "react";
-import { Button, SectionGroup, Section } from "@lesomnus/nox";
+import { Button, Popover, SectionGroup, Section } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -41,6 +41,16 @@ export function AccountDetails({
     [AuthState.BUSY]: "Authentication busy",
     [AuthState.UNSPECIFIED]: "Unknown",
   };
+  const sessionScoped = status.data
+    ? status.data.scope === "session" ||
+      status.data.state === AuthState.SESSION_SCOPED
+    : account.agent === "claude";
+  const signedIn = status.data?.state === AuthState.READY;
+  const statusText = status.loading
+    ? "Checking login…"
+    : status.data
+      ? labels[status.data.state ?? AuthState.UNSPECIFIED]
+      : "Status unavailable";
   return (
     <SectionGroup>
       <Section aria-label="Account details">
@@ -62,39 +72,65 @@ export function AccountDetails({
         {account.desc && <p>{account.desc}</p>}
       </Section>
       <Section aria-label="Authentication">
-        <div className={styles.row}>
+        <div className={accountStyles.authenticationRow}>
           <strong>Authentication</strong>
-          <Button disabled={status.loading} onClick={status.reload}>
-            Refresh status
-          </Button>
+          {sessionScoped ? (
+            <small
+              className={`${styles.muted} ${accountStyles.authenticationDescription}`}
+            >
+              {status.data?.message ||
+                "Login belongs to each session. Manage it from that session's details."}
+            </small>
+          ) : (
+            <>
+              <span
+                className={accountStyles.authenticationStatus}
+                role={status.error ? "alert" : undefined}
+                aria-description={status.error || undefined}
+              >
+                <Popover
+                  content={status.error || status.data?.message || statusText}
+                >
+                  {statusText}
+                </Popover>
+              </span>
+              <Button
+                className={accountStyles.authenticationRefresh}
+                aria-label="Refresh status"
+                title="Refresh status"
+                disabled={status.loading}
+                onClick={status.reload}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M13 7a5 5 0 1 0-1.3 4.1M13 3v4H9" />
+                </svg>
+              </Button>
+              <Button
+                className={accountStyles.authenticationAction}
+                disabled={
+                  status.loading ||
+                  login ||
+                  logout ||
+                  status.data?.scope !== "account" ||
+                  !(signedIn ? status.data.canLogout : status.data.canLogin)
+                }
+                onClick={() => (signedIn ? setLogout(true) : setLogin(true))}
+              >
+                {signedIn ? "Log out" : "Log in"}
+              </Button>
+            </>
+          )}
         </div>
-        <span>
-          {status.loading
-            ? "Checking login…"
-            : status.data
-              ? labels[status.data.state ?? AuthState.UNSPECIFIED]
-              : "Status unavailable"}
-        </span>
-        {status.data?.message && (
-          <small className={styles.muted}>{status.data.message}</small>
-        )}
-        {status.error && <p role="alert">{status.error}</p>}
-        {status.data?.scope === "account" && (
-          <div className={styles.row}>
-            <Button
-              disabled={status.loading || !status.data.canLogin || login}
-              onClick={() => setLogin(true)}
-            >
-              Log in
-            </Button>
-            <Button
-              disabled={status.loading || !status.data.canLogout}
-              onClick={() => setLogout(true)}
-            >
-              Log out
-            </Button>
-          </div>
-        )}
         {login && (
           <LoginPanel
             modal

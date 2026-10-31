@@ -104,6 +104,9 @@ test("account login refreshes status and logout uses confirmation", async ({
   page,
 }) => {
   await open(page, "account-login");
+  const actionWidth = (await page
+    .getByRole("button", { name: "Log in", exact: true })
+    .boundingBox())!.width;
   await page.getByRole("button", { name: "Log in", exact: true }).click();
   const dialog = page.getByRole("dialog", {
     name: "Log in · work",
@@ -149,7 +152,12 @@ test("account login refreshes status and logout uses confirmation", async ({
   await expect(page.getByText("Signed in", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Log in", exact: true }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
+  expect(
+    (await page
+      .getByRole("button", { name: "Log out", exact: true })
+      .boundingBox())!.width,
+  ).toBe(actionWidth);
   await page.getByRole("button", { name: "Log out", exact: true }).click();
   const confirmation = page.getByRole("dialog", {
     name: "Log out · Work account",
@@ -236,7 +244,7 @@ for (const story of ["login-failure-and-retry", "login-connection-closed"]) {
     await expect(panel.getByRole("alert")).toBeVisible();
     await expect(
       page.getByRole("button", {
-        name: "Log out",
+        name: "Log in",
         exact: true,
         includeHidden: true,
       }),

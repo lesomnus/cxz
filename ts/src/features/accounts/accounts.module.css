@@ -17,6 +17,42 @@
   align-items: center;
   gap: var(--space);
 }
+.authenticationRow {
+  --account-auth-action-width: 80px;
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  min-width: 0;
+}
+.authenticationRow > strong {
+  flex-shrink: 0;
+}
+.authenticationStatus {
+  flex: 0 1 14ch;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 12px/1.5 var(--ui-font-mono);
+  color: var(--muted);
+}
+.authenticationRefresh {
+  flex-shrink: 0;
+  width: var(--toolbar-button-height);
+  height: var(--toolbar-button-height);
+  min-height: 0;
+  padding: 0;
+}
+.authenticationAction {
+  flex: 0 0 var(--account-auth-action-width);
+  width: var(--account-auth-action-width);
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+.authenticationDescription {
+  flex: 1;
+  min-width: 0;
+}
 .session {
   display: block;
   text-decoration: none;

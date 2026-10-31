@@ -84,7 +84,7 @@ export const SignedInAccount: Story = {
     docs: {
       description: {
         story:
-          "Inspect a signed-in account with usage and an associated session. Log in is disabled and Log out requires confirmation. Cancel keeps the saved login; confirming enables login again.",
+          "Inspect a signed-in account with usage and an associated session. The compact Authentication row contains status, refresh and a fixed-width action that switches between Log in and Log out. Log out requires confirmation. Cancel keeps the saved login; confirming switches the action back to Log in. Session-scoped accounts display an explanation without account-level status or controls.",
       },
     },
   },
