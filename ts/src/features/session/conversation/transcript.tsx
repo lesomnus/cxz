@@ -11,6 +11,7 @@ import {
   edgePull,
   dragPullDistance,
   dragPullDirection,
+  dragPullOrigin,
   scrollRange,
   markerRangeStart,
   resumeRange,
@@ -72,6 +73,7 @@ type Drag = {
   stretch: number;
   lastTime: number;
   pullDirection: number;
+  pullOrigin: number;
 };
 type RangeMotion = {
   time: number;
@@ -584,10 +586,17 @@ export function Transcript({
     }
     // Only request the edge being approached. A small loaded window can be
     // near both ends: fetching both would alternately evict opposite pages.
-    if (delta < 0 && el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS)
+    // At the loaded edge scrollTop cannot change until the next page arrives;
+    // an active outward pull still expresses which page is needed.
+    const direction = drag.current?.pullDirection || Math.sign(delta);
+    if (direction && !follow.current) readingDirection.current = direction;
+    if (
+      direction < 0 &&
+      el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS
+    )
       callbacks.current.older();
     if (
-      delta > 0 &&
+      direction > 0 &&
       el.scrollHeight - el.scrollTop - el.clientHeight <
         el.clientHeight * HISTORY_PREFETCH_SCREENS
     )
@@ -728,7 +737,8 @@ export function Transcript({
     if (!d || !el || !rail) return;
     const g = geometry.current;
     const travel = Math.max(1, g.height - g.thumb);
-    const raw = d.pointer - rail.getBoundingClientRect().top - d.offset;
+    const origin = rail.getBoundingClientRect().top + d.offset;
+    const raw = d.pointer - origin;
     const bounded = clamp(raw, 0, travel);
     const distance = dragPullDistance(raw, travel);
     const active = dragPullDirection(
@@ -736,8 +746,11 @@ export function Transcript({
       d.pointer - d.lastPointer,
       d.pullDirection,
     );
+    if (active && active !== d.pullDirection)
+      d.pullOrigin =
+        origin + dragPullOrigin(d.lastPointer - origin, travel, active);
     d.lastPointer = d.pointer;
-    const pull = edgePull(active ? distance : 0, g.viewport);
+    const pull = edgePull(active ? d.pointer - d.pullOrigin : 0, g.viewport);
     d.stretch = pull.stretch;
     setStretch(pull.stretch);
     callbacks.current.onTension(pull.stretch);
@@ -950,6 +963,7 @@ export function Transcript({
               stretch: 0,
               lastTime: performance.now(),
               pullDirection: 0,
+              pullOrigin: e.clientY,
             };
             setDragging(true);
             measure();

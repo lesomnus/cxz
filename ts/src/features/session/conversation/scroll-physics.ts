@@ -77,6 +77,21 @@ export function dragPullDirection(
   return active === direction ? direction : 0;
 }
 
+// A gesture that starts beyond a quarter boundary builds pressure from its
+// grab/reversal position, rather than inheriting that whole pre-existing gap.
+export function dragPullOrigin(
+  position: number,
+  travel: number,
+  direction: number,
+) {
+  const length = Math.max(0, travel);
+  if (direction < 0)
+    return Math.min(position, length * DRAG_ACCELERATION_INSET);
+  if (direction > 0)
+    return Math.max(position, length * (1 - DRAG_ACCELERATION_INSET));
+  return position;
+}
+
 // A saturating spring moves less with each extra pixel of pull, while velocity
 // increases. Both directions share the same curve and stop at actual history edges.
 export function edgePull(distance: number, viewport: number) {

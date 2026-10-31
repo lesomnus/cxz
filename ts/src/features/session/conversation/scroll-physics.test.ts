@@ -3,6 +3,7 @@ import {
   edgePull,
   dragPullDistance,
   dragPullDirection,
+  dragPullOrigin,
   scrollRange,
   markerRangeStart,
   SCROLL_WINDOW_SCREENS,
@@ -12,6 +13,26 @@ import {
 import { quotaDots } from "#src/features/session/model/session-info.ts";
 
 describe("bounded scroll handle", () => {
+  it("builds a fresh pull from its grab/reversal point without preloading quarter distance", () => {
+    expect(dragPullOrigin(200, 400, -1)).toBe(100);
+    expect(dragPullOrigin(200, 400, 1)).toBe(300);
+    for (const [start, direction] of [
+      [0, -1],
+      [40, -1],
+      [360, 1],
+      [400, 1],
+    ]) {
+      const origin = dragPullOrigin(start, 400, direction);
+      expect(origin).toBe(start);
+      expect(
+        Math.abs(edgePull(start + direction - origin, 800).stretch),
+      ).toBeLessThan(1);
+      expect(
+        Math.abs(edgePull(start + 30 * direction - origin, 800).stretch),
+      ).toBeGreaterThan(6);
+    }
+    expect(dragPullOrigin(42, 400, 0)).toBe(42);
+  });
   it("requires an outward gesture and stops pulling when the user moves inward", () => {
     for (const direction of [-1, 1]) {
       const distance = direction * 60;
