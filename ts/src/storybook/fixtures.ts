@@ -469,3 +469,24 @@ export function mixedConversationEvents(turns = 120) {
     return events;
   }).flat();
 }
+
+export function complexConversationEvents(turns = 120) {
+  return mixedConversationEvents(turns).map((event) => {
+    const markdown =
+      `### Review ${event.seq}\n\n` +
+      "The **conversation** keeps short replies, structured questions and code together.\n\n" +
+      "| Check | Result |\n| --- | --- |\n| Keyboard | Preserved |\n| History | Available |\n\n" +
+      "```typescript\n" +
+      `export const review${event.seq} = {\n` +
+      '  layout: "compact",\n  preserveHistory: true,\n  shortcuts: ["Enter", "Escape"],\n};\n' +
+      "```\n\n" +
+      "- Keep the reading position.\n- Review the [documentation](https://example.com/docs).";
+    if (event.kind === "assistant") event.text = markdown;
+    if (event.kind === "approval") {
+      const wire = JSON.parse(new TextDecoder().decode(event.payload));
+      wire.params.questions[0].question = markdown;
+      event.payload = new TextEncoder().encode(JSON.stringify(wire));
+    }
+    return event;
+  });
+}

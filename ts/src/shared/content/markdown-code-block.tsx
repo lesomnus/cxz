@@ -10,7 +10,8 @@ import {
 } from "#src/shared/editor/code-syntax.ts";
 import {
   paletteVariables,
-  resolveEditorSettings,
+  defaultEditorSettings,
+  type Palette,
 } from "#src/shared/settings/editor-settings.ts";
 import { useSettings } from "#src/shared/settings/settings.ts";
 import { useTheme } from "#src/shared/theme/theme.tsx";
@@ -44,7 +45,10 @@ export function MarkdownCodeBlock({
   );
   const { snapshot } = useSettings();
   const theme = useTheme();
-  const palette = resolveEditorSettings(snapshot.document).colorPalette;
+  // Highlighting needs only the palette, not font resolution (a layout read).
+  const palette =
+    (snapshot.document["editor.colorPalette"] as Palette | undefined) ??
+    defaultEditorSettings.colorPalette;
   const colors = paletteVariables(palette, theme);
   // Lift contrast on the user's raised gray surface without discarding the
   // chosen palette's hues. Theme foreground also gives darker ink in light mode.
@@ -93,11 +97,15 @@ export function MarkdownCodeBlock({
           {tokens.map((line, index) => (
             <Fragment key={index}>
               {index > 0 && "\n"}
-              {line.map((token, tokenIndex) => (
-                <span key={tokenIndex} className={token.className || undefined}>
-                  {token.text}
-                </span>
-              ))}
+              {line.map((token, tokenIndex) =>
+                token.className ? (
+                  <span key={tokenIndex} className={token.className}>
+                    {token.text}
+                  </span>
+                ) : (
+                  token.text
+                ),
+              )}
             </Fragment>
           ))}
         </span>,

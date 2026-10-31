@@ -119,7 +119,7 @@ test("reading a full loaded history avoids animation position reads across rail 
   expect(result.maxMarkers).toBeLessThanOrEqual(budget);
 });
 
-for (const content of ["plain", "mixed"]) {
+for (const content of ["plain", "mixed", "complex"]) {
   test(`${content} scroll windows retain row observers and consume delivered resize measurements`, async ({
     page,
   }) => {
@@ -129,7 +129,7 @@ for (const content of ["plain", "mixed"]) {
       `/test-support/transcript-performance.html?count=8192&content=${content}`,
     );
     await expect(page.locator(".response-heading").first()).toBeVisible();
-    if (content === "mixed")
+    if (content !== "plain")
       await expect(page.locator(".question-history").first()).toBeAttached();
     await page
       .getByRole("scrollbar", { name: "Conversation scroll" })
@@ -185,3 +185,144 @@ for (const content of ["plain", "mixed"]) {
     expect(errors).toEqual([]);
   });
 }
+
+test("height corrections reuse retained row content while replacing a snapshot updates it", async ({
+  page,
+}) => {
+  await page.goto("/test-support/transcript-performance.html?probe=rows");
+  const first = page.locator('[data-rendered-row="1"]');
+  await expect(first).toBeVisible();
+  await page.waitForTimeout(300);
+  const read = async () => {
+    await page
+      .getByRole("button", { name: "Read render counts", exact: true })
+      .click();
+    return JSON.parse(
+      (await page.getByLabel("Render counts").textContent()) ?? "{}",
+    );
+  };
+  const before = await read();
+  const height = await first
+    .locator("..")
+    .evaluate((el) => el.getBoundingClientRect().height);
+  await page
+    .getByRole("button", { name: "Grow first row", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      first.locator("..").evaluate((el) => el.getBoundingClientRect().height),
+    )
+    .toBeGreaterThan(height + 60);
+  await page.waitForTimeout(100);
+  const after = await read();
+  const retained = await page
+    .locator("[data-rendered-row]")
+    .evaluateAll((nodes) =>
+      nodes.map((el) => el.getAttribute("data-rendered-row")!),
+    );
+  expect(retained.length).toBeGreaterThan(4);
+  for (const id of retained) if (before[id]) expect(after[id]).toBe(before[id]);
+  await page
+    .getByRole("button", { name: "Replace first row", exact: true })
+    .click();
+  await expect(first).toHaveText("Updated row");
+  const replaced = await read();
+  expect(replaced["1"]).toBe(before["1"] + 1);
+});
+
+test("sanitized Markdown survives remounts without crossing link modes or retaining unlimited text", async ({
+  page,
+}) => {
+  await page.goto("/test-support/transcript-performance.html?count=1");
+  const result = await page.evaluate(async () => {
+    // Browser-only sanitizer and the same module used by the actual cards.
+    const moduleURL = "/src/shared/content/markdown-html.ts";
+    const { markdownHTML } = await import(moduleURL);
+    const text =
+      '[Local](file:///workspace/test.md) [Web](https://example.com) <script>alert(1)</script><img src=x onerror=alert(1)><form><input></form><p style="color:red" onclick="alert(1)">Safe</p>';
+    const local = markdownHTML(text, true),
+      localAgain = markdownHTML(text, true),
+      web = markdownHTML(text, false);
+    const doc = new DOMParser().parseFromString(local.__html, "text/html");
+    const webDoc = new DOMParser().parseFromString(web.__html, "text/html");
+    const first = markdownHTML("eviction-probe", false);
+    for (let i = 0; i < 256; i++) markdownHTML(`entry ${i}`, false);
+    const entryEvicted = markdownHTML("eviction-probe", false) !== first;
+    const large = "z".repeat(600000);
+    const big = markdownHTML(large, false);
+    return {
+      reused: local === localAgain,
+      separated: local !== web,
+      safe: !doc.querySelector(
+        "script,img,form,input,style,[style],[onclick],[onerror]",
+      ),
+      local: doc.querySelector("[data-container-file]")?.getAttribute("href"),
+      webLocal: !!webDoc.querySelector("[data-container-file]"),
+      target: doc
+        .querySelector('a[href="https://example.com"]')
+        ?.getAttribute("target"),
+      entryEvicted,
+      largeBypassed: markdownHTML(large, false) !== big,
+      changed: markdownHTML(text + " **changed**", true).__html.includes(
+        "<strong>changed</strong>",
+      ),
+    };
+  });
+  expect(result).toEqual({
+    reused: true,
+    separated: true,
+    safe: true,
+    local: "/workspace/test.md",
+    webLocal: false,
+    target: "_blank",
+    entryEvicted: true,
+    largeBypassed: true,
+    changed: true,
+  });
+});
+
+test("revisiting a virtualized Markdown card reuses its sanitized result", async ({
+  page,
+}) => {
+  await page.addInitScript(() => performance.setResourceTimingBufferSize(4000));
+  await page.goto(
+    "/test-support/transcript-performance.html?count=500&content=complex",
+  );
+  const cards = page
+    .locator(".transcript article.response:not(.question-history)")
+    .filter({ has: page.locator(".markdown code") });
+  await expect(cards.last()).toBeVisible();
+  await page.waitForTimeout(500);
+  const seq = await cards.last().getAttribute("data-seq");
+  await page.evaluate(async (seq) => {
+    const url = performance
+      .getEntriesByType("resource")
+      .map((entry) => entry.name)
+      .find((url) => url.includes("/src/shared/content/markdown-parser.ts"))!;
+    const { conversationMarkdown } = await import(url);
+    const parse = conversationMarkdown.parse;
+    Object.assign(window, { revisitedMarkdownParses: 0 });
+    conversationMarkdown.parse = function (text: string, ...args: unknown[]) {
+      if (text.startsWith(`### Review ${seq}\n`))
+        (window as any).revisitedMarkdownParses++;
+      return parse.call(this, text, ...args);
+    };
+  }, seq);
+  const scroll = page.getByRole("scrollbar", {
+    name: "Conversation scroll",
+    exact: true,
+  });
+  await scroll.press("Home");
+  await expect(
+    page.locator(`.transcript article.response[data-seq="${seq}"]`),
+  ).toHaveCount(0);
+  await scroll.press("End");
+  await expect(
+    page.locator(
+      `.transcript article.response[data-seq="${seq}"] .markdown code`,
+    ),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => (window as any).revisitedMarkdownParses),
+  ).toBe(0);
+});

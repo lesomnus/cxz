@@ -733,8 +733,16 @@ test("choice fades track remaining distance and disappear on the boundary frame"
       const bottomEnd = await sample(max, bottom);
       const topNear = await sample(depth / 4, top);
       const topEnd = await sample(0, top);
-      return { depth, bottomNear, bottomEnd, topNear, topEnd };
+      const inherited = ["top", "bottom"].flatMap((edge) =>
+        ["hidden", "opacity", "motion"].map((value) =>
+          getComputedStyle(pane).getPropertyValue(
+            `--scroll-fade-${edge}-${value}`,
+          ),
+        ),
+      );
+      return { depth, bottomNear, bottomEnd, topNear, topEnd, inherited };
     });
+  expect(samples.inherited).toEqual(["", "", "", "", "", ""]);
   for (const near of [samples.bottomNear, samples.topNear]) {
     expect(near.opacity).toBeGreaterThan(0);
     expect(near.opacity).toBeLessThan(0.5);
