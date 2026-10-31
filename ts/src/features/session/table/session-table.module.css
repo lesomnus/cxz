@@ -81,7 +81,7 @@
   white-space: nowrap;
 }
 .navigationButton.navigationButton {
-  --button-background: var(--ui-shade-32);
+  --button-background: var(--session-navigation-background, var(--ui-shade-32));
   background: var(--button-background);
   display: flex;
   width: 100%;
@@ -93,7 +93,10 @@
   font: inherit;
 }
 .navigationButton.navigationButton:hover {
-  background: var(--ui-button-hover-background);
+  background: var(
+    --session-navigation-hover-background,
+    var(--ui-button-hover-background)
+  );
 }
 .navigationButton > :global(.button-content) {
   width: 100%;
@@ -148,9 +151,12 @@
   background: var(--ui-selected);
 }
 .table tbody tr:hover {
+  --session-navigation-background: var(--ui-shade-40);
   background: var(--ui-shade-32);
 }
 .table tbody tr[data-selected]:hover {
+  --session-navigation-background: var(--ui-shade-60);
+  --session-navigation-hover-background: var(--ui-shade-72);
   background: var(--ui-shade-51);
 }
 .table th:first-child,

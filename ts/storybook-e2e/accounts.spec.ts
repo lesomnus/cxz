@@ -325,8 +325,26 @@ test("account sessions use compact read-only identities and keep selection scope
   const before = await rows
     .nth(1)
     .evaluate((node) => getComputedStyle(node).backgroundColor);
-  await rows.nth(1).hover({ position: { x: 120, y: 20 } });
+  await rows.nth(1).hover({ position: { x: 16, y: 20 } });
   await expect(rows.nth(1)).not.toHaveCSS("background-color", before);
+  for (const row of [rows.nth(1), rows.first()]) {
+    await row.hover({ position: { x: 16, y: 20 } });
+    await expect
+      .poll(() =>
+        row.evaluate((node) => {
+          const rowShade = Number(
+            getComputedStyle(node).backgroundColor.match(/\d+/)?.[0],
+          );
+          return [...node.querySelectorAll("a")].every(
+            (button) =>
+              Number(
+                getComputedStyle(button).backgroundColor.match(/\d+/)?.[0],
+              ) > rowShade,
+          );
+        }),
+      )
+      .toBe(true);
+  }
   const viewport = work.locator('[data-scroll-area="viewport"]');
   expect(
     await viewport.evaluate((node) => node.scrollWidth <= node.clientWidth),
