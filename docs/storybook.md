@@ -63,7 +63,7 @@ npm run storybook
 | Story | 확인할 흐름 |
 | --- | --- |
 | AddAccount | 빈 목록에서 Add account로 Codex/Claude 계정 추가, 중복 alias 오류 |
-| AccountLogin | Codex 공유 계정 로그인, 상태 새로고침, 로그인 취소와 로그아웃 확인 |
+| AccountLogin | 공통 모달에서 Codex 공유 계정 로그인, 상태 새로고침, 취소·Escape·바깥 클릭으로 닫기와 로그아웃 확인 |
 | LoginFailureAndRetry | 제공자 오류 후 Retry login, 잘못된 코드 입력 후 재시도 |
 | LoginConnectionClosed | 로그인 도중 연결 종료와 새 연결로 재시도 |
 | SignedInAccount | 로그인된 계정의 상태·사용량·연결된 세션, 로그아웃 확인·취소 |

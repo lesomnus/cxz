@@ -97,6 +97,7 @@ export function AccountDetails({
         )}
         {login && (
           <LoginPanel
+            modal
             c={c}
             target={{ account: account.alias }}
             complete={() => {

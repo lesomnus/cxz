@@ -94,7 +94,20 @@ test("account login refreshes status and logout uses confirmation", async ({
 }) => {
   await open(page, "account-login");
   await page.getByRole("button", { name: "Log in", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Log in · work",
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator(".dialog-header")).toHaveText("Log in · work");
+  await expect(
+    dialog.locator(".dialog-body").getByLabel("Authentication code"),
+  ).toBeFocused();
+  await expect(dialog.locator(".dialog-footer").getByRole("button")).toHaveText(
+    ["Submit code", "Cancel"],
+  );
   await finishLogin(page);
+  await expect(dialog).toHaveCount(0);
   await expect(page.getByText("Signed in", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Log in", exact: true }),
@@ -118,6 +131,63 @@ test("account login refreshes status and logout uses confirmation", async ({
   ).toBeEnabled();
 });
 
+test("account login modal preserves page layout, traps focus and cancels from Escape or the backdrop on mobile", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 760 });
+  await open(page, "account-login");
+  const trigger = page.getByRole("button", { name: "Log in", exact: true });
+  await expect(trigger).toBeEnabled();
+  const card = page.locator('[data-account="work"]');
+  const before = await card.boundingBox();
+  await trigger.click();
+  const dialog = page.getByRole("dialog", {
+    name: "Log in · work",
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  expect(await card.boundingBox()).toEqual(before);
+  const code = dialog.getByLabel("Authentication code");
+  await expect(code).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(
+    dialog.getByRole("button", { name: "Cancel", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(code).toBeFocused();
+  await dialog.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
+  const bounds = (await dialog.boundingBox())!;
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+  expect(bounds.y).toBeGreaterThanOrEqual(0);
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(760);
+  await page.screenshot({
+    path: testInfo.outputPath("account-login-modal-mobile.png"),
+  });
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByText("Login required", { exact: true })).toBeVisible();
+  await trigger.click();
+  await expect(dialog).toBeVisible();
+  await page.mouse.click(1, 1);
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByText("Login required", { exact: true })).toBeVisible();
+  await trigger.click();
+  await dialog.getByLabel("Authentication code").fill("demo-code");
+  await expect(
+    dialog.getByRole("button", { name: "Submit code", exact: true }),
+  ).toBeEnabled();
+  await dialog.getByLabel("Authentication code").press("Enter");
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByText("Signed in", { exact: true })).toBeVisible();
+});
+
 for (const story of ["login-failure-and-retry", "login-connection-closed"]) {
   test(`${story} starts a fresh successful login after retry`, async ({
     page,
@@ -127,7 +197,11 @@ for (const story of ["login-failure-and-retry", "login-connection-closed"]) {
     const panel = loginPanel(page);
     await expect(panel.getByRole("alert")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Log out", exact: true }),
+      page.getByRole("button", {
+        name: "Log out",
+        exact: true,
+        includeHidden: true,
+      }),
     ).toBeDisabled();
     await panel
       .getByRole("button", { name: "Retry login", exact: true })
