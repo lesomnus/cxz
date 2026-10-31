@@ -8,6 +8,15 @@ nearby markers and outgoing animation positions, without mounting markers for
 the entire history. These changes must preserve the existing rail mapping,
 animation phase, reading anchor and follow behavior.
 
+Dragging the conversation handle tracks directly through the middle half of its
+travel. An outward gesture in the upper/lower quarters progressively adds
+upward/downward auto-scroll and elastic pull, continuing beyond the literal rail
+ends. Merely grabbing an end-positioned thumb or moving inward never activates
+the opposing pull; reversing inward cancels it even within that quarter. The local mapping
+shifts only by achieved auto-scroll, preserving pointer tracking and marker phase
+without jumping to a window boundary. Canceling an active pull rebases at the
+current reading position and stops the added velocity.
+
 React owns marker membership and styling; `ScrollMarkers` reuses its elements
 while `Transcript` paints their changing positions through refs. Range rebasing
 reads the last painted inline positions, avoiding computed-style reads. The
