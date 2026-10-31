@@ -1,7 +1,6 @@
 .tabs {
   --question-tab-width: 64px;
   --question-tab-icon-width: 20px;
-  --question-tab-border-color: transparent;
   --question-tab-circle-color: var(--shade-115);
   --question-tab-check-color: color-mix(
     in srgb,
@@ -9,26 +8,32 @@
     var(--shade-237)
   );
 }
-.tabs :global([role="tab"][aria-selected]),
-.tabs :global([role="tab"][aria-selected]:hover) {
-  --button-hover-background: transparent;
+.tabs :global([role="tab"]) {
   width: var(--question-tab-width);
   flex: 0 0 var(--question-tab-width);
+  border-radius: calc(2 * var(--space));
+}
+.underline {
+  --question-tab-border-color: transparent;
+}
+.underline :global([role="tab"][aria-selected]),
+.underline :global([role="tab"][aria-selected]:hover) {
+  --button-hover-background: transparent;
   background: transparent;
   border: 0;
   border-bottom: 2px solid var(--question-tab-border-color);
   border-radius: 0;
   transition: border-color 120ms ease-out;
 }
-.tabs :global([aria-selected="true"]) {
+.underline :global([aria-selected="true"]) {
   --question-tab-border-color: var(--shade-204);
 }
-.tabs :global([aria-selected="false"]:hover) {
+.underline :global([aria-selected="false"]:hover) {
   --question-tab-border-color: var(--shade-115);
 }
 @media (prefers-reduced-motion: reduce) {
-  .tabs :global([role="tab"][aria-selected]),
-  .tabs :global([role="tab"][aria-selected]:hover) {
+  .underline :global([role="tab"][aria-selected]),
+  .underline :global([role="tab"][aria-selected]:hover) {
     transition: none;
   }
 }

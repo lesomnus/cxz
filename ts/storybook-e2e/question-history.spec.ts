@@ -72,7 +72,7 @@ test("canceled questions preserve their text and cancellation state in every tab
   await expect(content(card, "Answer")).toContainText("Canceled");
 });
 
-test("live and recorded Question cards share the same numbered completion tabs", async ({
+test("live and recorded Question cards share tab geometry with separate selection styles", async ({
   page,
 }) => {
   const appearance = (tab: Locator) =>
@@ -86,7 +86,6 @@ test("live and recorded Question cards share the same numbered completion tabs",
         width: style.width,
         height: style.height,
         padding: style.padding,
-        radius: style.borderRadius,
         font: style.font,
         columns: getComputedStyle(node.querySelector(".button-content")!)
           .gridTemplateColumns,
@@ -108,6 +107,16 @@ test("live and recorded Question cards share the same numbered completion tabs",
   await live.getByRole("radio", { name: "Compact", exact: true }).check();
   await expect(liveTab.locator(".tab-answered path")).toHaveCount(1);
   await page.evaluate(() => document.fonts.ready);
+  await expect(liveTab).not.toHaveCSS("border-radius", "0px");
+  await expect(liveTab).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(liveTab).toHaveCSS("border-bottom-style", "none");
+  await expect(liveTab).toHaveAttribute("data-effect", "sparkle");
+  const otherLiveTab = live.getByRole("tab", { name: "Q2", exact: true });
+  await otherLiveTab.hover();
+  await expect(otherLiveTab).not.toHaveCSS(
+    "background-color",
+    "rgba(0, 0, 0, 0)",
+  );
   const expected = await appearance(liveTab);
   await page.goto(
     "/iframe.html?id=conversation-eventcards--answered-question&viewMode=story",
@@ -117,6 +126,12 @@ test("live and recorded Question cards share the same numbered completion tabs",
     .getByRole("tab", { name: "Q1", exact: true });
   await expect(recordedTab.locator('[data-mode="integer"]')).toHaveText("01");
   await expect.poll(() => appearance(recordedTab)).toEqual(expected);
+  await expect(recordedTab).toHaveCSS("border-radius", "0px");
+  await expect(recordedTab).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(recordedTab).toHaveCSS("border-bottom-style", "solid");
+  await expect(recordedTab).toHaveAttribute("data-effect", "none");
+  await recordedTab.hover();
+  await expect(recordedTab).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 });
 
 for (const width of [1280, 390]) {
