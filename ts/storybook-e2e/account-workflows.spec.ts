@@ -52,10 +52,21 @@ test("account creation uses the actual form and Reset clears its isolated state"
       labelInset: 10,
     });
   const agent = form.getByRole("combobox", { name: "Agent", exact: true });
+  await expect(agent.locator(".agent-brand-codex svg")).toBeVisible();
   expect((await agent.boundingBox())!.height).toBe(
     (await aliasInput.boundingBox())!.height,
   );
   await agent.click();
+  await expect(
+    form
+      .getByRole("option", { name: "Codex", exact: true })
+      .locator(".agent-brand-codex svg"),
+  ).toBeVisible();
+  await expect(
+    form
+      .getByRole("option", { name: "Claude", exact: true })
+      .locator(".agent-brand-claude img"),
+  ).toBeVisible();
   await expect(form.locator(".setting-menu")).toHaveCSS(
     "border-top-left-radius",
     "13px",

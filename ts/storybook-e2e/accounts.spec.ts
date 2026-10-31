@@ -108,6 +108,11 @@ test("the top add action opens a modal and creates an account card", async ({
   await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
   await dialog.getByRole("combobox", { name: "Agent", exact: true }).click();
   await dialog.getByRole("option", { name: "Claude", exact: true }).click();
+  await expect(
+    dialog
+      .getByRole("combobox", { name: "Agent", exact: true })
+      .locator(".agent-brand-claude img"),
+  ).toBeVisible();
   await dialog
     .getByRole("textbox", { name: "Alias", exact: true })
     .fill("new-account");
