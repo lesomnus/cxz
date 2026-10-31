@@ -13,6 +13,7 @@ if [[ "$version" == edge ]]; then
   build_version="source-$(git rev-parse --short=12 HEAD)"
 fi
 mkdir -p "$output"
+go run ./cmd/cxz-collector-source "$output/collector-src"
 # Keep the browser build out of Go executables and package it for manager images.
 git submodule update --init --recursive
 npm ci --prefix ts

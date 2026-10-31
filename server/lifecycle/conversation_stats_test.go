@@ -135,7 +135,7 @@ func TestConversationStatsRPC(t *testing.T) {
 }
 
 func TestStatsUsageMissingAndRunIsolation(t *testing.T) {
-	s := statsUsage{cost: map[string]float64{}, known: map[string]bool{}}
+	s := statsUsage{}
 	s.event(&api.Event{Kind: "usage", RunId: "old", Text: "thread/tokenUsage/updated", Payload: []byte(`{"tokenUsage":{"last":{"inputTokens":500}}}`)})
 	got := s.event(&api.Event{Kind: "turn_end", RunId: "new"})
 	if got.GetTokenReportedTurns() != 0 || got.GetCostReportedTurns() != 0 {

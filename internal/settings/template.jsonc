@@ -50,6 +50,11 @@
   // Client scroll window; provider context and server retention are independent.
   // "history": { "window_mib": 10, "window_turns": 200 },
 
+  // Local usage analytics. One Collector and ClickHouse per Manager installation.
+  // Applied by cxz install --recreate (also preserved by self-update).
+  // Numeric metrics only; no conversations are exported. 0 uses the defaults.
+  // "telemetry": { "enabled": true, "retention_days": 90, "queue_mib": 64 },
+
   // Shared Docker-in-Docker is enabled by default; use "off" to disable it.
   // Optional "compose": "docker.override.yaml" loads a services.dind override
   // relative to this settings file, or from an absolute / ~/ path.

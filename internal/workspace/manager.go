@@ -14,6 +14,8 @@ import (
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
+	"github.com/lesomnus/cxz/internal/telemetryauth"
+	"github.com/lesomnus/cxz/internal/telemetrystore"
 	"github.com/lesomnus/cxz/internal/transport"
 	"google.golang.org/grpc"
 	"os"
@@ -38,7 +40,9 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, LegacyProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
-	removedSessions map[string]bool // protected by writeMu; rejects late frames after removal
+	telemetry       *telemetrystore.Client
+	telemetryAux    map[string]map[string]telemetryauth.Session // protected by writeMu
+	removedSessions map[string]bool                             // protected by writeMu; rejects late frames after removal
 	auxStop         context.CancelFunc
 	auxDone         chan struct{}
 	auxMu           sync.Mutex
@@ -201,6 +205,9 @@ func (m *Manager) save(ctx context.Context, p *Project) error {
 	}
 	if e = core.WriteJSON(filepath.Join(m.Root, "projects", p.storageID(), "project.json"), p); e != nil {
 		return e
+	}
+	if err := m.writeTelemetryRegistry(p); err != nil {
+		fmt.Fprintln(os.Stderr, "telemetry registry:", err)
 	}
 	_, e = m.DB.ExecContext(ctx, "INSERT INTO projects VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data", p.ID, b)
 	return e

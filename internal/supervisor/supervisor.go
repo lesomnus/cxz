@@ -28,9 +28,11 @@ import (
 	"github.com/lesomnus/cxz/internal/filemap"
 	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/skillconfig"
+	"github.com/lesomnus/cxz/internal/telemetry"
 )
 
 type Supervisor struct {
+	telemetry        *telemetry.Publisher
 	mcpInstructions  string
 	lastActivity     time.Time
 	updateClients    map[string]updateClient
@@ -257,6 +259,8 @@ func Run(ctx context.Context, root, id string) error {
 		return err
 	}
 	args = append(args, auth.Args...)
+	s.telemetry, args, auth.Env = telemetry.Prepare(root, session, s.snap.RunID, args, auth.Env)
+	defer s.telemetry.Close()
 	if session.AuthBackend == accounts.BrokeredAccessToken {
 		s.codex.token = func(previous string, refresh bool) (accounts.Token, error) {
 			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
@@ -440,6 +444,7 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, respo
 	// records produced. Written before the reduction finished, it would
 	// describe the session as it was one record ago.
 	if !s.buffering {
+		s.telemetry.Observe(e)
 		s.recordState(context.Background())
 	}
 	return e
@@ -540,7 +545,9 @@ func (s *Supervisor) consume(raw []byte) {
 			panic(fmt.Sprintf("conversation durability failure: %v", err))
 		}
 		s.recordState(context.Background())
-		_ = committed
+		for _, e := range committed {
+			s.telemetry.Observe(e)
+		}
 		s.approvePending()
 		s.deliverQueued()
 		if completed && s.quotaRoot != "" {
