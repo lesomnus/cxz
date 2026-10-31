@@ -6,11 +6,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  ScrollArea,
   Section,
 } from "@lesomnus/nox";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";
+import loginStyles from "./login-panel.module.css";
 import { LoginTransportContext, type LoginSocket } from "./login-transport";
 
 export type LoginTarget = { account: string; project?: string; key?: string };
@@ -129,8 +131,19 @@ export function LoginPanel({
       </label>
     </>
   );
+  const canRetry = !!error && (!c.inProcess || !!connect);
+  const retry = (modal || canRetry) && (
+    <Button
+      type="button"
+      className={modal && !canRetry ? loginStyles.reservedAction : undefined}
+      onClick={() => setAttempt((value) => value + 1)}
+    >
+      Retry login
+    </Button>
+  );
   const actions = (
     <>
+      {modal && retry}
       <Button
         type={modal ? "submit" : "button"}
         disabled={!ready || !code}
@@ -138,11 +151,7 @@ export function LoginPanel({
       >
         Submit code
       </Button>
-      {error && (!c.inProcess || connect) && (
-        <Button type="button" onClick={() => setAttempt((value) => value + 1)}>
-          Retry login
-        </Button>
-      )}
+      {!modal && retry}
       <Button type="button" onClick={cancel}>
         Cancel
       </Button>
@@ -152,6 +161,7 @@ export function LoginPanel({
     return (
       <Dialog open onClose={cancel} initialFocus={input}>
         <form
+          className={loginStyles.form}
           role="region"
           aria-label="Provider login"
           onSubmit={(event) => {
@@ -162,7 +172,15 @@ export function LoginPanel({
           <DialogHeader>
             <DialogTitle>Log in · {target.account}</DialogTitle>
           </DialogHeader>
-          <DialogBody className={styles.list}>{fields}</DialogBody>
+          <DialogBody className={loginStyles.body}>
+            <ScrollArea
+              className={loginStyles.scroll}
+              contentClassName={loginStyles.fields}
+              scrollbarLabel="Login instructions"
+            >
+              {fields}
+            </ScrollArea>
+          </DialogBody>
           <DialogFooter>{actions}</DialogFooter>
         </form>
       </Dialog>

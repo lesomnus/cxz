@@ -222,6 +222,66 @@ for (const story of ["login-failure-and-retry", "login-connection-closed"]) {
   });
 }
 
+test("account login keeps its frame and controls fixed through loading, errors and body scrolling", async ({
+  page,
+}, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.clock.install();
+  await open(page, "login-failure-and-retry");
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Log in · work",
+    exact: true,
+  });
+  const geometry = () =>
+    dialog.evaluate((node) => {
+      const rect = (selector: string) =>
+        node.querySelector(selector)!.getBoundingClientRect().toJSON();
+      return {
+        dialog: node.getBoundingClientRect().toJSON(),
+        header: rect(".dialog-header"),
+        body: rect(".dialog-body"),
+        code: rect("input"),
+        footer: rect(".dialog-footer"),
+        submit: rect("button[type=submit]"),
+      };
+    });
+  await expect(dialog).toBeVisible();
+  const initial = await geometry();
+  await page.clock.runFor(300);
+  await expect(dialog).toContainText("demo-code");
+  expect(await geometry()).toEqual(initial);
+  await page.clock.runFor(400);
+  await expect(dialog.getByRole("alert")).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "Retry login", exact: true }),
+  ).toBeVisible();
+  expect(await geometry()).toEqual(initial);
+  await page.setViewportSize({ width: 390, height: 300 });
+  await page.clock.runFor(100);
+  const viewport = dialog.locator('[data-scroll-area="viewport"]');
+  expect(
+    await viewport.evaluate((node) => node.scrollHeight > node.clientHeight),
+  ).toBe(true);
+  const footer = (await dialog.locator(".dialog-footer").boundingBox())!;
+  await viewport.hover();
+  await expect(
+    dialog.getByRole("scrollbar", { name: "Login instructions", exact: true }),
+  ).toBeVisible();
+  await viewport.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await page.clock.runFor(50);
+  expect(await dialog.locator(".dialog-footer").boundingBox()).toEqual(footer);
+  const bounds = (await dialog.boundingBox())!;
+  expect(bounds.y).toBeGreaterThanOrEqual(0);
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(300);
+  await page.screenshot({
+    path: testInfo.outputPath("fixed-login-modal-short-viewport.png"),
+  });
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+});
+
 test("canceling a submitted login cannot authenticate later", async ({
   page,
 }) => {
