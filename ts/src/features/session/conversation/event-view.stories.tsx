@@ -144,6 +144,45 @@ const answeredQuestion = resolved("allowed", {
 export const AnsweredQuestion: Story = {
   args: { events: [answeredQuestion] },
 };
+const longQuestionHistory = clone(SessionEventSchema, answeredQuestion);
+const longQuestionPayload = payload(longQuestionHistory);
+longQuestionPayload.params.questions[1].question =
+  "Which changes should we keep?\n\n" +
+  Array.from(
+    { length: 18 },
+    (_, index) =>
+      `- **Requirement ${index + 1}:** Keep keyboard navigation, readable Markdown and the existing toolbar.`,
+  ).join("\n");
+longQuestionPayload.cxz_resolution.answers.notes.other =
+  "Keep the existing toolbar.\n\n" +
+  Array.from(
+    { length: 12 },
+    (_, index) =>
+      `### Change ${index + 1}\n\nPreserve focus and stable conversation layout.\n\n\`\`\`typescript\nconst compact = true;\n\`\`\``,
+  ).join("\n\n");
+longQuestionHistory.payload = new TextEncoder().encode(
+  JSON.stringify(longQuestionPayload),
+);
+export const LongQuestionHistory: Story = {
+  args: {
+    events: [
+      longQuestionHistory,
+      responseEvent(
+        6,
+        "codex",
+        "This response stays in place when you switch question tabs.",
+      ),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Switch between short and overflowing questions and answers. The response card and both content areas keep their heights; each area scrolls independently using the shared ScrollArea. The following response stays in place.",
+      },
+    },
+  },
+};
 const beforeQuestion = responseEvent(
   2,
   "codex",
@@ -174,7 +213,7 @@ export const QuestionHistoryInConversation: Story = {
       responseEvent(
         8,
         "codex",
-        "The conversation retains the question and its recorded answers above. Double-click its card to review every step and the complete free-text answer.",
+        "The conversation retains the question and its recorded answers above. Select a question tab to review its recorded answer.",
       ),
     ],
   },
@@ -182,7 +221,7 @@ export const QuestionHistoryInConversation: Story = {
     docs: {
       description: {
         story:
-          "A completed multi-step Question remains between the agent's responses in a conversation with user messages before and after it. The runtime-projected row contains cxz_resolution, including selected options and a free-text answer with Markdown/code. Double-click the Question card to read all recorded answers; it is history, so no live answer form or Submit action is opened.",
+          "A completed multi-step Question uses the same header and surface as an agent response. Tabs in its body display each question and its recorded answer, including Markdown and code. The card, question and answer areas keep their heights, with internal scrolling for overflow. This is history, so no live answer form or Submit action is opened.",
       },
     },
   },

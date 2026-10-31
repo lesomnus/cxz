@@ -25,7 +25,9 @@ npm run storybook
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
   `QuestionHistoryInConversation`은 사용자·에이전트 대화 중간에 답변 완료된 Question 기록을 표시합니다.
-  질문 카드를 더블클릭하면 선택한 항목과 Markdown·코드가 포함된 주관식 답변 전문을 확인합니다.
+  대화 응답과 같은 디자인의 카드 본문에서 질문별 탭을 선택해 질문과 기록된 답변을 확인합니다.
+  카드와 질문·답변 영역의 높이를 유지하며 긴 내용은 내부에서 스크롤됩니다.
+  `LongQuestionHistory`는 길이가 다른 질문·답변을 전환해도 이후 대화 위치가 유지되는 예제입니다.
 - `Conversation/QuestionCard/LiveApprovals`: `Request approval` 또는 예제 안의 `Ctrl+Alt+N`으로 작업 허용 요청을 추가합니다.
   스택 배치·전진·보충·퇴장·가려짐 처리는 Nox `CardStack`을 사용합니다. 독립적인 재사용 예제는
   Nox Storybook의 `Components/CardStack`에 있습니다. 승인 응답과 요청 내용 렌더링은 cxz가 담당합니다.

@@ -1,53 +1,86 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
-test("answered questions show selections and full free-text answers in their task details", async ({
+const history = "article.response.question-history";
+
+function content(card: Locator, name: "Question" | "Answer") {
+  return card.getByRole("group", { name, exact: true });
+}
+
+test("recorded questions share response chrome and show each answer inline", async ({
   page,
 }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(
     "/iframe.html?id=conversation-eventcards--answered-question&viewMode=story",
   );
-  const card = page.locator("button.question-history");
-  await expect(card).toContainText("Choose the layout. → Compact");
-  await expect(card).toContainText("Keep the existing toolbar.");
+  const card = page.locator(history);
   await expect(card).toHaveAttribute("data-state", "completed");
-  await card.dblclick();
-  const details = page.getByRole("dialog", { name: "Question", exact: true });
-  await expect(details).toContainText("Describe any additional changes.");
-  await expect(details.locator("pre code")).toHaveText(
+  await expect(card.locator(".response-heading .agent-brand")).toBeVisible();
+  await expect(card.locator(".response-heading time")).toBeVisible();
+  const first = card.getByRole("tab", { name: "Q1", exact: true });
+  const notes = card.getByRole("tab", { name: "Q2", exact: true });
+  const last = card.getByRole("tab", { name: "Q3", exact: true });
+  await expect(first).toHaveAttribute("aria-selected", "true");
+  await expect(content(card, "Question")).toContainText("Choose the layout.");
+  await expect(content(card, "Answer")).toContainText("Compact");
+  await notes.click();
+  await expect(content(card, "Question")).toContainText(
+    "Describe any additional changes.",
+  );
+  await expect(content(card, "Answer").locator("pre code")).toHaveText(
     "const compact = true;\n",
   );
-  await expect(details).toContainText("Compact");
-  await expect(details).toContainText("Now");
+  await expect(content(card, "Answer")).not.toContainText("Now");
+  await notes.press("ArrowRight");
+  await expect(last).toBeFocused();
+  await expect(card.getByRole("tabpanel")).toHaveAttribute(
+    "aria-labelledby",
+    (await last.getAttribute("id"))!,
+  );
+  await expect(content(card, "Answer")).toContainText("Now");
+  await last.press("Home");
+  await expect(first).toBeFocused();
+  await first.press("End");
+  await expect(last).toBeFocused();
+  await last.press("ArrowLeft");
+  await expect(notes).toBeFocused();
+  await card.dblclick({ position: { x: 10, y: 10 } });
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Submit", exact: true }),
+  ).toHaveCount(0);
+  expect(errors).toEqual([]);
 });
 
-test("canceled questions stay in the transcript with their question text", async ({
+test("canceled questions preserve their text and cancellation state in every tab", async ({
   page,
 }) => {
   await page.goto(
     "/iframe.html?id=conversation-eventcards--canceled-question&viewMode=story",
   );
-  const card = page.locator("button.question-history");
-  await expect(card).toContainText("Canceled");
+  const card = page.locator(history);
   await expect(card).toHaveAttribute("data-state", "failed");
-  await card.dblclick();
-  await expect(
-    page.getByRole("dialog", { name: "Question", exact: true }),
-  ).toContainText("Choose the layout.");
+  await expect(content(card, "Question")).toContainText("Choose the layout.");
+  await expect(content(card, "Answer")).toContainText("Canceled");
+  await card.getByRole("tab", { name: "Q2", exact: true }).click();
+  await expect(content(card, "Question")).toContainText(
+    "Describe any additional changes.",
+  );
+  await expect(content(card, "Answer")).toContainText("Canceled");
 });
 
 for (const width of [1280, 390]) {
-  test(`question history stays between messages and opens recorded answers at ${width}px`, async ({
+  test(`recorded questions stay between conversation messages at ${width}px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(
       "/iframe.html?id=conversation-eventcards--question-history-in-conversation&viewMode=story",
     );
-    const card = page.locator("button.question-history");
+    const card = page.locator(history);
     await expect(card).toHaveCount(1);
     await expect(card).toHaveAttribute("data-state", "completed");
-    await expect(card).toContainText("Choose the layout. → Compact");
-    await expect(card).toContainText("When should we ship? → Now");
     await expect(
       page
         .locator(".transcript")
@@ -59,21 +92,77 @@ for (const width of [1280, 390]) {
       page
         .locator(".transcript")
         .getByText(
-          "The conversation retains the question and its recorded answers above. Double-click its card to review every step and the complete free-text answer.",
+          "The conversation retains the question and its recorded answers above. Select a question tab to review its recorded answer.",
           { exact: true },
         ),
     ).toBeAttached();
-    await card.dblclick();
-    const details = page.getByRole("dialog", { name: "Question", exact: true });
-    await expect(details).toContainText("Describe any additional changes.");
-    await expect(details.locator("pre code")).toHaveText(
+    await card.getByRole("tab", { name: "Q2", exact: true }).click();
+    await expect(content(card, "Answer").locator("pre code")).toHaveText(
       "const compact = true;\n",
     );
-    await expect(details).toContainText("Compact");
-    await expect(details).toContainText("Now");
     await expect(
       page.getByRole("button", { name: "Submit", exact: true }),
     ).toHaveCount(0);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  });
+
+  test(`question tabs keep card, content areas and the following response fixed at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(
+      "/iframe.html?id=conversation-eventcards--long-question-history&viewMode=story",
+    );
+    const card = page.locator(history);
+    await expect(card).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const geometry = () =>
+      card.evaluate((node) => {
+        const origin = node.getBoundingClientRect();
+        const panel = node.querySelector('[role="tabpanel"]')!;
+        const regions = [...panel.querySelectorAll("section")];
+        const next = document.querySelector(
+          '.transcript article.response[data-seq="6"]',
+        )!;
+        return [node, ...regions, next].map((el) => {
+          const box = el.getBoundingClientRect();
+          return {
+            x: box.x - origin.x,
+            y: box.y - origin.y,
+            width: box.width,
+            height: box.height,
+          };
+        });
+      });
+    const initial = await geometry();
+    await card.getByRole("tab", { name: "Q2", exact: true }).click();
+    await expect(content(card, "Question")).toContainText("Requirement 18");
+    await expect(content(card, "Answer")).toContainText("Change 12");
+    await expect.poll(geometry).toEqual(initial);
+    for (const name of ["Question", "Answer"] as const) {
+      const viewport = content(card, name).locator(
+        '[data-scroll-area="viewport"]',
+      );
+      expect(
+        await viewport.evaluate((el) => el.scrollHeight > el.clientHeight),
+      ).toBe(true);
+      await viewport.hover();
+      await page.mouse.wheel(0, 160);
+      await expect
+        .poll(() => viewport.evaluate((el) => el.scrollTop))
+        .toBeGreaterThan(0);
+      await expect.poll(geometry).toEqual(initial);
+    }
+    await card.getByRole("tab", { name: "Q3", exact: true }).click();
+    await expect(content(card, "Answer")).toContainText("Now");
+    await expect.poll(geometry).toEqual(initial);
+    await card.getByRole("tab", { name: "Q1", exact: true }).click();
+    await expect(content(card, "Answer")).toContainText("Compact");
+    await expect.poll(geometry).toEqual(initial);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

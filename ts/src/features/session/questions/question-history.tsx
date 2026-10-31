@@ -1,12 +1,16 @@
+import { useId, useState } from "react";
 import type { EventSource } from "#src/features/session/model/event-source.ts";
 import {
   questions,
   payload,
   type Question,
 } from "#src/features/session/model/journal.ts";
-import { ActivityCard } from "#src/features/session/conversation/activity-card.tsx";
+import { ResponseHeading } from "#src/features/session/conversation/response-heading.tsx";
+import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { TabList } from "#src/shared/components/tab-list.tsx";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./question-history.module.css";
 
 function answerText(q: Question, resolution: any) {
@@ -30,41 +34,84 @@ export function QuestionHistory({
   source: EventSource;
   agent: string;
 }) {
+  useLocale();
+  const prefix = useId();
+  const [selected, setSelected] = useState<string>();
   const event = source();
   const qs = questions(agent, event);
+  const active = qs.find((q) => q.key === selected) ?? qs[0];
+  const activeIndex = qs.indexOf(active);
   const resolution = payload(event).cxz_resolution;
   const state = !resolution
     ? "pending"
     : resolution.state === "allowed"
       ? "completed"
       : "failed";
+  if (!active) return null;
+  const panel = `${prefix}-panel`;
   return (
-    <ActivityCard
-      seq={event.seq}
-      timeMs={event.timeMs}
-      title={t("Question")}
-      className="question-history"
-      state={state}
-      details={() => (
-        <div className={styles.details}>
-          {qs.map((q, index) => (
-            <section key={q.key}>
-              <div className={styles.question}>
-                <small>Q{index + 1}</small>
-                <Markdown text={q.text} />
-              </div>
-              <div className={styles.answer}>
-                <small>{t("Answer")}</small>
-                <Markdown text={answerText(q, resolution)} />
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+    <article
+      className={`response question-history ${styles.card}`}
+      data-seq={event.seq.toString()}
+      data-state={state}
+      aria-label={t("Question")}
     >
-      {state === "pending" ? "◯" : state === "completed" ? "✓" : "×"}{" "}
-      {t("Question")} ·{" "}
-      {qs.map((q) => `${q.text} → ${answerText(q, resolution)}`).join(" · ")}
-    </ActivityCard>
+      <ResponseHeading
+        agent={agent}
+        response={event.response}
+        timeMs={event.timeMs}
+        text={qs
+          .map((q) => `${q.text}\n\n${answerText(q, resolution)}`)
+          .join("\n\n")}
+      />
+      <div className={styles.body}>
+        <TabList
+          prefix={prefix}
+          panelId={panel}
+          label={t("Question steps")}
+          items={qs.map((q, index) => ({
+            id: q.key,
+            label: `Q${index + 1}`,
+            answered:
+              resolution?.state === "allowed" && !!resolution.answers?.[q.key],
+          }))}
+          value={active.key}
+          choose={setSelected}
+        />
+        <div
+          id={panel}
+          role="tabpanel"
+          aria-labelledby={`${prefix}-${activeIndex}`}
+          className={styles.panel}
+        >
+          <section
+            className={styles.question}
+            role="group"
+            aria-label={t("Question")}
+          >
+            <small>{t("Question")}</small>
+            <PanelScroll
+              key={`question-${active.key}`}
+              scrollbarLabel={t("Question")}
+            >
+              <Markdown text={active.text} />
+            </PanelScroll>
+          </section>
+          <section
+            className={styles.answer}
+            role="group"
+            aria-label={t("Answer")}
+          >
+            <small>{t("Answer")}</small>
+            <PanelScroll
+              key={`answer-${active.key}`}
+              scrollbarLabel={t("Answer")}
+            >
+              <Markdown text={answerText(active, resolution)} />
+            </PanelScroll>
+          </section>
+        </div>
+      </div>
+    </article>
   );
 }

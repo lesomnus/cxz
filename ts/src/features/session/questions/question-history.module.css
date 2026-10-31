@@ -1,23 +1,73 @@
-.details {
-  overflow-y: auto;
-  max-height: 100%;
-  padding: var(--control-inset);
+.card {
+  --question-history-heading-height: 28px;
+  --question-history-tabs-height: 28px;
+  --question-history-question-height: 96px;
+  --question-history-answer-height: 160px;
+  --question-history-gap: calc(2 * var(--space));
+  --question-history-inset: 12px;
+  box-sizing: border-box;
+  height: calc(
+    var(--question-history-heading-height) +
+      var(--question-history-tabs-height) +
+      var(--question-history-question-height) +
+      var(--question-history-answer-height) + 3 * var(--question-history-gap) +
+      2 * var(--question-history-inset)
+  );
+  display: grid;
+  grid-template-rows: var(--question-history-heading-height) minmax(0, 1fr);
+  gap: var(--question-history-gap);
 }
-.details section + section {
-  margin-top: calc(var(--space) * 2);
+.body {
+  display: grid;
+  grid-template-rows: var(--question-history-tabs-height) minmax(0, 1fr);
+  gap: var(--question-history-gap);
+  min-width: 0;
+  min-height: 0;
+}
+.body > :global(.tab-list) {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0;
+}
+.body :global([role="tab"]) {
+  flex: 0 0 auto;
+  min-width: 56px;
+  height: 100%;
+  padding: 0 var(--control-inline-inset);
+}
+.panel {
+  display: grid;
+  grid-template-rows: var(--question-history-question-height) var(
+      --question-history-answer-height
+    );
+  gap: var(--question-history-gap);
+  min-width: 0;
+  min-height: 0;
 }
 .question,
 .answer {
-  padding: var(--control-inset) var(--control-inline-inset);
+  display: grid;
+  grid-template-rows: 16px minmax(0, 1fr);
+  gap: var(--space);
+  min-width: 0;
+  min-height: 0;
 }
-.question small,
-.answer small {
+.question > small,
+.answer > small {
   color: var(--muted);
+  font-size: 11px;
+  line-height: 16px;
 }
 .answer {
-  background: var(--shade-0);
+  --ui-scroll-area-background: var(--shade-16);
+  background: var(--ui-scroll-area-background);
   border-radius: var(--wrapper-radius);
+  padding: var(--control-inset) var(--control-inline-inset);
 }
-.details p {
-  margin: var(--space) 0 0;
+.panel :global(.markdown) > :first-child {
+  margin-top: 0;
+}
+.panel :global(.markdown) > :last-child {
+  margin-bottom: 0;
 }
