@@ -10,6 +10,7 @@ import {
 import type { Account } from "#gen/cxz/account_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";
 export function AccountAddForm({
   c,
@@ -97,8 +98,16 @@ export function AccountAddForm({
                 alignItemWithTrigger
                 value={agent}
                 options={[
-                  { value: "codex", label: "Codex" },
-                  { value: "claude", label: "Claude" },
+                  {
+                    value: "codex",
+                    label: "Codex",
+                    icon: <AgentBrand agent="codex" />,
+                  },
+                  {
+                    value: "claude",
+                    label: "Claude",
+                    icon: <AgentBrand agent="claude" />,
+                  },
                 ]}
                 choose={setAgent}
                 disabled={busy}
