@@ -20,6 +20,7 @@ import {
   type LoginTarget,
 } from "#src/features/accounts/login-panel.tsx";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
+import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 
 export function SessionCreate({
@@ -37,6 +38,7 @@ export function SessionCreate({
   centered?: boolean;
   close: () => void;
 }) {
+  const dialogClose = useDialogClose(close);
   const navigate = useNavigate();
   const formId = useId();
   const pending = useRef(false);
@@ -86,9 +88,9 @@ export function SessionCreate({
       );
       if (controller.signal.aborted) return;
       c.store.apply("cxz.Session", [{ id: session.id, value: session }]);
-      close();
-      await navigate({
-        ...sessionLocation(session),
+      dialogClose.complete(() => {
+        close();
+        void navigate({ ...sessionLocation(session) });
       });
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -111,7 +113,9 @@ export function SessionCreate({
       anchor={anchor}
       centered={centered}
       trigger={trigger}
-      close={close}
+      open={dialogClose.open}
+      close={dialogClose.dismiss}
+      onClosed={dialogClose.onClosed}
       busy={busy}
     >
       <form
@@ -123,7 +127,7 @@ export function SessionCreate({
       >
         <Card
           title="Add session"
-          close={busy ? undefined : close}
+          close={busy ? undefined : dialogClose.dismiss}
           closeLabel="Close"
           footer={
             <CardActions>
@@ -134,7 +138,11 @@ export function SessionCreate({
               >
                 {busy ? "Creating…" : "Create session"}
               </Button>
-              <Button type="button" disabled={busy} onClick={close}>
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={dialogClose.dismiss}
+              >
                 Cancel
               </Button>
             </CardActions>

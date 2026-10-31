@@ -58,6 +58,13 @@ ts/
 
 `shared` contains application-wide connection/inventory, settings, translations, fonts, navigation primitives and other utilities. It is still cxz application code: shared API connection state uses feature-owned draft/cache type contracts. It is not the package boundary for reuse by another application. Keep reusable controls in `@lesomnus/nox`, and keep session-specific card hosting in the session feature.
 
+Modal boundaries use Nox `Dialog`, including account/session/task forms. The cxz
+`AnchoredDialog` adapter owns only positioning and trigger decoration; it uses
+`frame={false}` when its caller already supplies a Card. Conditionally mounted
+forms use `useDialogClose` to delay cancellation cleanup or successful navigation
+until `onClosed`. Cancel ongoing work immediately (for example, disconnect a
+login socket); only visual teardown waits for the exit animation.
+
 In the UI package, each component folder contains its implementation, CSS Module and independent Storybook examples. The optional editor has its own entry. Theme tokens and the translation provider have dedicated directories. Consumers import the public package entries; internal file paths are not an API. Application code uses those public entries directly rather than maintaining one-file re-export wrappers.
 
 Tests stay beside the behavior they verify. Application stories stay beside their components; package-control stories demonstrating cxz validation or action policy live under `src/storybook/components`. Standalone Nox stories live only in the Nox submodule and are registered by `.storybook-ui`; the cxz `.storybook` catalog discovers only `src` stories and does not duplicate library examples. Package browser checks use `ui-e2e`, while product integration checks use `storybook-e2e`. Shared preview framing and synthetic session data stay under `src/storybook` and are not used by application entries. Both Storybooks discover stories recursively, so directory moves do not require individual registration.

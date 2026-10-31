@@ -5,10 +5,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
 import {
-  DialogSurface,
-  dialogClassName,
+  Dialog,
   DialogTrigger,
   captureDialogTrigger,
   focusedDialogTrigger,
@@ -24,6 +22,8 @@ export function AnchoredDialog({
   children,
   trigger,
   centered = false,
+  open,
+  onClosed,
 }: {
   title: string;
   centered?: boolean;
@@ -32,6 +32,8 @@ export function AnchoredDialog({
   busy?: boolean;
   children: ReactNode;
   trigger?: HTMLElement | null;
+  open: boolean;
+  onClosed: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [adjacent, setAdjacent] = useState(false);
@@ -45,7 +47,6 @@ export function AnchoredDialog({
   const id = useId();
   useLayoutEffect(() => {
     const node = dialog.current!;
-    node.showModal();
     const position = () => {
       const inset =
         parseFloat(getComputedStyle(node).getPropertyValue("--space")) || 4;
@@ -71,37 +72,26 @@ export function AnchoredDialog({
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", position);
-      node.close();
     };
   }, [anchor, centered]);
-  return createPortal(
-    <dialog
+  return (
+    <Dialog
       ref={dialog}
-      className={`${dialogClassName} ${styles.dialog}`}
+      open={open}
+      onClose={close}
+      onClosed={onClosed}
+      dismissible={!busy}
+      frame={false}
+      anchored={adjacent}
+      decoration={<DialogTrigger origin={origin} adjacent={adjacent} />}
+      className={styles.dialog}
       aria-labelledby={id}
       aria-busy={busy}
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!busy) close();
-      }}
-      onClick={(event) => {
-        if (event.target !== event.currentTarget || busy) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        if (
-          event.clientX < rect.left ||
-          event.clientX > rect.right ||
-          event.clientY < rect.top ||
-          event.clientY > rect.bottom
-        )
-          close();
-      }}
     >
       <span id={id} className={styles.label}>
         {title}
       </span>
-      <DialogTrigger origin={origin} adjacent={adjacent} />
-      <DialogSurface anchored={adjacent}>{children}</DialogSurface>
-    </dialog>,
-    document.body,
+      {children}
+    </Dialog>
   );
 }

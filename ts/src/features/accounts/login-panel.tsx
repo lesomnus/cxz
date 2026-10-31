@@ -12,6 +12,7 @@ import {
   Section,
 } from "@lesomnus/nox";
 import type { Connection } from "#src/shared/api/connection.ts";
+import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";
 import loginStyles from "./login-panel.module.css";
@@ -31,6 +32,7 @@ export function LoginPanel({
   cancel: () => void;
   modal?: boolean;
 }) {
+  const dialogClose = useDialogClose(cancel);
   const [attempt, setAttempt] = useState(0);
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
@@ -38,10 +40,11 @@ export function LoginPanel({
   const [code, setCode] = useState("");
   const connect = useContext(LoginTransportContext);
   const socket = useRef<LoginSocket | undefined>(undefined);
+  const stopLogin = useRef<(() => void) | undefined>(undefined);
   const input = useRef<HTMLInputElement>(null);
   const codeId = useId();
   const onComplete = useRef(complete);
-  onComplete.current = complete;
+  onComplete.current = modal ? () => dialogClose.complete(complete) : complete;
   useEffect(() => {
     if (c.inProcess && !connect) {
       setError("Provider login requires a real Manager.");
@@ -102,7 +105,7 @@ export function LoginPanel({
       setReady(false);
       if (!ended) setError("Login connection closed before completion.");
     };
-    return () => {
+    const stop = () => {
       ended = true;
       ws.onmessage = null;
       ws.onerror = null;
@@ -110,7 +113,18 @@ export function LoginPanel({
       ws.close();
       if (socket.current === ws) socket.current = undefined;
     };
+    stopLogin.current = stop;
+    return () => {
+      stop();
+      if (stopLogin.current === stop) stopLogin.current = undefined;
+    };
   }, [c, target.account, target.project, target.key, attempt, connect]);
+  const dismissLogin = () => {
+    // Cancel authentication immediately; only visual cleanup waits for the exit.
+    stopLogin.current?.();
+    if (modal) dialogClose.dismiss();
+    else cancel();
+  };
   const submitCode = () => {
     if (!ready || !code) return;
     socket.current?.send(code + "\n");
@@ -159,14 +173,19 @@ export function LoginPanel({
         Submit code
       </Button>
       {!modal && retry}
-      <Button type="button" onClick={cancel}>
+      <Button type="button" onClick={dismissLogin}>
         Cancel
       </Button>
     </>
   );
   if (modal)
     return (
-      <Dialog open onClose={cancel} initialFocus={input}>
+      <Dialog
+        open={dialogClose.open}
+        onClose={dismissLogin}
+        onClosed={dialogClose.onClosed}
+        initialFocus={input}
+      >
         <form
           className={loginStyles.form}
           role="region"
