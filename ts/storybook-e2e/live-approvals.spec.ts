@@ -552,7 +552,7 @@ test("departing approvals stay opaque behind the composer before the next card c
   ).toContainText("npm run build");
 });
 
-test("hover opens and closes the approval stack in front-to-back order", async ({
+test("hover staggers entrance but dismisses all cards together with faster deeper layers", async ({
   page,
 }) => {
   await page.goto(
@@ -622,12 +622,11 @@ test("hover opens and closes the approval stack in front-to-back order", async (
       };
     });
   });
-  expect(closing[1].delay).toBeGreaterThan(closing[0].delay);
-  expect(closing[2].delay).toBeGreaterThan(closing[1].delay);
-  expect(closing[1].end).toBeGreaterThan(closing[0].end);
-  expect(closing[2].end).toBeGreaterThan(closing[1].end);
+  expect(closing.map((card) => card.delay)).toEqual([0, 0, 0]);
+  expect(closing[1].end).toBeLessThan(closing[0].end);
+  expect(closing[2].end).toBeLessThan(closing[1].end);
   await stack
-    .locator("[data-approval-exiting]")
+    .locator("[data-approval-back='2'] > div")
     .evaluate((node) => node.getAnimations().forEach((a) => a.finish()));
   await expect(stack).toBeVisible();
   await stack
@@ -635,7 +634,7 @@ test("hover opens and closes the approval stack in front-to-back order", async (
     .evaluate((node) => node.getAnimations().forEach((a) => a.finish()));
   await expect(stack).toBeVisible();
   await stack
-    .locator("[data-approval-back='2'] > div")
+    .locator("[data-approval-exiting]")
     .evaluate((node) => node.getAnimations().forEach((a) => a.finish()));
   await expect(stack).toHaveCount(0);
   await expect(group).toHaveAttribute("data-pending-count", "3");
@@ -727,9 +726,13 @@ test("full queued cards remain above Question and uncover their bodies while clo
       ...node.querySelectorAll<HTMLElement>("[data-approval-back] > div"),
     ];
     const t = backs[0].getAnimations()[0].effect!.getTiming();
-    const time = Number(t.delay) + Number(t.duration) * 0.25;
-    for (const face of [departure, ...backs])
-      for (const a of face.getAnimations()) a.currentTime = time;
+    const time = Number(t.duration) * 0.25;
+    // Hold the deeper face before retreat to inspect its full uncovered body.
+    for (const [index, face] of backs.entries())
+      for (const a of face.getAnimations())
+        a.currentTime = index === 0 ? time : 0;
+    for (const a of departure.getAnimations())
+      a.currentTime = Number(a.effect!.getTiming().duration) * 0.75;
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
     );

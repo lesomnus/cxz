@@ -15,7 +15,6 @@ type Departure = {
   event: SessionEvent;
   height: number;
   backs: readonly SessionEvent[];
-  frontDone?: boolean;
 };
 
 export const approvalBacks = (requests: readonly SessionEvent[]) =>
@@ -51,10 +50,7 @@ export function useApprovalPresence(
             height: before.height,
             backs: current ? empty : approvalBacks(before.requests),
           };
-        return approvalKey(old?.event) === approvalKey(current) ||
-          (current && old?.frontDone)
-          ? null
-          : old;
+        return approvalKey(old?.event) === approvalKey(current) ? null : old;
       });
     }
     const snapshot = {
@@ -75,12 +71,6 @@ export function useApprovalPresence(
 
   const finish = (key: string) =>
     setLeaving((old) => (approvalKey(old?.event) === key ? null : old));
-  const finishFront = (key: string) =>
-    setLeaving((old) =>
-      approvalKey(old?.event) === key && old
-        ? { ...old, frontDone: true }
-        : old,
-    );
   useEffect(() => {
     if (!leaving) return;
     // Also remove inert departures if an animation is canceled or motion changes.
@@ -91,5 +81,5 @@ export function useApprovalPresence(
     return () => window.clearTimeout(timer);
   }, [leaving]);
 
-  return { current, visible, leaving, entryDepth, finish, finishFront };
+  return { current, visible, leaving, entryDepth, finish };
 }

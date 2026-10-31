@@ -4,18 +4,29 @@ export function observeApprovalOcclusion(
 ) {
   let frame = 0;
   const previous = new WeakMap<HTMLElement, string>();
-  const paint = () => {
-    frame = 0;
-    const faces = [
+  let faces: { face: HTMLElement; height: number; animations: Animation[] }[] =
+    [];
+  const refresh = () => {
+    const elements = [
       stack.querySelector<HTMLElement>("[data-approval-exiting]"),
       stack.querySelector<HTMLElement>("[data-motion]"),
       ...stack.querySelectorAll<HTMLElement>("[data-approval-back] > div"),
     ].filter((face): face is HTMLElement => !!face);
-    const boxes = faces.map((face) => ({
+    const before = new Set(faces.map((item) => item.face));
+    const next = new Set(elements);
+    for (const face of before) if (!next.has(face)) observer.unobserve(face);
+    for (const face of next) if (!before.has(face)) observer.observe(face);
+    faces = elements.map((face) => ({
       face,
-      box: face.getBoundingClientRect(),
       height: parseFloat(getComputedStyle(face).height) || 0,
       animations: face.getAnimations(),
+    }));
+  };
+  const paint = () => {
+    frame = 0;
+    const boxes = faces.map((item) => ({
+      ...item,
+      box: item.face.getBoundingClientRect(),
     }));
     let edge = composer.getBoundingClientRect().top;
     for (const { face, box, height } of boxes) {
@@ -41,17 +52,22 @@ export function observeApprovalOcclusion(
       frame = requestAnimationFrame(paint);
   };
   const schedule = () => {
+    refresh();
     if (!frame) frame = requestAnimationFrame(paint);
   };
   const observer = new ResizeObserver(schedule);
+  const children = new MutationObserver(schedule);
   observer.observe(stack);
   observer.observe(composer);
+  children.observe(stack, { childList: true, subtree: true });
   stack.addEventListener("animationstart", schedule);
   stack.addEventListener("transitionrun", schedule);
+  refresh();
   paint();
   return () => {
     cancelAnimationFrame(frame);
     observer.disconnect();
+    children.disconnect();
     stack.removeEventListener("animationstart", schedule);
     stack.removeEventListener("transitionrun", schedule);
   };

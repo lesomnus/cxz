@@ -75,6 +75,7 @@
   --approval-promotion-duration: 360ms;
   --approval-promotion-delay: 100ms;
   --approval-hover-stagger: 60ms;
+  --approval-exit-depth-speed: 0.35;
   --approval-motion-easing: cubic-bezier(0.22, 0.7, 0.25, 1);
   position: absolute;
   width: min(var(--approval-card-width), calc(100% - 4 * var(--space)));
@@ -127,6 +128,11 @@
 }
 .stack[data-closing="true"] .back {
   animation-name: back-depart;
+  animation-delay: 0ms;
+  animation-duration: calc(
+    var(--approval-motion-duration) /
+      (1 + var(--approval-exit-depth-speed) * var(--approval-depth))
+  );
 }
 .request {
   position: relative;

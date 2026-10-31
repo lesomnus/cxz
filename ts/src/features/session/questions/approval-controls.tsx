@@ -42,8 +42,11 @@ export function ApprovalControls({
   const [deciding, setDeciding] = useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
-  const { current, visible, leaving, entryDepth, finish, finishFront } =
-    useApprovalPresence(requests, open, front);
+  const { current, visible, leaving, entryDepth, finish } = useApprovalPresence(
+    requests,
+    open,
+    front,
+  );
   const key = approvalKey(current);
   const leavingKey = approvalKey(leaving?.event);
   const backRequests = current
@@ -254,19 +257,7 @@ export function ApprovalControls({
                   className={styles.backClip}
                   style={{ "--approval-depth": depth } as CSSProperties}
                 >
-                  <div
-                    className={`${styles.surface} ${styles.back}`}
-                    onAnimationEnd={(event) => {
-                      if (
-                        !current &&
-                        depth === backRequests.length &&
-                        event.target === event.currentTarget &&
-                        event.animationName ===
-                          getComputedStyle(event.currentTarget).animationName
-                      )
-                        finish(leavingKey);
-                    }}
-                  >
+                  <div className={`${styles.surface} ${styles.back}`}>
                     <ScrollArea
                       className={styles.scroll}
                       scrollbarLabel={t("Request details")}
@@ -325,8 +316,7 @@ export function ApprovalControls({
                   data-approval-exiting
                   onAnimationEnd={(event) => {
                     if (event.target === event.currentTarget)
-                      if (current || !leaving.backs.length) finish(leavingKey);
-                      else finishFront(leavingKey);
+                      finish(leavingKey);
                   }}
                 >
                   <ApprovalContent event={leaving.event} />
