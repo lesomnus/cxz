@@ -51,10 +51,18 @@
   overflow: hidden;
 }
 .question {
-  --ui-scroll-area-background: var(--shade-20);
+  --ui-scroll-area-background: color-mix(
+    in srgb,
+    var(--shade-16) 75%,
+    var(--shade-0)
+  );
 }
 .answer {
-  --ui-scroll-area-background: var(--shade-16);
+  --ui-scroll-area-background: color-mix(
+    in srgb,
+    var(--shade-16) 25%,
+    var(--shade-0)
+  );
 }
 .panel :global(.markdown) {
   padding-inline: 0;
