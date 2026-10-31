@@ -4,7 +4,7 @@ test("shared controls refresh after the app language pack loads", async ({
   page,
 }) => {
   await page.goto(
-    "/iframe.html?id=components-editablevalue--alias&viewMode=story&globals=locale:ko",
+    "/iframe.html?id=sessions-fieldediting--alias&viewMode=story&globals=locale:ko",
   );
   await page.getByRole("button", { name: "Alias 편집", exact: true }).click();
   await expect(
@@ -18,7 +18,7 @@ test("inline edits keep value bounds and font, support hover and never submit th
   page,
 }) => {
   await page.goto(
-    "/iframe.html?id=components-editablevalue--alias&viewMode=story",
+    "/iframe.html?id=sessions-fieldediting--alias&viewMode=story",
   );
   const trigger = page.getByRole("button", { name: "Edit Alias", exact: true });
   const bounds = (await trigger.boundingBox())!;
@@ -122,7 +122,7 @@ test("validation and rejected edits keep the draft available for correction and 
   page,
 }) => {
   await page.goto(
-    "/iframe.html?id=components-editablevalue--failure&viewMode=story",
+    "/iframe.html?id=sessions-fieldediting--failure&viewMode=story",
   );
   const trigger = page.getByRole("button", { name: "Edit Alias" });
   await trigger.click();
@@ -148,7 +148,7 @@ test("pending edits prevent dismissal and duplicate activation", async ({
   page,
 }) => {
   await page.goto(
-    "/iframe.html?id=components-editablevalue--pending&viewMode=story",
+    "/iframe.html?id=sessions-fieldediting--pending&viewMode=story",
   );
   const trigger = page.getByRole("button", { name: "Edit Alias" });
   await trigger.click();
