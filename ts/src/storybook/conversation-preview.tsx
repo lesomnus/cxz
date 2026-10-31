@@ -179,6 +179,7 @@ export function ComponentPreview({
   working = false,
   backgroundJobs,
   backgroundReport,
+  approvals,
   sessionStopped = false,
   uploadMode,
   secretFiles,
@@ -201,6 +202,7 @@ export function ComponentPreview({
   working?: boolean;
   backgroundJobs?: number;
   backgroundReport?: ReactNode;
+  approvals?: ReactNode;
   sessionStopped?: boolean;
   uploadMode?: "ready" | "slow" | "retry";
   secretFiles?: SecretFiles;
@@ -285,6 +287,7 @@ export function ComponentPreview({
       />
       <FloatingCardHost>{children}</FloatingCardHost>
       <PreviewComposer
+        approvals={approvals}
         backgroundReport={backgroundReport}
         autoFocus={autoFocus}
         initialSelection={initialSelection}

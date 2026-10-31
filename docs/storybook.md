@@ -26,6 +26,10 @@ npm run storybook
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
   `QuestionHistoryInConversation`은 사용자·에이전트 대화 중간에 답변 완료된 Question 기록을 표시합니다.
   질문 카드를 더블클릭하면 선택한 항목과 Markdown·코드가 포함된 주관식 답변 전문을 확인합니다.
+- `Conversation/QuestionCard/LiveApprovals`: `Request approval`을 여러 번 누르면 작업 허용 요청이 쌓입니다.
+  toolbar 더보기 왼쪽의 X·체크 그룹으로 맨 앞 요청을 거부·허용합니다. 요청 내용만 담은 폭 제한 카드는
+  버튼 위 중앙에 뜨고, 남은 요청은 뒤에 겹쳐 보입니다. 일반 Question 폼은 기존 위치를 유지하며,
+  자동으로 해결되는 허용 요청은 표시 대기 시간 안에 사라져 카드나 버튼이 깜빡이지 않습니다.
 - `Conversation/QuestionCard`: 라디오 선택, 주관식·Other 편집기, 단계별 탭과 Markdown 선택지 preview. FreeText, Steps, AsyncSteps, OptionPreviews, LongQuestions로 각 이벤트 형식과 전체 답변 제출을 확인합니다. 선택지 목록만 스크롤하고 Other와 footer는 고정됩니다. 질문 전환 시 가장 긴 질문에 맞춘 높이를 유지하며, 대화를 스크롤하면 카드가 입력창 뒤로 내려갔다가 마우스 접근이나 포커스로 복귀합니다. 상세 카드가 가려도 답변은 유지되며, 명시적 제출 또는 Cancel로만 종료합니다.
 - `Conversation/Playground`: 메시지 입력과 전송부터 대화 카드 생성까지 이어지는 인터랙티브 미리보기.
 - `Conversation/SessionSearch`: 현재 세션 검색 오버레이. 단축키로 열고 입력·방향키·결과 선택을 확인하며, 본문 클릭이나 결과 이동으로 닫히지 않습니다. Close와 Escape로만 닫습니다. 로드된 예제 대화를 브라우저에서 검색하며, 응답 추가 시 결과 갱신도 확인할 수 있습니다.

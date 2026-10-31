@@ -53,6 +53,7 @@ export function ConversationComposer({
   onBackgroundJobs,
   latestVisible = false,
   onLatest,
+  approvals,
   menu,
   upload,
   secretFiles,
@@ -84,6 +85,7 @@ export function ConversationComposer({
   onBackgroundJobs?: () => void;
   latestVisible?: boolean;
   onLatest?: () => void;
+  approvals?: ReactNode;
   menu?: ReactNode | ((pick: (directory?: boolean) => void) => ReactNode);
   upload?: UploadFile;
   secretFiles?: SecretFiles;
@@ -222,6 +224,7 @@ export function ConversationComposer({
                 </svg>
               </Button>
             </span>
+            {approvals}
             {typeof menu === "function" ? menu(pick) : menu}
             <MicrophoneControl
               speech={speech}
