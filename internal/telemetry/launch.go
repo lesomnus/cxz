@@ -68,8 +68,9 @@ func NativeLaunch(agent, endpoint, token string, args, env []string) ([]string, 
 		env = environment(env, map[string]string{
 			"CLAUDE_CODE_ENABLE_TELEMETRY": "1", "OTEL_METRICS_EXPORTER": "otlp",
 			"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL": "http/protobuf", "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT": endpoint,
-			"OTEL_EXPORTER_OTLP_METRICS_HEADERS": "Authorization=Bearer%20" + token,
-			"OTEL_METRIC_EXPORT_INTERVAL":        "10000", "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": "delta",
+			"OTEL_EXPORTER_OTLP_METRICS_COMPRESSION": "none",
+			"OTEL_EXPORTER_OTLP_METRICS_HEADERS":     "Authorization=Bearer%20" + token,
+			"OTEL_METRIC_EXPORT_INTERVAL":            "10000", "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": "delta",
 			"OTEL_LOGS_EXPORTER": "none", "OTEL_TRACES_EXPORTER": "none",
 			"OTEL_LOG_USER_PROMPTS": "0",
 		})

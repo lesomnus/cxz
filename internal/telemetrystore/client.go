@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -20,10 +21,7 @@ type Client struct {
 }
 
 func New(endpoint, password string) *Client {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.Proxy = nil
-	transport.IdleConnTimeout = 30 * time.Second
-	transport.MaxIdleConnsPerHost = 4
+	transport := &http.Transport{DialContext: (&net.Dialer{Timeout: 5 * time.Second, KeepAlive: 30 * time.Second}).DialContext, IdleConnTimeout: 30 * time.Second, MaxIdleConns: 8, MaxIdleConnsPerHost: 4, ResponseHeaderTimeout: 15 * time.Second}
 	return &Client{Endpoint: endpoint, Password: password, HTTP: &http.Client{Timeout: 20 * time.Second, Transport: transport}, RetentionDays: 90}
 }
 

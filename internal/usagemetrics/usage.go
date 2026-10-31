@@ -16,6 +16,22 @@ type Values struct {
 	ReportedCostUSD                                                              float64
 }
 
+func (v *Values) Add(o Values) {
+	v.Events += o.Events
+	v.InputMessages += o.InputMessages
+	v.AssistantEvents += o.AssistantEvents
+	v.ConversationBytes += o.ConversationBytes
+	v.EventContentBytes += o.EventContentBytes
+	v.FinishedTurns += o.FinishedTurns
+	v.InputTokens += o.InputTokens
+	v.OutputTokens += o.OutputTokens
+	v.CacheReadTokens += o.CacheReadTokens
+	v.CacheWriteTokens += o.CacheWriteTokens
+	v.TokenReportedTurns += o.TokenReportedTurns
+	v.CostReportedTurns += o.CostReportedTurns
+	v.ReportedCostUSD += o.ReportedCostUSD
+}
+
 type State struct {
 	pending map[string]any
 	run     string

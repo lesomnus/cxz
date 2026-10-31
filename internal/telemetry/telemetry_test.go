@@ -153,3 +153,30 @@ func TestNativeSourceAndConfiguration(t *testing.T) {
 		}
 	}
 }
+
+func TestPublisherAggregatesStreamingAndDoesNotBlockOnOutage(t *testing.T) {
+	p, err := NewPublisher(filepath.Join(t.TempDir(), "missing.sock"), "capability", testIdentity())
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now()
+	for n := 0; n < 10000; n++ {
+		p.Observe(core.Event{Seq: uint64(n + 1), TimeMS: start.UnixMilli(), Kind: "raw"})
+	}
+	if len(p.queue) != 0 {
+		t.Fatal("a stream chunk created an export")
+	}
+	for n := 0; n < 256; n++ {
+		p.Observe(core.Event{Seq: uint64(10001 + n), TimeMS: start.UnixMilli(), Kind: "turn_end"})
+	}
+	if time.Since(start) > time.Second {
+		t.Fatal("agent event consumption waited on telemetry")
+	}
+	if p.dropped.Load() == 0 {
+		t.Fatal("outage did not enforce queue bound")
+	}
+	p.Close()
+	if time.Since(start) > 5*time.Second {
+		t.Fatal("shutdown waited indefinitely on telemetry")
+	}
+}

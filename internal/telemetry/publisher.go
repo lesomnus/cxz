@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -19,6 +20,11 @@ import (
 // event lock, never does I/O and never blocks on telemetry. At most 128 small
 // numeric batches are buffered; the Collector owns the bounded durable queue.
 type Publisher struct {
+	mu       sync.Mutex
+	closed   bool
+	once     sync.Once
+	pending  usagemetrics.Values
+	last     core.Event
 	identity telemetryauth.Identity
 	state    usagemetrics.State
 	queue    chan delivery
@@ -74,7 +80,25 @@ func (p *Publisher) Observe(e core.Event) {
 	if p == nil {
 		return
 	}
-	batch := EventMetrics(p.identity, e, p.state.Event(e))
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.closed {
+		return
+	}
+	p.pending.Add(p.state.Event(e))
+	p.last = core.Event{Seq: e.Seq, TimeMS: e.TimeMS}
+	if e.Response != nil {
+		p.last.Response = &core.ResponseMetadata{Model: e.Response.Model, Effort: e.Response.Effort}
+	}
+	// Aggregate stream/event metadata until a durable turn/state boundary. A
+	// stream chunk must not become a database write or a metric time series.
+	if e.Kind == "turn_end" || e.Kind == "state" && (e.Text == "idle" || e.Text == "stopped" || e.Text == "failed" || e.Text == "interrupted") {
+		p.flush()
+	}
+}
+func (p *Publisher) flush() {
+	batch := EventMetrics(p.identity, p.last, p.pending)
+	p.pending = usagemetrics.Values{}
 	if batch == nil {
 		return
 	}
@@ -88,6 +112,13 @@ func (p *Publisher) Close() {
 	if p == nil {
 		return
 	}
+	p.once.Do(p.close)
+}
+func (p *Publisher) close() {
+	p.mu.Lock()
+	p.flush()
+	p.closed = true
+	p.mu.Unlock()
 	// Give a final turn at most two seconds to reach the durable Collector.
 	deadline := time.NewTimer(2 * time.Second)
 	defer deadline.Stop()

@@ -85,7 +85,13 @@ func (s Stack) Prepare() error {
 	if err = os.WriteFile(filepath.Join(s.directory(), "db", "cxz.xml"), []byte(databaseConfig), 0644); err != nil {
 		return err
 	}
-	return core.WriteJSON(filepath.Join(s.directory(), "preferences.json"), s.Config)
+	if err = core.WriteJSON(filepath.Join(s.directory(), "preferences.json"), s.Config); err != nil {
+		return err
+	}
+	if s.Config.Active() {
+		return os.WriteFile(filepath.Join(s.tools(), "telemetry", "enabled"), []byte("1\n"), 0644)
+	}
+	return nil
 }
 
 func (s Stack) Ensure(ctx context.Context) error {
@@ -157,7 +163,7 @@ func (s Stack) Ensure(ctx context.Context) error {
 	args := append(append([]string{}, common...), "--memory", "256m", "--pids-limit", "64", "--read-only", "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
 		"--mount", "type=volume,source="+s.StateVolume+",volume-subpath=telemetry,target=/var/lib/cxz-telemetry",
 		"--mount", "type=volume,source="+s.ToolsVolume+",volume-subpath=telemetry,target=/var/run/cxz-telemetry",
-		"--entrypoint", "/bin/sh", s.Image, "-ec", `umask 000; exec /usr/local/bin/cxz-otelcol --config=/var/lib/cxz-telemetry/collector.yaml`)
+		"--entrypoint", "/bin/sh", s.Image, "-ec", `umask 000; rm -f /var/run/cxz-telemetry/collector.sock; exec /usr/local/bin/cxz-otelcol --config=/var/lib/cxz-telemetry/collector.yaml`)
 	if err = s.ensureContainer(ctx, s.prefix()+"-collector", s.Image, config, args); err != nil {
 		return err
 	}
@@ -208,10 +214,13 @@ func (s Stack) ensureContainer(ctx context.Context, name, image, config string, 
 			return fmt.Errorf("refusing unowned telemetry container %s", name)
 		}
 		if old.Config.Image == image && old.Config.Labels["cxz.telemetry.config"] == hash {
-			if !old.State.Running {
-				_, err = dockerx.Run(ctx, "start", old.ID)
+			current, lookupErr := dockerx.Run(ctx, "image", "inspect", "--format", "{{.Id}}", image)
+			if lookupErr == nil && strings.TrimSpace(string(current)) == old.Image {
+				if !old.State.Running {
+					_, err = dockerx.Run(ctx, "start", old.ID)
+				}
+				return err
 			}
-			return err
 		}
 	} else if !dockerx.Missing(err) {
 		return err
@@ -222,7 +231,12 @@ func (s Stack) ensureContainer(ctx context.Context, name, image, config string, 
 		}
 	}
 	if old.ID != "" {
-		if _, err = dockerx.Run(ctx, "rm", "-f", old.ID); err != nil {
+		if old.State.Running {
+			if _, err = dockerx.Run(ctx, "stop", "--time", "10", old.ID); err != nil {
+				return err
+			}
+		}
+		if _, err = dockerx.Run(ctx, "rm", old.ID); err != nil {
 			return err
 		}
 	}
@@ -322,7 +336,7 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, cxzidentity]
       exporters: [clickhouse]
-`, s.prefix(), password, s.Config.Days()*24, s.Config.QueueBytes(), s.Config.QueueBytes()*2, max(1, s.Config.QueueBytes()>>21))
+`, s.prefix(), password, s.Config.Days()*24, s.Config.QueueBytes(), max(16<<20, s.Config.QueueBytes()*2), max(1, s.Config.QueueBytes()>>21))
 }
 
 var databaseConfig = `<clickhouse>

@@ -18,12 +18,6 @@ import (
 //go:embed stats.sql
 var statsSQL string
 
-type statsRow struct {
-	Date, Session                                                               string
-	Events, Inputs, Assistants, Bytes, EventBytes, Turns, TokenTurns, CostTurns float64
-	InputTokens, OutputTokens, CacheRead, CacheWrite, Cost                      float64
-}
-
 func (c *Client) Stats(ctx context.Context, scope, id string, from, to int64) (*resource.ConversationStatsReply, error) {
 	filter := fmt.Sprintf("TimeUnix >= now() - INTERVAL %d DAY", c.RetentionDays)
 	params := map[string]string{"from": strconv.FormatInt(from, 10), "to": strconv.FormatInt(to, 10)}

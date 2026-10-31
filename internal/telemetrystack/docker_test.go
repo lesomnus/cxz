@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/cxz/internal/resourceid"
 	"github.com/lesomnus/cxz/internal/telemetry"
 	"github.com/lesomnus/cxz/internal/telemetryauth"
+	"github.com/lesomnus/cxz/internal/telemetryconfig"
 	"github.com/lesomnus/cxz/internal/usagemetrics"
 	collectorpb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
@@ -72,7 +73,7 @@ func TestManagedTelemetryDocker(t *testing.T) {
 	image := "cxz-telemetry-test:" + owner
 	manager := prefix + "-test"
 	defer func() {
-		for _, name := range []string{prefix + "-collector", prefix + "-db", manager} {
+		for _, name := range []string{prefix + "-collector", prefix + "-db", prefix + "-project-test", manager} {
 			_ = exec.Command("docker", "rm", "-f", name).Run()
 		}
 		_ = exec.Command("docker", "network", "rm", prefix).Run()
@@ -80,6 +81,10 @@ func TestManagedTelemetryDocker(t *testing.T) {
 			_ = exec.Command("docker", "volume", "rm", vol).Run()
 		}
 		_ = exec.Command("docker", "image", "rm", image).Run()
+		ids, _ := exec.Command("docker", "image", "ls", "-q", "--filter", "label=cxz.telemetry.test="+owner).Output()
+		for _, id := range strings.Fields(string(ids)) {
+			_ = exec.Command("docker", "image", "rm", id).Run()
+		}
 	}()
 	run("docker", "build", "-q", "-t", image, dir)
 	for _, vol := range []string{prefix + "-state", prefix + "-tools"} {
@@ -111,7 +116,7 @@ func testPipeline(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 150*time.Second)
 	defer cancel()
 	owner := os.Getenv("CXZ_TEST_OWNER")
-	s := Stack{Root: "/state", Owner: owner, StateVolume: "cxz-" + owner[:12] + "-telemetry-state", ToolsVolume: "cxz-" + owner[:12] + "-telemetry-tools", Image: os.Getenv("CXZ_TEST_IMAGE"), Manager: os.Getenv("CXZ_TEST_MANAGER"), ToolsRoot: "/tools"}
+	s := Stack{Root: "/state", Owner: owner, StateVolume: "cxz-" + owner[:12] + "-telemetry-state", ToolsVolume: "cxz-" + owner[:12] + "-telemetry-tools", Image: os.Getenv("CXZ_TEST_IMAGE"), Manager: os.Getenv("CXZ_TEST_MANAGER"), ToolsRoot: "/tools", Config: telemetryconfig.Config{QueueMiB: 1, RetentionDays: 1}}
 	if err := s.Prepare(); err != nil {
 		t.Fatal(err)
 	}
@@ -173,6 +178,11 @@ func testPipeline(t *testing.T) {
 		t.Fatal("collector accepted forged capability")
 	}
 	testNativeMetrics(t, s, registry, now)
+	projectArgs := []string{"run", "--rm", "--name", s.prefix() + "-project-test", "--user", "65534:65534", "--read-only", "--network", "none", "--cap-drop", "ALL", "--label", "cxz.owner=" + s.Owner,
+		"--mount", "type=volume,source=" + s.ToolsVolume + ",target=/cxz/tools,readonly", "-e", "CXZ_TEST_TOKEN=" + token, "--entrypoint", "/integration.test", s.Image, "-test.run=^TestReadOnlyTelemetrySocket$", "-test.timeout=10s"}
+	if b, err := exec.CommandContext(ctx, "docker", projectArgs...).CombinedOutput(); err != nil {
+		t.Fatal("read-only non-root project cannot export through tools socket", err, string(b))
+	}
 	// A Manager restart/configuration check must preserve both services/data.
 	before := dockerID(t, s.prefix()+"-collector")
 	if err = s.Ensure(ctx); err != nil {
@@ -181,6 +191,47 @@ func testPipeline(t *testing.T) {
 	if after := dockerID(t, s.prefix()+"-collector"); after != before {
 		t.Fatal("unchanged collector was replaced")
 	}
+	managerID, dbID := dockerID(t, s.Manager), dockerID(t, s.prefix()+"-db")
+	for _, revision := range []string{"one", "two"} {
+		candidate := s.prefix() + "-candidate"
+		if b, err := exec.CommandContext(ctx, "docker", "commit", "--change", "LABEL cxz.telemetry.test="+s.Owner, "--change", "LABEL cxz.telemetry.revision="+revision, s.prefix()+"-collector", candidate).CombinedOutput(); err != nil {
+			t.Fatal(err, string(b))
+		}
+		s.Image = candidate
+		if err = s.Ensure(ctx); err != nil {
+			t.Fatal(err)
+		}
+		after := dockerID(t, s.prefix()+"-collector")
+		if after == before {
+			t.Fatal("collector ignored changed image or mutable tag")
+		}
+		before = after
+		if dockerID(t, s.Manager) != managerID || dockerID(t, s.prefix()+"-db") != dbID {
+			t.Fatal("collector update replaced another component")
+		}
+	}
+	// The persistent queue must survive a Collector restart while its database
+	// is unavailable. The export acknowledgement means it is safely queued.
+	if b, err := exec.CommandContext(ctx, "docker", "stop", "--time", "5", s.prefix()+"-db").CombinedOutput(); err != nil {
+		t.Fatal(err, string(b))
+	}
+	event.Seq = 2
+	event.TimeMS = now + 100
+	event.Payload = json.RawMessage(`{"usage":{"inputTokens":10,"outputTokens":3}}`)
+	pending := telemetry.EventMetrics(i, event, state.Event(event))
+	if _, err = exporter.Export(exportCtx, pending, grpc.WaitForReady(true)); err != nil {
+		t.Fatal("database outage blocked durable ingestion", err)
+	}
+	if b, err := exec.CommandContext(ctx, "docker", "restart", s.prefix()+"-collector").CombinedOutput(); err != nil {
+		t.Fatal(err, string(b))
+	}
+	if err = s.Ensure(ctx); err != nil {
+		t.Fatal(err)
+	}
+	waitStats(t, func() bool {
+		stats, err := client.Stats(ctx, "account", account, now-1000, now+1000)
+		return err == nil && stats.GetTotal().GetInputTokens() == 70 && stats.GetTotal().GetFinishedTurns() == 2
+	})
 	if err = client.Erase(ctx, hex.EncodeToString(resourceid.Bytes(8, i.Session))); err != nil {
 		t.Fatal(err)
 	}
@@ -208,6 +259,26 @@ func testPipeline(t *testing.T) {
 	}
 	if _, err = os.Stat("/tools/telemetry/enabled"); !os.IsNotExist(err) {
 		t.Fatal("disabled marker retained", err)
+	}
+}
+
+func TestReadOnlyTelemetrySocket(t *testing.T) {
+	token := os.Getenv("CXZ_TEST_TOKEN")
+	if token == "" {
+		t.Skip("isolated project probe")
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	conn, err := grpc.NewClient("passthrough:///collector", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, "unix", telemetryauth.Socket)
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	request := nativeBatch(telemetryauth.Identity{}, []*metricspb.Metric{sumMetric("cxz.socket_probe", "", time.Now().UnixMilli(), 0, 1, metricspb.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)})
+	if _, err = collectorpb.NewMetricsServiceClient(conn).Export(metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token), request, grpc.WaitForReady(true)); err != nil {
+		t.Fatal(err)
 	}
 }
 

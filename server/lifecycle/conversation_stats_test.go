@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"encoding/hex"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/resource"
@@ -19,7 +20,22 @@ import (
 
 type statsFixture struct {
 	*fixture
-	events []*api.Event
+	events         []*api.Event
+	analytics      bool
+	analyticsError error
+	scope, id      string
+	historyCalls   int
+}
+
+func (f *statsFixture) TelemetryStats(_ context.Context, scope, id string, from, to int64) (*resource.ConversationStatsReply, bool, error) {
+	if !f.analytics {
+		return nil, false, nil
+	}
+	f.scope, f.id = scope, id
+	if f.analyticsError != nil {
+		return nil, true, f.analyticsError
+	}
+	return resource.ConversationStatsReply_builder{FromMs: &from, ToMs: &to, Total: resource.ConversationStatsValues_builder{InputTokens: ptr(uint64(321))}.Build(), Complete: ptr(false)}.Build(), true, nil
 }
 
 func (f *statsFixture) ResourceSnapshot(context.Context) (*api.ProjectList, *api.SessionList, error) {
@@ -29,6 +45,7 @@ func (f *statsFixture) ResourceSnapshot(context.Context) (*api.ProjectList, *api
 }
 
 func (f *statsFixture) History(_ context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
+	f.historyCalls++
 	b := &api.EventBatch{}
 	for _, e := range f.events {
 		if e.Seq > r.AfterSeq {
@@ -110,6 +127,18 @@ func TestConversationStatsRPC(t *testing.T) {
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatal(err)
 	}
+	f.analytics = true
+	f.historyCalls = 0
+	analyticsStats, err := c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Account: accountRef("work"), FromMs: ptr(day), ToMs: ptr(day + 86400000)}.Build())
+	if err != nil || analyticsStats.GetTotal().GetInputTokens() != 321 || analyticsStats.GetComplete() || f.scope != "account" || f.id != hex.EncodeToString(resourceID(9, "work")) || f.historyCalls != 0 {
+		t.Fatal("analytics did not bypass retained history", analyticsStats, err, f.scope, f.id, f.historyCalls)
+	}
+	f.analyticsError = status.Error(codes.Unavailable, "telemetry database unavailable")
+	_, err = c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Account: accountRef("work")}.Build())
+	if status.Code(err) != codes.Unavailable || f.historyCalls != 0 {
+		t.Fatal("analytics failure silently fell back to history", err, f.historyCalls)
+	}
+	f.analytics = false
 
 	_, err = c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Project: projectRef("project"), Session: sessionRef(f.s.Id)}.Build())
 	if status.Code(err) != codes.InvalidArgument {
