@@ -7,27 +7,25 @@
 }
 .form .body.body {
   display: flex;
+  flex-direction: column;
   flex: 1;
+  gap: var(--space);
   overflow: hidden;
 }
 .scroll {
   --ui-scroll-area-background: transparent;
 }
-.fields.fields {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
+.instructions.instructions {
+  display: grid;
   gap: var(--space);
   padding: var(--ui-control-inset);
   padding-right: calc(
     var(--ui-control-inset) + var(--ui-scroll-area-content-inset)
   );
 }
-.fields > :first-child {
-  flex: 1;
-}
-.fields > :last-child {
+.code {
   flex-shrink: 0;
+  margin: 0;
 }
 .reservedAction {
   visibility: hidden;

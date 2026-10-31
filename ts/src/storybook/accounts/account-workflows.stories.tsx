@@ -51,7 +51,7 @@ export const AccountLogin: Story = {
     docs: {
       description: {
         story:
-          "The account initially requires login. Click Log in to open the shared modal, submit demo-code and watch the actual account status switch to Signed in. The modal reserves its height before instructions arrive and scrolls its body with ScrollArea; the header, code field and footer stay in place as content loads. Cancel, Escape or clicking the backdrop closes the modal and leaves it signed out. The page layout stays in place. Log out opens the common confirmation dialog and removes the simulated saved login.",
+          "The account initially requires login. Click Log in to open the shared modal, submit demo-code and watch the actual account status switch to Signed in. The modal reserves its height before instructions arrive. ScrollArea contains only instructions and errors; the shared Form/FormField code input stays outside the viewport. The header, code field and footer stay in place as content loads or scrolls. Cancel, Escape or clicking the backdrop closes the modal and leaves it signed out. The page layout stays in place. Log out opens the common confirmation dialog and removes the simulated saved login.",
       },
     },
   },

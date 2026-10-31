@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useId, useRef, useState } from "react";
 import {
   Button,
   Dialog,
@@ -6,6 +6,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Form,
+  FormField,
   ScrollArea,
   Section,
 } from "@lesomnus/nox";
@@ -37,6 +39,7 @@ export function LoginPanel({
   const connect = useContext(LoginTransportContext);
   const socket = useRef<LoginSocket | undefined>(undefined);
   const input = useRef<HTMLInputElement>(null);
+  const codeId = useId();
   const onComplete = useRef(complete);
   onComplete.current = complete;
   useEffect(() => {
@@ -113,23 +116,27 @@ export function LoginPanel({
     socket.current?.send(code + "\n");
     setCode("");
   };
-  const fields = (
+  const instructions = (
     <>
       <div className={styles.status}>
         <Markdown text={output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "")} />
       </div>
       {error && <p role="alert">{error}</p>}
-      <label className={styles.field}>
-        Authentication code
+    </>
+  );
+  const codeField = (
+    <Form as="fieldset" columns={1} className={loginStyles.code}>
+      <FormField label="Authentication code" htmlFor={codeId}>
         <input
+          id={codeId}
           ref={input}
           type="password"
           autoComplete="off"
           value={code}
           onChange={(e) => setCode(e.target.value)}
         />
-      </label>
-    </>
+      </FormField>
+    </Form>
   );
   const canRetry = !!error && (!c.inProcess || !!connect);
   const retry = (modal || canRetry) && (
@@ -175,11 +182,12 @@ export function LoginPanel({
           <DialogBody className={loginStyles.body}>
             <ScrollArea
               className={loginStyles.scroll}
-              contentClassName={loginStyles.fields}
+              contentClassName={loginStyles.instructions}
               scrollbarLabel="Login instructions"
             >
-              {fields}
+              {instructions}
             </ScrollArea>
+            {codeField}
           </DialogBody>
           <DialogFooter>{actions}</DialogFooter>
         </form>
@@ -188,7 +196,8 @@ export function LoginPanel({
   return (
     <Section aria-label="Provider login">
       <strong>Log in · {target.account}</strong>
-      {fields}
+      {instructions}
+      {codeField}
       <div className={styles.row}>{actions}</div>
     </Section>
   );

@@ -114,6 +114,33 @@ test("account login refreshes status and logout uses confirmation", async ({
   await expect(
     dialog.locator(".dialog-body").getByLabel("Authentication code"),
   ).toBeFocused();
+  await dialog.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) => animation.effect?.getTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
+  const fieldLayout = await dialog
+    .getByLabel("Authentication code")
+    .evaluate((input) => {
+      const label = input.ownerDocument.querySelector(
+        `label[for="${input.id}"]`,
+      )!;
+      const css = getComputedStyle(input);
+      return {
+        labelInset:
+          label.getBoundingClientRect().left -
+          input.getBoundingClientRect().left,
+        radius: parseFloat(css.borderTopLeftRadius),
+        insideScroll: !!input.closest('[data-scroll-area="viewport"]'),
+      };
+    });
+  expect(fieldLayout.labelInset).toBe(fieldLayout.radius);
+  expect(fieldLayout.insideScroll).toBe(false);
   await expect(dialog.locator(".dialog-footer").getByRole("button")).toHaveText(
     ["Submit code", "Cancel"],
   );
@@ -264,6 +291,9 @@ test("account login keeps its frame and controls fixed through loading, errors a
     await viewport.evaluate((node) => node.scrollHeight > node.clientHeight),
   ).toBe(true);
   const footer = (await dialog.locator(".dialog-footer").boundingBox())!;
+  const code = dialog.getByLabel("Authentication code");
+  await expect(code).toBeInViewport();
+  const codeBeforeScroll = await code.boundingBox();
   await viewport.hover();
   await expect(
     dialog.getByRole("scrollbar", { name: "Login instructions", exact: true }),
@@ -273,6 +303,7 @@ test("account login keeps its frame and controls fixed through loading, errors a
   });
   await page.clock.runFor(50);
   expect(await dialog.locator(".dialog-footer").boundingBox()).toEqual(footer);
+  expect(await code.boundingBox()).toEqual(codeBeforeScroll);
   const bounds = (await dialog.boundingBox())!;
   expect(bounds.y).toBeGreaterThanOrEqual(0);
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(300);
