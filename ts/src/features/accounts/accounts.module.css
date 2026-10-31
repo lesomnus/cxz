@@ -1,6 +1,12 @@
 .page {
   grid-column: 2 / -1;
 }
+.layout {
+  --account-column-width: 420px;
+  --section-layout-max-width: calc(
+    2 * var(--account-column-width) + var(--ui-section-group-gap)
+  );
+}
 .header {
   display: flex;
   justify-content: flex-end;

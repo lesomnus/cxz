@@ -5,6 +5,7 @@ import { Button, EditableValue } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { SessionIndicator } from "#src/features/session/components/session-indicator.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -32,6 +33,7 @@ export function SessionTable({
   title = t("Sessions"),
   openSession,
   horizontalScrollbar = false,
+  variant = "default",
 }: {
   c: SessionControlConnection;
   sessions: Session[];
@@ -42,7 +44,9 @@ export function SessionTable({
   title?: string;
   openSession?: (session: Session) => void;
   horizontalScrollbar?: boolean;
+  variant?: "default" | "compact";
 }) {
+  const compact = variant === "compact";
   const [selected, select] = useState<Set<string>>(() => new Set());
   const controls = useSessionControls(c, (ids) =>
     select((previous) => {
@@ -107,7 +111,7 @@ export function SessionTable({
       </div>
       <PanelScroll
         horizontalScrollbar={horizontalScrollbar}
-        className={styles.scroll}
+        className={`${styles.scroll} ${compact ? styles.compact : ""}`}
         role="region"
         aria-label={t("Session list")}
         scrollbarLabel={t("Session list")}
@@ -120,11 +124,11 @@ export function SessionTable({
         >
           <colgroup>
             <col className={styles.selectionColumn} />
-            <col className={styles.agentColumn} />
+            {!compact && <col className={styles.agentColumn} />}
             <col className={styles.nameColumn} />
-            <col className={styles.aliasColumn} />
+            {!compact && <col className={styles.aliasColumn} />}
             {showAccount && <col className={styles.accountColumn} />}
-            <col />
+            <col className={styles.stateColumn} />
             <col className={styles.actionsColumn} />
           </colgroup>
           <thead>
@@ -145,9 +149,9 @@ export function SessionTable({
                   }
                 />
               </th>
-              <th scope="col" aria-label={t("Agent")} />
+              {!compact && <th scope="col" aria-label={t("Agent")} />}
               <th scope="col">{t("Name")}</th>
-              <th scope="col">{t("Alias")}</th>
+              {!compact && <th scope="col">{t("Alias")}</th>}
               {showAccount && <th scope="col">{t("Account")}</th>}
               <th scope="col">{t("State")}</th>
               <th scope="col" aria-label={t("Controls")} />
@@ -176,37 +180,48 @@ export function SessionTable({
                       onChange={() => toggle(s.runtimeId)}
                     />
                   </td>
-                  <td className={styles.agent}>
-                    <AgentBrand agent={s.agent} />
-                  </td>
-                  {(["name", "alias"] as const).map((field) => (
-                    <td className={styles[field]} key={field}>
-                      <fieldset
-                        className={styles.editable}
-                        disabled={controls.busy || loading}
-                      >
-                        <EditableValue
-                          label={field === "name" ? t("Name") : t("Alias")}
-                          value={s[field]}
-                          monospace={field === "alias"}
-                          validate={(value) =>
-                            validateSessionField(field, value)
-                          }
-                          save={async (value) => {
-                            const updated = await editSession(
-                              c.sessions,
-                              s.runtimeId,
-                              field,
-                              value,
-                            );
-                            c.store.apply("cxz.Session", [
-                              { id: updated.id, value: updated },
-                            ]);
-                          }}
-                        />
-                      </fieldset>
+                  {!compact && (
+                    <td className={styles.agent}>
+                      <AgentBrand agent={s.agent} />
                     </td>
-                  ))}
+                  )}
+                  {compact ? (
+                    <td className={styles.name}>
+                      <span className={styles.identity}>
+                        <span className={styles.title}>{name}</span>
+                        <span className={styles.subtitle}>{s.alias}</span>
+                      </span>
+                    </td>
+                  ) : (
+                    (["name", "alias"] as const).map((field) => (
+                      <td className={styles[field]} key={field}>
+                        <fieldset
+                          className={styles.editable}
+                          disabled={controls.busy || loading}
+                        >
+                          <EditableValue
+                            label={field === "name" ? t("Name") : t("Alias")}
+                            value={s[field]}
+                            monospace={field === "alias"}
+                            validate={(value) =>
+                              validateSessionField(field, value)
+                            }
+                            save={async (value) => {
+                              const updated = await editSession(
+                                c.sessions,
+                                s.runtimeId,
+                                field,
+                                value,
+                              );
+                              c.store.apply("cxz.Session", [
+                                { id: updated.id, value: updated },
+                              ]);
+                            }}
+                          />
+                        </fieldset>
+                      </td>
+                    ))
+                  )}
                   {showAccount && (
                     <td className={`${styles.cardCell} ${styles.account}`}>
                       {accountAlias ? (
@@ -224,7 +239,15 @@ export function SessionTable({
                       )}
                     </td>
                   )}
-                  <td className={styles.state}>{stateLabel(s)}</td>
+                  <td className={styles.state}>
+                    {compact ? (
+                      <span className={styles.stateIndicator}>
+                        <SessionIndicator session={s} variant="status" />
+                      </span>
+                    ) : (
+                      stateLabel(s)
+                    )}
+                  </td>
                   <td className={`${styles.cardCell} ${styles.actions}`}>
                     <SessionTableMenu
                       sessions={[s]}

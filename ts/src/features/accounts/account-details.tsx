@@ -146,6 +146,7 @@ export function AccountDetails({
           sessions={sessions}
           accounts={[account]}
           loading={sessionsLoading}
+          variant="compact"
           showAccount={false}
           title={`Sessions · ${sessions.length}`}
           horizontalScrollbar

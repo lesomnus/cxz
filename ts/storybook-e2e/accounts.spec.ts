@@ -63,6 +63,7 @@ for (const width of [1280, 390]) {
       );
       expect(sessionsBounds.y).toBe(informationBounds.y);
       expect(sessionsBounds.width).toBeCloseTo(informationBounds.width, 0);
+      expect(informationBounds.width).toBe(420);
       expect(authBounds.y + authBounds.height).toBeCloseTo(
         informationBounds.y + informationBounds.height,
         0,
@@ -199,7 +200,7 @@ for (const width of [1280, 390]) {
   });
 }
 
-test("account sessions share the project table presentation and keep selection scoped to the account", async ({
+test("account sessions use compact read-only identities and keep selection scoped to the account", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -211,17 +212,41 @@ test("account sessions share the project table presentation and keep selection s
   await expect(rows).toHaveCount(2);
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
-    "",
     "Name",
-    "Alias",
     "State",
     "",
   ]);
   await expect(
     table.getByRole("columnheader", { name: "Account", exact: true }),
   ).toHaveCount(0);
-  await expect(table.locator(".agent-brand-codex")).toHaveCount(2);
-  await expect(rows.locator("td:nth-child(5)")).toHaveText(["Idle", "Working"]);
+  await expect(table.locator(".agent-brand")).toHaveCount(0);
+  await expect(table.locator(".editable-value-trigger, fieldset")).toHaveCount(
+    0,
+  );
+  await expect(
+    rows.first().getByRole("img", { name: "Idle", exact: true }),
+  ).toBeVisible();
+  await expect(
+    rows.nth(1).getByRole("img", { name: "Working", exact: true }),
+  ).toBeVisible();
+  await expect(
+    personal.getByRole("img", { name: "Stopped", exact: true }),
+  ).toBeAttached();
+  const name = rows.first().getByText("Web account layout", { exact: true });
+  const alias = rows.first().getByText("oak", { exact: true });
+  const nameBounds = (await name.boundingBox())!;
+  const aliasBounds = (await alias.boundingBox())!;
+  expect(aliasBounds.x).toBe(nameBounds.x);
+  expect(aliasBounds.y).toBeGreaterThanOrEqual(
+    nameBounds.y + nameBounds.height,
+  );
+  expect(
+    await alias.evaluate((node) => parseFloat(getComputedStyle(node).fontSize)),
+  ).toBeLessThan(
+    await name.evaluate((node) => parseFloat(getComputedStyle(node).fontSize)),
+  );
+  await name.click();
+  await expect(table.getByRole("textbox")).toHaveCount(0);
   await rows.first().getByRole("checkbox").check();
   await expect(
     work.getByRole("button", { name: "1 selected", exact: true }),
@@ -242,7 +267,7 @@ test("account sessions share the project table presentation and keep selection s
   await expect(rows.nth(1)).not.toHaveCSS("background-color", before);
   const viewport = work.locator('[data-scroll-area="viewport"]');
   expect(
-    await viewport.evaluate((node) => node.scrollWidth > node.clientWidth),
+    await viewport.evaluate((node) => node.scrollWidth <= node.clientWidth),
   ).toBe(true);
   const more = rows.first().getByRole("button", {
     name: "Controls for Web account layout",

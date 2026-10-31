@@ -48,6 +48,38 @@
 .aliasColumn {
   width: 76px;
 }
+.compact {
+  --session-table-min-width: calc(280px + var(--session-account-column-width));
+}
+.compact .nameColumn {
+  width: auto;
+}
+.compact .stateColumn {
+  width: 48px;
+}
+.identity {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+.title,
+.subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.subtitle {
+  color: var(--ui-muted);
+  font: 10px/1.3 var(--ui-font-mono);
+}
+.stateIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+  vertical-align: middle;
+}
 .actionsColumn {
   width: calc(var(--session-row-height) + var(--ui-control-inset));
 }
