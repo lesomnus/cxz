@@ -35,6 +35,16 @@ export function useTranscriptMotion({
   const settling = useRef(0);
 
   function capture(tail = saved.current?.tail) {
+    // Historical rows do not animate. Even scrollTop can force pending style
+    // and layout work while new card layout effects are still committing.
+    // A zero-width baseline also prevents animating a jump back to latest.
+    if (!follow.current)
+      return {
+        tail,
+        scroll: 0,
+        width: 0,
+        positions: new Map<string, Position>(),
+      };
     const el = pane.current!,
       column = root.current!;
     return {
@@ -77,7 +87,9 @@ export function useTranscriptMotion({
     const scroll = () => {
       // Programmatic following already published this position in the layout
       // effect. Only a different position indicates a user's reading movement.
-      if (el.scrollTop !== saved.current?.scroll) navigate();
+      if (!follow.current) {
+        if (saved.current?.width !== 0) navigate();
+      } else if (el.scrollTop !== saved.current?.scroll) navigate();
     };
     const changed = () => {
       if (reduced.matches) navigate();

@@ -38,6 +38,22 @@ computed-style resolution on the common ancestor. Component-only previews omit
 this paint path; the real-app performance fixture verifies fade behavior and
 that scroll values do not inherit through messages.
 
+Retained virtual rows memoize their rendered content separately from their top
+position, so measuring a neighbor does not recreate their cards. Historical
+reading also skips arrival-animation geometry capture entirely; resuming live
+follow establishes a new baseline. DOM rows and observed heights remain bounded
+by the existing virtual/event windows, and event replacement still updates a row.
+
+Markdown remounts reuse sanitized HTML with separate file-link modes. This
+in-memory LRU retains at most 256 entries and a 2 MiB UTF-16 input/output text
+budget; oversized results bypass it. It retains no DOM, interactive code controls
+or selected language. Plain Markdown avoids an empty code-portal update, and
+uncolored code tokens remain text nodes. Normalized questions are weakly cached
+by immutable payload and decoding mode. Nested ScrollArea/ScrollFade variables
+belong to their leaf overlays too; closed ValueMenus do not measure popup width.
+Code highlighting resolves its palette without resolving editor fonts or reading
+the document's computed styles during card creation.
+
 React development builds record changed props in Performance Tracks. Those
 diagnostics have CPU and memory costs and can fail while cloning large details;
 they are not conversation events or server responses. See
@@ -84,3 +100,6 @@ short replies and resolved question cards. The scroll regressions verify that a
 retained row is not observed again and that delivered resize measurements avoid
 per-row rectangle reads. Storybook's Conversation / EventCards / Long Mixed
 Conversation provides the same mix for manual handle-drag checks.
+`content=complex` adds Markdown tables, fenced code and long question bodies.
+The regressions also cover row-content reuse during height correction, snapshot
+replacement, sanitizer/link-mode isolation, and Markdown cache eviction/bypass.

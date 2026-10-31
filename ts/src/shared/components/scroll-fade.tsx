@@ -13,6 +13,8 @@ export function ScrollFade({
   const region = useRef<HTMLDivElement>(null);
   const pane = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
+  const topFade = useRef<HTMLDivElement>(null);
+  const bottomFade = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const root = region.current!;
     const viewport = pane.current!;
@@ -27,11 +29,11 @@ export function ScrollFade({
     let lastTime = performance.now();
     let strength = 0;
     const paintMotion = (value: number) => {
-      root.style.setProperty(
+      topFade.current!.style.setProperty(
         "--scroll-fade-top-motion",
         String(Math.max(0, value)),
       );
-      root.style.setProperty(
+      bottomFade.current!.style.setProperty(
         "--scroll-fade-bottom-motion",
         String(Math.max(0, -value)),
       );
@@ -39,13 +41,19 @@ export function ScrollFade({
     const measure = () => {
       const max = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
       const top = clamp(viewport.scrollTop, 0, max);
-      root.style.setProperty("--scroll-fade-top-hidden", `${top}px`);
-      root.style.setProperty("--scroll-fade-bottom-hidden", `${max - top}px`);
-      root.style.setProperty(
+      topFade.current!.style.setProperty(
+        "--scroll-fade-top-hidden",
+        `${top}px`,
+      );
+      bottomFade.current!.style.setProperty(
+        "--scroll-fade-bottom-hidden",
+        `${max - top}px`,
+      );
+      topFade.current!.style.setProperty(
         "--scroll-fade-top-opacity",
         String(clamp(top / fadeDepth, 0, 1)),
       );
-      root.style.setProperty(
+      bottomFade.current!.style.setProperty(
         "--scroll-fade-bottom-opacity",
         String(clamp((max - top) / fadeDepth, 0, 1)),
       );
@@ -68,7 +76,6 @@ export function ScrollFade({
       lastTop = viewport.scrollTop;
       measure();
     };
-    measure();
     const observer = new ResizeObserver(measure);
     observer.observe(viewport);
     observer.observe(content.current!);
@@ -87,10 +94,12 @@ export function ScrollFade({
         </div>
       </div>
       <div
+        ref={topFade}
         className="scroll-edge-fade scroll-edge-fade-top"
         aria-hidden="true"
       />
       <div
+        ref={bottomFade}
         className="scroll-edge-fade scroll-edge-fade-bottom"
         aria-hidden="true"
       />

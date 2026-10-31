@@ -1,4 +1,8 @@
-import type { EventListSource } from "#src/features/session/model/event-source.ts";
+import {
+  eventSource,
+  type EventListSource,
+  type EventSource,
+} from "#src/features/session/model/event-source.ts";
 import React, {
   useEffect,
   useLayoutEffect,
@@ -35,6 +39,40 @@ const foldable = (event: SessionEvent) =>
   event.kind !== "input" &&
   event.kind !== "assistant" &&
   !isDiagnosticEvent(event);
+
+// Position corrections do not recreate the contents of a retained row. Keep
+// snapshots behind stable readers so development diagnostics do not walk bytes.
+const VirtualMessage = React.memo(function VirtualMessage({
+  source,
+  top,
+  activity,
+  latest,
+  unfolded,
+  observe,
+  render,
+}: {
+  source: EventSource;
+  top: number;
+  activity: boolean;
+  latest: boolean;
+  unfolded: boolean;
+  observe: React.RefCallback<HTMLDivElement>;
+  render: (event: SessionEvent) => React.ReactNode;
+}) {
+  const content = useMemo(() => render(source()), [source, render]);
+  return (
+    <div
+      data-row={source().seq.toString()}
+      data-activity={activity}
+      data-latest-activity={latest}
+      className="transcript-row"
+      style={{ top }}
+      ref={observe}
+    >
+      <ActivityCardUnfolded value={unfolded}>{content}</ActivityCardUnfolded>
+    </div>
+  );
+});
 
 export const VirtualMessages = React.memo(function VirtualMessages({
   pane,
@@ -94,23 +132,23 @@ export const VirtualMessages = React.memo(function VirtualMessages({
     if (!previous.current && anchor.current && !follow.current) return;
     const el = pane.current;
     if (!el) return;
+    const origin = root.current!.offsetTop;
+    const scrollTop = el.scrollTop;
     const rows = latest.current.layout.rows;
     const preferred = jumpAnchor.current;
     const target =
-      preferred && el.scrollTop === preferred.top
+      preferred && scrollTop === preferred.top
         ? rows.find((row) => row.id === preferred.id)
         : undefined;
     if (!target) jumpAnchor.current = null;
-    const row =
-      target ??
-      rows[rowAt(rows, Math.max(0, el.scrollTop - root.current!.offsetTop))];
+    const row = target ?? rows[rowAt(rows, Math.max(0, scrollTop - origin))];
     anchor.current = row
-      ? { id: row.id, offset: row.top + root.current!.offsetTop - el.scrollTop }
+      ? { id: row.id, offset: row.top + origin - scrollTop }
       : null;
     if (cache) cache.anchor = anchor.current;
     const next = {
-      top: Math.max(0, el.scrollTop - root.current!.offsetTop),
-      offset: el.scrollTop - root.current!.offsetTop,
+      top: Math.max(0, scrollTop - origin),
+      offset: scrollTop - origin,
       height: el.clientHeight,
     };
     setViewport((old) =>
@@ -326,25 +364,20 @@ export const VirtualMessages = React.memo(function VirtualMessages({
       events.slice(start, end).map((event, index) => {
         const id = event.seq.toString();
         return (
-          <div
+          <VirtualMessage
             key={id}
-            data-row={id}
-            data-activity={foldActivities && foldable(event)}
-            data-latest-activity={start + index === latestActivity}
-            className="transcript-row"
-            style={{ top: layout.rows[start + index].top }}
-            ref={observeRow}
-          >
-            <ActivityCardUnfolded
-              value={
-                !foldActivities ||
-                isDiagnosticEvent(event) ||
-                start + index === latestActivity
-              }
-            >
-              {render(event)}
-            </ActivityCardUnfolded>
-          </div>
+            source={eventSource(event)}
+            activity={foldActivities && foldable(event)}
+            latest={start + index === latestActivity}
+            top={layout.rows[start + index].top}
+            observe={observeRow}
+            render={render}
+            unfolded={
+              !foldActivities ||
+              isDiagnosticEvent(event) ||
+              start + index === latestActivity
+            }
+          />
         );
       }),
     [

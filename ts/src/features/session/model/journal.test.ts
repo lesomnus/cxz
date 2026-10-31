@@ -254,6 +254,29 @@ describe("journal recovery", () => {
   });
 });
 
+it("reuses normalized questions by immutable payload and invalidates replacements", () => {
+  const encode = (title: string) =>
+    new TextEncoder().encode(
+      JSON.stringify({
+        params: {
+          questions: [{ id: "layout", question: title, options: null }],
+        },
+      }),
+    );
+  const e = create(SessionEventSchema, {
+    text: "item/tool/requestUserInput",
+    payload: encode("First"),
+  });
+  const first = questions("codex", e);
+  expect(questions("codex", e)).toBe(first);
+  expect(questions("claude", e)).toEqual([]);
+  e.payload = encode("Second");
+  expect(questions("codex", e)).not.toBe(first);
+  expect(questions("codex", e)[0].text).toBe("Second");
+  e.text = "agentMessage/questions";
+  expect(questions("codex", e)).toEqual([]);
+});
+
 import { pendingAfter } from "./journal";
 it("reconciles only events newer than the pending snapshot across runs", () => {
   const pending = create(SessionEventSchema, {

@@ -82,7 +82,28 @@ export type Question = {
   secret: boolean;
   options: { label: string; description?: string; preview?: string }[];
 };
+const normalizedQuestions = new WeakMap<Uint8Array, Map<string, Question[]>>();
 export function questions(agent: string, e: SessionEvent): Question[] {
+  if (
+    !(
+      (agent === "codex" &&
+        ["agentMessage/questions", "item/tool/requestUserInput"].includes(
+          e.text,
+        )) ||
+      (agent === "claude" && e.text === "AskUserQuestion")
+    )
+  )
+    return [];
+  const key = `${agent}:${e.text}`;
+  const cached = normalizedQuestions.get(e.payload)?.get(key);
+  if (cached) return cached;
+  const result = parseQuestions(agent, e);
+  let entries = normalizedQuestions.get(e.payload);
+  if (!entries) normalizedQuestions.set(e.payload, (entries = new Map()));
+  entries.set(key, result);
+  return result;
+}
+function parseQuestions(agent: string, e: SessionEvent): Question[] {
   const p = payload(e);
   const async = agent === "codex" && e.text === "agentMessage/questions";
   let wire: unknown;
