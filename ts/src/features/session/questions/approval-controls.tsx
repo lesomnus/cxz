@@ -33,7 +33,6 @@ export function ApprovalControls({
   useLocale();
   const active = requests[0];
   const id = useId();
-  const container = useRef<HTMLDivElement>(null);
   const controls = useRef<HTMLDivElement>(null);
   const stack = useRef<HTMLDivElement>(null);
   const front = useRef<HTMLDivElement>(null);
@@ -60,9 +59,9 @@ export function ApprovalControls({
     window.clearTimeout(closeTimer.current);
     closeTimer.current = window.setTimeout(() => {
       if (
-        !container.current?.matches(":hover") &&
+        !controls.current?.matches(":hover") &&
         !stack.current?.matches(":hover") &&
-        !container.current?.querySelector(":focus-visible") &&
+        !controls.current?.querySelector(":focus-visible") &&
         !stack.current?.querySelector(":focus-visible")
       )
         setOpen(false);
@@ -155,8 +154,13 @@ export function ApprovalControls({
   return (
     <>
       <div
-        ref={container}
-        className={styles.controls}
+        ref={controls}
+        className={styles.group}
+        role="group"
+        aria-label={t("Pending approvals")}
+        aria-description={`${t("Pending approvals")}: ${requests.length}`}
+        aria-controls={current ? id : undefined}
+        aria-busy={busy || deciding}
         data-approval-controls
         data-pending-count={requests.length}
         onPointerEnter={show}
@@ -172,62 +176,52 @@ export function ApprovalControls({
           muted={!requests.length}
           label={`${t("Pending approvals")}: ${requests.length}`}
         />
-        <div
-          ref={controls}
-          className={styles.group}
-          role="group"
-          aria-label={t("Pending approvals")}
-          aria-description={`${t("Pending approvals")}: ${requests.length}`}
-          aria-controls={current ? id : undefined}
-          aria-busy={busy || deciding}
-          data-pending-count={requests.length}
+        <span className={styles.divider} aria-hidden="true" />
+        <Button
+          type="button"
+          effect="none"
+          className={`${styles.decision} ${styles.deny}`}
+          aria-label={t("Deny")}
+          title={t("Deny")}
+          disabled={disabled}
+          onClick={() => decide(false)}
         >
-          <Button
-            type="button"
-            effect="none"
-            className={`${styles.decision} ${styles.deny}`}
-            aria-label={t("Deny")}
-            title={t("Deny")}
-            disabled={disabled}
-            onClick={() => decide(false)}
+          <svg
+            viewBox="0 0 16 16"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            aria-hidden="true"
           >
-            <svg
-              viewBox="0 0 16 16"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="m4 4 8 8M12 4l-8 8" />
-            </svg>
-          </Button>
-          <Button
-            type="button"
-            effect="none"
-            className={`${styles.decision} ${styles.allow}`}
-            aria-label={t("Allow")}
-            title={t("Allow")}
-            disabled={disabled || unsupported}
-            onClick={() => decide(true)}
+            <path d="m4 4 8 8M12 4l-8 8" />
+          </svg>
+        </Button>
+        <Button
+          type="button"
+          effect="none"
+          className={`${styles.decision} ${styles.allow}`}
+          aria-label={t("Allow")}
+          title={t("Allow")}
+          disabled={disabled || unsupported}
+          onClick={() => decide(true)}
+        >
+          <svg
+            viewBox="0 0 16 16"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
           >
-            <svg
-              viewBox="0 0 16 16"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m3 8 3.2 3.2L13 4.5" />
-            </svg>
-          </Button>
-        </div>
+            <path d="m3 8 3.2 3.2L13 4.5" />
+          </svg>
+        </Button>
       </div>
       {(current || leaving) &&
         host &&
@@ -240,7 +234,12 @@ export function ApprovalControls({
             data-departing={!!leaving}
             data-closing={!current && !!leaving}
             data-pending-count={requests.length}
-            style={!current && leaving ? { height: leaving.height } : undefined}
+            style={
+              {
+                "--approval-back-count": backRequests.length,
+                ...(!current && leaving ? { height: leaving.height } : {}),
+              } as CSSProperties
+            }
             onPointerEnter={show}
             onPointerLeave={closeSoon}
             onFocusCapture={focus}

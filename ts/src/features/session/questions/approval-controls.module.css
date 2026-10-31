@@ -1,45 +1,47 @@
-.controls {
+.group > .count {
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
-  gap: var(--space);
-  height: var(--toolbar-button-height);
-}
-.count {
   min-width: 3ch;
+  margin-inline: var(--control-inset);
   font-size: 11px;
+  line-height: 1;
   color: var(--shade-136);
 }
-.controls[data-pending-count="0"] .count {
+.group[data-pending-count="0"] .count {
   opacity: 0.35;
 }
 .group {
   --approval-group-border-width: var(--ui-border-trail-width);
+  --approval-group-border-color: var(--composer-toolbar-background);
   display: inline-flex;
   flex: 0 0 auto;
-  align-items: center;
+  align-items: stretch;
   gap: var(--control-inset);
   height: var(--toolbar-button-height);
   padding: var(--control-inset);
   border: var(--approval-group-border-width) solid
-    var(--composer-toolbar-background);
+    var(--approval-group-border-color);
   border-radius: var(--toolbar-button-radius);
   transition: border-color var(--ui-button-background-duration) ease-out;
 }
 .group:not([data-pending-count="0"]) {
-  border-color: var(--ui-border-trail-track-color);
+  --approval-group-border-color: var(--ui-border-trail-track-color);
+}
+.divider {
+  align-self: stretch;
+  flex: 0 0 var(--approval-group-border-width);
+  margin-block: var(--control-inset);
+  background: var(--approval-group-border-color);
+  transition: background-color var(--ui-button-background-duration) ease-out;
 }
 .decision.decision {
   display: grid;
   place-items: center;
   width: var(--toolbar-button-height);
   min-width: 0;
-  height: calc(
-    var(--toolbar-button-height) - 2 *
-      (var(--control-inset) + var(--approval-group-border-width))
-  );
+  height: auto;
   min-height: 0;
-  padding: var(--control-inset);
+  padding: 0;
   border-radius: max(
     0px,
     calc(
@@ -128,7 +130,10 @@
 }
 .stack[data-closing="true"] .back {
   animation-name: back-depart;
-  animation-delay: 0ms;
+  animation-delay: calc(
+    var(--approval-hover-stagger) *
+      (var(--approval-back-count) - var(--approval-depth))
+  );
   animation-duration: calc(
     var(--approval-motion-duration) /
       (1 + var(--approval-exit-depth-speed) * var(--approval-depth))
@@ -175,6 +180,12 @@
 .leaving > .content {
   flex: 1;
   min-width: 0;
+}
+.stack[data-closing="true"] .leaving {
+  animation-delay: calc(
+    var(--approval-hover-stagger) * var(--approval-back-count)
+  );
+  animation-fill-mode: both;
 }
 .scroll {
   --ui-scroll-area-background: transparent;

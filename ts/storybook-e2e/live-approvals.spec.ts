@@ -271,9 +271,62 @@ test("approval count stays visible while request cards open on hover and keyboar
   });
   await expect(count).toBeVisible();
   const countBox = (await count.boundingBox())!;
-  expect(countBox.x + countBox.width).toBeLessThan(
-    (await group.boundingBox())!.x,
-  );
+  const groupBox = (await group.boundingBox())!;
+  const denyBox = (await group
+    .getByRole("button", { name: "Deny", exact: true })
+    .boundingBox())!;
+  expect(countBox.x).toBeGreaterThan(groupBox.x);
+  expect(countBox.x + countBox.width).toBeLessThan(denyBox.x);
+  expect(
+    await count.evaluate((node) => node.parentElement?.getAttribute("role")),
+  ).toBe("group");
+  const divider = (await group
+    .locator(":scope > [aria-hidden='true']")
+    .boundingBox())!;
+  expect(divider.x).toBeGreaterThan(countBox.x + countBox.width);
+  expect(divider.x + divider.width).toBeLessThan(denyBox.x);
+  const alignments = await group.evaluate((node) => {
+    const original = node.style.getPropertyValue("--ui-font-mono");
+    try {
+      return ["monospace", "serif"].map((font) => {
+        node.style.setProperty("--ui-font-mono", font);
+        const bounds = node.getBoundingClientRect();
+        const count = node.querySelector<HTMLElement>("[data-mode='integer']")!;
+        const textStyle = getComputedStyle(count);
+        return {
+          font,
+          textHeight: count.getBoundingClientRect().height,
+          lineHeight: textStyle.lineHeight,
+          fontSize: textStyle.fontSize,
+          childHeights: [...count.children].map(
+            (child) => child.getBoundingClientRect().height,
+          ),
+          buttons: [...node.querySelectorAll("button")].map((button) => {
+            const box = button.getBoundingClientRect();
+            const icon = button.querySelector("svg")!.getBoundingClientRect();
+            return {
+              top: box.top - bounds.top,
+              bottom: bounds.bottom - box.bottom,
+              center:
+                icon.top + icon.height / 2 - (bounds.top + bounds.height / 2),
+            };
+          }),
+        };
+      });
+    } finally {
+      if (original) node.style.setProperty("--ui-font-mono", original);
+      else node.style.removeProperty("--ui-font-mono");
+    }
+  });
+  for (const measurement of alignments) {
+    expect(measurement.lineHeight, measurement.font).toBe(measurement.fontSize);
+    for (const height of [measurement.textHeight, ...measurement.childHeights])
+      expect(Number.isInteger(height), measurement.font).toBe(true);
+    for (const button of measurement.buttons) {
+      expect(button.top, measurement.font).toBeCloseTo(button.bottom, 5);
+      expect(button.center, measurement.font).toBeCloseTo(0, 5);
+    }
+  }
   const stack = page.locator("[data-approval-stack]");
   await expect(stack).toHaveCount(0);
   await controls.hover();
@@ -552,7 +605,7 @@ test("departing approvals stay opaque behind the composer before the next card c
   ).toContainText("npm run build");
 });
 
-test("hover staggers entrance but dismisses all cards together with faster deeper layers", async ({
+test("hover enters from the front and dismisses from the back with the front last", async ({
   page,
 }) => {
   await page.goto(
@@ -622,7 +675,9 @@ test("hover staggers entrance but dismisses all cards together with faster deepe
       };
     });
   });
-  expect(closing.map((card) => card.delay)).toEqual([0, 0, 0]);
+  expect(closing[2].delay).toBe(0);
+  expect(closing[1].delay).toBeGreaterThan(closing[2].delay);
+  expect(closing[0].delay).toBeGreaterThan(closing[1].delay);
   expect(closing[1].end).toBeLessThan(closing[0].end);
   expect(closing[2].end).toBeLessThan(closing[1].end);
   await stack
@@ -725,14 +780,18 @@ test("full queued cards remain above Question and uncover their bodies while clo
     const backs = [
       ...node.querySelectorAll<HTMLElement>("[data-approval-back] > div"),
     ];
-    const t = backs[0].getAnimations()[0].effect!.getTiming();
-    const time = Number(t.duration) * 0.25;
     // Hold the deeper face before retreat to inspect its full uncovered body.
     for (const [index, face] of backs.entries())
-      for (const a of face.getAnimations())
-        a.currentTime = index === 0 ? time : 0;
+      for (const a of face.getAnimations()) {
+        const timing = a.effect!.getTiming();
+        a.currentTime =
+          Number(timing.delay) +
+          Number(timing.duration) * (index === 0 ? 0.25 : 0);
+      }
     for (const a of departure.getAnimations())
-      a.currentTime = Number(a.effect!.getTiming().duration) * 0.75;
+      a.currentTime =
+        Number(a.effect!.getTiming().delay) +
+        Number(a.effect!.getTiming().duration) * 0.75;
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
     );
