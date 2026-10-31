@@ -333,8 +333,9 @@ test("canceling a submitted login cannot authenticate later", async ({
   await panel.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(panel).toHaveCount(0);
   await page.clock.fastForward(1000);
-  await page
-    .getByRole("button", { name: "Refresh status", exact: true })
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await loginPanel(page)
+    .getByRole("button", { name: "Cancel", exact: true })
     .click();
   await expect(page.getByText("Login required", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Log in", exact: true }).click();

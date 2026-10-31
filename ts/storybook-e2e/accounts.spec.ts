@@ -89,14 +89,18 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     const row = [
-      authentication.getByText("Authentication", { exact: true }),
       authentication.getByText("Signed in", { exact: true }),
+      authentication.getByRole("button", { name: "Log out", exact: true }),
+    ];
+    await expect(
+      authentication.getByText("Authentication", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
       authentication.getByRole("button", {
         name: "Refresh status",
         exact: true,
       }),
-      authentication.getByRole("button", { name: "Log out", exact: true }),
-    ];
+    ).toHaveCount(0);
     const boxes = await Promise.all(row.map((item) => item.boundingBox()));
     for (let index = 1; index < boxes.length; index++) {
       expect(boxes[index]!.x).toBeGreaterThanOrEqual(

@@ -73,7 +73,6 @@ export function AccountDetails({
       </Section>
       <Section aria-label="Authentication">
         <div className={accountStyles.authenticationRow}>
-          <strong>Authentication</strong>
           {sessionScoped ? (
             <small
               className={`${styles.muted} ${accountStyles.authenticationDescription}`}
@@ -94,27 +93,6 @@ export function AccountDetails({
                   {statusText}
                 </Popover>
               </span>
-              <Button
-                className={accountStyles.authenticationRefresh}
-                aria-label="Refresh status"
-                title="Refresh status"
-                disabled={status.loading}
-                onClick={status.reload}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M13 7a5 5 0 1 0-1.3 4.1M13 3v4H9" />
-                </svg>
-              </Button>
               <Button
                 className={accountStyles.authenticationAction}
                 disabled={
