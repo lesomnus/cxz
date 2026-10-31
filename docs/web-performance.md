@@ -16,6 +16,13 @@ the opposing pull; reversing inward cancels it even within that quarter. The loc
 shifts only by achieved auto-scroll, preserving pointer tracking and marker phase
 without jumping to a window boundary. Canceling an active pull rebases at the
 current reading position and stops the added velocity.
+Each new outward pull uses its own starting point: the quarter boundary when
+entering from the center, or the last inactive pointer position when already
+inside that quarter. Regrabbing an end therefore starts with zero pressure,
+instead of instantly applying the entire distance from the quarter boundary.
+At a loaded-history edge, an active pull also requests the page in that direction
+while native scrolling is clamped. Waiting for a nonzero scroll delta would
+otherwise prevent that first page from ever being requested.
 
 React owns marker membership and styling; `ScrollMarkers` reuses its elements
 while `Transcript` paints their changing positions through refs. Range rebasing
