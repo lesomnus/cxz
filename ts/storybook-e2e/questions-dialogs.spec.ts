@@ -237,6 +237,38 @@ test("long confirmation bodies scroll while the padded header and actions stay v
   await expect(page.getByRole("status")).toHaveCount(0);
 });
 
+test("confirmation callers remain mounted until the shared modal exit finishes", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=components-confirmationdialog--default&viewMode=story",
+  );
+  const launch = page.getByRole("button", {
+    name: "Open confirmation",
+    exact: true,
+  });
+  for (const action of ["Cancel", "Stop"]) {
+    await launch.click();
+    const dialog = page.locator("dialog.confirmation-dialog");
+    await dialog.evaluate((node) =>
+      node.style.setProperty("--ui-dialog-exit-duration", "2s"),
+    );
+    await dialog.getByRole("button", { name: action, exact: true }).click();
+    await expect(dialog).toHaveAttribute("data-closing", "true");
+    await expect(dialog).toHaveJSProperty("open", true);
+    await dialog.evaluate((node) => {
+      const surface = node.querySelector('[data-motion="default"]')!;
+      for (const animation of node.getAnimations({ subtree: true })) {
+        const target = (animation.effect as KeyframeEffect | null)?.target;
+        if (target === node || target === surface) animation.finish();
+      }
+    });
+    await expect(dialog).toHaveCount(0);
+    await expect(launch).toBeFocused();
+  }
+  await expect(page.getByRole("status")).toHaveText("Action completed");
+});
+
 test("pending dialogs prevent dismissal and failed actions stay open for retry", async ({
   page,
 }) => {
