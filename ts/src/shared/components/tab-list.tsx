@@ -60,12 +60,13 @@ export function TabList({
                 viewBox="0 0 16 16"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="1.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <circle cx="7" cy="9" r="5" />
-                {item.answered && <path d="m4 8.5 3.2 3 7.3-8" />}
+                <circle cx="7" cy="9" r="4" strokeWidth="1" />
+                {item.answered && (
+                  <path d="m4 8.5 3.2 3 7.3-8" strokeWidth="2.2" />
+                )}
               </svg>
             </span>
           )}
