@@ -1,6 +1,6 @@
 .card {
   --question-history-heading-height: 28px;
-  --question-history-tabs-height: 28px;
+  --question-history-tabs-height: 32px;
   --question-history-question-height: 96px;
   --question-history-answer-height: 160px;
   --question-history-gap: calc(2 * var(--space));
@@ -23,18 +23,13 @@
   gap: var(--question-history-gap);
   min-width: 0;
   min-height: 0;
+  padding-inline: var(--question-history-inset);
 }
 .body > :global(.tab-list) {
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
   margin: 0;
-}
-.body :global([role="tab"]) {
-  flex: 0 0 auto;
-  min-width: 56px;
-  height: 100%;
-  padding: 0 var(--control-inline-inset);
 }
 .panel {
   display: grid;
@@ -47,23 +42,18 @@
 }
 .question,
 .answer {
-  display: grid;
-  grid-template-rows: 16px minmax(0, 1fr);
-  gap: var(--space);
+  display: flex;
   min-width: 0;
   min-height: 0;
-}
-.question > small,
-.answer > small {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 16px;
 }
 .answer {
   --ui-scroll-area-background: var(--shade-16);
   background: var(--ui-scroll-area-background);
   border-radius: var(--wrapper-radius);
-  padding: var(--control-inset) var(--control-inline-inset);
+  padding-block: var(--control-inset);
+}
+.panel :global(.markdown) {
+  padding-inline: 0;
 }
 .panel :global(.markdown) > :first-child {
   margin-top: 0;

@@ -1,0 +1,38 @@
+.tabs {
+  --question-tab-width: 64px;
+  --question-tab-icon-width: 20px;
+  --question-tab-circle-color: var(--shade-115);
+  --question-tab-check-color: color-mix(
+    in srgb,
+    var(--aurora-green) 60%,
+    var(--shade-237)
+  );
+}
+.tabs :global([role="tab"]) {
+  width: var(--question-tab-width);
+  flex: 0 0 var(--question-tab-width);
+  border-radius: calc(2 * var(--space));
+}
+.tabs :global(.button-content) {
+  display: grid;
+  grid-template-columns: var(--question-tab-icon-width) minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+}
+.tabs :global(.tab-label) {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+.tabs :global(.tab-answered) {
+  display: grid;
+  place-items: center;
+  width: var(--question-tab-icon-width);
+  margin: 0;
+}
+.tabs :global(.tab-answered) circle {
+  stroke: var(--question-tab-circle-color);
+}
+.tabs :global(.tab-answered) path {
+  stroke: var(--question-tab-check-color);
+}

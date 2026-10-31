@@ -18,6 +18,8 @@ test("recorded questions share response chrome and show each answer inline", asy
   await expect(card).toHaveAttribute("data-state", "completed");
   await expect(card.locator(".response-heading .agent-brand")).toBeVisible();
   await expect(card.locator(".response-heading time")).toBeVisible();
+  await expect(card.getByText("Question", { exact: true })).toHaveCount(0);
+  await expect(card.getByText("Answer", { exact: true })).toHaveCount(0);
   const first = card.getByRole("tab", { name: "Q1", exact: true });
   const notes = card.getByRole("tab", { name: "Q2", exact: true });
   const last = card.getByRole("tab", { name: "Q3", exact: true });
@@ -68,6 +70,53 @@ test("canceled questions preserve their text and cancellation state in every tab
     "Describe any additional changes.",
   );
   await expect(content(card, "Answer")).toContainText("Canceled");
+});
+
+test("live and recorded Question cards share the same numbered completion tabs", async ({
+  page,
+}) => {
+  const appearance = (tab: Locator) =>
+    tab.evaluate((node) => {
+      const style = getComputedStyle(node);
+      const circle = node.querySelector("circle")!;
+      const check = node.querySelector("path")!;
+      const icon = node.querySelector(".tab-answered")!;
+      const label = node.querySelector(".tab-label")!;
+      return {
+        width: style.width,
+        height: style.height,
+        padding: style.padding,
+        radius: style.borderRadius,
+        font: style.font,
+        columns: getComputedStyle(node.querySelector(".button-content")!)
+          .gridTemplateColumns,
+        iconWidth: icon.getBoundingClientRect().width,
+        labelWidth: label.getBoundingClientRect().width,
+        label: label.textContent,
+        circleColor: getComputedStyle(circle).stroke,
+        circleWidth: getComputedStyle(circle).strokeWidth,
+        checkColor: getComputedStyle(check).stroke,
+        checkWidth: getComputedStyle(check).strokeWidth,
+      };
+    });
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--steps&viewMode=story",
+  );
+  const live = page.getByRole("region", { name: "Question", exact: true });
+  const liveTab = live.getByRole("tab", { name: "Q1", exact: true });
+  await expect(liveTab.locator(".tab-answered path")).toHaveCount(0);
+  await live.getByRole("radio", { name: "Compact", exact: true }).check();
+  await expect(liveTab.locator(".tab-answered path")).toHaveCount(1);
+  await page.evaluate(() => document.fonts.ready);
+  const expected = await appearance(liveTab);
+  await page.goto(
+    "/iframe.html?id=conversation-eventcards--answered-question&viewMode=story",
+  );
+  const recordedTab = page
+    .locator(history)
+    .getByRole("tab", { name: "Q1", exact: true });
+  await expect(recordedTab.locator('[data-mode="integer"]')).toHaveText("01");
+  await expect.poll(() => appearance(recordedTab)).toEqual(expected);
 });
 
 for (const width of [1280, 390]) {
@@ -139,10 +188,22 @@ for (const width of [1280, 390]) {
         });
       });
     const initial = await geometry();
+    const textStarts = () =>
+      card.evaluate((node) => {
+        const next = document.querySelector(
+          '.transcript article.response[data-seq="6"] > .markdown > p',
+        )!;
+        const expected = next.getBoundingClientRect().x;
+        return [
+          ...node.querySelectorAll("section .markdown > :first-child"),
+        ].map((el) => el.getBoundingClientRect().x - expected);
+      });
+    await expect.poll(textStarts).toEqual([0, 0]);
     await card.getByRole("tab", { name: "Q2", exact: true }).click();
     await expect(content(card, "Question")).toContainText("Requirement 18");
     await expect(content(card, "Answer")).toContainText("Change 12");
     await expect.poll(geometry).toEqual(initial);
+    await expect.poll(textStarts).toEqual([0, 0]);
     for (const name of ["Question", "Answer"] as const) {
       const viewport = content(card, name).locator(
         '[data-scroll-area="viewport"]',

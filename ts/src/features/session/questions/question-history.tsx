@@ -7,7 +7,7 @@ import {
 } from "#src/features/session/model/journal.ts";
 import { ResponseHeading } from "#src/features/session/conversation/response-heading.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
-import { TabList } from "#src/shared/components/tab-list.tsx";
+import { QuestionTabs } from "./question-tabs.tsx";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -65,13 +65,11 @@ export function QuestionHistory({
           .join("\n\n")}
       />
       <div className={styles.body}>
-        <TabList
+        <QuestionTabs
           prefix={prefix}
           panelId={panel}
-          label={t("Question steps")}
-          items={qs.map((q, index) => ({
+          items={qs.map((q) => ({
             id: q.key,
-            label: `Q${index + 1}`,
             answered:
               resolution?.state === "allowed" && !!resolution.answers?.[q.key],
           }))}
@@ -89,7 +87,6 @@ export function QuestionHistory({
             role="group"
             aria-label={t("Question")}
           >
-            <small>{t("Question")}</small>
             <PanelScroll
               key={`question-${active.key}`}
               scrollbarLabel={t("Question")}
@@ -102,7 +99,6 @@ export function QuestionHistory({
             role="group"
             aria-label={t("Answer")}
           >
-            <small>{t("Answer")}</small>
             <PanelScroll
               key={`answer-${active.key}`}
               scrollbarLabel={t("Answer")}

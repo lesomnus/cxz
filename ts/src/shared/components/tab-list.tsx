@@ -9,6 +9,7 @@ export function TabList({
   items,
   value,
   choose,
+  className = "",
 }: {
   prefix: string;
   panelId: string;
@@ -21,9 +22,10 @@ export function TabList({
   }[];
   value: string;
   choose: (id: string) => void;
+  className?: string;
 }) {
   return (
-    <div className="tab-list" role="tablist" aria-label={label}>
+    <div className={`tab-list ${className}`} role="tablist" aria-label={label}>
       {items.map((item, index) => (
         <Button
           key={item.id}
