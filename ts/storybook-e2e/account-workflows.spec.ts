@@ -225,6 +225,79 @@ for (const zoom of [1, 1.25, 1.5]) {
   });
 }
 
+test("Account Login keeps both endpoint options aligned throughout a fractional zoom sweep", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 2000, height: 1400 });
+  await open(page, "account-login");
+  await page.getByRole("button", { name: "Add account", exact: true }).click();
+  const trigger = page.getByRole("combobox", { name: "Agent", exact: true });
+  await expect(trigger).toBeVisible();
+  // Settle the unrelated modal entrance before changing its coordinate scale.
+  await page
+    .getByRole("dialog", { name: "Add account", exact: true })
+    .evaluate(async (node) => {
+      await Promise.all(
+        node
+          .getAnimations({ subtree: true })
+          .map((animation) => animation.finished.catch(() => {})),
+      );
+    });
+  const results = await trigger.evaluate(async (node) => {
+    const trigger = node as HTMLButtonElement;
+    const settle = () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    const results: {
+      zoom: number;
+      value: string;
+      alignment?: string;
+      error: number;
+    }[] = [];
+    for (const zoom of [
+      0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.2, 1.25, 1.33, 1.5,
+    ]) {
+      document.body.style.zoom = String(zoom);
+      await settle();
+      for (const [value, next] of [
+        ["codex", "claude"],
+        ["claude", "codex"],
+      ]) {
+        trigger.click();
+        await settle();
+        const popup = document.querySelector<HTMLElement>(".setting-menu")!;
+        const selected = popup.querySelector<HTMLElement>(
+          '[role="option"][aria-selected="true"]',
+        )!;
+        const a = trigger.getBoundingClientRect(),
+          b = selected.getBoundingClientRect();
+        results.push({
+          zoom,
+          value,
+          alignment: popup.dataset.itemAlignment,
+          error: Math.max(
+            ...(["x", "y", "width", "height"] as const).map((key) =>
+              Math.abs(a[key] - b[key]),
+            ),
+          ),
+        });
+        popup
+          .querySelector<HTMLButtonElement>(`[data-option-value="${next}"]`)!
+          .click();
+        await settle();
+      }
+    }
+    return results;
+  });
+  expect(results).toHaveLength(22);
+  expect(
+    results.filter(
+      (result) => result.alignment !== "selected" || result.error >= 0.1,
+    ),
+  ).toEqual([]);
+});
+
 test("account login refreshes status and logout uses confirmation", async ({
   page,
 }) => {
