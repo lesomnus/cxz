@@ -433,3 +433,113 @@ test("approval shortcut is documented and isolated inside the full Storybook man
     /path=\/story\/conversation-questioncard--live-approvals/,
   );
 });
+
+test("departing approvals stay opaque behind the composer before the next card comes forward", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--live-approvals&viewMode=story",
+  );
+  await page
+    .getByRole("button", { name: "Request approval", exact: true })
+    .click();
+  await page.keyboard.press("Control+Alt+n");
+  const group = page.getByRole("group", {
+    name: "Pending approvals",
+    exact: true,
+  });
+  await expect(group).toHaveAttribute("data-pending-count", "2");
+  await group.hover();
+  await page
+    .getByRole("region", {
+      name: "item/commandExecution/requestApproval",
+      exact: true,
+    })
+    .evaluate(async (node) => {
+      await Promise.all(
+        node.getAnimations().map((a) => a.finished.catch(() => {})),
+      );
+    });
+  await page.evaluate(() => {
+    const seen = new WeakSet<Element>();
+    const observer = new MutationObserver(() => {
+      for (const node of document.querySelectorAll(
+        "[data-approval-exiting], [data-motion='promote']",
+      )) {
+        if (seen.has(node)) continue;
+        seen.add(node);
+        for (const animation of node.getAnimations()) {
+          animation.pause();
+          animation.currentTime = 0;
+        }
+      }
+    });
+    observer.observe(document.querySelector(".conversation")!, {
+      childList: true,
+      subtree: true,
+    });
+    (window as any).approvalPauseObserver = observer;
+  });
+  await group.getByRole("button", { name: "Allow", exact: true }).click();
+  await expect(group).toHaveAttribute("data-pending-count", "1");
+  const sample = await page.evaluate(() => {
+    const outgoing = document.querySelector<HTMLElement>(
+      "[data-approval-exiting]",
+    )!;
+    const incoming = document.querySelector<HTMLElement>(
+      "[data-motion='promote']",
+    )!;
+    const stack = document.querySelector<HTMLElement>("[data-approval-stack]")!;
+    const composer = document.querySelector<HTMLElement>(".composer")!;
+    const input = composer.querySelector<HTMLElement>(".composer-input")!;
+    const departure = outgoing.getAnimations()[0];
+    const promotion = incoming.getAnimations()[0];
+    const delay = Number(promotion.effect!.getTiming().delay);
+    departure.currentTime = delay / 2;
+    promotion.currentTime = delay / 2;
+    const before = {
+      opacity: getComputedStyle(outgoing).opacity,
+      promotionProgress: promotion.effect!.getComputedTiming().progress,
+      outgoingLayer: Number(getComputedStyle(outgoing.parentElement!).zIndex),
+      incomingLayer: Number(getComputedStyle(incoming).zIndex),
+      stackLayer: Number(getComputedStyle(stack).zIndex),
+      composerLayer: Number(getComputedStyle(composer).zIndex),
+    };
+    departure.currentTime = delay;
+    promotion.currentTime = delay;
+    const hiddenBeforePromotion =
+      outgoing.getBoundingClientRect().bottom >
+      input.getBoundingClientRect().top;
+    departure.currentTime =
+      Number(departure.effect!.getTiming().duration) - 0.01;
+    const end = {
+      opacity: getComputedStyle(outgoing).opacity,
+      top: outgoing.getBoundingClientRect().top,
+      inputTop: input.getBoundingClientRect().top,
+      clipBottom: outgoing.parentElement!.getBoundingClientRect().bottom,
+      inputBottom: input.getBoundingClientRect().bottom,
+    };
+    (window as any).approvalPauseObserver.disconnect();
+    departure.finish();
+    promotion.finish();
+    return { delay, before, hiddenBeforePromotion, end };
+  });
+  expect(sample.delay).toBeGreaterThan(0);
+  expect(sample.before.opacity).toBe("1");
+  expect(sample.before.promotionProgress).toBe(0);
+  expect(sample.before.outgoingLayer).toBeGreaterThan(
+    sample.before.incomingLayer,
+  );
+  expect(sample.before.stackLayer).toBeLessThan(sample.before.composerLayer);
+  expect(sample.hiddenBeforePromotion).toBe(true);
+  expect(sample.end.opacity).toBe("1");
+  expect(sample.end.top).toBeGreaterThanOrEqual(sample.end.inputTop);
+  expect(sample.end.clipBottom).toBeLessThanOrEqual(sample.end.inputBottom + 1);
+  await expect(page.locator("[data-approval-exiting]")).toHaveCount(0);
+  await expect(
+    page.getByRole("region", {
+      name: "item/commandExecution/requestApproval",
+      exact: true,
+    }),
+  ).toContainText("npm run build");
+});

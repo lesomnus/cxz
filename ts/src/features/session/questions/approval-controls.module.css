@@ -72,6 +72,7 @@
   --approval-card-width: 380px;
   --approval-card-step: calc(2 * var(--space));
   --approval-motion-duration: 180ms;
+  --approval-promotion-delay: 80ms;
   --approval-motion-easing: cubic-bezier(0.22, 0.7, 0.25, 1);
   position: absolute;
   width: min(var(--approval-card-width), calc(100% - 4 * var(--space)));
@@ -83,6 +84,9 @@
 }
 .stack[data-positioned="true"] {
   visibility: visible;
+}
+.stack[data-departing="true"] {
+  z-index: 1;
 }
 .surface {
   border: var(--ui-border-trail-width) solid var(--ui-border-trail-track-color);
@@ -118,6 +122,8 @@
     var(--approval-motion-easing);
 }
 .request {
+  position: relative;
+  z-index: 0;
   display: flex;
   min-height: 0;
   max-height: inherit;
@@ -130,14 +136,28 @@
 }
 .request[data-motion="promote"] {
   animation-name: promote;
+  animation-delay: var(--approval-promotion-delay);
+  animation-fill-mode: both;
+}
+.departureClip {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% - var(--approval-leaving-height));
+  height: calc(
+    var(--approval-leaving-height) + var(--approval-composer-offset) +
+      var(--approval-input-height)
+  );
+  overflow: clip;
+  pointer-events: none;
+  z-index: 2;
 }
 .leaving {
   position: absolute;
   inset-inline: 0;
-  bottom: 0;
+  top: 0;
   pointer-events: none;
-  z-index: 1;
-  animation: depart var(--approval-motion-duration) ease-in forwards;
+  animation: depart var(--approval-motion-duration)
+    var(--approval-motion-easing) forwards;
 }
 .leaving > .content {
   flex: 1;
@@ -210,13 +230,13 @@
   }
 }
 @keyframes depart {
-  0%,
-  65% {
-    opacity: 1;
-  }
   to {
-    opacity: 0;
-    transform: translateY(24px) scale(0.95);
+    transform: translateY(
+        calc(
+          100% + var(--approval-composer-offset) + var(--approval-input-radius)
+        )
+      )
+      scale(0.95);
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -83,6 +83,21 @@ export function ApprovalControls({
         "--approval-card-space",
         `${Math.max(0, button.top - bounds.top - gap * 3)}px`,
       );
+      const input = anchor
+        .closest(".composer")
+        ?.querySelector<HTMLElement>(".composer-input");
+      if (input) {
+        const box = input.getBoundingClientRect();
+        cards.style.setProperty(
+          "--approval-composer-offset",
+          `${Math.max(0, box.top - button.top + gap)}px`,
+        );
+        cards.style.setProperty("--approval-input-height", `${box.height}px`);
+        cards.style.setProperty(
+          "--approval-input-radius",
+          getComputedStyle(input).borderTopLeftRadius,
+        );
+      }
       const box = cards.getBoundingClientRect();
       const left = Math.max(
         bounds.left + gap,
@@ -207,6 +222,7 @@ export function ApprovalControls({
             id={id}
             className={styles.stack}
             data-approval-stack
+            data-departing={!!leaving}
             data-pending-count={requests.length}
             style={!current && leaving ? { height: leaving.height } : undefined}
             onPointerEnter={show}
@@ -262,16 +278,26 @@ export function ApprovalControls({
             {leaving && (
               <div
                 key={`leaving:${leavingKey}`}
-                className={`${styles.surface} ${styles.request} ${styles.leaving}`}
-                style={{ height: leaving.height }}
-                data-approval-exiting
+                className={styles.departureClip}
+                style={
+                  {
+                    "--approval-leaving-height": `${leaving.height}px`,
+                  } as CSSProperties
+                }
                 inert
                 aria-hidden="true"
-                onAnimationEnd={(event) => {
-                  if (event.target === event.currentTarget) finish(leavingKey);
-                }}
               >
-                <ApprovalContent event={leaving.event} />
+                <div
+                  className={`${styles.surface} ${styles.request} ${styles.leaving}`}
+                  style={{ height: leaving.height }}
+                  data-approval-exiting
+                  onAnimationEnd={(event) => {
+                    if (event.target === event.currentTarget)
+                      finish(leavingKey);
+                  }}
+                >
+                  <ApprovalContent event={leaving.event} />
+                </div>
               </div>
             )}
           </div>,

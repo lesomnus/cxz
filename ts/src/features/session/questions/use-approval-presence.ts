@@ -41,13 +41,15 @@ export function useApprovalPresence(
     }
     const snapshot = {
       requests: [...visible],
-      height: front.current?.offsetHeight ?? 0,
+      height: front.current
+        ? parseFloat(getComputedStyle(front.current).height)
+        : 0,
     };
     previous.current = snapshot;
     const node = front.current;
     if (!node) return;
     const observer = new ResizeObserver(() => {
-      snapshot.height = node.offsetHeight;
+      snapshot.height = parseFloat(getComputedStyle(node).height);
     });
     observer.observe(node);
     return () => observer.disconnect();
