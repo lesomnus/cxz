@@ -72,30 +72,19 @@ test("canceled questions preserve their text and cancellation state in every tab
   await expect(content(card, "Answer")).toContainText("Canceled");
 });
 
-test("live and recorded Question cards share tab geometry with separate selection styles", async ({
+test("Question dialog keeps status tabs while history shows numbered underlines", async ({
   page,
 }) => {
   const appearance = (tab: Locator) =>
     tab.evaluate((node) => {
       const style = getComputedStyle(node);
-      const circle = node.querySelector("circle")!;
-      const check = node.querySelector("path")!;
-      const icon = node.querySelector(".tab-answered")!;
       const label = node.querySelector(".tab-label")!;
       return {
         width: style.width,
         height: style.height,
         padding: style.padding,
         font: style.font,
-        columns: getComputedStyle(node.querySelector(".button-content")!)
-          .gridTemplateColumns,
-        iconWidth: icon.getBoundingClientRect().width,
-        labelWidth: label.getBoundingClientRect().width,
         label: label.textContent,
-        circleColor: getComputedStyle(circle).stroke,
-        circleWidth: getComputedStyle(circle).strokeWidth,
-        checkColor: getComputedStyle(check).stroke,
-        checkWidth: getComputedStyle(check).strokeWidth,
       };
     });
   await page.goto(
@@ -103,6 +92,7 @@ test("live and recorded Question cards share tab geometry with separate selectio
   );
   const live = page.getByRole("region", { name: "Question", exact: true });
   const liveTab = live.getByRole("tab", { name: "Q1", exact: true });
+  await expect(liveTab.locator(".tab-answered circle")).toHaveCount(1);
   await expect(liveTab.locator(".tab-answered path")).toHaveCount(0);
   await live.getByRole("radio", { name: "Compact", exact: true }).check();
   await expect(liveTab.locator(".tab-answered path")).toHaveCount(1);
@@ -125,13 +115,49 @@ test("live and recorded Question cards share tab geometry with separate selectio
     .locator(history)
     .getByRole("tab", { name: "Q1", exact: true });
   await expect(recordedTab.locator('[data-mode="integer"]')).toHaveText("01");
+  await expect(page.locator(history).locator(".tab-answered")).toHaveCount(0);
+  expect(
+    await recordedTab.evaluate((node) => {
+      const tab = node.getBoundingClientRect();
+      const number = node
+        .querySelector('[data-mode="integer"]')!
+        .getBoundingClientRect();
+      return Math.abs(number.x + number.width / 2 - tab.x - tab.width / 2);
+    }),
+  ).toBeLessThan(0.5);
   await expect.poll(() => appearance(recordedTab)).toEqual(expected);
   await expect(recordedTab).toHaveCSS("border-radius", "0px");
   await expect(recordedTab).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(recordedTab).toHaveCSS("border-bottom-style", "solid");
   await expect(recordedTab).toHaveAttribute("data-effect", "none");
+  const questionBackground = await content(
+    page.locator(history),
+    "Question",
+  ).evaluate((node) => getComputedStyle(node).backgroundColor);
+  const answerBackground = await content(
+    page.locator(history),
+    "Answer",
+  ).evaluate((node) => getComputedStyle(node).backgroundColor);
+  await page.mouse.move(0, 0);
+  await expect(recordedTab).toHaveCSS("border-bottom-color", answerBackground);
   await recordedTab.hover();
   await expect(recordedTab).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(recordedTab).toHaveCSS(
+    "border-bottom-color",
+    questionBackground,
+  );
+  const otherRecordedTab = page
+    .locator(history)
+    .getByRole("tab", { name: "Q2", exact: true });
+  await otherRecordedTab.hover();
+  await expect(otherRecordedTab).toHaveCSS(
+    "border-bottom-color",
+    questionBackground,
+  );
+  await expect(otherRecordedTab).toHaveCSS(
+    "background-color",
+    "rgba(0, 0, 0, 0)",
+  );
 });
 
 for (const width of [1280, 390]) {

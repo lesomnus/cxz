@@ -25,6 +25,7 @@ export function QuestionTabs({
       label={t("Question steps")}
       items={items.map((item, index) => ({
         ...item,
+        answered: variant === "filled" ? item.answered : undefined,
         label: <CompactNumber value={index + 1} mode="integer" digits={2} />,
         ariaLabel: `Q${index + 1}`,
       }))}
