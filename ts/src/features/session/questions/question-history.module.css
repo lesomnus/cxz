@@ -46,8 +46,16 @@
   scrollbar-width: none;
   margin: 0;
 }
-.panel {
+.panel:global([data-sliding-pages]) {
+  width: auto;
+  max-width: none;
+  height: 100%;
   min-height: 0;
+  margin-inline: calc(-1 * var(--ui-section-padding));
+}
+.pageLayout {
+  height: 100%;
+  padding-inline: var(--ui-section-padding);
 }
 .group {
   grid-template-rows: var(--question-history-question-height) var(

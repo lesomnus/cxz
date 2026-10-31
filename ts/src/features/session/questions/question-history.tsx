@@ -1,5 +1,11 @@
 import { useId, useState } from "react";
-import { Section, SectionGroup, SectionLayout } from "@lesomnus/nox";
+import {
+  Section,
+  SectionGroup,
+  SectionLayout,
+  SlidingPage,
+  SlidingPages,
+} from "@lesomnus/nox";
 import type { EventSource } from "#src/features/session/model/event-source.ts";
 import {
   questions,
@@ -38,6 +44,7 @@ export function QuestionHistory({
   useLocale();
   const prefix = useId();
   const [selected, setSelected] = useState<string>();
+  const [visited, setVisited] = useState(() => new Set<string>());
   const event = source();
   const qs = questions(agent, event);
   const active = qs.find((q) => q.key === selected) ?? qs[0];
@@ -76,43 +83,55 @@ export function QuestionHistory({
               resolution?.state === "allowed" && !!resolution.answers?.[q.key],
           }))}
           value={active.key}
-          choose={setSelected}
+          choose={(key) => {
+            if (key === active.key) return;
+            setVisited((previous) =>
+              new Set(previous).add(active.key).add(key),
+            );
+            setSelected(key);
+          }}
         />
-        <SectionLayout
+        <SlidingPages
+          value={active.key}
+          resize="none"
           id={panel}
           role="tabpanel"
           aria-labelledby={`${prefix}-${activeIndex}`}
           className={styles.panel}
-          align="start"
-          maxWidth="none"
         >
-          <SectionGroup className={styles.group}>
-            <Section
-              className={styles.question}
-              role="group"
-              aria-label={t("Question")}
-            >
-              <PanelScroll
-                key={`question-${active.key}`}
-                scrollbarLabel={t("Question")}
-              >
-                <Markdown text={active.text} />
-              </PanelScroll>
-            </Section>
-            <Section
-              className={styles.answer}
-              role="group"
-              aria-label={t("Answer")}
-            >
-              <PanelScroll
-                key={`answer-${active.key}`}
-                scrollbarLabel={t("Answer")}
-              >
-                <Markdown text={answerText(active, resolution)} />
-              </PanelScroll>
-            </Section>
-          </SectionGroup>
-        </SectionLayout>
+          {qs.map((q, index) => (
+            <SlidingPage key={q.key} value={q.key} aria-label={`Q${index + 1}`}>
+              {(q.key === active.key || visited.has(q.key)) && (
+                <SectionLayout
+                  className={styles.pageLayout}
+                  align="start"
+                  maxWidth="none"
+                >
+                  <SectionGroup className={styles.group}>
+                    <Section
+                      className={styles.question}
+                      role="group"
+                      aria-label={t("Question")}
+                    >
+                      <PanelScroll scrollbarLabel={t("Question")}>
+                        <Markdown text={q.text} />
+                      </PanelScroll>
+                    </Section>
+                    <Section
+                      className={styles.answer}
+                      role="group"
+                      aria-label={t("Answer")}
+                    >
+                      <PanelScroll scrollbarLabel={t("Answer")}>
+                        <Markdown text={answerText(q, resolution)} />
+                      </PanelScroll>
+                    </Section>
+                  </SectionGroup>
+                </SectionLayout>
+              )}
+            </SlidingPage>
+          ))}
+        </SlidingPages>
       </div>
     </article>
   );

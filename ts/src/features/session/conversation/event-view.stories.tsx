@@ -179,7 +179,7 @@ export const LongQuestionHistory: Story = {
     docs: {
       description: {
         story:
-          "Switch between short and overflowing questions and answers. The response card and both content areas keep their heights; each area scrolls independently using the shared ScrollArea. The following response stays in place.",
+          "Switch between short and overflowing questions and answers. Nox SlidingPages moves each question and its answer together in a fixed viewport; the response card and both content areas keep their heights. Each area scrolls independently using the shared ScrollArea, retaining its position when revisited. Unopened question content is mounted on demand. The following response stays in place.",
       },
     },
   },
@@ -222,7 +222,7 @@ export const QuestionHistoryInConversation: Story = {
     docs: {
       description: {
         story:
-          "A completed multi-step Question uses the same header and surface as an agent response. Tabs in its body display each question and its recorded answer, including Markdown and code. The card, question and answer areas keep their heights, with internal scrolling for overflow. This is history, so no live answer form or Submit action is opened.",
+          "A completed multi-step Question uses the same header and surface as an agent response. Tabs in its body slide between each question and its recorded answer using Nox SlidingPages, including Markdown and code. The card, question and answer areas keep their heights, with internal scrolling for overflow and retained scroll positions. This is history, so no live answer form or Submit action is opened.",
       },
     },
   },

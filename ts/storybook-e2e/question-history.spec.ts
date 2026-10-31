@@ -6,6 +6,11 @@ function content(card: Locator, name: "Question" | "Answer") {
   return card.getByRole("group", { name, exact: true });
 }
 
+const slideX = (slide: Locator) =>
+  slide.evaluate(
+    (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m41,
+  );
+
 test("recorded questions share response chrome and show each answer inline", async ({
   page,
 }) => {
@@ -151,6 +156,141 @@ test("Question dialog keeps status tabs while history shows numbered surface but
   );
 });
 
+test("history slides question and answer together, reverses and handles rapid tab navigation without moving the transcript", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(
+    "/iframe.html?id=conversation-eventcards--long-question-history&viewMode=story",
+  );
+  const card = page.locator(history);
+  const slider = card.getByRole("tabpanel");
+  const first = card.getByRole("tab", { name: "Q1", exact: true });
+  const second = card.getByRole("tab", { name: "Q2", exact: true });
+  const last = card.getByRole("tab", { name: "Q3", exact: true });
+  await first.hover();
+  await page.evaluate(() => document.fonts.ready);
+  await slider.evaluate((node) =>
+    node.style.setProperty("--ui-sliding-pages-duration", "1000ms"),
+  );
+  const frame = () =>
+    card.evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      const viewport = node
+        .querySelector('[role="tabpanel"]')!
+        .getBoundingClientRect();
+      const after = document
+        .querySelector('.transcript article.response[data-seq="6"]')!
+        .getBoundingClientRect();
+      return [
+        box.width,
+        box.height,
+        viewport.x - box.x,
+        viewport.width,
+        viewport.height,
+        after.y - box.y,
+      ];
+    });
+  const before = await frame();
+  const firstPage = slider.locator('[data-sliding-page="layout"]');
+  const secondPage = slider.locator('[data-sliding-page="notes"]');
+  await second.click();
+  await expect(second).toBeFocused();
+  await expect(secondPage).toHaveAttribute("data-active", "true");
+  await expect.poll(() => slideX(firstPage)).toBeLessThan(-1);
+  const incoming = await slideX(secondPage);
+  expect(incoming).toBeGreaterThan(0);
+  expect(incoming).toBeLessThan((await slider.boundingBox())!.width);
+  await expect(firstPage).toHaveAttribute("inert", "");
+  await expect(firstPage).toHaveAttribute("aria-hidden", "true");
+  await expect(content(card, "Question")).toHaveCount(1);
+  const samples = await card.evaluate(async (node) => {
+    const result: number[][] = [];
+    for (let index = 0; index < 5; index++) {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+      const box = node.getBoundingClientRect();
+      const viewport = node
+        .querySelector('[role="tabpanel"]')!
+        .getBoundingClientRect();
+      const after = document
+        .querySelector('.transcript article.response[data-seq="6"]')!
+        .getBoundingClientRect();
+      const sections = [
+        ...node.querySelectorAll("[data-sliding-page][data-active] section"),
+      ].map((section) => section.getBoundingClientRect());
+      result.push([
+        box.width,
+        box.height,
+        viewport.x - box.x,
+        viewport.width,
+        viewport.height,
+        after.y - box.y,
+        sections[1].x - sections[0].x,
+      ]);
+    }
+    return result;
+  });
+  for (const sample of samples) expect(sample).toEqual([...before, 0]);
+  await first.click();
+  await expect(firstPage).toHaveAttribute("data-active", "true");
+  await expect.poll(() => slideX(firstPage)).toBeLessThan(-1);
+  await expect(secondPage).toHaveAttribute("inert", "");
+  await first.press("End");
+  await last.press("Home");
+  await first.press("ArrowRight");
+  await second.press("End");
+  await expect(last).toBeFocused();
+  const active = slider.locator("[data-sliding-page][data-active]");
+  await expect(active).toHaveAttribute("data-sliding-page", "timing");
+  await expect.poll(async () => Math.abs(await slideX(active))).toBeLessThan(1);
+  await expect(content(card, "Answer")).toContainText("Now");
+  expect(await frame()).toEqual(before);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("history switches immediately with reduced motion and retains tab focus", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(
+    "/iframe.html?id=conversation-eventcards--answered-question&viewMode=story",
+  );
+  const card = page.locator(history);
+  const second = card.getByRole("tab", { name: "Q2", exact: true });
+  await expect(card).toBeVisible();
+  const before = (await card.boundingBox())!.height;
+  await second.click();
+  const active = card.locator("[data-sliding-page][data-active]");
+  await expect(active).toHaveAttribute("data-sliding-page", "notes");
+  await expect(active).toHaveCSS("transition-duration", "0s");
+  await expect
+    .poll(async () => Math.abs(await slideX(active)))
+    .toBeLessThan(0.5);
+  expect(await active.evaluate((node) => node.getAnimations().length)).toBe(0);
+  await expect(second).toBeFocused();
+  await expect(content(card, "Answer").locator("pre code")).toHaveText(
+    "const compact = true;\n",
+  );
+  await second.press("End");
+  await expect(
+    card.getByRole("tab", { name: "Q3", exact: true }),
+  ).toBeFocused();
+  await expect(active).toHaveAttribute("data-sliding-page", "timing");
+  await expect(card.locator('[data-sliding-page="notes"]')).toHaveAttribute(
+    "inert",
+    "",
+  );
+  expect((await card.boundingBox())!.height).toBe(before);
+});
+
 for (const width of [1280, 390]) {
   test(`recorded questions stay between conversation messages at ${width}px`, async ({
     page,
@@ -200,11 +340,12 @@ for (const width of [1280, 390]) {
     );
     const card = page.locator(history);
     await expect(card).toBeVisible();
+    await expect(card.locator("section")).toHaveCount(2);
     await page.evaluate(() => document.fonts.ready);
     const geometry = () =>
       card.evaluate((node) => {
         const origin = node.getBoundingClientRect();
-        const panel = node.querySelector('[role="tabpanel"]')!;
+        const panel = node.querySelector("[data-sliding-page][data-active]")!;
         const regions = [...panel.querySelectorAll("section")];
         const next = document.querySelector(
           '.transcript article.response[data-seq="6"]',
@@ -227,7 +368,9 @@ for (const width of [1280, 390]) {
         )!;
         const expected = next.getBoundingClientRect().x;
         return [
-          ...node.querySelectorAll("section .markdown > :first-child"),
+          ...node.querySelectorAll(
+            "[data-sliding-page][data-active] section .markdown > :first-child",
+          ),
         ].map((el) => el.getBoundingClientRect().x - expected);
       });
     await expect.poll(textStarts).toEqual([0, 0]);
@@ -236,6 +379,7 @@ for (const width of [1280, 390]) {
     await expect(content(card, "Answer")).toContainText("Change 12");
     await expect.poll(geometry).toEqual(initial);
     await expect.poll(textStarts).toEqual([0, 0]);
+    const positions: number[] = [];
     for (const name of ["Question", "Answer"] as const) {
       const viewport = content(card, name).locator(
         '[data-scroll-area="viewport"]',
@@ -249,10 +393,21 @@ for (const width of [1280, 390]) {
         .poll(() => viewport.evaluate((el) => el.scrollTop))
         .toBeGreaterThan(0);
       await expect.poll(geometry).toEqual(initial);
+      positions.push(await viewport.evaluate((el) => el.scrollTop));
     }
     await card.getByRole("tab", { name: "Q3", exact: true }).click();
     await expect(content(card, "Answer")).toContainText("Now");
     await expect.poll(geometry).toEqual(initial);
+    await card.getByRole("tab", { name: "Q2", exact: true }).click();
+    await expect.poll(geometry).toEqual(initial);
+    for (const [index, name] of (["Question", "Answer"] as const).entries()) {
+      const viewport = content(card, name).locator(
+        '[data-scroll-area="viewport"]',
+      );
+      await expect
+        .poll(() => viewport.evaluate((el) => el.scrollTop))
+        .toBe(positions[index]);
+    }
     await card.getByRole("tab", { name: "Q1", exact: true }).click();
     await expect(content(card, "Answer")).toContainText("Compact");
     await expect.poll(geometry).toEqual(initial);
