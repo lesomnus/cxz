@@ -47,6 +47,9 @@ test("automatic approvals do not flash cards; unresolved approvals and questions
   await page
     .getByRole("button", { name: "Request approval", exact: true })
     .click();
+  await expect(group).toHaveAttribute("data-pending-count", "1");
+  await expect(page.locator("[data-approval-stack]")).toHaveCount(0);
+  await group.hover();
   await expect(
     page.getByRole("region", {
       name: "item/commandExecution/requestApproval",
@@ -106,8 +109,9 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     await expect(group).toHaveAttribute("data-pending-count", "3");
+    await group.hover();
     await expect(stack).toHaveAttribute("data-positioned", "true");
-    await expect(stack.locator(":scope > [aria-hidden='true']")).toHaveCount(2);
+    await expect(stack.locator("[data-approval-back]")).toHaveCount(2);
     await expect(current).toContainText("git status --short");
     await expect(current).toContainText("/workspace");
     await expect(current.locator(".card-heading, .card-footer")).toHaveCount(0);
@@ -166,7 +170,7 @@ for (const width of [1280, 390]) {
     await group.getByRole("button", { name: "Deny", exact: true }).click();
     await expect(group).toHaveAttribute("data-pending-count", "1");
     await expect(current).toContainText("git diff --stat");
-    await expect(stack.locator(":scope > [aria-hidden='true']")).toHaveCount(0);
+    await expect(stack.locator("[data-approval-back]")).toHaveCount(0);
     await group.getByRole("button", { name: "Allow", exact: true }).focus();
     await page.keyboard.press("Enter");
     await expect(group).toHaveAttribute("data-pending-count", "0");
@@ -228,6 +232,7 @@ test("a busy approval keeps the request visible and both decisions disabled", as
     exact: true,
   });
   await expect(group).toHaveAttribute("aria-busy", "true");
+  await group.hover();
   await expect(
     group.getByRole("button", { name: "Allow", exact: true }),
   ).toBeDisabled();
@@ -240,4 +245,191 @@ test("a busy approval keeps the request visible and both decisions disabled", as
       exact: true,
     }),
   ).toBeVisible();
+});
+
+test("approval count stays visible while request cards open on hover and keyboard focus", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--live-approvals&viewMode=story",
+  );
+  const controls = page.locator("[data-approval-controls]");
+  const group = page.getByRole("group", {
+    name: "Pending approvals",
+    exact: true,
+  });
+  const request = page.getByRole("button", {
+    name: "Request approval",
+    exact: true,
+  });
+  await request.click();
+  await request.click();
+  await expect(group).toHaveAttribute("data-pending-count", "2");
+  const count = controls.getByRole("img", {
+    name: "Pending approvals: 2",
+    exact: true,
+  });
+  await expect(count).toBeVisible();
+  const countBox = (await count.boundingBox())!;
+  expect(countBox.x + countBox.width).toBeLessThan(
+    (await group.boundingBox())!.x,
+  );
+  const stack = page.locator("[data-approval-stack]");
+  await expect(stack).toHaveCount(0);
+  await controls.hover();
+  const current = page.getByRole("region", {
+    name: "item/commandExecution/requestApproval",
+    exact: true,
+  });
+  await expect(current).toBeVisible();
+  await current.hover();
+  await expect(current).toBeVisible();
+  await page.mouse.move(10, 200);
+  await expect(stack).toHaveCount(0);
+  await expect(group).toHaveAttribute("data-pending-count", "2");
+  await group.getByRole("button", { name: "Deny", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(current).toBeVisible();
+});
+
+test("approval queue animates arrival, promotion and departure without keeping stale requests", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--live-approvals&viewMode=story",
+  );
+  await page.locator("[data-approval-controls]").waitFor();
+  await page.evaluate(() => {
+    const seen = new WeakSet<Element>();
+    const motions: { kind: string; frames: Keyframe[] }[] = [];
+    (window as any).approvalMotions = motions;
+    new MutationObserver(() => {
+      for (const node of document.querySelectorAll(
+        "[data-approval-stack] [data-motion], [data-approval-exiting], [data-approval-back] > div",
+      )) {
+        if (seen.has(node)) continue;
+        seen.add(node);
+        motions.push({
+          kind: node.hasAttribute("data-approval-exiting")
+            ? "depart"
+            : (node.getAttribute("data-motion") ?? "back"),
+          frames: node
+            .getAnimations()
+            .flatMap((a) => (a.effect as KeyframeEffect).getKeyframes()),
+        });
+      }
+    }).observe(document.querySelector(".conversation")!, {
+      childList: true,
+      subtree: true,
+    });
+  });
+  const request = page.getByRole("button", {
+    name: "Request approval",
+    exact: true,
+  });
+  await request.click();
+  const group = page.getByRole("group", {
+    name: "Pending approvals",
+    exact: true,
+  });
+  await expect(group).toHaveAttribute("data-pending-count", "1");
+  await group.hover();
+  await expect(page.locator("[data-approval-stack]")).toBeVisible();
+  // The demo shortcut appends requests without moving the pointer away.
+  await page.keyboard.press("Control+Alt+n");
+  await expect(group).toHaveAttribute("data-pending-count", "2");
+  await page.keyboard.press("Control+Alt+n");
+  await expect(group).toHaveAttribute("data-pending-count", "3");
+  await page.keyboard.press("Control+Alt+n");
+  await expect(group).toHaveAttribute("data-pending-count", "4");
+  await group.getByRole("button", { name: "Allow", exact: true }).click();
+  await expect(group).toHaveAttribute("data-pending-count", "3");
+  await expect(
+    page.getByRole("region", {
+      name: "item/commandExecution/requestApproval",
+      exact: true,
+    }),
+  ).toContainText("npm run build");
+  const motions = await page.evaluate(
+    () =>
+      (window as any).approvalMotions as { kind: string; frames: Keyframe[] }[],
+  );
+  for (const kind of ["arrive", "back", "promote", "depart"]) {
+    const motion = motions.find((m) => m.kind === kind);
+    expect(motion, kind).toBeTruthy();
+    expect(motion!.frames.length, kind).toBeGreaterThan(1);
+    expect(motion!.frames[0].transform, kind).not.toEqual(
+      motion!.frames.at(-1)!.transform,
+    );
+  }
+  await group.getByRole("button", { name: "Deny", exact: true }).click();
+  await expect(group).toHaveAttribute("data-pending-count", "2");
+  await group.getByRole("button", { name: "Allow", exact: true }).click();
+  await expect(group).toHaveAttribute("data-pending-count", "1");
+  await group.getByRole("button", { name: "Allow", exact: true }).click();
+  await expect(group).toHaveAttribute("data-pending-count", "0");
+  await expect(page.locator("[data-approval-stack]")).toHaveCount(0);
+  await expect(page.locator("[data-approval-exiting]")).toHaveCount(0);
+});
+
+test("approval queue respects reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--live-approvals&viewMode=story",
+  );
+  const request = page.getByRole("button", {
+    name: "Request approval",
+    exact: true,
+  });
+  await request.click();
+  await request.click();
+  const group = page.getByRole("group", {
+    name: "Pending approvals",
+    exact: true,
+  });
+  await expect(group).toHaveAttribute("data-pending-count", "2");
+  await group.hover();
+  await expect(page.locator("[data-approval-stack]")).toBeVisible();
+  expect(
+    await page
+      .locator("[data-motion]")
+      .evaluateAll((nodes) => nodes.flatMap((n) => n.getAnimations()).length),
+  ).toBe(0);
+  await group.getByRole("button", { name: "Allow", exact: true }).click();
+  await expect(group).toHaveAttribute("data-pending-count", "1");
+  await expect(page.locator("[data-approval-exiting]")).toHaveCount(0);
+});
+
+test("approval shortcut is documented and isolated inside the full Storybook manager", async ({
+  page,
+}) => {
+  await page.goto("/?path=/story/conversation-questioncard--live-approvals");
+  const preview = page.frameLocator("#storybook-preview-iframe");
+  await expect(preview.getByText(/to add an approval request\./)).toBeVisible();
+  await preview
+    .getByRole("button", { name: "Request approval", exact: true })
+    .click();
+  const group = preview.getByRole("group", {
+    name: "Pending approvals",
+    exact: true,
+  });
+  await expect(group).toHaveAttribute("data-pending-count", "1");
+  await group.hover();
+  await preview.locator("body").evaluate(() => {
+    (window as any).approvalShortcutLeaks = 0;
+    window.addEventListener("keydown", (event) => {
+      if (event.code === "KeyN" && event.ctrlKey && event.altKey)
+        (window as any).approvalShortcutLeaks++;
+    });
+  });
+  await page.keyboard.press("Control+Alt+n");
+  await expect(group).toHaveAttribute("data-pending-count", "2");
+  expect(
+    await preview
+      .locator("body")
+      .evaluate(() => (window as any).approvalShortcutLeaks),
+  ).toBe(0);
+  await expect(page).toHaveURL(
+    /path=\/story\/conversation-questioncard--live-approvals/,
+  );
 });

@@ -244,8 +244,29 @@ export const LiveApprovals: Story = {
       if (remaining > 1)
         timers.current.push(setTimeout(() => automatic(remaining - 1), 50));
     };
+    useEffect(() => {
+      const addApproval = (event: KeyboardEvent) => {
+        if (
+          event.code !== "KeyN" ||
+          !event.ctrlKey ||
+          !event.altKey ||
+          event.metaKey ||
+          event.shiftKey ||
+          event.repeat
+        )
+          return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        cancelTimers();
+        receive(request());
+      };
+      window.addEventListener("keydown", addApproval, true);
+      return () => window.removeEventListener("keydown", addApproval, true);
+    }, []);
     return (
-      <>
+      <div
+        style={{ display: "flex", flexDirection: "column", height: "100dvh" }}
+      >
         <div style={{ display: "flex", gap: 4 }}>
           <Button
             onClick={() => {
@@ -256,6 +277,7 @@ export const LiveApprovals: Story = {
             Simulate automatic approvals
           </Button>
           <Button
+            title="Add approval request (Ctrl+Alt+N)"
             onClick={() => {
               cancelTimers();
               receive(request());
@@ -280,6 +302,11 @@ export const LiveApprovals: Story = {
             Resolve request
           </Button>
         </div>
+        <p style={{ margin: "8px 0", fontSize: 12, color: "var(--muted)" }}>
+          Press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd> to add an
+          approval request. Hover the count or decision buttons to view the
+          request stack.
+        </p>
         <ComponentPreview
           working
           approvals={
@@ -301,14 +328,14 @@ export const LiveApprovals: Story = {
             />
           ))}
         </ComponentPreview>
-      </>
+      </div>
     );
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Request approval appends independent permission requests. The X/check group stays immediately left of the composer menu; without a request its icons and translucent border are barely visible and disabled. Buttons have transparent backgrounds by default; dark red/green icons brighten and gain a tinted background on enabled hover. A compact, bordered, translucent blurred box shows only the request content centered above the controls. Remaining requests peek behind it without adding background layers beneath the front box. Deny/Allow resolves only the front request, in arrival order. Automatic native approval/resolution pairs use the real pending reducer and display gate without flashing request boxes or enabling the controls. Ask question keeps the separate persistent Question form.",
+          "Request approval or Ctrl+Alt+N appends independent permission requests without leaving the hovered controls. The shortcut is handled only inside this example and does not propagate to Storybook. A fixed-width count precedes the X/check group immediately left of the composer menu; without requests its icons and border are barely visible and disabled. Hover the count/buttons to reveal the compact bordered, blurred request box; it stays open while hovering its content, and keyboard focus also opens it. Buttons have transparent backgrounds at rest; dark red/green icons brighten and gain a tinted background on enabled hover. Resolved requests descend before fading, queued requests come forward, and new requests rise behind the front box without adding background layers beneath it. Only the next and newest queued requests peek behind the front. Deny/Allow resolves only the front request, in arrival order. Reduced motion disables the transitions. Automatic native approval/resolution pairs use the real pending reducer and display gate without flashing request boxes or enabling the controls. Ask question keeps the separate persistent Question form.",
       },
     },
   },

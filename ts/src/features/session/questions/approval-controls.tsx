@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -6,13 +7,14 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
-import { Button, ScrollArea } from "@lesomnus/nox";
+import { Button, CompactNumber, ScrollArea } from "@lesomnus/nox";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { approvalTitle, payload } from "#src/features/session/model/journal.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./approval-controls.module.css";
+import { approvalKey, useApprovalPresence } from "./use-approval-presence";
 
 export function ApprovalControls({
   requests,
@@ -25,13 +27,47 @@ export function ApprovalControls({
 }) {
   useLocale();
   const active = requests[0];
-  const key = active ? `${active.runId}:${active.requestId}:${active.seq}` : "";
   const id = useId();
+  const container = useRef<HTMLDivElement>(null);
   const controls = useRef<HTMLDivElement>(null);
   const stack = useRef<HTMLDivElement>(null);
+  const front = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef(0);
   const locked = useRef(false);
   const [deciding, setDeciding] = useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const { current, visible, leaving, entryDepth, finish } = useApprovalPresence(
+    requests,
+    open,
+    front,
+  );
+  const key = approvalKey(current);
+  const leavingKey = approvalKey(leaving?.event);
+  const backRequests =
+    visible.length > 3
+      ? [visible[1], visible[visible.length - 1]]
+      : visible.slice(1, 3);
+  const show = () => {
+    window.clearTimeout(closeTimer.current);
+    setOpen(true);
+  };
+  const closeSoon = () => {
+    window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => {
+      if (
+        !container.current?.matches(":hover") &&
+        !stack.current?.matches(":hover") &&
+        !container.current?.querySelector(":focus-visible") &&
+        !stack.current?.querySelector(":focus-visible")
+      )
+        setOpen(false);
+    }, 60);
+  };
+  const focus = () => {
+    if (document.activeElement?.matches(":focus-visible")) show();
+  };
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
   useLayoutEffect(() => {
     setHost(controls.current?.closest<HTMLElement>(".conversation") ?? null);
   }, [key]);
@@ -68,7 +104,7 @@ export function ApprovalControls({
       observer.disconnect();
       window.removeEventListener("resize", position);
     };
-  }, [host, key, requests.length]);
+  }, [host, key, leavingKey, requests.length]);
   const data = active ? payload(active) : {};
   const unsupported = !!(
     active?.text === "mcpServer/elicitation/request" &&
@@ -89,62 +125,81 @@ export function ApprovalControls({
   return (
     <>
       <div
-        ref={controls}
-        className={styles.group}
-        role="group"
-        aria-label={t("Pending approvals")}
-        aria-description={`${t("Pending approvals")}: ${requests.length}`}
-        aria-controls={active ? id : undefined}
-        aria-busy={busy || deciding}
+        ref={container}
+        className={styles.controls}
+        data-approval-controls
         data-pending-count={requests.length}
+        onPointerEnter={show}
+        onPointerLeave={closeSoon}
+        onFocusCapture={focus}
+        onBlurCapture={closeSoon}
       >
-        <Button
-          type="button"
-          effect="none"
-          className={`${styles.decision} ${styles.deny}`}
-          aria-label={t("Deny")}
-          title={t("Deny")}
-          disabled={disabled}
-          onClick={() => decide(false)}
+        <CompactNumber
+          className={styles.count}
+          mode="integer"
+          digits={3}
+          value={requests.length}
+          muted={!requests.length}
+          label={`${t("Pending approvals")}: ${requests.length}`}
+        />
+        <div
+          ref={controls}
+          className={styles.group}
+          role="group"
+          aria-label={t("Pending approvals")}
+          aria-description={`${t("Pending approvals")}: ${requests.length}`}
+          aria-controls={current ? id : undefined}
+          aria-busy={busy || deciding}
+          data-pending-count={requests.length}
         >
-          <svg
-            viewBox="0 0 16 16"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            aria-hidden="true"
+          <Button
+            type="button"
+            effect="none"
+            className={`${styles.decision} ${styles.deny}`}
+            aria-label={t("Deny")}
+            title={t("Deny")}
+            disabled={disabled}
+            onClick={() => decide(false)}
           >
-            <path d="m4 4 8 8M12 4l-8 8" />
-          </svg>
-        </Button>
-        <Button
-          type="button"
-          effect="none"
-          className={`${styles.decision} ${styles.allow}`}
-          aria-label={t("Allow")}
-          title={t("Allow")}
-          disabled={disabled || unsupported}
-          onClick={() => decide(true)}
-        >
-          <svg
-            viewBox="0 0 16 16"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+            <svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="m4 4 8 8M12 4l-8 8" />
+            </svg>
+          </Button>
+          <Button
+            type="button"
+            effect="none"
+            className={`${styles.decision} ${styles.allow}`}
+            aria-label={t("Allow")}
+            title={t("Allow")}
+            disabled={disabled || unsupported}
+            onClick={() => decide(true)}
           >
-            <path d="m3 8 3.2 3.2L13 4.5" />
-          </svg>
-        </Button>
+            <svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m3 8 3.2 3.2L13 4.5" />
+            </svg>
+          </Button>
+        </div>
       </div>
-      {active &&
+      {(current || leaving) &&
         host &&
         createPortal(
           <div
@@ -153,41 +208,72 @@ export function ApprovalControls({
             className={styles.stack}
             data-approval-stack
             data-pending-count={requests.length}
+            style={!current && leaving ? { height: leaving.height } : undefined}
+            onPointerEnter={show}
+            onPointerLeave={closeSoon}
+            onFocusCapture={focus}
+            onBlurCapture={closeSoon}
           >
-            {[2, 1]
-              .filter((depth) => depth < requests.length)
-              .map((depth) => (
+            {backRequests.map((event, index) => {
+              const depth = index + 1;
+              return (
                 <div
-                  key={depth}
+                  key={approvalKey(event)}
                   inert
                   aria-hidden="true"
-                  className={`${styles.surface} ${styles.back}`}
+                  data-approval-back={depth}
+                  className={styles.backClip}
                   style={{ "--approval-depth": depth } as CSSProperties}
-                />
-              ))}
-            <div
-              key={key}
-              className={`${styles.surface} ${styles.request}`}
-              role="region"
-              aria-label={approvalTitle(active)}
-              aria-live="polite"
-              data-request-id={active.requestId}
-            >
-              <ScrollArea
-                className={styles.scroll}
-                viewportClassName={styles.viewport}
-                scrollbarLabel={t("Request details")}
+                >
+                  <div className={`${styles.surface} ${styles.back}`} />
+                </div>
+              );
+            })}
+            {current && (
+              <div
+                ref={front}
+                key={key}
+                className={`${styles.surface} ${styles.request}`}
+                data-motion={entryDepth ? "promote" : "arrive"}
+                style={
+                  { "--approval-entry-depth": entryDepth } as CSSProperties
+                }
+                role="region"
+                aria-label={approvalTitle(current)}
+                aria-live="polite"
+                data-request-id={current.requestId}
               >
-                <ApprovalContent event={active} />
-                {unsupported && (
-                  <p className={styles.notice}>
-                    {t(
-                      "This request form is not supported in the web client yet. Complete it in the TUI.",
-                    )}
-                  </p>
-                )}
-              </ScrollArea>
-            </div>
+                <ScrollArea
+                  className={styles.scroll}
+                  viewportClassName={styles.viewport}
+                  scrollbarLabel={t("Request details")}
+                >
+                  <ApprovalContent event={current} />
+                  {unsupported && (
+                    <p className={styles.notice}>
+                      {t(
+                        "This request form is not supported in the web client yet. Complete it in the TUI.",
+                      )}
+                    </p>
+                  )}
+                </ScrollArea>
+              </div>
+            )}
+            {leaving && (
+              <div
+                key={`leaving:${leavingKey}`}
+                className={`${styles.surface} ${styles.request} ${styles.leaving}`}
+                style={{ height: leaving.height }}
+                data-approval-exiting
+                inert
+                aria-hidden="true"
+                onAnimationEnd={(event) => {
+                  if (event.target === event.currentTarget) finish(leavingKey);
+                }}
+              >
+                <ApprovalContent event={leaving.event} />
+              </div>
+            )}
           </div>,
           host,
         )}

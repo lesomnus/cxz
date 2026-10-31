@@ -26,12 +26,15 @@ npm run storybook
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
   `QuestionHistoryInConversation`은 사용자·에이전트 대화 중간에 답변 완료된 Question 기록을 표시합니다.
   질문 카드를 더블클릭하면 선택한 항목과 Markdown·코드가 포함된 주관식 답변 전문을 확인합니다.
-- `Conversation/QuestionCard/LiveApprovals`: `Request approval`을 여러 번 누르면 작업 허용 요청이 쌓입니다.
+- `Conversation/QuestionCard/LiveApprovals`: `Request approval` 또는 예제 안의 `Ctrl+Alt+N`으로 작업 허용 요청을 추가합니다.
   toolbar 더보기 왼쪽의 테두리가 있는 X·체크 그룹은 요청이 없어도 비활성 상태로 유지됩니다.
   요청이 없으면 아이콘과 반투명 테두리는 아주 희미하게 표시됩니다. 평소에는 배경 없이 어두운
   적색·녹색 아이콘을 표시하고, hover 시 밝아진 아이콘과 해당 색 배경을 표시합니다.
-  요청 내용만 담은 테두리와 블러 배경의 작은 상자가 버튼 위 중앙에 뜹니다. 남은 요청은 뒤로
-  드러나는 부분만 그려 앞 상자의 배경이 중첩되어 어두워지지 않습니다. 일반 Question 폼은 기존 위치를 유지하며,
+  그룹 왼쪽에는 고정 폭 요청 수가 표시됩니다. 수나 버튼에 hover하면 요청 내용만 담은 테두리와
+  블러 배경의 작은 상자가 버튼 위 중앙에 뜨고, 마우스를 카드로 옮겨 내용을 읽거나 스크롤할 수 있습니다.
+  키보드 포커스로도 열립니다. 처리된 요청은 아래로 내려간 뒤 사라지고, 다음 요청은 앞으로,
+  새 요청은 뒤에서 위로 이동합니다. 뒤 카드는 드러나는 부분만 그려 앞 상자의 배경이 중첩되어
+  어두워지지 않습니다. 움직임 줄이기 설정을 존중합니다. 일반 Question 폼은 기존 위치를 유지하며,
   자동으로 해결되는 허용 요청은 표시 대기 시간 안에 사라져 상자가 깜빡이거나 버튼이 활성화되지 않습니다.
 - `Conversation/QuestionCard`: 라디오 선택, 주관식·Other 편집기, 단계별 탭과 Markdown 선택지 preview. FreeText, Steps, AsyncSteps, OptionPreviews, LongQuestions로 각 이벤트 형식과 전체 답변 제출을 확인합니다. 선택지 목록만 스크롤하고 Other와 footer는 고정됩니다. 질문 전환 시 가장 긴 질문에 맞춘 높이를 유지하며, 대화를 스크롤하면 카드가 입력창 뒤로 내려갔다가 마우스 접근이나 포커스로 복귀합니다. 상세 카드가 가려도 답변은 유지되며, 명시적 제출 또는 Cancel로만 종료합니다.
 - `Conversation/Playground`: 메시지 입력과 전송부터 대화 카드 생성까지 이어지는 인터랙티브 미리보기.
