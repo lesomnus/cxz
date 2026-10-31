@@ -24,7 +24,7 @@ test("quota hover opens above the stationary outlined graph with stable columns"
       "data-enter-from",
       "from-bottom-right",
     );
-    await expect(content.locator(":scope > span").last()).toHaveText(
+    await expect(tooltip.getByRole("cell").last()).toHaveText(
       story === "full"
         ? "100%"
         : story === "low"
@@ -43,7 +43,7 @@ test("quota hover opens above the stationary outlined graph with stable columns"
     expect(glyphs!.x + glyphs!.width).toBeLessThan(donut.x);
     const box = (await tooltip.boundingBox())!;
     const center = box.y + box.height / 2;
-    for (const item of await content.locator(":scope > *").all()) {
+    for (const item of await tooltip.getByRole("cell").all()) {
       const bounds = (await item.boundingBox())!;
       expect(Math.abs(bounds.y + bounds.height / 2 - center)).toBeLessThan(1);
     }
@@ -78,6 +78,85 @@ test("quota hover opens above the stationary outlined graph with stable columns"
     await graph.locator("..").blur();
     await expect(tooltip).toBeHidden();
   }
+});
+
+test("quota hover shows session and weekly in separate aligned rows with independent values", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-usage--session-and-weekly&viewMode=story",
+  );
+  const graph = page.locator(".quota-dots");
+  const before = (await graph.boundingBox())!;
+  await graph.hover();
+  const tooltip = page.getByRole("tooltip");
+  const rows = tooltip.getByRole("row");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0).getByRole("cell").nth(0)).toHaveText("session");
+  await expect(rows.nth(1).getByRole("cell").nth(0)).toHaveText("weekly");
+  await expect(rows.nth(0).getByRole("cell").nth(2)).toHaveText("72%");
+  await expect(rows.nth(1).getByRole("cell").nth(2)).toHaveText("8%");
+  await expect(rows.nth(0).getByRole("cell").nth(1)).toHaveText(
+    "left 00d05h00m",
+  );
+  await expect(rows.nth(1).getByRole("cell").nth(1)).toHaveText(
+    "left 06d12h00m",
+  );
+  await expect(rows.nth(0)).toHaveAttribute("data-quota-level", "normal");
+  await expect(rows.nth(1)).toHaveAttribute("data-quota-level", "critical");
+  const colors = await rows.evaluateAll((rows) =>
+    rows.map((row) => getComputedStyle(row.lastElementChild!).color),
+  );
+  expect(colors[0]).not.toBe(colors[1]);
+  for (let cell = 0; cell < 3; cell++) {
+    const first = (await rows
+      .nth(0)
+      .getByRole("cell")
+      .nth(cell)
+      .boundingBox())!;
+    const second = (await rows
+      .nth(1)
+      .getByRole("cell")
+      .nth(cell)
+      .boundingBox())!;
+    expect(first.y + first.height).toBeLessThan(second.y);
+    expect(first.x).toBeCloseTo(second.x, 0);
+    expect(first.width).toBeCloseTo(second.width, 0);
+  }
+  expect(await graph.boundingBox()).toEqual(before);
+});
+
+test("quota hover retains all model buckets and unreported model windows", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-usage--multiple-buckets&viewMode=story",
+  );
+  await page.locator(".quota-dots").hover();
+  const rows = page.getByRole("tooltip").getByRole("row");
+  await expect(rows).toHaveCount(4);
+  await expect(rows.nth(0).getByRole("cell").first()).toHaveText(
+    "codex · session",
+  );
+  await expect(rows.nth(2).getByRole("cell").first()).toHaveText(
+    "Spark · session",
+  );
+  await expect(rows.nth(2).getByRole("cell").last()).toHaveText("24%");
+  await page.goto(
+    "/iframe.html?id=conversation-usage--claude-windows&viewMode=story",
+  );
+  await page.locator(".quota-dots").hover();
+  const claudeRows = page.getByRole("tooltip").getByRole("row");
+  await expect(claudeRows).toHaveCount(5);
+  await expect(claudeRows.nth(2).getByRole("cell").first()).toHaveText(
+    "opus weekly",
+  );
+  await expect(claudeRows.nth(3).getByRole("cell").first()).toHaveText(
+    "sonnet weekly",
+  );
+  await expect(claudeRows.nth(3).getByRole("cell").last()).toHaveText("—");
+  await expect(claudeRows.nth(4).getByRole("cell").first()).toHaveText("Fable");
+  await expect(claudeRows.nth(4).getByRole("cell").last()).toHaveText("35%");
 });
 
 test("quota reveal respects reduced motion", async ({ page }) => {
