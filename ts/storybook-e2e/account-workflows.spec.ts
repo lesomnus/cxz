@@ -100,6 +100,74 @@ test("account creation uses the actual form and Reset clears its isolated state"
   await expect(card).toHaveCount(0);
 });
 
+for (const viewport of [
+  { width: 1200, height: 900, fractional: false },
+  { width: 390, height: 720, fractional: false },
+  { width: 1200, height: 900, fractional: true },
+]) {
+  test(`agent selection stays on its trigger after changing and reopening at width ${viewport.width}${viewport.fractional ? " with fractional height" : ""}`, async ({
+    page,
+  }, info) => {
+    await page.setViewportSize(viewport);
+    await open(page, "add-account");
+    await page
+      .getByRole("button", { name: "Add account", exact: true })
+      .click();
+    const trigger = page.getByRole("combobox", { name: "Agent", exact: true });
+    for (const [current, next] of [
+      ["Codex", "Claude"],
+      ["Claude", "Codex"],
+      ["Codex", "Claude"],
+      ["Claude", "Claude"],
+    ]) {
+      await expect(trigger).toHaveText(current);
+      if (viewport.fractional && current === "Claude") {
+        await page
+          .getByRole("group", { name: "Account details", exact: true })
+          .evaluate((node) =>
+            node.style.setProperty(
+              "--ui-form-control-padding-block",
+              "11.875px",
+            ),
+          );
+      }
+      const box = (await trigger.boundingBox())!;
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      // Include a real held press, so the content has reached its pressed scale.
+      await page.waitForTimeout(120);
+      await page.mouse.up();
+      const popup = page.locator(".setting-menu");
+      const selected = popup.getByRole("option", {
+        name: current,
+        exact: true,
+      });
+      await expect(popup).toBeVisible();
+      await expect(popup).toHaveAttribute("data-item-alignment", "selected");
+      await expect(selected).toHaveAttribute("aria-selected", "true");
+      await expect(selected).toBeFocused();
+      await expect
+        .poll(async () => {
+          const a = (await trigger.boundingBox())!,
+            b = (await selected.boundingBox())!;
+          return Math.max(
+            ...(["x", "y", "width", "height"] as const).map((key) =>
+              Math.abs(a[key] - b[key]),
+            ),
+          );
+        })
+        .toBeLessThan(0.1);
+      if (current === "Claude") {
+        await page.screenshot({
+          path: info.outputPath("claude-item-aligned.png"),
+        });
+      }
+      await popup.getByRole("option", { name: next, exact: true }).click();
+      await expect(popup).toHaveCount(0);
+    }
+  });
+}
+
 test("account login refreshes status and logout uses confirmation", async ({
   page,
 }) => {
