@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { Section, SectionGroup, SectionLayout } from "@lesomnus/nox";
 import type { EventSource } from "#src/features/session/model/event-source.ts";
 import {
   questions,
@@ -76,37 +77,41 @@ export function QuestionHistory({
           value={active.key}
           choose={setSelected}
         />
-        <div
+        <SectionLayout
           id={panel}
           role="tabpanel"
           aria-labelledby={`${prefix}-${activeIndex}`}
           className={styles.panel}
+          align="start"
+          maxWidth="none"
         >
-          <section
-            className={styles.question}
-            role="group"
-            aria-label={t("Question")}
-          >
-            <PanelScroll
-              key={`question-${active.key}`}
-              scrollbarLabel={t("Question")}
+          <SectionGroup className={styles.group}>
+            <Section
+              className={styles.question}
+              role="group"
+              aria-label={t("Question")}
             >
-              <Markdown text={active.text} />
-            </PanelScroll>
-          </section>
-          <section
-            className={styles.answer}
-            role="group"
-            aria-label={t("Answer")}
-          >
-            <PanelScroll
-              key={`answer-${active.key}`}
-              scrollbarLabel={t("Answer")}
+              <PanelScroll
+                key={`question-${active.key}`}
+                scrollbarLabel={t("Question")}
+              >
+                <Markdown text={active.text} />
+              </PanelScroll>
+            </Section>
+            <Section
+              className={styles.answer}
+              role="group"
+              aria-label={t("Answer")}
             >
-              <Markdown text={answerText(active, resolution)} />
-            </PanelScroll>
-          </section>
-        </div>
+              <PanelScroll
+                key={`answer-${active.key}`}
+                scrollbarLabel={t("Answer")}
+              >
+                <Markdown text={answerText(active, resolution)} />
+              </PanelScroll>
+            </Section>
+          </SectionGroup>
+        </SectionLayout>
       </div>
     </article>
   );
