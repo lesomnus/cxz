@@ -394,6 +394,16 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       input = composerInput.current;
     const area = el?.parentElement;
     if (!el || !input || !area) return;
+    const topFade = area.querySelector<HTMLElement>(
+      ":scope > .transcript-fade-top",
+    );
+    const bottomFade = area.querySelector<HTMLElement>(
+      ":scope > .transcript-fade-bottom",
+    );
+    if (!topFade || !bottomFade) return;
+    // Read geometry before painting either fade. An inherited variable on the
+    // transcript area invalidates every message's style on each scroll frame.
+    const inputHeight = input.offsetHeight;
     const depth = Math.max(0, el.scrollHeight - el.scrollTop - el.clientHeight);
     const pull = Math.min(1, Math.abs(tension.current) / 20);
     const ramp = (distance: number) => {
@@ -409,19 +419,19 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     // during ordinary movement; elastic pulls produce a much longer veil.
     const topMotion = Math.max(0, scrollMotion.current);
     const bottomMotion = Math.max(0, -scrollMotion.current);
-    area.style.setProperty(
+    bottomFade.style.setProperty(
       "--bottom-fade-height",
-      `${input.offsetHeight * (bottom + 0.8 * bottomMotion + 3.5 * bottomPull)}px`,
+      `${inputHeight * (bottom + 0.8 * bottomMotion + 3.5 * bottomPull)}px`,
     );
-    area.style.setProperty(
+    bottomFade.style.setProperty(
       "--bottom-fade-opacity",
       String(Math.max(bottom, pull)),
     );
-    area.style.setProperty(
+    topFade.style.setProperty(
       "--top-fade-height",
-      `${input.offsetHeight * (0.45 * top + 0.8 * topMotion + 3.5 * topPull)}px`,
+      `${inputHeight * (0.45 * top + 0.8 * topMotion + 3.5 * topPull)}px`,
     );
-    area.style.setProperty(
+    topFade.style.setProperty(
       "--top-fade-opacity",
       String(Math.max(top, topPull)),
     );

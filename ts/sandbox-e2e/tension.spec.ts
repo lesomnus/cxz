@@ -53,7 +53,7 @@ test("both pinned edges advance prompt phase and extend the background fade with
           Math.abs(
             parseFloat(getComputedStyle(el).height) -
               parseFloat(
-                (el.parentElement as HTMLElement).style.getPropertyValue(
+                (el as HTMLElement).style.getPropertyValue(
                   "--bottom-fade-height",
                 ),
               ),
@@ -124,12 +124,13 @@ test("both pinned edges advance prompt phase and extend the background fade with
       const rail = document.querySelector<HTMLElement>(".scroll-track")!;
       // Observe a marker in the middle of the rail. The first cached marker
       // can be outside it and disappear during a virtual-window rebase.
-      const marker = [...rail.querySelectorAll<HTMLElement>(".scroll-marker")]
-        .sort(
-          (a, b) =>
-            Math.abs(parseFloat(a.style.top) - rail.clientHeight / 2) -
-            Math.abs(parseFloat(b.style.top) - rail.clientHeight / 2),
-        )[0]!;
+      const marker = [
+        ...rail.querySelectorAll<HTMLElement>(".scroll-marker"),
+      ].sort(
+        (a, b) =>
+          Math.abs(parseFloat(a.style.top) - rail.clientHeight / 2) -
+          Math.abs(parseFloat(b.style.top) - rail.clientHeight / 2),
+      )[0]!;
       const pane = document.querySelector(".transcript")!;
       return {
         scroll:
