@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
-import { Link } from "@tanstack/react-router";
 import { Button, EditableValue } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Project } from "#gen/cxz/project_pb";
@@ -13,6 +12,7 @@ import { t } from "#src/shared/i18n/i18n.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
   projectLocation,
+  accountLocation,
   resourceHandle,
   sessionLocation,
 } from "#src/shared/navigation/resource-route.ts";
@@ -252,17 +252,21 @@ export function SessionTable({
                     ))
                   )}
                   {showAccount && (
-                    <td className={`${styles.cardCell} ${styles.account}`}>
+                    <td className={styles.cardCell}>
                       {accountAlias ? (
-                        <Link
-                          to="/c/$connection/account/$accountId"
-                          params={{ connection: "_", accountId: accountAlias }}
-                          className={styles.accountCard}
+                        <RouteLink
+                          {...accountLocation(accountAlias)}
+                          className={styles.navigationButton}
                           title={accountName}
                         >
-                          <span>{accountName}</span>
+                          <span className={styles.identity}>
+                            <span className={styles.title}>{accountName}</span>
+                            <span className={styles.subtitle}>
+                              {accountAlias}
+                            </span>
+                          </span>
                           <OpenArrow />
-                        </Link>
+                        </RouteLink>
                       ) : (
                         accountName
                       )}

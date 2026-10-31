@@ -297,6 +297,8 @@ function ProjectDashboard({
           sessions={sessions}
           accounts={accounts}
           loading={sessionsLoading}
+          variant="compact"
+          horizontalScrollbar
           addSession={() => setAddingSession(true)}
         />
         {addingSession && (

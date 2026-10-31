@@ -3,7 +3,12 @@ import { expect, test, type Page } from "@playwright/test";
 const table = (page: Page) =>
   page.getByRole("table", { name: "Sessions", exact: true });
 const rows = (page: Page) => table(page).locator("tbody tr");
-const states = (page: Page) => rows(page).locator("td:nth-child(6)");
+const states = (page: Page) =>
+  rows(page).locator(".session-indicator[role=img]");
+const stateLabels = (page: Page) =>
+  states(page).evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute("aria-label")),
+  );
 async function openBulk(page: Page, action: string) {
   await page
     .getByRole("button", { name: /^\d+ selected$/, exact: true })
@@ -38,11 +43,14 @@ test("row controls confirm stop/restart and resume the intended session", async 
   await expect(more).toBeInViewport();
   const button = (await more.boundingBox())!;
   const cell = (await rows(page).first().locator("td").last().boundingBox())!;
-  const account = (await rows(page).first().getByRole("link").boundingBox())!;
+  const account = (await rows(page)
+    .first()
+    .getByRole("link", { name: "Work account work", exact: true })
+    .boundingBox())!;
   const accountCell = (await rows(page)
     .first()
     .locator("td")
-    .nth(4)
+    .nth(2)
     .boundingBox())!;
   expect(button.width).toBeCloseTo(button.height, 1);
   expect(button.y).toBe(account.y);
@@ -60,13 +68,13 @@ test("row controls confirm stop/restart and resume the intended session", async 
   const stop = page.getByRole("dialog", { name: "Stop session", exact: true });
   await expect(stop).toContainText("Plan the next release");
   await stop.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(states(page).first()).toHaveText("Waiting for input");
+  await expect(states(page).first()).toHaveAccessibleName("Awaiting answer");
   await openRow(page, "Stop");
   await stop.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(stop).toHaveCount(0);
-  await expect(states(page)).toHaveText(["Stopped", "Idle"]);
+  await expect.poll(() => stateLabels(page)).toEqual(["Stopped", "Idle"]);
   await openRow(page, "Resume");
-  await expect(states(page)).toHaveText(["Idle", "Idle"]);
+  await expect.poll(() => stateLabels(page)).toEqual(["Idle", "Idle"]);
   await openRow(page, "Restart");
   const restart = page.getByRole("dialog", {
     name: "Restart session",
@@ -103,11 +111,11 @@ test("bulk controls keep layout stable and apply only to the selected sessions",
   await expect(stop).toContainText("2 sessions will be affected.");
   await stop.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(stop).toHaveCount(0);
-  await expect(states(page)).toHaveText(["Stopped", "Stopped"]);
+  await expect.poll(() => stateLabels(page)).toEqual(["Stopped", "Stopped"]);
   await expect(bulk).toBeDisabled();
   await rows(page).first().getByRole("checkbox").check();
   await openBulk(page, "Resume");
-  await expect(states(page)).toHaveText(["Idle", "Stopped"]);
+  await expect.poll(() => stateLabels(page)).toEqual(["Idle", "Stopped"]);
   await expect(rows(page).first().getByRole("checkbox")).not.toBeChecked();
 });
 
@@ -185,7 +193,7 @@ test("partial failures keep only failed targets in the confirmation and selectio
   await expect(dialog).not.toContainText("Plan the next release");
   await expect(dialog).toContainText("Review changes");
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(states(page)).toHaveText(["Stopped", "Idle"]);
+  await expect.poll(() => stateLabels(page)).toEqual(["Stopped", "Idle"]);
   await expect(rows(page).first().getByRole("checkbox")).not.toBeChecked();
   await expect(rows(page).nth(1).getByRole("checkbox")).toBeChecked();
   await expect(
@@ -215,81 +223,87 @@ test("failed erase preserves its target and selection for retry", async ({
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
 });
 
-test("session names and aliases edit in place without changing row selection or layout", async ({
+test("stacked session and account links preserve selected-row emphasis and cell spacing", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const row = rows(page).first();
-  await row.getByRole("checkbox").check();
+  const links = row.getByRole("link");
   const before = await table(page).boundingBox();
-  const editName = row.getByRole("button", { name: "Edit Name", exact: true });
-  const origin = (await editName.boundingBox())!;
-  await editName.click();
-  const dialog = page.getByRole("dialog", { name: "Edit Name", exact: true });
-  const input = dialog.getByRole("textbox", { name: "Name", exact: true });
-  await expect(input).toBeFocused();
-  const overlay = (await input.boundingBox())!;
-  for (const axis of ["x", "y", "width", "height"] as const)
-    expect(overlay[axis]).toBeCloseTo(origin[axis], 1);
-  await input.fill("Release plan updated");
-  await input.press("Enter");
-  await expect(dialog).toHaveCount(0);
-  await expect(editName).toHaveText("Release plan updated");
+  await expect(links).toHaveCount(2);
+  for (const link of await links.all()) {
+    const spacing = await link.evaluate((node) => {
+      const cell = node.closest("td")!.getBoundingClientRect();
+      const button = node.getBoundingClientRect();
+      return {
+        top: button.top - cell.top,
+        bottom: cell.bottom - button.bottom,
+      };
+    });
+    expect(spacing.top).toBeCloseTo(spacing.bottom, 1);
+    await expect(link).toHaveCSS("border-top-width", "0px");
+    await expect(link).toHaveCSS("box-shadow", "none");
+  }
+  await row.getByRole("checkbox").check();
+  await row.hover({ position: { x: 16, y: 20 } });
+  await expect
+    .poll(() =>
+      row.evaluate((node) => {
+        const shade = (element: Element) =>
+          Number(getComputedStyle(element).backgroundColor.match(/\d+/)?.[0]);
+        return [...node.querySelectorAll("a")].every(
+          (link) => shade(link) > shade(node),
+        );
+      }),
+    )
+    .toBe(true);
+  await links.evaluateAll((nodes) =>
+    Promise.all(
+      nodes.flatMap((node) =>
+        node
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => {})),
+      ),
+    ),
+  );
+  const colors = () =>
+    row.evaluate((node) =>
+      [node, ...node.querySelectorAll("a")].map(
+        (element) => getComputedStyle(element).backgroundColor,
+      ),
+    );
+  const selected = await colors();
+  await page.mouse.move(0, 0);
+  await expect.poll(colors).toEqual(selected);
   await expect(row.getByRole("checkbox")).toBeChecked();
   expect(await table(page).boundingBox()).toEqual(before);
-
-  const editAlias = row.getByRole("button", {
-    name: "Edit Alias",
-    exact: true,
-  });
-  await editAlias.click();
-  const aliasDialog = page.getByRole("dialog", {
-    name: "Edit Alias",
-    exact: true,
-  });
-  const alias = aliasDialog.getByRole("textbox", {
-    name: "Alias",
-    exact: true,
-  });
-  await alias.fill("pine");
-  await alias.press("Escape");
-  await expect(editAlias).toHaveText("oak");
-  await editAlias.click();
-  await alias.fill("Bad");
-  await alias.press("Enter");
-  await expect(aliasDialog.getByRole("alert")).toContainText("Alias must be");
-  await alias.fill("elm");
-  await alias.press("Enter");
-  await expect(aliasDialog.getByRole("alert")).toContainText("already in use");
-  await expect(alias).toHaveValue("elm");
-  await alias.fill("oak-tree");
-  await aliasDialog
-    .getByRole("button", { name: "Confirm", exact: true })
-    .click();
-  await expect(aliasDialog).toHaveCount(0);
-  await expect(editAlias).toHaveText("oak-tree");
-  await expect(editName).toHaveText("Release plan updated");
-  await expect(row.getByRole("checkbox")).toBeChecked();
-  expect(await table(page).boundingBox()).toEqual(before);
+  await expect(row.locator(".editable-value-trigger")).toHaveCount(0);
 });
 
-test("failed identity saves keep the draft and leave the row unchanged", async ({
+test("unavailable runtime keeps cached session and account navigation available", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--unavailable&viewMode=story");
   const row = rows(page).first();
-  const trigger = row.getByRole("button", { name: "Edit Name", exact: true });
-  await trigger.click();
-  const dialog = page.getByRole("dialog", { name: "Edit Name", exact: true });
-  const input = dialog.getByRole("textbox", { name: "Name", exact: true });
-  await input.fill("Keep this draft");
-  await input.press("Enter");
-  await expect(dialog.getByRole("alert")).toContainText(
-    "Session is unavailable",
-  );
-  await expect(input).toHaveValue("Keep this draft");
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(trigger).toHaveText("Plan the next release");
+  const session = row.getByRole("link", {
+    name: "Plan the next release oak",
+    exact: true,
+  });
+  const account = row.getByRole("link", {
+    name: "Work account work",
+    exact: true,
+  });
+  await expect(session).toHaveAttribute("href", "/c/_/session/oak");
+  await expect(account).toHaveAttribute("href", "/c/_/account/work");
+  await row.getByRole("checkbox").check();
+  const before = await table(page).boundingBox();
+  await session.focus();
+  await expect(session).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(account).toBeFocused();
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(await table(page).boundingBox()).toEqual(before);
 });
 
 test("the rightmost Session button opens the existing create form for the current project", async ({
@@ -349,6 +363,8 @@ test("the rightmost Session button opens the existing create form for the curren
   await expect(dialog).toHaveCount(0);
   await expect(rows(page)).toHaveCount(3);
   await expect(
-    rows(page).last().getByRole("button", { name: "Edit Name", exact: true }),
-  ).toHaveText("Created from projects");
+    rows(page)
+      .last()
+      .getByRole("link", { name: /^Created from projects/ }),
+  ).toContainText("Created from projects");
 });
