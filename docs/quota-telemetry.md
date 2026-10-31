@@ -128,6 +128,11 @@ envelope. Shared Claude snapshots may additionally carry `_cxz_observed_ms`,
 which cxz adds as an observation timestamp. The period/remaining labels in the
 UI are derived values rather than raw provider fields.
 
+The browser retains the latest individual-period and unified-window
+notifications independently, so other windows survive hundreds of context
+updates and transcript window replacements. A later full unavailable snapshot
+still clears those older values.
+
 - `internal/supervisor/codex.go`: account quota polling and notifications.
 - `internal/supervisor/claude_args.go`, `quota_shared.go`: Claude control query
   and shared snapshot handling.
