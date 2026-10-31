@@ -85,7 +85,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The connected resource components with isolated, typed in-memory RPC fixtures. Provider login needs a real Manager.",
+          "The connected resource components with isolated, typed in-memory RPC fixtures. For interactive account creation, login, retry, logout and session authentication recovery, see Accounts/Workflows. This general resource fixture does not simulate provider login.",
       },
     },
   },

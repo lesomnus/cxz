@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Button, Section } from "@lesomnus/nox";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";
+import { LoginTransportContext, type LoginSocket } from "./login-transport";
 
 export type LoginTarget = { account: string; project?: string; key?: string };
 export function LoginPanel({
@@ -21,11 +22,12 @@ export function LoginPanel({
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
   const [code, setCode] = useState("");
-  const socket = useRef<WebSocket | undefined>(undefined);
+  const connect = useContext(LoginTransportContext);
+  const socket = useRef<LoginSocket | undefined>(undefined);
   const onComplete = useRef(complete);
   onComplete.current = complete;
   useEffect(() => {
-    if (c.inProcess) {
+    if (c.inProcess && !connect) {
       setError("Provider login requires a real Manager.");
       return;
     }
@@ -43,7 +45,7 @@ export function LoginPanel({
       url.searchParams.set("project", target.project);
       url.searchParams.set("key", target.key!);
     }
-    const ws = new WebSocket(url);
+    const ws = connect ? connect(url) : new WebSocket(url);
     socket.current = ws;
     let ended = false;
     ws.onopen = () => setReady(true);
@@ -90,8 +92,9 @@ export function LoginPanel({
       ws.onerror = null;
       ws.onclose = null;
       ws.close();
+      if (socket.current === ws) socket.current = undefined;
     };
-  }, [c, target.account, target.project, target.key, attempt]);
+  }, [c, target.account, target.project, target.key, attempt, connect]);
   return (
     <Section aria-label="Provider login">
       <strong>Log in · {target.account}</strong>
@@ -119,7 +122,7 @@ export function LoginPanel({
         >
           Submit code
         </Button>
-        {error && !c.inProcess && (
+        {error && (!c.inProcess || connect) && (
           <Button
             type="button"
             onClick={() => setAttempt((value) => value + 1)}

@@ -13,6 +13,7 @@ import errorStyles from "./activity-card.module.css";
 import { attachSummaries } from "#src/features/session/model/session-aux.ts";
 import { useSessionAux } from "#src/features/session/model/use-session-aux.ts";
 import { QuestionCard } from "#src/features/session/questions/question-card.tsx";
+import { ApprovalControls } from "#src/features/session/questions/approval-controls.tsx";
 import { requiredSessionLogin } from "#src/features/accounts/login-required.ts";
 import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
 import {
@@ -57,7 +58,11 @@ import {
 } from "#src/features/session/model/session-history.ts";
 import { create } from "@bufbuild/protobuf";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
-import { mergeEvents, payload } from "#src/features/session/model/journal.ts";
+import {
+  isQuestionEvent,
+  mergeEvents,
+  payload,
+} from "#src/features/session/model/journal.ts";
 import { mergeMetadata } from "#src/features/session/model/session-metadata.ts";
 import { sessionInfo } from "#src/features/session/model/session-info.ts";
 import {
@@ -1094,7 +1099,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }}
       />
       <FloatingCardHost>
-        {visibleApprovals.map((e) => (
+        {visibleApprovals.filter(isQuestionEvent).map((e) => (
           <QuestionCard
             key={`${e.runId}:${e.requestId}`}
             e={e}
@@ -1205,6 +1210,13 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }
         latestVisible={!follow && latestShown}
         onLatest={() => void loadHistory("newer", true)}
+        approvals={
+          <ApprovalControls
+            requests={visibleApprovals.filter((e) => !isQuestionEvent(e))}
+            busy={busy}
+            reply={reply}
+          />
+        }
         menu={(pick) => (
           <SessionMenu
             session={s && { ...s, project: sessionProject ?? s.project }}

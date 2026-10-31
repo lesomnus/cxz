@@ -130,21 +130,61 @@ const resolved = (state: string, resolution: Record<string, unknown> = {}) => {
   );
   return row;
 };
+const answeredQuestion = resolved("allowed", {
+  answers: {
+    layout: { selected: ["Compact"] },
+    notes: {
+      selected: [],
+      other:
+        "Keep the existing toolbar.\n\n```typescript\nconst compact = true;\n```",
+    },
+    timing: { selected: ["Now"] },
+  },
+});
 export const AnsweredQuestion: Story = {
+  args: { events: [answeredQuestion] },
+};
+const beforeQuestion = responseEvent(
+  2,
+  "codex",
+  "Before updating the composer, I will confirm the layout, additional changes and timing.",
+);
+beforeQuestion.response!.phase = "commentary";
+beforeQuestion.response!.completionJson = new Uint8Array();
+export const QuestionHistoryInConversation: Story = {
   args: {
     events: [
-      resolved("allowed", {
-        answers: {
-          layout: { selected: ["Compact"] },
-          notes: {
-            selected: [],
-            other:
-              "Keep the existing toolbar.\n\n```typescript\nconst compact = true;\n```",
-          },
-          timing: { selected: ["Now"] },
-        },
-      }),
+      storyEvent(
+        1,
+        "input",
+        "Update the composer while keeping the existing toolbar.",
+      ),
+      beforeQuestion,
+      clone(SessionEventSchema, answeredQuestion),
+      responseEvent(
+        6,
+        "codex",
+        "Your answers are recorded: **Compact**, keep the existing toolbar, and ship **Now**. I will apply those choices.",
+      ),
+      storyEvent(
+        7,
+        "input",
+        "Keep that question and its answers in the conversation so I can review the decision later.",
+      ),
+      responseEvent(
+        8,
+        "codex",
+        "The conversation retains the question and its recorded answers above. Double-click its card to review every step and the complete free-text answer.",
+      ),
     ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A completed multi-step Question remains between the agent's responses in a conversation with user messages before and after it. The runtime-projected row contains cxz_resolution, including selected options and a free-text answer with Markdown/code. Double-click the Question card to read all recorded answers; it is history, so no live answer form or Submit action is opened.",
+      },
+    },
   },
 };
 export const CanceledQuestion: Story = {
