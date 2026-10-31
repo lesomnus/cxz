@@ -93,6 +93,30 @@ describe("composer paste chips", () => {
       wholePasteSelection([range], range.start + 2, range.start + 2),
     ).toEqual({ start: range.end, end: range.end });
     expect(
+      wholePasteSelection([range], range.end - 1, range.end - 1, "backward"),
+    ).toEqual({ start: range.start, end: range.start });
+    expect(
+      wholePasteSelection([range], range.start + 1, range.start + 1, "forward"),
+    ).toEqual({ start: range.end, end: range.end });
+    expect(
+      wholePasteSelection(
+        [range],
+        range.start + 1,
+        range.end,
+        "forward",
+        "backward",
+      ),
+    ).toEqual({ start: range.end, end: range.end });
+    expect(
+      wholePasteSelection(
+        [range],
+        range.start,
+        range.end - 1,
+        "backward",
+        "forward",
+      ),
+    ).toEqual({ start: range.start, end: range.start });
+    expect(
       partialPasteEdit(
         text,
         text.slice(0, range.start) + text.slice(range.end),
