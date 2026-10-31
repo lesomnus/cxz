@@ -15,6 +15,7 @@ import {
   toolEvents,
   loadToolRecords,
   questionEvent,
+  mixedConversationEvents,
 } from "#src/storybook/fixtures.ts";
 
 const meta = {
@@ -222,6 +223,17 @@ export const QuestionHistoryInConversation: Story = {
       description: {
         story:
           "A completed multi-step Question uses the same header and surface as an agent response. Tabs in its body display each question and its recorded answer, including Markdown and code. The card, question and answer areas keep their heights, with internal scrolling for overflow. This is history, so no live answer form or Submit action is opened.",
+      },
+    },
+  },
+};
+export const LongMixedConversation: Story = {
+  args: { events: mixedConversationEvents(180) },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A long history mixing many short inputs/replies and resolved question cards. Drag the conversation handle quickly to compare rendering and nested card scrolling.",
       },
     },
   },
