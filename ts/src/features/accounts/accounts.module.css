@@ -17,14 +17,6 @@
   align-items: center;
   gap: var(--space);
 }
-.form {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: calc(2 * var(--space));
-  min-width: 0;
-}
 .session {
   display: block;
   text-decoration: none;

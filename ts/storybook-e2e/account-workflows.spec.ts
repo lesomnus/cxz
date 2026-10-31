@@ -24,6 +24,47 @@ test("account creation uses the actual form and Reset clears its isolated state"
   ).toBeVisible();
   await page.getByRole("button", { name: "Add account", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Add account", exact: true });
+  const aliasInput = form.getByRole("textbox", { name: "Alias", exact: true });
+  await expect(
+    form.getByRole("group", { name: "Account details", exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      aliasInput.evaluate((node) => {
+        const css = getComputedStyle(node);
+        const label = node.ownerDocument.querySelector(
+          `label[for="${node.id}"]`,
+        )!;
+        return {
+          padding: css.padding,
+          radius: css.borderRadius,
+          border: css.borderWidth,
+          labelInset:
+            label.getBoundingClientRect().left -
+            node.getBoundingClientRect().left,
+        };
+      }),
+    )
+    .toEqual({
+      padding: "12px",
+      radius: "10px",
+      border: "0px",
+      labelInset: 10,
+    });
+  const agent = form.getByRole("combobox", { name: "Agent", exact: true });
+  expect((await agent.boundingBox())!.height).toBe(
+    (await aliasInput.boundingBox())!.height,
+  );
+  await agent.click();
+  await expect(form.locator(".setting-menu")).toHaveCSS(
+    "border-top-left-radius",
+    "13px",
+  );
+  await page.keyboard.press("Escape");
+  await aliasInput.fill("INVALID_ALIAS");
+  await expect(
+    form.getByRole("button", { name: "Add", exact: true }),
+  ).toBeDisabled();
   await form
     .getByRole("textbox", { name: "Alias", exact: true })
     .fill("design");
@@ -134,6 +175,15 @@ test("session creation performs its scoped login and reuses the creation key", a
     .getByRole("button", { name: "Create session", exact: true })
     .click();
   await expect(loginPanel(page)).toBeVisible();
+  await expect(
+    form.getByRole("textbox", { name: "Title", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    form.getByRole("group", { name: "Session details", exact: true }),
+  ).toHaveJSProperty("disabled", true);
+  await expect(
+    loginPanel(page).getByLabel("Authentication code"),
+  ).toBeEnabled();
   await finishLogin(page);
   await expect(form).toHaveCount(0);
   await expect(
