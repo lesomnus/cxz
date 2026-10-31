@@ -53,13 +53,13 @@ export function AccountDetails({
       : "Status unavailable";
   return (
     <div className={accountStyles.details}>
-      <SectionGroup className={accountStyles.informationColumn}>
+      <SectionGroup className={accountStyles.summaryColumn}>
         <Section
           aria-label="Account details"
           className={accountStyles.informationDetails}
         >
           <ResourceFields
-            columns={1}
+            columns={2}
             rows={[
               ["Display name", account.name || account.alias],
               ["Alias", account.alias],
@@ -76,6 +76,11 @@ export function AccountDetails({
           />
           {account.desc && <p>{account.desc}</p>}
         </Section>
+        <UsageReport
+          c={c}
+          account={account.alias}
+          className={accountStyles.usageSection}
+        />
         <Section aria-label="Authentication">
           <div className={accountStyles.authenticationRow}>
             {sessionScoped ? (
@@ -131,11 +136,6 @@ export function AccountDetails({
           )}
         </Section>
       </SectionGroup>
-      <UsageReport
-        c={c}
-        account={account.alias}
-        className={accountStyles.usageColumn}
-      />
       <Section
         aria-label="Sessions using this account"
         className={accountStyles.sessionsColumn}

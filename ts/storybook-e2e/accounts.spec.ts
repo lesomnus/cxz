@@ -20,7 +20,7 @@ for (const width of [1280, 390]) {
     const group = work.locator('[data-section-layout="group"]');
     await expect(group).toHaveCount(1);
     const sections = group.locator(':scope > [data-section-layout="section"]');
-    await expect(sections).toHaveCount(2);
+    await expect(sections).toHaveCount(3);
     const corners = await sections.evaluateAll((nodes) =>
       nodes.map((node) => {
         const css = getComputedStyle(node);
@@ -45,36 +45,32 @@ for (const width of [1280, 390]) {
     const informationBounds = (await group.boundingBox())!;
     const usageBounds = (await usage.boundingBox())!;
     const sessionsBounds = (await sessions.boundingBox())!;
+    const authBounds = (await work
+      .getByRole("region", { name: "Authentication", exact: true })
+      .boundingBox())!;
+    expect(usageBounds.x).toBe(informationBounds.x);
+    expect(usageBounds.width).toBe(informationBounds.width);
+    expect(authBounds.y).toBeGreaterThanOrEqual(
+      usageBounds.y + usageBounds.height,
+    );
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>
         parseFloat(getComputedStyle(node).maxWidth),
       );
       expect((await work.boundingBox())!.width).toBe(widthLimit);
-      expect(usageBounds.x).toBeGreaterThan(
+      expect(sessionsBounds.x).toBeGreaterThan(
         informationBounds.x + informationBounds.width,
       );
-      expect(sessionsBounds.x).toBeGreaterThan(
-        usageBounds.x + usageBounds.width,
-      );
-      expect(usageBounds.y).toBe(informationBounds.y);
       expect(sessionsBounds.y).toBe(informationBounds.y);
-      expect(usageBounds.width).toBeCloseTo(informationBounds.width, 0);
-      expect(sessionsBounds.width).toBeCloseTo(2 * informationBounds.width, 0);
-      const authBounds = (await work
-        .getByRole("region", { name: "Authentication", exact: true })
-        .boundingBox())!;
+      expect(sessionsBounds.width).toBeCloseTo(informationBounds.width, 0);
       expect(authBounds.y + authBounds.height).toBeCloseTo(
         informationBounds.y + informationBounds.height,
         0,
       );
     } else {
-      expect(usageBounds.y).toBeGreaterThan(
+      expect(sessionsBounds.y).toBeGreaterThan(
         informationBounds.y + informationBounds.height,
       );
-      expect(sessionsBounds.y).toBeGreaterThan(
-        usageBounds.y + usageBounds.height,
-      );
-      expect(usageBounds.width).toBe(informationBounds.width);
       expect(sessionsBounds.width).toBe(informationBounds.width);
     }
     const details = work.getByRole("region", { name: "Account details" });
@@ -98,12 +94,26 @@ for (const width of [1280, 390]) {
       .evaluateAll((nodes) =>
         nodes.map((node) => node.getBoundingClientRect().toJSON()),
       );
-    for (let index = 1; index < fields.length; index++) {
-      expect(fields[index].x).toBe(fields[0].x);
-      expect(fields[index].y).toBeGreaterThanOrEqual(
-        fields[index - 1].y + fields[index - 1].height,
-      );
+    for (let index = 0; index < fields.length; index++) {
+      if (index % 2) {
+        expect(fields[index].x).toBeGreaterThan(fields[index - 1].x);
+        expect(fields[index].y).toBe(fields[index - 1].y);
+      } else {
+        expect(fields[index].x).toBe(fields[0].x);
+        if (index >= 2)
+          expect(fields[index].y).toBeGreaterThanOrEqual(
+            fields[index - 2].y + fields[index - 2].height,
+          );
+      }
     }
+    const metrics = await usage
+      .locator("dl > div")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getBoundingClientRect().toJSON()),
+      );
+    expect(metrics[1].y).toBe(metrics[0].y);
+    expect(metrics[1].x).toBeGreaterThan(metrics[0].x);
+    expect(metrics[2].y).toBeGreaterThan(metrics[0].y);
     const logo = (await details
       .getByRole("img", { name: "Codex", exact: true })
       .boundingBox())!;

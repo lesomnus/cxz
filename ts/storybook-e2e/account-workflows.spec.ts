@@ -184,6 +184,7 @@ test("account login modal preserves page layout, traps focus and cancels from Es
   await open(page, "account-login");
   const trigger = page.getByRole("button", { name: "Log in", exact: true });
   await expect(trigger).toBeEnabled();
+  await trigger.scrollIntoViewIfNeeded();
   const card = page.locator('[data-account="work"]');
   const before = await card.boundingBox();
   await trigger.click();

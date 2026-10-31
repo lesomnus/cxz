@@ -19,17 +19,17 @@
   align-items: stretch;
   gap: var(--ui-section-group-gap);
 }
-.informationColumn {
-  grid-template-rows: minmax(0, 1fr) auto;
+.summaryColumn {
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 .informationDetails,
-.usageColumn,
+.usageSection,
 .sessionsColumn {
   align-content: start;
 }
 @container account (min-width: 560px) {
   .details {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 .agent {
