@@ -1863,6 +1863,8 @@ pre {
   --card-reserve: 0px;
 }
 .floating-card-host > .floating-card {
+  position: absolute;
+  width: calc(100% - var(--card-shadow-left) - var(--card-shadow-right));
   max-height: var(--card-preview-max-height);
 }
 .question-cards {

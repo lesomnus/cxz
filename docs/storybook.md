@@ -28,6 +28,40 @@ npm run storybook
 - `Conversation/Playground`: 메시지 입력과 전송부터 대화 카드 생성까지 이어지는 인터랙티브 미리보기.
 - `Conversation/SessionSearch`: 현재 세션 검색 오버레이. 단축키로 열고 입력·방향키·결과 선택을 확인하며, 본문 클릭이나 결과 이동으로 닫히지 않습니다. Close와 Escape로만 닫습니다. 로드된 예제 대화를 브라우저에서 검색하며, 응답 추가 시 결과 갱신도 확인할 수 있습니다.
 
+## 계정 워크플로
+
+`Accounts/Workflows`는 실제 계정 페이지와 폼, 로그인 패널, 세션 대화 컴포넌트를
+연결합니다. 계정 RPC와 로그인 소켓은 예제마다 독립된 메모리 상태를 사용하며,
+실제 Manager나 에이전트 제공자에 연결하거나 자격 증명을 저장하지 않습니다.
+인증 코드에는 `demo-code`를 입력합니다. `Reset preview`는 예제의 계정, 인증 상태,
+대화 초안과 진행 중 요청을 초기화합니다.
+
+| Story | 확인할 흐름 |
+| --- | --- |
+| AddAccount | 빈 목록에서 Add account로 Codex/Claude 계정 추가, 중복 alias 오류 |
+| AccountLogin | Codex 공유 계정 로그인, 상태 새로고침, 로그인 취소와 로그아웃 확인 |
+| LoginFailureAndRetry | 제공자 오류 후 Retry login, 잘못된 코드 입력 후 재시도 |
+| LoginConnectionClosed | 로그인 도중 연결 종료와 새 연결로 재시도 |
+| SignedInAccount | 로그인된 계정의 상태·사용량·연결된 세션, 로그아웃 확인·취소 |
+| SessionCreationRequiresLogin | Claude 세션 생성의 로그인 필요 응답, 세션별 로그인, 동일 생성 키로 재시도 |
+| ConversationRequiresLogin | Send 후 인증 만료로 실패한 턴, Log in again, 로그인 후 세션 재개와 다음 대화 제출 |
+| ExpiredSession | 기록을 열었을 때 인증 만료 상태와 입력창 위 로그인 카드, 취소 후 복구 안내 유지 |
+
+Claude 인증 복구는 실제 앱처럼 이미 수신된 프롬프트를 자동 재전송하지 않습니다.
+로그인 후에는 다음 메시지를 직접 전송합니다. `loginOutcome` control로 성공,
+첫 시도 실패, 첫 연결 종료를 바꿀 수 있습니다. 이후 재시도는 정상 로그인으로 이어집니다.
+
+예제와 fixture는 `ts/src/storybook/accounts/`에 있습니다. 로그인 소켓의 교체 범위는
+`LoginTransportContext` 하위 트리로 제한됩니다. 전역 `WebSocket`을 바꾸지 않으며,
+실제 앱은 provider가 없으므로 기존 Manager 소켓과 인증 정책을 그대로 사용합니다.
+
+관련 브라우저 검사만 실행하려면 Storybook 정적 빌드 후 다음을 실행합니다.
+
+```sh
+cd ts
+npx playwright test --config playwright.storybook.config.ts storybook-e2e/account-workflows.spec.ts
+```
+
 ## Composer 영역과 Story 구성
 
 **Composer**는 메시지 작성 영역 전체를 뜻합니다. `Compose`는 작성 동작을 가리킵니다.
