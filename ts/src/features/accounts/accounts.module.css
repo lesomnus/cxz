@@ -9,8 +9,28 @@
   width: var(--toolbar-button-width);
 }
 .card {
+  container: account / inline-size;
   min-width: 0;
   scroll-margin-top: calc(3 * var(--space));
+}
+.details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--ui-section-group-gap);
+}
+.informationColumn {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.informationDetails,
+.usageColumn,
+.sessionsColumn {
+  align-content: start;
+}
+@container account (min-width: 960px) {
+  .details {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr);
+  }
 }
 .agent {
   display: flex;

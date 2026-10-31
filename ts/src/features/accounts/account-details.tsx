@@ -52,80 +52,94 @@ export function AccountDetails({
       ? labels[status.data.state ?? AuthState.UNSPECIFIED]
       : "Status unavailable";
   return (
-    <SectionGroup>
-      <Section aria-label="Account details">
-        <ResourceFields
-          rows={[
-            ["Display name", account.name || account.alias],
-            ["Alias", account.alias],
-            [
-              "Agent",
-              <span className={accountStyles.agent}>
-                <AgentBrand agent={account.agent} />
-                {account.agent}
-              </span>,
-            ],
-            ["Authentication backend", account.authBackend],
-            ["Created", <DateTime value={account.dateCreated} />],
-          ]}
-        />
-        {account.desc && <p>{account.desc}</p>}
-      </Section>
-      <Section aria-label="Authentication">
-        <div className={accountStyles.authenticationRow}>
-          {sessionScoped ? (
-            <small
-              className={`${styles.muted} ${accountStyles.authenticationDescription}`}
-            >
-              {status.data?.message ||
-                "Login belongs to each session. Manage it from that session's details."}
-            </small>
-          ) : (
-            <>
-              <span
-                className={accountStyles.authenticationStatus}
-                role={status.error ? "alert" : undefined}
-                aria-description={status.error || undefined}
-              >
-                <Popover
-                  content={status.error || status.data?.message || statusText}
-                >
-                  {statusText}
-                </Popover>
-              </span>
-              <Button
-                className={accountStyles.authenticationAction}
-                disabled={
-                  status.loading ||
-                  login ||
-                  logout ||
-                  status.data?.scope !== "account" ||
-                  !(signedIn ? status.data.canLogout : status.data.canLogin)
-                }
-                onClick={() => (signedIn ? setLogout(true) : setLogin(true))}
-              >
-                {signedIn ? "Log out" : "Log in"}
-              </Button>
-            </>
-          )}
-        </div>
-        {login && (
-          <LoginPanel
-            modal
-            c={c}
-            target={{ account: account.alias }}
-            complete={() => {
-              setLogin(false);
-              status.reload();
-            }}
-            cancel={() => {
-              setLogin(false);
-              status.reload();
-            }}
+    <div className={accountStyles.details}>
+      <SectionGroup className={accountStyles.informationColumn}>
+        <Section
+          aria-label="Account details"
+          className={accountStyles.informationDetails}
+        >
+          <ResourceFields
+            columns={1}
+            rows={[
+              ["Display name", account.name || account.alias],
+              ["Alias", account.alias],
+              [
+                "Agent",
+                <span className={accountStyles.agent}>
+                  <AgentBrand agent={account.agent} />
+                  {account.agent}
+                </span>,
+              ],
+              ["Authentication backend", account.authBackend],
+              ["Created", <DateTime value={account.dateCreated} />],
+            ]}
           />
-        )}
-      </Section>
-      <Section aria-label="Sessions using this account">
+          {account.desc && <p>{account.desc}</p>}
+        </Section>
+        <Section aria-label="Authentication">
+          <div className={accountStyles.authenticationRow}>
+            {sessionScoped ? (
+              <small
+                className={`${styles.muted} ${accountStyles.authenticationDescription}`}
+              >
+                {status.data?.message ||
+                  "Login belongs to each session. Manage it from that session's details."}
+              </small>
+            ) : (
+              <>
+                <span
+                  className={accountStyles.authenticationStatus}
+                  role={status.error ? "alert" : undefined}
+                  aria-description={status.error || undefined}
+                >
+                  <Popover
+                    content={status.error || status.data?.message || statusText}
+                  >
+                    {statusText}
+                  </Popover>
+                </span>
+                <Button
+                  className={accountStyles.authenticationAction}
+                  disabled={
+                    status.loading ||
+                    login ||
+                    logout ||
+                    status.data?.scope !== "account" ||
+                    !(signedIn ? status.data.canLogout : status.data.canLogin)
+                  }
+                  onClick={() => (signedIn ? setLogout(true) : setLogin(true))}
+                >
+                  {signedIn ? "Log out" : "Log in"}
+                </Button>
+              </>
+            )}
+          </div>
+          {login && (
+            <LoginPanel
+              modal
+              c={c}
+              target={{ account: account.alias }}
+              complete={() => {
+                setLogin(false);
+                status.reload();
+              }}
+              cancel={() => {
+                setLogin(false);
+                status.reload();
+              }}
+            />
+          )}
+        </Section>
+      </SectionGroup>
+      <UsageReport
+        c={c}
+        account={account.alias}
+        className={accountStyles.usageColumn}
+      />
+      <Section
+        aria-label="Sessions using this account"
+        className={accountStyles.sessionsColumn}
+      >
         <strong>Sessions · {sessions.length}</strong>
         {sessionsLoading && <p className={styles.muted}>Loading sessions…</p>}
         {!sessionsLoading && !sessions.length && (
@@ -144,7 +158,6 @@ export function AccountDetails({
           </RouteLink>
         ))}
       </Section>
-      {status.data && <UsageReport c={c} account={account.alias} />}
       {logout && (
         <ConfirmationDialog
           title={`Log out · ${account.name || account.alias}`}
@@ -164,6 +177,6 @@ export function AccountDetails({
           </p>
         </ConfirmationDialog>
       )}
-    </SectionGroup>
+    </div>
   );
 }

@@ -9,7 +9,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Interactive account workflows using the real Accounts page, Add account/Add session forms, LoginPanel and Conversation. Every story owns an isolated in-memory RPC fixture and a scoped login socket; no Manager, provider connection or real credentials are used. Enter demo-code to finish a login. Reset preview clears accounts, authentication, drafts and pending requests in this example.",
+          "Interactive account workflows using the real Accounts page, Add account/Add session forms, LoginPanel and Conversation. Account cards place vertically stacked metadata with authentication at the bottom, conversation usage, and a wider session list side by side when space allows; narrow panes stack these groups. Every story owns an isolated in-memory RPC fixture and a scoped login socket; no Manager, provider connection or real credentials are used. Enter demo-code to finish a login. Reset preview clears accounts, authentication, drafts and pending requests in this example.",
       },
     },
   },

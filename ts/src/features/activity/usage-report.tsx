@@ -7,11 +7,13 @@ export function UsageReport({
   session = "",
   project = "",
   account = "",
+  className,
 }: {
   c: Connection;
   session?: string;
   project?: string;
   account?: string;
+  className?: string;
 }) {
   const stats = useRemote(
     (signal) =>
@@ -29,7 +31,7 @@ export function UsageReport({
   );
   const total = stats.data?.total;
   return (
-    <Section>
+    <Section className={className} aria-label="Conversation usage">
       <div className={styles.row}>
         <strong>Conversation usage</strong>
         <Button onClick={stats.reload}>Refresh</Button>

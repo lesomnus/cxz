@@ -56,7 +56,8 @@ function ResourcePreview({
   return (
     <div
       style={{
-        width: view === "accounts" ? "min(960px, 100vw)" : "min(600px, 100vw)",
+        width: view === "accounts" ? "100vw" : "min(600px, 100vw)",
+        boxSizing: "border-box",
         padding: "var(--space)",
         height: "95vh",
         overflow: view === "accounts" ? "hidden" : "auto",

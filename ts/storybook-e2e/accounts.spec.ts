@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 for (const width of [1280, 390]) {
-  test(`account cards are centered without a sidebar at ${width}px`, async ({
+  test(`account columns adapt without a sidebar at ${width}px`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     await page.setViewportSize({ width, height: 800 });
     await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
     await expect(
@@ -20,7 +20,7 @@ for (const width of [1280, 390]) {
     const group = work.locator('[data-section-layout="group"]');
     await expect(group).toHaveCount(1);
     const sections = group.locator(':scope > [data-section-layout="section"]');
-    await expect(sections).toHaveCount(4);
+    await expect(sections).toHaveCount(2);
     const corners = await sections.evaluateAll((nodes) =>
       nodes.map((node) => {
         const css = getComputedStyle(node);
@@ -31,6 +31,48 @@ for (const width of [1280, 390]) {
       parseFloat(corners[0][1]),
     );
     expect(corners.at(-1)![1]).toBe(corners[0][0]);
+    const usage = work.getByRole("region", {
+      name: "Conversation usage",
+      exact: true,
+    });
+    const sessions = work.getByRole("region", {
+      name: "Sessions using this account",
+      exact: true,
+    });
+    await expect(
+      usage.getByText("Complete retained coverage", { exact: true }),
+    ).toBeVisible();
+    const informationBounds = (await group.boundingBox())!;
+    const usageBounds = (await usage.boundingBox())!;
+    const sessionsBounds = (await sessions.boundingBox())!;
+    if (width === 1280) {
+      expect(usageBounds.x).toBeGreaterThan(
+        informationBounds.x + informationBounds.width,
+      );
+      expect(sessionsBounds.x).toBeGreaterThan(
+        usageBounds.x + usageBounds.width,
+      );
+      expect(usageBounds.y).toBe(informationBounds.y);
+      expect(sessionsBounds.y).toBe(informationBounds.y);
+      expect(usageBounds.width).toBeCloseTo(informationBounds.width, 0);
+      expect(sessionsBounds.width).toBeCloseTo(2 * informationBounds.width, 0);
+      const authBounds = (await work
+        .getByRole("region", { name: "Authentication", exact: true })
+        .boundingBox())!;
+      expect(authBounds.y + authBounds.height).toBeCloseTo(
+        informationBounds.y + informationBounds.height,
+        0,
+      );
+    } else {
+      expect(usageBounds.y).toBeGreaterThan(
+        informationBounds.y + informationBounds.height,
+      );
+      expect(sessionsBounds.y).toBeGreaterThan(
+        usageBounds.y + usageBounds.height,
+      );
+      expect(usageBounds.width).toBe(informationBounds.width);
+      expect(sessionsBounds.width).toBe(informationBounds.width);
+    }
     const details = work.getByRole("region", { name: "Account details" });
     await expect(
       details.getByRole("img", { name: "Codex", exact: true }),
@@ -47,6 +89,17 @@ for (const width of [1280, 390]) {
     expect(typography.value).toBe(12);
     expect(typography.label).toBe(10);
     expect(typography.gap).toBeGreaterThan(0);
+    const fields = await details
+      .locator("dl > div")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getBoundingClientRect().toJSON()),
+      );
+    for (let index = 1; index < fields.length; index++) {
+      expect(fields[index].x).toBe(fields[0].x);
+      expect(fields[index].y).toBeGreaterThanOrEqual(
+        fields[index - 1].y + fields[index - 1].height,
+      );
+    }
     const logo = (await details
       .getByRole("img", { name: "Codex", exact: true })
       .boundingBox())!;
@@ -126,6 +179,9 @@ for (const width of [1280, 390]) {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath(`account-columns-${width}.png`),
+    });
   });
 }
 
