@@ -4,14 +4,16 @@
   --question-history-question-height: 96px;
   --question-history-answer-height: 160px;
   --question-history-gap: calc(2 * var(--space));
+  --question-history-panel-gap: var(--control-inset);
+  --question-history-panel-padding: var(--control-inline-inset);
   --question-history-inset: 12px;
   box-sizing: border-box;
   height: calc(
     var(--question-history-heading-height) +
       var(--question-history-tabs-height) +
       var(--question-history-question-height) +
-      var(--question-history-answer-height) + 3 * var(--question-history-gap) +
-      2 * var(--question-history-inset)
+      var(--question-history-answer-height) + 2 * var(--question-history-gap) +
+      var(--question-history-panel-gap) + 2 * var(--question-history-inset)
   );
   display: grid;
   grid-template-rows: var(--question-history-heading-height) minmax(0, 1fr);
@@ -36,21 +38,30 @@
   grid-template-rows: var(--question-history-question-height) var(
       --question-history-answer-height
     );
-  gap: var(--question-history-gap);
+  gap: var(--question-history-panel-gap);
   min-width: 0;
   min-height: 0;
 }
 .question,
 .answer {
+  box-sizing: border-box;
   display: flex;
   min-width: 0;
   min-height: 0;
+  margin-inline: calc(-1 * var(--question-history-panel-padding));
+  padding: var(--question-history-panel-padding);
+  overflow: hidden;
+  background: var(--ui-scroll-area-background);
+}
+.question {
+  border-radius: var(--wrapper-radius) var(--wrapper-radius)
+    var(--question-history-panel-gap) var(--question-history-panel-gap);
 }
 .answer {
   --ui-scroll-area-background: var(--shade-16);
-  background: var(--ui-scroll-area-background);
-  border-radius: var(--wrapper-radius);
-  padding-block: var(--control-inset);
+  border-radius: var(--question-history-panel-gap)
+    var(--question-history-panel-gap) var(--wrapper-radius)
+    var(--wrapper-radius);
 }
 .panel :global(.markdown) {
   padding-inline: 0;
