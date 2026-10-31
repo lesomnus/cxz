@@ -308,7 +308,7 @@ export const LiveApprovals: Story = {
     docs: {
       description: {
         story:
-          "Request approval appends independent permission requests. The X/check group stays immediately left of the composer menu; without a request its icons and translucent border are barely visible and disabled. Only the icons use dark red/green colors that brighten on hover; button backgrounds stay transparent. A compact, translucent blurred box shows only the request content centered above the controls, with remaining requests stacked behind it. Deny/Allow resolves only the front request, in arrival order. Automatic native approval/resolution pairs use the real pending reducer and display gate without flashing request boxes or enabling the controls. Ask question keeps the separate persistent Question form.",
+          "Request approval appends independent permission requests. The X/check group stays immediately left of the composer menu; without a request its icons and translucent border are barely visible and disabled. Buttons have transparent backgrounds by default; dark red/green icons brighten and gain a tinted background on enabled hover. A compact, bordered, translucent blurred box shows only the request content centered above the controls. Remaining requests peek behind it without adding background layers beneath the front box. Deny/Allow resolves only the front request, in arrival order. Automatic native approval/resolution pairs use the real pending reducer and display gate without flashing request boxes or enabling the controls. Ask question keeps the separate persistent Question form.",
       },
     },
   },
