@@ -522,9 +522,17 @@ test("departing approvals stay opaque behind the composer before the next card c
     (window as any).approvalPauseObserver.disconnect();
     departure.finish();
     promotion.finish();
-    return { delay, before, hiddenBeforePromotion, end };
+    return {
+      delay,
+      before,
+      hiddenBeforePromotion,
+      end,
+      departureDuration: Number(departure.effect!.getTiming().duration),
+      promotionDuration: Number(promotion.effect!.getTiming().duration),
+    };
   });
   expect(sample.delay).toBeGreaterThan(0);
+  expect(sample.promotionDuration).toBeGreaterThan(sample.departureDuration);
   expect(sample.before.opacity).toBe("1");
   expect(sample.before.promotionProgress).toBe(0);
   expect(sample.before.outgoingLayer).toBeGreaterThan(
@@ -542,4 +550,103 @@ test("departing approvals stay opaque behind the composer before the next card c
       exact: true,
     }),
   ).toContainText("npm run build");
+});
+
+test("hover opens and closes the approval stack in front-to-back order", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--live-approvals&viewMode=story",
+  );
+  await page
+    .getByRole("button", { name: "Request approval", exact: true })
+    .click();
+  await page.keyboard.press("Control+Alt+n");
+  await page.keyboard.press("Control+Alt+n");
+  const group = page.getByRole("group", {
+    name: "Pending approvals",
+    exact: true,
+  });
+  await expect(group).toHaveAttribute("data-pending-count", "3");
+  await page.evaluate(() => {
+    const seen = new WeakSet<Animation>();
+    const observer = new MutationObserver(() => {
+      for (const node of document.querySelectorAll(
+        "[data-motion], [data-approval-exiting], [data-approval-back] > div",
+      )) {
+        for (const animation of node.getAnimations()) {
+          if (seen.has(animation)) continue;
+          seen.add(animation);
+          animation.pause();
+          animation.currentTime = 0;
+        }
+      }
+    });
+    observer.observe(document.querySelector(".conversation")!, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-closing"],
+    });
+    (window as any).approvalCascadeObserver = observer;
+  });
+  await group.hover();
+  const stack = page.locator("[data-approval-stack]");
+  await expect(stack).toHaveAttribute("data-closing", "false");
+  const opening = await stack.evaluate((node) => {
+    const cards = [
+      node.querySelector("[data-motion]")!,
+      ...node.querySelectorAll("[data-approval-back] > div"),
+    ];
+    const timing = cards.map((card) =>
+      card.getAnimations()[0].effect!.getTiming(),
+    );
+    for (const card of cards)
+      for (const animation of card.getAnimations()) animation.finish();
+    return timing.map((t) => Number(t.delay));
+  });
+  expect(opening[1]).toBeGreaterThan(opening[0]);
+  expect(opening[2]).toBeGreaterThan(opening[1]);
+  await page.mouse.move(10, 200);
+  await expect(stack).toHaveAttribute("data-closing", "true");
+  const closing = await stack.evaluate((node) => {
+    const cards = [
+      node.querySelector("[data-approval-exiting]")!,
+      ...node.querySelectorAll("[data-approval-back] > div"),
+    ];
+    return cards.map((card) => {
+      const t = card.getAnimations()[0].effect!.getTiming();
+      return {
+        delay: Number(t.delay),
+        end: Number(t.delay) + Number(t.duration),
+      };
+    });
+  });
+  expect(closing[1].delay).toBeGreaterThan(closing[0].delay);
+  expect(closing[2].delay).toBeGreaterThan(closing[1].delay);
+  expect(closing[1].end).toBeGreaterThan(closing[0].end);
+  expect(closing[2].end).toBeGreaterThan(closing[1].end);
+  await stack
+    .locator("[data-approval-exiting]")
+    .evaluate((node) => node.getAnimations().forEach((a) => a.finish()));
+  await expect(stack).toBeVisible();
+  await stack
+    .locator("[data-approval-back='1'] > div")
+    .evaluate((node) => node.getAnimations().forEach((a) => a.finish()));
+  await expect(stack).toBeVisible();
+  await stack
+    .locator("[data-approval-back='2'] > div")
+    .evaluate((node) => node.getAnimations().forEach((a) => a.finish()));
+  await expect(stack).toHaveCount(0);
+  await expect(group).toHaveAttribute("data-pending-count", "3");
+  await page.evaluate(() =>
+    (window as any).approvalCascadeObserver.disconnect(),
+  );
+  await group.hover();
+  await expect(
+    page.getByRole("region", {
+      name: "item/commandExecution/requestApproval",
+      exact: true,
+    }),
+  ).toContainText("git status --short");
 });

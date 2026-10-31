@@ -14,7 +14,11 @@ import { Markdown } from "#src/shared/content/markdown.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./approval-controls.module.css";
-import { approvalKey, useApprovalPresence } from "./use-approval-presence";
+import {
+  approvalBacks,
+  approvalKey,
+  useApprovalPresence,
+} from "./use-approval-presence";
 
 export function ApprovalControls({
   requests,
@@ -37,17 +41,13 @@ export function ApprovalControls({
   const [deciding, setDeciding] = useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
-  const { current, visible, leaving, entryDepth, finish } = useApprovalPresence(
-    requests,
-    open,
-    front,
-  );
+  const { current, visible, leaving, entryDepth, finish, finishFront } =
+    useApprovalPresence(requests, open, front);
   const key = approvalKey(current);
   const leavingKey = approvalKey(leaving?.event);
-  const backRequests =
-    visible.length > 3
-      ? [visible[1], visible[visible.length - 1]]
-      : visible.slice(1, 3);
+  const backRequests = current
+    ? approvalBacks(visible)
+    : (leaving?.backs ?? []);
   const show = () => {
     window.clearTimeout(closeTimer.current);
     setOpen(true);
@@ -223,6 +223,7 @@ export function ApprovalControls({
             className={styles.stack}
             data-approval-stack
             data-departing={!!leaving}
+            data-closing={!current && !!leaving}
             data-pending-count={requests.length}
             style={!current && leaving ? { height: leaving.height } : undefined}
             onPointerEnter={show}
@@ -241,7 +242,19 @@ export function ApprovalControls({
                   className={styles.backClip}
                   style={{ "--approval-depth": depth } as CSSProperties}
                 >
-                  <div className={`${styles.surface} ${styles.back}`} />
+                  <div
+                    className={`${styles.surface} ${styles.back}`}
+                    onAnimationEnd={(event) => {
+                      if (
+                        !current &&
+                        depth === backRequests.length &&
+                        event.target === event.currentTarget &&
+                        event.animationName ===
+                          getComputedStyle(event.currentTarget).animationName
+                      )
+                        finish(leavingKey);
+                    }}
+                  />
                 </div>
               );
             })}
@@ -293,7 +306,8 @@ export function ApprovalControls({
                   data-approval-exiting
                   onAnimationEnd={(event) => {
                     if (event.target === event.currentTarget)
-                      finish(leavingKey);
+                      if (current || !leaving.backs.length) finish(leavingKey);
+                      else finishFront(leavingKey);
                   }}
                 >
                   <ApprovalContent event={leaving.event} />

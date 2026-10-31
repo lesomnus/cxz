@@ -11,7 +11,17 @@ export const approvalKey = (event?: SessionEvent) =>
   event ? `${event.runId}:${event.requestId}:${event.seq}` : "";
 
 const empty: readonly SessionEvent[] = [];
-type Departure = { event: SessionEvent; height: number };
+type Departure = {
+  event: SessionEvent;
+  height: number;
+  backs: readonly SessionEvent[];
+  frontDone?: boolean;
+};
+
+export const approvalBacks = (requests: readonly SessionEvent[]) =>
+  requests.length > 3
+    ? [requests[1], requests[requests.length - 1]]
+    : requests.slice(1, 3);
 
 export function useApprovalPresence(
   requests: readonly SessionEvent[],
@@ -35,8 +45,16 @@ export function useApprovalPresence(
       setLeaving((old) => {
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
           return null;
-        if (from) return { event: from, height: before.height };
-        return approvalKey(old?.event) === approvalKey(current) ? null : old;
+        if (from)
+          return {
+            event: from,
+            height: before.height,
+            backs: current ? empty : approvalBacks(before.requests),
+          };
+        return approvalKey(old?.event) === approvalKey(current) ||
+          (current && old?.frontDone)
+          ? null
+          : old;
       });
     }
     const snapshot = {
@@ -57,6 +75,12 @@ export function useApprovalPresence(
 
   const finish = (key: string) =>
     setLeaving((old) => (approvalKey(old?.event) === key ? null : old));
+  const finishFront = (key: string) =>
+    setLeaving((old) =>
+      approvalKey(old?.event) === key && old
+        ? { ...old, frontDone: true }
+        : old,
+    );
   useEffect(() => {
     if (!leaving) return;
     // Also remove inert departures if an animation is canceled or motion changes.
@@ -67,5 +91,5 @@ export function useApprovalPresence(
     return () => window.clearTimeout(timer);
   }, [leaving]);
 
-  return { current, visible, leaving, entryDepth, finish };
+  return { current, visible, leaving, entryDepth, finish, finishFront };
 }
