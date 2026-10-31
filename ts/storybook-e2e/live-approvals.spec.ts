@@ -129,7 +129,7 @@ for (const width of [1280, 390]) {
     const conversation = (await page.locator(".conversation").boundingBox())!;
     expect(buttons.x + buttons.width).toBeLessThanOrEqual(menu.x);
     expect(cards.y + cards.height).toBeLessThan(buttons.y);
-    expect(cards.width).toBeLessThanOrEqual(380);
+    expect(cards.width).toBeLessThanOrEqual(320);
     expect(cards.x).toBeGreaterThanOrEqual(conversation.x);
     expect(cards.x + cards.width).toBeLessThanOrEqual(
       conversation.x + conversation.width,
@@ -538,7 +538,7 @@ test("departing approvals stay opaque behind the composer before the next card c
   expect(sample.before.outgoingLayer).toBeGreaterThan(
     sample.before.incomingLayer,
   );
-  expect(sample.before.stackLayer).toBeLessThan(sample.before.composerLayer);
+  expect(sample.before.stackLayer).toBeGreaterThan(sample.before.composerLayer);
   expect(sample.hiddenBeforePromotion).toBe(true);
   expect(sample.end.opacity).toBe("1");
   expect(sample.end.top).toBeGreaterThanOrEqual(sample.end.inputTop);
@@ -649,4 +649,130 @@ test("hover opens and closes the approval stack in front-to-back order", async (
       exact: true,
     }),
   ).toContainText("git status --short");
+});
+
+test("full queued cards remain above Question and uncover their bodies while closing", async ({
+  page,
+}, testInfo) => {
+  await page.goto(
+    "/iframe.html?id=conversation-questioncard--live-approvals&viewMode=story",
+  );
+  await page.getByRole("button", { name: "Ask question", exact: true }).click();
+  const question = page.getByRole("region", { name: "Question", exact: true });
+  await expect(question).toBeVisible();
+  await page
+    .getByRole("button", { name: "Request approval", exact: true })
+    .click();
+  await page.keyboard.press("Control+Alt+n");
+  await page.keyboard.press("Control+Alt+n");
+  const group = page.getByRole("group", {
+    name: "Pending approvals",
+    exact: true,
+  });
+  await expect(group).toHaveAttribute("data-pending-count", "3");
+  await group.hover();
+  const stack = page.locator("[data-approval-stack]");
+  await stack.evaluate(async (node) => {
+    await Promise.all(
+      [...node.querySelectorAll("[data-motion], [data-approval-back] > div")]
+        .flatMap((n) => n.getAnimations())
+        .map((a) => a.finished.catch(() => {})),
+    );
+  });
+  await expect(stack.locator("[data-approval-back='1']")).toContainText(
+    "npm run build",
+  );
+  await expect(stack.locator("[data-approval-back='2']")).toContainText(
+    "git diff --stat",
+  );
+  const before = await stack.evaluate((node) => ({
+    layer: getComputedStyle(node).zIndex,
+    backHeight: node
+      .querySelector("[data-approval-back] > div")!
+      .getBoundingClientRect().height,
+    frontHeight: node.querySelector("[data-motion]")!.getBoundingClientRect()
+      .height,
+  }));
+  expect(before.backHeight).toBeGreaterThanOrEqual(before.frontHeight - 1);
+  await page.evaluate(() => {
+    const seen = new WeakSet<Animation>();
+    const observer = new MutationObserver(() => {
+      if (!document.querySelector("[data-approval-stack][data-closing='true']"))
+        return;
+      for (const node of document.querySelectorAll(
+        "[data-approval-exiting], [data-approval-back] > div",
+      ))
+        for (const animation of node.getAnimations()) {
+          if (seen.has(animation)) continue;
+          seen.add(animation);
+          animation.pause();
+          animation.currentTime = 0;
+        }
+    });
+    observer.observe(document.querySelector(".conversation")!, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-closing"],
+    });
+    (window as any).approvalFullBackObserver = observer;
+  });
+  await page.mouse.move(10, 200);
+  await expect(stack).toHaveAttribute("data-closing", "true");
+  const sample = await stack.evaluate(async (node) => {
+    const departure = node.querySelector<HTMLElement>(
+      "[data-approval-exiting]",
+    )!;
+    const backs = [
+      ...node.querySelectorAll<HTMLElement>("[data-approval-back] > div"),
+    ];
+    const t = backs[0].getAnimations()[0].effect!.getTiming();
+    const time = Number(t.delay) + Number(t.duration) * 0.25;
+    for (const face of [departure, ...backs])
+      for (const a of face.getAnimations()) a.currentTime = time;
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+    const deepest = backs[1];
+    const style = getComputedStyle(deepest);
+    const covered = Number(style.clipPath.match(/[-\d.]+/g)?.[2] ?? 0);
+    const composer = node
+      .closest(".conversation")!
+      .querySelector<HTMLElement>(".composer-wrapper")!;
+    const box = deepest.getBoundingClientRect();
+    return {
+      layer: getComputedStyle(node).zIndex,
+      questionLayer: getComputedStyle(
+        document.querySelector(".floating-card-host")!,
+      ).zIndex,
+      visibleHeight: parseFloat(style.height) - covered,
+      fullHeight: parseFloat(style.height),
+      border: style.borderBottomWidth,
+      clipBottom: deepest.parentElement!.getBoundingClientRect().bottom,
+      composerTop: composer.getBoundingClientRect().top,
+      overlapsQuestion:
+        box.top <
+        document.querySelector(".question-cards")!.getBoundingClientRect()
+          .bottom,
+    };
+  });
+  expect(sample.layer).toBe(before.layer);
+  expect(Number(sample.layer)).toBeGreaterThan(Number(sample.questionLayer));
+  expect(sample.visibleHeight).toBeGreaterThan(sample.fullHeight / 2);
+  expect(sample.border).not.toBe("0px");
+  expect(sample.clipBottom).toBeLessThanOrEqual(sample.composerTop + 1);
+  expect(sample.overlapsQuestion).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("closing-full-cards-over-question.png"),
+  });
+  await stack.evaluate((node) => {
+    (window as any).approvalFullBackObserver.disconnect();
+    for (const face of node.querySelectorAll(
+      "[data-approval-exiting], [data-approval-back] > div",
+    ))
+      for (const a of face.getAnimations()) a.finish();
+  });
+  await expect(stack).toHaveCount(0);
+  await expect(question).toBeVisible();
+  await expect(group).toHaveAttribute("data-pending-count", "3");
 });

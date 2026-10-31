@@ -14,6 +14,7 @@ import { Markdown } from "#src/shared/content/markdown.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./approval-controls.module.css";
+import { observeApprovalOcclusion } from "./approval-occlusion";
 import {
   approvalBacks,
   approvalKey,
@@ -92,13 +93,19 @@ export function ApprovalControls({
           "--approval-composer-offset",
           `${Math.max(0, box.top - button.top + gap)}px`,
         );
-        cards.style.setProperty("--approval-input-height", `${box.height}px`);
         cards.style.setProperty(
           "--approval-input-radius",
           getComputedStyle(input).borderTopLeftRadius,
         );
       }
       const box = cards.getBoundingClientRect();
+      cards.style.setProperty("--approval-body-height", `${box.height}px`);
+      const surface = anchor.closest<HTMLElement>(".composer-wrapper");
+      if (surface)
+        cards.style.setProperty(
+          "--approval-occlusion-offset",
+          `${Math.max(0, surface.getBoundingClientRect().top - button.top + gap)}px`,
+        );
       const left = Math.max(
         bounds.left + gap,
         Math.min(
@@ -111,12 +118,17 @@ export function ApprovalControls({
       cards.dataset.positioned = "true";
     };
     position();
+    const surface = anchor.closest<HTMLElement>(".composer-wrapper");
+    const stopOcclusion = surface
+      ? observeApprovalOcclusion(cards, surface)
+      : undefined;
     const observer = new ResizeObserver(position);
     for (const element of [host, anchor, cards, anchor.closest(".composer")])
       if (element) observer.observe(element);
     window.addEventListener("resize", position);
     return () => {
       observer.disconnect();
+      stopOcclusion?.();
       window.removeEventListener("resize", position);
     };
   }, [host, key, leavingKey, requests.length]);
@@ -254,7 +266,14 @@ export function ApprovalControls({
                       )
                         finish(leavingKey);
                     }}
-                  />
+                  >
+                    <ScrollArea
+                      className={styles.scroll}
+                      scrollbarLabel={t("Request details")}
+                    >
+                      <ApprovalContent event={event} />
+                    </ScrollArea>
+                  </div>
                 </div>
               );
             })}

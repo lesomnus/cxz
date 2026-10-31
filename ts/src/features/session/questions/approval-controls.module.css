@@ -69,7 +69,7 @@
   background: color-mix(in srgb, var(--decision-color) 42%, var(--shade-16));
 }
 .stack {
-  --approval-card-width: 380px;
+  --approval-card-width: 320px;
   --approval-card-step: calc(2 * var(--space));
   --approval-motion-duration: 240ms;
   --approval-promotion-duration: 360ms;
@@ -87,9 +87,6 @@
 .stack[data-positioned="true"] {
   visibility: visible;
 }
-.stack[data-departing="true"] {
-  z-index: 1;
-}
 .surface {
   border: var(--ui-border-trail-width) solid var(--ui-border-trail-track-color);
   border-radius: var(--toolbar-button-radius);
@@ -99,26 +96,30 @@
 }
 .backClip {
   position: absolute;
-  bottom: 100%;
+  top: calc(-2 * var(--approval-card-step));
   inset-inline: 0;
-  height: calc(2 * var(--approval-card-step));
+  height: calc(
+    var(--approval-body-height) + 2 * var(--approval-card-step) +
+      var(--approval-occlusion-offset)
+  );
   overflow: clip;
   pointer-events: none;
   z-index: calc(-1 * var(--approval-depth));
 }
 .back {
+  display: flex;
   position: absolute;
-  bottom: calc(var(--approval-card-step) * (var(--approval-depth) - 1));
+  top: calc(var(--approval-card-step) * (2 - var(--approval-depth)));
   inset-inline: 0;
-  height: var(--approval-card-step);
-  border-bottom: 0;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  height: var(--approval-body-height);
+  padding: calc(2 * var(--space));
+  overflow: hidden;
+  font-size: 12px;
   pointer-events: none;
   transform-origin: center top;
   transform: scaleX(calc(1 - 0.035 * var(--approval-depth)));
   transition:
-    bottom var(--approval-motion-duration) var(--approval-motion-easing),
+    top var(--approval-motion-duration) var(--approval-motion-easing),
     transform var(--approval-motion-duration) var(--approval-motion-easing);
   animation: back-arrive var(--approval-motion-duration)
     var(--approval-motion-easing) both;
@@ -151,8 +152,7 @@
   inset-inline: 0;
   top: calc(100% - var(--approval-leaving-height));
   height: calc(
-    var(--approval-leaving-height) + var(--approval-composer-offset) +
-      var(--approval-input-height)
+    var(--approval-leaving-height) + var(--approval-occlusion-offset)
   );
   overflow: clip;
   pointer-events: none;
@@ -251,7 +251,13 @@
     transform: translateY(0) scaleX(calc(1 - 0.035 * var(--approval-depth)));
   }
   to {
-    transform: translateY(24px)
+    transform: translateY(
+        calc(
+          100% + var(--approval-composer-offset) +
+            var(--approval-input-radius) + var(--approval-card-step) *
+            var(--approval-depth)
+        )
+      )
       scaleX(calc(0.96 - 0.035 * var(--approval-depth)));
   }
 }
