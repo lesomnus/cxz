@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   edgePull,
   dragPullDistance,
+  dragPullDirection,
   scrollRange,
   markerRangeStart,
   SCROLL_WINDOW_SCREENS,
@@ -11,6 +12,18 @@ import {
 import { quotaDots } from "#src/features/session/model/session-info.ts";
 
 describe("bounded scroll handle", () => {
+  it("requires an outward gesture and stops pulling when the user moves inward", () => {
+    for (const direction of [-1, 1]) {
+      const distance = direction * 60;
+      expect(dragPullDirection(distance, 0, 0)).toBe(0);
+      expect(dragPullDirection(distance, -direction, 0)).toBe(0);
+      expect(dragPullDirection(distance, direction, 0)).toBe(direction);
+      expect(dragPullDirection(distance, 0, direction)).toBe(direction);
+      expect(dragPullDirection(distance, -direction, direction)).toBe(0);
+      expect(dragPullDirection(distance, 0, -direction)).toBe(0);
+      expect(dragPullDirection(0, direction, direction)).toBe(0);
+    }
+  });
   it("starts a continuous symmetric pull in the outer quarters before either end", () => {
     for (const travel of [200, 400, 800]) {
       for (const fraction of [0.25, 0.5, 0.75])

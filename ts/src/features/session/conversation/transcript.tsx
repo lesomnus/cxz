@@ -10,6 +10,7 @@ import {
   clamp,
   edgePull,
   dragPullDistance,
+  dragPullDirection,
   scrollRange,
   markerRangeStart,
   resumeRange,
@@ -66,10 +67,11 @@ type Drag = {
   id: number;
   offset: number;
   pointer: number;
+  lastPointer: number;
   range: ScrollRange;
   stretch: number;
   lastTime: number;
-  edge: number;
+  pullDirection: number;
 };
 type RangeMotion = {
   time: number;
@@ -729,13 +731,19 @@ export function Transcript({
     const raw = d.pointer - rail.getBoundingClientRect().top - d.offset;
     const bounded = clamp(raw, 0, travel);
     const distance = dragPullDistance(raw, travel);
-    const pull = edgePull(distance, g.viewport);
+    const active = dragPullDirection(
+      distance,
+      d.pointer - d.lastPointer,
+      d.pullDirection,
+    );
+    d.lastPointer = d.pointer;
+    const pull = edgePull(active ? distance : 0, g.viewport);
     d.stretch = pull.stretch;
     setStretch(pull.stretch);
     callbacks.current.onTension(pull.stretch);
     const dt = Math.min(32, time - d.lastTime) / 1000;
     d.lastTime = time;
-    if (!distance && d.edge)
+    if (!active && d.pullDirection)
       d.range = resumeRange(
         mapping.current?.toLogical(el.scrollTop) ?? el.scrollTop,
         bounded / travel,
@@ -751,7 +759,7 @@ export function Transcript({
     el.scrollTop = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? target
       : smoothStep(el.scrollTop, target, dt * 1000, 12);
-    if (distance) {
+    if (active) {
       const before = el.scrollTop;
       el.scrollTop += pull.speed * dt;
       const after = el.scrollTop;
@@ -761,7 +769,7 @@ export function Transcript({
       d.range.start +=
         (map?.toLogical(after) ?? after) - (map?.toLogical(before) ?? before);
     }
-    d.edge = Math.sign(distance);
+    d.pullDirection = active;
     scrolled();
     raf.current = requestAnimationFrame(animate);
   }
@@ -932,6 +940,7 @@ export function Transcript({
               id: e.pointerId,
               offset: e.clientY - bounds.top,
               pointer: e.clientY,
+              lastPointer: e.clientY,
               range: resumeRange(
                 mapping.current?.toLogical(pane.current!.scrollTop) ??
                   pane.current!.scrollTop,
@@ -940,7 +949,7 @@ export function Transcript({
               ),
               stretch: 0,
               lastTime: performance.now(),
-              edge: 0,
+              pullDirection: 0,
             };
             setDragging(true);
             measure();

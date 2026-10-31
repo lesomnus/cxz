@@ -64,6 +64,19 @@ export function dragPullDistance(position: number, travel: number) {
   );
 }
 
+// Grabbing a thumb already near an end is not an outward pull. Moving inward
+// must track normally, even before it leaves that quarter of the rail.
+export function dragPullDirection(
+  distance: number,
+  movement: number,
+  active: number,
+) {
+  const direction = Math.sign(distance);
+  if (!direction) return 0;
+  if (movement) return Math.sign(movement) === direction ? direction : 0;
+  return active === direction ? direction : 0;
+}
+
 // A saturating spring moves less with each extra pixel of pull, while velocity
 // increases. Both directions share the same curve and stop at actual history edges.
 export function edgePull(distance: number, viewport: number) {

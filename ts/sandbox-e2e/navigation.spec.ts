@@ -16,6 +16,38 @@ async function openLong(page: import("@playwright/test").Page) {
   ).toBeVisible();
 }
 
+test("first drag from latest detaches live follow inside the bottom quarter", async ({
+  page,
+}) => {
+  await openLong(page);
+  const pane = page.locator(".transcript");
+  const gap = () =>
+    pane.evaluate((el) => el.scrollHeight - el.clientHeight - el.scrollTop);
+  await expect.poll(gap).toBeLessThan(2);
+  await page.waitForTimeout(500);
+  const thumb = page.getByRole("scrollbar", { name: "Conversation scroll" });
+  const grab = (await thumb.boundingBox())!;
+  const rail = (await page.locator(".scroll-track").boundingBox())!;
+  const x = grab.x + grab.width / 2;
+  await page.mouse.move(x, grab.y + grab.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(100);
+  await expect(thumb).toHaveAttribute("data-stretch", "0.00");
+  await page.mouse.move(
+    x,
+    grab.y + grab.height / 2 - (rail.height - grab.height) * 0.05,
+    { steps: 4 },
+  );
+  await expect.poll(gap).toBeGreaterThan(40);
+  await expect(thumb).toHaveAttribute("data-stretch", "0.00");
+  await page.mouse.up();
+  await expect(
+    page.getByRole("button", { name: "Latest", exact: true }),
+  ).toBeVisible();
+  await page.waitForTimeout(200);
+  await expect.poll(gap).toBeGreaterThan(40);
+});
+
 test("first elastic drag returns to the rail at the reading position", async ({
   page,
 }) => {

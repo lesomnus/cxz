@@ -1,5 +1,62 @@
 import { expect, test } from "@playwright/test";
 
+for (const boundary of ["latest", "oldest"] as const) {
+  test(`first drag away from ${boundary} moves immediately and does not accelerate back`, async ({
+    page,
+  }) => {
+    await page.goto("/test-support/transcript-performance.html?count=8192");
+    const pane = page.locator(".transcript");
+    const thumb = page.getByRole("scrollbar", {
+      name: "Conversation scroll",
+      exact: true,
+    });
+    await expect(thumb).toBeVisible();
+    if (boundary === "oldest") await thumb.press("Home");
+    else
+      await expect
+        .poll(() =>
+          pane.evaluate(
+            (el) => el.scrollHeight - el.clientHeight - el.scrollTop,
+          ),
+        )
+        .toBeLessThan(2);
+    await page.waitForTimeout(500);
+    const grab = (await thumb.boundingBox())!;
+    const rail = (await page.locator(".scroll-track").boundingBox())!;
+    const direction = boundary === "latest" ? -1 : 1;
+    const before = await thumb.getAttribute("aria-valuenow").then(Number);
+    await page.mouse.move(grab.x + grab.width / 2, grab.y + grab.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(100);
+    await expect(thumb).toHaveAttribute("data-stretch", "0.00");
+    // Stay in the same outer quarter: moving inward must remain ordinary drag.
+    await page.mouse.move(
+      grab.x + grab.width / 2,
+      grab.y + grab.height / 2 + direction * (rail.height - grab.height) * 0.05,
+      { steps: 4 },
+    );
+    await expect
+      .poll(
+        async () =>
+          direction *
+          (Number(await thumb.getAttribute("aria-valuenow")) - before),
+      )
+      .toBeGreaterThan(20);
+    await expect(thumb).toHaveAttribute("data-stretch", "0.00");
+    await page.waitForTimeout(200);
+    const positions = await pane.evaluate(async (el) => {
+      const values: number[] = [];
+      for (let i = 0; i < 12; i++) {
+        await new Promise(requestAnimationFrame);
+        values.push(el.scrollTop);
+      }
+      return values;
+    });
+    expect(Math.abs(positions.at(-1)! - positions[0])).toBeLessThan(2);
+    await page.mouse.up();
+  });
+}
+
 test("outer quarters accelerate before rail ends and returning to center stops without a jump", async ({
   page,
 }) => {
