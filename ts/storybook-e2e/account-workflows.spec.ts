@@ -168,6 +168,63 @@ for (const viewport of [
   });
 }
 
+for (const zoom of [1, 1.25, 1.5]) {
+  test(`Account Login preserves agent item alignment on repeated selections at CSS zoom ${zoom}`, async ({
+    page,
+  }, info) => {
+    await page.setViewportSize({ width: 1600, height: 1000 });
+    await open(page, "account-login");
+    await page
+      .getByRole("article", { name: "Work account", exact: true })
+      .waitFor({ state: "attached" });
+    await page.evaluate((zoom) => {
+      document.body.style.zoom = String(zoom);
+    }, zoom);
+    await page
+      .getByRole("button", { name: "Add account", exact: true })
+      .click();
+    const form = page.getByRole("dialog", { name: "Add account", exact: true });
+    const trigger = form.getByRole("combobox", { name: "Agent", exact: true });
+    for (const [current, next] of [
+      ["Codex", "Claude"],
+      ["Claude", "Codex"],
+      ["Codex", "Claude"],
+      ["Claude", "Claude"],
+    ]) {
+      await expect(trigger).toHaveText(current);
+      await trigger.click();
+      const popup = form.locator(".setting-menu");
+      const selected = popup.getByRole("option", {
+        name: current,
+        exact: true,
+      });
+      await expect(popup).toHaveAttribute("data-item-alignment", "selected");
+      await expect(selected).toBeFocused();
+      await expect
+        .poll(async () => {
+          const a = (await trigger.boundingBox())!,
+            b = (await selected.boundingBox())!;
+          return Math.max(
+            ...(["x", "y", "width", "height"] as const).map((key) =>
+              Math.abs(a[key] - b[key]),
+            ),
+          );
+        })
+        .toBeLessThan(0.1);
+      await expect(trigger.locator(".button-content")).toHaveCSS(
+        "opacity",
+        "0",
+      );
+      if (current === "Claude")
+        await form.screenshot({
+          path: info.outputPath("account-login-claude-aligned.png"),
+        });
+      await popup.getByRole("option", { name: next, exact: true }).click();
+      await expect(popup).toHaveCount(0);
+    }
+  });
+}
+
 test("account login refreshes status and logout uses confirmation", async ({
   page,
 }) => {
