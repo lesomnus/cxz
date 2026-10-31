@@ -11,6 +11,8 @@ import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { createWorkspaceRouter } from "#src/app/router.tsx";
 import { create } from "@bufbuild/protobuf";
 import { SessionSchema } from "#gen/cxz/session_pb";
+import { ProjectSchema } from "#gen/cxz/project_pb";
+import { projectFixtureId } from "./project-id";
 import type { Connection } from "#src/shared/api/connection.ts";
 
 function AccountPreview({ c }: { c: Connection }) {
@@ -21,11 +23,24 @@ function AccountPreview({ c }: { c: Connection }) {
         view: () => (
           <AccountsPage
             c={c}
+            projects={[
+              create(ProjectSchema, {
+                id: projectFixtureId(1),
+                alias: "web",
+                name: "Web workspace",
+              }),
+              create(ProjectSchema, {
+                id: projectFixtureId(2),
+                alias: "api",
+                name: "API workspace",
+              }),
+            ]}
             sessions={[
               create(SessionSchema, {
                 runtimeId: "demo",
                 name: "Web account layout",
                 alias: "oak",
+                project: { id: projectFixtureId(1) },
                 account: { alias: "work" },
                 agent: "codex",
                 status: { state: "idle" },
@@ -34,6 +49,7 @@ function AccountPreview({ c }: { c: Connection }) {
                 runtimeId: "personal-demo",
                 name: "Claude project",
                 alias: "elm",
+                project: { id: projectFixtureId(2) },
                 account: { alias: "personal" },
                 agent: "claude",
                 status: { state: "stopped" },
@@ -42,6 +58,7 @@ function AccountPreview({ c }: { c: Connection }) {
                 runtimeId: "demo-review",
                 name: "Review deployment changes",
                 alias: "pine",
+                project: { id: projectFixtureId(2) },
                 account: { alias: "work" },
                 agent: "codex",
                 status: { state: "working" },

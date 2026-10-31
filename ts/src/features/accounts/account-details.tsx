@@ -6,6 +6,7 @@ import { Button, Popover, SectionGroup, Section } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
+import type { Project } from "#gen/cxz/project_pb";
 import { AccountAuthStatus_State as AuthState } from "#gen/cxz/account_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -21,11 +22,13 @@ export function AccountDetails({
   c,
   account,
   sessions,
+  projects,
   sessionsLoading,
 }: {
   c: Connection;
   account: Account;
   sessions: Session[];
+  projects: Project[];
   sessionsLoading: boolean;
 }) {
   const navigate = useNavigate();
@@ -144,10 +147,12 @@ export function AccountDetails({
         <SessionTable
           c={c}
           sessions={sessions}
+          projects={projects}
           accounts={[account]}
           loading={sessionsLoading}
           variant="compact"
           showAccount={false}
+          showProject
           title={`Sessions · ${sessions.length}`}
           horizontalScrollbar
           openSession={(session) => {

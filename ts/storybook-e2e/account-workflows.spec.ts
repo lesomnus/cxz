@@ -322,6 +322,43 @@ test("account login keeps its frame and controls fixed through loading, errors a
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
 });
 
+for (const destination of ["conversation", "project"] as const) {
+  test(`account session ${destination} buttons navigate to their own resource`, async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await open(page, "signed-in-account");
+    const table = page.getByRole("table", { name: "Sessions", exact: true });
+    if (destination === "conversation") {
+      const link = table.getByRole("link", {
+        name: "Account login workflow seal",
+        exact: true,
+      });
+      await expect(link).toHaveAttribute("href", "/c/_/session/seal");
+      await link.click();
+      await expect(
+        page.getByRole("textbox", { name: "Message", exact: true }),
+      ).toBeVisible();
+    } else {
+      const link = table.getByRole("link", {
+        name: "Demo workspace",
+        exact: true,
+      });
+      await expect(link).toHaveAttribute("href", "/c/_/project/workspace");
+      await link.focus();
+      await page.keyboard.press("Enter");
+      await expect(
+        page.getByRole("main", { name: "Project workspace", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("combobox", { name: "Select project", exact: true }),
+      ).toContainText("Demo workspace");
+    }
+    expect(errors).toEqual([]);
+  });
+}
+
 test("account session row menus can still open the conversation", async ({
   page,
 }) => {

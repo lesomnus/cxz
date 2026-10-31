@@ -42,6 +42,7 @@ export function WorkspaceView() {
     return (
       <AccountsPage
         c={c}
+        projects={projects}
         sessions={sessions}
         sessionsLoading={sessionsLoading}
       />

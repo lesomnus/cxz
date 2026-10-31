@@ -4,6 +4,7 @@ import { Provider } from "@lesomnus/payday/react";
 import { Button } from "@lesomnus/nox";
 import { createWorkspaceRouter, useWorkspaceRoute } from "#src/app/router.tsx";
 import { AccountsPage } from "#src/pages/accounts/accounts-page.tsx";
+import { ProjectsPage } from "#src/pages/projects/projects-page.tsx";
 import { Conversation } from "#src/features/session/conversation/conversation.tsx";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { LoginTransportContext } from "#src/features/accounts/login-transport.ts";
@@ -69,6 +70,15 @@ function WorkflowPreview({
                 projects={[fixture.project]}
               />
             );
+          if (route.project)
+            return (
+              <ProjectsPage
+                c={fixture.c}
+                projects={[fixture.project]}
+                sessions={fixture.sessions}
+                projectsLoading={false}
+              />
+            );
           if (scenario === "create-session")
             return (
               <div className={styles.create}>
@@ -83,7 +93,13 @@ function WorkflowPreview({
                 )}
               </div>
             );
-          return <AccountsPage c={fixture.c} sessions={fixture.sessions} />;
+          return (
+            <AccountsPage
+              c={fixture.c}
+              sessions={fixture.sessions}
+              projects={[fixture.project]}
+            />
+          );
         },
       },
       createMemoryHistory({

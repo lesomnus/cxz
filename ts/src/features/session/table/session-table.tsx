@@ -3,12 +3,19 @@ import { key } from "@lesomnus/payday/store";
 import { Link } from "@tanstack/react-router";
 import { Button, EditableValue } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
+import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { SessionIndicator } from "#src/features/session/components/session-indicator.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
+import { RouteLink } from "#src/shared/navigation/route-link.tsx";
+import {
+  projectLocation,
+  resourceHandle,
+  sessionLocation,
+} from "#src/shared/navigation/resource-route.ts";
 import type { SessionControlConnection } from "#src/features/session/model/session-control-batch.ts";
 import {
   editSession,
@@ -27,9 +34,11 @@ export function SessionTable({
   c,
   sessions,
   accounts,
+  projects = [],
   loading,
   addSession,
   showAccount = true,
+  showProject = false,
   title = t("Sessions"),
   openSession,
   horizontalScrollbar = false,
@@ -38,9 +47,11 @@ export function SessionTable({
   c: SessionControlConnection;
   sessions: Session[];
   accounts: Account[];
+  projects?: Project[];
   loading?: boolean;
   addSession?: () => void;
   showAccount?: boolean;
+  showProject?: boolean;
   title?: string;
   openSession?: (session: Session) => void;
   horizontalScrollbar?: boolean;
@@ -60,6 +71,10 @@ export function SessionTable({
   const accountsById = useMemo(
     () => new Map(accounts.map((a) => [key(a.id), a])),
     [accounts],
+  );
+  const projectsById = useMemo(
+    () => new Map(projects.map((project) => [key(project.id), project])),
+    [projects],
   );
   const count = chosen.length;
   const all = sessions.length > 0 && count === sessions.length;
@@ -121,6 +136,7 @@ export function SessionTable({
           aria-label={t("Sessions")}
           aria-busy={loading}
           data-account-column={showAccount}
+          data-project-column={showProject}
         >
           <colgroup>
             <col className={styles.selectionColumn} />
@@ -128,6 +144,7 @@ export function SessionTable({
             <col className={styles.nameColumn} />
             {!compact && <col className={styles.aliasColumn} />}
             {showAccount && <col className={styles.accountColumn} />}
+            {showProject && <col className={styles.projectColumn} />}
             <col className={styles.stateColumn} />
             <col className={styles.actionsColumn} />
           </colgroup>
@@ -153,6 +170,7 @@ export function SessionTable({
               <th scope="col">{t("Name")}</th>
               {!compact && <th scope="col">{t("Alias")}</th>}
               {showAccount && <th scope="col">{t("Account")}</th>}
+              {showProject && <th scope="col">{t("Project")}</th>}
               <th scope="col">{t("State")}</th>
               <th scope="col" aria-label={t("Controls")} />
             </tr>
@@ -169,6 +187,12 @@ export function SessionTable({
                 s.account?.alias ||
                 "—";
               const checked = selected.has(s.runtimeId);
+              const projectResource =
+                s.project && (projectsById.get(key(s.project.id)) || s.project);
+              const project =
+                projectResource && resourceHandle(projectResource);
+              const projectName =
+                projectResource?.name || projectResource?.alias || project;
               return (
                 <tr key={s.runtimeId} data-selected={checked || undefined}>
                   <td className={styles.selectionCell}>
@@ -186,11 +210,18 @@ export function SessionTable({
                     </td>
                   )}
                   {compact ? (
-                    <td className={styles.name}>
-                      <span className={styles.identity}>
-                        <span className={styles.title}>{name}</span>
-                        <span className={styles.subtitle}>{s.alias}</span>
-                      </span>
+                    <td className={`${styles.name} ${styles.cardCell}`}>
+                      <RouteLink
+                        {...sessionLocation(s)}
+                        className={styles.navigationButton}
+                        title={name}
+                      >
+                        <span className={styles.identity}>
+                          <span className={styles.title}>{name}</span>
+                          <span className={styles.subtitle}>{s.alias}</span>
+                        </span>
+                        <OpenArrow />
+                      </RouteLink>
                     </td>
                   ) : (
                     (["name", "alias"] as const).map((field) => (
@@ -236,6 +267,22 @@ export function SessionTable({
                         </Link>
                       ) : (
                         accountName
+                      )}
+                    </td>
+                  )}
+                  {showProject && (
+                    <td className={styles.cardCell}>
+                      {project ? (
+                        <RouteLink
+                          {...projectLocation(project)}
+                          className={styles.navigationButton}
+                          title={projectName}
+                        >
+                          <span className={styles.title}>{projectName}</span>
+                          <OpenArrow />
+                        </RouteLink>
+                      ) : (
+                        "—"
                       )}
                     </td>
                   )}

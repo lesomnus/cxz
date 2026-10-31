@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, SectionLayout } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
+import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { listAccounts } from "./account-data";
@@ -14,12 +15,14 @@ export function AccountsView({
   selected,
   select,
   sessions = [],
+  projects = [],
   sessionsLoading = false,
 }: {
   c: Connection;
   selected?: string;
   select?: (alias: string) => void;
   sessions?: Session[];
+  projects?: Project[];
   sessionsLoading?: boolean;
 }) {
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
@@ -80,6 +83,7 @@ export function AccountsView({
                 <AccountDetails
                   c={c}
                   account={account}
+                  projects={projects}
                   sessions={sessions.filter(
                     (session) => session.account?.alias === account.alias,
                   )}

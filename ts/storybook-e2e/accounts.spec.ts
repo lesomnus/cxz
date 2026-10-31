@@ -213,6 +213,7 @@ test("account sessions use compact read-only identities and keep selection scope
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
     "Name",
+    "Project",
     "State",
     "",
   ]);
@@ -245,7 +246,37 @@ test("account sessions use compact read-only identities and keep selection scope
   ).toBeLessThan(
     await name.evaluate((node) => parseFloat(getComputedStyle(node).fontSize)),
   );
-  await name.click();
+  await expect(
+    rows
+      .first()
+      .getByRole("link", { name: "Web account layout oak", exact: true }),
+  ).toHaveAttribute("href", "/c/_/session/oak");
+  await expect(
+    rows.first().getByRole("link", { name: "Web workspace", exact: true }),
+  ).toHaveAttribute("href", "/c/_/project/web");
+  await expect(
+    rows.nth(1).getByRole("link", { name: "API workspace", exact: true }),
+  ).toHaveAttribute("href", "/c/_/project/api");
+  for (const link of await rows.first().getByRole("link").all()) {
+    await expect(link).toHaveCSS("border-top-width", "0px");
+    await expect(link).toHaveCSS("box-shadow", "none");
+    const background = await link.evaluate(
+      (node) => getComputedStyle(node).backgroundColor,
+    );
+    expect(background).not.toBe("rgba(0, 0, 0, 0)");
+    const shades = await link.evaluate((node) => ({
+      button: Number(getComputedStyle(node).backgroundColor.match(/\d+/)?.[0]),
+      table: Number(
+        getComputedStyle(node.closest("section")!).backgroundColor.match(
+          /\d+/,
+        )?.[0],
+      ),
+    }));
+    expect(shades.button).toBeGreaterThan(shades.table);
+    expect(shades.button - shades.table).toBeLessThan(24);
+    await link.hover();
+    await expect(link).not.toHaveCSS("background-color", background);
+  }
   await expect(table.getByRole("textbox")).toHaveCount(0);
   await rows.first().getByRole("checkbox").check();
   await expect(
