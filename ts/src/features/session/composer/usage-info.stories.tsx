@@ -8,7 +8,7 @@ const meta = {
     (Story) => (
       <div
         style={{
-          padding: "80px 24px 24px",
+          padding: "180px 24px 24px",
           width: 520,
           maxWidth: "100vw",
         }}
@@ -51,6 +51,107 @@ export const Weekly: Story = {
       remaining: 72,
       quotaLabel: "codex · weekly",
       reset: Date.now() + 7 * 24 * 3600_000,
+    },
+  },
+};
+export const SessionAndWeekly: Story = {
+  args: {
+    info: {
+      ...meta.args.info,
+      remaining: 8,
+      quotaLabel: "codex · weekly",
+      reset: Date.now() + 6.5 * 24 * 3600_000,
+      quotas: [
+        {
+          key: "codex/primary",
+          label: "codex · 5h",
+          bucket: "codex",
+          period: "5h",
+          remaining: 72,
+          reset: Date.now() + 5 * 3600_000,
+        },
+        {
+          key: "codex/secondary",
+          label: "codex · weekly",
+          bucket: "codex",
+          period: "weekly",
+          remaining: 8,
+          reset: Date.now() + 6.5 * 24 * 3600_000,
+        },
+      ],
+    },
+  },
+};
+export const MultipleBuckets: Story = {
+  args: {
+    info: {
+      ...SessionAndWeekly.args!.info!,
+      quotas: [
+        ...SessionAndWeekly.args!.info!.quotas!,
+        {
+          key: "spark/primary",
+          label: "Spark · 5h",
+          bucket: "spark",
+          bucketName: "Spark",
+          period: "5h",
+          remaining: 24,
+          reset: Date.now() + 4 * 3600_000,
+        },
+        {
+          key: "spark/secondary",
+          label: "Spark · weekly",
+          bucket: "spark",
+          bucketName: "Spark",
+          period: "weekly",
+          remaining: 90,
+          reset: Date.now() + 4 * 24 * 3600_000,
+        },
+      ],
+    },
+  },
+};
+export const ClaudeWindows: Story = {
+  args: {
+    agent: "claude",
+    info: {
+      ...meta.args.info,
+      remaining: 15,
+      quotaLabel: "seven day opus",
+      quotas: [
+        {
+          key: "five_hour",
+          label: "five hour",
+          period: "five_hour",
+          remaining: 70,
+          reset: Date.now() + 5 * 3600_000,
+        },
+        {
+          key: "seven_day",
+          label: "seven day",
+          period: "seven_day",
+          remaining: 60,
+          reset: Date.now() + 6 * 24 * 3600_000,
+        },
+        {
+          key: "seven_day_opus",
+          label: "seven day opus",
+          period: "seven_day_opus",
+          remaining: 15,
+          reset: Date.now() + 6 * 24 * 3600_000,
+        },
+        {
+          key: "seven_day_sonnet",
+          label: "seven day sonnet",
+          period: "seven_day_sonnet",
+          status: "allowed",
+        },
+        {
+          key: "model_scoped/0",
+          label: "Fable",
+          remaining: 35,
+          reset: Date.now() + 2 * 24 * 3600_000,
+        },
+      ],
     },
   },
 };

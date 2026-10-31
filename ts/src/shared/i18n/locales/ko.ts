@@ -361,6 +361,7 @@ export const messages = {
   Connected: "연결됨",
   "Connecting…": "연결 중…",
   "Context usage": "컨텍스트 사용량",
+  "Usage windows": "사용량 기간별 한도",
   "Continue the conversation…": "대화를 이어가세요…",
   Conversation: "대화",
   "Conversation scroll": "대화 스크롤",
