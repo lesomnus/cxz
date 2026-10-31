@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,11 +30,14 @@ type Identity struct {
 	Source      string `json:"source"`
 	UsageSource string `json:"usage_source"`
 	Scope       string `json:"scope,omitempty"`
+	Parent      string `json:"parent,omitempty"`
 }
 
 type Session struct {
 	Account string `json:"account"`
 	Agent   string `json:"agent"`
+	Scope   string `json:"scope,omitempty"`
+	Parent  string `json:"parent,omitempty"`
 }
 type Registry struct {
 	Secret   string             `json:"secret"`
@@ -62,7 +66,7 @@ func (i Identity) Validate() error {
 	if i.UsageSource != "native" && i.UsageSource != "supervisor" {
 		return errors.New("invalid telemetry usage source")
 	}
-	if len(i.Agent) > 64 || i.Agent == "" || len(i.Scope) > 64 {
+	if len(i.Agent) > 64 || i.Agent == "" || len(i.Scope) > 64 || len(i.Parent) > 128 {
 		return errors.New("invalid telemetry agent identity")
 	}
 	return nil
@@ -105,7 +109,12 @@ func Verify(directory, token string) (Identity, error) {
 		return Identity{}, invalid
 	}
 	key, _ := ProjectKey(i.Project)
-	b, err = os.ReadFile(filepath.Join(directory, key+".json"))
+	f, err := os.Open(filepath.Join(directory, key+".json"))
+	if err != nil {
+		return Identity{}, invalid
+	}
+	defer f.Close()
+	b, err = io.ReadAll(io.LimitReader(f, (4<<20)+1))
 	if err != nil || len(b) > 4<<20 {
 		return Identity{}, invalid
 	}
@@ -123,7 +132,35 @@ func Verify(directory, token string) (Identity, error) {
 		return Identity{}, invalid
 	}
 	session, ok := registry.Sessions[i.Session]
-	if !ok || session.Account != i.Account || session.Agent != i.Agent {
+	if !ok || session.Account != i.Account || session.Agent != i.Agent || session.Parent != i.Parent || (session.Scope != "" && session.Scope != i.Scope) {
+		return Identity{}, invalid
+	}
+	return i, nil
+}
+
+// VerifyProject authenticates the runtime's loopback relay before reading a
+// request body. The Collector additionally checks the live session registry.
+func VerifyProject(project, secret, token string) (Identity, error) {
+	var i Identity
+	invalid := errors.New("unauthorized telemetry")
+	if len(token) > 4096 {
+		return i, invalid
+	}
+	payload, _, ok := strings.Cut(token, ".")
+	if !ok {
+		return i, invalid
+	}
+	b, err := base64.RawURLEncoding.DecodeString(payload)
+	if err != nil || json.Unmarshal(b, &i) != nil || i.Validate() != nil {
+		return Identity{}, invalid
+	}
+	key, err := ProjectKey(project)
+	if err != nil {
+		return Identity{}, invalid
+	}
+	other, _ := ProjectKey(i.Project)
+	expected, err := Sign(secret, i)
+	if err != nil || key != other || !hmac.Equal([]byte(token), []byte(expected)) {
 		return Identity{}, invalid
 	}
 	return i, nil
@@ -131,10 +168,14 @@ func Verify(directory, token string) (Identity, error) {
 
 func (i Identity) Attributes() map[string]string {
 	project, _ := ProjectKey(i.Project)
+	session := i.Session
+	if i.Parent != "" {
+		session = i.Parent
+	}
 	return map[string]string{
 		"cxz.project.id":       project,
-		"cxz.session.id":       hex.EncodeToString(resourceid.Bytes(8, i.Session)),
-		"cxz.runtime.id":       i.Session,
+		"cxz.session.id":       hex.EncodeToString(resourceid.Bytes(8, session)),
+		"cxz.runtime.id":       session,
 		"cxz.account.id":       hex.EncodeToString(resourceid.Bytes(9, i.Account)),
 		"cxz.account.alias":    i.Account,
 		"cxz.run.id":           i.Run,

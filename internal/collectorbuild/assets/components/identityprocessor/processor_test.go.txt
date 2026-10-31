@@ -1,0 +1,84 @@
+package identityprocessor
+
+import (
+	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/lesomnus/cxz/internal/telemetryauth"
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor/processortest"
+)
+
+func TestAuthOverridesResourceAndRejectsRevocation(t *testing.T) {
+	dir := t.TempDir()
+	i := telemetryauth.Identity{Project: "00112233445566778899aabbccddeeff", Session: "one", Account: "work", Agent: "codex", Run: "run", Source: "supervisor", UsageSource: "supervisor", Scope: "conversation"}
+	registry := telemetryauth.Registry{Secret: "private", Sessions: map[string]telemetryauth.Session{i.Session: {Account: i.Account, Agent: i.Agent}}}
+	file := filepath.Join(dir, i.Project+".json")
+	b, _ := json.Marshal(registry)
+	if err := os.WriteFile(file, b, 0600); err != nil {
+		t.Fatal(err)
+	}
+	token, _ := telemetryauth.Sign(registry.Secret, i)
+	calls := 0
+	next, err := consumer.NewMetrics(func(_ context.Context, md pmetric.Metrics) error {
+		calls++
+		r := md.ResourceMetrics().At(0)
+		v, _ := r.Resource().Attributes().Get("cxz.project.id")
+		if v.Str() != i.Project {
+			t.Fatal("forged resource survived", v)
+		}
+		if _, ok := r.Resource().Attributes().Get("user.email"); ok {
+			t.Fatal("private native attributes survived")
+		}
+		metrics := r.ScopeMetrics().At(0).Metrics()
+		if metrics.Len() != 1 {
+			t.Fatal("wrong source metric survived", metrics.Len())
+		}
+		attrs := metrics.At(0).Sum().DataPoints().At(0).Attributes()
+		if _, ok := attrs.Get("prompt"); ok {
+			t.Fatal("unrecognized attribute survived")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	factory := NewFactory()
+	p, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(factory.Type()), &Config{RegistryDirectory: dir}, next)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Shutdown(t.Context())
+	batch := func() pmetric.Metrics {
+		m := pmetric.NewMetrics()
+		r := m.ResourceMetrics().AppendEmpty()
+		r.Resource().Attributes().PutStr("cxz.project.id", "other-project")
+		r.Resource().Attributes().PutStr("user.email", "private@example.test")
+		s := r.ScopeMetrics().AppendEmpty()
+		good := s.Metrics().AppendEmpty()
+		good.SetName("cxz.turn.finished")
+		point := good.SetEmptySum().DataPoints().AppendEmpty()
+		point.SetIntValue(1)
+		point.Attributes().PutStr("prompt", "sensitive")
+		s.Metrics().AppendEmpty().SetName("codex.turn.token_usage")
+		return m
+	}
+	ctx := client.NewContext(context.Background(), client.Info{Metadata: client.NewMetadata(map[string][]string{"authorization": {"Bearer " + token}})})
+	if err = p.ConsumeMetrics(ctx, batch()); err != nil || calls != 1 {
+		t.Fatal(err, calls)
+	}
+	if err = p.ConsumeMetrics(t.Context(), batch()); err == nil || calls != 1 {
+		t.Fatal("missing metadata accepted", err, calls)
+	}
+	if err = os.Remove(file); err != nil {
+		t.Fatal(err)
+	}
+	if err = p.ConsumeMetrics(ctx, batch()); err == nil || calls != 1 {
+		t.Fatal("revoked session accepted", err, calls)
+	}
+}
