@@ -5,7 +5,6 @@
   --question-history-answer-height: 160px;
   --question-history-gap: calc(2 * var(--space));
   --ui-section-group-gap: var(--control-inset);
-  --ui-section-padding: var(--control-inline-inset);
   --ui-section-radius: var(--wrapper-radius);
   --ui-section-inner-radius: var(--control-inset);
   --question-history-inset: 12px;
@@ -50,6 +49,9 @@
   min-height: 0;
   margin-inline: calc(-1 * var(--ui-section-padding));
   overflow: hidden;
+}
+.question {
+  --ui-scroll-area-background: var(--shade-20);
 }
 .answer {
   --ui-scroll-area-background: var(--shade-16);
