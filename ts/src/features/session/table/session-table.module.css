@@ -147,14 +147,11 @@
 .table tbody tr:not(:last-child) td {
   box-shadow: inset 0 -1px 0 var(--ui-shade-36);
 }
-.table tbody tr[data-selected] {
-  background: var(--ui-selected);
-}
 .table tbody tr:hover {
   --session-navigation-background: var(--ui-shade-40);
   background: var(--ui-shade-32);
 }
-.table tbody tr[data-selected]:hover {
+.table tbody tr[data-selected] {
   --session-navigation-background: var(--ui-shade-60);
   --session-navigation-hover-background: var(--ui-shade-72);
   background: var(--ui-shade-51);

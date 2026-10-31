@@ -345,6 +345,37 @@ test("account sessions use compact read-only identities and keep selection scope
       )
       .toBe(true);
   }
+  await rows
+    .first()
+    .getByRole("link")
+    .evaluateAll((links) =>
+      Promise.all(
+        links.flatMap((link) =>
+          link
+            .getAnimations()
+            .map((animation) => animation.finished.catch(() => {})),
+        ),
+      ),
+    );
+  const selectedColors = await rows
+    .first()
+    .evaluate((node) =>
+      [node, ...node.querySelectorAll("a")].map(
+        (element) => getComputedStyle(element).backgroundColor,
+      ),
+    );
+  await page.mouse.move(0, 0);
+  await expect
+    .poll(() =>
+      rows
+        .first()
+        .evaluate((node) =>
+          [node, ...node.querySelectorAll("a")].map(
+            (element) => getComputedStyle(element).backgroundColor,
+          ),
+        ),
+    )
+    .toEqual(selectedColors);
   const viewport = work.locator('[data-scroll-area="viewport"]');
   expect(
     await viewport.evaluate((node) => node.scrollWidth <= node.clientWidth),
