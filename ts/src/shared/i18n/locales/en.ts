@@ -360,6 +360,7 @@ export const messages = {
   Connected: "Connected",
   "Connecting…": "Connecting…",
   "Context usage": "Context usage",
+  "Usage windows": "Usage windows",
   "Continue the conversation…": "Continue the conversation…",
   Conversation: "Conversation",
   "Conversation scroll": "Conversation scroll",

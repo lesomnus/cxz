@@ -5,6 +5,7 @@ import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   quotaDots,
+  type QuotaWindow,
   type SessionInfo,
 } from "#src/features/session/model/session-info.ts";
 
@@ -13,14 +14,28 @@ function quotaPeriod(label: string | undefined) {
   return (
     (
       {
-        "five hour": "5h",
-        five_hour: "5h",
+        "five hour": "session",
+        five_hour: "session",
+        "5h": "session",
         "seven day": "weekly",
         seven_day: "weekly",
         weekly: "weekly",
+        seven_day_opus: "opus weekly",
+        seven_day_sonnet: "sonnet weekly",
+        seven_day_oauth_apps: "apps weekly",
       } as Record<string, string>
     )[period] ?? period
   );
+}
+
+function quotaLevel(remaining: number | undefined) {
+  return remaining === undefined
+    ? "unknown"
+    : remaining < 10
+      ? "critical"
+      : remaining <= 30
+        ? "warning"
+        : "normal";
 }
 
 export function UsageInfo({ info }: { info: SessionInfo; agent: string }) {
@@ -32,6 +47,18 @@ export function UsageInfo({ info }: { info: SessionInfo; agent: string }) {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const open = hovered || focused;
+  const windows: QuotaWindow[] = info.quotas?.length
+    ? info.quotas
+    : [
+        {
+          key: "selected",
+          label: info.quotaLabel ?? "",
+          remaining: info.remaining,
+          reset: info.reset,
+        },
+      ];
+  const multipleBuckets =
+    new Set(windows.map((window) => window.bucket)).size > 1;
   const [contextHovered, setContextHovered] = useState(false);
   const [contextFocused, setContextFocused] = useState(false);
   const contextOpen = contextHovered || contextFocused;
@@ -74,15 +101,7 @@ export function UsageInfo({ info }: { info: SessionInfo; agent: string }) {
         ref={quota}
         className={`meta-popover ${styles.quota}`}
         data-open={open}
-        data-quota-level={
-          info.remaining === undefined
-            ? "unknown"
-            : info.remaining < 10
-              ? "critical"
-              : info.remaining <= 30
-                ? "warning"
-                : "normal"
-        }
+        data-quota-level={quotaLevel(info.remaining)}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)}
@@ -111,24 +130,45 @@ export function UsageInfo({ info }: { info: SessionInfo; agent: string }) {
             from="bottom-right"
             role="tooltip"
           >
-            <span className={styles.period}>
-              {quotaPeriod(info.quotaLabel)}
-            </span>
-            <span className={styles.time}>
-              left{" "}
-              <DurationDisplay
-                durationMs={
-                  info.reset === undefined
-                    ? undefined
-                    : Math.max(0, info.reset - now)
-                }
-                rounding="ceil"
-              />
-            </span>
-            <span className={styles.percent}>
-              {info.remaining === undefined
-                ? "—"
-                : `${Math.round(info.remaining)}%`}
+            <span
+              className={styles.rows}
+              role="table"
+              aria-label={t("Usage windows")}
+            >
+              {windows.map((window) => (
+                <span
+                  key={window.key}
+                  className={styles.quotaRow}
+                  role="row"
+                  data-quota-window={window.key}
+                  data-quota-level={quotaLevel(window.remaining)}
+                >
+                  <span className={styles.period} role="cell">
+                    {window.bucket &&
+                      (multipleBuckets || window.bucket !== "codex") &&
+                      `${window.bucketName || window.bucket} · `}
+                    {window.period || window.key === "selected"
+                      ? quotaPeriod(window.period ?? window.label)
+                      : window.label}
+                  </span>
+                  <span className={styles.time} role="cell">
+                    left{" "}
+                    <DurationDisplay
+                      durationMs={
+                        window.reset === undefined
+                          ? undefined
+                          : Math.max(0, window.reset - now)
+                      }
+                      rounding="ceil"
+                    />
+                  </span>
+                  <span className={styles.percent} role="cell">
+                    {window.remaining === undefined
+                      ? "—"
+                      : `${Math.round(window.remaining)}%`}
+                  </span>
+                </span>
+              ))}
             </span>
           </DialogReveal>
         )}

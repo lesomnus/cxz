@@ -58,10 +58,21 @@
   white-space: nowrap;
 }
 .content {
+  display: block;
+}
+.rows {
   display: grid;
-  grid-template-columns: 8ch calc(14ch + 11px) calc(4ch + 11px);
+  grid-template-columns: minmax(8ch, max-content) calc(14ch + 11px) calc(
+      4ch + 11px
+    );
   align-items: center;
   gap: 10px;
+}
+.quotaRow {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
 }
 .period,
 .time {
@@ -79,6 +90,7 @@
 }
 
 .period {
+  max-inline-size: 18ch;
   text-align: center;
 }
 
@@ -100,19 +112,22 @@
   margin-left: 10px;
 }
 
-.quota[data-quota-level="warning"] {
+:is(.quota, .quotaRow)[data-quota-level="warning"] {
   --quota-color: #9d8245;
 }
-.quota[data-quota-level="critical"] {
+:is(.quota, .quotaRow)[data-quota-level="critical"] {
   --quota-color: #b0485b;
 }
-.quota:is([data-quota-level="warning"], [data-quota-level="critical"])
-  :is(.graph, .percent) {
+.quota:is([data-quota-level="warning"], [data-quota-level="critical"]) .graph,
+.quotaRow:is([data-quota-level="warning"], [data-quota-level="critical"])
+  .percent {
   color: var(--quota-color);
 }
-:global(:root[data-theme="light"]) .quota[data-quota-level="warning"] {
+:global(:root[data-theme="light"])
+  :is(.quota, .quotaRow)[data-quota-level="warning"] {
   --quota-color: #8a6200;
 }
-:global(:root[data-theme="light"]) .quota[data-quota-level="critical"] {
+:global(:root[data-theme="light"])
+  :is(.quota, .quotaRow)[data-quota-level="critical"] {
   --quota-color: #c52e48;
 }

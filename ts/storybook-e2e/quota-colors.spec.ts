@@ -22,9 +22,7 @@ for (const theme of ["dark", "light"]) {
       await graph.hover();
       const popup = page.getByRole("tooltip");
       await expect(popup).toBeVisible();
-      const percent = popup
-        .locator('[data-enter-effect="reveal"] > span')
-        .last();
+      const percent = popup.getByRole("cell").last();
       if (level === "warning" || level === "critical") {
         const expected =
           level === "warning"

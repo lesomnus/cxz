@@ -14,13 +14,23 @@ const resetTime = (v: unknown) => {
   const n = typeof v === "string" ? Date.parse(v) : (count(v) ?? 0) * 1000;
   return Number.isFinite(n) && n > 0 ? n : undefined;
 };
-type Quota = { remaining?: number; reset?: number; label: string };
+export type QuotaWindow = {
+  key: string;
+  label: string;
+  period?: string;
+  bucket?: string;
+  bucketName?: string;
+  remaining?: number;
+  reset?: number;
+  status?: string;
+};
 export type SessionInfo = {
   model: string;
   effort: string;
   remaining?: number;
   reset?: number;
   quotaLabel?: string;
+  quotas?: QuotaWindow[];
   contextUsed?: number;
   contextWindow?: number;
 };
@@ -31,7 +41,7 @@ export function sessionInfo(
   events: SessionEvent[],
 ): SessionInfo {
   const info: SessionInfo = { model: s?.model ?? "", effort: "" };
-  const quotas = new Map<string, Quota>();
+  const quotas = new Map<string, QuotaWindow>();
   let context: ObjectValue = {};
   let limits: ObjectValue = {};
   const addQuota = (
@@ -40,12 +50,16 @@ export function sessionInfo(
     value: unknown,
     field: string,
     multiplier = 1,
+    metadata: Pick<QuotaWindow, "period" | "bucket" | "bucketName"> = {},
   ) => {
     const v = object(value);
     if (!Object.keys(v).length) return;
     const used = count(v[field]);
     quotas.set(key, {
+      key,
       label,
+      ...metadata,
+      status: text(v.status) || undefined,
       remaining:
         used === undefined
           ? undefined
@@ -120,19 +134,55 @@ export function sessionInfo(
             `${text(bucket.limitName) || id} · ${label}`,
             window,
             "usedPercent",
+            1,
+            { period: label, bucket: id, bucketName: text(bucket.limitName) },
           );
         }
       }
     }
     if (s?.agent === "claude" && e.text === "get_usage") {
       quotas.clear();
-      for (const [key, window] of Object.entries(object(p.rate_limits)))
-        addQuota(key, key.replaceAll("_", " "), window, "utilization");
+      for (const [key, window] of Object.entries(object(p.rate_limits))) {
+        if (key === "model_scoped" && Array.isArray(window)) {
+          window.forEach((value, index) =>
+            addQuota(
+              `${key}/${index}`,
+              text(object(value).display_name) || `model ${index + 1}`,
+              value,
+              "utilization",
+            ),
+          );
+        } else {
+          addQuota(key, key.replaceAll("_", " "), window, "utilization", 1, {
+            period: key,
+          });
+        }
+      }
     }
     if (s?.agent === "claude" && e.text === "rate_limit_event") {
       const window = object(p.rate_limit_info);
       const key = text(window.rateLimitType) || "quota";
-      addQuota(key, key.replaceAll("_", " "), window, "utilization", 100);
+      const unified = object(window.unifiedWindows);
+      if (key !== "quota" || !Object.keys(unified).length)
+        addQuota(key, key.replaceAll("_", " "), window, "utilization", 100, {
+          period: key,
+        });
+      for (const [period, value] of Object.entries(unified)) {
+        if (value === null) {
+          quotas.delete(period);
+          continue;
+        }
+        addQuota(
+          period,
+          period.replaceAll("_", " "),
+          period === key ? { ...window, ...object(value) } : value,
+          "utilization",
+          100,
+          {
+            period,
+          },
+        );
+      }
     }
   }
   if (s?.agent === "codex") {
@@ -162,6 +212,13 @@ export function sessionInfo(
     info.contextWindow = window;
   }
   if (!info.contextWindow) info.contextWindow = undefined;
+  // Keep every reported window for inspection. The compact graph retains its
+  // model-specific, most-constrained selection independently of row order.
+  info.quotas = [...quotas.values()].sort(
+    (a, b) =>
+      Number(a.key.startsWith("model_scoped/")) -
+        Number(b.key.startsWith("model_scoped/")) || a.key.localeCompare(b.key),
+  );
   const bucket = /spark/i.test(info.model) ? "spark" : "codex";
   const candidates = [...quotas.entries()]
     .filter(([key]) => s?.agent !== "codex" || key.startsWith(`${bucket}/`))

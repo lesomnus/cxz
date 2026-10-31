@@ -42,3 +42,64 @@ it("preserves model capabilities and quota across hundreds of context updates an
   expect(sessionInfo(session, metadata).contextUsed).toBe(999);
   expect(metadata.length).toBeLessThanOrEqual(202);
 });
+
+it.each(["individual", "unified"])(
+  "preserves Claude %s quota windows beyond the context event tail",
+  (source) => {
+    const session = create(SessionSchema, {
+      agent: "claude",
+      status: { runId: "current" },
+    });
+    const event = (seq: number, text: string, value: unknown) =>
+      create(SessionEventSchema, {
+        seq: BigInt(seq),
+        runId: "current",
+        kind: "usage",
+        text,
+        payload: new TextEncoder().encode(JSON.stringify(value)),
+      });
+    const weekly =
+      source === "individual"
+        ? { rateLimitType: "seven_day", utilization: 0.7 }
+        : {
+            rateLimitType: "five_hour",
+            utilization: 0.1,
+            unifiedWindows: {
+              five_hour: { utilization: 0.1 },
+              seven_day: { utilization: 0.7 },
+            },
+          };
+    let metadata = mergeMetadata(
+      [],
+      [
+        event(1, "rate_limit_event", { rate_limit_info: weekly }),
+        event(2, "rate_limit_event", {
+          rate_limit_info: { rateLimitType: "five_hour", utilization: 0.2 },
+        }),
+      ],
+    );
+    for (let seq = 3; seq < 400; seq++) {
+      metadata = mergeMetadata(metadata, [
+        event(seq, "context/message", {
+          usage: { input_tokens: seq },
+        }),
+      ]);
+    }
+    const info = sessionInfo(session, metadata);
+    expect(info.quotas).toMatchObject([
+      { key: "five_hour", remaining: 80 },
+      { key: "seven_day", remaining: 30 },
+    ]);
+    expect(metadata.length).toBeLessThanOrEqual(203);
+    const cleared = sessionInfo(
+      session,
+      mergeMetadata(metadata, [
+        event(401, "get_usage", {
+          rate_limits_available: false,
+          rate_limits: null,
+        }),
+      ]),
+    );
+    expect(cleared.quotas).toEqual([]);
+  },
+);

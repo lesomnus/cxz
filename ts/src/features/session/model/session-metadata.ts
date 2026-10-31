@@ -46,10 +46,24 @@ export function mergeMetadata(
   const snapshots = new Map<string, SessionEvent>();
   for (const e of sorted) {
     if (!runs.includes(e.runId)) continue;
-    const p = e.text === "account/rateLimits/updated" ? payload(e) : {};
-    const bucket = p.rateLimitsByLimitId
+    const p = ["account/rateLimits/updated", "rate_limit_event"].includes(
+      e.text,
+    )
+      ? payload(e)
+      : {};
+    let bucket = p.rateLimitsByLimitId
       ? "all"
       : p.rateLimits?.limitId || "codex";
+    if (e.text === "rate_limit_event") {
+      const limit = p.rate_limit_info ?? {};
+      // Individual and unified window updates are independent snapshots.
+      // Keeping only the last notification loses weekly data once its older
+      // event falls outside the recent-context tail.
+      const windows = Object.keys(limit.unifiedWindows ?? {})
+        .sort()
+        .join(",");
+      bucket = `${limit.rateLimitType || "quota"}/${windows}`;
+    }
     const key = `${e.runId}/${e.kind}/${e.text}/${bucket}`;
     snapshots.set(key, e);
   }
