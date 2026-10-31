@@ -40,7 +40,6 @@ export function SessionTable({
   showAccount = true,
   showProject = false,
   title = t("Sessions"),
-  openSession,
   horizontalScrollbar = false,
   variant = "default",
 }: {
@@ -53,7 +52,6 @@ export function SessionTable({
   showAccount?: boolean;
   showProject?: boolean;
   title?: string;
-  openSession?: (session: Session) => void;
   horizontalScrollbar?: boolean;
   variant?: "default" | "compact";
 }) {
@@ -305,7 +303,6 @@ export function SessionTable({
                       sessions={[s]}
                       controls={controls}
                       disabled={loading}
-                      openSession={openSession}
                     />
                   </td>
                 </tr>

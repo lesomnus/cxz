@@ -17,13 +17,11 @@ export function SessionTableMenu({
   controls,
   bulk = false,
   disabled = false,
-  openSession,
 }: {
   sessions: Session[];
   controls: Controls;
   bulk?: boolean;
   disabled?: boolean;
-  openSession?: (session: Session) => void;
 }) {
   const operations: SessionControlKind[] = bulk
     ? ["stop", "resume", "restart", "purge"]
@@ -56,32 +54,6 @@ export function SessionTableMenu({
       motion={{ from: "top-right", effect: "reveal" }}
       disabled={disabled || controls.busy || !sessions.length}
       groups={[
-        ...(!bulk && openSession && sessions[0]
-          ? [
-              {
-                label: "",
-                items: [
-                  {
-                    label: t("Open conversation"),
-                    icon: (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M7 17 17 7M7 7h10v10" />
-                      </svg>
-                    ),
-                    run: () => openSession(sessions[0]),
-                  },
-                ],
-              },
-            ]
-          : []),
         {
           label: t("Controls"),
           items: operations.map((kind) => ({

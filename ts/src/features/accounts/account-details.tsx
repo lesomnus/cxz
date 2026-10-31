@@ -1,5 +1,3 @@
-import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
-import { useNavigate } from "@tanstack/react-router";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useState } from "react";
 import { Button, Popover, SectionGroup, Section } from "@lesomnus/nox";
@@ -31,7 +29,6 @@ export function AccountDetails({
   projects: Project[];
   sessionsLoading: boolean;
 }) {
-  const navigate = useNavigate();
   const status = useRemote(
     (signal) => accountStatus(c, account.alias, signal),
     [c, account.alias],
@@ -155,9 +152,6 @@ export function AccountDetails({
           showProject
           title={`Sessions · ${sessions.length}`}
           horizontalScrollbar
-          openSession={(session) => {
-            void navigate(sessionLocation(session));
-          }}
         />
       </Section>
       {logout && (

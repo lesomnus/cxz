@@ -387,7 +387,15 @@ test("account sessions use compact read-only identities and keep selection scope
   await more.click();
   await expect(
     page.getByRole("menuitem", { name: "Open conversation", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("menuitem", { name: "Purge", exact: true }),
+  ).toHaveCSS(
+    "font-weight",
+    await page
+      .getByRole("menuitem", { name: "Stop", exact: true })
+      .evaluate((node) => getComputedStyle(node).fontWeight),
+  );
   await page.keyboard.press("Escape");
   await page.screenshot({
     path: testInfo.outputPath("account-session-table.png"),

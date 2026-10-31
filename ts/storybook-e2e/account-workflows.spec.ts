@@ -427,7 +427,7 @@ for (const destination of ["conversation", "project"] as const) {
   });
 }
 
-test("account session row menus can still open the conversation", async ({
+test("account session row menus only contain lifecycle controls", async ({
   page,
 }) => {
   await open(page, "signed-in-account");
@@ -438,13 +438,16 @@ test("account session row menus can still open the conversation", async ({
       exact: true,
     })
     .click();
-  await page
-    .getByRole("menuitem", { name: "Open conversation", exact: true })
-    .click();
+  await expect(page.getByRole("menuitem")).toHaveText([
+    "Stop",
+    "Restart",
+    "Purge",
+  ]);
   await expect(
-    page.getByRole("textbox", { name: "Message", exact: true }),
-  ).toBeVisible();
-  await expect(table).toHaveCount(0);
+    page.getByRole("menuitem", { name: "Open conversation", exact: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(table).toBeVisible();
 });
 
 test("canceling a submitted login cannot authenticate later", async ({

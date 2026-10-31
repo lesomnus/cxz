@@ -8,6 +8,15 @@ async function openBulk(page: Page, action: string) {
   await page
     .getByRole("button", { name: /^\d+ selected$/, exact: true })
     .click();
+  if (action === "Purge")
+    await expect(
+      page.getByRole("menuitem", { name: "Purge", exact: true }),
+    ).toHaveCSS(
+      "font-weight",
+      await page
+        .getByRole("menuitem", { name: "Restart", exact: true })
+        .evaluate((node) => getComputedStyle(node).fontWeight),
+    );
   await page.getByRole("menuitem", { name: action, exact: true }).click();
 }
 async function openRow(page: Page, action: string) {
