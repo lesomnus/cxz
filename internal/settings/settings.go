@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/internal/filemap"
 	"github.com/lesomnus/cxz/internal/historypolicy"
 	"github.com/lesomnus/cxz/internal/projectconfig"
+	"github.com/lesomnus/cxz/internal/telemetryconfig"
 	"github.com/tailscale/hujson"
 	"io"
 	"os"
@@ -21,15 +22,16 @@ import (
 )
 
 type Config struct {
-	History      historypolicy.Window `json:"history,omitempty"`
-	Schema       string               `json:"$schema,omitempty"`
-	Connections  *Connections         `json:"connections,omitempty"`
-	Docker       engine.Config        `json:"docker,omitempty"`
-	Devcontainer projectconfig.Config `json:"devcontainer,omitempty"`
-	Files        []filemap.Mapping    `json:"files,omitempty"`
-	Agent        string               `json:"agent,omitempty"`
-	ClaudeModel  string               `json:"claude_model,omitempty"`
-	CodexModel   string               `json:"codex_model,omitempty"`
+	Telemetry    telemetryconfig.Config `json:"telemetry,omitempty"`
+	History      historypolicy.Window   `json:"history,omitempty"`
+	Schema       string                 `json:"$schema,omitempty"`
+	Connections  *Connections           `json:"connections,omitempty"`
+	Docker       engine.Config          `json:"docker,omitempty"`
+	Devcontainer projectconfig.Config   `json:"devcontainer,omitempty"`
+	Files        []filemap.Mapping      `json:"files,omitempty"`
+	Agent        string                 `json:"agent,omitempty"`
+	ClaudeModel  string                 `json:"claude_model,omitempty"`
+	CodexModel   string                 `json:"codex_model,omitempty"`
 }
 
 const (
@@ -69,6 +71,9 @@ func ValidateModel(v string) error {
 	return nil
 }
 func (c Config) Validate() error {
+	if err := c.Telemetry.Validate(); err != nil {
+		return err
+	}
 	if err := c.History.Validate(); err != nil {
 		return err
 	}

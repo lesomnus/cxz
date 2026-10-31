@@ -2,12 +2,13 @@ package lifecycle
 
 import (
 	"context"
-	"encoding/json"
-	"math"
+	"encoding/hex"
 	"sort"
 	"time"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/usagemetrics"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,6 +29,34 @@ func (s SessionServer) ConversationStats(ctx context.Context, r *resource.Conver
 	}
 	if err := s.ensureSnapshot(ctx); err != nil {
 		return nil, err
+	}
+	if analytics, ok := s.shared.runtime.(interface {
+		TelemetryStats(context.Context, string, string, int64, int64) (*resource.ConversationStatsReply, bool, error)
+	}); ok {
+		scope, id := "", ""
+		if r.HasSession() {
+			v, err := s.Next().Session().Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetSession(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+			if err != nil {
+				return nil, err
+			}
+			scope, id = "session", hex.EncodeToString(v.GetId())
+		} else if r.HasProject() {
+			v, err := s.Next().Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetProject(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
+			if err != nil {
+				return nil, err
+			}
+			scope, id = "project", hex.EncodeToString(v.GetId())
+		} else if r.HasAccount() {
+			v, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: r.GetAccount(), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
+			if err != nil {
+				return nil, err
+			}
+			scope, id = "account", hex.EncodeToString(v.GetId())
+		}
+		result, enabled, err := analytics.TelemetryStats(ctx, scope, id, from, to)
+		if enabled {
+			return result, err
+		}
 	}
 	var sessions []*resource.Session
 	if r.HasSession() {
@@ -81,7 +110,7 @@ func (s SessionServer) ConversationStats(ctx context.Context, r *resource.Conver
 	var count, bytes uint64
 	for _, session := range sessions {
 		c := resource.ConversationStatsCoverage_builder{SessionId: session.GetId(), Alias: ptr(session.GetAlias()), SnapshotSeq: ptr(session.GetStatus().GetLastSeq()), Complete: ptr(true)}.Build()
-		state := statsUsage{cost: map[string]float64{}, known: map[string]bool{}}
+		state := statsUsage{}
 		var after uint64
 		for after < c.GetSnapshotSeq() {
 			if err := ctx.Err(); err != nil {
@@ -101,7 +130,7 @@ func (s SessionServer) ConversationStats(ctx context.Context, r *resource.Conver
 				}
 				if e.Seq != after+1 {
 					c.SetComplete(false)
-					state = statsUsage{cost: map[string]float64{}, known: map[string]bool{}, gap: true}
+					state = statsUsage{State: usagemetrics.State{Gap: true}}
 				}
 				after = e.Seq
 				if c.GetFirstSeq() == 0 {
@@ -162,93 +191,24 @@ func newStatsValues() *resource.ConversationStatsValues {
 	return resource.ConversationStatsValues_builder{}.Build()
 }
 
-// Input tokens exclude cache reads/writes; normalize Codex's inclusive input count.
-type statsUsage struct {
-	pending map[string]any
-	run     string
-	cost    map[string]float64
-	known   map[string]bool
-	gap     bool
-}
+type statsUsage struct{ usagemetrics.State }
 
-func object(m map[string]any, key string) map[string]any { v, _ := m[key].(map[string]any); return v }
-func statsNumber(m map[string]any, keys ...string) (float64, bool) {
-	for _, key := range keys {
-		v, ok := m[key].(float64)
-		if ok && v >= 0 && !math.IsNaN(v) && !math.IsInf(v, 0) && v < math.MaxInt64 {
-			return v, true
-		}
-	}
-	return 0, false
-}
 func (s *statsUsage) event(e *api.Event) *resource.ConversationStatsValues {
+	u := s.Event(core.Event{Kind: e.Kind, Text: e.Text, Payload: e.Payload, RunID: e.RunId})
 	v := newStatsValues()
-	v.SetEvents(1)
-	v.SetEventContentBytes(uint64(len(e.Text) + len(e.Payload)))
-	if e.Kind == "input" {
-		v.SetInputMessages(1)
-		s.pending = nil
-	}
-	if e.Kind == "assistant" {
-		v.SetAssistantEvents(1)
-	}
-	if e.Kind == "input" || e.Kind == "assistant" {
-		v.SetConversationBytes(uint64(len(e.Text)))
-	}
-	var root map[string]any
-	_ = json.Unmarshal(e.Payload, &root)
-	if e.Kind == "usage" && e.Text == "thread/tokenUsage/updated" {
-		s.pending = object(object(root, "tokenUsage"), "last")
-		s.run = e.RunId
-	}
-	if e.Kind != "turn_end" {
-		return v
-	}
-	v.SetFinishedTurns(1)
-	u := object(root, "usage")
-	if len(u) == 0 {
-		u = object(object(root, "turn"), "usage")
-	}
-	if len(u) == 0 && s.run == e.RunId {
-		u = s.pending
-	}
-	s.pending = nil
-	reported := false
-	for _, field := range []struct {
-		keys []string
-		set  func(uint64)
-	}{
-		{[]string{"input_tokens", "inputTokens"}, v.SetInputTokens},
-		{[]string{"output_tokens", "outputTokens"}, v.SetOutputTokens},
-		{[]string{"cache_read_input_tokens", "cachedInputTokens"}, v.SetCacheReadTokens},
-		{[]string{"cache_creation_input_tokens"}, v.SetCacheWriteTokens},
-	} {
-		if n, ok := statsNumber(u, field.keys...); ok {
-			field.set(uint64(n))
-			reported = true
-		}
-	}
-	if _, codex := u["inputTokens"]; codex {
-		v.SetInputTokens(v.GetInputTokens() - min(v.GetInputTokens(), v.GetCacheReadTokens()))
-	}
-	if reported {
-		v.SetTokenReportedTurns(1)
-	}
-	if n, ok := statsNumber(root, "total_cost_usd"); ok {
-		if s.known[e.RunId] || !s.gap {
-			delta := n - s.cost[e.RunId]
-			if delta < 0 {
-				delta = n
-			}
-			v.SetReportedCostUsd(delta)
-			v.SetCostReportedTurns(1)
-		}
-		s.cost[e.RunId] = n
-		s.known[e.RunId] = true
-	} else if n, ok := statsNumber(root, "costUSD", "costUsd"); ok {
-		v.SetReportedCostUsd(n)
-		v.SetCostReportedTurns(1)
-	}
+	v.SetEvents(u.Events)
+	v.SetInputMessages(u.InputMessages)
+	v.SetAssistantEvents(u.AssistantEvents)
+	v.SetConversationBytes(u.ConversationBytes)
+	v.SetEventContentBytes(u.EventContentBytes)
+	v.SetFinishedTurns(u.FinishedTurns)
+	v.SetInputTokens(u.InputTokens)
+	v.SetOutputTokens(u.OutputTokens)
+	v.SetCacheReadTokens(u.CacheReadTokens)
+	v.SetCacheWriteTokens(u.CacheWriteTokens)
+	v.SetTokenReportedTurns(u.TokenReportedTurns)
+	v.SetCostReportedTurns(u.CostReportedTurns)
+	v.SetReportedCostUsd(u.ReportedCostUSD)
 	return v
 }
 func addStats(a, b *resource.ConversationStatsValues) {

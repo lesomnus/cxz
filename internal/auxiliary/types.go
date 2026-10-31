@@ -154,6 +154,7 @@ type Output struct {
 	Models     []agentview.ModelOption `json:"models,omitempty"`
 }
 type Input struct {
+	Session string  `json:"session,omitempty"`
 	Profile Profile `json:"profile"`
 	Task    string  `json:"task"`
 	Text    string  `json:"text"`

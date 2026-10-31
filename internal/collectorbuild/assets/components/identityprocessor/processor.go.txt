@@ -1,0 +1,134 @@
+// Package identityprocessor verifies cxz project/session ingestion capabilities.
+package identityprocessor
+
+import (
+	"context"
+	"errors"
+	"strings"
+
+	"github.com/lesomnus/cxz/internal/telemetryauth"
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
+)
+
+type Config struct {
+	RegistryDirectory string `mapstructure:"registry_directory"`
+}
+
+func (c *Config) Validate() error {
+	if c.RegistryDirectory == "" {
+		return errors.New("registry_directory is required")
+	}
+	return nil
+}
+
+func NewFactory() processor.Factory {
+	return processor.NewFactory(component.MustNewType("cxzidentity"), func() component.Config { return &Config{} },
+		processor.WithMetrics(createMetrics, component.StabilityLevelBeta))
+}
+func createMetrics(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Metrics) (processor.Metrics, error) {
+	directory := cfg.(*Config).RegistryDirectory
+	return processorhelper.NewMetrics(ctx, set, cfg, next, func(ctx context.Context, data pmetric.Metrics) (pmetric.Metrics, error) {
+		headers := client.FromContext(ctx).Metadata.Get("authorization")
+		if len(headers) != 1 {
+			return data, consumererror.NewPermanent(errors.New("unauthorized telemetry"))
+		}
+		token, err := telemetryauth.Bearer(headers[0])
+		if err != nil {
+			return data, consumererror.NewPermanent(err)
+		}
+		identity, err := telemetryauth.Verify(directory, token)
+		if err != nil {
+			return data, consumererror.NewPermanent(err)
+		}
+		attrs := identity.Attributes()
+		resources := data.ResourceMetrics()
+		for n := 0; n < resources.Len(); n++ {
+			resource := resources.At(n)
+			values := resource.Resource().Attributes()
+			model := ""
+			if value, ok := values.Get("model"); ok {
+				model = value.AsString()
+			}
+			values.Clear()
+			if len(model) <= 256 && model != "" {
+				values.PutStr("model", model)
+			}
+			values.PutStr("service.name", "cxz."+identity.Agent)
+			for k, v := range attrs {
+				values.PutStr(k, v)
+			}
+			scopes := resource.ScopeMetrics()
+			for x := 0; x < scopes.Len(); x++ {
+				scope := scopes.At(x)
+				scope.Scope().Attributes().Clear()
+				scope.Scope().SetName("cxz." + identity.Source + "." + identity.Agent)
+				scope.Scope().SetVersion("1")
+				scopes.At(x).Metrics().RemoveIf(func(m pmetric.Metric) bool {
+					if identity.Source == "supervisor" {
+						return !strings.HasPrefix(m.Name(), "cxz.")
+					}
+					if identity.Agent == "claude" {
+						return !strings.HasPrefix(m.Name(), "claude_code.")
+					}
+					if identity.Agent == "codex" {
+						return !strings.HasPrefix(m.Name(), "codex.")
+					}
+					return true
+				})
+				for n := 0; n < scope.Metrics().Len(); n++ {
+					sanitizeMetric(scope.Metrics().At(n), identity.Source)
+				}
+			}
+		}
+		return data, nil
+	}, processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+}
+
+func sanitizeMetric(m pmetric.Metric, source string) {
+	m.SetDescription("")
+	clean := func(attrs pcommon.Map) {
+		attrs.RemoveIf(func(key string, v pcommon.Value) bool {
+			if len(v.AsString()) > 256 {
+				return true
+			}
+			if source == "supervisor" {
+				return key != "cxz.event.seq" && key != "model" && key != "effort"
+			}
+			return key != "type" && key != "token_type" && key != "model" && key != "source" && key != "tool" && key != "success" && key != "status"
+		})
+	}
+	switch m.Type() {
+	case pmetric.MetricTypeSum:
+		p := m.Sum().DataPoints()
+		for n := 0; n < p.Len(); n++ {
+			clean(p.At(n).Attributes())
+		}
+	case pmetric.MetricTypeGauge:
+		p := m.Gauge().DataPoints()
+		for n := 0; n < p.Len(); n++ {
+			clean(p.At(n).Attributes())
+		}
+	case pmetric.MetricTypeHistogram:
+		p := m.Histogram().DataPoints()
+		for n := 0; n < p.Len(); n++ {
+			clean(p.At(n).Attributes())
+		}
+	case pmetric.MetricTypeExponentialHistogram:
+		p := m.ExponentialHistogram().DataPoints()
+		for n := 0; n < p.Len(); n++ {
+			clean(p.At(n).Attributes())
+		}
+	case pmetric.MetricTypeSummary:
+		p := m.Summary().DataPoints()
+		for n := 0; n < p.Len(); n++ {
+			clean(p.At(n).Attributes())
+		}
+	}
+}

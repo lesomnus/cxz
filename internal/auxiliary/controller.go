@@ -318,7 +318,7 @@ func (c *Controller) execute(ctx context.Context, cancel context.CancelFunc, id 
 		if len(text) > MaxInput {
 			return Output{}, fmt.Errorf("auxiliary input exceeds budget")
 		}
-		o, e := c.run(ctx, Input{p, task, text})
+		o, e := c.run(ctx, Input{Profile: p, Task: task, Text: text, Session: id})
 		// An overlong summary or suggestion is clipped rather than thrown away.
 		// Both are text a person reads, so showing it with its truncation marked
 		// beats reporting a failure for a reply that did arrive. The checkpoint

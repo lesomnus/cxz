@@ -5,9 +5,10 @@ available through the existing Connect web transport. No CLI/TUI/web screen is
 added. It does not start an agent or generate an auxiliary AI task.
 
 Request:
-- `session`: SessionRef (UUID, alias, or runtime ID), for one listed session.
-- `project`: ProjectRef, for listed sessions in one project.
-- Omit both to include all listed sessions on this server. Supplying both is invalid.
+- `session`: SessionRef (UUID, alias, or runtime ID), for one session resolved by the API.
+- `project`: ProjectRef, for usage associated with one project.
+- `account`: AccountRef, for one account.
+- Omit scope to include all retained usage on this server. Supply at most one scope.
 - `from_ms`, `to_ms`: UTC half-open interval. End defaults to now; start defaults
   to 30 days before end. Maximum interval is 366 days. Negative/empty/reversed
   intervals are invalid. A zero value means default.
@@ -33,24 +34,51 @@ Response:
   potentially lost history. A cumulative counter reset starts at its new value.
   Zero cost with zero reported turns means unknown, not free. No model price
   table or unreported cost estimate is invented.
-- Per-session canonical UUID, current alias, snapshot/first/last seq, and
-  `complete`. Top-level complete means all session snapshots had every seq
-  from 1 through their captured tail. It does NOT assert complete provider
-  token reporting or account billing.
+- Per-session canonical UUID and coverage. The history path also supplies
+  current alias and snapshot/first/last seq. `complete` describes backend
+  coverage as detailed below; it does not assert complete provider token
+  reporting or account billing.
 
-The supervisor journal is authoritative; SQLite is a projection and Manager
-history may fall back to a partial cache when a project is offline. Retention
-can remove older events. These are statistics of available retained history,
-not a permanent lifetime ledger. Removed/unlisted sessions are excluded.
+## Managed analytics
 
-Each session uses its captured resource tail as a cutoff; this is not a global
-transactional snapshot across projects. In-progress usage is only counted when
-a turn ends, on that turn's UTC completion day. Events/bytes are counted on their
-own event day. Stream chunks are counted as events, not unique model replies.
+An installed Manager with telemetry enabled queries its private ClickHouse
+store. See [managed telemetry](managed-telemetry.md) for the data path, settings,
+security, deployment and retention.
 
-Scanning includes older retained events to establish cost baselines and detect
-gaps. Work is bounded to 1000 sessions, 100000 events, and 64 MiB of text/payload.
-Exceeding a bound returns ResourceExhausted, not a silently truncated total.
-Narrow the session/project scope in that case; a narrower date interval does
-not reduce baseline scan work. Runtime errors and cancellation propagate.
-No schema migration or DB reset is needed.
+- Metrics survive display-history pruning and are retained for the configured
+  rolling period (90 days by default). Existing history is not backfilled.
+- Stream metadata is summed at durable turn/state boundaries; its events/bytes
+  are attributed to the flush day. Native metrics use their export timestamp.
+- Native cumulative counters include the baseline before the requested range;
+  resets start at the new value. Delta points are summed. Identical retries are
+  deduplicated. Input excludes cache; overlapping reasoning/total counters are
+  not added again. Auxiliary usage is attributed to its actual selected account
+  and parent project/session.
+- Collection is best effort: old running agents, native export delay, bounded
+  queues and retention can leave gaps. `complete` is always false. Session
+  coverage carries canonical UUIDs; retained-history aliases and sequence fences
+  are unavailable in this path. A native token/cost series can establish that at
+  least one turn reported a value when a Supervisor reporting counter is missing;
+  reporting counts are therefore partial, not a billing reconciliation.
+- Permanently purged sessions are excluded even if an old queued batch arrives
+  later. Soft deletion/archiving preserves usage until permanent purge or TTL.
+- Queries are bounded to 15 seconds, 256 MiB query memory and 8 MiB of results.
+  Database failures propagate instead of silently replacing analytics with a
+  smaller history-derived total. Narrow scope/time when a query exceeds limits.
+
+## Retained-history fallback
+
+Telemetry-disabled installations, standalone runtimes and source binaries
+without the packaged Collector retain the bounded history-scan path. Statistics
+cover available retained history; they are not a permanent lifetime ledger.
+Session snapshots fence each scan. All sequences through each snapshot tail are
+required for `complete=true`, which still does not prove provider token or
+billing completeness. Deleted sessions are excluded.
+
+In-progress usage is counted when a turn ends, on that turn's UTC completion
+day. Events/bytes use their own event day. Stream chunks count as events rather
+than unique model replies. Older retained events establish cost baselines and
+detect gaps. Scans are limited to 1000 sessions, 100000 events and 64 MiB of
+text/payload; exceeding a bound returns ResourceExhausted. Narrower dates do not
+reduce baseline scan work. Runtime errors/cancellation propagate. No existing
+conversation DB reset is needed for either path.

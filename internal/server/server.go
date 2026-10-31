@@ -34,6 +34,8 @@ import (
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/sqlitetime"
 	"github.com/lesomnus/cxz/internal/supervisor"
+	"github.com/lesomnus/cxz/internal/telemetry"
+	"github.com/lesomnus/cxz/internal/telemetryauth"
 	"github.com/lesomnus/cxz/internal/transcripthistory"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/versionpin"
@@ -131,6 +133,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 			return e
 		}
 		s.manager.Conversations = s.conversations
+		s.manager.StartTelemetry(ctx)
 		// The manager keeps no copy of conversations: it reads each session's
 		// own store. Dropping the table it used to mirror pages into also
 		// clears what purged projects left behind, since nothing ever deleted
@@ -195,6 +198,14 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		s.manager.StartAuxiliary(ctx)
 	}
 	if s.manager == nil {
+		if rt, err := workspace.LoadRuntime(root); err == nil && rt.Token != "" {
+			relay, err := telemetry.StartRelay(ctx, telemetry.RelayAddress, telemetryauth.Socket, rt.ProjectID, rt.Token)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "telemetry relay:", err)
+			} else {
+				defer relay.Close()
+			}
+		}
 		broker, err := mcpruntime.Start(root)
 		if err != nil {
 			return err
