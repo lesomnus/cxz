@@ -44,7 +44,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | CHAT-02 | N/A: raw command output, no Markdown conversation UI | Supported: Markdown and copy controls | Not implemented |
 | CHAT-03 | Partial: raw `session events`; no input/output inspection UI | Supported: `/view`, `/details`, tool preview tabs | Partial: grouped tool status rows with shell/script preview and input/output/result/approval records in the shared floating card; file edits retain raw details rather than a normalized diff preview; [web client](web.md) |
 | CHAT-04 | Partial: `session events ID AFTER_SEQ`; no viewport navigation | Supported: history window and navigation controls | Supported: bounded cached history, virtualized rows, anchored paging, directional prefetch, follow-latest and pinned prompt navigation; [history transport](web-conversation-history.md) |
-| CHAT-05 | Partial: recorded event telemetry; no dedicated session usage report command | Supported: turn metrics, `/usage` and quota display | Not implemented |
+| CHAT-05 | Partial: recorded event telemetry; no dedicated session usage report command | Supported: turn metrics, `/usage` and quota display | Partial: composer account-quota graph with all reported windows in hover/focus and a context meter; no dedicated usage report |
 | CHAT-06 | Not implemented: no dedicated context command | Supported: `/context`, Summary/Raw | Not implemented |
 | CHAT-07 | Not implemented: no dedicated compact command | Supported: `/compact`, provider/idle constraints apply | Not implemented |
 | CHAT-08 | Partial: session creation model and configuration defaults; no session catalog/effort command | Supported: `/model`, `/effort` where provider supports them | Not implemented |
