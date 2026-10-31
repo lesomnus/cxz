@@ -38,8 +38,8 @@ describe("composer paste chips", () => {
       expect(needsPasteChip(character.repeat(32))).toBe(false);
       expect(needsPasteChip(character.repeat(33))).toBe(true);
       expect(defaultPasteSendMode(character.repeat(33))).toBe("text");
-      expect(defaultPasteSendMode(character.repeat(64))).toBe("text");
-      expect(defaultPasteSendMode(character.repeat(65))).toBe("file");
+      expect(defaultPasteSendMode(character.repeat(256))).toBe("text");
+      expect(defaultPasteSendMode(character.repeat(257))).toBe("file");
     }
     expect(needsPasteChip("one\ntwo\nthree")).toBe(false);
     expect(needsPasteChip("one\ntwo\nthree\n")).toBe(false);

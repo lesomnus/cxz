@@ -356,7 +356,7 @@ transform, keeping those layers in the same stacking context. During IME
 composition, native text is visible and code backgrounds remain in place.
 
 Line numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
-32 Unicode characters become chips; text over 64 characters defaults to File
+32 Unicode characters become chips; text over 256 characters defaults to File
 when uploads are available, while shorter chips default to Text. Click a chip, select it with Left/Right and
 press Enter, or use Ctrl+P to preview the original; the preview can remove that
 occurrence or expand it into editable text. Backspace/Delete removes a whole

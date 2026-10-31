@@ -61,7 +61,7 @@ export function needsPasteChip(text: string) {
 }
 
 export function defaultPasteSendMode(text: string): "text" | "file" {
-  return exceedsCharacters(text, 64) ? "file" : "text";
+  return exceedsCharacters(text, 256) ? "file" : "text";
 }
 
 function exceedsCharacters(text: string, limit: number) {
