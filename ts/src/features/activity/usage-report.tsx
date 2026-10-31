@@ -2,6 +2,7 @@ import { Button, Section } from "@lesomnus/nox";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
+import usageStyles from "./usage-report.module.css";
 export function UsageReport({
   c,
   session = "",
@@ -31,8 +32,11 @@ export function UsageReport({
   );
   const total = stats.data?.total;
   return (
-    <Section className={className} aria-label="Conversation usage">
-      <div className={styles.row}>
+    <Section
+      className={`${usageStyles.report} ${className ?? ""}`}
+      aria-label="Conversation usage"
+    >
+      <div className={`${styles.row} ${usageStyles.header}`}>
         <strong>Conversation usage</strong>
         <Button onClick={stats.reload}>Refresh</Button>
       </div>
@@ -45,7 +49,7 @@ export function UsageReport({
       {stats.loading && <p className={styles.muted}>Loading usage…</p>}
       {total && (
         <>
-          <dl className={styles.metrics}>
+          <dl className={`${styles.metrics} ${usageStyles.metrics}`}>
             {[
               ["Finished turns", total.finishedTurns],
               ["Input tokens", total.inputTokens],

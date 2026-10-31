@@ -1,0 +1,15 @@
+.report {
+  container: conversation-usage / inline-size;
+}
+@container conversation-usage (max-width: 200px) {
+  .header.header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .metrics.metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .metrics.metrics > div {
+    padding: var(--ui-space) var(--ui-control-inline-inset);
+  }
+}

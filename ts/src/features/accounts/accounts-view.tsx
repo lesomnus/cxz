@@ -41,7 +41,7 @@ export function AccountsView({
     <>
       <main className={`${resourceStyles.page} ${styles.page}`}>
         <div className={resourceStyles.body}>
-          <SectionLayout ref={content} maxWidth="none">
+          <SectionLayout ref={content}>
             <header className={styles.header}>
               <Button
                 ref={add}

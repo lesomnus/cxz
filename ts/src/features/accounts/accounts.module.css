@@ -27,7 +27,7 @@
 .sessionsColumn {
   align-content: start;
 }
-@container account (min-width: 960px) {
+@container account (min-width: 560px) {
   .details {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr);
   }

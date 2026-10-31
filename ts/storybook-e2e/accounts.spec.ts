@@ -46,6 +46,10 @@ for (const width of [1280, 390]) {
     const usageBounds = (await usage.boundingBox())!;
     const sessionsBounds = (await sessions.boundingBox())!;
     if (width === 1280) {
+      const widthLimit = await layout.evaluate((node) =>
+        parseFloat(getComputedStyle(node).maxWidth),
+      );
+      expect((await work.boundingBox())!.width).toBe(widthLimit);
       expect(usageBounds.x).toBeGreaterThan(
         informationBounds.x + informationBounds.width,
       );
@@ -142,7 +146,7 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     const row = [
-      authentication.getByText("Signed in", { exact: true }),
+      authentication.getByText("Signed in", { exact: true }).locator(".."),
       authentication.getByRole("button", { name: "Log out", exact: true }),
     ];
     await expect(
