@@ -15,6 +15,7 @@ export function QuestionTabs({ items, ...props }: QuestionTabsProps) {
   return (
     <TabList
       {...props}
+      effect="none"
       className={`question-tabs ${styles.tabs}`}
       label={t("Question steps")}
       items={items.map((item, index) => ({

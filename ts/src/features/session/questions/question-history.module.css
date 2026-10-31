@@ -13,7 +13,7 @@
     var(--question-history-heading-height) +
       var(--question-history-tabs-height) +
       var(--question-history-question-height) +
-      var(--question-history-answer-height) + 2 * var(--question-history-gap) +
+      var(--question-history-answer-height) + var(--question-history-gap) + 2 *
       var(--ui-section-group-gap) + 2 * var(--question-history-inset)
   );
   display: grid;
@@ -23,7 +23,7 @@
 .body {
   display: grid;
   grid-template-rows: var(--question-history-tabs-height) minmax(0, 1fr);
-  gap: var(--question-history-gap);
+  gap: var(--ui-section-group-gap);
   min-width: 0;
   min-height: 0;
   padding-inline: var(--question-history-inset);

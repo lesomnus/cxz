@@ -1,4 +1,4 @@
-import { Button } from "@lesomnus/nox";
+import { Button, type ButtonProps } from "@lesomnus/nox";
 import type { ReactNode } from "react";
 
 // The owner supplies IDs so panels and tabs can share accessible relationships.
@@ -10,6 +10,7 @@ export function TabList({
   value,
   choose,
   className = "",
+  effect,
 }: {
   prefix: string;
   panelId: string;
@@ -23,6 +24,7 @@ export function TabList({
   value: string;
   choose: (id: string) => void;
   className?: string;
+  effect?: ButtonProps["effect"];
 }) {
   return (
     <div className={`tab-list ${className}`} role="tablist" aria-label={label}>
@@ -31,6 +33,7 @@ export function TabList({
           key={item.id}
           id={`${prefix}-${index}`}
           type="button"
+          effect={effect}
           role="tab"
           aria-label={item.ariaLabel}
           aria-selected={item.id === value}
