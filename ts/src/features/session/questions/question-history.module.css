@@ -9,12 +9,8 @@
     var(--shade-16) 25%,
     var(--shade-0)
   );
-  --question-tab-selected-border-color: var(
-    --question-history-answer-background
-  );
-  --question-tab-hover-border-color: var(
-    --question-history-question-background
-  );
+  --question-tab-selected-background: var(--question-history-answer-background);
+  --question-tab-hover-background: var(--question-history-question-background);
   --question-history-heading-height: 28px;
   --question-history-tabs-height: 32px;
   --question-history-question-height: 96px;
@@ -29,7 +25,7 @@
     var(--question-history-heading-height) +
       var(--question-history-tabs-height) +
       var(--question-history-question-height) +
-      var(--question-history-answer-height) + var(--question-history-gap) + 2 *
+      var(--question-history-answer-height) + 2 * var(--question-history-gap) +
       var(--ui-section-group-gap) + 2 * var(--question-history-inset)
   );
   display: grid;
@@ -39,7 +35,7 @@
 .body {
   display: grid;
   grid-template-rows: var(--question-history-tabs-height) minmax(0, 1fr);
-  gap: var(--ui-section-group-gap);
+  gap: var(--question-history-gap);
   min-width: 0;
   min-height: 0;
   padding-inline: var(--question-history-inset);

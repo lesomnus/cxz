@@ -67,7 +67,7 @@ export function QuestionHistory({
       />
       <div className={styles.body}>
         <QuestionTabs
-          variant="underline"
+          variant="history"
           prefix={prefix}
           panelId={panel}
           items={qs.map((q) => ({

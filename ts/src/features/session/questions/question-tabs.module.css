@@ -13,35 +13,21 @@
   flex: 0 0 var(--question-tab-width);
   border-radius: calc(2 * var(--space));
 }
-.underline {
-  --question-tab-border-color: transparent;
+.history {
+  --question-tab-background: transparent;
 }
-.underline :global([role="tab"][aria-selected]),
-.underline :global([role="tab"][aria-selected]:hover) {
-  --button-hover-background: transparent;
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid var(--question-tab-border-color);
-  border-radius: 0;
-  transition: border-color 120ms ease-out;
+.history :global([role="tab"][aria-selected]),
+.history :global([role="tab"][aria-selected]:hover) {
+  background: var(--question-tab-background);
 }
-.underline :global([aria-selected="true"]) {
-  --question-tab-border-color: var(
-    --question-tab-selected-border-color,
-    var(--shade-204)
+.history :global([aria-selected="true"]) {
+  --question-tab-background: var(
+    --question-tab-selected-background,
+    var(--hover)
   );
 }
-.underline :global([role="tab"]:hover) {
-  --question-tab-border-color: var(
-    --question-tab-hover-border-color,
-    var(--shade-115)
-  );
-}
-@media (prefers-reduced-motion: reduce) {
-  .underline :global([role="tab"][aria-selected]),
-  .underline :global([role="tab"][aria-selected]:hover) {
-    transition: none;
-  }
+.history :global([role="tab"]:hover) {
+  --question-tab-background: var(--question-tab-hover-background, var(--hover));
 }
 .tabs :global(.button-content) {
   display: grid;
@@ -49,7 +35,7 @@
   align-items: center;
   width: 100%;
 }
-.underline :global(.button-content) {
+.history :global(.button-content) {
   grid-template-columns: minmax(0, 1fr);
 }
 .tabs :global(.tab-label) {

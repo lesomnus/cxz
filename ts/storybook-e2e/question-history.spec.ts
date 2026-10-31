@@ -72,7 +72,7 @@ test("canceled questions preserve their text and cancellation state in every tab
   await expect(content(card, "Answer")).toContainText("Canceled");
 });
 
-test("Question dialog keeps status tabs while history shows numbered underlines", async ({
+test("Question dialog keeps status tabs while history shows numbered surface buttons", async ({
   page,
 }) => {
   const appearance = (tab: Locator) =>
@@ -126,10 +126,9 @@ test("Question dialog keeps status tabs while history shows numbered underlines"
     }),
   ).toBeLessThan(0.5);
   await expect.poll(() => appearance(recordedTab)).toEqual(expected);
-  await expect(recordedTab).toHaveCSS("border-radius", "0px");
-  await expect(recordedTab).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect(recordedTab).toHaveCSS("border-bottom-style", "solid");
-  await expect(recordedTab).toHaveAttribute("data-effect", "none");
+  await expect(recordedTab).not.toHaveCSS("border-radius", "0px");
+  await expect(recordedTab).toHaveCSS("border-bottom-style", "none");
+  await expect(recordedTab).toHaveAttribute("data-effect", "sparkle");
   const questionBackground = await content(
     page.locator(history),
     "Question",
@@ -139,24 +138,16 @@ test("Question dialog keeps status tabs while history shows numbered underlines"
     "Answer",
   ).evaluate((node) => getComputedStyle(node).backgroundColor);
   await page.mouse.move(0, 0);
-  await expect(recordedTab).toHaveCSS("border-bottom-color", answerBackground);
+  await expect(recordedTab).toHaveCSS("background-color", answerBackground);
   await recordedTab.hover();
-  await expect(recordedTab).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect(recordedTab).toHaveCSS(
-    "border-bottom-color",
-    questionBackground,
-  );
+  await expect(recordedTab).toHaveCSS("background-color", questionBackground);
   const otherRecordedTab = page
     .locator(history)
     .getByRole("tab", { name: "Q2", exact: true });
   await otherRecordedTab.hover();
   await expect(otherRecordedTab).toHaveCSS(
-    "border-bottom-color",
-    questionBackground,
-  );
-  await expect(otherRecordedTab).toHaveCSS(
     "background-color",
-    "rgba(0, 0, 0, 0)",
+    questionBackground,
   );
 });
 

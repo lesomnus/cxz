@@ -9,7 +9,7 @@ type QuestionTabsProps = Pick<
   "prefix" | "panelId" | "value" | "choose"
 > & {
   items: { id: string; answered: boolean }[];
-  variant?: "filled" | "underline";
+  variant?: "filled" | "history";
 };
 
 export function QuestionTabs({
@@ -20,8 +20,7 @@ export function QuestionTabs({
   return (
     <TabList
       {...props}
-      effect={variant === "underline" ? "none" : undefined}
-      className={`question-tabs ${styles.tabs} ${variant === "underline" ? styles.underline : ""}`}
+      className={`question-tabs ${styles.tabs} ${variant === "history" ? styles.history : ""}`}
       label={t("Question steps")}
       items={items.map((item, index) => ({
         ...item,
