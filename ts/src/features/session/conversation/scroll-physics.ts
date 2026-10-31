@@ -2,6 +2,7 @@ import { clamp } from "#src/shared/lib/math.ts";
 export { clamp } from "#src/shared/lib/math.ts";
 export const SCROLL_WINDOW_SCREENS = 12;
 export const ELASTIC_RESERVE = 20;
+export const DRAG_ACCELERATION_INSET = 0.25;
 export type ScrollRange = { start: number; span: number };
 
 // Heights round to integers while scrollTop stays fractional. Zoom can leave
@@ -48,6 +49,19 @@ export function scrollRange(
 // content passing that edge. Inside the mapped range they share the same phase.
 export function markerRangeStart(top: number, range: ScrollRange) {
   return range.start + top - clamp(top, range.start, range.start + range.span);
+}
+
+// The middle half tracks directly; the outer quarters progressively add pull.
+export function dragPullDistance(position: number, travel: number) {
+  const length = Math.max(0, travel);
+  return (
+    position -
+    clamp(
+      position,
+      length * DRAG_ACCELERATION_INSET,
+      length * (1 - DRAG_ACCELERATION_INSET),
+    )
+  );
 }
 
 // A saturating spring moves less with each extra pixel of pull, while velocity

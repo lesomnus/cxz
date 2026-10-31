@@ -42,11 +42,13 @@ test("first elastic drag returns to the rail at the reading position", async ({
     .toBeGreaterThan(15);
   await expect.poll(visibleSequence).toBeLessThan(initial - 200);
   const before = await visibleSequence();
-  await page.mouse.move(x, rail.y + bounds.height / 2 + 4);
+  const accelerationStart =
+    rail.y + bounds.height / 2 + (rail.height - bounds.height) / 4;
+  await page.mouse.move(x, accelerationStart + 4);
   await expect(thumb).toHaveAttribute("data-stretch", "0.00");
   const resumed = await visibleSequence();
   expect(Math.abs(resumed - before)).toBeLessThan(30);
-  await page.mouse.move(x, rail.y + bounds.height / 2 + 12);
+  await page.mouse.move(x, accelerationStart + 12);
   await page.waitForTimeout(150);
   expect(Math.abs((await visibleSequence()) - resumed)).toBeLessThan(30);
   await expect(
