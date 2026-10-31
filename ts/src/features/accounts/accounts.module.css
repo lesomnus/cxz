@@ -23,9 +23,15 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 .informationDetails,
-.usageSection,
-.sessionsColumn {
+.usageSection {
   align-content: start;
+}
+.sessionsColumn.sessionsColumn {
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  padding-inline: 0;
+  overflow: hidden;
 }
 @container account (min-width: 560px) {
   .details {
@@ -62,20 +68,4 @@
 .authenticationDescription {
   flex: 1;
   min-width: 0;
-}
-.session {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  padding: calc(2 * var(--space));
-  border-radius: var(--wrapper-radius);
-}
-.session:hover {
-  background: var(--hover);
-}
-.session > :global(.button-content) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space);
 }

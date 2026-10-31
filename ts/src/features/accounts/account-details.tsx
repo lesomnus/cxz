@@ -1,4 +1,5 @@
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
+import { useNavigate } from "@tanstack/react-router";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useState } from "react";
 import { Button, Popover, SectionGroup, Section } from "@lesomnus/nox";
@@ -10,8 +11,7 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
-import { SessionIdentity } from "#src/features/session/components/session-identity.tsx";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
+import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import { accountRef, accountStatus } from "./account-data";
 import { LoginPanel } from "./login-panel";
@@ -28,6 +28,7 @@ export function AccountDetails({
   sessions: Session[];
   sessionsLoading: boolean;
 }) {
+  const navigate = useNavigate();
   const status = useRemote(
     (signal) => accountStatus(c, account.alias, signal),
     [c, account.alias],
@@ -140,23 +141,18 @@ export function AccountDetails({
         aria-label="Sessions using this account"
         className={accountStyles.sessionsColumn}
       >
-        <strong>Sessions · {sessions.length}</strong>
-        {sessionsLoading && <p className={styles.muted}>Loading sessions…</p>}
-        {!sessionsLoading && !sessions.length && (
-          <p className={styles.muted}>No sessions use this account.</p>
-        )}
-        {sessions.map((session) => (
-          <RouteLink
-            key={session.runtimeId}
-            {...sessionLocation(session)}
-            className={accountStyles.session}
-          >
-            <SessionIdentity session={session} />
-            <span className={styles.muted}>
-              {session.status?.state || "unknown"}
-            </span>
-          </RouteLink>
-        ))}
+        <SessionTable
+          c={c}
+          sessions={sessions}
+          accounts={[account]}
+          loading={sessionsLoading}
+          showAccount={false}
+          title={`Sessions · ${sessions.length}`}
+          horizontalScrollbar
+          openSession={(session) => {
+            void navigate(sessionLocation(session));
+          }}
+        />
       </Section>
       {logout && (
         <ConfirmationDialog

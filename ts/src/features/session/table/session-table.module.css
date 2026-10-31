@@ -4,6 +4,8 @@
   --session-row-gap: var(--ui-control-inset);
   --session-header-height: 28px;
   --session-visible-rows: 7.5;
+  --session-table-min-width: 528px;
+  --session-account-column-width: 96px;
   --ui-scroll-area-background: var(--ui-shade-24);
   --ui-scroll-area-content-inset: 0px;
   flex: none;
@@ -20,17 +22,22 @@
 }
 .table {
   width: 100%;
-  min-width: 528px;
+  min-width: var(--session-table-min-width);
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 11px;
 }
+.table[data-account-column="false"] {
+  min-width: calc(
+    var(--session-table-min-width) - var(--session-account-column-width)
+  );
+}
 .selectionColumn {
   width: 44px;
 }
 .accountColumn {
-  width: 96px;
+  width: var(--session-account-column-width);
 }
 .agentColumn {
   width: 44px;

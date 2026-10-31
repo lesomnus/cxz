@@ -322,6 +322,26 @@ test("account login keeps its frame and controls fixed through loading, errors a
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
 });
 
+test("account session row menus can still open the conversation", async ({
+  page,
+}) => {
+  await open(page, "signed-in-account");
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  await table
+    .getByRole("button", {
+      name: "Controls for Account login workflow",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Open conversation", exact: true })
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toBeVisible();
+  await expect(table).toHaveCount(0);
+});
+
 test("canceling a submitted login cannot authenticate later", async ({
   page,
 }) => {

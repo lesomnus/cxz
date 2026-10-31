@@ -9,19 +9,21 @@ import {
 import { resumableStates } from "#src/features/session/model/session-actions.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { useSessionControls } from "./use-session-controls";
-import styles from "./project-session-controls.module.css";
+import styles from "./session-table-controls.module.css";
 
 type Controls = ReturnType<typeof useSessionControls>;
-export function ProjectSessionMenu({
+export function SessionTableMenu({
   sessions,
   controls,
   bulk = false,
   disabled = false,
+  openSession,
 }: {
   sessions: Session[];
   controls: Controls;
   bulk?: boolean;
   disabled?: boolean;
+  openSession?: (session: Session) => void;
 }) {
   const operations: SessionControlKind[] = bulk
     ? ["stop", "resume", "restart", "purge"]
@@ -54,6 +56,32 @@ export function ProjectSessionMenu({
       motion={{ from: "top-right", effect: "reveal" }}
       disabled={disabled || controls.busy || !sessions.length}
       groups={[
+        ...(!bulk && openSession && sessions[0]
+          ? [
+              {
+                label: "",
+                items: [
+                  {
+                    label: t("Open conversation"),
+                    icon: (
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M7 17 17 7M7 7h10v10" />
+                      </svg>
+                    ),
+                    run: () => openSession(sessions[0]),
+                  },
+                ],
+              },
+            ]
+          : []),
         {
           label: t("Controls"),
           items: operations.map((kind) => ({
@@ -76,11 +104,7 @@ export function ProjectSessionMenu({
   );
 }
 
-export function ProjectSessionConfirmation({
-  controls,
-}: {
-  controls: Controls;
-}) {
+export function SessionTableConfirmation({ controls }: { controls: Controls }) {
   const pending = controls.confirmation;
   if (!pending) return null;
   const single = pending.targets.length === 1;
@@ -183,7 +207,7 @@ export function ProjectSessionConfirmation({
   );
 }
 
-export function ProjectSessionFeedback({ controls }: { controls: Controls }) {
+export function SessionTableFeedback({ controls }: { controls: Controls }) {
   if (!controls.errors.length) return null;
   return (
     <div className={styles.feedback}>

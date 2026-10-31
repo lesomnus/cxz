@@ -38,6 +38,14 @@ function AccountPreview({ c }: { c: Connection }) {
                 agent: "claude",
                 status: { state: "stopped" },
               }),
+              create(SessionSchema, {
+                runtimeId: "demo-review",
+                name: "Review deployment changes",
+                alias: "pine",
+                account: { alias: "work" },
+                agent: "codex",
+                status: { state: "working" },
+              }),
             ]}
           />
         ),

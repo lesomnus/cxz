@@ -199,6 +199,70 @@ for (const width of [1280, 390]) {
   });
 }
 
+test("account sessions share the project table presentation and keep selection scoped to the account", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
+  const work = page.getByRole("article", { name: "Work", exact: true });
+  const personal = page.getByRole("article", { name: "Personal", exact: true });
+  const table = work.getByRole("table", { name: "Sessions", exact: true });
+  const rows = table.locator("tbody tr");
+  await expect(rows).toHaveCount(2);
+  await expect(table.getByRole("columnheader")).toHaveText([
+    "",
+    "",
+    "Name",
+    "Alias",
+    "State",
+    "",
+  ]);
+  await expect(
+    table.getByRole("columnheader", { name: "Account", exact: true }),
+  ).toHaveCount(0);
+  await expect(table.locator(".agent-brand-codex")).toHaveCount(2);
+  await expect(rows.locator("td:nth-child(5)")).toHaveText(["Idle", "Working"]);
+  await rows.first().getByRole("checkbox").check();
+  await expect(
+    work.getByRole("button", { name: "1 selected", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    personal.getByRole("button", { name: "0 selected", exact: true }),
+  ).toBeDisabled();
+  const border = await rows
+    .first()
+    .locator("td")
+    .first()
+    .evaluate((node) => getComputedStyle(node).borderBottomColor);
+  expect(border).not.toBe("rgba(0, 0, 0, 0)");
+  const before = await rows
+    .nth(1)
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  await rows.nth(1).hover({ position: { x: 120, y: 20 } });
+  await expect(rows.nth(1)).not.toHaveCSS("background-color", before);
+  const viewport = work.locator('[data-scroll-area="viewport"]');
+  expect(
+    await viewport.evaluate((node) => node.scrollWidth > node.clientWidth),
+  ).toBe(true);
+  const more = rows.first().getByRole("button", {
+    name: "Controls for Web account layout",
+    exact: true,
+  });
+  await more.click();
+  await expect(
+    page.getByRole("menuitem", { name: "Open conversation", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.screenshot({
+    path: testInfo.outputPath("account-session-table.png"),
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
 test("the top add action opens a modal and creates an account card", async ({
   page,
 }) => {

@@ -9,7 +9,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Interactive account workflows using the real Accounts page, Add account/Add session forms, LoginPanel and Conversation. Account cards keep their normal bounded width: the left column groups metadata, conversation usage and authentication at the bottom; the right column is reserved for sessions. Metadata and usage values each use paired fields. Very narrow panes stack the groups. Every story owns an isolated in-memory RPC fixture and a scoped login socket; no Manager, provider connection or real credentials are used. Enter demo-code to finish a login. Reset preview clears accounts, authentication, drafts and pending requests in this example.",
+          "Interactive account workflows using the real Accounts page, Add account/Add session forms, LoginPanel and Conversation. Account cards keep their normal bounded width: the left column groups metadata, conversation usage and authentication at the bottom; the right column reuses the Projects session table, with selection, inline name/alias editing and controls. The redundant account column is omitted; narrow tables scroll horizontally. Open conversation is available from a row's menu. Metadata and usage values each use paired fields. Very narrow panes stack the groups. Every story owns an isolated in-memory RPC fixture and a scoped login socket; no Manager, provider connection or real credentials are used. Enter demo-code to finish a login. Reset preview clears accounts, authentication, drafts and pending requests in this example.",
       },
     },
   },

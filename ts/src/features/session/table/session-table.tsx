@@ -15,25 +15,33 @@ import {
 } from "#src/features/session/model/session-edit.ts";
 import { useSessionControls } from "./use-session-controls";
 import {
-  ProjectSessionMenu,
-  ProjectSessionConfirmation,
-  ProjectSessionFeedback,
-} from "./project-session-controls";
-import controlStyles from "./project-session-controls.module.css";
-import styles from "./project-sessions.module.css";
+  SessionTableMenu,
+  SessionTableConfirmation,
+  SessionTableFeedback,
+} from "./session-table-controls";
+import controlStyles from "./session-table-controls.module.css";
+import styles from "./session-table.module.css";
 
-export function ProjectSessions({
+export function SessionTable({
   c,
   sessions,
   accounts,
   loading,
   addSession,
+  showAccount = true,
+  title = t("Sessions"),
+  openSession,
+  horizontalScrollbar = false,
 }: {
   c: SessionControlConnection;
   sessions: Session[];
   accounts: Account[];
   loading?: boolean;
-  addSession: () => void;
+  addSession?: () => void;
+  showAccount?: boolean;
+  title?: string;
+  openSession?: (session: Session) => void;
+  horizontalScrollbar?: boolean;
 }) {
   const [selected, select] = useState<Set<string>>(() => new Set());
   const controls = useSessionControls(c, (ids) =>
@@ -62,40 +70,43 @@ export function ProjectSessions({
   return (
     <>
       <div className={controlStyles.toolbar}>
-        <h2>{t("Sessions")}</h2>
+        <h2>{title}</h2>
         {controls.busy && (
           <span className={controlStyles.progress} role="status">
             {t("Working…")} {controls.progress.done}/{controls.progress.total}
           </span>
         )}
-        <ProjectSessionMenu
+        <SessionTableMenu
           sessions={chosen}
           controls={controls}
           bulk
           disabled={loading}
         />
-        <Button
-          type="button"
-          className={controlStyles.addTrigger}
-          aria-label={t("Add session")}
-          disabled={loading || controls.busy}
-          onClick={addSession}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            aria-hidden="true"
+        {addSession && (
+          <Button
+            type="button"
+            className={controlStyles.addTrigger}
+            aria-label={t("Add session")}
+            disabled={loading || controls.busy}
+            onClick={addSession}
           >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          <span>{t("Session")}</span>
-        </Button>
-        <ProjectSessionFeedback controls={controls} />
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <span>{t("Session")}</span>
+          </Button>
+        )}
+        <SessionTableFeedback controls={controls} />
       </div>
       <PanelScroll
+        horizontalScrollbar={horizontalScrollbar}
         className={styles.scroll}
         role="region"
         aria-label={t("Session list")}
@@ -105,13 +116,14 @@ export function ProjectSessions({
           className={styles.table}
           aria-label={t("Sessions")}
           aria-busy={loading}
+          data-account-column={showAccount}
         >
           <colgroup>
             <col className={styles.selectionColumn} />
             <col className={styles.agentColumn} />
             <col className={styles.nameColumn} />
             <col className={styles.aliasColumn} />
-            <col className={styles.accountColumn} />
+            {showAccount && <col className={styles.accountColumn} />}
             <col />
             <col className={styles.actionsColumn} />
           </colgroup>
@@ -136,7 +148,7 @@ export function ProjectSessions({
               <th scope="col" aria-label={t("Agent")} />
               <th scope="col">{t("Name")}</th>
               <th scope="col">{t("Alias")}</th>
-              <th scope="col">{t("Account")}</th>
+              {showAccount && <th scope="col">{t("Account")}</th>}
               <th scope="col">{t("State")}</th>
               <th scope="col" aria-label={t("Controls")} />
             </tr>
@@ -195,27 +207,30 @@ export function ProjectSessions({
                       </fieldset>
                     </td>
                   ))}
-                  <td className={`${styles.cardCell} ${styles.account}`}>
-                    {accountAlias ? (
-                      <Link
-                        to="/c/$connection/account/$accountId"
-                        params={{ connection: "_", accountId: accountAlias }}
-                        className={styles.accountCard}
-                        title={accountName}
-                      >
-                        <span>{accountName}</span>
-                        <OpenArrow />
-                      </Link>
-                    ) : (
-                      accountName
-                    )}
-                  </td>
+                  {showAccount && (
+                    <td className={`${styles.cardCell} ${styles.account}`}>
+                      {accountAlias ? (
+                        <Link
+                          to="/c/$connection/account/$accountId"
+                          params={{ connection: "_", accountId: accountAlias }}
+                          className={styles.accountCard}
+                          title={accountName}
+                        >
+                          <span>{accountName}</span>
+                          <OpenArrow />
+                        </Link>
+                      ) : (
+                        accountName
+                      )}
+                    </td>
+                  )}
                   <td className={styles.state}>{stateLabel(s)}</td>
                   <td className={`${styles.cardCell} ${styles.actions}`}>
-                    <ProjectSessionMenu
+                    <SessionTableMenu
                       sessions={[s]}
                       controls={controls}
                       disabled={loading}
+                      openSession={openSession}
                     />
                   </td>
                 </tr>
@@ -229,7 +244,7 @@ export function ProjectSessions({
           </p>
         )}
       </PanelScroll>
-      <ProjectSessionConfirmation controls={controls} />
+      <SessionTableConfirmation controls={controls} />
     </>
   );
 }
