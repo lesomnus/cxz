@@ -10,6 +10,7 @@ import {
 import type { Account } from "#gen/cxz/account_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
+import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";
 export function AccountAddForm({
@@ -25,6 +26,7 @@ export function AccountAddForm({
   close: () => void;
   trigger?: HTMLElement | null;
 }) {
+  const dialogClose = useDialogClose(close);
   const [agent, setAgent] = useState("codex"),
     [alias, setAlias] = useState(""),
     [name, setName] = useState(""),
@@ -38,7 +40,9 @@ export function AccountAddForm({
     <AnchoredDialog
       title="Add account"
       anchor={anchor}
-      close={close}
+      open={dialogClose.open}
+      close={dialogClose.dismiss}
+      onClosed={dialogClose.onClosed}
       busy={busy}
       trigger={trigger}
     >
@@ -57,7 +61,8 @@ export function AccountAddForm({
               { agent, alias: alias.trim(), name: name.trim() },
               { signal: controller.signal, timeoutMs: 30000 },
             );
-            if (!controller.signal.aborted) added(account);
+            if (!controller.signal.aborted)
+              dialogClose.complete(() => added(account));
           } catch (error) {
             if (!controller.signal.aborted) setError(String(error));
           } finally {
@@ -68,7 +73,7 @@ export function AccountAddForm({
       >
         <Card
           title="Add account"
-          close={busy ? undefined : close}
+          close={busy ? undefined : dialogClose.dismiss}
           closeLabel="Close"
           data-entered="true"
           footer={
@@ -80,7 +85,11 @@ export function AccountAddForm({
               >
                 {busy ? "Adding…" : "Add"}
               </Button>
-              <Button type="button" disabled={busy} onClick={close}>
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={dialogClose.dismiss}
+              >
                 Cancel
               </Button>
             </CardActions>
