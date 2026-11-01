@@ -173,19 +173,20 @@ for (const width of [1280, 390]) {
     expect(eraseBounds.width).toBe(64);
     expect(eraseBounds.height).toBe(64);
     expect(authBounds.height).toBe(64);
-    expect(eraseBounds.x + eraseBounds.width).toBeLessThan(authBounds.x);
+    expect(authBounds.x + authBounds.width).toBeLessThan(eraseBounds.x);
+    expect(eraseBounds.x + eraseBounds.width).toBe(
+      usageBounds.x + usageBounds.width,
+    );
     expect(eraseBounds.y).toBe(authBounds.y);
-    const reserved = work.getByRole("switch", {
-      name: "Account option",
-      exact: true,
-    });
-    await expect(reserved).toBeDisabled();
-    await expect(reserved).not.toBeChecked();
-    const reservedBounds = (await reserved.locator("..").boundingBox())!;
-    expect(reservedBounds.width).toBe(64);
-    expect(reservedBounds.height).toBe(64);
-    expect(reservedBounds.x).toBeGreaterThan(eraseBounds.x + eraseBounds.width);
-    expect(reservedBounds.x + reservedBounds.width).toBeLessThan(authBounds.x);
+    await expect(work.getByRole("switch")).toHaveCount(0);
+    await work
+      .getByRole("button", { name: "Erase account Work", exact: true })
+      .hover();
+    await expect(page.getByRole("tooltip")).toContainText(
+      "all linked sessions",
+    );
+    await expect(page.getByRole("tooltip")).toContainText("cannot be undone");
+    await page.mouse.move(0, 0);
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>
         parseFloat(getComputedStyle(node).maxWidth),
@@ -299,8 +300,8 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     const row = [
-      authentication.getByText("Signed in", { exact: true }).locator(".."),
       authentication.getByRole("button", { name: "Log out", exact: true }),
+      authentication.getByText("Signed in", { exact: true }).locator(".."),
     ];
     await expect(
       authentication.getByText("Authentication", { exact: true }),
