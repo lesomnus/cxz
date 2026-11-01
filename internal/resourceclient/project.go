@@ -15,7 +15,7 @@ import (
 
 func project(p *resource.Project) *api.Project {
 	st := p.GetStatus()
-	return &api.Project{Id: projectid.String(p.GetId()), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: projectstate.Word(st.GetContainerState()), ContainerId: st.GetContainerId(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
+	return &api.Project{Id: projectid.String(p.GetId()), Alias: p.GetAlias(), Workspace: p.GetWorkspace(), Name: p.GetName(), Config: p.GetConfig(), State: projectstate.Word(st.GetContainerState()), ContainerId: st.GetContainerId(), ContainerName: st.GetContainerName(), RemoteUser: st.GetRemoteUser(), RemoteWorkspace: st.GetRemoteWorkspace(), ProvisionState: st.GetProvisionState(), ProvisionStep: st.GetProvisionStep(), ProvisionAttempt: st.GetProvisionAttempt(), Error: st.GetError()}
 }
 func (c *Client) Projects(ctx context.Context, _ *api.Empty, opts ...grpc.CallOption) (*api.ProjectList, error) {
 	out, err := c.registeredProjects(ctx, opts...)
