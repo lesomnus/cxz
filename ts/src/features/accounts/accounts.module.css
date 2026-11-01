@@ -104,6 +104,14 @@
   .details {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .details .summaryColumn > [data-section-layout="section"] {
+    border-start-end-radius: var(--ui-section-inner-radius);
+    border-end-end-radius: var(--ui-section-inner-radius);
+  }
+  .details .usageColumn > [data-section-layout="section"] {
+    border-start-start-radius: var(--ui-section-inner-radius);
+    border-end-start-radius: var(--ui-section-inner-radius);
+  }
 }
 .agent {
   display: flex;
