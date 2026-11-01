@@ -6,7 +6,13 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
-import { PageToolbar, Button, EditableValue } from "@lesomnus/nox";
+import {
+  PageToolbar,
+  Button,
+  EditableValue,
+  Section,
+  SectionGroup,
+} from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import {
   containerState,
@@ -203,84 +209,89 @@ function ProjectDashboard({
   return (
     <div className={styles.dashboard}>
       <div className={styles.information}>
-        <section className={styles.section} aria-label={t("Information")}>
-          <h2 className={styles.sectionTitle}>{t("Information")}</h2>
-          <Fields
-            rows={[
-              [
-                t("Project ID"),
-                <IdentifierValue
-                  value={
-                    p.id.length === 16 ? new Id(p.id).toString() : undefined
-                  }
-                />,
-                t(
-                  "Canonical UUID used to identify this project across APIs and links.",
-                ),
-              ],
-              [t("Name"), editable("name", t("Name"))],
-              [t("Alias"), editable("alias", t("Alias"))],
-              [t("Description"), editable("desc", t("Description"))],
-              [t("Workspace"), p.workspace],
-              [t("Configuration"), p.config],
-              [t("Created"), <DateTime value={p.dateCreated} />],
-              [t("Updated"), <DateTime value={p.dateUpdated} />],
-              [t("Deleted"), <DateTime value={p.dateErased} />],
-            ]}
-          />
-        </section>
-        <section className={styles.section} aria-label={t("Environment")}>
-          <div className={styles.sectionHeading}>
-            <h2>{t("Environment")}</h2>
-            <Button
-              className={styles.refresh}
-              type="button"
-              disabled={branch.loading || !running(p)}
-              onClick={branch.reload}
-            >
-              {t("Refresh")}
-            </Button>
-          </div>
-          <Fields
-            rows={[
-              [t("Status"), t(containerStateName(containerState(p)))],
-              [t("Workspace"), p.status?.remoteWorkspace],
-              [t("Remote user"), p.status?.remoteUser],
-              [t("Git branch"), git],
-              [
-                t("Provisioning"),
-                [p.status?.provisionState, p.status?.provisionStep]
-                  .filter(Boolean)
-                  .join(" · "),
-                t(
-                  "Status and current step of preparing the project container and workspace.",
-                ),
-              ],
-            ]}
-          />
-          {p.status?.error && (
-            <p className={styles.errors} role="alert">
-              {p.status.error}
-            </p>
-          )}
-          {branch.error && (
-            <p className={styles.empty} role="status">
-              {branch.error}
-            </p>
-          )}
-        </section>
-        <section className={styles.section} aria-label={t("Diagnostics")}>
-          <h2 className={styles.sectionTitle}>{t("Diagnostics")}</h2>
-          <Fields
-            rows={[
-              [
-                t("Container ID"),
-                <IdentifierValue value={p.status?.containerId} />,
-              ],
-              [t("Provision attempts"), p.status?.provisionAttempt.toString()],
-            ]}
-          />
-        </section>
+        <SectionGroup>
+          <Section aria-label={t("Information")}>
+            <h2 className={styles.sectionTitle}>{t("Information")}</h2>
+            <Fields
+              rows={[
+                [
+                  t("Project ID"),
+                  <IdentifierValue
+                    value={
+                      p.id.length === 16 ? new Id(p.id).toString() : undefined
+                    }
+                  />,
+                  t(
+                    "Canonical UUID used to identify this project across APIs and links.",
+                  ),
+                ],
+                [t("Name"), editable("name", t("Name"))],
+                [t("Alias"), editable("alias", t("Alias"))],
+                [t("Description"), editable("desc", t("Description"))],
+                [t("Workspace"), p.workspace],
+                [t("Configuration"), p.config],
+                [t("Created"), <DateTime value={p.dateCreated} />],
+                [t("Updated"), <DateTime value={p.dateUpdated} />],
+                [t("Deleted"), <DateTime value={p.dateErased} />],
+              ]}
+            />
+          </Section>
+          <Section aria-label={t("Environment")}>
+            <div className={styles.sectionHeading}>
+              <h2>{t("Environment")}</h2>
+              <Button
+                className={styles.refresh}
+                type="button"
+                disabled={branch.loading || !running(p)}
+                onClick={branch.reload}
+              >
+                {t("Refresh")}
+              </Button>
+            </div>
+            <Fields
+              rows={[
+                [t("Status"), t(containerStateName(containerState(p)))],
+                [t("Workspace"), p.status?.remoteWorkspace],
+                [t("Remote user"), p.status?.remoteUser],
+                [t("Git branch"), git],
+                [
+                  t("Provisioning"),
+                  [p.status?.provisionState, p.status?.provisionStep]
+                    .filter(Boolean)
+                    .join(" · "),
+                  t(
+                    "Status and current step of preparing the project container and workspace.",
+                  ),
+                ],
+              ]}
+            />
+            {p.status?.error && (
+              <p className={styles.errors} role="alert">
+                {p.status.error}
+              </p>
+            )}
+            {branch.error && (
+              <p className={styles.empty} role="status">
+                {branch.error}
+              </p>
+            )}
+          </Section>
+          <Section aria-label={t("Diagnostics")}>
+            <h2 className={styles.sectionTitle}>{t("Diagnostics")}</h2>
+            <Fields
+              rows={[
+                [
+                  t("Container ID"),
+                  <IdentifierValue value={p.status?.containerId} />,
+                ],
+                [
+                  t("Provision attempts"),
+                  p.status?.provisionAttempt.toString(),
+                ],
+              ]}
+            />
+          </Section>
+        </SectionGroup>
         <section className={styles.actions} aria-label={t("Actions")}>
           <ProjectActions
             c={c}
