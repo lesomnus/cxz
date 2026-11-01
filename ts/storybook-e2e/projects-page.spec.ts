@@ -44,9 +44,9 @@ test("project sessions use the account table design with stacked resource links 
   ).toBeVisible();
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2);
-  await expect(
-    table.locator(".agent-brand, .editable-value-trigger, fieldset"),
-  ).toHaveCount(0);
+  await expect(table.locator(".editable-value-trigger, fieldset")).toHaveCount(
+    0,
+  );
   const session = rows
     .first()
     .getByRole("link", { name: "Plan the next release oak", exact: true });
@@ -55,6 +55,18 @@ test("project sessions use the account table design with stacked resource links 
     .getByRole("link", { name: "Work account work", exact: true });
   await expect(session).toHaveAttribute("href", "/c/_/session/oak");
   await expect(account).toHaveAttribute("href", "/c/_/account/work");
+  await expect(account.locator(".agent-brand-codex")).toBeVisible();
+  await expect(
+    rows
+      .last()
+      .getByRole("link", { name: "Work account work", exact: true })
+      .locator(".agent-brand-codex"),
+  ).toBeVisible();
+  const logo = (await account.locator(".agent-brand").boundingBox())!;
+  const accountText = (await account
+    .getByText("Work account", { exact: true })
+    .boundingBox())!;
+  expect(logo.x + logo.width).toBeLessThanOrEqual(accountText.x);
   for (const [link, name, alias] of [
     [session, "Plan the next release", "oak"],
     [account, "Work account", "work"],
@@ -177,7 +189,7 @@ test("session states use the same status icons as account sessions", async ({
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(9);
-  await expect(table.locator(".agent-brand")).toHaveCount(0);
+  await expect(table.locator(".agent-brand")).toHaveCount(9);
   await expect(rows.locator("td:nth-child(4) .session-indicator")).toHaveCount(
     9,
   );
@@ -215,6 +227,25 @@ test("dashboard scopes project usage and places sessions below Info", async ({
     exact: true,
   });
   await expect(info).toContainText("cxz-web-devcontainer");
+  for (const panel of [
+    info,
+    sessions,
+    main.getByRole("region", { name: "Actions", exact: true }),
+  ])
+    await expect(panel.getByRole("heading")).toHaveCount(0);
+  const header = sessions.getByRole("columnheader", {
+    name: "Controls",
+    exact: true,
+  });
+  await expect(
+    header.getByRole("button", {
+      name: "Selected session actions",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    header.getByRole("button", { name: "Add session", exact: true }),
+  ).toBeVisible();
   await expect(
     usage
       .getByRole("region", { name: "Recent 30 days" })

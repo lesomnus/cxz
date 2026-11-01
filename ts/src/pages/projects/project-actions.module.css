@@ -16,14 +16,6 @@
 .detail {
   color: var(--ui-muted);
 }
-.header {
-  --ui-section-padding: calc(4 * var(--ui-space));
-}
-.header h2 {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-}
 .action {
   --ui-section-padding: calc(2 * var(--ui-space));
   --button-hover-background: var(--ui-confirm-button-background);

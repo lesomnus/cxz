@@ -183,7 +183,6 @@ function ProjectDashboard({
       <div className={styles.columns}>
         <div className={styles.information}>
           <Section aria-label={t("Information")}>
-            <h2 className={styles.sectionTitle}>{t("Information")}</h2>
             <Fields
               rows={[
                 {
@@ -240,6 +239,7 @@ function ProjectDashboard({
               accounts={accounts}
               loading={sessionsLoading}
               variant="compact"
+              showToolbar={false}
               horizontalScrollbar
               addSession={() => setAddingSession(true)}
             />

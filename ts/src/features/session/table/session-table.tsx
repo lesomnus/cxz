@@ -88,6 +88,30 @@ export function SessionTable({
       return next;
     });
   }
+  const addControl = addSession && (
+    <Button
+      type="button"
+      className={
+        showToolbar ? controlStyles.addTrigger : controlStyles.headerAddTrigger
+      }
+      aria-label={t("Add session")}
+      disabled={loading || controls.busy}
+      onClick={addSession}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      {showToolbar && <span>{t("Session")}</span>}
+    </Button>
+  );
+
   return (
     <>
       {showToolbar && (
@@ -104,27 +128,7 @@ export function SessionTable({
             bulk
             disabled={loading}
           />
-          {addSession && (
-            <Button
-              type="button"
-              className={controlStyles.addTrigger}
-              aria-label={t("Add session")}
-              disabled={loading || controls.busy}
-              onClick={addSession}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                aria-hidden="true"
-              >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              <span>{t("Session")}</span>
-            </Button>
-          )}
+          {addControl}
           <SessionTableFeedback controls={controls} />
         </div>
       )}
@@ -142,6 +146,7 @@ export function SessionTable({
           aria-busy={loading}
           data-account-column={showAccount}
           data-project-column={showProject}
+          data-header-add={!showToolbar && !!addSession ? "true" : undefined}
         >
           <colgroup>
             <col className={styles.selectionColumn} />
@@ -185,13 +190,16 @@ export function SessionTable({
                 aria-label={t("Controls")}
               >
                 {!showToolbar && (
-                  <SessionTableMenu
-                    sessions={chosen}
-                    controls={controls}
-                    bulk
-                    iconTrigger
-                    disabled={loading}
-                  />
+                  <div className={styles.headerActions}>
+                    {addControl}
+                    <SessionTableMenu
+                      sessions={chosen}
+                      controls={controls}
+                      bulk
+                      iconTrigger
+                      disabled={loading}
+                    />
+                  </div>
                 )}
               </th>
             </tr>
@@ -282,6 +290,16 @@ export function SessionTable({
                           className={styles.navigationButton}
                           title={accountName}
                         >
+                          <span
+                            className={styles.accountAgent}
+                            aria-hidden="true"
+                          >
+                            <AgentBrand
+                              agent={
+                                account?.agent || s.account?.agent || s.agent
+                              }
+                            />
+                          </span>
                           <span className={styles.identity}>
                             <span className={styles.title}>{accountName}</span>
                             <span className={styles.subtitle}>
