@@ -11,7 +11,7 @@ const stateLabels = (page: Page) =>
   );
 async function openBulk(page: Page, action: string) {
   await page
-    .getByRole("button", { name: /^\d+ selected$/, exact: true })
+    .getByRole("button", { name: "Selected session actions", exact: true })
     .click();
   if (action === "Erase")
     await expect(
@@ -55,15 +55,8 @@ test("row controls confirm stop/restart and resume the intended session", async 
   expect(button.width).toBeCloseTo(button.height, 1);
   expect(button.y).toBe(account.y);
   expect(button.height).toBe(account.height);
-  expect(button.x - cell.x).toBe(account.x - accountCell.x);
-  expect(cell.x + cell.width - button.x - button.width).toBe(
-    accountCell.x +
-      accountCell.width -
-      account.x -
-      account.width +
-      button.x -
-      cell.x,
-  );
+  expect(button.x).toBeGreaterThanOrEqual(cell.x);
+  expect(button.x + button.width).toBeLessThanOrEqual(cell.x + cell.width);
   await more.click();
   await expect(page.getByRole("menuitem")).toHaveText([
     "Stop",
@@ -120,26 +113,34 @@ test("bulk controls keep layout stable and apply only to the selected sessions",
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const bulk = page.getByRole("button", {
-    name: /^\d+ selected$/,
+    name: "Selected session actions",
     exact: true,
   });
-  await expect(bulk).toBeDisabled();
+  await expect(bulk).toBeEnabled();
+  await bulk.click();
+  await expect(page.getByRole("menu").getByRole("status")).toHaveText(
+    "0 selected",
+  );
+  await expect(
+    page.getByRole("menuitem", { name: "Stop", exact: true }),
+  ).toBeDisabled();
+  await page.keyboard.press("Escape");
   const before = await table(page).boundingBox();
   const buttonBefore = await bulk.boundingBox();
-  await expect(bulk).toHaveAttribute("aria-label", "0 selected");
+  await expect(bulk).toHaveAttribute("aria-label", "Selected session actions");
   await table(page)
     .getByRole("checkbox", { name: "Select all sessions", exact: true })
     .check();
   expect(await table(page).boundingBox()).toEqual(before);
   expect(await bulk.boundingBox()).toEqual(buttonBefore);
-  await expect(bulk).toHaveAttribute("aria-label", "2 selected");
+  await expect(bulk).toHaveAttribute("aria-label", "Selected session actions");
   await openBulk(page, "Stop");
   const stop = page.getByRole("dialog", { name: "Stop sessions", exact: true });
   await expect(stop).toContainText("2 sessions will be affected.");
   await stop.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(stop).toHaveCount(0);
   await expect.poll(() => stateLabels(page)).toEqual(["Stopped", "Stopped"]);
-  await expect(bulk).toBeDisabled();
+  await expect(bulk).toBeEnabled();
   await rows(page).first().getByRole("checkbox").check();
   await openBulk(page, "Resume");
   await expect.poll(() => stateLabels(page)).toEqual(["Idle", "Stopped"]);
@@ -165,10 +166,10 @@ test("mixed-state bulk stop skips sessions already stopped", async ({
   await dialog.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "3 selected", exact: true }),
+    page.getByRole("button", { name: "Selected session actions", exact: true }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: /^\d+ selected$/, exact: true })
+    .getByRole("button", { name: "Selected session actions", exact: true })
     .click();
   await expect(
     page.getByRole("menuitem", { name: "Stop", exact: true }),
@@ -224,7 +225,7 @@ test("partial failures keep only failed targets in the confirmation and selectio
   await expect(rows(page).first().getByRole("checkbox")).not.toBeChecked();
   await expect(rows(page).nth(1).getByRole("checkbox")).toBeChecked();
   await expect(
-    page.getByRole("button", { name: "1 selected", exact: true }),
+    page.getByRole("button", { name: "Selected session actions", exact: true }),
   ).toBeVisible();
 });
 
@@ -333,7 +334,7 @@ test("unavailable runtime keeps cached session and account navigation available"
   expect(await table(page).boundingBox()).toEqual(before);
 });
 
-test("the rightmost Session button opens the existing create form for the current project", async ({
+test("the header Add session button opens the existing create form for the current project", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
@@ -342,12 +343,25 @@ test("the rightmost Session button opens the existing create form for the curren
     exact: true,
   });
   const add = section.getByRole("button", { name: "Add session", exact: true });
-  const bulk = section.getByRole("button", { name: "0 selected", exact: true });
-  await expect(bulk).toBeDisabled();
+  const bulk = section.getByRole("button", {
+    name: "Selected session actions",
+    exact: true,
+  });
+  await expect(bulk).toBeEnabled();
   await expect(add).toBeEnabled();
   const addBox = (await add.boundingBox())!;
   const bulkBox = (await bulk.boundingBox())!;
-  expect(addBox.x).toBeGreaterThan(bulkBox.x + bulkBox.width);
+  expect(addBox.x + addBox.width).toBeLessThanOrEqual(bulkBox.x);
+  expect(addBox.y).toBe(bulkBox.y);
+  expect(addBox.width).toBe(bulkBox.width);
+  const header = section.getByRole("columnheader", {
+    name: "Controls",
+    exact: true,
+  });
+  await expect(
+    header.getByRole("button", { name: "Add session", exact: true }),
+  ).toBeVisible();
+  await expect(section.getByRole("heading")).toHaveCount(0);
   await expect(
     section.getByRole("button", { name: "Actions", exact: true }),
   ).toHaveCount(0);

@@ -46,7 +46,8 @@
   flex: none;
   background: var(--ui-shade-32);
 }
-.addTrigger svg {
+.addTrigger svg,
+.headerAddTrigger svg {
   width: var(--ui-icon-size-small);
   height: var(--ui-icon-size-small);
 }
@@ -57,7 +58,9 @@
   aspect-ratio: 1;
   padding: var(--ui-control-inset);
 }
-.headerTrigger.headerTrigger {
+.headerTrigger.headerTrigger,
+.headerAddTrigger.headerAddTrigger {
+  flex: none;
   width: var(--session-header-height);
   height: var(--session-header-height);
   min-height: 0;

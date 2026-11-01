@@ -65,12 +65,6 @@
   padding-top: var(--ui-section-group-gap);
   padding-inline: 0;
 }
-.sectionTitle {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-}
 .empty {
   color: var(--ui-muted);
   font-size: 11px;
