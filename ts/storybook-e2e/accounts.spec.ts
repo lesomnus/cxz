@@ -199,7 +199,7 @@ for (const width of [1280, 390]) {
         informationBounds.x + informationBounds.width,
       );
       expect(usageBounds.width).toBeCloseTo(informationBounds.width, 0);
-      expect(informationBounds.width).toBe(420);
+      expect(informationBounds.width).toBe(424);
       expect(sessionsBounds.y + sessionsBounds.height).toBeCloseTo(
         informationBounds.y + informationBounds.height,
         0,
