@@ -21,7 +21,7 @@ import {
 } from "./project-state.ts";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
-import { DateTime } from "#src/shared/components/date-time.tsx";
+import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
 import { IdentifierValue } from "#src/shared/components/identifier-value.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -230,9 +230,24 @@ function ProjectDashboard({
                 [t("Description"), editable("desc", t("Description"))],
                 [t("Workspace"), p.workspace],
                 [t("Configuration"), p.config],
-                [t("Created"), <DateTime value={p.dateCreated} />],
-                [t("Updated"), <DateTime value={p.dateUpdated} />],
-                [t("Deleted"), <DateTime value={p.dateErased} />],
+                [
+                  t("Created"),
+                  <DateTime value={p.dateCreated} />,
+                  undefined,
+                  <RelativeTime value={p.dateCreated} />,
+                ],
+                [
+                  t("Updated"),
+                  <DateTime value={p.dateUpdated} />,
+                  undefined,
+                  <RelativeTime value={p.dateUpdated} />,
+                ],
+                [
+                  t("Deleted"),
+                  <DateTime value={p.dateErased} />,
+                  undefined,
+                  <RelativeTime value={p.dateErased} />,
+                ],
               ]}
             />
           </Section>
