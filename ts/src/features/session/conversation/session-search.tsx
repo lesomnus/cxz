@@ -257,6 +257,8 @@ export function SessionSearch({
           {visible.length > 0 && (
             <ScrollArea
               className={styles.results}
+              contentClassName={styles.resultContent}
+              scrollbarOffset={5}
               scrollbarLabel={t("Search results")}
               viewportRef={results}
               style={

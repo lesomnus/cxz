@@ -11,7 +11,7 @@
   backdrop-filter: blur(var(--ui-dialog-blur));
   border: 1px solid var(--ui-shade-54);
   border-radius: var(--ui-dialog-radius);
-  overflow: hidden;
+  overflow: visible;
 }
 .controls {
   display: flex;
@@ -53,10 +53,15 @@
 }
 .results {
   --ui-scroll-area-background: var(--ui-shade-17);
+  border-end-start-radius: calc(var(--ui-dialog-radius) - 1px);
+  border-end-end-radius: calc(var(--ui-dialog-radius) - 1px);
   height: min(
     calc(var(--search-result-count) * var(--search-result-height)),
     35vh
   );
+}
+.results .resultContent {
+  padding-inline: var(--ui-control-inset);
 }
 .result {
   display: block;
