@@ -416,7 +416,7 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
     }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(info.locator("dt")).toHaveText([
+  await expect(info.locator("dt > span:first-child")).toHaveText([
     "Project ID",
     "Name",
     "Alias",
@@ -430,14 +430,53 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
   await expect(
     info
       .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Deleted$/ }) })
+      .filter({ has: page.locator("dt", { hasText: /^Deleted/ }) })
       .locator("dd"),
   ).toHaveText("—");
   const created = info
     .locator("dl > div")
-    .filter({ has: page.locator("dt", { hasText: /^Created$/ }) })
-    .locator("time");
+    .filter({ has: page.locator("dt", { hasText: /^Created/ }) })
+    .locator("dd time");
   await expect(created).toHaveAttribute("datetime", /^\d{4}-\d\d-\d\dT.*Z$/);
+  const elapsed = created.locator("xpath=../../dt//time");
+  await expect(elapsed).toHaveText(/ago|yesterday/);
+  expect(await elapsed.getAttribute("datetime")).toBe(
+    await created.getAttribute("datetime"),
+  );
+  const elapsedBox = (await elapsed.boundingBox())!;
+  const labelBox = (await created
+    .locator("xpath=../../dt/span[1]")
+    .boundingBox())!;
+  const headingBox = (await created.locator("xpath=../../dt").boundingBox())!;
+  expect(Math.abs(elapsedBox.y - labelBox.y)).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(elapsedBox.x + elapsedBox.width - headingBox.x - headingBox.width),
+  ).toBeLessThan(1);
+
+  // A wrapped field must not stretch either row inside its neighboring field.
+  const workspace = info
+    .locator("dl > div")
+    .filter({ has: page.locator("dt", { hasText: /^Workspace$/ }) });
+  const configuration = info
+    .locator("dl > div")
+    .filter({ has: page.locator("dt", { hasText: /^Configuration$/ }) });
+  const before = (await configuration.boundingBox())!;
+  await workspace.locator("dd").evaluate((node) => {
+    node.textContent = "/workspace/" + "long-project-path/".repeat(20);
+  });
+  const after = (await configuration.boundingBox())!;
+  expect(after.height).toBe(before.height);
+  expect(after.y).toBe(before.y);
+  expect((await workspace.boundingBox())!.height).toBeGreaterThan(
+    after.height * 2,
+  );
+  expect((await workspace.locator("dt").boundingBox())!.y).toBe(
+    (await configuration.locator("dt").boundingBox())!.y,
+  );
+  expect((await workspace.locator("dd").boundingBox())!.y).toBe(
+    (await configuration.locator("dd").boundingBox())!.y,
+  );
+
   expect(
     await main
       .locator("time")
@@ -458,8 +497,8 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
   await expect(
     info
       .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Deleted$/ }) })
-      .locator("time"),
+      .filter({ has: page.locator("dt", { hasText: /^Deleted/ }) })
+      .locator("dd time"),
   ).toBeVisible();
 });
 

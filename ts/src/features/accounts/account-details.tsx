@@ -1,4 +1,4 @@
-import { DateTime } from "#src/shared/components/date-time.tsx";
+import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { useState } from "react";
 import { Button, Popover, SectionGroup, Section } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
@@ -72,7 +72,12 @@ export function AccountDetails({
                 </span>,
               ],
               ["Authentication backend", account.authBackend],
-              ["Created", <DateTime value={account.dateCreated} />],
+              [
+                "Created",
+                <DateTime value={account.dateCreated} />,
+                undefined,
+                <RelativeTime value={account.dateCreated} />,
+              ],
             ]}
           />
           {account.desc && <p>{account.desc}</p>}

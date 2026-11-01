@@ -4,6 +4,7 @@
     var(--resource-field-columns, 2),
     minmax(0, 1fr)
   );
+  align-items: start;
   gap: var(--ui-space);
   column-gap: calc(2 * var(--ui-space));
   margin: var(--ui-space) 0;
@@ -12,18 +13,29 @@
 .fields > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  min-width: 0;
   gap: var(--ui-control-inset);
   padding: var(--ui-control-inset) var(--ui-control-inline-inset);
 }
 .fields dt {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space);
   font-size: 10px;
   color: var(--ui-muted);
   overflow-wrap: anywhere;
 }
 .fields dd {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   min-height: var(--ui-icon-size);
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.labelDetail {
+  margin-inline-start: auto;
+  text-align: end;
+  white-space: nowrap;
 }

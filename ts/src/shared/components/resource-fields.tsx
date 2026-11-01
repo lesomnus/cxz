@@ -6,6 +6,7 @@ export type ResourceFieldRow = readonly [
   label: string,
   value: ReactNode,
   description?: string,
+  labelDetail?: ReactNode,
 ];
 
 // Keep labels, values, help and field spacing consistent across resource pages.
@@ -21,10 +22,13 @@ export function ResourceFields({
       className={styles.fields}
       style={{ "--resource-field-columns": columns } as CSSProperties}
     >
-      {rows.map(([label, value, description]) => (
+      {rows.map(([label, value, description, labelDetail]) => (
         <div key={label}>
           <dt>
             <FieldLabel label={label} description={description} />
+            {labelDetail != null && (
+              <span className={styles.labelDetail}>{labelDetail}</span>
+            )}
           </dt>
           <dd>
             {value === undefined || value === null || value === ""

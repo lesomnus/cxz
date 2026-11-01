@@ -1,23 +1,23 @@
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { useEffect, useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { formatOffsetDateTime } from "./date-time-format";
+import {
+  dateTimeDate,
+  formatOffsetDateTime,
+  formatRelativeDateTime,
+  type DateTimeValue,
+} from "./date-time-format";
 import styles from "./date-time.module.css";
 
 export function DateTime({
   value,
   title,
 }: {
-  value?: Timestamp | bigint | number;
+  value?: DateTimeValue;
   title?: string;
 }) {
   useLocale();
-  if (value === undefined) return <>—</>;
-  const ms =
-    typeof value === "object"
-      ? Number(value.seconds) * 1000 + value.nanos / 1e6
-      : Number(value);
-  const date = new Date(ms);
-  if (!Number.isFinite(date.getTime())) return <>—</>;
+  const date = dateTimeDate(value);
+  if (!date) return <>—</>;
   return (
     <time className={styles.time} dateTime={date.toISOString()} title={title}>
       {formatOffsetDateTime(date)
@@ -31,6 +31,26 @@ export function DateTime({
             part
           ),
         )}
+    </time>
+  );
+}
+
+// A separate label detail keeps the absolute timestamp available in the value.
+export function RelativeTime({ value }: { value?: DateTimeValue }) {
+  const { locale } = useLocale();
+  const [now, setNow] = useState(Date.now);
+  const date = dateTimeDate(value);
+  const valid = date !== undefined;
+  useEffect(() => {
+    if (!valid) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, [valid]);
+  if (!date) return null;
+  return (
+    <time className={styles.time} dateTime={date.toISOString()}>
+      {formatRelativeDateTime(date, locale, now)}
     </time>
   );
 }
