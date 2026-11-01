@@ -254,10 +254,12 @@
   margin-inline-start: auto;
 }
 .accountAgent {
-  --agent-logo-size: var(--ui-icon-size-small);
+  --agent-logo-size: calc(var(--ui-icon-size-small) - var(--ui-control-inset));
   display: grid;
   place-items: center;
   flex: none;
-  width: var(--ui-icon-size-small);
-  height: var(--ui-icon-size-small);
+  box-sizing: border-box;
+  width: calc(var(--agent-logo-size) + 2 * var(--ui-control-inset));
+  height: var(--agent-logo-size);
+  padding-inline: var(--ui-control-inset);
 }
