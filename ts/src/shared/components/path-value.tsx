@@ -1,8 +1,10 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Button, Popover } from "@lesomnus/nox";
+import { EllipsisMark } from "./ellipsis-mark";
+import { elidePath, type ElidedPath } from "./path-elision";
 import styles from "./path-value.module.css";
 
-// Shrink the ancestors before truncating the final file/directory name.
+// Elide the middle before shortening a leaf, preserving the leading context.
 export function PathValue({
   value,
   label,
@@ -17,24 +19,50 @@ export function PathValue({
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   const measure = useRef<HTMLSpanElement>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [display, setDisplay] = useState<ElidedPath>({
+    prefix: "",
+    leaf: value,
+    middle: false,
+    end: false,
+    separator: "",
+  });
   useLayoutEffect(() => {
-    const text = measure.current;
-    if (!anchor || !text) return;
-    const update = () =>
-      setCollapsed(text.getBoundingClientRect().width > anchor.clientWidth);
+    const container = measure.current;
+    const text = container?.querySelector("span")?.firstChild;
+    const mark = container?.querySelector("svg");
+    if (!anchor || !container || !text || !mark) return;
+    const update = () => {
+      // Measure real glyphs, including loaded fonts, rather than character counts.
+      const range = document.createRange();
+      const widthOf = (part: string) => {
+        if (!part) return 0;
+        const start = value.indexOf(part);
+        range.setStart(text, start);
+        range.setEnd(text, start + part.length);
+        return range.getBoundingClientRect().width;
+      };
+      const next = elidePath(
+        value,
+        anchor.clientWidth,
+        widthOf,
+        mark.getBoundingClientRect().width,
+      );
+      setDisplay((current) =>
+        current.prefix === next.prefix &&
+        current.leaf === next.leaf &&
+        current.middle === next.middle &&
+        current.end === next.end &&
+        current.separator === next.separator
+          ? current
+          : next,
+      );
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(anchor);
-    observer.observe(text);
+    observer.observe(container);
     return () => observer.disconnect();
   }, [anchor, value]);
-  const parts = value.match(/^(.*[/\\])([^/\\]+[/\\]*)$/);
-  const parent = parts?.[1] ?? "";
-  const leaf = parts?.[2] ?? value;
-  const shownParent =
-    collapsed && parent.length > 4 ? `...${parent.at(-1)}` : parent;
-  const parentMin = collapsed ? shownParent.length : Math.min(parent.length, 2);
   return (
     <>
       <Button
@@ -54,15 +82,22 @@ export function PathValue({
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
       >
-        <span
-          className={styles.text}
-          style={{ "--path-parent-min": `${parentMin}ch` } as CSSProperties}
-        >
-          {shownParent && <span className={styles.parent}>{shownParent}</span>}
-          <span className={styles.leaf}>{leaf}</span>
+        <span className={styles.text}>
+          {display.prefix && (
+            <span className={styles.prefix}>{display.prefix}</span>
+          )}
+          {display.middle && (
+            <>
+              <EllipsisMark />
+              <span>{display.separator}</span>
+            </>
+          )}
+          <span className={styles.leaf}>{display.leaf}</span>
+          {display.end && <EllipsisMark />}
         </span>
         <span ref={measure} className={styles.measure} aria-hidden="true">
-          {value}
+          <span>{value}</span>
+          <EllipsisMark />
         </span>
       </Button>
       <Popover

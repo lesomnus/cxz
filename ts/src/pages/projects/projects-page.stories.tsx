@@ -14,6 +14,7 @@ function Preview({
   sessionCount = 2,
   mixedStates = false,
   longPaths = false,
+  homePaths = false,
   failControls = false,
   failErase = false,
   requireTrust = false,
@@ -36,6 +37,14 @@ function Preview({
         "/host/" + "long-parent-directory/".repeat(10) + "workspace-leaf";
       fixture.projects[0]!.config =
         ".devcontainer/" + "very-long-leaf-".repeat(12) + ".json";
+    }
+    if (homePaths) {
+      fixture.projects[0]!.workspace =
+        "/home/somnus/workspaces/github.com/lesomnus/cxz/.devcontainer/devcontainer.json";
+      fixture.projects[0]!.config =
+        "/home/somnus/workspaces/github.com/lesomnus/cxz/.devcontainer/" +
+        "devcontainer-".repeat(12) +
+        ".json";
     }
     if (mixedStates) {
       const states = [
@@ -128,6 +137,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const LongPaths: Story = { args: { longPaths: true } };
+export const HomePaths: Story = { args: { homePaths: true } };
 export const SessionStates: Story = {
   args: { sessionCount: 9, mixedStates: true },
 };

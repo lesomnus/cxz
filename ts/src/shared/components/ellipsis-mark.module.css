@@ -1,0 +1,8 @@
+.mark {
+  display: inline-block;
+  flex: none;
+  width: 1ch;
+  height: 1em;
+  fill: currentColor;
+  vertical-align: -0.125em;
+}

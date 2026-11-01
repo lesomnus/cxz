@@ -23,19 +23,20 @@ for (const width of [1440, 390]) {
       name: "Copy: Workspace",
       exact: true,
     });
-    await expect(copy.getByText(".../", { exact: true })).toBeVisible();
+    const display = copy.locator(":scope > span > span").first();
+    await expect(display.locator("svg")).toHaveCount(1);
+    await expect(display).toContainText("/host/long-parent-directory/");
     const leaf = copy.getByText("workspace-leaf", { exact: true });
     expect(
       await leaf.evaluate((node) => node.scrollWidth <= node.clientWidth),
     ).toBe(true);
-    const longLeaf = configuration
+    const configDisplay = configuration
       .getByRole("button")
-      .locator("span")
-      .filter({ hasText: /^very-long-leaf-/ })
-      .last();
-    expect(
-      await longLeaf.evaluate((node) => node.scrollWidth > node.clientWidth),
-    ).toBe(true);
+      .locator(":scope > span > span")
+      .first();
+    await expect(configDisplay.locator("svg")).toHaveCount(1);
+    await expect(configDisplay).toContainText(".devcontainer/very-long-leaf-");
+    expect((await configDisplay.textContent())!.length).toBeLessThan(100);
     const bounds = (await workspace.boundingBox())!;
     const configBounds = (await configuration.boundingBox())!;
     expect(configBounds.x).toBe(bounds.x);
@@ -108,4 +109,63 @@ test("path copy feedback resets its timeout and reports clipboard failure", asyn
   );
   await copy.click();
   await expect(field.getByRole("status")).toHaveText("Copy failed");
+});
+
+test("middle elision preserves leading entries across resizing and uses centered one-character marks", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/iframe.html?id=pages-projects--home-paths&viewMode=story");
+  const info = page.getByRole("region", { name: "Information", exact: true });
+  const copy = info.getByRole("button", {
+    name: "Copy: Workspace",
+    exact: true,
+  });
+  const display = copy.locator(":scope > span > span").first();
+  await expect(display).toContainText("/home/somnus/workspaces/");
+  await expect(display).toContainText("devcontainer.json");
+  await expect(display.locator("svg")).toHaveCount(1);
+  // A smaller container drops more middle entries before touching the leaf.
+  await copy.evaluate((node) => {
+    node.style.width = "270px";
+  });
+  await expect(display).toHaveText(
+    "/home/somnus/workspaces//devcontainer.json",
+  );
+  await copy.evaluate((node) => {
+    node.style.width = "125px";
+  });
+  await expect(display.locator("svg")).toHaveCount(2);
+  await expect(display).toContainText("/home/somnus/");
+  await expect(display).not.toContainText("devcontainer.json");
+  const size = await display.evaluate((node) => {
+    const mark = node.querySelector("svg")!;
+    const box = mark.getBoundingClientRect();
+    const range = document.createRange();
+    const prefix = node.firstChild!.firstChild!;
+    range.setStart(prefix, 0);
+    range.setEnd(prefix, 1);
+    const glyph = range.getBoundingClientRect();
+    const line = node.getBoundingClientRect();
+    return {
+      markWidth: box.width,
+      characterWidth: glyph.width,
+      center: box.y + box.height / 2,
+      lineCenter: line.y + line.height / 2,
+      scroll: node.scrollWidth,
+      width: node.clientWidth,
+    };
+  });
+  expect(Math.abs(size.markWidth - size.characterWidth)).toBeLessThan(1);
+  expect(Math.abs(size.center - size.lineCenter)).toBeLessThan(1);
+  expect(size.scroll).toBeLessThanOrEqual(size.width);
+  // Widening restores the entire original path instead of leaving stale elision.
+  await copy.evaluate((node) => {
+    node.style.width = "1000px";
+    node.style.flexShrink = "0";
+  });
+  await expect(display.locator("svg")).toHaveCount(0);
+  await expect(display).toHaveText(
+    "/home/somnus/workspaces/github.com/lesomnus/cxz/.devcontainer/devcontainer.json",
+  );
 });
