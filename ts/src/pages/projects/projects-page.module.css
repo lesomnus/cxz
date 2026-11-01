@@ -1,5 +1,12 @@
 .page {
   --project-section-gap: calc(3 * var(--ui-space));
+  --project-panel-width: 420px;
+  --project-panel-gap: 12px;
+  --project-page-gutter: 24px;
+  --project-content-width: calc(
+    2 * var(--project-panel-width) + var(--project-panel-gap)
+  );
+  container: project-page / inline-size;
   grid-column: 2 / -1;
   display: flex;
   flex-direction: column;
@@ -10,18 +17,29 @@
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
 }
+.page > .toolbar {
+  padding-inline: var(--project-page-gutter);
+}
+.toolbarContent,
 .content {
   width: 100%;
-  max-width: 1200px;
-  margin: 0;
-  padding: var(--project-section-gap);
+  max-width: var(--project-content-width);
+  min-width: 0;
+  margin-inline: auto;
+}
+.toolbarContent {
+  display: flex;
+  align-items: center;
+}
+.scroll .scrollContent {
+  padding: var(--project-section-gap) var(--project-page-gutter);
 }
 .dashboard {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-areas: "information sessions";
   align-items: start;
-  gap: var(--project-section-gap);
+  gap: var(--project-panel-gap);
 }
 .information {
   grid-area: information;
@@ -72,7 +90,12 @@
 .errors {
   color: var(--ui-error, #db7979);
 }
-@media (max-width: 760px) {
+/* Two 420px panels, their 12px gap and both 24px page gutters. */
+@container project-page (width < 900px) {
+  .toolbarContent,
+  .content {
+    max-width: var(--project-panel-width);
+  }
   .dashboard {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "information" "sessions";
