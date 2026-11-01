@@ -29,7 +29,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Hover a code block to show its language chooser and copy icon at the upper right. Keyboard focus also reveals controls. Language choices only affect highlighting; copy preserves the literal code without Markdown fences. Menus stay visible while open, and unknown languages fall back to plain text.",
+          "Hover a code block to show its language chooser and copy icon just above its upper-right edge. The floating toolbar occupies no layout space and remains reachable across the gap. Keyboard focus also reveals controls. Language choices only affect highlighting; copy preserves the literal code without Markdown fences. Menus stay visible while open, and unknown languages fall back to plain text.",
       },
     },
   },

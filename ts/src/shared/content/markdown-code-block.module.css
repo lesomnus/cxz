@@ -9,8 +9,8 @@
 .toolbar {
   z-index: 1;
   position: absolute;
-  top: var(--space);
-  right: var(--space);
+  bottom: calc(100% + var(--space));
+  right: 0;
   display: flex;
   align-items: center;
   gap: var(--space);
@@ -20,6 +20,13 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms ease;
+}
+.toolbar::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: var(--space);
 }
 .toolbar .viewToggle {
   width: auto;

@@ -96,6 +96,22 @@ test("code controls reveal on hover, choose highlighting, and copy literal code"
   await expect(toolbar).toHaveCSS("opacity", "0");
   await block.hover();
   await expect(toolbar).toHaveCSS("opacity", "1");
+  const placement = await toolbar.evaluate((node) => ({
+    toolbar: node.getBoundingClientRect().toJSON(),
+    block: node.parentElement!.getBoundingClientRect().toJSON(),
+  }));
+  expect(placement.toolbar.bottom).toBeLessThan(placement.block.top);
+  expect(placement.toolbar.right).toBeCloseTo(placement.block.right, 1);
+  const copy = block.getByRole("button", { name: "Copy", exact: true });
+  const copyBounds = (await copy.boundingBox())!;
+  // Crossing the gap must keep the outside controls reachable.
+  await page.mouse.move(
+    copyBounds.x + copyBounds.width / 2,
+    (placement.toolbar.bottom + placement.block.top) / 2,
+  );
+  await expect(toolbar).toHaveCSS("opacity", "1");
+  await copy.hover();
+  await expect(toolbar).toHaveCSS("opacity", "1");
   const height = await block.evaluate(
     (node) => node.getBoundingClientRect().height,
   );
