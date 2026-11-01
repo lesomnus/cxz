@@ -2,17 +2,33 @@
   container: conversation-usage / inline-size;
 }
 .metrics.metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   text-align: right;
+}
+.metrics.metrics > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--ui-space);
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+}
+.metrics.metrics dd {
+  margin-top: auto;
+  white-space: nowrap;
+}
+.value {
+  display: inline-flex;
+  align-items: baseline;
+}
+.prefix {
+  color: var(--ui-text-separator);
+}
+.missing {
+  color: var(--ui-text-leading);
 }
 @container conversation-usage (max-width: 200px) {
   .header.header {
     flex-direction: column;
     align-items: stretch;
-  }
-  .metrics.metrics {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .metrics.metrics > div {
-    padding: var(--ui-space) var(--ui-control-inline-inset);
   }
 }
