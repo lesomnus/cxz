@@ -1,4 +1,5 @@
 .search {
+  --search-border-width: 1px;
   --search-result-height: 64px;
   position: absolute;
   top: calc(12 * var(--ui-space));
@@ -9,7 +10,7 @@
   color: var(--ui-shade-237);
   background: var(--ui-dialog-background);
   backdrop-filter: blur(var(--ui-dialog-blur));
-  border: 1px solid var(--ui-shade-54);
+  border: var(--search-border-width) solid var(--ui-shade-54);
   border-radius: var(--ui-dialog-radius);
   overflow: visible;
 }
@@ -21,19 +22,27 @@
 }
 .icon {
   flex-shrink: 0;
-  margin-inline: var(--ui-space);
   color: var(--ui-muted);
 }
 .input {
   flex: 1;
   min-width: 0;
   height: 32px;
-  padding: var(--ui-control-inline-inset);
+  padding: 0;
   background: transparent;
   border: 0;
   color: inherit;
   font: inherit;
   outline: none;
+}
+.controls > button.close {
+  align-self: stretch;
+  height: auto;
+  padding-block: 0;
+  border-radius: max(
+    0px,
+    calc(var(--ui-dialog-radius) - var(--search-border-width) - var(--ui-space))
+  );
 }
 .input::-webkit-search-cancel-button {
   display: none;
@@ -53,8 +62,12 @@
 }
 .results {
   --ui-scroll-area-background: var(--ui-shade-17);
-  border-end-start-radius: calc(var(--ui-dialog-radius) - 1px);
-  border-end-end-radius: calc(var(--ui-dialog-radius) - 1px);
+  border-end-start-radius: calc(
+    var(--ui-dialog-radius) - var(--search-border-width)
+  );
+  border-end-end-radius: calc(
+    var(--ui-dialog-radius) - var(--search-border-width)
+  );
   height: min(
     calc(var(--search-result-count) * var(--search-result-height)),
     35vh

@@ -239,6 +239,7 @@ export function SessionSearch({
           }}
         />
         <Button
+          className={styles.close}
           variant="toolbar"
           type="button"
           aria-label={t("Close search")}
