@@ -118,17 +118,17 @@ test("quota hover shows session and weekly in separate aligned rows with indepen
     rows.map((row) => getComputedStyle(row.lastElementChild!).color),
   );
   expect(colors[0]).not.toBe(colors[1]);
+  const cells = await rows.evaluateAll((rows) =>
+    rows.map((row) =>
+      [...row.querySelectorAll('[role="cell"]')].map((cell) => {
+        const { x, y, width, height } = cell.getBoundingClientRect();
+        return { x, y, width, height };
+      }),
+    ),
+  );
   for (let cell = 0; cell < 3; cell++) {
-    const first = (await rows
-      .nth(0)
-      .getByRole("cell")
-      .nth(cell)
-      .boundingBox())!;
-    const second = (await rows
-      .nth(1)
-      .getByRole("cell")
-      .nth(cell)
-      .boundingBox())!;
+    const first = cells[0][cell];
+    const second = cells[1][cell];
     expect(first.y + first.height).toBeLessThan(second.y);
     expect(first.x).toBeCloseTo(second.x, 0);
     expect(first.width).toBeCloseTo(second.width, 0);
