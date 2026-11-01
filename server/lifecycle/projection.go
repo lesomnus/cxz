@@ -207,7 +207,7 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 			if err := s.ensureAccount(ctx, v.Account, v.Agent, v.AuthBackend); err != nil {
 				return nil, err
 			}
-			account = accountRef(v.Account)
+			account = runtimeAccountRef(v.Account)
 		}
 		binding, err := s.ensureBinding(ctx, v.ProjectId, v.Account, v.Agent, v.AuthBackend, v.AuthBinding)
 		if err != nil {

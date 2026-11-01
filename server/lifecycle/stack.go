@@ -90,6 +90,9 @@ func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log, options .
 	if err := migrate.NewSchema(driver).Create(ctx); err != nil {
 		return nil, err
 	}
+	if err := accountIdentitySchema(ctx, db); err != nil {
+		return nil, err
+	}
 	broker, err := (config.WatchConfig{Broker: config.BrokerMemory}).Build(ctx, config.DbConfig{Driver: "sqlite3"})
 	if err != nil {
 		return nil, err

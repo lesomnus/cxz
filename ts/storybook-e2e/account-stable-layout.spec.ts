@@ -95,18 +95,13 @@ for (const width of [1280, 390]) {
     ).toHaveAttribute("aria-busy", "false");
     expect(await panels(work)).toEqual(normal);
     const name = work
-      .getByRole("region", { name: "Account details", exact: true })
-      .getByText(
-        "Work account with a very long display name that must not resize the panel",
-        { exact: true },
-      );
+      .getByRole("button", { name: "Edit Display name", exact: true })
+      .locator(".button-content");
     expect(await name.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
       true,
     );
     await name.hover();
-    await expect(page.getByRole("tooltip")).toContainText(
-      "Work account with a very long display name",
-    );
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
     expect(
       await page
         .locator("body")

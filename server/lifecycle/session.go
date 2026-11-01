@@ -36,6 +36,7 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 		return nil, status.Error(codes.InvalidArgument, "client_id required")
 	}
 	account := ""
+	var accountID []byte
 	backend := ""
 	if r.HasAccount() {
 		a, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: r.GetAccount(), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
@@ -46,7 +47,11 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 			return nil, status.Error(codes.InvalidArgument, "agent does not match account")
 		}
 		r.SetAgent(a.GetAgent())
-		account = a.GetAlias()
+		accountID = a.GetId()
+		account, err = s.accountProfile(ctx, a)
+		if err != nil {
+			return nil, err
+		}
 		backend = a.GetAuthBackend()
 	}
 	p, err := s.Next().Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetProject(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
@@ -60,7 +65,7 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	if err != nil {
 		return nil, err
 	}
-	if !bytes.Equal(binding.GetProject().GetId(), p.GetId()) || binding.GetAccount().GetAlias() != account || binding.GetAuthBackend() != backend {
+	if !bytes.Equal(binding.GetProject().GetId(), p.GetId()) || !bytes.Equal(binding.GetAccount().GetId(), accountID) || binding.GetAuthBackend() != backend {
 		return nil, status.Error(codes.InvalidArgument, "auth binding does not match project/account/backend")
 	}
 	v, err := s.shared.runtime.Create(ctx, &api.CreateRequest{Workspace: p.GetWorkspace(), Title: r.GetName(), Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), Account: account, AuthBackend: backend, AuthBinding: binding.GetBindingId()})

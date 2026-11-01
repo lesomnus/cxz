@@ -118,12 +118,28 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	return registeredAccountWorkflow(ctx, resources, c, a, c.Name, flg.MustGet[string](c, "project"), true)
 }
 
+// The public alias may have changed while the private login profile stayed put.
+func accountProfileKey(ctx context.Context, resources *resourceclient.Client, a *resource.Account) (string, error) {
+	login, err := resources.Accounts.LoginInfo(ctx, resource.AccountRef_builder{Id: a.GetId()}.Build())
+	if err != nil {
+		return "", err
+	}
+	if login.GetAccount() == "" {
+		return "", fmt.Errorf("account authentication profile unavailable; update the Manager")
+	}
+	return login.GetAccount(), nil
+}
+
 func registeredAccountWorkflow(ctx context.Context, resources *resourceclient.Client, c *xli.Command, a *resource.Account, op, target string, prepare bool) error {
 	backend, err := accounts.Resolve(a.GetAgent(), a.GetAuthBackend())
 	if err != nil {
 		return err
 	}
 	if backend.Info().Workflow == "account-login" {
+		profile, err := accountProfileKey(ctx, resources, a)
+		if err != nil {
+			return err
+		}
 		install, err := transport.Load(stateFrom(ctx))
 		if err != nil {
 			return err
@@ -132,7 +148,7 @@ func registeredAccountWorkflow(ctx context.Context, resources *resourceclient.Cl
 		if terminal(c) {
 			args = append(args, "-t")
 		}
-		args = append(args, install.Container, "/cxz/tools/cxz", "--state", "/var/lib/cxz", "_central-account-"+op, a.GetAlias())
+		args = append(args, install.Container, "/cxz/tools/cxz", "--state", "/var/lib/cxz", "_central-account-"+op, profile)
 		cmd := exec.CommandContext(ctx, "docker", args...)
 		cmd.Stdin = c.ReadCloser
 		cmd.Stdout = c.Writer
@@ -159,6 +175,10 @@ func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Clien
 	}
 	if backend.Info().Workflow != "session-login" || backend.Info().Scope != "project" {
 		return fmt.Errorf("account does not use project login")
+	}
+	profile, err := accountProfileKey(ctx, resources, a)
+	if err != nil {
+		return err
 	}
 	// Account registration is global; OAuth grants belong to one project and
 	// profile. Never fan out rotating refresh tokens (architecture §4.2).
@@ -203,7 +223,7 @@ func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Clien
 	if op == "login" {
 		binding, err = resources.Bind(ctx, p.Id, a.GetAlias())
 	} else {
-		spec, e := backend.Binding(p.Id, a.GetAlias())
+		spec, e := backend.Binding(p.Id, profile)
 		if e != nil {
 			return e
 		}
@@ -220,7 +240,7 @@ func projectAccountWorkflow(ctx context.Context, resources *resourceclient.Clien
 	if terminal(c) {
 		args = append(args, "-t")
 	}
-	args = append(args, "--user", p.RemoteUser, p.ContainerId, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_account-"+op, "--session-key", creationKey, a.GetAlias(), a.GetAgent(), a.GetAuthBackend())
+	args = append(args, "--user", p.RemoteUser, p.ContainerId, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_account-"+op, "--session-key", creationKey, profile, a.GetAgent(), a.GetAuthBackend())
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Stdin = c.ReadCloser
 	cmd.Stdout = c.Writer

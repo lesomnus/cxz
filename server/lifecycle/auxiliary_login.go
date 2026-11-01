@@ -78,7 +78,11 @@ func (s ProjectServer) AuxiliaryLogin(stream grpc.BidiStreamingServer[resource.P
 		}
 	}()
 	output := &sessionLoginOutput{stream: stream, cancel: cancel}
-	err = runtime.AuxiliaryLogin(ctx, auxiliary.Profile{Account: a.GetAlias(), Agent: a.GetAgent(), Backend: a.GetAuthBackend()}, in, output, output)
+	key, err := s.accountProfile(ctx, a)
+	if err != nil {
+		return err
+	}
+	err = runtime.AuxiliaryLogin(ctx, auxiliary.Profile{Account: key, Agent: a.GetAgent(), Backend: a.GetAuthBackend()}, in, output, output)
 	select {
 	case inputErr := <-inputErr:
 		return inputErr

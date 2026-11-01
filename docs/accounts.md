@@ -84,7 +84,22 @@ account may hold.
 
 In the web UI, **Accounts** shows account cards with metadata, authentication,
 recorded usage and listed sessions. The top add button opens a modal form.
-Authentication follows metadata, with a square Erase action on its left.
+Information and sessions share the left column; authentication sits above usage
+on the right, with a square Erase action on its left.
+The metadata's **Display name** and **Alias** values can be clicked to edit them.
+Saving uses `AccountService.Patch` with the account UUID and its last-read
+`date_updated`; conflicting edits are refused rather than overwritten. Agent
+and authentication backend stay fixed, and general `AccountService.Apply` writes
+remain closed.
+
+An alias is a public handle, not the authentication directory's identity. Renaming
+it preserves the account UUID, existing sessions, login, grants, bindings and
+auxiliary AI assignments. The Manager keeps the original private profile key in
+`account_runtime_identity`, which is created and backfilled automatically on
+startup. Reusing an old alias for a new account gives it a separate profile and
+UUID. This editing support requires the updated Manager; no database reset,
+session restart or project recreation is needed.
+
 Usage covers retained
 conversation records for the account's listed sessions; it does not represent
 provider billing or remaining quota.

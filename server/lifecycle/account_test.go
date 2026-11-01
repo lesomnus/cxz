@@ -42,7 +42,7 @@ func TestAccountResources(t *testing.T) {
 	}
 	_, err = stack.Account().Patch(ctx, resource.AccountPatchRequest_builder{Ref: accountRef("work"), Alias: ptr("changed")}.Build())
 	if status.Code(err) != codes.PermissionDenied {
-		t.Fatal("account identity mutable", err)
+		t.Fatal("unversioned account edit accepted", err)
 	}
 	_, err = stack.Account().Erase(ctx, accountRef("work"))
 	if status.Code(err) != codes.Unimplemented {

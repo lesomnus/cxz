@@ -78,12 +78,14 @@ function ResourcePreview({
   usageDelayMs = 0,
   usageFailures = 0,
   longAccountDetails = false,
+  editFailures = 0,
 }: {
   view: "accounts" | "memory" | "usage" | "background" | "auxiliary";
   eraseFailures?: number;
   usageDelayMs?: number;
   usageFailures?: number;
   longAccountDetails?: boolean;
+  editFailures?: number;
 }) {
   const [c] = useState(() =>
     resourceFixture({
@@ -91,6 +93,7 @@ function ResourcePreview({
       usageDelayMs,
       usageFailures,
       longAccountDetails,
+      editFailures,
     }),
   );
   return (
@@ -144,6 +147,9 @@ export const AccountsLoading: Story = {
 };
 export const AccountsLongDetails: Story = {
   args: { view: "accounts", longAccountDetails: true },
+};
+export const AccountEditFailure: Story = {
+  args: { view: "accounts", editFailures: 1 },
 };
 export const Usage: Story = { args: { view: "usage" } };
 export const UsageFailure: Story = {

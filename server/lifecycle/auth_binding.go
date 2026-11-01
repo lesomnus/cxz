@@ -40,9 +40,13 @@ func (s AuthBindingServer) Add(ctx context.Context, r *resource.AuthBindingAddRe
 	if r.GetAuthBackend() != "" && r.GetAuthBackend() != a.GetAuthBackend() {
 		return nil, status.Error(codes.InvalidArgument, "binding backend must match account")
 	}
+	key, err := s.accountProfile(ctx, a)
+	if err != nil {
+		return nil, err
+	}
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
-	return s.ensureBinding(ctx, projectid.String(p.GetId()), a.GetAlias(), a.GetAgent(), a.GetAuthBackend())
+	return s.ensureBinding(ctx, projectid.String(p.GetId()), key, a.GetAgent(), a.GetAuthBackend())
 }
 
 // Caller holds shared.mu. The unique binding ID makes retries converge.
@@ -81,7 +85,7 @@ func (s Layer) ensureBinding(ctx context.Context, project, alias, agent, backend
 	if status.Code(err) != codes.NotFound {
 		return nil, err
 	}
-	return s.Next().AuthBinding().Add(ctx, resource.AuthBindingAddRequest_builder{Id: resourceID(10, id), BindingId: id, Account: accountRef(alias), Project: projectRef(project), AuthBackend: backend, Scope: spec.Scope, CredentialRef: spec.CredentialRef}.Build())
+	return s.Next().AuthBinding().Add(ctx, resource.AuthBindingAddRequest_builder{Id: resourceID(10, id), BindingId: id, Account: runtimeAccountRef(alias), Project: projectRef(project), AuthBackend: backend, Scope: spec.Scope, CredentialRef: spec.CredentialRef}.Build())
 }
 func (s AuthBindingServer) Patch(context.Context, *resource.AuthBindingPatchRequest) (*resource.AuthBinding, error) {
 	return nil, closed()

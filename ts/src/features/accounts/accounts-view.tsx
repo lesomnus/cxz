@@ -10,6 +10,7 @@ import { AccountDetails } from "./account-details";
 import resourceStyles from "#src/shared/components/resource-surface.module.css";
 import styles from "./accounts.module.css";
 import { matchesResource } from "#src/shared/navigation/resource-route.ts";
+import { key } from "@lesomnus/payday/store";
 export function AccountsView({
   c,
   selected,
@@ -75,7 +76,7 @@ export function AccountsView({
             )}
             {accounts.data?.map((account) => (
               <article
-                key={account.alias}
+                key={account.id.length ? key(account.id) : account.alias}
                 data-account={account.alias}
                 aria-label={account.name || account.alias}
                 className={styles.card}
@@ -86,6 +87,14 @@ export function AccountsView({
                   projects={projects}
                   sessions={sessionsForAccount(account, sessions)}
                   sessionsLoading={sessionsLoading}
+                  saved={(updated) => {
+                    accounts.reload();
+                    if (
+                      selected === account.alias &&
+                      updated.alias !== account.alias
+                    )
+                      select?.(updated.alias);
+                  }}
                   erased={() => {
                     accounts.reload();
                     if (selected && matchesResource(account, selected))

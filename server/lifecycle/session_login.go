@@ -79,7 +79,11 @@ func (s ProjectServer) SessionLogin(stream grpc.BidiStreamingServer[resource.Pro
 		}
 	}()
 	output := &sessionLoginOutput{stream: stream, cancel: cancel}
-	err = runtime.LoginSession(ctx, projectid.String(p.GetId()), a.GetAlias(), first.GetSessionKey(), in, output)
+	key, err := s.accountProfile(ctx, a)
+	if err != nil {
+		return err
+	}
+	err = runtime.LoginSession(ctx, projectid.String(p.GetId()), key, first.GetSessionKey(), in, output)
 	select {
 	case inputErr := <-inputErr:
 		return inputErr

@@ -4,7 +4,11 @@ import (
 	"context"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
+	"github.com/protobuf-orm/ent/dialect"
+	entsql "github.com/protobuf-orm/ent/dialect/sql"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -43,7 +47,11 @@ func (s AccountServer) Status(ctx context.Context, ref *resource.AccountRef) (*r
 	if !ok {
 		return nil, status.Error(codes.Unimplemented, "account authentication status unavailable; update the Manager")
 	}
-	out, err := runtime.AccountStatus(ctx, account.GetAlias(), account.GetAgent(), account.GetAuthBackend())
+	key, err := s.accountProfile(ctx, account)
+	if err != nil {
+		return nil, err
+	}
+	out, err := runtime.AccountStatus(ctx, key, account.GetAgent(), account.GetAuthBackend())
 	if err != nil {
 		return nil, err
 	}
@@ -64,10 +72,14 @@ func (s AccountServer) Logout(ctx context.Context, ref *resource.AccountRef) (*r
 	if !ok {
 		return nil, status.Error(codes.Unimplemented, "account logout unavailable; update the Manager")
 	}
-	if err := runtime.LogoutAccount(ctx, account.GetAlias(), account.GetAgent(), account.GetAuthBackend()); err != nil {
+	key, err := s.accountProfile(ctx, account)
+	if err != nil {
 		return nil, err
 	}
-	out, err := runtime.AccountStatus(ctx, account.GetAlias(), account.GetAgent(), account.GetAuthBackend())
+	if err := runtime.LogoutAccount(ctx, key, account.GetAgent(), account.GetAuthBackend()); err != nil {
+		return nil, err
+	}
+	out, err := runtime.AccountStatus(ctx, key, account.GetAgent(), account.GetAuthBackend())
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +108,12 @@ func (s AccountServer) Models(ctx context.Context, ref *resource.AccountRef) (*r
 	if err != nil {
 		return nil, err
 	}
+	key, err := s.accountProfile(ctx, account)
+	if err != nil {
+		return nil, err
+	}
 	out, err := s.shared.runtime.AuxModels(ctx, &api.AuxModelsInput{
-		Account: account.GetAlias(), Agent: account.GetAgent(), Backend: account.GetAuthBackend(),
+		Account: key, Agent: account.GetAgent(), Backend: account.GetAuthBackend(),
 	})
 	if err != nil {
 		return nil, err
@@ -122,8 +138,12 @@ func (s AccountServer) LoginInfo(ctx context.Context, ref *resource.AccountRef) 
 	if err != nil {
 		return nil, err
 	}
+	key, err := s.accountProfile(ctx, account)
+	if err != nil {
+		return nil, err
+	}
 	out, err := s.shared.runtime.AuxLoginInfo(ctx, &api.AuxLoginInfoInput{
-		Account: account.GetAlias(), Agent: account.GetAgent(), Backend: account.GetAuthBackend(),
+		Account: key, Agent: account.GetAgent(), Backend: account.GetAuthBackend(),
 	})
 	if err != nil {
 		return nil, err
@@ -170,10 +190,58 @@ func (s AccountServer) Add(ctx context.Context, r *resource.AccountAddRequest) (
 	}
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
-	return s.Next().Account().Add(ctx, resource.AccountAddRequest_builder{Id: resourceID(9, r.GetAlias()), Alias: r.GetAlias(), Name: name, Desc: r.GetDesc(), Agent: r.GetAgent(), AuthBackend: backend.Info().ID}.Build())
+	key, err := s.newAccountProfile(ctx, r.GetAlias())
+	if err != nil {
+		return nil, err
+	}
+	driver, tx, err := dialect.BeginTx(ctx, entsql.OpenDB(dialect.SQLite, s.shared.db))
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	store, err := enttx.Rebind(s.Next(), driver)
+	if err != nil {
+		return nil, err
+	}
+	a, err := store.Account().Add(ctx, resource.AccountAddRequest_builder{Id: resourceID(9, key), Alias: r.GetAlias(), Name: name, Desc: r.GetDesc(), Agent: r.GetAgent(), AuthBackend: backend.Info().ID}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if err = driver.Exec(ctx, `INSERT INTO account_runtime_identity(account_id,profile_key) VALUES(?,?)`, []any{projectid.String(a.GetId()), key}, nil); err != nil {
+		return nil, err
+	}
+	return a, tx.Commit()
 }
-func (s AccountServer) Patch(context.Context, *resource.AccountPatchRequest) (*resource.Account, error) {
-	return nil, closed()
+func (s AccountServer) Patch(ctx context.Context, r *resource.AccountPatchRequest) (*resource.Account, error) {
+	if r.GetDateUpdatedForce() || !r.HasDateUpdated() {
+		return nil, closed()
+	}
+	if err := s.effect(); err != nil {
+		return nil, err
+	}
+	if r.HasName() {
+		if err := validName(r.GetName()); err != nil {
+			return nil, err
+		}
+	}
+	s.shared.transition.Lock()
+	defer s.shared.transition.Unlock()
+	s.shared.mu.Lock()
+	defer s.shared.mu.Unlock()
+	a, err := s.registered(ctx, r.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	if r.HasAlias() {
+		if err := accounts.Validate(r.GetAlias(), a.GetAgent()); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+	if _, err := s.accountProfile(ctx, a); err != nil {
+		return nil, err
+	}
+	r.SetRef(resource.AccountRef_builder{Id: a.GetId()}.Build())
+	return s.AccountServiceServer.Patch(ctx, r)
 }
 func (s AccountServer) Apply(context.Context, *resource.AccountApplyRequest) (*resource.Account, error) {
 	return nil, closed()
@@ -185,7 +253,7 @@ func (s Layer) ensureAccount(ctx context.Context, alias, agent, backend string) 
 	if _, err := accounts.Resolve(agent, backend); err != nil {
 		return status.Error(codes.FailedPrecondition, err.Error())
 	}
-	v, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: accountRef(alias), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
+	v, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: runtimeAccountRef(alias), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
 	if status.Code(err) == codes.NotFound {
 		_, err = s.Next().Account().Add(ctx, resource.AccountAddRequest_builder{Id: resourceID(9, alias), Alias: alias, Name: alias, Agent: agent, AuthBackend: backend}.Build())
 		return err
