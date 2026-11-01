@@ -43,11 +43,7 @@
   --activity-month-color: var(--ui-shade-0);
 }
 .day[data-month-tone="soft"] {
-  --activity-month-color: color-mix(
-    in srgb,
-    var(--ui-shade-16) 75%,
-    var(--ui-shade-0)
-  );
+  --activity-month-color: #131313;
 }
 .cell {
   position: relative;
@@ -80,7 +76,7 @@ button.cell {
 }
 .cell[data-future] {
   background: transparent;
-  border: 1px solid var(--ui-shade-16);
+  border: 1px solid #000;
 }
 button.cell:hover,
 button.cell:focus-visible,
