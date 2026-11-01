@@ -73,24 +73,27 @@ export function ProjectsPage({
   const project = useProject(c, visibleProjects, selected);
   return (
     <main className={styles.page} aria-label={t("Project workspace")}>
-      <PageToolbar aria-label={t("Project toolbar")}>
-        <ProjectPicker
-          projects={visibleProjects}
-          value={projectId(project) ?? ""}
-          loading={projectsLoading}
-          choose={(project) =>
-            void navigate(
-              projectLocation(
-                resourceHandle(
-                  visibleProjects.find((p) => projectId(p) === project)!,
+      <PageToolbar className={styles.toolbar} aria-label={t("Project toolbar")}>
+        <div className={styles.toolbarContent}>
+          <ProjectPicker
+            projects={visibleProjects}
+            value={projectId(project) ?? ""}
+            loading={projectsLoading}
+            choose={(project) =>
+              void navigate(
+                projectLocation(
+                  resourceHandle(
+                    visibleProjects.find((p) => projectId(p) === project)!,
+                  ),
                 ),
-              ),
-            )
-          }
-        />
+              )
+            }
+          />
+        </div>
       </PageToolbar>
       <PanelScroll
         className={styles.scroll}
+        contentClassName={styles.scrollContent}
         scrollbarLabel={t("Project scroll")}
       >
         <div className={styles.content}>
