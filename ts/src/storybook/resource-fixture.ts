@@ -258,6 +258,8 @@ export function resourceFixture({
                     primary: {
                       usedPercent: 100 - remaining,
                       windowDurationMins: 300,
+                      resetsAt:
+                        Math.floor(Date.now() / 1000) + 2 * 3600 + 25 * 60,
                     },
                     secondary: {
                       usedPercent: Math.min(10, 100 - remaining),
