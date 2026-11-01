@@ -15,7 +15,13 @@ import { ProjectSchema } from "#gen/cxz/project_pb";
 import { projectFixtureId } from "./project-id";
 import type { Connection } from "#src/shared/api/connection.ts";
 
-function AccountPreview({ c }: { c: Connection }) {
+function AccountPreview({
+  c,
+  extraSessions = 0,
+}: {
+  c: Connection;
+  extraSessions?: number;
+}) {
   const [router] = useState(() =>
     createWorkspaceRouter(
       {
@@ -63,6 +69,18 @@ function AccountPreview({ c }: { c: Connection }) {
                 agent: "codex",
                 status: { state: "working" },
               }),
+              ...Array.from({ length: extraSessions }, (_, index) =>
+                create(SessionSchema, {
+                  id: projectFixtureId(index + 100),
+                  runtimeId: `extra-${index}`,
+                  alias: `extra-${index}`,
+                  name: `Extra session ${index + 1}`,
+                  project: { id: projectFixtureId(1) },
+                  account: { id: projectFixtureId(10) },
+                  agent: "codex",
+                  status: { state: "idle" },
+                }),
+              ),
             ]}
           />
         ),
@@ -79,6 +97,7 @@ function ResourcePreview({
   usageFailures = 0,
   longAccountDetails = false,
   editFailures = 0,
+  extraSessions = 0,
 }: {
   view: "accounts" | "memory" | "usage" | "background" | "auxiliary";
   eraseFailures?: number;
@@ -86,6 +105,7 @@ function ResourcePreview({
   usageFailures?: number;
   longAccountDetails?: boolean;
   editFailures?: number;
+  extraSessions?: number;
 }) {
   const [c] = useState(() =>
     resourceFixture({
@@ -108,7 +128,7 @@ function ResourcePreview({
       }}
     >
       {view === "accounts" ? (
-        <AccountPreview c={c} />
+        <AccountPreview c={c} extraSessions={extraSessions} />
       ) : view === "memory" ? (
         <MemoryLibrary c={c} session="demo" />
       ) : view === "usage" ? (
@@ -139,6 +159,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const SharedMemory: Story = {};
 export const Accounts: Story = { args: { view: "accounts" } };
+export const AccountsLongSessions: Story = {
+  args: { view: "accounts", extraSessions: 20 },
+};
 export const AccountEraseFailure: Story = {
   args: { view: "accounts", eraseFailures: 1 },
 };

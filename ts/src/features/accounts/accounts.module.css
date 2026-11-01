@@ -106,7 +106,7 @@
   flex-direction: column;
   padding-top: var(--ui-section-group-gap);
   padding-inline: 0;
-  overflow: hidden;
+  overflow: visible;
   min-height: 0;
   height: 100%;
 }
