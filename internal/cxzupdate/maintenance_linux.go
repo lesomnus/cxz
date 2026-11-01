@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/observe"
+	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -71,6 +72,13 @@ func (g *Gate) Busy() bool { g.mu.RLock(); defer g.mu.RUnlock(); return g.blocke
 // sweep held the gate's lock while it ran -- so a read misfiled here only
 // looked slow. Now it would fail, which is why the reads are named.
 func mutating(method string) bool {
+	switch method {
+	case resource.NotificationService_Read_FullMethodName,
+		resource.NotificationService_Count_FullMethodName,
+		resource.NotificationService_Listen_FullMethodName,
+		resource.SessionService_ReadState_FullMethodName:
+		return false
+	}
 	name := method[strings.LastIndex(method, "/")+1:]
 	switch name {
 	case // The catalog and what a session is doing.

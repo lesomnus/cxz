@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -163,6 +164,79 @@ func TestHeldGateRefusesInputAndStillAnswersReads(t *testing.T) {
 			return nil, nil
 		}); status.Code(e) != codes.Unavailable {
 			t.Fatalf("%s was not refused: %v", name, e)
+		}
+	}
+}
+
+type maintenanceTestStream struct{ grpc.ServerStream }
+
+func (maintenanceTestStream) Context() context.Context { return context.Background() }
+
+func TestNotificationListenerDoesNotDelayMaintenance(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "run"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	g := NewGate(root)
+	entered, finish := make(chan struct{}), make(chan struct{})
+	done := make(chan error, 1)
+	held := make(chan error, 1)
+	admitted := false
+	defer func() {
+		close(finish)
+		if err := <-done; err != nil {
+			t.Error(err)
+		}
+		if !admitted {
+			<-held
+		}
+	}()
+	go func() {
+		done <- g.Stream(nil, maintenanceTestStream{}, &grpc.StreamServerInfo{FullMethod: resource.NotificationService_Listen_FullMethodName, IsServerStream: true}, func(any, grpc.ServerStream) error {
+			close(entered)
+			<-finish
+			return nil
+		})
+	}()
+	<-entered
+	go func() { held <- g.hold(core.ID(), func() error { return nil }) }()
+	select {
+	case err := <-held:
+		admitted = true
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("the live notification listener prevented maintenance admission")
+	}
+	if err := g.Stream(nil, maintenanceTestStream{}, &grpc.StreamServerInfo{FullMethod: resource.NotificationService_Listen_FullMethodName, IsServerStream: true}, func(any, grpc.ServerStream) error { return nil }); err != nil {
+		t.Fatal("a notification listener could not reconnect during maintenance:", err)
+	}
+	for _, method := range []string{
+		resource.NotificationService_Read_FullMethodName,
+		resource.NotificationService_Count_FullMethodName,
+		resource.SessionService_ReadState_FullMethodName,
+	} {
+		called := false
+		_, err := g.Unary(context.Background(), nil, &grpc.UnaryServerInfo{FullMethod: method}, func(context.Context, any) (any, error) {
+			called = true
+			return nil, nil
+		})
+		if err != nil || !called {
+			t.Fatalf("%s was refused during maintenance: %v", method, err)
+		}
+	}
+	for _, method := range []string{
+		resource.NotificationService_Mark_FullMethodName,
+		resource.NotificationService_Add_FullMethodName,
+		resource.SessionService_MarkRead_FullMethodName,
+	} {
+		_, err := g.Unary(context.Background(), nil, &grpc.UnaryServerInfo{FullMethod: method}, func(context.Context, any) (any, error) {
+			t.Errorf("%s mutated state during maintenance", method)
+			return nil, nil
+		})
+		if status.Code(err) != codes.Unavailable {
+			t.Fatalf("%s was not refused: %v", method, err)
 		}
 	}
 }
