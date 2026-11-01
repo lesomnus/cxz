@@ -183,24 +183,34 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     const quotaBounds = (await quota.boundingBox())!;
-    expect(quotaBounds.width).toBe(64);
+    expect(quotaBounds.width).toBe(96);
     expect(quotaBounds.height).toBe(64);
     expect(quotaBounds.y).toBe(authBounds.y);
     expect(quotaBounds.x).toBeGreaterThan(authBounds.x + authBounds.width);
     expect(quotaBounds.x + quotaBounds.width).toBeLessThan(eraseBounds.x);
+    const gauge = quota.getByRole("meter").locator("..");
+    const gaugeBounds = (await gauge.boundingBox())!;
+    expect(gaugeBounds.width).toBe(32);
+    expect(gaugeBounds.height).toBe(60);
+    expect(gaugeBounds.x - quotaBounds.x).toBe(2);
+    expect(gaugeBounds.y - quotaBounds.y).toBe(2);
+    expect(
+      await gauge.evaluate((node) => getComputedStyle(node).borderRadius),
+    ).toBe("8px");
     await expect(quota.getByRole("meter")).toHaveAttribute(
       "aria-valuenow",
       "64",
     );
     expect(
       await quota
-        .locator('[aria-hidden="true"]')
+        .locator("span[style]")
         .first()
         .evaluate((node) => node.getBoundingClientRect().height),
-    ).toBeCloseTo(64 * 0.64, 0);
+    ).toBeCloseTo(60 * 0.64, 0);
+    await expect(quota).toContainText(/00d02h2[56]m/);
     await expect(
       personal.getByRole("region", { name: "Remaining agent usage" }),
-    ).toHaveText("—");
+    ).toContainText("—");
     await expect(work.getByRole("switch")).toHaveCount(0);
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>
