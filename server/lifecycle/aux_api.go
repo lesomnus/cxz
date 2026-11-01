@@ -158,6 +158,8 @@ func (s InstallationServer) Agents(ctx context.Context, r *resource.AgentsReques
 }
 
 func (s InstallationServer) SaveAgents(ctx context.Context, r *resource.SaveAgentsRequest) (*resource.AgentProfiles, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}

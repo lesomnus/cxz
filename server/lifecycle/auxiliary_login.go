@@ -17,6 +17,8 @@ import (
 // This stream is transient: authentication input/output never goes through
 // resource mutations, audit payloads, session events or supervisor logs.
 func (s ProjectServer) AuxiliaryLogin(stream grpc.BidiStreamingServer[resource.ProjectLoginRequest, resource.ProjectLoginOutput]) error {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return err
 	}

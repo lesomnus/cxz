@@ -45,8 +45,8 @@ func TestAccountResources(t *testing.T) {
 		t.Fatal("account identity mutable", err)
 	}
 	_, err = stack.Account().Erase(ctx, accountRef("work"))
-	if status.Code(err) != codes.PermissionDenied {
-		t.Fatal("account deletion accepted", err)
+	if status.Code(err) != codes.Unimplemented {
+		t.Fatal("account deletion without runtime support accepted", err)
 	}
 	s, err := stack.Session().Get(ctx, resource.SessionGetRequest_builder{Ref: sessionRef("session"), Select: resource.SessionSelect_builder{All: ptr(true), Account: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
 	if err != nil {

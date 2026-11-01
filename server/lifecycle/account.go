@@ -30,6 +30,8 @@ func authStatus(out accounts.AuthStatus) *resource.AccountAuthStatus {
 }
 
 func (s AccountServer) Status(ctx context.Context, ref *resource.AccountRef) (*resource.AccountAuthStatus, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -49,6 +51,8 @@ func (s AccountServer) Status(ctx context.Context, ref *resource.AccountRef) (*r
 }
 
 func (s AccountServer) Logout(ctx context.Context, ref *resource.AccountRef) (*resource.AccountAuthStatus, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -83,6 +87,8 @@ func accountRef(alias string) *resource.AccountRef {
 // taking a caller's word for it, which is what keeps a request from naming one
 // account and authenticating as another.
 func (s AccountServer) Models(ctx context.Context, ref *resource.AccountRef) (*resource.AccountModels, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -107,6 +113,8 @@ func (s AccountServer) Models(ctx context.Context, ref *resource.AccountRef) (*r
 }
 
 func (s AccountServer) LoginInfo(ctx context.Context, ref *resource.AccountRef) (*resource.AccountLoginInfo, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -138,6 +146,8 @@ func (s AccountServer) registered(ctx context.Context, ref *resource.AccountRef)
 }
 
 func (s AccountServer) Add(ctx context.Context, r *resource.AccountAddRequest) (*resource.Account, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -168,10 +178,6 @@ func (s AccountServer) Patch(context.Context, *resource.AccountPatchRequest) (*r
 func (s AccountServer) Apply(context.Context, *resource.AccountApplyRequest) (*resource.Account, error) {
 	return nil, closed()
 }
-func (s AccountServer) Erase(context.Context, *resource.AccountRef) (*resource.AccountEraseResponse, error) {
-	return nil, closed()
-}
-
 func (s Layer) ensureAccount(ctx context.Context, alias, agent, backend string) error {
 	if alias == "" {
 		return nil
