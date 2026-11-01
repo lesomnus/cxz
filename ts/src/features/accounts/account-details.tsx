@@ -115,7 +115,7 @@ export function AccountDetails({
             variant="compact"
             showAccount={false}
             showProject
-            title={`Sessions · ${sessions.length}`}
+            showToolbar={false}
             horizontalScrollbar
             fillHeight
           />
