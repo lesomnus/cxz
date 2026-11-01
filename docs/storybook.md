@@ -25,6 +25,7 @@ npm run storybook
 - `Resources/Tasks`: 프로젝트 선택과 상태별 작업 보드. `ProjectBoard`, `ManyTasks`, `EmptyProject`, `OlderRuntime`에서 등록·수정, 담당 세션 이동, 정지/이전 run 경고와 Release 확인을 확인합니다. `Simulate agent update`는 열린 편집 내용을 보존하면서 원격 갱신·alias 변경과 저장 충돌을 재현합니다. 실제 Connect 클라이언트와 메모리 서비스 fixture를 사용하며 서버의 Task는 변경하지 않습니다.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
+  `MermaidResponse`는 실제 대화 응답 안의 Mermaid 코드 블록을 다이어그램으로 표시합니다.
   `QuestionHistoryInConversation`은 사용자·에이전트 대화 중간에 답변 완료된 Question 기록을 표시합니다.
   대화 응답과 같은 디자인의 카드 본문에서 질문별 탭을 선택해 질문과 기록된 답변을 확인합니다.
   Nox SlidingPages로 질문과 답변이 함께 슬라이드되며 카드와 각 영역의 높이는 유지됩니다.
@@ -57,6 +58,15 @@ npm run storybook
 - `Conversation/QuestionCard`: 라디오 선택, 주관식·Other 편집기, 단계별 탭과 Markdown 선택지 preview. FreeText, Steps, AsyncSteps, OptionPreviews, LongQuestions로 각 이벤트 형식과 전체 답변 제출을 확인합니다. 선택지 목록만 스크롤하고 Other와 footer는 고정됩니다. 질문 전환 시 가장 긴 질문에 맞춘 높이를 유지하며, 대화를 스크롤하면 카드가 입력창 뒤로 내려갔다가 마우스 접근이나 포커스로 복귀합니다. 상세 카드가 가려도 답변은 유지되며, 명시적 제출 또는 Cancel로만 종료합니다.
 - `Conversation/Playground`: 메시지 입력과 전송부터 대화 카드 생성까지 이어지는 인터랙티브 미리보기.
 - `Conversation/SessionSearch`: 현재 세션 검색 오버레이. 단축키로 열고 입력·방향키·결과 선택을 확인하며, 본문 클릭이나 결과 이동으로 닫히지 않습니다. Close와 Escape로만 닫습니다. 로드된 예제 대화를 브라우저에서 검색하며, 응답 추가 시 결과 갱신도 확인할 수 있습니다.
+- `Content/Markdown/Mermaid`: flowchart와 sequence diagram, 테마에 맞는 회색조, 원문 보기와 복사.
+  `MermaidStreaming`은 미완성·잘못된 정의에서 복구, 응답 추가, 다이어그램 교체와 재마운트를 재현합니다.
+  `MermaidUntrusted`는 HTML·스크립트 링크·페이지 CSS를 요청하는 정의에서도 앱의 보안 설정을 유지하는 예제입니다.
+  `mermaid` 언어가 명시된 fenced code block만 자동으로 렌더링합니다. 다른 코드의 언어 선택과 문법 강조는 유지합니다.
+  Mermaid는 npm 의존성으로 번들에 포함하되 다이어그램이 있을 때만 로드합니다. 외부 렌더링 서비스나 CDN은 사용하지 않습니다.
+  [공식 렌더링 API](https://mermaid.js.org/config/usage.html)의 strict 설정을 사용하며, 생성된 SVG는
+  이미지로 표시해 내부 스타일·ID를 대화 DOM과 분리합니다. 잘못된 정의와 로드 실패는 원문을 유지합니다.
+  스트리밍 갱신은 모아서 처리하고, 취소된 요청은 화면을 덮어쓰지 않으며, 크기가 제한된 메모리 캐시로
+  가상 스크롤 재마운트의 레이아웃 계산을 줄입니다. 컴포넌트의 CSS Module과 구현 코드가 크기·대기 시간·캐시 한도의 기준입니다.
 
 ## 계정 워크플로
 

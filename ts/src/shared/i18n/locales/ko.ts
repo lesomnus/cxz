@@ -1,5 +1,13 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  Diagram: "다이어그램",
+  Source: "원문",
+  "View diagram": "다이어그램 보기",
+  "View source": "원문 보기",
+  "Mermaid diagram": "Mermaid 다이어그램",
+  "Rendering diagram…": "다이어그램 그리는 중…",
+  "Unable to render this Mermaid diagram. Showing source.":
+    "Mermaid 다이어그램을 그릴 수 없어 원문을 표시합니다.",
   Text: "텍스트",
   "Pasted text": "붙여넣은 텍스트",
   "Image attachment": "첨부 이미지",

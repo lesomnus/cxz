@@ -1,5 +1,13 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Diagram: "Diagram",
+  Source: "Source",
+  "View diagram": "View diagram",
+  "View source": "View source",
+  "Mermaid diagram": "Mermaid diagram",
+  "Rendering diagram…": "Rendering diagram…",
+  "Unable to render this Mermaid diagram. Showing source.":
+    "Unable to render this Mermaid diagram. Showing source.",
   Text: "Text",
   "Pasted text": "Pasted text",
   "Image attachment": "Image attachment",
