@@ -42,11 +42,10 @@
 }
 .authenticationGroup {
   --ui-section-radius: var(--ui-section-inner-radius);
-  grid-template-columns: 64px 64px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 64px;
   height: 64px;
 }
-.eraseAction.eraseAction,
-.reservedControl.reservedControl {
+.eraseAction.eraseAction {
   width: 64px;
   height: 64px;
   padding: 0;
@@ -149,7 +148,6 @@
 .authenticationAction {
   flex: 0 0 var(--account-auth-action-width);
   width: var(--account-auth-action-width);
-  margin-inline-start: auto;
   white-space: nowrap;
 }
 .authenticationDescription {

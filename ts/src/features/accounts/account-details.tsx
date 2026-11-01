@@ -7,7 +7,6 @@ import {
   Popover,
   SectionGroup,
   Section,
-  Switch,
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
@@ -147,25 +146,6 @@ export function AccountDetails({
       <SectionGroup className={accountStyles.usageColumn}>
         <SectionGroup className={accountStyles.authenticationGroup}>
           <Section
-            as="button"
-            className={accountStyles.eraseAction}
-            aria-label={`Erase account ${account.name || account.alias}`}
-            onClick={() => {
-              setEraseError("");
-              setErase(true);
-            }}
-          >
-            <SessionActionIcon action="erase" />
-          </Section>
-          <Section className={accountStyles.reservedControl}>
-            <Switch
-              label="Account option"
-              checked={false}
-              disabled
-              onChange={() => {}}
-            />
-          </Section>
-          <Section
             aria-label="Authentication"
             className={accountStyles.authenticationSection}
           >
@@ -179,19 +159,6 @@ export function AccountDetails({
                 </small>
               ) : (
                 <>
-                  <span
-                    className={accountStyles.authenticationStatus}
-                    role={status.error ? "alert" : undefined}
-                    aria-description={status.error || undefined}
-                  >
-                    <Popover
-                      content={
-                        status.error || status.data?.message || statusText
-                      }
-                    >
-                      {statusText}
-                    </Popover>
-                  </span>
                   <Button
                     className={accountStyles.authenticationAction}
                     disabled={
@@ -207,6 +174,19 @@ export function AccountDetails({
                   >
                     {signedIn ? "Log out" : "Log in"}
                   </Button>
+                  <span
+                    className={accountStyles.authenticationStatus}
+                    role={status.error ? "alert" : undefined}
+                    aria-description={status.error || undefined}
+                  >
+                    <Popover
+                      content={
+                        status.error || status.data?.message || statusText
+                      }
+                    >
+                      {statusText}
+                    </Popover>
+                  </span>
                 </>
               )}
             </div>
@@ -226,6 +206,22 @@ export function AccountDetails({
               />
             )}
           </Section>
+          <Popover
+            placement="top-end"
+            content="Erase this account, its saved login and all linked sessions and their stored data. This cannot be undone."
+          >
+            <Section
+              as="button"
+              className={accountStyles.eraseAction}
+              aria-label={`Erase account ${account.name || account.alias}`}
+              onClick={() => {
+                setEraseError("");
+                setErase(true);
+              }}
+            >
+              <SessionActionIcon action="erase" />
+            </Section>
+          </Popover>
         </SectionGroup>
         <UsageReport
           c={c}
