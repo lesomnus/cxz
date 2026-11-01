@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { Provider } from "@lesomnus/payday/react";
 import { Button } from "@lesomnus/nox";
@@ -62,6 +62,7 @@ function WorkflowPreview({
         view: function WorkflowView() {
           const route = useWorkspaceRoute();
           const [creating, setCreating] = useState(false);
+          const createTrigger = useRef<HTMLButtonElement>(null);
           if (route.session)
             return (
               <Conversation
@@ -82,12 +83,15 @@ function WorkflowPreview({
           if (scenario === "create-session")
             return (
               <div className={styles.create}>
-                <Button onClick={() => setCreating(true)}>Add session</Button>
+                <Button ref={createTrigger} onClick={() => setCreating(true)}>
+                  Add session
+                </Button>
                 {creating && (
                   <SessionCreate
                     c={fixture.c}
                     projects={[fixture.project]}
-                    centered
+                    anchor={createTrigger.current}
+                    trigger={createTrigger.current}
                     close={() => setCreating(false)}
                   />
                 )}

@@ -13,7 +13,7 @@ import {
 } from "@lesomnus/nox";
 import styles from "./anchored-dialog.module.css";
 
-// A native modal focus boundary positioned beside an existing panel.
+// A native modal focus boundary, centered unless positioned beside a panel.
 export function AnchoredDialog({
   title,
   anchor,
@@ -38,7 +38,7 @@ export function AnchoredDialog({
   const dialog = useRef<HTMLDialogElement>(null);
   const [adjacent, setAdjacent] = useState(false);
   const [origin] = useState(() =>
-    anchor
+    !centered && anchor
       ? trigger
         ? captureDialogTrigger(trigger)
         : focusedDialogTrigger()
@@ -62,7 +62,7 @@ export function AnchoredDialog({
         ),
       );
       node.style.left = `${left}px`;
-      node.style.top = `${Math.max(inset, Math.min(rect?.top ?? (centered ? (window.innerHeight - node.offsetHeight) / 2 : inset), window.innerHeight - node.offsetHeight - inset))}px`;
+      node.style.top = `${Math.max(inset, Math.min(rect?.top ?? (window.innerHeight - node.offsetHeight) / 2, window.innerHeight - node.offsetHeight - inset))}px`;
       setAdjacent(!!rect && left >= rect.right);
     };
     position();
