@@ -20,13 +20,19 @@
   scroll-margin-top: calc(3 * var(--space));
 }
 .details {
+  /* Preserve the loaded card's dimensions while data or text changes. */
+  --account-info-height: 163px;
+  --account-auth-height: 64px;
+  --account-usage-height: 482px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   gap: var(--ui-section-group-gap);
 }
 .summaryColumn {
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: var(--account-info-height) var(--account-auth-height) var(
+      --account-usage-height
+    );
 }
 .authenticationGroup {
   --ui-section-radius: var(--ui-section-inner-radius);
@@ -55,6 +61,26 @@
 .informationDetails,
 .usageSection {
   align-content: start;
+  min-height: 0;
+}
+.informationDetails dl > div {
+  height: 41px;
+}
+.informationDetails dt,
+.informationDetails dd {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.informationDetails dd > span {
+  min-width: 0;
+  max-width: 100%;
+}
+.fieldValue {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sessionsColumn.sessionsColumn {
   display: flex;
@@ -62,16 +88,22 @@
   padding-top: 0;
   padding-inline: 0;
   overflow: hidden;
+  height: 428px;
 }
 @container account (min-width: 560px) {
   .details {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sessionsColumn.sessionsColumn {
+    height: 100%;
   }
 }
 .agent {
   display: flex;
   align-items: center;
   gap: var(--space);
+  overflow: hidden;
+  white-space: nowrap;
 }
 .authenticationRow {
   --account-auth-action-width: 80px;

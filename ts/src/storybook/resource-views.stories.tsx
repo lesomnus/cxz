@@ -41,7 +41,7 @@ function AccountPreview({ c }: { c: Connection }) {
                 name: "Web account layout",
                 alias: "oak",
                 project: { id: projectFixtureId(1) },
-                account: { alias: "work" },
+                account: { id: projectFixtureId(10) },
                 agent: "codex",
                 status: { state: "idle" },
               }),
@@ -50,7 +50,7 @@ function AccountPreview({ c }: { c: Connection }) {
                 name: "Claude project",
                 alias: "elm",
                 project: { id: projectFixtureId(2) },
-                account: { alias: "personal" },
+                account: { id: projectFixtureId(11) },
                 agent: "claude",
                 status: { state: "stopped" },
               }),
@@ -59,7 +59,7 @@ function AccountPreview({ c }: { c: Connection }) {
                 name: "Review deployment changes",
                 alias: "pine",
                 project: { id: projectFixtureId(2) },
-                account: { alias: "work" },
+                account: { id: projectFixtureId(10) },
                 agent: "codex",
                 status: { state: "working" },
               }),
@@ -75,11 +75,24 @@ function AccountPreview({ c }: { c: Connection }) {
 function ResourcePreview({
   view,
   eraseFailures = 0,
+  usageDelayMs = 0,
+  usageFailures = 0,
+  longAccountDetails = false,
 }: {
   view: "accounts" | "memory" | "usage" | "background" | "auxiliary";
   eraseFailures?: number;
+  usageDelayMs?: number;
+  usageFailures?: number;
+  longAccountDetails?: boolean;
 }) {
-  const [c] = useState(() => resourceFixture({ eraseFailures }));
+  const [c] = useState(() =>
+    resourceFixture({
+      eraseFailures,
+      usageDelayMs,
+      usageFailures,
+      longAccountDetails,
+    }),
+  );
   return (
     <div
       style={{
@@ -126,6 +139,15 @@ export const Accounts: Story = { args: { view: "accounts" } };
 export const AccountEraseFailure: Story = {
   args: { view: "accounts", eraseFailures: 1 },
 };
+export const AccountsLoading: Story = {
+  args: { view: "accounts", usageDelayMs: 1500 },
+};
+export const AccountsLongDetails: Story = {
+  args: { view: "accounts", longAccountDetails: true },
+};
 export const Usage: Story = { args: { view: "usage" } };
+export const UsageFailure: Story = {
+  args: { view: "usage", usageFailures: 1 },
+};
 export const BackgroundTasks: Story = { args: { view: "background" } };
 export const AuxiliaryAI: Story = { args: { view: "auxiliary" } };

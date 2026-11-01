@@ -8,13 +8,21 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  flex-wrap: wrap;
+  min-width: 0;
+  height: 15px;
   gap: var(--ui-space);
   font-size: 0.8rem;
 }
 .period {
   color: var(--ui-muted);
   font-size: 0.7rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header > :first-child {
+  flex: none;
 }
 .calendar {
   display: grid;

@@ -4,6 +4,7 @@ import {
   usageActivityDays,
   usageActivityCells,
   usageActivityWeeks,
+  usageActivityRange,
   type ActivityDay,
 } from "./usage-activity-data";
 import styles from "./usage-activity.module.css";
@@ -11,12 +12,16 @@ import styles from "./usage-activity.module.css";
 export function UsageActivity({
   stats,
   loading,
+  weeks,
+  toMs,
   selectedDate,
   onSelect,
   onWeeksChange,
 }: {
   stats?: ConversationStatsReply;
   loading: boolean;
+  weeks: number;
+  toMs: bigint;
   selectedDate: string;
   onSelect: (day: ActivityDay) => void;
   onWeeksChange: (weeks: number) => void;
@@ -37,7 +42,12 @@ export function UsageActivity({
     observer.observe(element);
     return () => observer.disconnect();
   }, [onWeeksChange]);
-  const days = stats ? usageActivityDays(stats) : [];
+  const days = usageActivityDays(
+    stats ?? {
+      ...usageActivityRange(weeks, toMs),
+      days: [],
+    },
+  );
   const cells = usageActivityCells(days);
   return (
     <section
@@ -71,7 +81,7 @@ export function UsageActivity({
                   Number(date.slice(5, 7)) % 2 === 0 ? "soft" : "dim"
                 }
               >
-                {day ? (
+                {day && stats ? (
                   <button
                     type="button"
                     className={styles.cell}
@@ -83,7 +93,8 @@ export function UsageActivity({
                 ) : (
                   <span
                     className={styles.cell}
-                    data-future="true"
+                    data-future={future || undefined}
+                    data-placeholder={!stats || undefined}
                     aria-hidden="true"
                   />
                 )}
