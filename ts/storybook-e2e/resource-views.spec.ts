@@ -72,7 +72,13 @@ test("usage calendar selects daily statistics without a popover", async ({
   expect((await activity.boundingBox())!.y).toBeCloseTo(calendarTop, 0);
   await expect(busy).toHaveAttribute("aria-pressed", "true");
   await expect(daily.getByText("2026-10-24", { exact: true })).toBeVisible();
-  await expect(daily.getByText("8 days ago", { exact: true })).toBeVisible();
+  await expect(daily.locator("time")).toHaveAttribute(
+    "aria-label",
+    "8 days ago",
+  );
+  await expect(
+    daily.locator("time").getByRole("img", { name: "8", exact: true }),
+  ).toHaveAttribute("data-mode", "integer");
   await expect(
     daily.getByRole("img", { name: "800", exact: true }),
   ).toBeVisible();
@@ -178,7 +184,7 @@ test("activity month backdrops stop at boundaries and future days stay black", a
   await expect(october).not.toHaveAttribute("data-right");
   const november = activity.locator('[data-date="2026-11-01"]');
   await expect(november).not.toHaveAttribute("data-left");
-  await expect(november).toHaveAttribute("data-bottom", "true");
+  await expect(november).not.toHaveAttribute("data-bottom");
   const futures = activity.locator('[data-future="true"]');
   await expect(futures).toHaveCount(6);
   await expect(
@@ -187,7 +193,21 @@ test("activity month backdrops stop at boundaries and future days stay black", a
   for (const cell of await futures.all()) {
     await expect(cell).toHaveCSS("background-color", "rgb(0, 0, 0)");
     expect(await cell.evaluate((el) => el.tagName)).toBe("SPAN");
+    expect(
+      await cell.evaluate(
+        (el) => getComputedStyle(el.parentElement!, "::before").content,
+      ),
+    ).toBe("none");
   }
+  const tones = await activity.evaluate((el) => {
+    const color = (date: string) =>
+      getComputedStyle(el.querySelector(`[data-date="${date}"]`)!, "::before")
+        .backgroundColor;
+    return [color("2026-09-01"), color("2026-10-01"), color("2026-11-01")];
+  });
+  expect(tones[0]).toBe("rgb(22, 22, 22)");
+  expect(tones[1]).toBe("rgb(27, 27, 27)");
+  expect(tones[2]).toBe(tones[0]);
   await expect(
     activity.getByRole("button", { name: /2026-11-0[2-7]/ }),
   ).toHaveCount(0);

@@ -86,9 +86,15 @@ it("treats an exact midnight end as exclusive and humanizes UTC dates", () => {
   expect(days.at(-1)?.date).toBe("2026-10-31");
   expect(days).toHaveLength(14);
   const now = Date.parse("2026-11-01T00:01:00Z");
-  expect(usageDateAge("2026-10-24", now, "en")).toBe("8 days ago");
-  expect(usageDateAge("2026-10-31", now, "en")).toBe("yesterday");
-  expect(usageDateAge("2026-11-01", now, "en")).toBe("today");
+  expect(usageDateAge("2026-10-24", now, "en").label).toBe("8 days ago");
+  expect(usageDateAge("2026-10-24", now, "en").days).toBe(8);
+  expect(usageDateAge("2026-10-31", now, "en").label).toBe("yesterday");
+  expect(usageDateAge("2026-11-01", now, "en").label).toBe("today");
+  expect(
+    usageDateAge("2026-11-01", now, "en").parts.some(
+      (part) => part.type === "integer",
+    ),
+  ).toBe(false);
 });
 
 it("joins neighbours only within a calendar month, including year boundaries", () => {
@@ -117,5 +123,11 @@ it("joins neighbours only within a calendar month, including year boundaries", (
   expect(cells.filter((cell) => cell.future).every((cell) => !cell.day)).toBe(
     true,
   );
+  expect(find("2027-01-04").bottom).toBe(false);
+  expect(
+    cells
+      .filter((cell) => cell.future)
+      .every((cell) => !cell.top && !cell.bottom && !cell.left && !cell.right),
+  ).toBe(true);
   expect(usageActivityCells([])).toEqual([]);
 });

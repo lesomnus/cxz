@@ -44,12 +44,18 @@
   position: relative;
 }
 .day::before {
+  content: none;
+}
+.day[data-month]::before {
   content: "";
   position: absolute;
   inset: -1px;
   border-radius: 1px;
-  background: var(--ui-shade-32);
+  background: var(--ui-shade-22);
   pointer-events: none;
+}
+.day[data-month-tone="soft"]::before {
+  background: var(--ui-shade-27);
 }
 .day[data-top]::before {
   top: calc(-0.5 * var(--ui-space));
