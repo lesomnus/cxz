@@ -1,0 +1,111 @@
+import { expect, test } from "@playwright/test";
+
+for (const width of [1440, 390]) {
+  test(`project paths preserve their leaf, expand and copy at ${width}px`, async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(
+      "/iframe.html?id=pages-projects--long-paths&viewMode=story",
+    );
+    const info = page.getByRole("region", { name: "Information", exact: true });
+    const field = (label: string) =>
+      info.locator("dl > div").filter({
+        has: page.locator("dt > span:first-child", {
+          hasText: new RegExp(`^${label}$`),
+        }),
+      });
+    const workspace = field("Workspace"),
+      configuration = field("Configuration");
+    const copy = workspace.getByRole("button", {
+      name: "Copy: Workspace",
+      exact: true,
+    });
+    await expect(copy.getByText(".../", { exact: true })).toBeVisible();
+    const leaf = copy.getByText("workspace-leaf", { exact: true });
+    expect(
+      await leaf.evaluate((node) => node.scrollWidth <= node.clientWidth),
+    ).toBe(true);
+    const longLeaf = configuration
+      .getByRole("button")
+      .locator("span")
+      .filter({ hasText: /^very-long-leaf-/ })
+      .last();
+    expect(
+      await longLeaf.evaluate((node) => node.scrollWidth > node.clientWidth),
+    ).toBe(true);
+    const bounds = (await workspace.boundingBox())!;
+    const configBounds = (await configuration.boundingBox())!;
+    expect(configBounds.x).toBe(bounds.x);
+    expect(configBounds.width).toBe(bounds.width);
+    expect(configBounds.y).toBeGreaterThanOrEqual(bounds.y + bounds.height);
+    expect(bounds.width).toBe((await info.locator("dl").boundingBox())!.width);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+
+    const complete =
+      "/host/" + "long-parent-directory/".repeat(10) + "workspace-leaf";
+    await copy.hover();
+    const tooltip = page.getByRole("tooltip", { name: complete, exact: true });
+    await expect(tooltip).toBeVisible();
+    await expect(tooltip).toHaveAttribute("data-placement", "in-place");
+    const origin = await tooltip.evaluate((node) => {
+      const range = document.createRange();
+      range.setStart(node.firstChild!, 0);
+      range.setEnd(node.firstChild!, 1);
+      return range.getBoundingClientRect().left;
+    });
+    expect(Math.abs(origin - (await copy.boundingBox())!.x)).toBeLessThan(1);
+    await page.keyboard.press("Escape");
+    await expect(tooltip).toHaveCount(0);
+    await copy.focus();
+    await expect(tooltip).toBeVisible();
+    await copy.press("Enter");
+    await expect(copy).toBeFocused();
+    await expect(workspace.getByRole("status")).toHaveText("copied!");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      complete,
+    );
+    await expect(configuration.getByRole("status")).toBeEmpty();
+    await expect(workspace.getByRole("status")).toBeEmpty();
+  });
+}
+
+test("path copy feedback resets its timeout and reports clipboard failure", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.clock.install();
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const field = page
+    .getByRole("region", { name: "Information", exact: true })
+    .locator("dl > div")
+    .filter({
+      has: page.getByRole("button", { name: "Copy: Workspace", exact: true }),
+    });
+  const copy = field.getByRole("button");
+  await copy.click();
+  await expect(field.getByRole("status")).toHaveText("copied!");
+  await page.clock.fastForward(1500);
+  await copy.click();
+  await page.clock.fastForward(1000);
+  await expect(field.getByRole("status")).toHaveText("copied!");
+  await page.clock.fastForward(1100);
+  await expect(field.getByRole("status")).toBeEmpty();
+  await page.evaluate(() =>
+    Object.defineProperty(navigator.clipboard, "writeText", {
+      configurable: true,
+      value: async () => {
+        throw new Error("Clipboard unavailable");
+      },
+    }),
+  );
+  await copy.click();
+  await expect(field.getByRole("status")).toHaveText("Copy failed");
+});

@@ -228,8 +228,18 @@ function ProjectDashboard({
                 [t("Name"), editable("name", t("Name"))],
                 [t("Alias"), editable("alias", t("Alias"))],
                 [t("Description"), editable("desc", t("Description"))],
-                [t("Workspace"), p.workspace],
-                [t("Configuration"), p.config],
+                {
+                  label: t("Workspace"),
+                  value: p.workspace,
+                  fullWidth: true,
+                  path: true,
+                },
+                {
+                  label: t("Configuration"),
+                  value: p.config,
+                  fullWidth: true,
+                  path: true,
+                },
                 [
                   t("Created"),
                   <DateTime value={p.dateCreated} />,
@@ -266,7 +276,12 @@ function ProjectDashboard({
             <Fields
               rows={[
                 [t("Status"), t(containerStateName(containerState(p)))],
-                [t("Workspace"), p.status?.remoteWorkspace],
+                {
+                  label: t("Workspace"),
+                  value: p.status?.remoteWorkspace,
+                  fullWidth: true,
+                  path: true,
+                },
                 [t("Remote user"), p.status?.remoteUser],
                 [t("Git branch"), git],
                 [
