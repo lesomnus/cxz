@@ -25,10 +25,14 @@ export function usageActivityRange(weeks: number, toMs: bigint) {
 export function usageDateAge(date: string, now: number, locale: string) {
   const today = Math.floor(now / dayMs) * dayMs;
   const days = Math.round((Date.parse(`${date}T00:00:00Z`) - today) / dayMs);
-  return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
-    days,
-    "day",
-  );
+  const parts = new Intl.RelativeTimeFormat(locale, {
+    numeric: "auto",
+  }).formatToParts(days, "day");
+  return {
+    days: Math.abs(days),
+    parts,
+    label: parts.map((part) => part.value).join(""),
+  };
 }
 
 export type ActivityDay = {
@@ -53,8 +57,8 @@ export function usageActivityCells(days: ActivityDay[]) {
     const sameMonth = (index: number) => {
       const neighbour = cells[index];
       return (
-        !!neighbour &&
-        !!(neighbour.day || neighbour.future) &&
+        !!cell.day &&
+        !!neighbour?.day &&
         cell.date.slice(0, 7) === neighbour.date.slice(0, 7)
       );
     };

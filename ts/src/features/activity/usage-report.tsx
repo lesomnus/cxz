@@ -70,6 +70,7 @@ export function UsageReport({
   const today = new Date(now).toISOString().slice(0, 10);
   const selected = selection?.scope === scope ? selection.day : undefined;
   const date = selected?.date ?? today;
+  const age = usageDateAge(date, now, locale);
   const selectedMs = Date.parse(`${date}T00:00:00Z`);
   const historyContainsDate =
     history.data &&
@@ -107,7 +108,21 @@ export function UsageReport({
             <div className={usageStyles.dayHeader}>
               <strong className={usageStyles.periodTitle}>{date}</strong>
               <span className={usageStyles.date}>
-                <time dateTime={date}>{usageDateAge(date, now, locale)}</time>
+                <time dateTime={date} aria-label={age.label}>
+                  {age.parts.map((part, index) =>
+                    part.type === "integer" ? (
+                      <CompactNumber
+                        key={index}
+                        value={age.days}
+                        label={part.value}
+                        mode="integer"
+                        digits={3}
+                      />
+                    ) : (
+                      part.value
+                    ),
+                  )}
+                </time>
                 {" · UTC"}
               </span>
             </div>
