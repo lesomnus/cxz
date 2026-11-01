@@ -189,7 +189,7 @@ test("activity cells alternate black month fills and show hollow future days", a
   ).toBeVisible();
   for (const cell of await futures.all()) {
     await expect(cell).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    await expect(cell).toHaveCSS("border-top-color", "rgb(16, 16, 16)");
+    await expect(cell).toHaveCSS("border-top-color", "rgb(0, 0, 0)");
     await expect(cell).toHaveCSS("border-top-width", "1px");
     await expect(cell).toHaveCSS("width", "12px");
     await expect(cell).toHaveCSS("height", "12px");
@@ -202,7 +202,7 @@ test("activity cells alternate black month fills and show hollow future days", a
     return [color("2026-07-01"), color("2026-08-01"), color("2026-09-01")];
   });
   expect(tones[0]).toBe("rgb(0, 0, 0)");
-  expect(tones[1]).not.toBe(tones[0]);
+  expect(tones[1]).toBe("rgb(19, 19, 19)");
   expect(tones[2]).toBe(tones[0]);
   for (const [date, color] of [
     ["2026-10-24", tones[1]],
