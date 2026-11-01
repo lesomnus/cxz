@@ -189,7 +189,7 @@ test("activity cells alternate black month fills and show hollow future days", a
   ).toBeVisible();
   for (const cell of await futures.all()) {
     await expect(cell).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    await expect(cell).toHaveCSS("border-top-color", "rgb(20, 20, 20)");
+    await expect(cell).toHaveCSS("border-top-color", "rgb(16, 16, 16)");
     await expect(cell).toHaveCSS("border-top-width", "1px");
     await expect(cell).toHaveCSS("width", "12px");
     await expect(cell).toHaveCSS("height", "12px");
@@ -202,8 +202,19 @@ test("activity cells alternate black month fills and show hollow future days", a
     return [color("2026-07-01"), color("2026-08-01"), color("2026-09-01")];
   });
   expect(tones[0]).toBe("rgb(0, 0, 0)");
-  expect(tones[1]).toBe("rgb(16, 16, 16)");
+  expect(tones[1]).not.toBe(tones[0]);
   expect(tones[2]).toBe(tones[0]);
+  for (const [date, color] of [
+    ["2026-10-24", tones[1]],
+    ["2026-11-01", tones[0]],
+  ]) {
+    const active = activity.locator(`[data-date="${date}"] button`);
+    await expect(active).toHaveCSS("border-top-color", color);
+    await expect(active).toHaveCSS("border-top-width", "1px");
+    expect(
+      await active.evaluate((el) => getComputedStyle(el).backgroundColor),
+    ).not.toBe(color);
+  }
   await expect(
     activity.getByRole("button", { name: /2026-11-0[2-7]/ }),
   ).toHaveCount(0);

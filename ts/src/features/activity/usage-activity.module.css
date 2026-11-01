@@ -39,21 +39,32 @@
   justify-content: space-between;
   min-width: 0;
 }
+.day {
+  --activity-month-color: var(--ui-shade-0);
+}
+.day[data-month-tone="soft"] {
+  --activity-month-color: color-mix(
+    in srgb,
+    var(--ui-shade-16) 75%,
+    var(--ui-shade-0)
+  );
+}
 .cell {
   position: relative;
+  box-sizing: border-box;
   display: block;
   width: var(--activity-cell-size);
   height: var(--activity-cell-size);
   border-radius: calc(var(--ui-space) / 2);
-  background: var(--ui-shade-0);
+  background: var(--activity-month-color, var(--ui-shade-0));
   border: 0;
   padding: 0;
 }
 button.cell {
   cursor: pointer;
 }
-.day[data-month-tone="soft"] .cell[data-level="0"] {
-  background: var(--ui-shade-16);
+.day .cell {
+  border: 1px solid var(--activity-month-color);
 }
 .cell[data-level="1"] {
   background: color-mix(in srgb, var(--ui-brand-color) 20%, var(--ui-shade-24));
@@ -68,9 +79,8 @@ button.cell {
   background: color-mix(in srgb, var(--ui-brand-color) 85%, var(--ui-shade-24));
 }
 .cell[data-future] {
-  box-sizing: border-box;
   background: transparent;
-  border: 1px solid var(--ui-shade-20);
+  border: 1px solid var(--ui-shade-16);
 }
 button.cell:hover,
 button.cell:focus-visible,
