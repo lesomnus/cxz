@@ -27,44 +27,130 @@ test("account and usage stories use isolated typed clients", async ({
   ).toBeVisible();
   await page.goto("/iframe.html?id=resources-views--usage&viewMode=story");
   await expect(
-    page.getByText("Complete retained coverage", { exact: true }),
+    page.getByRole("region", { name: "Recent 30 days", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("img", { name: "4800", exact: true }),
   ).toBeVisible();
 });
 
-test("usage calendar shows daily details without an expander", async ({
+test("usage calendar selects daily statistics without a popover", async ({
   page,
 }) => {
+  await page.clock.setFixedTime(new Date("2026-11-01T18:00:00Z"));
   await page.goto("/iframe.html?id=resources-views--usage&viewMode=story");
   const activity = page.getByRole("region", {
     name: "Daily activity",
     exact: true,
   });
-  await expect(activity.getByRole("img")).toHaveCount(30);
+  const recent = page.getByRole("region", {
+    name: "Recent 30 days",
+    exact: true,
+  });
+  const daily = page.getByRole("region", {
+    name: "Daily statistics",
+    exact: true,
+  });
+  await expect(daily.getByText("Today", { exact: true })).toBeVisible();
+  await expect(
+    daily.getByRole("img", { name: "200", exact: true }),
+  ).toBeVisible();
+  await expect(
+    recent.getByRole("img", { name: "4800", exact: true }),
+  ).toBeVisible();
   await expect(page.locator("details")).toHaveCount(0);
-  const busy = activity.getByRole("img", {
+  const busy = activity.getByRole("button", {
     name: "2026-10-24 (UTC): 4 finished turns",
     exact: true,
   });
   await busy.hover();
-  const tooltip = page.getByRole("tooltip");
-  await expect(tooltip).toContainText("2026-10-24 · UTC");
+  await expect(page.getByRole("tooltip")).not.toBeVisible();
+  const calendarTop = (await activity.boundingBox())!.y;
+  await busy.click();
+  expect((await activity.boundingBox())!.y).toBeCloseTo(calendarTop, 0);
+  await expect(busy).toHaveAttribute("aria-pressed", "true");
+  await expect(daily.getByText("2026-10-24", { exact: true })).toBeVisible();
+  await expect(daily.getByText("8 days ago", { exact: true })).toBeVisible();
   await expect(
-    tooltip.getByRole("img", { name: "800", exact: true }),
+    daily.getByRole("img", { name: "800", exact: true }),
   ).toBeVisible();
   await expect(
-    tooltip.getByRole("img", { name: "$0.14", exact: true }),
+    daily.getByRole("img", { name: "$0.14", exact: true }),
   ).toBeVisible();
-  const quiet = activity.getByRole("img", {
+  // The wider calendar's August activity does not change the rolling total.
+  const older = activity.getByRole("button", {
+    name: "2026-08-12 (UTC): 6 finished turns",
+    exact: true,
+  });
+  await older.focus();
+  await page.keyboard.press("Enter");
+  await expect(daily.getByText("2026-08-12", { exact: true })).toBeVisible();
+  await expect(
+    daily.getByRole("img", { name: "900", exact: true }),
+  ).toBeVisible();
+  await expect(
+    recent.getByRole("img", { name: "4800", exact: true }),
+  ).toBeVisible();
+  await daily.getByRole("button", { name: "Today", exact: true }).click();
+  await expect(daily.getByText("2026-11-01", { exact: true })).toBeVisible();
+  await expect(
+    daily.getByRole("img", { name: "200", exact: true }),
+  ).toBeVisible();
+  const quiet = activity.getByRole("button", {
     name: "2026-10-04 (UTC): 0 finished turns",
     exact: true,
   });
-  await page.mouse.move(0, 0);
-  await quiet.locator("..").focus();
-  await expect(tooltip).toContainText("No recorded activity");
-  await expect(tooltip).toContainText("2026-10-04 · UTC");
-  await page.keyboard.press("Escape");
-  await expect(tooltip).not.toBeVisible();
+  await quiet.click();
+  await expect(daily.getByText("2026-10-04", { exact: true })).toBeVisible();
+  await expect(daily.getByRole("img", { name: "0", exact: true })).toHaveCount(
+    7,
+  );
+  await expect(
+    daily.getByRole("img", { name: "Not reported", exact: true }),
+  ).toHaveText("-");
 });
+
+for (const width of [390, 600]) {
+  test(`usage calendar fills a ${width}px panel and adjusts its time range`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/iframe.html?id=resources-views--usage&viewMode=story");
+    const activity = page.getByRole("region", {
+      name: "Daily activity",
+      exact: true,
+    });
+    const oldest = activity.getByRole("button").first();
+    await expect(oldest).toBeVisible();
+    await expect(activity).toHaveAttribute("aria-busy", "false");
+    const before = (await oldest.getAttribute("aria-label"))!;
+    const geometry = await activity.evaluate((el) => {
+      const buttons = [...el.querySelectorAll("button")];
+      const last = buttons.at(-1)!.getBoundingClientRect();
+      const grid = buttons[0].parentElement!.getBoundingClientRect();
+      const first = buttons[0].getBoundingClientRect();
+      return {
+        right: last.right,
+        edge: grid.right,
+        first: first.left,
+        start: grid.left,
+        size: first.width,
+        overflow: el.scrollWidth > el.clientWidth,
+      };
+    });
+    expect(geometry.size).toBe(12);
+    expect(Math.abs(geometry.right - geometry.edge)).toBeLessThan(1);
+    expect(Math.abs(geometry.first - geometry.start)).toBeLessThan(1);
+    expect(geometry.overflow).toBe(false);
+    await page.setViewportSize({
+      width: width === 390 ? 600 : 390,
+      height: 900,
+    });
+    await expect(oldest).not.toHaveAttribute("aria-label", before);
+    await expect(
+      page
+        .getByRole("region", { name: "Recent 30 days", exact: true })
+        .getByRole("img", { name: "4800", exact: true }),
+    ).toBeVisible();
+  });
+}

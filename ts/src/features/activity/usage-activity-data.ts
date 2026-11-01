@@ -5,6 +5,32 @@ import type {
 
 const dayMs = 86400000;
 
+export function usageActivityWeeks(width: number, size: number, gap: number) {
+  return Math.max(1, Math.min(52, Math.floor((width + gap) / (size + gap))));
+}
+
+export function usageActivityRange(weeks: number, toMs: bigint) {
+  const last = new Date(Number(toMs) - 1);
+  const midnight = Date.UTC(
+    last.getUTCFullYear(),
+    last.getUTCMonth(),
+    last.getUTCDate(),
+  );
+  const fromMs = BigInt(
+    midnight - (last.getUTCDay() + (weeks - 1) * 7) * dayMs,
+  );
+  return { fromMs, toMs };
+}
+
+export function usageDateAge(date: string, now: number, locale: string) {
+  const today = Math.floor(now / dayMs) * dayMs;
+  const days = Math.round((Date.parse(`${date}T00:00:00Z`) - today) / dayMs);
+  return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
+    days,
+    "day",
+  );
+}
+
 export type ActivityDay = {
   date: string;
   values: ConversationStatsDay["values"];

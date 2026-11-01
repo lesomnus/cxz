@@ -168,41 +168,70 @@ export function resourceFixture() {
         memory.name = request.name;
         return { memory };
       },
-      conversationStats: () => ({
-        fromMs: BigInt(Date.parse("2026-10-03T00:00:00Z")),
-        toMs: BigInt(Date.parse("2026-11-02T00:00:00Z")),
-        complete: true,
-        total: {
-          finishedTurns: 12n,
-          inputTokens: 4800n,
-          outputTokens: 2300n,
-          cacheReadTokens: 12000n,
-          cacheWriteTokens: 400n,
-          tokenReportedTurns: 12n,
-          reportedCostUsd: 0.42,
-          costReportedTurns: 12n,
-        },
-        days: [
+      conversationStats: (request) => {
+        const toMs = request.toMs || BigInt(Date.parse("2026-11-01T18:00:00Z"));
+        const fromMs = request.fromMs || toMs - 30n * 86400000n;
+        const days = [
+          ["2026-08-12", 6, 900, 200, 0.21],
           ["2026-10-03", 1, 150, 0, 0.03],
           ["2026-10-09", 2, 400, 100, 0.07],
           ["2026-10-14", 1, 150, 0, 0.03],
           ["2026-10-24", 4, 800, 200, 0.14],
           ["2026-10-27", 1, 200, 0, 0.03],
-          ["2026-10-31", 3, 600, 100, 0.12],
-        ].map(([date, turns, output, cacheWrite, cost]) => ({
-          date: String(date),
-          values: {
-            finishedTurns: BigInt(turns),
-            inputTokens: BigInt(Number(turns) * 400),
-            outputTokens: BigInt(output),
-            cacheReadTokens: BigInt(Number(turns) * 1000),
-            cacheWriteTokens: BigInt(cacheWrite),
-            tokenReportedTurns: BigInt(turns),
-            costReportedTurns: BigInt(turns),
-            reportedCostUsd: Number(cost),
-          },
-        })),
-      }),
+          ["2026-10-31", 2, 400, 50, 0.08],
+          ["2026-11-01", 1, 200, 50, 0.04],
+        ] as const;
+        const recorded = days
+          .filter(([date]) => {
+            const start = Date.parse(`${date}T00:00:00Z`);
+            return start < Number(toMs) && start + 86400000 > Number(fromMs);
+          })
+          .map(([date, turns, output, cacheWrite, cost]) => ({
+            date,
+            values: {
+              finishedTurns: BigInt(turns),
+              inputTokens: BigInt(Number(turns) * 400),
+              outputTokens: BigInt(output),
+              cacheReadTokens: BigInt(Number(turns) * 1000),
+              cacheWriteTokens: BigInt(cacheWrite),
+              tokenReportedTurns: BigInt(turns),
+              costReportedTurns: BigInt(turns),
+              reportedCostUsd: Number(cost),
+            },
+          }));
+        const total = {
+          finishedTurns: 0n,
+          inputTokens: 0n,
+          outputTokens: 0n,
+          cacheReadTokens: 0n,
+          cacheWriteTokens: 0n,
+          tokenReportedTurns: 0n,
+          costReportedTurns: 0n,
+          reportedCostUsd: 0,
+        };
+        for (const { values } of recorded) {
+          for (const key of [
+            "finishedTurns",
+            "inputTokens",
+            "outputTokens",
+            "cacheReadTokens",
+            "cacheWriteTokens",
+            "tokenReportedTurns",
+            "costReportedTurns",
+          ] as const)
+            total[key] += values[key];
+          total.reportedCostUsd += values.reportedCostUsd;
+        }
+        total.reportedCostUsd = Math.round(total.reportedCostUsd * 100) / 100;
+        return {
+          fromMs,
+          toMs,
+          generatedMs: toMs,
+          complete: true,
+          total,
+          days: recorded,
+        };
+      },
       background: () => ({
         data: new TextEncoder().encode(
           JSON.stringify({

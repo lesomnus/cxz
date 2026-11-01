@@ -1,24 +1,64 @@
-import { CompactNumber, Popover } from "@lesomnus/nox";
+import { useLayoutEffect, useRef } from "react";
 import type { ConversationStatsReply } from "#gen/cxz/session_svc_pb";
-import { usageActivityDays, type ActivityDay } from "./usage-activity-data";
+import {
+  usageActivityDays,
+  usageActivityWeeks,
+  type ActivityDay,
+} from "./usage-activity-data";
 import styles from "./usage-activity.module.css";
 
-export function UsageActivity({ stats }: { stats: ConversationStatsReply }) {
-  const days = usageActivityDays(stats);
-  if (!days.length) return null;
-  const offset = new Date(`${days[0].date}T00:00:00Z`).getUTCDay();
+export function UsageActivity({
+  stats,
+  loading,
+  selectedDate,
+  onSelect,
+  onWeeksChange,
+}: {
+  stats?: ConversationStatsReply;
+  loading: boolean;
+  selectedDate: string;
+  onSelect: (day: ActivityDay) => void;
+  onWeeksChange: (weeks: number) => void;
+}) {
+  const grid = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = grid.current;
+    if (!element) return;
+    const measure = () => {
+      const style = getComputedStyle(element);
+      const size = parseFloat(style.getPropertyValue("--activity-cell-size"));
+      const gap = parseFloat(style.rowGap);
+      onWeeksChange(
+        usageActivityWeeks(element.getBoundingClientRect().width, size, gap),
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [onWeeksChange]);
+  const days = stats ? usageActivityDays(stats) : [];
+  const offset = days.length
+    ? new Date(`${days[0].date}T00:00:00Z`).getUTCDay()
+    : 0;
   const cells = [
     ...Array<null>(offset).fill(null),
     ...days,
     ...Array<null>((7 - ((offset + days.length) % 7)) % 7).fill(null),
   ];
   return (
-    <section className={styles.activity} aria-label="Daily activity">
+    <section
+      className={styles.activity}
+      aria-label="Daily activity"
+      aria-busy={loading}
+    >
       <div className={styles.header}>
         <span>Daily activity</span>
-        <span className={styles.period}>
-          {days[0].date} – {days.at(-1)!.date} · UTC
-        </span>
+        {days.length > 0 && (
+          <span className={styles.period}>
+            {days[0].date} – {days.at(-1)!.date} · UTC
+          </span>
+        )}
       </div>
       <div className={styles.calendar}>
         <div className={styles.weekdays} aria-hidden="true">
@@ -26,21 +66,22 @@ export function UsageActivity({ stats }: { stats: ConversationStatsReply }) {
             <span key={i}>{label}</span>
           ))}
         </div>
-        <div className={styles.days}>
-          {cells.map((day, i) => (
-            <div className={styles.day} key={day?.date ?? i}>
-              {day && (
-                <Popover content={<DayDetails day={day} />}>
-                  <span
-                    className={styles.cell}
-                    data-level={day.level}
-                    role="img"
-                    aria-label={`${day.date} (UTC): ${day.values?.finishedTurns ?? 0n} finished turns`}
-                  />
-                </Popover>
-              )}
-            </div>
-          ))}
+        <div className={styles.days} ref={grid}>
+          {cells.map((day, i) =>
+            day ? (
+              <button
+                type="button"
+                className={styles.cell}
+                key={day.date}
+                data-level={day.level}
+                aria-pressed={selectedDate === day.date}
+                aria-label={`${day.date} (UTC): ${day.values?.finishedTurns ?? 0n} finished turns`}
+                onClick={() => onSelect(day)}
+              />
+            ) : (
+              <span key={i} aria-hidden="true" />
+            ),
+          )}
         </div>
       </div>
       <div
@@ -59,44 +100,5 @@ export function UsageActivity({ stats }: { stats: ConversationStatsReply }) {
         <span>More turns</span>
       </div>
     </section>
-  );
-}
-
-function DayDetails({ day }: { day: ActivityDay }) {
-  const values = day.values;
-  const metrics = [
-    ["Finished turns", values?.finishedTurns ?? 0n],
-    ["Input tokens", values?.inputTokens ?? 0n],
-    ["Output tokens", values?.outputTokens ?? 0n],
-    ["Cache read", values?.cacheReadTokens ?? 0n],
-    ["Cache write", values?.cacheWriteTokens ?? 0n],
-  ] as const;
-  return (
-    <span className={styles.details}>
-      <strong>{day.date} · UTC</strong>
-      {!values && <span className={styles.empty}>No recorded activity</span>}
-      {metrics.map(([label, value]) => (
-        <span className={styles.metric} key={label}>
-          <span>{label}</span>
-          <CompactNumber value={Number(value)} label={String(value)} />
-        </span>
-      ))}
-      <span className={styles.metric}>
-        <span>Reported cost</span>
-        {values?.costReportedTurns ? (
-          <span className={styles.cost}>
-            <span aria-hidden="true">$</span>
-            <CompactNumber
-              value={values.reportedCostUsd}
-              label={`$${values.reportedCostUsd}`}
-            />
-          </span>
-        ) : (
-          <span className={styles.missing} aria-label="Not reported">
-            -
-          </span>
-        )}
-      </span>
-    </span>
   );
 }
