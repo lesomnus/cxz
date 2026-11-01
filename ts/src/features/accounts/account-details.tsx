@@ -102,6 +102,26 @@ export function AccountDetails({
             ]}
           />
         </Section>
+        <Section
+          aria-label="Sessions using this account"
+          className={accountStyles.sessionsColumn}
+        >
+          <SessionTable
+            c={c}
+            sessions={sessions}
+            projects={projects}
+            accounts={[account]}
+            loading={sessionsLoading}
+            variant="compact"
+            showAccount={false}
+            showProject
+            title={`Sessions · ${sessions.length}`}
+            horizontalScrollbar
+            fillHeight
+          />
+        </Section>
+      </SectionGroup>
+      <SectionGroup className={accountStyles.usageColumn}>
         <SectionGroup className={accountStyles.authenticationGroup}>
           <Section
             as="button"
@@ -184,30 +204,12 @@ export function AccountDetails({
             )}
           </Section>
         </SectionGroup>
-        <Section
-          aria-label="Sessions using this account"
-          className={accountStyles.sessionsColumn}
-        >
-          <SessionTable
-            c={c}
-            sessions={sessions}
-            projects={projects}
-            accounts={[account]}
-            loading={sessionsLoading}
-            variant="compact"
-            showAccount={false}
-            showProject
-            title={`Sessions · ${sessions.length}`}
-            horizontalScrollbar
-            fillHeight
-          />
-        </Section>
+        <UsageReport
+          c={c}
+          account={account.alias}
+          className={accountStyles.usageSection}
+        />
       </SectionGroup>
-      <UsageReport
-        c={c}
-        account={account.alias}
-        className={accountStyles.usageSection}
-      />
       {erase && (
         <ConfirmationDialog
           title={`Erase account · ${account.name || account.alias}`}

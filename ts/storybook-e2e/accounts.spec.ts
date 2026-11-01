@@ -141,10 +141,10 @@ for (const width of [1280, 390]) {
     const infoBounds = (await work
       .getByRole("region", { name: "Account details", exact: true })
       .boundingBox())!;
-    expect(authBounds.y).toBeGreaterThanOrEqual(
+    expect(sessionsBounds.y).toBeGreaterThanOrEqual(
       infoBounds.y + infoBounds.height,
     );
-    expect(sessionsBounds.y).toBeGreaterThanOrEqual(
+    expect(usageBounds.y).toBeGreaterThanOrEqual(
       authBounds.y + authBounds.height,
     );
     const scrollBounds = (await sessions
@@ -187,16 +187,23 @@ for (const width of [1280, 390]) {
       expect(usageBounds.x).toBeGreaterThan(
         informationBounds.x + informationBounds.width,
       );
-      expect(usageBounds.y).toBe(informationBounds.y);
+      expect(authBounds.y).toBe(informationBounds.y);
+      expect(authBounds.x).toBeGreaterThan(
+        informationBounds.x + informationBounds.width,
+      );
       expect(usageBounds.width).toBeCloseTo(informationBounds.width, 0);
       expect(informationBounds.width).toBe(420);
       expect(sessionsBounds.y + sessionsBounds.height).toBeCloseTo(
         informationBounds.y + informationBounds.height,
         0,
       );
-      expect(usageBounds.height).toBe(informationBounds.height);
+      expect(usageBounds.y + usageBounds.height).toBeCloseTo(
+        sessionsBounds.y + sessionsBounds.height,
+        0,
+      );
+      expect(sessionsBounds.height).toBeLessThan(usageBounds.height);
     } else {
-      expect(usageBounds.y).toBeGreaterThan(
+      expect(authBounds.y).toBeGreaterThan(
         informationBounds.y + informationBounds.height,
       );
       expect(usageBounds.width).toBe(informationBounds.width);
