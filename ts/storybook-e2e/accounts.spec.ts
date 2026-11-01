@@ -160,6 +160,8 @@ for (const width of [1280, 390]) {
       sessionsBounds.y + sessionsBounds.height - sessionsPadding,
       0,
     );
+    expect(scrollBounds.y).toBe(sessionsBounds.y);
+    await expect(sessions.getByRole("heading")).toHaveCount(0);
     const eraseBounds = (await work
       .getByRole("button", { name: "Erase account Work", exact: true })
       .boundingBox())!;
@@ -349,7 +351,7 @@ test("account sessions use compact read-only identities and keep selection scope
     "",
     "Name",
     "Project",
-    "State",
+    "",
     "",
   ]);
   await expect(
@@ -368,6 +370,20 @@ test("account sessions use compact read-only identities and keep selection scope
   await expect(
     personal.getByRole("img", { name: "Stopped", exact: true }),
   ).toBeAttached();
+  for (const icon of await table.locator("tbody .session-indicator").all()) {
+    const bounds = await icon.evaluate((node) => {
+      const cell = node.closest("td")!.getBoundingClientRect();
+      const glyph = node.getBoundingClientRect();
+      return {
+        x: glyph.x + glyph.width / 2 - cell.x - cell.width / 2,
+        y: glyph.y + glyph.height / 2 - cell.y - cell.height / 2,
+        width: cell.width,
+      };
+    });
+    expect(Math.abs(bounds.x)).toBeLessThan(1);
+    expect(Math.abs(bounds.y)).toBeLessThan(1);
+    expect(bounds.width).toBe(32);
+  }
   const name = rows.first().getByText("Web account layout", { exact: true });
   const alias = rows.first().getByText("oak", { exact: true });
   const nameBounds = (await name.boundingBox())!;
@@ -444,13 +460,34 @@ test("account sessions use compact read-only identities and keep selection scope
     await expect(link).not.toHaveCSS("background-color", background);
   }
   await expect(table.getByRole("textbox")).toHaveCount(0);
+  const bulk = table
+    .locator("thead")
+    .getByRole("button", { name: "Selected session actions", exact: true });
+  await bulk.click();
+  const bulkMenu = page.getByRole("menu", {
+    name: "Selected session actions",
+    exact: true,
+  });
+  await expect(bulkMenu.getByRole("status")).toHaveText("0 selected");
+  for (const item of await bulkMenu.getByRole("menuitem").all())
+    await expect(item).toBeDisabled();
+  await page.keyboard.press("Escape");
   await rows.first().getByRole("checkbox").check();
-  await expect(
-    work.getByRole("button", { name: "1 selected", exact: true }),
-  ).toBeEnabled();
-  await expect(
-    personal.getByRole("button", { name: "0 selected", exact: true }),
-  ).toBeDisabled();
+  await bulk.click();
+  await expect(bulkMenu.getByRole("status")).toHaveText("1 selected");
+  await bulkMenu.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  const erase = page.getByRole("dialog", {
+    name: "Erase session",
+    exact: true,
+  });
+  await expect(erase).toContainText("Web account layout");
+  await expect(erase).not.toContainText("Review deployment changes");
+  await erase.getByRole("button", { name: "Cancel", exact: true }).click();
+  await personal
+    .getByRole("button", { name: "Selected session actions", exact: true })
+    .click();
+  await expect(bulkMenu.getByRole("status")).toHaveText("0 selected");
+  await page.keyboard.press("Escape");
   const divider = await rows
     .first()
     .locator("td")

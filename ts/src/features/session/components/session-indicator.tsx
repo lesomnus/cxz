@@ -149,19 +149,17 @@ function StateIcon({ state }: { state: string }) {
       aria-hidden="true"
     >
       {state === "stopped" ? (
-        <rect x="3" y="3" width="10" height="10" rx="1" />
+        <path d="M8 1.5v6m-3.5-4a5.5 5.5 0 1 0 7 0" />
       ) : state === "interrupted" || state === "waiting" ? (
         <path d="M6 4v8m4-8v8" />
       ) : (
         <>
           <circle cx="8" cy="8" r="5.5" />
-          {state === "idle" ? (
-            <path d="m5.5 8 1.7 1.7 3.5-3.5" />
-          ) : state === "failed" ? (
+          {state === "failed" ? (
             <path d="M8 4.5V8m0 3h.01" />
-          ) : (
+          ) : state !== "idle" ? (
             <path d="M6.5 6.25a1.5 1.5 0 1 1 2 1.4c-.5.2-.5.6-.5 1.1M8 11h.01" />
-          )}
+          ) : null}
         </>
       )}
     </svg>
