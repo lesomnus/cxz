@@ -69,8 +69,12 @@ export function AccountDetails({
           <ResourceFields
             columns={2}
             rows={[
-              ["Display name", account.name || account.alias],
-              ["Alias", account.alias],
+              [
+                "Display name",
+                <AccountValue value={account.name || account.alias} />,
+                account.desc,
+              ],
+              ["Alias", <AccountValue value={account.alias} />],
               [
                 "Agent",
                 <span className={accountStyles.agent}>
@@ -78,16 +82,25 @@ export function AccountDetails({
                   {account.agent}
                 </span>,
               ],
-              ["Authentication backend", account.authBackend],
+              [
+                "Authentication backend",
+                <AccountValue value={account.authBackend} />,
+              ],
               [
                 "Created",
-                <DateTime value={account.dateCreated} />,
+                <Popover
+                  content={<DateTime value={account.dateCreated} />}
+                  placement="in-place"
+                >
+                  <span className={accountStyles.fieldValue}>
+                    <DateTime value={account.dateCreated} />
+                  </span>
+                </Popover>,
                 undefined,
                 <RelativeTime value={account.dateCreated} />,
               ],
             ]}
           />
-          {account.desc && <p>{account.desc}</p>}
         </Section>
         <SectionGroup className={accountStyles.authenticationGroup}>
           <Section
@@ -258,5 +271,13 @@ export function AccountDetails({
         </ConfirmationDialog>
       )}
     </div>
+  );
+}
+
+function AccountValue({ value }: { value: string }) {
+  return (
+    <Popover content={value} placement="in-place">
+      <span className={accountStyles.fieldValue}>{value || "—"}</span>
+    </Popover>
   );
 }

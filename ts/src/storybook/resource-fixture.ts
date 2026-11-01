@@ -8,12 +8,21 @@ import {
 import { AuxKind, InstallationService } from "#gen/cxz/installation_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
+import { projectFixtureId } from "./project-id";
 
 // This fixture uses the same typed clients as production without credentials,
 // Docker or a provider. Each story owns its own editable state.
 export function resourceFixture({
   eraseFailures = 0,
-}: { eraseFailures?: number } = {}) {
+  usageDelayMs = 0,
+  usageFailures = 0,
+  longAccountDetails = false,
+}: {
+  eraseFailures?: number;
+  usageDelayMs?: number;
+  usageFailures?: number;
+  longAccountDetails?: boolean;
+} = {}) {
   let revision = "1",
     content =
       "# Project memory\n\nKeep decisions here.\n\n```ts\nconst shared = true;\n```";
@@ -26,22 +35,33 @@ export function resourceFixture({
   };
   const accounts: Pick<
     Account,
-    "alias" | "name" | "agent" | "authBackend" | "dateCreated"
+    "id" | "alias" | "name" | "desc" | "agent" | "authBackend" | "dateCreated"
   >[] = [
     {
+      id: projectFixtureId(10),
       dateCreated: timestampFromDate(new Date("2026-10-20T00:00:00Z")),
       alias: "work",
       name: "Work",
+      desc: "",
       agent: "codex",
       authBackend: "brokered-access-token",
     },
     {
+      id: projectFixtureId(11),
       alias: "personal",
       name: "Personal",
+      desc: "",
       agent: "claude",
       authBackend: "project-local-oauth",
     },
   ];
+  if (longAccountDetails) {
+    accounts[0].name =
+      "Work account with a very long display name that must not resize the panel";
+    accounts[0].authBackend =
+      "brokered-access-token-with-a-very-long-backend-description";
+    accounts[0].desc = "Account description. ".repeat(40);
+  }
   const signedIn = new Set(["work"]);
   const authStatus = (alias: string) => {
     const account = accounts.find((account) => account.alias === alias);
@@ -86,8 +106,10 @@ export function resourceFixture({
         if (accounts.some((account) => account.alias === request.alias))
           throw new ConnectError("Account already exists", Code.AlreadyExists);
         const account = {
+          id: projectFixtureId(accounts.length + 20),
           alias: request.alias,
           name: request.name || request.alias,
+          desc: "",
           agent: request.agent,
           authBackend:
             request.agent === "claude"
@@ -118,8 +140,11 @@ export function resourceFixture({
             Code.Unavailable,
           );
         }
-        const index = accounts.findIndex(
-          (a) => ref.key.case === "alias" && a.alias === ref.key.value,
+        const index = accounts.findIndex((a) =>
+          ref.key.case === "alias"
+            ? a.alias === ref.key.value
+            : ref.key.case === "id" &&
+              a.id.toString() === ref.key.value.toString(),
         );
         if (index < 0) return { erased: false };
         signedIn.delete(accounts[index].alias);
@@ -186,7 +211,16 @@ export function resourceFixture({
         memory.name = request.name;
         return { memory };
       },
-      conversationStats: (request) => {
+      conversationStats: async (request) => {
+        if (usageDelayMs)
+          await new Promise((resolve) => setTimeout(resolve, usageDelayMs));
+        if (usageFailures > 0) {
+          usageFailures--;
+          throw new ConnectError(
+            "Conversation statistics temporarily unavailable. ".repeat(10),
+            Code.Unavailable,
+          );
+        }
         const toMs = request.toMs || BigInt(Date.parse("2026-11-01T18:00:00Z"));
         const fromMs = request.fromMs || toMs - 30n * 86400000n;
         const days = [

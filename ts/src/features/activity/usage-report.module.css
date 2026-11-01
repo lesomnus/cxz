@@ -1,6 +1,18 @@
 .report {
   container: conversation-usage / inline-size;
 }
+.header.header {
+  min-height: 32px;
+  flex-wrap: nowrap;
+}
+.header > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.error {
+  color: var(--ui-action-error-color);
+}
 .period {
   display: grid;
   gap: var(--ui-space);
@@ -8,16 +20,22 @@
 .periodTitle {
   font-size: 0.8rem;
   font-weight: 400;
+  line-height: 15px;
 }
 .dayHeader {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  min-width: 0;
+  height: 15px;
   gap: calc(2 * var(--ui-space));
 }
 .date {
   color: var(--ui-muted);
   font-size: 0.7rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .metrics.metrics {
   margin-block: var(--ui-space) calc(2 * var(--ui-space));
@@ -33,6 +51,16 @@
 }
 .metrics.metrics dd {
   margin-top: auto;
+  white-space: nowrap;
+  height: 18px;
+  line-height: 18px;
+  overflow: hidden;
+}
+.metrics.metrics dt {
+  height: 14px;
+  line-height: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .value {

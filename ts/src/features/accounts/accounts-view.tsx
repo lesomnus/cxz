@@ -4,7 +4,7 @@ import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { listAccounts } from "./account-data";
+import { listAccounts, sessionsForAccount } from "./account-data";
 import { AccountAddForm } from "./account-add-form";
 import { AccountDetails } from "./account-details";
 import resourceStyles from "#src/shared/components/resource-surface.module.css";
@@ -84,9 +84,7 @@ export function AccountsView({
                   c={c}
                   account={account}
                   projects={projects}
-                  sessions={sessions.filter(
-                    (session) => session.account?.alias === account.alias,
-                  )}
+                  sessions={sessionsForAccount(account, sessions)}
                   sessionsLoading={sessionsLoading}
                   erased={() => {
                     accounts.reload();

@@ -87,7 +87,19 @@ export function UsageReport({
     >
       <div className={`${styles.row} ${usageStyles.header}`}>
         <strong>Conversation usage</strong>
+        {(stats.error || history.error) && (
+          <Popover content={stats.error || history.error}>
+            <span
+              role="alert"
+              aria-label={stats.error || history.error}
+              className={usageStyles.error}
+            >
+              !
+            </span>
+          </Popover>
+        )}
         <Button
+          loading={stats.loading || history.loading}
           onClick={() => {
             setNow(Date.now());
             stats.reload();
@@ -96,53 +108,60 @@ export function UsageReport({
           Refresh
         </Button>
       </div>
-      {stats.error && <p role="alert">{stats.error}</p>}
-      {stats.loading && <p className={styles.muted}>Loading usage…</p>}
-      {stats.data?.total && (
-        <>
-          <section aria-label="Recent 30 days" className={usageStyles.period}>
-            <strong className={usageStyles.periodTitle}>Recent 30 days</strong>
-            <UsageMetrics values={stats.data.total} />
-          </section>
-          <section aria-label="Daily statistics" className={usageStyles.period}>
-            <div className={usageStyles.dayHeader}>
-              <strong className={usageStyles.periodTitle}>{date}</strong>
-              <span className={usageStyles.date}>
-                <time dateTime={date} aria-label={age.label}>
-                  {age.parts.map((part, index) =>
-                    part.type === "integer" ? (
-                      <CompactNumber
-                        key={index}
-                        value={age.days}
-                        label={part.value}
-                        mode="integer"
-                        digits={3}
-                      />
-                    ) : (
-                      part.value
-                    ),
-                  )}
-                </time>
-                {" · UTC"}
-              </span>
-            </div>
-            <UsageMetrics values={selectedValues} />
-          </section>
-          {history.error && <p role="alert">{history.error}</p>}
-          <UsageActivity
-            stats={history.data}
-            loading={history.loading}
-            selectedDate={date}
-            onSelect={(day) => setSelection({ scope, day })}
-            onWeeksChange={setWeeks}
-          />
-        </>
-      )}
+      <section aria-label="Recent 30 days" className={usageStyles.period}>
+        <strong className={usageStyles.periodTitle}>Recent 30 days</strong>
+        <UsageMetrics
+          values={stats.data?.total}
+          unavailable={!stats.data?.total}
+        />
+      </section>
+      <section aria-label="Daily statistics" className={usageStyles.period}>
+        <div className={usageStyles.dayHeader}>
+          <strong className={usageStyles.periodTitle}>{date}</strong>
+          <span className={usageStyles.date}>
+            <time dateTime={date} aria-label={age.label}>
+              {age.parts.map((part, index) =>
+                part.type === "integer" ? (
+                  <CompactNumber
+                    key={index}
+                    value={age.days}
+                    label={part.value}
+                    mode="integer"
+                    digits={3}
+                  />
+                ) : (
+                  part.value
+                ),
+              )}
+            </time>
+            {" · UTC"}
+          </span>
+        </div>
+        <UsageMetrics
+          values={selectedValues}
+          unavailable={!historyContainsDate && !stats.data}
+        />
+      </section>
+      <UsageActivity
+        stats={history.data}
+        weeks={weeks ?? 1}
+        toMs={stats.data?.toMs ?? BigInt(now)}
+        loading={stats.loading || history.loading}
+        selectedDate={date}
+        onSelect={(day) => setSelection({ scope, day })}
+        onWeeksChange={setWeeks}
+      />
     </Section>
   );
 }
 
-function UsageMetrics({ values }: { values?: ConversationStatsValues }) {
+function UsageMetrics({
+  values,
+  unavailable = false,
+}: {
+  values?: ConversationStatsValues;
+  unavailable?: boolean;
+}) {
   const metrics: UsageMetric[] = [
     { label: "Input tokens", value: values?.inputTokens ?? 0n },
     { label: "Output tokens", value: values?.outputTokens ?? 0n },
@@ -179,11 +198,11 @@ function UsageMetrics({ values }: { values?: ConversationStatsValues }) {
             )}
           </dt>
           <dd>
-            {value === undefined ? (
+            {unavailable || value === undefined ? (
               <span
                 className={usageStyles.missing}
                 role="img"
-                aria-label="Not reported"
+                aria-label={unavailable ? "Unavailable" : "Not reported"}
               >
                 -
               </span>

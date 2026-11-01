@@ -1,5 +1,23 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Connection } from "#src/shared/api/connection.ts";
+import type { Account } from "#gen/cxz/account_pb";
+import type { Session } from "#gen/cxz/session_pb";
+
+export function sessionsForAccount(
+  account: Pick<Account, "id" | "alias">,
+  sessions: Session[],
+) {
+  return sessions.filter((session) => {
+    const linked = session.account;
+    if (!linked) return false;
+    if (account.id.length && linked.id.length)
+      return (
+        account.id.length === linked.id.length &&
+        account.id.every((value, index) => value === linked.id[index])
+      );
+    return !!linked.alias && linked.alias === account.alias;
+  });
+}
 export const accountRef = (alias: string) => ({
   key: { case: "alias" as const, value: alias },
 });
