@@ -13,24 +13,25 @@
 .text {
   display: flex;
   flex: 1;
+  align-items: center;
   min-width: 0;
   white-space: pre;
 }
-.parent {
+.prefix {
   flex: 0 1 auto;
-  min-width: var(--path-parent-min);
+  min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .leaf {
   flex: 0 0 auto;
-  max-width: calc(100% - var(--path-parent-min));
+  max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .measure {
   position: absolute;
+  display: flex;
+  align-items: center;
   width: max-content;
   visibility: hidden;
   white-space: pre;
