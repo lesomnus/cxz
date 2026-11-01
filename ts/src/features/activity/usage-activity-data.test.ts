@@ -3,6 +3,7 @@ import { expect, it } from "vitest";
 import { ConversationStatsReplySchema } from "#gen/cxz/session_svc_pb";
 import {
   usageActivityDays,
+  usageActivityCells,
   usageActivityRange,
   usageActivityWeeks,
   usageDateAge,
@@ -88,4 +89,33 @@ it("treats an exact midnight end as exclusive and humanizes UTC dates", () => {
   expect(usageDateAge("2026-10-24", now, "en")).toBe("8 days ago");
   expect(usageDateAge("2026-10-31", now, "en")).toBe("yesterday");
   expect(usageDateAge("2026-11-01", now, "en")).toBe("today");
+});
+
+it("joins neighbours only within a calendar month, including year boundaries", () => {
+  const cells = usageActivityCells(
+    usageActivityDays(
+      create(ConversationStatsReplySchema, {
+        fromMs: BigInt(Date.parse("2026-12-27T00:00:00Z")),
+        toMs: BigInt(Date.parse("2027-01-04T12:00:00Z")),
+      }),
+    ),
+  );
+  const find = (date: string) => cells.find((cell) => cell.date === date)!;
+  expect(find("2026-12-30").bottom).toBe(true);
+  expect(find("2026-12-31").bottom).toBe(false);
+  expect(find("2027-01-01").top).toBe(false);
+  expect(find("2026-12-28").right).toBe(false);
+  expect(find("2027-01-04").left).toBe(false);
+  expect(find("2027-01-03").bottom).toBe(true);
+  expect(cells.filter((cell) => cell.future).map((cell) => cell.date)).toEqual([
+    "2027-01-05",
+    "2027-01-06",
+    "2027-01-07",
+    "2027-01-08",
+    "2027-01-09",
+  ]);
+  expect(cells.filter((cell) => cell.future).every((cell) => !cell.day)).toBe(
+    true,
+  );
+  expect(usageActivityCells([])).toEqual([]);
 });

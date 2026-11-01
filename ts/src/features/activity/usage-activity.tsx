@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import type { ConversationStatsReply } from "#gen/cxz/session_svc_pb";
 import {
   usageActivityDays,
+  usageActivityCells,
   usageActivityWeeks,
   type ActivityDay,
 } from "./usage-activity-data";
@@ -28,9 +29,11 @@ export function UsageActivity({
       const style = getComputedStyle(element);
       const size = parseFloat(style.getPropertyValue("--activity-cell-size"));
       const gap = parseFloat(style.rowGap);
-      onWeeksChange(
-        usageActivityWeeks(element.getBoundingClientRect().width, size, gap),
-      );
+      const width = element.getBoundingClientRect().width;
+      const weeks = usageActivityWeeks(width, size, gap);
+      const columnGap = weeks > 1 ? (width - weeks * size) / (weeks - 1) : gap;
+      element.style.setProperty("--activity-column-gap", `${columnGap}px`);
+      onWeeksChange(weeks);
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -38,14 +41,7 @@ export function UsageActivity({
     return () => observer.disconnect();
   }, [onWeeksChange]);
   const days = stats ? usageActivityDays(stats) : [];
-  const offset = days.length
-    ? new Date(`${days[0].date}T00:00:00Z`).getUTCDay()
-    : 0;
-  const cells = [
-    ...Array<null>(offset).fill(null),
-    ...days,
-    ...Array<null>((7 - ((offset + days.length) % 7)) % 7).fill(null),
-  ];
+  const cells = usageActivityCells(days);
   return (
     <section
       className={styles.activity}
@@ -67,19 +63,37 @@ export function UsageActivity({
           ))}
         </div>
         <div className={styles.days} ref={grid}>
-          {cells.map((day, i) =>
-            day ? (
-              <button
-                type="button"
-                className={styles.cell}
-                key={day.date}
-                data-level={day.level}
-                aria-pressed={selectedDate === day.date}
-                aria-label={`${day.date} (UTC): ${day.values?.finishedTurns ?? 0n} finished turns`}
-                onClick={() => onSelect(day)}
-              />
+          {cells.map(({ date, day, future, top, bottom, left, right }) =>
+            day || future ? (
+              <div
+                key={date}
+                className={styles.day}
+                data-date={date}
+                data-month={date.slice(0, 7)}
+                data-top={top || undefined}
+                data-bottom={bottom || undefined}
+                data-left={left || undefined}
+                data-right={right || undefined}
+              >
+                {day ? (
+                  <button
+                    type="button"
+                    className={styles.cell}
+                    data-level={day.level}
+                    aria-pressed={selectedDate === date}
+                    aria-label={`${date} (UTC): ${day.values?.finishedTurns ?? 0n} finished turns`}
+                    onClick={() => onSelect(day)}
+                  />
+                ) : (
+                  <span
+                    className={styles.cell}
+                    data-future="true"
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
             ) : (
-              <span key={i} aria-hidden="true" />
+              <span key={date} aria-hidden="true" />
             ),
           )}
         </div>

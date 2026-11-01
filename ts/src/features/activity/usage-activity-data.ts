@@ -37,6 +37,37 @@ export type ActivityDay = {
   level: number;
 };
 
+// Calendar neighbours are one day vertically and seven days horizontally.
+// Extend only the last week, keeping future days outside the recorded data.
+export function usageActivityCells(days: ActivityDay[]) {
+  if (!days.length) return [];
+  const offset = new Date(`${days[0].date}T00:00:00Z`).getUTCDay();
+  const first = Date.parse(`${days[0].date}T00:00:00Z`) - offset * dayMs;
+  const count = Math.ceil((offset + days.length) / 7) * 7;
+  const cells = Array.from({ length: count }, (_, i) => ({
+    date: new Date(first + i * dayMs).toISOString().slice(0, 10),
+    day: days[i - offset] as ActivityDay | undefined,
+    future: i >= offset + days.length,
+  }));
+  return cells.map((cell, i) => {
+    const sameMonth = (index: number) => {
+      const neighbour = cells[index];
+      return (
+        !!neighbour &&
+        !!(neighbour.day || neighbour.future) &&
+        cell.date.slice(0, 7) === neighbour.date.slice(0, 7)
+      );
+    };
+    return {
+      ...cell,
+      top: i % 7 > 0 && sameMonth(i - 1),
+      bottom: i % 7 < 6 && sameMonth(i + 1),
+      left: sameMonth(i - 7),
+      right: sameMonth(i + 7),
+    };
+  });
+}
+
 // Stats use UTC dates and a half-open time range. Missing dates have no
 // recorded activity; padding outside the requested range is not a zero day.
 export function usageActivityDays({

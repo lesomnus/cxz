@@ -105,18 +105,11 @@ export function UsageReport({
           </section>
           <section aria-label="Daily statistics" className={usageStyles.period}>
             <div className={usageStyles.dayHeader}>
-              <strong className={usageStyles.periodTitle}>
-                {date === today ? "Today" : date}
-              </strong>
+              <strong className={usageStyles.periodTitle}>{date}</strong>
               <span className={usageStyles.date}>
-                <time dateTime={date}>
-                  {date === today ? date : usageDateAge(date, now, locale)}
-                </time>
+                <time dateTime={date}>{usageDateAge(date, now, locale)}</time>
                 {" · UTC"}
               </span>
-              {date !== today && (
-                <Button onClick={() => setSelection(undefined)}>Today</Button>
-              )}
             </div>
             <UsageMetrics values={selectedValues} />
           </section>

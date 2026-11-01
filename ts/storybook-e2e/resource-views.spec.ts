@@ -51,7 +51,9 @@ test("usage calendar selects daily statistics without a popover", async ({
     name: "Daily statistics",
     exact: true,
   });
-  await expect(daily.getByText("Today", { exact: true })).toBeVisible();
+  await expect(daily.getByText("2026-11-01", { exact: true })).toBeVisible();
+  await expect(daily.getByText("today", { exact: true })).toBeVisible();
+  await expect(daily.getByRole("button")).toHaveCount(0);
   await expect(
     daily.getByRole("img", { name: "200", exact: true }),
   ).toBeVisible();
@@ -91,7 +93,13 @@ test("usage calendar selects daily statistics without a popover", async ({
   await expect(
     recent.getByRole("img", { name: "4800", exact: true }),
   ).toBeVisible();
-  await daily.getByRole("button", { name: "Today", exact: true }).click();
+  await expect(daily.getByRole("button")).toHaveCount(0);
+  await activity
+    .getByRole("button", {
+      name: "2026-11-01 (UTC): 1 finished turns",
+      exact: true,
+    })
+    .click();
   await expect(daily.getByText("2026-11-01", { exact: true })).toBeVisible();
   await expect(
     daily.getByRole("img", { name: "200", exact: true }),
@@ -127,7 +135,8 @@ for (const width of [390, 600]) {
     const geometry = await activity.evaluate((el) => {
       const buttons = [...el.querySelectorAll("button")];
       const last = buttons.at(-1)!.getBoundingClientRect();
-      const grid = buttons[0].parentElement!.getBoundingClientRect();
+      const grid =
+        buttons[0].parentElement!.parentElement!.getBoundingClientRect();
       const first = buttons[0].getBoundingClientRect();
       return {
         right: last.right,
@@ -154,3 +163,43 @@ for (const width of [390, 600]) {
     ).toBeVisible();
   });
 }
+
+test("activity month backdrops stop at boundaries and future days stay black", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=resources-views--usage&viewMode=story");
+  const activity = page.getByRole("region", {
+    name: "Daily activity",
+    exact: true,
+  });
+  const october = activity.locator('[data-date="2026-10-25"]');
+  await expect(october).toHaveAttribute("data-month", "2026-10");
+  await expect(october).toHaveAttribute("data-bottom", "true");
+  await expect(october).not.toHaveAttribute("data-right");
+  const november = activity.locator('[data-date="2026-11-01"]');
+  await expect(november).not.toHaveAttribute("data-left");
+  await expect(november).toHaveAttribute("data-bottom", "true");
+  const futures = activity.locator('[data-future="true"]');
+  await expect(futures).toHaveCount(6);
+  await expect(
+    activity.locator('[data-date="2026-11-07"] [data-future]'),
+  ).toBeVisible();
+  for (const cell of await futures.all()) {
+    await expect(cell).toHaveCSS("background-color", "rgb(0, 0, 0)");
+    expect(await cell.evaluate((el) => el.tagName)).toBe("SPAN");
+  }
+  await expect(
+    activity.getByRole("button", { name: /2026-11-0[2-7]/ }),
+  ).toHaveCount(0);
+  const oldDate = activity.getByRole("button", {
+    name: "2026-10-24 (UTC): 4 finished turns",
+    exact: true,
+  });
+  await oldDate.click();
+  const daily = page.getByRole("region", {
+    name: "Daily statistics",
+    exact: true,
+  });
+  await futures.first().click();
+  await expect(daily.getByText("2026-10-24", { exact: true })).toBeVisible();
+});
