@@ -6,7 +6,6 @@ import {
   canControl,
   type SessionControlKind,
 } from "#src/features/session/model/session-control-batch.ts";
-import { resumableStates } from "#src/features/session/model/session-actions.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { useSessionControls } from "./use-session-controls";
 import styles from "./session-table-controls.module.css";
@@ -25,15 +24,12 @@ export function SessionTableMenu({
   iconTrigger?: boolean;
   disabled?: boolean;
 }) {
-  const operations: SessionControlKind[] = bulk
-    ? ["stop", "resume", "restart", "erase"]
-    : [
-        resumableStates.has(sessions[0]?.status?.state ?? "")
-          ? "resume"
-          : "stop",
-        "restart",
-        "erase",
-      ];
+  const operations: SessionControlKind[] = [
+    "stop",
+    "resume",
+    "restart",
+    "erase",
+  ];
   return (
     <ActionMenu
       label={
