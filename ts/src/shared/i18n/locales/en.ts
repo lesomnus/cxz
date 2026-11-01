@@ -698,6 +698,7 @@ export const messages = {
   "Remote user": "Remote user",
   "Git branch": "Git branch",
   Provisioning: "Provisioning",
+  "Container name": "Container name",
   "Container ID": "Container ID",
   "Provision attempts": "Provision attempts",
   "Session overview": "Session overview",

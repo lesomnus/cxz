@@ -1,7 +1,7 @@
 .page {
   --project-section-gap: calc(3 * var(--ui-space));
-  --project-panel-width: 420px;
-  --project-panel-gap: 12px;
+  --project-panel-width: 424px;
+  --project-panel-gap: var(--ui-section-group-gap);
   --project-page-gutter: 24px;
   --project-content-width: calc(
     2 * var(--project-panel-width) + var(--project-panel-gap)
@@ -36,50 +36,40 @@
 }
 .dashboard {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-areas: "information sessions";
-  align-items: start;
-  gap: var(--project-panel-gap);
-}
-.information {
-  grid-area: information;
-  display: grid;
-  min-width: 0;
   gap: var(--project-section-gap);
 }
-.sessionSection {
-  grid-area: sessions;
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--project-panel-gap);
+  align-items: stretch;
 }
-.section {
+.information {
   min-width: 0;
-  padding: calc(2 * var(--ui-space));
-  background: var(--ui-shade-24);
-  border-radius: var(--ui-dialog-radius);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.usage {
+  min-width: 0;
+}
+.usageSection {
+  height: 100%;
+  align-content: start;
 }
 .actions {
+  width: 100%;
+  max-width: var(--project-panel-width);
   min-width: 0;
   display: grid;
   gap: var(--ui-space);
 }
-.section.sessionSection {
-  padding-top: 0;
+.sessionSection.sessionSection {
+  padding-top: var(--ui-section-group-gap);
   padding-inline: 0;
 }
-.sectionTitle,
-.sectionHeading h2 {
+.sectionTitle {
   margin: 0;
   font-size: 12px;
   font-weight: 500;
-}
-.sectionTitle {
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-}
-.sectionHeading {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--ui-space);
   padding: var(--ui-space) var(--ui-control-inline-inset);
 }
 .empty {
@@ -90,22 +80,25 @@
 .errors {
   color: var(--ui-error, #db7979);
 }
-/* Two 420px panels, their 12px gap and both 24px page gutters. */
+@container project-page (width >= 900px) {
+  .information > [data-section-layout="section"] {
+    border-start-end-radius: var(--ui-section-inner-radius);
+    border-end-end-radius: var(--ui-section-inner-radius);
+  }
+  .usage > [data-section-layout="section"] {
+    border-start-start-radius: var(--ui-section-inner-radius);
+    border-end-start-radius: var(--ui-section-inner-radius);
+  }
+}
+/* Two 424px panels, their 4px group gap and both 24px page gutters. */
 @container project-page (width < 900px) {
   .toolbarContent,
   .content {
     max-width: var(--project-panel-width);
   }
-  .dashboard {
+  .columns {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "information" "sessions";
   }
-}
-
-.refresh {
-  font-size: 11px;
-  color: var(--ui-muted);
-  padding: var(--ui-space) var(--ui-control-inline-inset);
 }
 
 .editable {

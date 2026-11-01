@@ -17,8 +17,7 @@ for (const width of [1440, 390]) {
           hasText: new RegExp(`^${label}$`),
         }),
       });
-    const workspace = field("Workspace"),
-      configuration = field("Configuration");
+    const workspace = field("Workspace");
     const copy = workspace.getByRole("button", {
       name: "Copy: Workspace",
       exact: true,
@@ -30,18 +29,7 @@ for (const width of [1440, 390]) {
     expect(
       await leaf.evaluate((node) => node.scrollWidth <= node.clientWidth),
     ).toBe(true);
-    const configDisplay = configuration
-      .getByRole("button")
-      .locator(":scope > span > span")
-      .first();
-    await expect(configDisplay.locator("svg")).toHaveCount(1);
-    await expect(configDisplay).toContainText(".devcontainer/very-long-leaf-");
-    expect((await configDisplay.textContent())!.length).toBeLessThan(100);
     const bounds = (await workspace.boundingBox())!;
-    const configBounds = (await configuration.boundingBox())!;
-    expect(configBounds.x).toBe(bounds.x);
-    expect(configBounds.width).toBe(bounds.width);
-    expect(configBounds.y).toBeGreaterThanOrEqual(bounds.y + bounds.height);
     expect(bounds.width).toBe((await info.locator("dl").boundingBox())!.width);
     expect(
       await page.evaluate(
@@ -72,7 +60,7 @@ for (const width of [1440, 390]) {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       complete,
     );
-    await expect(configuration.getByRole("status")).toBeEmpty();
+    await expect(field("Configuration")).toHaveCount(0);
     await expect(workspace.getByRole("status")).toBeEmpty();
   });
 }

@@ -44,7 +44,9 @@ export function projectFixture(
         remoteWorkspace: "/workspace",
         remoteUser: "developer",
         containerId: `container-${i + 1}`,
+        containerName: i ? "cxz-api-devcontainer" : "cxz-web-devcontainer",
         provisionState: "ready",
+        error: unavailable ? "Workspace is unavailable" : "",
       },
       dateCreated: timestampFromDate(new Date(now - 86400000)),
       dateUpdated: timestampFromDate(new Date(now - 60000)),
@@ -326,6 +328,70 @@ export function projectFixture(
       },
     });
     router.service(SessionService, {
+      conversationStats: (request, context) => {
+        const project = projects.find((p) =>
+          matchesProject(p, request.project),
+        );
+        if (!project)
+          throw new ConnectError(
+            "A project scope is required",
+            Code.InvalidArgument,
+          );
+        calls.push({
+          method: "stats",
+          project: projectId(project),
+          signal: context.signal,
+        });
+        const toMs = request.toMs || BigInt(now);
+        const fromMs = request.fromMs || toMs - 30n * 86400000n;
+        const count = sessions.filter(
+          (session) =>
+            session.project &&
+            projectId(session.project) === projectId(project),
+        ).length;
+        const scale = count * (projects.indexOf(project) + 1);
+        const values = () => ({
+          finishedTurns: BigInt(scale),
+          inputTokens: BigInt(scale * 400),
+          outputTokens: BigInt(scale * 100),
+          cacheReadTokens: BigInt(scale * 1000),
+          cacheWriteTokens: BigInt(scale * 50),
+          tokenReportedTurns: BigInt(scale),
+          costReportedTurns: BigInt(scale),
+          reportedCostUsd: scale * 0.04,
+        });
+        const days = [0, 1, 7]
+          .map((offset) => ({
+            date: new Date(now - offset * 86400000).toISOString().slice(0, 10),
+            values: values(),
+          }))
+          .filter(({ date }) => {
+            const start = BigInt(Date.parse(date + "T00:00:00Z"));
+            return start < toMs && start + 86400000n > fromMs;
+          });
+        const total = values();
+        for (const name of [
+          "finishedTurns",
+          "inputTokens",
+          "outputTokens",
+          "cacheReadTokens",
+          "cacheWriteTokens",
+          "tokenReportedTurns",
+          "costReportedTurns",
+        ] as const)
+          total[name] *= BigInt(days.length);
+        total.reportedCostUsd =
+          Math.round(total.reportedCostUsd * days.length * 100) / 100;
+        return {
+          fromMs,
+          toMs,
+          generatedMs: BigInt(now),
+          complete: true,
+          total,
+          days,
+        };
+      },
+
       add: (request, context) => {
         const project = projects.find((p) =>
           matchesProject(
