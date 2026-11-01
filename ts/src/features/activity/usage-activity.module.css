@@ -20,6 +20,7 @@
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: calc(2 * var(--ui-space));
+  margin-inline: 1px;
   min-width: 0;
 }
 .weekdays,
@@ -39,7 +40,31 @@
   justify-content: space-between;
   min-width: 0;
 }
+.day {
+  position: relative;
+}
+.day::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 1px;
+  background: var(--ui-shade-32);
+  pointer-events: none;
+}
+.day[data-top]::before {
+  top: calc(-0.5 * var(--ui-space));
+}
+.day[data-bottom]::before {
+  bottom: calc(-0.5 * var(--ui-space));
+}
+.day[data-left]::before {
+  left: calc(-0.5 * var(--activity-column-gap, var(--ui-space)));
+}
+.day[data-right]::before {
+  right: calc(-0.5 * var(--activity-column-gap, var(--ui-space)));
+}
 .cell {
+  position: relative;
   display: block;
   width: var(--activity-cell-size);
   height: var(--activity-cell-size);
@@ -62,6 +87,9 @@ button.cell {
 }
 .cell[data-level="4"] {
   background: color-mix(in srgb, var(--ui-brand-color) 85%, var(--ui-shade-24));
+}
+.cell[data-future] {
+  background: #000;
 }
 button.cell:hover,
 button.cell:focus-visible,
