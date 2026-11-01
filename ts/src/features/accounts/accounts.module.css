@@ -42,7 +42,7 @@
 }
 .authenticationGroup {
   --ui-section-radius: var(--ui-section-inner-radius);
-  grid-template-columns: minmax(0, 1fr) 96px 64px;
+  grid-template-columns: minmax(0, 1fr) 64px 64px;
   height: 64px;
 }
 .eraseAction.eraseAction {
@@ -65,7 +65,7 @@
 }
 .quotaSquare.quotaSquare {
   --quota-tint: #7c8b4f;
-  width: 96px;
+  width: 64px;
   height: 64px;
   padding: 2px;
   grid-template-columns: 32px minmax(0, 1fr);
@@ -120,6 +120,11 @@
   min-width: 0;
   justify-self: center;
   font: 10px/1.2 var(--ui-font-mono);
+}
+.quotaReset > span {
+  flex-direction: column;
+  width: 3ch;
+  gap: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
   .quotaFill {

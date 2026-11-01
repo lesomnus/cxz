@@ -183,7 +183,7 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     const quotaBounds = (await quota.boundingBox())!;
-    expect(quotaBounds.width).toBe(96);
+    expect(quotaBounds.width).toBe(64);
     expect(quotaBounds.height).toBe(64);
     expect(quotaBounds.y).toBe(authBounds.y);
     expect(quotaBounds.x).toBeGreaterThan(authBounds.x + authBounds.width);
@@ -194,6 +194,9 @@ for (const width of [1280, 390]) {
     expect(gaugeBounds.height).toBe(60);
     expect(gaugeBounds.x - quotaBounds.x).toBe(2);
     expect(gaugeBounds.y - quotaBounds.y).toBe(2);
+    expect(
+      quotaBounds.y + quotaBounds.height - gaugeBounds.y - gaugeBounds.height,
+    ).toBe(2);
     expect(
       await gauge.evaluate((node) => getComputedStyle(node).borderRadius),
     ).toBe("8px");
@@ -208,6 +211,26 @@ for (const width of [1280, 390]) {
         .evaluate((node) => node.getBoundingClientRect().height),
     ).toBeCloseTo(60 * 0.64, 0);
     await expect(quota).toContainText(/00d02h2[56]m/);
+    const reset = quota.getByRole("img", { name: /milliseconds/ });
+    const resetRows = await reset
+      .locator(":scope > span")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const box = node.getBoundingClientRect();
+          return { x: box.x, y: box.y, right: box.right, bottom: box.bottom };
+        }),
+      );
+    expect(resetRows).toHaveLength(3);
+    for (const [index, row] of resetRows.entries()) {
+      expect(row.x).toBeGreaterThan(gaugeBounds.x + gaugeBounds.width);
+      expect(row.right).toBeLessThanOrEqual(
+        quotaBounds.x + quotaBounds.width - 2,
+      );
+      if (index) {
+        expect(row.x).toBe(resetRows[index - 1].x);
+        expect(row.y).toBeGreaterThan(resetRows[index - 1].bottom);
+      }
+    }
     await expect(
       personal.getByRole("region", { name: "Remaining agent usage" }),
     ).toContainText("—");
