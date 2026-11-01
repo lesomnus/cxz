@@ -136,16 +136,29 @@ for (const width of [1280, 390]) {
     const authBounds = (await work
       .getByRole("region", { name: "Authentication", exact: true })
       .boundingBox())!;
-    expect(usageBounds.x).toBe(informationBounds.x);
-    expect(usageBounds.width).toBe(informationBounds.width);
+    expect(sessionsBounds.x).toBe(informationBounds.x);
+    expect(sessionsBounds.width).toBe(informationBounds.width);
     const infoBounds = (await work
       .getByRole("region", { name: "Account details", exact: true })
       .boundingBox())!;
     expect(authBounds.y).toBeGreaterThanOrEqual(
       infoBounds.y + infoBounds.height,
     );
-    expect(usageBounds.y).toBeGreaterThanOrEqual(
+    expect(sessionsBounds.y).toBeGreaterThanOrEqual(
       authBounds.y + authBounds.height,
+    );
+    const scrollBounds = (await sessions
+      .getByRole("region", {
+        name: "Session list",
+        exact: true,
+      })
+      .boundingBox())!;
+    const sessionsPadding = await sessions.evaluate((node) =>
+      parseFloat(getComputedStyle(node).paddingBottom),
+    );
+    expect(scrollBounds.y + scrollBounds.height).toBeCloseTo(
+      sessionsBounds.y + sessionsBounds.height - sessionsPadding,
+      0,
     );
     const eraseBounds = (await work
       .getByRole("button", { name: "Erase account Work", exact: true })
@@ -171,21 +184,22 @@ for (const width of [1280, 390]) {
         parseFloat(getComputedStyle(node).maxWidth),
       );
       expect((await work.boundingBox())!.width).toBe(widthLimit);
-      expect(sessionsBounds.x).toBeGreaterThan(
+      expect(usageBounds.x).toBeGreaterThan(
         informationBounds.x + informationBounds.width,
       );
-      expect(sessionsBounds.y).toBe(informationBounds.y);
-      expect(sessionsBounds.width).toBeCloseTo(informationBounds.width, 0);
+      expect(usageBounds.y).toBe(informationBounds.y);
+      expect(usageBounds.width).toBeCloseTo(informationBounds.width, 0);
       expect(informationBounds.width).toBe(420);
-      expect(usageBounds.y + usageBounds.height).toBeCloseTo(
+      expect(sessionsBounds.y + sessionsBounds.height).toBeCloseTo(
         informationBounds.y + informationBounds.height,
         0,
       );
+      expect(usageBounds.height).toBe(informationBounds.height);
     } else {
-      expect(sessionsBounds.y).toBeGreaterThan(
+      expect(usageBounds.y).toBeGreaterThan(
         informationBounds.y + informationBounds.height,
       );
-      expect(sessionsBounds.width).toBe(informationBounds.width);
+      expect(usageBounds.width).toBe(informationBounds.width);
     }
     const details = work.getByRole("region", { name: "Account details" });
     await expect(
