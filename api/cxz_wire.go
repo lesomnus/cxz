@@ -4973,28 +4973,30 @@ func (x *SecretFileReply) GetPath() string {
 	return ""
 }
 
-type SessionPurgeInput struct {
+type SessionEraseInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	DryRun        bool                   `protobuf:"varint,2,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,3,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	CreateId      string                 `protobuf:"bytes,4,opt,name=create_id,json=createId,proto3" json:"create_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SessionPurgeInput) Reset() {
-	*x = SessionPurgeInput{}
+func (x *SessionEraseInput) Reset() {
+	*x = SessionEraseInput{}
 	mi := &file_cxz_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SessionPurgeInput) String() string {
+func (x *SessionEraseInput) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SessionPurgeInput) ProtoMessage() {}
+func (*SessionEraseInput) ProtoMessage() {}
 
-func (x *SessionPurgeInput) ProtoReflect() protoreflect.Message {
+func (x *SessionEraseInput) ProtoReflect() protoreflect.Message {
 	mi := &file_cxz_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5006,26 +5008,40 @@ func (x *SessionPurgeInput) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SessionPurgeInput.ProtoReflect.Descriptor instead.
-func (*SessionPurgeInput) Descriptor() ([]byte, []int) {
+// Deprecated: Use SessionEraseInput.ProtoReflect.Descriptor instead.
+func (*SessionEraseInput) Descriptor() ([]byte, []int) {
 	return file_cxz_proto_rawDescGZIP(), []int{68}
 }
 
-func (x *SessionPurgeInput) GetSessionId() string {
+func (x *SessionEraseInput) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
 	}
 	return ""
 }
 
-func (x *SessionPurgeInput) GetDryRun() bool {
+func (x *SessionEraseInput) GetDryRun() bool {
 	if x != nil {
 		return x.DryRun
 	}
 	return false
 }
 
-type SessionPurgeTarget struct {
+func (x *SessionEraseInput) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *SessionEraseInput) GetCreateId() string {
+	if x != nil {
+		return x.CreateId
+	}
+	return ""
+}
+
+type SessionEraseTarget struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Kind          string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
 	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
@@ -5035,20 +5051,20 @@ type SessionPurgeTarget struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SessionPurgeTarget) Reset() {
-	*x = SessionPurgeTarget{}
+func (x *SessionEraseTarget) Reset() {
+	*x = SessionEraseTarget{}
 	mi := &file_cxz_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SessionPurgeTarget) String() string {
+func (x *SessionEraseTarget) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SessionPurgeTarget) ProtoMessage() {}
+func (*SessionEraseTarget) ProtoMessage() {}
 
-func (x *SessionPurgeTarget) ProtoReflect() protoreflect.Message {
+func (x *SessionEraseTarget) ProtoReflect() protoreflect.Message {
 	mi := &file_cxz_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5060,63 +5076,63 @@ func (x *SessionPurgeTarget) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SessionPurgeTarget.ProtoReflect.Descriptor instead.
-func (*SessionPurgeTarget) Descriptor() ([]byte, []int) {
+// Deprecated: Use SessionEraseTarget.ProtoReflect.Descriptor instead.
+func (*SessionEraseTarget) Descriptor() ([]byte, []int) {
 	return file_cxz_proto_rawDescGZIP(), []int{69}
 }
 
-func (x *SessionPurgeTarget) GetKind() string {
+func (x *SessionEraseTarget) GetKind() string {
 	if x != nil {
 		return x.Kind
 	}
 	return ""
 }
 
-func (x *SessionPurgeTarget) GetPath() string {
+func (x *SessionEraseTarget) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
 	return ""
 }
 
-func (x *SessionPurgeTarget) GetFiles() int32 {
+func (x *SessionEraseTarget) GetFiles() int32 {
 	if x != nil {
 		return x.Files
 	}
 	return 0
 }
 
-func (x *SessionPurgeTarget) GetBytes() int64 {
+func (x *SessionEraseTarget) GetBytes() int64 {
 	if x != nil {
 		return x.Bytes
 	}
 	return 0
 }
 
-type SessionPurgeReply struct {
+type SessionEraseReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	DryRun        bool                   `protobuf:"varint,2,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
-	Targets       []*SessionPurgeTarget  `protobuf:"bytes,3,rep,name=targets,proto3" json:"targets,omitempty"`
+	Targets       []*SessionEraseTarget  `protobuf:"bytes,3,rep,name=targets,proto3" json:"targets,omitempty"`
 	Retained      []string               `protobuf:"bytes,4,rep,name=retained,proto3" json:"retained,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SessionPurgeReply) Reset() {
-	*x = SessionPurgeReply{}
+func (x *SessionEraseReply) Reset() {
+	*x = SessionEraseReply{}
 	mi := &file_cxz_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SessionPurgeReply) String() string {
+func (x *SessionEraseReply) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SessionPurgeReply) ProtoMessage() {}
+func (*SessionEraseReply) ProtoMessage() {}
 
-func (x *SessionPurgeReply) ProtoReflect() protoreflect.Message {
+func (x *SessionEraseReply) ProtoReflect() protoreflect.Message {
 	mi := &file_cxz_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5128,33 +5144,33 @@ func (x *SessionPurgeReply) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SessionPurgeReply.ProtoReflect.Descriptor instead.
-func (*SessionPurgeReply) Descriptor() ([]byte, []int) {
+// Deprecated: Use SessionEraseReply.ProtoReflect.Descriptor instead.
+func (*SessionEraseReply) Descriptor() ([]byte, []int) {
 	return file_cxz_proto_rawDescGZIP(), []int{70}
 }
 
-func (x *SessionPurgeReply) GetSessionId() string {
+func (x *SessionEraseReply) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
 	}
 	return ""
 }
 
-func (x *SessionPurgeReply) GetDryRun() bool {
+func (x *SessionEraseReply) GetDryRun() bool {
 	if x != nil {
 		return x.DryRun
 	}
 	return false
 }
 
-func (x *SessionPurgeReply) GetTargets() []*SessionPurgeTarget {
+func (x *SessionEraseReply) GetTargets() []*SessionEraseTarget {
 	if x != nil {
 		return x.Targets
 	}
 	return nil
 }
 
-func (x *SessionPurgeReply) GetRetained() []string {
+func (x *SessionEraseReply) GetRetained() []string {
 	if x != nil {
 		return x.Retained
 	}
@@ -7609,21 +7625,24 @@ const file_cxz_proto_rawDesc = "" +
 	"\aproject\x18\x01 \x01(\tR\aproject\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\"%\n" +
 	"\x0fSecretFileReply\x12\x12\n" +
-	"\x04path\x18\x01 \x01(\tR\x04path\"K\n" +
-	"\x11SessionPurgeInput\x12\x1d\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\"\x87\x01\n" +
+	"\x11SessionEraseInput\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x17\n" +
-	"\adry_run\x18\x02 \x01(\bR\x06dryRun\"h\n" +
-	"\x12SessionPurgeTarget\x12\x12\n" +
+	"\adry_run\x18\x02 \x01(\bR\x06dryRun\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x03 \x01(\tR\tprojectId\x12\x1b\n" +
+	"\tcreate_id\x18\x04 \x01(\tR\bcreateId\"h\n" +
+	"\x12SessionEraseTarget\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x14\n" +
 	"\x05files\x18\x03 \x01(\x05R\x05files\x12\x14\n" +
 	"\x05bytes\x18\x04 \x01(\x03R\x05bytes\"\xa2\x01\n" +
-	"\x11SessionPurgeReply\x12\x1d\n" +
+	"\x11SessionEraseReply\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x17\n" +
 	"\adry_run\x18\x02 \x01(\bR\x06dryRun\x129\n" +
-	"\atargets\x18\x03 \x03(\v2\x1f.cxz.runtime.SessionPurgeTargetR\atargets\x12\x1a\n" +
+	"\atargets\x18\x03 \x03(\v2\x1f.cxz.runtime.SessionEraseTargetR\atargets\x12\x1a\n" +
 	"\bretained\x18\x04 \x03(\tR\bretained\"\x9f\x01\n" +
 	"\rHistoryPolicy\x12\x1a\n" +
 	"\bdisabled\x18\x01 \x01(\bR\bdisabled\x12\x17\n" +
@@ -7831,7 +7850,7 @@ const file_cxz_proto_rawDesc = "" +
 	"\fAuxSetConfig\x12\x1e.cxz.runtime.AuxSetConfigInput\x1a\x1b.cxz.runtime.AuxConfigReply\x12E\n" +
 	"\tAuxModels\x12\x1b.cxz.runtime.AuxModelsInput\x1a\x1b.cxz.runtime.AuxModelsReply\x12N\n" +
 	"\fAuxLoginInfo\x12\x1e.cxz.runtime.AuxLoginInfoInput\x1a\x1e.cxz.runtime.AuxLoginInfoReply\x12N\n" +
-	"\fPurgeSession\x12\x1e.cxz.runtime.SessionPurgeInput\x1a\x1e.cxz.runtime.SessionPurgeReply\x12B\n" +
+	"\fEraseSession\x12\x1e.cxz.runtime.SessionEraseInput\x1a\x1e.cxz.runtime.SessionEraseReply\x12B\n" +
 	"\x10GetHistoryPolicy\x12\x12.cxz.runtime.Empty\x1a\x1a.cxz.runtime.HistoryPolicy\x12J\n" +
 	"\x10SetHistoryPolicy\x12\x1a.cxz.runtime.HistoryPolicy\x1a\x1a.cxz.runtime.HistoryPolicy\x12J\n" +
 	"\x0fGetHistoryFloor\x12\x17.cxz.runtime.SessionRef\x1a\x1e.cxz.runtime.HistoryFloorReply\x12N\n" +
@@ -7940,9 +7959,9 @@ var file_cxz_proto_goTypes = []any{
 	(*PutSecretFileInput)(nil),         // 65: cxz.runtime.PutSecretFileInput
 	(*DeleteSecretFileInput)(nil),      // 66: cxz.runtime.DeleteSecretFileInput
 	(*SecretFileReply)(nil),            // 67: cxz.runtime.SecretFileReply
-	(*SessionPurgeInput)(nil),          // 68: cxz.runtime.SessionPurgeInput
-	(*SessionPurgeTarget)(nil),         // 69: cxz.runtime.SessionPurgeTarget
-	(*SessionPurgeReply)(nil),          // 70: cxz.runtime.SessionPurgeReply
+	(*SessionEraseInput)(nil),          // 68: cxz.runtime.SessionEraseInput
+	(*SessionEraseTarget)(nil),         // 69: cxz.runtime.SessionEraseTarget
+	(*SessionEraseReply)(nil),          // 70: cxz.runtime.SessionEraseReply
 	(*HistoryPolicy)(nil),              // 71: cxz.runtime.HistoryPolicy
 	(*HistoryFloorReply)(nil),          // 72: cxz.runtime.HistoryFloorReply
 	(*SkillsInput)(nil),                // 73: cxz.runtime.SkillsInput
@@ -8009,7 +8028,7 @@ var file_cxz_proto_depIdxs = []int32{
 	50,  // 22: cxz.runtime.AuxConfigReply.profiles:type_name -> cxz.runtime.AuxProfile
 	50,  // 23: cxz.runtime.AuxSetConfigInput.profiles:type_name -> cxz.runtime.AuxProfile
 	52,  // 24: cxz.runtime.AuxModelsReply.models:type_name -> cxz.runtime.AuxModel
-	69,  // 25: cxz.runtime.SessionPurgeReply.targets:type_name -> cxz.runtime.SessionPurgeTarget
+	69,  // 25: cxz.runtime.SessionEraseReply.targets:type_name -> cxz.runtime.SessionEraseTarget
 	78,  // 26: cxz.runtime.SkillsReply.entries:type_name -> cxz.runtime.SkillEntry
 	82,  // 27: cxz.runtime.RenderDevcontainerReply.files:type_name -> cxz.runtime.RenderedFile
 	106, // 28: cxz.runtime.McpServer.env:type_name -> cxz.runtime.McpServer.EnvEntry
@@ -8070,7 +8089,7 @@ var file_cxz_proto_depIdxs = []int32{
 	60,  // 83: cxz.runtime.Sessions.AuxSetConfig:input_type -> cxz.runtime.AuxSetConfigInput
 	61,  // 84: cxz.runtime.Sessions.AuxModels:input_type -> cxz.runtime.AuxModelsInput
 	63,  // 85: cxz.runtime.Sessions.AuxLoginInfo:input_type -> cxz.runtime.AuxLoginInfoInput
-	68,  // 86: cxz.runtime.Sessions.PurgeSession:input_type -> cxz.runtime.SessionPurgeInput
+	68,  // 86: cxz.runtime.Sessions.EraseSession:input_type -> cxz.runtime.SessionEraseInput
 	0,   // 87: cxz.runtime.Sessions.GetHistoryPolicy:input_type -> cxz.runtime.Empty
 	71,  // 88: cxz.runtime.Sessions.SetHistoryPolicy:input_type -> cxz.runtime.HistoryPolicy
 	3,   // 89: cxz.runtime.Sessions.GetHistoryFloor:input_type -> cxz.runtime.SessionRef
@@ -8141,7 +8160,7 @@ var file_cxz_proto_depIdxs = []int32{
 	59,  // 154: cxz.runtime.Sessions.AuxSetConfig:output_type -> cxz.runtime.AuxConfigReply
 	62,  // 155: cxz.runtime.Sessions.AuxModels:output_type -> cxz.runtime.AuxModelsReply
 	64,  // 156: cxz.runtime.Sessions.AuxLoginInfo:output_type -> cxz.runtime.AuxLoginInfoReply
-	70,  // 157: cxz.runtime.Sessions.PurgeSession:output_type -> cxz.runtime.SessionPurgeReply
+	70,  // 157: cxz.runtime.Sessions.EraseSession:output_type -> cxz.runtime.SessionEraseReply
 	71,  // 158: cxz.runtime.Sessions.GetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
 	71,  // 159: cxz.runtime.Sessions.SetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
 	72,  // 160: cxz.runtime.Sessions.GetHistoryFloor:output_type -> cxz.runtime.HistoryFloorReply

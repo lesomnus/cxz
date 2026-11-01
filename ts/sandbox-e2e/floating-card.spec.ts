@@ -25,8 +25,8 @@ async function paste(page: Page, body: string) {
   await input.focus();
   await input.press("Control+v");
   await expect(page.locator(".paste-chip").last()).toHaveAttribute(
-    "data-upload-state",
-    "ready",
+    "aria-busy",
+    "false",
   );
 }
 

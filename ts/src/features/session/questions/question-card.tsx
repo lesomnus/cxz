@@ -24,7 +24,7 @@ import type { UploadFile } from "#src/features/session/composer/composer-upload.
 import type { DownloadAttachment } from "#src/features/session/composer/composer-download.ts";
 import type { SecretFiles } from "#src/features/session/composer/secret-paste.ts";
 import { composerPrompt } from "#src/features/session/composer/composer-code.ts";
-import { TabList } from "#src/shared/components/tab-list.tsx";
+import { QuestionTabs } from "./question-tabs.tsx";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import { ScrollFade } from "#src/shared/components/scroll-fade.tsx";
 
@@ -108,13 +108,11 @@ export function QuestionCard({
       )}
       {qs.length > 0 && (
         <header className="question-header">
-          <TabList
+          <QuestionTabs
             prefix={prefix}
             panelId={panel}
-            label={t("Question steps")}
             items={qs.map((q, index) => ({
               id: String(index),
-              label: `Q${index + 1}`,
               answered: answered(q.key),
             }))}
             value={String(activeStep)}

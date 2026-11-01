@@ -52,8 +52,8 @@ func TestProjectEraseFailureRetryAndRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// A session already erased is still a session whose data must go.
-	if _, err := stack.Session().Erase(ctx, sessionRef("session")); err != nil {
+	// Stopped sessions remain registered and are erased with their project.
+	if _, err := stack.Session().List(ctx, &resource.SessionListRequest{}); err != nil {
 		t.Fatal(err)
 	}
 	f.err = errors.New("volume is in use")

@@ -177,17 +177,17 @@ test("project row and bulk controls use the sandbox session lifecycle", async ({
   await expect(rows).toHaveCount(8);
   const first = rows.first(),
     second = rows.nth(1);
-  const state = first.locator("td:nth-child(6)");
+  const state = first.getByRole("img");
   await first.getByRole("button", { name: /Controls for/ }).click();
   await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
   await page
     .getByRole("dialog", { name: "Stop session", exact: true })
     .getByRole("button", { name: "Stop", exact: true })
     .click();
-  await expect(state).toHaveText("Stopped");
+  await expect(state).toHaveAccessibleName("Stopped");
   await first.getByRole("button", { name: /Controls for/ }).click();
   await page.getByRole("menuitem", { name: "Resume", exact: true }).click();
-  await expect(state).toHaveText("Idle");
+  await expect(state).toHaveAccessibleName("Idle");
 
   await first.getByRole("checkbox").check();
   await second.getByRole("checkbox").check();
@@ -200,72 +200,48 @@ test("project row and bulk controls use the sandbox session lifecycle", async ({
   const stop = page.getByRole("dialog", { name: "Stop sessions", exact: true });
   await expect(stop).toContainText("2 sessions will be affected.");
   await stop.getByRole("button", { name: "Stop", exact: true }).click();
-  await expect(first.locator("td:nth-child(6)")).toHaveText("Stopped");
-  await expect(second.locator("td:nth-child(6)")).toHaveText("Stopped");
+  await expect(first.getByRole("img")).toHaveAccessibleName("Stopped");
+  await expect(second.getByRole("img")).toHaveAccessibleName("Stopped");
   await expect(actions).toBeDisabled();
 
   await first.getByRole("checkbox").check();
   await second.getByRole("checkbox").check();
   await actions.click();
-  await page.getByRole("menuitem", { name: "Purge", exact: true }).click();
-  const purge = page.getByRole("dialog", {
-    name: "Purge sessions",
+  await page.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  const erase = page.getByRole("dialog", {
+    name: "Erase sessions",
     exact: true,
   });
-  await expect(purge).toContainText("/sandbox/session-1/journal");
-  await purge.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(erase).toContainText("This cannot be undone.");
+  await erase.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(rows).toHaveCount(8);
   await actions.click();
-  await page.getByRole("menuitem", { name: "Purge", exact: true }).click();
-  await purge
-    .getByRole("button", { name: "Purge permanently", exact: true })
-    .click();
-  await expect(purge).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  await erase.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(erase).toHaveCount(0);
   await expect(rows).toHaveCount(6);
   await expect(table).not.toContainText("Project checklist");
 });
 
-test("project session identity edits use Session.Patch in the sandbox", async ({
+test("project session identities use stacked navigation buttons in the sandbox", async ({
   page,
 }) => {
   await page.goto("/sandbox.html#/c/_/project");
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   await expect(table).toBeVisible({ timeout: 45000 });
   const row = table.locator("tbody tr").first();
+  await expect(
+    table.locator(".agent-brand, .editable-value-trigger"),
+  ).toHaveCount(0);
+  const session = row.locator('a[href*="/session/"]');
+  await expect(session).toBeVisible();
+  const href = (await session.getAttribute("href"))!;
+  const target = href.slice(href.indexOf("/c/"));
   await row.getByRole("checkbox").check();
-  const before = await row.boundingBox();
-  const editName = row.getByRole("button", { name: "Edit Name", exact: true });
-  const originalAlias = await row
-    .getByRole("button", { name: "Edit Alias", exact: true })
-    .textContent();
-  await editName.click();
-  const dialog = page.getByRole("dialog", { name: "Edit Name", exact: true });
-  const input = dialog.getByRole("textbox", { name: "Name", exact: true });
-  await input.fill("Updated project session");
-  await input.press("Enter");
-  await expect(dialog).toHaveCount(0);
-  await expect(editName).toHaveText("Updated project session");
-  const editAlias = row.getByRole("button", {
-    name: "Edit Alias",
-    exact: true,
-  });
-  await expect(editAlias).toHaveText(originalAlias!);
-  await editAlias.click();
-  const aliasDialog = page.getByRole("dialog", {
-    name: "Edit Alias",
-    exact: true,
-  });
-  await aliasDialog
-    .getByRole("textbox", { name: "Alias", exact: true })
-    .fill("project-edited");
-  await aliasDialog
-    .getByRole("button", { name: "Confirm", exact: true })
-    .click();
-  await expect(aliasDialog).toHaveCount(0);
-  await expect(editAlias).toHaveText("project-edited");
-  await expect(editName).toHaveText("Updated project session");
   await expect(row.getByRole("checkbox")).toBeChecked();
-  expect(await row.boundingBox()).toEqual(before);
+  await session.click();
+  await expect(page).toHaveURL((url) => url.hash.endsWith(target));
+  await expect(page.locator("form.composer")).toBeVisible();
 });
 
 test("project Session add opens the shared creation dialog scoped to the selected project", async ({
@@ -401,9 +377,15 @@ test("project Stop retains the sandbox project and conversation records", async 
     .getByRole("table", { name: "Sessions", exact: true })
     .locator("tbody tr");
   await expect(rows).toHaveCount(8);
-  await expect(rows.locator("td:nth-child(6)")).toHaveText(
-    Array(8).fill("Stopped"),
-  );
+  await expect
+    .poll(() =>
+      rows
+        .getByRole("img")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("aria-label")),
+        ),
+    )
+    .toEqual(Array(8).fill("Stopped"));
   const picker = page.getByRole("combobox", {
     name: "Select project",
     exact: true,

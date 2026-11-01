@@ -356,7 +356,7 @@ transform, keeping those layers in the same stacking context. During IME
 composition, native text is visible and code backgrounds remain in place.
 
 Line numbers follow soft wrapping, scrolling and viewport changes. Text pastes over
-32 Unicode characters become chips; text over 64 characters defaults to File
+32 Unicode characters become chips; text over 256 characters defaults to File
 when uploads are available, while shorter chips default to Text. Click a chip, select it with Left/Right and
 press Enter, or use Ctrl+P to preview the original; the preview can remove that
 occurrence or expand it into editable text. Backspace/Delete removes a whole
@@ -393,7 +393,7 @@ the same request and carries it over the worker's message channel to the same
 handler, where the fake service stores simulated files only in memory; Download
 can read them in the owning project, and Purge releases them. Real uploads use
 the existing container-readable `/cxz/assets` attachment mount and survive until
-session purge. Uploads do not alter workspace files or add transcript events.
+session erasure. Uploads do not alter workspace files or add transcript events.
 Implementation limits live in `composer-files.ts`, `composer-pastes.ts`,
 `composer-upload.ts` and the server attachment implementation.
 See [Attachment data path](attachment-data-path.md) for discovery, cancellation,

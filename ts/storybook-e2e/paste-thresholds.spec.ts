@@ -14,8 +14,8 @@ test("native paste uses inline, Text and File defaults at the character boundari
     ["one\ntwo\nthree\nfour", "inline"],
     ["😀".repeat(32), "inline"],
     ["a".repeat(33), "text"],
-    ["한".repeat(64), "text"],
-    ["😀".repeat(65), "file"],
+    ["한".repeat(256), "text"],
+    ["😀".repeat(257), "file"],
   ] as const) {
     await input.fill("");
     await page.evaluate((text) => navigator.clipboard.writeText(text), body);

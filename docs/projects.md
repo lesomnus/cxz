@@ -31,7 +31,7 @@ What survives what:
 | `project recreate` | new | **gone** | kept | kept | kept |
 | `project purge --yes` | gone | gone | **gone** | owned project volumes **gone** | **gone** |
 | `uninstall` | kept | kept | kept | kept | kept |
-| `session purge` | kept | kept | **gone for one session** | kept | kept |
+| `session erase` | kept | kept | **gone for one session** | kept | kept |
 | `purge` | gone | gone | **gone** | **gone** | **gone** |
 
 `up` prepares and returns — it never starts an agent and never replays an old
@@ -79,8 +79,8 @@ cxz project set --name "Production Web" --alias prod web
 
 Session aliases are random three-to-seven-letter English words, globally unique.
 Select a session in the project list and press `r` to change one; custom aliases
-are three to seven lowercase letters. Deleting a session frees its alias and keeps
-its journal. The word pool is finite — exhaustion is reported rather than silently
+are three to seven lowercase letters. Erasing a session frees its alias and permanently deletes its
+journal and stored data. The word pool is finite — exhaustion is reported rather than silently
 falling back to numbers.
 
 Project arguments resolve in order: exact ID or path, then alias, then an
@@ -116,37 +116,30 @@ cannot reach your other projects or accounts.
 
 ## Deleting a session
 
-Deleting a session (`Ctrl+X` twice in the TUI) stops its agent, releases its alias
-and stops listing it. It does **not** delete the conversation: the journal, the
-agent profile behind it and the session's uploads all stay, so a delete you regret
-costs you a listing and nothing else.
-
-`cxz session purge` is the other half, and the only command that destroys one
-conversation:
+`Session.Erase` permanently deletes one session and its owned data. In the CLI:
 
 ```sh
-cxz session purge --dry-run lamp   # what it would delete, and how many bytes
-cxz session purge --yes lamp       # delete it
+cxz session erase --yes lamp
 ```
 
-It stops the agent, then unlinks the journal, the agent profile and its
-credentials, the agent's own transcript, the memory documents the session
-published, its attachments, and finally the session record itself including its
-title and alias. A purged session is not a tombstone — it is gone from every
-listing and every read.
+The TUI requires pressing `Ctrl+X` twice; the web shows a confirmation dialog.
+Erasure stops the agent, then deletes its conversation, profile and credentials,
+provider transcript, published memory, attachments and registry record. Workspace
+files, the project, shared accounts, attachment bytes referenced by another
+session and log lines elsewhere are retained. Erasure runs from the host client;
+an agent inside a project cannot erase the history it can read.
 
-Purge runs from the host client. It is refused inside a project container, where it
-could not reach the attachments the manager holds — and where an agent must not be
-able to delete the history it can read.
+`Stop` retains the session and its data. Display filtering belongs to the client:
+`Session.List` and `Watch` include every unerased session, including stopped ones.
+There is no server archive/restore state or `listed` field. Existing hidden
+sessions are returned by the API after upgrade without deleting their retained data.
 
-What a session purge leaves alone: files the agent wrote in your workspace,
-attachment bytes another session still references, the project itself, and log
-lines elsewhere that mention the session id. The reply lists these rather than
-implying more was deleted than was.
-
-`--dry-run` measures the same targets the real run deletes and changes nothing, so
-the byte total it prints is the one you lose. Purge is re-runnable: an interrupted
-purge leaves less data than before, never a live session missing its journal.
+`Erase` accepts a session reference and returns whether it erased a resource.
+Repeated calls for an already absent resource succeed without deleting anything
+else. Cleanup failures retain the resource for retry. The old `Purge` and
+`Restore` RPCs and `session purge` command are removed. Upgrade clients, Manager
+and project runtimes together: an older client's `Erase` now means permanent
+deletion too. Public session erasure has no dry-run endpoint.
 
 ## Purge
 

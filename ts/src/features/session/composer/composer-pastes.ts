@@ -61,7 +61,7 @@ export function needsPasteChip(text: string) {
 }
 
 export function defaultPasteSendMode(text: string): "text" | "file" {
-  return exceedsCharacters(text, 64) ? "file" : "text";
+  return exceedsCharacters(text, 256) ? "file" : "text";
 }
 
 function exceedsCharacters(text: string, limit: number) {
@@ -165,10 +165,22 @@ export function wholePasteSelection(
   ranges: PasteRange[],
   start: number,
   end: number,
+  motion?: "forward" | "backward",
+  direction: "forward" | "backward" | "none" = "none",
 ) {
+  if (motion && start !== end) {
+    const anchor = direction === "backward" ? end : start;
+    let caret = direction === "backward" ? start : end;
+    const range = ranges.find(
+      (range) => caret > range.start && caret < range.end,
+    );
+    if (range) caret = motion === "backward" ? range.start : range.end;
+    start = Math.min(anchor, caret);
+    end = Math.max(anchor, caret);
+  }
   for (const range of ranges) {
     if (start === end && start > range.start && start < range.end) {
-      start = end = range.end;
+      start = end = motion === "backward" ? range.start : range.end;
     } else if (start < range.end && end > range.start) {
       start = Math.min(start, range.start);
       end = Math.max(end, range.end);

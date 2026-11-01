@@ -79,6 +79,9 @@ func (b builder) Build(next resource.Server) (resource.Server, error) {
 type Options struct{ Notifications bool }
 
 func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log, options ...Options) (resource.Server, error) {
+	if err := migrateSessionSchema(ctx, db); err != nil {
+		return nil, err
+	}
 	if err := migrateProjectSchema(ctx, db); err != nil {
 		return nil, err
 	}

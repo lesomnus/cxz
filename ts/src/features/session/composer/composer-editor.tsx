@@ -166,6 +166,7 @@ export function ComposerEditor({
     | { start: number; end: number; direction: "forward" | "backward" | "none" }
     | undefined
   >(undefined);
+  const caretMotion = useRef<"forward" | "backward" | undefined>(undefined);
   const expectedEdit = useRef<{ text: string; source: string } | undefined>(
     undefined,
   );
@@ -533,12 +534,18 @@ export function ComposerEditor({
       ranges,
       el.selectionStart,
       el.selectionEnd,
+      caretMotion.current,
+      el.selectionDirection,
     );
     if (
       selection.start !== el.selectionStart ||
       selection.end !== el.selectionEnd
     )
-      el.setSelectionRange(selection.start, selection.end);
+      el.setSelectionRange(
+        selection.start,
+        selection.end,
+        el.selectionDirection,
+      );
     return selection;
   }
   function replace(
@@ -771,6 +778,9 @@ export function ComposerEditor({
             autoCapitalize="off"
             autoCorrect="off"
             wrap={wordWrap ? "soft" : "off"}
+            onPointerDown={() => {
+              caretMotion.current = undefined;
+            }}
             onFocus={updateSuggestions}
             onBlur={() => {
               rememberSelection();
@@ -943,6 +953,14 @@ export function ComposerEditor({
             onKeyDown={(event) => {
               if (readOnly) return;
               if (event.nativeEvent.isComposing || composing.current) return;
+              // Native word movement can stop inside a chip's invisible text.
+              // Snap to the edge in that direction instead of undoing the move.
+              caretMotion.current =
+                event.key === "ArrowLeft"
+                  ? "backward"
+                  : event.key === "ArrowRight"
+                    ? "forward"
+                    : undefined;
               if (
                 event.altKey &&
                 !event.ctrlKey &&
@@ -1033,6 +1051,37 @@ export function ComposerEditor({
                 return;
               }
               const selection = normalizedSelection();
+              if (
+                event.ctrlKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
+                (selection.start === selection.end || event.shiftKey)
+              ) {
+                const backward = event.key === "ArrowLeft";
+                const active =
+                  el.selectionDirection === "backward"
+                    ? selection.start
+                    : selection.end;
+                const adjacent = ranges.find(
+                  (range) => active === (backward ? range.end : range.start),
+                );
+                if (adjacent) {
+                  event.preventDefault();
+                  const target = backward ? adjacent.start : adjacent.end;
+                  const anchor = event.shiftKey
+                    ? el.selectionDirection === "backward"
+                      ? selection.end
+                      : selection.start
+                    : target;
+                  el.setSelectionRange(
+                    Math.min(anchor, target),
+                    Math.max(anchor, target),
+                    target < anchor ? "backward" : "forward",
+                  );
+                  return;
+                }
+              }
               // Pair a completed opening fence and place the native cursor on
               // the empty body line between the visible Markdown delimiters.
               if (

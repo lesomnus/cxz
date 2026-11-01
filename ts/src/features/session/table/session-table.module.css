@@ -4,6 +4,9 @@
   --session-row-gap: var(--ui-control-inset);
   --session-header-height: 28px;
   --session-visible-rows: 7.5;
+  --session-table-min-width: 528px;
+  --session-account-column-width: 96px;
+  --session-project-column-width: 96px;
   --ui-scroll-area-background: var(--ui-shade-24);
   --ui-scroll-area-content-inset: 0px;
   flex: none;
@@ -19,18 +22,33 @@
   top: var(--session-header-height);
 }
 .table {
+  --session-project-column-space: 0px;
   width: 100%;
-  min-width: 528px;
+  min-width: calc(
+    var(--session-table-min-width) + var(--session-project-column-space)
+  );
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 11px;
 }
+.table[data-account-column="false"] {
+  min-width: calc(
+    var(--session-table-min-width) - var(--session-account-column-width) +
+      var(--session-project-column-space)
+  );
+}
+.table[data-project-column="true"] {
+  --session-project-column-space: var(--session-project-column-width);
+}
 .selectionColumn {
   width: 44px;
 }
 .accountColumn {
-  width: 96px;
+  width: var(--session-account-column-width);
+}
+.projectColumn {
+  width: var(--session-project-column-width);
 }
 .agentColumn {
   width: 44px;
@@ -40,6 +58,63 @@
 }
 .aliasColumn {
   width: 76px;
+}
+.compact {
+  --session-table-min-width: calc(280px + var(--session-account-column-width));
+}
+.compact .nameColumn {
+  width: auto;
+}
+.compact .stateColumn {
+  width: 48px;
+}
+.identity {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+.title,
+.subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navigationButton.navigationButton {
+  --button-background: var(--session-navigation-background, var(--ui-shade-32));
+  background: var(--button-background);
+  display: flex;
+  width: 100%;
+  height: calc(var(--session-row-height) - 2 * var(--ui-control-inset));
+  min-height: 0;
+  padding: 0 var(--ui-control-inline-inset);
+  border-radius: var(--session-cell-radius);
+  text-align: left;
+  font: inherit;
+}
+.navigationButton.navigationButton:hover {
+  background: var(
+    --session-navigation-hover-background,
+    var(--ui-button-hover-background)
+  );
+}
+.navigationButton > :global(.button-content) {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+  gap: var(--ui-space);
+}
+.subtitle {
+  color: var(--ui-muted);
+  font: 10px/1.3 var(--ui-font-mono);
+}
+.stateIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+  vertical-align: middle;
 }
 .actionsColumn {
   width: calc(var(--session-row-height) + var(--ui-control-inset));
@@ -65,20 +140,20 @@
 }
 .table td {
   height: calc(var(--session-row-height) + var(--session-row-gap));
-  padding: 0 var(--ui-space) calc(var(--session-row-gap) - 1px);
-  border-bottom: 1px solid transparent;
+  padding: 0 var(--ui-space);
+  border-bottom: 0;
   vertical-align: middle;
 }
 .table tbody tr:not(:last-child) td {
-  border-bottom-color: var(--ui-shade-36);
-}
-.table tbody tr[data-selected] {
-  background: var(--ui-selected);
+  box-shadow: inset 0 -1px 0 var(--ui-shade-36);
 }
 .table tbody tr:hover {
+  --session-navigation-background: var(--ui-shade-40);
   background: var(--ui-shade-32);
 }
-.table tbody tr[data-selected]:hover {
+.table tbody tr[data-selected] {
+  --session-navigation-background: var(--ui-shade-60);
+  --session-navigation-hover-background: var(--ui-shade-72);
   background: var(--ui-shade-51);
 }
 .table th:first-child,
@@ -98,47 +173,12 @@
   height: auto;
 }
 .table td.cardCell {
-  padding: var(--ui-control-inset) var(--ui-control-inset)
-    calc(var(--session-row-gap) + var(--ui-control-inset) - 1px);
-}
-.account {
-  color: var(--ui-muted);
-}
-.accountCard {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--ui-space);
-  width: 100%;
-  height: calc(var(--session-row-height) - 2 * var(--ui-control-inset));
-  min-height: calc(var(--session-row-height) - 2 * var(--ui-control-inset));
-  padding: 0 var(--ui-control-inline-inset);
-  border: 1px solid var(--ui-shade-48);
-  border-radius: var(--session-cell-radius);
-  background: transparent;
-  color: inherit;
-  text-decoration: none;
-}
-.accountCard span {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: var(--ui-control-inset);
 }
 .openArrow {
   flex: none;
   width: var(--ui-icon-size-small);
   height: var(--ui-icon-size-small);
-}
-.accountCard:hover {
-  background: var(--ui-hover);
-  border-color: var(--ui-shade-72);
-  color: var(--ui-shade-237);
-}
-.accountCard:focus-visible {
-  outline: 1px solid var(--ui-muted);
-  outline-offset: 1px;
 }
 .state {
   color: var(--ui-muted);

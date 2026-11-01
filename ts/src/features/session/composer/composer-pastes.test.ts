@@ -38,8 +38,8 @@ describe("composer paste chips", () => {
       expect(needsPasteChip(character.repeat(32))).toBe(false);
       expect(needsPasteChip(character.repeat(33))).toBe(true);
       expect(defaultPasteSendMode(character.repeat(33))).toBe("text");
-      expect(defaultPasteSendMode(character.repeat(64))).toBe("text");
-      expect(defaultPasteSendMode(character.repeat(65))).toBe("file");
+      expect(defaultPasteSendMode(character.repeat(256))).toBe("text");
+      expect(defaultPasteSendMode(character.repeat(257))).toBe("file");
     }
     expect(needsPasteChip("one\ntwo\nthree")).toBe(false);
     expect(needsPasteChip("one\ntwo\nthree\n")).toBe(false);
@@ -92,6 +92,30 @@ describe("composer paste chips", () => {
     expect(
       wholePasteSelection([range], range.start + 2, range.start + 2),
     ).toEqual({ start: range.end, end: range.end });
+    expect(
+      wholePasteSelection([range], range.end - 1, range.end - 1, "backward"),
+    ).toEqual({ start: range.start, end: range.start });
+    expect(
+      wholePasteSelection([range], range.start + 1, range.start + 1, "forward"),
+    ).toEqual({ start: range.end, end: range.end });
+    expect(
+      wholePasteSelection(
+        [range],
+        range.start + 1,
+        range.end,
+        "forward",
+        "backward",
+      ),
+    ).toEqual({ start: range.end, end: range.end });
+    expect(
+      wholePasteSelection(
+        [range],
+        range.start,
+        range.end - 1,
+        "backward",
+        "forward",
+      ),
+    ).toEqual({ start: range.start, end: range.start });
     expect(
       partialPasteEdit(
         text,

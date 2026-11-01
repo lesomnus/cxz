@@ -32,11 +32,11 @@ it("offers secret input only for a plain inline directive", () => {
   expect(redactQuery("`/@red", 6, 6)).toBeUndefined();
   expect(redactQuery("/@red", 5, 5)).toBeUndefined();
 });
-it("keeps mentions within the current project and excludes self/archive", () => {
+it("keeps mentions within the current project and excludes self/erased", () => {
   const project = { id: new Uint8Array([1]), runtimeId: "p" };
   const current = create(SessionSchema, {
     runtimeId: "self",
-    listed: true,
+
     alias: "self",
     project,
   });
@@ -45,19 +45,20 @@ it("keeps mentions within the current project and excludes self/archive", () => 
       runtimeId: "oak",
       alias: "oak",
       name: "Research",
-      listed: true,
+
       project,
     }),
     create(SessionSchema, {
       runtimeId: "other",
       alias: "oak-other",
-      listed: true,
+
       project: { id: new Uint8Array([2]) },
     }),
     create(SessionSchema, {
       runtimeId: "gone",
       alias: "oak-gone",
-      listed: false,
+      dateErased: { seconds: 1n },
+
       project,
     }),
     current,

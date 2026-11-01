@@ -13,15 +13,14 @@ import (
 func RegistryFromResources(ctx context.Context, project string, list func(context.Context, *resource.SessionListRequest) (*resource.SessionListResponse, error)) ([]Session, error) {
 	var out []Session
 	after := ""
-	yes := true
 	for {
-		page, err := list(ctx, resource.SessionListRequest_builder{Size: 200, After: after, Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Listed: &yes, Project: projectid.Ref(project)}.Build()}}.Build())
+		page, err := list(ctx, resource.SessionListRequest_builder{Size: 200, After: after, Filters: []*resource.SessionFilter{resource.SessionFilter_builder{Project: projectid.Ref(project)}.Build()}}.Build())
 		if err != nil {
 			return nil, err
 		}
 		for _, v := range page.GetItems() {
 			// List expands project relations; check even if a backend ignores filters.
-			if !projectid.Same(projectid.String(v.GetProject().GetId()), project) || !v.GetListed() {
+			if !projectid.Same(projectid.String(v.GetProject().GetId()), project) {
 				continue
 			}
 			id, err := uuid.FromBytes(v.GetId())

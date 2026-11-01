@@ -108,7 +108,7 @@ reject/drop further metrics; agent execution continues. This is best effort
 collection and statistics always report `complete=false` rather than asserting
 that every token was captured.
 
-Permanent session purge/project erasure revokes ingestion and writes a durable exclusion before
+Session/project erasure revokes ingestion and writes a durable exclusion before
 physical metric cleanup. Queued late exports remain excluded and periodic
 cleanup removes their rows. Exclusions expire after retention plus seven days;
 queries already exclude metrics older than retention. Erasure may return an

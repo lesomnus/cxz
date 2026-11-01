@@ -89,7 +89,7 @@ func TestSessionPatchManualTitleAndAlias(t *testing.T) {
 			t.Fatal("invalid metadata edit", err)
 		}
 	}
-	if _, err := stack.Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: sessionRef("first"), Name: ptr("New title"), Listed: ptr(false)}.Build()); status.Code(err) != codes.PermissionDenied {
+	if _, err := stack.Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: sessionRef("first"), Name: ptr("New title"), StatusNull: ptr(true)}.Build()); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("metadata field bypass", err)
 	}
 	if f.titleCalls != 0 || !proto.Equal(before, get("first")) {

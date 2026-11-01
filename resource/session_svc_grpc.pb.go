@@ -29,7 +29,6 @@ const (
 	SessionService_MarkRead_FullMethodName               = "/cxz.SessionService/MarkRead"
 	SessionService_ReadState_FullMethodName              = "/cxz.SessionService/ReadState"
 	SessionService_ConversationStats_FullMethodName      = "/cxz.SessionService/ConversationStats"
-	SessionService_Restore_FullMethodName                = "/cxz.SessionService/Restore"
 	SessionService_Resume_FullMethodName                 = "/cxz.SessionService/Resume"
 	SessionService_Fork_FullMethodName                   = "/cxz.SessionService/Fork"
 	SessionService_Stop_FullMethodName                   = "/cxz.SessionService/Stop"
@@ -72,7 +71,6 @@ const (
 	SessionService_AuxEvents_FullMethodName              = "/cxz.SessionService/AuxEvents"
 	SessionService_AuxPrefer_FullMethodName              = "/cxz.SessionService/AuxPrefer"
 	SessionService_AuxCancel_FullMethodName              = "/cxz.SessionService/AuxCancel"
-	SessionService_Purge_FullMethodName                  = "/cxz.SessionService/Purge"
 	SessionService_GetHistoryFloor_FullMethodName        = "/cxz.SessionService/GetHistoryFloor"
 	SessionService_McpLogs_FullMethodName                = "/cxz.SessionService/McpLogs"
 	SessionService_RestartMcp_FullMethodName             = "/cxz.SessionService/RestartMcp"
@@ -111,7 +109,6 @@ type SessionServiceClient interface {
 	ReadState(ctx context.Context, in *SessionReadStateRequest, opts ...grpc.CallOption) (*SessionReadState, error)
 	// Read retained conversation statistics, never account billing or lifetime totals.
 	ConversationStats(ctx context.Context, in *ConversationStatsRequest, opts ...grpc.CallOption) (*ConversationStatsReply, error)
-	Restore(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
 	Resume(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	// Branch a settled conversation, retaining its project, account and settings.
 	// client_id makes retries return the same child rather than creating another.
@@ -190,10 +187,6 @@ type SessionServiceClient interface {
 	AuxEvents(ctx context.Context, in *AuxStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AuxState], error)
 	AuxPrefer(ctx context.Context, in *AuxPreferRequest, opts ...grpc.CallOption) (*AuxState, error)
 	AuxCancel(ctx context.Context, in *AuxCancelRequest, opts ...grpc.CallOption) (*AuxState, error)
-	// Purge destroys a session everywhere cxz keeps it, which is the one
-	// operation that does. A dry run reports the plan without carrying it out --
-	// the same code, so that what is reported is what would happen.
-	Purge(ctx context.Context, in *SessionPurgeRequest, opts ...grpc.CallOption) (*SessionPurgeReply, error)
 	// One session's connection to one registered MCP. Both are the session's and
 	// not the installation's: the logs are of that launch and the reconnection is
 	// of that connection, and neither changes what is registered.
@@ -316,16 +309,6 @@ func (c *sessionServiceClient) ConversationStats(ctx context.Context, in *Conver
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConversationStatsReply)
 	err := c.cc.Invoke(ctx, SessionService_ConversationStats_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sessionServiceClient) Restore(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Session)
-	err := c.cc.Invoke(ctx, SessionService_Restore_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -788,16 +771,6 @@ func (c *sessionServiceClient) AuxCancel(ctx context.Context, in *AuxCancelReque
 	return out, nil
 }
 
-func (c *sessionServiceClient) Purge(ctx context.Context, in *SessionPurgeRequest, opts ...grpc.CallOption) (*SessionPurgeReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SessionPurgeReply)
-	err := c.cc.Invoke(ctx, SessionService_Purge_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sessionServiceClient) GetHistoryFloor(ctx context.Context, in *SessionHistoryFloorRequest, opts ...grpc.CallOption) (*SessionHistoryFloorReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionHistoryFloorReply)
@@ -861,7 +834,6 @@ type SessionServiceServer interface {
 	ReadState(context.Context, *SessionReadStateRequest) (*SessionReadState, error)
 	// Read retained conversation statistics, never account billing or lifetime totals.
 	ConversationStats(context.Context, *ConversationStatsRequest) (*ConversationStatsReply, error)
-	Restore(context.Context, *SessionRef) (*Session, error)
 	Resume(context.Context, *SessionControl) (*Session, error)
 	// Branch a settled conversation, retaining its project, account and settings.
 	// client_id makes retries return the same child rather than creating another.
@@ -940,10 +912,6 @@ type SessionServiceServer interface {
 	AuxEvents(*AuxStatusRequest, grpc.ServerStreamingServer[AuxState]) error
 	AuxPrefer(context.Context, *AuxPreferRequest) (*AuxState, error)
 	AuxCancel(context.Context, *AuxCancelRequest) (*AuxState, error)
-	// Purge destroys a session everywhere cxz keeps it, which is the one
-	// operation that does. A dry run reports the plan without carrying it out --
-	// the same code, so that what is reported is what would happen.
-	Purge(context.Context, *SessionPurgeRequest) (*SessionPurgeReply, error)
 	// One session's connection to one registered MCP. Both are the session's and
 	// not the installation's: the logs are of that launch and the reconnection is
 	// of that connection, and neither changes what is registered.
@@ -992,9 +960,6 @@ func (UnimplementedSessionServiceServer) ReadState(context.Context, *SessionRead
 }
 func (UnimplementedSessionServiceServer) ConversationStats(context.Context, *ConversationStatsRequest) (*ConversationStatsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ConversationStats not implemented")
-}
-func (UnimplementedSessionServiceServer) Restore(context.Context, *SessionRef) (*Session, error) {
-	return nil, status.Error(codes.Unimplemented, "method Restore not implemented")
 }
 func (UnimplementedSessionServiceServer) Resume(context.Context, *SessionControl) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Resume not implemented")
@@ -1121,9 +1086,6 @@ func (UnimplementedSessionServiceServer) AuxPrefer(context.Context, *AuxPreferRe
 }
 func (UnimplementedSessionServiceServer) AuxCancel(context.Context, *AuxCancelRequest) (*AuxState, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuxCancel not implemented")
-}
-func (UnimplementedSessionServiceServer) Purge(context.Context, *SessionPurgeRequest) (*SessionPurgeReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method Purge not implemented")
 }
 func (UnimplementedSessionServiceServer) GetHistoryFloor(context.Context, *SessionHistoryFloorRequest) (*SessionHistoryFloorReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetHistoryFloor not implemented")
@@ -1324,24 +1286,6 @@ func _SessionService_ConversationStats_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionServiceServer).ConversationStats(ctx, req.(*ConversationStatsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SessionService_Restore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SessionRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SessionServiceServer).Restore(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SessionService_Restore_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionServiceServer).Restore(ctx, req.(*SessionRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2074,24 +2018,6 @@ func _SessionService_AuxCancel_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SessionService_Purge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SessionPurgeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SessionServiceServer).Purge(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SessionService_Purge_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionServiceServer).Purge(ctx, req.(*SessionPurgeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SessionService_GetHistoryFloor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionHistoryFloorRequest)
 	if err := dec(in); err != nil {
@@ -2188,10 +2114,6 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ConversationStats",
 			Handler:    _SessionService_ConversationStats_Handler,
-		},
-		{
-			MethodName: "Restore",
-			Handler:    _SessionService_Restore_Handler,
 		},
 		{
 			MethodName: "Resume",
@@ -2344,10 +2266,6 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AuxCancel",
 			Handler:    _SessionService_AuxCancel_Handler,
-		},
-		{
-			MethodName: "Purge",
-			Handler:    _SessionService_Purge_Handler,
 		},
 		{
 			MethodName: "GetHistoryFloor",

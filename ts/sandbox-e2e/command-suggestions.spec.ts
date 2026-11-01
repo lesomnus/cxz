@@ -139,7 +139,9 @@ test("mobile suggestions preserve multiline text, dismiss on Escape and leave Ot
   await expect(input).toHaveValue("/model\nKeep this body");
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
   await expect(
-    page.getByText("Which environment?", { exact: true }),
+    page
+      .locator(".question-cards")
+      .getByText("Which environment?", { exact: true }),
   ).toBeVisible();
   await input.fill("/");
   await expect(list).toBeVisible();

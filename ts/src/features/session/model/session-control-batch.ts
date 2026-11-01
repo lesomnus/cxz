@@ -9,7 +9,7 @@ import {
   type SessionOperation,
 } from "./session-actions";
 
-export type SessionControlKind = SessionOperation | "purge";
+export type SessionControlKind = SessionOperation | "erase";
 export type SessionControlConnection = Pick<
   Connection,
   "sessions" | "store" | "drafts" | "attention" | "conversations"
@@ -31,7 +31,7 @@ export function controlTarget(s: Session): SessionTarget {
   };
 }
 export function canControl(s: Session, kind: SessionControlKind) {
-  if (kind === "purge") return true;
+  if (kind === "erase") return true;
   if (!s.status?.runId) return false;
   const stopped = resumableStates.has(s.status.state);
   return kind === "resume" ? stopped : kind === "stop" ? !stopped : true;
@@ -54,26 +54,15 @@ async function assertTarget(
     throw new Error(t("Session run changed. Open the menu again."));
 }
 
-export async function previewSessionPurge(
-  c: SessionControlConnection,
-  target: SessionTarget,
-) {
-  await assertTarget(c, target);
-  return c.sessions.purge(
-    { ref: ref(target.runtimeId), dryRun: true },
-    { timeoutMs: 20_000 },
-  );
-}
-
 export async function performSessionControl(
   c: SessionControlConnection,
   target: SessionTarget,
   kind: SessionControlKind,
 ) {
-  if (kind === "purge") {
+  if (kind === "erase") {
     await assertTarget(c, target);
-    await c.sessions.purge(
-      { ref: ref(target.runtimeId) },
+    await c.sessions.erase(
+      { key: { case: "id", value: target.id } },
       { timeoutMs: 120_000 },
     );
     c.store.apply("cxz.Session", [{ id: target.id }]);

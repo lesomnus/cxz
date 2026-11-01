@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { useVisibleApprovals } from "#src/features/session/model/use-visible-approvals.ts";
-import { pendingAfter } from "#src/features/session/model/journal.ts";
+import {
+  isQuestionEvent,
+  pendingAfter,
+} from "#src/features/session/model/journal.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { QuestionCard } from "./question-card";
+import { ApprovalControls } from "./approval-controls";
 import { Button } from "@lesomnus/nox";
 import type { UploadProgress } from "#src/features/session/composer/composer-upload.ts";
 import {
@@ -189,7 +193,7 @@ export const FailedSecret: Story = {
 export const LongQuestions: Story = { args: { example: "long" } };
 
 export const LiveApprovals: Story = {
-  render: function ApprovalStream() {
+  render: function ApprovalStream({ busy = false }) {
     const [pending, setPending] = useState<SessionEvent[]>([]);
     const visible = useVisibleApprovals(pending);
     const pastes = useRef(previewPastes());
@@ -207,7 +211,16 @@ export const LiveApprovals: Story = {
         "approval",
         "item/commandExecution/requestApproval",
         {
-          params: { itemId: `tool-${seq}`, command: "git status --short" },
+          id: seq,
+          method: "item/commandExecution/requestApproval",
+          params: {
+            itemId: `tool-${seq}`,
+            command: ["git status --short", "npm run build", "git diff --stat"][
+              (seq - 101) % 3
+            ],
+            cwd: "/workspace",
+            reason: "Review this command before it runs in the workspace.",
+          },
         },
       );
       event.requestId = `request-${seq}`;
@@ -215,11 +228,11 @@ export const LiveApprovals: Story = {
     };
     const receive = (event: SessionEvent) =>
       setPending((old) => pendingAfter(old, [event]));
-    const resolve = (event: SessionEvent) => {
+    const resolve = (event: SessionEvent, allow = true) => {
       const reply = storyEvent(
         ++sequence.current,
         "approval_resolved",
-        "allowed",
+        allow ? "allowed" : "denied",
       );
       reply.requestId = event.requestId;
       receive(reply);
@@ -231,8 +244,29 @@ export const LiveApprovals: Story = {
       if (remaining > 1)
         timers.current.push(setTimeout(() => automatic(remaining - 1), 50));
     };
+    useEffect(() => {
+      const addApproval = (event: KeyboardEvent) => {
+        if (
+          event.code !== "KeyN" ||
+          !event.ctrlKey ||
+          !event.altKey ||
+          event.metaKey ||
+          event.shiftKey ||
+          event.repeat
+        )
+          return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        cancelTimers();
+        receive(request());
+      };
+      window.addEventListener("keydown", addApproval, true);
+      return () => window.removeEventListener("keydown", addApproval, true);
+    }, []);
     return (
-      <>
+      <div
+        style={{ display: "flex", flexDirection: "column", height: "100dvh" }}
+      >
         <div style={{ display: "flex", gap: 4 }}>
           <Button
             onClick={() => {
@@ -243,9 +277,10 @@ export const LiveApprovals: Story = {
             Simulate automatic approvals
           </Button>
           <Button
+            title="Add approval request (Ctrl+Alt+N)"
             onClick={() => {
               cancelTimers();
-              setPending([request()]);
+              receive(request());
             }}
           >
             Request approval
@@ -253,7 +288,7 @@ export const LiveApprovals: Story = {
           <Button
             onClick={() => {
               cancelTimers();
-              setPending([questionEvent()]);
+              receive(questionEvent());
             }}
           >
             Ask question
@@ -261,32 +296,46 @@ export const LiveApprovals: Story = {
           <Button
             onClick={() => {
               cancelTimers();
-              setPending([]);
+              if (pending[0]) resolve(pending[0]);
             }}
           >
             Resolve request
           </Button>
         </div>
-        <ComponentPreview working>
-          {visible.map((event) => (
+        <p style={{ margin: "8px 0", fontSize: 12, color: "var(--muted)" }}>
+          Press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd> to add an
+          approval request. Hover the count or decision buttons to view the
+          request stack.
+        </p>
+        <ComponentPreview
+          working
+          approvals={
+            <ApprovalControls
+              requests={visible.filter((event) => !isQuestionEvent(event))}
+              busy={busy}
+              reply={async (event, allow) => resolve(event, allow)}
+            />
+          }
+        >
+          {visible.filter(isQuestionEvent).map((event) => (
             <QuestionCard
               key={`${event.runId}:${event.requestId}:${event.seq}`}
               e={event}
               agent="codex"
               pastes={pastes.current}
-              busy={false}
-              reply={async () => setPending([])}
+              busy={busy}
+              reply={async (event, allow) => resolve(event, allow)}
             />
           ))}
         </ComponentPreview>
-      </>
+      </div>
     );
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Automatic native approval/resolution pairs use the real pending reducer and display gate, without flashing cards. Permission requests that remain unresolved become visible; human questions appear immediately.",
+          "Request approval or Ctrl+Alt+N appends independent permission requests without leaving the hovered controls. The shortcut is handled only inside this example and does not propagate to Storybook. A fixed-width count, vertical divider and X/check buttons share one bordered group immediately left of the composer menu; without requests its icons and border are barely visible and disabled. Hover the group to reveal the compact bordered, blurred request box; it stays open while hovering its content, and keyboard focus also opens it. Buttons have transparent backgrounds at rest; dark red/green icons brighten and gain a tinted background on enabled hover. Resolved requests stay opaque while shrinking and sliding behind the composer boundary. The approval layer stays above Question throughout. The next card waits until the departure has advanced before coming forward. Retained back cards follow one slot forward after a further delay; the next queued request rises into the deepest slot at the same time. Visible cards follow consecutive FIFO order. Hover entrance is staggered from front to back; dismissal starts with the deepest back card and proceeds toward the front. The front card finishes last and then removes the stack. Queued cards retain their full contents; only covered regions are clipped as cards move so tint does not accumulate and uncovered bodies remain visible. Deny/Allow resolves only the front request, in arrival order. Reduced motion disables the transitions. Automatic native approval/resolution pairs use the real pending reducer and display gate without flashing request boxes or enabling the controls. Ask question keeps the separate persistent Question form.",
       },
     },
   },

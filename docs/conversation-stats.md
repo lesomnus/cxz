@@ -60,8 +60,8 @@ security, deployment and retention.
   are unavailable in this path. A native token/cost series can establish that at
   least one turn reported a value when a Supervisor reporting counter is missing;
   reporting counts are therefore partial, not a billing reconciliation.
-- Permanently purged sessions are excluded even if an old queued batch arrives
-  later. Soft deletion/archiving preserves usage until permanent purge or TTL.
+- Erased sessions are excluded even if an old queued batch arrives later.
+  Stopping a session preserves usage until erasure or TTL.
 - Queries are bounded to 15 seconds, 256 MiB query memory and 8 MiB of results.
   Database failures propagate instead of silently replacing analytics with a
   smaller history-derived total. Narrow scope/time when a query exceeds limits.

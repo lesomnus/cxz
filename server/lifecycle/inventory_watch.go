@@ -189,6 +189,10 @@ func (s SessionServer) watchInventory(r *resource.SessionWatchRequest, out grpc.
 				f.SetRef(resource.SessionRef_builder{Id: id}.Build())
 				current = append(current, f)
 			}
+			if len(filters) == 0 {
+				current = append(current, resource.SessionFilter_builder{Ref: resource.SessionRef_builder{Id: id}.Build()}.Build())
+			}
+
 			if len(current) == 0 {
 				return nil, false, nil
 			}

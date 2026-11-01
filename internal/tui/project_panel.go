@@ -512,7 +512,7 @@ func (m *model) panelScreen() string {
 		lines[2] = warning.Render(workingSpinner(m.pulse+spinnerKeyPhase(m.deletingID)) + " Deleting session…")
 	} else if d := m.deleteConfirm; d != nil && time.Now().Before(d.until) {
 		seconds := int(time.Until(d.until).Seconds()) + 1
-		lines[2] = warning.Render(fmt.Sprintf("Ctrl+X again · delete (%ds)", seconds))
+		lines[2] = warning.Render(fmt.Sprintf("Ctrl+X again · erase! (%ds)", seconds))
 	}
 	if len(rows) == 0 {
 		lines = append(lines, "No projects")

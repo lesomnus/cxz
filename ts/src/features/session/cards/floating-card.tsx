@@ -294,6 +294,9 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
     const questions = persistent.current!;
     const conversation = node.closest<HTMLElement>(".conversation")!;
     const area = conversation.querySelector<HTMLElement>(".transcript-area")!;
+    const bottomFade = area.querySelector<HTMLElement>(
+      ":scope > .transcript-fade-bottom",
+    );
     node.dataset.retreated = "false";
     questions.dataset.retreated = "false";
     if (!hasQuestions) return;
@@ -332,16 +335,19 @@ export function FloatingCardHost({ children }: { children?: ReactNode }) {
       update();
     };
     const shadow = () => {
-      const style = getComputedStyle(area);
       node.style.setProperty(
         "--question-fade-height",
-        style.getPropertyValue("--bottom-fade-height") || "96px",
+        bottomFade?.style.getPropertyValue("--bottom-fade-height") || "96px",
       );
     };
     update();
     shadow();
     const observer = new MutationObserver(shadow);
-    observer.observe(area, { attributes: true, attributeFilter: ["style"] });
+    if (bottomFade)
+      observer.observe(bottomFade, {
+        attributes: true,
+        attributeFilter: ["style"],
+      });
     conversation.addEventListener("conversation-reading-move", scroll);
     conversation.addEventListener("pointermove", move);
     conversation.addEventListener("pointerleave", leave);

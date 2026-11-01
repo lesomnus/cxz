@@ -75,7 +75,7 @@ func (m *model) confirmSessionDelete(now time.Time) tea.Cmd {
 		if !ok {
 			return sessionDeleted{id: id, err: fmt.Errorf("session deletion unsupported")}
 		}
-		ctx, cancel := context.WithTimeout(parent, 35*time.Second)
+		ctx, cancel := context.WithTimeout(parent, 2*time.Minute)
 		defer cancel()
 		return sessionDeleted{id: id, err: c.DeleteSession(ctx, id)}
 	}
@@ -118,7 +118,7 @@ func (m *model) receiveSessionDeleted(v sessionDeleted) {
 			break
 		}
 	}
-	m.notice = "session deleted; journal retained (cxz session purge to destroy it)"
+	m.notice = "session and its stored data permanently erased"
 	m.resize()
 	m.render()
 }

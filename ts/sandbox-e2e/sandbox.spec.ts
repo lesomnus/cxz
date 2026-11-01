@@ -57,7 +57,7 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   // Shared pending-question UI sends the same Reply RPC through the WASM transport.
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
   await expect(
-    page.getByText("Which environment?", {
+    page.locator(".question-cards").getByText("Which environment?", {
       exact: true,
     }),
   ).toBeVisible();

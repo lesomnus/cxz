@@ -9,14 +9,14 @@ import (
 )
 
 // A purge names a session, and the session names the connection that holds it.
-func (c *Client) PurgeSession(ctx context.Context, r *api.SessionPurgeInput, opts ...grpc.CallOption) (*api.SessionPurgeReply, error) {
-	in := proto.Clone(r).(*api.SessionPurgeInput)
+func (c *Client) EraseSession(ctx context.Context, r *api.SessionEraseInput, opts ...grpc.CallOption) (*api.SessionEraseReply, error) {
+	in := proto.Clone(r).(*api.SessionEraseInput)
 	_, id, client, err := c.route(ctx, r.SessionId)
 	if err != nil {
 		return nil, err
 	}
 	in.SessionId = id
-	out, err := client.PurgeSession(ctx, in, opts...)
+	out, err := client.EraseSession(ctx, in, opts...)
 	if err != nil {
 		return nil, err
 	}

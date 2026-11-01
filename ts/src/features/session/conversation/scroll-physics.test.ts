@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   edgePull,
+  dragPullDistance,
+  dragPullDirection,
+  dragPullOrigin,
   scrollRange,
   markerRangeStart,
   SCROLL_WINDOW_SCREENS,
@@ -10,6 +13,59 @@ import {
 import { quotaDots } from "#src/features/session/model/session-info.ts";
 
 describe("bounded scroll handle", () => {
+  it("builds a fresh pull from its grab/reversal point without preloading quarter distance", () => {
+    expect(dragPullOrigin(200, 400, -1)).toBe(100);
+    expect(dragPullOrigin(200, 400, 1)).toBe(300);
+    for (const [start, direction] of [
+      [0, -1],
+      [40, -1],
+      [360, 1],
+      [400, 1],
+    ]) {
+      const origin = dragPullOrigin(start, 400, direction);
+      expect(origin).toBe(start);
+      expect(
+        Math.abs(edgePull(start + direction - origin, 800).stretch),
+      ).toBeLessThan(1);
+      expect(
+        Math.abs(edgePull(start + 30 * direction - origin, 800).stretch),
+      ).toBeGreaterThan(6);
+    }
+    expect(dragPullOrigin(42, 400, 0)).toBe(42);
+  });
+  it("requires an outward gesture and stops pulling when the user moves inward", () => {
+    for (const direction of [-1, 1]) {
+      const distance = direction * 60;
+      expect(dragPullDirection(distance, 0, 0)).toBe(0);
+      expect(dragPullDirection(distance, -direction, 0)).toBe(0);
+      expect(dragPullDirection(distance, direction, 0)).toBe(direction);
+      expect(dragPullDirection(distance, 0, direction)).toBe(direction);
+      expect(dragPullDirection(distance, -direction, direction)).toBe(0);
+      expect(dragPullDirection(distance, 0, -direction)).toBe(0);
+      expect(dragPullDirection(0, direction, direction)).toBe(0);
+    }
+  });
+  it("starts a continuous symmetric pull in the outer quarters before either end", () => {
+    for (const travel of [200, 400, 800]) {
+      for (const fraction of [0.25, 0.5, 0.75])
+        expect(dragPullDistance(travel * fraction, travel)).toBe(0);
+      const light = dragPullDistance(travel * 0.2, travel);
+      const strong = dragPullDistance(travel * 0.1, travel);
+      expect(light).toBeLessThan(0);
+      expect(strong).toBeLessThan(light);
+      expect(dragPullDistance(travel * 0.8, travel)).toBeCloseTo(-light);
+      expect(dragPullDistance(travel * 0.9, travel)).toBeCloseTo(-strong);
+      expect(edgePull(strong, 800).speed).toBeLessThan(
+        edgePull(light, 800).speed,
+      );
+      expect(
+        Math.abs(
+          edgePull(dragPullDistance(travel * 0.25 - 0.01, travel), 800).speed,
+        ),
+      ).toBeLessThan(0.1);
+      expect(dragPullDistance(-50, travel)).toBe(-50 - travel * 0.25);
+    }
+  });
   it("preserves fractional handle motion instead of snapping small updates", () => {
     const next = smoothStep(0, 0.8, 16, 28, 0.05);
     expect(next).toBeGreaterThan(0);

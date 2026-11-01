@@ -8,6 +8,22 @@ nearby markers and outgoing animation positions, without mounting markers for
 the entire history. These changes must preserve the existing rail mapping,
 animation phase, reading anchor and follow behavior.
 
+Dragging the conversation handle tracks directly through the middle half of its
+travel. An outward gesture in the upper/lower quarters progressively adds
+upward/downward auto-scroll and elastic pull, continuing beyond the literal rail
+ends. Merely grabbing an end-positioned thumb or moving inward never activates
+the opposing pull; reversing inward cancels it even within that quarter. The local mapping
+shifts only by achieved auto-scroll, preserving pointer tracking and marker phase
+without jumping to a window boundary. Canceling an active pull rebases at the
+current reading position and stops the added velocity.
+Each new outward pull uses its own starting point: the quarter boundary when
+entering from the center, or the last inactive pointer position when already
+inside that quarter. Regrabbing an end therefore starts with zero pressure,
+instead of instantly applying the entire distance from the quarter boundary.
+At a loaded-history edge, an active pull also requests the page in that direction
+while native scrolling is clamped. Waiting for a nonzero scroll delta would
+otherwise prevent that first page from ever being requested.
+
 React owns marker membership and styling; `ScrollMarkers` reuses its elements
 while `Transcript` paints their changing positions through refs. Range rebasing
 reads the last painted inline positions, avoiding computed-style reads. The
@@ -22,6 +38,37 @@ animation frames must not rebuild message rows. While reading older messages,
 positions or column width for a live-arrival effect. Those measurements remain
 available while following new responses. Equal viewport and pinned-prompt values
 must not schedule redundant updates.
+
+Mounted rows keep a stable ref and ResizeObserver subscription while the visible
+window moves. The observer reuses delivered border-box dimensions and content
+padding instead of reading each row's client rectangle again. Cached row heights
+and reading knots are pruned when the event window changes, rather than on every
+height correction.
+
+The real conversation also paints top/bottom fades during scrolling and elastic
+pulls. Keep their changing CSS variables on the fade elements: placing inherited
+variables on the transcript area invalidates every message/card subtree's style.
+Read composer geometry before writing either fade. Floating question cards
+observe the bottom fade directly and reuse its inline height without forcing
+computed-style resolution on the common ancestor. Component-only previews omit
+this paint path; the real-app performance fixture verifies fade behavior and
+that scroll values do not inherit through messages.
+
+Retained virtual rows memoize their rendered content separately from their top
+position, so measuring a neighbor does not recreate their cards. Historical
+reading also skips arrival-animation geometry capture entirely; resuming live
+follow establishes a new baseline. DOM rows and observed heights remain bounded
+by the existing virtual/event windows, and event replacement still updates a row.
+
+Markdown remounts reuse sanitized HTML with separate file-link modes. This
+in-memory LRU retains at most 256 entries and a 2 MiB UTF-16 input/output text
+budget; oversized results bypass it. It retains no DOM, interactive code controls
+or selected language. Plain Markdown avoids an empty code-portal update, and
+uncolored code tokens remain text nodes. Normalized questions are weakly cached
+by immutable payload and decoding mode. Nested ScrollArea/ScrollFade variables
+belong to their leaf overlays too; closed ValueMenus do not measure popup width.
+Code highlighting resolves its palette without resolving editor fonts or reading
+the document's computed styles during card creation.
 
 React development builds record changed props in Performance Tracks. Those
 diagnostics have CPU and memory costs and can fail while cloning large details;
@@ -63,3 +110,12 @@ scroll and work-dialog behavior remains covered by the existing Storybook tests.
 timings with other builds and tests idle; parallel compilation distorts browser
 frame times. Synthetic measurements do not establish the exact cause of an OOM
 in a user's browser without its stack and memory profile.
+
+Use `/test-support/transcript-performance.html?count=8192&content=mixed` for many
+short replies and resolved question cards. The scroll regressions verify that a
+retained row is not observed again and that delivered resize measurements avoid
+per-row rectangle reads. Storybook's Conversation / EventCards / Long Mixed
+Conversation provides the same mix for manual handle-drag checks.
+`content=complex` adds Markdown tables, fenced code and long question bodies.
+The regressions also cover row-content reuse during height correction, snapshot
+replacement, sanitizer/link-mode isolation, and Markdown cache eviction/bypass.

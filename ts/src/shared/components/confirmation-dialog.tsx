@@ -31,6 +31,7 @@ export function ConfirmationDialog({
   const pending = useRef(false);
   const alive = useRef(false);
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(true);
   const [failed, setFailed] = useState(false);
   useLayoutEffect(() => {
     alive.current = true;
@@ -49,7 +50,7 @@ export function ConfirmationDialog({
     try {
       const done = await execute();
       if (!alive.current) return;
-      if (done) close();
+      if (done) setOpen(false);
       else setFailed(true);
     } catch {
       if (alive.current) setFailed(true);
@@ -61,8 +62,9 @@ export function ConfirmationDialog({
   return (
     <Dialog
       ref={dialog}
-      open
-      onClose={close}
+      open={open}
+      onClose={() => setOpen(false)}
+      onClosed={close}
       dismissible={!busy}
       initialFocus={cancel}
       aria-busy={busy}
@@ -80,10 +82,20 @@ export function ConfirmationDialog({
         )}
       </DialogBody>
       <DialogFooter>
-        <Button type="button" disabled={busy} onClick={() => void submit()}>
-          {busy ? t("Working…") : confirmLabel}
+        <Button
+          type="button"
+          loading={busy}
+          disabled={busy}
+          onClick={() => void submit()}
+        >
+          {confirmLabel}
         </Button>
-        <Button ref={cancel} type="button" disabled={busy} onClick={close}>
+        <Button
+          ref={cancel}
+          type="button"
+          disabled={busy}
+          onClick={() => setOpen(false)}
+        >
           {t("Cancel")}
         </Button>
       </DialogFooter>

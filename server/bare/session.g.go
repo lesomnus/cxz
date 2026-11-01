@@ -192,11 +192,6 @@ func (st SessionServiceServer) create(ctx context.Context, req *resource.Session
 	if req.HasStatus() {
 		q.SetStatus(req.GetStatus())
 	}
-	if req.HasListed() {
-		q.SetListed(req.GetListed())
-	} else {
-		q.SetListed(true)
-	}
 	if k, err := AccountGetKey(ctx, st.Db, req.GetAccount()); err != nil {
 		return nil, nil, err
 	} else {
@@ -373,9 +368,6 @@ func SessionSelectedFields(m *resource.SessionSelect) []string {
 	if m.GetStatus() {
 		vs = append(vs, session.FieldStatus)
 	}
-	if m.GetListed() {
-		vs = append(vs, session.FieldListed)
-	}
 
 	return vs
 }
@@ -458,7 +450,7 @@ func SessionGetKey(ctx context.Context, db *ent.Client, ref *resource.SessionRef
 var sessionOrmEntity = ormpatch.MustEntityOf(resource.File_cxz_session_proto, "Session")
 
 var sessionPatchColumns = entpatch.Columns{
-	1: session.FieldId, 4: session.FieldAlias, 5: session.FieldName, 6: session.FieldDesc, 8: session.ProjectColumn, 9: session.FieldAgent, 10: session.FieldModel, 11: session.FieldRuntimeId, 12: session.FieldClientId, 13: session.FieldDateUpdated, 14: session.FieldDateErased, 15: session.FieldDateCreated, 16: session.FieldStatus, 17: session.FieldListed, 18: session.AccountColumn, 19: session.AuthBindingColumn}
+	1: session.FieldId, 4: session.FieldAlias, 5: session.FieldName, 6: session.FieldDesc, 8: session.ProjectColumn, 9: session.FieldAgent, 10: session.FieldModel, 11: session.FieldRuntimeId, 12: session.FieldClientId, 13: session.FieldDateUpdated, 14: session.FieldDateErased, 15: session.FieldDateCreated, 16: session.FieldStatus, 18: session.AccountColumn, 19: session.AuthBindingColumn}
 
 func (s SessionServiceServer) Apply(ctx context.Context, req *resource.SessionApplyRequest) (*resource.Session, error) {
 	if !req.HasPatch() {

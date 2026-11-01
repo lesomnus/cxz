@@ -39,8 +39,4 @@ func init() {
 	// sessionDescStatus is the schema descriptor for status field.
 	sessionDescStatus := sessionFields[11].Descriptor()
 	session.ValueScanner.Status = sessionDescStatus.ValueScanner.(field.TypeValueScanner[*resource.SessionStatus])
-	// sessionDescListed is the schema descriptor for listed field.
-	sessionDescListed := sessionFields[12].Descriptor()
-	// session.DefaultListed holds the default value on creation for the listed field.
-	session.DefaultListed = sessionDescListed.Default.(bool)
 }

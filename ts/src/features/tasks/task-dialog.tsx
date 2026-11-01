@@ -19,6 +19,7 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
+import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { AgentIdentity } from "#src/shared/components/agent-identity.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
@@ -391,6 +392,7 @@ export function TaskDialog({
   close: () => void;
   saved: (task: Task) => void;
 }) {
+  const dialogClose = useDialogClose(close);
   const [busy, setBusy] = useState(false);
   const [task, setTask] = useState(latest);
   const [editRevision, setEditRevision] = useState(0);
@@ -425,7 +427,9 @@ export function TaskDialog({
     <AnchoredDialog
       title={selected ? "Task details" : "Add task"}
       centered
-      close={close}
+      open={dialogClose.open}
+      close={dialogClose.dismiss}
+      onClosed={dialogClose.onClosed}
       busy={busy}
     >
       {!selected || task ? (
@@ -440,8 +444,8 @@ export function TaskDialog({
           task={task}
           latest={latest ?? detail.data}
           sessions={sessions}
-          close={close}
-          saved={saved}
+          close={dialogClose.dismiss}
+          saved={(value) => dialogClose.complete(() => saved(value))}
           setBusy={setBusy}
           reloadError={detail.error}
           reload={() => {
@@ -450,7 +454,11 @@ export function TaskDialog({
           }}
         />
       ) : (
-        <Card title="Task details" close={close} closeLabel="Close">
+        <Card
+          title="Task details"
+          close={dialogClose.dismiss}
+          closeLabel="Close"
+        >
           {detail.error ? (
             <>
               <p role="alert">{detail.error}</p>

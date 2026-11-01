@@ -1,8 +1,14 @@
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
-import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useId, useRef, useState } from "react";
-import { Button, Card, CardActions } from "@lesomnus/nox";
+import {
+  Button,
+  Card,
+  CardActions,
+  Form,
+  FormField,
+  ValueMenu,
+} from "@lesomnus/nox";
 import { useNavigate } from "@tanstack/react-router";
 import { requiredSessionLogin } from "#src/features/accounts/login-required.ts";
 import type { Project } from "#gen/cxz/project_pb";
@@ -14,6 +20,7 @@ import {
   type LoginTarget,
 } from "#src/features/accounts/login-panel.tsx";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
+import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 
 export function SessionCreate({
@@ -31,6 +38,7 @@ export function SessionCreate({
   centered?: boolean;
   close: () => void;
 }) {
+  const dialogClose = useDialogClose(close);
   const navigate = useNavigate();
   const formId = useId();
   const pending = useRef(false);
@@ -80,9 +88,9 @@ export function SessionCreate({
       );
       if (controller.signal.aborted) return;
       c.store.apply("cxz.Session", [{ id: session.id, value: session }]);
-      close();
-      await navigate({
-        ...sessionLocation(session),
+      dialogClose.complete(() => {
+        close();
+        void navigate({ ...sessionLocation(session) });
       });
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -105,7 +113,9 @@ export function SessionCreate({
       anchor={anchor}
       centered={centered}
       trigger={trigger}
-      close={close}
+      open={dialogClose.open}
+      close={dialogClose.dismiss}
+      onClosed={dialogClose.onClosed}
       busy={busy}
     >
       <form
@@ -117,7 +127,7 @@ export function SessionCreate({
       >
         <Card
           title="Add session"
-          close={busy ? undefined : close}
+          close={busy ? undefined : dialogClose.dismiss}
           closeLabel="Close"
           footer={
             <CardActions>
@@ -128,56 +138,72 @@ export function SessionCreate({
               >
                 {busy ? "Creating…" : "Create session"}
               </Button>
-              <Button type="button" disabled={busy} onClick={close}>
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={dialogClose.dismiss}
+              >
                 Cancel
               </Button>
             </CardActions>
           }
         >
           <div className={styles.list}>
-            <ValueMenu
-              label="Project"
-              searchable
-              value={project}
-              options={projects.map((p) => ({
-                value: projectId(p),
-                label: p.name || p.alias,
-                searchText: p.alias,
-              }))}
-              choose={setProject}
+            <Form
+              as="fieldset"
+              columns={1}
               disabled={busy || !!login}
-            />
-            <ValueMenu
-              label="Account"
-              value={alias}
-              options={[
-                { value: "", label: "Choose an account" },
-                ...(accounts.data ?? []).map((a) => ({
-                  value: a.alias,
-                  label: `${a.name || a.alias} · ${a.agent}`,
-                })),
-              ]}
-              choose={setAlias}
-              disabled={busy || !!login}
-            />
-            <label className={styles.field}>
-              Title
-              <input
-                autoFocus
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={busy || !!login}
-              />
-            </label>
-            <label className={styles.field}>
-              Model
-              <input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="Provider default"
-                disabled={busy || !!login}
-              />
-            </label>
+              aria-label="Session details"
+            >
+              <FormField label="Project">
+                <ValueMenu
+                  label="Project"
+                  searchable
+                  value={project}
+                  options={projects.map((p) => ({
+                    value: projectId(p),
+                    label: p.name || p.alias,
+                    searchText: p.alias,
+                  }))}
+                  choose={setProject}
+                  disabled={busy || !!login}
+                />
+              </FormField>
+              <FormField label="Account">
+                <ValueMenu
+                  label="Account"
+                  alignItemWithTrigger
+                  value={alias}
+                  options={[
+                    { value: "", label: "Choose an account" },
+                    ...(accounts.data ?? []).map((a) => ({
+                      value: a.alias,
+                      label: `${a.name || a.alias} · ${a.agent}`,
+                    })),
+                  ]}
+                  choose={setAlias}
+                  disabled={busy || !!login}
+                />
+              </FormField>
+              <FormField label="Title" htmlFor={`${formId}-title`}>
+                <input
+                  id={`${formId}-title`}
+                  autoFocus
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  disabled={busy || !!login}
+                />
+              </FormField>
+              <FormField label="Model" htmlFor={`${formId}-model`}>
+                <input
+                  id={`${formId}-model`}
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder="Provider default"
+                  disabled={busy || !!login}
+                />
+              </FormField>
+            </Form>
             {(error || accounts.error) && (
               <p role="alert">{error || accounts.error}</p>
             )}

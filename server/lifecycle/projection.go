@@ -220,16 +220,13 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 		if err != nil {
 			return nil, err
 		}
-		return srv.Add(ctx, resource.SessionAddRequest_builder{Id: resourceID(8, v.Id), Alias: &alias, Name: v.Title, Project: projectRef(v.ProjectId), Agent: v.Agent, Model: v.Model, Account: account, AuthBinding: bindingRef(v.AuthBinding), RuntimeId: v.Id, ClientId: clientID, DateCreated: timestamppb.New(time.UnixMilli(v.CreatedAt)), Status: state, Listed: ptr(true)}.Build())
+		return srv.Add(ctx, resource.SessionAddRequest_builder{Id: resourceID(8, v.Id), Alias: &alias, Name: v.Title, Project: projectRef(v.ProjectId), Agent: v.Agent, Model: v.Model, Account: account, AuthBinding: bindingRef(v.AuthBinding), RuntimeId: v.Id, ClientId: clientID, DateCreated: timestamppb.New(time.UnixMilli(v.CreatedAt)), Status: state}.Build())
 	}
 	if err != nil {
 		return nil, err
 	}
-	if !old.GetListed() {
-		return old, nil
-	}
 	// Existing sessions are updated here only from runtime state. Explicit
-	// metadata edits, archive and restore write through their own handlers.
+	// metadata edits write through their own handler.
 	ctx = projectionContext(ctx)
 	if old.GetAlias() == "" {
 		alias, e := s.newSessionAlias(ctx)
@@ -241,8 +238,8 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 			return nil, e
 		}
 	}
-	if old.GetStatus().GetLastSeq() > state.GetLastSeq() || (old.GetListed() && proto.Equal(old.GetStatus(), state) && old.GetName() == v.Title) {
+	if old.GetStatus().GetLastSeq() > state.GetLastSeq() || (proto.Equal(old.GetStatus(), state) && old.GetName() == v.Title) {
 		return old, nil
 	}
-	return srv.Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Name: ptr(v.Title), Status: state, Listed: ptr(true), DateUpdatedForce: ptr(true)}.Build())
+	return srv.Patch(ctx, resource.SessionPatchRequest_builder{Ref: ref, Name: ptr(v.Title), Status: state, DateUpdatedForce: ptr(true)}.Build())
 }

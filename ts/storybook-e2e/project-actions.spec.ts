@@ -157,10 +157,15 @@ test("Stop confirms, stops all project sessions and retains the project", async 
   await expect(dialog).toHaveCount(0);
   await expect(stop).toBeDisabled();
   await expect(rows).toHaveCount(2);
-  await expect(rows.locator("td:nth-child(6)")).toHaveText([
-    "Stopped",
-    "Stopped",
-  ]);
+  await expect
+    .poll(() =>
+      rows
+        .getByRole("img")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("aria-label")),
+        ),
+    )
+    .toEqual(["Stopped", "Stopped"]);
   await expect(rows.first().getByRole("checkbox")).toBeChecked();
   const picker = page.getByRole("combobox", {
     name: "Select project",
@@ -177,10 +182,15 @@ test("Stop confirms, stops all project sessions and retains the project", async 
   await expect(
     actions.getByRole("button", { name: "Stop", exact: true }),
   ).toBeEnabled();
-  await expect(rows.locator("td:nth-child(6)")).toHaveText([
-    "Waiting for input",
-    "Idle",
-  ]);
+  await expect
+    .poll(() =>
+      rows
+        .getByRole("img")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("aria-label")),
+        ),
+    )
+    .toEqual(["Awaiting answer", "Idle"]);
   await picker.click();
   await page
     .getByRole("option", { name: "Web workspace", exact: true })

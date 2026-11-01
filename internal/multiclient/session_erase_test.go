@@ -14,10 +14,10 @@ type purgeDaemon struct {
 	calls   int
 }
 
-func (d *purgeDaemon) PurgeSession(_ context.Context, in *api.SessionPurgeInput, _ ...grpc.CallOption) (*api.SessionPurgeReply, error) {
+func (d *purgeDaemon) EraseSession(_ context.Context, in *api.SessionEraseInput, _ ...grpc.CallOption) (*api.SessionEraseReply, error) {
 	d.calls++
 	d.session = in.SessionId
-	return &api.SessionPurgeReply{SessionId: in.SessionId, DryRun: in.DryRun}, nil
+	return &api.SessionEraseReply{SessionId: in.SessionId, DryRun: in.DryRun}, nil
 }
 func (d *purgeDaemon) GetHistoryPolicy(context.Context, *api.Empty, ...grpc.CallOption) (*api.HistoryPolicy, error) {
 	d.calls++
@@ -31,7 +31,7 @@ func TestPurgeRoutesAndAnswersUnderTheCallersName(t *testing.T) {
 	a, b := &purgeDaemon{}, &purgeDaemon{}
 	c := New(t.Context(), []Source{{Name: "a", Client: a}, {Name: "b", Client: b}}, "a")
 	defer c.Close()
-	out, err := c.PurgeSession(t.Context(), &api.SessionPurgeInput{SessionId: "b::S", DryRun: true})
+	out, err := c.EraseSession(t.Context(), &api.SessionEraseInput{SessionId: "b::S", DryRun: true})
 	if err != nil {
 		t.Fatal(err)
 	}

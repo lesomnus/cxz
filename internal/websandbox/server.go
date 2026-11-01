@@ -84,7 +84,7 @@ func New(seed uint64, delay time.Duration) *Server {
 		if i == 7 {
 			project = s.projects[1]
 		}
-		st.value = resource.Session_builder{Id: resourceid.Bytes(8, id), RuntimeId: id, Alias: id, Name: name, Agent: agent, Model: "sandbox-" + agent, Listed: true, Project: project, Status: resource.SessionStatus_builder{State: "idle", RunId: id + "-run-1", PermissionMode: "default"}.Build()}.Build()
+		st.value = resource.Session_builder{Id: resourceid.Bytes(8, id), RuntimeId: id, Alias: id, Name: name, Agent: agent, Model: "sandbox-" + agent, Project: project, Status: resource.SessionStatus_builder{State: "idle", RunId: id + "-run-1", PermissionMode: "default"}.Build()}.Build()
 		s.sessions = append(s.sessions, st)
 		s.telemetry(st)
 		s.event(st, "input", "Show the current state of this project.", "", nil)
@@ -214,7 +214,7 @@ func sessionMatches(st *session, filters []*resource.SessionFilter) bool {
 		return true
 	}
 	for _, f := range filters {
-		if matchSession(st, f.GetRef()) && matchProject(st.value.GetProject(), f.GetProject()) && (!f.HasListed() || f.GetListed() == st.value.GetListed()) {
+		if matchSession(st, f.GetRef()) && matchProject(st.value.GetProject(), f.GetProject()) {
 			return true
 		}
 	}

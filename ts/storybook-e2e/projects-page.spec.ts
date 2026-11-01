@@ -27,43 +27,56 @@ test("project page stories render their selector and states", async ({
   expect(errors).toEqual([]);
 });
 
-test("session table splits identity columns and supports individual and select-all checkboxes", async ({
+test("project sessions use the account table design with stacked resource links and scoped selection", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
-    "",
     "Name",
-    "Alias",
     "Account",
     "State",
     "",
   ]);
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2);
-  await expect(rows.first().locator("td").nth(2)).toContainText(
-    "Plan the next release",
-  );
-  await expect(rows.first().locator("td").nth(3)).toHaveText("oak");
   await expect(
-    rows
-      .first()
-      .locator("td")
-      .nth(1)
-      .getByRole("img", { name: "Codex", exact: true }),
+    table.locator(".agent-brand, .editable-value-trigger, fieldset"),
+  ).toHaveCount(0);
+  const session = rows
+    .first()
+    .getByRole("link", { name: "Plan the next release oak", exact: true });
+  const account = rows
+    .first()
+    .getByRole("link", { name: "Work account work", exact: true });
+  await expect(session).toHaveAttribute("href", "/c/_/session/oak");
+  await expect(account).toHaveAttribute("href", "/c/_/account/work");
+  for (const [link, name, alias] of [
+    [session, "Plan the next release", "oak"],
+    [account, "Work account", "work"],
+  ] as const) {
+    const title = link.getByText(name, { exact: true });
+    const subtitle = link.getByText(alias, { exact: true });
+    const top = (await title.boundingBox())!;
+    const bottom = (await subtitle.boundingBox())!;
+    expect(bottom.x).toBe(top.x);
+    expect(bottom.y).toBeGreaterThanOrEqual(top.y + top.height);
+    expect(
+      await subtitle.evaluate((node) =>
+        parseFloat(getComputedStyle(node).fontSize),
+      ),
+    ).toBeLessThan(
+      await title.evaluate((node) =>
+        parseFloat(getComputedStyle(node).fontSize),
+      ),
+    );
+    await expect(link).toHaveCSS("border-top-width", "0px");
+    await expect(link).toHaveCSS("box-shadow", "none");
+  }
+  await expect(
+    rows.first().getByRole("img", { name: "Awaiting answer", exact: true }),
   ).toBeVisible();
-  await expect(
-    rows.first().getByRole("button", { name: "Edit Name", exact: true }),
-  ).toHaveText("Plan the next release");
-  await expect(rows.first().locator("td").nth(4)).toHaveText("Work account");
-  await expect(
-    rows.first().getByRole("link", { name: "Work account", exact: true }),
-  ).toHaveAttribute("href", "/c/_/account/work");
-  await expect(rows.first().locator("td").nth(5)).toHaveText(
-    "Waiting for input",
-  );
   const all = table.getByRole("checkbox", {
     name: "Select all sessions",
     exact: true,
@@ -140,7 +153,7 @@ test("session table reserves seven and a half rows with a sticky header and inde
   expect(await viewport.evaluate((el) => el.scrollTop)).toBe(scrolled);
   expect(await viewport.boundingBox()).toEqual(frame);
   expect(await section.boundingBox()).toEqual(before);
-  await expect(cards.nth(10).locator("td").nth(2)).toContainText("Session 11");
+  await expect(cards.nth(10).locator("td").nth(1)).toContainText("Session 11");
   for (const story of ["default", "empty-sessions"]) {
     await page.goto(`/iframe.html?id=pages-projects--${story}&viewMode=story`);
     await expect(list).toBeVisible();
@@ -152,7 +165,7 @@ test("session table reserves seven and a half rows with a sticky header and inde
   ).toBeDisabled();
 });
 
-test("session states stay in their column without leading icons", async ({
+test("session states use the same status icons as account sessions", async ({
   page,
 }) => {
   await page.goto(
@@ -161,9 +174,18 @@ test("session states stay in their column without leading icons", async ({
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(9);
-  await expect(table.locator(".session-indicator")).toHaveCount(0);
-  await expect(rows.locator("td:nth-child(6)")).toHaveText([
-    "Waiting for input",
+  await expect(table.locator(".agent-brand")).toHaveCount(0);
+  await expect(rows.locator("td:nth-child(4) .session-indicator")).toHaveCount(
+    9,
+  );
+  expect(
+    await rows
+      .locator("td:nth-child(4) [role=img]")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute("aria-label")),
+      ),
+  ).toEqual([
+    "Awaiting answer",
     "Working",
     "Idle",
     "Stopped",
@@ -261,15 +283,21 @@ test("stopped and unavailable runtimes retain the session table and account name
     main.getByRole("region", { name: "Session overview" }),
   ).toHaveCount(0);
   await expect(
-    main.locator("tbody tr").first().locator("td").nth(5),
-  ).toHaveText("Stopped");
+    main
+      .locator("tbody tr")
+      .first()
+      .getByRole("img", { name: "Stopped", exact: true }),
+  ).toBeVisible();
   await page.goto("/iframe.html?id=pages-projects--unavailable&viewMode=story");
   await expect(
     main.getByRole("region", { name: "Environment", exact: true }),
   ).toContainText("Workspace is unavailable");
   await expect(
-    main.locator("tbody tr").first().locator("td").nth(4),
-  ).toHaveText("Work account");
+    main
+      .locator("tbody tr")
+      .first()
+      .getByRole("link", { name: "Work account work", exact: true }),
+  ).toBeVisible();
   await expect(
     main
       .getByRole("table", { name: "Sessions", exact: true })
@@ -318,15 +346,15 @@ test("live inventory preserves row selection and account labels", async ({
     .first();
   const check = row.getByRole("checkbox");
   await check.check();
-  await expect(row.locator("td").nth(4)).toHaveText("Work account");
+  await expect(row.locator("td").nth(2)).toContainText("Work account");
   // Several inventory revisions occur while checking selection and card position.
   const before = await row.boundingBox();
   await expect
     .poll(async () => {
       await expect(check).toBeChecked();
-      return row.locator("td").nth(4).textContent();
+      return row.locator("td").nth(2).textContent();
     })
-    .toBe("Work account");
+    .toContain("Work account");
   expect(await row.boundingBox()).toEqual(before);
 });
 

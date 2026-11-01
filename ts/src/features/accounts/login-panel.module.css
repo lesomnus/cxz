@@ -1,0 +1,32 @@
+.form {
+  --account-login-height: 480px;
+  height: min(
+    var(--account-login-height),
+    calc(100dvh - 4 * var(--ui-space) - 2 * var(--card-border-width))
+  );
+}
+.form .body.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space);
+  overflow: hidden;
+}
+.scroll {
+  --ui-scroll-area-background: transparent;
+}
+.instructions.instructions {
+  display: grid;
+  gap: var(--space);
+  padding: var(--ui-control-inset);
+  padding-right: calc(
+    var(--ui-control-inset) + var(--ui-scroll-area-content-inset)
+  );
+}
+.code {
+  flex-shrink: 0;
+  margin: 0;
+}
+.reservedAction {
+  visibility: hidden;
+}

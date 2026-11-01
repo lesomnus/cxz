@@ -29,7 +29,6 @@ type Mutation struct {
 	date_erased         *time.Time
 	date_created        *time.Time
 	status              **resource.SessionStatus
-	listed              *bool
 	clearedFields       map[string]struct{}
 	exprs               map[string]sql.Querier
 	project             *uuid.UUID
@@ -335,42 +334,6 @@ func (m *Mutation) ResetStatus() {
 	delete(m.exprs, FieldStatus)
 }
 
-// SetListed sets the "listed" field.
-func (m *Mutation) SetListed(b bool) {
-	m.listed = &b
-	delete(m.clearedFields, FieldListed)
-	delete(m.exprs, FieldListed)
-}
-
-// Listed returns the value of the "listed" field in the mutation.
-func (m *Mutation) Listed() (r bool, exists bool) {
-	v := m.listed
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearListed clears the value of the "listed" field.
-func (m *Mutation) ClearListed() {
-	m.listed = nil
-	delete(m.exprs, FieldListed)
-	m.clearedFields[FieldListed] = struct{}{}
-}
-
-// ListedCleared returns if the "listed" field was cleared in this mutation.
-func (m *Mutation) ListedCleared() bool {
-	_, ok := m.clearedFields[FieldListed]
-	return ok
-}
-
-// ResetListed resets all changes to the "listed" field.
-func (m *Mutation) ResetListed() {
-	m.listed = nil
-	delete(m.clearedFields, FieldListed)
-	delete(m.exprs, FieldListed)
-}
-
 // SetProjectId sets the "project_id" field.
 func (m *Mutation) SetProjectId(u uuid.UUID) {
 	m.project = &u
@@ -543,7 +506,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 14)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -576,9 +539,6 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.status != nil || m.exprs[FieldStatus] != nil {
 		fields = append(fields, FieldStatus)
-	}
-	if m.listed != nil || m.exprs[FieldListed] != nil {
-		fields = append(fields, FieldListed)
 	}
 	if m.project != nil {
 		fields = append(fields, FieldProjectId)
@@ -625,8 +585,6 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateCreated()
 	case FieldStatus:
 		return m.Status()
-	case FieldListed:
-		return m.Listed()
 	case FieldProjectId:
 		return m.ProjectId()
 	case FieldAccountId:
@@ -762,16 +720,6 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatus(v)
 		return nil
-	case FieldListed:
-		v, ok := value.(bool)
-		if !ok {
-			if e, ok := value.(sql.Querier); ok {
-				return m.SetFieldExpr(name, e)
-			}
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetListed(v)
-		return nil
 	case FieldProjectId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -846,8 +794,6 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldStatus:
 		m.ResetStatus()
-	case FieldListed:
-		m.ResetListed()
 	case FieldProjectId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	case FieldAccountId:
@@ -893,9 +839,6 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldStatus]; ok {
 		fields = append(fields, FieldStatus)
 	}
-	if _, ok := m.exprs[FieldListed]; ok {
-		fields = append(fields, FieldListed)
-	}
 	return fields
 }
 
@@ -937,9 +880,6 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldStatus) {
 		fields = append(fields, FieldStatus)
 	}
-	if m.FieldCleared(FieldListed) {
-		fields = append(fields, FieldListed)
-	}
 	return fields
 }
 
@@ -965,9 +905,6 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldStatus:
 		m.ClearStatus()
-		return nil
-	case FieldListed:
-		m.ClearListed()
 		return nil
 	}
 	return fmt.Errorf("unknown Session nullable field %s", name)
@@ -1009,9 +946,6 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldStatus:
 		m.ResetStatus()
-		return nil
-	case FieldListed:
-		m.ResetListed()
 		return nil
 	case FieldProjectId:
 		m.ResetProjectId()

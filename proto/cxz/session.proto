@@ -26,7 +26,8 @@ message Session {
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
   SessionStatus status = 16;
-  bool listed = 17 [(orm.field) = {default: "true"}];
+  reserved 17;
+  reserved listed;
   Account account = 18 [(orm.edge) = {immutable: true}];
   AuthBinding auth_binding = 19 [(orm.edge) = {immutable: true}];
   option (orm.message) = {
@@ -36,7 +37,7 @@ message Session {
   option (payday.entity) = {
     domain: 8
     global: {}
-    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "project"}, {name: "account"}, {name: "listed"}], size: 50, max: 200}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "project"}, {name: "account"}], size: 50, max: 200}
     watch: {}
   };
 }

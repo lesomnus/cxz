@@ -2,6 +2,7 @@ import { clamp } from "#src/shared/lib/math.ts";
 export { clamp } from "#src/shared/lib/math.ts";
 export const SCROLL_WINDOW_SCREENS = 12;
 export const ELASTIC_RESERVE = 20;
+export const DRAG_ACCELERATION_INSET = 0.25;
 export type ScrollRange = { start: number; span: number };
 
 // Heights round to integers while scrollTop stays fractional. Zoom can leave
@@ -48,6 +49,47 @@ export function scrollRange(
 // content passing that edge. Inside the mapped range they share the same phase.
 export function markerRangeStart(top: number, range: ScrollRange) {
   return range.start + top - clamp(top, range.start, range.start + range.span);
+}
+
+// The middle half tracks directly; the outer quarters progressively add pull.
+export function dragPullDistance(position: number, travel: number) {
+  const length = Math.max(0, travel);
+  return (
+    position -
+    clamp(
+      position,
+      length * DRAG_ACCELERATION_INSET,
+      length * (1 - DRAG_ACCELERATION_INSET),
+    )
+  );
+}
+
+// Grabbing a thumb already near an end is not an outward pull. Moving inward
+// must track normally, even before it leaves that quarter of the rail.
+export function dragPullDirection(
+  distance: number,
+  movement: number,
+  active: number,
+) {
+  const direction = Math.sign(distance);
+  if (!direction) return 0;
+  if (movement) return Math.sign(movement) === direction ? direction : 0;
+  return active === direction ? direction : 0;
+}
+
+// A gesture that starts beyond a quarter boundary builds pressure from its
+// grab/reversal position, rather than inheriting that whole pre-existing gap.
+export function dragPullOrigin(
+  position: number,
+  travel: number,
+  direction: number,
+) {
+  const length = Math.max(0, travel);
+  if (direction < 0)
+    return Math.min(position, length * DRAG_ACCELERATION_INSET);
+  if (direction > 0)
+    return Math.max(position, length * (1 - DRAG_ACCELERATION_INSET));
+  return position;
 }
 
 // A saturating spring moves less with each extra pixel of pull, while velocity

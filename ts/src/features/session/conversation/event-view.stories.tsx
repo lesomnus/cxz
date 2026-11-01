@@ -15,6 +15,7 @@ import {
   toolEvents,
   loadToolRecords,
   questionEvent,
+  mixedConversationEvents,
 } from "#src/storybook/fixtures.ts";
 
 const meta = {
@@ -130,21 +131,111 @@ const resolved = (state: string, resolution: Record<string, unknown> = {}) => {
   );
   return row;
 };
+const answeredQuestion = resolved("allowed", {
+  answers: {
+    layout: { selected: ["Compact"] },
+    notes: {
+      selected: [],
+      other:
+        "Keep the existing toolbar.\n\n```typescript\nconst compact = true;\n```",
+    },
+    timing: { selected: ["Now"] },
+  },
+});
 export const AnsweredQuestion: Story = {
+  args: { events: [answeredQuestion] },
+};
+const longQuestionHistory = clone(SessionEventSchema, answeredQuestion);
+const longQuestionPayload = payload(longQuestionHistory);
+longQuestionPayload.params.questions[1].question =
+  "Which changes should we keep?\n\n" +
+  Array.from(
+    { length: 18 },
+    (_, index) =>
+      `- **Requirement ${index + 1}:** Keep keyboard navigation, readable Markdown and the existing toolbar.`,
+  ).join("\n");
+longQuestionPayload.cxz_resolution.answers.notes.other =
+  "Keep the existing toolbar.\n\n" +
+  Array.from(
+    { length: 12 },
+    (_, index) =>
+      `### Change ${index + 1}\n\nPreserve focus and stable conversation layout.\n\n\`\`\`typescript\nconst compact = true;\n\`\`\``,
+  ).join("\n\n");
+longQuestionHistory.payload = new TextEncoder().encode(
+  JSON.stringify(longQuestionPayload),
+);
+export const LongQuestionHistory: Story = {
   args: {
     events: [
-      resolved("allowed", {
-        answers: {
-          layout: { selected: ["Compact"] },
-          notes: {
-            selected: [],
-            other:
-              "Keep the existing toolbar.\n\n```typescript\nconst compact = true;\n```",
-          },
-          timing: { selected: ["Now"] },
-        },
-      }),
+      longQuestionHistory,
+      responseEvent(
+        6,
+        "codex",
+        "This response stays in place when you switch question tabs.",
+      ),
     ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Switch between short and overflowing questions and answers. Nox SlidingPages moves each question and its answer together in a fixed viewport; the response card and both content areas keep their heights. Each area scrolls independently using the shared ScrollArea, retaining its position when revisited. Unopened question content is mounted on demand. The following response stays in place.",
+      },
+    },
+  },
+};
+const beforeQuestion = responseEvent(
+  2,
+  "codex",
+  "Before updating the composer, I will confirm the layout, additional changes and timing.",
+);
+beforeQuestion.response!.phase = "commentary";
+beforeQuestion.response!.completionJson = new Uint8Array();
+export const QuestionHistoryInConversation: Story = {
+  args: {
+    events: [
+      storyEvent(
+        1,
+        "input",
+        "Update the composer while keeping the existing toolbar.",
+      ),
+      beforeQuestion,
+      clone(SessionEventSchema, answeredQuestion),
+      responseEvent(
+        6,
+        "codex",
+        "Your answers are recorded: **Compact**, keep the existing toolbar, and ship **Now**. I will apply those choices.",
+      ),
+      storyEvent(
+        7,
+        "input",
+        "Keep that question and its answers in the conversation so I can review the decision later.",
+      ),
+      responseEvent(
+        8,
+        "codex",
+        "The conversation retains the question and its recorded answers above. Select a question tab to review its recorded answer.",
+      ),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A completed multi-step Question uses the same header and surface as an agent response. Tabs in its body slide between each question and its recorded answer using Nox SlidingPages, including Markdown and code. The card, question and answer areas keep their heights, with internal scrolling for overflow and retained scroll positions. This is history, so no live answer form or Submit action is opened.",
+      },
+    },
+  },
+};
+export const LongMixedConversation: Story = {
+  args: { events: mixedConversationEvents(180) },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A long history mixing many short inputs/replies and resolved question cards. Drag the conversation handle quickly to compare rendering and nested card scrolling.",
+      },
+    },
   },
 };
 export const CanceledQuestion: Story = {

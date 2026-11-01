@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState, useId } from "react";
-import { Button, Card, CardActions } from "@lesomnus/nox";
+import {
+  Button,
+  Card,
+  CardActions,
+  Form,
+  FormField,
+  ValueMenu,
+} from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
-import { ResourceValue } from "#src/shared/components/resource-value.tsx";
+import { useDialogClose } from "#src/shared/components/dialog-close.ts";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";
-import accountStyles from "./accounts.module.css";
 export function AccountAddForm({
   c,
   anchor,
@@ -19,6 +26,7 @@ export function AccountAddForm({
   close: () => void;
   trigger?: HTMLElement | null;
 }) {
+  const dialogClose = useDialogClose(close);
   const [agent, setAgent] = useState("codex"),
     [alias, setAlias] = useState(""),
     [name, setName] = useState(""),
@@ -32,7 +40,9 @@ export function AccountAddForm({
     <AnchoredDialog
       title="Add account"
       anchor={anchor}
-      close={close}
+      open={dialogClose.open}
+      close={dialogClose.dismiss}
+      onClosed={dialogClose.onClosed}
       busy={busy}
       trigger={trigger}
     >
@@ -51,7 +61,8 @@ export function AccountAddForm({
               { agent, alias: alias.trim(), name: name.trim() },
               { signal: controller.signal, timeoutMs: 30000 },
             );
-            if (!controller.signal.aborted) added(account);
+            if (!controller.signal.aborted)
+              dialogClose.complete(() => added(account));
           } catch (error) {
             if (!controller.signal.aborted) setError(String(error));
           } finally {
@@ -62,7 +73,7 @@ export function AccountAddForm({
       >
         <Card
           title="Add account"
-          close={busy ? undefined : close}
+          close={busy ? undefined : dialogClose.dismiss}
           closeLabel="Close"
           data-entered="true"
           footer={
@@ -74,26 +85,46 @@ export function AccountAddForm({
               >
                 {busy ? "Adding…" : "Add"}
               </Button>
-              <Button type="button" disabled={busy} onClick={close}>
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={dialogClose.dismiss}
+              >
                 Cancel
               </Button>
             </CardActions>
           }
         >
-          <fieldset disabled={busy} className={accountStyles.form}>
-            <ResourceValue
-              label="Agent"
-              value={agent}
-              options={[
-                { value: "codex", label: "Codex" },
-                { value: "claude", label: "Claude" },
-              ]}
-              choose={setAgent}
-              disabled={busy}
-            />
-            <label className={styles.field}>
-              Alias
+          <Form
+            as="fieldset"
+            columns={1}
+            disabled={busy}
+            aria-label="Account details"
+          >
+            <FormField label="Agent">
+              <ValueMenu
+                label="Agent"
+                alignItemWithTrigger
+                value={agent}
+                options={[
+                  {
+                    value: "codex",
+                    label: "Codex",
+                    icon: <AgentBrand agent="codex" />,
+                  },
+                  {
+                    value: "claude",
+                    label: "Claude",
+                    icon: <AgentBrand agent="claude" />,
+                  },
+                ]}
+                choose={setAgent}
+                disabled={busy}
+              />
+            </FormField>
+            <FormField label="Alias" htmlFor={`${id}-alias`}>
               <input
+                id={`${id}-alias`}
                 autoFocus
                 required
                 pattern="[a-z][a-z0-9-]{0,62}"
@@ -102,22 +133,22 @@ export function AccountAddForm({
                 onChange={(event) => setAlias(event.target.value)}
                 autoComplete="off"
               />
-            </label>
-            <label className={styles.field}>
-              Display name
+            </FormField>
+            <FormField label="Display name" htmlFor={`${id}-name`}>
               <input
+                id={`${id}-name`}
                 maxLength={200}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
-            </label>
+            </FormField>
             <small className={styles.muted}>
               {agent === "codex"
                 ? "Codex uses a central login shared by this account's sessions."
                 : "Claude uses an independent login for each session."}
             </small>
             {error && <p role="alert">{error}</p>}
-          </fieldset>
+          </Form>
         </Card>
       </form>
     </AnchoredDialog>

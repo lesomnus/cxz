@@ -14,7 +14,7 @@ function Preview({
   sessionCount = 2,
   mixedStates = false,
   failControls = false,
-  failPreview = false,
+  failErase = false,
   requireTrust = false,
 }) {
   const [router] = useState(() => {
@@ -24,8 +24,8 @@ function Preview({
       sessionCount,
       failControls
         ? "control"
-        : failPreview
-          ? "preview"
+        : failErase
+          ? "erase"
           : requireTrust
             ? "trust"
             : "",
@@ -137,4 +137,4 @@ export const RequiresTrust: Story = {
 export const LiveInventory: Story = { args: { streaming: true } };
 
 export const PartialFailure: Story = { args: { failControls: true } };
-export const PurgePreviewFailure: Story = { args: { failPreview: true } };
+export const EraseFailure: Story = { args: { failErase: true } };

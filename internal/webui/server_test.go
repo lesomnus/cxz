@@ -99,8 +99,8 @@ func (*testSessions) Patch(_ context.Context, r *resource.SessionPatchRequest) (
 	}
 	return resource.Session_builder{Name: r.GetName(), Alias: r.GetAlias()}.Build(), nil
 }
-func (*testSessions) Purge(_ context.Context, r *resource.SessionPurgeRequest) (*resource.SessionPurgeReply, error) {
-	return resource.SessionPurgeReply_builder{Ref: r.GetRef(), DryRun: proto.Bool(r.GetDryRun()), Retained: []string{"account"}}.Build(), nil
+func (*testSessions) Erase(_ context.Context, _ *resource.SessionRef) (*resource.SessionEraseResponse, error) {
+	return resource.SessionEraseResponse_builder{Erased: proto.Bool(true)}.Build(), nil
 }
 func (f *testSessions) AuxEvents(_ *resource.AuxStatusRequest, stream grpc.ServerStreamingServer[resource.AuxState]) error {
 	defer close(f.auxCanceled)
@@ -198,12 +198,14 @@ func TestBrowserConnect(t *testing.T) {
 	if connect.CodeOf(err) != connect.CodePermissionDenied || !strings.Contains(err.Error(), "Manager policy denied patch") {
 		t.Fatal("Manager status lost", err)
 	}
-	purge := connect.NewClient[resource.SessionPurgeRequest, resource.SessionPurgeReply](client, server.URL+"/cxz.SessionService/Purge")
-	for _, dryRun := range []bool{true, false} {
-		plan, err := purge.CallUnary(t.Context(), connect.NewRequest(resource.SessionPurgeRequest_builder{DryRun: proto.Bool(dryRun)}.Build()))
-		if err != nil || plan.Msg.GetDryRun() != dryRun || len(plan.Msg.GetRetained()) != 1 {
-			t.Fatal("Purge not forwarded", err)
-		}
+	erase := connect.NewClient[resource.SessionRef, resource.SessionEraseResponse](client, server.URL+"/cxz.SessionService/Erase")
+	erased, err := erase.CallUnary(t.Context(), connect.NewRequest(resource.SessionRef_builder{RuntimeId: proto.String("session")}.Build()))
+	if err != nil || !erased.Msg.GetErased() {
+		t.Fatal("Erase not forwarded", err)
+	}
+	removed := connect.NewClient[resource.SessionRef, resource.SessionEraseResponse](client, server.URL+"/cxz.SessionService/Purge")
+	if _, err := removed.CallUnary(t.Context(), connect.NewRequest(&resource.SessionRef{})); connect.CodeOf(err) != connect.CodeUnimplemented {
+		t.Fatal("obsolete Purge RPC remains available", err)
 	}
 	aux := connect.NewClient[resource.AuxStatusRequest, resource.AuxState](client, server.URL+"/cxz.SessionService/AuxEvents")
 	summaries, err := aux.CallServerStream(t.Context(), connect.NewRequest(&resource.AuxStatusRequest{}))

@@ -483,7 +483,6 @@ var (
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "status", Type: field.TypeJson, Nullable: true},
-		{Name: "listed", Type: field.TypeBool, Nullable: true, Default: true},
 		{Name: "project_id", Type: field.TypeUuid},
 		{Name: "account_id", Type: field.TypeUuid},
 		{Name: "auth_binding_id", Type: field.TypeUuid},
@@ -496,19 +495,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "session_project_project",
-				Columns:    []*schema.Column{SessionColumns[13]},
+				Columns:    []*schema.Column{SessionColumns[12]},
 				RefColumns: []*schema.Column{ProjectColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "session_account_account",
-				Columns:    []*schema.Column{SessionColumns[14]},
+				Columns:    []*schema.Column{SessionColumns[13]},
 				RefColumns: []*schema.Column{AccountColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "session_authbinding_auth_binding",
-				Columns:    []*schema.Column{SessionColumns[15]},
+				Columns:    []*schema.Column{SessionColumns[14]},
 				RefColumns: []*schema.Column{AuthbindingColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

@@ -83,7 +83,7 @@ service Sessions {
   // same plan without carrying it out, which is the only reason the two share
   // a request instead of being two calls: the plan and the removal must be the
   // same code or the report is of something else.
-  rpc PurgeSession(SessionPurgeInput) returns (SessionPurgeReply);
+  rpc EraseSession(SessionEraseInput) returns (SessionEraseReply);
   rpc GetHistoryPolicy(Empty) returns (HistoryPolicy);
   rpc SetHistoryPolicy(HistoryPolicy) returns (HistoryPolicy);
   // The floor a project runtime has trimmed to. Only the manager asks, to keep
@@ -415,13 +415,13 @@ message PutSecretFileInput { string project = 1; string session = 2; bytes secre
 message DeleteSecretFileInput { string project = 1; string path = 2; }
 message SecretFileReply { string path = 1; }
 
-message SessionPurgeInput { string session_id = 1; bool dry_run = 2; }
+message SessionEraseInput { string session_id = 1; bool dry_run = 2; string project_id = 3; string create_id = 4; }
 // kind says what the path is, so a caller can describe a plan without knowing
 // the layout: journal, state, cache, and so on.
-message SessionPurgeTarget { string kind = 1; string path = 2; int32 files = 3; int64 bytes = 4; }
-message SessionPurgeReply {
+message SessionEraseTarget { string kind = 1; string path = 2; int32 files = 3; int64 bytes = 4; }
+message SessionEraseReply {
   string session_id = 1; bool dry_run = 2;
-  repeated SessionPurgeTarget targets = 3;
+  repeated SessionEraseTarget targets = 3;
   // retained names what purge deliberately left, so a caller can say so
   // instead of implying the session vanished from the world.
   repeated string retained = 4;

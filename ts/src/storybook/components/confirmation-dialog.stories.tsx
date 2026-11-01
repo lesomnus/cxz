@@ -56,10 +56,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
-export const Purge: Story = {
+export const Erase: Story = {
   args: {
-    title: "Purge session",
-    confirmLabel: "Purge permanently",
+    title: "Erase session",
+    confirmLabel: "Erase",
     children: (
       <p>
         Permanently deletes this session and its stored data. This cannot be
@@ -77,8 +77,8 @@ export const Pending: Story = {
 export const Failure: Story = { args: { execute: async () => false } };
 export const LongContent: Story = {
   args: {
-    title: "Purge session",
-    confirmLabel: "Purge permanently",
+    title: "Erase session",
+    confirmLabel: "Erase",
     children: (
       <>
         <p>Permanently deletes this session and its stored data.</p>

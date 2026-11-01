@@ -9,6 +9,9 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   clamp,
   edgePull,
+  dragPullDistance,
+  dragPullDirection,
+  dragPullOrigin,
   scrollRange,
   markerRangeStart,
   resumeRange,
@@ -65,10 +68,12 @@ type Drag = {
   id: number;
   offset: number;
   pointer: number;
+  lastPointer: number;
   range: ScrollRange;
   stretch: number;
   lastTime: number;
-  edge: number;
+  pullDirection: number;
+  pullOrigin: number;
 };
 type RangeMotion = {
   time: number;
@@ -581,10 +586,17 @@ export function Transcript({
     }
     // Only request the edge being approached. A small loaded window can be
     // near both ends: fetching both would alternately evict opposite pages.
-    if (delta < 0 && el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS)
+    // At the loaded edge scrollTop cannot change until the next page arrives;
+    // an active outward pull still expresses which page is needed.
+    const direction = drag.current?.pullDirection || Math.sign(delta);
+    if (direction && !follow.current) readingDirection.current = direction;
+    if (
+      direction < 0 &&
+      el.scrollTop < el.clientHeight * HISTORY_PREFETCH_SCREENS
+    )
       callbacks.current.older();
     if (
-      delta > 0 &&
+      direction > 0 &&
       el.scrollHeight - el.scrollTop - el.clientHeight <
         el.clientHeight * HISTORY_PREFETCH_SCREENS
     )
@@ -725,42 +737,52 @@ export function Transcript({
     if (!d || !el || !rail) return;
     const g = geometry.current;
     const travel = Math.max(1, g.height - g.thumb);
-    const raw = d.pointer - rail.getBoundingClientRect().top - d.offset;
+    const origin = rail.getBoundingClientRect().top + d.offset;
+    const raw = d.pointer - origin;
     const bounded = clamp(raw, 0, travel);
-    const outside = raw - bounded;
-    const pull = edgePull(outside, g.viewport);
+    const distance = dragPullDistance(raw, travel);
+    const active = dragPullDirection(
+      distance,
+      d.pointer - d.lastPointer,
+      d.pullDirection,
+    );
+    if (active && active !== d.pullDirection)
+      d.pullOrigin =
+        origin + dragPullOrigin(d.lastPointer - origin, travel, active);
+    d.lastPointer = d.pointer;
+    const pull = edgePull(active ? d.pointer - d.pullOrigin : 0, g.viewport);
     d.stretch = pull.stretch;
     setStretch(pull.stretch);
     callbacks.current.onTension(pull.stretch);
     const dt = Math.min(32, time - d.lastTime) / 1000;
     d.lastTime = time;
-    if (outside) {
-      if (d.edge !== Math.sign(outside))
-        el.scrollTop =
-          mapping.current?.toNative(
-            d.range.start + (outside > 0 ? d.range.span : 0),
-          ) ?? 0;
-      el.scrollTop += pull.speed * dt;
-    } else {
-      if (d.edge)
-        d.range = resumeRange(
-          mapping.current?.toLogical(el.scrollTop) ?? el.scrollTop,
-          bounded / travel,
-          d.range.span,
-        );
-      const target = clamp(
-        mapping.current?.toNative(
-          d.range.start + (bounded / travel) * d.range.span,
-        ) ?? 0,
-        0,
-        g.max,
+    if (!active && d.pullDirection)
+      d.range = resumeRange(
+        mapping.current?.toLogical(el.scrollTop) ?? el.scrollTop,
+        bounded / travel,
+        d.range.span,
       );
-      el.scrollTop = window.matchMedia("(prefers-reduced-motion: reduce)")
-        .matches
-        ? target
-        : smoothStep(el.scrollTop, target, dt * 1000, 12);
+    const target = clamp(
+      mapping.current?.toNative(
+        d.range.start + (bounded / travel) * d.range.span,
+      ) ?? 0,
+      0,
+      g.max,
+    );
+    el.scrollTop = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? target
+      : smoothStep(el.scrollTop, target, dt * 1000, 12);
+    if (active) {
+      const before = el.scrollTop;
+      el.scrollTop += pull.speed * dt;
+      const after = el.scrollTop;
+      // Shift only by achieved auto-scroll, keeping direct pointer movement
+      // continuous at the quarter boundary and respecting actual history ends.
+      const map = mapping.current;
+      d.range.start +=
+        (map?.toLogical(after) ?? after) - (map?.toLogical(before) ?? before);
     }
-    d.edge = Math.sign(outside);
+    d.pullDirection = active;
     scrolled();
     raf.current = requestAnimationFrame(animate);
   }
@@ -931,6 +953,7 @@ export function Transcript({
               id: e.pointerId,
               offset: e.clientY - bounds.top,
               pointer: e.clientY,
+              lastPointer: e.clientY,
               range: resumeRange(
                 mapping.current?.toLogical(pane.current!.scrollTop) ??
                   pane.current!.scrollTop,
@@ -939,7 +962,8 @@ export function Transcript({
               ),
               stretch: 0,
               lastTime: performance.now(),
-              edge: 0,
+              pullDirection: 0,
+              pullOrigin: e.clientY,
             };
             setDragging(true);
             measure();

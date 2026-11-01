@@ -1,0 +1,101 @@
+.group > .count {
+  display: inline-flex;
+  align-items: center;
+  min-width: 3ch;
+  margin-inline: var(--control-inset);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--shade-136);
+}
+.group[data-pending-count="0"] .count {
+  opacity: 0.35;
+}
+.group {
+  --approval-group-border-width: var(--ui-border-trail-width);
+  --approval-group-border-color: var(--composer-toolbar-background);
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  gap: var(--control-inset);
+  height: var(--toolbar-button-height);
+  padding: var(--control-inset);
+  border: var(--approval-group-border-width) solid
+    var(--approval-group-border-color);
+  border-radius: var(--toolbar-button-radius);
+  transition: border-color var(--ui-button-background-duration) ease-out;
+}
+.group:not([data-pending-count="0"]) {
+  --approval-group-border-color: var(--ui-border-trail-track-color);
+}
+.divider {
+  align-self: stretch;
+  flex: 0 0 var(--approval-group-border-width);
+  margin-block: var(--control-inset);
+  background: var(--approval-group-border-color);
+  transition: background-color var(--ui-button-background-duration) ease-out;
+}
+.decision.decision {
+  display: grid;
+  place-items: center;
+  width: var(--toolbar-button-height);
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border-radius: max(
+    0px,
+    calc(
+      var(--toolbar-button-radius) - var(--control-inset) -
+        var(--approval-group-border-width)
+    )
+  );
+  background: transparent;
+  color: var(--decision-color);
+  transition:
+    color var(--ui-button-background-duration) ease-out,
+    background-color var(--ui-button-background-duration) ease-out;
+}
+.deny {
+  --decision-color: #934554;
+  --decision-hover-color: #df8493;
+}
+.allow {
+  --decision-color: #4b815d;
+  --decision-hover-color: #8dcca0;
+}
+.decision.decision:disabled {
+  opacity: 0.18;
+}
+.decision.decision:not(:disabled):hover {
+  color: var(--decision-hover-color);
+  background: color-mix(in srgb, var(--decision-color) 42%, var(--shade-16));
+}
+.content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(2 * var(--space));
+  overflow-wrap: anywhere;
+}
+.content p {
+  margin: 0;
+}
+.content pre {
+  margin: 0;
+  padding: calc(2 * var(--space));
+  border-radius: var(--ui-card-stack-radius);
+  background: var(--shade-0);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--ui-font-mono);
+}
+.content pre code {
+  font: inherit;
+}
+.path {
+  color: var(--muted);
+  font-family: var(--ui-font-mono);
+}
+.notice {
+  color: var(--muted);
+}

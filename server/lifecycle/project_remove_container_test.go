@@ -92,7 +92,7 @@ func TestRemovingAContainerRetainsSessions(t *testing.T) {
 		if !bytes.Equal(gotP.GetId(), p.GetId()) || gotP.GetAlias() != p.GetAlias() || gotP.GetName() != p.GetName() {
 			t.Fatal(phase, "project identity changed", gotP)
 		}
-		if !bytes.Equal(gotS.GetId(), s.GetId()) || gotS.GetRuntimeId() != s.GetRuntimeId() || gotS.GetAlias() != s.GetAlias() || gotS.GetName() != s.GetName() || !gotS.GetListed() || gotS.GetStatus().GetVendorId() != s.GetStatus().GetVendorId() || gotS.GetStatus().GetState() != "stopped" {
+		if !bytes.Equal(gotS.GetId(), s.GetId()) || gotS.GetRuntimeId() != s.GetRuntimeId() || gotS.GetAlias() != s.GetAlias() || gotS.GetName() != s.GetName() || gotS.GetStatus().GetVendorId() != s.GetStatus().GetVendorId() || gotS.GetStatus().GetState() != "stopped" {
 			t.Fatal(phase, "session identity or saved conversation changed", gotS)
 		}
 		gotHistory, err := stack.Session().History(ctx, historyRequest)

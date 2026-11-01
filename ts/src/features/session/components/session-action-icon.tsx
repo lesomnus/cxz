@@ -7,7 +7,7 @@ export function SessionActionIcon({
     | "remove"
     | "restart"
     | "fork"
-    | "purge"
+    | "erase"
     | "details"
     | "terminal"
     | "upload"
@@ -47,7 +47,7 @@ export function SessionActionIcon({
           <circle cx="5" cy="13" r="1.5" />
         </>
       )}
-      {action === "purge" && (
+      {action === "erase" && (
         <>
           <path d="M3 4h10M6 4V2h4v2M4 4l.7 9h6.6l.7-9M6.5 6.5v4M9.5 6.5v4" />
         </>

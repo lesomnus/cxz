@@ -36,7 +36,6 @@ func (e *Session) Proto() *resource.Session {
 	if e.Status != nil {
 		x.SetStatus(e.Status)
 	}
-	x.SetListed(e.Listed)
 	if v := e.Edges.Account; v != nil {
 		x.SetAccount(v.Proto())
 	} else if v := e.AccountId; v != *new(uuid.UUID) {

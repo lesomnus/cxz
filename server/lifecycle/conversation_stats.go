@@ -64,12 +64,9 @@ func (s SessionServer) ConversationStats(ctx context.Context, r *resource.Conver
 		if err != nil {
 			return nil, err
 		}
-		if !v.GetListed() {
-			return nil, status.Error(codes.NotFound, "session deleted")
-		}
 		sessions = append(sessions, v)
 	} else {
-		filter := resource.SessionFilter_builder{Listed: ptr(true)}.Build()
+		filter := resource.SessionFilter_builder{}.Build()
 		if r.HasAccount() {
 			account, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{Ref: r.GetAccount(), Select: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build())
 			if err != nil {
@@ -84,9 +81,13 @@ func (s SessionServer) ConversationStats(ctx context.Context, r *resource.Conver
 			}
 			filter.SetProject(resource.ProjectRef_builder{Id: p.GetId()}.Build())
 		}
+		var filters []*resource.SessionFilter
+		if r.HasAccount() || r.HasProject() {
+			filters = []*resource.SessionFilter{filter}
+		}
 		after := ""
 		for {
-			page, err := s.Next().Session().List(ctx, resource.SessionListRequest_builder{Filters: []*resource.SessionFilter{filter}, Size: 200, After: after}.Build())
+			page, err := s.Next().Session().List(ctx, resource.SessionListRequest_builder{Filters: filters, Size: 200, After: after}.Build())
 			if err != nil {
 				return nil, err
 			}

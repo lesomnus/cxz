@@ -432,3 +432,61 @@ export function conversationEvents(agent = "codex", turns = 1) {
     ];
   }).flat();
 }
+
+// Short replies and resolved question cards exercise nested scroll areas as well
+// as message virtualization, without depending on private conversation records.
+export function mixedConversationEvents(turns = 120) {
+  let seq = 0;
+  return Array.from({ length: turns }, (_, index) => {
+    const events = [storyEvent(++seq, "input", `Check step ${index + 1}.`)];
+    if (index % 3 === 0) {
+      const question = questionEvent("steps");
+      question.seq = BigInt(++seq);
+      question.requestId = `mixed-question-${index}`;
+      question.timeMs = events[0].timeMs + 100n;
+      const wire = JSON.parse(new TextDecoder().decode(question.payload));
+      wire.cxz_resolution = {
+        state: "allowed",
+        answers: {
+          layout: { selected: ["Compact"] },
+          notes: {
+            selected: [],
+            other: "Keep the existing toolbar and keyboard shortcuts.",
+          },
+          timing: { selected: ["Now"] },
+        },
+      };
+      question.payload = new TextEncoder().encode(JSON.stringify(wire));
+      events.push(question);
+    }
+    events.push(
+      responseEvent(
+        ++seq,
+        "codex",
+        `Step **${index + 1}** is ready. The existing behavior is preserved.`,
+      ),
+    );
+    return events;
+  }).flat();
+}
+
+export function complexConversationEvents(turns = 120) {
+  return mixedConversationEvents(turns).map((event) => {
+    const markdown =
+      `### Review ${event.seq}\n\n` +
+      "The **conversation** keeps short replies, structured questions and code together.\n\n" +
+      "| Check | Result |\n| --- | --- |\n| Keyboard | Preserved |\n| History | Available |\n\n" +
+      "```typescript\n" +
+      `export const review${event.seq} = {\n` +
+      '  layout: "compact",\n  preserveHistory: true,\n  shortcuts: ["Enter", "Escape"],\n};\n' +
+      "```\n\n" +
+      "- Keep the reading position.\n- Review the [documentation](https://example.com/docs).";
+    if (event.kind === "assistant") event.text = markdown;
+    if (event.kind === "approval") {
+      const wire = JSON.parse(new TextDecoder().decode(event.payload));
+      wire.params.questions[0].question = markdown;
+      event.payload = new TextEncoder().encode(JSON.stringify(wire));
+    }
+    return event;
+  });
+}

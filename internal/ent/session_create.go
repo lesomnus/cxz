@@ -117,20 +117,6 @@ func (_c *SessionCreate) SetStatus(v *resource.SessionStatus) *SessionCreate {
 	return _c
 }
 
-// SetListed sets the "listed" field.
-func (_c *SessionCreate) SetListed(v bool) *SessionCreate {
-	_c.mutation.SetListed(v)
-	return _c
-}
-
-// SetNillableListed sets the "listed" field if the given value is not nil.
-func (_c *SessionCreate) SetNillableListed(v *bool) *SessionCreate {
-	if v != nil {
-		_c.SetListed(*v)
-	}
-	return _c
-}
-
 // SetProjectId sets the "project_id" field.
 func (_c *SessionCreate) SetProjectId(v uuid.UUID) *SessionCreate {
 	_c.mutation.SetProjectId(v)
@@ -177,7 +163,6 @@ func (_c *SessionCreate) Mutation() *SessionMutation {
 
 // Save creates the Session in the database.
 func (_c *SessionCreate) Save(ctx context.Context) (*Session, error) {
-	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -200,16 +185,6 @@ func (_c *SessionCreate) Exec(ctx context.Context) error {
 func (_c *SessionCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
-	}
-}
-
-// defaults sets the default values of the builder before save.
-func (_c *SessionCreate) defaults() {
-	if _, ok := _c.mutation.Listed(); !ok {
-		if _, ok := _c.mutation.FieldExpr(session.FieldListed); !ok {
-			v := session.DefaultListed
-			_c.mutation.SetListed(v)
-		}
 	}
 }
 
@@ -362,10 +337,6 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec, error) {
 		_spec.SetField(session.FieldStatus, field.TypeJson, vv)
 		_node.Status = value
 	}
-	if value, ok := _c.mutation.Listed(); ok {
-		_spec.SetField(session.FieldListed, field.TypeBool, value)
-		_node.Listed = value
-	}
 	if nodes := _c.mutation.ProjectIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -464,7 +435,6 @@ func (_c *SessionCreateBulk) Save(ctx context.Context) ([]*Session, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
-			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*SessionMutation)
 				if !ok {

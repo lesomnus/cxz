@@ -1,3 +1,4 @@
+import { key } from "@lesomnus/payday/store";
 import { projectFixtureId, matchesProject } from "./project-id";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { clone, create, isFieldSet } from "@bufbuild/protobuf";
@@ -22,7 +23,7 @@ export function projectFixture(
   unavailable = false,
   stopped = false,
   sessionCount = 2,
-  failure: "" | "control" | "preview" | "trust" = "",
+  failure: "" | "control" | "erase" | "trust" = "",
 ) {
   const now = Date.now();
   const projects = ["Web workspace", "API workspace"].map((name, i) =>
@@ -407,47 +408,28 @@ export function projectFixture(
         publish();
         return updated;
       },
-      purge: (request, context) => {
-        const id = String(request.ref?.key.value);
-        calls.push({
-          method: "purge",
-          session: id,
-          dryRun: request.dryRun,
-          signal: context.signal,
-        });
-        const index = sessions.findIndex((s) => s.runtimeId === id);
-        if (index < 0)
-          throw new ConnectError("Session not found", Code.NotFound);
+      erase: (request, context) => {
+        const index = sessions.findIndex((s) =>
+          request.key.case === "id"
+            ? key(s.id) === key(request.key.value)
+            : s.runtimeId === request.key.value ||
+              s.alias === request.key.value,
+        );
+        const id = sessions[index]?.runtimeId || "";
+        calls.push({ method: "erase", session: id, signal: context.signal });
+        if (index < 0) return { erased: false };
         if (
           unavailable ||
-          (failure === "preview" &&
-            request.dryRun &&
-            sessions[index]!.alias === "elm") ||
-          (failure === "control" &&
-            !request.dryRun &&
+          (["erase", "control"].includes(failure) &&
             sessions[index]!.alias === "elm")
         )
           throw new ConnectError(
             "Simulated session action failure",
             Code.Unavailable,
           );
-        if (!request.dryRun) {
-          sessions.splice(index, 1);
-          publish();
-        }
-        return {
-          ref: request.ref,
-          dryRun: request.dryRun,
-          targets: [
-            {
-              kind: "conversation",
-              path: `/storybook/${id}/journal`,
-              files: 2,
-              bytes: 4096n,
-            },
-          ],
-          retained: ["Project workspace", "Account settings"],
-        };
+        sessions.splice(index, 1);
+        publish();
+        return { erased: true };
       },
     });
     router.service(AuthBindingService, {

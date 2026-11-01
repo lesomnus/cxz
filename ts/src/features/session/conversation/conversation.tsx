@@ -13,6 +13,7 @@ import errorStyles from "./activity-card.module.css";
 import { attachSummaries } from "#src/features/session/model/session-aux.ts";
 import { useSessionAux } from "#src/features/session/model/use-session-aux.ts";
 import { QuestionCard } from "#src/features/session/questions/question-card.tsx";
+import { ApprovalControls } from "#src/features/session/questions/approval-controls.tsx";
 import { requiredSessionLogin } from "#src/features/accounts/login-required.ts";
 import { ConversationComposer } from "#src/features/session/composer/conversation-composer.tsx";
 import {
@@ -57,7 +58,11 @@ import {
 } from "#src/features/session/model/session-history.ts";
 import { create } from "@bufbuild/protobuf";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
-import { mergeEvents, payload } from "#src/features/session/model/journal.ts";
+import {
+  isQuestionEvent,
+  mergeEvents,
+  payload,
+} from "#src/features/session/model/journal.ts";
 import { mergeMetadata } from "#src/features/session/model/session-metadata.ts";
 import { sessionInfo } from "#src/features/session/model/session-info.ts";
 import {
@@ -389,6 +394,16 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       input = composerInput.current;
     const area = el?.parentElement;
     if (!el || !input || !area) return;
+    const topFade = area.querySelector<HTMLElement>(
+      ":scope > .transcript-fade-top",
+    );
+    const bottomFade = area.querySelector<HTMLElement>(
+      ":scope > .transcript-fade-bottom",
+    );
+    if (!topFade || !bottomFade) return;
+    // Read geometry before painting either fade. An inherited variable on the
+    // transcript area invalidates every message's style on each scroll frame.
+    const inputHeight = input.offsetHeight;
     const depth = Math.max(0, el.scrollHeight - el.scrollTop - el.clientHeight);
     const pull = Math.min(1, Math.abs(tension.current) / 20);
     const ramp = (distance: number) => {
@@ -404,19 +419,19 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     // during ordinary movement; elastic pulls produce a much longer veil.
     const topMotion = Math.max(0, scrollMotion.current);
     const bottomMotion = Math.max(0, -scrollMotion.current);
-    area.style.setProperty(
+    bottomFade.style.setProperty(
       "--bottom-fade-height",
-      `${input.offsetHeight * (bottom + 0.8 * bottomMotion + 3.5 * bottomPull)}px`,
+      `${inputHeight * (bottom + 0.8 * bottomMotion + 3.5 * bottomPull)}px`,
     );
-    area.style.setProperty(
+    bottomFade.style.setProperty(
       "--bottom-fade-opacity",
       String(Math.max(bottom, pull)),
     );
-    area.style.setProperty(
+    topFade.style.setProperty(
       "--top-fade-height",
-      `${input.offsetHeight * (0.45 * top + 0.8 * topMotion + 3.5 * topPull)}px`,
+      `${inputHeight * (0.45 * top + 0.8 * topMotion + 3.5 * topPull)}px`,
     );
-    area.style.setProperty(
+    topFade.style.setProperty(
       "--top-fade-opacity",
       String(Math.max(top, topPull)),
     );
@@ -1094,7 +1109,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }}
       />
       <FloatingCardHost>
-        {visibleApprovals.map((e) => (
+        {visibleApprovals.filter(isQuestionEvent).map((e) => (
           <QuestionCard
             key={`${e.runId}:${e.requestId}`}
             e={e}
@@ -1205,6 +1220,13 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }
         latestVisible={!follow && latestShown}
         onLatest={() => void loadHistory("newer", true)}
+        approvals={
+          <ApprovalControls
+            requests={visibleApprovals.filter((e) => !isQuestionEvent(e))}
+            busy={busy}
+            reply={reply}
+          />
+        }
         menu={(pick) => (
           <SessionMenu
             session={s && { ...s, project: sessionProject ?? s.project }}

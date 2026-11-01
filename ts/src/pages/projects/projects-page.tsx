@@ -28,7 +28,7 @@ import {
   type ProjectField,
 } from "./project-edit";
 import { ProjectActions } from "./project-actions";
-import { ProjectSessions } from "./project-sessions";
+import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
 import type { Account } from "#gen/cxz/account_pb";
@@ -292,11 +292,13 @@ function ProjectDashboard({
         className={`${styles.section} ${styles.sessionSection}`}
         aria-label={t("Project sessions")}
       >
-        <ProjectSessions
+        <SessionTable
           c={c}
           sessions={sessions}
           accounts={accounts}
           loading={sessionsLoading}
+          variant="compact"
+          horizontalScrollbar
           addSession={() => setAddingSession(true)}
         />
         {addingSession && (

@@ -1,6 +1,12 @@
 .page {
   grid-column: 2 / -1;
 }
+.layout {
+  --account-column-width: 420px;
+  --section-layout-max-width: calc(
+    2 * var(--account-column-width) + var(--ui-section-group-gap)
+  );
+}
 .header {
   display: flex;
   justify-content: flex-end;
@@ -9,35 +15,63 @@
   width: var(--toolbar-button-width);
 }
 .card {
+  container: account / inline-size;
   min-width: 0;
   scroll-margin-top: calc(3 * var(--space));
+}
+.details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--ui-section-group-gap);
+}
+.summaryColumn {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.informationDetails,
+.usageSection {
+  align-content: start;
+}
+.sessionsColumn.sessionsColumn {
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  padding-inline: 0;
+  overflow: hidden;
+}
+@container account (min-width: 560px) {
+  .details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .agent {
   display: flex;
   align-items: center;
   gap: var(--space);
 }
-.form {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: calc(2 * var(--space));
-  min-width: 0;
-}
-.session {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  padding: calc(2 * var(--space));
-  border-radius: var(--wrapper-radius);
-}
-.session:hover {
-  background: var(--hover);
-}
-.session > :global(.button-content) {
+.authenticationRow {
+  --account-auth-action-width: 80px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space);
+  min-width: 0;
+}
+.authenticationStatus {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 12px/1.5 var(--ui-font-mono);
+  color: var(--muted);
+}
+.authenticationAction {
+  flex: 0 0 var(--account-auth-action-width);
+  width: var(--account-auth-action-width);
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+.authenticationDescription {
+  flex: 1;
+  min-width: 0;
 }

@@ -36,8 +36,6 @@ const (
 	FieldDateCreated = "date_created"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
-	// FieldListed holds the string denoting the listed field in the database.
-	FieldListed = "listed"
 	// FieldProjectId holds the string denoting the project_id field in the database.
 	FieldProjectId = "project_id"
 	// FieldAccountId holds the string denoting the account_id field in the database.
@@ -89,7 +87,6 @@ var Columns = []string{
 	FieldDateErased,
 	FieldDateCreated,
 	FieldStatus,
-	FieldListed,
 	FieldProjectId,
 	FieldAccountId,
 	FieldAuthBindingId,
@@ -106,8 +103,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultListed holds the default value on creation for the "listed" field.
-	DefaultListed bool
 	// ValueScanner of all Session fields.
 	ValueScanner struct {
 		Status field.TypeValueScanner[*resource.SessionStatus]
@@ -170,11 +165,6 @@ func ByDateErased(opts ...sql.OrderTermOption) OrderOption {
 // ByDateCreated orders the results by the date_created field.
 func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
-}
-
-// ByListed orders the results by the listed field.
-func ByListed(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldListed, opts...).ToFunc()
 }
 
 // ByProjectId orders the results by the project_id field.

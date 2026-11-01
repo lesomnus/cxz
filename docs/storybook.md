@@ -21,12 +21,76 @@ npm run storybook
 - `Components/SessionDetails`: 고정폭 key·value와 Title·Alias 편집. 편집 가능한 행의 hover 배경 안에서 값 영역은 더 밝은 둥근 표면을 유지하며, 외곽과 내부 모서리는 같은 중심을 갖습니다. Title은 `Session.name`이고 alias와 별개이며, 둘 다 `Session.Patch`로 저장합니다. 이름 변경은 수동 제목으로 기록하고 진행 중인 자동 제목 생성을 취소하며, 보조 AI를 실행하지 않습니다.
 - `Conversation/TaskDetails`: 작업의 Input/Output/Result를 cxz `DetailTabs`와 Monaco로 표시하는 floating card 연동 예제. 기본 Card와 SourceEditor 자체 예제는 Nox에 있습니다.
 - `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤.
+- `Pages/Projects`: Account와 같은 공용 Sessions 테이블을 사용합니다. 이름·alias를 묶은 세션/계정 이동 버튼, 상태 아이콘, 행 선택과 개별·일괄 작업, 세션 추가를 확인합니다.
 - `Resources/Tasks`: 프로젝트 선택과 상태별 작업 보드. `ProjectBoard`, `ManyTasks`, `EmptyProject`, `OlderRuntime`에서 등록·수정, 담당 세션 이동, 정지/이전 run 경고와 Release 확인을 확인합니다. `Simulate agent update`는 열린 편집 내용을 보존하면서 원격 갱신·alias 변경과 저장 충돌을 재현합니다. 실제 Connect 클라이언트와 메모리 서비스 fixture를 사용하며 서버의 Task는 변경하지 않습니다.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
+  `QuestionHistoryInConversation`은 사용자·에이전트 대화 중간에 답변 완료된 Question 기록을 표시합니다.
+  대화 응답과 같은 디자인의 카드 본문에서 질문별 탭을 선택해 질문과 기록된 답변을 확인합니다.
+  Nox SlidingPages로 질문과 답변이 함께 슬라이드되며 카드와 각 영역의 높이는 유지됩니다.
+  긴 내용은 내부에서 스크롤하고, 열어본 질문의 스크롤 위치는 탭을 다시 선택해도 유지됩니다.
+  질문 번호 표시는 진행 중 QuestionCard와 공유합니다. 대화 기록은 번호만 중앙에 표시하는 버튼형 탭을 사용하며,
+  다이얼로그의 완료 아이콘·탭 배경·둥근 모서리는 유지합니다. 질문·답변 본문은 다른 대화의 시작선에 정렬됩니다.
+  `LongQuestionHistory`는 길이가 다른 질문·답변을 전환해도 이후 대화 위치가 유지되는 예제입니다.
+- `Conversation/QuestionCard/LiveApprovals`: `Request approval` 또는 예제 안의 `Ctrl+Alt+N`으로 작업 허용 요청을 추가합니다.
+  스택 배치·전진·보충·퇴장·가려짐 처리는 Nox `CardStack`을 사용합니다. 독립적인 재사용 예제는
+  Nox Storybook의 `Components/CardStack`에 있습니다. 승인 응답과 요청 내용 렌더링은 cxz가 담당합니다.
+  toolbar 더보기 왼쪽의 테두리가 있는 X·체크 그룹은 요청이 없어도 비활성 상태로 유지됩니다.
+  요청이 없으면 아이콘과 반투명 테두리는 아주 희미하게 표시됩니다. 평소에는 배경 없이 어두운
+  적색·녹색 아이콘을 표시하고, hover 시 밝아진 아이콘과 해당 색 배경을 표시합니다.
+  요청 수·세로 구분선·X·체크 버튼이 같은 테두리 안에 표시됩니다. 요청 수는 고정 폭입니다.
+  내부 높이는 그룹의 padding 안에서 늘어나도록 정렬하며, 별도의 버튼 높이 계산은 하지 않습니다.
+  카운트는 폰트 기준 줄 높이를 사용해 같은 내부 영역의 중앙에 정렬합니다.
+  수나 버튼에 hover하면 요청 내용만 담은 테두리와
+  블러 배경의 작은 상자가 버튼 위 중앙에 뜨고, 마우스를 카드로 옮겨 내용을 읽거나 스크롤할 수 있습니다.
+  키보드 포커스로도 열립니다. 처리된 요청은 투명도를 바꾸지 않고 작아지며 입력창 뒤로 들어갑니다.
+  퇴장 카드가 앞 레이어를 유지하고, 다음 요청은 퇴장이 진행된 뒤 지연을 두고 앞으로 옵니다.
+  그 뒤에 있던 카드는 지연을 두고 한 칸 전진합니다. 요청이 충분히 남아 있으면 같은 시점에
+  다음 대기 카드가 맨 뒤로 올라와 빈 슬롯을 채웁니다. 화면에는 연속된 FIFO 요청을 표시합니다.
+  앞으로 다가오는 동작은 일반 등장·퇴장보다 천천히 움직입니다. hover로 열 때는 앞 카드부터
+  순서대로 올라옵니다. 닫을 때는 가장 뒤 카드부터 먼저 내려가고,
+  가장 늦게 끝나는 앞 카드의 퇴장이 완료되면 전체 스택을 정리합니다.
+  새 요청은 뒤에서 위로 이동합니다. 뒤 카드도 전체 내용을 유지하며, 앞 카드와 입력창에 가려지는
+  영역만 움직임에 맞춰 잘라내어 배경이 중첩되지 않고 드러나는 본문도 비지 않습니다.
+  퇴장 중에도 Question보다 위 레이어를 유지합니다. 움직임 줄이기 설정을 존중합니다. 일반 Question 폼은 기존 위치를 유지하며,
+  자동으로 해결되는 허용 요청은 표시 대기 시간 안에 사라져 상자가 깜빡이거나 버튼이 활성화되지 않습니다.
 - `Conversation/QuestionCard`: 라디오 선택, 주관식·Other 편집기, 단계별 탭과 Markdown 선택지 preview. FreeText, Steps, AsyncSteps, OptionPreviews, LongQuestions로 각 이벤트 형식과 전체 답변 제출을 확인합니다. 선택지 목록만 스크롤하고 Other와 footer는 고정됩니다. 질문 전환 시 가장 긴 질문에 맞춘 높이를 유지하며, 대화를 스크롤하면 카드가 입력창 뒤로 내려갔다가 마우스 접근이나 포커스로 복귀합니다. 상세 카드가 가려도 답변은 유지되며, 명시적 제출 또는 Cancel로만 종료합니다.
 - `Conversation/Playground`: 메시지 입력과 전송부터 대화 카드 생성까지 이어지는 인터랙티브 미리보기.
 - `Conversation/SessionSearch`: 현재 세션 검색 오버레이. 단축키로 열고 입력·방향키·결과 선택을 확인하며, 본문 클릭이나 결과 이동으로 닫히지 않습니다. Close와 Escape로만 닫습니다. 로드된 예제 대화를 브라우저에서 검색하며, 응답 추가 시 결과 갱신도 확인할 수 있습니다.
+
+## 계정 워크플로
+
+`Accounts/Workflows`는 실제 계정 페이지와 폼, 로그인 패널, 세션 대화 컴포넌트를
+연결합니다. 계정 RPC와 로그인 소켓은 예제마다 독립된 메모리 상태를 사용하며,
+실제 Manager나 에이전트 제공자에 연결하거나 자격 증명을 저장하지 않습니다.
+인증 코드에는 `demo-code`를 입력합니다. `Reset preview`는 예제의 계정, 인증 상태,
+대화 초안과 진행 중 요청을 초기화합니다.
+
+| Story | 확인할 흐름 |
+| --- | --- |
+| AddAccount | 빈 목록에서 Add account로 Codex/Claude 계정 추가, 중복 alias 오류 |
+| AccountLogin | 공통 모달에서 Codex 공유 계정 로그인, 상태 새로고침, 취소·Escape·바깥 클릭으로 닫기와 로그아웃 확인 |
+| LoginFailureAndRetry | 제공자 오류 후 Retry login, 잘못된 코드 입력 후 재시도 |
+| LoginConnectionClosed | 로그인 도중 연결 종료와 새 연결로 재시도 |
+| SignedInAccount | 로그인된 계정의 상태·사용량·연결된 세션, 로그아웃 확인·취소 |
+| SessionCreationRequiresLogin | Claude 세션 생성의 로그인 필요 응답, 세션별 로그인, 동일 생성 키로 재시도 |
+| ConversationRequiresLogin | Send 후 인증 만료로 실패한 턴, Log in again, 로그인 후 세션 재개와 다음 대화 제출 |
+| ExpiredSession | 기록을 열었을 때 인증 만료 상태와 입력창 위 로그인 카드, 취소 후 복구 안내 유지 |
+
+Claude 인증 복구는 실제 앱처럼 이미 수신된 프롬프트를 자동 재전송하지 않습니다.
+로그인 후에는 다음 메시지를 직접 전송합니다. `loginOutcome` control로 성공,
+첫 시도 실패, 첫 연결 종료를 바꿀 수 있습니다. 이후 재시도는 정상 로그인으로 이어집니다.
+
+예제와 fixture는 `ts/src/storybook/accounts/`에 있습니다. 로그인 소켓의 교체 범위는
+`LoginTransportContext` 하위 트리로 제한됩니다. 전역 `WebSocket`을 바꾸지 않으며,
+실제 앱은 provider가 없으므로 기존 Manager 소켓과 인증 정책을 그대로 사용합니다.
+
+관련 브라우저 검사만 실행하려면 Storybook 정적 빌드 후 다음을 실행합니다.
+
+```sh
+cd ts
+npx playwright test --config playwright.storybook.config.ts storybook-e2e/account-workflows.spec.ts
+```
 
 ## Composer 영역과 Story 구성
 

@@ -49,7 +49,6 @@ export const messages = {
 
   "Erase this project and its owned data permanently.":
     "이 프로젝트와 소유 데이터를 영구 삭제합니다.",
-  "Purge project": "프로젝트 영구 삭제",
   "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.":
     "이 프로젝트의 세션, 대화 기록, 공유 메모리 및 소유 리소스를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
   "Workspace source files and shared accounts are preserved.":
@@ -198,9 +197,9 @@ export const messages = {
   Resume: "재개",
   "Restart session": "세션 재시작",
   Restart: "재시작",
+  "Erase session": "세션 영구 삭제",
+  "Erase sessions": "세션 영구 삭제",
   Purge: "영구 삭제",
-  "Purge session": "세션 영구 삭제",
-  "Purge permanently": "영구 삭제",
   "Session details": "세션 상세 정보",
   Cancel: "취소",
   "Confirm cancel": "취소 확인",
@@ -361,6 +360,7 @@ export const messages = {
   Connected: "연결됨",
   "Connecting…": "연결 중…",
   "Context usage": "컨텍스트 사용량",
+  "Usage windows": "사용량 기간별 한도",
   "Continue the conversation…": "대화를 이어가세요…",
   Conversation: "대화",
   "Conversation scroll": "대화 스크롤",
@@ -767,7 +767,6 @@ export const messages = {
   "{count} selected": "{count}개 선택됨",
   "Selected session actions": "선택한 세션 작업",
   "Controls for {name}": "{name} 제어",
-  "Purge sessions": "세션 영구 삭제",
   "Restart sessions": "세션 재시작",
   "Stop sessions": "세션 정지",
   "{count} sessions will be affected.": "세션 {count}개에 적용됩니다.",

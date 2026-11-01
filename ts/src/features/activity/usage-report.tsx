@@ -2,16 +2,19 @@ import { Button, Section } from "@lesomnus/nox";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
+import usageStyles from "./usage-report.module.css";
 export function UsageReport({
   c,
   session = "",
   project = "",
   account = "",
+  className,
 }: {
   c: Connection;
   session?: string;
   project?: string;
   account?: string;
+  className?: string;
 }) {
   const stats = useRemote(
     (signal) =>
@@ -29,21 +32,24 @@ export function UsageReport({
   );
   const total = stats.data?.total;
   return (
-    <Section>
-      <div className={styles.row}>
+    <Section
+      className={`${usageStyles.report} ${className ?? ""}`}
+      aria-label="Conversation usage"
+    >
+      <div className={`${styles.row} ${usageStyles.header}`}>
         <strong>Conversation usage</strong>
         <Button onClick={stats.reload}>Refresh</Button>
       </div>
       <small className={styles.muted}>
         {account
-          ? "Recorded conversation usage for this account's listed sessions over the last 30 days. Provider billing and remaining quota are not included."
+          ? "Recorded conversation usage for this account's sessions over the last 30 days. Provider billing and remaining quota are not included."
           : "Retained conversation statistics for the last 30 days. These are reported token and cost metrics, not account billing or lifetime totals."}
       </small>
       {stats.error && <p role="alert">{stats.error}</p>}
       {stats.loading && <p className={styles.muted}>Loading usage…</p>}
       {total && (
         <>
-          <dl className={styles.metrics}>
+          <dl className={`${styles.metrics} ${usageStyles.metrics}`}>
             {[
               ["Finished turns", total.finishedTurns],
               ["Input tokens", total.inputTokens],

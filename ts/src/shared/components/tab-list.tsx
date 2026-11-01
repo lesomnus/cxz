@@ -1,4 +1,5 @@
-import { Button } from "@lesomnus/nox";
+import { Button, type ButtonProps } from "@lesomnus/nox";
+import type { ReactNode } from "react";
 
 // The owner supplies IDs so panels and tabs can share accessible relationships.
 export function TabList({
@@ -8,22 +9,33 @@ export function TabList({
   items,
   value,
   choose,
+  className = "",
+  effect,
 }: {
   prefix: string;
   panelId: string;
   label: string;
-  items: { id: string; label: string; answered?: boolean }[];
+  items: {
+    id: string;
+    label: ReactNode;
+    ariaLabel?: string;
+    answered?: boolean;
+  }[];
   value: string;
   choose: (id: string) => void;
+  className?: string;
+  effect?: ButtonProps["effect"];
 }) {
   return (
-    <div className="tab-list" role="tablist" aria-label={label}>
+    <div className={`tab-list ${className}`} role="tablist" aria-label={label}>
       {items.map((item, index) => (
         <Button
           key={item.id}
           id={`${prefix}-${index}`}
           type="button"
+          effect={effect}
           role="tab"
+          aria-label={item.ariaLabel}
           aria-selected={item.id === value}
           aria-controls={panelId}
           tabIndex={item.id === value ? 0 : -1}
@@ -41,16 +53,29 @@ export function TabList({
             document.getElementById(`${prefix}-${next}`)?.focus();
           }}
         >
-          <span className="tab-label">{item.label}</span>
           {item.answered !== undefined && (
             <span
               className="tab-answered"
               data-answered={item.answered}
               aria-hidden="true"
             >
-              {item.answered ? "✓" : "○"}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="7" cy="9" r="4" strokeWidth="1" />
+                {item.answered && (
+                  <path d="m2 8.5 3.2 3 7.3-8" strokeWidth="2.6" />
+                )}
+              </svg>
             </span>
           )}
+          <span className="tab-label">{item.label}</span>
         </Button>
       ))}
     </div>

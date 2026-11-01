@@ -12,7 +12,9 @@ test.beforeEach(async ({ page }) => {
   ).toBeVisible({ timeout: 45000 });
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
   await expect(
-    page.getByText("Which environment?", { exact: true }),
+    page
+      .locator(".question-cards")
+      .getByText("Which environment?", { exact: true }),
   ).toBeVisible();
 });
 
@@ -39,20 +41,26 @@ test("a single click expires; a second click interrupts without stopping the ses
   await stop.click();
   await expect(stop).toBeEnabled();
   await expect(
-    page.getByText("Which environment?", { exact: true }),
+    page
+      .locator(".question-cards")
+      .getByText("Which environment?", { exact: true }),
   ).toBeVisible();
   await stop.click();
   await expect(stop).toBeDisabled();
   await expect(timer).toHaveText("00:00:00");
   await expect(
-    page.getByText("Which environment?", { exact: true }),
+    page
+      .locator(".question-cards")
+      .getByText("Which environment?", { exact: true }),
   ).toHaveCount(0);
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("New turn after interrupt");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(stop).toBeEnabled();
   await expect(
-    page.getByText("Which environment?", { exact: true }),
+    page
+      .locator(".question-cards")
+      .getByText("Which environment?", { exact: true }),
   ).toBeVisible();
 });
 
@@ -84,7 +92,9 @@ test("two distinct Escape presses interrupt; held keys and a session switch cann
   await page.keyboard.press("Escape");
   await expect(stop).toHaveAttribute("data-armed", "true");
   await expect(
-    page.getByText("Which environment?", { exact: true }),
+    page
+      .locator(".question-cards")
+      .getByText("Which environment?", { exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(stop).toBeDisabled();

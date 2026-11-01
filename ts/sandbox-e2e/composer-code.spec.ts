@@ -303,7 +303,7 @@ test("Question Other uses the same code editor and sends fenced syntax without s
   await expect(composer).toHaveValue("Keep my draft");
   await question.getByRole("button", { name: "Submit", exact: true }).click();
   await expect(question).toHaveCount(0);
-  const history = page.locator("button.question-history");
+  const history = page.locator("article.question-history");
   await expect(history).toContainText("Which environment?");
   await expect(history).toHaveAttribute("data-state", "completed");
   const response = page

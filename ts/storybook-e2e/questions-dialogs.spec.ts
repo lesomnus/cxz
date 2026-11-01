@@ -207,7 +207,7 @@ test("long confirmation bodies scroll while the padded header and actions stay v
   await page
     .getByRole("button", { name: "Open confirmation", exact: true })
     .click();
-  const dialog = page.getByRole("dialog", { name: "Purge session" });
+  const dialog = page.getByRole("dialog", { name: "Erase session" });
   const body = dialog.locator(".card-body");
   const footer = dialog.locator(".card-footer");
   const header = dialog.locator(".card-heading");
@@ -224,7 +224,7 @@ test("long confirmation bodies scroll while the padded header and actions stay v
   expect(await footer.boundingBox()).toEqual(originalFooter);
   expect(await header.boundingBox()).toEqual(originalHeader);
   await expect(
-    dialog.getByRole("button", { name: "Purge permanently", exact: true }),
+    dialog.getByRole("button", { name: "Erase", exact: true }),
   ).toBeVisible();
   const bounds = (await dialog.boundingBox())!;
   expect(bounds.y).toBeGreaterThanOrEqual(0);
@@ -235,6 +235,38 @@ test("long confirmation bodies scroll while the padded header and actions stay v
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveCount(0);
+});
+
+test("confirmation callers remain mounted until the shared modal exit finishes", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=components-confirmationdialog--default&viewMode=story",
+  );
+  const launch = page.getByRole("button", {
+    name: "Open confirmation",
+    exact: true,
+  });
+  for (const action of ["Cancel", "Stop"]) {
+    await launch.click();
+    const dialog = page.locator("dialog.confirmation-dialog");
+    await dialog.evaluate((node) =>
+      node.style.setProperty("--ui-dialog-exit-duration", "2s"),
+    );
+    await dialog.getByRole("button", { name: action, exact: true }).click();
+    await expect(dialog).toHaveAttribute("data-closing", "true");
+    await expect(dialog).toHaveJSProperty("open", true);
+    await dialog.evaluate((node) => {
+      const surface = node.querySelector('[data-motion="default"]')!;
+      for (const animation of node.getAnimations({ subtree: true })) {
+        const target = (animation.effect as KeyframeEffect | null)?.target;
+        if (target === node || target === surface) animation.finish();
+      }
+    });
+    await expect(dialog).toHaveCount(0);
+    await expect(launch).toBeFocused();
+  }
+  await expect(page.getByRole("status")).toHaveText("Action completed");
 });
 
 test("pending dialogs prevent dismissal and failed actions stay open for retry", async ({
@@ -252,9 +284,10 @@ test("pending dialogs prevent dismissal and failed actions stay open for retry",
   await expect(
     dialog.getByRole("button", { name: "Cancel", exact: true }),
   ).toBeDisabled();
-  await expect(
-    dialog.getByRole("button", { name: "Working…", exact: true }),
-  ).toBeDisabled();
+  const confirm = dialog.getByRole("button", { name: "Stop", exact: true });
+  await expect(confirm).toBeDisabled();
+  await expect(confirm).toHaveAttribute("aria-busy", "true");
+  await expect(confirm).toHaveAttribute("data-loading", "true");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveCount(0);
@@ -424,7 +457,7 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
     name: "Submit",
     exact: true,
   });
-  await expect(tabs.getByRole("tab")).toHaveText(["Q1○", "Q2○", "Q3○"]);
+  await expect(tabs.getByRole("tab")).toHaveText(["01", "02", "03"]);
   const tabBefore = await tabs
     .getByRole("tab", { name: "Q1", exact: true })
     .boundingBox();
@@ -432,6 +465,18 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
     .getByRole("tab", { name: "Q1", exact: true })
     .locator(".tab-answered")
     .boundingBox();
+  const number = tabs
+    .getByRole("tab", { name: "Q1", exact: true })
+    .getByRole("img", { name: "1", exact: true });
+  await expect(number).toHaveAttribute("data-mode", "integer");
+  expect(iconBefore!.x + iconBefore!.width).toBeLessThanOrEqual(
+    (await number.boundingBox())!.x,
+  );
+  await expect(
+    tabs
+      .getByRole("tab", { name: "Q1", exact: true })
+      .locator(".tab-answered path"),
+  ).toHaveCount(0);
   await question.getByRole("radio", { name: "Compact", exact: true }).check();
   expect(
     await tabs.getByRole("tab", { name: "Q1", exact: true }).boundingBox(),
@@ -440,7 +485,12 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
     .getByRole("tab", { name: "Q1", exact: true })
     .locator(".tab-answered")
     .boundingBox())!;
-  // Different glyphs have different heights; their allocated width and center stay fixed.
+  await expect(
+    tabs
+      .getByRole("tab", { name: "Q1", exact: true })
+      .locator(".tab-answered path"),
+  ).toHaveCount(1);
+  // Completion changes the drawing without moving either allocated slot.
   expect(iconAfter.width).toBe(iconBefore!.width);
   expect(iconAfter.x + iconAfter.width / 2).toBe(
     iconBefore!.x + iconBefore!.width / 2,
@@ -683,8 +733,16 @@ test("choice fades track remaining distance and disappear on the boundary frame"
       const bottomEnd = await sample(max, bottom);
       const topNear = await sample(depth / 4, top);
       const topEnd = await sample(0, top);
-      return { depth, bottomNear, bottomEnd, topNear, topEnd };
+      const inherited = ["top", "bottom"].flatMap((edge) =>
+        ["hidden", "opacity", "motion"].map((value) =>
+          getComputedStyle(pane).getPropertyValue(
+            `--scroll-fade-${edge}-${value}`,
+          ),
+        ),
+      );
+      return { depth, bottomNear, bottomEnd, topNear, topEnd, inherited };
     });
+  expect(samples.inherited).toEqual(["", "", "", "", "", ""]);
   for (const near of [samples.bottomNear, samples.topNear]) {
     expect(near.opacity).toBeGreaterThan(0);
     expect(near.opacity).toBeLessThan(0.5);
@@ -779,6 +837,18 @@ test("reading tucks the question into the composer fade and approaching restores
 }) => {
   await page.goto(
     "/iframe.html?id=conversation-questioncard--long-questions&viewMode=story",
+  );
+  const fade = page.locator(".transcript-fade-bottom");
+  await expect(page.locator(".question-card")).toBeVisible();
+  await fade.evaluate((el) =>
+    (el as HTMLElement).style.setProperty("--bottom-fade-height", "123px"),
+  );
+  await expect(page.locator(".floating-card-host")).toHaveCSS(
+    "--question-fade-height",
+    "123px",
+  );
+  await fade.evaluate((el) =>
+    (el as HTMLElement).style.removeProperty("--bottom-fade-height"),
   );
   const question = page.getByRole("region", { name: "Question", exact: true });
   const layer = page.locator(".question-cards");

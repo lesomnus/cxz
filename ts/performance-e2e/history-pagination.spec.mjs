@@ -11,11 +11,9 @@ function stream(rows) {
   return Buffer.concat([...frames, Buffer.from([2, 0, 0, 0, 2, 123, 125])]);
 }
 
-// Exercise the real development app and RPC decoder, not an already populated
-// preview. Approval metadata can dwarf the visible text in a Transcript page.
-test("large Transcript pages stay responsive and preserve the reading anchor", async ({
-  page,
-}) => {
+// Exercise the real app and RPC decoder. Large approval metadata and local
+// scroll effects are absent from an already populated component preview.
+async function openConversation(page, largePayload = false) {
   const payload = Buffer.from(
     JSON.stringify({
       params: { _meta: { arguments: "x".repeat(192 * 1024) } },
@@ -23,7 +21,12 @@ test("large Transcript pages stay responsive and preserve the reading anchor", a
   ).toString("base64");
   const events = Array.from({ length: 2400 }, (_, index) => {
     const seq = index + 1;
-    const kind = seq % 16 === 0 ? "approval" : seq % 2 ? "input" : "assistant";
+    const kind =
+      largePayload && seq % 16 === 0
+        ? "approval"
+        : seq % 2
+          ? "input"
+          : "assistant";
     return {
       seq: String(seq),
       kind,
@@ -119,6 +122,13 @@ test("large Transcript pages stay responsive and preserve the reading anchor", a
   );
   // Let the initial live-arrival motion settle before measuring historical positions.
   await page.waitForTimeout(600);
+  return { requests, errors };
+}
+
+test("large Transcript pages stay responsive and preserve the reading anchor", async ({
+  page,
+}) => {
+  const { requests, errors } = await openConversation(page, true);
   const previousFirst = await page
     .locator(".virtual-messages")
     .getAttribute("data-first");
@@ -171,5 +181,70 @@ test("large Transcript pages stay responsive and preserve the reading anchor", a
     requests.filter((q) => q.beforeSeq && q.limit > 1).length,
   ).toBeGreaterThan(0);
   expect(requests.length).toBeLessThan(8);
+  expect(errors).toEqual([]);
+});
+
+test("real conversation scroll fades stay local to their overlays", async ({
+  page,
+}) => {
+  const { errors } = await openConversation(page);
+  const pane = page.locator(".transcript");
+  const scrollbar = page.getByRole("scrollbar", {
+    name: "Conversation scroll",
+  });
+  const bottom = page.locator(".transcript-fade-bottom");
+  const top = page.locator(".transcript-fade-top");
+  await expect(bottom).toHaveCSS("opacity", "0");
+  await scrollbar.press("PageUp");
+  await expect(bottom).toHaveCSS("opacity", "1");
+  await expect(top).toHaveCSS("opacity", "1");
+  await expect
+    .poll(() => bottom.evaluate((el) => el.getBoundingClientRect().height))
+    .toBeGreaterThan(0);
+  // Scroll animation values must not inherit through message/card subtrees.
+  // Updating them on the common parent makes every card recalculate styles.
+  const result = await page.evaluate(async () => {
+    const pane = document.querySelector(".transcript");
+    const area = pane.parentElement;
+    const properties = [
+      "--top-fade-height",
+      "--top-fade-opacity",
+      "--bottom-fade-height",
+      "--bottom-fade-opacity",
+    ];
+    let sharedWrites = 0;
+    const observer = new MutationObserver((records) => {
+      sharedWrites += records.length;
+    });
+    observer.observe(area, { attributes: true, attributeFilter: ["style"] });
+    try {
+      for (let i = 0; i < 40; i++) {
+        pane.scrollTop = Math.max(
+          0,
+          pane.scrollHeight - pane.clientHeight - 1500 - i * 80,
+        );
+        await new Promise(requestAnimationFrame);
+      }
+      return {
+        sharedWrites,
+        inherited: properties.map((name) =>
+          getComputedStyle(pane).getPropertyValue(name),
+        ),
+        rows: pane.querySelectorAll("[data-row]").length,
+      };
+    } finally {
+      observer.disconnect();
+    }
+  });
+  expect(result.sharedWrites).toBe(0);
+  expect(result.inherited).toEqual(["", "", "", ""]);
+  expect(result.rows).toBeLessThan(50);
+  await scrollbar.press("End");
+  await expect
+    .poll(() =>
+      pane.evaluate((el) => el.scrollHeight - el.clientHeight - el.scrollTop),
+    )
+    .toBeLessThan(2);
+  await expect(bottom).toHaveCSS("opacity", "0");
   expect(errors).toEqual([]);
 });
