@@ -1,7 +1,14 @@
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { useRef, useState } from "react";
 import { ConnectError } from "@connectrpc/connect";
-import { Button, Popover, SectionGroup, Section, Switch } from "@lesomnus/nox";
+import {
+  Button,
+  EditableValue,
+  Popover,
+  SectionGroup,
+  Section,
+  Switch,
+} from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -14,7 +21,13 @@ import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
-import { accountRef, accountStatus } from "./account-data";
+import {
+  accountRef,
+  accountStatus,
+  editAccount,
+  validateAccountField,
+  type AccountField,
+} from "./account-data";
 import { LoginPanel } from "./login-panel";
 import styles from "#src/shared/components/resource-surface.module.css";
 import accountStyles from "./accounts.module.css";
@@ -25,6 +38,7 @@ export function AccountDetails({
   projects,
   sessionsLoading,
   erased,
+  saved,
 }: {
   c: Connection;
   account: Account;
@@ -32,7 +46,23 @@ export function AccountDetails({
   projects: Project[];
   sessionsLoading: boolean;
   erased: () => void;
+  saved: (account: Account) => void;
 }) {
+  const editable = (field: AccountField, label: string) => (
+    <div className={accountStyles.editable}>
+      <EditableValue
+        label={label}
+        value={account[field]}
+        monospace
+        validate={(value) => validateAccountField(field, value)}
+        save={async (value) => {
+          const updated = await editAccount(c.accounts, account, field, value);
+          c.store.apply("cxz.Account", [{ id: updated.id, value: updated }]);
+          saved(updated);
+        }}
+      />
+    </div>
+  );
   const status = useRemote(
     (signal) => accountStatus(c, account.alias, signal),
     [c, account.alias],
@@ -69,12 +99,8 @@ export function AccountDetails({
           <ResourceFields
             columns={2}
             rows={[
-              [
-                "Display name",
-                <AccountValue value={account.name || account.alias} />,
-                account.desc,
-              ],
-              ["Alias", <AccountValue value={account.alias} />],
+              ["Display name", editable("name", "Display name"), account.desc],
+              ["Alias", editable("alias", "Alias")],
               [
                 "Agent",
                 <span className={accountStyles.agent}>
@@ -84,18 +110,15 @@ export function AccountDetails({
               ],
               [
                 "Authentication backend",
-                <AccountValue value={account.authBackend} />,
+                <span className={accountStyles.fieldValue}>
+                  {account.authBackend || "—"}
+                </span>,
               ],
               [
                 "Created",
-                <Popover
-                  content={<DateTime value={account.dateCreated} />}
-                  placement="in-place"
-                >
-                  <span className={accountStyles.fieldValue}>
-                    <DateTime value={account.dateCreated} />
-                  </span>
-                </Popover>,
+                <span className={accountStyles.fieldValue}>
+                  <DateTime value={account.dateCreated} />
+                </span>,
                 undefined,
                 <RelativeTime value={account.dateCreated} />,
               ],
@@ -274,13 +297,5 @@ export function AccountDetails({
         </ConfirmationDialog>
       )}
     </div>
-  );
-}
-
-function AccountValue({ value }: { value: string }) {
-  return (
-    <Popover content={value} placement="in-place">
-      <span className={accountStyles.fieldValue}>{value || "—"}</span>
-    </Popover>
   );
 }

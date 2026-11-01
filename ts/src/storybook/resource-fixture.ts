@@ -1,8 +1,10 @@
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
+import { isFieldSet } from "@bufbuild/protobuf";
 import type { Account } from "#gen/cxz/account_pb";
 import { createRouterTransport, ConnectError, Code } from "@connectrpc/connect";
 import {
   AccountService,
+  AccountPatchRequestSchema,
   AccountAuthStatus_State as AuthState,
 } from "#gen/cxz/account_svc_pb";
 import { AuxKind, InstallationService } from "#gen/cxz/installation_pb";
@@ -17,11 +19,13 @@ export function resourceFixture({
   usageDelayMs = 0,
   usageFailures = 0,
   longAccountDetails = false,
+  editFailures = 0,
 }: {
   eraseFailures?: number;
   usageDelayMs?: number;
   usageFailures?: number;
   longAccountDetails?: boolean;
+  editFailures?: number;
 } = {}) {
   let revision = "1",
     content =
@@ -35,11 +39,19 @@ export function resourceFixture({
   };
   const accounts: Pick<
     Account,
-    "id" | "alias" | "name" | "desc" | "agent" | "authBackend" | "dateCreated"
+    | "id"
+    | "alias"
+    | "name"
+    | "desc"
+    | "agent"
+    | "authBackend"
+    | "dateCreated"
+    | "dateUpdated"
   >[] = [
     {
       id: projectFixtureId(10),
       dateCreated: timestampFromDate(new Date("2026-10-20T00:00:00Z")),
+      dateUpdated: timestampFromDate(new Date("2026-10-20T00:00:00Z")),
       alias: "work",
       name: "Work",
       desc: "",
@@ -48,6 +60,7 @@ export function resourceFixture({
     },
     {
       id: projectFixtureId(11),
+      dateUpdated: timestampFromDate(new Date("2026-10-20T00:00:00Z")),
       alias: "personal",
       name: "Personal",
       desc: "",
@@ -102,6 +115,57 @@ export function resourceFixture({
   const transport = createRouterTransport((router) => {
     router.service(AccountService, {
       list: () => ({ items: accounts }),
+      get: (request) => {
+        const account = accounts.find((a) =>
+          request.ref?.key.case === "id"
+            ? a.id.toString() === request.ref.key.value.toString()
+            : a.alias === request.ref?.key.value,
+        );
+        if (!account)
+          throw new ConnectError("Account not found", Code.NotFound);
+        return account;
+      },
+      patch: (request) => {
+        if (editFailures > 0) {
+          editFailures--;
+          throw new ConnectError(
+            "Account save failed. Try again.",
+            Code.Unavailable,
+          );
+        }
+        const account = accounts.find((a) =>
+          request.ref?.key.case === "id"
+            ? a.id.toString() === request.ref.key.value.toString()
+            : a.alias === request.ref?.key.value,
+        );
+        if (!account)
+          throw new ConnectError("Account not found", Code.NotFound);
+        if (
+          !request.dateUpdated ||
+          request.dateUpdated.seconds !== account.dateUpdated?.seconds ||
+          request.dateUpdated.nanos !== account.dateUpdated?.nanos
+        )
+          throw new ConnectError(
+            "Account changed. Refresh and try again.",
+            Code.FailedPrecondition,
+          );
+        if (isFieldSet(request, AccountPatchRequestSchema.field.alias)) {
+          if (accounts.some((a) => a !== account && a.alias === request.alias))
+            throw new ConnectError(
+              "Account alias is already in use",
+              Code.AlreadyExists,
+            );
+          if (signedIn.delete(account.alias)) signedIn.add(request.alias);
+          account.alias = request.alias;
+        }
+        if (isFieldSet(request, AccountPatchRequestSchema.field.name))
+          account.name = request.name;
+        account.dateUpdated = {
+          ...account.dateUpdated!,
+          nanos: account.dateUpdated!.nanos + 1,
+        };
+        return account;
+      },
       add: (request) => {
         if (accounts.some((account) => account.alias === request.alias))
           throw new ConnectError("Account already exists", Code.AlreadyExists);
@@ -110,6 +174,7 @@ export function resourceFixture({
           alias: request.alias,
           name: request.name || request.alias,
           desc: "",
+          dateUpdated: timestampFromDate(new Date()),
           agent: request.agent,
           authBackend:
             request.agent === "claude"

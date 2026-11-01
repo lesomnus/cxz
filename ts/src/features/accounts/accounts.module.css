@@ -75,11 +75,21 @@
 .informationDetails dl > div {
   height: 41px;
 }
-.informationDetails dt,
-.informationDetails dd {
+.informationDetails dt {
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
+}
+.informationDetails dd {
+  min-width: 0;
+}
+.editable {
+  flex: 1;
+  min-width: 0;
+}
+.editable :global(.editable-value-trigger) {
+  min-height: var(--ui-icon-size);
+  font: inherit;
 }
 .informationDetails dd > span {
   min-width: 0;
