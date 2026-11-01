@@ -26,6 +26,12 @@ func (s SessionServer) Erase(ctx context.Context, ref *resource.SessionRef) (*re
 	if err := s.sync(ctx); err != nil {
 		return nil, err
 	}
+	return s.eraseSession(ctx, ref)
+}
+
+// Caller holds transition so account erasure can reuse the same purge without
+// admitting new sessions between the cascade and deletion of the account.
+func (s SessionServer) eraseSession(ctx context.Context, ref *resource.SessionRef) (*resource.SessionEraseResponse, error) {
 	v, err := s.Next().Session().Get(ctx, resource.SessionGetRequest_builder{Ref: ref, Select: resource.SessionSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
 	if status.Code(err) == codes.NotFound {
 		return &resource.SessionEraseResponse{}, nil

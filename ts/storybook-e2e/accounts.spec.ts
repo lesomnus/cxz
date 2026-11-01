@@ -1,5 +1,94 @@
 import { expect, test } from "@playwright/test";
 
+test("account erase confirms the full cascade and cancel keeps the account", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
+  const work = page.getByRole("article", { name: "Work", exact: true });
+  const erase = work.getByRole("button", {
+    name: "Erase account Work",
+    exact: true,
+  });
+  await erase.click();
+  const modal = page.getByRole("dialog", {
+    name: "Erase account · Work",
+    exact: true,
+  });
+  await expect(modal).toContainText("all sessions linked to this account");
+  await expect(modal).toContainText(
+    "conversations, memory, attachments and agent profiles",
+  );
+  await expect(
+    modal.getByRole("button", { name: "Cancel", exact: true }),
+  ).toBeFocused();
+  await modal.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(modal).toHaveCount(0);
+  await expect(work).toBeVisible();
+  await erase.click();
+  await modal
+    .getByRole("button", { name: "Erase permanently", exact: true })
+    .click();
+  await expect(modal).toHaveCount(0);
+  await expect(work).toHaveCount(0);
+  await expect(
+    page.getByRole("article", { name: "Personal", exact: true }),
+  ).toBeVisible();
+});
+
+test("account erase cleanup failure stays visible and can be retried", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=resources-views--account-erase-failure&viewMode=story",
+  );
+  const work = page.getByRole("article", { name: "Work", exact: true });
+  await work
+    .getByRole("button", { name: "Erase account Work", exact: true })
+    .click();
+  const modal = page.getByRole("dialog", {
+    name: "Erase account · Work",
+    exact: true,
+  });
+  await modal
+    .getByRole("button", { name: "Erase permanently", exact: true })
+    .click();
+  await expect(modal.getByRole("alert")).toContainText(
+    "Session cleanup failed",
+  );
+  await expect(work).toBeVisible();
+  await modal
+    .getByRole("button", { name: "Erase permanently", exact: true })
+    .click();
+  await expect(modal).toHaveCount(0);
+  await expect(work).toHaveCount(0);
+});
+
+test("account erase uses the immutable account id when available", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=accounts-workflows--account-login&viewMode=story",
+  );
+  const account = page.getByRole("article", {
+    name: "Work account",
+    exact: true,
+  });
+  await account
+    .getByRole("button", { name: "Erase account Work account", exact: true })
+    .click();
+  const modal = page.getByRole("dialog", {
+    name: "Erase account · Work account",
+    exact: true,
+  });
+  await modal
+    .getByRole("button", { name: "Erase permanently", exact: true })
+    .click();
+  await expect(modal).toHaveCount(0);
+  await expect(
+    page.getByText("No accounts yet.", { exact: true }),
+  ).toBeVisible();
+});
+
 for (const width of [1280, 390]) {
   test(`account columns adapt without a sidebar at ${width}px`, async ({
     page,
@@ -17,10 +106,9 @@ for (const width of [1280, 390]) {
     await expect(work).toBeVisible();
     const layout = page.locator('[data-section-layout="layout"]');
     await expect(layout).toHaveCount(1);
-    const group = work.locator('[data-section-layout="group"]');
-    await expect(group).toHaveCount(1);
+    const group = work.locator('[data-section-layout="group"]').first();
     const sections = group.locator(':scope > [data-section-layout="section"]');
-    await expect(sections).toHaveCount(3);
+    await expect(sections).toHaveCount(2);
     const corners = await sections.evaluateAll((nodes) =>
       nodes.map((node) => {
         const css = getComputedStyle(node);
@@ -50,9 +138,21 @@ for (const width of [1280, 390]) {
       .boundingBox())!;
     expect(usageBounds.x).toBe(informationBounds.x);
     expect(usageBounds.width).toBe(informationBounds.width);
+    const infoBounds = (await work
+      .getByRole("region", { name: "Account details", exact: true })
+      .boundingBox())!;
     expect(authBounds.y).toBeGreaterThanOrEqual(
-      usageBounds.y + usageBounds.height,
+      infoBounds.y + infoBounds.height,
     );
+    expect(usageBounds.y).toBeGreaterThanOrEqual(
+      authBounds.y + authBounds.height,
+    );
+    const eraseBounds = (await work
+      .getByRole("button", { name: "Erase account Work", exact: true })
+      .boundingBox())!;
+    expect(eraseBounds.width).toBe(eraseBounds.height);
+    expect(eraseBounds.x + eraseBounds.width).toBeLessThan(authBounds.x);
+    expect(eraseBounds.y).toBe(authBounds.y);
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>
         parseFloat(getComputedStyle(node).maxWidth),
@@ -64,7 +164,7 @@ for (const width of [1280, 390]) {
       expect(sessionsBounds.y).toBe(informationBounds.y);
       expect(sessionsBounds.width).toBeCloseTo(informationBounds.width, 0);
       expect(informationBounds.width).toBe(420);
-      expect(authBounds.y + authBounds.height).toBeCloseTo(
+      expect(usageBounds.y + usageBounds.height).toBeCloseTo(
         informationBounds.y + informationBounds.height,
         0,
       );

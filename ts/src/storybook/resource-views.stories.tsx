@@ -74,10 +74,12 @@ function AccountPreview({ c }: { c: Connection }) {
 }
 function ResourcePreview({
   view,
+  eraseFailures = 0,
 }: {
   view: "accounts" | "memory" | "usage" | "background" | "auxiliary";
+  eraseFailures?: number;
 }) {
-  const [c] = useState(resourceFixture);
+  const [c] = useState(() => resourceFixture({ eraseFailures }));
   return (
     <div
       style={{
@@ -121,6 +123,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const SharedMemory: Story = {};
 export const Accounts: Story = { args: { view: "accounts" } };
+export const AccountEraseFailure: Story = {
+  args: { view: "accounts", eraseFailures: 1 },
+};
 export const Usage: Story = { args: { view: "usage" } };
 export const BackgroundTasks: Story = { args: { view: "background" } };
 export const AuxiliaryAI: Story = { args: { view: "auxiliary" } };

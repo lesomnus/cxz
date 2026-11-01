@@ -21,6 +21,8 @@ func bindingRef(id string) *resource.AuthBindingRef {
 	return resource.AuthBindingRef_builder{BindingId: &id}.Build()
 }
 func (s AuthBindingServer) Add(ctx context.Context, r *resource.AuthBindingAddRequest) (*resource.AuthBinding, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}

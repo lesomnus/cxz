@@ -11,7 +11,9 @@ import { Connection } from "#src/shared/api/connection.ts";
 
 // This fixture uses the same typed clients as production without credentials,
 // Docker or a provider. Each story owns its own editable state.
-export function resourceFixture() {
+export function resourceFixture({
+  eraseFailures = 0,
+}: { eraseFailures?: number } = {}) {
   let revision = "1",
     content =
       "# Project memory\n\nKeep decisions here.\n\n```ts\nconst shared = true;\n```";
@@ -107,6 +109,22 @@ export function resourceFixture() {
           );
         signedIn.delete(alias);
         return authStatus(alias);
+      },
+      erase: (ref) => {
+        if (eraseFailures > 0) {
+          eraseFailures--;
+          throw new ConnectError(
+            "Session cleanup failed. Retry to finish erasing this account.",
+            Code.Unavailable,
+          );
+        }
+        const index = accounts.findIndex(
+          (a) => ref.key.case === "alias" && a.alias === ref.key.value,
+        );
+        if (index < 0) return { erased: false };
+        signedIn.delete(accounts[index].alias);
+        accounts.splice(index, 1);
+        return { erased: true };
       },
       models: () => ({
         models: [

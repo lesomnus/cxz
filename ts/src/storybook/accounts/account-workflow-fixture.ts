@@ -137,7 +137,8 @@ export function accountWorkflowFixture(
   let revision = 0,
     loginAttempts = 0,
     run = 0,
-    needsLogin = isSession;
+    needsLogin = isSession,
+    sessionErased = false;
   const events: SessionEvent[] = [];
   const changes = new Set<() => void>();
   const sockets = new Set<PreviewLoginSocket>();
@@ -274,13 +275,37 @@ export function accountWorkflowFixture(
           notify();
           return status(alias);
         },
+        erase: (request) => {
+          const index = accounts.findIndex((item) =>
+            request.key.case === "alias"
+              ? item.alias === request.key.value
+              : request.key.case === "id" &&
+                item.id.toString() === request.key.value.toString(),
+          );
+          if (index < 0) return { erased: false };
+          if (accounts[index].alias === session.account?.alias) {
+            sessionErased = true;
+            events.splice(0);
+            authenticatedSessions.clear();
+            for (const timer of timers) clearTimeout(timer);
+            for (const socket of sockets) socket.close();
+          }
+          signedIn.delete(accounts[index].alias);
+          accounts.splice(index, 1);
+          notify();
+          return { erased: true };
+        },
         models: () => ({ models: [] }),
       });
       router.service(AuthBindingService, {
         add: () => ({ bindingId: "preview-binding" }),
       });
       router.service(SessionService, {
-        get: () => clone(SessionSchema, session),
+        get: () => {
+          if (sessionErased)
+            throw new ConnectError("Session not found", Code.NotFound);
+          return clone(SessionSchema, session);
+        },
         async *watch(_request, context) {
           while (!context.signal.aborted) {
             const seen = revision;
@@ -431,6 +456,7 @@ export function accountWorkflowFixture(
     project,
     calls,
     get sessions() {
+      if (sessionErased) return [];
       return scenario === "create-session" && !authenticatedSessions.size
         ? []
         : [session];
