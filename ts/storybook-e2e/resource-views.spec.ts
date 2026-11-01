@@ -29,5 +29,7 @@ test("account and usage stories use isolated typed clients", async ({
   await expect(
     page.getByText("Complete retained coverage", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("4800", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: "4800", exact: true }),
+  ).toBeVisible();
 });
