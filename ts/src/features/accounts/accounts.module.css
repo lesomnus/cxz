@@ -49,6 +49,9 @@
 .eraseAction.eraseAction > :global(.button-content) {
   justify-content: center;
 }
+.eraseAction.eraseAction:not(:disabled):hover {
+  color: var(--ui-action-error-color);
+}
 .informationDetails,
 .usageSection {
   align-content: start;
