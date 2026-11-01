@@ -206,22 +206,17 @@ export function AccountDetails({
               />
             )}
           </Section>
-          <Popover
-            placement="top-end"
-            content="Erase this account, its saved login and all linked sessions and their stored data. This cannot be undone."
+          <Section
+            as="button"
+            className={accountStyles.eraseAction}
+            aria-label={`Erase account ${account.name || account.alias}`}
+            onClick={() => {
+              setEraseError("");
+              setErase(true);
+            }}
           >
-            <Section
-              as="button"
-              className={accountStyles.eraseAction}
-              aria-label={`Erase account ${account.name || account.alias}`}
-              onClick={() => {
-                setEraseError("");
-                setErase(true);
-              }}
-            >
-              <SessionActionIcon action="erase" />
-            </Section>
-          </Popover>
+            <SessionActionIcon action="erase" />
+          </Section>
         </SectionGroup>
         <UsageReport
           c={c}
