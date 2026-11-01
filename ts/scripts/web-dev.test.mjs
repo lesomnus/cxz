@@ -32,6 +32,30 @@ async function config(dir, name = "web.json", values = {}) {
   );
 }
 
+// A request with the Host header a browser on another machine would send, which
+// fetch() will not let a caller set.
+function ask(port, host, path = "/auth/status") {
+  return new Promise((resolve) => {
+    const req = request(
+      {
+        host: "127.0.0.1",
+        port,
+        path,
+        headers: { Host: host, Origin: `http://${host}` },
+      },
+      (res) => {
+        res.resume();
+        resolve({
+          status: res.statusCode,
+          cookies: res.headers["set-cookie"] ?? [],
+        });
+      },
+    );
+    req.on("error", () => resolve({ status: 0, cookies: [] }));
+    req.end();
+  });
+}
+
 describe("dev gateway discovery", () => {
   it("uses the same default and XDG state locations as cxz", async () => {
     const home = await temp();
@@ -110,6 +134,7 @@ async function fixture({
   publicToken = false,
   streamRPC = false,
   identity,
+  host = "127.0.0.1",
 } = {}) {
   const dir = await temp();
   const tokenFile = join(
@@ -174,12 +199,13 @@ async function fixture({
     plugins: [devGatewayPlugin({ origin, tokenFile })],
     logLevel: "silent",
     optimizeDeps: { noDiscovery: true, include: [] },
-    server: { host: "127.0.0.1", port, strictPort: true, watch: null },
+    server: { host, port, strictPort: true, watch: null },
   });
   await vite.listen();
   cleanup.push(() => vite.close());
   return {
     url: `http://127.0.0.1:${vite.httpServer.address().port}`,
+    port: vite.httpServer.address().port,
     origin,
     tokenFile,
     calls,
@@ -408,5 +434,30 @@ describe("Vite against a real HTTP gateway", () => {
     expect(upgrades[0].origin).toBe(f.origin);
     expect(upgrades[0].cookie).toBe("test-session=valid");
     expect(await upgrade("https://other.example")).toBe(false);
+  });
+
+  // Served on every interface, another machine on the network reaches this by
+  // address. An address is taken as it is -- nobody can re-resolve one -- while
+  // a name has to be one `server.allowedHosts` already lists, so a page somebody
+  // else's DNS points here does not get signed in.
+  it("signs in a browser that reached it by address and refuses an unlisted name", async () => {
+    const f = await fixture({ host: "0.0.0.0" });
+    expect((await ask(f.port, `127.0.0.1:${f.port}`)).status).toBe(204);
+    expect((await ask(f.port, `10.1.2.3:${f.port}`)).status).toBe(204);
+    const signedIn = f.calls.length;
+    expect((await ask(f.port, `cxz.example:${f.port}`)).status).toBe(403);
+    expect(f.calls).toHaveLength(signedIn);
+  });
+
+  // A browser keeps a `Secure` cookie only on a secure origin, and a page served
+  // by address over plain HTTP is not one. Forwarded unchanged, the session the
+  // gateway just issued is thrown away and the login screen never clears.
+  it("keeps the session usable on a page served by address", async () => {
+    const f = await fixture({ host: "0.0.0.0" });
+    const loopback = await ask(f.port, `127.0.0.1:${f.port}`);
+    expect(loopback.cookies.join(";")).toContain("Secure");
+    const byAddress = await ask(f.port, `10.1.2.3:${f.port}`);
+    expect(byAddress.cookies.join(";")).toContain("test-session=valid");
+    expect(byAddress.cookies.join(";").toLowerCase()).not.toContain("secure");
   });
 });
