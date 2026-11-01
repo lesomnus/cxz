@@ -400,21 +400,41 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe("container-1");
-  const projectId = info
-    .locator("dl > div")
-    .filter({ has: page.locator("dt", { hasText: /^Project ID$/ }) });
+  const projectId = info.locator("dl > div").filter({
+    has: page.locator("dt > span:first-child", { hasText: /^Project ID$/ }),
+  });
   await expect(projectId.getByText("0000000", { exact: true })).toBeVisible();
-  await projectId.getByRole("button", { name: "Copy", exact: true }).click();
+  const copyId = projectId.getByRole("button", {
+    name: "Copy: Project ID",
+    exact: true,
+  });
+  await expect(projectId.locator("dd svg")).toHaveCount(0);
+  await copyId.click();
+  await expect(projectId.getByRole("status")).toHaveText("copied!");
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe("00000000-0000-8000-8007-000000000001");
-  await projectId.locator("dd [tabindex]").hover();
+  await copyId.hover();
   await expect(
     page.getByRole("tooltip", {
       name: "00000000-0000-8000-8007-000000000001",
       exact: true,
     }),
   ).toBeVisible();
+  await expectAlignedText(copyId);
+  await page.keyboard.press("Escape");
+  await copyId.evaluate((node) => node.blur());
+  await copyId.focus();
+  await page.evaluate(() =>
+    navigator.clipboard.writeText("keyboard-copy-check"),
+  );
+  await copyId.press("Enter");
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe("00000000-0000-8000-8007-000000000001");
+  await expect(copyId).toBeFocused();
+  await expect(projectId.getByRole("status")).toHaveText("copied!");
+  await expect(projectId.getByRole("status")).toBeEmpty();
   await page.keyboard.press("Escape");
   await expect(info.locator("dt > span:first-child")).toHaveText([
     "Project ID",
