@@ -70,7 +70,11 @@ func (s AccountServer) Erase(ctx context.Context, ref *resource.AccountRef) (*re
 			return nil, err
 		}
 	}
-	if err := runtime.EraseAccount(ctx, a.GetAlias(), a.GetAgent(), a.GetAuthBackend()); err != nil {
+	key, err := s.accountProfile(ctx, a)
+	if err != nil {
+		return nil, err
+	}
+	if err := runtime.EraseAccount(ctx, key, a.GetAgent(), a.GetAuthBackend()); err != nil {
 		return nil, err
 	}
 
@@ -129,6 +133,7 @@ func (s AccountServer) Erase(ctx context.Context, ref *resource.AccountRef) (*re
 		"DELETE FROM audit WHERE object_id IN (SELECT id FROM authbinding WHERE account_id=?)",
 		"DELETE FROM audit WHERE object_id=?",
 		"DELETE FROM authbinding WHERE account_id=?",
+		"DELETE FROM account_runtime_identity WHERE account_id=?",
 		"DELETE FROM account WHERE id=?",
 	} {
 		if err := driver.Exec(ctx, query, []any{projectid.String(a.GetId())}, nil); err != nil {
