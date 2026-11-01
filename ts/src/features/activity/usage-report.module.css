@@ -1,6 +1,9 @@
 .report {
   container: conversation-usage / inline-size;
 }
+.metrics.metrics {
+  text-align: right;
+}
 @container conversation-usage (max-width: 200px) {
   .header.header {
     flex-direction: column;

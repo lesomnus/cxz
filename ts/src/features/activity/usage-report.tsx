@@ -1,4 +1,4 @@
-import { Button, Section } from "@lesomnus/nox";
+import { Button, CompactNumber, Section } from "@lesomnus/nox";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
@@ -59,15 +59,22 @@ export function UsageReport({
               ["Token-reported turns", total.tokenReportedTurns],
               [
                 "Reported cost (USD)",
-                total.costReportedTurns
-                  ? total.reportedCostUsd.toFixed(4)
-                  : "Not reported",
+                total.costReportedTurns ? total.reportedCostUsd : undefined,
               ],
               ["Cost-reported turns", total.costReportedTurns],
             ].map(([label, value]) => (
               <div key={String(label)}>
                 <dt>{String(label)}</dt>
-                <dd>{String(value)}</dd>
+                <dd>
+                  {value === undefined ? (
+                    "Not reported"
+                  ) : (
+                    <CompactNumber
+                      value={Number(value)}
+                      label={String(value)}
+                    />
+                  )}
+                </dd>
               </div>
             ))}
           </dl>
