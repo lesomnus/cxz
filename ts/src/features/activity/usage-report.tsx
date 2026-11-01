@@ -3,6 +3,7 @@ import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 import usageStyles from "./usage-report.module.css";
+import { UsageActivity } from "./usage-activity";
 
 type UsageMetric = {
   label: string;
@@ -124,18 +125,7 @@ export function UsageReport({
               ? "Complete retained coverage"
               : "Partial coverage: some older records are unavailable"}
           </small>
-          <details>
-            <summary>Daily totals</summary>
-            {stats.data?.days.map((day) => (
-              <div className={styles.row} key={day.date}>
-                <span>{day.date}</span>
-                <span className={styles.status}>
-                  {day.values?.finishedTurns.toString()} turns ·{" "}
-                  {day.values?.outputTokens.toString()} output tokens
-                </span>
-              </div>
-            ))}
-          </details>
+          <UsageActivity stats={stats.data!} />
         </>
       )}
     </Section>

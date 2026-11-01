@@ -1,0 +1,106 @@
+.activity {
+  --activity-cell-size: 16px;
+  display: grid;
+  gap: calc(2 * var(--ui-space));
+  padding-block: calc(2 * var(--ui-space));
+}
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--ui-space);
+  font-size: 0.8rem;
+}
+.period {
+  color: var(--ui-muted);
+  font-size: 0.7rem;
+}
+.calendar {
+  display: flex;
+  gap: calc(2 * var(--ui-space));
+  margin-inline: auto;
+}
+.weekdays,
+.days {
+  display: grid;
+  grid-template-rows: repeat(7, var(--activity-cell-size));
+  gap: var(--ui-space);
+}
+.weekdays {
+  align-items: center;
+  color: var(--ui-muted);
+  font-size: 0.7rem;
+}
+.days {
+  grid-auto-flow: column;
+  grid-auto-columns: var(--activity-cell-size);
+}
+.day {
+  display: flex;
+}
+.cell {
+  display: block;
+  width: var(--activity-cell-size);
+  height: var(--activity-cell-size);
+  border-radius: calc(var(--ui-space) / 2);
+  background: var(--ui-shade-38);
+}
+.cell[data-level="1"] {
+  background: color-mix(in srgb, var(--ui-brand-color) 20%, var(--ui-shade-24));
+}
+.cell[data-level="2"] {
+  background: color-mix(in srgb, var(--ui-brand-color) 40%, var(--ui-shade-24));
+}
+.cell[data-level="3"] {
+  background: color-mix(in srgb, var(--ui-brand-color) 65%, var(--ui-shade-24));
+}
+.cell[data-level="4"] {
+  background: color-mix(in srgb, var(--ui-brand-color) 85%, var(--ui-shade-24));
+}
+.day:hover .cell,
+.day:focus-within .cell {
+  outline: 1px solid var(--ui-text-value);
+  outline-offset: 1px;
+}
+.legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space);
+  color: var(--ui-muted);
+  font-size: 0.7rem;
+}
+.legend .cell {
+  --activity-cell-size: 10px;
+}
+.details {
+  display: grid;
+  gap: calc(2 * var(--ui-space));
+  min-width: 180px;
+}
+.details strong {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(4 * var(--ui-space));
+}
+.metric > :first-child,
+.empty {
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+.cost {
+  display: inline-flex;
+  align-items: baseline;
+}
+.cost > :first-child {
+  color: var(--ui-text-separator);
+}
+.missing {
+  color: var(--ui-text-leading);
+}
