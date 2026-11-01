@@ -66,13 +66,9 @@ export function UsageActivity({
                 key={date}
                 className={styles.day}
                 data-date={date}
-                data-month={future ? undefined : date.slice(0, 7)}
+                data-month={date.slice(0, 7)}
                 data-month-tone={
-                  future
-                    ? undefined
-                    : Number(date.slice(5, 7)) % 2 === 0
-                      ? "soft"
-                      : "dim"
+                  Number(date.slice(5, 7)) % 2 === 0 ? "soft" : "dim"
                 }
               >
                 {day ? (
