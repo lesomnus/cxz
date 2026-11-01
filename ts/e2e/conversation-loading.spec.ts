@@ -135,7 +135,11 @@ for (const resolved of [true, false]) {
     await page.addInitScript(() => {
       (window as any).approvalFlashed = false;
       new MutationObserver(() => {
-        if (document.querySelector(".question-cards .approval"))
+        if (
+          document.querySelector(
+            "[data-approval-controls] button:not(:disabled)",
+          )
+        )
           (window as any).approvalFlashed = true;
       }).observe(document, { childList: true, subtree: true });
     });
@@ -193,17 +197,24 @@ for (const resolved of [true, false]) {
       await page.waitForTimeout(250);
       await expect(
         page.getByRole("button", { name: "Allow", exact: true }),
-      ).toHaveCount(0);
+      ).toBeDisabled();
+      await expect(
+        page.getByRole("button", { name: "Deny", exact: true }),
+      ).toBeDisabled();
+      await expect(page.locator("[data-approval-controls]")).toHaveAttribute(
+        "data-pending-count",
+        "0",
+      );
       expect(await page.evaluate(() => (window as any).approvalFlashed)).toBe(
         false,
       );
     } else {
       await expect(
         page.getByRole("button", { name: "Allow", exact: true }),
-      ).toBeVisible();
+      ).toBeEnabled();
       await expect(
         page.getByRole("button", { name: "Deny", exact: true }),
-      ).toBeVisible();
+      ).toBeEnabled();
     }
   });
 }

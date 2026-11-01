@@ -45,7 +45,7 @@ async function fixture(page, helpers = false, extraProject = false) {
     authBackend: "brokered-access-token",
   };
   let queued = "Queued review request";
-  let listed = true;
+  let erased = false;
   const session = () => ({
     id: id("fixture"),
     runtimeId: "fixture",
@@ -53,7 +53,6 @@ async function fixture(page, helpers = false, extraProject = false) {
     name: "Research session",
     clientId: "creation",
     agent: "codex",
-    listed,
     project,
     account,
     status: { state: "idle", runId: "run", lastSeq: "4", pending: [], queued },
@@ -155,47 +154,36 @@ async function fixture(page, helpers = false, extraProject = false) {
         project,
       });
     if (path === "/cxz.SessionService/List")
-      return send({
-        items:
-          q.filters?.[0]?.listed === false
-            ? !listed
-              ? [session()]
-              : []
-            : listed
-              ? [session()]
-              : [],
-      });
+      return send({ items: erased ? [] : [session()] });
     if (path === "/cxz.SessionService/Watch")
       return sendStream([
         {
-          items: [
-            { id: session().id, value: session() },
-            ...(helpers
-              ? [
-                  {
-                    id: id("helper"),
-                    value: {
-                      ...session(),
-                      id: id("helper"),
-                      runtimeId: "helper",
-                      alias: "elm",
-                      name: "Helper session",
-                    },
-                  },
-                ]
-              : []),
-          ],
+          items: erased
+            ? []
+            : [
+                { id: session().id, value: session() },
+                ...(helpers
+                  ? [
+                      {
+                        id: id("helper"),
+                        value: {
+                          ...session(),
+                          id: id("helper"),
+                          runtimeId: "helper",
+                          alias: "elm",
+                          name: "Helper session",
+                        },
+                      },
+                    ]
+                  : []),
+              ],
         },
       ]);
     if (path === "/cxz.SessionService/Get") return send(session());
     if (path === "/cxz.SessionService/Add") return send(session());
     if (path === "/cxz.SessionService/Erase") {
-      listed = false;
+      erased = true;
       return send({ erased: true });
-    }
-    if (path === "/cxz.SessionService/Restore") {
-      listed = true;
-      return send(session());
     }
     if (path === "/cxz.SessionService/Transcript")
       return send({
@@ -424,7 +412,7 @@ test("inline session mentions and secret chips preserve the prompt and storage b
       .text,
   ).not.toContain("synthetic-private-value");
 });
-test("account registration, session creation and archive restore use resource APIs", async ({
+test("account registration, session creation and confirmed erasure use resource APIs", async ({
   page,
 }) => {
   const requests = await fixture(page);
@@ -577,23 +565,36 @@ test("account registration, session creation and archive restore use resource AP
     )
     .toBe(true);
   await expect(create).toHaveCount(0);
-  await page.goto("/c/_/session");
+  await page.getByRole("link", { name: "Projects view", exact: true }).click();
   await page
     .locator("main")
-    .getByRole("button", { name: "Archive", exact: true })
+    .getByRole("button", { name: "Controls for Research session", exact: true })
     .click();
+  await page.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  const erase = page.getByRole("dialog", {
+    name: "Erase session",
+    exact: true,
+  });
+  await expect(erase).toContainText("This cannot be undone.");
+  await erase.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(erase).toHaveCount(0);
+  expect(requests.some((r) => r.path.endsWith("SessionService/Erase"))).toBe(
+    false,
+  );
   await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Archive", exact: true })
+    .locator("main")
+    .getByRole("button", { name: "Controls for Research session", exact: true })
     .click();
+  await page.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  await erase.getByRole("button", { name: "Erase", exact: true }).click();
   await expect
     .poll(() => requests.some((r) => r.path.endsWith("SessionService/Erase")))
     .toBe(true);
-  await page.getByRole("button", { name: "Archived", exact: true }).click();
-  await page.getByRole("button", { name: "Restore", exact: true }).click();
-  await expect
-    .poll(() => requests.some((r) => r.path.endsWith("SessionService/Restore")))
-    .toBe(true);
+  await expect(erase).toHaveCount(0);
+  await expect(page.locator("main tbody tr")).toHaveCount(0);
+  expect(
+    requests.some((r) => /SessionService\/(Restore|Purge)$/.test(r.path)),
+  ).toBe(false);
 });
 test("search opens the matched response and queue recall preserves its text", async ({
   page,
@@ -682,11 +683,21 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
     .getByRole("button", { name: "Confirm", exact: true })
     .click();
   await expect(
+    page.getByRole("dialog", { name: "Discard unsaved changes" }),
+  ).toHaveCount(0);
+  await expect(page.locator(".monaco-editor")).toContainText(
+    "External version",
+  );
+  await expect(
     page.getByRole("button", { name: "Save", exact: true }),
   ).toBeDisabled();
-  await editor.focus();
+  await page.locator(".monaco-editor .view-lines").click();
+  await expect(editor).toBeFocused();
   await editor.press("Control+a");
-  await editor.fill("Merged notes");
+  await editor.pressSequentially("Merged notes");
+  await expect(
+    page.getByText("notes.md · Unsaved", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect
     .poll(
@@ -813,9 +824,21 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await expect(projectPicker).toHaveText("Demo project");
   await projectPicker.click();
   await expect(search).toHaveValue("Demo project");
-  const searchBounds = await search.boundingBox();
-  expect(searchBounds.x).toBeCloseTo(triggerBounds.x, 0);
-  expect(searchBounds.y).toBeCloseTo(triggerBounds.y, 0);
+
+  await expect
+    .poll(async () => {
+      const bounds = await search.boundingBox();
+      return Math.max(
+        Math.abs(bounds.x - triggerBounds.x),
+        Math.abs(
+          bounds.y +
+            bounds.height / 2 -
+            triggerBounds.y -
+            triggerBounds.height / 2,
+        ),
+      );
+    })
+    .toBeLessThan(0.5);
   await expect(search).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(
     page.getByRole("option", { name: "Demo project", exact: true }),
