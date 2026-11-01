@@ -150,9 +150,22 @@ for (const width of [1280, 390]) {
     const eraseBounds = (await work
       .getByRole("button", { name: "Erase account Work", exact: true })
       .boundingBox())!;
-    expect(eraseBounds.width).toBe(eraseBounds.height);
+    expect(eraseBounds.width).toBe(64);
+    expect(eraseBounds.height).toBe(64);
+    expect(authBounds.height).toBe(64);
     expect(eraseBounds.x + eraseBounds.width).toBeLessThan(authBounds.x);
     expect(eraseBounds.y).toBe(authBounds.y);
+    const reserved = work.getByRole("switch", {
+      name: "Account option",
+      exact: true,
+    });
+    await expect(reserved).toBeDisabled();
+    await expect(reserved).not.toBeChecked();
+    const reservedBounds = (await reserved.locator("..").boundingBox())!;
+    expect(reservedBounds.width).toBe(64);
+    expect(reservedBounds.height).toBe(64);
+    expect(reservedBounds.x).toBeGreaterThan(eraseBounds.x + eraseBounds.width);
+    expect(reservedBounds.x + reservedBounds.width).toBeLessThan(authBounds.x);
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>
         parseFloat(getComputedStyle(node).maxWidth),
