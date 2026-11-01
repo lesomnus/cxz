@@ -1,8 +1,16 @@
-import { Button, CompactNumber, Section } from "@lesomnus/nox";
+import { Button, CompactNumber, Popover, Section } from "@lesomnus/nox";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 import usageStyles from "./usage-report.module.css";
+
+type UsageMetric = {
+  label: string;
+  value: number | bigint | undefined;
+  description?: string;
+  prefix?: string;
+};
+
 export function UsageReport({
   c,
   session = "",
@@ -31,6 +39,30 @@ export function UsageReport({
     [c, session, project, account],
   );
   const total = stats.data?.total;
+  const metrics: UsageMetric[] = total
+    ? [
+        { label: "Input tokens", value: total.inputTokens },
+        { label: "Output tokens", value: total.outputTokens },
+        { label: "Cache read", value: total.cacheReadTokens },
+        { label: "Cache write", value: total.cacheWriteTokens },
+        { label: "Finished turns", value: total.finishedTurns },
+        {
+          label: "Token reports",
+          value: total.tokenReportedTurns,
+          description: "Turns with reported token usage.",
+        },
+        {
+          label: "Cost reports",
+          value: total.costReportedTurns,
+          description: "Turns with a reported cost.",
+        },
+        {
+          label: "Reported cost",
+          value: total.costReportedTurns ? total.reportedCostUsd : undefined,
+          prefix: "$",
+        },
+      ]
+    : [];
   return (
     <Section
       className={`${usageStyles.report} ${className ?? ""}`}
@@ -50,29 +82,38 @@ export function UsageReport({
       {total && (
         <>
           <dl className={`${styles.metrics} ${usageStyles.metrics}`}>
-            {[
-              ["Finished turns", total.finishedTurns],
-              ["Input tokens", total.inputTokens],
-              ["Output tokens", total.outputTokens],
-              ["Cache read tokens", total.cacheReadTokens],
-              ["Cache write tokens", total.cacheWriteTokens],
-              ["Token-reported turns", total.tokenReportedTurns],
-              [
-                "Reported cost (USD)",
-                total.costReportedTurns ? total.reportedCostUsd : undefined,
-              ],
-              ["Cost-reported turns", total.costReportedTurns],
-            ].map(([label, value]) => (
-              <div key={String(label)}>
-                <dt>{String(label)}</dt>
+            {metrics.map(({ label, value, description, prefix = "" }) => (
+              <div key={label}>
+                <dt>
+                  {description ? (
+                    <Popover content={description}>
+                      <span>{label}</span>
+                    </Popover>
+                  ) : (
+                    label
+                  )}
+                </dt>
                 <dd>
                   {value === undefined ? (
-                    "Not reported"
+                    <span
+                      className={usageStyles.missing}
+                      role="img"
+                      aria-label="Not reported"
+                    >
+                      -
+                    </span>
                   ) : (
-                    <CompactNumber
-                      value={Number(value)}
-                      label={String(value)}
-                    />
+                    <span className={usageStyles.value}>
+                      {prefix && (
+                        <span className={usageStyles.prefix} aria-hidden="true">
+                          {prefix}
+                        </span>
+                      )}
+                      <CompactNumber
+                        value={Number(value)}
+                        label={`${prefix}${value}`}
+                      />
+                    </span>
                   )}
                 </dd>
               </div>
