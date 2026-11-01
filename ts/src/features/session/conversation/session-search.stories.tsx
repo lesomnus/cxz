@@ -1,6 +1,7 @@
 import { eventListSource } from "#src/features/session/model/event-source.ts";
 import { useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { userEvent, within } from "storybook/test";
 import { create } from "@bufbuild/protobuf";
 import { Button } from "@lesomnus/nox";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
@@ -161,3 +162,24 @@ const meta = {
 } satisfies Meta<typeof SessionSearch>;
 export default meta;
 export const Default: StoryObj<typeof meta> = {};
+export const WithResults: StoryObj<typeof meta> = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Opens with 'network' already entered and matching conversation results visible. Inspect the search bar, selected and unselected results, transcript highlights and scrollbar markers without setting up a search. The real search remains interactive: edit the query, navigate results, append a response or close with Escape.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Search conversation" }),
+    );
+    const input = await canvas.findByRole("searchbox", {
+      name: "Search this conversation",
+    });
+    await userEvent.clear(input);
+    await userEvent.type(input, "network");
+  },
+};
