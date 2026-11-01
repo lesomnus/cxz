@@ -136,12 +136,6 @@ export function UsageReport({
             onSelect={(day) => setSelection({ scope, day })}
             onWeeksChange={setWeeks}
           />
-          {(!stats.data.complete ||
-            (history.data && !history.data.complete)) && (
-            <small className={styles.muted}>
-              Partial coverage: some older records are unavailable
-            </small>
-          )}
         </>
       )}
     </Section>

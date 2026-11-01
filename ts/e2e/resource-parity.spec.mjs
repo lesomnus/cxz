@@ -713,7 +713,7 @@ test("usage, background tasks and auxiliary controls are connected", async ({
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Activity", exact: true }).click();
   await expect(
-    page.getByText("Complete retained coverage", { exact: true }),
+    page.getByRole("region", { name: "Recent 30 days", exact: true }),
   ).toBeVisible();
   await page.getByRole("combobox", { name: "Scope", exact: true }).click();
   await page
