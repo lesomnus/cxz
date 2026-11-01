@@ -20,12 +20,14 @@ export function resourceFixture({
   usageFailures = 0,
   longAccountDetails = false,
   editFailures = 0,
+  quotaRemaining = 64,
 }: {
   eraseFailures?: number;
   usageDelayMs?: number;
   usageFailures?: number;
   longAccountDetails?: boolean;
   editFailures?: number;
+  quotaRemaining?: number | null;
 } = {}) {
   let revision = "1",
     content =
@@ -234,6 +236,40 @@ export function resourceFixture({
       },
     });
     router.service(SessionService, {
+      transcript: (request) => {
+        const id = request.ref?.key.value;
+        if (
+          quotaRemaining === null ||
+          !["demo", "demo-review"].includes(String(id))
+        )
+          return {};
+        const older = id === "demo";
+        const remaining = older ? 12 : quotaRemaining;
+        return {
+          metadata: [
+            {
+              seq: older ? 1000n : 1n,
+              timeMs: BigInt(Date.now() - (older ? 60000 : 1000)),
+              kind: "usage",
+              text: "account/rateLimits/updated",
+              payload: new TextEncoder().encode(
+                JSON.stringify({
+                  rateLimits: {
+                    primary: {
+                      usedPercent: 100 - remaining,
+                      windowDurationMins: 300,
+                    },
+                    secondary: {
+                      usedPercent: Math.min(10, 100 - remaining),
+                      windowDurationMins: 10080,
+                    },
+                  },
+                }),
+              ),
+            },
+          ],
+        };
+      },
       libraryMemories: () => ({
         memories: [
           memory,

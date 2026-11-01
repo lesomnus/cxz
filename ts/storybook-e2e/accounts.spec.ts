@@ -178,6 +178,29 @@ for (const width of [1280, 390]) {
       usageBounds.x + usageBounds.width,
     );
     expect(eraseBounds.y).toBe(authBounds.y);
+    const quota = work.getByRole("region", {
+      name: "Remaining agent usage",
+      exact: true,
+    });
+    const quotaBounds = (await quota.boundingBox())!;
+    expect(quotaBounds.width).toBe(64);
+    expect(quotaBounds.height).toBe(64);
+    expect(quotaBounds.y).toBe(authBounds.y);
+    expect(quotaBounds.x).toBeGreaterThan(authBounds.x + authBounds.width);
+    expect(quotaBounds.x + quotaBounds.width).toBeLessThan(eraseBounds.x);
+    await expect(quota.getByRole("meter")).toHaveAttribute(
+      "aria-valuenow",
+      "64",
+    );
+    expect(
+      await quota
+        .locator('[aria-hidden="true"]')
+        .first()
+        .evaluate((node) => node.getBoundingClientRect().height),
+    ).toBeCloseTo(64 * 0.64, 0);
+    await expect(
+      personal.getByRole("region", { name: "Remaining agent usage" }),
+    ).toHaveText("—");
     await expect(work.getByRole("switch")).toHaveCount(0);
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>
@@ -262,11 +285,20 @@ for (const width of [1280, 390]) {
     expect(logo.y).toBeGreaterThanOrEqual(value.y);
     expect(logo.y + logo.height).toBeLessThanOrEqual(value.y + value.height);
     await expect(work.locator("header")).toHaveCount(0);
-    const created = details.locator("dd time");
+    const created = details
+      .locator("dl > div")
+      .filter({ has: page.getByText("Created", { exact: true }) })
+      .locator("dd time");
     await expect(created).toHaveAttribute("datetime", /T.*Z$/);
     await expect(created).toHaveText(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/,
     );
+    await expect(
+      details
+        .locator("dl > div")
+        .filter({ has: page.getByText("Updated", { exact: true }) })
+        .locator("dd time"),
+    ).toHaveAttribute("datetime", /T.*Z$/);
 
     await expect(personal).toBeAttached();
     await expect(
