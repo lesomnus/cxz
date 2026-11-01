@@ -87,10 +87,18 @@ test("terminal keyboard shortcuts paste once, erase words and select without edi
   await input.press("Control+Backspace");
   await expect(panel).not.toContainText("discarded");
   const cursor = panel.locator(".xterm-cursor");
-  const beforeBackspace = (await cursor.boundingBox())!.x;
+  let beforeBackspace = 0;
+  await expect
+    .poll(async () => {
+      const bounds = await cursor.boundingBox();
+      if (!bounds) return false;
+      beforeBackspace = bounds.x;
+      return true;
+    })
+    .toBe(true);
   await input.press("Backspace");
   await expect
-    .poll(async () => (await cursor.boundingBox())!.x)
+    .poll(async () => (await cursor.boundingBox())?.x ?? Infinity)
     .toBeLessThan(beforeBackspace);
   await input.press("Shift+ArrowLeft");
   await expect.poll(() => copyTerminalSelection(panel)).toBe("d");
