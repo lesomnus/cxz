@@ -45,6 +45,29 @@
     calc(var(--ui-dialog-radius) - var(--search-border-width) - var(--ui-space))
   );
 }
+.modes {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--ui-control-inset);
+}
+.modes button.mode {
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  color: var(--ui-muted);
+  font: 12px/1 var(--ui-font-mono);
+  box-shadow: none;
+}
+.modes button.mode[aria-pressed="true"] {
+  background: var(--ui-selected);
+  color: var(--ui-shade-237);
+}
+.word {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .input::-webkit-search-cancel-button {
   display: none;
 }
@@ -140,7 +163,7 @@
   overflow: hidden;
   font-size: 12px;
   line-height: 16px;
-  white-space: pre-wrap;
+  white-space: normal;
 }
 .more {
   width: 100%;

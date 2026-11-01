@@ -1,5 +1,9 @@
 import { expect, it } from "vitest";
-import { searchText } from "./loaded-search";
+import { searchText as searchCompiledText } from "./loaded-search";
+import { compileSearchPattern, type SearchOptions } from "./search-pattern";
+
+const searchText = (text: string, query: string, options?: SearchOptions) =>
+  searchCompiledText(text, compileSearchPattern(query, options).pattern);
 
 const marked = (result: ReturnType<typeof searchText>) =>
   result?.snippetMatches.map(({ start, end }) =>

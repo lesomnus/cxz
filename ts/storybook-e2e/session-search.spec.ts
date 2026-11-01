@@ -195,3 +195,169 @@ test("preview highlights preserve casing and match literal punctuation and repea
   await input.press("Escape");
   await expect(search).toHaveCount(0);
 });
+
+test("search mode toggles share matches with previews, transcript highlighting and navigation", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-sessionsearch--with-results&viewMode=story",
+  );
+  const search = page.getByRole("search", {
+    name: "Search current conversation",
+  });
+  const input = search.getByRole("searchbox");
+  const counter = search.getByRole("status");
+  const matchCase = search.getByRole("button", {
+    name: "Match case",
+    exact: true,
+  });
+  const wholeWord = search.getByRole("button", {
+    name: "Match whole word",
+    exact: true,
+  });
+  const regex = search.getByRole("button", {
+    name: "Use regular expression",
+    exact: true,
+  });
+  const highlightCount = () =>
+    page.evaluate(() => CSS.highlights.get("conversation-search")?.size ?? 0);
+  await expect(input).toHaveValue("network");
+  for (const button of [matchCase, wholeWord, regex])
+    await expect(button).toHaveAttribute("aria-pressed", "false");
+  await input.fill("NETWORK");
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
+  await matchCase.click();
+  await expect(matchCase).toHaveAttribute("aria-pressed", "true");
+  await expect(input).toBeFocused();
+  await expect(input).toHaveValue("NETWORK");
+  await expect(counter).toHaveAccessibleName("Result 0 of 0");
+  await expect(search.locator("mark")).toHaveCount(0);
+  await expect.poll(highlightCount).toBe(0);
+  await input.fill("net");
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
+  await wholeWord.click();
+  await expect(wholeWord).toHaveAttribute("aria-pressed", "true");
+  await expect(counter).toHaveAccessibleName("Result 0 of 0");
+  await expect.poll(highlightCount).toBe(0);
+  await regex.click();
+  await expect(regex).toHaveAttribute("aria-pressed", "true");
+  await input.fill("net(?:work)");
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
+  await expect(search.locator("mark")).toHaveText(["network", "network"]);
+  await expect.poll(highlightCount).toBe(3);
+  await input.press("Enter");
+  await expect(page.getByText("Jumped to message 2")).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [
+          ...(CSS.highlights.get("conversation-search-current") ?? []),
+        ][0]?.toString(),
+      ),
+    )
+    .toBe("network");
+  await input.fill("(?:NETWORK|terminal)");
+  await expect(counter).toHaveAccessibleName("Result 1 of 1");
+  await expect(search.locator("mark")).toHaveText(["terminal"]);
+  await expect.poll(highlightCount).toBe(1);
+  await input.press("Enter");
+  await expect(page.getByText("Jumped to message 1")).toBeVisible();
+  await matchCase.click();
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
+  await expect(search.locator("mark")).toHaveText([
+    "network",
+    "network",
+    "terminal",
+  ]);
+  await expect.poll(highlightCount).toBe(4);
+  await input.fill("[");
+  await expect(input).toHaveAttribute("aria-invalid", "true");
+  await expect(search.getByRole("alert")).toHaveText(
+    "Invalid regular expression",
+  );
+  await expect(counter).toHaveAccessibleName("Result 0 of 0");
+  await expect.poll(highlightCount).toBe(0);
+  await input.fill("network");
+  await expect(input).not.toHaveAttribute("aria-invalid", "true");
+  await expect(search.getByRole("alert")).toHaveCount(0);
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
+  await input.fill("(?=network)");
+  await expect(counter).toHaveAccessibleName("Result 0 of 0");
+  await expect(search.getByText("No matches", { exact: true })).toBeVisible();
+  await expect.poll(highlightCount).toBe(0);
+  await input.press("Escape");
+  await expect(search).toHaveCount(0);
+});
+
+test("the populated options story handles Unicode whole words and keeps narrow controls within the search bar", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-sessionsearch--with-search-options&viewMode=story",
+  );
+  const search = page.getByRole("search", {
+    name: "Search current conversation",
+  });
+  const input = search.getByRole("searchbox");
+  await expect(input).toHaveValue("net(?:work)?");
+  for (const name of [
+    "Match case",
+    "Match whole word",
+    "Use regular expression",
+  ])
+    await expect(
+      search.getByRole("button", { name, exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+  await expect(search.locator("mark")).toHaveText([
+    "network",
+    "net",
+    "network",
+  ]);
+  expect(
+    await search.locator("[data-search-index]").evaluateAll((rows) =>
+      rows.every((row) => {
+        const snippet = row
+          .querySelector("mark")!
+          .parentElement!.getBoundingClientRect();
+        return [...row.querySelectorAll("mark")].some((mark) =>
+          [...mark.getClientRects()].some(
+            (rect) => rect.top < snippet.bottom && rect.bottom > snippet.top,
+          ),
+        );
+      }),
+    ),
+  ).toBe(true);
+  await input.fill("한글");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 1",
+  );
+  await expect(search.locator("mark")).toHaveText(["한글", "한글", "한글"]);
+  await expect
+    .poll(() =>
+      page.evaluate(() => CSS.highlights.get("conversation-search")?.size),
+    )
+    .toBe(3);
+  await page.setViewportSize({ width: 360, height: 800 });
+  const geometry = await search.evaluate((el) => {
+    const form = el.querySelector("form")!;
+    const input = el.querySelector("input")!.getBoundingClientRect();
+    const close = el
+      .querySelector<HTMLElement>('button[aria-label="Close search"]')!
+      .getBoundingClientRect();
+    const mode = el
+      .querySelector<HTMLElement>('[role="group"]')!
+      .getBoundingClientRect();
+    return {
+      width: form.clientWidth,
+      scrollWidth: form.scrollWidth,
+      inputWidth: input.width,
+      modeRight: mode.right,
+      closeLeft: close.left,
+    };
+  });
+  expect(geometry.scrollWidth).toBe(geometry.width);
+  expect(geometry.inputWidth).toBeGreaterThan(40);
+  expect(geometry.modeRight).toBeLessThan(geometry.closeLeft);
+  await input.press("Escape");
+  await expect(search).toHaveCount(0);
+});

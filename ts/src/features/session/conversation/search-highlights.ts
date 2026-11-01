@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from "react";
-import { literalSearchPattern } from "./loaded-search";
+import { searchMatches } from "./search-pattern";
 
 export type SearchLocation = {
   seq: string;
@@ -10,8 +10,8 @@ export type SearchLocation = {
 
 // Match rendered text, including Markdown split across inline syntax spans.
 // Keep block boundaries separate and leave React's DOM and row heights intact.
-export function textMatches(root: HTMLElement, query: string): Range[] {
-  if (!query) return [];
+export function textMatches(root: HTMLElement, pattern?: RegExp): Range[] {
+  if (!pattern) return [];
   const nodes: { node: Text; start: number; end: number }[] = [];
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let text = "",
@@ -29,9 +29,8 @@ export function textMatches(root: HTMLElement, query: string): Range[] {
     text += node.textContent ?? "";
     nodes.push({ node: node as Text, start, end: text.length });
   }
-  const pattern = literalSearchPattern(query);
   const ranges: Range[] = [];
-  for (const match of text.matchAll(pattern)) {
+  for (const match of searchMatches(text, pattern)) {
     const start = match.index,
       end = start + match[0].length;
     const first = nodes.find((part) => part.start <= start && part.end > start);
@@ -45,7 +44,7 @@ export function textMatches(root: HTMLElement, query: string): Range[] {
   return ranges;
 }
 
-export function conversationMatches(area: HTMLElement, query: string) {
+export function conversationMatches(area: HTMLElement, pattern: RegExp) {
   const found = new Map<string, Range[]>();
   for (const row of area.querySelectorAll<HTMLElement>(
     ".transcript .virtual-messages [data-row]",
@@ -54,7 +53,7 @@ export function conversationMatches(area: HTMLElement, query: string) {
       ...row.querySelectorAll<HTMLElement>(
         "article.input .message-body, article.response > .markdown",
       ),
-    ].flatMap((body) => textMatches(body, query));
+    ].flatMap((body) => textMatches(body, pattern));
     if (ranges.length) found.set(row.dataset.row!, ranges);
   }
   return found;
@@ -62,12 +61,12 @@ export function conversationMatches(area: HTMLElement, query: string) {
 
 export function useSearchHighlights({
   area,
-  query,
+  pattern,
   location,
   located,
 }: {
   area: RefObject<HTMLElement | null>;
-  query: string;
+  pattern: RegExp | undefined;
   location: SearchLocation | undefined;
   located: (occurrence: number) => void;
 }) {
@@ -77,13 +76,13 @@ export function useSearchHighlights({
   callback.current = located;
   useEffect(() => {
     const root = area.current;
-    if (!root || !query) {
+    if (!root || !pattern) {
       matches.current.clear();
       return;
     }
     let frame = 0;
     const update = () => {
-      matches.current = conversationMatches(root, query);
+      matches.current = conversationMatches(root, pattern);
       const all = [...matches.current.values()].flat();
       const ranges = location && matches.current.get(location.seq);
       const index = ranges?.length
@@ -134,6 +133,6 @@ export function useSearchHighlights({
         CSS.highlights.delete("conversation-search-current");
       }
     };
-  }, [area, query, location]);
+  }, [area, pattern, location]);
   return matches;
 }

@@ -37,15 +37,16 @@ const meta = {
     docs: {
       description: {
         component:
-          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing immediately searches loaded conversation data, including virtualized messages outside the viewport. No Search API, pagination or history loading is used. Result previews highlight the exact contributing text spans, using the same case-insensitive literal matching as the transcript. The transcript highlights rendered matches without changing layout and adds green search ticks beside its scroll handle, sharing the existing elastic marker motion. Enter visits each occurrence from newest to oldest, then wraps; arrow keys select results and clicking jumps without dismissing search. Only Close or Escape dismiss it. This story supplies local messages; try 'network'.",
+          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing immediately searches loaded conversation data, including virtualized messages outside the viewport. No Search API, pagination or history loading is used. Match case, Match whole word and Use regular expression toggles apply the same compiled expression to result previews, transcript highlights, scroll markers and navigation. The default is case-insensitive literal matching; whole-word boundaries recognize Unicode letters, numbers and combining marks. Invalid regular expressions show a field error, and empty matches are omitted. The transcript highlights rendered matches without changing layout and adds green search ticks beside its scroll handle, sharing the existing elastic marker motion. Enter visits each occurrence from newest to oldest, then wraps; arrow keys select results and clicking jumps without dismissing search. Only Close or Escape dismiss it. This story supplies local messages; try 'network'.",
       },
     },
   },
-  render: function Preview() {
+  render: function Preview({ source }) {
+    const initialEvents = source();
     const area = useRef<HTMLDivElement>(null),
       input = useRef<HTMLTextAreaElement>(null);
     const [selected, setSelected] = useState("");
-    const [loaded, setLoaded] = useState(events);
+    const [loaded, setLoaded] = useState(initialEvents);
     const pane = useRef<HTMLDivElement>(null),
       follow = useRef(false);
     const [searchMatches, setSearchMatches] = useState<readonly string[]>([]);
@@ -181,5 +182,50 @@ export const WithResults: StoryObj<typeof meta> = {
     });
     await userEvent.clear(input);
     await userEvent.type(input, "network");
+  },
+};
+
+export const WithSearchOptions: StoryObj<typeof meta> = {
+  args: {
+    source: eventListSource([
+      create(SessionEventSchema, {
+        seq: 1n,
+        kind: "input",
+        text: "**Network** and NETWORK differ from network and networking.",
+        timeMs: BigInt(Date.now() - 10 * 60_000),
+      }),
+      create(SessionEventSchema, {
+        seq: 2n,
+        kind: "assistant",
+        text: "한글 검색: 한글, 한글자, 새한글, (한글).\n\nUse network or net; not networking.",
+        timeMs: BigInt(Date.now() - 5 * 60_000),
+      }),
+    ]),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "All three search modes enabled. The expression net(?:work)? finds lowercase standalone 'net' and 'network', excluding Network, NETWORK and networking. Try '한글' for Unicode whole-word matching, or '[' to inspect the invalid-pattern state.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Search conversation" }),
+    );
+    const input = await canvas.findByRole("searchbox", {
+      name: "Search this conversation",
+    });
+    await userEvent.type(input, "net(?:work)?");
+    for (const name of [
+      "Match case",
+      "Match whole word",
+      "Use regular expression",
+    ]) {
+      await userEvent.click(canvas.getByRole("button", { name }));
+    }
+    await userEvent.click(input);
   },
 };

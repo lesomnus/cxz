@@ -1,6 +1,7 @@
 import type { EventListSource } from "#src/features/session/model/event-source.ts";
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -8,13 +9,25 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { Button, CompactNumber, DateTime, ScrollArea } from "@lesomnus/nox";
+import {
+  Button,
+  CompactNumber,
+  DateTime,
+  Popover,
+  ScrollArea,
+  ToggleButton,
+} from "@lesomnus/nox";
 import { searchLoadedMessages, type LoadedSearchHit } from "./loaded-search";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./session-search.module.css";
 import { useSearchHighlights, type SearchLocation } from "./search-highlights";
 import { messageDate, relativeMessageTime } from "./message-time";
+import {
+  compileSearchPattern,
+  defaultSearchOptions,
+  type SearchOptions,
+} from "./search-pattern";
 
 const noHits: LoadedSearchHit[] = [];
 
@@ -39,6 +52,8 @@ export function SessionSearch({
   useLocale();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [options, setOptions] = useState(defaultSearchOptions);
+  const errorId = useId();
   const [selected, setSelected] = useState(0);
   const [location, setLocation] = useState<SearchLocation>();
   const [now, setNow] = useState(() => new Date());
@@ -48,14 +63,17 @@ export function SessionSearch({
   const overlay = useRef<HTMLElement>(null);
   const results = useRef<HTMLDivElement>(null);
   const origin = useRef<HTMLElement | null>(null);
-  const latest = useRef({ open, query: query.trim(), restoreFocus });
-  latest.current = { open, query: query.trim(), restoreFocus };
+  const latest = useRef({ open, restoreFocus });
+  latest.current = { open, restoreFocus };
+  const searchQuery = options.useRegex ? query : query.trim();
+  const compiled = useMemo(
+    () => compileSearchPattern(searchQuery, options),
+    [searchQuery, options],
+  );
+  const pattern = open ? compiled.pattern : undefined;
   const visible = useMemo(
-    () =>
-      open && query.trim()
-        ? searchLoadedMessages(events, query.trim())
-        : noHits,
-    [events, open, query],
+    () => (pattern ? searchLoadedMessages(events, pattern) : noHits),
+    [events, pattern],
   );
   const selectedIndex = Math.min(selected, Math.max(0, visible.length - 1));
   useEffect(() => {
@@ -70,7 +88,7 @@ export function SessionSearch({
   useEffect(() => () => onMatchesChange?.([]), [onMatchesChange]);
   const matches = useSearchHighlights({
     area,
-    query: open ? query.trim() : "",
+    pattern,
     location,
     located: (occurrence) => {
       if (position.current)
@@ -78,6 +96,17 @@ export function SessionSearch({
       input.current?.focus({ preventScroll: true });
     },
   });
+  function resetNavigation() {
+    navigation.current++;
+    position.current = undefined;
+    setLocation(undefined);
+    setSelected(0);
+  }
+  function changeOption(key: keyof SearchOptions, pressed: boolean) {
+    resetNavigation();
+    setOptions((current) => ({ ...current, [key]: pressed }));
+    input.current?.focus({ preventScroll: true });
+  }
   async function select(hit: LoadedSearchHit, occurrence = -1) {
     const element = overlay.current;
     if (!element) return;
@@ -101,7 +130,6 @@ export function SessionSearch({
   }
 
   async function nextMatch() {
-    if (!query.trim()) return;
     const available = visible;
     if (!available.length) return;
     const current = position.current;
@@ -222,14 +250,13 @@ export function SessionSearch({
           type="search"
           value={query}
           aria-label={t("Search this conversation")}
+          aria-invalid={!!compiled.error || undefined}
+          aria-describedby={compiled.error ? errorId : undefined}
           placeholder={t("Search this conversation")}
           autoComplete="off"
           onChange={(event) => {
-            navigation.current++;
-            position.current = undefined;
-            setLocation(undefined);
+            resetNavigation();
             setQuery(event.target.value);
-            setSelected(0);
           }}
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) return;
@@ -263,6 +290,47 @@ export function SessionSearch({
             <CompactNumber value={visible.length} mode="integer" />
           </span>
         </div>
+        <div
+          className={styles.modes}
+          role="group"
+          aria-label={t("Search options")}
+        >
+          <Popover content={t("Match case")}>
+            <ToggleButton
+              className={styles.mode}
+              variant="toolbar"
+              aria-label={t("Match case")}
+              pressed={options.matchCase}
+              onPressedChange={(pressed) => changeOption("matchCase", pressed)}
+            >
+              <span aria-hidden="true">Aa</span>
+            </ToggleButton>
+          </Popover>
+          <Popover content={t("Match whole word")}>
+            <ToggleButton
+              className={styles.mode}
+              variant="toolbar"
+              aria-label={t("Match whole word")}
+              pressed={options.wholeWord}
+              onPressedChange={(pressed) => changeOption("wholeWord", pressed)}
+            >
+              <span className={styles.word} aria-hidden="true">
+                ab
+              </span>
+            </ToggleButton>
+          </Popover>
+          <Popover content={t("Use regular expression")}>
+            <ToggleButton
+              className={styles.mode}
+              variant="toolbar"
+              aria-label={t("Use regular expression")}
+              pressed={options.useRegex}
+              onPressedChange={(pressed) => changeOption("useRegex", pressed)}
+            >
+              <span aria-hidden="true">.*</span>
+            </ToggleButton>
+          </Popover>
+        </div>
         <Button
           className={styles.close}
           variant="toolbar"
@@ -273,10 +341,18 @@ export function SessionSearch({
           ×
         </Button>
       </form>
-      {!!query.trim() && (
+      {!!searchQuery && (
         <>
-          {visible.length === 0 && (
-            <p className={styles.empty}>{t("No matches")}</p>
+          {compiled.error ? (
+            <p className={styles.empty} id={errorId} role="alert">
+              <Popover content={compiled.error}>
+                {t("Invalid regular expression")}
+              </Popover>
+            </p>
+          ) : (
+            visible.length === 0 && (
+              <p className={styles.empty}>{t("No matches")}</p>
+            )
           )}
           {visible.length > 0 && (
             <ScrollArea
