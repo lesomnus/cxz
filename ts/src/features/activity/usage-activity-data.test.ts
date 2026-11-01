@@ -97,7 +97,7 @@ it("treats an exact midnight end as exclusive and humanizes UTC dates", () => {
   ).toBe(false);
 });
 
-it("joins neighbours only within a calendar month, including year boundaries", () => {
+it("pads the final week across a year boundary without inventing activity", () => {
   const cells = usageActivityCells(
     usageActivityDays(
       create(ConversationStatsReplySchema, {
@@ -106,13 +106,8 @@ it("joins neighbours only within a calendar month, including year boundaries", (
       }),
     ),
   );
-  const find = (date: string) => cells.find((cell) => cell.date === date)!;
-  expect(find("2026-12-30").bottom).toBe(true);
-  expect(find("2026-12-31").bottom).toBe(false);
-  expect(find("2027-01-01").top).toBe(false);
-  expect(find("2026-12-28").right).toBe(false);
-  expect(find("2027-01-04").left).toBe(false);
-  expect(find("2027-01-03").bottom).toBe(true);
+  expect(cells.filter((cell) => cell.day)).toHaveLength(9);
+  expect(cells[0].date).toBe("2026-12-27");
   expect(cells.filter((cell) => cell.future).map((cell) => cell.date)).toEqual([
     "2027-01-05",
     "2027-01-06",
@@ -123,11 +118,5 @@ it("joins neighbours only within a calendar month, including year boundaries", (
   expect(cells.filter((cell) => cell.future).every((cell) => !cell.day)).toBe(
     true,
   );
-  expect(find("2027-01-04").bottom).toBe(false);
-  expect(
-    cells
-      .filter((cell) => cell.future)
-      .every((cell) => !cell.top && !cell.bottom && !cell.left && !cell.right),
-  ).toBe(true);
   expect(usageActivityCells([])).toEqual([]);
 });

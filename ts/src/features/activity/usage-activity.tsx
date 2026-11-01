@@ -30,10 +30,7 @@ export function UsageActivity({
       const size = parseFloat(style.getPropertyValue("--activity-cell-size"));
       const gap = parseFloat(style.rowGap);
       const width = element.getBoundingClientRect().width;
-      const weeks = usageActivityWeeks(width, size, gap);
-      const columnGap = weeks > 1 ? (width - weeks * size) / (weeks - 1) : gap;
-      element.style.setProperty("--activity-column-gap", `${columnGap}px`);
-      onWeeksChange(weeks);
+      onWeeksChange(usageActivityWeeks(width, size, gap));
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -63,7 +60,7 @@ export function UsageActivity({
           ))}
         </div>
         <div className={styles.days} ref={grid}>
-          {cells.map(({ date, day, future, top, bottom, left, right }) =>
+          {cells.map(({ date, day, future }) =>
             day || future ? (
               <div
                 key={date}
@@ -77,10 +74,6 @@ export function UsageActivity({
                       ? "soft"
                       : "dim"
                 }
-                data-top={top || undefined}
-                data-bottom={bottom || undefined}
-                data-left={left || undefined}
-                data-right={right || undefined}
               >
                 {day ? (
                   <button

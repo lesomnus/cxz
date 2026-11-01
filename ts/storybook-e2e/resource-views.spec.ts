@@ -170,7 +170,7 @@ for (const width of [390, 600]) {
   });
 }
 
-test("activity month backdrops stop at boundaries and future days stay black", async ({
+test("activity cells alternate black month fills and show hollow future days", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=resources-views--usage&viewMode=story");
@@ -180,33 +180,29 @@ test("activity month backdrops stop at boundaries and future days stay black", a
   });
   const october = activity.locator('[data-date="2026-10-25"]');
   await expect(october).toHaveAttribute("data-month", "2026-10");
-  await expect(october).toHaveAttribute("data-bottom", "true");
-  await expect(october).not.toHaveAttribute("data-right");
   const november = activity.locator('[data-date="2026-11-01"]');
-  await expect(november).not.toHaveAttribute("data-left");
-  await expect(november).not.toHaveAttribute("data-bottom");
+  await expect(november).toHaveAttribute("data-month-tone", "dim");
   const futures = activity.locator('[data-future="true"]');
   await expect(futures).toHaveCount(6);
   await expect(
     activity.locator('[data-date="2026-11-07"] [data-future]'),
   ).toBeVisible();
   for (const cell of await futures.all()) {
-    await expect(cell).toHaveCSS("background-color", "rgb(0, 0, 0)");
+    await expect(cell).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(cell).toHaveCSS("border-top-color", "rgb(20, 20, 20)");
+    await expect(cell).toHaveCSS("border-top-width", "1px");
+    await expect(cell).toHaveCSS("width", "12px");
+    await expect(cell).toHaveCSS("height", "12px");
     expect(await cell.evaluate((el) => el.tagName)).toBe("SPAN");
-    expect(
-      await cell.evaluate(
-        (el) => getComputedStyle(el.parentElement!, "::before").content,
-      ),
-    ).toBe("none");
   }
   const tones = await activity.evaluate((el) => {
     const color = (date: string) =>
-      getComputedStyle(el.querySelector(`[data-date="${date}"]`)!, "::before")
+      getComputedStyle(el.querySelector(`[data-date="${date}"] button`)!)
         .backgroundColor;
-    return [color("2026-09-01"), color("2026-10-01"), color("2026-11-01")];
+    return [color("2026-07-01"), color("2026-08-01"), color("2026-09-01")];
   });
-  expect(tones[0]).toBe("rgb(22, 22, 22)");
-  expect(tones[1]).toBe("rgb(27, 27, 27)");
+  expect(tones[0]).toBe("rgb(0, 0, 0)");
+  expect(tones[1]).toBe("rgb(16, 16, 16)");
   expect(tones[2]).toBe(tones[0]);
   await expect(
     activity.getByRole("button", { name: /2026-11-0[2-7]/ }),
