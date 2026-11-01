@@ -88,6 +88,11 @@ export function AccountsView({
                     (session) => session.account?.alias === account.alias,
                   )}
                   sessionsLoading={sessionsLoading}
+                  erased={() => {
+                    accounts.reload();
+                    if (selected && matchesResource(account, selected))
+                      select?.("");
+                  }}
                 />
               </article>
             ))}

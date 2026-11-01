@@ -1,5 +1,6 @@
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { ConnectError } from "@connectrpc/connect";
 import { Button, Popover, SectionGroup, Section } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
@@ -22,19 +23,24 @@ export function AccountDetails({
   sessions,
   projects,
   sessionsLoading,
+  erased,
 }: {
   c: Connection;
   account: Account;
   sessions: Session[];
   projects: Project[];
   sessionsLoading: boolean;
+  erased: () => void;
 }) {
   const status = useRemote(
     (signal) => accountStatus(c, account.alias, signal),
     [c, account.alias],
   );
   const [login, setLogin] = useState(false),
-    [logout, setLogout] = useState(false);
+    [logout, setLogout] = useState(false),
+    [erase, setErase] = useState(false),
+    [eraseError, setEraseError] = useState("");
+  const didErase = useRef(false);
   const labels = {
     [AuthState.READY]: "Signed in",
     [AuthState.LOGIN_REQUIRED]: "Login required",
@@ -82,65 +88,82 @@ export function AccountDetails({
           />
           {account.desc && <p>{account.desc}</p>}
         </Section>
+        <SectionGroup className={accountStyles.authenticationGroup}>
+          <Section
+            as="button"
+            className={accountStyles.eraseAction}
+            aria-label={`Erase account ${account.name || account.alias}`}
+            onClick={() => {
+              setEraseError("");
+              setErase(true);
+            }}
+          >
+            Erase
+          </Section>
+          <Section aria-label="Authentication">
+            <div className={accountStyles.authenticationRow}>
+              {sessionScoped ? (
+                <small
+                  className={`${styles.muted} ${accountStyles.authenticationDescription}`}
+                >
+                  {status.data?.message ||
+                    "Login belongs to each session. Manage it from that session's details."}
+                </small>
+              ) : (
+                <>
+                  <span
+                    className={accountStyles.authenticationStatus}
+                    role={status.error ? "alert" : undefined}
+                    aria-description={status.error || undefined}
+                  >
+                    <Popover
+                      content={
+                        status.error || status.data?.message || statusText
+                      }
+                    >
+                      {statusText}
+                    </Popover>
+                  </span>
+                  <Button
+                    className={accountStyles.authenticationAction}
+                    disabled={
+                      status.loading ||
+                      login ||
+                      logout ||
+                      status.data?.scope !== "account" ||
+                      !(signedIn ? status.data.canLogout : status.data.canLogin)
+                    }
+                    onClick={() =>
+                      signedIn ? setLogout(true) : setLogin(true)
+                    }
+                  >
+                    {signedIn ? "Log out" : "Log in"}
+                  </Button>
+                </>
+              )}
+            </div>
+            {login && (
+              <LoginPanel
+                modal
+                c={c}
+                target={{ account: account.alias }}
+                complete={() => {
+                  setLogin(false);
+                  status.reload();
+                }}
+                cancel={() => {
+                  setLogin(false);
+                  status.reload();
+                }}
+              />
+            )}
+          </Section>
+        </SectionGroup>
         <UsageReport
           c={c}
           account={account.alias}
           className={accountStyles.usageSection}
         />
-        <Section aria-label="Authentication">
-          <div className={accountStyles.authenticationRow}>
-            {sessionScoped ? (
-              <small
-                className={`${styles.muted} ${accountStyles.authenticationDescription}`}
-              >
-                {status.data?.message ||
-                  "Login belongs to each session. Manage it from that session's details."}
-              </small>
-            ) : (
-              <>
-                <span
-                  className={accountStyles.authenticationStatus}
-                  role={status.error ? "alert" : undefined}
-                  aria-description={status.error || undefined}
-                >
-                  <Popover
-                    content={status.error || status.data?.message || statusText}
-                  >
-                    {statusText}
-                  </Popover>
-                </span>
-                <Button
-                  className={accountStyles.authenticationAction}
-                  disabled={
-                    status.loading ||
-                    login ||
-                    logout ||
-                    status.data?.scope !== "account" ||
-                    !(signedIn ? status.data.canLogout : status.data.canLogin)
-                  }
-                  onClick={() => (signedIn ? setLogout(true) : setLogin(true))}
-                >
-                  {signedIn ? "Log out" : "Log in"}
-                </Button>
-              </>
-            )}
-          </div>
-          {login && (
-            <LoginPanel
-              modal
-              c={c}
-              target={{ account: account.alias }}
-              complete={() => {
-                setLogin(false);
-                status.reload();
-              }}
-              cancel={() => {
-                setLogin(false);
-                status.reload();
-              }}
-            />
-          )}
-        </Section>
       </SectionGroup>
       <Section
         aria-label="Sessions using this account"
@@ -159,6 +182,50 @@ export function AccountDetails({
           horizontalScrollbar
         />
       </Section>
+      {erase && (
+        <ConfirmationDialog
+          title={`Erase account · ${account.name || account.alias}`}
+          confirmLabel="Erase permanently"
+          failureMessage={eraseError || undefined}
+          close={() => {
+            setErase(false);
+            if (didErase.current) {
+              didErase.current = false;
+              erased();
+            }
+          }}
+          execute={async () => {
+            setEraseError("");
+            try {
+              await c.accounts.erase(
+                account.id.length
+                  ? { key: { case: "id", value: account.id } }
+                  : accountRef(account.alias),
+                { timeoutMs: 600000 },
+              );
+              didErase.current = true;
+              return true;
+            } catch (error) {
+              setEraseError(ConnectError.from(error).rawMessage);
+              return false;
+            }
+          }}
+        >
+          <p>
+            Permanently erase <strong>{account.name || account.alias}</strong> (
+            {account.alias}) and all sessions linked to this account.
+          </p>
+          <p>
+            This deletes their conversations, memory, attachments and agent
+            profiles, along with this account's saved login, authorizations and
+            AI task configuration.
+          </p>
+          <p>
+            Project workspaces and resources shared with other accounts are
+            kept. This cannot be undone.
+          </p>
+        </ConfirmationDialog>
+      )}
       {logout && (
         <ConfirmationDialog
           title={`Log out · ${account.name || account.alias}`}
