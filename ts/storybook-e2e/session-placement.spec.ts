@@ -110,4 +110,51 @@ for (const [story, sectionLabel] of [
       )
       .toBeGreaterThan(0);
   });
+
+  for (const width of [1280, 390]) {
+    test(`${sectionLabel} stays still when wheeling past the table boundary at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 700 });
+      await page.goto(`/iframe.html?id=${story}&viewMode=story`);
+      const area = page
+        .getByRole("region", { name: sectionLabel, exact: true })
+        .first()
+        .getByRole("region", { name: "Session list", exact: true });
+      const viewport = area.locator('[data-scroll-area="viewport"]');
+      await expect(viewport).toHaveCSS("border-radius", "0px");
+      await expect(viewport).toHaveCSS("overscroll-behavior", "none");
+      const thumb = area.getByRole("scrollbar", {
+        name: "Session list",
+        exact: true,
+      });
+      for (const [key, delta] of [
+        ["End", 320],
+        ["Home", -320],
+      ] as const) {
+        await thumb.press(key);
+        const before = (await viewport.boundingBox())!;
+        const grab = (await thumb.boundingBox())!;
+        await page.mouse.move(
+          grab.x + grab.width / 2 + 1,
+          grab.y + grab.height / 2,
+        );
+        await page.mouse.wheel(0, delta);
+        await page.mouse.wheel(0, delta);
+        await page.waitForTimeout(150);
+        const after = (await viewport.boundingBox())!;
+        expect(after.y).toBeCloseTo(before.y, 1);
+        expect(after.height).toBeCloseTo(before.height, 1);
+        const samples = await viewport.evaluate(async (node) => {
+          const values: number[] = [];
+          for (let frame = 0; frame < 12; frame++) {
+            await new Promise(requestAnimationFrame);
+            values.push(node.querySelector("table")!.getBoundingClientRect().y);
+          }
+          return values;
+        });
+        expect(Math.max(...samples) - Math.min(...samples)).toBeLessThan(0.1);
+      }
+    });
+  }
 }
