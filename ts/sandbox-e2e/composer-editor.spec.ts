@@ -107,12 +107,13 @@ test("paste files preserve source and session drafts while sending the uploaded 
   const body = "한글 😀\n  two\nthree\nfour\n".repeat(4);
   await paste(page, body);
   await expect(page.locator(".paste-chip")).toHaveCount(1);
+  const chip = page.locator(".paste-chip");
+  await expect(chip).toHaveAttribute("data-send-as", "text");
+  await chip.getByRole("radio", { name: "File", exact: true }).check();
+  await expect(chip).toHaveAttribute("data-upload-state", "ready");
   await input.press("End");
   await input.pressSequentially(" 뒤");
-  await expect(page.locator(".paste-chip")).toHaveAttribute(
-    "data-upload-state",
-    "ready",
-  );
+  await expect(chip).toHaveAttribute("data-send-as", "file");
   const draft = await input.inputValue();
   expect(await readChipDisplay(input)).toMatch(/^앞 [0-9.]{4}[BKMT] 뒤$/);
   await inspectPaste(page, page.locator(".paste-chip"));
@@ -152,8 +153,8 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   const body = "one\ntwo\nthree\nfour".repeat(4);
   await paste(page, body);
   await expect(page.locator(".paste-chip")).toHaveAttribute(
-    "data-upload-state",
-    "ready",
+    "aria-busy",
+    "false",
   );
   const token = await input.inputValue();
   await input.press("Backspace");
@@ -183,8 +184,8 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   await input.press("Enter");
   await paste(page, body);
   await expect(page.locator(".paste-chip").nth(1)).toHaveAttribute(
-    "data-upload-state",
-    "ready",
+    "aria-busy",
+    "false",
   );
   await expect(input).toHaveValue(`${token}\n${token}`);
   await inspectPaste(page, page.locator(".paste-chip").nth(1));

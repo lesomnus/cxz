@@ -357,8 +357,8 @@ test("sending a paste chip hides its original paint layer while the snapshot mov
   });
   const original = page.locator(".composer-editor:not(.composer-send-ghost)");
   await expect(original.locator(".paste-chip")).toHaveAttribute(
-    "data-upload-state",
-    "ready",
+    "aria-busy",
+    "false",
   );
   await probe(page);
   await page.getByRole("button", { name: "Send", exact: true }).click();

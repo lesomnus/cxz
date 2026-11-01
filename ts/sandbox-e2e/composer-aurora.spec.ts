@@ -75,7 +75,9 @@ test("toolbar glow follows composer layout and contains oversized orbs without p
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
   await aligned();
   await expect(
-    page.getByText("Which environment?", { exact: true }),
+    page
+      .locator(".question-cards")
+      .getByText("Which environment?", { exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

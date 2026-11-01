@@ -146,11 +146,11 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(page.getByText("Actions", { exact: true })).toHaveCount(0);
   await page.locator(".quota-dots").hover();
   const quotaDetails = page.locator(".usage-info").getByRole("tooltip");
-  await expect(quotaDetails).toContainText("5h");
+  const quotaRow = quotaDetails.getByRole("row");
+  await expect(quotaRow).toHaveCount(1);
+  await expect(quotaRow.getByRole("cell").first()).toHaveText("session");
   await expect(quotaDetails).toContainText(/left \d{2}d\d{2}h\d{2}m/);
-  await expect(
-    quotaDetails.locator('[data-enter-effect="reveal"] > span').last(),
-  ).toHaveText("70%");
+  await expect(quotaRow.getByRole("cell").last()).toHaveText("70%");
   await page.locator(".context-popover").hover();
   await expect(
     page.locator(".context-popover").getByRole("tooltip"),
