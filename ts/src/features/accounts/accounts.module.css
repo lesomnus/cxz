@@ -23,7 +23,7 @@
   /* Preserve the loaded card's dimensions while data or text changes. */
   --account-info-height: 163px;
   --account-auth-height: 64px;
-  --account-usage-height: 482px;
+  --account-lower-panel-height: 482px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
@@ -31,7 +31,7 @@
 }
 .summaryColumn {
   grid-template-rows: var(--account-info-height) var(--account-auth-height) var(
-      --account-usage-height
+      --account-lower-panel-height
     );
 }
 .authenticationGroup {
@@ -63,6 +63,9 @@
   align-content: start;
   min-height: 0;
 }
+.usageSection {
+  height: var(--account-lower-panel-height);
+}
 .informationDetails dl > div {
   height: 41px;
 }
@@ -88,13 +91,14 @@
   padding-top: 0;
   padding-inline: 0;
   overflow: hidden;
-  height: 428px;
+  min-height: 0;
+  height: 100%;
 }
 @container account (min-width: 560px) {
   .details {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .sessionsColumn.sessionsColumn {
+  .usageSection {
     height: 100%;
   }
 }

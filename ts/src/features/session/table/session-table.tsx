@@ -41,6 +41,7 @@ export function SessionTable({
   showProject = false,
   title = t("Sessions"),
   horizontalScrollbar = false,
+  fillHeight = false,
   variant = "default",
 }: {
   c: SessionControlConnection;
@@ -53,6 +54,7 @@ export function SessionTable({
   showProject?: boolean;
   title?: string;
   horizontalScrollbar?: boolean;
+  fillHeight?: boolean;
   variant?: "default" | "compact";
 }) {
   const compact = variant === "compact";
@@ -124,7 +126,7 @@ export function SessionTable({
       </div>
       <PanelScroll
         horizontalScrollbar={horizontalScrollbar}
-        className={`${styles.scroll} ${compact ? styles.compact : ""}`}
+        className={`${styles.scroll} ${compact ? styles.compact : ""} ${fillHeight ? styles.fillHeight : ""}`}
         role="region"
         aria-label={t("Session list")}
         scrollbarLabel={t("Session list")}

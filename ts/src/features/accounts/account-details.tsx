@@ -184,29 +184,30 @@ export function AccountDetails({
             )}
           </Section>
         </SectionGroup>
-        <UsageReport
-          c={c}
-          account={account.alias}
-          className={accountStyles.usageSection}
-        />
+        <Section
+          aria-label="Sessions using this account"
+          className={accountStyles.sessionsColumn}
+        >
+          <SessionTable
+            c={c}
+            sessions={sessions}
+            projects={projects}
+            accounts={[account]}
+            loading={sessionsLoading}
+            variant="compact"
+            showAccount={false}
+            showProject
+            title={`Sessions · ${sessions.length}`}
+            horizontalScrollbar
+            fillHeight
+          />
+        </Section>
       </SectionGroup>
-      <Section
-        aria-label="Sessions using this account"
-        className={accountStyles.sessionsColumn}
-      >
-        <SessionTable
-          c={c}
-          sessions={sessions}
-          projects={projects}
-          accounts={[account]}
-          loading={sessionsLoading}
-          variant="compact"
-          showAccount={false}
-          showProject
-          title={`Sessions · ${sessions.length}`}
-          horizontalScrollbar
-        />
-      </Section>
+      <UsageReport
+        c={c}
+        account={account.alias}
+        className={accountStyles.usageSection}
+      />
       {erase && (
         <ConfirmationDialog
           title={`Erase account · ${account.name || account.alias}`}

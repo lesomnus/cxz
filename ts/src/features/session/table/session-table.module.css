@@ -18,6 +18,10 @@
 .scroll :global(.panel-scroll-content) {
   overscroll-behavior: contain;
 }
+.scroll.fillHeight {
+  flex: 1;
+  height: 100%;
+}
 .scroll :global(.panel-scroll-fade-top) {
   top: var(--session-header-height);
 }
