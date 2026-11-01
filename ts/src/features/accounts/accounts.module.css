@@ -42,7 +42,7 @@
 }
 .authenticationGroup {
   --ui-section-radius: var(--ui-section-inner-radius);
-  grid-template-columns: minmax(0, 1fr) 64px;
+  grid-template-columns: minmax(0, 1fr) 64px 64px;
   height: 64px;
 }
 .eraseAction.eraseAction {
@@ -62,6 +62,49 @@
 }
 .eraseAction.eraseAction:not(:disabled):hover {
   color: var(--ui-action-error-color);
+}
+.quotaSquare.quotaSquare {
+  --quota-tint: #7c8b4f;
+  position: relative;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+.quotaSquare[data-quota-level="warning"] {
+  --quota-tint: #9d8245;
+}
+.quotaSquare[data-quota-level="critical"] {
+  --quota-tint: #b0485b;
+}
+.quotaFill {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  background: color-mix(
+    in srgb,
+    var(--ui-section-background),
+    var(--quota-tint) 16%
+  );
+  transition: height 300ms ease;
+}
+.quotaValue {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  color: var(--shade-170);
+  font: 12px/1 var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.quotaUnit {
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .quotaFill {
+    transition: none;
+  }
 }
 .informationDetails,
 .usageSection {

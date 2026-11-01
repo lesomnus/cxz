@@ -9,7 +9,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Interactive account workflows using the real Accounts page, Add account/Add session forms, LoginPanel and Conversation. Account cards use a bounded two-column layout: the left column groups metadata, authentication with a square Erase action on its left, and conversation usage; the right column uses the shared session table in its compact presentation, with selection and controls. Erase opens a confirmation modal before deleting the account and its sessions. Names and smaller aliases are stacked in one navigation button opening the conversation. The Project column links to the owning project dashboard. Simple state indicators replace state text; agent logos, inline editing and the redundant account column are omitted. Row menus contain lifecycle controls only. Metadata and usage values each use paired fields. Very narrow panes stack the groups. Every story owns an isolated in-memory RPC fixture and a scoped login socket; no Manager, provider connection or real credentials are used. Enter demo-code to finish a login. Reset preview clears accounts, authentication, drafts and pending requests in this example.",
+          "Interactive account workflows using the real Accounts page, Add account/Add session forms, LoginPanel and Conversation. Account cards use a bounded two-column layout: the left column groups metadata and the compact session table; the right column groups authentication and conversation usage. The authentication row places Log in/Log out first, then status, a square remaining-quota display, and Erase last. Erase opens a confirmation modal before deleting the account and its sessions. Names and smaller aliases are stacked in one navigation button opening the conversation. The Project column links to the owning project dashboard. Simple state indicators replace state text; agent logos, inline editing and the redundant account column are omitted. Row menus contain lifecycle controls only. Metadata and usage values each use paired fields. Very narrow panes stack the groups. Every story owns an isolated in-memory RPC fixture and a scoped login socket; no Manager, provider connection or real credentials are used. Enter demo-code to finish a login. Reset preview clears accounts, authentication, drafts and pending requests in this example.",
       },
     },
   },
@@ -84,7 +84,7 @@ export const SignedInAccount: Story = {
     docs: {
       description: {
         story:
-          "Inspect a signed-in account with usage and an associated session. The compact authentication row contains status on the left and a fixed-width action on the right that switches between Log in and Log out. Log out requires confirmation. Cancel keeps the saved login; confirming switches the action back to Log in. Session-scoped accounts display only an explanation.",
+          "Inspect a signed-in account with usage and an associated session. The compact authentication row starts with a fixed-width Log in/Log out action, followed by status, the remaining-quota square and Erase. Quota uses the most constrained latest provider-reported window from linked session metadata; unreported or expired values show a dash. Log out requires confirmation. Cancel keeps the saved login; confirming switches the action back to Log in. Session-scoped accounts display only an explanation.",
       },
     },
   },

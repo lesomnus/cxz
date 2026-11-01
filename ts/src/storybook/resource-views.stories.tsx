@@ -98,6 +98,7 @@ function ResourcePreview({
   longAccountDetails = false,
   editFailures = 0,
   extraSessions = 0,
+  quotaRemaining = 64,
 }: {
   view: "accounts" | "memory" | "usage" | "background" | "auxiliary";
   eraseFailures?: number;
@@ -106,6 +107,7 @@ function ResourcePreview({
   longAccountDetails?: boolean;
   editFailures?: number;
   extraSessions?: number;
+  quotaRemaining?: number | null;
 }) {
   const [c] = useState(() =>
     resourceFixture({
@@ -114,6 +116,7 @@ function ResourcePreview({
       usageFailures,
       longAccountDetails,
       editFailures,
+      quotaRemaining,
     }),
   );
   return (
@@ -153,12 +156,18 @@ const meta = {
       },
     },
   },
-  args: { view: "memory" },
+  args: { view: "memory", quotaRemaining: 64 },
 } satisfies Meta<typeof ResourcePreview>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const SharedMemory: Story = {};
 export const Accounts: Story = { args: { view: "accounts" } };
+export const AccountsLowQuota: Story = {
+  args: { view: "accounts", quotaRemaining: 8 },
+};
+export const AccountsQuotaNotReported: Story = {
+  args: { view: "accounts", quotaRemaining: null },
+};
 export const AccountsLongSessions: Story = {
   args: { view: "accounts", extraSessions: 20 },
 };

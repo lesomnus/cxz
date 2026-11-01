@@ -28,6 +28,7 @@ import {
   type AccountField,
 } from "./account-data";
 import { LoginPanel } from "./login-panel";
+import { AccountQuotaSquare } from "./account-quota-square";
 import styles from "#src/shared/components/resource-surface.module.css";
 import accountStyles from "./accounts.module.css";
 export function AccountDetails({
@@ -121,6 +122,14 @@ export function AccountDetails({
                 undefined,
                 <RelativeTime value={account.dateCreated} />,
               ],
+              [
+                "Updated",
+                <span className={accountStyles.fieldValue}>
+                  <DateTime value={account.dateUpdated} />
+                </span>,
+                undefined,
+                <RelativeTime value={account.dateUpdated} />,
+              ],
             ]}
           />
         </Section>
@@ -206,6 +215,12 @@ export function AccountDetails({
               />
             )}
           </Section>
+          <AccountQuotaSquare
+            c={c}
+            account={account.alias}
+            agent={account.agent}
+            sessions={sessions}
+          />
           <Section
             as="button"
             className={accountStyles.eraseAction}
