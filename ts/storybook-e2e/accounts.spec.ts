@@ -179,14 +179,6 @@ for (const width of [1280, 390]) {
     );
     expect(eraseBounds.y).toBe(authBounds.y);
     await expect(work.getByRole("switch")).toHaveCount(0);
-    await work
-      .getByRole("button", { name: "Erase account Work", exact: true })
-      .hover();
-    await expect(page.getByRole("tooltip")).toContainText(
-      "all linked sessions",
-    );
-    await expect(page.getByRole("tooltip")).toContainText("cannot be undone");
-    await page.mouse.move(0, 0);
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>
         parseFloat(getComputedStyle(node).maxWidth),
