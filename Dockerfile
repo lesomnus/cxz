@@ -18,6 +18,9 @@ ARG APP_VERSION=dev
 ARG BUILD_HASH=unknown
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
+    go run ./cmd/cxz-collector-source /dist/collector-src
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
     for arch in amd64 arm64; do \
       mkdir -p /dist/linux-${arch}; \
       CGO_ENABLED=0 GOOS=linux GOARCH=${arch} go build -trimpath \

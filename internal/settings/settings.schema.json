@@ -10,6 +10,15 @@
       "description": "Editor schema reference. cxz edit refreshes settings.schema.json from the current binary.",
       "default": "./settings.schema.json"
     },
+    "telemetry": {
+      "type": "object", "additionalProperties": false,
+      "description": "Managed host telemetry; applied by install --recreate and self-update. No external service is used.",
+      "properties": {
+        "enabled": {"type": "boolean", "default": true},
+        "retention_days": {"type": "integer", "minimum": 0, "maximum": 3660, "default": 90},
+        "queue_mib": {"type": "integer", "minimum": 0, "maximum": 1024, "default": 64}
+      }
+    },
     "history": {
  "type":"object", "additionalProperties":false,
  "description":"TUI window limits. Server retention is configured on the connected Manager in Settings.",

@@ -260,7 +260,7 @@ func (c *Controller) startTitle(id string, s *TitleState, phase string) error {
 			if len(b) > MaxInput {
 				err = fmt.Errorf("title context exceeds limit")
 			} else {
-				out, err = c.run(ctx, Input{Profile: p, Task: "title", Text: string(b)})
+				out, err = c.run(ctx, Input{Profile: p, Task: "title", Text: string(b), Session: id})
 			}
 			<-c.slots
 		case <-ctx.Done():

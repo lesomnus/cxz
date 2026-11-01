@@ -135,3 +135,13 @@ touching the runtime.
   Preference pushes a runtime does not understand are skipped rather than failing —
   otherwise the project would be unusable until it updated, and it only updates when
   its sessions are idle.
+
+## Managed telemetry
+
+The installation owns one Collector and ClickHouse pair, independently of its
+Manager and agent processes. A project runtime translates loopback OTLP/HTTP to
+authenticated OTLP/gRPC over the shared tools directory’s dedicated Unix socket;
+Supervisors and auxiliary tasks emit the same normalized usage contract. Projects
+receive write-only capabilities rather than database access. Statistics are kept
+separately from conversation history with bounded queues and retention. See
+[managed telemetry](managed-telemetry.md) for the contract and operational limits.

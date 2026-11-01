@@ -7,11 +7,14 @@ import (
 	"crypto/sha256"
 	_ "embed"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/collectorbuild"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/engine"
+	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/versionpin"
 	"github.com/lesomnus/cxz/internal/wisp"
@@ -93,6 +96,9 @@ func Build(ctx context.Context, out io.Writer) (string, error) {
 			e = writeUIArchive(tw, uiDirectory)
 		}
 		if e == nil {
+			e = collectorbuild.Archive(tw, "collector-src/")
+		}
+		if e == nil {
 			e = tw.Close()
 		}
 		wr.CloseWithError(e)
@@ -159,6 +165,14 @@ type installReservationKey struct{}
 // InstallLocked is for the release-switch controller, which holds install.lock
 // across stopping runtimes, replacing the manager and resuming sessions.
 func InstallLocked(ctx context.Context, root, workspaceRoot, image string, recreate bool, out io.Writer) error {
+	preferences, err := settings.Load(root)
+	if err != nil {
+		return err
+	}
+	telemetryConfig, err := json.Marshal(preferences.Telemetry)
+	if err != nil {
+		return err
+	}
 	v, e := transport.Load(root)
 	if e != nil && !os.IsNotExist(e) {
 		return e
@@ -256,6 +270,7 @@ func InstallLocked(ctx context.Context, root, workspaceRoot, image string, recre
 		return e
 	}
 	args := []string{"run", "-d", "--name", v.Container, "--restart", "unless-stopped", "--label", "cxz.role=daemon", "--label", "cxz.owner=" + v.Owner, "--mount", "type=volume,source=" + v.StateVolume + ",target=/var/lib/cxz", "--mount", "type=volume,source=" + v.ToolsVolume + ",target=/cxz/tools", "--mount", "type=bind,source=" + workspaceRoot + ",target=" + workspaceRoot, "-e", "CXZ_OWNER=" + v.Owner, "-e", "CXZ_WORKSPACE_ROOT=" + workspaceRoot, "-e", "CXZ_TOOLS_VOLUME=" + v.ToolsVolume, "-e", "CXZ_STATE_VOLUME=" + v.StateVolume, "-e", "CXZ_MANAGER_IMAGE=" + image, "-e", "CXZ_MANAGER_CONTAINER=" + v.Container}
+	args = append(args, "-e", "CXZ_TELEMETRY_CONFIG="+string(telemetryConfig))
 	if p, e := versionpin.Load(root); e != nil {
 		return e
 	} else if p.Channel != "" {

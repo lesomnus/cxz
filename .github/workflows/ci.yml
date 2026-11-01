@@ -33,6 +33,7 @@ jobs:
     outputs:
       storybook: ${{ steps.scope.outputs.storybook }}
       sandbox: ${{ steps.scope.outputs.sandbox }}
+      telemetry: ${{ steps.scope.outputs.telemetry }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,7 +48,7 @@ jobs:
         run: |
           set -euo pipefail
           everything() {
-            printf 'storybook=true\nsandbox=true\n' >> "$GITHUB_OUTPUT"
+            printf 'storybook=true\nsandbox=true\ntelemetry=%s\n' "${telemetry:-true}" >> "$GITHUB_OUTPUT"
             echo "scope: everything ($1)"
             exit 0
           }
@@ -58,6 +59,11 @@ jobs:
           git cat-file -e "$BASE^{commit}" 2>/dev/null || everything "base revision unavailable"
           files=$(git diff --name-only "$BASE" HEAD)
           printf '%s\n' "$files" | sed 's/^/changed: /'
+          telemetry=false
+          if printf '%s\n' "$files" | grep -qE '^(cmd/cxz-collector-source/|internal/(collectorbuild|telemetry|telemetryauth|telemetryconfig|telemetrystore|telemetrystack|usagemetrics|resourceid|core|dockerx|workspace|supervisor|auxiliary|installer|server)/|server/lifecycle/|scripts/(build-collector|release)\.sh$|Dockerfile$|go\.(mod|sum)$|\.github/workflows/ci\.yml$)'; then
+            telemetry=true
+          fi
+          printf 'telemetry=%s\n' "$telemetry" >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$files" | grep -qE '^(ts/|packages/|proto/|\.github/|go\.mod$|go\.sum$)'; then
             everything "web sources, protos, submodule or workflow"
           fi
@@ -323,6 +329,31 @@ jobs:
           path: ${{ runner.temp }}/race-tests.jsonl
           retention-days: 7
           if-no-files-found: ignore
+  telemetry:
+    needs: changes
+    if: needs.changes.outputs.telemetry == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: collector-${{ runner.os }}-${{ hashFiles('internal/collectorbuild/assets/**', 'go.mod', 'go.sum') }}
+          restore-keys: collector-${{ runner.os }}-
+      - name: Build the pinned OCB distribution and test its identity processor
+        run: bash scripts/build-collector.sh "$RUNNER_TEMP/collector"
+      - name: Verify the managed ClickHouse, Collector and Unix socket pipeline
+        env:
+          CXZ_TELEMETRY_DOCKER: '1'
+          CXZ_COLLECTOR_BINARY: ${{ runner.temp }}/collector/cxz-otelcol
+        run: go test -count=1 -run '^TestManagedTelemetryDocker$' -v ./internal/telemetrystack
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -398,7 +429,7 @@ jobs:
             app.cache-from=type=gha,scope=cxz-app
             app.cache-to=type=gha,scope=cxz-app,mode=max
   publish:
-    needs: [test, race, windows-frontend, web, web-storybook, web-sandbox, image]
+    needs: [test, race, windows-frontend, web, web-storybook, web-sandbox, telemetry, image]
     # A suite this change cannot reach is skipped, and a skipped dependency
     # would otherwise skip the release with it -- so this asks that nothing
     # failed rather than that everything succeeded.

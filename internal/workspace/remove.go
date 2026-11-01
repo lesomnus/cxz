@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/mcpconfig"
+	"github.com/lesomnus/cxz/internal/resourceid"
 	"github.com/lesomnus/cxz/internal/skillconfig"
 	"github.com/lesomnus/cxz/internal/wisp"
 )
@@ -63,7 +65,11 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 		return err
 	}
 	storage := id
-for _,p:=range projects {if p.ID==id {storage=p.storageID()}}
+	for _, p := range projects {
+		if p.ID == id {
+			storage = p.storageID()
+		}
+	}
 	ids := map[string]bool{}
 	for _, session := range sessions {
 		ids[session] = true
@@ -128,6 +134,18 @@ for _,p:=range projects {if p.ID==id {storage=p.storageID()}}
 	for session := range ids {
 		m.removedSessions[session] = true
 	}
+	if m.telemetry != nil {
+		var eraseIDs []string
+		for session := range ids {
+			eraseIDs = append(eraseIDs, hex.EncodeToString(resourceid.Bytes(8, session)))
+		}
+		if err := m.telemetry.EraseMany(ctx, eraseIDs); err != nil {
+			return err
+		}
+		if err := m.eraseTelemetry(ctx, id, ""); err != nil {
+			return err
+		}
+	}
 	aux, err := m.auxiliaryController()
 	if err != nil {
 		return err
@@ -137,7 +155,11 @@ for _,p:=range projects {if p.ID==id {storage=p.storageID()}}
 			return err
 		}
 	}
-	if storage!=id {if err:=accounts.RevokeProjectGrants(m.Root,storage);err!=nil{return err}}
+	if storage != id {
+		if err := accounts.RevokeProjectGrants(m.Root, storage); err != nil {
+			return err
+		}
+	}
 	if err := accounts.RevokeProjectGrants(m.Root, id); err != nil {
 		return err
 	}
@@ -157,7 +179,11 @@ for _,p:=range projects {if p.ID==id {storage=p.storageID()}}
 			return err
 		}
 	}
-	if storage!=id {if err:=root.RemoveAll(filepath.Join("assets","exports",storage));err!=nil{return err}}
+	if storage != id {
+		if err := root.RemoveAll(filepath.Join("assets", "exports", storage)); err != nil {
+			return err
+		}
+	}
 	if err := root.RemoveAll(filepath.Join("assets", "exports", id)); err != nil {
 		return err
 	}

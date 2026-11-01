@@ -25,11 +25,19 @@ func (m *Manager) EraseSession(ctx context.Context, in *api.SessionEraseInput) (
 	if in.ProjectId != "" && !projectid.Same(in.ProjectId, project.ID) {
 		return nil, fmt.Errorf("session belongs to another project")
 	}
+	lock := m.projectLock(project.ID)
+	lock.Lock()
+	defer lock.Unlock()
 	conn, client, err := m.client(ctx, project)
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
+	if !r.DryRun && m.telemetry != nil {
+		if err = m.eraseTelemetry(ctx, project.ID, r.Session); err != nil {
+			return nil, err
+		}
+	}
 	reply, err := client.EraseSession(ctx, in)
 	if err != nil {
 		return nil, err
@@ -49,11 +57,31 @@ func (m *Manager) EraseSession(ctx context.Context, in *api.SessionEraseInput) (
 		})
 	}
 	if !r.DryRun {
+		m.writeMu.Lock()
+		if m.removedSessions == nil {
+			m.removedSessions = map[string]bool{}
+		}
+		m.removedSessions[r.Session] = true
+		if err = m.writeTelemetryRegistry(project); err != nil {
+			m.writeMu.Unlock()
+			return nil, err
+		}
+		m.writeMu.Unlock()
 		c, err := m.auxiliaryController()
 		if err != nil {
 			return nil, err
 		}
 		if err = c.Purge(r.Session); err != nil {
+			return nil, err
+		}
+		kept := project.Sessions[:0]
+		for _, s := range project.Sessions {
+			if s.Id != r.Session {
+				kept = append(kept, s)
+			}
+		}
+		project.Sessions = kept
+		if err = m.save(ctx, project); err != nil {
 			return nil, err
 		}
 	}

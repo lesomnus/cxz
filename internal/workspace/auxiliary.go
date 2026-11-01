@@ -66,6 +66,8 @@ func (m *Manager) runAuxiliary(ctx context.Context, in auxiliary.Input) (auxilia
 		return auxiliary.Output{}, e
 	}
 	q := auxiliary.HelperInput{Input: in, Binary: bin}
+	metrics, finishMetrics := m.auxiliaryTelemetry(ctx, in)
+	defer finishMetrics()
 	if in.Profile.Backend == accounts.BrokeredAccessToken {
 		if in.Task == "models" {
 			if _, err := accounts.CentralToken(m.Root, in.Profile.Account); err != nil {
@@ -87,6 +89,18 @@ func (m *Manager) runAuxiliary(ctx context.Context, in auxiliary.Input) (auxilia
 	}
 	var out auxiliary.Output
 	e = json.Unmarshal(output.Bytes(), &out)
+	if e == nil && metrics != nil && len(out.Usage) > 0 {
+		var usage map[string]json.RawMessage
+		if json.Unmarshal(out.Usage, &usage) == nil {
+			payload := map[string]json.RawMessage{"usage": out.Usage}
+			if tokens := usage["tokens"]; len(tokens) > 0 {
+				payload["usage"] = tokens
+				payload["total_cost_usd"] = usage["total_cost_usd"]
+			}
+			b, _ := json.Marshal(payload)
+			metrics.Observe(core.Event{Seq: 1, TimeMS: time.Now().UnixMilli(), Kind: "turn_end", Payload: b})
+		}
+	}
 	return out, e
 }
 func (m *Manager) AuxiliaryLogin(ctx context.Context, p auxiliary.Profile, r io.Reader, w, errw io.Writer) error {

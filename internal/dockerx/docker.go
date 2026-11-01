@@ -51,6 +51,7 @@ func Input(ctx context.Context, in io.Reader, args ...string) error {
 
 type Container struct {
 	ID     string `json:"Id"`
+	Image  string // immutable image ID, distinct from Config.Image's mutable reference
 	Name   string
 	Config struct {
 		Labels map[string]string
