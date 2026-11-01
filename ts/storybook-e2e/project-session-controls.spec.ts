@@ -64,7 +64,20 @@ test("row controls confirm stop/restart and resume the intended session", async 
       button.x -
       cell.x,
   );
-  await openRow(page, "Stop");
+  await more.click();
+  await expect(page.getByRole("menuitem")).toHaveText([
+    "Stop",
+    "Resume",
+    "Restart",
+    "Erase",
+  ]);
+  await expect(
+    page.getByRole("menuitem", { name: "Stop", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("menuitem", { name: "Resume", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
   const stop = page.getByRole("dialog", { name: "Stop session", exact: true });
   await expect(stop).toContainText("Plan the next release");
   await stop.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -73,6 +86,20 @@ test("row controls confirm stop/restart and resume the intended session", async 
   await stop.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(stop).toHaveCount(0);
   await expect.poll(() => stateLabels(page)).toEqual(["Stopped", "Idle"]);
+  await more.click();
+  await expect(page.getByRole("menuitem")).toHaveText([
+    "Stop",
+    "Resume",
+    "Restart",
+    "Erase",
+  ]);
+  await expect(
+    page.getByRole("menuitem", { name: "Stop", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("menuitem", { name: "Resume", exact: true }),
+  ).toBeEnabled();
+  await page.keyboard.press("Escape");
   await openRow(page, "Resume");
   await expect.poll(() => stateLabels(page)).toEqual(["Idle", "Idle"]);
   await openRow(page, "Restart");
