@@ -94,7 +94,13 @@
   width: 100%;
   height: var(--search-result-height);
   padding: var(--ui-space) calc(2 * var(--ui-space));
-  border-radius: var(--ui-space);
+  border-radius: max(
+    0px,
+    calc(
+      var(--ui-dialog-radius) - var(--search-border-width) -
+        var(--ui-control-inset)
+    )
+  );
   text-align: left;
 }
 .result > :global(.button-content) {
