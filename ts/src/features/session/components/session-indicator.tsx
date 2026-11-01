@@ -149,8 +149,10 @@ function StateIcon({ state }: { state: string }) {
       aria-hidden="true"
     >
       {state === "stopped" ? (
-        <path d="M8 1.5v6m-3.5-4a5.5 5.5 0 1 0 7 0" />
-      ) : state === "interrupted" || state === "waiting" ? (
+        <path d="M2.83 9.88a5.5 5.5 0 0 1 7.05-7.05m3.29 3.29a5.5 5.5 0 0 1-7.05 7.05M3.5 12.5l9-9" />
+      ) : state === "interrupted" ? (
+        <path d="m8 2.5 5.5 11h-11Z" />
+      ) : state === "waiting" ? (
         <path d="M6 4v8m4-8v8" />
       ) : (
         <>
