@@ -214,17 +214,15 @@ function ProjectDashboard({
             <h2 className={styles.sectionTitle}>{t("Information")}</h2>
             <Fields
               rows={[
-                [
-                  t("Project ID"),
-                  <IdentifierValue
-                    value={
-                      p.id.length === 16 ? new Id(p.id).toString() : undefined
-                    }
-                  />,
-                  t(
+                {
+                  label: t("Project ID"),
+                  value:
+                    p.id.length === 16 ? new Id(p.id).toString() : undefined,
+                  description: t(
                     "Canonical UUID used to identify this project across APIs and links.",
                   ),
-                ],
+                  identifier: true,
+                },
                 [t("Name"), editable("name", t("Name"))],
                 [t("Alias"), editable("alias", t("Alias"))],
                 [t("Description"), editable("desc", t("Description"))],

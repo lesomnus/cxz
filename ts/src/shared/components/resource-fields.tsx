@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { FieldLabel } from "./field-label";
+import { IdentifierValue } from "./identifier-value";
 import { PathValue } from "./path-value";
 import styles from "./resource-fields.module.css";
 
@@ -12,6 +13,7 @@ type ResourceField = {
   labelDetail?: ReactNode;
   fullWidth?: boolean;
   path?: boolean;
+  identifier?: boolean;
 };
 
 export type ResourceFieldRow =
@@ -48,7 +50,11 @@ export function ResourceFields({
               };
         return (
           <Field
-            key={field.path ? `${field.label}:${field.value}` : field.label}
+            key={
+              field.path || field.identifier
+                ? `${field.label}:${field.value}`
+                : field.label
+            }
             {...field}
           />
         );
@@ -64,6 +70,7 @@ function Field({
   labelDetail,
   fullWidth,
   path,
+  identifier,
 }: ResourceField) {
   useLocale();
   const [feedback, setFeedback] = useState<{
@@ -76,13 +83,15 @@ function Field({
     const timer = setTimeout(() => setFeedback(undefined), 2000);
     return () => clearTimeout(timer);
   }, [feedback]);
-  const pathValue =
-    path && typeof value === "string" && value ? value : undefined;
+  const copyValue =
+    (path || identifier) && typeof value === "string" && value
+      ? value
+      : undefined;
   async function copy() {
-    if (!pathValue || copying) return;
+    if (!copyValue || copying) return;
     setCopying(true);
     try {
-      await navigator.clipboard.writeText(pathValue);
+      await navigator.clipboard.writeText(copyValue);
       setFeedback({ message: "copied!" });
     } catch {
       setFeedback({ message: t("Copy failed"), failed: true });
@@ -97,7 +106,7 @@ function Field({
         {labelDetail != null && (
           <span className={styles.labelDetail}>{labelDetail}</span>
         )}
-        {path && (
+        {(path || identifier) && (
           <span
             className={feedback?.failed ? styles.copyError : styles.labelDetail}
             role="status"
@@ -107,9 +116,16 @@ function Field({
         )}
       </dt>
       <dd>
-        {pathValue ? (
+        {copyValue && identifier ? (
+          <IdentifierValue
+            value={copyValue}
+            label={`${t("Copy")}: ${label}`}
+            copying={copying}
+            onCopy={copy}
+          />
+        ) : copyValue && path ? (
           <PathValue
-            value={pathValue}
+            value={copyValue}
             label={`${t("Copy")}: ${label}`}
             copying={copying}
             onCopy={copy}
