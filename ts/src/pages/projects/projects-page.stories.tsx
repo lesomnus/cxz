@@ -13,6 +13,7 @@ function Preview({
   streaming = false,
   sessionCount = 2,
   mixedStates = false,
+  longPaths = false,
   failControls = false,
   failErase = false,
   requireTrust = false,
@@ -30,6 +31,12 @@ function Preview({
             ? "trust"
             : "",
     );
+    if (longPaths) {
+      fixture.projects[0]!.workspace =
+        "/host/" + "long-parent-directory/".repeat(10) + "workspace-leaf";
+      fixture.projects[0]!.config =
+        ".devcontainer/" + "very-long-leaf-".repeat(12) + ".json";
+    }
     if (mixedStates) {
       const states = [
         "waiting_input",
@@ -120,6 +127,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const LongPaths: Story = { args: { longPaths: true } };
 export const SessionStates: Story = {
   args: { sessionCount: 9, mixedStates: true },
 };

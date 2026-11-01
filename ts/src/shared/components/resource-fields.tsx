@@ -1,13 +1,27 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { FieldLabel } from "./field-label";
+import { PathValue } from "./path-value";
 import styles from "./resource-fields.module.css";
 
-export type ResourceFieldRow = readonly [
-  label: string,
-  value: ReactNode,
-  description?: string,
-  labelDetail?: ReactNode,
-];
+type ResourceField = {
+  label: string;
+  value: ReactNode;
+  description?: string;
+  labelDetail?: ReactNode;
+  fullWidth?: boolean;
+  path?: boolean;
+};
+
+export type ResourceFieldRow =
+  | ResourceField
+  | readonly [
+      label: string,
+      value: ReactNode,
+      description?: string,
+      labelDetail?: ReactNode,
+    ];
 
 // Keep labels, values, help and field spacing consistent across resource pages.
 export function ResourceFields({
@@ -22,21 +36,90 @@ export function ResourceFields({
       className={styles.fields}
       style={{ "--resource-field-columns": columns } as CSSProperties}
     >
-      {rows.map(([label, value, description, labelDetail]) => (
-        <div key={label}>
-          <dt>
-            <FieldLabel label={label} description={description} />
-            {labelDetail != null && (
-              <span className={styles.labelDetail}>{labelDetail}</span>
-            )}
-          </dt>
-          <dd>
-            {value === undefined || value === null || value === ""
-              ? "—"
-              : value}
-          </dd>
-        </div>
-      ))}
+      {rows.map((row) => {
+        const field: ResourceField =
+          "label" in row
+            ? row
+            : {
+                label: row[0],
+                value: row[1],
+                description: row[2],
+                labelDetail: row[3],
+              };
+        return (
+          <Field
+            key={field.path ? `${field.label}:${field.value}` : field.label}
+            {...field}
+          />
+        );
+      })}
     </dl>
+  );
+}
+
+function Field({
+  label,
+  value,
+  description,
+  labelDetail,
+  fullWidth,
+  path,
+}: ResourceField) {
+  useLocale();
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    failed?: boolean;
+  }>();
+  const [copying, setCopying] = useState(false);
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(undefined), 2000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+  const pathValue =
+    path && typeof value === "string" && value ? value : undefined;
+  async function copy() {
+    if (!pathValue || copying) return;
+    setCopying(true);
+    try {
+      await navigator.clipboard.writeText(pathValue);
+      setFeedback({ message: "copied!" });
+    } catch {
+      setFeedback({ message: t("Copy failed"), failed: true });
+    } finally {
+      setCopying(false);
+    }
+  }
+  return (
+    <div className={fullWidth ? styles.fullWidth : undefined}>
+      <dt>
+        <FieldLabel label={label} description={description} />
+        {labelDetail != null && (
+          <span className={styles.labelDetail}>{labelDetail}</span>
+        )}
+        {path && (
+          <span
+            className={feedback?.failed ? styles.copyError : styles.labelDetail}
+            role="status"
+          >
+            {feedback?.message}
+          </span>
+        )}
+      </dt>
+      <dd>
+        {pathValue ? (
+          <PathValue
+            value={pathValue}
+            label={`${t("Copy")}: ${label}`}
+            copying={copying}
+            onCopy={copy}
+          />
+        ) : value === undefined || value === null || value === "" ? (
+          "—"
+        ) : (
+          value
+        )}
+      </dd>
+    </div>
   );
 }

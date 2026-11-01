@@ -1,0 +1,38 @@
+.path[data-variant] {
+  --press-scale: 1;
+  --button-hover-background: transparent;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  min-height: var(--ui-icon-size);
+  padding: 0;
+  border-radius: var(--ui-control-inset);
+  text-align: start;
+}
+.text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  white-space: pre;
+}
+.parent {
+  flex: 0 1 auto;
+  min-width: var(--path-parent-min);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.leaf {
+  flex: 0 0 auto;
+  max-width: calc(100% - var(--path-parent-min));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.measure {
+  position: absolute;
+  width: max-content;
+  visibility: hidden;
+  white-space: pre;
+  pointer-events: none;
+}

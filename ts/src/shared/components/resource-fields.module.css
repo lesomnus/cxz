@@ -35,7 +35,13 @@
 }
 
 .labelDetail {
-  margin-inline-start: auto;
-  text-align: end;
+  color: var(--ui-shade-136);
   white-space: nowrap;
+}
+
+.fields > .fullWidth {
+  grid-column: 1 / -1;
+}
+.copyError {
+  color: var(--ui-action-error-color);
 }
