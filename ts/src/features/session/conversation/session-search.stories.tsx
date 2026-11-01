@@ -21,7 +21,7 @@ const events = messages.map((text, index) =>
     seq: BigInt(index + 1),
     kind: index ? "assistant" : "input",
     text,
-    timeMs: BigInt(Date.now()),
+    timeMs: BigInt(Date.now() - (messages.length - index) * 5 * 60_000),
   }),
 );
 const meta = {

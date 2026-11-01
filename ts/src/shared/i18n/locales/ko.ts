@@ -92,7 +92,7 @@ export const messages = {
   "Search this conversation": "이 대화에서 검색",
   "Close search": "검색 닫기",
   "Searching…": "검색 중…",
-  "{count} matches": "검색 결과 {count}개",
+  "Result {current} of {count}": "검색 결과 {count}개 중 {current}번째",
   "Search results": "검색 결과",
   "Session history is still being indexed.": "세션 기록을 아직 색인 중입니다.",
   "Load more results": "검색 결과 더 보기",

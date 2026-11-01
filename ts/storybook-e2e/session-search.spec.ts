@@ -10,13 +10,22 @@ test("session-search story opens, matches and jumps while keeping the overlay un
   const search = page.getByRole("search", {
     name: "Search current conversation",
   });
-  await search.getByRole("searchbox").fill("network");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
+  const input = search.getByRole("searchbox");
+  const counter = search.getByRole("status");
+  await expect(counter).toHaveAccessibleName("Result 0 of 0");
+  await input.fill("network");
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
+  await expect(counter).toHaveText("0001/0002");
+  await input.press("ArrowDown");
+  await expect(counter).toHaveAccessibleName("Result 2 of 2");
+  await input.press("ArrowUp");
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
   await expect(page.locator(".scroll-tick[data-search]")).toHaveCount(2);
   await search
     .getByRole("button", { name: /Investigate network latency/ })
     .click();
   await expect(page.getByText("Jumped to message 1")).toBeVisible();
+  await expect(counter).toHaveAccessibleName("Result 2 of 2");
   await expect(search).toBeVisible();
   await page.mouse.click(5, 5);
   await expect(search).toBeVisible();
@@ -37,7 +46,8 @@ test("Enter highlights each occurrence newest first, including inline Markdown, 
   });
   const input = search.getByRole("searchbox");
   await input.fill("network");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
+  const counter = search.getByRole("status");
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
   await expect
     .poll(() =>
       page.evaluate(() => CSS.highlights.get("conversation-search")?.size),
@@ -67,18 +77,21 @@ test("Enter highlights each occurrence newest first, including inline Markdown, 
   await expect(input).toBeFocused();
   await input.press("Enter");
   await expect.poll(active).toEqual({ seq: "2", text: "network" });
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
   expect(
     await page.locator(".transcript").evaluate((el) => el.scrollTop),
   ).toBeLessThan(bottomMatchScroll);
   await expect(input).toBeFocused();
   await input.press("Enter");
   await expect.poll(async () => (await active())?.seq).toBe("1");
+  await expect(counter).toHaveAccessibleName("Result 2 of 2");
   await input.press("Enter");
   await expect
     .poll(active)
     .toEqual({ seq: "2", text: "Second network match in this reply." });
+  await expect(counter).toHaveAccessibleName("Result 1 of 2");
   await input.fill("network transfer");
-  await expect(search.getByRole("status")).toHaveText("1 matches");
+  await expect(counter).toHaveAccessibleName("Result 1 of 1");
   await input.press("Enter");
   await expect
     .poll(() =>
@@ -92,6 +105,9 @@ test("Enter highlights each occurrence newest first, including inline Markdown, 
     )
     .toBe("network transfer");
   await input.fill("[network]");
+  await expect(counter).toHaveAccessibleName("Result 0 of 0");
+  await expect(counter).toHaveText("0000/0000");
+  await expect(search.getByText("No matches", { exact: true })).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => CSS.highlights.get("conversation-search")?.size),
@@ -117,10 +133,14 @@ test("local search updates when loaded responses arrive without changing the que
     }),
     input = search.getByRole("searchbox");
   await input.fill("network");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 2",
+  );
   await page.getByRole("button", { name: "Append response" }).click();
   await expect(input).toHaveValue("network");
-  await expect(search.getByRole("status")).toHaveText("3 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 3",
+  );
   await search.locator('[data-search-index="0"]').click();
   await expect(page.getByText("Jumped to message 4")).toBeVisible();
   await expect(input).toBeFocused();

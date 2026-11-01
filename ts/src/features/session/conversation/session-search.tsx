@@ -1,4 +1,3 @@
-import { DateTime } from "#src/shared/components/date-time.tsx";
 import type { EventListSource } from "#src/features/session/model/event-source.ts";
 import {
   useEffect,
@@ -8,12 +7,13 @@ import {
   type CSSProperties,
   type RefObject,
 } from "react";
-import { Button, ScrollArea } from "@lesomnus/nox";
+import { Button, CompactNumber, DateTime, ScrollArea } from "@lesomnus/nox";
 import { searchLoadedMessages, type LoadedSearchHit } from "./loaded-search";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./session-search.module.css";
 import { useSearchHighlights, type SearchLocation } from "./search-highlights";
+import { messageDate, relativeMessageTime } from "./message-time";
 
 const noHits: LoadedSearchHit[] = [];
 
@@ -40,6 +40,7 @@ export function SessionSearch({
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const [location, setLocation] = useState<SearchLocation>();
+  const [now, setNow] = useState(() => new Date());
   const position = useRef<SearchLocation | undefined>(undefined);
   const navigation = useRef(0);
   const input = useRef<HTMLInputElement>(null);
@@ -56,6 +57,12 @@ export function SessionSearch({
     [events, open, query],
   );
   const selectedIndex = Math.min(selected, Math.max(0, visible.length - 1));
+  useEffect(() => {
+    if (!open) return;
+    setNow(new Date());
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, [open]);
   useEffect(() => {
     onMatchesChange?.(visible.map((hit) => hit.seq.toString()));
   }, [visible, onMatchesChange]);
@@ -238,6 +245,23 @@ export function SessionSearch({
             );
           }}
         />
+        <div
+          className={styles.counter}
+          role="status"
+          aria-label={t("Result {current} of {count}", {
+            current: visible.length ? selectedIndex + 1 : 0,
+            count: visible.length,
+          })}
+        >
+          <span aria-hidden="true">
+            <CompactNumber
+              value={visible.length ? selectedIndex + 1 : 0}
+              mode="integer"
+            />
+            <span className={styles.separator}>/</span>
+            <CompactNumber value={visible.length} mode="integer" />
+          </span>
+        </div>
         <Button
           className={styles.close}
           variant="toolbar"
@@ -250,11 +274,9 @@ export function SessionSearch({
       </form>
       {!!query.trim() && (
         <>
-          <div className={styles.status} role="status">
-            {visible.length
-              ? t("{count} matches", { count: visible.length })
-              : t("No matches")}
-          </div>
+          {visible.length === 0 && (
+            <p className={styles.empty}>{t("No matches")}</p>
+          )}
           {visible.length > 0 && (
             <ScrollArea
               className={styles.results}
@@ -266,26 +288,32 @@ export function SessionSearch({
                 { "--search-result-count": visible.length } as CSSProperties
               }
             >
-              {visible.map((hit, index) => (
-                <Button
-                  key={hit.seq.toString()}
-                  className={styles.result}
-                  type="button"
-                  data-search-index={index}
-                  data-seq={hit.seq.toString()}
-                  aria-pressed={index === selectedIndex}
-                  onClick={() => {
-                    setSelected(index);
-                    void select(hit);
-                  }}
-                >
-                  <span className={styles.meta}>
-                    {hit.kind === "input" ? ">" : "↳"}
-                    {hit.timeMs > 0n && <DateTime value={hit.timeMs} />}
-                  </span>
-                  <span className={styles.snippet}>{hit.snippet}</span>
-                </Button>
-              ))}
+              {visible.map((hit, index) => {
+                const date = messageDate(hit.timeMs);
+                const relative = date ? relativeMessageTime(date, now) : "";
+                return (
+                  <Button
+                    key={hit.seq.toString()}
+                    className={styles.result}
+                    type="button"
+                    data-search-index={index}
+                    data-seq={hit.seq.toString()}
+                    aria-pressed={index === selectedIndex}
+                    onClick={() => {
+                      setSelected(index);
+                      void select(hit);
+                    }}
+                  >
+                    <span className={styles.meta}>
+                      {date && <DateTime value={date} />}
+                      {relative && (
+                        <span className={styles.relative}>- {relative}</span>
+                      )}
+                    </span>
+                    <span className={styles.snippet}>{hit.snippet}</span>
+                  </Button>
+                );
+              })}
             </ScrollArea>
           )}
         </>

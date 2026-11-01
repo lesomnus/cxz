@@ -93,7 +93,7 @@ export const messages = {
   "Search this conversation": "Search this conversation",
   "Close search": "Close search",
   "Searching…": "Searching…",
-  "{count} matches": "{count} matches",
+  "Result {current} of {count}": "Result {current} of {count}",
   "Search results": "Search results",
   "Session history is still being indexed.":
     "Session history is still being indexed.",
