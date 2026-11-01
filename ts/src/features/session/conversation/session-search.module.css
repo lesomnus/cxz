@@ -121,6 +121,12 @@
   white-space: nowrap;
 }
 .meta > time {
+  --ui-text-value: var(--ui-muted);
+  --ui-text-separator: color-mix(
+    in srgb,
+    var(--ui-text-value) 70%,
+    var(--ui-shade-0)
+  );
   flex-shrink: 0;
 }
 .relative {
