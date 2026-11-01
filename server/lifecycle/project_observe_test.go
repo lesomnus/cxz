@@ -23,7 +23,7 @@ func TestAReadObservesTheContainerWithinItsWindow(t *testing.T) {
 	}
 	defer db.Close()
 	f := &fixture{
-		p: &api.Project{Id: "project", Workspace: "/work", Name: "work", State: "running"},
+		p: &api.Project{Id: "project", Workspace: "/work", Name: "work", State: "running", ContainerName: "initial-container"},
 		s: &api.Session{Id: "session", ProjectId: "project", Workspace: "/work", Agent: "claude", Account: "work", AuthBackend: accounts.ProjectLocalOAuth, State: "idle", RunId: "run"},
 	}
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
@@ -46,10 +46,15 @@ func TestAReadObservesTheContainerWithinItsWindow(t *testing.T) {
 	if got := state(); got != resource.ContainerState_CONTAINER_STATE_RUNNING {
 		t.Fatal(got)
 	}
+	before, err := projects.Get(ctx, resource.ProjectGetRequest_builder{Ref: projectRef("project"), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil || before.GetStatus().GetContainerName() != "initial-container" {
+		t.Fatal(before, err)
+	}
 	looks := f.looks
 	// Inside the window the answer is shared: polling clients do not each cost
 	// a Docker inventory.
 	f.p.State = "stopped"
+	f.p.ContainerName = "renamed-container"
 	if got := state(); got != resource.ContainerState_CONTAINER_STATE_RUNNING || f.looks != looks {
 		t.Fatal("a second read inside the window asked again", got, f.looks, looks)
 	}
@@ -58,6 +63,10 @@ func TestAReadObservesTheContainerWithinItsWindow(t *testing.T) {
 	defer func() { observeWindow = window }()
 	if got := state(); got != resource.ContainerState_CONTAINER_STATE_STOPPED {
 		t.Fatal("a read outside the window answered with a stale conclusion", got)
+	}
+	after, err := projects.Get(ctx, resource.ProjectGetRequest_builder{Ref: projectRef("project"), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil || after.GetStatus().GetContainerName() != "renamed-container" {
+		t.Fatal(after, err)
 	}
 	if f.looks <= looks {
 		t.Fatal("the container was never looked at again")

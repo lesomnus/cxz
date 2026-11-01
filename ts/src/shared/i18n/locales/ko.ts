@@ -700,6 +700,7 @@ export const messages = {
   "Remote user": "원격 사용자",
   "Git branch": "Git 브랜치",
   Provisioning: "프로비저닝",
+  "Container name": "컨테이너 이름",
   "Container ID": "컨테이너 ID",
   "Provision attempts": "프로비저닝 시도",
   "Session overview": "세션 현황",

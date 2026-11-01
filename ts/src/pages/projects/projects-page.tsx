@@ -14,20 +14,14 @@ import {
   SectionGroup,
 } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
-import {
-  containerState,
-  containerStateName,
-  running,
-} from "./project-state.ts";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
-import { IdentifierValue } from "#src/shared/components/identifier-value.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { projectBranch, type DashboardConnection } from "./project-dashboard";
+import { type DashboardConnection } from "./project-dashboard";
 import {
   editProject,
   validateProjectField,
@@ -38,6 +32,7 @@ import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
 import type { Account } from "#gen/cxz/account_pb";
+import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import styles from "./projects-page.module.css";
 import {
   projectLocation,
@@ -189,27 +184,10 @@ function ProjectDashboard({
     </div>
   );
   const [addingSession, setAddingSession] = useState(false);
-  const branch = useRemote(
-    (signal) => projectBranch(c, p, signal),
-    [c, projectId(p), p.status?.containerState, p.status?.remoteWorkspace],
-  );
-  const git = branch.loading
-    ? t("Loading…")
-    : branch.error
-      ? t("Unavailable")
-      : branch.data?.state === "branch"
-        ? branch.data.value
-        : branch.data?.state === "detached"
-          ? `${branch.data.value} · ${t("Detached HEAD")}`
-          : branch.data?.state === "missing"
-            ? t("Not a Git workspace")
-            : branch.data?.state === "offline"
-              ? t("Project is not running")
-              : t("Unavailable");
   return (
     <div className={styles.dashboard}>
-      <div className={styles.information}>
-        <SectionGroup>
+      <div className={styles.columns}>
+        <SectionGroup className={styles.information}>
           <Section aria-label={t("Information")}>
             <h2 className={styles.sectionTitle}>{t("Information")}</h2>
             <Fields
@@ -232,11 +210,11 @@ function ProjectDashboard({
                   fullWidth: true,
                   path: true,
                 },
+                [t("Container name"), p.status?.containerName],
                 {
-                  label: t("Configuration"),
-                  value: p.config,
-                  fullWidth: true,
-                  path: true,
+                  label: t("Container ID"),
+                  value: p.status?.containerId,
+                  identifier: true,
                 },
                 [
                   t("Created"),
@@ -250,47 +228,6 @@ function ProjectDashboard({
                   undefined,
                   <RelativeTime value={p.dateUpdated} />,
                 ],
-                [
-                  t("Deleted"),
-                  <DateTime value={p.dateErased} />,
-                  undefined,
-                  <RelativeTime value={p.dateErased} />,
-                ],
-              ]}
-            />
-          </Section>
-          <Section aria-label={t("Environment")}>
-            <div className={styles.sectionHeading}>
-              <h2>{t("Environment")}</h2>
-              <Button
-                className={styles.refresh}
-                type="button"
-                disabled={branch.loading || !running(p)}
-                onClick={branch.reload}
-              >
-                {t("Refresh")}
-              </Button>
-            </div>
-            <Fields
-              rows={[
-                [t("Status"), t(containerStateName(containerState(p)))],
-                {
-                  label: t("Workspace"),
-                  value: p.status?.remoteWorkspace,
-                  fullWidth: true,
-                  path: true,
-                },
-                [t("Remote user"), p.status?.remoteUser],
-                [t("Git branch"), git],
-                [
-                  t("Provisioning"),
-                  [p.status?.provisionState, p.status?.provisionStep]
-                    .filter(Boolean)
-                    .join(" · "),
-                  t(
-                    "Status and current step of preparing the project container and workspace.",
-                  ),
-                ],
               ]}
             />
             {p.status?.error && (
@@ -298,67 +235,54 @@ function ProjectDashboard({
                 {p.status.error}
               </p>
             )}
-            {branch.error && (
-              <p className={styles.empty} role="status">
-                {branch.error}
-              </p>
+          </Section>
+          <Section
+            className={styles.sessionSection}
+            aria-label={t("Project sessions")}
+          >
+            <SessionTable
+              c={c}
+              sessions={sessions}
+              accounts={accounts}
+              loading={sessionsLoading}
+              variant="compact"
+              horizontalScrollbar
+              addSession={() => setAddingSession(true)}
+            />
+            {addingSession && (
+              <SessionCreate
+                c={c}
+                projects={[p]}
+                centered
+                close={() => setAddingSession(false)}
+              />
+            )}
+            {accountsError && (
+              <div className={styles.empty}>
+                <p role="alert">{accountsError}</p>
+                <Button type="button" onClick={reloadAccounts}>
+                  {t("Retry")}
+                </Button>
+              </div>
             )}
           </Section>
-          <Section aria-label={t("Diagnostics")}>
-            <h2 className={styles.sectionTitle}>{t("Diagnostics")}</h2>
-            <Fields
-              rows={[
-                [
-                  t("Container ID"),
-                  <IdentifierValue value={p.status?.containerId} />,
-                ],
-                [
-                  t("Provision attempts"),
-                  p.status?.provisionAttempt.toString(),
-                ],
-              ]}
-            />
-          </Section>
         </SectionGroup>
-        <section className={styles.actions} aria-label={t("Actions")}>
-          <ProjectActions
+        <SectionGroup className={styles.usage}>
+          <UsageReport
             c={c}
-            project={p}
-            sessions={sessions}
-            erased={erased}
-            updated={saved}
+            project={projectId(p)}
+            className={styles.usageSection}
           />
-        </section>
+        </SectionGroup>
       </div>
-      <section
-        className={`${styles.section} ${styles.sessionSection}`}
-        aria-label={t("Project sessions")}
-      >
-        <SessionTable
+      <section className={styles.actions} aria-label={t("Actions")}>
+        <ProjectActions
           c={c}
+          project={p}
           sessions={sessions}
-          accounts={accounts}
-          loading={sessionsLoading}
-          variant="compact"
-          horizontalScrollbar
-          addSession={() => setAddingSession(true)}
+          erased={erased}
+          updated={saved}
         />
-        {addingSession && (
-          <SessionCreate
-            c={c}
-            projects={[p]}
-            centered
-            close={() => setAddingSession(false)}
-          />
-        )}
-        {accountsError && (
-          <div className={styles.empty}>
-            <p role="alert">{accountsError}</p>
-            <Button type="button" onClick={reloadAccounts}>
-              {t("Retry")}
-            </Button>
-          </div>
-        )}
       </section>
     </div>
   );

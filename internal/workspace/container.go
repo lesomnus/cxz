@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/lesomnus/cxz/api"
@@ -261,6 +262,20 @@ func containerState(p *Project, inventory []dockerx.Container, lookErr error) st
 		return "stopped"
 	}
 	return "absent"
+}
+
+// Container names are observations, not manifest state: external renames must
+// be reflected without another provisioning operation.
+func containerName(p *Project, inventory []dockerx.Container, lookErr error) string {
+	if lookErr != nil {
+		return ""
+	}
+	for _, container := range inventory {
+		if container.Config.Labels["cxz.project"] == p.storageID() && container.Config.Labels["devcontainer.local_folder"] == p.Workspace {
+			return strings.TrimPrefix(container.Name, "/")
+		}
+	}
+	return ""
 }
 
 // The runtime API entry points. They resolve the project, take its lock and

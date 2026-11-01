@@ -4,7 +4,7 @@ test("shared fields use tighter spacing and label help escapes clipping with key
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
-  for (const name of ["Information", "Environment", "Diagnostics"]) {
+  for (const name of ["Information"]) {
     const row = page
       .getByRole("region", { name, exact: true })
       .locator("dl > div")
@@ -18,7 +18,7 @@ test("shared fields use tighter spacing and label help escapes clipping with key
     }));
     expect(spacing.gap).toBe(spacing.inset);
   }
-  for (const label of ["Provisioning", "Project ID"]) {
+  for (const label of ["Project ID"]) {
     const icon = page.getByRole("img", { name: `About ${label}`, exact: true });
     await icon.hover();
     const tooltip = page.getByRole("tooltip");

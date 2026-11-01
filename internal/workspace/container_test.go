@@ -116,3 +116,27 @@ func TestContainerStateIsDerivedAndKnowsWhatItDoesNotKnow(t *testing.T) {
 		t.Fatal("adopted another project's container", got)
 	}
 }
+
+func TestContainerNameIsObservedFromMatchingLabels(t *testing.T) {
+	p := &Project{ID: "canonical", StorageID: "legacy", Workspace: "/work", ContainerID: "stale-id"}
+	var container dockerx.Container
+	container.ID, container.Name = "actual-id", "/cxz-devcontainer"
+	container.Config.Labels = map[string]string{"cxz.project": "legacy", "devcontainer.local_folder": "/work"}
+	if got := containerName(p, []dockerx.Container{container}, nil); got != "cxz-devcontainer" {
+		t.Fatal(got)
+	}
+	container.Name = "/renamed-container"
+	if got := containerName(p, []dockerx.Container{container}, nil); got != "renamed-container" {
+		t.Fatal(got)
+	}
+	if got := containerName(p, []dockerx.Container{container}, errors.New("Docker unavailable")); got != "" {
+		t.Fatal(got)
+	}
+	container.Config.Labels["devcontainer.local_folder"] = "/other"
+	if got := containerName(p, []dockerx.Container{container}, nil); got != "" {
+		t.Fatal(got)
+	}
+	if got := containerName(p, nil, nil); got != "" {
+		t.Fatal(got)
+	}
+}
