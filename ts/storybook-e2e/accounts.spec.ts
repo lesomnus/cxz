@@ -160,7 +160,12 @@ for (const width of [1280, 390]) {
       sessionsBounds.y + sessionsBounds.height - sessionsPadding,
       0,
     );
-    expect(scrollBounds.y).toBe(sessionsBounds.y);
+    const headerGap = await sessions.evaluate((node) =>
+      parseFloat(
+        getComputedStyle(node).getPropertyValue("--ui-section-group-gap"),
+      ),
+    );
+    expect(scrollBounds.y - sessionsBounds.y).toBe(headerGap);
     await expect(sessions.getByRole("heading")).toHaveCount(0);
     const eraseBounds = (await work
       .getByRole("button", { name: "Erase account Work", exact: true })

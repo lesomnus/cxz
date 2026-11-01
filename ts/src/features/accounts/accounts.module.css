@@ -94,7 +94,7 @@
 .sessionsColumn.sessionsColumn {
   display: flex;
   flex-direction: column;
-  padding-top: 0;
+  padding-top: var(--ui-section-group-gap);
   padding-inline: 0;
   overflow: hidden;
   min-height: 0;
