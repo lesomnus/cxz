@@ -6,13 +6,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
-import {
-  PageToolbar,
-  Button,
-  EditableValue,
-  Section,
-  SectionGroup,
-} from "@lesomnus/nox";
+import { PageToolbar, Button, EditableValue, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -187,7 +181,7 @@ function ProjectDashboard({
   return (
     <div className={styles.dashboard}>
       <div className={styles.columns}>
-        <SectionGroup className={styles.information}>
+        <div className={styles.information}>
           <Section aria-label={t("Information")}>
             <h2 className={styles.sectionTitle}>{t("Information")}</h2>
             <Fields
@@ -266,14 +260,12 @@ function ProjectDashboard({
               </div>
             )}
           </Section>
-        </SectionGroup>
-        <SectionGroup className={styles.usage}>
-          <UsageReport
-            c={c}
-            project={projectId(p)}
-            className={styles.usageSection}
-          />
-        </SectionGroup>
+        </div>
+        <UsageReport
+          c={c}
+          project={projectId(p)}
+          className={styles.usageSection}
+        />
       </div>
       <section className={styles.actions} aria-label={t("Actions")}>
         <ProjectActions
