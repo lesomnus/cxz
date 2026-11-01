@@ -16,6 +16,7 @@ test("session-search story opens, matches and jumps while keeping the overlay un
   await input.fill("network");
   await expect(counter).toHaveAccessibleName("Result 1 of 2");
   await expect(counter).toHaveText("0001/0002");
+  await expect(search.locator("mark")).toHaveText(["network", "network"]);
   await input.press("ArrowDown");
   await expect(counter).toHaveAccessibleName("Result 2 of 2");
   await input.press("ArrowUp");
@@ -92,6 +93,7 @@ test("Enter highlights each occurrence newest first, including inline Markdown, 
   await expect(counter).toHaveAccessibleName("Result 1 of 2");
   await input.fill("network transfer");
   await expect(counter).toHaveAccessibleName("Result 1 of 1");
+  await expect(search.locator("mark")).toHaveText(["network transfer"]);
   await input.press("Enter");
   await expect
     .poll(() =>
@@ -108,6 +110,7 @@ test("Enter highlights each occurrence newest first, including inline Markdown, 
   await expect(counter).toHaveAccessibleName("Result 0 of 0");
   await expect(counter).toHaveText("0000/0000");
   await expect(search.getByText("No matches", { exact: true })).toBeVisible();
+  await expect(search.locator("mark")).toHaveCount(0);
   await expect
     .poll(() =>
       page.evaluate(() => CSS.highlights.get("conversation-search")?.size),
@@ -141,9 +144,54 @@ test("local search updates when loaded responses arrive without changing the que
   await expect(search.getByRole("status")).toHaveAccessibleName(
     "Result 1 of 3",
   );
+  await expect(search.locator("mark")).toHaveText([
+    "network",
+    "network",
+    "network",
+  ]);
   await search.locator('[data-search-index="0"]').click();
   await expect(page.getByText("Jumped to message 4")).toBeVisible();
   await expect(input).toBeFocused();
+  await input.press("Escape");
+  await expect(search).toHaveCount(0);
+});
+
+test("preview highlights preserve casing and match literal punctuation and repeated text", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-sessionsearch--with-results&viewMode=story",
+  );
+  const search = page.getByRole("search", {
+    name: "Search current conversation",
+  });
+  const input = search.getByRole("searchbox");
+  await expect(input).toHaveValue("network");
+  const originalHeight = (
+    await search.locator("[data-search-index]").first().boundingBox()
+  )?.height;
+  await input.fill("NETWORK");
+  await expect(search.locator("mark")).toHaveText(["network", "network"]);
+  await input.fill(".");
+  const punctuation = search.locator("mark");
+  await expect(punctuation.first()).toBeVisible();
+  expect(
+    (await punctuation.allTextContents()).every((text) => text === "."),
+  ).toBe(true);
+  await input.fill("Transfer diagnostics.");
+  const repeated = search.locator("mark");
+  await expect(repeated.first()).toBeVisible();
+  expect(await repeated.count()).toBeGreaterThan(1);
+  expect(
+    (await repeated.allTextContents()).every((text) =>
+      "Transfer diagnostics.".startsWith(text),
+    ),
+  ).toBe(true);
+  const row = search.locator("[data-search-index]");
+  await expect(row).toHaveCount(1);
+  expect((await row.boundingBox())?.height).toBe(originalHeight);
+  await row.click();
+  await expect(page.getByText("Jumped to message 2")).toBeVisible();
   await input.press("Escape");
   await expect(search).toHaveCount(0);
 });

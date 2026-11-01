@@ -140,7 +140,12 @@
   width: 100%;
   font-size: 12px;
 }
+.snippet mark {
+  padding: 0;
+  font: inherit;
+}
 
+.snippet mark,
 :global(::highlight(conversation-search)) {
   background-color: color-mix(in srgb, var(--ui-brand-color) 65%, transparent);
   color: #111111;

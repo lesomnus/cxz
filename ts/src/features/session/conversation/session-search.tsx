@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
   type RefObject,
 } from "react";
 import { Button, CompactNumber, DateTime, ScrollArea } from "@lesomnus/nox";
@@ -310,7 +311,7 @@ export function SessionSearch({
                         <span className={styles.relative}>- {relative}</span>
                       )}
                     </span>
-                    <span className={styles.snippet}>{hit.snippet}</span>
+                    <SearchSnippet hit={hit} />
                   </Button>
                 );
               })}
@@ -320,4 +321,18 @@ export function SessionSearch({
       )}
     </section>
   );
+}
+
+function SearchSnippet({ hit }: { hit: LoadedSearchHit }) {
+  const content: ReactNode[] = [];
+  let offset = 0;
+  for (const { start, end } of hit.snippetMatches) {
+    content.push(
+      hit.snippet.slice(offset, start),
+      <mark key={start}>{hit.snippet.slice(start, end)}</mark>,
+    );
+    offset = end;
+  }
+  content.push(hit.snippet.slice(offset));
+  return <span className={styles.snippet}>{content}</span>;
 }

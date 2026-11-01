@@ -37,7 +37,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing immediately searches loaded conversation data, including virtualized messages outside the viewport. No Search API, pagination or history loading is used. The transcript highlights rendered matches without changing layout and adds green search ticks beside its scroll handle, sharing the existing elastic marker motion. Enter visits each occurrence from newest to oldest, then wraps; arrow keys select results and clicking jumps without dismissing search. Only Close or Escape dismiss it. This story supplies local messages; try 'network'.",
+          "Ctrl+Shift+F (Cmd+Shift+F on macOS) opens a persistent nonmodal search near the top of the current conversation. Typing immediately searches loaded conversation data, including virtualized messages outside the viewport. No Search API, pagination or history loading is used. Result previews highlight the exact contributing text spans, using the same case-insensitive literal matching as the transcript. The transcript highlights rendered matches without changing layout and adds green search ticks beside its scroll handle, sharing the existing elastic marker motion. Enter visits each occurrence from newest to oldest, then wraps; arrow keys select results and clicking jumps without dismissing search. Only Close or Escape dismiss it. This story supplies local messages; try 'network'.",
       },
     },
   },
