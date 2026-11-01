@@ -40,7 +40,7 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     await expect(
-      usage.getByText("Complete retained coverage", { exact: true }),
+      usage.getByRole("region", { name: "Recent 30 days", exact: true }),
     ).toBeVisible();
     const informationBounds = (await group.boundingBox())!;
     const usageBounds = (await usage.boundingBox())!;
@@ -114,7 +114,8 @@ for (const width of [1280, 390]) {
       );
     expect(metrics[1].y).toBe(metrics[0].y);
     expect(metrics[1].x).toBeGreaterThan(metrics[0].x);
-    expect(metrics[2].y).toBeGreaterThan(metrics[0].y);
+    expect(metrics[3].y).toBe(metrics[0].y);
+    expect(metrics[4].y).toBeGreaterThan(metrics[0].y);
     const logo = (await details
       .getByRole("img", { name: "Codex", exact: true })
       .boundingBox())!;
@@ -127,7 +128,7 @@ for (const width of [1280, 390]) {
     expect(logo.y).toBeGreaterThanOrEqual(value.y);
     expect(logo.y + logo.height).toBeLessThanOrEqual(value.y + value.height);
     await expect(work.locator("header")).toHaveCount(0);
-    const created = details.locator("time");
+    const created = details.locator("dd time");
     await expect(created).toHaveAttribute("datetime", /T.*Z$/);
     await expect(created).toHaveText(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/,
