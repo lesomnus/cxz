@@ -169,6 +169,8 @@ export function resourceFixture() {
         return { memory };
       },
       conversationStats: () => ({
+        fromMs: BigInt(Date.parse("2026-10-03T00:00:00Z")),
+        toMs: BigInt(Date.parse("2026-11-02T00:00:00Z")),
         complete: true,
         total: {
           finishedTurns: 12n,
@@ -180,6 +182,26 @@ export function resourceFixture() {
           reportedCostUsd: 0.42,
           costReportedTurns: 12n,
         },
+        days: [
+          ["2026-10-03", 1, 150, 0, 0.03],
+          ["2026-10-09", 2, 400, 100, 0.07],
+          ["2026-10-14", 1, 150, 0, 0.03],
+          ["2026-10-24", 4, 800, 200, 0.14],
+          ["2026-10-27", 1, 200, 0, 0.03],
+          ["2026-10-31", 3, 600, 100, 0.12],
+        ].map(([date, turns, output, cacheWrite, cost]) => ({
+          date: String(date),
+          values: {
+            finishedTurns: BigInt(turns),
+            inputTokens: BigInt(Number(turns) * 400),
+            outputTokens: BigInt(output),
+            cacheReadTokens: BigInt(Number(turns) * 1000),
+            cacheWriteTokens: BigInt(cacheWrite),
+            tokenReportedTurns: BigInt(turns),
+            costReportedTurns: BigInt(turns),
+            reportedCostUsd: Number(cost),
+          },
+        })),
       }),
       background: () => ({
         data: new TextEncoder().encode(
