@@ -22,6 +22,7 @@
 }
 .icon {
   flex-shrink: 0;
+  margin-inline: calc(2 * var(--ui-space));
   color: var(--ui-muted);
 }
 .input {
