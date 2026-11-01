@@ -207,7 +207,7 @@ test("long confirmation bodies scroll while the padded header and actions stay v
   await page
     .getByRole("button", { name: "Open confirmation", exact: true })
     .click();
-  const dialog = page.getByRole("dialog", { name: "Purge session" });
+  const dialog = page.getByRole("dialog", { name: "Erase session" });
   const body = dialog.locator(".card-body");
   const footer = dialog.locator(".card-footer");
   const header = dialog.locator(".card-heading");
@@ -224,7 +224,7 @@ test("long confirmation bodies scroll while the padded header and actions stay v
   expect(await footer.boundingBox()).toEqual(originalFooter);
   expect(await header.boundingBox()).toEqual(originalHeader);
   await expect(
-    dialog.getByRole("button", { name: "Purge permanently", exact: true }),
+    dialog.getByRole("button", { name: "Erase", exact: true }),
   ).toBeVisible();
   const bounds = (await dialog.boundingBox())!;
   expect(bounds.y).toBeGreaterThanOrEqual(0);
