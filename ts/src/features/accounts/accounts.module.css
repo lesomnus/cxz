@@ -30,14 +30,21 @@
 }
 .authenticationGroup {
   --ui-section-radius: var(--ui-section-inner-radius);
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: 64px 64px minmax(0, 1fr);
+  height: 64px;
 }
-.eraseAction.eraseAction {
+.eraseAction.eraseAction,
+.reservedControl.reservedControl {
   width: 64px;
   height: 64px;
   padding: 0;
   place-items: center;
   font-size: 12px;
+}
+.authenticationSection {
+  height: 64px;
+  min-height: 0;
+  align-content: center;
 }
 .eraseAction.eraseAction > :global(.button-content) {
   justify-content: center;
@@ -88,4 +95,8 @@
 .authenticationDescription {
   flex: 1;
   min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }

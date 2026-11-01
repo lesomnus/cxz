@@ -1,7 +1,7 @@
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { useRef, useState } from "react";
 import { ConnectError } from "@connectrpc/connect";
-import { Button, Popover, SectionGroup, Section } from "@lesomnus/nox";
+import { Button, Popover, SectionGroup, Section, Switch } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -12,6 +12,7 @@ import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import { SessionTable } from "#src/features/session/table/session-table.tsx";
+import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import { accountRef, accountStatus } from "./account-data";
 import { LoginPanel } from "./login-panel";
@@ -98,9 +99,20 @@ export function AccountDetails({
               setErase(true);
             }}
           >
-            Erase
+            <SessionActionIcon action="erase" />
           </Section>
-          <Section aria-label="Authentication">
+          <Section className={accountStyles.reservedControl}>
+            <Switch
+              label="Account option"
+              checked={false}
+              disabled
+              onChange={() => {}}
+            />
+          </Section>
+          <Section
+            aria-label="Authentication"
+            className={accountStyles.authenticationSection}
+          >
             <div className={accountStyles.authenticationRow}>
               {sessionScoped ? (
                 <small
