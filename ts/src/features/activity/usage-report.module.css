@@ -1,7 +1,30 @@
 .report {
   container: conversation-usage / inline-size;
 }
+.period {
+  display: grid;
+  gap: var(--ui-space);
+}
+.periodTitle {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.dayHeader {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(2 * var(--ui-space));
+}
+.date {
+  color: var(--ui-muted);
+  font-size: 0.7rem;
+}
+.dayHeader > button {
+  margin-left: auto;
+}
 .metrics.metrics {
+  margin-block: var(--ui-space) calc(2 * var(--ui-space));
   grid-template-columns: repeat(4, minmax(0, 1fr));
   text-align: right;
 }
