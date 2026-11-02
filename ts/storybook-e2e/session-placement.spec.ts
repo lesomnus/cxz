@@ -213,6 +213,30 @@ for (const [story, sectionLabel] of [
       await expect
         .poll(() => viewport.evaluate((node) => node.scrollTop))
         .toBe(32);
+      const eased = await viewport.evaluate(async (node) => {
+        node.scrollTop = 0;
+        const event = new WheelEvent("wheel", {
+          deltaY: 120,
+          bubbles: true,
+          cancelable: true,
+        });
+        node.dispatchEvent(event);
+        const immediate = node.scrollTop;
+        for (let frame = 0; frame < 3; frame++)
+          await new Promise(requestAnimationFrame);
+        return {
+          consumed: event.defaultPrevented,
+          immediate,
+          intermediate: node.scrollTop,
+        };
+      });
+      expect(eased.consumed).toBe(true);
+      expect(eased.immediate).toBe(0);
+      expect(eased.intermediate).toBeGreaterThan(0);
+      expect(eased.intermediate).toBeLessThan(120);
+      await expect
+        .poll(() => viewport.evaluate((node) => node.scrollTop))
+        .toBe(120);
       for (const delta of [120, 120, 120, 120, 120, 120, 1, 0.5, 0.25, 0.125])
         await page.mouse.wheel(0, delta);
       await expect
