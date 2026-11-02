@@ -27,7 +27,7 @@ Implementation phases:
 - [x] Flat web/TUI/native clients and fixtures.
 - [x] Remove old RPCs/storage entry points; integration/migration/race/browser tests.
 - [x] Migrate real data with backup/verification.
-- [ ] Locally merge /workspace after final checks.
+- [x] Locally merged /workspace after final checks.
 
 Worktree: /tmp/cxz-memory-resource-v2, branch feat/memory-resource-v2. Shared task:
 memory-resource-v2. Do not restart user dev servers 5173/6006; own test servers must
@@ -45,7 +45,8 @@ and per-document hash manifest are retained in:
 `/cxz/state/data/backups/memory-resource-20261102T033941Z`.
 This path belongs to this development installation, not a repository fixture.
 
-Validation: full Go suite; race checks for lifecycle/MCP/server/workspace/TUI;
+Validation: TypeScript 721 unit tests, 14 Memory Storybook browser tests and the
+real web client conflict-save test; Linux/Windows builds; full Go suite; race checks for lifecycle/MCP/server/workspace/TUI;
 generator check; go vet; TypeScript check/build/unit tests; browser contracts for
 flat selection, editing conflicts, metadata-only revision stability, history/diff,
 old-body restoration, labels, trash/restore/purge, project scope and narrow screens.
