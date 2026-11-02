@@ -99,18 +99,22 @@
   background: color-mix(
     in srgb,
     var(--ui-section-background),
-    var(--quota-tint) 4%
+    var(--quota-tint) 16%
   );
 }
-.quotaFill {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
+.quotaSquare[data-quota-level="unknown"] .quotaGauge {
   background: color-mix(
     in srgb,
     var(--ui-section-background),
-    var(--quota-tint) 16%
+    var(--quota-tint) 4%
   );
+}
+.quotaEmpty {
+  position: absolute;
+  inset-inline: var(--account-quota-inset);
+  top: var(--account-quota-inset);
+  border-radius: inherit;
+  background: var(--ui-section-background);
   transition: height 300ms ease;
 }
 .quotaValue {
@@ -135,7 +139,7 @@
   gap: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .quotaFill {
+  .quotaEmpty {
     transition: none;
   }
 }
