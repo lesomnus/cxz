@@ -40,6 +40,7 @@ test("project heading is muted and hover highlights the whole project", async ({
 for (const [story, rows] of [
   ["default", 3],
   ["long-list", 24],
+  ["working-phases", 8],
   ["collapsed", 0],
   ["empty", 0],
   ["loading", 0],

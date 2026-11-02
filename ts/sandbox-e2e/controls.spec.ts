@@ -306,11 +306,13 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
     const animation = dot.getAnimations()[0];
     animation.pause();
     const duration = Number(animation.effect!.getComputedTiming().duration);
-    animation.currentTime = 0;
+    const delay = Number(animation.effect!.getTiming().delay);
+    const cycle = Math.ceil(-delay / duration) * duration;
+    animation.currentTime = cycle + delay;
     const hidden = new DOMMatrix(getComputedStyle(dot).transform).a;
-    animation.currentTime = duration / 16;
+    animation.currentTime = cycle + delay + duration / 16;
     const between = new DOMMatrix(getComputedStyle(dot).transform).a;
-    animation.currentTime = duration / 8;
+    animation.currentTime = cycle + delay + duration / 8;
     const shown = new DOMMatrix(getComputedStyle(dot).transform).a;
     // Release the manually controlled animation before testing CSS motion preferences.
     animation.cancel();
