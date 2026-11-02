@@ -28,7 +28,7 @@ export function SessionCreate({
   projects,
   anchor,
   trigger,
-  centered = false,
+  centered = true,
   close,
 }: {
   c: Connection;

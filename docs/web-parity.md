@@ -40,12 +40,12 @@ authentication store, search index, or memory library.
   filter by project, match type, tools, case and UTC date window, continue result
   pages, and open the matched event. Index progress, unavailable projects and
   trimmed conversations are reported instead of appearing complete.
-- **Shared memory**: select a session's project library, search memories, read
-  documents and snapshots, edit this session's own documents with revision
-  checks, create documents, snapshot, fork, merge, rename, import, move to trash,
-  restore and purge. Other sessions' documents and snapshots are read only.
-  A save conflict preserves the editor's draft. Destructive actions and discarding
-  document changes require an explicit confirmation.
+- **Shared memory**: list project-scoped documents directly, search names/body,
+  filter labels, preview/edit Markdown, create/copy, rename, inspect versions and
+  contextual diffs, restore old bodies as new revisions, trash/restore/purge.
+  Body saves carry revision and metadata version checks; conflicts preserve drafts.
+  Deletion, purge and discarding changes require confirmation. An editing-session
+  context and collection/snapshot hierarchy are no longer required.
 - **Auxiliary AI**: configure the account, model and effort for summary,
   suggestion and title tasks, including the helper's provider login. Each session
   has automatic execution preferences, manual execution, cancellation, results

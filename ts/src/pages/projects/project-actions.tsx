@@ -127,9 +127,6 @@ export function ProjectActions({
     <>
       <SectionLayout align="start" maxWidth="none">
         <SectionGroup>
-          <Section className={styles.header}>
-            <h2>{t("Actions")}</h2>
-          </Section>
           {actions.map((action) => {
             const description = copy[action.kind].description;
             const wordEnd = description.search(/\s/u);

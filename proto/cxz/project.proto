@@ -51,6 +51,8 @@ message ProjectStatus {
   uint64 provision_attempt = 7;
   string error = 8;
   ContainerState container_state = 9;
+  // Observed Docker name, without its leading slash; empty if unobserved.
+  string container_name = 10;
 }
 
 // Derived from the container inventory, every time it is asked. A look that

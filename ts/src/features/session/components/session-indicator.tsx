@@ -1,35 +1,11 @@
-import { useState, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { resumableStates } from "#src/features/session/model/session-actions.ts";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
 import styles from "./session-indicator.module.css";
-
-// Keep the braille-like arrangement, ordered around its perimeter.
-const activityDots = [
-  [4, 2],
-  [8, 2],
-  [8, 6],
-  [8, 10],
-  [8, 14],
-  [4, 14],
-  [4, 10],
-  [4, 6],
-] as const;
-const activityColors = ["green", "cyan", "violet"] as const;
-
-function randomActivityColors() {
-  // Keep all toolbar hues present, with a stable random order per indicator.
-  const colors = activityDots.map(
-    (_, index) => activityColors[index % activityColors.length]!,
-  );
-  for (let index = colors.length - 1; index > 0; index--) {
-    const other = Math.floor(Math.random() * (index + 1));
-    [colors[index], colors[other]] = [colors[other]!, colors[index]!];
-  }
-  return colors;
-}
+import { activityDots, sessionActivity } from "./session-activity";
 
 export function SessionIndicator({
   session,
@@ -45,7 +21,6 @@ export function SessionIndicator({
   variant?: "activity" | "status";
 }) {
   useLocale();
-  const [dotColors] = useState(randomActivityColors);
   const state = session.status?.state || "unknown";
   if (error)
     return (
@@ -80,6 +55,7 @@ export function SessionIndicator({
         <UnreadBadge />
       </span>
     );
+  const activity = sessionActivity(session);
   return (
     <span
       className={`session-indicator ${question ? "attention" : ""}`}
@@ -103,6 +79,7 @@ export function SessionIndicator({
         "?"
       ) : working || background ? (
         <svg
+          key={activity.seed}
           className={
             !working && background ? styles.backgroundActivity : undefined
           }
@@ -120,8 +97,8 @@ export function SessionIndicator({
               r="1.3"
               style={
                 {
-                  animationDelay: `calc(${index} * var(--session-dot-step) * -1)`,
-                  "--session-dot-highlight": `var(--aurora-${dotColors[index]})`,
+                  animationDelay: `calc((${index} + ${activity.phase}) * var(--session-dot-step) * -1)`,
+                  "--session-dot-highlight": `var(--aurora-${activity.colors[index]})`,
                 } as CSSProperties
               }
             />
@@ -149,19 +126,19 @@ function StateIcon({ state }: { state: string }) {
       aria-hidden="true"
     >
       {state === "stopped" ? (
-        <rect x="3" y="3" width="10" height="10" rx="1" />
-      ) : state === "interrupted" || state === "waiting" ? (
+        <path d="M2.83 9.88a5.5 5.5 0 0 1 7.05-7.05m3.29 3.29a5.5 5.5 0 0 1-7.05 7.05M2.5 13.5l11-11" />
+      ) : state === "interrupted" ? (
+        <path d="m8 2.5 5.5 11h-11Z" />
+      ) : state === "waiting" ? (
         <path d="M6 4v8m4-8v8" />
       ) : (
         <>
           <circle cx="8" cy="8" r="5.5" />
-          {state === "idle" ? (
-            <path d="m5.5 8 1.7 1.7 3.5-3.5" />
-          ) : state === "failed" ? (
+          {state === "failed" ? (
             <path d="M8 4.5V8m0 3h.01" />
-          ) : (
+          ) : state !== "idle" ? (
             <path d="M6.5 6.25a1.5 1.5 0 1 1 2 1.4c-.5.2-.5.6-.5 1.1M8 11h.01" />
-          )}
+          ) : null}
         </>
       )}
     </svg>

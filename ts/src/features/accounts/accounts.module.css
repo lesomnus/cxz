@@ -2,7 +2,7 @@
   grid-column: 2 / -1;
 }
 .layout {
-  --account-column-width: 420px;
+  --account-column-width: 424px;
   --section-layout-max-width: calc(
     2 * var(--account-column-width) + var(--ui-section-group-gap)
   );
@@ -20,34 +20,201 @@
   scroll-margin-top: calc(3 * var(--space));
 }
 .details {
+  /* Preserve the loaded card's dimensions while data or text changes. */
+  --account-info-height: 163px;
+  --account-auth-height: 64px;
+  --account-usage-height: 482px;
+  --account-column-height: calc(
+    var(--account-auth-height) + var(--ui-section-group-gap) +
+      var(--account-usage-height)
+  );
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   gap: var(--ui-section-group-gap);
 }
 .summaryColumn {
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: var(--account-column-height);
+  grid-template-rows: var(--account-info-height) minmax(0, 1fr);
+}
+.usageColumn {
+  grid-template-rows: var(--account-auth-height) var(--account-usage-height);
+}
+.authenticationGroup {
+  --account-action-radius: 16px;
+  --ui-section-radius: var(--ui-section-inner-radius);
+  grid-template-columns: minmax(0, 1fr) 64px 64px;
+  height: 64px;
+}
+.eraseAction.eraseAction,
+.quotaSquare.quotaSquare {
+  --ui-section-radius: var(--account-action-radius, 16px);
+  --ui-section-inner-radius: var(--ui-section-radius);
+  border-radius: var(--ui-section-radius);
+}
+.eraseAction.eraseAction {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  place-items: center;
+  font-size: 12px;
+}
+.authenticationSection {
+  height: 64px;
+  min-height: 0;
+  align-content: center;
+}
+.eraseAction.eraseAction > :global(.button-content) {
+  justify-content: center;
+}
+.eraseAction.eraseAction:not(:disabled):hover {
+  color: var(--ui-action-error-color);
+}
+.quotaSquare.quotaSquare {
+  --quota-tint: #7c8b4f;
+  --account-quota-inset: 2px;
+  width: 64px;
+  height: 64px;
+  padding: var(--account-quota-inset);
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 2px;
+  align-items: center;
+  overflow: hidden;
+}
+.quotaSquare[data-quota-level="warning"] {
+  --quota-tint: #9d8245;
+}
+.quotaSquare[data-quota-level="critical"] {
+  --quota-tint: #b0485b;
+}
+.quotaGauge {
+  --account-quota-gauge-radius: calc(
+    var(--ui-section-radius) - var(--account-quota-inset)
+  );
+  position: relative;
+  display: grid;
+  width: 32px;
+  height: 60px;
+  place-items: center;
+  border-radius: var(--account-quota-gauge-radius);
+  overflow: hidden;
+  isolation: isolate;
+  background: color-mix(
+    in srgb,
+    var(--ui-section-background),
+    var(--quota-tint) 16%
+  );
+}
+.quotaSquare[data-quota-level="unknown"] .quotaGauge {
+  background: color-mix(
+    in srgb,
+    var(--ui-section-background),
+    var(--quota-tint) 4%
+  );
+}
+.quotaEmpty {
+  --account-quota-empty-inset: 1px;
+  position: absolute;
+  inset-inline: var(--account-quota-empty-inset);
+  top: var(--account-quota-empty-inset);
+  border-radius: max(
+    0px,
+    calc(var(--account-quota-gauge-radius) - var(--account-quota-empty-inset))
+  );
+  background: var(--ui-section-background);
+  transition: height 300ms ease;
+}
+.quotaValue {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  color: var(--shade-170);
+  font: 12px/1 var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.quotaUnit {
+  color: var(--muted);
+}
+.quotaReset {
+  min-width: 0;
+  justify-self: center;
+  font: 10px/1.2 var(--ui-font-mono);
+}
+.quotaReset > span {
+  flex-direction: column;
+  width: 3ch;
+  gap: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .quotaEmpty {
+    transition: none;
+  }
 }
 .informationDetails,
 .usageSection {
   align-content: start;
+  min-height: 0;
+}
+.usageSection {
+  height: 100%;
+}
+.informationDetails dl > div {
+  height: 41px;
+}
+.informationDetails dt {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.informationDetails dd {
+  min-width: 0;
+}
+.editable {
+  flex: 1;
+  min-width: 0;
+}
+.editable :global(.editable-value-trigger) {
+  min-height: var(--ui-icon-size);
+  font: inherit;
+}
+.informationDetails dd > span {
+  min-width: 0;
+  max-width: 100%;
+}
+.fieldValue {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sessionsColumn.sessionsColumn {
   display: flex;
   flex-direction: column;
-  padding-top: 0;
+  padding-top: var(--ui-section-group-gap);
   padding-inline: 0;
-  overflow: hidden;
+  overflow: visible;
+  min-height: 0;
+  height: 100%;
 }
 @container account (min-width: 560px) {
   .details {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .details .summaryColumn > [data-section-layout="section"] {
+    border-start-end-radius: var(--ui-section-inner-radius);
+    border-end-end-radius: var(--ui-section-inner-radius);
+  }
+  .details .usageColumn > [data-section-layout="section"] {
+    border-start-start-radius: var(--ui-section-inner-radius);
+    border-end-start-radius: var(--ui-section-inner-radius);
   }
 }
 .agent {
   display: flex;
   align-items: center;
   gap: var(--space);
+  overflow: hidden;
+  white-space: nowrap;
 }
 .authenticationRow {
   --account-auth-action-width: 80px;
@@ -68,10 +235,13 @@
 .authenticationAction {
   flex: 0 0 var(--account-auth-action-width);
   width: var(--account-auth-action-width);
-  margin-inline-start: auto;
   white-space: nowrap;
 }
 .authenticationDescription {
   flex: 1;
   min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }

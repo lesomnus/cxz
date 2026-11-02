@@ -19,16 +19,65 @@ Copying never moves credentials.
 
 ## Shared project memory
 
-Sessions in a project can publish Markdown documents that other sessions in the
-same project can read. This is exposed to agents as an MCP server, so an agent can
-list, search, read and update it during a conversation.
+A Memory is one Markdown document in a project, with an optional owner session and
+labels. A session can publish any number of memories. Published documents survive
+session purge. The web Memory page lists documents directly; selecting an editing
+session is unnecessary. The TUI `/memory` view offers direct browsing, copying,
+rename, trash/restore/purge, and starting a session seeded from a selected document.
 
-Each session owns exactly one memory and can only write its own. Reads are open
-across the project, which is the point: a session that solved something can leave
-the reasoning where the next one will find it.
+`MemoryService` is independent of `SessionService`:
 
-Snapshots are independent once taken — updating a memory does not change a snapshot
-of it.
+- `List(project=ref)` scopes to a project; `List(session=ref)` to an owner;
+  `List()` covers all projects accessible on the connection. Each label map is an
+  AND expression, and repeated filters are OR expressions. List/search returns
+  metadata only; `Read` retrieves the body.
+- `Add` accepts `client_id` for idempotent retries. `Patch` requires the last read
+  `date_updated`; body edits also require `base_revision`. Labels can be cleared
+  explicitly with `clear_labels`. Apply is intentionally unavailable.
+- Each changed body gets an increasing `revision` and an immutable full-body
+  MemoryVersion with a SHA-256 hash. Changing metadata does not advance the body
+  revision. Reverting A → B → A creates three versions; the two A hashes match.
+  The current row caches the latest body. Versions and the resource commit in one
+  transaction. Audit keeps management metadata, without duplicating body payloads.
+- `Read` defaults to full text. An explicit `revision` reads a retained version;
+  `Versions` lists retained revisions. With `base_revision`, `format=DIFF` requests
+  a contextual unified diff. `AUTO` chooses a smaller diff, otherwise full text.
+  A missing base returns full text with `fallback_reason`. Smaller byte size is a
+  heuristic, not a tokenizer or a guarantee of model comprehension.
+- `Erase` sets `date_deleted` 30 days ahead. An unset value is active, a future
+  value is restorable trash, and an elapsed value is logically absent even before
+  garbage collection. `Restore` requires the last metadata version. `Purge`
+  requires trash and permanently removes all body versions.
+
+There are no Snapshot/Fork/Merge resource types. A copy is a new Memory. Restoring
+an old body means reading that version and patching it as a new revision. Existing
+saved snapshots migrate to ordinary, independently editable documents.
+
+The manager routes requests to the project's `resources.db`, including a disposable
+helper for stopped project volumes. The helper verifies volume ownership and
+project identity and opens the DB as its owner. Memory operations cannot run inside
+Batch database transactions. The separate native agent-data browser uses
+`SessionService.ReadAgentData` and `CopyAgentData`, not MemoryService.
+
+### Migration
+
+Startup and retained-volume access import legacy collections idempotently. Each
+Markdown file becomes a Memory; `legacy.collection`, `legacy.collection-name`,
+`legacy.filename`, and `legacy.agent` labels retain provenance. Saved copies carry
+`legacy.snapshot=true`. The first retained body becomes revision 1; the old
+metadata-only Changes index cannot recover historical bodies. Deleted documents and collections enter trash with a fresh
+30-day recovery window. Missing source sessions retain a stable owner identity.
+
+A migration marker and the imported document/version commit together. Unchanged
+sources are skipped. A late legacy edit can advance the imported body if the new
+API has not changed it; otherwise it creates a separate `legacy.conflict=true`
+document instead of overwriting new work. Legacy files remain untouched and are
+recovery material, not the live store. Deletions in the old tree do not delete new
+resources. Retire old writers when deploying the new API. Back up SQLite using a
+consistent backup, including committed WAL contents, before upgrading.
+
+The retired `SessionService.Library*`, `SessionService.Memory`, and
+`SessionService.CopyMemory` RPCs are removed; clients must upgrade together.
 
 ### What belongs in it
 
@@ -84,39 +133,22 @@ schema change, or separate AI compaction task.
 
 ### Discovering changes
 
-The MCP tools are `memory_list`, `memory_search`, `memory_read`, `memory_update`
-and `memory_changes`. When a refresh is useful, call `memory_changes` with the
-cursor retained from the previous call, then read only relevant changed documents.
-This is an explicit refresh mechanism, not a request to poll on every message.
+The MCP tools are `memory_list`, `memory_search`, `memory_read`, `memory_add`,
+`memory_update`, and `memory_changes`. They bind project/session/run on the server:
+reads cover the project, while mutations are limited to the caller's own documents.
+Use IDs returned by list/add. Updates carry the body revision; metadata edits also
+carry the returned metadata version. Conversation tools remain independent.
 
-Memory operations wait only briefly for another operation's project lock. If the
-lock remains busy, the call returns a deadline error instead of waiting indefinitely.
-The timed-out call has not modified a document. Once the contention clears, normal
-ownership and revision checks still apply to the next request.
+Call `memory_changes` only when a refresh is useful. Without a cursor it starts a
+paginated metadata baseline; retain the cursor and drain `has_more` pages. Later
+calls return created/updated/deleted metadata, never bodies. Changes during baseline
+pagination are drained afterward. Treat entries as upserts/removals, then read only
+relevant documents. A document read does not advance the changes cursor.
 
-Omitting `cursor` starts a metadata baseline of current memories and documents.
-Save the returned opaque `cursor`; while `has_more` is true, request the next page
-with that cursor. `limit` defaults to 100 and accepts 1–500 entries. Baseline pages
-have `baseline: true`. Later calls return `changes` with `kind` (`created`,
-`updated`, or `deleted`), `memory_id`, `revision`, and `document` for document
-entries. An absent document identifies memory metadata, including its `name`.
-Treat created/updated entries as upserts and deleted entries as removals. Document
-bodies are never included. Changes occurring during baseline pagination are
-returned after the baseline, so callers should drain all `has_more` pages.
-
-Cursors are project-scoped and survive process restarts. Each reader retains its
-own cursor; reading a document does not advance it, and another reader's refresh
-does not consume changes. The server compares content hashes on refresh, including
-host edits with unchanged timestamps, and persists the latest observed state.
-This is not an audit log: multiple edits can coalesce, and a file created and
-removed between observations need not appear.
-
-The index retains at most 4,096 deleted-item markers. If a cursor predates an
-evicted marker, or its index was recreated, the response has
-`reset_required: true`. Discard cached metadata and start a new baseline without
-a cursor. This makes deletion retention bounded without silently missing changes.
-The hidden `.changes.json` index contains metadata and hashes, never document
-bodies; it should not be manually edited.
+Changes is a discovery feed, not recoverable history. MemoryVersion supplies body
+history. The DB retains the newest 10,000 change records; a pruned or foreign-epoch
+cursor returns `reset_required`. Discard cached metadata and start without a cursor.
+Project cursors survive restarts; connection-wide cursors combine project cursors.
 
 ## Referencing session conversations
 

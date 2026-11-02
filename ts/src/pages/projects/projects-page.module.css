@@ -1,5 +1,12 @@
 .page {
   --project-section-gap: calc(3 * var(--ui-space));
+  --project-panel-width: 420px;
+  --project-panel-gap: 10px;
+  --project-page-gutter: 24px;
+  --project-content-width: calc(
+    2 * var(--project-panel-width) + var(--project-panel-gap)
+  );
+  container: project-page / inline-size;
   grid-column: 2 / -1;
   display: flex;
   flex-direction: column;
@@ -10,59 +17,53 @@
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
 }
+.page > .toolbar {
+  padding-inline: var(--project-page-gutter);
+}
+.toolbarContent,
 .content {
   width: 100%;
-  max-width: 1200px;
-  margin: 0;
-  padding: var(--project-section-gap);
+  max-width: var(--project-content-width);
+  min-width: 0;
+  margin-inline: auto;
+}
+.toolbarContent {
+  display: flex;
+  align-items: center;
+}
+.scroll .scrollContent {
+  padding: var(--project-section-gap) var(--project-page-gutter);
 }
 .dashboard {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  grid-template-areas: "information sessions";
-  align-items: start;
   gap: var(--project-section-gap);
+}
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--project-panel-gap);
+  align-items: start;
 }
 .information {
-  grid-area: information;
   display: grid;
   min-width: 0;
-  gap: var(--project-section-gap);
+  gap: var(--project-panel-gap);
+  align-content: start;
 }
-.sessionSection {
-  grid-area: sessions;
-}
-.section {
+.usageSection {
   min-width: 0;
-  padding: calc(2 * var(--ui-space));
-  background: var(--ui-shade-24);
-  border-radius: var(--ui-dialog-radius);
+  align-content: start;
 }
 .actions {
+  width: 100%;
+  max-width: var(--project-panel-width);
   min-width: 0;
   display: grid;
   gap: var(--ui-space);
 }
-.section.sessionSection {
-  padding-top: 0;
+.sessionSection.sessionSection {
+  padding-top: var(--ui-section-group-gap);
   padding-inline: 0;
-}
-.sectionTitle,
-.sectionHeading h2 {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-}
-.sectionTitle {
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-}
-.sectionHeading {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--ui-space);
-  padding: var(--ui-space) var(--ui-control-inline-inset);
 }
 .empty {
   color: var(--ui-muted);
@@ -72,17 +73,15 @@
 .errors {
   color: var(--ui-error, #db7979);
 }
-@media (max-width: 760px) {
-  .dashboard {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "information" "sessions";
+/* Two 420px panels, their 10px gap and both 24px page gutters. */
+@container project-page (width < 898px) {
+  .toolbarContent,
+  .content {
+    max-width: var(--project-panel-width);
   }
-}
-
-.refresh {
-  font-size: 11px;
-  color: var(--ui-muted);
-  padding: var(--ui-space) var(--ui-control-inline-inset);
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .editable {

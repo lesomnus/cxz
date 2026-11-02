@@ -37,6 +37,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const FinalResponse: Story = {};
+export const MermaidResponse: Story = {
+  args: {
+    events: [
+      storyEvent(1, "input", "Show how a message reaches the agent."),
+      responseEvent(
+        2,
+        "codex",
+        "The manager forwards the message to the project's agent.\n\n```mermaid\nflowchart TD\n  accTitle: Conversation routing\n  Browser --> Manager\n  Manager --> Runtime[Project runtime]\n  Runtime --> Agent\n  Agent --> Response[Conversation response]\n```\n\nThe original diagram definition remains available from the source and copy controls.",
+      ),
+    ],
+  },
+};
 const longModel = responseEvent();
 longModel.response!.model = "provider/very-long-model-identifier-".repeat(8);
 export const LongModelName: Story = { args: { events: [longModel] } };

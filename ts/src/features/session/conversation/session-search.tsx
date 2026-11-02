@@ -1,19 +1,33 @@
-import { DateTime } from "#src/shared/components/date-time.tsx";
 import type { EventListSource } from "#src/features/session/model/event-source.ts";
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
   type RefObject,
 } from "react";
-import { Button, ScrollArea } from "@lesomnus/nox";
+import {
+  Button,
+  CompactNumber,
+  DateTime,
+  Popover,
+  ScrollArea,
+  ToggleButton,
+} from "@lesomnus/nox";
 import { searchLoadedMessages, type LoadedSearchHit } from "./loaded-search";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./session-search.module.css";
 import { useSearchHighlights, type SearchLocation } from "./search-highlights";
+import { messageDate, relativeMessageTime } from "./message-time";
+import {
+  compileSearchPattern,
+  defaultSearchOptions,
+  type SearchOptions,
+} from "./search-pattern";
 
 const noHits: LoadedSearchHit[] = [];
 
@@ -38,31 +52,43 @@ export function SessionSearch({
   useLocale();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [options, setOptions] = useState(defaultSearchOptions);
+  const errorId = useId();
   const [selected, setSelected] = useState(0);
   const [location, setLocation] = useState<SearchLocation>();
+  const [now, setNow] = useState(() => new Date());
   const position = useRef<SearchLocation | undefined>(undefined);
   const navigation = useRef(0);
   const input = useRef<HTMLInputElement>(null);
   const overlay = useRef<HTMLElement>(null);
   const results = useRef<HTMLDivElement>(null);
   const origin = useRef<HTMLElement | null>(null);
-  const latest = useRef({ open, query: query.trim(), restoreFocus });
-  latest.current = { open, query: query.trim(), restoreFocus };
+  const latest = useRef({ open, restoreFocus });
+  latest.current = { open, restoreFocus };
+  const searchQuery = options.useRegex ? query : query.trim();
+  const compiled = useMemo(
+    () => compileSearchPattern(searchQuery, options),
+    [searchQuery, options],
+  );
+  const pattern = open ? compiled.pattern : undefined;
   const visible = useMemo(
-    () =>
-      open && query.trim()
-        ? searchLoadedMessages(events, query.trim())
-        : noHits,
-    [events, open, query],
+    () => (pattern ? searchLoadedMessages(events, pattern) : noHits),
+    [events, pattern],
   );
   const selectedIndex = Math.min(selected, Math.max(0, visible.length - 1));
+  useEffect(() => {
+    if (!open) return;
+    setNow(new Date());
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, [open]);
   useEffect(() => {
     onMatchesChange?.(visible.map((hit) => hit.seq.toString()));
   }, [visible, onMatchesChange]);
   useEffect(() => () => onMatchesChange?.([]), [onMatchesChange]);
   const matches = useSearchHighlights({
     area,
-    query: open ? query.trim() : "",
+    pattern,
     location,
     located: (occurrence) => {
       if (position.current)
@@ -70,6 +96,17 @@ export function SessionSearch({
       input.current?.focus({ preventScroll: true });
     },
   });
+  function resetNavigation() {
+    navigation.current++;
+    position.current = undefined;
+    setLocation(undefined);
+    setSelected(0);
+  }
+  function changeOption(key: keyof SearchOptions, pressed: boolean) {
+    resetNavigation();
+    setOptions((current) => ({ ...current, [key]: pressed }));
+    input.current?.focus({ preventScroll: true });
+  }
   async function select(hit: LoadedSearchHit, occurrence = -1) {
     const element = overlay.current;
     if (!element) return;
@@ -93,7 +130,6 @@ export function SessionSearch({
   }
 
   async function nextMatch() {
-    if (!query.trim()) return;
     const available = visible;
     if (!available.length) return;
     const current = position.current;
@@ -214,14 +250,13 @@ export function SessionSearch({
           type="search"
           value={query}
           aria-label={t("Search this conversation")}
+          aria-invalid={!!compiled.error || undefined}
+          aria-describedby={compiled.error ? errorId : undefined}
           placeholder={t("Search this conversation")}
           autoComplete="off"
           onChange={(event) => {
-            navigation.current++;
-            position.current = undefined;
-            setLocation(undefined);
+            resetNavigation();
             setQuery(event.target.value);
-            setSelected(0);
           }}
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) return;
@@ -238,7 +273,66 @@ export function SessionSearch({
             );
           }}
         />
+        <div
+          className={styles.counter}
+          role="status"
+          aria-label={t("Result {current} of {count}", {
+            current: visible.length ? selectedIndex + 1 : 0,
+            count: visible.length,
+          })}
+        >
+          <span aria-hidden="true">
+            <CompactNumber
+              value={visible.length ? selectedIndex + 1 : 0}
+              mode="integer"
+            />
+            <span className={styles.separator}>/</span>
+            <CompactNumber value={visible.length} mode="integer" />
+          </span>
+        </div>
+        <div
+          className={styles.modes}
+          role="group"
+          aria-label={t("Search options")}
+        >
+          <Popover content={t("Match case")}>
+            <ToggleButton
+              className={styles.mode}
+              variant="toolbar"
+              aria-label={t("Match case")}
+              pressed={options.matchCase}
+              onPressedChange={(pressed) => changeOption("matchCase", pressed)}
+            >
+              <span aria-hidden="true">Aa</span>
+            </ToggleButton>
+          </Popover>
+          <Popover content={t("Match whole word")}>
+            <ToggleButton
+              className={styles.mode}
+              variant="toolbar"
+              aria-label={t("Match whole word")}
+              pressed={options.wholeWord}
+              onPressedChange={(pressed) => changeOption("wholeWord", pressed)}
+            >
+              <span className={styles.word} aria-hidden="true">
+                ab
+              </span>
+            </ToggleButton>
+          </Popover>
+          <Popover content={t("Use regular expression")}>
+            <ToggleButton
+              className={styles.mode}
+              variant="toolbar"
+              aria-label={t("Use regular expression")}
+              pressed={options.useRegex}
+              onPressedChange={(pressed) => changeOption("useRegex", pressed)}
+            >
+              <span aria-hidden="true">.*</span>
+            </ToggleButton>
+          </Popover>
+        </div>
         <Button
+          className={styles.close}
           variant="toolbar"
           type="button"
           aria-label={t("Close search")}
@@ -247,46 +341,74 @@ export function SessionSearch({
           ×
         </Button>
       </form>
-      {!!query.trim() && (
+      {!!searchQuery && (
         <>
-          <div className={styles.status} role="status">
-            {visible.length
-              ? t("{count} matches", { count: visible.length })
-              : t("No matches")}
-          </div>
+          {compiled.error ? (
+            <p className={styles.empty} id={errorId} role="alert">
+              <Popover content={compiled.error}>
+                {t("Invalid regular expression")}
+              </Popover>
+            </p>
+          ) : (
+            visible.length === 0 && (
+              <p className={styles.empty}>{t("No matches")}</p>
+            )
+          )}
           {visible.length > 0 && (
             <ScrollArea
               className={styles.results}
+              contentClassName={styles.resultContent}
+              scrollbarOffset={5}
               scrollbarLabel={t("Search results")}
               viewportRef={results}
               style={
                 { "--search-result-count": visible.length } as CSSProperties
               }
             >
-              {visible.map((hit, index) => (
-                <Button
-                  key={hit.seq.toString()}
-                  className={styles.result}
-                  type="button"
-                  data-search-index={index}
-                  data-seq={hit.seq.toString()}
-                  aria-pressed={index === selectedIndex}
-                  onClick={() => {
-                    setSelected(index);
-                    void select(hit);
-                  }}
-                >
-                  <span className={styles.meta}>
-                    {hit.kind === "input" ? ">" : "↳"}
-                    {hit.timeMs > 0n && <DateTime value={hit.timeMs} />}
-                  </span>
-                  <span className={styles.snippet}>{hit.snippet}</span>
-                </Button>
-              ))}
+              {visible.map((hit, index) => {
+                const date = messageDate(hit.timeMs);
+                const relative = date ? relativeMessageTime(date, now) : "";
+                return (
+                  <Button
+                    key={hit.seq.toString()}
+                    className={styles.result}
+                    type="button"
+                    data-search-index={index}
+                    data-seq={hit.seq.toString()}
+                    aria-pressed={index === selectedIndex}
+                    onClick={() => {
+                      setSelected(index);
+                      void select(hit);
+                    }}
+                  >
+                    <span className={styles.meta}>
+                      {date && <DateTime value={date} />}
+                      {relative && (
+                        <span className={styles.relative}>- {relative}</span>
+                      )}
+                    </span>
+                    <SearchSnippet hit={hit} />
+                  </Button>
+                );
+              })}
             </ScrollArea>
           )}
         </>
       )}
     </section>
   );
+}
+
+function SearchSnippet({ hit }: { hit: LoadedSearchHit }) {
+  const content: ReactNode[] = [];
+  let offset = 0;
+  for (const { start, end } of hit.snippetMatches) {
+    content.push(
+      hit.snippet.slice(offset, start),
+      <mark key={start}>{hit.snippet.slice(start, end)}</mark>,
+    );
+    offset = end;
+  }
+  content.push(hit.snippet.slice(offset));
+  return <span className={styles.snippet}>{content}</span>;
 }

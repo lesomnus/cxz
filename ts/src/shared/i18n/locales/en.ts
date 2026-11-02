@@ -1,5 +1,13 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Diagram: "Diagram",
+  Source: "Source",
+  "View diagram": "View diagram",
+  "View source": "View source",
+  "Mermaid diagram": "Mermaid diagram",
+  "Rendering diagram…": "Rendering diagram…",
+  "Unable to render this Mermaid diagram. Showing source.":
+    "Unable to render this Mermaid diagram. Showing source.",
   Text: "Text",
   "Pasted text": "Pasted text",
   "Image attachment": "Image attachment",
@@ -84,8 +92,13 @@ export const messages = {
   "Cannot open message: {error}": "Cannot open message: {error}",
   "Search this conversation": "Search this conversation",
   "Close search": "Close search",
+  "Search options": "Search options",
+  "Match case": "Match case",
+  "Match whole word": "Match whole word",
+  "Use regular expression": "Use regular expression",
+  "Invalid regular expression": "Invalid regular expression",
   "Searching…": "Searching…",
-  "{count} matches": "{count} matches",
+  "Result {current} of {count}": "Result {current} of {count}",
   "Search results": "Search results",
   "Session history is still being indexed.":
     "Session history is still being indexed.",
@@ -685,6 +698,7 @@ export const messages = {
   "Remote user": "Remote user",
   "Git branch": "Git branch",
   Provisioning: "Provisioning",
+  "Container name": "Container name",
   "Container ID": "Container ID",
   "Provision attempts": "Provision attempts",
   "Session overview": "Session overview",

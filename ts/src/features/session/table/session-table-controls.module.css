@@ -57,6 +57,13 @@
   aspect-ratio: 1;
   padding: var(--ui-control-inset);
 }
+.headerTrigger.headerTrigger {
+  flex: none;
+  width: var(--session-header-height);
+  height: var(--session-header-height);
+  min-height: 0;
+  padding: var(--ui-control-inset);
+}
 .targets {
   list-style: none;
   padding: 0;
@@ -111,6 +118,12 @@
   max-height: 12rem;
   overflow: auto;
   margin: 0;
+}
+.feedback.inlineFeedback {
+  position: relative;
+  inset: auto;
+  flex: none;
+  margin-inline: var(--ui-control-inline-inset);
 }
 .feedback button {
   flex: none;

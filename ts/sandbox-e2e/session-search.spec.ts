@@ -26,10 +26,15 @@ test("local search includes loaded virtualized history, excludes unloaded histor
   expect(box.x).toBeGreaterThanOrEqual(outer.x);
   expect(box.x + box.width).toBeLessThanOrEqual(outer.x + outer.width);
   await input.fill("HISTORY ITEM 0001");
-  await expect(search.getByRole("status")).toHaveText("No matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 0 of 0",
+  );
+  await expect(search.getByText("No matches", { exact: true })).toBeVisible();
   await expect(pane).not.toContainText("History item 0001");
   await input.fill("HISTORY ITEM 1800");
-  await expect(search.getByRole("status")).toHaveText("1 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 1",
+  );
   await search.getByRole("button", { name: /History item 1800/ }).click();
   await expect(pane).toContainText("History item 1800");
   await expect(input).toBeFocused();
@@ -83,7 +88,9 @@ test("local search has no result page limit and Enter visits newest matches with
     await expect(input).toBeFocused();
   }
   await input.fill("HISTORY ITEM 1800");
-  await expect(search.getByRole("status")).toHaveText("1 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 1",
+  );
   const target = await search
     .locator('[data-search-index="0"]')
     .getAttribute("data-seq");

@@ -20,13 +20,13 @@ test("bottom-left Erase action requires confirmation and leaves other projects i
   );
   await expect(actions.locator('[data-section-layout="group"]')).toHaveCount(1);
   const sectionSurfaces = actions.locator('[data-section-layout="section"]');
-  await expect(sectionSurfaces).toHaveCount(5);
+  await expect(sectionSurfaces).toHaveCount(4);
   await expect(
     sectionSurfaces
       .first()
       .getByRole("heading", { name: "Actions", exact: true }),
-  ).toBeVisible();
-  await expect(sectionSurfaces.first()).toHaveJSProperty("tagName", "SECTION");
+  ).toHaveCount(0);
+  await expect(sectionSurfaces.first()).toHaveJSProperty("tagName", "BUTTON");
   for (const name of ["Stop", "Start", "Remove", "Erase"]) {
     const action = actions.getByRole("button", { name, exact: true });
     await expect(action.locator("strong")).toHaveText(name);

@@ -401,7 +401,7 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 			}
 		}
 		seen[p.ContainerID] = true
-		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, State: containerState(p, inventory, lookErr), Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt})
+		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, ContainerName: containerName(p, inventory, lookErr), State: containerState(p, inventory, lookErr), Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt})
 	}
 	if lookErr != nil {
 		return out, nil

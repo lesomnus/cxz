@@ -71,3 +71,42 @@ func TestCentralStatusMissingDoesNotCreateAnAccountAndCancelledLogoutPreservesLo
 		t.Fatal("cancelled logout changed credentials", state, err)
 	}
 }
+
+func TestEraseCentralRemovesProfileAndGrantsButPreservesOtherAccounts(t *testing.T) {
+	root := t.TempDir()
+	for _, alias := range []string{"work", "other"} {
+		seedCentral(t, root, alias, "subject-"+alias, "synthetic-token")
+		if _, err := IssueGrant(root, "project", alias); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := IssueAuxiliaryGrant(root, "work"); err != nil {
+		t.Fatal(err)
+	}
+	if err := Prepare(root, "work", "claude"); err != nil {
+		t.Fatal(err)
+	}
+	if err := EraseCentral(t.Context(), root, "work"); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := os.ReadDir(Dir(centralRoot(root), "work"))
+	if err != nil || len(entries) != 1 || entries[0].Name() != "broker.lock" {
+		t.Fatal("private profile retained", entries, err)
+	}
+	if _, err := os.Stat(Dir(root, "work")); !os.IsNotExist(err) {
+		t.Fatal("legacy profile retained", err)
+	}
+	remaining, _ := filepath.Glob(filepath.Join(root, "central", "bindings", "*.json"))
+	if len(remaining) != 1 {
+		t.Fatal("grants retained", remaining)
+	}
+	if _, err := CentralToken(root, "other"); err != nil {
+		t.Fatal("other account affected", err)
+	}
+	if err := EraseCentral(t.Context(), root, "work"); err != nil {
+		t.Fatal("retry", err)
+	}
+	if _, err := os.Stat(filepath.Join(Dir(centralRoot(root), "work"), "subject.json")); !os.IsNotExist(err) {
+		t.Fatal("identity pin retained", err)
+	}
+}

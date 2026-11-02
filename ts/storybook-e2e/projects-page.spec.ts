@@ -36,14 +36,17 @@ test("project sessions use the account table design with stacked resource links 
     "",
     "Name",
     "Account",
-    "State",
+    "",
     "",
   ]);
+  await expect(
+    table.getByRole("columnheader", { name: "State", exact: true }),
+  ).toBeVisible();
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2);
-  await expect(
-    table.locator(".agent-brand, .editable-value-trigger, fieldset"),
-  ).toHaveCount(0);
+  await expect(table.locator(".editable-value-trigger, fieldset")).toHaveCount(
+    0,
+  );
   const session = rows
     .first()
     .getByRole("link", { name: "Plan the next release oak", exact: true });
@@ -52,6 +55,18 @@ test("project sessions use the account table design with stacked resource links 
     .getByRole("link", { name: "Work account work", exact: true });
   await expect(session).toHaveAttribute("href", "/c/_/session/oak");
   await expect(account).toHaveAttribute("href", "/c/_/account/work");
+  await expect(account.locator(".agent-brand-codex")).toBeVisible();
+  await expect(
+    rows
+      .last()
+      .getByRole("link", { name: "Work account work", exact: true })
+      .locator(".agent-brand-codex"),
+  ).toBeVisible();
+  const logo = (await account.locator(".agent-brand").boundingBox())!;
+  const accountText = (await account
+    .getByText("Work account", { exact: true })
+    .boundingBox())!;
+  expect(logo.x + logo.width).toBeLessThanOrEqual(accountText.x);
   for (const [link, name, alias] of [
     [session, "Plan the next release", "oak"],
     [account, "Work account", "work"],
@@ -135,11 +150,12 @@ test("session table reserves seven and a half rows with a sticky header and inde
     "main > .panel-scroll-region > .panel-scroll-content",
   );
   const outerTop = await outer.evaluate((el) => el.scrollTop);
+  const target = await viewport.evaluate((el) =>
+    Math.min(el.scrollTop + 300, el.scrollHeight - el.clientHeight),
+  );
   await viewport.hover();
   await page.mouse.wheel(0, 300);
-  await expect
-    .poll(() => viewport.evaluate((el) => el.scrollTop))
-    .toBeGreaterThan(100);
+  await expect.poll(() => viewport.evaluate((el) => el.scrollTop)).toBe(target);
   expect(await outer.evaluate((el) => el.scrollTop)).toBe(outerTop);
   expect((await header.boundingBox())!.y).toBe(headerBefore.y);
   const scrolled = await viewport.evaluate((el) => el.scrollTop);
@@ -174,7 +190,7 @@ test("session states use the same status icons as account sessions", async ({
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(9);
-  await expect(table.locator(".agent-brand")).toHaveCount(0);
+  await expect(table.locator(".agent-brand")).toHaveCount(9);
   await expect(rows.locator("td:nth-child(4) .session-indicator")).toHaveCount(
     9,
   );
@@ -197,58 +213,61 @@ test("session states use the same status icons as account sessions", async ({
   ]);
 });
 
-test("dashboard scopes project data, resets selection on project change and keeps diagnostics project-only", async ({
+test("dashboard scopes project usage and places sessions below Info", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const main = page.getByRole("main", { name: "Project workspace" });
-  const environment = main.getByRole("region", {
-    name: "Environment",
-    exact: true,
-  });
-  const info = main.getByRole("region", {
-    name: "Information",
-    exact: true,
-  });
+  const info = main.getByRole("region", { name: "Information", exact: true });
   const sessions = main.getByRole("region", {
     name: "Project sessions",
     exact: true,
   });
-  const diagnostics = main.getByRole("region", {
-    name: "Diagnostics",
+  const usage = main.getByRole("region", {
+    name: "Conversation usage",
     exact: true,
   });
-  await expect(environment).toContainText("ui/dashboard");
-  await expect(environment).toContainText("/workspace");
-  await expect(info).toContainText("Web workspace");
-  await expect(info).toContainText("Frontend and design system");
-  await expect(info).toContainText("/host/workspace");
-  await expect(info).toContainText(".devcontainer/devcontainer.json");
+  await expect(info).toContainText("cxz-web-devcontainer");
+  for (const panel of [
+    info,
+    sessions,
+    main.getByRole("region", { name: "Actions", exact: true }),
+  ])
+    await expect(panel.getByRole("heading")).toHaveCount(0);
+  const header = sessions.getByRole("columnheader", {
+    name: "Controls",
+    exact: true,
+  });
   await expect(
-    main.getByRole("region", { name: "Project tasks", exact: true }),
+    header.getByRole("button", {
+      name: "Selected session actions",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    header.getByRole("button", { name: "Add session", exact: true }),
   ).toHaveCount(0);
   await expect(
-    main.getByRole("region", { name: "Session overview", exact: true }),
-  ).toHaveCount(0);
-  await expect(main.locator("section").first()).toHaveAttribute(
-    "aria-label",
-    "Information",
-  );
-  const toolbar = (await main.locator(":scope > header").boundingBox())!;
-  const sectionGap = await sessions
-    .locator("..")
-    .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
-  const sessionsBox = (await sessions.boundingBox())!;
-  expect(sessionsBox.y).toBe(toolbar.y + toolbar.height + sectionGap);
-  expect((await info.boundingBox())!.y).toBe(sessionsBox.y);
-  const environmentBox = (await environment.boundingBox())!;
-  expect(environmentBox.x + environmentBox.width).toBeLessThan(sessionsBox.x);
-  expect((await diagnostics.boundingBox())!.x).toBe(environmentBox.x);
-  await expect(diagnostics.locator("details, summary")).toHaveCount(0);
+    usage
+      .getByRole("region", { name: "Recent 30 days" })
+      .getByRole("img", { name: "2400", exact: true }),
+  ).toBeVisible();
   await expect(
-    diagnostics.getByText("Provider session ID", { exact: true }),
+    main.getByRole("region", { name: "Environment", exact: true }),
   ).toHaveCount(0);
+  await expect(
+    main.getByRole("region", { name: "Diagnostics", exact: true }),
+  ).toHaveCount(0);
+  const infoBox = (await info.boundingBox())!,
+    sessionsBox = (await sessions.boundingBox())!,
+    usageBox = (await usage.boundingBox())!;
+  expect(infoBox.width).toBe(420);
+  expect(sessionsBox.x).toBe(infoBox.x);
+  expect(sessionsBox.width).toBe(infoBox.width);
+  expect(sessionsBox.y).toBeGreaterThanOrEqual(infoBox.y + infoBox.height);
+  expect(usageBox.y).toBe(infoBox.y);
+  expect(usageBox.x - infoBox.x - infoBox.width).toBe(10);
+  expect(usageBox.width).toBe(420);
   const all = sessions.getByRole("checkbox", {
     name: "Select all sessions",
     exact: true,
@@ -260,15 +279,16 @@ test("dashboard scopes project data, resets selection on project change and keep
   await page
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
-  await expect(environment).toContainText("api-main");
-  await expect(info).toContainText("API workspace");
+  await expect(info).toContainText("cxz-api-devcontainer");
   await expect(info).toContainText("Backend services and API contracts");
   await expect(info).not.toContainText("Frontend and design system");
+  await expect(
+    usage
+      .getByRole("region", { name: "Recent 30 days" })
+      .getByRole("img", { name: "4800", exact: true }),
+  ).toBeVisible();
   await expect(all).not.toBeChecked();
   await expect(sessions.locator("tbody tr")).toHaveCount(2);
-  await expect(
-    main.getByRole("region", { name: "Session details", exact: true }),
-  ).toHaveCount(0);
 });
 
 test("stopped and unavailable runtimes retain the session table and account names", async ({
@@ -277,8 +297,10 @@ test("stopped and unavailable runtimes retain the session table and account name
   await page.goto("/iframe.html?id=pages-projects--stopped&viewMode=story");
   const main = page.getByRole("main", { name: "Project workspace" });
   await expect(
-    main.getByRole("region", { name: "Environment", exact: true }),
-  ).toContainText("Project is not running");
+    main
+      .getByRole("region", { name: "Conversation usage", exact: true })
+      .getByRole("region", { name: "Recent 30 days" }),
+  ).toBeVisible();
   await expect(
     main.getByRole("region", { name: "Session overview" }),
   ).toHaveCount(0);
@@ -290,8 +312,8 @@ test("stopped and unavailable runtimes retain the session table and account name
   ).toBeVisible();
   await page.goto("/iframe.html?id=pages-projects--unavailable&viewMode=story");
   await expect(
-    main.getByRole("region", { name: "Environment", exact: true }),
-  ).toContainText("Workspace is unavailable");
+    main.getByRole("region", { name: "Information", exact: true }),
+  ).toContainText("cxz-web-devcontainer");
   await expect(
     main
       .locator("tbody tr")
@@ -358,19 +380,15 @@ test("live inventory preserves row selection and account labels", async ({
   expect(await row.boundingBox()).toEqual(before);
 });
 
-test("project metadata and diagnostics show short IDs, copy complete values, and use machine-readable dates", async ({
+test("project metadata shows short IDs, copy complete values, and use machine-readable dates", async ({
   page,
   context,
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const main = page.getByRole("main", { name: "Project workspace" });
-  const diagnostic = main.getByRole("region", {
-    name: "Diagnostics",
-    exact: true,
-  });
-  await expect(diagnostic).toBeVisible();
   const info = main.getByRole("region", { name: "Information", exact: true });
+  await expect(info).toBeVisible();
   const entries = info.locator("dl > div");
   const left = (await entries.nth(0).boundingBox())!;
   const right = (await entries.nth(1).boundingBox())!;
@@ -378,11 +396,14 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
   expect(right.x).toBeGreaterThan(left.x + left.width);
   expect((await entries.nth(2).boundingBox())!.y).toBeGreaterThan(left.y);
   await expect(main.locator("h1, details, summary")).toHaveCount(0);
-  const container = diagnostic
-    .locator("dl > div")
-    .filter({ has: page.locator("dt", { hasText: /^Container ID$/ }) });
+  const container = info.locator("dl > div").filter({
+    has: page.locator("dt > span:first-child", { hasText: /^Container ID$/ }),
+  });
   await expect(container.getByText("contain", { exact: true })).toBeVisible();
-  const trigger = container.locator("[tabindex]");
+  const trigger = container.getByRole("button", {
+    name: "Copy: Container ID",
+    exact: true,
+  });
   await trigger.hover();
   const full = page.getByRole("tooltip", { name: "container-1", exact: true });
   await expect(full).toBeVisible();
@@ -396,48 +417,84 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
   await expect(full).toBeVisible();
   await trigger.press("Escape");
   await expect(full).toHaveCount(0);
-  await container.getByRole("button", { name: "Copy", exact: true }).click();
+  await trigger.click();
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe("container-1");
-  const projectId = info
-    .locator("dl > div")
-    .filter({ has: page.locator("dt", { hasText: /^Project ID$/ }) });
+  const projectId = info.locator("dl > div").filter({
+    has: page.locator("dt > span:first-child", { hasText: /^Project ID$/ }),
+  });
   await expect(projectId.getByText("0000000", { exact: true })).toBeVisible();
-  await projectId.getByRole("button", { name: "Copy", exact: true }).click();
+  const copyId = projectId.getByRole("button", {
+    name: "Copy: Project ID",
+    exact: true,
+  });
+  await expect(projectId.locator("dd svg")).toHaveCount(0);
+  await copyId.click();
+  await expect(projectId.getByRole("status")).toHaveText("copied!");
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe("00000000-0000-8000-8007-000000000001");
-  await projectId.locator("dd [tabindex]").hover();
+  await copyId.hover();
   await expect(
     page.getByRole("tooltip", {
       name: "00000000-0000-8000-8007-000000000001",
       exact: true,
     }),
   ).toBeVisible();
+  await expectAlignedText(copyId);
   await page.keyboard.press("Escape");
-  await expect(info.locator("dt")).toHaveText([
+  await copyId.evaluate((node) => node.blur());
+  await copyId.focus();
+  await page.evaluate(() =>
+    navigator.clipboard.writeText("keyboard-copy-check"),
+  );
+  await copyId.press("Enter");
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe("00000000-0000-8000-8007-000000000001");
+  await expect(copyId).toBeFocused();
+  await expect(projectId.getByRole("status")).toHaveText("copied!");
+  await expect(projectId.getByRole("status")).toBeEmpty();
+  await page.keyboard.press("Escape");
+  await expect(info.locator("dt > span:first-child")).toHaveText([
     "Project ID",
     "Name",
     "Alias",
     "Description",
     "Workspace",
-    "Configuration",
+    "Container name",
+    "Container ID",
     "Created",
     "Updated",
-    "Deleted",
   ]);
   await expect(
     info
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Deleted$/ }) })
-      .locator("dd"),
-  ).toHaveText("—");
+      .locator("dt > span:first-child")
+      .filter({ hasText: /^(Configuration|Deleted)$/ }),
+  ).toHaveCount(0);
   const created = info
     .locator("dl > div")
-    .filter({ has: page.locator("dt", { hasText: /^Created$/ }) })
-    .locator("time");
+    .filter({ has: page.locator("dt", { hasText: /^Created/ }) })
+    .locator("dd time");
   await expect(created).toHaveAttribute("datetime", /^\d{4}-\d\d-\d\dT.*Z$/);
+  const elapsed = created.locator("xpath=../../dt//time");
+  await expect(elapsed).toHaveText(/ago|yesterday/);
+  expect(await elapsed.getAttribute("datetime")).toBe(
+    await created.getAttribute("datetime"),
+  );
+  const elapsedBox = (await elapsed.boundingBox())!;
+  const labelBox = (await created
+    .locator("xpath=../../dt/span[1]")
+    .boundingBox())!;
+  expect(
+    Math.abs(
+      elapsedBox.y + elapsedBox.height / 2 - labelBox.y - labelBox.height / 2,
+    ),
+  ).toBeLessThanOrEqual(1);
+  expect(elapsedBox.x - labelBox.x - labelBox.width).toBeGreaterThan(0);
+  expect(elapsedBox.x - labelBox.x - labelBox.width).toBeLessThanOrEqual(8);
+
   expect(
     await main
       .locator("time")
@@ -457,10 +514,9 @@ test("project metadata and diagnostics show short IDs, copy complete values, and
     .click();
   await expect(
     info
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Deleted$/ }) })
-      .locator("time"),
-  ).toBeVisible();
+      .locator("dt > span:first-child")
+      .filter({ hasText: /^(Configuration|Deleted)$/ }),
+  ).toHaveCount(0);
 });
 
 async function expectAlignedText(trigger: Locator) {
@@ -496,10 +552,17 @@ for (const scale of [1, 1.25, 1.5, 2]) {
     }) => {
       await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
       const row = page
-        .getByRole("region", { name: "Diagnostics", exact: true })
+        .getByRole("region", { name: "Information", exact: true })
         .locator("dl > div")
-        .filter({ has: page.locator("dt", { hasText: /^Container ID$/ }) });
-      const trigger = row.locator("[tabindex]");
+        .filter({
+          has: page.locator("dt > span:first-child", {
+            hasText: /^Container ID$/,
+          }),
+        });
+      const trigger = row.getByRole("button", {
+        name: "Copy: Container ID",
+        exact: true,
+      });
       await page.evaluate(() => document.fonts.ready);
       await expect(
         page.getByRole("region", { name: "Information", exact: true }),

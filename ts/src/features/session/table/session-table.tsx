@@ -39,8 +39,10 @@ export function SessionTable({
   addSession,
   showAccount = true,
   showProject = false,
+  showToolbar = true,
   title = t("Sessions"),
   horizontalScrollbar = false,
+  fillHeight = false,
   variant = "default",
 }: {
   c: SessionControlConnection;
@@ -51,8 +53,10 @@ export function SessionTable({
   addSession?: () => void;
   showAccount?: boolean;
   showProject?: boolean;
+  showToolbar?: boolean;
   title?: string;
   horizontalScrollbar?: boolean;
+  fillHeight?: boolean;
   variant?: "default" | "compact";
 }) {
   const compact = variant === "compact";
@@ -84,47 +88,53 @@ export function SessionTable({
       return next;
     });
   }
+  const addControl = addSession && (
+    <Button
+      type="button"
+      className={controlStyles.addTrigger}
+      aria-label={t("Add session")}
+      disabled={loading || controls.busy}
+      onClick={addSession}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      <span>{t("Session")}</span>
+    </Button>
+  );
+
   return (
     <>
-      <div className={controlStyles.toolbar}>
-        <h2>{title}</h2>
-        {controls.busy && (
-          <span className={controlStyles.progress} role="status">
-            {t("Working…")} {controls.progress.done}/{controls.progress.total}
-          </span>
-        )}
-        <SessionTableMenu
-          sessions={chosen}
-          controls={controls}
-          bulk
-          disabled={loading}
-        />
-        {addSession && (
-          <Button
-            type="button"
-            className={controlStyles.addTrigger}
-            aria-label={t("Add session")}
-            disabled={loading || controls.busy}
-            onClick={addSession}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span>{t("Session")}</span>
-          </Button>
-        )}
-        <SessionTableFeedback controls={controls} />
-      </div>
+      {showToolbar && (
+        <div className={controlStyles.toolbar}>
+          <h2>{title}</h2>
+          {controls.busy && (
+            <span className={controlStyles.progress} role="status">
+              {t("Working…")} {controls.progress.done}/{controls.progress.total}
+            </span>
+          )}
+          <SessionTableMenu
+            sessions={chosen}
+            controls={controls}
+            bulk
+            disabled={loading}
+          />
+          {addControl}
+          <SessionTableFeedback controls={controls} />
+        </div>
+      )}
       <PanelScroll
+        wheelBehavior="instant"
+        scrollbarOffset={0}
         horizontalScrollbar={horizontalScrollbar}
-        className={`${styles.scroll} ${compact ? styles.compact : ""}`}
+        className={`${styles.scroll} ${compact ? styles.compact : ""} ${fillHeight ? styles.fillHeight : ""}`}
         role="region"
         aria-label={t("Session list")}
         scrollbarLabel={t("Session list")}
@@ -169,8 +179,25 @@ export function SessionTable({
               {!compact && <th scope="col">{t("Alias")}</th>}
               {showAccount && <th scope="col">{t("Account")}</th>}
               {showProject && <th scope="col">{t("Project")}</th>}
-              <th scope="col">{t("State")}</th>
-              <th scope="col" aria-label={t("Controls")} />
+              <th scope="col" aria-label={compact ? t("State") : undefined}>
+                {!compact && t("State")}
+              </th>
+              <th
+                scope="col"
+                className={styles.actions}
+                aria-label={t("Controls")}
+              >
+                {!showToolbar && (
+                  <SessionTableMenu
+                    sessions={chosen}
+                    controls={controls}
+                    bulk
+                    iconTrigger
+                    disabled={loading}
+                    addSession={addSession}
+                  />
+                )}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -259,6 +286,16 @@ export function SessionTable({
                           className={styles.navigationButton}
                           title={accountName}
                         >
+                          <span
+                            className={styles.accountAgent}
+                            aria-hidden="true"
+                          >
+                            <AgentBrand
+                              agent={
+                                account?.agent || s.account?.agent || s.agent
+                              }
+                            />
+                          </span>
                           <span className={styles.identity}>
                             <span className={styles.title}>{accountName}</span>
                             <span className={styles.subtitle}>
@@ -320,6 +357,16 @@ export function SessionTable({
           </p>
         )}
       </PanelScroll>
+      {!showToolbar && (
+        <>
+          {controls.busy && (
+            <span className={controlStyles.progress} role="status">
+              {t("Working…")} {controls.progress.done}/{controls.progress.total}
+            </span>
+          )}
+          <SessionTableFeedback controls={controls} inline />
+        </>
+      )}
       <SessionTableConfirmation controls={controls} />
     </>
   );

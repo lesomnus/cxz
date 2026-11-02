@@ -2136,6 +2136,7 @@ type Project struct {
 	ProvisionStep    string                 `protobuf:"bytes,11,opt,name=provision_step,json=provisionStep,proto3" json:"provision_step,omitempty"`
 	ProvisionAttempt uint64                 `protobuf:"varint,12,opt,name=provision_attempt,json=provisionAttempt,proto3" json:"provision_attempt,omitempty"`
 	Alias            string                 `protobuf:"bytes,13,opt,name=alias,proto3" json:"alias,omitempty"`
+	ContainerName    string                 `protobuf:"bytes,14,opt,name=container_name,json=containerName,proto3" json:"container_name,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2257,6 +2258,13 @@ func (x *Project) GetProvisionAttempt() uint64 {
 func (x *Project) GetAlias() string {
 	if x != nil {
 		return x.Alias
+	}
+	return ""
+}
+
+func (x *Project) GetContainerName() string {
+	if x != nil {
+		return x.ContainerName
 	}
 	return ""
 }
@@ -7378,7 +7386,7 @@ const file_cxz_proto_rawDesc = "" +
 	" \x01(\bR\vprepareOnly\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x14\n" +
 	"\x05alias\x18\f \x01(\tR\x05alias\x12\x18\n" +
-	"\aaccount\x18\r \x01(\tR\aaccount\"\x91\x03\n" +
+	"\aaccount\x18\r \x01(\tR\aaccount\"\xb8\x03\n" +
 	"\aProject\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\x12\x12\n" +
@@ -7394,7 +7402,8 @@ const file_cxz_proto_rawDesc = "" +
 	" \x01(\tR\x0eprovisionState\x12%\n" +
 	"\x0eprovision_step\x18\v \x01(\tR\rprovisionStep\x12+\n" +
 	"\x11provision_attempt\x18\f \x01(\x04R\x10provisionAttempt\x12\x14\n" +
-	"\x05alias\x18\r \x01(\tR\x05alias\"?\n" +
+	"\x05alias\x18\r \x01(\tR\x05alias\x12%\n" +
+	"\x0econtainer_name\x18\x0e \x01(\tR\rcontainerName\"?\n" +
 	"\vProjectList\x120\n" +
 	"\bprojects\x18\x01 \x03(\v2\x14.cxz.runtime.ProjectR\bprojects\"x\n" +
 	"\x0fPermissionInput\x12\x1d\n" +

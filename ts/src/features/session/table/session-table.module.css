@@ -8,7 +8,6 @@
   --session-account-column-width: 96px;
   --session-project-column-width: 96px;
   --ui-scroll-area-background: var(--ui-shade-24);
-  --ui-scroll-area-content-inset: 0px;
   flex: none;
   height: calc(
     var(--session-header-height) + var(--session-visible-rows) *
@@ -16,7 +15,14 @@
   );
 }
 .scroll :global(.panel-scroll-content) {
-  overscroll-behavior: contain;
+  overscroll-behavior: none;
+}
+.scroll :global(.panel-scroll-inner) {
+  --ui-scroll-area-content-inset: 0px;
+}
+.scroll.fillHeight {
+  flex: 1;
+  height: 100%;
 }
 .scroll :global(.panel-scroll-fade-top) {
   top: var(--session-header-height);
@@ -66,7 +72,7 @@
   width: auto;
 }
 .compact .stateColumn {
-  width: 48px;
+  width: 32px;
 }
 .identity {
   display: grid;
@@ -109,12 +115,12 @@
   font: 10px/1.3 var(--ui-font-mono);
 }
 .stateIndicator {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: var(--ui-icon-size-small);
-  height: var(--ui-icon-size-small);
-  vertical-align: middle;
+  height: 20px;
+  margin-inline: auto;
 }
 .actionsColumn {
   width: calc(var(--session-row-height) + var(--ui-control-inset));
@@ -126,6 +132,7 @@
 .actions :global(.action-menu) {
   display: flex;
   width: 100%;
+  justify-content: center;
 }
 .table th {
   position: sticky;
@@ -137,6 +144,10 @@
   color: var(--ui-muted);
   text-align: left;
   font-weight: 400;
+}
+.table th.actions {
+  padding: 0 var(--ui-control-inset);
+  padding-right: calc(2 * var(--ui-control-inset));
 }
 .table td {
   height: calc(var(--session-row-height) + var(--session-row-gap));
@@ -182,6 +193,7 @@
 }
 .state {
   color: var(--ui-muted);
+  text-align: center;
 }
 .agent {
   text-align: center;
@@ -218,4 +230,15 @@
   margin: var(--ui-space) var(--ui-control-inline-inset);
   color: var(--ui-muted);
   font-size: 11px;
+}
+
+.accountAgent {
+  --agent-logo-size: calc(var(--ui-icon-size-small) - var(--ui-control-inset));
+  display: grid;
+  place-items: center;
+  flex: none;
+  box-sizing: border-box;
+  width: calc(var(--agent-logo-size) + 2 * var(--ui-control-inset));
+  height: var(--agent-logo-size);
+  padding-inline: var(--ui-control-inset);
 }

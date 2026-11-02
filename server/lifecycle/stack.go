@@ -45,17 +45,18 @@ type shared struct {
 	// linkMu serializes the read-check-write a task link needs: two sessions
 	// adding opposite blocking edges at once would otherwise both read a graph
 	// without the other's edge and both pass the cycle check.
-	linkMu        sync.Mutex
-	snapshotMu    sync.Mutex
-	initialMu     sync.Mutex
-	initialized   bool
-	observedMu    sync.Mutex
-	observedAt    time.Time
-	watchers      atomic.Int64
-	watch         *watch.Watch
-	runtime       Runtime
-	observe       *observe.Log
-	notifications *notificationState
+	linkMu         sync.Mutex
+	snapshotMu     sync.Mutex
+	initialMu      sync.Mutex
+	initialized    bool
+	retainedMemory bool
+	observedMu     sync.Mutex
+	observedAt     time.Time
+	watchers       atomic.Int64
+	watch          *watch.Watch
+	runtime        Runtime
+	observe        *observe.Log
+	notifications  *notificationState
 }
 
 // Reconcile is a low-frequency safety net for changes made outside cxz.
@@ -76,7 +77,11 @@ func (b builder) Build(next resource.Server) (resource.Server, error) {
 
 // A separate database keeps the rc.1 registry/journal untouched. Resource
 // projections can be rebuilt from runtime manifests, without changing vendor IDs.
-type Options struct{ Notifications bool }
+type Options struct {
+	Notifications bool
+	// RetainedMemory seeds missing identities without overwriting live runtime status.
+	RetainedMemory bool
+}
 
 func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log, options ...Options) (resource.Server, error) {
 	if err := migrateSessionSchema(ctx, db); err != nil {
@@ -90,17 +95,26 @@ func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log, options .
 	if err := migrate.NewSchema(driver).Create(ctx); err != nil {
 		return nil, err
 	}
+	if err := memoryVersionSchema(ctx, db); err != nil {
+		return nil, err
+	}
+	if err := accountIdentitySchema(ctx, db); err != nil {
+		return nil, err
+	}
 	broker, err := (config.WatchConfig{Broker: config.BrokerMemory}).Build(ctx, config.DbConfig{Driver: "sqlite3"})
 	if err != nil {
 		return nil, err
 	}
 	w := watch.New(broker)
-	sink, err := pd.NewSink(client, bare.WithMinter(pd.Minter()), bare.WithScope(pd.Wall()), bare.WithRecorder(bare.Recorders{managementAudit{pd.Recorder(audit.Contents{})}, pd.WatchRecorder(w)}))
+	sink, err := pd.NewSink(client, bare.WithMinter(pd.Minter()), bare.WithScope(pd.Wall()), bare.WithRecorder(bare.Recorders{memoryVersionRecorder{}, managementAudit{pd.Recorder(audit.Contents{})}, pd.WatchRecorder(w)}))
 	if err != nil {
 		return nil, err
 	}
 	// Publish each committed Sink call, including background projection writes.
 	shared := &shared{runtime: r, db: db, watch: w, observe: o}
+	if len(options) > 0 {
+		shared.retainedMemory = options[0].RetainedMemory
+	}
 	stack, err := resource.Build(sessionNamingSink{sink.WithWatch(w)}, pd.InterceptBuild([]grpc.UnaryServerInterceptor{projectReferencesUnary, taskWatchUnary(w)}, []grpc.StreamServerInterceptor{projectReferencesStream}), builder{shared}, pd.AuditBuild(), pd.GateBuild())
 	if err != nil {
 		return nil, err

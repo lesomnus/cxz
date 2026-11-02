@@ -14,14 +14,15 @@ import (
 
 type accountStatusFixture struct {
 	*fixture
-	loggedOut      bool
-	called         int
-	agent, backend string
+	loggedOut               bool
+	called                  int
+	agent, backend, profile string
 }
 
 func (f *accountStatusFixture) AccountStatus(_ context.Context, alias, agent, backend string) (accounts.AuthStatus, error) {
 	f.called++
 	f.agent, f.backend = agent, backend
+	f.profile = alias
 	if backend == accounts.ProjectLocalOAuth {
 		return accounts.AuthStatus{State: "session_scoped", Scope: "session"}, nil
 	}

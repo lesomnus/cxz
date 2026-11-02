@@ -10,7 +10,6 @@ import (
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/memorylib"
 )
 
 const (
@@ -35,7 +34,6 @@ func populate(t *testing.T, root string) (mine, theirs []string) {
 			filepath.Join(core.Dir(root, s.Session), "conversation-exports", "snapshot.jsonl"),
 			core.Socket(root, s.Session),
 			filepath.Join(accounts.SessionRoot(root, s.CreateID), "accounts", "work", "config", "transcript.jsonl"),
-			filepath.Join(memorylib.Dir(root, s.Project), memorylib.SnapshotID(s.Session), "overview.md"),
 			filepath.Join(assets.ExportRoot(filepath.Join(root, "assets"), s.Project), s.Session, "abc", "note.txt"),
 		}
 		for _, path := range files {
@@ -79,7 +77,7 @@ func TestPurgeReachesEveryPlaceASessionWrote(t *testing.T) {
 			kinds = append(kinds, target.Kind)
 		}
 	}
-	for _, want := range []string{"conversation", "socket", "profile", "memory", "uploads"} {
+	for _, want := range []string{"conversation", "socket", "profile", "uploads"} {
 		if !strings.Contains(strings.Join(kinds, " "), want) {
 			t.Fatal("purge never reported", want, "in", kinds)
 		}

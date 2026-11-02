@@ -28,7 +28,7 @@ func sessionStatus(v *api.Session) *resource.SessionStatus {
 	return resource.SessionStatus_builder{State: v.State, PermissionMode: v.PermissionMode, RunId: v.RunId, VendorId: v.VendorId, LastSeq: v.LastSeq, Queued: v.Queued, Pending: pending}.Build()
 }
 func projectStatus(v *api.Project) *resource.ProjectStatus {
-	return resource.ProjectStatus_builder{ContainerState: projectstate.Of(v.State), ContainerId: v.ContainerId, RemoteUser: v.RemoteUser, RemoteWorkspace: v.RemoteWorkspace, ProvisionState: v.ProvisionState, ProvisionStep: v.ProvisionStep, ProvisionAttempt: v.ProvisionAttempt, Error: v.Error}.Build()
+	return resource.ProjectStatus_builder{ContainerState: projectstate.Of(v.State), ContainerId: v.ContainerId, ContainerName: v.ContainerName, RemoteUser: v.RemoteUser, RemoteWorkspace: v.RemoteWorkspace, ProvisionState: v.ProvisionState, ProvisionStep: v.ProvisionStep, ProvisionAttempt: v.ProvisionAttempt, Error: v.Error}.Build()
 }
 
 func (s Layer) sync(ctx context.Context) error {
@@ -49,11 +49,29 @@ func (s Layer) sync(ctx context.Context) error {
 		if p.Id == "" || p.State == "foreign" {
 			continue
 		}
+		if s.shared.retainedMemory {
+			_, e := s.Next().Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: projectRef(p.Id)}.Build())
+			if e == nil {
+				continue
+			}
+			if status.Code(e) != codes.NotFound {
+				return e
+			}
+		}
 		if _, err = s.saveProject(ctx, p); err != nil {
 			return err
 		}
 	}
 	for _, v := range sessions.Sessions {
+		if s.shared.retainedMemory {
+			_, e := s.Next().Session().Get(ctx, resource.SessionGetRequest_builder{Ref: sessionRef(v.Id)}.Build())
+			if e == nil {
+				continue
+			}
+			if status.Code(e) != codes.NotFound {
+				return e
+			}
+		}
 		if _, err = s.saveSession(ctx, v, ""); err != nil {
 			return err
 		}
@@ -78,7 +96,7 @@ var observeWindow = 2 * time.Second
 // what is known is older than the window. Sessions are not touched: this is the
 // container inventory, which is cheap, and not the per-project session calls.
 func (s Layer) observeProjects(ctx context.Context) error {
-	if s.bound {
+	if s.bound || s.shared.retainedMemory {
 		return nil
 	}
 	s.shared.observedMu.Lock()
@@ -207,7 +225,7 @@ func (s Layer) saveSession(ctx context.Context, v *api.Session, clientID string)
 			if err := s.ensureAccount(ctx, v.Account, v.Agent, v.AuthBackend); err != nil {
 				return nil, err
 			}
-			account = accountRef(v.Account)
+			account = runtimeAccountRef(v.Account)
 		}
 		binding, err := s.ensureBinding(ctx, v.ProjectId, v.Account, v.Agent, v.AuthBackend, v.AuthBinding)
 		if err != nil {

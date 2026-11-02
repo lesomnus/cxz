@@ -7,9 +7,10 @@
   margin: 0;
 }
 .toolbar {
+  z-index: 1;
   position: absolute;
-  top: var(--space);
-  right: var(--space);
+  bottom: calc(100% + var(--space));
+  right: 0;
   display: flex;
   align-items: center;
   gap: var(--space);
@@ -19,6 +20,44 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms ease;
+}
+.toolbar::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: var(--space);
+}
+.toolbar .viewToggle {
+  width: auto;
+  padding-inline: calc(2 * var(--space));
+  font: inherit;
+}
+.diagram {
+  --markdown-diagram-max-height: min(60vh, 30rem);
+  border-radius: calc(1.5 * var(--space));
+  background: var(--markdown-block-background, var(--shade-16));
+}
+.diagram .diagramViewport {
+  height: auto;
+  max-height: var(--markdown-diagram-max-height);
+}
+.diagramContent {
+  display: flex;
+  justify-content: center;
+  padding: calc(3 * var(--space));
+}
+.diagramImage {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 0;
+}
+.diagramStatus {
+  display: block;
+  padding: var(--space) calc(3 * var(--space));
+  color: var(--shade-115);
+  font-size: 0.8em;
 }
 .toolbar :global(.value-menu) {
   flex: none;

@@ -323,6 +323,7 @@ type ProjectStatus struct {
 	xxx_hidden_ProvisionAttempt uint64                 `protobuf:"varint,7,opt,name=provision_attempt,json=provisionAttempt"`
 	xxx_hidden_Error            string                 `protobuf:"bytes,8,opt,name=error"`
 	xxx_hidden_ContainerState   ContainerState         `protobuf:"varint,9,opt,name=container_state,json=containerState,enum=cxz.ContainerState"`
+	xxx_hidden_ContainerName    string                 `protobuf:"bytes,10,opt,name=container_name,json=containerName"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -408,6 +409,13 @@ func (x *ProjectStatus) GetContainerState() ContainerState {
 	return ContainerState_CONTAINER_STATE_UNSPECIFIED
 }
 
+func (x *ProjectStatus) GetContainerName() string {
+	if x != nil {
+		return x.xxx_hidden_ContainerName
+	}
+	return ""
+}
+
 func (x *ProjectStatus) SetContainerId(v string) {
 	x.xxx_hidden_ContainerId = v
 }
@@ -440,6 +448,10 @@ func (x *ProjectStatus) SetContainerState(v ContainerState) {
 	x.xxx_hidden_ContainerState = v
 }
 
+func (x *ProjectStatus) SetContainerName(v string) {
+	x.xxx_hidden_ContainerName = v
+}
+
 type ProjectStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -451,6 +463,8 @@ type ProjectStatus_builder struct {
 	ProvisionAttempt uint64
 	Error            string
 	ContainerState   ContainerState
+	// Observed Docker name, without its leading slash; empty if unobserved.
+	ContainerName string
 }
 
 func (b0 ProjectStatus_builder) Build() *ProjectStatus {
@@ -465,6 +479,7 @@ func (b0 ProjectStatus_builder) Build() *ProjectStatus {
 	x.xxx_hidden_ProvisionAttempt = b.ProvisionAttempt
 	x.xxx_hidden_Error = b.Error
 	x.xxx_hidden_ContainerState = b.ContainerState
+	x.xxx_hidden_ContainerName = b.ContainerName
 	return m0
 }
 
@@ -495,7 +510,7 @@ const file_cxz_project_proto_rawDesc = "" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref 2(\xc8\x01:\x00*\x00J\x04\b\n" +
 	"\x10\vJ\x04\b\x11\x10\x12R\n" +
-	"runtime_id\"\xd5\x02\n" +
+	"runtime_id\"\xfc\x02\n" +
 	"\rProjectStatus\x12!\n" +
 	"\fcontainer_id\x18\x02 \x01(\tR\vcontainerId\x12\x1f\n" +
 	"\vremote_user\x18\x03 \x01(\tR\n" +
@@ -505,7 +520,9 @@ const file_cxz_project_proto_rawDesc = "" +
 	"\x0eprovision_step\x18\x06 \x01(\tR\rprovisionStep\x12+\n" +
 	"\x11provision_attempt\x18\a \x01(\x04R\x10provisionAttempt\x12\x14\n" +
 	"\x05error\x18\b \x01(\tR\x05error\x12<\n" +
-	"\x0fcontainer_state\x18\t \x01(\x0e2\x13.cxz.ContainerStateR\x0econtainerStateJ\x04\b\x01\x10\x02*\xa4\x01\n" +
+	"\x0fcontainer_state\x18\t \x01(\x0e2\x13.cxz.ContainerStateR\x0econtainerState\x12%\n" +
+	"\x0econtainer_name\x18\n" +
+	" \x01(\tR\rcontainerNameJ\x04\b\x01\x10\x02*\xa4\x01\n" +
 	"\x0eContainerState\x12\x1f\n" +
 	"\x1bCONTAINER_STATE_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16CONTAINER_STATE_ABSENT\x10\x01\x12\x1b\n" +

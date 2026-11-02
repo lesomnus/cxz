@@ -570,9 +570,13 @@ test("account session row menus only contain lifecycle controls", async ({
     .click();
   await expect(page.getByRole("menuitem")).toHaveText([
     "Stop",
+    "Resume",
     "Restart",
     "Erase",
   ]);
+  await expect(
+    page.getByRole("menuitem", { name: "Resume", exact: true }),
+  ).toBeDisabled();
   await expect(
     page.getByRole("menuitem", { name: "Open conversation", exact: true }),
   ).toHaveCount(0);

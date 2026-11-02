@@ -1,9 +1,11 @@
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { conversationMarkdown } from "#src/shared/content/markdown-parser.ts";
 import DOMPurify from "dompurify";
+import { searchMatches } from "./search-pattern";
 
 export type LoadedSearchHit = Pick<SessionEvent, "seq" | "timeMs" | "kind"> & {
   snippet: string;
+  snippetMatches: { start: number; end: number }[];
   occurrences: number;
 };
 
@@ -34,33 +36,50 @@ function bodyText(event: SessionEvent) {
   return text;
 }
 
-export function literalSearchPattern(query: string) {
-  return new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
+export function searchText(text: string, pattern?: RegExp) {
+  let start = 0,
+    end = 0,
+    occurrences = 0;
+  const snippetMatches: LoadedSearchHit["snippetMatches"] = [];
+  for (const match of searchMatches(text, pattern)) {
+    if (!occurrences) {
+      start = Math.max(0, match.index - 80);
+      end = Math.min(text.length, start + 240);
+    }
+    occurrences++;
+    const from = Math.max(start, match.index);
+    const to = Math.min(end, match.index + match[0].length);
+    if (from < to) {
+      const offset = start ? 1 : 0;
+      snippetMatches.push({
+        start: from - start + offset,
+        end: to - start + offset,
+      });
+    }
+  }
+  if (!occurrences) return;
+  return {
+    snippet: `${start ? "…" : ""}${text.slice(start, end)}${end < text.length ? "…" : ""}`,
+    snippetMatches,
+    occurrences,
+  };
 }
 
 export function searchLoadedMessages(
   events: SessionEvent[],
-  query: string,
+  pattern?: RegExp,
 ): LoadedSearchHit[] {
-  if (!query) return [];
+  if (!pattern) return [];
   const hits: LoadedSearchHit[] = [];
   for (const event of events) {
     if (event.kind !== "input" && event.kind !== "assistant") continue;
-    const text = bodyText(event);
-    let first = -1,
-      occurrences = 0;
-    for (const match of text.matchAll(literalSearchPattern(query))) {
-      if (first < 0) first = match.index;
-      occurrences++;
-    }
-    if (!occurrences) continue;
-    const start = Math.max(0, first - 80);
+    const result = searchText(bodyText(event), pattern);
+    if (!result) continue;
     hits.push({
       seq: event.seq,
       timeMs: event.timeMs,
       kind: event.kind,
-      snippet: `${start ? "…" : ""}${text.slice(start, start + 240)}${start + 240 < text.length ? "…" : ""}`,
-      occurrences,
+      ...result,
     });
   }
   return hits.sort((a, b) => (a.seq > b.seq ? -1 : a.seq < b.seq ? 1 : 0));

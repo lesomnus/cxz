@@ -6,7 +6,6 @@ import {
   canControl,
   type SessionControlKind,
 } from "#src/features/session/model/session-control-batch.ts";
-import { resumableStates } from "#src/features/session/model/session-actions.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { useSessionControls } from "./use-session-controls";
 import styles from "./session-table-controls.module.css";
@@ -16,44 +15,84 @@ export function SessionTableMenu({
   sessions,
   controls,
   bulk = false,
+  iconTrigger = false,
   disabled = false,
+  addSession,
 }: {
   sessions: Session[];
   controls: Controls;
   bulk?: boolean;
+  iconTrigger?: boolean;
   disabled?: boolean;
+  addSession?: () => void;
 }) {
-  const operations: SessionControlKind[] = bulk
-    ? ["stop", "resume", "restart", "erase"]
-    : [
-        resumableStates.has(sessions[0]?.status?.state ?? "")
-          ? "resume"
-          : "stop",
-        "restart",
-        "erase",
-      ];
+  const operations: SessionControlKind[] = [
+    "stop",
+    "resume",
+    "restart",
+    "erase",
+  ];
   return (
     <ActionMenu
       label={
         bulk
-          ? t("{count} selected", { count: sessions.length })
+          ? iconTrigger
+            ? t("Selected session actions")
+            : t("{count} selected", { count: sessions.length })
           : t("Controls for {name}", {
               name: sessions[0]?.name || sessions[0]?.alias || "",
             })
       }
       triggerContent={
-        bulk ? (
+        bulk && !iconTrigger ? (
           <span className={styles.selected}>
             <span className={styles.selectedNumber}>{sessions.length}</span>
             <span>{t("selected")}</span>
           </span>
         ) : undefined
       }
-      status={bulk ? t("Selected session actions") : undefined}
-      triggerClassName={bulk ? styles.bulkTrigger : styles.rowTrigger}
+      status={
+        bulk ? t("{count} selected", { count: sessions.length }) : undefined
+      }
+      triggerClassName={
+        bulk
+          ? iconTrigger
+            ? styles.headerTrigger
+            : styles.bulkTrigger
+          : styles.rowTrigger
+      }
       motion={{ from: "top-right", effect: "reveal" }}
-      disabled={disabled || controls.busy || !sessions.length}
+      disabled={
+        disabled ||
+        controls.busy ||
+        (!sessions.length && !(bulk && iconTrigger))
+      }
       groups={[
+        ...(addSession
+          ? [
+              {
+                label: "",
+                items: [
+                  {
+                    label: t("Add session"),
+                    icon: (
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    ),
+                    run: addSession,
+                  },
+                ],
+              },
+            ]
+          : []),
         {
           label: t("Controls"),
           items: operations.map((kind) => ({
@@ -158,10 +197,18 @@ export function SessionTableConfirmation({ controls }: { controls: Controls }) {
   );
 }
 
-export function SessionTableFeedback({ controls }: { controls: Controls }) {
+export function SessionTableFeedback({
+  controls,
+  inline = false,
+}: {
+  controls: Controls;
+  inline?: boolean;
+}) {
   if (!controls.errors.length) return null;
   return (
-    <div className={styles.feedback}>
+    <div
+      className={`${styles.feedback} ${inline ? styles.inlineFeedback : ""}`}
+    >
       <ul className={styles.failures} role="alert">
         {controls.errors.map((failure) => (
           <li key={failure.target.runtimeId}>

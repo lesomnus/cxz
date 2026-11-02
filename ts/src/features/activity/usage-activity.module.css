@@ -1,0 +1,105 @@
+.activity {
+  --activity-cell-size: 12px;
+  display: grid;
+  gap: calc(2 * var(--ui-space));
+  padding-block: calc(2 * var(--ui-space));
+}
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 0;
+  height: 15px;
+  gap: var(--ui-space);
+  font-size: 0.8rem;
+}
+.period {
+  color: var(--ui-muted);
+  font-size: 0.7rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header > :first-child {
+  flex: none;
+}
+.calendar {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: calc(2 * var(--ui-space));
+  min-width: 0;
+}
+.weekdays,
+.days {
+  display: grid;
+  grid-template-rows: repeat(7, var(--activity-cell-size));
+  gap: var(--ui-space);
+}
+.weekdays {
+  align-items: center;
+  color: var(--ui-muted);
+  font-family: var(--ui-font-mono);
+  font-size: 0.7rem;
+}
+.days {
+  grid-auto-flow: column;
+  grid-auto-columns: var(--activity-cell-size);
+  justify-content: space-between;
+  min-width: 0;
+}
+.day {
+  --activity-month-color: #202020;
+}
+.day[data-month-tone="soft"] {
+  --activity-month-color: #282828;
+}
+.cell {
+  position: relative;
+  box-sizing: border-box;
+  display: block;
+  width: var(--activity-cell-size);
+  height: var(--activity-cell-size);
+  border-radius: calc(var(--ui-space) / 2);
+  background: var(--activity-month-color, #202020);
+  border: 0;
+  padding: 0;
+}
+button.cell {
+  cursor: pointer;
+}
+.day .cell {
+  border: 1px solid var(--activity-month-color);
+}
+.cell[data-level="1"] {
+  background: color-mix(in srgb, var(--ui-brand-color) 20%, var(--ui-shade-24));
+}
+.cell[data-level="2"] {
+  background: color-mix(in srgb, var(--ui-brand-color) 40%, var(--ui-shade-24));
+}
+.cell[data-level="3"] {
+  background: color-mix(in srgb, var(--ui-brand-color) 65%, var(--ui-shade-24));
+}
+.cell[data-level="4"] {
+  background: color-mix(in srgb, var(--ui-brand-color) 85%, var(--ui-shade-24));
+}
+.cell[data-future] {
+  background: transparent;
+}
+button.cell:hover,
+button.cell:focus-visible,
+.cell[aria-pressed="true"] {
+  outline: 1px solid var(--ui-text-value);
+  outline-offset: 1px;
+}
+.legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-space);
+  color: var(--ui-muted);
+  font-size: 0.7rem;
+}
+.legend .cell {
+  --activity-cell-size: 8px;
+}

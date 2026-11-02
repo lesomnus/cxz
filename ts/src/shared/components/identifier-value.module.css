@@ -20,3 +20,11 @@
   width: var(--ui-icon-size-small);
   height: var(--ui-icon-size-small);
 }
+
+.copyValue[data-variant] {
+  --press-scale: 1;
+  --button-hover-background: transparent;
+  min-height: var(--ui-icon-size);
+  padding: 0;
+  border-radius: var(--ui-control-inset);
+}

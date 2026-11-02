@@ -58,14 +58,15 @@ async function fixture(page, helpers = false, extraProject = false) {
     status: { state: "idle", runId: "run", lastSeq: "4", pending: [], queued },
   });
   const memory = {
-    id: "own",
-    session: "fixture",
+    id: id("memory"),
     name: "Research notes",
-    agent: "codex",
-    size: "32",
+    project,
+    revision: "1",
+    labels: { topic: "design" },
+    dateCreated: "2026-11-02T00:00:00Z",
+    dateUpdated: "2026-11-02T00:00:00Z",
   };
   let content = "# Shared notes\nOriginal content";
-  let revision = "r1";
   const events = [
     {
       kind: "input",
@@ -266,29 +267,29 @@ async function fixture(page, helpers = false, extraProject = false) {
         },
         { summary: { hits: 1, sessions: 1, projects: 1 } },
       ]);
-    if (path === "/cxz.SessionService/LibraryMemories")
-      return send({
-        memories: q.scope === "LIBRARY_SCOPE_TRASH" ? [] : [memory],
-      });
-    if (path === "/cxz.SessionService/LibraryMemory")
+    if (path === "/cxz.MemoryService/List")
+      return send({ items: q.scope === "MEMORY_SCOPE_TRASH" ? [] : [memory] });
+    if (path === "/cxz.MemoryService/Get") return send(memory);
+    if (path === "/cxz.MemoryService/Read")
       return send({
         memory,
-        documents: [{ name: "notes.md", size: "32", revision }],
+        content,
+        revision: memory.revision,
+        format: "MEMORY_READ_FORMAT_FULL",
       });
-    if (path === "/cxz.SessionService/LibraryDocument")
-      return send({ memory, content, revision });
-    if (path === "/cxz.SessionService/WriteLibraryDocument") {
-      if (q.content.includes("conflict")) {
-        revision = "r2";
+    if (path === "/cxz.MemoryService/Patch") {
+      if (q.content?.includes("conflict")) {
+        memory.revision = "2";
+        memory.dateUpdated = "2026-11-02T00:00:01Z";
         content = "# Shared notes\nExternal version";
         return error("aborted", "Document changed. Read the current revision.");
       }
-      content = q.content;
-      revision = "r2";
-      return send({ memory, content, revision });
+      if (q.content !== undefined) {
+        content = q.content;
+        memory.revision = "3";
+      }
+      return send(memory);
     }
-    if (path === "/cxz.SessionService/SnapshotLibraryMemory")
-      return send({ memory: { ...memory, snapshot: true } });
     if (path === "/cxz.SessionService/ConversationStats")
       return send({
         complete: true,
@@ -331,22 +332,27 @@ async function fixture(page, helpers = false, extraProject = false) {
 }
 test("every resource tab has its own body and navigation", async ({ page }) => {
   await fixture(page);
-  for (const [name, heading] of [
-    ["Projects view", "Projects"],
-    ["Accounts", "Accounts"],
-    ["Search", "Search"],
-    ["Memory", "Shared memory"],
-    ["Activity", "Activity & usage"],
-    ["Auxiliary AI", "Auxiliary AI"],
+  for (const [name, body] of [
+    [
+      "Projects view",
+      page.getByRole("combobox", { name: "Select project", exact: true }),
+    ],
+    [
+      "Accounts",
+      page.getByRole("article", { name: "Work account", exact: true }),
+    ],
+    ["Search", page.getByRole("heading", { name: "Search", exact: true })],
+    [
+      "Memory",
+      page.getByRole("main", { name: "Shared memory workspace", exact: true }),
+    ],
+    [
+      "Auxiliary AI",
+      page.getByRole("heading", { name: "Auxiliary AI", exact: true }),
+    ],
   ]) {
     await page.getByRole("link", { name, exact: true }).click();
-    await expect(
-      name === "Projects view"
-        ? page.getByRole("combobox", { name: "Select project", exact: true })
-        : name === "Accounts"
-          ? page.getByRole("article", { name: "Work account", exact: true })
-          : page.getByRole("heading", { name: heading, exact: true }),
-    ).toBeVisible();
+    await expect(body).toBeVisible();
     if (name !== "Projects view")
       await expect(page.locator(".resource-panel .project-row")).toHaveCount(0);
   }
@@ -354,7 +360,7 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
 test("resource bodies fit a mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await fixture(page);
-  for (const name of ["Accounts", "Memory", "Activity"]) {
+  for (const name of ["Accounts", "Memory"]) {
     await page.getByRole("link", { name, exact: true }).click();
     await expect(page.locator("main")).toBeVisible();
     const bounds = await page.locator("main").boundingBox();
@@ -633,16 +639,23 @@ test("conversation search uses loaded messages immediately without a Search requ
     }),
     input = search.getByRole("searchbox");
   await input.fill("Earlier");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 2",
+  );
   await search.getByRole("button", { name: /Earlier response/ }).click();
   await expect(input).toBeFocused();
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
   await expect(search).toBeVisible();
   await input.fill("query not in loaded messages");
-  await expect(search.getByRole("status")).toHaveText("No matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 0 of 0",
+  );
+  await expect(search.getByText("No matches", { exact: true })).toBeVisible();
   await input.fill("Current");
   await input.fill("Earlier");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 2",
+  );
   await expect(search).not.toContainText("Current response");
   expect(
     requests.filter((r) => r.path.endsWith("SessionService/Search")),
@@ -656,7 +669,7 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Memory", exact: true }).click();
-  await page.getByRole("button", { name: "notes.md", exact: true }).click();
+  await page.getByRole("button", { name: "Source", exact: true }).click();
   const editor = page.locator(".monaco-editor textarea");
   await expect(editor).toBeVisible();
   await editor.focus();
@@ -667,14 +680,12 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
     "Document changed",
   );
   expect(
-    requests.find((r) => r.path.endsWith("WriteLibraryDocument"))?.q.revision,
-  ).toBe("r1");
+    requests.find((r) => r.path === "/cxz.MemoryService/Patch")?.q.baseRevision,
+  ).toBe("1");
   await expect(
-    page.getByText("notes.md · Unsaved", { exact: true }),
+    page.getByText("Research notes · Unsaved", { exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Reload document", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
   await expect(
     page.getByRole("dialog", { name: "Discard unsaved changes" }),
   ).toBeVisible();
@@ -696,32 +707,38 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
   await editor.press("Control+a");
   await editor.pressSequentially("Merged notes");
   await expect(
-    page.getByText("notes.md · Unsaved", { exact: true }),
+    page.getByText("Research notes · Unsaved", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect
     .poll(
       () =>
-        requests.filter((r) => r.path.endsWith("WriteLibraryDocument")).at(-1)
-          ?.q.revision,
+        requests.filter((r) => r.path === "/cxz.MemoryService/Patch").at(-1)?.q
+          .baseRevision,
     )
-    .toBe("r2");
+    .toBe("2");
 });
 test("usage, background tasks and auxiliary controls are connected", async ({
   page,
 }) => {
   const requests = await fixture(page);
-  await page.getByRole("link", { name: "Activity", exact: true }).click();
+  await page.getByRole("link", { name: "Projects view", exact: true }).click();
   await expect(
-    page.getByText("Complete retained coverage", { exact: true }),
+    page.getByRole("region", { name: "Recent 30 days", exact: true }),
   ).toBeVisible();
-  await page.getByRole("combobox", { name: "Scope", exact: true }).click();
-  await page
-    .getByRole("option", { name: "Research session", exact: true })
-    .click();
-  await expect(page.getByText("Build assets", { exact: true })).toBeVisible();
+  await expect
+    .poll(() =>
+      requests.some((r) => r.path.endsWith("ConversationStats") && r.q.project),
+    )
+    .toBe(true);
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await page.getByRole("link", { name: "oak", exact: false }).first().click();
+  await page
+    .getByRole("button", {
+      name: /active background jobs?|Background job status unavailable/,
+    })
+    .click();
+  await expect(page.getByText("Build assets", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Session menu" }).click();
   await page
     .getByRole("menuitem", { name: "Auxiliary AI", exact: true })
@@ -746,7 +763,9 @@ test("local session search Enter visits loaded responses before wrapping without
     }),
     input = search.getByRole("searchbox");
   await input.fill("response");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 2",
+  );
   const historyCount = () =>
     requests.filter((r) => /SessionService\/(History|Transcript)$/.test(r.path))
       .length;

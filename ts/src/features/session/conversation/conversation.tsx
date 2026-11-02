@@ -796,7 +796,9 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     if (kind === "memory")
       openCard({
         title: "Shared memory",
-        content: () => <MemoryLibrary c={c} session={id} />,
+        content: () => (
+          <MemoryLibrary c={c} project={projectId} sessions={s ? [s] : []} />
+        ),
       });
     if (kind === "usage")
       openCard({

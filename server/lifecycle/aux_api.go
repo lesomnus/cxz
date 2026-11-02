@@ -154,10 +154,12 @@ func (s InstallationServer) Agents(ctx context.Context, r *resource.AgentsReques
 	if err != nil {
 		return nil, err
 	}
-	return auxConfigReply(out), nil
+	return s.accountConfigReply(ctx, out)
 }
 
 func (s InstallationServer) SaveAgents(ctx context.Context, r *resource.SaveAgentsRequest) (*resource.AgentProfiles, error) {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
@@ -175,23 +177,24 @@ func (s InstallationServer) SaveAgents(ctx context.Context, r *resource.SaveAgen
 	if err != nil {
 		return nil, err
 	}
-	return auxConfigReply(out), nil
+	return s.accountConfigReply(ctx, out)
 }
 
 // auxAccount reads what an account authenticates as off the registered account
 // rather than taking a caller's word for it, which is what keeps a request from
 // naming one account and authenticating as another.
-func (s InstallationServer) auxAccount(ctx context.Context, account string) (string, string, error) {
+func (s InstallationServer) auxAccount(ctx context.Context, account string) (string, string, string, error) {
 	if account == "" {
-		return "", "", status.Error(codes.InvalidArgument, "select a registered account")
+		return "", "", "", status.Error(codes.InvalidArgument, "select a registered account")
 	}
 	a, err := s.Next().Account().Get(ctx, resource.AccountGetRequest_builder{
 		Ref: accountRef(account), Select: resource.AccountSelect_builder{All: ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
-	return a.GetAgent(), a.GetAuthBackend(), nil
+	key, err := s.accountProfile(ctx, a)
+	return key, a.GetAgent(), a.GetAuthBackend(), err
 }
 
 // auxProfile fills in what an account authenticates as, for the same reason
@@ -211,12 +214,30 @@ func (s InstallationServer) auxProfile(ctx context.Context, p *resource.AgentPro
 		}
 		return out, nil
 	}
-	agent, backend, err := s.auxAccount(ctx, out.Account)
+	key, agent, backend, err := s.auxAccount(ctx, out.Account)
 	if err != nil {
 		return nil, err
 	}
-	out.Agent, out.Backend = agent, backend
+	out.Account, out.Agent, out.Backend = key, agent, backend
 	return out, nil
+}
+
+func (s InstallationServer) accountConfigReply(ctx context.Context, out *api.AuxConfigReply) (*resource.AgentProfiles, error) {
+	reply := auxConfigReply(out)
+	for _, profile := range reply.GetProfiles() {
+		if profile.GetAccount() == "" {
+			continue
+		}
+		alias, err := s.accountAlias(ctx, profile.GetAccount())
+		if status.Code(err) == codes.NotFound {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		profile.SetAccount(alias)
+	}
+	return reply, nil
 }
 
 func auxConfigReply(out *api.AuxConfigReply) *resource.AgentProfiles {

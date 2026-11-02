@@ -1,6 +1,6 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ValueMenu } from "@lesomnus/nox";
+import { Button, ScrollArea, ValueMenu } from "@lesomnus/nox";
 import { CopyButton } from "#src/shared/components/copy-button.tsx";
 import {
   codeSyntax,
@@ -18,6 +18,7 @@ import { useTheme } from "#src/shared/theme/theme.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./markdown-code-block.module.css";
+import { useMermaid } from "./use-mermaid";
 
 export function MarkdownCodeBlock({
   container,
@@ -34,7 +35,19 @@ export function MarkdownCodeBlock({
 }) {
   useLocale();
   const [selected, setSelected] = useState(codeSyntax(language));
+  const [showSource, setShowSource] = useState(false);
   useEffect(() => setSelected(codeSyntax(language)), [language]);
+  const isMermaid = selected === "mermaid";
+  const diagram = useMermaid(text, isMermaid);
+  const showDiagram = isMermaid && !showSource;
+  const diagramReady = showDiagram && diagram.status === "ready";
+  useLayoutEffect(() => {
+    const pre = code.parentElement!;
+    pre.hidden = diagramReady;
+    return () => {
+      pre.hidden = false;
+    };
+  }, [code, diagramReady]);
   const syntax = useMemo(
     () => (selected === "auto" ? detectCodeSyntax(text) : selected),
     [selected, text],
@@ -61,9 +74,12 @@ export function MarkdownCodeBlock({
           ]),
         )
       : colors;
-  const choices = codeSyntaxes.includes(selected)
-    ? codeSyntaxes
-    : [selected, ...codeSyntaxes];
+  const choices =
+    codeSyntax(language) === "mermaid"
+      ? ["mermaid", ...codeSyntaxes]
+      : codeSyntaxes.includes(selected)
+        ? codeSyntaxes
+        : [selected, ...codeSyntaxes];
   return (
     <>
       {createPortal(
@@ -84,6 +100,17 @@ export function MarkdownCodeBlock({
             }))}
             choose={setSelected}
           />
+          {isMermaid && (
+            <Button
+              type="button"
+              variant="toolbar"
+              className={styles.viewToggle}
+              aria-label={showSource ? t("View diagram") : t("View source")}
+              onClick={() => setShowSource((value) => !value)}
+            >
+              {showSource ? t("Diagram") : t("Source")}
+            </Button>
+          )}
           <CopyButton value={text} />
         </div>,
         container,
@@ -111,6 +138,37 @@ export function MarkdownCodeBlock({
         </span>,
         code,
       )}
+      {showDiagram &&
+        createPortal(
+          diagram.status === "ready" ? (
+            <ScrollArea
+              className={styles.diagram}
+              viewportClassName={styles.diagramViewport}
+              contentClassName={styles.diagramContent}
+              scrollbarLabel={t("Scroll {label}", {
+                label: t("Mermaid diagram"),
+              })}
+            >
+              <img
+                className={styles.diagramImage}
+                src={diagram.url}
+                width={diagram.width}
+                height={diagram.height}
+                alt={
+                  text.match(/^\s*accTitle:\s*(.+)$/m)?.[1] ??
+                  t("Mermaid diagram")
+                }
+              />
+            </ScrollArea>
+          ) : (
+            <span className={styles.diagramStatus} role="status">
+              {diagram.status === "error"
+                ? t("Unable to render this Mermaid diagram. Showing source.")
+                : t("Rendering diagram…")}
+            </span>
+          ),
+          container,
+        )}
     </>
   );
 }

@@ -47,9 +47,10 @@ test("the viewed session carries its project into other pages and picks up later
   await expect(picker(page)).toHaveText("Secondary project");
   await visit(page, "Memory");
   await expect(page).toHaveURL(/#\/c\/_\/memory\?project=project-2$/);
+  await expect(picker(page)).toHaveText("Secondary project");
   await expect(
-    page.getByRole("combobox", { name: "Session", exact: true }),
-  ).toContainText("session-8");
+    page.getByRole("main", { name: "Shared memory workspace", exact: true }),
+  ).toBeVisible();
 });
 
 test("explicit routes, browser history and reload retain the displayed project", async ({

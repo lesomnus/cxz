@@ -17,6 +17,8 @@ import (
 // This stream is transient: authentication input/output never goes through
 // resource mutations, audit payloads, session events or supervisor logs.
 func (s ProjectServer) AuxiliaryLogin(stream grpc.BidiStreamingServer[resource.ProjectLoginRequest, resource.ProjectLoginOutput]) error {
+	s.shared.transition.RLock()
+	defer s.shared.transition.RUnlock()
 	if err := s.effect(); err != nil {
 		return err
 	}
@@ -76,7 +78,11 @@ func (s ProjectServer) AuxiliaryLogin(stream grpc.BidiStreamingServer[resource.P
 		}
 	}()
 	output := &sessionLoginOutput{stream: stream, cancel: cancel}
-	err = runtime.AuxiliaryLogin(ctx, auxiliary.Profile{Account: a.GetAlias(), Agent: a.GetAgent(), Backend: a.GetAuthBackend()}, in, output, output)
+	key, err := s.accountProfile(ctx, a)
+	if err != nil {
+		return err
+	}
+	err = runtime.AuxiliaryLogin(ctx, auxiliary.Profile{Account: key, Agent: a.GetAgent(), Backend: a.GetAuthBackend()}, in, output, output)
 	select {
 	case inputErr := <-inputErr:
 		return inputErr

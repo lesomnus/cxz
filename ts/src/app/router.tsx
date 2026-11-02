@@ -26,7 +26,6 @@ export type ResourceView =
   | "accounts"
   | "search"
   | "memory"
-  | "activity"
   | "auxiliary"
   | "not-found";
 export type SettingsTopic = "general" | "editor" | "connections" | "logs";
@@ -142,11 +141,6 @@ const memoryRoute = createRoute({
     project: typeof s.project === "string" ? s.project : undefined,
   }),
 });
-const activityRoute = createRoute({
-  getParentRoute: () => connectionRoute,
-  path: "activity",
-  staticData: { resource: "activity" },
-});
 const auxiliaryRoute = createRoute({
   getParentRoute: () => connectionRoute,
   path: "auxiliary",
@@ -227,14 +221,9 @@ const notFoundRoute = createRoute({
         }),
         replace: true,
       });
-    if (
-      ["search", "memory", "activity", "auxiliary"].includes(parts[0]) &&
-      !handle
-    )
+    if (["search", "memory", "auxiliary"].includes(parts[0]) && !handle)
       throw redirect({
-        ...resourceLocation(
-          parts[0] as "search" | "memory" | "activity" | "auxiliary",
-        ),
+        ...resourceLocation(parts[0] as "search" | "memory" | "auxiliary"),
         replace: true,
       });
     if (
@@ -266,7 +255,6 @@ const routeTree = rootRoute.addChildren([
     taskRoute,
     searchRoute,
     memoryRoute,
-    activityRoute,
     auxiliaryRoute,
   ]),
   settingsRoute.addChildren([

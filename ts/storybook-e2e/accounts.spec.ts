@@ -1,5 +1,94 @@
 import { expect, test } from "@playwright/test";
 
+test("account erase confirms the full cascade and cancel keeps the account", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=resources-views--accounts&viewMode=story");
+  const work = page.getByRole("article", { name: "Work", exact: true });
+  const erase = work.getByRole("button", {
+    name: "Erase account Work",
+    exact: true,
+  });
+  await erase.click();
+  const modal = page.getByRole("dialog", {
+    name: "Erase account · Work",
+    exact: true,
+  });
+  await expect(modal).toContainText("all sessions linked to this account");
+  await expect(modal).toContainText(
+    "conversations, memory, attachments and agent profiles",
+  );
+  await expect(
+    modal.getByRole("button", { name: "Cancel", exact: true }),
+  ).toBeFocused();
+  await modal.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(modal).toHaveCount(0);
+  await expect(work).toBeVisible();
+  await erase.click();
+  await modal
+    .getByRole("button", { name: "Erase permanently", exact: true })
+    .click();
+  await expect(modal).toHaveCount(0);
+  await expect(work).toHaveCount(0);
+  await expect(
+    page.getByRole("article", { name: "Personal", exact: true }),
+  ).toBeVisible();
+});
+
+test("account erase cleanup failure stays visible and can be retried", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=resources-views--account-erase-failure&viewMode=story",
+  );
+  const work = page.getByRole("article", { name: "Work", exact: true });
+  await work
+    .getByRole("button", { name: "Erase account Work", exact: true })
+    .click();
+  const modal = page.getByRole("dialog", {
+    name: "Erase account · Work",
+    exact: true,
+  });
+  await modal
+    .getByRole("button", { name: "Erase permanently", exact: true })
+    .click();
+  await expect(modal.getByRole("alert")).toContainText(
+    "Session cleanup failed",
+  );
+  await expect(work).toBeVisible();
+  await modal
+    .getByRole("button", { name: "Erase permanently", exact: true })
+    .click();
+  await expect(modal).toHaveCount(0);
+  await expect(work).toHaveCount(0);
+});
+
+test("account erase uses the immutable account id when available", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=accounts-workflows--account-login&viewMode=story",
+  );
+  const account = page.getByRole("article", {
+    name: "Work account",
+    exact: true,
+  });
+  await account
+    .getByRole("button", { name: "Erase account Work account", exact: true })
+    .click();
+  const modal = page.getByRole("dialog", {
+    name: "Erase account · Work account",
+    exact: true,
+  });
+  await modal
+    .getByRole("button", { name: "Erase permanently", exact: true })
+    .click();
+  await expect(modal).toHaveCount(0);
+  await expect(
+    page.getByText("No accounts yet.", { exact: true }),
+  ).toBeVisible();
+});
+
 for (const width of [1280, 390]) {
   test(`account columns adapt without a sidebar at ${width}px`, async ({
     page,
@@ -17,10 +106,9 @@ for (const width of [1280, 390]) {
     await expect(work).toBeVisible();
     const layout = page.locator('[data-section-layout="layout"]');
     await expect(layout).toHaveCount(1);
-    const group = work.locator('[data-section-layout="group"]');
-    await expect(group).toHaveCount(1);
+    const group = work.locator('[data-section-layout="group"]').first();
     const sections = group.locator(':scope > [data-section-layout="section"]');
-    await expect(sections).toHaveCount(3);
+    await expect(sections).toHaveCount(2);
     const corners = await sections.evaluateAll((nodes) =>
       nodes.map((node) => {
         const css = getComputedStyle(node);
@@ -40,7 +128,7 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     await expect(
-      usage.getByText("Complete retained coverage", { exact: true }),
+      usage.getByRole("region", { name: "Recent 30 days", exact: true }),
     ).toBeVisible();
     const informationBounds = (await group.boundingBox())!;
     const usageBounds = (await usage.boundingBox())!;
@@ -48,31 +136,147 @@ for (const width of [1280, 390]) {
     const authBounds = (await work
       .getByRole("region", { name: "Authentication", exact: true })
       .boundingBox())!;
-    expect(usageBounds.x).toBe(informationBounds.x);
-    expect(usageBounds.width).toBe(informationBounds.width);
-    expect(authBounds.y).toBeGreaterThanOrEqual(
-      usageBounds.y + usageBounds.height,
+    expect(sessionsBounds.x).toBe(informationBounds.x);
+    expect(sessionsBounds.width).toBe(informationBounds.width);
+    const infoBounds = (await work
+      .getByRole("region", { name: "Account details", exact: true })
+      .boundingBox())!;
+    expect(sessionsBounds.y).toBeGreaterThanOrEqual(
+      infoBounds.y + infoBounds.height,
     );
+    expect(usageBounds.y).toBeGreaterThanOrEqual(
+      authBounds.y + authBounds.height,
+    );
+    const scrollBounds = (await sessions
+      .getByRole("region", {
+        name: "Session list",
+        exact: true,
+      })
+      .boundingBox())!;
+    const sessionsPadding = await sessions.evaluate((node) =>
+      parseFloat(getComputedStyle(node).paddingBottom),
+    );
+    expect(scrollBounds.y + scrollBounds.height).toBeCloseTo(
+      sessionsBounds.y + sessionsBounds.height - sessionsPadding,
+      0,
+    );
+    const headerGap = await sessions.evaluate((node) =>
+      parseFloat(
+        getComputedStyle(node).getPropertyValue("--ui-section-group-gap"),
+      ),
+    );
+    expect(scrollBounds.y - sessionsBounds.y).toBe(headerGap);
+    await expect(sessions.getByRole("heading")).toHaveCount(0);
+    const eraseBounds = (await work
+      .getByRole("button", { name: "Erase account Work", exact: true })
+      .boundingBox())!;
+    expect(eraseBounds.width).toBe(64);
+    expect(eraseBounds.height).toBe(64);
+    await expect(
+      work.getByRole("button", { name: "Erase account Work", exact: true }),
+    ).toHaveCSS("border-radius", "16px");
+    expect(authBounds.height).toBe(64);
+    expect(authBounds.x + authBounds.width).toBeLessThan(eraseBounds.x);
+    expect(eraseBounds.x + eraseBounds.width).toBe(
+      usageBounds.x + usageBounds.width,
+    );
+    expect(eraseBounds.y).toBe(authBounds.y);
+    const quota = work.getByRole("region", {
+      name: "Remaining agent usage",
+      exact: true,
+    });
+    const quotaBounds = (await quota.boundingBox())!;
+    await expect(quota).toHaveCSS("border-radius", "16px");
+    expect(quotaBounds.width).toBe(64);
+    expect(quotaBounds.height).toBe(64);
+    expect(quotaBounds.y).toBe(authBounds.y);
+    expect(quotaBounds.x).toBeGreaterThan(authBounds.x + authBounds.width);
+    expect(quotaBounds.x + quotaBounds.width).toBeLessThan(eraseBounds.x);
+    const gauge = quota.getByRole("meter").locator("..");
+    const gaugeBounds = (await gauge.boundingBox())!;
+    expect(gaugeBounds.width).toBe(32);
+    expect(gaugeBounds.height).toBe(60);
+    expect(gaugeBounds.x - quotaBounds.x).toBe(2);
+    expect(gaugeBounds.y - quotaBounds.y).toBe(2);
+    expect(
+      quotaBounds.y + quotaBounds.height - gaugeBounds.y - gaugeBounds.height,
+    ).toBe(2);
+    expect(
+      await gauge.evaluate((node) => getComputedStyle(node).borderRadius),
+    ).toBe("14px");
+    expect(gaugeBounds.x + 14).toBe(quotaBounds.x + 16);
+    expect(gaugeBounds.y + 14).toBe(quotaBounds.y + 16);
+    expect(gaugeBounds.y + gaugeBounds.height - 14).toBe(
+      quotaBounds.y + quotaBounds.height - 16,
+    );
+    await expect(quota.getByRole("meter")).toHaveAttribute(
+      "aria-valuenow",
+      "64",
+    );
+    const empty = gauge.locator(':scope > span[aria-hidden="true"]');
+    await expect
+      .poll(() => empty.evaluate((node) => node.getBoundingClientRect().height))
+      .toBeCloseTo(58 * 0.36, 0);
+    const emptyBounds = (await empty.boundingBox())!;
+    expect(emptyBounds.x - gaugeBounds.x).toBe(1);
+    expect(emptyBounds.y - gaugeBounds.y).toBe(1);
+    expect(
+      gaugeBounds.x + gaugeBounds.width - emptyBounds.x - emptyBounds.width,
+    ).toBe(1);
+    await expect(empty).toHaveCSS("border-radius", "13px");
+    await expect(quota).toContainText(/00d02h2[56]m/);
+    const reset = quota.getByRole("img", { name: /milliseconds/ });
+    const resetRows = await reset
+      .locator(":scope > span")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const box = node.getBoundingClientRect();
+          return { x: box.x, y: box.y, right: box.right, bottom: box.bottom };
+        }),
+      );
+    expect(resetRows).toHaveLength(3);
+    for (const [index, row] of resetRows.entries()) {
+      expect(row.x).toBeGreaterThan(gaugeBounds.x + gaugeBounds.width);
+      expect(row.right).toBeLessThanOrEqual(
+        quotaBounds.x + quotaBounds.width - 2,
+      );
+      if (index) {
+        expect(row.x).toBe(resetRows[index - 1].x);
+        expect(row.y).toBeGreaterThan(resetRows[index - 1].bottom);
+      }
+    }
+    await expect(
+      personal.getByRole("region", { name: "Remaining agent usage" }),
+    ).toContainText("—");
+    await expect(work.getByRole("switch")).toHaveCount(0);
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>
         parseFloat(getComputedStyle(node).maxWidth),
       );
       expect((await work.boundingBox())!.width).toBe(widthLimit);
-      expect(sessionsBounds.x).toBeGreaterThan(
+      expect(usageBounds.x).toBeGreaterThan(
         informationBounds.x + informationBounds.width,
       );
-      expect(sessionsBounds.y).toBe(informationBounds.y);
-      expect(sessionsBounds.width).toBeCloseTo(informationBounds.width, 0);
-      expect(informationBounds.width).toBe(420);
-      expect(authBounds.y + authBounds.height).toBeCloseTo(
+      expect(authBounds.y).toBe(informationBounds.y);
+      expect(authBounds.x).toBeGreaterThan(
+        informationBounds.x + informationBounds.width,
+      );
+      expect(usageBounds.width).toBeCloseTo(informationBounds.width, 0);
+      expect(informationBounds.width).toBe(424);
+      expect(sessionsBounds.y + sessionsBounds.height).toBeCloseTo(
         informationBounds.y + informationBounds.height,
         0,
       );
+      expect(usageBounds.y + usageBounds.height).toBeCloseTo(
+        sessionsBounds.y + sessionsBounds.height,
+        0,
+      );
+      expect(sessionsBounds.height).toBeLessThan(usageBounds.height);
     } else {
-      expect(sessionsBounds.y).toBeGreaterThan(
+      expect(authBounds.y).toBeGreaterThan(
         informationBounds.y + informationBounds.height,
       );
-      expect(sessionsBounds.width).toBe(informationBounds.width);
+      expect(usageBounds.width).toBe(informationBounds.width);
     }
     const details = work.getByRole("region", { name: "Account details" });
     await expect(
@@ -114,7 +318,8 @@ for (const width of [1280, 390]) {
       );
     expect(metrics[1].y).toBe(metrics[0].y);
     expect(metrics[1].x).toBeGreaterThan(metrics[0].x);
-    expect(metrics[2].y).toBeGreaterThan(metrics[0].y);
+    expect(metrics[3].y).toBe(metrics[0].y);
+    expect(metrics[4].y).toBeGreaterThan(metrics[0].y);
     const logo = (await details
       .getByRole("img", { name: "Codex", exact: true })
       .boundingBox())!;
@@ -127,11 +332,20 @@ for (const width of [1280, 390]) {
     expect(logo.y).toBeGreaterThanOrEqual(value.y);
     expect(logo.y + logo.height).toBeLessThanOrEqual(value.y + value.height);
     await expect(work.locator("header")).toHaveCount(0);
-    const created = details.locator("time");
+    const created = details
+      .locator("dl > div")
+      .filter({ has: page.getByText("Created", { exact: true }) })
+      .locator("dd time");
     await expect(created).toHaveAttribute("datetime", /T.*Z$/);
     await expect(created).toHaveText(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/,
     );
+    await expect(
+      details
+        .locator("dl > div")
+        .filter({ has: page.getByText("Updated", { exact: true }) })
+        .locator("dd time"),
+    ).toHaveAttribute("datetime", /T.*Z$/);
 
     await expect(personal).toBeAttached();
     await expect(
@@ -157,8 +371,8 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     const row = [
-      authentication.getByText("Signed in", { exact: true }).locator(".."),
       authentication.getByRole("button", { name: "Log out", exact: true }),
+      authentication.getByText("Signed in", { exact: true }).locator(".."),
     ];
     await expect(
       authentication.getByText("Authentication", { exact: true }),
@@ -214,7 +428,7 @@ test("account sessions use compact read-only identities and keep selection scope
     "",
     "Name",
     "Project",
-    "State",
+    "",
     "",
   ]);
   await expect(
@@ -233,6 +447,20 @@ test("account sessions use compact read-only identities and keep selection scope
   await expect(
     personal.getByRole("img", { name: "Stopped", exact: true }),
   ).toBeAttached();
+  for (const icon of await table.locator("tbody .session-indicator").all()) {
+    const bounds = await icon.evaluate((node) => {
+      const cell = node.closest("td")!.getBoundingClientRect();
+      const glyph = node.getBoundingClientRect();
+      return {
+        x: glyph.x + glyph.width / 2 - cell.x - cell.width / 2,
+        y: glyph.y + glyph.height / 2 - cell.y - cell.height / 2,
+        width: cell.width,
+      };
+    });
+    expect(Math.abs(bounds.x)).toBeLessThan(1);
+    expect(Math.abs(bounds.y)).toBeLessThan(1);
+    expect(bounds.width).toBe(32);
+  }
   const name = rows.first().getByText("Web account layout", { exact: true });
   const alias = rows.first().getByText("oak", { exact: true });
   const nameBounds = (await name.boundingBox())!;
@@ -309,13 +537,34 @@ test("account sessions use compact read-only identities and keep selection scope
     await expect(link).not.toHaveCSS("background-color", background);
   }
   await expect(table.getByRole("textbox")).toHaveCount(0);
+  const bulk = table
+    .locator("thead")
+    .getByRole("button", { name: "Selected session actions", exact: true });
+  await bulk.click();
+  const bulkMenu = page.getByRole("menu", {
+    name: "Selected session actions",
+    exact: true,
+  });
+  await expect(bulkMenu.getByRole("status")).toHaveText("0 selected");
+  for (const item of await bulkMenu.getByRole("menuitem").all())
+    await expect(item).toBeDisabled();
+  await page.keyboard.press("Escape");
   await rows.first().getByRole("checkbox").check();
-  await expect(
-    work.getByRole("button", { name: "1 selected", exact: true }),
-  ).toBeEnabled();
-  await expect(
-    personal.getByRole("button", { name: "0 selected", exact: true }),
-  ).toBeDisabled();
+  await bulk.click();
+  await expect(bulkMenu.getByRole("status")).toHaveText("1 selected");
+  await bulkMenu.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  const erase = page.getByRole("dialog", {
+    name: "Erase session",
+    exact: true,
+  });
+  await expect(erase).toContainText("Web account layout");
+  await expect(erase).not.toContainText("Review deployment changes");
+  await erase.getByRole("button", { name: "Cancel", exact: true }).click();
+  await personal
+    .getByRole("button", { name: "Selected session actions", exact: true })
+    .click();
+  await expect(bulkMenu.getByRole("status")).toHaveText("0 selected");
+  await page.keyboard.press("Escape");
   const divider = await rows
     .first()
     .locator("td")

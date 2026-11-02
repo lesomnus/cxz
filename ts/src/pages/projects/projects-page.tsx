@@ -6,22 +6,16 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
-import { PageToolbar, Button, EditableValue } from "@lesomnus/nox";
+import { PageToolbar, Button, EditableValue, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
-import {
-  containerState,
-  containerStateName,
-  running,
-} from "./project-state.ts";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
-import { DateTime } from "#src/shared/components/date-time.tsx";
+import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
-import { IdentifierValue } from "#src/shared/components/identifier-value.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { projectBranch, type DashboardConnection } from "./project-dashboard";
+import { type DashboardConnection } from "./project-dashboard";
 import {
   editProject,
   validateProjectField,
@@ -32,6 +26,7 @@ import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
 import type { Account } from "#gen/cxz/account_pb";
+import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import styles from "./projects-page.module.css";
 import {
   projectLocation,
@@ -73,24 +68,27 @@ export function ProjectsPage({
   const project = useProject(c, visibleProjects, selected);
   return (
     <main className={styles.page} aria-label={t("Project workspace")}>
-      <PageToolbar aria-label={t("Project toolbar")}>
-        <ProjectPicker
-          projects={visibleProjects}
-          value={projectId(project) ?? ""}
-          loading={projectsLoading}
-          choose={(project) =>
-            void navigate(
-              projectLocation(
-                resourceHandle(
-                  visibleProjects.find((p) => projectId(p) === project)!,
+      <PageToolbar className={styles.toolbar} aria-label={t("Project toolbar")}>
+        <div className={styles.toolbarContent}>
+          <ProjectPicker
+            projects={visibleProjects}
+            value={projectId(project) ?? ""}
+            loading={projectsLoading}
+            choose={(project) =>
+              void navigate(
+                projectLocation(
+                  resourceHandle(
+                    visibleProjects.find((p) => projectId(p) === project)!,
+                  ),
                 ),
-              ),
-            )
-          }
-        />
+              )
+            }
+          />
+        </div>
       </PageToolbar>
       <PanelScroll
         className={styles.scroll}
+        contentClassName={styles.scrollContent}
         scrollbarLabel={t("Project scroll")}
       >
         <div className={styles.content}>
@@ -180,143 +178,103 @@ function ProjectDashboard({
     </div>
   );
   const [addingSession, setAddingSession] = useState(false);
-  const branch = useRemote(
-    (signal) => projectBranch(c, p, signal),
-    [c, projectId(p), p.status?.containerState, p.status?.remoteWorkspace],
-  );
-  const git = branch.loading
-    ? t("Loading…")
-    : branch.error
-      ? t("Unavailable")
-      : branch.data?.state === "branch"
-        ? branch.data.value
-        : branch.data?.state === "detached"
-          ? `${branch.data.value} · ${t("Detached HEAD")}`
-          : branch.data?.state === "missing"
-            ? t("Not a Git workspace")
-            : branch.data?.state === "offline"
-              ? t("Project is not running")
-              : t("Unavailable");
   return (
     <div className={styles.dashboard}>
-      <div className={styles.information}>
-        <section className={styles.section} aria-label={t("Information")}>
-          <h2 className={styles.sectionTitle}>{t("Information")}</h2>
-          <Fields
-            rows={[
-              [
-                t("Project ID"),
-                <IdentifierValue
-                  value={
-                    p.id.length === 16 ? new Id(p.id).toString() : undefined
-                  }
-                />,
-                t(
-                  "Canonical UUID used to identify this project across APIs and links.",
-                ),
-              ],
-              [t("Name"), editable("name", t("Name"))],
-              [t("Alias"), editable("alias", t("Alias"))],
-              [t("Description"), editable("desc", t("Description"))],
-              [t("Workspace"), p.workspace],
-              [t("Configuration"), p.config],
-              [t("Created"), <DateTime value={p.dateCreated} />],
-              [t("Updated"), <DateTime value={p.dateUpdated} />],
-              [t("Deleted"), <DateTime value={p.dateErased} />],
-            ]}
-          />
-        </section>
-        <section className={styles.section} aria-label={t("Environment")}>
-          <div className={styles.sectionHeading}>
-            <h2>{t("Environment")}</h2>
-            <Button
-              className={styles.refresh}
-              type="button"
-              disabled={branch.loading || !running(p)}
-              onClick={branch.reload}
-            >
-              {t("Refresh")}
-            </Button>
-          </div>
-          <Fields
-            rows={[
-              [t("Status"), t(containerStateName(containerState(p)))],
-              [t("Workspace"), p.status?.remoteWorkspace],
-              [t("Remote user"), p.status?.remoteUser],
-              [t("Git branch"), git],
-              [
-                t("Provisioning"),
-                [p.status?.provisionState, p.status?.provisionStep]
-                  .filter(Boolean)
-                  .join(" · "),
-                t(
-                  "Status and current step of preparing the project container and workspace.",
-                ),
-              ],
-            ]}
-          />
-          {p.status?.error && (
-            <p className={styles.errors} role="alert">
-              {p.status.error}
-            </p>
-          )}
-          {branch.error && (
-            <p className={styles.empty} role="status">
-              {branch.error}
-            </p>
-          )}
-        </section>
-        <section className={styles.section} aria-label={t("Diagnostics")}>
-          <h2 className={styles.sectionTitle}>{t("Diagnostics")}</h2>
-          <Fields
-            rows={[
-              [
-                t("Container ID"),
-                <IdentifierValue value={p.status?.containerId} />,
-              ],
-              [t("Provision attempts"), p.status?.provisionAttempt.toString()],
-            ]}
-          />
-        </section>
-        <section className={styles.actions} aria-label={t("Actions")}>
-          <ProjectActions
-            c={c}
-            project={p}
-            sessions={sessions}
-            erased={erased}
-            updated={saved}
-          />
-        </section>
-      </div>
-      <section
-        className={`${styles.section} ${styles.sessionSection}`}
-        aria-label={t("Project sessions")}
-      >
-        <SessionTable
+      <div className={styles.columns}>
+        <div className={styles.information}>
+          <Section aria-label={t("Information")}>
+            <Fields
+              rows={[
+                {
+                  label: t("Project ID"),
+                  value:
+                    p.id.length === 16 ? new Id(p.id).toString() : undefined,
+                  description: t(
+                    "Canonical UUID used to identify this project across APIs and links.",
+                  ),
+                  identifier: true,
+                },
+                [t("Name"), editable("name", t("Name"))],
+                [t("Alias"), editable("alias", t("Alias"))],
+                [t("Description"), editable("desc", t("Description"))],
+                {
+                  label: t("Workspace"),
+                  value: p.workspace,
+                  fullWidth: true,
+                  path: true,
+                },
+                [t("Container name"), p.status?.containerName],
+                {
+                  label: t("Container ID"),
+                  value: p.status?.containerId,
+                  identifier: true,
+                },
+                [
+                  t("Created"),
+                  <DateTime value={p.dateCreated} />,
+                  undefined,
+                  <RelativeTime value={p.dateCreated} />,
+                ],
+                [
+                  t("Updated"),
+                  <DateTime value={p.dateUpdated} />,
+                  undefined,
+                  <RelativeTime value={p.dateUpdated} />,
+                ],
+              ]}
+            />
+            {p.status?.error && (
+              <p className={styles.errors} role="alert">
+                {p.status.error}
+              </p>
+            )}
+          </Section>
+          <Section
+            className={styles.sessionSection}
+            aria-label={t("Project sessions")}
+          >
+            <SessionTable
+              c={c}
+              sessions={sessions}
+              accounts={accounts}
+              loading={sessionsLoading}
+              variant="compact"
+              showToolbar={false}
+              horizontalScrollbar
+              addSession={() => setAddingSession(true)}
+            />
+            {addingSession && (
+              <SessionCreate
+                c={c}
+                projects={[p]}
+                centered
+                close={() => setAddingSession(false)}
+              />
+            )}
+            {accountsError && (
+              <div className={styles.empty}>
+                <p role="alert">{accountsError}</p>
+                <Button type="button" onClick={reloadAccounts}>
+                  {t("Retry")}
+                </Button>
+              </div>
+            )}
+          </Section>
+        </div>
+        <UsageReport
           c={c}
-          sessions={sessions}
-          accounts={accounts}
-          loading={sessionsLoading}
-          variant="compact"
-          horizontalScrollbar
-          addSession={() => setAddingSession(true)}
+          project={projectId(p)}
+          className={styles.usageSection}
         />
-        {addingSession && (
-          <SessionCreate
-            c={c}
-            projects={[p]}
-            centered
-            close={() => setAddingSession(false)}
-          />
-        )}
-        {accountsError && (
-          <div className={styles.empty}>
-            <p role="alert">{accountsError}</p>
-            <Button type="button" onClick={reloadAccounts}>
-              {t("Retry")}
-            </Button>
-          </div>
-        )}
+      </div>
+      <section className={styles.actions} aria-label={t("Actions")}>
+        <ProjectActions
+          c={c}
+          project={p}
+          sessions={sessions}
+          erased={erased}
+          updated={saved}
+        />
       </section>
     </div>
   );

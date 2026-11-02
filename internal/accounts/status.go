@@ -71,3 +71,40 @@ func CentralLogout(ctx context.Context, root, alias string) error {
 	}
 	return revokeAccountGrants(ctx, root, alias)
 }
+
+// EraseCentral also removes the subject pin and private profile configuration.
+// The empty lock inode stays in place so a concurrent login cannot take a
+// different lock while this operation still holds the original one.
+func EraseCentral(ctx context.Context, root, alias string) error {
+	if err := Validate(alias, "codex"); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	lock, err := centralLock(root, alias)
+	if err != nil {
+		return fmt.Errorf("account authentication is busy")
+	}
+	defer lock.Close()
+	if err := revokeAccountGrants(ctx, root, alias); err != nil {
+		return err
+	}
+	directory := Dir(centralRoot(root), alias)
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if entry.Name() == "broker.lock" {
+			continue
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := os.RemoveAll(filepath.Join(directory, entry.Name())); err != nil {
+			return fmt.Errorf("cannot erase saved account profile")
+		}
+	}
+	return os.RemoveAll(Dir(root, alias))
+}

@@ -76,8 +76,8 @@ explained in the mobile plan; it remains Not implemented in the web column.
 | ID | CLI | TUI | Web |
 |---|---|---|---|
 | TASK-01 | Shared: built-in agent Task MCP; no task subcommands | Shared: agent Task MCP; no task board or commands | Supported: project board, live updates, details/editing, confirmed Release and owner/source links; agent Task MCP and WASM parity; [Task API](tasks.md) |
-| MEM-01 | Not implemented: no public memory-library command | Supported: `/memory` browsing/search | Not implemented |
-| MEM-02 | Not implemented: no public memory-library lifecycle commands | Supported: library lifecycle and session-from-copy flow | Not implemented |
+| MEM-01 | No dedicated command | Supported: `/memory` document browsing/search | Supported: project documents, body/label search, preview/source |
+| MEM-02 | No dedicated lifecycle command | Supported: document lifecycle and session seeded from a copy | Supported: create/copy/edit, version history/diff, trash/restore/purge |
 | MEM-03 | Not implemented: no dedicated native-memory browser | Supported: original agent file browser from memory view | Not implemented |
 | MEM-04 | Shared: agent/MCP guidance, no compact command for shared memory | Shared: agent/MCP guidance, no separate compact UI | Not implemented |
 | MEM-05 | Shared: built-in MCP tools; no dedicated CLI command | Shared: agent can invoke MCP tools; no dedicated transcript search view | Shared: agent can invoke MCP tools; no dedicated transcript search view |

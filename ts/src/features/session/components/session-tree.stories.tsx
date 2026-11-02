@@ -120,7 +120,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Real project/session rows and panel scrolling, with a memory router. Sessions requiring Resume (stopped, interrupted or failed) have a dimmed identity and an empty activity indicator slot, preserving row alignment. Unread errors remain visible. Idle sessions are ready for input and stay bright. Working dots randomly share the toolbar's green, cyan and violet palette, with a stable color per dot across updates. They grow in their accent color, gradually return to the foreground color, then shrink. Select a session to check highlighting and logo/title/alias press motion. Collapse the project to hide its sessions. The long-list story exposes hover-only scrollbar handles and edge fades.",
+          "Real project/session rows and panel scrolling, with a memory router. Sessions requiring Resume (stopped, interrupted or failed) have a dimmed identity and an empty activity indicator slot, preserving row alignment. Unread errors remain visible. Idle sessions are ready for input and stay bright. Working dots share the toolbar's green, cyan and violet palette. Session UUID and run ID seed their color order and initial phase, preserving the appearance across reloads and remounts without synchronizing different sessions. A new run reseeds the appearance; ordinary status updates and renames do not. The dots grow in their accent color, gradually return to the foreground color, then shrink. Select a session to check highlighting and logo/title/alias press motion. Collapse the project to hide its sessions. The long-list story exposes hover-only scrollbar handles and edge fades.",
       },
     },
   },
@@ -129,6 +129,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const LongList: Story = { args: { count: 24 } };
+export const WorkingPhases: Story = {
+  args: { count: 8, states: Array(8).fill("working") },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Several sessions start working together but use independent seeded phases and color orders. Collapse/reopen the project or reload the story to reproduce each session's initial phase and palette.",
+      },
+    },
+  },
+};
 export const Collapsed: Story = { args: { expanded: false } };
 export const Empty: Story = { args: { count: 0 } };
 export const Loading: Story = { args: { count: 0, loading: true } };

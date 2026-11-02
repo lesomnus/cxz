@@ -297,6 +297,43 @@ var (
 			},
 		},
 	}
+	// MemoryColumns holds the columns for the "memory" table.
+	MemoryColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "owner_session", Type: field.TypeString},
+		{Name: "revision", Type: field.TypeUint64},
+		{Name: "date_deleted", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "content", Type: field.TypeString},
+		{Name: "client_id", Type: field.TypeString, Unique: true},
+		{Name: "project_id", Type: field.TypeUuid},
+	}
+	// MemoryTable holds the schema information for the "memory" table.
+	MemoryTable = &schema.Table{
+		Name:       "memory",
+		Columns:    MemoryColumns,
+		PrimaryKey: []*schema.Column{MemoryColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "memory_project_project",
+				Columns:    []*schema.Column{MemoryColumns[12]},
+				RefColumns: []*schema.Column{ProjectColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "memory_page",
+				Unique:  false,
+				Columns: []*schema.Column{MemoryColumns[9], MemoryColumns[0]},
+			},
+		},
+	}
 	// NotificationreceiptrecordColumns holds the columns for the "notificationreceiptrecord" table.
 	NotificationreceiptrecordColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -717,6 +754,7 @@ var (
 		AuthbindingTable,
 		ConnectionTable,
 		HolderTable,
+		MemoryTable,
 		NotificationreceiptrecordTable,
 		NotificationrecordTable,
 		OperatorTable,
@@ -756,6 +794,10 @@ func init() {
 	HolderTable.ForeignKeys[0].RefTable = TenantTable
 	HolderTable.Annotation = &entsql.Annotation{
 		Table: "holder",
+	}
+	MemoryTable.ForeignKeys[0].RefTable = ProjectTable
+	MemoryTable.Annotation = &entsql.Annotation{
+		Table: "memory",
 	}
 	NotificationreceiptrecordTable.Annotation = &entsql.Annotation{
 		Table: "notificationreceiptrecord",

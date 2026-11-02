@@ -1,15 +1,85 @@
 .report {
   container: conversation-usage / inline-size;
 }
+.header.header {
+  min-height: 32px;
+  flex-wrap: nowrap;
+}
+.header > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.refresh {
+  width: var(--toolbar-button-width);
+  flex: none;
+}
+.error {
+  color: var(--ui-action-error-color);
+}
+.period {
+  display: grid;
+  gap: var(--ui-space);
+}
+.periodTitle {
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 15px;
+}
+.dayHeader {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 15px;
+  gap: calc(2 * var(--ui-space));
+}
+.date {
+  color: var(--ui-muted);
+  font-size: 0.7rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metrics.metrics {
+  margin-block: var(--ui-space) calc(2 * var(--ui-space));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  text-align: right;
+}
+.metrics.metrics > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--ui-space);
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+}
+.metrics.metrics dd {
+  margin-top: auto;
+  white-space: nowrap;
+  height: 18px;
+  line-height: 18px;
+  overflow: hidden;
+}
+.metrics.metrics dt {
+  height: 14px;
+  line-height: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.value {
+  display: inline-flex;
+  align-items: baseline;
+}
+.prefix {
+  color: var(--ui-text-separator);
+}
+.missing {
+  color: var(--ui-text-leading);
+}
 @container conversation-usage (max-width: 200px) {
   .header.header {
     flex-direction: column;
     align-items: stretch;
-  }
-  .metrics.metrics {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .metrics.metrics > div {
-    padding: var(--ui-space) var(--ui-control-inline-inset);
   }
 }

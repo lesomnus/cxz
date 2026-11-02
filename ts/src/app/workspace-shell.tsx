@@ -63,9 +63,12 @@ export function Workspace({
     selectedSession,
   );
   const session = selectedSession?.runtimeId ?? route.session;
-  const hasResourcePanel = !["accounts", "tasks", "projects"].includes(
-    resource,
-  );
+  const hasResourcePanel = ![
+    "accounts",
+    "tasks",
+    "projects",
+    "memory",
+  ].includes(resource);
   const settingsTopic = route.settingsTopic;
   const lastSession = useRef("");
   if (route.resource === "sessions")
@@ -162,14 +165,7 @@ export function Workspace({
             </SidebarHint>
           ))}
           {(
-            [
-              "tasks",
-              "accounts",
-              "search",
-              "memory",
-              "activity",
-              "auxiliary",
-            ] as const
+            ["tasks", "accounts", "search", "memory", "auxiliary"] as const
           ).map((view) => (
             <SidebarHint
               key={view}

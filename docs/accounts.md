@@ -82,9 +82,25 @@ account may hold.
 
 ## The accounts view
 
-In the web UI, **Accounts** has its own profile panel and detail area. Select a
-profile to see its metadata, listed sessions and recorded token/cost usage.
-The panel's add button opens a modal form beside the panel. Usage covers retained
+In the web UI, **Accounts** shows account cards with metadata, authentication,
+recorded usage and listed sessions. The top add button opens a modal form.
+Information and sessions share the left column; authentication sits above usage
+on the right, with a square Erase action on its left.
+The metadata's **Display name** and **Alias** values can be clicked to edit them.
+Saving uses `AccountService.Patch` with the account UUID and its last-read
+`date_updated`; conflicting edits are refused rather than overwritten. Agent
+and authentication backend stay fixed, and general `AccountService.Apply` writes
+remain closed.
+
+An alias is a public handle, not the authentication directory's identity. Renaming
+it preserves the account UUID, existing sessions, login, grants, bindings and
+auxiliary AI assignments. The Manager keeps the original private profile key in
+`account_runtime_identity`, which is created and backfilled automatically on
+startup. Reusing an old alias for a new account gives it a separate profile and
+UUID. This editing support requires the updated Manager; no database reset,
+session restart or project recreation is needed.
+
+Usage covers retained
 conversation records for the account's listed sessions; it does not represent
 provider billing or remaining quota.
 
@@ -101,6 +117,21 @@ account's immutable identity pin and other profiles. Already-issued provider
 access tokens can remain usable until their expiry; the operation does not
 revoke a grant at the provider. Session-local login removal is not supported by
 this account-scoped operation. The web UI confirms logout before executing it.
+
+`AccountService.Erase(AccountRef)` permanently erases the account and every linked
+session, including stopped sessions and sessions in other projects. Each session
+uses the same runtime purge as `SessionService.Erase`: its conversations, owned
+memory, attachments, agent profile, derived usage and auxiliary results are removed.
+Account authentication, token-supply grants, auxiliary authentication volumes,
+AI task profile assignments, bindings and registry rows are removed as well.
+The account alias can be registered again. Project workspaces and shared resources
+remain; files written in the workspace, bytes referenced by other sessions and
+shared operational logs are outside session-owned cleanup.
+
+The web UI explains the cascade in a confirmation modal. Cancellation performs no
+erase. If cleanup fails, the account remains available to retry; completed session
+erasures are not rolled back. The server serializes the cascade against new
+session creation and authentication. This operation requires an updated Manager.
 
 These RPCs and the account filter on `SessionService.ConversationStats` require
 an updated Manager. Older servers show status as unavailable rather than guessing

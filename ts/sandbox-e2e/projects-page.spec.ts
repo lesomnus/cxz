@@ -33,9 +33,11 @@ test("projects use the full workspace with a persistent project picker and scope
   await expect(
     main.getByRole("region", { name: "Project tasks", exact: true }),
   ).toHaveCount(0);
-  const diagnostic = main
-    .getByRole("region", { name: "Diagnostics", exact: true })
-    .locator("dl > div");
+  const information = main.getByRole("region", {
+    name: "Information",
+    exact: true,
+  });
+  const diagnostic = information.locator("dl > div");
   const firstDiagnostic = (await diagnostic.first().boundingBox())!;
   const secondDiagnostic = (await diagnostic.nth(1).boundingBox())!;
   expect(secondDiagnostic.y).toBe(firstDiagnostic.y);
@@ -62,8 +64,15 @@ test("projects use the full workspace with a persistent project picker and scope
   const sectionGap = await sessions
     .locator("..")
     .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
+  const pageInset = await main
+    .locator(
+      ":scope > .panel-scroll-region > .panel-scroll-content > .panel-scroll-inner",
+    )
+    .evaluate((el) => parseFloat(getComputedStyle(el).paddingTop));
+  const informationBounds = (await information.boundingBox())!;
+  expect(informationBounds.y).toBe(toolbar.y + toolbar.height + pageInset);
   expect((await sessions.boundingBox())!.y).toBe(
-    toolbar.y + toolbar.height + sectionGap,
+    informationBounds.y + informationBounds.height + sectionGap,
   );
   const cards = main
     .getByRole("region", { name: "Session list", exact: true })
@@ -192,7 +201,7 @@ test("project row and bulk controls use the sandbox session lifecycle", async ({
   await first.getByRole("checkbox").check();
   await second.getByRole("checkbox").check();
   const actions = page.getByRole("button", {
-    name: /^\d+ selected$/,
+    name: "Selected session actions",
     exact: true,
   });
   await actions.click();
@@ -202,7 +211,9 @@ test("project row and bulk controls use the sandbox session lifecycle", async ({
   await stop.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(first.getByRole("img")).toHaveAccessibleName("Stopped");
   await expect(second.getByRole("img")).toHaveAccessibleName("Stopped");
-  await expect(actions).toBeDisabled();
+  await expect(first.getByRole("checkbox")).not.toBeChecked();
+  await expect(second.getByRole("checkbox")).not.toBeChecked();
+  await expect(actions).toBeEnabled();
 
   await first.getByRole("checkbox").check();
   await second.getByRole("checkbox").check();
@@ -249,11 +260,17 @@ test("project Session add opens the shared creation dialog scoped to the selecte
 }) => {
   await page.goto("/sandbox.html#/c/_/project/project-2");
   const main = page.getByRole("main", { name: "Project workspace" });
-  const add = main.getByRole("button", { name: "Add session", exact: true });
-  await expect(add).toBeEnabled({ timeout: 45000 });
+  const actions = main.getByRole("button", {
+    name: "Selected session actions",
+    exact: true,
+  });
+  await expect(actions).toBeEnabled({ timeout: 45000 });
+  await actions.click();
   await expect(
-    main.getByRole("button", { name: "0 selected", exact: true }),
+    page.getByRole("menuitem", { name: "Stop", exact: true }),
   ).toBeDisabled();
+  const add = page.getByRole("menuitem", { name: "Add session", exact: true });
+  await expect(add).toBeEnabled();
   await add.click();
   const dialog = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(
@@ -266,7 +283,7 @@ test("project Session add opens the shared creation dialog scoped to the selecte
     .toBe(true);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  await expect(add).toBeFocused();
+  await expect(actions).toBeFocused();
   await expect(page).toHaveURL(/\/c\/_\/project\/project-2$/);
 });
 
@@ -415,11 +432,6 @@ test("project Stop, Start and Remove move the container and keep the project", a
   const actions = page.getByRole("region", { name: "Actions", exact: true });
   const button = (name: string) =>
     actions.getByRole("button", { name, exact: true });
-  const status = page
-    .getByRole("region", { name: "Environment", exact: true })
-    .locator("dl > div")
-    .filter({ has: page.locator("dt", { hasText: /^Status$/ }) })
-    .locator("dd");
   const confirm = async (action: string, dialogName: string) => {
     await button(action).click();
     const dialog = page.getByRole("dialog", { name: dialogName, exact: true });
@@ -429,10 +441,10 @@ test("project Stop, Start and Remove move the container and keep the project", a
 
   await expect(button("Stop")).toBeEnabled({ timeout: 45000 });
   await expect(button("Start")).toBeDisabled();
-  await expect(status).toHaveText("Running");
+  await expect(button("Remove")).toBeEnabled();
 
   await confirm("Stop", "Stop project");
-  await expect(status).toHaveText("Stopped");
+  await expect(button("Remove")).toBeEnabled();
   await expect(button("Stop")).toBeDisabled();
   await expect(button("Start")).toBeEnabled();
 
@@ -447,14 +459,14 @@ test("project Stop, Start and Remove move the container and keep the project", a
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
 
   await confirm("Start", "Start project");
-  await expect(status).toHaveText("Running");
+  await expect(button("Stop")).toBeEnabled();
   await expect(button("Start")).toBeDisabled();
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(group).toBeVisible();
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
 
   await confirm("Remove", "Remove container");
-  await expect(status).toHaveText("No container");
+  await expect(button("Stop")).toBeDisabled();
   await expect(button("Remove")).toBeDisabled();
   // Start is what makes a project run, so it is offered with no container as
   // well: it builds one. The sandbox answers it the same way either way.
@@ -483,7 +495,7 @@ test("project Stop, Start and Remove move the container and keep the project", a
   // group, including its retained sessions, without reloading the workspace.
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
   await confirm("Start", "Start project");
-  await expect(status).toHaveText("Running");
+  await expect(button("Stop")).toBeEnabled();
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(group).toBeVisible();
   await expect(group.locator(".tree-session")).toHaveCount(8);
