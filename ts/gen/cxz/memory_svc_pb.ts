@@ -20,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/memory_svc.g.proto.
  */
 export const file_cxz_memory_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChZjeHovbWVtb3J5X3N2Yy5nLnByb3RvEgNjeHoirwMKEE1lbW9yeUFkZFJlcXVlc3QSCgoCaWQYASABKAwSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjEKBmxhYmVscxgHIAMoCzIhLmN4ei5NZW1vcnlBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EiAKB3Byb2plY3QYCCABKAsyDy5jeHouUHJvamVjdFJlZhIcCg1vd25lcl9zZXNzaW9uGAkgASgJQgWqAQIIAhIXCghyZXZpc2lvbhgKIAEoBEIFqgECCAISMAoMZGF0ZV9kZWxldGVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKB2NvbnRlbnQYECABKAlCBaoBAggCEhgKCWNsaWVudF9pZBgRIAEoCUIFqgECCAIaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJSChBNZW1vcnlHZXRSZXF1ZXN0EhsKA3JlZhgBIAEoCzIOLmN4ei5NZW1vcnlSZWYSIQoGc2VsZWN0GAIgASgLMhEuY3h6Lk1lbW9yeVNlbGVjdCJpCglNZW1vcnlSZWYSDAoCaWQYASABKAxIABIPCgVhbGlhcxgEIAEoCUgAEhMKCWNsaWVudF9pZBgRIAEoCUgAEiEKB3Byb2plY3QY6AcgASgLMg8uY3h6LlByb2plY3RSZWZCBQoDa2V5IooCCgxNZW1vcnlTZWxlY3QSCwoDYWxsGAEgASgIEg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSIwoHcHJvamVjdBgIIAEoCzISLmN4ei5Qcm9qZWN0U2VsZWN0EhUKDW93bmVyX3Nlc3Npb24YCSABKAgSEAoIcmV2aXNpb24YCiABKAgSFAoMZGF0ZV9kZWxldGVkGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSDwoHY29udGVudBgQIAEoCBIRCgljbGllbnRfaWQYESABKAgilQMKEk1lbW9yeVBhdGNoUmVxdWVzdBIbCgNyZWYYASABKAsyDi5jeHouTWVtb3J5UmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRIzCgZsYWJlbHMYDiADKAsyIy5jeHouTWVtb3J5UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EhAKCHJldmlzaW9uGBQgASgEEjAKDGRhdGVfZGVsZXRlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGQoRZGF0ZV9kZWxldGVkX251bGwYFyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSDwoHY29udGVudBggIAEoCRIVCgxjbGVhcl9sYWJlbHMY6AcgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiTgoSTWVtb3J5QXBwbHlSZXF1ZXN0EhsKA3JlZhgBIAEoCzIOLmN4ei5NZW1vcnlSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIlChNNZW1vcnlFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCLyAQoRTWVtb3J5TGlzdFJlcXVlc3QSIgoHZmlsdGVycxgBIAMoCzIRLmN4ei5NZW1vcnlGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiEKB3Byb2plY3QY6AcgASgLMg8uY3h6LlByb2plY3RSZWYSIQoHc2Vzc2lvbhjpByABKAsyDy5jeHouU2Vzc2lvblJlZhIgCgVzY29wZRjqByABKA4yEC5jeHouTWVtb3J5U2NvcGUSDgoFcXVlcnkY6wcgASgJIkUKEk1lbW9yeUxpc3RSZXNwb25zZRIaCgVpdGVtcxgBIAMoCzILLmN4ei5NZW1vcnkSEwoEbmV4dBgCIAEoCUIFqgECCAIiwgEKDE1lbW9yeUZpbHRlchIbCgNyZWYYASABKAsyDi5jeHouTWVtb3J5UmVmEiAKB3Byb2plY3QYAiABKAsyDy5jeHouUHJvamVjdFJlZhIVCg1vd25lcl9zZXNzaW9uGAMgASgJEi0KBmxhYmVscxgEIAMoCzIdLmN4ei5NZW1vcnlGaWx0ZXIuTGFiZWxzRW50cnkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASK+AQoSTWVtb3J5V2F0Y2hSZXF1ZXN0EiIKB2ZpbHRlcnMYASADKAsyES5jeHouTWVtb3J5RmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCEiEKB3Byb2plY3QY6AcgASgLMg8uY3h6LlByb2plY3RSZWYSIQoHc2Vzc2lvbhjpByABKAsyDy5jeHouU2Vzc2lvblJlZhIgCgVzY29wZRjqByABKA4yEC5jeHouTWVtb3J5U2NvcGUiOgoTTWVtb3J5V2F0Y2hSZXNwb25zZRIjCgVpdGVtcxgBIAMoCzIULmN4ei5NZW1vcnlXYXRjaEl0ZW0iUAoPTWVtb3J5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEhoKBXZhbHVlGAIgASgLMgsuY3h6Lk1lbW9yeRIVCgZhY3Rpb24YAyABKAlCBaoBAggCIoABChFNZW1vcnlSZWFkUmVxdWVzdBIbCgNyZWYYASABKAsyDi5jeHouTWVtb3J5UmVmEhUKDWJhc2VfcmV2aXNpb24YAiABKAQSEAoIcmV2aXNpb24YAyABKAQSJQoGZm9ybWF0GAQgASgOMhUuY3h6Lk1lbW9yeVJlYWRGb3JtYXQitgEKD01lbW9yeVJlYWRSZXBseRIbCgZtZW1vcnkYASABKAsyCy5jeHouTWVtb3J5EhUKDWJhc2VfcmV2aXNpb24YAiABKAQSEAoIcmV2aXNpb24YAyABKAQSJQoGZm9ybWF0GAQgASgOMhUuY3h6Lk1lbW9yeVJlYWRGb3JtYXQSDwoHY29udGVudBgFIAEoCRIMCgRkaWZmGAYgASgJEhcKD2ZhbGxiYWNrX3JlYXNvbhgHIAEoCSJbChVNZW1vcnlWZXJzaW9uc1JlcXVlc3QSGwoDcmVmGAEgASgLMg4uY3h6Lk1lbW9yeVJlZhIXCg9iZWZvcmVfcmV2aXNpb24YAiABKAQSDAoEc2l6ZRgDIAEoBSJSChNNZW1vcnlWZXJzaW9uc1JlcGx5EiQKCHZlcnNpb25zGAEgAygLMhIuY3h6Lk1lbW9yeVZlcnNpb24SFQoNbmV4dF9yZXZpc2lvbhgCIAEoBCJ8Cg1NZW1vcnlWZXJzaW9uEhEKCW1lbW9yeV9pZBgBIAEoDBIQCghyZXZpc2lvbhgCIAEoBBIUCgxjb250ZW50X2hhc2gYAyABKAkSMAoMZGF0ZV9jcmVhdGVkGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJWChRNZW1vcnlDaGFuZ2VzUmVxdWVzdBIgCgdwcm9qZWN0GAEgASgLMg8uY3h6LlByb2plY3RSZWYSDgoGY3Vyc29yGAIgASgJEgwKBHNpemUYAyABKAUihAEKEk1lbW9yeUNoYW5nZXNSZXBseRIiCgdjaGFuZ2VzGAEgAygLMhEuY3h6Lk1lbW9yeUNoYW5nZRIOCgZjdXJzb3IYAiABKAkSEAoIYmFzZWxpbmUYAyABKAgSEAoIaGFzX21vcmUYBCABKAgSFgoOcmVzZXRfcmVxdWlyZWQYBSABKAgiZwoMTWVtb3J5Q2hhbmdlEhAKCHNlcXVlbmNlGAEgASgEEgwKBGtpbmQYAiABKAkSEQoJbWVtb3J5X2lkGAMgASgMEhIKCnByb2plY3RfaWQYBCABKAwSEAoIcmV2aXNpb24YBSABKAQiZQoUTWVtb3J5UmVzdG9yZVJlcXVlc3QSGwoDcmVmGAEgASgLMg4uY3h6Lk1lbW9yeVJlZhIwCgxkYXRlX3VwZGF0ZWQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImMKEk1lbW9yeVB1cmdlUmVxdWVzdBIbCgNyZWYYASABKAsyDi5jeHouTWVtb3J5UmVmEjAKDGRhdGVfdXBkYXRlZBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAqXAoLTWVtb3J5U2NvcGUSHAoYTUVNT1JZX1NDT1BFX1VOU1BFQ0lGSUVEEAASFwoTTUVNT1JZX1NDT1BFX0FDVElWRRABEhYKEk1FTU9SWV9TQ09QRV9UUkFTSBACKo0BChBNZW1vcnlSZWFkRm9ybWF0EiIKHk1FTU9SWV9SRUFEX0ZPUk1BVF9VTlNQRUNJRklFRBAAEhsKF01FTU9SWV9SRUFEX0ZPUk1BVF9GVUxMEAESGwoXTUVNT1JZX1JFQURfRk9STUFUX0FVVE8QAhIbChdNRU1PUllfUkVBRF9GT1JNQVRfRElGRhADMpMFCg1NZW1vcnlTZXJ2aWNlEikKA0FkZBIVLmN4ei5NZW1vcnlBZGRSZXF1ZXN0GgsuY3h6Lk1lbW9yeRIpCgNHZXQSFS5jeHouTWVtb3J5R2V0UmVxdWVzdBoLLmN4ei5NZW1vcnkSLQoFUGF0Y2gSFy5jeHouTWVtb3J5UGF0Y2hSZXF1ZXN0GgsuY3h6Lk1lbW9yeRItCgVBcHBseRIXLmN4ei5NZW1vcnlBcHBseVJlcXVlc3QaCy5jeHouTWVtb3J5EjEKBUVyYXNlEg4uY3h6Lk1lbW9yeVJlZhoYLmN4ei5NZW1vcnlFcmFzZVJlc3BvbnNlEjcKBExpc3QSFi5jeHouTWVtb3J5TGlzdFJlcXVlc3QaFy5jeHouTWVtb3J5TGlzdFJlc3BvbnNlEjwKBVdhdGNoEhcuY3h6Lk1lbW9yeVdhdGNoUmVxdWVzdBoYLmN4ei5NZW1vcnlXYXRjaFJlc3BvbnNlMAESNAoEUmVhZBIWLmN4ei5NZW1vcnlSZWFkUmVxdWVzdBoULmN4ei5NZW1vcnlSZWFkUmVwbHkSQAoIVmVyc2lvbnMSGi5jeHouTWVtb3J5VmVyc2lvbnNSZXF1ZXN0GhguY3h6Lk1lbW9yeVZlcnNpb25zUmVwbHkSPQoHQ2hhbmdlcxIZLmN4ei5NZW1vcnlDaGFuZ2VzUmVxdWVzdBoXLmN4ei5NZW1vcnlDaGFuZ2VzUmVwbHkSMQoHUmVzdG9yZRIZLmN4ei5NZW1vcnlSZXN0b3JlUmVxdWVzdBoLLmN4ei5NZW1vcnkSOgoFUHVyZ2USFy5jeHouTWVtb3J5UHVyZ2VSZXF1ZXN0GhguY3h6Lk1lbW9yeUVyYXNlUmVzcG9uc2VCIlogZ2l0aHViLmNvbS9sZXNvbW51cy9jeHovcmVzb3VyY2ViCGVkaXRpb25zcOgH", [file_cxz_memory, file_cxz_project_svc_g, file_cxz_session_svc_g, file_google_protobuf_timestamp, file_patch_patch]);
+  fileDesc("ChZjeHovbWVtb3J5X3N2Yy5nLnByb3RvEgNjeHoirwMKEE1lbW9yeUFkZFJlcXVlc3QSCgoCaWQYASABKAwSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjEKBmxhYmVscxgHIAMoCzIhLmN4ei5NZW1vcnlBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EiAKB3Byb2plY3QYCCABKAsyDy5jeHouUHJvamVjdFJlZhIcCg1vd25lcl9zZXNzaW9uGAkgASgJQgWqAQIIAhIXCghyZXZpc2lvbhgKIAEoBEIFqgECCAISMAoMZGF0ZV9kZWxldGVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKB2NvbnRlbnQYECABKAlCBaoBAggCEhgKCWNsaWVudF9pZBgRIAEoCUIFqgECCAIaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJSChBNZW1vcnlHZXRSZXF1ZXN0EhsKA3JlZhgBIAEoCzIOLmN4ei5NZW1vcnlSZWYSIQoGc2VsZWN0GAIgASgLMhEuY3h6Lk1lbW9yeVNlbGVjdCJpCglNZW1vcnlSZWYSDAoCaWQYASABKAxIABIPCgVhbGlhcxgEIAEoCUgAEhMKCWNsaWVudF9pZBgRIAEoCUgAEiEKB3Byb2plY3QY6AcgASgLMg8uY3h6LlByb2plY3RSZWZCBQoDa2V5IooCCgxNZW1vcnlTZWxlY3QSCwoDYWxsGAEgASgIEg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSIwoHcHJvamVjdBgIIAEoCzISLmN4ei5Qcm9qZWN0U2VsZWN0EhUKDW93bmVyX3Nlc3Npb24YCSABKAgSEAoIcmV2aXNpb24YCiABKAgSFAoMZGF0ZV9kZWxldGVkGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSDwoHY29udGVudBgQIAEoCBIRCgljbGllbnRfaWQYESABKAgiuwMKEk1lbW9yeVBhdGNoUmVxdWVzdBIbCgNyZWYYASABKAsyDi5jeHouTWVtb3J5UmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRIzCgZsYWJlbHMYDiADKAsyIy5jeHouTWVtb3J5UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EhAKCHJldmlzaW9uGBQgASgEEjAKDGRhdGVfZGVsZXRlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGQoRZGF0ZV9kZWxldGVkX251bGwYFyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSDwoHY29udGVudBggIAEoCRIcCgxjbGVhcl9sYWJlbHMY6AcgASgIQgWqAQIIAhIdCg1iYXNlX3JldmlzaW9uGOkHIAEoBEIFqgECCAEaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJOChJNZW1vcnlBcHBseVJlcXVlc3QSGwoDcmVmGAEgASgLMg4uY3h6Lk1lbW9yeVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiUKE01lbW9yeUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIoACChFNZW1vcnlMaXN0UmVxdWVzdBIiCgdmaWx0ZXJzGAEgAygLMhEuY3h6Lk1lbW9yeUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIQoHcHJvamVjdBjoByABKAsyDy5jeHouUHJvamVjdFJlZhIhCgdzZXNzaW9uGOkHIAEoCzIPLmN4ei5TZXNzaW9uUmVmEicKBXNjb3BlGOoHIAEoDjIQLmN4ei5NZW1vcnlTY29wZUIFqgECCAISFQoFcXVlcnkY6wcgASgJQgWqAQIIAiJFChJNZW1vcnlMaXN0UmVzcG9uc2USGgoFaXRlbXMYASADKAsyCy5jeHouTWVtb3J5EhMKBG5leHQYAiABKAlCBaoBAggCIsIBCgxNZW1vcnlGaWx0ZXISGwoDcmVmGAEgASgLMg4uY3h6Lk1lbW9yeVJlZhIgCgdwcm9qZWN0GAIgASgLMg8uY3h6LlByb2plY3RSZWYSFQoNb3duZXJfc2Vzc2lvbhgDIAEoCRItCgZsYWJlbHMYBCADKAsyHS5jeHouTWVtb3J5RmlsdGVyLkxhYmVsc0VudHJ5Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEixQEKEk1lbW9yeVdhdGNoUmVxdWVzdBIiCgdmaWx0ZXJzGAEgAygLMhEuY3h6Lk1lbW9yeUZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAhIhCgdwcm9qZWN0GOgHIAEoCzIPLmN4ei5Qcm9qZWN0UmVmEiEKB3Nlc3Npb24Y6QcgASgLMg8uY3h6LlNlc3Npb25SZWYSJwoFc2NvcGUY6gcgASgOMhAuY3h6Lk1lbW9yeVNjb3BlQgWqAQIIAiI6ChNNZW1vcnlXYXRjaFJlc3BvbnNlEiMKBWl0ZW1zGAEgAygLMhQuY3h6Lk1lbW9yeVdhdGNoSXRlbSJQCg9NZW1vcnlXYXRjaEl0ZW0SCgoCaWQYASABKAwSGgoFdmFsdWUYAiABKAsyCy5jeHouTWVtb3J5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIilQEKEU1lbW9yeVJlYWRSZXF1ZXN0EhsKA3JlZhgBIAEoCzIOLmN4ei5NZW1vcnlSZWYSHAoNYmFzZV9yZXZpc2lvbhgCIAEoBEIFqgECCAISFwoIcmV2aXNpb24YAyABKARCBaoBAggCEiwKBmZvcm1hdBgEIAEoDjIVLmN4ei5NZW1vcnlSZWFkRm9ybWF0QgWqAQIIAiLgAQoPTWVtb3J5UmVhZFJlcGx5EhsKBm1lbW9yeRgBIAEoCzILLmN4ei5NZW1vcnkSHAoNYmFzZV9yZXZpc2lvbhgCIAEoBEIFqgECCAISFwoIcmV2aXNpb24YAyABKARCBaoBAggCEiwKBmZvcm1hdBgEIAEoDjIVLmN4ei5NZW1vcnlSZWFkRm9ybWF0QgWqAQIIAhIWCgdjb250ZW50GAUgASgJQgWqAQIIAhITCgRkaWZmGAYgASgJQgWqAQIIAhIeCg9mYWxsYmFja19yZWFzb24YByABKAlCBaoBAggCImkKFU1lbW9yeVZlcnNpb25zUmVxdWVzdBIbCgNyZWYYASABKAsyDi5jeHouTWVtb3J5UmVmEh4KD2JlZm9yZV9yZXZpc2lvbhgCIAEoBEIFqgECCAISEwoEc2l6ZRgDIAEoBUIFqgECCAIiWQoTTWVtb3J5VmVyc2lvbnNSZXBseRIkCgh2ZXJzaW9ucxgBIAMoCzISLmN4ei5NZW1vcnlWZXJzaW9uEhwKDW5leHRfcmV2aXNpb24YAiABKARCBaoBAggCIooBCg1NZW1vcnlWZXJzaW9uEhEKCW1lbW9yeV9pZBgBIAEoDBIXCghyZXZpc2lvbhgCIAEoBEIFqgECCAISGwoMY29udGVudF9oYXNoGAMgASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImQKFE1lbW9yeUNoYW5nZXNSZXF1ZXN0EiAKB3Byb2plY3QYASABKAsyDy5jeHouUHJvamVjdFJlZhIVCgZjdXJzb3IYAiABKAlCBaoBAggCEhMKBHNpemUYAyABKAVCBaoBAggCIqABChJNZW1vcnlDaGFuZ2VzUmVwbHkSIgoHY2hhbmdlcxgBIAMoCzIRLmN4ei5NZW1vcnlDaGFuZ2USFQoGY3Vyc29yGAIgASgJQgWqAQIIAhIXCghiYXNlbGluZRgDIAEoCEIFqgECCAISFwoIaGFzX21vcmUYBCABKAhCBaoBAggCEh0KDnJlc2V0X3JlcXVpcmVkGAUgASgIQgWqAQIIAiJ8CgxNZW1vcnlDaGFuZ2USFwoIc2VxdWVuY2UYASABKARCBaoBAggCEhMKBGtpbmQYAiABKAlCBaoBAggCEhEKCW1lbW9yeV9pZBgDIAEoDBISCgpwcm9qZWN0X2lkGAQgASgMEhcKCHJldmlzaW9uGAUgASgEQgWqAQIIAiJlChRNZW1vcnlSZXN0b3JlUmVxdWVzdBIbCgNyZWYYASABKAsyDi5jeHouTWVtb3J5UmVmEjAKDGRhdGVfdXBkYXRlZBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYwoSTWVtb3J5UHVyZ2VSZXF1ZXN0EhsKA3JlZhgBIAEoCzIOLmN4ei5NZW1vcnlSZWYSMAoMZGF0ZV91cGRhdGVkGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCpcCgtNZW1vcnlTY29wZRIcChhNRU1PUllfU0NPUEVfVU5TUEVDSUZJRUQQABIXChNNRU1PUllfU0NPUEVfQUNUSVZFEAESFgoSTUVNT1JZX1NDT1BFX1RSQVNIEAIqjQEKEE1lbW9yeVJlYWRGb3JtYXQSIgoeTUVNT1JZX1JFQURfRk9STUFUX1VOU1BFQ0lGSUVEEAASGwoXTUVNT1JZX1JFQURfRk9STUFUX0ZVTEwQARIbChdNRU1PUllfUkVBRF9GT1JNQVRfQVVUTxACEhsKF01FTU9SWV9SRUFEX0ZPUk1BVF9ESUZGEAMykwUKDU1lbW9yeVNlcnZpY2USKQoDQWRkEhUuY3h6Lk1lbW9yeUFkZFJlcXVlc3QaCy5jeHouTWVtb3J5EikKA0dldBIVLmN4ei5NZW1vcnlHZXRSZXF1ZXN0GgsuY3h6Lk1lbW9yeRItCgVQYXRjaBIXLmN4ei5NZW1vcnlQYXRjaFJlcXVlc3QaCy5jeHouTWVtb3J5Ei0KBUFwcGx5EhcuY3h6Lk1lbW9yeUFwcGx5UmVxdWVzdBoLLmN4ei5NZW1vcnkSMQoFRXJhc2USDi5jeHouTWVtb3J5UmVmGhguY3h6Lk1lbW9yeUVyYXNlUmVzcG9uc2USNwoETGlzdBIWLmN4ei5NZW1vcnlMaXN0UmVxdWVzdBoXLmN4ei5NZW1vcnlMaXN0UmVzcG9uc2USPAoFV2F0Y2gSFy5jeHouTWVtb3J5V2F0Y2hSZXF1ZXN0GhguY3h6Lk1lbW9yeVdhdGNoUmVzcG9uc2UwARI0CgRSZWFkEhYuY3h6Lk1lbW9yeVJlYWRSZXF1ZXN0GhQuY3h6Lk1lbW9yeVJlYWRSZXBseRJACghWZXJzaW9ucxIaLmN4ei5NZW1vcnlWZXJzaW9uc1JlcXVlc3QaGC5jeHouTWVtb3J5VmVyc2lvbnNSZXBseRI9CgdDaGFuZ2VzEhkuY3h6Lk1lbW9yeUNoYW5nZXNSZXF1ZXN0GhcuY3h6Lk1lbW9yeUNoYW5nZXNSZXBseRIxCgdSZXN0b3JlEhkuY3h6Lk1lbW9yeVJlc3RvcmVSZXF1ZXN0GgsuY3h6Lk1lbW9yeRI6CgVQdXJnZRIXLmN4ei5NZW1vcnlQdXJnZVJlcXVlc3QaGC5jeHouTWVtb3J5RXJhc2VSZXNwb25zZUIiWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZWIIZWRpdGlvbnNw6Ac", [file_cxz_memory, file_cxz_project_svc_g, file_cxz_session_svc_g, file_google_protobuf_timestamp, file_patch_patch]);
 
 /**
  * @generated from message cxz.MemoryAddRequest
@@ -312,9 +312,14 @@ export type MemoryPatchRequest = Message<"cxz.MemoryPatchRequest"> & {
   content: string;
 
   /**
-   * @generated from field: bool clear_labels = 1000;
+   * @generated from field: bool clear_labels = 1000 [features.field_presence = IMPLICIT];
    */
   clearLabels: boolean;
+
+  /**
+   * @generated from field: uint64 base_revision = 1001 [features.field_presence = EXPLICIT];
+   */
+  baseRevision: bigint;
 };
 
 /**
@@ -421,12 +426,12 @@ export type MemoryListRequest = Message<"cxz.MemoryListRequest"> & {
   session?: SessionRef | undefined;
 
   /**
-   * @generated from field: cxz.MemoryScope scope = 1002;
+   * @generated from field: cxz.MemoryScope scope = 1002 [features.field_presence = IMPLICIT];
    */
   scope: MemoryScope;
 
   /**
-   * @generated from field: string query = 1003;
+   * @generated from field: string query = 1003 [features.field_presence = IMPLICIT];
    */
   query: string;
 };
@@ -539,7 +544,7 @@ export type MemoryWatchRequest = Message<"cxz.MemoryWatchRequest"> & {
   session?: SessionRef | undefined;
 
   /**
-   * @generated from field: cxz.MemoryScope scope = 1002;
+   * @generated from field: cxz.MemoryScope scope = 1002 [features.field_presence = IMPLICIT];
    */
   scope: MemoryScope;
 };
@@ -627,17 +632,17 @@ export type MemoryReadRequest = Message<"cxz.MemoryReadRequest"> & {
   ref?: MemoryRef | undefined;
 
   /**
-   * @generated from field: uint64 base_revision = 2;
+   * @generated from field: uint64 base_revision = 2 [features.field_presence = IMPLICIT];
    */
   baseRevision: bigint;
 
   /**
-   * @generated from field: uint64 revision = 3;
+   * @generated from field: uint64 revision = 3 [features.field_presence = IMPLICIT];
    */
   revision: bigint;
 
   /**
-   * @generated from field: cxz.MemoryReadFormat format = 4;
+   * @generated from field: cxz.MemoryReadFormat format = 4 [features.field_presence = IMPLICIT];
    */
   format: MemoryReadFormat;
 };
@@ -659,32 +664,32 @@ export type MemoryReadReply = Message<"cxz.MemoryReadReply"> & {
   memory?: Memory | undefined;
 
   /**
-   * @generated from field: uint64 base_revision = 2;
+   * @generated from field: uint64 base_revision = 2 [features.field_presence = IMPLICIT];
    */
   baseRevision: bigint;
 
   /**
-   * @generated from field: uint64 revision = 3;
+   * @generated from field: uint64 revision = 3 [features.field_presence = IMPLICIT];
    */
   revision: bigint;
 
   /**
-   * @generated from field: cxz.MemoryReadFormat format = 4;
+   * @generated from field: cxz.MemoryReadFormat format = 4 [features.field_presence = IMPLICIT];
    */
   format: MemoryReadFormat;
 
   /**
-   * @generated from field: string content = 5;
+   * @generated from field: string content = 5 [features.field_presence = IMPLICIT];
    */
   content: string;
 
   /**
-   * @generated from field: string diff = 6;
+   * @generated from field: string diff = 6 [features.field_presence = IMPLICIT];
    */
   diff: string;
 
   /**
-   * @generated from field: string fallback_reason = 7;
+   * @generated from field: string fallback_reason = 7 [features.field_presence = IMPLICIT];
    */
   fallbackReason: string;
 };
@@ -706,12 +711,12 @@ export type MemoryVersionsRequest = Message<"cxz.MemoryVersionsRequest"> & {
   ref?: MemoryRef | undefined;
 
   /**
-   * @generated from field: uint64 before_revision = 2;
+   * @generated from field: uint64 before_revision = 2 [features.field_presence = IMPLICIT];
    */
   beforeRevision: bigint;
 
   /**
-   * @generated from field: int32 size = 3;
+   * @generated from field: int32 size = 3 [features.field_presence = IMPLICIT];
    */
   size: number;
 };
@@ -733,7 +738,7 @@ export type MemoryVersionsReply = Message<"cxz.MemoryVersionsReply"> & {
   versions: MemoryVersion[];
 
   /**
-   * @generated from field: uint64 next_revision = 2;
+   * @generated from field: uint64 next_revision = 2 [features.field_presence = IMPLICIT];
    */
   nextRevision: bigint;
 };
@@ -755,12 +760,12 @@ export type MemoryVersion = Message<"cxz.MemoryVersion"> & {
   memoryId: Uint8Array;
 
   /**
-   * @generated from field: uint64 revision = 2;
+   * @generated from field: uint64 revision = 2 [features.field_presence = IMPLICIT];
    */
   revision: bigint;
 
   /**
-   * @generated from field: string content_hash = 3;
+   * @generated from field: string content_hash = 3 [features.field_presence = IMPLICIT];
    */
   contentHash: string;
 
@@ -787,12 +792,12 @@ export type MemoryChangesRequest = Message<"cxz.MemoryChangesRequest"> & {
   project?: ProjectRef | undefined;
 
   /**
-   * @generated from field: string cursor = 2;
+   * @generated from field: string cursor = 2 [features.field_presence = IMPLICIT];
    */
   cursor: string;
 
   /**
-   * @generated from field: int32 size = 3;
+   * @generated from field: int32 size = 3 [features.field_presence = IMPLICIT];
    */
   size: number;
 };
@@ -814,22 +819,22 @@ export type MemoryChangesReply = Message<"cxz.MemoryChangesReply"> & {
   changes: MemoryChange[];
 
   /**
-   * @generated from field: string cursor = 2;
+   * @generated from field: string cursor = 2 [features.field_presence = IMPLICIT];
    */
   cursor: string;
 
   /**
-   * @generated from field: bool baseline = 3;
+   * @generated from field: bool baseline = 3 [features.field_presence = IMPLICIT];
    */
   baseline: boolean;
 
   /**
-   * @generated from field: bool has_more = 4;
+   * @generated from field: bool has_more = 4 [features.field_presence = IMPLICIT];
    */
   hasMore: boolean;
 
   /**
-   * @generated from field: bool reset_required = 5;
+   * @generated from field: bool reset_required = 5 [features.field_presence = IMPLICIT];
    */
   resetRequired: boolean;
 };
@@ -846,12 +851,12 @@ export const MemoryChangesReplySchema: GenMessage<MemoryChangesReply> = /*@__PUR
  */
 export type MemoryChange = Message<"cxz.MemoryChange"> & {
   /**
-   * @generated from field: uint64 sequence = 1;
+   * @generated from field: uint64 sequence = 1 [features.field_presence = IMPLICIT];
    */
   sequence: bigint;
 
   /**
-   * @generated from field: string kind = 2;
+   * @generated from field: string kind = 2 [features.field_presence = IMPLICIT];
    */
   kind: string;
 
@@ -866,7 +871,7 @@ export type MemoryChange = Message<"cxz.MemoryChange"> & {
   projectId: Uint8Array;
 
   /**
-   * @generated from field: uint64 revision = 5;
+   * @generated from field: uint64 revision = 5 [features.field_presence = IMPLICIT];
    */
   revision: bigint;
 };

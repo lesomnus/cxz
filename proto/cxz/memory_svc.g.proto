@@ -114,7 +114,8 @@ message MemoryPatchRequest {
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
   string content = 32;
-  bool clear_labels = 1000;
+  bool clear_labels = 1000 [features.field_presence = IMPLICIT];
+  uint64 base_revision = 1001 [features.field_presence = EXPLICIT];
 }
 
 message MemoryApplyRequest {
@@ -151,8 +152,8 @@ message MemoryListRequest {
   bool reverse = 4 [features.field_presence = IMPLICIT];
   ProjectRef project = 1000;
   SessionRef session = 1001;
-  MemoryScope scope = 1002;
-  string query = 1003;
+  MemoryScope scope = 1002 [features.field_presence = IMPLICIT];
+  string query = 1003 [features.field_presence = IMPLICIT];
 }
 
 message MemoryListResponse {
@@ -198,7 +199,7 @@ message MemoryWatchRequest {
   bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
   ProjectRef project = 1000;
   SessionRef session = 1001;
-  MemoryScope scope = 1002;
+  MemoryScope scope = 1002 [features.field_presence = IMPLICIT];
 }
 
 message MemoryWatchResponse {
@@ -233,19 +234,19 @@ message MemoryWatchItem {
 
 message MemoryReadRequest {
   MemoryRef ref = 1;
-  uint64 base_revision = 2;
-  uint64 revision = 3;
-  MemoryReadFormat format = 4;
+  uint64 base_revision = 2 [features.field_presence = IMPLICIT];
+  uint64 revision = 3 [features.field_presence = IMPLICIT];
+  MemoryReadFormat format = 4 [features.field_presence = IMPLICIT];
 }
 
 message MemoryReadReply {
   Memory memory = 1;
-  uint64 base_revision = 2;
-  uint64 revision = 3;
-  MemoryReadFormat format = 4;
-  string content = 5;
-  string diff = 6;
-  string fallback_reason = 7;
+  uint64 base_revision = 2 [features.field_presence = IMPLICIT];
+  uint64 revision = 3 [features.field_presence = IMPLICIT];
+  MemoryReadFormat format = 4 [features.field_presence = IMPLICIT];
+  string content = 5 [features.field_presence = IMPLICIT];
+  string diff = 6 [features.field_presence = IMPLICIT];
+  string fallback_reason = 7 [features.field_presence = IMPLICIT];
 }
 
 enum MemoryReadFormat {
@@ -257,42 +258,42 @@ enum MemoryReadFormat {
 
 message MemoryVersionsRequest {
   MemoryRef ref = 1;
-  uint64 before_revision = 2;
-  int32 size = 3;
+  uint64 before_revision = 2 [features.field_presence = IMPLICIT];
+  int32 size = 3 [features.field_presence = IMPLICIT];
 }
 
 message MemoryVersionsReply {
   repeated MemoryVersion versions = 1;
-  uint64 next_revision = 2;
+  uint64 next_revision = 2 [features.field_presence = IMPLICIT];
 }
 
 message MemoryVersion {
   bytes memory_id = 1;
-  uint64 revision = 2;
-  string content_hash = 3;
+  uint64 revision = 2 [features.field_presence = IMPLICIT];
+  string content_hash = 3 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 4;
 }
 
 message MemoryChangesRequest {
   ProjectRef project = 1;
-  string cursor = 2;
-  int32 size = 3;
+  string cursor = 2 [features.field_presence = IMPLICIT];
+  int32 size = 3 [features.field_presence = IMPLICIT];
 }
 
 message MemoryChangesReply {
   repeated MemoryChange changes = 1;
-  string cursor = 2;
-  bool baseline = 3;
-  bool has_more = 4;
-  bool reset_required = 5;
+  string cursor = 2 [features.field_presence = IMPLICIT];
+  bool baseline = 3 [features.field_presence = IMPLICIT];
+  bool has_more = 4 [features.field_presence = IMPLICIT];
+  bool reset_required = 5 [features.field_presence = IMPLICIT];
 }
 
 message MemoryChange {
-  uint64 sequence = 1;
-  string kind = 2;
+  uint64 sequence = 1 [features.field_presence = IMPLICIT];
+  string kind = 2 [features.field_presence = IMPLICIT];
   bytes memory_id = 3;
   bytes project_id = 4;
-  uint64 revision = 5;
+  uint64 revision = 5 [features.field_presence = IMPLICIT];
 }
 
 message MemoryRestoreRequest {

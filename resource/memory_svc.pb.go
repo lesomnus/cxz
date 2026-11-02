@@ -1146,6 +1146,7 @@ type MemoryPatchRequest struct {
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	xxx_hidden_Content          *string                `protobuf:"bytes,32,opt,name=content"`
 	xxx_hidden_ClearLabels      bool                   `protobuf:"varint,1000,opt,name=clear_labels,json=clearLabels"`
+	xxx_hidden_BaseRevision     uint64                 `protobuf:"varint,1001,opt,name=base_revision,json=baseRevision"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
 	XXX_presence                [1]uint32
 	unknownFields               protoimpl.UnknownFields
@@ -1273,23 +1274,30 @@ func (x *MemoryPatchRequest) GetClearLabels() bool {
 	return false
 }
 
+func (x *MemoryPatchRequest) GetBaseRevision() uint64 {
+	if x != nil {
+		return x.xxx_hidden_BaseRevision
+	}
+	return 0
+}
+
 func (x *MemoryPatchRequest) SetRef(v *MemoryRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *MemoryPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 13)
 }
 
 func (x *MemoryPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 13)
 }
 
 func (x *MemoryPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 13)
 }
 
 func (x *MemoryPatchRequest) SetLabels(v map[string]string) {
@@ -1298,7 +1306,7 @@ func (x *MemoryPatchRequest) SetLabels(v map[string]string) {
 
 func (x *MemoryPatchRequest) SetRevision(v uint64) {
 	x.xxx_hidden_Revision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 13)
 }
 
 func (x *MemoryPatchRequest) SetDateDeleted(v *timestamppb.Timestamp) {
@@ -1307,7 +1315,7 @@ func (x *MemoryPatchRequest) SetDateDeleted(v *timestamppb.Timestamp) {
 
 func (x *MemoryPatchRequest) SetDateDeletedNull(v bool) {
 	x.xxx_hidden_DateDeletedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 13)
 }
 
 func (x *MemoryPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1316,17 +1324,21 @@ func (x *MemoryPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *MemoryPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 13)
 }
 
 func (x *MemoryPatchRequest) SetContent(v string) {
 	x.xxx_hidden_Content = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 13)
 }
 
 func (x *MemoryPatchRequest) SetClearLabels(v bool) {
 	x.xxx_hidden_ClearLabels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
+}
+
+func (x *MemoryPatchRequest) SetBaseRevision(v uint64) {
+	x.xxx_hidden_BaseRevision = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 13)
 }
 
 func (x *MemoryPatchRequest) HasRef() bool {
@@ -1399,11 +1411,11 @@ func (x *MemoryPatchRequest) HasContent() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
-func (x *MemoryPatchRequest) HasClearLabels() bool {
+func (x *MemoryPatchRequest) HasBaseRevision() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
 func (x *MemoryPatchRequest) ClearRef() {
@@ -1453,9 +1465,9 @@ func (x *MemoryPatchRequest) ClearContent() {
 	x.xxx_hidden_Content = nil
 }
 
-func (x *MemoryPatchRequest) ClearClearLabels() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
-	x.xxx_hidden_ClearLabels = false
+func (x *MemoryPatchRequest) ClearBaseRevision() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	x.xxx_hidden_BaseRevision = 0
 }
 
 type MemoryPatchRequest_builder struct {
@@ -1488,7 +1500,8 @@ type MemoryPatchRequest_builder struct {
 	// apart from a caller who never considered locking at all.
 	DateUpdatedForce *bool
 	Content          *string
-	ClearLabels      *bool
+	ClearLabels      bool
+	BaseRevision     *uint64
 }
 
 func (b0 MemoryPatchRequest_builder) Build() *MemoryPatchRequest {
@@ -1497,39 +1510,40 @@ func (b0 MemoryPatchRequest_builder) Build() *MemoryPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 13)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 13)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 13)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 13)
 		x.xxx_hidden_Revision = *b.Revision
 	}
 	x.xxx_hidden_DateDeleted = b.DateDeleted
 	if b.DateDeletedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 13)
 		x.xxx_hidden_DateDeletedNull = *b.DateDeletedNull
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 13)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	if b.Content != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 13)
 		x.xxx_hidden_Content = b.Content
 	}
-	if b.ClearLabels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
-		x.xxx_hidden_ClearLabels = *b.ClearLabels
+	x.xxx_hidden_ClearLabels = b.ClearLabels
+	if b.BaseRevision != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 13)
+		x.xxx_hidden_BaseRevision = *b.BaseRevision
 	}
 	return m0
 }
@@ -1708,19 +1722,17 @@ func (b0 MemoryEraseResponse_builder) Build() *MemoryEraseResponse {
 }
 
 type MemoryListRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Filters     *[]*MemoryFilter       `protobuf:"bytes,1,rep,name=filters"`
-	xxx_hidden_Size        int32                  `protobuf:"varint,2,opt,name=size"`
-	xxx_hidden_After       string                 `protobuf:"bytes,3,opt,name=after"`
-	xxx_hidden_Reverse     bool                   `protobuf:"varint,4,opt,name=reverse"`
-	xxx_hidden_Project     *ProjectRef            `protobuf:"bytes,1000,opt,name=project"`
-	xxx_hidden_Session     *SessionRef            `protobuf:"bytes,1001,opt,name=session"`
-	xxx_hidden_Scope       MemoryScope            `protobuf:"varint,1002,opt,name=scope,enum=cxz.MemoryScope"`
-	xxx_hidden_Query       *string                `protobuf:"bytes,1003,opt,name=query"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Filters *[]*MemoryFilter       `protobuf:"bytes,1,rep,name=filters"`
+	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
+	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Project *ProjectRef            `protobuf:"bytes,1000,opt,name=project"`
+	xxx_hidden_Session *SessionRef            `protobuf:"bytes,1001,opt,name=session"`
+	xxx_hidden_Scope   MemoryScope            `protobuf:"varint,1002,opt,name=scope,enum=cxz.MemoryScope"`
+	xxx_hidden_Query   string                 `protobuf:"bytes,1003,opt,name=query"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *MemoryListRequest) Reset() {
@@ -1794,19 +1806,14 @@ func (x *MemoryListRequest) GetSession() *SessionRef {
 
 func (x *MemoryListRequest) GetScope() MemoryScope {
 	if x != nil {
-		if protoimpl.X.Present(&(x.XXX_presence[0]), 6) {
-			return x.xxx_hidden_Scope
-		}
+		return x.xxx_hidden_Scope
 	}
 	return MemoryScope_MEMORY_SCOPE_UNSPECIFIED
 }
 
 func (x *MemoryListRequest) GetQuery() string {
 	if x != nil {
-		if x.xxx_hidden_Query != nil {
-			return *x.xxx_hidden_Query
-		}
-		return ""
+		return x.xxx_hidden_Query
 	}
 	return ""
 }
@@ -1837,12 +1844,10 @@ func (x *MemoryListRequest) SetSession(v *SessionRef) {
 
 func (x *MemoryListRequest) SetScope(v MemoryScope) {
 	x.xxx_hidden_Scope = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
 }
 
 func (x *MemoryListRequest) SetQuery(v string) {
-	x.xxx_hidden_Query = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
+	x.xxx_hidden_Query = v
 }
 
 func (x *MemoryListRequest) HasProject() bool {
@@ -1859,36 +1864,12 @@ func (x *MemoryListRequest) HasSession() bool {
 	return x.xxx_hidden_Session != nil
 }
 
-func (x *MemoryListRequest) HasScope() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
-}
-
-func (x *MemoryListRequest) HasQuery() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
-}
-
 func (x *MemoryListRequest) ClearProject() {
 	x.xxx_hidden_Project = nil
 }
 
 func (x *MemoryListRequest) ClearSession() {
 	x.xxx_hidden_Session = nil
-}
-
-func (x *MemoryListRequest) ClearScope() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
-	x.xxx_hidden_Scope = MemoryScope_MEMORY_SCOPE_UNSPECIFIED
-}
-
-func (x *MemoryListRequest) ClearQuery() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
-	x.xxx_hidden_Query = nil
 }
 
 type MemoryListRequest_builder struct {
@@ -1913,8 +1894,8 @@ type MemoryListRequest_builder struct {
 	Reverse bool
 	Project *ProjectRef
 	Session *SessionRef
-	Scope   *MemoryScope
-	Query   *string
+	Scope   MemoryScope
+	Query   string
 }
 
 func (b0 MemoryListRequest_builder) Build() *MemoryListRequest {
@@ -1927,14 +1908,8 @@ func (b0 MemoryListRequest_builder) Build() *MemoryListRequest {
 	x.xxx_hidden_Reverse = b.Reverse
 	x.xxx_hidden_Project = b.Project
 	x.xxx_hidden_Session = b.Session
-	if b.Scope != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
-		x.xxx_hidden_Scope = *b.Scope
-	}
-	if b.Query != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
-		x.xxx_hidden_Query = b.Query
-	}
+	x.xxx_hidden_Scope = b.Scope
+	x.xxx_hidden_Query = b.Query
 	return m0
 }
 
@@ -2167,8 +2142,6 @@ type MemoryWatchRequest struct {
 	xxx_hidden_Project      *ProjectRef            `protobuf:"bytes,1000,opt,name=project"`
 	xxx_hidden_Session      *SessionRef            `protobuf:"bytes,1001,opt,name=session"`
 	xxx_hidden_Scope        MemoryScope            `protobuf:"varint,1002,opt,name=scope,enum=cxz.MemoryScope"`
-	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
-	XXX_presence            [1]uint32
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2230,9 +2203,7 @@ func (x *MemoryWatchRequest) GetSession() *SessionRef {
 
 func (x *MemoryWatchRequest) GetScope() MemoryScope {
 	if x != nil {
-		if protoimpl.X.Present(&(x.XXX_presence[0]), 4) {
-			return x.xxx_hidden_Scope
-		}
+		return x.xxx_hidden_Scope
 	}
 	return MemoryScope_MEMORY_SCOPE_UNSPECIFIED
 }
@@ -2255,7 +2226,6 @@ func (x *MemoryWatchRequest) SetSession(v *SessionRef) {
 
 func (x *MemoryWatchRequest) SetScope(v MemoryScope) {
 	x.xxx_hidden_Scope = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *MemoryWatchRequest) HasProject() bool {
@@ -2272,24 +2242,12 @@ func (x *MemoryWatchRequest) HasSession() bool {
 	return x.xxx_hidden_Session != nil
 }
 
-func (x *MemoryWatchRequest) HasScope() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
-}
-
 func (x *MemoryWatchRequest) ClearProject() {
 	x.xxx_hidden_Project = nil
 }
 
 func (x *MemoryWatchRequest) ClearSession() {
 	x.xxx_hidden_Session = nil
-}
-
-func (x *MemoryWatchRequest) ClearScope() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_Scope = MemoryScope_MEMORY_SCOPE_UNSPECIFIED
 }
 
 type MemoryWatchRequest_builder struct {
@@ -2311,7 +2269,7 @@ type MemoryWatchRequest_builder struct {
 	SkipSnapshot bool
 	Project      *ProjectRef
 	Session      *SessionRef
-	Scope        *MemoryScope
+	Scope        MemoryScope
 }
 
 func (b0 MemoryWatchRequest_builder) Build() *MemoryWatchRequest {
@@ -2322,10 +2280,7 @@ func (b0 MemoryWatchRequest_builder) Build() *MemoryWatchRequest {
 	x.xxx_hidden_SkipSnapshot = b.SkipSnapshot
 	x.xxx_hidden_Project = b.Project
 	x.xxx_hidden_Session = b.Session
-	if b.Scope != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
-		x.xxx_hidden_Scope = *b.Scope
-	}
+	x.xxx_hidden_Scope = b.Scope
 	return m0
 }
 
@@ -2529,8 +2484,6 @@ type MemoryReadRequest struct {
 	xxx_hidden_BaseRevision uint64                 `protobuf:"varint,2,opt,name=base_revision,json=baseRevision"`
 	xxx_hidden_Revision     uint64                 `protobuf:"varint,3,opt,name=revision"`
 	xxx_hidden_Format       MemoryReadFormat       `protobuf:"varint,4,opt,name=format,enum=cxz.MemoryReadFormat"`
-	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
-	XXX_presence            [1]uint32
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2583,9 +2536,7 @@ func (x *MemoryReadRequest) GetRevision() uint64 {
 
 func (x *MemoryReadRequest) GetFormat() MemoryReadFormat {
 	if x != nil {
-		if protoimpl.X.Present(&(x.XXX_presence[0]), 3) {
-			return x.xxx_hidden_Format
-		}
+		return x.xxx_hidden_Format
 	}
 	return MemoryReadFormat_MEMORY_READ_FORMAT_UNSPECIFIED
 }
@@ -2596,17 +2547,14 @@ func (x *MemoryReadRequest) SetRef(v *MemoryRef) {
 
 func (x *MemoryReadRequest) SetBaseRevision(v uint64) {
 	x.xxx_hidden_BaseRevision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
 }
 
 func (x *MemoryReadRequest) SetRevision(v uint64) {
 	x.xxx_hidden_Revision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
 }
 
 func (x *MemoryReadRequest) SetFormat(v MemoryReadFormat) {
 	x.xxx_hidden_Format = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
 
 func (x *MemoryReadRequest) HasRef() bool {
@@ -2616,53 +2564,17 @@ func (x *MemoryReadRequest) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *MemoryReadRequest) HasBaseRevision() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *MemoryReadRequest) HasRevision() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
-func (x *MemoryReadRequest) HasFormat() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
 func (x *MemoryReadRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
-}
-
-func (x *MemoryReadRequest) ClearBaseRevision() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_BaseRevision = 0
-}
-
-func (x *MemoryReadRequest) ClearRevision() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Revision = 0
-}
-
-func (x *MemoryReadRequest) ClearFormat() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_Format = MemoryReadFormat_MEMORY_READ_FORMAT_UNSPECIFIED
 }
 
 type MemoryReadRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref          *MemoryRef
-	BaseRevision *uint64
-	Revision     *uint64
-	Format       *MemoryReadFormat
+	BaseRevision uint64
+	Revision     uint64
+	Format       MemoryReadFormat
 }
 
 func (b0 MemoryReadRequest_builder) Build() *MemoryReadRequest {
@@ -2670,18 +2582,9 @@ func (b0 MemoryReadRequest_builder) Build() *MemoryReadRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
-	if b.BaseRevision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
-		x.xxx_hidden_BaseRevision = *b.BaseRevision
-	}
-	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
-		x.xxx_hidden_Revision = *b.Revision
-	}
-	if b.Format != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
-		x.xxx_hidden_Format = *b.Format
-	}
+	x.xxx_hidden_BaseRevision = b.BaseRevision
+	x.xxx_hidden_Revision = b.Revision
+	x.xxx_hidden_Format = b.Format
 	return m0
 }
 
@@ -2691,11 +2594,9 @@ type MemoryReadReply struct {
 	xxx_hidden_BaseRevision   uint64                 `protobuf:"varint,2,opt,name=base_revision,json=baseRevision"`
 	xxx_hidden_Revision       uint64                 `protobuf:"varint,3,opt,name=revision"`
 	xxx_hidden_Format         MemoryReadFormat       `protobuf:"varint,4,opt,name=format,enum=cxz.MemoryReadFormat"`
-	xxx_hidden_Content        *string                `protobuf:"bytes,5,opt,name=content"`
-	xxx_hidden_Diff           *string                `protobuf:"bytes,6,opt,name=diff"`
-	xxx_hidden_FallbackReason *string                `protobuf:"bytes,7,opt,name=fallback_reason,json=fallbackReason"`
-	XXX_raceDetectHookData    protoimpl.RaceDetectHookData
-	XXX_presence              [1]uint32
+	xxx_hidden_Content        string                 `protobuf:"bytes,5,opt,name=content"`
+	xxx_hidden_Diff           string                 `protobuf:"bytes,6,opt,name=diff"`
+	xxx_hidden_FallbackReason string                 `protobuf:"bytes,7,opt,name=fallback_reason,json=fallbackReason"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -2748,39 +2649,28 @@ func (x *MemoryReadReply) GetRevision() uint64 {
 
 func (x *MemoryReadReply) GetFormat() MemoryReadFormat {
 	if x != nil {
-		if protoimpl.X.Present(&(x.XXX_presence[0]), 3) {
-			return x.xxx_hidden_Format
-		}
+		return x.xxx_hidden_Format
 	}
 	return MemoryReadFormat_MEMORY_READ_FORMAT_UNSPECIFIED
 }
 
 func (x *MemoryReadReply) GetContent() string {
 	if x != nil {
-		if x.xxx_hidden_Content != nil {
-			return *x.xxx_hidden_Content
-		}
-		return ""
+		return x.xxx_hidden_Content
 	}
 	return ""
 }
 
 func (x *MemoryReadReply) GetDiff() string {
 	if x != nil {
-		if x.xxx_hidden_Diff != nil {
-			return *x.xxx_hidden_Diff
-		}
-		return ""
+		return x.xxx_hidden_Diff
 	}
 	return ""
 }
 
 func (x *MemoryReadReply) GetFallbackReason() string {
 	if x != nil {
-		if x.xxx_hidden_FallbackReason != nil {
-			return *x.xxx_hidden_FallbackReason
-		}
-		return ""
+		return x.xxx_hidden_FallbackReason
 	}
 	return ""
 }
@@ -2791,32 +2681,26 @@ func (x *MemoryReadReply) SetMemory(v *Memory) {
 
 func (x *MemoryReadReply) SetBaseRevision(v uint64) {
 	x.xxx_hidden_BaseRevision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
 }
 
 func (x *MemoryReadReply) SetRevision(v uint64) {
 	x.xxx_hidden_Revision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
 }
 
 func (x *MemoryReadReply) SetFormat(v MemoryReadFormat) {
 	x.xxx_hidden_Format = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
 }
 
 func (x *MemoryReadReply) SetContent(v string) {
-	x.xxx_hidden_Content = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+	x.xxx_hidden_Content = v
 }
 
 func (x *MemoryReadReply) SetDiff(v string) {
-	x.xxx_hidden_Diff = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+	x.xxx_hidden_Diff = v
 }
 
 func (x *MemoryReadReply) SetFallbackReason(v string) {
-	x.xxx_hidden_FallbackReason = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+	x.xxx_hidden_FallbackReason = v
 }
 
 func (x *MemoryReadReply) HasMemory() bool {
@@ -2826,92 +2710,20 @@ func (x *MemoryReadReply) HasMemory() bool {
 	return x.xxx_hidden_Memory != nil
 }
 
-func (x *MemoryReadReply) HasBaseRevision() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *MemoryReadReply) HasRevision() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
-func (x *MemoryReadReply) HasFormat() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
-func (x *MemoryReadReply) HasContent() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
-}
-
-func (x *MemoryReadReply) HasDiff() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
-}
-
-func (x *MemoryReadReply) HasFallbackReason() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
-}
-
 func (x *MemoryReadReply) ClearMemory() {
 	x.xxx_hidden_Memory = nil
-}
-
-func (x *MemoryReadReply) ClearBaseRevision() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_BaseRevision = 0
-}
-
-func (x *MemoryReadReply) ClearRevision() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Revision = 0
-}
-
-func (x *MemoryReadReply) ClearFormat() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_Format = MemoryReadFormat_MEMORY_READ_FORMAT_UNSPECIFIED
-}
-
-func (x *MemoryReadReply) ClearContent() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_Content = nil
-}
-
-func (x *MemoryReadReply) ClearDiff() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
-	x.xxx_hidden_Diff = nil
-}
-
-func (x *MemoryReadReply) ClearFallbackReason() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
-	x.xxx_hidden_FallbackReason = nil
 }
 
 type MemoryReadReply_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Memory         *Memory
-	BaseRevision   *uint64
-	Revision       *uint64
-	Format         *MemoryReadFormat
-	Content        *string
-	Diff           *string
-	FallbackReason *string
+	BaseRevision   uint64
+	Revision       uint64
+	Format         MemoryReadFormat
+	Content        string
+	Diff           string
+	FallbackReason string
 }
 
 func (b0 MemoryReadReply_builder) Build() *MemoryReadReply {
@@ -2919,30 +2731,12 @@ func (b0 MemoryReadReply_builder) Build() *MemoryReadReply {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Memory = b.Memory
-	if b.BaseRevision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
-		x.xxx_hidden_BaseRevision = *b.BaseRevision
-	}
-	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
-		x.xxx_hidden_Revision = *b.Revision
-	}
-	if b.Format != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
-		x.xxx_hidden_Format = *b.Format
-	}
-	if b.Content != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
-		x.xxx_hidden_Content = b.Content
-	}
-	if b.Diff != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
-		x.xxx_hidden_Diff = b.Diff
-	}
-	if b.FallbackReason != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
-		x.xxx_hidden_FallbackReason = b.FallbackReason
-	}
+	x.xxx_hidden_BaseRevision = b.BaseRevision
+	x.xxx_hidden_Revision = b.Revision
+	x.xxx_hidden_Format = b.Format
+	x.xxx_hidden_Content = b.Content
+	x.xxx_hidden_Diff = b.Diff
+	x.xxx_hidden_FallbackReason = b.FallbackReason
 	return m0
 }
 
@@ -2951,8 +2745,6 @@ type MemoryVersionsRequest struct {
 	xxx_hidden_Ref            *MemoryRef             `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_BeforeRevision uint64                 `protobuf:"varint,2,opt,name=before_revision,json=beforeRevision"`
 	xxx_hidden_Size           int32                  `protobuf:"varint,3,opt,name=size"`
-	XXX_raceDetectHookData    protoimpl.RaceDetectHookData
-	XXX_presence              [1]uint32
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -3009,12 +2801,10 @@ func (x *MemoryVersionsRequest) SetRef(v *MemoryRef) {
 
 func (x *MemoryVersionsRequest) SetBeforeRevision(v uint64) {
 	x.xxx_hidden_BeforeRevision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
 }
 
 func (x *MemoryVersionsRequest) SetSize(v int32) {
 	x.xxx_hidden_Size = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
 }
 
 func (x *MemoryVersionsRequest) HasRef() bool {
@@ -3024,40 +2814,16 @@ func (x *MemoryVersionsRequest) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *MemoryVersionsRequest) HasBeforeRevision() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *MemoryVersionsRequest) HasSize() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
 func (x *MemoryVersionsRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
-}
-
-func (x *MemoryVersionsRequest) ClearBeforeRevision() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_BeforeRevision = 0
-}
-
-func (x *MemoryVersionsRequest) ClearSize() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Size = 0
 }
 
 type MemoryVersionsRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref            *MemoryRef
-	BeforeRevision *uint64
-	Size           *int32
+	BeforeRevision uint64
+	Size           int32
 }
 
 func (b0 MemoryVersionsRequest_builder) Build() *MemoryVersionsRequest {
@@ -3065,14 +2831,8 @@ func (b0 MemoryVersionsRequest_builder) Build() *MemoryVersionsRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
-	if b.BeforeRevision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
-		x.xxx_hidden_BeforeRevision = *b.BeforeRevision
-	}
-	if b.Size != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
-		x.xxx_hidden_Size = *b.Size
-	}
+	x.xxx_hidden_BeforeRevision = b.BeforeRevision
+	x.xxx_hidden_Size = b.Size
 	return m0
 }
 
@@ -3080,8 +2840,6 @@ type MemoryVersionsReply struct {
 	state                   protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Versions     *[]*MemoryVersion      `protobuf:"bytes,1,rep,name=versions"`
 	xxx_hidden_NextRevision uint64                 `protobuf:"varint,2,opt,name=next_revision,json=nextRevision"`
-	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
-	XXX_presence            [1]uint32
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -3133,26 +2891,13 @@ func (x *MemoryVersionsReply) SetVersions(v []*MemoryVersion) {
 
 func (x *MemoryVersionsReply) SetNextRevision(v uint64) {
 	x.xxx_hidden_NextRevision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
-}
-
-func (x *MemoryVersionsReply) HasNextRevision() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *MemoryVersionsReply) ClearNextRevision() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_NextRevision = 0
 }
 
 type MemoryVersionsReply_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Versions     []*MemoryVersion
-	NextRevision *uint64
+	NextRevision uint64
 }
 
 func (b0 MemoryVersionsReply_builder) Build() *MemoryVersionsReply {
@@ -3160,10 +2905,7 @@ func (b0 MemoryVersionsReply_builder) Build() *MemoryVersionsReply {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Versions = &b.Versions
-	if b.NextRevision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
-		x.xxx_hidden_NextRevision = *b.NextRevision
-	}
+	x.xxx_hidden_NextRevision = b.NextRevision
 	return m0
 }
 
@@ -3171,7 +2913,7 @@ type MemoryVersion struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_MemoryId    []byte                 `protobuf:"bytes,1,opt,name=memory_id,json=memoryId"`
 	xxx_hidden_Revision    uint64                 `protobuf:"varint,2,opt,name=revision"`
-	xxx_hidden_ContentHash *string                `protobuf:"bytes,3,opt,name=content_hash,json=contentHash"`
+	xxx_hidden_ContentHash string                 `protobuf:"bytes,3,opt,name=content_hash,json=contentHash"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -3220,10 +2962,7 @@ func (x *MemoryVersion) GetRevision() uint64 {
 
 func (x *MemoryVersion) GetContentHash() string {
 	if x != nil {
-		if x.xxx_hidden_ContentHash != nil {
-			return *x.xxx_hidden_ContentHash
-		}
-		return ""
+		return x.xxx_hidden_ContentHash
 	}
 	return ""
 }
@@ -3245,12 +2984,10 @@ func (x *MemoryVersion) SetMemoryId(v []byte) {
 
 func (x *MemoryVersion) SetRevision(v uint64) {
 	x.xxx_hidden_Revision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
 }
 
 func (x *MemoryVersion) SetContentHash(v string) {
-	x.xxx_hidden_ContentHash = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+	x.xxx_hidden_ContentHash = v
 }
 
 func (x *MemoryVersion) SetDateCreated(v *timestamppb.Timestamp) {
@@ -3262,20 +2999,6 @@ func (x *MemoryVersion) HasMemoryId() bool {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *MemoryVersion) HasRevision() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *MemoryVersion) HasContentHash() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
 func (x *MemoryVersion) HasDateCreated() bool {
@@ -3290,16 +3013,6 @@ func (x *MemoryVersion) ClearMemoryId() {
 	x.xxx_hidden_MemoryId = nil
 }
 
-func (x *MemoryVersion) ClearRevision() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_Revision = 0
-}
-
-func (x *MemoryVersion) ClearContentHash() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_ContentHash = nil
-}
-
 func (x *MemoryVersion) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
@@ -3308,8 +3021,8 @@ type MemoryVersion_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	MemoryId    []byte
-	Revision    *uint64
-	ContentHash *string
+	Revision    uint64
+	ContentHash string
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -3321,27 +3034,19 @@ func (b0 MemoryVersion_builder) Build() *MemoryVersion {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
 		x.xxx_hidden_MemoryId = b.MemoryId
 	}
-	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
-		x.xxx_hidden_Revision = *b.Revision
-	}
-	if b.ContentHash != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
-		x.xxx_hidden_ContentHash = b.ContentHash
-	}
+	x.xxx_hidden_Revision = b.Revision
+	x.xxx_hidden_ContentHash = b.ContentHash
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
 
 type MemoryChangesRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Project     *ProjectRef            `protobuf:"bytes,1,opt,name=project"`
-	xxx_hidden_Cursor      *string                `protobuf:"bytes,2,opt,name=cursor"`
-	xxx_hidden_Size        int32                  `protobuf:"varint,3,opt,name=size"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Project *ProjectRef            `protobuf:"bytes,1,opt,name=project"`
+	xxx_hidden_Cursor  string                 `protobuf:"bytes,2,opt,name=cursor"`
+	xxx_hidden_Size    int32                  `protobuf:"varint,3,opt,name=size"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *MemoryChangesRequest) Reset() {
@@ -3378,10 +3083,7 @@ func (x *MemoryChangesRequest) GetProject() *ProjectRef {
 
 func (x *MemoryChangesRequest) GetCursor() string {
 	if x != nil {
-		if x.xxx_hidden_Cursor != nil {
-			return *x.xxx_hidden_Cursor
-		}
-		return ""
+		return x.xxx_hidden_Cursor
 	}
 	return ""
 }
@@ -3398,13 +3100,11 @@ func (x *MemoryChangesRequest) SetProject(v *ProjectRef) {
 }
 
 func (x *MemoryChangesRequest) SetCursor(v string) {
-	x.xxx_hidden_Cursor = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+	x.xxx_hidden_Cursor = v
 }
 
 func (x *MemoryChangesRequest) SetSize(v int32) {
 	x.xxx_hidden_Size = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
 }
 
 func (x *MemoryChangesRequest) HasProject() bool {
@@ -3414,40 +3114,16 @@ func (x *MemoryChangesRequest) HasProject() bool {
 	return x.xxx_hidden_Project != nil
 }
 
-func (x *MemoryChangesRequest) HasCursor() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *MemoryChangesRequest) HasSize() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
 func (x *MemoryChangesRequest) ClearProject() {
 	x.xxx_hidden_Project = nil
-}
-
-func (x *MemoryChangesRequest) ClearCursor() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_Cursor = nil
-}
-
-func (x *MemoryChangesRequest) ClearSize() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Size = 0
 }
 
 type MemoryChangesRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Project *ProjectRef
-	Cursor  *string
-	Size    *int32
+	Cursor  string
+	Size    int32
 }
 
 func (b0 MemoryChangesRequest_builder) Build() *MemoryChangesRequest {
@@ -3455,26 +3131,18 @@ func (b0 MemoryChangesRequest_builder) Build() *MemoryChangesRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Project = b.Project
-	if b.Cursor != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
-		x.xxx_hidden_Cursor = b.Cursor
-	}
-	if b.Size != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
-		x.xxx_hidden_Size = *b.Size
-	}
+	x.xxx_hidden_Cursor = b.Cursor
+	x.xxx_hidden_Size = b.Size
 	return m0
 }
 
 type MemoryChangesReply struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Changes       *[]*MemoryChange       `protobuf:"bytes,1,rep,name=changes"`
-	xxx_hidden_Cursor        *string                `protobuf:"bytes,2,opt,name=cursor"`
+	xxx_hidden_Cursor        string                 `protobuf:"bytes,2,opt,name=cursor"`
 	xxx_hidden_Baseline      bool                   `protobuf:"varint,3,opt,name=baseline"`
 	xxx_hidden_HasMore       bool                   `protobuf:"varint,4,opt,name=has_more,json=hasMore"`
 	xxx_hidden_ResetRequired bool                   `protobuf:"varint,5,opt,name=reset_required,json=resetRequired"`
-	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
-	XXX_presence             [1]uint32
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -3515,10 +3183,7 @@ func (x *MemoryChangesReply) GetChanges() []*MemoryChange {
 
 func (x *MemoryChangesReply) GetCursor() string {
 	if x != nil {
-		if x.xxx_hidden_Cursor != nil {
-			return *x.xxx_hidden_Cursor
-		}
-		return ""
+		return x.xxx_hidden_Cursor
 	}
 	return ""
 }
@@ -3549,81 +3214,29 @@ func (x *MemoryChangesReply) SetChanges(v []*MemoryChange) {
 }
 
 func (x *MemoryChangesReply) SetCursor(v string) {
-	x.xxx_hidden_Cursor = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
+	x.xxx_hidden_Cursor = v
 }
 
 func (x *MemoryChangesReply) SetBaseline(v bool) {
 	x.xxx_hidden_Baseline = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
 }
 
 func (x *MemoryChangesReply) SetHasMore(v bool) {
 	x.xxx_hidden_HasMore = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
 }
 
 func (x *MemoryChangesReply) SetResetRequired(v bool) {
 	x.xxx_hidden_ResetRequired = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
-}
-
-func (x *MemoryChangesReply) HasCursor() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *MemoryChangesReply) HasBaseline() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
-func (x *MemoryChangesReply) HasHasMore() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
-func (x *MemoryChangesReply) HasResetRequired() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
-}
-
-func (x *MemoryChangesReply) ClearCursor() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_Cursor = nil
-}
-
-func (x *MemoryChangesReply) ClearBaseline() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Baseline = false
-}
-
-func (x *MemoryChangesReply) ClearHasMore() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_HasMore = false
-}
-
-func (x *MemoryChangesReply) ClearResetRequired() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_ResetRequired = false
 }
 
 type MemoryChangesReply_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Changes       []*MemoryChange
-	Cursor        *string
-	Baseline      *bool
-	HasMore       *bool
-	ResetRequired *bool
+	Cursor        string
+	Baseline      bool
+	HasMore       bool
+	ResetRequired bool
 }
 
 func (b0 MemoryChangesReply_builder) Build() *MemoryChangesReply {
@@ -3631,29 +3244,17 @@ func (b0 MemoryChangesReply_builder) Build() *MemoryChangesReply {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Changes = &b.Changes
-	if b.Cursor != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
-		x.xxx_hidden_Cursor = b.Cursor
-	}
-	if b.Baseline != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
-		x.xxx_hidden_Baseline = *b.Baseline
-	}
-	if b.HasMore != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
-		x.xxx_hidden_HasMore = *b.HasMore
-	}
-	if b.ResetRequired != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
-		x.xxx_hidden_ResetRequired = *b.ResetRequired
-	}
+	x.xxx_hidden_Cursor = b.Cursor
+	x.xxx_hidden_Baseline = b.Baseline
+	x.xxx_hidden_HasMore = b.HasMore
+	x.xxx_hidden_ResetRequired = b.ResetRequired
 	return m0
 }
 
 type MemoryChange struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Sequence    uint64                 `protobuf:"varint,1,opt,name=sequence"`
-	xxx_hidden_Kind        *string                `protobuf:"bytes,2,opt,name=kind"`
+	xxx_hidden_Kind        string                 `protobuf:"bytes,2,opt,name=kind"`
 	xxx_hidden_MemoryId    []byte                 `protobuf:"bytes,3,opt,name=memory_id,json=memoryId"`
 	xxx_hidden_ProjectId   []byte                 `protobuf:"bytes,4,opt,name=project_id,json=projectId"`
 	xxx_hidden_Revision    uint64                 `protobuf:"varint,5,opt,name=revision"`
@@ -3697,10 +3298,7 @@ func (x *MemoryChange) GetSequence() uint64 {
 
 func (x *MemoryChange) GetKind() string {
 	if x != nil {
-		if x.xxx_hidden_Kind != nil {
-			return *x.xxx_hidden_Kind
-		}
-		return ""
+		return x.xxx_hidden_Kind
 	}
 	return ""
 }
@@ -3728,12 +3326,10 @@ func (x *MemoryChange) GetRevision() uint64 {
 
 func (x *MemoryChange) SetSequence(v uint64) {
 	x.xxx_hidden_Sequence = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 5)
 }
 
 func (x *MemoryChange) SetKind(v string) {
-	x.xxx_hidden_Kind = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
+	x.xxx_hidden_Kind = v
 }
 
 func (x *MemoryChange) SetMemoryId(v []byte) {
@@ -3754,21 +3350,6 @@ func (x *MemoryChange) SetProjectId(v []byte) {
 
 func (x *MemoryChange) SetRevision(v uint64) {
 	x.xxx_hidden_Revision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
-}
-
-func (x *MemoryChange) HasSequence() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *MemoryChange) HasKind() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
 func (x *MemoryChange) HasMemoryId() bool {
@@ -3785,23 +3366,6 @@ func (x *MemoryChange) HasProjectId() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *MemoryChange) HasRevision() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
-}
-
-func (x *MemoryChange) ClearSequence() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Sequence = 0
-}
-
-func (x *MemoryChange) ClearKind() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_Kind = nil
-}
-
 func (x *MemoryChange) ClearMemoryId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
 	x.xxx_hidden_MemoryId = nil
@@ -3812,33 +3376,22 @@ func (x *MemoryChange) ClearProjectId() {
 	x.xxx_hidden_ProjectId = nil
 }
 
-func (x *MemoryChange) ClearRevision() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_Revision = 0
-}
-
 type MemoryChange_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Sequence  *uint64
-	Kind      *string
+	Sequence  uint64
+	Kind      string
 	MemoryId  []byte
 	ProjectId []byte
-	Revision  *uint64
+	Revision  uint64
 }
 
 func (b0 MemoryChange_builder) Build() *MemoryChange {
 	m0 := &MemoryChange{}
 	b, x := &b0, m0
 	_, _ = b, x
-	if b.Sequence != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 5)
-		x.xxx_hidden_Sequence = *b.Sequence
-	}
-	if b.Kind != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
-		x.xxx_hidden_Kind = b.Kind
-	}
+	x.xxx_hidden_Sequence = b.Sequence
+	x.xxx_hidden_Kind = b.Kind
 	if b.MemoryId != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
 		x.xxx_hidden_MemoryId = b.MemoryId
@@ -3847,10 +3400,7 @@ func (b0 MemoryChange_builder) Build() *MemoryChange {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
 		x.xxx_hidden_ProjectId = b.ProjectId
 	}
-	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
-		x.xxx_hidden_Revision = *b.Revision
-	}
+	x.xxx_hidden_Revision = b.Revision
 	return m0
 }
 
@@ -4085,7 +3635,7 @@ const file_cxz_memory_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12!\n" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12\x18\n" +
 	"\acontent\x18\x10 \x01(\bR\acontent\x12\x1b\n" +
-	"\tclient_id\x18\x11 \x01(\bR\bclientId\"\x9e\x04\n" +
+	"\tclient_id\x18\x11 \x01(\bR\bclientId\"\xd2\x04\n" +
 	"\x12MemoryPatchRequest\x12 \n" +
 	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.MemoryRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -4098,8 +3648,9 @@ const file_cxz_memory_svc_g_proto_rawDesc = "" +
 	"\x11date_deleted_null\x18\x17 \x01(\bR\x0fdateDeletedNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12\x18\n" +
-	"\acontent\x18  \x01(\tR\acontent\x12\"\n" +
-	"\fclear_labels\x18\xe8\a \x01(\bR\vclearLabels\x1a9\n" +
+	"\acontent\x18  \x01(\tR\acontent\x12)\n" +
+	"\fclear_labels\x18\xe8\a \x01(\bB\x05\xaa\x01\x02\b\x02R\vclearLabels\x12+\n" +
+	"\rbase_revision\x18\xe9\a \x01(\x04B\x05\xaa\x01\x02\b\x01R\fbaseRevision\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Z\n" +
@@ -4107,16 +3658,16 @@ const file_cxz_memory_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.MemoryRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
 	"\x13MemoryEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xb1\x02\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xbf\x02\n" +
 	"\x11MemoryListRequest\x12+\n" +
 	"\afilters\x18\x01 \x03(\v2\x11.cxz.MemoryFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
 	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12*\n" +
 	"\aproject\x18\xe8\a \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12*\n" +
-	"\asession\x18\xe9\a \x01(\v2\x0f.cxz.SessionRefR\asession\x12'\n" +
-	"\x05scope\x18\xea\a \x01(\x0e2\x10.cxz.MemoryScopeR\x05scope\x12\x15\n" +
-	"\x05query\x18\xeb\a \x01(\tR\x05query\"R\n" +
+	"\asession\x18\xe9\a \x01(\v2\x0f.cxz.SessionRefR\asession\x12.\n" +
+	"\x05scope\x18\xea\a \x01(\x0e2\x10.cxz.MemoryScopeB\x05\xaa\x01\x02\b\x02R\x05scope\x12\x1c\n" +
+	"\x05query\x18\xeb\a \x01(\tB\x05\xaa\x01\x02\b\x02R\x05query\"R\n" +
 	"\x12MemoryListResponse\x12!\n" +
 	"\x05items\x18\x01 \x03(\v2\v.cxz.MemoryR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xf2\x01\n" +
@@ -4127,61 +3678,61 @@ const file_cxz_memory_svc_g_proto_rawDesc = "" +
 	"\x06labels\x18\x04 \x03(\v2\x1d.cxz.MemoryFilter.LabelsEntryR\x06labels\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xee\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf5\x01\n" +
 	"\x12MemoryWatchRequest\x12+\n" +
 	"\afilters\x18\x01 \x03(\v2\x11.cxz.MemoryFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\x12*\n" +
 	"\aproject\x18\xe8\a \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12*\n" +
-	"\asession\x18\xe9\a \x01(\v2\x0f.cxz.SessionRefR\asession\x12'\n" +
-	"\x05scope\x18\xea\a \x01(\x0e2\x10.cxz.MemoryScopeR\x05scope\"A\n" +
+	"\asession\x18\xe9\a \x01(\v2\x0f.cxz.SessionRefR\asession\x12.\n" +
+	"\x05scope\x18\xea\a \x01(\x0e2\x10.cxz.MemoryScopeB\x05\xaa\x01\x02\b\x02R\x05scope\"A\n" +
 	"\x13MemoryWatchResponse\x12*\n" +
 	"\x05items\x18\x01 \x03(\v2\x14.cxz.MemoryWatchItemR\x05items\"c\n" +
 	"\x0fMemoryWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12!\n" +
 	"\x05value\x18\x02 \x01(\v2\v.cxz.MemoryR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa5\x01\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xba\x01\n" +
 	"\x11MemoryReadRequest\x12 \n" +
-	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.MemoryRefR\x03ref\x12#\n" +
-	"\rbase_revision\x18\x02 \x01(\x04R\fbaseRevision\x12\x1a\n" +
-	"\brevision\x18\x03 \x01(\x04R\brevision\x12-\n" +
-	"\x06format\x18\x04 \x01(\x0e2\x15.cxz.MemoryReadFormatR\x06format\"\xfd\x01\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.MemoryRefR\x03ref\x12*\n" +
+	"\rbase_revision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\fbaseRevision\x12!\n" +
+	"\brevision\x18\x03 \x01(\x04B\x05\xaa\x01\x02\b\x02R\brevision\x124\n" +
+	"\x06format\x18\x04 \x01(\x0e2\x15.cxz.MemoryReadFormatB\x05\xaa\x01\x02\b\x02R\x06format\"\xa7\x02\n" +
 	"\x0fMemoryReadReply\x12#\n" +
-	"\x06memory\x18\x01 \x01(\v2\v.cxz.MemoryR\x06memory\x12#\n" +
-	"\rbase_revision\x18\x02 \x01(\x04R\fbaseRevision\x12\x1a\n" +
-	"\brevision\x18\x03 \x01(\x04R\brevision\x12-\n" +
-	"\x06format\x18\x04 \x01(\x0e2\x15.cxz.MemoryReadFormatR\x06format\x12\x18\n" +
-	"\acontent\x18\x05 \x01(\tR\acontent\x12\x12\n" +
-	"\x04diff\x18\x06 \x01(\tR\x04diff\x12'\n" +
-	"\x0ffallback_reason\x18\a \x01(\tR\x0efallbackReason\"v\n" +
+	"\x06memory\x18\x01 \x01(\v2\v.cxz.MemoryR\x06memory\x12*\n" +
+	"\rbase_revision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\fbaseRevision\x12!\n" +
+	"\brevision\x18\x03 \x01(\x04B\x05\xaa\x01\x02\b\x02R\brevision\x124\n" +
+	"\x06format\x18\x04 \x01(\x0e2\x15.cxz.MemoryReadFormatB\x05\xaa\x01\x02\b\x02R\x06format\x12\x1f\n" +
+	"\acontent\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\acontent\x12\x19\n" +
+	"\x04diff\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04diff\x12.\n" +
+	"\x0ffallback_reason\x18\a \x01(\tB\x05\xaa\x01\x02\b\x02R\x0efallbackReason\"\x84\x01\n" +
 	"\x15MemoryVersionsRequest\x12 \n" +
-	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.MemoryRefR\x03ref\x12'\n" +
-	"\x0fbefore_revision\x18\x02 \x01(\x04R\x0ebeforeRevision\x12\x12\n" +
-	"\x04size\x18\x03 \x01(\x05R\x04size\"j\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.MemoryRefR\x03ref\x12.\n" +
+	"\x0fbefore_revision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\x0ebeforeRevision\x12\x19\n" +
+	"\x04size\x18\x03 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\"q\n" +
 	"\x13MemoryVersionsReply\x12.\n" +
-	"\bversions\x18\x01 \x03(\v2\x12.cxz.MemoryVersionR\bversions\x12#\n" +
-	"\rnext_revision\x18\x02 \x01(\x04R\fnextRevision\"\xaa\x01\n" +
+	"\bversions\x18\x01 \x03(\v2\x12.cxz.MemoryVersionR\bversions\x12*\n" +
+	"\rnext_revision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\fnextRevision\"\xb8\x01\n" +
 	"\rMemoryVersion\x12\x1b\n" +
-	"\tmemory_id\x18\x01 \x01(\fR\bmemoryId\x12\x1a\n" +
-	"\brevision\x18\x02 \x01(\x04R\brevision\x12!\n" +
-	"\fcontent_hash\x18\x03 \x01(\tR\vcontentHash\x12=\n" +
-	"\fdate_created\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"m\n" +
+	"\tmemory_id\x18\x01 \x01(\fR\bmemoryId\x12!\n" +
+	"\brevision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\brevision\x12(\n" +
+	"\fcontent_hash\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\vcontentHash\x12=\n" +
+	"\fdate_created\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"{\n" +
 	"\x14MemoryChangesRequest\x12)\n" +
-	"\aproject\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12\x16\n" +
-	"\x06cursor\x18\x02 \x01(\tR\x06cursor\x12\x12\n" +
-	"\x04size\x18\x03 \x01(\x05R\x04size\"\xb7\x01\n" +
+	"\aproject\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12\x1d\n" +
+	"\x06cursor\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06cursor\x12\x19\n" +
+	"\x04size\x18\x03 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\"\xd3\x01\n" +
 	"\x12MemoryChangesReply\x12+\n" +
-	"\achanges\x18\x01 \x03(\v2\x11.cxz.MemoryChangeR\achanges\x12\x16\n" +
-	"\x06cursor\x18\x02 \x01(\tR\x06cursor\x12\x1a\n" +
-	"\bbaseline\x18\x03 \x01(\bR\bbaseline\x12\x19\n" +
-	"\bhas_more\x18\x04 \x01(\bR\ahasMore\x12%\n" +
-	"\x0ereset_required\x18\x05 \x01(\bR\rresetRequired\"\x96\x01\n" +
-	"\fMemoryChange\x12\x1a\n" +
-	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x12\n" +
-	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x1b\n" +
+	"\achanges\x18\x01 \x03(\v2\x11.cxz.MemoryChangeR\achanges\x12\x1d\n" +
+	"\x06cursor\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06cursor\x12!\n" +
+	"\bbaseline\x18\x03 \x01(\bB\x05\xaa\x01\x02\b\x02R\bbaseline\x12 \n" +
+	"\bhas_more\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\ahasMore\x12,\n" +
+	"\x0ereset_required\x18\x05 \x01(\bB\x05\xaa\x01\x02\b\x02R\rresetRequired\"\xab\x01\n" +
+	"\fMemoryChange\x12!\n" +
+	"\bsequence\x18\x01 \x01(\x04B\x05\xaa\x01\x02\b\x02R\bsequence\x12\x19\n" +
+	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\x1b\n" +
 	"\tmemory_id\x18\x03 \x01(\fR\bmemoryId\x12\x1d\n" +
 	"\n" +
-	"project_id\x18\x04 \x01(\fR\tprojectId\x12\x1a\n" +
-	"\brevision\x18\x05 \x01(\x04R\brevision\"w\n" +
+	"project_id\x18\x04 \x01(\fR\tprojectId\x12!\n" +
+	"\brevision\x18\x05 \x01(\x04B\x05\xaa\x01\x02\b\x02R\brevision\"w\n" +
 	"\x14MemoryRestoreRequest\x12 \n" +
 	"\x03ref\x18\x01 \x01(\v2\x0e.cxz.MemoryRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\"u\n" +

@@ -238,6 +238,9 @@ func internalCommands() xli.Commands {
 			return err
 		}),
 		makeCmd("wisp", nil, func(ctx context.Context, _ *xli.Command) error { return wisp.Serve(os.Stdin, os.Stdout) }),
+		makeCmd("_memory-resource", nil, func(ctx context.Context, _ *xli.Command) error {
+			return server.ServeMemory(ctx, stateFrom(ctx), os.Stdin, os.Stdout)
+		}),
 		makeCmd("_memory-library", nil, func(ctx context.Context, _ *xli.Command) error {
 			return memorylib.Serve(ctx, stateFrom(ctx), os.Stdin, os.Stdout)
 		}),
