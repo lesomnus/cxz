@@ -50,7 +50,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The Accounts page's actual 64×64 quota display, backed by an isolated in-memory RPC fixture. The container has a 16px radius; the 32×60 gauge has a 2px inset and a 14px radius so their left corner centers align. The gauge stays tinted across its full height. An empty-area box with the same 14px radius grows downward from the top as quota is used, inset 2px inside the gauge; its maximum height leaves a 2px bottom gap too. The percentage stays above both layers and uses CompactNumber. The reset countdown stacks days, hours and minutes to its right. Critical usage is below 10%, warning is 10–30%, and normal is above 30%. Use the theme toolbar to compare dark and light appearances. No Manager, provider or saved account is used.",
+          "The Accounts page's actual 64×64 quota display, backed by an isolated in-memory RPC fixture. The container has a 16px radius; the 32×60 gauge has a 2px inset and a 14px radius so their left corner centers align. The gauge stays tinted across its full height. An empty-area box with the same 14px radius grows downward from the top as quota is used, inset 1px inside the gauge; its maximum height leaves a 1px bottom gap too. The percentage stays above both layers and uses CompactNumber. The reset countdown stacks days, hours and minutes to its right. Critical usage is below 10%, warning is 10–30%, and normal is above 30%. Use the theme toolbar to compare dark and light appearances. No Manager, provider or saved account is used.",
       },
     },
   },
