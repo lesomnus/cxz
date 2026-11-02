@@ -64,7 +64,8 @@ Batch database transactions. The separate native agent-data browser uses
 Startup and retained-volume access import legacy collections idempotently. Each
 Markdown file becomes a Memory; `legacy.collection`, `legacy.collection-name`,
 `legacy.filename`, and `legacy.agent` labels retain provenance. Saved copies carry
-`legacy.snapshot=true`. Deleted documents and collections enter trash with a fresh
+`legacy.snapshot=true`. The first retained body becomes revision 1; the old
+metadata-only Changes index cannot recover historical bodies. Deleted documents and collections enter trash with a fresh
 30-day recovery window. Missing source sessions retain a stable owner identity.
 
 A migration marker and the imported document/version commit together. Unchanged

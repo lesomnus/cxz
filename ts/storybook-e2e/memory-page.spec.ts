@@ -187,11 +187,26 @@ test("label filters, trash restoration and purge use the flat resource", async (
   await expect(
     list(page).getByRole("button", { name: /Architecture notes/ }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await page
-    .getByRole("main")
-    .getByRole("alert")
-    .count()
-    .then((n) => expect(n).toBe(0));
+    .getByRole("dialog")
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await page.getByRole("radio", { name: "Trash", exact: true }).check();
+  await page.getByRole("button", { name: "Purge", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("all its versions");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await expect(
+    page.getByText("No memories match your filters.", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("radio", { name: "Memories", exact: true }).check();
+  await expect(
+    list(page).getByRole("button", { name: /Architecture notes/ }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
 });
 test("memory access does not require an existing project session", async ({
   page,

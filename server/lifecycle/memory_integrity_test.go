@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -216,5 +217,30 @@ func TestRetainedMemoryHelperDoesNotOverwriteRuntimeProjection(t *testing.T) {
 	}
 	if !proto.Equal(before, after) {
 		t.Fatal("helper changed live runtime state", before, after)
+	}
+}
+
+func TestMemoryDiffPreservesEndOfFileNewlines(t *testing.T) {
+	for _, tt := range []struct{ before, after, want string }{
+		{"one", "two", "-one\n\\ No newline at end of file\n+two\n\\ No newline at end of file\n"},
+		{"one", "one\n", "-one\n\\ No newline at end of file\n+one\n"},
+		{"", "one", "@@ -0,0 +1 @@\n+one\n\\ No newline at end of file\n"},
+	} {
+		t.Run(tt.before+"->"+tt.after, func(t *testing.T) {
+			f, stack, _ := taskStack(t)
+			ctx := t.Context()
+			m, e := stack.Memory().Add(ctx, resource.MemoryAddRequest_builder{Project: projectRef(f.p.Id), Name: "eof", Content: tt.before}.Build())
+			if e != nil {
+				t.Fatal(e)
+			}
+			_, e = stack.Memory().Patch(ctx, resource.MemoryPatchRequest_builder{Ref: m.Ref(), Content: ptr(tt.after), BaseRevision: ptr(uint64(1)), DateUpdated: m.GetDateUpdated()}.Build())
+			if e != nil {
+				t.Fatal(e)
+			}
+			diff, e := stack.Memory().Read(ctx, resource.MemoryReadRequest_builder{Ref: m.Ref(), BaseRevision: 1, Format: resource.MemoryReadFormat_MEMORY_READ_FORMAT_DIFF}.Build())
+			if e != nil || !strings.Contains(diff.GetDiff(), tt.want) {
+				t.Fatal(diff, e)
+			}
+		})
 	}
 }

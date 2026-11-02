@@ -21,13 +21,40 @@ MCP binds project/session server-side and uses MemoryService, preserving indepen
 conversation lookup/search/read tools. Native file browsing is a separate feature.
 
 Implementation phases:
-- [ ] Resource schema/generation and transactional versioned service.
-- [ ] Project routing, retained-volume access and resumable migration.
-- [ ] API-backed MCP, ownership and launch/scope validation.
-- [ ] Flat web/TUI/native clients and fixtures.
-- [ ] Remove old RPCs/storage entry points; integration/migration/race/browser tests.
-- [ ] Migrate real data with backup/verification, locally merge /workspace.
+- [x] Resource schema/generation and transactional versioned service.
+- [x] Project routing, retained-volume access and resumable migration.
+- [x] API-backed MCP, ownership and launch/scope validation.
+- [x] Flat web/TUI/native clients and fixtures.
+- [x] Remove old RPCs/storage entry points; integration/migration/race/browser tests.
+- [x] Migrate real data with backup/verification.
+- [ ] Locally merge /workspace after final checks.
 
 Worktree: /tmp/cxz-memory-resource-v2, branch feat/memory-resource-v2. Shared task:
 memory-resource-v2. Do not restart user dev servers 5173/6006; own test servers must
 be stopped. Do not push unless requested. Keep the shared root branch and WIP.
+
+## Verified data migration (2026-11-02)
+
+Current project: 55 documents, 1,076,875 bytes at initial import. Source-file,
+Memory and MemoryVersion hashes matched for all 55. SQLite integrity_check passed;
+foreign_key_check returned no violations. Repeated import is marker-based and
+idempotent. Original files remain under memories/; they are recovery sources.
+
+Consistent SQLite backups of resources.db and cxz.db, a locked legacy file archive
+and per-document hash manifest are retained in:
+`/cxz/state/data/backups/memory-resource-20261102T033941Z`.
+This path belongs to this development installation, not a repository fixture.
+
+Validation: full Go suite; race checks for lifecycle/MCP/server/workspace/TUI;
+generator check; go vet; TypeScript check/build/unit tests; browser contracts for
+flat selection, editing conflicts, metadata-only revision stability, history/diff,
+old-body restoration, labels, trash/restore/purge, project scope and narrow screens.
+Docker validates stopped volumes owned by different non-root users, source
+migration, project isolation, native file copying and credentials preservation.
+
+Source/API changes are separate from runtime rollout. No release/push or running
+runtime replacement is performed here. Existing runtime and MCP bridge processes
+keep their old binary until upgraded; new binaries remove the old RPCs and register
+the new tools. Legacy source edits during that interval are picked up on next
+migration, preserving conflicts rather than overwriting new API work. User dev
+servers are not restarted.

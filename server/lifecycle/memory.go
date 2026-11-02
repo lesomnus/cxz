@@ -326,6 +326,20 @@ func (s MemoryServer) List(ctx context.Context, r *resource.MemoryListRequest) (
 		cursor = page.GetNext()
 	}
 }
+
+// Keep EOF newline changes visible without synthesizing a blank content line.
+func memoryDiffLines(text string) []string {
+	if text == "" {
+		return nil
+	}
+	lines := strings.SplitAfter(text, "\n")
+	if lines[len(lines)-1] == "" {
+		return lines[:len(lines)-1]
+	}
+	lines[len(lines)-1] += "\n\\ No newline at end of file\n"
+	return lines
+}
+
 func (s MemoryServer) Read(ctx context.Context, r *resource.MemoryReadRequest) (*resource.MemoryReadReply, error) {
 	out := &resource.MemoryReadReply{}
 	if ok, err := s.remote(ctx, r.GetRef().GetProject(), resource.MemoryService_Read_FullMethodName, r, out); ok || err != nil {
@@ -369,7 +383,7 @@ func (s MemoryServer) Read(ctx context.Context, r *resource.MemoryReadRequest) (
 	if err != nil {
 		return nil, err
 	}
-	diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{A: difflib.SplitLines(base), B: difflib.SplitLines(content), FromFile: fmt.Sprintf("%s@%d", m.GetName(), r.GetBaseRevision()), ToFile: fmt.Sprintf("%s@%d", m.GetName(), revision), Context: 5})
+	diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{A: memoryDiffLines(base), B: memoryDiffLines(content), FromFile: fmt.Sprintf("%s@%d", m.GetName(), r.GetBaseRevision()), ToFile: fmt.Sprintf("%s@%d", m.GetName(), revision), Context: 5})
 	if err != nil {
 		return nil, err
 	}

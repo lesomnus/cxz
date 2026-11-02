@@ -78,7 +78,8 @@ func (b builder) Build(next resource.Server) (resource.Server, error) {
 // A separate database keeps the rc.1 registry/journal untouched. Resource
 // projections can be rebuilt from runtime manifests, without changing vendor IDs.
 type Options struct {
-	Notifications  bool
+	Notifications bool
+	// RetainedMemory seeds missing identities without overwriting live runtime status.
 	RetainedMemory bool
 }
 
