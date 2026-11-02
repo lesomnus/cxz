@@ -39,6 +39,7 @@
 .weekdays {
   align-items: center;
   color: var(--ui-muted);
+  font-family: var(--ui-font-mono);
   font-size: 0.7rem;
 }
 .days {
