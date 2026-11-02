@@ -24,6 +24,7 @@ import (
 	entAuthBinding "github.com/lesomnus/cxz/internal/ent/authbinding"
 	entConnection "github.com/lesomnus/cxz/internal/ent/connection"
 	entHolder "github.com/lesomnus/cxz/internal/ent/holder"
+	entMemory "github.com/lesomnus/cxz/internal/ent/memory"
 	entNotificationReceiptRecord "github.com/lesomnus/cxz/internal/ent/notificationreceiptrecord"
 	entNotificationRecord "github.com/lesomnus/cxz/internal/ent/notificationrecord"
 	entOperator "github.com/lesomnus/cxz/internal/ent/operator"
@@ -113,6 +114,7 @@ const (
 	AuthBindingDomain               pdid.Domain = 10  // "auth-binding"
 	ConnectionDomain                pdid.Domain = 12  // "connection"
 	HolderDomain                    pdid.Domain = 2   // "holder"
+	MemoryDomain                    pdid.Domain = 18  // "memory"
 	NotificationReceiptRecordDomain pdid.Domain = 15  // "notification-receipt"
 	NotificationRecordDomain        pdid.Domain = 14  // "notification"
 	OperatorDomain                  pdid.Domain = 16  // "operator"
@@ -135,6 +137,7 @@ func init() {
 	pdid.Register("cxz.AuthBinding", AuthBindingDomain, "auth-binding")
 	pdid.Register("cxz.Connection", ConnectionDomain, "connection")
 	pdid.Register("cxz.Holder", HolderDomain, "holder")
+	pdid.Register("cxz.Memory", MemoryDomain, "memory")
 	pdid.Register("cxz.NotificationReceiptRecord", NotificationReceiptRecordDomain, "notification-receipt")
 	pdid.Register("cxz.NotificationRecord", NotificationRecordDomain, "notification")
 	pdid.Register("cxz.Operator", OperatorDomain, "operator")
@@ -161,6 +164,7 @@ var Domains = map[string]pdid.Domain{
 	"cxz.AuthBinding":               AuthBindingDomain,
 	"cxz.Connection":                ConnectionDomain,
 	"cxz.Holder":                    HolderDomain,
+	"cxz.Memory":                    MemoryDomain,
 	"cxz.NotificationReceiptRecord": NotificationReceiptRecordDomain,
 	"cxz.NotificationRecord":        NotificationRecordDomain,
 	"cxz.Operator":                  OperatorDomain,
@@ -196,6 +200,7 @@ var IndexRenames = []rename.Index{
 	{Table: "connection", From: "connection_name_id", To: "connection_page"},
 	{Table: "holder", From: "holder_alias_tenant_id", To: "holder_slug"},
 	{Table: "holder", From: "holder_tenant_id_date_created_id", To: "holder_page"},
+	{Table: "memory", From: "memory_date_created_id", To: "memory_page"},
 	{Table: "notificationreceiptrecord", From: "notificationreceiptrecord_notification_id_reader_id", To: "notificationreceiptrecord_receipt"},
 	{Table: "notificationreceiptrecord", From: "notificationreceiptrecord_reader_id_notification_id", To: "notificationreceiptrecord_reader"},
 	{Table: "notificationrecord", From: "notificationrecord_producer_idempotency_key", To: "notificationrecord_publication"},
@@ -300,6 +305,11 @@ func (wall) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	}
 
 	return entHolder.TenantIdIn(vs...), nil
+}
+
+// MemoryScope: declared `global`, so it is not behind the wall at all.
+func (wall) MemoryScope(ctx context.Context) (predicate.Memory, error) {
+	return nil, nil
 }
 
 // NotificationReceiptRecordScope: declared `global`, so it is not behind the wall at all.
@@ -2404,6 +2414,512 @@ func (s sinkHolder) watchHolderKeys(
 		}
 
 		v, err := s.Get(ctx, resource.HolderGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
+type sinkMemory struct {
+	resource.MemoryServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Memory() resource.MemoryServiceServer {
+	v := sinkMemory{s.Server.Memory(), s.Server.Store, s.w, s.namer, s.joined}
+	v.MemoryServiceServer = bare.MemoryWithAddRule(v.MemoryServiceServer, v.admit)
+	return v
+}
+
+// admit decides the name of a row an Add of Memory writes, refusing one
+// that was given and cannot be one.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.Memory].
+//
+// The name goes through [Sink.WithNamer], which is unset in most
+// deployments and then means: fold what was given, and make a name up
+// when nothing was -- for the reason `bare.Minter` makes a key up. An app
+// whose rows have to be named says so with `slug.Required`; see
+// `slug.Names` for why that is the way round it is.
+func (s sinkMemory) admit(ctx context.Context, req *resource.MemoryAddRequest) (*resource.MemoryAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	v, err := slug.NameWith(ctx, s.namer, "cxz.Memory", req.GetAlias(), req)
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+	r.SetAlias(v)
+
+	return r, nil
+}
+
+// Add tries again when the name it made up was taken.
+//
+// The name is [sinkMemory.admit]'s, and every try goes through it, so a
+// name made up is made up again and a name given is the same each time.
+func (s sinkMemory) Add(ctx context.Context, req *resource.MemoryAddRequest) (*resource.Memory, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		res, err := s.MemoryServiceServer.Add(ctx, req)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkMemory.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+//
+// And it forgets what the transaction was told about the row; see
+// [sinkMemory.Apply].
+func (s sinkMemory) Patch(ctx context.Context, req *resource.MemoryPatchRequest) (*resource.Memory, error) {
+	seen.Forget(s.store.Db.Driver(), "Memory", req.GetRef())
+
+	if !req.HasAlias() {
+		return s.MemoryServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.MemoryServiceServer.Patch(ctx, req)
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkMemory) Erase(ctx context.Context, req *resource.MemoryRef) (*resource.MemoryEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "Memory", req)
+
+	return s.MemoryServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkMemory) Apply(ctx context.Context, req *resource.MemoryApplyRequest) (*resource.Memory, error) {
+	seen.Forget(s.store.Db.Driver(), "Memory", req.GetRef())
+
+	return s.MemoryServiceServer.Apply(ctx, req)
+}
+
+// orderMemory is how Memorys come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderMemory = []sqlpage.Order{
+	{Column: entMemory.FieldDateCreated, Desc: false},
+	{Column: entMemory.FieldId, Desc: false},
+}
+
+func afterMemory(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextMemory(last *ent.Memory, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByMemory is an order as ent orders a query by it.
+func orderByMemory(by []sqlpage.Order) []entMemory.OrderOption {
+	out := make([]entMemory.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// MemoryPageSize is what a request that did not say gets, and
+	// MemoryPageLimit is the most it gets however loudly it asks.
+	MemoryPageSize  = 100
+	MemoryPageLimit = 500
+
+	// MemoryFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	MemoryFilterLimit = 32
+)
+
+// List answers with the Memorys that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkMemory) List(ctx context.Context, req *resource.MemoryListRequest) (*resource.MemoryListResponse, error) {
+	q := s.store.Db.Memory.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.MemoryNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > MemoryFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), MemoryFilterLimit)
+		}
+
+		ps := make([]predicate.Memory, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterMemory(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entMemory.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderMemory, afterMemory, nextMemory, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), MemoryPageSize, MemoryPageLimit)
+	us, err := q.Order(orderByMemory(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*resource.Memory, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := resource.MemoryListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterMemory turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterMemory(f *resource.MemoryFilter) (predicate.Memory, error) {
+	ps := make([]predicate.Memory, 0, 1)
+	if f.HasRef() {
+		p, err := bare.MemoryPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasProject() {
+		w := f.GetProject()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "project: %s", err)
+			}
+
+			ps = append(ps, entMemory.ProjectIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.ProjectPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entMemory.HasProjectWith(q))
+		}
+	}
+	if f.HasOwnerSession() {
+		ps = append(ps, entMemory.OwnerSessionEQ(f.GetOwnerSession()))
+	}
+	if m := f.GetLabels(); len(m) > 0 {
+		ks := make([]string, 0, len(m))
+		for k := range m {
+			ks = append(ks, k)
+		}
+		sort.Strings(ks)
+
+		for _, k := range ks {
+			ps = append(ps, predicate.Memory(func(s *sql.Selector) {
+				s.Where(sql.And(
+					sqljson.HasKey(entMemory.FieldLabels, sqljson.Path(k)),
+					sqljson.ValueEQ(entMemory.FieldLabels, m[k], sqljson.Path(k)),
+				))
+			}))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entMemory.And(ps...), nil
+}
+
+// MemoryService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a Memory. A service is named for the entity it
+// is about, so the name carries it.
+var MemoryService = watch.ServiceOf(resource.MemoryService_Get_FullMethodName)
+
+// Watch answers with the Memorys this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkMemory) Watch(req *resource.MemoryWatchRequest, out grpc.ServerStreamingServer[resource.MemoryWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > MemoryFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), MemoryFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchMemoryKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, MemoryService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*resource.MemoryWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, resource.MemoryWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(resource.MemoryWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkMemory) watchNow(
+	ctx context.Context, req *resource.MemoryWatchRequest, out grpc.ServerStreamingServer[resource.MemoryWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, resource.MemoryListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*resource.MemoryWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, resource.MemoryWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(resource.MemoryWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkMemory) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*resource.Memory, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, resource.MemoryGetRequest_builder{
+		Ref: resource.MemoryRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchMemoryKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkMemory) watchMemoryKeys(
+	ctx context.Context, fs []*resource.MemoryFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, resource.MemoryGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -5400,6 +5916,8 @@ func described(key pdid.Id) (protoreflect.MessageDescriptor, []protoreflect.Fiel
 		return describedConnection.md, describedConnection.secret, describedConnection.personal
 	case HolderDomain:
 		return describedHolder.md, describedHolder.secret, describedHolder.personal
+	case MemoryDomain:
+		return describedMemory.md, describedMemory.secret, describedMemory.personal
 	case NotificationReceiptRecordDomain:
 		return describedNotificationReceiptRecord.md, describedNotificationReceiptRecord.secret, describedNotificationReceiptRecord.personal
 	case NotificationRecordDomain:
@@ -5470,6 +5988,9 @@ var (
 	describedHolder = describe((*resource.Holder)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{4, 5, 6, 7})
+	describedMemory = describe((*resource.Memory)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
 	describedNotificationReceiptRecord = describe((*resource.NotificationReceiptRecord)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -5530,6 +6051,7 @@ func added(by string) bool {
 		resource.AuditService_Add_FullMethodName,
 		resource.AuthBindingService_Add_FullMethodName,
 		resource.HolderService_Add_FullMethodName,
+		resource.MemoryService_Add_FullMethodName,
 		resource.NotificationReceiptRecordService_Add_FullMethodName,
 		resource.NotificationRecordService_Add_FullMethodName,
 		resource.OperatorService_Add_FullMethodName,
@@ -5686,6 +6208,8 @@ func left(ctx context.Context, s bare.Server, key pdid.Id, image proto.Message) 
 		vs, err = rowsConnection(ctx, s.Db, entConnection.IdEQ(uuid.UUID(key)))
 	case HolderDomain:
 		vs, err = rowsHolder(ctx, s.Db, entHolder.IdEQ(uuid.UUID(key)))
+	case MemoryDomain:
+		vs, err = rowsMemory(ctx, s.Db, entMemory.IdEQ(uuid.UUID(key)))
 	case NotificationReceiptRecordDomain:
 		vs, err = rowsNotificationReceiptRecord(ctx, s.Db, entNotificationReceiptRecord.IdEQ(uuid.UUID(key)))
 	case NotificationRecordDomain:
@@ -6077,6 +6601,9 @@ func Digests(ctx context.Context, db *ent.Client, d *audit.Digest, p trail.Polic
 	if err := audit.CheckKind(ctx, d, checkedHolder(db), archived, &out); err != nil {
 		return out, fmt.Errorf("holder: %w", err)
 	}
+	if err := audit.CheckKind(ctx, d, checkedMemory(db), archived, &out); err != nil {
+		return out, fmt.Errorf("memory: %w", err)
+	}
 	if err := audit.CheckKind(ctx, d, checkedNotificationReceiptRecord(db), archived, &out); err != nil {
 		return out, fmt.Errorf("notification-receipt: %w", err)
 	}
@@ -6239,6 +6766,52 @@ func checkedHolder(db *ent.Client) audit.Kind {
 			var out map[pdid.Id]*audit.Recorded
 			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
 				rows, err := rowsHolder(ctx, db, entHolder.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedMemory is what a check of the rows reads of the memory kind.
+func checkedMemory(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.Memory) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsMemory(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: MemoryDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entMemory.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entMemory.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, MemoryDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsMemory(ctx, db, entMemory.IdIn(uuids(ids)...))
 				if err != nil {
 					return err
 				}
@@ -6745,6 +7318,26 @@ func rowsHolder(ctx context.Context, db *ent.Client, ps ...predicate.Holder) ([]
 	return out, nil
 }
 
+// rowsMemory is the rows `ps` says of the memory kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsMemory(ctx context.Context, db *ent.Client, ps ...predicate.Memory) ([]audit.Live, error) {
+	q := db.Memory.Query().Where(ps...)
+	bare.MemorySelectInit(q, nil)
+
+	vs, err := q.Order(entMemory.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
 // rowsNotificationReceiptRecord is the rows `ps` says of the notification-receipt kind -- every row there is,
 // live or erased softly -- at most a page of them in identifier order, each as
 // a Get reads it.
@@ -7154,6 +7747,8 @@ func record(ctx context.Context, db *ent.Client, content audit.Contents, action 
 				rows, err = rowsAuthBinding(ctx, db, entAuthBinding.IdIn(uuids(page)...))
 			case HolderDomain:
 				rows, err = rowsHolder(ctx, db, entHolder.IdIn(uuids(page)...))
+			case MemoryDomain:
+				rows, err = rowsMemory(ctx, db, entMemory.IdIn(uuids(page)...))
 			case NotificationReceiptRecordDomain:
 				rows, err = rowsNotificationReceiptRecord(ctx, db, entNotificationReceiptRecord.IdIn(uuids(page)...))
 			case NotificationRecordDomain:
@@ -7292,6 +7887,8 @@ func (s trailStore) Carry(ctx context.Context, digest *audit.Digest, d pdid.Doma
 			rows, err = rowsAuthBinding(ctx, s.db, entAuthBinding.IdIn(uuids(ids)...))
 		case HolderDomain:
 			rows, err = rowsHolder(ctx, s.db, entHolder.IdIn(uuids(ids)...))
+		case MemoryDomain:
+			rows, err = rowsMemory(ctx, s.db, entMemory.IdIn(uuids(ids)...))
 		case NotificationReceiptRecordDomain:
 			rows, err = rowsNotificationReceiptRecord(ctx, s.db, entNotificationReceiptRecord.IdIn(uuids(ids)...))
 		case NotificationRecordDomain:
@@ -7768,204 +8365,6 @@ func (s interceptConnection) List(ctx context.Context, req *resource.ConnectionL
 		resource.ConnectionService_List_FullMethodName, req, s.ConnectionServiceServer.List)
 }
 
-func (s Intercept) Operator() resource.OperatorServiceServer {
-	return interceptOperator{s, s.Next().Operator()}
-}
-
-type interceptOperator struct {
-	Intercept
-	resource.OperatorServiceServer
-}
-
-func (s interceptOperator) Add(ctx context.Context, req *resource.OperatorAddRequest) (*resource.Operator, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.OperatorServiceServer,
-		resource.OperatorService_Add_FullMethodName, req, s.OperatorServiceServer.Add)
-}
-
-func (s interceptOperator) Get(ctx context.Context, req *resource.OperatorGetRequest) (*resource.Operator, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.OperatorServiceServer,
-		resource.OperatorService_Get_FullMethodName, req, s.OperatorServiceServer.Get)
-}
-
-func (s Intercept) Access() resource.AccessServiceServer {
-	return interceptAccess{s, s.Next().Access()}
-}
-
-type interceptAccess struct {
-	Intercept
-	resource.AccessServiceServer
-}
-
-func (s interceptAccess) Get(ctx context.Context, req *resource.AccessGetRequest) (*resource.Access, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.AccessServiceServer,
-		resource.AccessService_Get_FullMethodName, req, s.AccessServiceServer.Get)
-}
-
-func (s interceptAccess) List(ctx context.Context, req *resource.AccessListRequest) (*resource.AccessListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.AccessServiceServer,
-		resource.AccessService_List_FullMethodName, req, s.AccessServiceServer.List)
-}
-
-func (s Intercept) Audit() resource.AuditServiceServer {
-	return interceptAudit{s, s.Next().Audit()}
-}
-
-type interceptAudit struct {
-	Intercept
-	resource.AuditServiceServer
-}
-
-func (s interceptAudit) Add(ctx context.Context, req *resource.AuditAddRequest) (*resource.Audit, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
-		resource.AuditService_Add_FullMethodName, req, s.AuditServiceServer.Add)
-}
-
-func (s interceptAudit) Get(ctx context.Context, req *resource.AuditGetRequest) (*resource.Audit, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
-		resource.AuditService_Get_FullMethodName, req, s.AuditServiceServer.Get)
-}
-
-func (s interceptAudit) Patch(ctx context.Context, req *resource.AuditPatchRequest) (*resource.Audit, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
-		resource.AuditService_Patch_FullMethodName, req, s.AuditServiceServer.Patch)
-}
-
-func (s interceptAudit) Apply(ctx context.Context, req *resource.AuditApplyRequest) (*resource.Audit, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
-		resource.AuditService_Apply_FullMethodName, req, s.AuditServiceServer.Apply)
-}
-
-func (s interceptAudit) Erase(ctx context.Context, req *resource.AuditRef) (*resource.AuditEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
-		resource.AuditService_Erase_FullMethodName, req, s.AuditServiceServer.Erase)
-}
-
-func (s interceptAudit) List(ctx context.Context, req *resource.AuditListRequest) (*resource.AuditListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
-		resource.AuditService_List_FullMethodName, req, s.AuditServiceServer.List)
-}
-
-func (s Intercept) Tenant() resource.TenantServiceServer {
-	return interceptTenant{s, s.Next().Tenant()}
-}
-
-type interceptTenant struct {
-	Intercept
-	resource.TenantServiceServer
-}
-
-func (s interceptTenant) Add(ctx context.Context, req *resource.TenantAddRequest) (*resource.Tenant, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
-		resource.TenantService_Add_FullMethodName, req, s.TenantServiceServer.Add)
-}
-
-func (s interceptTenant) Get(ctx context.Context, req *resource.TenantGetRequest) (*resource.Tenant, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
-		resource.TenantService_Get_FullMethodName, req, s.TenantServiceServer.Get)
-}
-
-func (s interceptTenant) Patch(ctx context.Context, req *resource.TenantPatchRequest) (*resource.Tenant, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
-		resource.TenantService_Patch_FullMethodName, req, s.TenantServiceServer.Patch)
-}
-
-func (s interceptTenant) Apply(ctx context.Context, req *resource.TenantApplyRequest) (*resource.Tenant, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
-		resource.TenantService_Apply_FullMethodName, req, s.TenantServiceServer.Apply)
-}
-
-func (s interceptTenant) Erase(ctx context.Context, req *resource.TenantRef) (*resource.TenantEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
-		resource.TenantService_Erase_FullMethodName, req, s.TenantServiceServer.Erase)
-}
-
-func (s interceptTenant) List(ctx context.Context, req *resource.TenantListRequest) (*resource.TenantListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
-		resource.TenantService_List_FullMethodName, req, s.TenantServiceServer.List)
-}
-
-func (s Intercept) Holder() resource.HolderServiceServer {
-	return interceptHolder{s, s.Next().Holder()}
-}
-
-type interceptHolder struct {
-	Intercept
-	resource.HolderServiceServer
-}
-
-func (s interceptHolder) Add(ctx context.Context, req *resource.HolderAddRequest) (*resource.Holder, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		resource.HolderService_Add_FullMethodName, req, s.HolderServiceServer.Add)
-}
-
-func (s interceptHolder) Get(ctx context.Context, req *resource.HolderGetRequest) (*resource.Holder, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		resource.HolderService_Get_FullMethodName, req, s.HolderServiceServer.Get)
-}
-
-func (s interceptHolder) Patch(ctx context.Context, req *resource.HolderPatchRequest) (*resource.Holder, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		resource.HolderService_Patch_FullMethodName, req, s.HolderServiceServer.Patch)
-}
-
-func (s interceptHolder) Apply(ctx context.Context, req *resource.HolderApplyRequest) (*resource.Holder, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		resource.HolderService_Apply_FullMethodName, req, s.HolderServiceServer.Apply)
-}
-
-func (s interceptHolder) Erase(ctx context.Context, req *resource.HolderRef) (*resource.HolderEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		resource.HolderService_Erase_FullMethodName, req, s.HolderServiceServer.Erase)
-}
-
-func (s interceptHolder) List(ctx context.Context, req *resource.HolderListRequest) (*resource.HolderListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		resource.HolderService_List_FullMethodName, req, s.HolderServiceServer.List)
-}
-
-func (s interceptHolder) Watch(req *resource.HolderWatchRequest, out grpc.ServerStreamingServer[resource.HolderWatchResponse]) error {
-	return grpcx.RunStream(s.stream, s.HolderServiceServer,
-		resource.HolderService_Watch_FullMethodName, req, out, s.HolderServiceServer.Watch)
-}
-
-func (s Intercept) NotificationReceiptRecord() resource.NotificationReceiptRecordServiceServer {
-	return interceptNotificationReceiptRecord{s, s.Next().NotificationReceiptRecord()}
-}
-
-type interceptNotificationReceiptRecord struct {
-	Intercept
-	resource.NotificationReceiptRecordServiceServer
-}
-
-func (s interceptNotificationReceiptRecord) Add(ctx context.Context, req *resource.NotificationReceiptRecordAddRequest) (*resource.NotificationReceiptRecord, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.NotificationReceiptRecordServiceServer,
-		resource.NotificationReceiptRecordService_Add_FullMethodName, req, s.NotificationReceiptRecordServiceServer.Add)
-}
-
-func (s interceptNotificationReceiptRecord) Get(ctx context.Context, req *resource.NotificationReceiptRecordGetRequest) (*resource.NotificationReceiptRecord, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.NotificationReceiptRecordServiceServer,
-		resource.NotificationReceiptRecordService_Get_FullMethodName, req, s.NotificationReceiptRecordServiceServer.Get)
-}
-
-func (s Intercept) NotificationRecord() resource.NotificationRecordServiceServer {
-	return interceptNotificationRecord{s, s.Next().NotificationRecord()}
-}
-
-type interceptNotificationRecord struct {
-	Intercept
-	resource.NotificationRecordServiceServer
-}
-
-func (s interceptNotificationRecord) Add(ctx context.Context, req *resource.NotificationRecordAddRequest) (*resource.NotificationRecord, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.NotificationRecordServiceServer,
-		resource.NotificationRecordService_Add_FullMethodName, req, s.NotificationRecordServiceServer.Add)
-}
-
-func (s interceptNotificationRecord) Get(ctx context.Context, req *resource.NotificationRecordGetRequest) (*resource.NotificationRecord, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.NotificationRecordServiceServer,
-		resource.NotificationRecordService_Get_FullMethodName, req, s.NotificationRecordServiceServer.Get)
-}
-
 func (s Intercept) Session() resource.SessionServiceServer {
 	return interceptSession{s, s.Next().Session()}
 }
@@ -8248,6 +8647,273 @@ func (s interceptSession) McpLogs(ctx context.Context, req *resource.SessionMcpR
 func (s interceptSession) RestartMcp(ctx context.Context, req *resource.SessionMcpRequest) (*resource.SessionReceipt, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_RestartMcp_FullMethodName, req, s.SessionServiceServer.RestartMcp)
+}
+
+func (s Intercept) Memory() resource.MemoryServiceServer {
+	return interceptMemory{s, s.Next().Memory()}
+}
+
+type interceptMemory struct {
+	Intercept
+	resource.MemoryServiceServer
+}
+
+func (s interceptMemory) Add(ctx context.Context, req *resource.MemoryAddRequest) (*resource.Memory, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Add_FullMethodName, req, s.MemoryServiceServer.Add)
+}
+
+func (s interceptMemory) Get(ctx context.Context, req *resource.MemoryGetRequest) (*resource.Memory, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Get_FullMethodName, req, s.MemoryServiceServer.Get)
+}
+
+func (s interceptMemory) Patch(ctx context.Context, req *resource.MemoryPatchRequest) (*resource.Memory, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Patch_FullMethodName, req, s.MemoryServiceServer.Patch)
+}
+
+func (s interceptMemory) Apply(ctx context.Context, req *resource.MemoryApplyRequest) (*resource.Memory, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Apply_FullMethodName, req, s.MemoryServiceServer.Apply)
+}
+
+func (s interceptMemory) Erase(ctx context.Context, req *resource.MemoryRef) (*resource.MemoryEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Erase_FullMethodName, req, s.MemoryServiceServer.Erase)
+}
+
+func (s interceptMemory) List(ctx context.Context, req *resource.MemoryListRequest) (*resource.MemoryListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_List_FullMethodName, req, s.MemoryServiceServer.List)
+}
+
+func (s interceptMemory) Watch(req *resource.MemoryWatchRequest, out grpc.ServerStreamingServer[resource.MemoryWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.MemoryServiceServer,
+		resource.MemoryService_Watch_FullMethodName, req, out, s.MemoryServiceServer.Watch)
+}
+
+func (s interceptMemory) Read(ctx context.Context, req *resource.MemoryReadRequest) (*resource.MemoryReadReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Read_FullMethodName, req, s.MemoryServiceServer.Read)
+}
+
+func (s interceptMemory) Versions(ctx context.Context, req *resource.MemoryVersionsRequest) (*resource.MemoryVersionsReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Versions_FullMethodName, req, s.MemoryServiceServer.Versions)
+}
+
+func (s interceptMemory) Changes(ctx context.Context, req *resource.MemoryChangesRequest) (*resource.MemoryChangesReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Changes_FullMethodName, req, s.MemoryServiceServer.Changes)
+}
+
+func (s interceptMemory) Restore(ctx context.Context, req *resource.MemoryRestoreRequest) (*resource.Memory, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Restore_FullMethodName, req, s.MemoryServiceServer.Restore)
+}
+
+func (s interceptMemory) Purge(ctx context.Context, req *resource.MemoryPurgeRequest) (*resource.MemoryEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.MemoryServiceServer,
+		resource.MemoryService_Purge_FullMethodName, req, s.MemoryServiceServer.Purge)
+}
+
+func (s Intercept) Operator() resource.OperatorServiceServer {
+	return interceptOperator{s, s.Next().Operator()}
+}
+
+type interceptOperator struct {
+	Intercept
+	resource.OperatorServiceServer
+}
+
+func (s interceptOperator) Add(ctx context.Context, req *resource.OperatorAddRequest) (*resource.Operator, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.OperatorServiceServer,
+		resource.OperatorService_Add_FullMethodName, req, s.OperatorServiceServer.Add)
+}
+
+func (s interceptOperator) Get(ctx context.Context, req *resource.OperatorGetRequest) (*resource.Operator, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.OperatorServiceServer,
+		resource.OperatorService_Get_FullMethodName, req, s.OperatorServiceServer.Get)
+}
+
+func (s Intercept) Access() resource.AccessServiceServer {
+	return interceptAccess{s, s.Next().Access()}
+}
+
+type interceptAccess struct {
+	Intercept
+	resource.AccessServiceServer
+}
+
+func (s interceptAccess) Get(ctx context.Context, req *resource.AccessGetRequest) (*resource.Access, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccessServiceServer,
+		resource.AccessService_Get_FullMethodName, req, s.AccessServiceServer.Get)
+}
+
+func (s interceptAccess) List(ctx context.Context, req *resource.AccessListRequest) (*resource.AccessListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AccessServiceServer,
+		resource.AccessService_List_FullMethodName, req, s.AccessServiceServer.List)
+}
+
+func (s Intercept) Audit() resource.AuditServiceServer {
+	return interceptAudit{s, s.Next().Audit()}
+}
+
+type interceptAudit struct {
+	Intercept
+	resource.AuditServiceServer
+}
+
+func (s interceptAudit) Add(ctx context.Context, req *resource.AuditAddRequest) (*resource.Audit, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
+		resource.AuditService_Add_FullMethodName, req, s.AuditServiceServer.Add)
+}
+
+func (s interceptAudit) Get(ctx context.Context, req *resource.AuditGetRequest) (*resource.Audit, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
+		resource.AuditService_Get_FullMethodName, req, s.AuditServiceServer.Get)
+}
+
+func (s interceptAudit) Patch(ctx context.Context, req *resource.AuditPatchRequest) (*resource.Audit, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
+		resource.AuditService_Patch_FullMethodName, req, s.AuditServiceServer.Patch)
+}
+
+func (s interceptAudit) Apply(ctx context.Context, req *resource.AuditApplyRequest) (*resource.Audit, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
+		resource.AuditService_Apply_FullMethodName, req, s.AuditServiceServer.Apply)
+}
+
+func (s interceptAudit) Erase(ctx context.Context, req *resource.AuditRef) (*resource.AuditEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
+		resource.AuditService_Erase_FullMethodName, req, s.AuditServiceServer.Erase)
+}
+
+func (s interceptAudit) List(ctx context.Context, req *resource.AuditListRequest) (*resource.AuditListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.AuditServiceServer,
+		resource.AuditService_List_FullMethodName, req, s.AuditServiceServer.List)
+}
+
+func (s Intercept) Tenant() resource.TenantServiceServer {
+	return interceptTenant{s, s.Next().Tenant()}
+}
+
+type interceptTenant struct {
+	Intercept
+	resource.TenantServiceServer
+}
+
+func (s interceptTenant) Add(ctx context.Context, req *resource.TenantAddRequest) (*resource.Tenant, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
+		resource.TenantService_Add_FullMethodName, req, s.TenantServiceServer.Add)
+}
+
+func (s interceptTenant) Get(ctx context.Context, req *resource.TenantGetRequest) (*resource.Tenant, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
+		resource.TenantService_Get_FullMethodName, req, s.TenantServiceServer.Get)
+}
+
+func (s interceptTenant) Patch(ctx context.Context, req *resource.TenantPatchRequest) (*resource.Tenant, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
+		resource.TenantService_Patch_FullMethodName, req, s.TenantServiceServer.Patch)
+}
+
+func (s interceptTenant) Apply(ctx context.Context, req *resource.TenantApplyRequest) (*resource.Tenant, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
+		resource.TenantService_Apply_FullMethodName, req, s.TenantServiceServer.Apply)
+}
+
+func (s interceptTenant) Erase(ctx context.Context, req *resource.TenantRef) (*resource.TenantEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
+		resource.TenantService_Erase_FullMethodName, req, s.TenantServiceServer.Erase)
+}
+
+func (s interceptTenant) List(ctx context.Context, req *resource.TenantListRequest) (*resource.TenantListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
+		resource.TenantService_List_FullMethodName, req, s.TenantServiceServer.List)
+}
+
+func (s Intercept) Holder() resource.HolderServiceServer {
+	return interceptHolder{s, s.Next().Holder()}
+}
+
+type interceptHolder struct {
+	Intercept
+	resource.HolderServiceServer
+}
+
+func (s interceptHolder) Add(ctx context.Context, req *resource.HolderAddRequest) (*resource.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		resource.HolderService_Add_FullMethodName, req, s.HolderServiceServer.Add)
+}
+
+func (s interceptHolder) Get(ctx context.Context, req *resource.HolderGetRequest) (*resource.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		resource.HolderService_Get_FullMethodName, req, s.HolderServiceServer.Get)
+}
+
+func (s interceptHolder) Patch(ctx context.Context, req *resource.HolderPatchRequest) (*resource.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		resource.HolderService_Patch_FullMethodName, req, s.HolderServiceServer.Patch)
+}
+
+func (s interceptHolder) Apply(ctx context.Context, req *resource.HolderApplyRequest) (*resource.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		resource.HolderService_Apply_FullMethodName, req, s.HolderServiceServer.Apply)
+}
+
+func (s interceptHolder) Erase(ctx context.Context, req *resource.HolderRef) (*resource.HolderEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		resource.HolderService_Erase_FullMethodName, req, s.HolderServiceServer.Erase)
+}
+
+func (s interceptHolder) List(ctx context.Context, req *resource.HolderListRequest) (*resource.HolderListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		resource.HolderService_List_FullMethodName, req, s.HolderServiceServer.List)
+}
+
+func (s interceptHolder) Watch(req *resource.HolderWatchRequest, out grpc.ServerStreamingServer[resource.HolderWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.HolderServiceServer,
+		resource.HolderService_Watch_FullMethodName, req, out, s.HolderServiceServer.Watch)
+}
+
+func (s Intercept) NotificationReceiptRecord() resource.NotificationReceiptRecordServiceServer {
+	return interceptNotificationReceiptRecord{s, s.Next().NotificationReceiptRecord()}
+}
+
+type interceptNotificationReceiptRecord struct {
+	Intercept
+	resource.NotificationReceiptRecordServiceServer
+}
+
+func (s interceptNotificationReceiptRecord) Add(ctx context.Context, req *resource.NotificationReceiptRecordAddRequest) (*resource.NotificationReceiptRecord, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NotificationReceiptRecordServiceServer,
+		resource.NotificationReceiptRecordService_Add_FullMethodName, req, s.NotificationReceiptRecordServiceServer.Add)
+}
+
+func (s interceptNotificationReceiptRecord) Get(ctx context.Context, req *resource.NotificationReceiptRecordGetRequest) (*resource.NotificationReceiptRecord, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NotificationReceiptRecordServiceServer,
+		resource.NotificationReceiptRecordService_Get_FullMethodName, req, s.NotificationReceiptRecordServiceServer.Get)
+}
+
+func (s Intercept) NotificationRecord() resource.NotificationRecordServiceServer {
+	return interceptNotificationRecord{s, s.Next().NotificationRecord()}
+}
+
+type interceptNotificationRecord struct {
+	Intercept
+	resource.NotificationRecordServiceServer
+}
+
+func (s interceptNotificationRecord) Add(ctx context.Context, req *resource.NotificationRecordAddRequest) (*resource.NotificationRecord, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NotificationRecordServiceServer,
+		resource.NotificationRecordService_Add_FullMethodName, req, s.NotificationRecordServiceServer.Add)
+}
+
+func (s interceptNotificationRecord) Get(ctx context.Context, req *resource.NotificationRecordGetRequest) (*resource.NotificationRecord, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NotificationRecordServiceServer,
+		resource.NotificationRecordService_Get_FullMethodName, req, s.NotificationRecordServiceServer.Get)
 }
 
 func (s Intercept) SessionRead() resource.SessionReadServiceServer {
@@ -10620,42 +11286,6 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.AuthBindingListRequest{}
 	case resource.ConnectionService_List_FullMethodName:
 		v = &resource.ConnectionListRequest{}
-	case resource.OperatorService_Add_FullMethodName:
-		v = &resource.OperatorAddRequest{}
-	case resource.OperatorService_Get_FullMethodName:
-		v = &resource.OperatorGetRequest{}
-	case resource.TenantService_Add_FullMethodName:
-		v = &resource.TenantAddRequest{}
-	case resource.TenantService_Get_FullMethodName:
-		v = &resource.TenantGetRequest{}
-	case resource.TenantService_Patch_FullMethodName:
-		v = &resource.TenantPatchRequest{}
-	case resource.TenantService_Apply_FullMethodName:
-		v = &resource.TenantApplyRequest{}
-	case resource.TenantService_Erase_FullMethodName:
-		v = &resource.TenantRef{}
-	case resource.TenantService_List_FullMethodName:
-		v = &resource.TenantListRequest{}
-	case resource.HolderService_Add_FullMethodName:
-		v = &resource.HolderAddRequest{}
-	case resource.HolderService_Get_FullMethodName:
-		v = &resource.HolderGetRequest{}
-	case resource.HolderService_Patch_FullMethodName:
-		v = &resource.HolderPatchRequest{}
-	case resource.HolderService_Apply_FullMethodName:
-		v = &resource.HolderApplyRequest{}
-	case resource.HolderService_Erase_FullMethodName:
-		v = &resource.HolderRef{}
-	case resource.HolderService_List_FullMethodName:
-		v = &resource.HolderListRequest{}
-	case resource.NotificationReceiptRecordService_Add_FullMethodName:
-		v = &resource.NotificationReceiptRecordAddRequest{}
-	case resource.NotificationReceiptRecordService_Get_FullMethodName:
-		v = &resource.NotificationReceiptRecordGetRequest{}
-	case resource.NotificationRecordService_Add_FullMethodName:
-		v = &resource.NotificationRecordAddRequest{}
-	case resource.NotificationRecordService_Get_FullMethodName:
-		v = &resource.NotificationRecordGetRequest{}
 	case resource.SessionService_Add_FullMethodName:
 		v = &resource.SessionAddRequest{}
 	case resource.SessionService_Get_FullMethodName:
@@ -10756,6 +11386,64 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.SessionMcpRequest{}
 	case resource.SessionService_RestartMcp_FullMethodName:
 		v = &resource.SessionMcpRequest{}
+	case resource.MemoryService_Add_FullMethodName:
+		v = &resource.MemoryAddRequest{}
+	case resource.MemoryService_Get_FullMethodName:
+		v = &resource.MemoryGetRequest{}
+	case resource.MemoryService_Patch_FullMethodName:
+		v = &resource.MemoryPatchRequest{}
+	case resource.MemoryService_Apply_FullMethodName:
+		v = &resource.MemoryApplyRequest{}
+	case resource.MemoryService_Erase_FullMethodName:
+		v = &resource.MemoryRef{}
+	case resource.MemoryService_List_FullMethodName:
+		v = &resource.MemoryListRequest{}
+	case resource.MemoryService_Read_FullMethodName:
+		v = &resource.MemoryReadRequest{}
+	case resource.MemoryService_Versions_FullMethodName:
+		v = &resource.MemoryVersionsRequest{}
+	case resource.MemoryService_Changes_FullMethodName:
+		v = &resource.MemoryChangesRequest{}
+	case resource.MemoryService_Restore_FullMethodName:
+		v = &resource.MemoryRestoreRequest{}
+	case resource.MemoryService_Purge_FullMethodName:
+		v = &resource.MemoryPurgeRequest{}
+	case resource.OperatorService_Add_FullMethodName:
+		v = &resource.OperatorAddRequest{}
+	case resource.OperatorService_Get_FullMethodName:
+		v = &resource.OperatorGetRequest{}
+	case resource.TenantService_Add_FullMethodName:
+		v = &resource.TenantAddRequest{}
+	case resource.TenantService_Get_FullMethodName:
+		v = &resource.TenantGetRequest{}
+	case resource.TenantService_Patch_FullMethodName:
+		v = &resource.TenantPatchRequest{}
+	case resource.TenantService_Apply_FullMethodName:
+		v = &resource.TenantApplyRequest{}
+	case resource.TenantService_Erase_FullMethodName:
+		v = &resource.TenantRef{}
+	case resource.TenantService_List_FullMethodName:
+		v = &resource.TenantListRequest{}
+	case resource.HolderService_Add_FullMethodName:
+		v = &resource.HolderAddRequest{}
+	case resource.HolderService_Get_FullMethodName:
+		v = &resource.HolderGetRequest{}
+	case resource.HolderService_Patch_FullMethodName:
+		v = &resource.HolderPatchRequest{}
+	case resource.HolderService_Apply_FullMethodName:
+		v = &resource.HolderApplyRequest{}
+	case resource.HolderService_Erase_FullMethodName:
+		v = &resource.HolderRef{}
+	case resource.HolderService_List_FullMethodName:
+		v = &resource.HolderListRequest{}
+	case resource.NotificationReceiptRecordService_Add_FullMethodName:
+		v = &resource.NotificationReceiptRecordAddRequest{}
+	case resource.NotificationReceiptRecordService_Get_FullMethodName:
+		v = &resource.NotificationReceiptRecordGetRequest{}
+	case resource.NotificationRecordService_Add_FullMethodName:
+		v = &resource.NotificationRecordAddRequest{}
+	case resource.NotificationRecordService_Get_FullMethodName:
+		v = &resource.NotificationRecordGetRequest{}
 	case resource.SessionReadService_Add_FullMethodName:
 		v = &resource.SessionReadAddRequest{}
 	case resource.SessionReadService_Get_FullMethodName:
@@ -10880,42 +11568,6 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.AuthBinding().List(ctx, v.(*resource.AuthBindingListRequest))
 	case resource.ConnectionService_List_FullMethodName:
 		res, err = s.Connection().List(ctx, v.(*resource.ConnectionListRequest))
-	case resource.OperatorService_Add_FullMethodName:
-		res, err = s.Operator().Add(ctx, v.(*resource.OperatorAddRequest))
-	case resource.OperatorService_Get_FullMethodName:
-		res, err = s.Operator().Get(ctx, v.(*resource.OperatorGetRequest))
-	case resource.TenantService_Add_FullMethodName:
-		res, err = s.Tenant().Add(ctx, v.(*resource.TenantAddRequest))
-	case resource.TenantService_Get_FullMethodName:
-		res, err = s.Tenant().Get(ctx, v.(*resource.TenantGetRequest))
-	case resource.TenantService_Patch_FullMethodName:
-		res, err = s.Tenant().Patch(ctx, v.(*resource.TenantPatchRequest))
-	case resource.TenantService_Apply_FullMethodName:
-		res, err = s.Tenant().Apply(ctx, v.(*resource.TenantApplyRequest))
-	case resource.TenantService_Erase_FullMethodName:
-		res, err = s.Tenant().Erase(ctx, v.(*resource.TenantRef))
-	case resource.TenantService_List_FullMethodName:
-		res, err = s.Tenant().List(ctx, v.(*resource.TenantListRequest))
-	case resource.HolderService_Add_FullMethodName:
-		res, err = s.Holder().Add(ctx, v.(*resource.HolderAddRequest))
-	case resource.HolderService_Get_FullMethodName:
-		res, err = s.Holder().Get(ctx, v.(*resource.HolderGetRequest))
-	case resource.HolderService_Patch_FullMethodName:
-		res, err = s.Holder().Patch(ctx, v.(*resource.HolderPatchRequest))
-	case resource.HolderService_Apply_FullMethodName:
-		res, err = s.Holder().Apply(ctx, v.(*resource.HolderApplyRequest))
-	case resource.HolderService_Erase_FullMethodName:
-		res, err = s.Holder().Erase(ctx, v.(*resource.HolderRef))
-	case resource.HolderService_List_FullMethodName:
-		res, err = s.Holder().List(ctx, v.(*resource.HolderListRequest))
-	case resource.NotificationReceiptRecordService_Add_FullMethodName:
-		res, err = s.NotificationReceiptRecord().Add(ctx, v.(*resource.NotificationReceiptRecordAddRequest))
-	case resource.NotificationReceiptRecordService_Get_FullMethodName:
-		res, err = s.NotificationReceiptRecord().Get(ctx, v.(*resource.NotificationReceiptRecordGetRequest))
-	case resource.NotificationRecordService_Add_FullMethodName:
-		res, err = s.NotificationRecord().Add(ctx, v.(*resource.NotificationRecordAddRequest))
-	case resource.NotificationRecordService_Get_FullMethodName:
-		res, err = s.NotificationRecord().Get(ctx, v.(*resource.NotificationRecordGetRequest))
 	case resource.SessionService_Add_FullMethodName:
 		res, err = s.Session().Add(ctx, v.(*resource.SessionAddRequest))
 	case resource.SessionService_Get_FullMethodName:
@@ -11016,6 +11668,64 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.Session().McpLogs(ctx, v.(*resource.SessionMcpRequest))
 	case resource.SessionService_RestartMcp_FullMethodName:
 		res, err = s.Session().RestartMcp(ctx, v.(*resource.SessionMcpRequest))
+	case resource.MemoryService_Add_FullMethodName:
+		res, err = s.Memory().Add(ctx, v.(*resource.MemoryAddRequest))
+	case resource.MemoryService_Get_FullMethodName:
+		res, err = s.Memory().Get(ctx, v.(*resource.MemoryGetRequest))
+	case resource.MemoryService_Patch_FullMethodName:
+		res, err = s.Memory().Patch(ctx, v.(*resource.MemoryPatchRequest))
+	case resource.MemoryService_Apply_FullMethodName:
+		res, err = s.Memory().Apply(ctx, v.(*resource.MemoryApplyRequest))
+	case resource.MemoryService_Erase_FullMethodName:
+		res, err = s.Memory().Erase(ctx, v.(*resource.MemoryRef))
+	case resource.MemoryService_List_FullMethodName:
+		res, err = s.Memory().List(ctx, v.(*resource.MemoryListRequest))
+	case resource.MemoryService_Read_FullMethodName:
+		res, err = s.Memory().Read(ctx, v.(*resource.MemoryReadRequest))
+	case resource.MemoryService_Versions_FullMethodName:
+		res, err = s.Memory().Versions(ctx, v.(*resource.MemoryVersionsRequest))
+	case resource.MemoryService_Changes_FullMethodName:
+		res, err = s.Memory().Changes(ctx, v.(*resource.MemoryChangesRequest))
+	case resource.MemoryService_Restore_FullMethodName:
+		res, err = s.Memory().Restore(ctx, v.(*resource.MemoryRestoreRequest))
+	case resource.MemoryService_Purge_FullMethodName:
+		res, err = s.Memory().Purge(ctx, v.(*resource.MemoryPurgeRequest))
+	case resource.OperatorService_Add_FullMethodName:
+		res, err = s.Operator().Add(ctx, v.(*resource.OperatorAddRequest))
+	case resource.OperatorService_Get_FullMethodName:
+		res, err = s.Operator().Get(ctx, v.(*resource.OperatorGetRequest))
+	case resource.TenantService_Add_FullMethodName:
+		res, err = s.Tenant().Add(ctx, v.(*resource.TenantAddRequest))
+	case resource.TenantService_Get_FullMethodName:
+		res, err = s.Tenant().Get(ctx, v.(*resource.TenantGetRequest))
+	case resource.TenantService_Patch_FullMethodName:
+		res, err = s.Tenant().Patch(ctx, v.(*resource.TenantPatchRequest))
+	case resource.TenantService_Apply_FullMethodName:
+		res, err = s.Tenant().Apply(ctx, v.(*resource.TenantApplyRequest))
+	case resource.TenantService_Erase_FullMethodName:
+		res, err = s.Tenant().Erase(ctx, v.(*resource.TenantRef))
+	case resource.TenantService_List_FullMethodName:
+		res, err = s.Tenant().List(ctx, v.(*resource.TenantListRequest))
+	case resource.HolderService_Add_FullMethodName:
+		res, err = s.Holder().Add(ctx, v.(*resource.HolderAddRequest))
+	case resource.HolderService_Get_FullMethodName:
+		res, err = s.Holder().Get(ctx, v.(*resource.HolderGetRequest))
+	case resource.HolderService_Patch_FullMethodName:
+		res, err = s.Holder().Patch(ctx, v.(*resource.HolderPatchRequest))
+	case resource.HolderService_Apply_FullMethodName:
+		res, err = s.Holder().Apply(ctx, v.(*resource.HolderApplyRequest))
+	case resource.HolderService_Erase_FullMethodName:
+		res, err = s.Holder().Erase(ctx, v.(*resource.HolderRef))
+	case resource.HolderService_List_FullMethodName:
+		res, err = s.Holder().List(ctx, v.(*resource.HolderListRequest))
+	case resource.NotificationReceiptRecordService_Add_FullMethodName:
+		res, err = s.NotificationReceiptRecord().Add(ctx, v.(*resource.NotificationReceiptRecordAddRequest))
+	case resource.NotificationReceiptRecordService_Get_FullMethodName:
+		res, err = s.NotificationReceiptRecord().Get(ctx, v.(*resource.NotificationReceiptRecordGetRequest))
+	case resource.NotificationRecordService_Add_FullMethodName:
+		res, err = s.NotificationRecord().Add(ctx, v.(*resource.NotificationRecordAddRequest))
+	case resource.NotificationRecordService_Get_FullMethodName:
+		res, err = s.NotificationRecord().Get(ctx, v.(*resource.NotificationRecordGetRequest))
 	case resource.SessionReadService_Add_FullMethodName:
 		res, err = s.SessionRead().Add(ctx, v.(*resource.SessionReadAddRequest))
 	case resource.SessionReadService_Get_FullMethodName:
@@ -11084,6 +11794,7 @@ func Resources(s resource.Server, drv dialect.Driver, guard batch.Guard, w *watc
 		&resource.AuthBinding{},
 		&resource.Connection{},
 		&resource.Holder{},
+		&resource.Memory{},
 		&resource.NotificationReceiptRecord{},
 		&resource.NotificationRecord{},
 		&resource.Operator{},
@@ -11298,6 +12009,45 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				return nil, err
 			}
 			query := db.Holder.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *resource.Memory:
+			ctx, err := read.Allow(ctx, resource.MemoryService_Get_FullMethodName, 1)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.MemoryNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entMemory.Table, []resourcesql.Column{
+				{Number: 1, Name: entMemory.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 4, Name: entMemory.FieldAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 5, Name: entMemory.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 6, Name: entMemory.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 8, Name: entMemory.ProjectColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 9, Name: entMemory.FieldOwnerSession, Type: 9, Nullable: false, Key: 0},
+				{Number: 10, Name: entMemory.FieldRevision, Type: 4, Nullable: false, Key: 0},
+				{Number: 11, Name: entMemory.FieldDateDeleted, Type: 65, Nullable: true, Key: 0},
+				{Number: 13, Name: entMemory.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 15, Name: entMemory.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+				{Number: 16, Name: entMemory.FieldContent, Type: 9, Nullable: false, Key: 0},
+				{Number: 17, Name: entMemory.FieldClientId, Type: 9, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.Memory.Query()
 			if pred != nil {
 				query.Where(pred)
 			}
@@ -11630,6 +12380,14 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case resource.HolderService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case resource.MemoryService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case resource.MemoryService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case resource.MemoryService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case resource.MemoryService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case resource.NotificationReceiptRecordService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case resource.NotificationRecordService_Add_FullMethodName:
@@ -11700,7 +12458,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "cxz.Access", "cxz.Account", "cxz.Audit", "cxz.AuthBinding", "cxz.Holder", "cxz.NotificationReceiptRecord", "cxz.NotificationRecord", "cxz.Operator", "cxz.Project", "cxz.Session", "cxz.SessionRead", "cxz.Task", "cxz.TaskLink", "cxz.Tenant":
+	case "cxz.Access", "cxz.Account", "cxz.Audit", "cxz.AuthBinding", "cxz.Holder", "cxz.Memory", "cxz.NotificationReceiptRecord", "cxz.NotificationRecord", "cxz.Operator", "cxz.Project", "cxz.Session", "cxz.SessionRead", "cxz.Task", "cxz.TaskLink", "cxz.Tenant":
 	default:
 		return nil
 	}

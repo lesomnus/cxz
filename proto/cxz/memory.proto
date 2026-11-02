@@ -1,0 +1,34 @@
+edition = "2023";
+package cxz;
+import "cxz/project.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/cxz/resource";
+
+// One project-scoped Markdown document. Session identity is retained as a value:
+// deleting the source session must not delete its published knowledge.
+message Memory {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID, key: true, default: ""}];
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+  Project project = 8 [(orm.edge) = {immutable: true}];
+  string owner_session = 9 [(orm.field) = {immutable: true}];
+  uint64 revision = 10;
+  // Permanent deletion deadline: unset=active, future=trash, elapsed=gone.
+  google.protobuf.Timestamp date_deleted = 11 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  reserved 14;
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
+  string content = 16;
+  string client_id = 17 [(orm.field) = {unique: true, immutable: true}];
+  option (orm.message) = {rpc: {crud: true} indexes: [{name: "page", refs: [{name: "date_created", number: 15}, {name: "id", number: 1}]}]};
+  option (payday.entity) = {
+    domain: 18 global: {} erase: {hard: {}}
+    list: {order: [{field: {name: "date_created"}}, {field: {name: "id"}}], by: [{name: "ref"}, {name: "project"}, {name: "owner_session"}, {name: "labels"}], size: 100, max: 500}
+    watch: {}
+  };
+}

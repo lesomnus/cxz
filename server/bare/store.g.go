@@ -14,6 +14,7 @@ import (
 	authbinding "github.com/lesomnus/cxz/internal/ent/authbinding"
 	connection "github.com/lesomnus/cxz/internal/ent/connection"
 	holder "github.com/lesomnus/cxz/internal/ent/holder"
+	memory "github.com/lesomnus/cxz/internal/ent/memory"
 	notificationreceiptrecord "github.com/lesomnus/cxz/internal/ent/notificationreceiptrecord"
 	notificationrecord "github.com/lesomnus/cxz/internal/ent/notificationrecord"
 	operator "github.com/lesomnus/cxz/internal/ent/operator"
@@ -382,6 +383,8 @@ type Scope interface {
 	ProjectScope(ctx context.Context) (predicate.Project, error)
 	AuthBindingScope(ctx context.Context) (predicate.AuthBinding, error)
 	ConnectionScope(ctx context.Context) (predicate.Connection, error)
+	MemoryScope(ctx context.Context) (predicate.Memory, error)
+	SessionScope(ctx context.Context) (predicate.Session, error)
 	OperatorScope(ctx context.Context) (predicate.Operator, error)
 	AccessScope(ctx context.Context) (predicate.Access, error)
 	ArchivedScope(ctx context.Context) (predicate.Archived, error)
@@ -393,7 +396,6 @@ type Scope interface {
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
 	OwedScope(ctx context.Context) (predicate.Owed, error)
 	RowSealScope(ctx context.Context) (predicate.RowSeal, error)
-	SessionScope(ctx context.Context) (predicate.Session, error)
 	SessionReadScope(ctx context.Context) (predicate.SessionRead, error)
 	TaskScope(ctx context.Context) (predicate.Task, error)
 	TaskLinkScope(ctx context.Context) (predicate.TaskLink, error)
@@ -421,6 +423,12 @@ func (Unscoped) AuthBindingScope(_ context.Context) (predicate.AuthBinding, erro
 	return nil, nil
 }
 func (Unscoped) ConnectionScope(_ context.Context) (predicate.Connection, error) {
+	return nil, nil
+}
+func (Unscoped) MemoryScope(_ context.Context) (predicate.Memory, error) {
+	return nil, nil
+}
+func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
 	return nil, nil
 }
 func (Unscoped) OperatorScope(_ context.Context) (predicate.Operator, error) {
@@ -454,9 +462,6 @@ func (Unscoped) OwedScope(_ context.Context) (predicate.Owed, error) {
 	return nil, nil
 }
 func (Unscoped) RowSealScope(_ context.Context) (predicate.RowSeal, error) {
-	return nil, nil
-}
-func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
 	return nil, nil
 }
 func (Unscoped) SessionReadScope(_ context.Context) (predicate.SessionRead, error) {
@@ -566,6 +571,46 @@ func (ss Scopes) ConnectionScope(ctx context.Context) (predicate.Connection, err
 	}
 
 	return connection.And(ps...), nil
+}
+
+func (ss Scopes) MemoryScope(ctx context.Context) (predicate.Memory, error) {
+	ps := make([]predicate.Memory, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.MemoryScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return memory.And(ps...), nil
+}
+
+func (ss Scopes) SessionScope(ctx context.Context) (predicate.Session, error) {
+	ps := make([]predicate.Session, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.SessionScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return session.And(ps...), nil
 }
 
 func (ss Scopes) OperatorScope(ctx context.Context) (predicate.Operator, error) {
@@ -786,26 +831,6 @@ func (ss Scopes) RowSealScope(ctx context.Context) (predicate.RowSeal, error) {
 	}
 
 	return rowseal.And(ps...), nil
-}
-
-func (ss Scopes) SessionScope(ctx context.Context) (predicate.Session, error) {
-	ps := make([]predicate.Session, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.SessionScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return session.And(ps...), nil
 }
 
 func (ss Scopes) SessionReadScope(ctx context.Context) (predicate.SessionRead, error) {
@@ -1049,6 +1074,8 @@ func (s Server) AuthBinding() resource.AuthBindingServiceServer {
 func (s Server) Connection() resource.ConnectionServiceServer {
 	return ConnectionServiceServer{Store: s.Store}
 }
+func (s Server) Memory() resource.MemoryServiceServer   { return MemoryServiceServer{Store: s.Store} }
+func (s Server) Session() resource.SessionServiceServer { return SessionServiceServer{Store: s.Store} }
 func (s Server) Operator() resource.OperatorServiceServer {
 	return OperatorServiceServer{Store: s.Store}
 }
@@ -1068,7 +1095,6 @@ func (s Server) NotificationReceiptRecord() resource.NotificationReceiptRecordSe
 func (s Server) Outbox() resource.OutboxServiceServer   { return OutboxServiceServer{Store: s.Store} }
 func (s Server) Owed() resource.OwedServiceServer       { return OwedServiceServer{Store: s.Store} }
 func (s Server) RowSeal() resource.RowSealServiceServer { return RowSealServiceServer{Store: s.Store} }
-func (s Server) Session() resource.SessionServiceServer { return SessionServiceServer{Store: s.Store} }
 func (s Server) SessionRead() resource.SessionReadServiceServer {
 	return SessionReadServiceServer{Store: s.Store}
 }
