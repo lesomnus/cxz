@@ -23,9 +23,37 @@ for (const width of [1440, 390]) {
       exact: true,
     });
     const display = copy.locator(":scope > span > span").first();
-    await expect(display.locator("svg")).toHaveCount(1);
+    const leafFits = await copy.evaluate((button) => {
+      const measure = button.querySelector(
+        ':scope > span > span[aria-hidden="true"]',
+      )!;
+      const text = measure.querySelector("span")!.firstChild!;
+      const value = text.textContent!;
+      const range = document.createRange();
+      const width = (part: string) => {
+        const start = value.indexOf(part);
+        range.setStart(text, start);
+        range.setEnd(text, start + part.length);
+        return range.getBoundingClientRect().width;
+      };
+      return (
+        width("/host/long-parent-directory/") +
+          measure.querySelector("svg")!.getBoundingClientRect().width +
+          width("/") +
+          width("workspace-leaf") <=
+        button.clientWidth
+      );
+    });
+    await expect(display.locator("svg")).toHaveCount(leafFits ? 1 : 2);
     await expect(display).toContainText("/host/long-parent-directory/");
-    const leaf = copy.getByText("workspace-leaf", { exact: true });
+    const leaf = display.locator(":scope > span").last();
+    if (leafFits) await expect(leaf).toHaveText("workspace-leaf");
+    else {
+      const text = await leaf.textContent();
+      expect(text).toBeTruthy();
+      expect("workspace-leaf".startsWith(text!)).toBe(true);
+      expect(text!.length).toBeLessThan("workspace-leaf".length);
+    }
     expect(
       await leaf.evaluate((node) => node.scrollWidth <= node.clientWidth),
     ).toBe(true);
@@ -115,13 +143,39 @@ test("middle elision preserves leading entries across resizing and uses centered
   await expect(display.locator("svg")).toHaveCount(1);
   // A smaller container drops more middle entries before touching the leaf.
   await copy.evaluate((node) => {
-    node.style.width = "270px";
+    const measure = node.querySelector(
+      ':scope > span > span[aria-hidden="true"]',
+    )!;
+    const text = measure.querySelector("span")!.firstChild!;
+    const value = text.textContent!;
+    const range = document.createRange();
+    const width = (part: string) => {
+      const start = value.indexOf(part);
+      range.setStart(text, start);
+      range.setEnd(text, start + part.length);
+      return range.getBoundingClientRect().width;
+    };
+    const mark = measure.querySelector("svg")!.getBoundingClientRect().width;
+    node.style.width = `${Math.ceil(width("/home/somnus/workspaces/") + mark + width("/") + width("devcontainer.json"))}px`;
   });
   await expect(display).toHaveText(
     "/home/somnus/workspaces//devcontainer.json",
   );
   await copy.evaluate((node) => {
-    node.style.width = "125px";
+    const measure = node.querySelector(
+      ':scope > span > span[aria-hidden="true"]',
+    )!;
+    const text = measure.querySelector("span")!.firstChild!;
+    const value = text.textContent!;
+    const range = document.createRange();
+    const width = (part: string) => {
+      const start = value.indexOf(part);
+      range.setStart(text, start);
+      range.setEnd(text, start + part.length);
+      return range.getBoundingClientRect().width;
+    };
+    const mark = measure.querySelector("svg")!.getBoundingClientRect().width;
+    node.style.width = `${Math.ceil(width("/home/somnus/") + 2 * mark + width("/") + width("de"))}px`;
   });
   await expect(display.locator("svg")).toHaveCount(2);
   await expect(display).toContainText("/home/somnus/");

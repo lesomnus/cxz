@@ -332,21 +332,27 @@ async function fixture(page, helpers = false, extraProject = false) {
 }
 test("every resource tab has its own body and navigation", async ({ page }) => {
   await fixture(page);
-  for (const [name, heading] of [
-    ["Projects view", "Projects"],
-    ["Accounts", "Accounts"],
-    ["Search", "Search"],
-    ["Memory", "Shared memory"],
-    ["Auxiliary AI", "Auxiliary AI"],
+  for (const [name, body] of [
+    [
+      "Projects view",
+      page.getByRole("combobox", { name: "Select project", exact: true }),
+    ],
+    [
+      "Accounts",
+      page.getByRole("article", { name: "Work account", exact: true }),
+    ],
+    ["Search", page.getByRole("heading", { name: "Search", exact: true })],
+    [
+      "Memory",
+      page.getByRole("main", { name: "Shared memory workspace", exact: true }),
+    ],
+    [
+      "Auxiliary AI",
+      page.getByRole("heading", { name: "Auxiliary AI", exact: true }),
+    ],
   ]) {
     await page.getByRole("link", { name, exact: true }).click();
-    await expect(
-      name === "Projects view"
-        ? page.getByRole("combobox", { name: "Select project", exact: true })
-        : name === "Accounts"
-          ? page.getByRole("article", { name: "Work account", exact: true })
-          : page.getByRole("heading", { name: heading, exact: true }),
-    ).toBeVisible();
+    await expect(body).toBeVisible();
     if (name !== "Projects view")
       await expect(page.locator(".resource-panel .project-row")).toHaveCount(0);
   }
@@ -633,16 +639,23 @@ test("conversation search uses loaded messages immediately without a Search requ
     }),
     input = search.getByRole("searchbox");
   await input.fill("Earlier");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 2",
+  );
   await search.getByRole("button", { name: /Earlier response/ }).click();
   await expect(input).toBeFocused();
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
   await expect(search).toBeVisible();
   await input.fill("query not in loaded messages");
-  await expect(search.getByRole("status")).toHaveText("No matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 0 of 0",
+  );
+  await expect(search.getByText("No matches", { exact: true })).toBeVisible();
   await input.fill("Current");
   await input.fill("Earlier");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 2",
+  );
   await expect(search).not.toContainText("Current response");
   expect(
     requests.filter((r) => r.path.endsWith("SessionService/Search")),
@@ -709,17 +722,23 @@ test("usage, background tasks and auxiliary controls are connected", async ({
   page,
 }) => {
   const requests = await fixture(page);
-  await page.getByRole("link", { name: "Activity", exact: true }).click();
+  await page.getByRole("link", { name: "Projects view", exact: true }).click();
   await expect(
     page.getByRole("region", { name: "Recent 30 days", exact: true }),
   ).toBeVisible();
-  await page.getByRole("combobox", { name: "Scope", exact: true }).click();
-  await page
-    .getByRole("option", { name: "Research session", exact: true })
-    .click();
-  await expect(page.getByText("Build assets", { exact: true })).toBeVisible();
+  await expect
+    .poll(() =>
+      requests.some((r) => r.path.endsWith("ConversationStats") && r.q.project),
+    )
+    .toBe(true);
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await page.getByRole("link", { name: "oak", exact: false }).first().click();
+  await page
+    .getByRole("button", {
+      name: /active background jobs?|Background job status unavailable/,
+    })
+    .click();
+  await expect(page.getByText("Build assets", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Session menu" }).click();
   await page
     .getByRole("menuitem", { name: "Auxiliary AI", exact: true })
@@ -744,7 +763,9 @@ test("local session search Enter visits loaded responses before wrapping without
     }),
     input = search.getByRole("searchbox");
   await input.fill("response");
-  await expect(search.getByRole("status")).toHaveText("2 matches");
+  await expect(search.getByRole("status")).toHaveAccessibleName(
+    "Result 1 of 2",
+  );
   const historyCount = () =>
     requests.filter((r) => /SessionService\/(History|Transcript)$/.test(r.path))
       .length;

@@ -150,11 +150,12 @@ test("session table reserves seven and a half rows with a sticky header and inde
     "main > .panel-scroll-region > .panel-scroll-content",
   );
   const outerTop = await outer.evaluate((el) => el.scrollTop);
+  const target = await viewport.evaluate((el) =>
+    Math.min(el.scrollTop + 300, el.scrollHeight - el.clientHeight),
+  );
   await viewport.hover();
   await page.mouse.wheel(0, 300);
-  await expect
-    .poll(() => viewport.evaluate((el) => el.scrollTop))
-    .toBeGreaterThan(100);
+  await expect.poll(() => viewport.evaluate((el) => el.scrollTop)).toBe(target);
   expect(await outer.evaluate((el) => el.scrollTop)).toBe(outerTop);
   expect((await header.boundingBox())!.y).toBe(headerBefore.y);
   const scrolled = await viewport.evaluate((el) => el.scrollTop);
@@ -486,7 +487,11 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
   const labelBox = (await created
     .locator("xpath=../../dt/span[1]")
     .boundingBox())!;
-  expect(Math.abs(elapsedBox.y - labelBox.y)).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(
+      elapsedBox.y + elapsedBox.height / 2 - labelBox.y - labelBox.height / 2,
+    ),
+  ).toBeLessThanOrEqual(1);
   expect(elapsedBox.x - labelBox.x - labelBox.width).toBeGreaterThan(0);
   expect(elapsedBox.x - labelBox.x - labelBox.width).toBeLessThanOrEqual(8);
 
