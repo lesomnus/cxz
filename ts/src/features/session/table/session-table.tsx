@@ -131,6 +131,7 @@ export function SessionTable({
         </div>
       )}
       <PanelScroll
+        wheelBehavior="instant"
         scrollbarOffset={0}
         horizontalScrollbar={horizontalScrollbar}
         className={`${styles.scroll} ${compact ? styles.compact : ""} ${fillHeight ? styles.fillHeight : ""}`}

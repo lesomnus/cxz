@@ -192,6 +192,37 @@ for (const [story, sectionLabel] of [
         "opacity",
         "0",
       );
+      // A sequence that starts inside must be consumed from its first event;
+      // waiting until the end can leave subsequent events non-cancelable.
+      await viewport.evaluate((node) => {
+        node.scrollTop = 0;
+        node.addEventListener(
+          "wheel",
+          (event) => {
+            node.dataset.firstInsideWheel = String(event.defaultPrevented);
+          },
+          { once: true },
+        );
+      });
+      await page.mouse.move(
+        contentBounds.x + contentBounds.width / 2,
+        contentBounds.y + contentBounds.height / 2,
+      );
+      await page.mouse.wheel(0, 32);
+      await expect(viewport).toHaveAttribute("data-first-inside-wheel", "true");
+      await expect
+        .poll(() => viewport.evaluate((node) => node.scrollTop))
+        .toBe(32);
+      for (const delta of [120, 120, 120, 120, 120, 120, 1, 0.5, 0.25, 0.125])
+        await page.mouse.wheel(0, delta);
+      await expect
+        .poll(() =>
+          viewport.evaluate((node) =>
+            Math.abs(node.scrollHeight - node.clientHeight - node.scrollTop),
+          ),
+        )
+        .toBeLessThan(1);
+      expect((await viewport.boundingBox())!.y).toBeCloseTo(contentBounds.y, 1);
     });
   }
 }
