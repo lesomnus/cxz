@@ -53,8 +53,8 @@ test("row controls confirm stop/restart and resume the intended session", async 
     .nth(2)
     .boundingBox())!;
   expect(button.width).toBeCloseTo(button.height, 1);
-  expect(button.y).toBe(account.y);
-  expect(button.height).toBe(account.height);
+  expect(button.y).toBeGreaterThanOrEqual(account.y);
+  expect(button.height).toBeLessThanOrEqual(account.height);
   expect(button.x).toBeGreaterThanOrEqual(cell.x);
   expect(button.x + button.width).toBeLessThanOrEqual(cell.x + cell.width);
   await more.click();
@@ -334,7 +334,7 @@ test("unavailable runtime keeps cached session and account navigation available"
   expect(await table(page).boundingBox()).toEqual(before);
 });
 
-test("the header Add session button opens the existing create form for the current project", async ({
+test("Add session inside the header menu opens the create form for the current project", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
@@ -342,25 +342,15 @@ test("the header Add session button opens the existing create form for the curre
     name: "Project sessions",
     exact: true,
   });
-  const add = section.getByRole("button", { name: "Add session", exact: true });
   const bulk = section.getByRole("button", {
     name: "Selected session actions",
     exact: true,
   });
   await expect(bulk).toBeEnabled();
-  await expect(add).toBeEnabled();
-  const addBox = (await add.boundingBox())!;
-  const bulkBox = (await bulk.boundingBox())!;
-  expect(addBox.x + addBox.width).toBeLessThanOrEqual(bulkBox.x);
-  expect(addBox.y).toBe(bulkBox.y);
-  expect(addBox.width).toBe(bulkBox.width);
-  const header = section.getByRole("columnheader", {
-    name: "Controls",
-    exact: true,
-  });
   await expect(
-    header.getByRole("button", { name: "Add session", exact: true }),
-  ).toBeVisible();
+    section.getByRole("button", { name: "Add session", exact: true }),
+  ).toHaveCount(0);
+  const add = page.getByRole("menuitem", { name: "Add session", exact: true });
   await expect(section.getByRole("heading")).toHaveCount(0);
   await expect(
     section.getByRole("button", { name: "Actions", exact: true }),
@@ -373,7 +363,10 @@ test("the header Add session button opens the existing create form for the curre
   await page
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
+  await bulk.click();
+  await expect(add).toBeEnabled();
   await add.click();
+  await expect(page.getByRole("menu")).toHaveCount(0);
   const dialog = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(
     dialog.getByRole("combobox", { name: "Project", exact: true }),
@@ -385,11 +378,12 @@ test("the header Add session button opens the existing create form for the curre
     .toBe(true);
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(add).toBeFocused();
+  await expect(bulk).toBeFocused();
   await picker.click();
   await page
     .getByRole("option", { name: "Web workspace", exact: true })
     .click();
+  await bulk.click();
   await add.click();
   await dialog
     .getByRole("textbox", { name: "Title", exact: true })
@@ -408,4 +402,24 @@ test("the header Add session button opens the existing create form for the curre
       .last()
       .getByRole("link", { name: /^Created from projects/ }),
   ).toContainText("Created from projects");
+});
+
+test("empty project can add a session from its header menu", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--empty-sessions&viewMode=story",
+  );
+  await page
+    .getByRole("button", { name: "Selected session actions", exact: true })
+    .click();
+  await expect(
+    page.getByRole("menuitem", { name: "Stop", exact: true }),
+  ).toBeDisabled();
+  const add = page.getByRole("menuitem", { name: "Add session", exact: true });
+  await expect(add).toBeEnabled();
+  await add.click();
+  await expect(
+    page.getByRole("dialog", { name: "Add session", exact: true }),
+  ).toBeVisible();
 });

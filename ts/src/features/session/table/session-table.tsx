@@ -91,9 +91,7 @@ export function SessionTable({
   const addControl = addSession && (
     <Button
       type="button"
-      className={
-        showToolbar ? controlStyles.addTrigger : controlStyles.headerAddTrigger
-      }
+      className={controlStyles.addTrigger}
       aria-label={t("Add session")}
       disabled={loading || controls.busy}
       onClick={addSession}
@@ -108,7 +106,7 @@ export function SessionTable({
       >
         <path d="M12 5v14M5 12h14" />
       </svg>
-      {showToolbar && <span>{t("Session")}</span>}
+      <span>{t("Session")}</span>
     </Button>
   );
 
@@ -146,7 +144,6 @@ export function SessionTable({
           aria-busy={loading}
           data-account-column={showAccount}
           data-project-column={showProject}
-          data-header-add={!showToolbar && !!addSession ? "true" : undefined}
         >
           <colgroup>
             <col className={styles.selectionColumn} />
@@ -190,16 +187,14 @@ export function SessionTable({
                 aria-label={t("Controls")}
               >
                 {!showToolbar && (
-                  <div className={styles.headerActions}>
-                    {addControl}
-                    <SessionTableMenu
-                      sessions={chosen}
-                      controls={controls}
-                      bulk
-                      iconTrigger
-                      disabled={loading}
-                    />
-                  </div>
+                  <SessionTableMenu
+                    sessions={chosen}
+                    controls={controls}
+                    bulk
+                    iconTrigger
+                    disabled={loading}
+                    addSession={addSession}
+                  />
                 )}
               </th>
             </tr>
