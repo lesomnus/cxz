@@ -8,7 +8,6 @@
   --session-account-column-width: 96px;
   --session-project-column-width: 96px;
   --ui-scroll-area-background: var(--ui-shade-24);
-  --ui-scroll-area-content-inset: 0px;
   flex: none;
   height: calc(
     var(--session-header-height) + var(--session-visible-rows) *
@@ -17,6 +16,9 @@
 }
 .scroll :global(.panel-scroll-content) {
   overscroll-behavior: none;
+}
+.scroll :global(.panel-scroll-inner) {
+  --ui-scroll-area-content-inset: 0px;
 }
 .scroll.fillHeight {
   flex: 1;
