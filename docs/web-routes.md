@@ -23,8 +23,9 @@ used for conversation state, drafts, subscriptions or mutations.
 | Project task          | `/c/_/task/fix-login?project=cxz`                   |
 | Shared memory         | `/c/_/memory?project=cxz`                           |
 | Search                | `/c/_/search`                                       |
-| Activity              | `/c/_/activity`                                     |
 | Auxiliary AI          | `/c/_/auxiliary`                                    |
+
+Conversation usage reports are available on the project and account pages.
 
 Project, account and task references accept UUIDs as well. Task storage is
 project-scoped, so task links include a project reference. With several projects,

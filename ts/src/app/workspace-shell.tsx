@@ -165,14 +165,7 @@ export function Workspace({
             </SidebarHint>
           ))}
           {(
-            [
-              "tasks",
-              "accounts",
-              "search",
-              "memory",
-              "activity",
-              "auxiliary",
-            ] as const
+            ["tasks", "accounts", "search", "memory", "auxiliary"] as const
           ).map((view) => (
             <SidebarHint
               key={view}

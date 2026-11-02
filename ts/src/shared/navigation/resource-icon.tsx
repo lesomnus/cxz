@@ -18,7 +18,6 @@ export function ResourceIcon({
     | "accounts"
     | "search"
     | "memory"
-    | "activity"
     | "auxiliary";
 }) {
   useLocale();
@@ -65,8 +64,6 @@ export function ResourceIcon({
           <>
             <path d="M4 3h16v18H4Z M8 7h8M8 11h8M8 15h5" />
           </>
-        ) : kind === "activity" ? (
-          <path d="M3 12h4l3-8 4 16 3-8h4" />
         ) : kind === "auxiliary" ? (
           <>
             <path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z" />

@@ -11,7 +11,6 @@ import { NotFoundPage } from "#src/pages/not-found/not-found-page.tsx";
 import { AccountsPage } from "#src/pages/accounts/accounts-page.tsx";
 import { SearchPage } from "#src/pages/search/search-page.tsx";
 import { MemoryPage } from "#src/pages/memory/memory-page.tsx";
-import { ActivityPage } from "#src/pages/activity/activity-page.tsx";
 import { AuxiliaryPage } from "#src/pages/auxiliary/auxiliary-page.tsx";
 import { TasksPage } from "#src/pages/tasks/tasks-page.tsx";
 export function WorkspaceView() {
@@ -59,8 +58,6 @@ export function WorkspaceView() {
         error={inventoryError}
       />
     );
-  if (resource === "activity")
-    return <ActivityPage c={c} sessions={sessions} />;
   if (resource === "auxiliary") return <AuxiliaryPage c={c} />;
   if (resource === "settings" && settingsTopic === "connections")
     return <ConnectionsPage />;
