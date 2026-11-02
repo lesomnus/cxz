@@ -70,7 +70,6 @@ export const resourcePaths = {
   accounts: "/c/$connection/account",
   search: "/c/$connection/search",
   memory: "/c/$connection/memory",
-  activity: "/c/$connection/activity",
   auxiliary: "/c/$connection/auxiliary",
 } as const;
 
