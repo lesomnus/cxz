@@ -93,6 +93,18 @@ func (f HolderFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HolderMutation", m)
 }
 
+// The MemoryFunc type is an adapter to allow the use of ordinary
+// function as Memory mutator.
+type MemoryFunc func(context.Context, *ent.MemoryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MemoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MemoryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MemoryMutation", m)
+}
+
 // The NotificationReceiptRecordFunc type is an adapter to allow the use of ordinary
 // function as NotificationReceiptRecord mutator.
 type NotificationReceiptRecordFunc func(context.Context, *ent.NotificationReceiptRecordMutation) (ent.Value, error)

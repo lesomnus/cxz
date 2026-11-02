@@ -1,12 +1,11 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Button, IconValueMenu, PageToolbar, Section } from "@lesomnus/nox";
+import { Button, PageToolbar, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
-import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -39,12 +38,9 @@ export function MemoryPage({
     ? projects.find((p) => matchesResource(p, memoryProject))
     : projects[0];
   const id = projectId(project) ?? "";
-  const [selection, setSelection] = useState<Record<string, string>>({});
   const scoped = sessions.filter(
-    (s) => s.project && project && projectId(s.project) === id,
+    (s) => s.project && projectId(s.project) === id,
   );
-  const session =
-    scoped.find((s) => s.runtimeId === selection[id]) ?? scoped[0];
   const guard = useRef<(run: () => void) => void>((run) => run());
   const registerGuard = useCallback(
     (next: ((run: () => void) => void) | undefined) => {
@@ -70,28 +66,6 @@ export function MemoryPage({
               })
             }
           />
-          {session && (
-            <div className={styles.sessionControl}>
-              <span className={styles.contextLabel}>Editing as</span>
-              <IconValueMenu
-                label="Editing session"
-                icon={<AgentBrand agent={session.agent} />}
-                value={session.runtimeId}
-                display={session.alias || session.name || session.runtimeId}
-                options={scoped.map((s) => ({
-                  value: s.runtimeId,
-                  label: s.name || s.alias || s.runtimeId,
-                  searchText: `${s.alias} ${s.agent}`,
-                }))}
-                searchable
-                choose={(value) =>
-                  guard.current(() =>
-                    setSelection((old) => ({ ...old, [id]: value })),
-                  )
-                }
-              />
-            </div>
-          )}
         </div>
       </PageToolbar>
       <PanelScroll
@@ -105,11 +79,11 @@ export function MemoryPage({
               {error}
             </p>
           )}
-          {session ? (
+          {project ? (
             <MemoryLibrary
-              key={`${id}:${session.runtimeId}`}
+              key={id}
               c={c}
-              session={session.runtimeId}
+              project={id}
               sessions={scoped}
               registerGuard={registerGuard}
             />
@@ -122,15 +96,11 @@ export function MemoryPage({
                     ? memoryProject
                       ? "Project unavailable"
                       : "No projects yet"
-                    : "No session available for this project"}
+                    : "Project unavailable"}
               </strong>
               {!projectsLoading && !sessionsLoading && project && (
                 <>
-                  <p>
-                    Shared memory is stored per project. Choose or create a
-                    session to browse it; this does not mean the project's
-                    memory is empty.
-                  </p>
+                  <p>Choose a project to browse its memory documents.</p>
                   <Button
                     onClick={() =>
                       void navigate(projectLocation(resourceHandle(project)))

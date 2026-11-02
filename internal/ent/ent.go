@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/connection"
 	"github.com/lesomnus/cxz/internal/ent/holder"
+	"github.com/lesomnus/cxz/internal/ent/memory"
 	"github.com/lesomnus/cxz/internal/ent/notificationreceiptrecord"
 	"github.com/lesomnus/cxz/internal/ent/notificationrecord"
 	"github.com/lesomnus/cxz/internal/ent/operator"
@@ -98,6 +99,7 @@ func checkColumn(t, c string) error {
 			authbinding.Table:               authbinding.ValidColumn,
 			connection.Table:                connection.ValidColumn,
 			holder.Table:                    holder.ValidColumn,
+			memory.Table:                    memory.ValidColumn,
 			notificationreceiptrecord.Table: notificationreceiptrecord.ValidColumn,
 			notificationrecord.Table:        notificationrecord.ValidColumn,
 			operator.Table:                  operator.ValidColumn,

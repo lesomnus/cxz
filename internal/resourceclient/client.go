@@ -289,7 +289,7 @@ func (c *Client) FileMappings(ctx context.Context, r *api.FileMappingsInput, opt
 }
 
 func (c *Client) Memory(ctx context.Context, r *api.MemoryRequest, opts ...grpc.CallOption) (*api.MemoryReply, error) {
-	out, err := c.sessions.Memory(ctx, resource.SessionMemoryRequest_builder{Ref: sr(r.SessionId), Path: &r.Path}.Build(), opts...)
+	out, err := c.sessions.ReadAgentData(ctx, resource.SessionReadAgentDataRequest_builder{Ref: sr(r.SessionId), Path: &r.Path}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +297,7 @@ func (c *Client) Memory(ctx context.Context, r *api.MemoryRequest, opts ...grpc.
 }
 
 func (c *Client) CopyMemory(ctx context.Context, r *api.CopyMemoryRequest, opts ...grpc.CallOption) (*api.Receipt, error) {
-	out, err := c.sessions.CopyMemory(ctx, resource.SessionCopyMemoryRequest_builder{Ref: sr(r.SessionId), Path: &r.Path, Target: sr(r.TargetId), TargetPath: &r.TargetPath}.Build(), opts...)
+	out, err := c.sessions.CopyAgentData(ctx, resource.SessionCopyAgentDataRequest_builder{Ref: sr(r.SessionId), Path: &r.Path, Target: sr(r.TargetId), TargetPath: &r.TargetPath}.Build(), opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -1,53 +1,41 @@
 import { test, expect, type Page } from "@playwright/test";
-const open = (page: Page, story = "default") =>
-  page.goto(`/iframe.html?id=pages-memory--${story}&viewMode=story`);
-const memories = (page: Page) =>
-  page.getByRole("region", { name: "Project memories", exact: true });
-const documents = (page: Page) =>
-  page.getByRole("region", { name: "Memory documents", exact: true });
-async function edit(page: Page, text: string) {
-  await page.getByRole("button", { name: "Source", exact: true }).click();
-  const editor = page.locator(".monaco-editor textarea");
+const open = (p: Page, story = "default") =>
+  p.goto(`/iframe.html?id=pages-memory--${story}&viewMode=story`);
+const list = (p: Page) =>
+  p.getByRole("region", { name: "Project memories", exact: true });
+const doc = (p: Page) =>
+  p.getByRole("region", { name: "Memory document", exact: true });
+async function source(p: Page, text: string) {
+  const button = p.getByRole("button", { name: "Source", exact: true });
+  if (await button.isVisible()) await button.click();
+  const editor = p.locator(".monaco-editor textarea");
   await editor.focus();
-  await page.keyboard.press("ControlOrMeta+A");
-  await page.keyboard.insertText(text);
+  await p.keyboard.press("ControlOrMeta+A");
+  await p.keyboard.insertText(text);
 }
-
-test("a new editing session shows populated project memories without reading a nonexistent default", async ({
+test("flat memories open directly without an editing-session context", async ({
   page,
 }) => {
   await open(page);
-  await expect(
-    memories(page).getByRole("button", { name: /Architecture notes/ }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(
-    memories(page).getByRole("button", { name: /New session/ }),
-  ).toBeVisible();
-  await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
-  await documents(page)
-    .getByRole("button", { name: "notes.md", exact: true })
-    .click();
   await expect(
     page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Save", exact: true }),
-  ).toBeDisabled();
-  await memories(page)
-    .getByRole("button", { name: /New session/ })
+    page.getByRole("combobox", { name: "Editing session" }),
+  ).toHaveCount(0);
+  await expect(
+    list(page).getByRole("button", { name: /Architecture notes/ }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await list(page)
+    .getByRole("button", { name: /Handoff notes/ })
     .click();
   await expect(
-    page.getByText("This memory has no documents.", { exact: true }),
+    page.getByRole("heading", { name: "Handoff", exact: true }),
   ).toBeVisible();
 });
-
-test("project selection scopes the memory list and editing context", async ({
-  page,
-}) => {
+test("project selection scopes documents", async ({ page }) => {
   await open(page);
-  await expect(
-    documents(page).getByRole("button", { name: "notes.md", exact: true }),
-  ).toBeVisible();
+  await expect(doc(page)).toBeVisible();
   await page
     .getByRole("combobox", { name: "Select project", exact: true })
     .click();
@@ -55,40 +43,29 @@ test("project selection scopes the memory list and editing context", async ({
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
   await expect(
-    memories(page).getByRole("button", { name: /API notes/ }),
-  ).toBeVisible();
-  await expect(
-    memories(page).getByRole("button", { name: /Architecture notes/ }),
-  ).toHaveCount(0);
-  await documents(page)
-    .getByRole("button", { name: "notes.md", exact: true })
-    .click();
-  await expect(
     page.getByRole("heading", { name: "API", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("combobox", { name: "Editing session" }),
-  ).toContainText("pine");
+    list(page).getByRole("button", { name: /Architecture notes/ }),
+  ).toHaveCount(0);
 });
-
-test("empty project memory can create and save its first document", async ({
+test("an empty project creates and saves its first Memory", async ({
   page,
 }) => {
   await open(page, "empty");
-  await expect(page.getByText(/No shared memories yet/)).toBeVisible();
+  await expect(
+    page.getByText("No memories yet. Create a document to start.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "New memory", exact: true }).click();
   await page
-    .getByRole("button", { name: "This session's memory", exact: true })
-    .click();
-  await page
-    .getByRole("textbox", { name: "New document name" })
-    .fill("decisions.md");
-  await page.getByRole("button", { name: "New document", exact: true }).click();
-  const editor = page.locator(".monaco-editor textarea");
-  await editor.focus();
-  await page.keyboard.insertText("# First decision");
+    .getByRole("textbox", { name: "Memory name", exact: true })
+    .fill("First decision");
+  await source(page, "# First decision");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    documents(page).getByRole("button", { name: "decisions.md", exact: true }),
+    list(page).getByRole("button", { name: /First decision/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(
@@ -96,31 +73,17 @@ test("empty project memory can create and save its first document", async ({
   ).toBeVisible();
   await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
 });
-
-test("forked memory supports editing and protects drafts on project changes", async ({
+test("edits are guarded on project changes and metadata saves preserve body revision", async ({
   page,
 }) => {
   await open(page);
-  await documents(page)
-    .getByRole("button", { name: "notes.md", exact: true })
-    .waitFor();
-  await page.getByText("Memory actions", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Fork into this session", exact: true })
-    .click();
   await expect(
-    documents(page).getByText("Forked notes", { exact: true }),
+    page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
-  await documents(page)
-    .getByRole("button", { name: "notes.md", exact: true })
-    .click();
-  await edit(page, "# Local draft");
-  await expect(
-    page.getByRole("button", { name: "Save", exact: true }),
-  ).toBeEnabled();
   await page
-    .getByRole("combobox", { name: "Select project", exact: true })
-    .click();
+    .getByRole("textbox", { name: "Memory name", exact: true })
+    .fill("Renamed notes");
+  await page.getByRole("combobox", { name: "Select project" }).click();
   await page
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
@@ -131,124 +94,165 @@ test("forked memory supports editing and protects drafts on project changes", as
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Save", exact: true }),
-  ).toBeDisabled();
-  await page.getByRole("button", { name: "Preview", exact: true }).click();
+    doc(page).getByText("Revision 1", { exact: true }),
+  ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Local draft", exact: true }),
+    list(page).getByRole("button", { name: /Renamed notes/ }),
   ).toBeVisible();
 });
-
-test("revision conflicts keep the draft and explain the save failure", async ({
+test("body edits create versions, show diff and restore as another version", async ({
+  page,
+}) => {
+  await open(page);
+  await expect(
+    page.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+  await source(page, "# Updated decision");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(
+    doc(page).getByText("Revision 2", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Version history", { exact: true }).click();
+  await page.getByRole("button", { name: "r1", exact: true }).click();
+  await expect(doc(page).locator("pre")).toContainText("Updated decision");
+  await page
+    .getByRole("button", { name: "Use this version", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Save", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(
+    doc(page).getByText("Revision 3", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Preview", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+});
+test("revision conflicts preserve the draft and display the actual failure", async ({
   page,
 }) => {
   await open(page, "revision-conflict");
-  await page.getByText("Memory actions", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Fork into this session", exact: true })
-    .click();
   await expect(
-    documents(page).getByText("Forked notes", { exact: true }),
+    page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
-  await documents(page)
-    .getByRole("button", { name: "notes.md", exact: true })
-    .click();
-  await edit(page, "# Unsaved draft");
+  await source(page, "# Unsaved draft");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
-    "Document revision changed",
+    "Memory revision changed",
   );
   await page.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Unsaved draft", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("notes.md · Unsaved", { exact: true }),
+    doc(page).getByText("Architecture notes · Unsaved", { exact: true }),
   ).toBeVisible();
 });
-
-test("search, snapshots and trash distinguish empty results and retain restoration", async ({
+test("label filters, trash restoration and purge use the flat resource", async ({
   page,
 }) => {
   await open(page);
+  await expect(doc(page)).toBeVisible();
   await page
-    .getByRole("textbox", { name: "Search shared memory" })
-    .fill("no-such-memory");
+    .getByRole("textbox", { name: "Filter labels", exact: true })
+    .fill("topic=none");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(
-    page.getByText("No memories match your search.", { exact: true }),
+    page.getByText("No memories match your filters.", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("textbox", { name: "Search shared memory" }).fill("");
+  await page
+    .getByRole("textbox", { name: "Filter labels", exact: true })
+    .fill("topic=design");
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await memories(page)
-    .getByRole("button", { name: /Saved checkpoint/ })
-    .click();
-  await documents(page)
-    .getByRole("button", { name: "notes.md", exact: true })
-    .click();
   await expect(
-    page.getByRole("heading", { name: "Saved checkpoint", exact: true }),
+    page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Save", exact: true }),
-  ).toBeDisabled();
-  await page.getByText("Memory actions", { exact: true }).click();
-  await memories(page)
-    .getByRole("button", { name: "Delete", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(
-    memories(page).getByRole("button", { name: /Saved checkpoint/ }),
+    list(page).getByRole("button", { name: /Architecture notes/ }),
   ).toHaveCount(0);
   await page.getByRole("radio", { name: "Trash", exact: true }).check();
-  await memories(page)
-    .getByRole("button", { name: /Saved checkpoint/ })
+  await expect(
+    doc(page).getByRole("button", { name: "Restore", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Restore", exact: true }).click();
+  await expect(
+    page.getByText("No memories match your filters.", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("radio", { name: "Memories", exact: true }).check();
+  await expect(
+    list(page).getByRole("button", { name: /Architecture notes/ }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Confirm", exact: true })
     .click();
-  await memories(page)
-    .getByRole("button", { name: "Restore", exact: true })
+  await page.getByRole("radio", { name: "Trash", exact: true }).check();
+  await page.getByRole("button", { name: "Purge", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("all its versions");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Confirm", exact: true })
     .click();
   await expect(
-    memories(page).getByRole("button", { name: /Saved checkpoint/ }),
+    page.getByText("No memories match your filters.", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("radio", { name: "Memories", exact: true }).check();
+  await expect(
+    list(page).getByRole("button", { name: /Architecture notes/ }),
   ).toHaveCount(0);
   await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
-  await page.getByRole("radio", { name: "Library", exact: true }).check();
-  await expect(
-    memories(page).getByRole("button", { name: /Saved checkpoint/ }),
-  ).toBeVisible();
 });
-
+test("memory access does not require an existing project session", async ({
+  page,
+}) => {
+  await open(page, "no-sessions");
+  await expect(
+    page.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "New memory", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Memory name", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Owner session", exact: true }),
+  ).toHaveCount(0);
+});
 for (const [story, message] of [
   ["unavailable", "Memories could not be loaded."],
   ["loading", "Loading memories…"],
-  ["no-sessions", "No session available for this project"],
-] as const) {
-  test(`${story} has an explicit state`, async ({ page }) => {
+] as const)
+  test(`${story} is explicit`, async ({ page }) => {
     await open(page, story);
     await expect(page.getByText(message, { exact: false })).toBeVisible();
-    await expect(page.getByText(/No shared memories yet/)).toHaveCount(0);
+    await expect(
+      page.getByText("No memories yet. Create a document to start.", {
+        exact: true,
+      }),
+    ).toHaveCount(0);
   });
-}
-for (const width of [390, 850, 1200]) {
-  test(`memory panels fit ${width}px without page overflow`, async ({
-    page,
-  }) => {
+for (const width of [390, 850, 1200])
+  test(`flat Memory fits ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await open(page);
     await expect(
-      documents(page).getByRole("button", { name: "notes.md", exact: true }),
+      page.getByRole("heading", { name: "Architecture", exact: true }),
     ).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    const left = (await memories(page).boundingBox())!;
-    const right = (await documents(page).boundingBox())!;
+    const left = (await list(page).boundingBox())!,
+      right = (await doc(page).boundingBox())!;
     if (width === 1200) {
       expect(right.x - left.x - left.width).toBeCloseTo(10, 0);
-      expect(left.y).toBeCloseTo(right.y, 0);
+      expect(right.y).toBeCloseTo(left.y, 0);
     } else if (width === 390)
       expect(right.y).toBeGreaterThan(left.y + left.height);
   });
-}

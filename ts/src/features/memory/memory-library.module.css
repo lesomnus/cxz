@@ -179,3 +179,22 @@
   gap: 4px;
   text-align: start;
 }
+.field {
+  display: grid;
+  gap: 4px;
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+.diff {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 11px var(--ui-font-mono);
+  margin: 8px 0;
+}
+.memoryTitle > span:first-child {
+  width: auto;
+  height: auto;
+  flex: 1;
+}

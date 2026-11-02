@@ -15,9 +15,11 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/memorylib"
+	"github.com/lesomnus/cxz/internal/memoryclient"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/transport"
+	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -31,7 +33,7 @@ type accountWorkflow struct {
 	updates                          chan tea.Msg
 	input                            textinput.Model
 	alias, provider, output, message string
-	seed                             string
+	seed                             *resource.Memory
 	create, sending, canceling       bool
 	started                          time.Time
 	offset                           int
@@ -152,13 +154,13 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 			return open() // Same creation key and settings, exactly one retry.
 		}
 	}
-	seed := ""
+	var seed *resource.Memory
 	if create {
 		seed = m.seedMemory
 		f.seed = seed
-		m.seedMemory = ""
+		m.seedMemory = nil
 	}
-	libraryClient, _ := m.client.(memorylib.Client)
+	libraryClient, _ := m.client.(memoryclient.Client)
 	auxClient, auxOK := m.client.(accounts.AuxiliaryLoginClient)
 	work := func() tea.Msg {
 		defer r.Close()
@@ -175,11 +177,19 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 			}
 		} else if create {
 			s, err = creator(ctx, projectID, alias, r, out, out)
-			if err == nil && seed != "" {
+			if err == nil && seed != nil {
 				if libraryClient == nil {
 					err = fmt.Errorf("new session created but shared memory unavailable")
 				} else {
-					_, err = libraryClient.Library(ctx, s.Id, memorylib.Request{Action: "fork", ID: seed})
+					client, project, e := libraryClient.MemoryResources(ctx, s.ProjectId)
+					err = e
+					if err == nil {
+						owner := s.Id
+						if _, local, ok := strings.Cut(owner, "::"); ok {
+							owner = local
+						}
+						_, err = client.Add(ctx, resource.MemoryAddRequest_builder{Project: projectid.Ref(project), OwnerSession: owner, Name: seed.GetName(), Content: seed.GetContent(), Labels: seed.GetLabels(), ClientId: "seed:" + s.Id}.Build())
+					}
 					if err != nil {
 						err = fmt.Errorf("session %s created, but memory could not be loaded: %w", s.Id, err)
 					}

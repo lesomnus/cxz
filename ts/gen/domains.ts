@@ -33,6 +33,9 @@ export const ConnectionDomain = 12
 /** The domain identifiers of cxz.Holder carry. */
 export const HolderDomain = 2
 
+/** The domain identifiers of cxz.Memory carry. */
+export const MemoryDomain = 18
+
 /** The domain identifiers of cxz.NotificationReceiptRecord carry. */
 export const NotificationReceiptRecordDomain = 15
 
@@ -78,6 +81,7 @@ pdid.register("cxz.Audit", AuditDomain, "audit")
 pdid.register("cxz.AuthBinding", AuthBindingDomain, "auth-binding")
 pdid.register("cxz.Connection", ConnectionDomain, "connection")
 pdid.register("cxz.Holder", HolderDomain, "holder")
+pdid.register("cxz.Memory", MemoryDomain, "memory")
 pdid.register("cxz.NotificationReceiptRecord", NotificationReceiptRecordDomain, "notification-receipt")
 pdid.register("cxz.NotificationRecord", NotificationRecordDomain, "notification")
 pdid.register("cxz.Operator", OperatorDomain, "operator")

@@ -1,6 +1,8 @@
+import { Id } from "@lesomnus/payday/pdid";
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AccountsPage } from "#src/pages/accounts/accounts-page.tsx";
+import { memoryFixture } from "./memory-fixture";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import { BackgroundReport } from "#src/features/activity/background-report.tsx";
@@ -119,6 +121,7 @@ function ResourcePreview({
       quotaRemaining,
     }),
   );
+  const [memory] = useState(() => memoryFixture());
   return (
     <div
       style={{
@@ -138,7 +141,11 @@ function ResourcePreview({
       {view === "accounts" ? (
         <AccountPreview c={c} extraSessions={extraSessions} />
       ) : view === "memory" ? (
-        <MemoryLibrary c={c} session="demo" />
+        <MemoryLibrary
+          c={memory.c}
+          project={new Id(memory.projects[0]!.id).toString()}
+          sessions={memory.sessions}
+        />
       ) : view === "usage" ? (
         <UsageReport c={c} />
       ) : view === "background" ? (

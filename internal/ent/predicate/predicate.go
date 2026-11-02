@@ -27,6 +27,9 @@ type Connection func(*sql.Selector)
 // Holder is the predicate function for holder builders.
 type Holder func(*sql.Selector)
 
+// Memory is the predicate function for memory builders.
+type Memory func(*sql.Selector)
+
 // NotificationReceiptRecord is the predicate function for notificationreceiptrecord builders.
 type NotificationReceiptRecord func(*sql.Selector)
 

@@ -18,6 +18,7 @@ import (
 	"github.com/lesomnus/cxz/internal/ent/authbinding"
 	"github.com/lesomnus/cxz/internal/ent/connection"
 	"github.com/lesomnus/cxz/internal/ent/holder"
+	"github.com/lesomnus/cxz/internal/ent/memory"
 	"github.com/lesomnus/cxz/internal/ent/notificationreceiptrecord"
 	"github.com/lesomnus/cxz/internal/ent/notificationrecord"
 	"github.com/lesomnus/cxz/internal/ent/operator"
@@ -53,6 +54,8 @@ type Client struct {
 	Connection *ConnectionClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
+	// Memory is the client for interacting with the Memory builders.
+	Memory *MemoryClient
 	// NotificationReceiptRecord is the client for interacting with the NotificationReceiptRecord builders.
 	NotificationReceiptRecord *NotificationReceiptRecordClient
 	// NotificationRecord is the client for interacting with the NotificationRecord builders.
@@ -94,6 +97,7 @@ func (c *Client) init() {
 	c.AuthBinding = NewAuthBindingClient(c.config)
 	c.Connection = NewConnectionClient(c.config)
 	c.Holder = NewHolderClient(c.config)
+	c.Memory = NewMemoryClient(c.config)
 	c.NotificationReceiptRecord = NewNotificationReceiptRecordClient(c.config)
 	c.NotificationRecord = NewNotificationRecordClient(c.config)
 	c.Operator = NewOperatorClient(c.config)
@@ -205,6 +209,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		AuthBinding:               NewAuthBindingClient(cfg),
 		Connection:                NewConnectionClient(cfg),
 		Holder:                    NewHolderClient(cfg),
+		Memory:                    NewMemoryClient(cfg),
 		NotificationReceiptRecord: NewNotificationReceiptRecordClient(cfg),
 		NotificationRecord:        NewNotificationRecordClient(cfg),
 		Operator:                  NewOperatorClient(cfg),
@@ -243,6 +248,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		AuthBinding:               NewAuthBindingClient(cfg),
 		Connection:                NewConnectionClient(cfg),
 		Holder:                    NewHolderClient(cfg),
+		Memory:                    NewMemoryClient(cfg),
 		NotificationReceiptRecord: NewNotificationReceiptRecordClient(cfg),
 		NotificationRecord:        NewNotificationRecordClient(cfg),
 		Operator:                  NewOperatorClient(cfg),
@@ -331,9 +337,9 @@ func (c *Client) InTx() bool {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Access, c.Account, c.Archived, c.Audit, c.AuthBinding, c.Connection, c.Holder,
-		c.NotificationReceiptRecord, c.NotificationRecord, c.Operator, c.Outbox,
-		c.Owed, c.Project, c.RowSeal, c.Session, c.SessionRead, c.Task, c.TaskLink,
-		c.Tenant,
+		c.Memory, c.NotificationReceiptRecord, c.NotificationRecord, c.Operator,
+		c.Outbox, c.Owed, c.Project, c.RowSeal, c.Session, c.SessionRead, c.Task,
+		c.TaskLink, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -344,9 +350,9 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Access, c.Account, c.Archived, c.Audit, c.AuthBinding, c.Connection, c.Holder,
-		c.NotificationReceiptRecord, c.NotificationRecord, c.Operator, c.Outbox,
-		c.Owed, c.Project, c.RowSeal, c.Session, c.SessionRead, c.Task, c.TaskLink,
-		c.Tenant,
+		c.Memory, c.NotificationReceiptRecord, c.NotificationRecord, c.Operator,
+		c.Outbox, c.Owed, c.Project, c.RowSeal, c.Session, c.SessionRead, c.Task,
+		c.TaskLink, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -369,6 +375,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Connection.mutate(ctx, m)
 	case *HolderMutation:
 		return c.Holder.mutate(ctx, m)
+	case *MemoryMutation:
+		return c.Memory.mutate(ctx, m)
 	case *NotificationReceiptRecordMutation:
 		return c.NotificationReceiptRecord.mutate(ctx, m)
 	case *NotificationRecordMutation:
@@ -1374,6 +1382,155 @@ func (c *HolderClient) mutate(ctx context.Context, m *HolderMutation) (Value, er
 		return (&HolderDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Holder mutation op: %q", m.Op())
+	}
+}
+
+// MemoryClient is a client for the Memory schema.
+type MemoryClient struct {
+	config
+}
+
+// NewMemoryClient returns a client for the Memory from the given config.
+func NewMemoryClient(c config) *MemoryClient {
+	return &MemoryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `memory.Hooks(f(g(h())))`.
+func (c *MemoryClient) Use(hooks ...Hook) {
+	c.hooks.Memory = append(c.hooks.Memory, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `memory.Intercept(f(g(h())))`.
+func (c *MemoryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Memory = append(c.inters.Memory, interceptors...)
+}
+
+// Create returns a builder for creating a Memory entity.
+func (c *MemoryClient) Create() *MemoryCreate {
+	mutation := newMemoryMutation(c.config, OpCreate)
+	return &MemoryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Memory entities.
+func (c *MemoryClient) CreateBulk(builders ...*MemoryCreate) *MemoryCreateBulk {
+	return &MemoryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MemoryClient) MapCreateBulk(slice any, setFunc func(*MemoryCreate, int)) *MemoryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MemoryCreateBulk{err: fmt.Errorf("calling to MemoryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MemoryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MemoryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Memory.
+func (c *MemoryClient) Update() *MemoryUpdate {
+	mutation := newMemoryMutation(c.config, OpUpdate)
+	return &MemoryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MemoryClient) UpdateOne(_m *Memory) *MemoryUpdateOne {
+	mutation := newMemoryMutation(c.config, OpUpdateOne, withMemory(_m))
+	return &MemoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *MemoryClient) UpdateOneId(id uuid.UUID) *MemoryUpdateOne {
+	mutation := newMemoryMutation(c.config, OpUpdateOne, withMemoryId(id))
+	return &MemoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Memory.
+func (c *MemoryClient) Delete() *MemoryDelete {
+	mutation := newMemoryMutation(c.config, OpDelete)
+	return &MemoryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MemoryClient) DeleteOne(_m *Memory) *MemoryDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *MemoryClient) DeleteOneId(id uuid.UUID) *MemoryDeleteOne {
+	builder := c.Delete().Where(memory.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &MemoryDeleteOne{builder}
+}
+
+// Query returns a query builder for Memory.
+func (c *MemoryClient) Query() *MemoryQuery {
+	return &MemoryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMemory},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Memory entity by its id.
+func (c *MemoryClient) Get(ctx context.Context, id uuid.UUID) (*Memory, error) {
+	return c.Query().Where(memory.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MemoryClient) GetX(ctx context.Context, id uuid.UUID) *Memory {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryProject queries the project edge of a Memory.
+func (c *MemoryClient) QueryProject(_m *Memory) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(memory.Table, memory.FieldId, id),
+			sqlgraph.To(project.Table, project.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, memory.ProjectTable, memory.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MemoryClient) Hooks() []Hook {
+	return c.hooks.Memory
+}
+
+// Interceptors returns the client interceptors.
+func (c *MemoryClient) Interceptors() []Interceptor {
+	return c.inters.Memory
+}
+
+func (c *MemoryClient) mutate(ctx context.Context, m *MemoryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MemoryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MemoryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MemoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MemoryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Memory mutation op: %q", m.Op())
 	}
 }
 
@@ -3104,12 +3261,12 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Access, Account, Archived, Audit, AuthBinding, Connection, Holder,
+		Access, Account, Archived, Audit, AuthBinding, Connection, Holder, Memory,
 		NotificationReceiptRecord, NotificationRecord, Operator, Outbox, Owed, Project,
 		RowSeal, Session, SessionRead, Task, TaskLink, Tenant []ent.Hook
 	}
 	inters struct {
-		Access, Account, Archived, Audit, AuthBinding, Connection, Holder,
+		Access, Account, Archived, Audit, AuthBinding, Connection, Holder, Memory,
 		NotificationReceiptRecord, NotificationRecord, Operator, Outbox, Owed, Project,
 		RowSeal, Session, SessionRead, Task, TaskLink, Tenant []ent.Interceptor
 	}

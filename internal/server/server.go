@@ -262,6 +262,10 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	if e != nil {
 		return fmt.Errorf("build payday resource server: %w", e)
 	}
+	memoryLayer, _ := resource.Find[lifecycle.Layer](resources)
+	if e = memoryLayer.MigrateMemories(ctx); e != nil {
+		return fmt.Errorf("migrate memory documents: %w", e)
+	}
 	stopMaintenance := s.startMaintenance(ctx, resources)
 	defer stopMaintenance()
 	if os.Getenv("CXZ_PROJECT_ID") == "" {

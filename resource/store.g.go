@@ -30,6 +30,8 @@ type Server interface {
 	Project() ProjectServiceServer
 	AuthBinding() AuthBindingServiceServer
 	Connection() ConnectionServiceServer
+	Memory() MemoryServiceServer
+	Session() SessionServiceServer
 	Operator() OperatorServiceServer
 	Access() AccessServiceServer
 	Archived() ArchivedServiceServer
@@ -41,7 +43,6 @@ type Server interface {
 	Outbox() OutboxServiceServer
 	Owed() OwedServiceServer
 	RowSeal() RowSealServiceServer
-	Session() SessionServiceServer
 	SessionRead() SessionReadServiceServer
 	Task() TaskServiceServer
 	TaskLink() TaskLinkServiceServer
@@ -56,6 +57,8 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterProjectServiceServer(g, s.Project())
 	RegisterAuthBindingServiceServer(g, s.AuthBinding())
 	RegisterConnectionServiceServer(g, s.Connection())
+	RegisterMemoryServiceServer(g, s.Memory())
+	RegisterSessionServiceServer(g, s.Session())
 	RegisterOperatorServiceServer(g, s.Operator())
 	RegisterAccessServiceServer(g, s.Access())
 	RegisterArchivedServiceServer(g, s.Archived())
@@ -67,7 +70,6 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterOutboxServiceServer(g, s.Outbox())
 	RegisterOwedServiceServer(g, s.Owed())
 	RegisterRowSealServiceServer(g, s.RowSeal())
-	RegisterSessionServiceServer(g, s.Session())
 	RegisterSessionReadServiceServer(g, s.SessionRead())
 	RegisterTaskServiceServer(g, s.Task())
 	RegisterTaskLinkServiceServer(g, s.TaskLink())
@@ -78,6 +80,8 @@ type UnimplementedServer struct {
 	ProjectServer                   ProjectServiceServer
 	AuthBindingServer               AuthBindingServiceServer
 	ConnectionServer                ConnectionServiceServer
+	MemoryServer                    MemoryServiceServer
+	SessionServer                   SessionServiceServer
 	OperatorServer                  OperatorServiceServer
 	AccessServer                    AccessServiceServer
 	ArchivedServer                  ArchivedServiceServer
@@ -89,7 +93,6 @@ type UnimplementedServer struct {
 	OutboxServer                    OutboxServiceServer
 	OwedServer                      OwedServiceServer
 	RowSealServer                   RowSealServiceServer
-	SessionServer                   SessionServiceServer
 	SessionReadServer               SessionReadServiceServer
 	TaskServer                      TaskServiceServer
 	TaskLinkServer                  TaskLinkServiceServer
@@ -103,6 +106,8 @@ func (UnimplementedServer) AuthBinding() AuthBindingServiceServer {
 func (UnimplementedServer) Connection() ConnectionServiceServer {
 	return UnimplementedConnectionServiceServer{}
 }
+func (UnimplementedServer) Memory() MemoryServiceServer   { return UnimplementedMemoryServiceServer{} }
+func (UnimplementedServer) Session() SessionServiceServer { return UnimplementedSessionServiceServer{} }
 func (UnimplementedServer) Operator() OperatorServiceServer {
 	return UnimplementedOperatorServiceServer{}
 }
@@ -122,7 +127,6 @@ func (UnimplementedServer) NotificationReceiptRecord() NotificationReceiptRecord
 func (UnimplementedServer) Outbox() OutboxServiceServer   { return UnimplementedOutboxServiceServer{} }
 func (UnimplementedServer) Owed() OwedServiceServer       { return UnimplementedOwedServiceServer{} }
 func (UnimplementedServer) RowSeal() RowSealServiceServer { return UnimplementedRowSealServiceServer{} }
-func (UnimplementedServer) Session() SessionServiceServer { return UnimplementedSessionServiceServer{} }
 func (UnimplementedServer) SessionRead() SessionReadServiceServer {
 	return UnimplementedSessionReadServiceServer{}
 }
@@ -136,6 +140,8 @@ type StaticServer struct {
 	ProjectServer                   ProjectServiceServer
 	AuthBindingServer               AuthBindingServiceServer
 	ConnectionServer                ConnectionServiceServer
+	MemoryServer                    MemoryServiceServer
+	SessionServer                   SessionServiceServer
 	OperatorServer                  OperatorServiceServer
 	AccessServer                    AccessServiceServer
 	ArchivedServer                  ArchivedServiceServer
@@ -147,7 +153,6 @@ type StaticServer struct {
 	OutboxServer                    OutboxServiceServer
 	OwedServer                      OwedServiceServer
 	RowSealServer                   RowSealServiceServer
-	SessionServer                   SessionServiceServer
 	SessionReadServer               SessionReadServiceServer
 	TaskServer                      TaskServiceServer
 	TaskLinkServer                  TaskLinkServiceServer
@@ -157,6 +162,8 @@ func (s StaticServer) Account() AccountServiceServer         { return s.AccountS
 func (s StaticServer) Project() ProjectServiceServer         { return s.ProjectServer }
 func (s StaticServer) AuthBinding() AuthBindingServiceServer { return s.AuthBindingServer }
 func (s StaticServer) Connection() ConnectionServiceServer   { return s.ConnectionServer }
+func (s StaticServer) Memory() MemoryServiceServer           { return s.MemoryServer }
+func (s StaticServer) Session() SessionServiceServer         { return s.SessionServer }
 func (s StaticServer) Operator() OperatorServiceServer       { return s.OperatorServer }
 func (s StaticServer) Access() AccessServiceServer           { return s.AccessServer }
 func (s StaticServer) Archived() ArchivedServiceServer       { return s.ArchivedServer }
@@ -172,7 +179,6 @@ func (s StaticServer) NotificationReceiptRecord() NotificationReceiptRecordServi
 func (s StaticServer) Outbox() OutboxServiceServer           { return s.OutboxServer }
 func (s StaticServer) Owed() OwedServiceServer               { return s.OwedServer }
 func (s StaticServer) RowSeal() RowSealServiceServer         { return s.RowSealServer }
-func (s StaticServer) Session() SessionServiceServer         { return s.SessionServer }
 func (s StaticServer) SessionRead() SessionReadServiceServer { return s.SessionReadServer }
 func (s StaticServer) Task() TaskServiceServer               { return s.TaskServer }
 func (s StaticServer) TaskLink() TaskLinkServiceServer       { return s.TaskLinkServer }
@@ -182,6 +188,8 @@ type Client interface {
 	Project() ProjectServiceClient
 	AuthBinding() AuthBindingServiceClient
 	Connection() ConnectionServiceClient
+	Memory() MemoryServiceClient
+	Session() SessionServiceClient
 	Operator() OperatorServiceClient
 	Access() AccessServiceClient
 	Archived() ArchivedServiceClient
@@ -193,7 +201,6 @@ type Client interface {
 	Outbox() OutboxServiceClient
 	Owed() OwedServiceClient
 	RowSeal() RowSealServiceClient
-	Session() SessionServiceClient
 	SessionRead() SessionReadServiceClient
 	Task() TaskServiceClient
 	TaskLink() TaskLinkServiceClient
@@ -205,6 +212,8 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Project:                   NewProjectServiceClient(c),
 		_AuthBinding:               NewAuthBindingServiceClient(c),
 		_Connection:                NewConnectionServiceClient(c),
+		_Memory:                    NewMemoryServiceClient(c),
+		_Session:                   NewSessionServiceClient(c),
 		_Operator:                  NewOperatorServiceClient(c),
 		_Access:                    NewAccessServiceClient(c),
 		_Archived:                  NewArchivedServiceClient(c),
@@ -216,7 +225,6 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Outbox:                    NewOutboxServiceClient(c),
 		_Owed:                      NewOwedServiceClient(c),
 		_RowSeal:                   NewRowSealServiceClient(c),
-		_Session:                   NewSessionServiceClient(c),
 		_SessionRead:               NewSessionReadServiceClient(c),
 		_Task:                      NewTaskServiceClient(c),
 		_TaskLink:                  NewTaskLinkServiceClient(c),
@@ -228,6 +236,8 @@ type client struct {
 	_Project                   ProjectServiceClient
 	_AuthBinding               AuthBindingServiceClient
 	_Connection                ConnectionServiceClient
+	_Memory                    MemoryServiceClient
+	_Session                   SessionServiceClient
 	_Operator                  OperatorServiceClient
 	_Access                    AccessServiceClient
 	_Archived                  ArchivedServiceClient
@@ -239,7 +249,6 @@ type client struct {
 	_Outbox                    OutboxServiceClient
 	_Owed                      OwedServiceClient
 	_RowSeal                   RowSealServiceClient
-	_Session                   SessionServiceClient
 	_SessionRead               SessionReadServiceClient
 	_Task                      TaskServiceClient
 	_TaskLink                  TaskLinkServiceClient
@@ -249,6 +258,8 @@ func (c *client) Account() AccountServiceClient                       { return c
 func (c *client) Project() ProjectServiceClient                       { return c._Project }
 func (c *client) AuthBinding() AuthBindingServiceClient               { return c._AuthBinding }
 func (c *client) Connection() ConnectionServiceClient                 { return c._Connection }
+func (c *client) Memory() MemoryServiceClient                         { return c._Memory }
+func (c *client) Session() SessionServiceClient                       { return c._Session }
 func (c *client) Operator() OperatorServiceClient                     { return c._Operator }
 func (c *client) Access() AccessServiceClient                         { return c._Access }
 func (c *client) Archived() ArchivedServiceClient                     { return c._Archived }
@@ -262,7 +273,6 @@ func (c *client) NotificationReceiptRecord() NotificationReceiptRecordServiceCli
 func (c *client) Outbox() OutboxServiceClient           { return c._Outbox }
 func (c *client) Owed() OwedServiceClient               { return c._Owed }
 func (c *client) RowSeal() RowSealServiceClient         { return c._RowSeal }
-func (c *client) Session() SessionServiceClient         { return c._Session }
 func (c *client) SessionRead() SessionReadServiceClient { return c._SessionRead }
 func (c *client) Task() TaskServiceClient               { return c._Task }
 func (c *client) TaskLink() TaskLinkServiceClient       { return c._TaskLink }

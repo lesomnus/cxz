@@ -20,6 +20,7 @@ import { AuditSchema } from './cxz/payday/audit_pb.js'
 import { AuthBindingSchema } from './cxz/auth_binding_pb.js'
 import { ConnectionSchema } from './cxz/connection_pb.js'
 import { HolderSchema } from './cxz/payday/holder_pb.js'
+import { MemorySchema } from './cxz/memory_pb.js'
 import { NotificationReceiptRecordSchema } from './cxz/payday/notification_receipt_pb.js'
 import { NotificationRecordSchema } from './cxz/payday/notification_pb.js'
 import { OperatorSchema } from './cxz/operator_pb.js'
@@ -39,6 +40,7 @@ import { AuditService } from './cxz/payday/audit_svc_pb.js'
 import { AuthBindingService } from './cxz/auth_binding_svc_pb.js'
 import { ConnectionService } from './cxz/connection_svc_pb.js'
 import { HolderService } from './cxz/payday/holder_svc_pb.js'
+import { MemoryService } from './cxz/memory_svc_pb.js'
 import { NotificationReceiptRecordService } from './cxz/payday/notification_receipt_svc_pb.js'
 import { NotificationRecordService } from './cxz/payday/notification_svc_pb.js'
 import { OperatorService } from './cxz/operator_svc_pb.js'
@@ -129,6 +131,19 @@ export const Holder = {
 	key: "id",
 	ids: ["id"],
 	service: HolderService,
+} as const satisfies EntityDesc
+
+/** cxz.Memory, as the store holds it. */
+export const Memory = {
+	typeName: "cxz.Memory",
+	schema: MemorySchema,
+	domain: 18,
+	version: "dateUpdated",
+	refs: [{ field: "project", to: "cxz.Project" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
+	service: MemoryService,
 } as const satisfies EntityDesc
 
 /** cxz.NotificationReceiptRecord, as the store holds it. */
@@ -271,5 +286,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Access, Account, Archived, Audit, AuthBinding, Connection, Holder, NotificationReceiptRecord, NotificationRecord, Operator, Outbox, Owed, Project, RowSeal, Session, SessionRead, Task, TaskLink, Tenant] as const
+export const entities = [Access, Account, Archived, Audit, AuthBinding, Connection, Holder, Memory, NotificationReceiptRecord, NotificationRecord, Operator, Outbox, Owed, Project, RowSeal, Session, SessionRead, Task, TaskLink, Tenant] as const
 

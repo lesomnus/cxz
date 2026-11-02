@@ -12,7 +12,6 @@ import (
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/editor"
 	"github.com/lesomnus/cxz/internal/maintenance"
-	"github.com/lesomnus/cxz/internal/memorylib"
 	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/cxz/server/lifecycle"
@@ -73,7 +72,7 @@ func (s *Server) startMaintenance(ctx context.Context, resources resource.Server
 		if _, err := layer.RetainNotifications(ctx, now, p.NotificationDays); err != nil {
 			errs = append(errs, err)
 		}
-		if _, err := memorylib.SweepTrash(ctx, s.root, now, p.TrashDays); err != nil {
+		if _, err := layer.RetainMemories(ctx, now); err != nil {
 			errs = append(errs, err)
 		}
 		return errors.Join(errs...)

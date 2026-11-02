@@ -20,7 +20,6 @@ import (
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/memorylib"
 )
 
 // MaxSpec bounds a purge request the way every other Docker action spec is
@@ -114,9 +113,6 @@ func Paths(scope Scope, root string, s Subject) ([]Target, error) {
 			add("uploads", filepath.Join(assets.ExportRoot(filepath.Join(root, "assets"), s.Project), s.Session))
 		}
 	} else {
-		if s.Project != "" {
-			add("memory", filepath.Join(memorylib.Dir(root, s.Project), memorylib.SnapshotID(s.Session)))
-		}
 		if s.CreateID != "" {
 			add("profile", accounts.SessionRoot(root, s.CreateID))
 		}

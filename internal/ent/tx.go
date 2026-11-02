@@ -26,6 +26,8 @@ type Tx struct {
 	Connection *ConnectionClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
+	// Memory is the client for interacting with the Memory builders.
+	Memory *MemoryClient
 	// NotificationReceiptRecord is the client for interacting with the NotificationReceiptRecord builders.
 	NotificationReceiptRecord *NotificationReceiptRecordClient
 	// NotificationRecord is the client for interacting with the NotificationRecord builders.
@@ -188,6 +190,7 @@ func (tx *Tx) init() {
 	tx.AuthBinding = NewAuthBindingClient(tx.config)
 	tx.Connection = NewConnectionClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
+	tx.Memory = NewMemoryClient(tx.config)
 	tx.NotificationReceiptRecord = NewNotificationReceiptRecordClient(tx.config)
 	tx.NotificationRecord = NewNotificationRecordClient(tx.config)
 	tx.Operator = NewOperatorClient(tx.config)
