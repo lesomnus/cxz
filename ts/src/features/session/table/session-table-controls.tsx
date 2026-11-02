@@ -68,23 +68,6 @@ export function SessionTableMenu({
         (!sessions.length && !(bulk && iconTrigger))
       }
       groups={[
-        {
-          label: t("Controls"),
-          items: operations.map((kind) => ({
-            label:
-              kind === "stop"
-                ? t("Stop")
-                : kind === "resume"
-                  ? t("Resume")
-                  : kind === "restart"
-                    ? t("Restart")
-                    : t("Erase"),
-            icon: <SessionActionIcon action={kind} />,
-            danger: kind === "erase",
-            disabled: !sessions.some((s) => canControl(s, kind)),
-            run: () => void controls.request(kind, sessions),
-          })),
-        },
         ...(addSession
           ? [
               {
@@ -110,6 +93,23 @@ export function SessionTableMenu({
               },
             ]
           : []),
+        {
+          label: t("Controls"),
+          items: operations.map((kind) => ({
+            label:
+              kind === "stop"
+                ? t("Stop")
+                : kind === "resume"
+                  ? t("Resume")
+                  : kind === "restart"
+                    ? t("Restart")
+                    : t("Erase"),
+            icon: <SessionActionIcon action={kind} />,
+            danger: kind === "erase",
+            disabled: !sessions.some((s) => canControl(s, kind)),
+            run: () => void controls.request(kind, sessions),
+          })),
+        },
       ]}
     />
   );
