@@ -110,9 +110,10 @@
   );
 }
 .quotaEmpty {
+  --account-quota-empty-inset: 1px;
   position: absolute;
-  inset-inline: var(--account-quota-inset);
-  top: var(--account-quota-inset);
+  inset-inline: var(--account-quota-empty-inset);
+  top: var(--account-quota-empty-inset);
   border-radius: inherit;
   background: var(--ui-section-background);
   transition: height 300ms ease;

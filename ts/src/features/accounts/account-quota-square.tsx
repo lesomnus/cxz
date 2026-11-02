@@ -66,7 +66,7 @@ export function AccountQuotaSquare({
         <span
           className={styles.quotaEmpty}
           style={{
-            height: `calc((100% - 2 * var(--account-quota-inset)) * ${remaining === undefined ? 0 : (100 - remaining) / 100})`,
+            height: `calc((100% - 2 * var(--account-quota-empty-inset)) * ${remaining === undefined ? 0 : (100 - remaining) / 100})`,
           }}
           aria-hidden="true"
         />
