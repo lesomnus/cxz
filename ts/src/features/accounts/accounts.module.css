@@ -88,29 +88,40 @@
   --quota-tint: #b0485b;
 }
 .quotaGauge {
+  --account-quota-gauge-radius: calc(
+    var(--ui-section-radius) - var(--account-quota-inset)
+  );
   position: relative;
   display: grid;
   width: 32px;
   height: 60px;
   place-items: center;
-  border-radius: calc(var(--ui-section-radius) - var(--account-quota-inset));
+  border-radius: var(--account-quota-gauge-radius);
   overflow: hidden;
   isolation: isolate;
+  background: color-mix(
+    in srgb,
+    var(--ui-section-background),
+    var(--quota-tint) 16%
+  );
+}
+.quotaSquare[data-quota-level="unknown"] .quotaGauge {
   background: color-mix(
     in srgb,
     var(--ui-section-background),
     var(--quota-tint) 4%
   );
 }
-.quotaFill {
+.quotaEmpty {
+  --account-quota-empty-inset: 1px;
   position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  background: color-mix(
-    in srgb,
-    var(--ui-section-background),
-    var(--quota-tint) 16%
+  inset-inline: var(--account-quota-empty-inset);
+  top: var(--account-quota-empty-inset);
+  border-radius: max(
+    0px,
+    calc(var(--account-quota-gauge-radius) - var(--account-quota-empty-inset))
   );
+  background: var(--ui-section-background);
   transition: height 300ms ease;
 }
 .quotaValue {
@@ -135,7 +146,7 @@
   gap: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .quotaFill {
+  .quotaEmpty {
     transition: none;
   }
 }

@@ -213,12 +213,17 @@ for (const width of [1280, 390]) {
       "aria-valuenow",
       "64",
     );
+    const empty = gauge.locator(':scope > span[aria-hidden="true"]');
+    await expect
+      .poll(() => empty.evaluate((node) => node.getBoundingClientRect().height))
+      .toBeCloseTo(58 * 0.36, 0);
+    const emptyBounds = (await empty.boundingBox())!;
+    expect(emptyBounds.x - gaugeBounds.x).toBe(1);
+    expect(emptyBounds.y - gaugeBounds.y).toBe(1);
     expect(
-      await quota
-        .locator("span[style]")
-        .first()
-        .evaluate((node) => node.getBoundingClientRect().height),
-    ).toBeCloseTo(60 * 0.64, 0);
+      gaugeBounds.x + gaugeBounds.width - emptyBounds.x - emptyBounds.width,
+    ).toBe(1);
+    await expect(empty).toHaveCSS("border-radius", "13px");
     await expect(quota).toContainText(/00d02h2[56]m/);
     const reset = quota.getByRole("img", { name: /milliseconds/ });
     const resetRows = await reset

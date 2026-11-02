@@ -20,7 +20,7 @@ npm run storybook
 - `Components/EditableValue`: 값 영역 그대로 편집하는 입력과 취소·확인 오버레이. Alias/Title, 저장 대기, 실패 후 수정·재시도를 확인합니다.
 - `Components/SessionDetails`: 고정폭 key·value와 Title·Alias 편집. 편집 가능한 행의 hover 배경 안에서 값 영역은 더 밝은 둥근 표면을 유지하며, 외곽과 내부 모서리는 같은 중심을 갖습니다. Title은 `Session.name`이고 alias와 별개이며, 둘 다 `Session.Patch`로 저장합니다. 이름 변경은 수동 제목으로 기록하고 진행 중인 자동 제목 생성을 취소하며, 보조 AI를 실행하지 않습니다.
 - `Conversation/TaskDetails`: 작업의 Input/Output/Result를 cxz `DetailTabs`와 Monaco로 표시하는 floating card 연동 예제. 기본 Card와 SourceEditor 자체 예제는 Nox에 있습니다.
-- `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤.
+- `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤. `WorkingPhases`는 여러 working 세션의 시작 위상과 오로라 색상 순서가 서로 다른 예제입니다. 세션 ID와 run ID로 seed를 만들므로 새로고침하거나 프로젝트를 접었다 펼쳐도 같은 배치를 재현하며, 이름 변경이나 일반 상태 갱신은 배치를 바꾸지 않습니다.
 - `Pages/Projects`: Account와 같은 공용 Sessions 테이블을 사용합니다. 이름·alias를 묶은 세션/계정 이동 버튼, 상태 아이콘, 행 선택과 개별·일괄 작업, 세션 추가를 확인합니다.
 - `Resources/Tasks`: 프로젝트 선택과 상태별 작업 보드. `ProjectBoard`, `ManyTasks`, `EmptyProject`, `OlderRuntime`에서 등록·수정, 담당 세션 이동, 정지/이전 run 경고와 Release 확인을 확인합니다. `Simulate agent update`는 열린 편집 내용을 보존하면서 원격 갱신·alias 변경과 저장 충돌을 재현합니다. 실제 Connect 클라이언트와 메모리 서비스 fixture를 사용하며 서버의 Task는 변경하지 않습니다.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
