@@ -273,8 +273,8 @@ func memoryScope(m *resource.Memory, scope resource.MemoryScope) bool {
 }
 func (s MemoryServer) List(ctx context.Context, r *resource.MemoryListRequest) (*resource.MemoryListResponse, error) {
 	out := &resource.MemoryListResponse{}
-	if ok, err := s.remote(ctx, r.GetProject(), resource.MemoryService_List_FullMethodName, r, out); ok || err != nil {
-		return out, err
+	if err := s.effect(); err != nil {
+		return nil, err
 	}
 	if r.GetScope() < 0 || r.GetScope() > resource.MemoryScope_MEMORY_SCOPE_TRASH {
 		return nil, memoryInvalid("unknown memory scope")
@@ -282,6 +282,13 @@ func (s MemoryServer) List(ctx context.Context, r *resource.MemoryListRequest) (
 	filters, err := s.memoryFilters(ctx, r)
 	if err != nil {
 		return nil, err
+	}
+	// Resolve aliases on this connection before partitioning requests by project.
+	request := proto.Clone(r).(*resource.MemoryListRequest)
+	request.SetFilters(filters)
+	request.ClearSession()
+	if ok, err := s.remote(ctx, r.GetProject(), resource.MemoryService_List_FullMethodName, request, out); ok || err != nil {
+		return out, err
 	}
 	limit := int(r.GetSize())
 	if limit <= 0 {
