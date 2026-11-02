@@ -63,9 +63,12 @@ export function Workspace({
     selectedSession,
   );
   const session = selectedSession?.runtimeId ?? route.session;
-  const hasResourcePanel = !["accounts", "tasks", "projects"].includes(
-    resource,
-  );
+  const hasResourcePanel = ![
+    "accounts",
+    "tasks",
+    "projects",
+    "memory",
+  ].includes(resource);
   const settingsTopic = route.settingsTopic;
   const lastSession = useRef("");
   if (route.resource === "sessions")
