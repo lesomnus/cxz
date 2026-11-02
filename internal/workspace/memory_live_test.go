@@ -16,8 +16,9 @@ import (
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
-	"github.com/lesomnus/cxz/internal/memorylib"
 	"github.com/lesomnus/cxz/internal/memoryview"
+	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/resource"
 )
 
 func TestLiveRetainedMemoryWithoutProjectContainer(t *testing.T) {
@@ -90,12 +91,16 @@ func TestLiveRetainedMemoryWithoutProjectContainer(t *testing.T) {
 		}
 		s := p.Sessions[0]
 		profile := accounts.Config(accounts.SessionRoot("data", s.CreateId), s.Account)
-		files := map[string]string{
+		runtimeJSON, _ := json.Marshal(Runtime{ProjectID: p.ID})
+		files := map[string]string{"runtime.json": string(runtimeJSON),
 			filepath.Join(profile, ".credentials.json"):                "keep-login",
 			filepath.Join(filepath.Dir(profile), "login.lock"):         "",
 			filepath.Join("data", "sessions", s.Id, "supervisor.lock"): "",
 		}
 		if i == 0 {
+			manifest, _ := json.Marshal(map[string]any{"format": 1, "name": "Migrated collection", "session": s.Id, "created": time.Now()})
+			files["data/memories/0123456789abcdef01234567/session-abcdef0123456789abcdef01/manifest.json"] = string(manifest)
+			files["data/memories/0123456789abcdef01234567/session-abcdef0123456789abcdef01/notes.md"] = "retained legacy document"
 			files[filepath.Join(profile, "projects/old/memory/MEMORY.md")] = "saved across projects and accounts"
 		}
 		for name, content := range files {
@@ -121,6 +126,7 @@ func TestLiveRetainedMemoryWithoutProjectContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 	source, target := projects[0].Sessions[0], projects[1].Sessions[0]
+	p := projects[0]
 	req := &api.MemoryRequest{SessionId: source.Id, Path: "projects/old/memory/MEMORY.md"}
 	out, err := m.Memory(ctx, req)
 	if err != nil {
@@ -131,26 +137,27 @@ func TestLiveRetainedMemoryWithoutProjectContainer(t *testing.T) {
 		t.Fatal(page, err)
 	}
 	// Shared memory helpers drop to the retained session UID before creating files.
-	if _, err = m.Library(ctx, source.Id, memorylib.Request{Action: "import"}); err != nil {
-		t.Fatal(err)
-	}
-	shared, err := m.Library(ctx, source.Id, memorylib.Request{Action: "read"})
-	if err != nil || len(shared.Documents) != 1 {
-		t.Fatal(shared, err)
-	}
-	saved, err := m.Library(ctx, source.Id, memorylib.Request{Action: "snapshot", Name: "Retained memory"})
+	// New MemoryService remains available against the retained project DB.
+	created := &resource.Memory{}
+	err = m.MemoryInvoke(ctx, p.ID, resource.MemoryService_Add_FullMethodName, resource.MemoryAddRequest_builder{Project: projectid.Ref(p.ID), Name: "handoff.md", Content: "pending", ClientId: "retained-test"}.Build(), created)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = m.Library(ctx, target.Id, memorylib.Request{Action: "read", ID: saved.Memory.ID}); err == nil {
-		t.Fatal("cross-project library read accepted")
+	read := &resource.MemoryReadReply{}
+	err = m.MemoryInvoke(ctx, p.ID, resource.MemoryService_Read_FullMethodName, resource.MemoryReadRequest_builder{Ref: resource.MemoryRef_builder{Id: created.GetId(), Project: projectid.Ref(p.ID)}.Build()}.Build(), read)
+	if err != nil || read.GetContent() != "pending" {
+		t.Fatal(read, err)
 	}
-	if _, err = m.Library(ctx, source.Id, memorylib.Request{Action: "update", Document: "handoff.md", Content: "pending"}); err != nil {
-		t.Fatal(err)
+
+	listing := &resource.MemoryListResponse{}
+	if err = m.MemoryInvoke(ctx, p.ID, resource.MemoryService_List_FullMethodName, resource.MemoryListRequest_builder{Project: projectid.Ref(p.ID)}.Build(), listing); err != nil || len(listing.GetItems()) != 2 {
+		t.Fatal(listing, err)
 	}
-	shared, err = m.Library(ctx, source.Id, memorylib.Request{Action: "read", Document: "handoff.md"})
-	if err != nil || shared.Content != "pending" {
-		t.Fatal(shared, err)
+	if err = m.MemoryInvoke(ctx, projects[1].ID, resource.MemoryService_Read_FullMethodName, resource.MemoryReadRequest_builder{Ref: created.Ref()}.Build(), &resource.MemoryReadReply{}); err == nil {
+		t.Fatal("cross-project read accepted")
+	}
+	if _, err = dockerx.Run(ctx, "run", "--rm", "--user", "1000:1000", "--network", "none", "--mount", "type=volume,source="+p.Volume+",target=/state,readonly", "--entrypoint", "test", m.Image, "-r", "/state/data/resources.db"); err != nil {
+		t.Fatal("resource DB ownership damaged", err)
 	}
 	copyReq := &api.CopyMemoryRequest{SessionId: source.Id, Path: "projects/old/memory", TargetId: target.Id, TargetPath: "projects/new/memory"}
 	if _, err = m.CopyMemory(ctx, copyReq); err != nil {

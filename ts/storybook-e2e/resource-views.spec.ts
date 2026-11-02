@@ -1,19 +1,18 @@
 import { test, expect } from "@playwright/test";
-test("shared-memory story renders the live editor and read-only snapshots", async ({
+test("shared-memory story uses flat resources and the live editor", async ({
   page,
 }) => {
   await page.goto(
     "/iframe.html?id=resources-views--shared-memory&viewMode=story",
   );
-  await page.getByRole("button", { name: "notes.md", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Source", exact: true }).click();
   await expect(page.locator(".monaco-editor")).toBeVisible();
-  await page.getByRole("button", { name: /Saved checkpoint/ }).click();
-  await page.getByRole("button", { name: "notes.md", exact: true }).click();
+  await page.getByRole("button", { name: /Handoff notes/ }).click();
   await expect(
-    page.getByText("Read only. Fork this memory to edit it in this session.", {
-      exact: true,
-    }),
+    page.getByRole("heading", { name: "Handoff", exact: true }),
   ).toBeVisible();
 });
 test("account and usage stories use isolated typed clients", async ({

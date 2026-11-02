@@ -10,8 +10,11 @@ import (
 	"strings"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/memorymigration"
 	"github.com/lesomnus/cxz/internal/memorywire"
 	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/internal/sqlitetime"
+	"github.com/lesomnus/cxz/internal/workspace"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/cxz/server/lifecycle"
 	"github.com/lesomnus/payday/config"
@@ -46,6 +49,16 @@ func ServeMemory(ctx context.Context, root string, in io.Reader, out io.Writer) 
 	if request.Project.GetId() == "" || !strings.HasPrefix(request.Method, "/cxz.MemoryService/") {
 		return fmt.Errorf("invalid memory helper request")
 	}
+	runtime, err := workspace.LoadRuntime(root)
+	if err != nil {
+		return fmt.Errorf("read retained project identity: %w", err)
+	}
+	if runtime.ProjectID == "" || projectid.Canonical(runtime.ProjectID) != projectid.Canonical(request.Project.Id) {
+		return fmt.Errorf("retained project identity does not match request")
+	}
+	if err := memorymigration.AsOwner(root); err != nil {
+		return err
+	}
 	open := func(name string) config.DbConfig {
 		return config.DbConfig{Driver: "sqlite3", Dsn: (&url.URL{Scheme: "file", Path: filepath.Join(root, name)}).String() + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)", MaxOpenConns: 1}
 	}
@@ -63,7 +76,10 @@ func ServeMemory(ctx context.Context, root string, in io.Reader, out io.Writer) 
 	}
 	defer db.Close()
 	r := memoryHelperRuntime{Server: &Server{root: root, db: runtimeDB}, project: request.Project}
-	stack, err := lifecycle.Build(ctx, db, r, nil)
+	if err = sqlitetime.Migrate(ctx, db); err != nil {
+		return err
+	}
+	stack, err := lifecycle.Build(ctx, db, r, nil, lifecycle.Options{RetainedMemory: true})
 	if err != nil {
 		return err
 	}

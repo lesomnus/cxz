@@ -1,33 +1,29 @@
-import { create } from "@bufbuild/protobuf";
+import { create, isFieldSet } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
+import { Id } from "@lesomnus/payday/pdid";
 import { ProjectSchema } from "#gen/cxz/project_pb";
 import { SessionSchema } from "#gen/cxz/session_pb";
+import { MemorySchema, type Memory } from "#gen/cxz/memory_pb";
 import {
-  LibraryDocuments,
-  LibraryMemorySchema,
-  LibraryScope,
-  SessionService,
-  type LibraryMemory,
-} from "#gen/cxz/session_svc_pb";
+  MemoryService,
+  MemoryPatchRequestSchema,
+  MemoryScope,
+  MemoryReadFormat,
+} from "#gen/cxz/memory_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { projectFixtureId } from "./project-id";
-
-type Document = { content: string; revision: string; deleted?: boolean };
-type Entry = { memory: LibraryMemory; documents: Map<string, Document> };
-
-/** Project-scoped data, including an empty editing session and populated peers. */
 export function memoryFixture({
   empty = false,
   fail = false,
   delay = 0,
   conflict = false,
 } = {}) {
-  const projects = ["web", "api"].map((alias, index) =>
+  const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
-      id: projectFixtureId(index + 1),
+      id: projectFixtureId(i + 1),
       alias,
-      name: index ? "API workspace" : "Web workspace",
+      name: i ? "API workspace" : "Web workspace",
     }),
   );
   const sessions = [
@@ -52,239 +48,200 @@ export function memoryFixture({
       agent: "codex",
       project: projects[1],
     },
-  ].map((s, index) =>
-    create(SessionSchema, { ...s, id: projectFixtureId(index + 100) }),
+  ].map((s, i) =>
+    create(SessionSchema, { ...s, id: projectFixtureId(i + 100) }),
   );
-  function entry(
-    id: string,
+  const rows = new Map<string, Memory>(),
+    versions = new Map<string, Map<bigint, string>>();
+  let serial = 200,
+    tick = Date.now();
+  const stamp = () => timestampFromDate(new Date(++tick));
+  const key = (id: Uint8Array) => new Id(id).toString();
+  function add(
     name: string,
-    session: string,
-    content?: string,
-    snapshot = false,
-  ): Entry {
-    return {
-      memory: create(LibraryMemorySchema, {
-        id,
-        name,
-        session,
-        agent: session === "writer" ? "claude" : "codex",
-        snapshot,
-        updated: timestampFromDate(new Date("2026-11-01T18:00:00Z")),
-      }),
-      documents: new Map(
-        content === undefined ? [] : [["notes.md", { content, revision: "1" }]],
-      ),
-    };
+    content: string,
+    p = 0,
+    owner = sessions[p === 0 ? 1 : 2],
+  ) {
+    const id = projectFixtureId(++serial);
+    id[9] = 18;
+    const m = create(MemorySchema, {
+      id,
+      name,
+      project: projects[p],
+      ownerSession: key(owner!.id),
+      revision: 1n,
+      content,
+      dateCreated: stamp(),
+      dateUpdated: stamp(),
+      labels: { topic: p ? "api" : "design" },
+    });
+    rows.set(key(id), m);
+    versions.set(key(id), new Map([[1n, content]]));
+    return m;
   }
-  const libraries = [
-    new Map<string, Entry>(
-      empty
-        ? []
-        : [
-            ["own", entry("own", "New session", "demo")],
-            [
-              "shared",
-              entry(
-                "shared",
-                "Architecture notes",
-                "writer",
-                "# Architecture\n\nShared memory belongs to the project, even when this session is new.\n\n- Keep UI decisions together.\n- Preserve document revisions.",
-              ),
-            ],
-            [
-              "checkpoint",
-              entry(
-                "checkpoint",
-                "Saved checkpoint",
-                "writer",
-                "# Saved checkpoint\n\nRead only snapshot.",
-                true,
-              ),
-            ],
-          ],
-    ),
-    new Map([
-      [
-        "api-own",
-        entry(
-          "api-own",
-          "API notes",
-          "api-demo",
-          "# API\n\nAPI-specific shared memory.",
-        ),
-      ],
-    ]),
-  ];
-  let serial = 0;
+  if (!empty) {
+    add(
+      "Architecture notes",
+      "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
+    );
+    add("Handoff notes", "# Handoff\n\nReview open changes.");
+  }
+  add("API notes", "# API\n\nAPI-specific shared memory.", 1);
+  function find(ref?: {
+    key: { case?: string; value?: unknown };
+    project?: unknown;
+  }) {
+    const id = ref?.key.value;
+    if (!(id instanceof Uint8Array))
+      throw new ConnectError("Memory ID required", Code.InvalidArgument);
+    const m = rows.get(key(id));
+    if (!m) throw new ConnectError("Memory not found", Code.NotFound);
+    return m;
+  }
   const transport = createRouterTransport(({ service }) =>
-    service(SessionService, {
-      libraryMemories: async (request) => {
+    service(MemoryService, {
+      list: async (r) => {
         if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
         if (fail)
           throw new ConnectError(
             "Memory library temporarily unavailable",
             Code.Unavailable,
           );
+        const p = r.project?.key.value;
         return {
-          memories: [...library(request).values()]
+          items: [...rows.values()]
             .filter(
-              (e) =>
-                !!e.memory.deleted === (request.scope === LibraryScope.TRASH) &&
-                (!request.query ||
-                  `${e.memory.name} ${[...e.documents.values()].map((d) => d.content).join(" ")}`
+              (m) =>
+                (!(p instanceof Uint8Array) || key(m.project!.id) === key(p)) &&
+                !!m.dateDeleted === (r.scope === MemoryScope.TRASH) &&
+                (!r.session?.key.value ||
+                  m.ownerSession === key(r.session.key.value as Uint8Array)) &&
+                (!r.query ||
+                  `${m.name} ${m.content}`
                     .toLowerCase()
-                    .includes(request.query.toLowerCase())),
+                    .includes(r.query.toLowerCase())) &&
+                (!r.filters.length ||
+                  r.filters.some((f) =>
+                    Object.entries(f.labels).every(
+                      ([k, v]) => m.labels[k] === v,
+                    ),
+                  )),
             )
-            .map((e) => metadata(e)),
+            .map((m) => ({ ...m, content: "" })),
         };
       },
-      libraryMemory: (request) => {
-        const e = get(request);
+      get: (r) => ({ ...find(r.ref) }),
+      read: (r) => {
+        const m = find(r.ref),
+          history = versions.get(key(m.id))!,
+          rev = r.revision || m.revision,
+          content = history.get(rev);
+        if (content === undefined)
+          throw new ConnectError("Version not retained", Code.NotFound);
+        if (
+          r.format === MemoryReadFormat.DIFF &&
+          r.baseRevision &&
+          history.has(r.baseRevision)
+        ) {
+          const before = history.get(r.baseRevision)!;
+          return {
+            memory: { ...m, content: "" },
+            revision: rev,
+            baseRevision: r.baseRevision,
+            format: MemoryReadFormat.DIFF,
+            diff:
+              before === content
+                ? ""
+                : `--- r${r.baseRevision}\n+++ r${rev}\n-${before}\n+${content}`,
+          };
+        }
         return {
-          memory: metadata(e),
-          documents: [...e.documents]
-            .filter(
-              ([, d]) =>
-                !!d.deleted ===
-                (request.documents === LibraryDocuments.DELETED),
-            )
-            .map(([name, d]) => ({
-              name,
-              revision: d.revision,
-              size: BigInt(d.content.length),
+          memory: { ...m, content: "" },
+          revision: rev,
+          format: MemoryReadFormat.FULL,
+          content,
+        };
+      },
+      add: (r) => {
+        const retry = [...rows.values()].find(
+          (m) => r.clientId && m.clientId === r.clientId,
+        );
+        if (retry) return retry;
+        const p = r.project?.key.value;
+        const index =
+          p instanceof Uint8Array
+            ? projects.findIndex((v) => key(v.id) === key(p))
+            : 0;
+        const m = add(r.name, r.content, Math.max(0, index));
+        m.ownerSession = r.ownerSession;
+        m.labels = { ...r.labels };
+        m.clientId = r.clientId;
+        return { ...m };
+      },
+      patch: (r) => {
+        const m = find(r.ref);
+        if (
+          conflict ||
+          (isFieldSet(r, MemoryPatchRequestSchema.field.content) &&
+            r.baseRevision !== m.revision)
+        )
+          throw new ConnectError(
+            "Memory revision changed; read current state",
+            Code.Aborted,
+          );
+        if (
+          r.dateUpdated?.seconds !== m.dateUpdated?.seconds ||
+          r.dateUpdated?.nanos !== m.dateUpdated?.nanos
+        )
+          throw new ConnectError("Memory version changed", Code.Aborted);
+        if (
+          isFieldSet(r, MemoryPatchRequestSchema.field.content) &&
+          r.content !== m.content
+        ) {
+          m.content = r.content;
+          m.revision++;
+          versions.get(key(m.id))!.set(m.revision, m.content);
+        }
+        if (isFieldSet(r, MemoryPatchRequestSchema.field.name)) m.name = r.name;
+        if (Object.keys(r.labels).length) m.labels = { ...r.labels };
+        if (r.clearLabels) m.labels = {};
+        m.dateUpdated = stamp();
+        return { ...m };
+      },
+      versions: (r) => {
+        const m = find(r.ref);
+        return {
+          versions: [...versions.get(key(m.id))!]
+            .reverse()
+            .map(([revision]) => ({
+              memoryId: m.id,
+              revision,
+              contentHash: `hash-${revision}`,
+              dateCreated: m.dateUpdated,
             })),
         };
       },
-      libraryDocument: (request) => {
-        const e = get(request);
-        const d = e.documents.get(request.document);
-        if (!d || d.deleted)
-          throw new ConnectError("Document not found", Code.NotFound);
-        return { memory: metadata(e), ...d };
+      erase: (r) => {
+        const m = find(r);
+        m.dateDeleted = timestampFromDate(new Date(Date.now() + 30 * 86400000));
+        m.dateUpdated = stamp();
+        return { erased: true };
       },
-      writeLibraryDocument: (request) => {
-        if (conflict)
-          throw new ConnectError(
-            "Document revision changed; reload before saving",
-            Code.Aborted,
-          );
-        const e = own(request);
-        const previous = e.documents.get(request.document);
-        if (previous && previous.revision !== request.revision)
-          throw new ConnectError("Document revision changed", Code.Aborted);
-        const d = {
-          content: request.content,
-          revision: String(Number(previous?.revision ?? "0") + 1),
-        };
-        e.documents.set(request.document, d);
-        return { memory: metadata(e), ...d };
+      restore: (r) => {
+        const m = find(r.ref);
+        m.dateDeleted = undefined;
+        m.dateUpdated = stamp();
+        return { ...m };
       },
-      renameLibraryMemory: (request) => {
-        const e = get(request);
-        e.memory.name = request.name;
-        return { memory: metadata(e) };
+      purge: (r) => {
+        const m = find(r.ref);
+        rows.delete(key(m.id));
+        versions.delete(key(m.id));
+        return { erased: true };
       },
-      snapshotLibraryMemory: (request) => {
-        const source = get(request);
-        const id = `snapshot-${++serial}`;
-        const saved = entry(
-          id,
-          request.name || "New checkpoint",
-          source.memory.session,
-          undefined,
-          true,
-        );
-        saved.documents = new Map(
-          [...source.documents].map(([name, d]) => [name, { ...d }]),
-        );
-        library(request).set(id, saved);
-        return { memory: metadata(saved) };
-      },
-      forkLibraryMemory: (request) => {
-        const source = get(request);
-        const target = own(request);
-        target.documents = new Map(
-          [...source.documents].map(([name, d]) => [name, { ...d }]),
-        );
-        target.memory.name = request.name || "Forked notes";
-        return { memory: metadata(target) };
-      },
-      mergeLibraryMemories: (request) => {
-        const source = request.ids.map((id) => get({ ...request, id }));
-        const target = own(request);
-        for (const e of source)
-          for (const [name, d] of e.documents)
-            target.documents.set(name, { ...d });
-        target.memory.name = request.name || "Merged notes";
-        return { memory: metadata(target) };
-      },
-      deleteLibraryMemory: (request) => {
-        get(request).memory.deleted = true;
-        return {};
-      },
-      restoreLibraryMemory: (request) => {
-        get(request).memory.deleted = false;
-        return {};
-      },
-      purgeLibraryMemory: (request) => {
-        library(request).delete(request.id);
-        return {};
-      },
-      deleteLibraryDocument: (request) => {
-        get(request).documents.get(request.document)!.deleted = true;
-        return {};
-      },
-      restoreLibraryDocument: (request) => {
-        get(request).documents.get(request.document)!.deleted = false;
-        return {};
-      },
-      purgeLibraryDocument: (request) => {
-        get(request).documents.delete(request.document);
-        return {};
-      },
-      importLibraryMemories: () => ({}),
     }),
   );
-  type Context = { ref?: { key: { case?: string; value?: unknown } } };
-  function runtime(request: Context) {
-    return String(request.ref?.key.value);
-  }
-  function library(request: Context) {
-    return libraries[runtime(request) === "api-demo" ? 1 : 0]!;
-  }
-  function get(request: Context & { id: string }) {
-    const e = library(request).get(request.id);
-    if (!e)
-      throw new ConnectError(
-        "Memory not found (explicit memory ID required)",
-        Code.NotFound,
-      );
-    return e;
-  }
-  function own(request: Context) {
-    const items = library(request);
-    const session = runtime(request);
-    let e = [...items.values()].find(
-      (v) =>
-        v.memory.session === session && !v.memory.snapshot && !v.memory.deleted,
-    );
-    if (!e) {
-      const id = `own-${session}`;
-      e = entry(id, "New session", session);
-      items.set(id, e);
-    }
-    return e;
-  }
-  function metadata(e: Entry) {
-    return {
-      ...e.memory,
-      size: BigInt(
-        [...e.documents.values()]
-          .filter((d) => !d.deleted)
-          .reduce((n, d) => n + d.content.length, 0),
-      ),
-    };
-  }
   return {
     c: new Connection("http://storybook", transport),
     projects,

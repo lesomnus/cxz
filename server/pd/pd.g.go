@@ -8444,94 +8444,14 @@ func (s interceptSession) Interrupt(ctx context.Context, req *resource.SessionCo
 		resource.SessionService_Interrupt_FullMethodName, req, s.SessionServiceServer.Interrupt)
 }
 
-func (s interceptSession) CopyMemory(ctx context.Context, req *resource.SessionCopyMemoryRequest) (*resource.SessionReceipt, error) {
+func (s interceptSession) CopyAgentData(ctx context.Context, req *resource.SessionCopyAgentDataRequest) (*resource.SessionReceipt, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_CopyMemory_FullMethodName, req, s.SessionServiceServer.CopyMemory)
+		resource.SessionService_CopyAgentData_FullMethodName, req, s.SessionServiceServer.CopyAgentData)
 }
 
-func (s interceptSession) LibraryMemories(ctx context.Context, req *resource.SessionLibraryMemoriesRequest) (*resource.SessionLibraryMemoriesReply, error) {
+func (s interceptSession) ReadAgentData(ctx context.Context, req *resource.SessionReadAgentDataRequest) (*resource.SessionReadAgentDataReply, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_LibraryMemories_FullMethodName, req, s.SessionServiceServer.LibraryMemories)
-}
-
-func (s interceptSession) LibraryMemory(ctx context.Context, req *resource.SessionLibraryMemoryRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_LibraryMemory_FullMethodName, req, s.SessionServiceServer.LibraryMemory)
-}
-
-func (s interceptSession) LibraryDocument(ctx context.Context, req *resource.SessionLibraryDocumentRequest) (*resource.SessionLibraryDocumentReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_LibraryDocument_FullMethodName, req, s.SessionServiceServer.LibraryDocument)
-}
-
-func (s interceptSession) LibraryChanges(ctx context.Context, req *resource.SessionLibraryChangesRequest) (*resource.SessionLibraryChangesReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_LibraryChanges_FullMethodName, req, s.SessionServiceServer.LibraryChanges)
-}
-
-func (s interceptSession) WriteLibraryDocument(ctx context.Context, req *resource.SessionLibraryWriteRequest) (*resource.SessionLibraryDocumentReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_WriteLibraryDocument_FullMethodName, req, s.SessionServiceServer.WriteLibraryDocument)
-}
-
-func (s interceptSession) DeleteLibraryDocument(ctx context.Context, req *resource.SessionLibraryDocumentEditRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_DeleteLibraryDocument_FullMethodName, req, s.SessionServiceServer.DeleteLibraryDocument)
-}
-
-func (s interceptSession) RestoreLibraryDocument(ctx context.Context, req *resource.SessionLibraryDocumentEditRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_RestoreLibraryDocument_FullMethodName, req, s.SessionServiceServer.RestoreLibraryDocument)
-}
-
-func (s interceptSession) PurgeLibraryDocument(ctx context.Context, req *resource.SessionLibraryDocumentEditRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_PurgeLibraryDocument_FullMethodName, req, s.SessionServiceServer.PurgeLibraryDocument)
-}
-
-func (s interceptSession) SnapshotLibraryMemory(ctx context.Context, req *resource.SessionLibraryCopyRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_SnapshotLibraryMemory_FullMethodName, req, s.SessionServiceServer.SnapshotLibraryMemory)
-}
-
-func (s interceptSession) ForkLibraryMemory(ctx context.Context, req *resource.SessionLibraryCopyRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_ForkLibraryMemory_FullMethodName, req, s.SessionServiceServer.ForkLibraryMemory)
-}
-
-func (s interceptSession) MergeLibraryMemories(ctx context.Context, req *resource.SessionLibraryMergeRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_MergeLibraryMemories_FullMethodName, req, s.SessionServiceServer.MergeLibraryMemories)
-}
-
-func (s interceptSession) RenameLibraryMemory(ctx context.Context, req *resource.SessionLibraryRenameRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_RenameLibraryMemory_FullMethodName, req, s.SessionServiceServer.RenameLibraryMemory)
-}
-
-func (s interceptSession) DeleteLibraryMemory(ctx context.Context, req *resource.SessionLibraryMemoryEditRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_DeleteLibraryMemory_FullMethodName, req, s.SessionServiceServer.DeleteLibraryMemory)
-}
-
-func (s interceptSession) RestoreLibraryMemory(ctx context.Context, req *resource.SessionLibraryMemoryEditRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_RestoreLibraryMemory_FullMethodName, req, s.SessionServiceServer.RestoreLibraryMemory)
-}
-
-func (s interceptSession) PurgeLibraryMemory(ctx context.Context, req *resource.SessionLibraryMemoryEditRequest) (*resource.SessionLibraryMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_PurgeLibraryMemory_FullMethodName, req, s.SessionServiceServer.PurgeLibraryMemory)
-}
-
-func (s interceptSession) ImportLibraryMemories(ctx context.Context, req *resource.SessionLibraryImportRequest) (*resource.SessionLibraryMemoriesReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_ImportLibraryMemories_FullMethodName, req, s.SessionServiceServer.ImportLibraryMemories)
-}
-
-func (s interceptSession) Memory(ctx context.Context, req *resource.SessionMemoryRequest) (*resource.SessionMemoryReply, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		resource.SessionService_Memory_FullMethodName, req, s.SessionServiceServer.Memory)
+		resource.SessionService_ReadAgentData_FullMethodName, req, s.SessionServiceServer.ReadAgentData)
 }
 
 func (s interceptSession) Logs(ctx context.Context, req *resource.SessionLogsRequest) (*resource.SessionLogsReply, error) {
@@ -11312,42 +11232,10 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.SessionControl{}
 	case resource.SessionService_Interrupt_FullMethodName:
 		v = &resource.SessionControl{}
-	case resource.SessionService_CopyMemory_FullMethodName:
-		v = &resource.SessionCopyMemoryRequest{}
-	case resource.SessionService_LibraryMemories_FullMethodName:
-		v = &resource.SessionLibraryMemoriesRequest{}
-	case resource.SessionService_LibraryMemory_FullMethodName:
-		v = &resource.SessionLibraryMemoryRequest{}
-	case resource.SessionService_LibraryDocument_FullMethodName:
-		v = &resource.SessionLibraryDocumentRequest{}
-	case resource.SessionService_LibraryChanges_FullMethodName:
-		v = &resource.SessionLibraryChangesRequest{}
-	case resource.SessionService_WriteLibraryDocument_FullMethodName:
-		v = &resource.SessionLibraryWriteRequest{}
-	case resource.SessionService_DeleteLibraryDocument_FullMethodName:
-		v = &resource.SessionLibraryDocumentEditRequest{}
-	case resource.SessionService_RestoreLibraryDocument_FullMethodName:
-		v = &resource.SessionLibraryDocumentEditRequest{}
-	case resource.SessionService_PurgeLibraryDocument_FullMethodName:
-		v = &resource.SessionLibraryDocumentEditRequest{}
-	case resource.SessionService_SnapshotLibraryMemory_FullMethodName:
-		v = &resource.SessionLibraryCopyRequest{}
-	case resource.SessionService_ForkLibraryMemory_FullMethodName:
-		v = &resource.SessionLibraryCopyRequest{}
-	case resource.SessionService_MergeLibraryMemories_FullMethodName:
-		v = &resource.SessionLibraryMergeRequest{}
-	case resource.SessionService_RenameLibraryMemory_FullMethodName:
-		v = &resource.SessionLibraryRenameRequest{}
-	case resource.SessionService_DeleteLibraryMemory_FullMethodName:
-		v = &resource.SessionLibraryMemoryEditRequest{}
-	case resource.SessionService_RestoreLibraryMemory_FullMethodName:
-		v = &resource.SessionLibraryMemoryEditRequest{}
-	case resource.SessionService_PurgeLibraryMemory_FullMethodName:
-		v = &resource.SessionLibraryMemoryEditRequest{}
-	case resource.SessionService_ImportLibraryMemories_FullMethodName:
-		v = &resource.SessionLibraryImportRequest{}
-	case resource.SessionService_Memory_FullMethodName:
-		v = &resource.SessionMemoryRequest{}
+	case resource.SessionService_CopyAgentData_FullMethodName:
+		v = &resource.SessionCopyAgentDataRequest{}
+	case resource.SessionService_ReadAgentData_FullMethodName:
+		v = &resource.SessionReadAgentDataRequest{}
 	case resource.SessionService_Logs_FullMethodName:
 		v = &resource.SessionLogsRequest{}
 	case resource.SessionService_Permission_FullMethodName:
@@ -11594,42 +11482,10 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.Session().Stop(ctx, v.(*resource.SessionControl))
 	case resource.SessionService_Interrupt_FullMethodName:
 		res, err = s.Session().Interrupt(ctx, v.(*resource.SessionControl))
-	case resource.SessionService_CopyMemory_FullMethodName:
-		res, err = s.Session().CopyMemory(ctx, v.(*resource.SessionCopyMemoryRequest))
-	case resource.SessionService_LibraryMemories_FullMethodName:
-		res, err = s.Session().LibraryMemories(ctx, v.(*resource.SessionLibraryMemoriesRequest))
-	case resource.SessionService_LibraryMemory_FullMethodName:
-		res, err = s.Session().LibraryMemory(ctx, v.(*resource.SessionLibraryMemoryRequest))
-	case resource.SessionService_LibraryDocument_FullMethodName:
-		res, err = s.Session().LibraryDocument(ctx, v.(*resource.SessionLibraryDocumentRequest))
-	case resource.SessionService_LibraryChanges_FullMethodName:
-		res, err = s.Session().LibraryChanges(ctx, v.(*resource.SessionLibraryChangesRequest))
-	case resource.SessionService_WriteLibraryDocument_FullMethodName:
-		res, err = s.Session().WriteLibraryDocument(ctx, v.(*resource.SessionLibraryWriteRequest))
-	case resource.SessionService_DeleteLibraryDocument_FullMethodName:
-		res, err = s.Session().DeleteLibraryDocument(ctx, v.(*resource.SessionLibraryDocumentEditRequest))
-	case resource.SessionService_RestoreLibraryDocument_FullMethodName:
-		res, err = s.Session().RestoreLibraryDocument(ctx, v.(*resource.SessionLibraryDocumentEditRequest))
-	case resource.SessionService_PurgeLibraryDocument_FullMethodName:
-		res, err = s.Session().PurgeLibraryDocument(ctx, v.(*resource.SessionLibraryDocumentEditRequest))
-	case resource.SessionService_SnapshotLibraryMemory_FullMethodName:
-		res, err = s.Session().SnapshotLibraryMemory(ctx, v.(*resource.SessionLibraryCopyRequest))
-	case resource.SessionService_ForkLibraryMemory_FullMethodName:
-		res, err = s.Session().ForkLibraryMemory(ctx, v.(*resource.SessionLibraryCopyRequest))
-	case resource.SessionService_MergeLibraryMemories_FullMethodName:
-		res, err = s.Session().MergeLibraryMemories(ctx, v.(*resource.SessionLibraryMergeRequest))
-	case resource.SessionService_RenameLibraryMemory_FullMethodName:
-		res, err = s.Session().RenameLibraryMemory(ctx, v.(*resource.SessionLibraryRenameRequest))
-	case resource.SessionService_DeleteLibraryMemory_FullMethodName:
-		res, err = s.Session().DeleteLibraryMemory(ctx, v.(*resource.SessionLibraryMemoryEditRequest))
-	case resource.SessionService_RestoreLibraryMemory_FullMethodName:
-		res, err = s.Session().RestoreLibraryMemory(ctx, v.(*resource.SessionLibraryMemoryEditRequest))
-	case resource.SessionService_PurgeLibraryMemory_FullMethodName:
-		res, err = s.Session().PurgeLibraryMemory(ctx, v.(*resource.SessionLibraryMemoryEditRequest))
-	case resource.SessionService_ImportLibraryMemories_FullMethodName:
-		res, err = s.Session().ImportLibraryMemories(ctx, v.(*resource.SessionLibraryImportRequest))
-	case resource.SessionService_Memory_FullMethodName:
-		res, err = s.Session().Memory(ctx, v.(*resource.SessionMemoryRequest))
+	case resource.SessionService_CopyAgentData_FullMethodName:
+		res, err = s.Session().CopyAgentData(ctx, v.(*resource.SessionCopyAgentDataRequest))
+	case resource.SessionService_ReadAgentData_FullMethodName:
+		res, err = s.Session().ReadAgentData(ctx, v.(*resource.SessionReadAgentDataRequest))
 	case resource.SessionService_Logs_FullMethodName:
 		res, err = s.Session().Logs(ctx, v.(*resource.SessionLogsRequest))
 	case resource.SessionService_Permission_FullMethodName:

@@ -3,54 +3,53 @@ package tui
 import (
 	"context"
 	"fmt"
-	"sort"
-	"strings"
-	"time"
-
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/memorylib"
+	"github.com/lesomnus/cxz/internal/memoryclient"
+	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/resource"
+	"google.golang.org/protobuf/proto"
+	"strings"
+	"time"
 )
 
 type libraryPage struct {
-	session          *api.Session
-	request          memorylib.Request
-	data             memorylib.Reply
-	selected, offset int
-	loading          bool
-	message          string
-	cancel           context.CancelFunc
-	generation       uint64
-	checked          map[string]bool
-	dialog           string
-	input            textinput.Model
-	confirmed        memorylib.Request
-	refreshed        time.Time
+	session                *api.Session
+	rows                   []*resource.Memory
+	document               *resource.Memory
+	selected, offset       int
+	loading, trash         bool
+	query, message, dialog string
+	input                  textinput.Model
+	cancel                 context.CancelFunc
+	generation             uint64
+	refreshed              time.Time
+	confirmed              *resource.Memory
 }
 type libraryResult struct {
 	page       *libraryPage
 	generation uint64
-	request    memorylib.Request
-	data       memorylib.Reply
+	rows       []*resource.Memory
+	document   *resource.Memory
 	err        error
 }
 
 func (m *model) openMemory(s *api.Session) tea.Cmd {
-	if _, ok := m.client.(memorylib.Client); !ok {
-		return m.openAgentMemory(s)
-	}
 	if s == nil {
 		return nil
 	}
-	m.library = &libraryPage{session: &api.Session{Id: s.Id, ProjectId: s.ProjectId, Agent: s.Agent, Account: s.Account, Title: s.Title}, checked: map[string]bool{}, input: textinput.New()}
+	if _, ok := m.client.(memoryclient.Client); !ok {
+		return m.openAgentMemory(s)
+	}
+	m.library = &libraryPage{session: proto.Clone(s).(*api.Session), input: textinput.New()}
 	m.library.input.CharLimit = 256
 	m.input.Blur()
 	m.clearPathHints()
-	return m.loadLibrary(memorylib.Request{Action: "list"})
+	return m.loadLibrary()
 }
-func (m *model) loadLibrary(q memorylib.Request) tea.Cmd {
+func (m *model) loadLibrary() tea.Cmd {
 	p := m.library
 	if p == nil {
 		return nil
@@ -65,12 +64,30 @@ func (m *model) loadLibrary(q memorylib.Request) tea.Cmd {
 	p.loading = true
 	p.message = ""
 	p.refreshed = time.Now()
-	client := m.client.(memorylib.Client)
-	id := p.session.Id
 	return func() tea.Msg {
 		defer cancel()
-		data, err := client.Library(ctx, id, q)
-		return libraryResult{p, gen, q, data, err}
+		client, project, err := m.client.(memoryclient.Client).MemoryResources(ctx, p.session.ProjectId)
+		if err != nil {
+			return libraryResult{page: p, generation: gen, err: err}
+		}
+		var rows []*resource.Memory
+		after := ""
+		scope := resource.MemoryScope_MEMORY_SCOPE_ACTIVE
+		if p.trash {
+			scope = resource.MemoryScope_MEMORY_SCOPE_TRASH
+		}
+		for {
+			page, e := client.List(ctx, resource.MemoryListRequest_builder{Project: projectid.Ref(project), Scope: scope, Query: p.query, After: after, Size: 500}.Build())
+			if e != nil {
+				return libraryResult{page: p, generation: gen, err: e}
+			}
+			rows = append(rows, page.GetItems()...)
+			after = page.GetNext()
+			if after == "" {
+				break
+			}
+		}
+		return libraryResult{page: p, generation: gen, rows: rows}
 	}
 }
 func (m *model) receiveLibrary(v libraryResult) tea.Cmd {
@@ -83,255 +100,203 @@ func (m *model) receiveLibrary(v libraryResult) tea.Cmd {
 		p.message = v.err.Error()
 		return nil
 	}
-	switch v.request.Action {
-	case "list", "search", "read", "deleted_documents":
-		if p.request.ID != v.request.ID || p.request.Document != v.request.Document || p.request.Action != v.request.Action || p.request.Trash != v.request.Trash {
-			p.selected = 0
-			p.offset = 0
-		}
-		p.request = v.request
-		p.data = v.data
-		p.selected = min(p.selected, max(0, m.libraryCount()-1))
+	if v.document != nil {
+		p.document = v.document
+		p.offset = 0
+	} else {
+		p.rows = v.rows
+		p.document = nil
+		p.selected = min(p.selected, max(0, len(p.rows)-1))
+		p.offset = 0
+	}
+	return nil
+}
+func (m *model) selectedMemory() *resource.Memory {
+	p := m.library
+	if p.document != nil {
+		return p.document
+	}
+	if p.selected >= 0 && p.selected < len(p.rows) {
+		return p.rows[p.selected]
+	}
+	return nil
+}
+func (m *model) memoryAction(action string, selected *resource.Memory) tea.Cmd {
+	p := m.library
+	if p == nil || selected == nil {
 		return nil
-	default:
-		q := p.request
-		if v.request.Action == "delete" || v.request.Action == "restore" || v.request.Action == "purge" {
-			if v.request.Document == "" {
-				q = memorylib.Request{Action: "list", Trash: p.request.Trash}
-			} else {
-				q.Document = ""
+	}
+	ctx, cancel := context.WithTimeout(m.contextFor(p.session.Id), 30*time.Second)
+	p.cancel = cancel
+	p.generation++
+	gen := p.generation
+	p.loading = true
+	name := p.input.Value()
+	return func() tea.Msg {
+		defer cancel()
+		client, project, err := m.client.(memoryclient.Client).MemoryResources(ctx, p.session.ProjectId)
+		if err != nil {
+			return libraryResult{page: p, generation: gen, err: err}
+		}
+		ref := resource.MemoryRef_builder{Id: selected.GetId(), Project: projectid.Ref(project)}.Build()
+		var doc *resource.Memory
+		switch action {
+		case "read":
+			doc, err = client.Get(ctx, resource.MemoryGetRequest_builder{Ref: ref, Select: resource.MemorySelect_builder{All: proto.Bool(true), Project: resource.ProjectSelect_builder{All: proto.Bool(true)}.Build()}.Build()}.Build())
+		case "rename":
+			doc, err = client.Patch(ctx, resource.MemoryPatchRequest_builder{Ref: ref, DateUpdated: selected.GetDateUpdated(), Name: proto.String(name)}.Build())
+		case "delete":
+			_, err = client.Erase(ctx, ref)
+		case "restore":
+			_, err = client.Restore(ctx, resource.MemoryRestoreRequest_builder{Ref: ref, DateUpdated: selected.GetDateUpdated()}.Build())
+		case "purge":
+			_, err = client.Purge(ctx, resource.MemoryPurgeRequest_builder{Ref: ref, DateUpdated: selected.GetDateUpdated()}.Build())
+		case "copy":
+			source, e := client.Get(ctx, resource.MemoryGetRequest_builder{Ref: ref, Select: resource.MemorySelect_builder{All: proto.Bool(true)}.Build()}.Build())
+			err = e
+			if err == nil {
+				_, err = client.Add(ctx, resource.MemoryAddRequest_builder{Project: projectid.Ref(project), Name: name, Content: source.GetContent(), Labels: source.GetLabels(), OwnerSession: localMemoryOwner(p.session.Id)}.Build())
 			}
 		}
-		if v.request.Action == "snapshot" || v.request.Action == "merge" {
-			q = memorylib.Request{Action: "list"}
-			p.checked = map[string]bool{}
+		if action == "read" || action == "rename" {
+			return libraryResult{page: p, generation: gen, document: doc, err: err}
 		}
-		return m.loadLibrary(q)
+		return libraryActionResult{page: p, generation: gen, err: err}
 	}
 }
-func (m *model) libraryCount() int {
-	p := m.library
-	if p.request.ID == "" {
-		return len(p.data.Memories)
-	}
-	return len(p.data.Documents)
+
+type libraryActionResult struct {
+	page       *libraryPage
+	generation uint64
+	err        error
 }
-func (m *model) librarySelection() (string, string, string) {
+
+func (m *model) libraryKey(key tea.KeyMsg) tea.Cmd {
 	p := m.library
-	if p.request.ID == "" {
-		if len(p.data.Memories) > p.selected {
-			return p.data.Memories[p.selected].ID, "", ""
-		}
-		return "", "", ""
+	if p == nil {
+		return nil
 	}
-	if p.request.Document != "" {
-		return p.request.ID, p.request.Document, p.data.Revision
-	}
-	if len(p.data.Documents) > p.selected {
-		d := p.data.Documents[p.selected]
-		return p.request.ID, d.Name, d.Revision
-	}
-	return p.request.ID, "", ""
-}
-func (m *model) libraryKey(k tea.KeyMsg) tea.Cmd {
-	p := m.library
-	if k.String() == "ctrl+d" && !k.Paste {
-		if p.cancel != nil {
-			p.cancel()
-		}
-		return tea.Quit
-	}
+	text := key.String()
 	if p.dialog != "" {
-		if k.String() == "esc" && !k.Paste {
+		if text == "esc" {
 			p.dialog = ""
 			return nil
 		}
-		if p.dialog == "delete" {
-			if k.String() == "y" && !k.Paste {
+		if p.dialog == "delete" || p.dialog == "purge" {
+			if text == "y" {
+				action, selected := p.dialog, p.confirmed
 				p.dialog = ""
-				return m.loadLibrary(p.confirmed)
+				return m.memoryAction(action, selected)
 			}
 			return nil
 		}
-		if k.String() == "enter" && !k.Paste {
+		if text == "enter" {
 			action := p.dialog
 			p.dialog = ""
-			value := strings.TrimSpace(p.input.Value())
-			if value == "" {
-				return nil
-			}
-			q := p.confirmed
-			q.Action = action
-			q.Name = value
 			if action == "search" {
-				q = memorylib.Request{Action: "search", Query: value}
+				p.query = p.input.Value()
+				p.selected = 0
+				return m.loadLibrary()
 			}
-			return m.loadLibrary(q)
+			return m.memoryAction(action, p.confirmed)
 		}
 		var cmd tea.Cmd
-		p.input, cmd = p.input.Update(k)
+		p.input, cmd = p.input.Update(key)
 		return cmd
 	}
-	if k.Paste {
-		return nil
-	}
-	if p.loading && k.String() != "esc" {
-		return nil
-	}
-	id, doc, rev := m.librarySelection()
-	switch k.String() {
+	switch text {
 	case "esc":
+		if p.document != nil {
+			p.document = nil
+			p.offset = 0
+			return nil
+		}
 		if p.cancel != nil {
 			p.cancel()
 		}
 		m.library = nil
-		return m.focusComposer()
-	case "left", "backspace":
-		if p.request.Document != "" {
-			return m.loadLibrary(memorylib.Request{Action: "read", ID: p.request.ID, Trash: p.request.Trash})
+		return nil
+	case "left", "h":
+		p.document = nil
+		p.offset = 0
+	case "up", "k":
+		if p.document != nil {
+			p.offset = max(0, p.offset-1)
+		} else {
+			p.selected = max(0, p.selected-1)
 		}
-		return m.loadLibrary(memorylib.Request{Action: "list", Trash: p.request.Trash})
-	case "enter", "right":
-		if id == "" || p.request.Action == "deleted_documents" {
-			return nil
+	case "down", "j":
+		if p.document != nil {
+			p.offset++
+		} else {
+			p.selected = min(max(0, len(p.rows)-1), p.selected+1)
 		}
-		return m.loadLibrary(memorylib.Request{Action: "read", ID: id, Document: doc, Trash: p.request.Trash})
+	case "enter", "right", "l":
+		return m.memoryAction("read", m.selectedMemory())
+	case "r":
+		return m.loadLibrary()
+	case "t":
+		p.trash = !p.trash
+		p.selected = 0
+		return m.loadLibrary()
+	case "u":
+		if p.trash {
+			return m.memoryAction("restore", m.selectedMemory())
+		}
+	case "d":
+		if !p.trash && m.selectedMemory() != nil {
+			p.dialog = "delete"
+			p.confirmed = m.selectedMemory()
+			p.message = "Move this memory to trash? y confirms; Esc cancels."
+		}
+	case "x":
+		if p.trash && m.selectedMemory() != nil {
+			p.dialog = "purge"
+			p.confirmed = m.selectedMemory()
+			p.message = "Permanently delete this memory and its versions? y confirms."
+		}
+	case "/":
+		p.dialog = "search"
+		p.input.SetValue(p.query)
+		return p.input.Focus()
+	case "e", "c":
+		if m.selectedMemory() != nil && !p.trash {
+			p.dialog = "rename"
+			if text == "c" {
+				p.dialog = "copy"
+			}
+			p.confirmed = m.selectedMemory()
+			p.input.SetValue(p.confirmed.GetName())
+			return p.input.Focus()
+		}
+	case "n":
+		if !p.trash {
+			return m.startMemorySession()
+		}
 	case "o":
 		s := p.session
 		m.library = nil
 		return m.openAgentMemory(s)
-	case "r":
-		return m.loadLibrary(p.request)
-	case "t":
-		if p.request.ID != "" && !p.request.Trash {
-			if p.request.Action == "deleted_documents" {
-				return m.loadLibrary(memorylib.Request{Action: "read", ID: p.request.ID})
-			}
-			return m.loadLibrary(memorylib.Request{Action: "deleted_documents", ID: p.request.ID})
-		}
-		return m.loadLibrary(memorylib.Request{Action: "list", Trash: !p.request.Trash})
-	case "u":
-		if p.request.Trash || p.request.Action == "deleted_documents" {
-			return m.loadLibrary(memorylib.Request{Action: "restore", ID: id, Document: doc})
-		}
-	case "d", "delete":
-		if id != "" && !p.request.Trash && p.request.Action != "deleted_documents" {
-			p.dialog = "delete"
-			p.confirmed = memorylib.Request{Action: "delete", ID: id, Document: doc, Revision: rev}
-			p.message = "Move selected memory/document to trash? y confirms · Esc cancels"
-		}
-	case "x":
-		if id != "" && (p.request.Trash || p.request.Action == "deleted_documents") {
-			p.dialog = "delete"
-			p.confirmed = memorylib.Request{Action: "purge", ID: id, Document: doc, Trash: p.request.Trash}
-			p.message = "Permanently delete selected item? Cannot undo. y confirms · Esc cancels"
-		}
-	case "i":
-		return m.loadLibrary(memorylib.Request{Action: "import"})
-	case "s":
-		p.dialog = "snapshot"
-		p.confirmed = memorylib.Request{}
-		p.input.SetValue("Memory " + time.Now().Format("2006-01-02 15:04"))
-		return p.input.Focus()
-	case "c":
-		if id != "" && !p.request.Trash {
-			p.dialog = "snapshot"
-			p.confirmed = memorylib.Request{ID: id}
-			p.input.SetValue("Saved memory")
-			return p.input.Focus()
-		}
-	case "e":
-		if id != "" {
-			p.dialog = "rename"
-			p.confirmed = memorylib.Request{ID: id, Trash: p.request.Trash}
-			p.input.SetValue("")
-			return p.input.Focus()
-		}
-	case "/":
-		p.dialog = "search"
-		p.input.SetValue("")
-		return p.input.Focus()
-	case " ":
-		if p.request.ID == "" && id != "" && !p.request.Trash {
-			p.checked[id] = !p.checked[id]
-		}
-	case "m":
-		ids := []string{}
-		for id, checked := range p.checked {
-			if checked {
-				ids = append(ids, id)
-			}
-		}
-		sort.Strings(ids)
-		if len(ids) < 2 {
-			p.message = "Select at least two memories with Space"
-			return nil
-		}
-		p.dialog = "merge"
-		p.confirmed = memorylib.Request{IDs: ids}
-		p.input.SetValue("Combined memory")
-		return p.input.Focus()
-	case "n":
-		if id == "" || p.request.Trash {
-			return nil
-		}
-		return m.startMemorySession(id)
-	case "up", "down", "pgup", "pgdown", "home", "end":
-		step := 1
-		if k.String() == "pgup" || k.String() == "pgdown" {
-			step = max(1, m.height-8)
-		}
-		if k.String() == "up" || k.String() == "pgup" {
-			step = -step
-		}
-		if p.request.Document != "" {
-			p.offset = max(0, p.offset+step)
-			if k.String() == "home" {
-				p.offset = 0
-			}
-			if k.String() == "end" {
-				p.offset = 1 << 20
-			}
-		} else {
-			p.selected = max(0, min(m.libraryCount()-1, p.selected+step))
-			if k.String() == "home" {
-				p.selected = 0
-			}
-			if k.String() == "end" {
-				p.selected = max(0, m.libraryCount()-1)
-			}
-		}
 	}
 	return nil
 }
 func (m *model) libraryScreen() string {
 	p := m.library
-	width := m.settingsWidth()
-	inner := max(1, width-4)
+	inner := max(20, m.width-4)
 	title := "Project memory"
-	if p.request.Trash || p.request.Action == "deleted_documents" {
+	if p.trash {
 		title += " · Trash"
 	}
-	if p.data.Memory != nil {
-		title += " · " + p.data.Memory.Name
+	if p.document != nil {
+		title += " · " + p.document.GetName()
 	}
-	rows := []string{accent.Bold(true).Render(safeText(title)), clip(safeText(p.data.Location), inner), ""}
-	body := []string{}
-	if p.loading && p.data.Location == "" {
-		body = append(body, "Loading…")
-	} else if p.request.Document != "" {
-		body = strings.Split(ansi.Hardwrap(safeText(p.data.Content), inner, true), "\n")
-	} else if p.request.ID == "" {
-		for i, item := range p.data.Memories {
-			mark := "  "
-			if p.checked[item.ID] {
-				mark = "✓ "
-			}
-			kind := "session"
-			if item.Snapshot {
-				kind = "saved"
-			}
-			line := fmt.Sprintf("%s%s · %s · %s · %s", mark, item.Name, kind, item.Agent, attachmentSize(item.Size))
+	rows := []string{accent.Bold(true).Render(safeText(title)), ""}
+	var body []string
+	if p.document != nil {
+		body = strings.Split(ansi.Hardwrap(safeText(p.document.GetContent()), inner, true), "\n")
+	} else {
+		for i, v := range p.rows {
+			line := fmt.Sprintf("%s · revision %d · %s", v.GetName(), v.GetRevision(), v.GetOwnerSession())
 			if i == p.selected {
 				line = accent.Render("❯ " + safeText(line))
 			} else {
@@ -339,27 +304,20 @@ func (m *model) libraryScreen() string {
 			}
 			body = append(body, line)
 		}
-	} else {
-		for i, d := range p.data.Documents {
-			line := safeText(d.Name) + " · " + attachmentSize(d.Size)
-			if i == p.selected {
-				line = accent.Render("❯ " + line)
-			} else {
-				line = "  " + line
-			}
-			body = append(body, line)
-		}
 	}
 	if len(body) == 0 {
-		body = []string{"No memory yet. Agents can save notes through MCP; i imports native Markdown."}
+		if p.loading {
+			body = []string{"Loading…"}
+		} else {
+			body = []string{"No memories match. Agents publish documents with memory_add."}
+		}
 	}
-	footer := []string{clip(safeText(p.message), inner), "↑↓ Enter browse · / search · s save current · c copy selected · n new session", "Space select · m combine · e rename · d delete · t trash · u restore · x purge", "i import native · o original files · r refresh · ← parent · Esc close"}
-	if p.dialog != "" && p.dialog != "delete" {
+	footer := []string{clip(safeText(p.message), inner), "↑↓ Enter read · / search · e rename · c copy · r refresh", "d delete · t trash · u restore · x purge · o original files · Esc close"}
+	if p.dialog != "" && p.dialog != "delete" && p.dialog != "purge" {
 		footer[0] = safeText(p.dialog) + ": " + p.input.View()
-		footer[1] = "Enter apply · Esc cancel"
 	}
 	capacity := max(1, m.height-len(rows)-len(footer))
-	if p.request.Document == "" {
+	if p.document == nil {
 		p.offset = max(0, min(p.offset, p.selected))
 		p.offset = max(p.offset, p.selected-capacity+1)
 	}
@@ -371,40 +329,53 @@ func (m *model) libraryScreen() string {
 		}
 		rows = append(rows, clip(line, inner))
 	}
-	for _, line := range footer {
-		rows = append(rows, clip(line, inner))
-	}
-	return screen(strings.Join(rows, "\n"), width, m.height)
+	rows = append(rows, footer...)
+	return strings.Join(rows, "\n")
 }
 func (m *model) libraryMouse(v tea.MouseMsg) tea.Cmd {
-	p := m.library
-	if p.dialog != "" {
-		return nil
-	}
 	if v.Button == tea.MouseButtonWheelUp {
 		return m.libraryKey(tea.KeyMsg{Type: tea.KeyUp})
 	}
 	if v.Button == tea.MouseButtonWheelDown {
 		return m.libraryKey(tea.KeyMsg{Type: tea.KeyDown})
 	}
-	if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress && v.Y >= 3 && v.Y < m.height-4 && p.request.Document == "" {
-		index := v.Y - 3 + p.offset
-		if index >= 0 && index < m.libraryCount() {
-			p.selected = index
+	if v.Button == tea.MouseButtonLeft && v.Action == tea.MouseActionPress && v.Y >= 2 && v.Y < m.height-3 && m.library.document == nil {
+		index := v.Y - 2 + m.library.offset
+		if index >= 0 && index < len(m.library.rows) {
+			m.library.selected = index
 			return m.libraryKey(tea.KeyMsg{Type: tea.KeyEnter})
 		}
 	}
 	return nil
 }
 func (m *model) pollLibrary() tea.Cmd {
-	p := m.library
-	if p == nil || p.loading || p.dialog != "" || time.Since(p.refreshed) < 5*time.Second {
+	if m.library == nil || m.library.loading || m.library.dialog != "" || m.library.document != nil || time.Since(m.library.refreshed) < 5*time.Second {
 		return nil
 	}
-	return m.loadLibrary(p.request)
+	return m.loadLibrary()
 }
-func (m *model) startMemorySession(id string) tea.Cmd {
+
+func localMemoryOwner(id string) string {
+	if _, local, ok := strings.Cut(id, "::"); ok {
+		return local
+	}
+	return id
+}
+
+type memorySeed struct {
+	page       *libraryPage
+	generation uint64
+	project    *api.Project
+	data       *resource.Memory
+	err        error
+}
+
+func (m *model) startMemorySession() tea.Cmd {
 	p := m.library
+	selected := m.selectedMemory()
+	if selected == nil {
+		return nil
+	}
 	var project *api.Project
 	for _, candidate := range append([]*api.Project{m.project}, m.panelProjects...) {
 		if candidate != nil && candidate.Id == p.session.ProjectId {
@@ -413,28 +384,21 @@ func (m *model) startMemorySession(id string) tea.Cmd {
 		}
 	}
 	if project == nil {
-		p.message = "Project metadata unavailable; refresh the project first"
+		p.message = "Project metadata unavailable; refresh first"
 		return nil
 	}
-	// Freeze live memory before account selection; the source may keep changing.
-	client := m.client.(memorylib.Client)
 	ctx, cancel := context.WithTimeout(m.contextFor(p.session.Id), 30*time.Second)
 	p.cancel = cancel
-	session := p.session.Id
-	p.loading = true
 	p.generation++
+	p.loading = true
 	gen := p.generation
 	return func() tea.Msg {
 		defer cancel()
-		data, e := client.Library(ctx, session, memorylib.Request{Action: "snapshot", ID: id, Name: "Session starting memory"})
-		return memorySeed{p, gen, project, data, e}
+		client, local, err := m.client.(memoryclient.Client).MemoryResources(ctx, p.session.ProjectId)
+		var data *resource.Memory
+		if err == nil {
+			data, err = client.Get(ctx, resource.MemoryGetRequest_builder{Ref: resource.MemoryRef_builder{Id: selected.GetId(), Project: projectid.Ref(local)}.Build(), Select: resource.MemorySelect_builder{All: proto.Bool(true)}.Build()}.Build())
+		}
+		return memorySeed{p, gen, project, data, err}
 	}
-}
-
-type memorySeed struct {
-	page       *libraryPage
-	generation uint64
-	project    *api.Project
-	data       memorylib.Reply
-	err        error
 }

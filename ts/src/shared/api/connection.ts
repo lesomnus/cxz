@@ -13,6 +13,7 @@ import {
 import { NotificationService } from "#gen/cxz/payday/notification_pb";
 import { AccountService } from "#gen/cxz/account_svc_pb";
 import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
+import { MemoryService } from "#gen/cxz/memory_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
 import { TaskCatalog } from "#src/features/tasks/task-catalog.ts";
 import {
@@ -52,6 +53,7 @@ export class Connection {
   readonly accounts;
   readonly bindings;
   readonly tasks;
+  readonly memories;
   readonly taskCatalog;
   readonly inventory: ResourceInventory;
   readonly attention;
@@ -92,6 +94,7 @@ export class Connection {
     this.accounts = createClient(AccountService, this.transport);
     this.bindings = createClient(AuthBindingService, this.transport);
     this.tasks = createClient(TaskService, this.transport);
+    this.memories = createClient(MemoryService, this.transport);
     if (!this.inProcess && cacheIdentity)
       this.taskCache = openTaskCache(baseUrl, cacheIdentity).catch(
         () => undefined,

@@ -31,6 +31,16 @@ type manifest struct {
 // Scan refuses partial/corrupt imports. The retained source remains untouched.
 func Scan(ctx context.Context, root string, accept func(string, string) bool, consume func(Document) error) error {
 	base := filepath.Join(root, "memories")
+	info, err := os.Lstat(base)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("legacy memory root must be a directory")
+	}
 	projects, err := os.ReadDir(base)
 	if os.IsNotExist(err) {
 		return nil
@@ -44,7 +54,9 @@ func Scan(ctx context.Context, root string, accept func(string, string) bool, co
 		}
 		dir := filepath.Join(base, project.Name())
 		lock := flock.New(filepath.Join(dir, ".lock"))
-		ok, err := lock.TryLockContext(ctx, 25*time.Millisecond)
+		lockCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		ok, err := lock.TryLockContext(lockCtx, 25*time.Millisecond)
+		cancel()
 		if err != nil {
 			return err
 		}
@@ -81,6 +93,13 @@ func scanProject(ctx context.Context, dir, project string, accept func(string, s
 				continue
 			}
 			bundle := filepath.Join(path, entry.Name())
+			info, err := os.Lstat(filepath.Join(bundle, "manifest.json"))
+			if err != nil {
+				return err
+			}
+			if !info.Mode().IsRegular() || info.Size() > 65536 {
+				return fmt.Errorf("invalid legacy manifest")
+			}
 			raw, err := os.ReadFile(filepath.Join(bundle, "manifest.json"))
 			if err != nil {
 				return err

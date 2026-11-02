@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/mcpconfig"
+	_ "github.com/lesomnus/cxz/internal/memorymcp"
 )
 
 type removalFake struct {

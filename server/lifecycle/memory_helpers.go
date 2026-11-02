@@ -25,6 +25,9 @@ type memoryRouter interface {
 }
 
 func (s MemoryServer) remote(ctx context.Context, p *resource.ProjectRef, method string, r, out proto.Message) (bool, error) {
+	if err := s.effect(); err != nil {
+		return true, err
+	}
 	router, ok := s.shared.runtime.(memoryRouter)
 	if !ok {
 		return false, nil

@@ -84,7 +84,7 @@ func (m *model) accountKey(key tea.KeyMsg) tea.Cmd {
 			m.accountAdding = false
 		} else {
 			m.accountView = false
-			m.seedMemory = ""
+			m.seedMemory = nil
 			m.panelFocus = m.projectView
 		}
 		m.notice = ""

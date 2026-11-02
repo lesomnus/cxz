@@ -29,16 +29,6 @@ export function resourceFixture({
   editFailures?: number;
   quotaRemaining?: number | null;
 } = {}) {
-  let revision = "1",
-    content =
-      "# Project memory\n\nKeep decisions here.\n\n```ts\nconst shared = true;\n```";
-  const memory = {
-    id: "own",
-    name: "Project notes",
-    session: "demo",
-    agent: "codex",
-    snapshot: false,
-  };
   const accounts: Pick<
     Account,
     | "id"
@@ -271,48 +261,6 @@ export function resourceFixture({
             },
           ],
         };
-      },
-      libraryMemories: () => ({
-        memories: [
-          memory,
-          {
-            ...memory,
-            id: "snapshot",
-            name: "Saved checkpoint",
-            session: "previous",
-            snapshot: true,
-          },
-        ],
-      }),
-      libraryMemory: (request) => ({
-        memory:
-          request.id === "snapshot"
-            ? { ...memory, id: "snapshot", snapshot: true }
-            : memory,
-        documents: [
-          { name: "notes.md", revision, size: BigInt(content.length) },
-        ],
-      }),
-      libraryDocument: (request) => ({
-        memory,
-        revision,
-        content:
-          request.id === "snapshot"
-            ? "# Saved checkpoint\nRead only snapshot."
-            : content,
-      }),
-      writeLibraryDocument: (request) => {
-        if (request.revision && request.revision !== revision)
-          throw new ConnectError("Document revision changed", Code.Aborted);
-        content = request.content;
-        revision = String(Number(revision) + 1);
-        return { memory, content, revision };
-      },
-      snapshotLibraryMemory: () => ({ memory: { ...memory, snapshot: true } }),
-      forkLibraryMemory: () => ({ memory }),
-      renameLibraryMemory: (request) => {
-        memory.name = request.name;
-        return { memory };
       },
       conversationStats: async (request) => {
         if (usageDelayMs)

@@ -468,7 +468,7 @@ func (s SessionServer) Logs(ctx context.Context, r *resource.SessionLogsRequest)
 	return resource.SessionLogsReply_builder{Text: &out.Text}.Build(), nil
 }
 
-func (s SessionServer) Memory(ctx context.Context, r *resource.SessionMemoryRequest) (*resource.SessionMemoryReply, error) {
+func (s SessionServer) ReadAgentData(ctx context.Context, r *resource.SessionReadAgentDataRequest) (*resource.SessionReadAgentDataReply, error) {
 	v, err := s.resolve(ctx, r.GetRef())
 	if err != nil {
 		return nil, err
@@ -477,10 +477,10 @@ func (s SessionServer) Memory(ctx context.Context, r *resource.SessionMemoryRequ
 	if err != nil {
 		return nil, err
 	}
-	return resource.SessionMemoryReply_builder{Data: out.Data}.Build(), nil
+	return resource.SessionReadAgentDataReply_builder{Data: out.Data}.Build(), nil
 }
 
-func (s SessionServer) CopyMemory(ctx context.Context, r *resource.SessionCopyMemoryRequest) (*resource.SessionReceipt, error) {
+func (s SessionServer) CopyAgentData(ctx context.Context, r *resource.SessionCopyAgentDataRequest) (*resource.SessionReceipt, error) {
 	s.shared.transition.RLock()
 	defer s.shared.transition.RUnlock()
 	source, err := s.resolve(ctx, r.GetRef())

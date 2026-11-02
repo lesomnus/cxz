@@ -44,7 +44,7 @@ type model struct {
 	auxiliaryWatches         map[string]*auxiliaryWatch
 	auxiliaryError           string
 	library                  *libraryPage
-	seedMemory               string
+	seedMemory               *resource.Memory
 	download                 *fileDownload
 	bottomButtonHover        bool
 	sessionNavigation        sessionNavigation
@@ -1080,6 +1080,16 @@ func (m *model) Update(msg tea.Msg) (next tea.Model, cmd tea.Cmd) {
 		m.blinkFrom = m.pulse
 	}
 	switch v := msg.(type) {
+	case libraryActionResult:
+		if m.library == v.page && m.library.generation == v.generation {
+			m.library.loading = false
+			if v.err != nil {
+				m.library.message = v.err.Error()
+				return m, nil
+			}
+			return m, m.loadLibrary()
+		}
+		return m, nil
 	case libraryResult:
 		return m, m.receiveLibrary(v)
 	case memorySeed:
@@ -1091,11 +1101,11 @@ func (m *model) Update(msg tea.Msg) (next tea.Model, cmd tea.Cmd) {
 			m.library.message = v.err.Error()
 			return m, nil
 		}
-		if v.data.Memory == nil {
-			m.library.message = "Memory snapshot unavailable"
+		if v.data == nil {
+			m.library.message = "Memory document unavailable"
 			return m, nil
 		}
-		m.seedMemory = v.data.Memory.ID
+		m.seedMemory = v.data
 		m.project = v.project
 		m.library = nil
 		m.openAccounts(true)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"database/sql"
+	"github.com/google/uuid"
 	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/cxz/server/bare"
@@ -78,6 +79,8 @@ func (memoryVersionRecorder) Record(ctx context.Context, s bare.Server, c bare.C
 
 func memoryVersionSchema(ctx context.Context, db *sql.DB) error {
 	for _, q := range []string{
+		`CREATE TABLE IF NOT EXISTS memory_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL)`,
+		`INSERT OR IGNORE INTO memory_meta VALUES('changes_floor','0')`,
 		`CREATE TABLE IF NOT EXISTS memory_version(memory_id TEXT NOT NULL,revision INTEGER NOT NULL,content TEXT NOT NULL,content_hash TEXT NOT NULL,date_created DATETIME NOT NULL,PRIMARY KEY(memory_id,revision))`,
 		`CREATE TABLE IF NOT EXISTS memory_change(sequence INTEGER PRIMARY KEY AUTOINCREMENT,memory_id TEXT NOT NULL,project_id TEXT NOT NULL,revision INTEGER NOT NULL,kind TEXT NOT NULL,date_created DATETIME NOT NULL)`,
 		`CREATE INDEX IF NOT EXISTS memory_change_project ON memory_change(project_id,sequence)`,
@@ -87,7 +90,68 @@ func memoryVersionSchema(ctx context.Context, db *sql.DB) error {
 			return err
 		}
 	}
-	return nil
+	_, err := db.ExecContext(ctx, `INSERT OR IGNORE INTO memory_meta VALUES('epoch',?)`, uuid.NewString())
+	return err
 }
 
 var _ bare.SnapshotRecorder = memoryVersionRecorder{}
+
+// RetainMemories performs physical removal only after the logical deadline.
+func (s Layer) RetainMemories(ctx context.Context, now time.Time) (int, error) {
+	rows, err := s.shared.db.QueryContext(ctx, `SELECT id FROM memory WHERE date_deleted IS NOT NULL AND date_deleted<=? ORDER BY date_deleted,id LIMIT 128`, now)
+	if err != nil {
+		return 0, err
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err = rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		ids = append(ids, id)
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return 0, err
+	}
+	removed := 0
+	for _, id := range ids {
+		uid, err := uuid.Parse(id)
+		if err != nil {
+			return removed, err
+		}
+		m, err := s.Next().Memory().Get(ctx, resource.MemoryGetRequest_builder{Ref: resource.MemoryById(uid[:]), Select: memoryAll()}.Build())
+		if err != nil {
+			return removed, err
+		}
+		if !m.HasDateDeleted() || m.GetDateDeleted().AsTime().After(now) {
+			continue
+		}
+		if _, err = (MemoryServer{Layer: s}).purgeVersioned(ctx, m); err != nil {
+			return removed, err
+		}
+		removed++
+	}
+	tx, err := s.shared.db.BeginTx(ctx, nil)
+	if err != nil {
+		return removed, err
+	}
+	defer tx.Rollback()
+	var cut uint64
+	err = tx.QueryRowContext(ctx, `SELECT sequence FROM memory_change ORDER BY sequence DESC LIMIT 1 OFFSET 9999`).Scan(&cut)
+	if err == sql.ErrNoRows {
+		return removed, nil
+	}
+	if err != nil {
+		return removed, err
+	}
+	if _, err = tx.ExecContext(ctx, `DELETE FROM memory_change WHERE sequence<?`, cut); err != nil {
+		return removed, err
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE memory_meta SET value=? WHERE key='changes_floor'`, fmt.Sprint(cut-1)); err != nil {
+		return removed, err
+	}
+	return removed, tx.Commit()
+}

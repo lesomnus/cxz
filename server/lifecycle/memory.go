@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
@@ -40,8 +41,8 @@ func memoryExpired(m *resource.Memory) bool {
 	return m.HasDateDeleted() && !m.GetDateDeleted().AsTime().After(time.Now())
 }
 func memoryFields(name, content string, labels map[string]string) error {
-	if strings.TrimSpace(name) == "" || len(name) > 256 {
-		return memoryInvalid("name is required (maximum 256 bytes)")
+	if strings.TrimSpace(name) == "" || len(name) > 1024 {
+		return memoryInvalid("name is required (maximum 1024 bytes)")
 	}
 	if len(content) > memoryBodyLimit || !utf8.ValidString(content) || strings.ContainsRune(content, 0) {
 		return memoryInvalid("content must be UTF-8 Markdown, maximum 256 KiB")
@@ -108,7 +109,7 @@ func (s MemoryServer) Add(ctx context.Context, r *resource.MemoryAddRequest) (*r
 		return nil, err
 	}
 	if len(r.GetClientId()) > 256 {
-		return nil, memoryInvalid("client_id maximum 256 bytes")
+		return nil, memoryInvalid("client_id maximum 1024 bytes")
 	}
 	request := proto.Clone(r).(*resource.MemoryAddRequest)
 	request.SetProject(projectRef(projectid.String(p.GetId())))
@@ -148,7 +149,8 @@ func (s MemoryServer) Add(ctx context.Context, r *resource.MemoryAddRequest) (*r
 		return nil, err
 	}
 	if request.GetAlias() == "" {
-		request.SetAlias("memory-" + request.GetClientId()[:min(16, len(request.GetClientId()))])
+		hash := sha256.Sum256([]byte(request.GetClientId()))
+		request.SetAlias("memory-" + hex.EncodeToString(hash[:8]))
 	}
 	request.SetRevision(1)
 	return s.Next().Memory().Add(ctx, request)
@@ -196,10 +198,16 @@ func (s MemoryServer) Patch(ctx context.Context, r *resource.MemoryPatchRequest)
 	if err = memoryFields(name, content, labels); err != nil {
 		return nil, err
 	}
+	var saved *resource.Memory
 	if r.GetClearLabels() {
-		return s.patchClearLabels(ctx, m, request)
+		saved, err = s.patchClearLabels(ctx, m, request)
+	} else {
+		saved, err = s.Next().Memory().Patch(ctx, request)
 	}
-	return s.Next().Memory().Patch(ctx, request)
+	if status.Code(err) == codes.FailedPrecondition {
+		return nil, status.Error(codes.Aborted, "memory metadata version changed; read latest before updating")
+	}
+	return saved, err
 }
 func (s MemoryServer) Apply(context.Context, *resource.MemoryApplyRequest) (*resource.Memory, error) {
 	return nil, status.Error(codes.PermissionDenied, "use versioned Memory.Patch")
@@ -416,6 +424,7 @@ func (s MemoryServer) Versions(ctx context.Context, r *resource.MemoryVersionsRe
 
 // The cursor is scoped to its project filter, never interpreted as an audit log.
 type memoryCursor struct {
+	Epoch    string `json:"epoch"`
 	Project  string `json:"project"`
 	Sequence uint64 `json:"sequence"`
 	Baseline bool   `json:"baseline"`
@@ -438,9 +447,31 @@ func (s MemoryServer) Changes(ctx context.Context, r *resource.MemoryChangesRequ
 	c := memoryCursor{Project: project, Baseline: true}
 	if r.GetCursor() != "" {
 		b, e := base64.RawURLEncoding.DecodeString(r.GetCursor())
-		if e != nil || len(b) > 4096 || json.Unmarshal(b, &c) != nil || c.Project != project {
+		if e != nil || len(b) > 4096 || json.Unmarshal(b, &c) != nil {
 			return nil, memoryInvalid("invalid or out-of-scope memory cursor")
 		}
+	}
+	var epoch string
+	var floor, maxSeq uint64
+	if err := s.shared.db.QueryRowContext(ctx, `SELECT value FROM memory_meta WHERE key='epoch'`).Scan(&epoch); err != nil {
+		return nil, err
+	}
+	if err := s.shared.db.QueryRowContext(ctx, `SELECT CAST(value AS INTEGER) FROM memory_meta WHERE key='changes_floor'`).Scan(&floor); err != nil {
+		return nil, err
+	}
+	if err := s.shared.db.QueryRowContext(ctx, `SELECT COALESCE(MAX(sequence),0) FROM memory_change`).Scan(&maxSeq); err != nil {
+		return nil, err
+	}
+	if r.GetCursor() != "" {
+		if c.Epoch != epoch || c.Sequence < floor || c.Sequence > maxSeq {
+			out.SetResetRequired(true)
+			return out, nil
+		}
+		if c.Project != project {
+			return nil, memoryInvalid("memory cursor belongs to another project")
+		}
+	} else {
+		c.Epoch = epoch
 	}
 	limit := int(r.GetSize())
 	if limit <= 0 {
@@ -516,6 +547,9 @@ func (s MemoryServer) Changes(ctx context.Context, r *resource.MemoryChangesRequ
 		if err = rows.Err(); err != nil {
 			return nil, err
 		}
+	}
+	if !c.Baseline && !out.GetHasMore() {
+		c.Sequence = maxSeq
 	}
 	b, _ := json.Marshal(c)
 	out.SetCursor(base64.RawURLEncoding.EncodeToString(b))

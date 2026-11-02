@@ -4,113 +4,98 @@ import (
 	"context"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/memorylib"
-	"io"
+	"github.com/lesomnus/cxz/resource"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"strings"
 	"testing"
 )
 
-type libraryClient struct {
-	api.SessionsClient
-	store *memorylib.Store
+type flatMemoryRPC struct {
+	resource.MemoryServiceClient
+	row *resource.Memory
 }
 
-func (c *libraryClient) Library(ctx context.Context, id string, q memorylib.Request) (memorylib.Reply, error) {
-	return c.store.Do(ctx, q)
-}
-func libraryModel(t *testing.T) *model {
-	t.Helper()
-	m := conversationModel()
-	store := memorylib.New(t.TempDir(), core.Session{ID: "s", ProjectID: "p", Kind: "codex"})
-	_, e := store.Do(context.Background(), memorylib.Request{Action: "update", Document: "handoff.md", Content: "PR still pending"})
-	if e != nil {
-		t.Fatal(e)
+func (c *flatMemoryRPC) List(_ context.Context, r *resource.MemoryListRequest, _ ...grpc.CallOption) (*resource.MemoryListResponse, error) {
+	if c.row.HasDateDeleted() != (r.GetScope() == resource.MemoryScope_MEMORY_SCOPE_TRASH) {
+		return &resource.MemoryListResponse{}, nil
 	}
-	m.client = &libraryClient{SessionsClient: m.client, store: store}
-	applyLibrary(t, m, m.openMemory(m.current()))
-	return m
+	copy := proto.Clone(c.row).(*resource.Memory)
+	copy.SetContent("")
+	return resource.MemoryListResponse_builder{Items: []*resource.Memory{copy}}.Build(), nil
 }
-func applyLibrary(t *testing.T, m *model, cmd tea.Cmd) {
+func (c *flatMemoryRPC) Get(context.Context, *resource.MemoryGetRequest, ...grpc.CallOption) (*resource.Memory, error) {
+	return proto.Clone(c.row).(*resource.Memory), nil
+}
+func (c *flatMemoryRPC) Erase(context.Context, *resource.MemoryRef, ...grpc.CallOption) (*resource.MemoryEraseResponse, error) {
+	c.row.SetDateDeleted(timestamppb.Now())
+	return resource.MemoryEraseResponse_builder{Erased: proto.Bool(true)}.Build(), nil
+}
+func (c *flatMemoryRPC) Restore(context.Context, *resource.MemoryRestoreRequest, ...grpc.CallOption) (*resource.Memory, error) {
+	c.row.ClearDateDeleted()
+	return proto.Clone(c.row).(*resource.Memory), nil
+}
+
+type flatMemoryClient struct {
+	api.SessionsClient
+	rpc *flatMemoryRPC
+}
+
+func (c *flatMemoryClient) MemoryResources(_ context.Context, project string) (resource.MemoryServiceClient, string, error) {
+	return c.rpc, project, nil
+}
+func applyMemory(t *testing.T, m *model, cmd tea.Cmd) {
 	t.Helper()
 	if cmd == nil {
 		return
 	}
 	_, next := m.Update(cmd())
 	if next != nil {
-		applyLibrary(t, m, next)
+		applyMemory(t, m, next)
 	}
 }
-func TestLibraryBrowseDeleteRestoreAndExternalRefresh(t *testing.T) {
-	m := libraryModel(t)
-	if m.library == nil || len(m.library.data.Memories) != 1 {
-		t.Fatal("library not opened")
+func flatMemoryModel(t *testing.T) (*model, *flatMemoryRPC) {
+	t.Helper()
+	m := conversationModel()
+	rpc := &flatMemoryRPC{row: resource.Memory_builder{Id: []byte("1234567890123456"), Name: "handoff.md", Content: "PR still pending", Revision: 1, DateCreated: timestamppb.Now(), DateUpdated: timestamppb.Now()}.Build()}
+	m.client = &flatMemoryClient{m.client, rpc}
+	applyMemory(t, m, m.openMemory(m.current()))
+	return m, rpc
+}
+func TestFlatMemoryBrowseDeleteRestore(t *testing.T) {
+	m, _ := flatMemoryModel(t)
+	if m.library == nil || len(m.library.rows) != 1 {
+		t.Fatal("list missing")
 	}
-	applyLibrary(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyEnter}))
-	applyLibrary(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyEnter}))
+	applyMemory(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyEnter}))
 	if !strings.Contains(m.libraryScreen(), "PR still pending") {
 		t.Fatal(m.libraryScreen())
 	}
 	m.libraryKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
 	if m.library.dialog != "delete" {
-		t.Fatal("missing confirmation")
+		t.Fatal("confirmation missing")
 	}
-	applyLibrary(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")}))
-	if len(m.library.data.Documents) != 0 {
-		t.Fatal("document retained")
+	applyMemory(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")}))
+	if len(m.library.rows) != 0 {
+		t.Fatal("active memory retained")
 	}
-	applyLibrary(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("t")}))
-	if len(m.library.data.Documents) != 1 {
+	applyMemory(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("t")}))
+	if len(m.library.rows) != 1 {
 		t.Fatal("trash missing")
 	}
-	applyLibrary(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("u")}))
-	if len(m.library.data.Documents) != 0 {
-		t.Fatal("not restored")
+	applyMemory(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("u")}))
+	if len(m.library.rows) != 0 {
+		t.Fatal("restore did not remove trash entry")
 	}
 }
-func TestLibraryLateResultAndSnapshotName(t *testing.T) {
-	m := libraryModel(t)
-	cmd := m.loadLibrary(memorylib.Request{Action: "list"})
-	m.libraryKey(tea.KeyMsg{Type: tea.KeyEsc})
-	m.Update(cmd())
-	if m.library != nil {
-		t.Fatal("late response reopened library")
-	}
-	applyLibrary(t, m, m.openMemory(m.current()))
-	m.libraryKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")})
-	m.library.input.SetValue("배포 전")
-	applyLibrary(t, m, m.libraryKey(tea.KeyMsg{Type: tea.KeyEnter}))
-	if len(m.library.data.Memories) != 2 {
-		t.Fatal(m.library.message, m.library.data)
-	}
-}
-
-type seedClient struct {
-	api.SessionsClient
-	id      string
-	request memorylib.Request
-}
-
-func (c *seedClient) Library(_ context.Context, id string, q memorylib.Request) (memorylib.Reply, error) {
-	c.id = id
-	c.request = q
-	return memorylib.Reply{}, nil
-}
-func TestLibrarySeedsNewSessionAfterAccountSelection(t *testing.T) {
-	m := projectModel()
-	client := &seedClient{SessionsClient: m.client}
-	m.client = client
-	m.seedMemory = "saved-source"
-	m.createProjectSession = func(_ context.Context, _ string, account string, _ io.Reader, _ io.Writer, _ io.Writer) (*api.Session, error) {
-		if account != "chosen" {
-			t.Fatal(account)
-		}
-		return &api.Session{Id: "new-session", Agent: "codex"}, nil
-	}
-	batch := m.startAccountWorkflow("chosen", "codex", "", true)().(tea.BatchMsg)
-	defer m.workflow.close()
-	done := batch[0]().(workflowDone)
-	if done.err != nil || client.id != "new-session" || client.request.Action != "fork" || client.request.ID != "saved-source" || m.seedMemory != "" {
-		t.Fatal(done.err, client, m.seedMemory)
+func TestFlatMemoryLateReplyCannotReplaceNewPage(t *testing.T) {
+	m, _ := flatMemoryModel(t)
+	old := m.library
+	cmd := m.loadLibrary()
+	m.library = &libraryPage{}
+	m.receiveLibrary(cmd().(libraryResult))
+	if m.library == old || len(m.library.rows) != 0 {
+		t.Fatal("late reply replaced page")
 	}
 }
