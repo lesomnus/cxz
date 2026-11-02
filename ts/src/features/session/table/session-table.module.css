@@ -28,11 +28,9 @@
 }
 .table {
   --session-project-column-space: 0px;
-  --session-header-action-space: 0px;
   width: 100%;
   min-width: calc(
-    var(--session-table-min-width) + var(--session-project-column-space) +
-      var(--session-header-action-space)
+    var(--session-table-min-width) + var(--session-project-column-space)
   );
   table-layout: fixed;
   border-collapse: separate;
@@ -42,7 +40,7 @@
 .table[data-account-column="false"] {
   min-width: calc(
     var(--session-table-min-width) - var(--session-account-column-width) +
-      var(--session-project-column-space) + var(--session-header-action-space)
+      var(--session-project-column-space)
   );
 }
 .table[data-project-column="true"] {
@@ -124,10 +122,7 @@
   margin-inline: auto;
 }
 .actionsColumn {
-  width: calc(
-    var(--session-row-height) + var(--ui-control-inset) +
-      var(--session-header-action-space)
-  );
+  width: calc(var(--session-row-height) + var(--ui-control-inset));
 }
 .table td.cardCell.actions {
   text-align: center;
@@ -236,23 +231,6 @@
   font-size: 11px;
 }
 
-.table[data-header-add="true"] {
-  --session-header-action-space: 24px;
-}
-.headerActions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--ui-space);
-}
-.headerActions > :global(.action-menu) {
-  flex: none;
-  width: var(--session-header-height);
-}
-.table[data-header-add="true"] td.actions :global(.action-menu) {
-  width: calc(var(--session-row-height) - 2 * var(--ui-control-inset));
-  margin-inline-start: auto;
-}
 .accountAgent {
   --agent-logo-size: calc(var(--ui-icon-size-small) - var(--ui-control-inset));
   display: grid;

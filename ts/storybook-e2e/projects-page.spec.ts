@@ -245,7 +245,7 @@ test("dashboard scopes project usage and places sessions below Info", async ({
   ).toBeVisible();
   await expect(
     header.getByRole("button", { name: "Add session", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(
     usage
       .getByRole("region", { name: "Recent 30 days" })

@@ -17,12 +17,14 @@ export function SessionTableMenu({
   bulk = false,
   iconTrigger = false,
   disabled = false,
+  addSession,
 }: {
   sessions: Session[];
   controls: Controls;
   bulk?: boolean;
   iconTrigger?: boolean;
   disabled?: boolean;
+  addSession?: () => void;
 }) {
   const operations: SessionControlKind[] = [
     "stop",
@@ -83,6 +85,31 @@ export function SessionTableMenu({
             run: () => void controls.request(kind, sessions),
           })),
         },
+        ...(addSession
+          ? [
+              {
+                label: "",
+                items: [
+                  {
+                    label: t("Add session"),
+                    icon: (
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    ),
+                    run: addSession,
+                  },
+                ],
+              },
+            ]
+          : []),
       ]}
     />
   );
