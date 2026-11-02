@@ -223,7 +223,7 @@ for (const width of [1280, 390]) {
     expect(
       gaugeBounds.x + gaugeBounds.width - emptyBounds.x - emptyBounds.width,
     ).toBe(1);
-    await expect(empty).toHaveCSS("border-radius", "14px");
+    await expect(empty).toHaveCSS("border-radius", "13px");
     await expect(quota).toContainText(/00d02h2[56]m/);
     const reset = quota.getByRole("img", { name: /milliseconds/ });
     const resetRows = await reset

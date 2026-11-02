@@ -88,12 +88,15 @@
   --quota-tint: #b0485b;
 }
 .quotaGauge {
+  --account-quota-gauge-radius: calc(
+    var(--ui-section-radius) - var(--account-quota-inset)
+  );
   position: relative;
   display: grid;
   width: 32px;
   height: 60px;
   place-items: center;
-  border-radius: calc(var(--ui-section-radius) - var(--account-quota-inset));
+  border-radius: var(--account-quota-gauge-radius);
   overflow: hidden;
   isolation: isolate;
   background: color-mix(
@@ -114,7 +117,10 @@
   position: absolute;
   inset-inline: var(--account-quota-empty-inset);
   top: var(--account-quota-empty-inset);
-  border-radius: inherit;
+  border-radius: max(
+    0px,
+    calc(var(--account-quota-gauge-radius) - var(--account-quota-empty-inset))
+  );
   background: var(--ui-section-background);
   transition: height 300ms ease;
 }
