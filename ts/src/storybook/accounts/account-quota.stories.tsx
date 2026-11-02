@@ -50,7 +50,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The Accounts page's actual 64×64 quota display, backed by an isolated in-memory RPC fixture. The 32×60 gauge has a 2px inset, an 8px radius and a CompactNumber percentage inside. The reset countdown stacks days, hours and minutes to its right. Critical usage is below 10%, warning is 10–30%, and normal is above 30%. Use the theme toolbar to compare dark and light appearances. No Manager, provider or saved account is used.",
+          "The Accounts page's actual 64×64 quota display, backed by an isolated in-memory RPC fixture. The container has a 16px radius; the 32×60 gauge has a 2px inset and a 14px radius so their left corner centers align. Its percentage uses CompactNumber. The reset countdown stacks days, hours and minutes to its right. Critical usage is below 10%, warning is 10–30%, and normal is above 30%. Use the theme toolbar to compare dark and light appearances. No Manager, provider or saved account is used.",
       },
     },
   },

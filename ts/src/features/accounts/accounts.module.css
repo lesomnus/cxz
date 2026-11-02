@@ -41,9 +41,16 @@
   grid-template-rows: var(--account-auth-height) var(--account-usage-height);
 }
 .authenticationGroup {
+  --account-action-radius: 16px;
   --ui-section-radius: var(--ui-section-inner-radius);
   grid-template-columns: minmax(0, 1fr) 64px 64px;
   height: 64px;
+}
+.eraseAction.eraseAction,
+.quotaSquare.quotaSquare {
+  --ui-section-radius: var(--account-action-radius, 16px);
+  --ui-section-inner-radius: var(--ui-section-radius);
+  border-radius: var(--ui-section-radius);
 }
 .eraseAction.eraseAction {
   width: 64px;
@@ -65,9 +72,10 @@
 }
 .quotaSquare.quotaSquare {
   --quota-tint: #7c8b4f;
+  --account-quota-inset: 2px;
   width: 64px;
   height: 64px;
-  padding: 2px;
+  padding: var(--account-quota-inset);
   grid-template-columns: 32px minmax(0, 1fr);
   gap: 2px;
   align-items: center;
@@ -85,7 +93,7 @@
   width: 32px;
   height: 60px;
   place-items: center;
-  border-radius: 8px;
+  border-radius: calc(var(--ui-section-radius) - var(--account-quota-inset));
   overflow: hidden;
   isolation: isolate;
   background: color-mix(

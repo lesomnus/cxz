@@ -172,6 +172,9 @@ for (const width of [1280, 390]) {
       .boundingBox())!;
     expect(eraseBounds.width).toBe(64);
     expect(eraseBounds.height).toBe(64);
+    await expect(
+      work.getByRole("button", { name: "Erase account Work", exact: true }),
+    ).toHaveCSS("border-radius", "16px");
     expect(authBounds.height).toBe(64);
     expect(authBounds.x + authBounds.width).toBeLessThan(eraseBounds.x);
     expect(eraseBounds.x + eraseBounds.width).toBe(
@@ -183,6 +186,7 @@ for (const width of [1280, 390]) {
       exact: true,
     });
     const quotaBounds = (await quota.boundingBox())!;
+    await expect(quota).toHaveCSS("border-radius", "16px");
     expect(quotaBounds.width).toBe(64);
     expect(quotaBounds.height).toBe(64);
     expect(quotaBounds.y).toBe(authBounds.y);
@@ -199,7 +203,12 @@ for (const width of [1280, 390]) {
     ).toBe(2);
     expect(
       await gauge.evaluate((node) => getComputedStyle(node).borderRadius),
-    ).toBe("8px");
+    ).toBe("14px");
+    expect(gaugeBounds.x + 14).toBe(quotaBounds.x + 16);
+    expect(gaugeBounds.y + 14).toBe(quotaBounds.y + 16);
+    expect(gaugeBounds.y + gaugeBounds.height - 14).toBe(
+      quotaBounds.y + quotaBounds.height - 16,
+    );
     await expect(quota.getByRole("meter")).toHaveAttribute(
       "aria-valuenow",
       "64",
