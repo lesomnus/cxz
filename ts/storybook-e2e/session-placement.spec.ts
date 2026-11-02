@@ -124,6 +124,13 @@ for (const [story, sectionLabel] of [
       const viewport = area.locator('[data-scroll-area="viewport"]');
       await expect(viewport).toHaveCSS("border-radius", "0px");
       await expect(viewport).toHaveCSS("overscroll-behavior", "none");
+      const content = area.locator('[data-scroll-area="content"]');
+      await expect(content).toHaveCSS("padding-right", "0px");
+      const edges = await content.evaluate((node) => ({
+        content: node.getBoundingClientRect().right,
+        table: node.querySelector("table")!.getBoundingClientRect().right,
+      }));
+      expect(edges.table).toBeCloseTo(edges.content, 1);
       const thumb = area.getByRole("scrollbar", {
         name: "Session list",
         exact: true,
@@ -155,6 +162,36 @@ for (const [story, sectionLabel] of [
         });
         expect(Math.max(...samples) - Math.min(...samples)).toBeLessThan(0.1);
       }
+      // Enter the content while a free-spinning wheel keeps delivering input,
+      // then continue with a fractional tail after reaching the native end.
+      await viewport.evaluate((node) => {
+        node.scrollTop = node.scrollHeight - node.clientHeight - 40;
+        node.dataset.blockedWheels = "0";
+        node.addEventListener("wheel", (event) => {
+          if (event.defaultPrevented)
+            node.dataset.blockedWheels = String(
+              Number(node.dataset.blockedWheels) + 1,
+            );
+        });
+      });
+      const contentBounds = (await viewport.boundingBox())!;
+      await page.mouse.move(
+        contentBounds.x + contentBounds.width / 2,
+        contentBounds.y + contentBounds.height / 2,
+      );
+      for (const delta of [24, 24, 24, 1, 0.5, 0.25, 0.125, 0.125, 0.125])
+        await page.mouse.wheel(0, delta);
+      await expect
+        .poll(() =>
+          viewport.evaluate((node) => Number(node.dataset.blockedWheels)),
+        )
+        .toBeGreaterThan(0);
+      const final = (await viewport.boundingBox())!;
+      expect(final.y).toBeCloseTo(contentBounds.y, 1);
+      await expect(area.locator('[data-scroll-area="bottom-fade"]')).toHaveCSS(
+        "opacity",
+        "0",
+      );
     });
   }
 }
