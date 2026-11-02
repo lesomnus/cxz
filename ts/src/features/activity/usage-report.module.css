@@ -10,6 +10,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.refresh {
+  width: var(--toolbar-button-width);
+  flex: none;
+}
 .error {
   color: var(--ui-action-error-color);
 }

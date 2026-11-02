@@ -99,13 +99,27 @@ export function UsageReport({
           </Popover>
         )}
         <Button
+          className={usageStyles.refresh}
+          aria-label="Refresh"
           loading={stats.loading || history.loading}
           onClick={() => {
             setNow(Date.now());
             stats.reload();
           }}
         >
-          Refresh
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M13 7a5 5 0 1 0-.8 3.7M13 3v4H9" />
+          </svg>
         </Button>
       </div>
       <section aria-label="Recent 30 days" className={usageStyles.period}>
