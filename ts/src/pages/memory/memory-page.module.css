@@ -1,0 +1,75 @@
+.page {
+  --memory-content-width: 850px;
+  --memory-page-gutter: 24px;
+  grid-column: 2 / -1;
+  container: memory-page / inline-size;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.page > .toolbar {
+  padding-inline: var(--memory-page-gutter);
+}
+.toolbarContent,
+.content {
+  width: 100%;
+  max-width: var(--memory-content-width);
+  margin-inline: auto;
+  min-width: 0;
+}
+.toolbarContent {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
+}
+.sessionControl {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+  margin-inline-start: auto;
+  min-width: 0;
+}
+.sessionControl > :last-child {
+  min-width: 0;
+  max-width: 220px;
+}
+.contextLabel {
+  color: var(--ui-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.scroll {
+  --ui-scroll-area-background: var(--ui-shade-20);
+}
+.scroll .scrollContent {
+  padding: 12px var(--memory-page-gutter);
+}
+.error {
+  color: var(--ui-action-error-color);
+  font-size: 12px;
+}
+.empty {
+  font-size: 12px;
+}
+.empty p {
+  margin: 0;
+  color: var(--ui-muted);
+}
+.empty button {
+  justify-self: start;
+}
+@container memory-page (width < 600px) {
+  .page > .toolbar {
+    height: auto;
+  }
+  .toolbarContent {
+    flex-wrap: wrap;
+    padding-block: var(--ui-space);
+  }
+  .sessionControl {
+    margin-inline-start: 0;
+    width: 100%;
+  }
+}

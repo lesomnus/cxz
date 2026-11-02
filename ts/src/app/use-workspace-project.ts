@@ -30,6 +30,7 @@ export function useWorkspaceProject(
   // An unscoped task detail can instead require an explicit project choice.
   const defaultsToFirst =
     route.resource === "projects" ||
+    route.resource === "memory" ||
     (route.resource === "tasks" &&
       (!route.tasks.task || projects.length === 1));
   const active = selected || defaultsToFirst ? resolved : undefined;

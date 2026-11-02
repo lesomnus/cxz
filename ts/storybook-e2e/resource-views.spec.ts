@@ -6,11 +6,9 @@ test("shared-memory story renders the live editor and read-only snapshots", asyn
     "/iframe.html?id=resources-views--shared-memory&viewMode=story",
   );
   await page.getByRole("button", { name: "notes.md", exact: true }).click();
+  await page.getByRole("button", { name: "Source", exact: true }).click();
   await expect(page.locator(".monaco-editor")).toBeVisible();
-  await page.getByRole("combobox", { name: "Memory", exact: true }).click();
-  await page
-    .getByRole("option", { name: "Saved checkpoint · Snapshot", exact: true })
-    .click();
+  await page.getByRole("button", { name: /Saved checkpoint/ }).click();
   await page.getByRole("button", { name: "notes.md", exact: true }).click();
   await expect(
     page.getByText("Read only. Fork this memory to edit it in this session.", {

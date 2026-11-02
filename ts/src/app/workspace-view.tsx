@@ -47,7 +47,17 @@ export function WorkspaceView() {
       />
     );
   if (resource === "search") return <SearchPage c={c} projects={projects} />;
-  if (resource === "memory") return <MemoryPage c={c} sessions={sessions} />;
+  if (resource === "memory")
+    return (
+      <MemoryPage
+        c={c}
+        projects={projects}
+        sessions={sessions}
+        projectsLoading={projectsLoading}
+        sessionsLoading={sessionsLoading}
+        error={inventoryError}
+      />
+    );
   if (resource === "auxiliary") return <AuxiliaryPage c={c} />;
   if (resource === "settings" && settingsTopic === "connections")
     return <ConnectionsPage />;

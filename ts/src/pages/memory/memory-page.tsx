@@ -1,53 +1,149 @@
-import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
-import { useState } from "react";
-
+import { useCallback, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Button, IconValueMenu, PageToolbar, Section } from "@lesomnus/nox";
+import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
-import styles from "#src/shared/components/resource-surface.module.css";
+import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { projectId } from "#src/shared/api/project-id.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
-import { matchesResource } from "#src/shared/navigation/resource-route.ts";
+import {
+  matchesResource,
+  resourceHandle,
+  resourceLocation,
+  projectLocation,
+} from "#src/shared/navigation/resource-route.ts";
+import styles from "./memory-page.module.css";
+
 export function MemoryPage({
   c,
+  projects,
   sessions,
+  projectsLoading = false,
+  sessionsLoading = false,
+  error,
 }: {
   c: Connection;
+  projects: Project[];
   sessions: Session[];
+  projectsLoading?: boolean;
+  sessionsLoading?: boolean;
+  error?: string;
 }) {
-  const [selected, setSelected] = useState("");
+  const navigate = useNavigate();
   const { memoryProject } = useWorkspaceRoute();
+  const project = memoryProject
+    ? projects.find((p) => matchesResource(p, memoryProject))
+    : projects[0];
+  const id = projectId(project) ?? "";
+  const [selection, setSelection] = useState<Record<string, string>>({});
   const scoped = sessions.filter(
-    (s) =>
-      !memoryProject ||
-      (!!s.project && matchesResource(s.project, memoryProject)),
+    (s) => s.project && project && projectId(s.project) === id,
   );
   const session =
-    scoped.find((s) => s.runtimeId === selected)?.runtimeId ||
-    scoped[0]?.runtimeId ||
-    "";
+    scoped.find((s) => s.runtimeId === selection[id]) ?? scoped[0];
+  const guard = useRef<(run: () => void) => void>((run) => run());
+  const registerGuard = useCallback(
+    (next: ((run: () => void) => void) | undefined) => {
+      guard.current = next ?? ((run) => run());
+    },
+    [],
+  );
   return (
-    <main className={styles.page}>
-      <header className={styles.heading}>
-        <h1>Shared memory</h1>
-        <ValueMenu
-          label="Session"
-          value={session}
-          options={scoped.map((s) => ({
-            value: s.runtimeId,
-            label: `${s.project?.name || s.project?.alias || ""} · ${s.alias}`,
-          }))}
-          choose={setSelected}
-        />
-      </header>
-      <div className={styles.body}>
-        {session ? (
-          <MemoryLibrary key={session} c={c} session={session} />
-        ) : (
-          <p className={styles.muted}>
-            Create a session to open its project's shared memory.
-          </p>
-        )}
-      </div>
+    <main className={styles.page} aria-label="Shared memory workspace">
+      <PageToolbar className={styles.toolbar}>
+        <div className={styles.toolbarContent}>
+          <ProjectPicker
+            projects={projects}
+            value={id}
+            loading={projectsLoading}
+            choose={(value) =>
+              guard.current(() => {
+                const chosen = projects.find((p) => projectId(p) === value)!;
+                void navigate({
+                  ...resourceLocation("memory"),
+                  search: { project: resourceHandle(chosen) },
+                });
+              })
+            }
+          />
+          {session && (
+            <div className={styles.sessionControl}>
+              <span className={styles.contextLabel}>Editing as</span>
+              <IconValueMenu
+                label="Editing session"
+                icon={<AgentBrand agent={session.agent} />}
+                value={session.runtimeId}
+                display={session.alias || session.name || session.runtimeId}
+                options={scoped.map((s) => ({
+                  value: s.runtimeId,
+                  label: s.name || s.alias || s.runtimeId,
+                  searchText: `${s.alias} ${s.agent}`,
+                }))}
+                searchable
+                choose={(value) =>
+                  guard.current(() =>
+                    setSelection((old) => ({ ...old, [id]: value })),
+                  )
+                }
+              />
+            </div>
+          )}
+        </div>
+      </PageToolbar>
+      <PanelScroll
+        className={styles.scroll}
+        contentClassName={styles.scrollContent}
+        scrollbarLabel="Shared memory scroll"
+      >
+        <div className={styles.content}>
+          {error && (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          )}
+          {session ? (
+            <MemoryLibrary
+              key={`${id}:${session.runtimeId}`}
+              c={c}
+              session={session.runtimeId}
+              sessions={scoped}
+              registerGuard={registerGuard}
+            />
+          ) : (
+            <Section className={styles.empty}>
+              <strong>
+                {projectsLoading || sessionsLoading
+                  ? "Loading shared memory…"
+                  : !project
+                    ? memoryProject
+                      ? "Project unavailable"
+                      : "No projects yet"
+                    : "No session available for this project"}
+              </strong>
+              {!projectsLoading && !sessionsLoading && project && (
+                <>
+                  <p>
+                    Shared memory is stored per project. Choose or create a
+                    session to browse it; this does not mean the project's
+                    memory is empty.
+                  </p>
+                  <Button
+                    onClick={() =>
+                      void navigate(projectLocation(resourceHandle(project)))
+                    }
+                  >
+                    Open project
+                  </Button>
+                </>
+              )}
+            </Section>
+          )}
+        </div>
+      </PanelScroll>
     </main>
   );
 }
