@@ -224,6 +224,7 @@ header strong {
   margin: 4px 0 16px;
 }
 .resource-link {
+  --button-hover-background: var(--shade-32);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -244,8 +245,8 @@ header strong {
   font-size: 10px;
 }
 .resource-link.active {
-  --button-background: var(--shade-65);
-  --button-hover-background: var(--shade-72);
+  --button-background: var(--selected);
+  --button-hover-background: var(--selected-hover);
   color: var(--shade-255);
 }
 .profile-menu {
