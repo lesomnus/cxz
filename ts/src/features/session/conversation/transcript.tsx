@@ -853,6 +853,7 @@ export function Transcript({
     >
       <div
         className="transcript"
+        data-code-expand-boundary
         ref={pane}
         id="conversation-transcript"
         tabIndex={0}

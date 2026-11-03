@@ -3,6 +3,8 @@ export const messages = {
   Diagram: "Diagram",
   Source: "Source",
   "View diagram": "View diagram",
+  "Expand code block": "Expand code block",
+  "Restore code block width": "Restore code block width",
   "View source": "View source",
   "Mermaid diagram": "Mermaid diagram",
   "Rendering diagram…": "Rendering diagram…",
