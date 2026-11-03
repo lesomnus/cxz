@@ -247,8 +247,9 @@ export function Workspace({
                       run: () => setAddingSession(true),
                     },
                     {
-                      label: t("Enable project collapse"),
-                      checked: projectCollapse,
+                      label: projectCollapse
+                        ? t("Disable project collapse")
+                        : t("Enable project collapse"),
                       icon: (
                         <svg
                           width="16"
@@ -264,8 +265,8 @@ export function Workspace({
                           <path
                             d={
                               projectCollapse
-                                ? "m7 4 5 5 5-5M7 20l5-5 5 5"
-                                : "m7 9 5-5 5 5M7 15l5 5 5-5"
+                                ? "m7 9 5-5 5 5M7 15l5 5 5-5"
+                                : "m7 4 5 5 5-5M7 20l5-5 5 5"
                             }
                           />
                         </svg>
