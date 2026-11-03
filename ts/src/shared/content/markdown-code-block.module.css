@@ -6,6 +6,20 @@
 :global(.markdown) .block > pre {
   margin: 0;
 }
+.block[data-code-expanded] > pre,
+.block[data-code-expanded] > .diagram {
+  width: var(--code-expanded-width);
+  max-width: none;
+  margin-inline-start: var(--code-expanded-left);
+}
+
+/* Keep the vertical virtualization clip, but let the widened surface reach the
+   owning transcript viewport, which still clips it at both pane boundaries. */
+:global(.virtual-messages):has(.block[data-code-expanded]),
+:global(.transcript-row[data-live-arrival]):has(.block[data-code-expanded]) {
+  overflow: visible clip;
+}
+
 .toolbar {
   z-index: 1;
   position: absolute;

@@ -49,6 +49,26 @@ export const MermaidResponse: Story = {
     ],
   },
 };
+export const WideCodeBlock: Story = {
+  args: {
+    events: [
+      storyEvent(
+        1,
+        "input",
+        "Show the full configuration without moving the message toolbar.",
+      ),
+      responseEvent(
+        2,
+        "codex",
+        "Use the expand button immediately left of Copy to read wide code across the conversation pane.\n\n```typescript\n" +
+          "const configuration = { project: 'design-system', workspace: '/workspace', preserveToolbarPosition: true, expandToConversationPane: true };\n" +
+          "console.log(configuration.project, configuration.workspace, configuration.preserveToolbarPosition);\n```\n\n" +
+          "The surrounding response stays in the normal text column.\n\n" +
+          '- A nested code block also aligns to the pane edges:\n\n    ```json\n    { "nested": true, "toolbar": "stays in its original position" }\n    ```',
+      ),
+    ],
+  },
+};
 const longModel = responseEvent();
 longModel.response!.model = "provider/very-long-model-identifier-".repeat(8);
 export const LongModelName: Story = { args: { events: [longModel] } };

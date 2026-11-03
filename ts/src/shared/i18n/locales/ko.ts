@@ -3,6 +3,8 @@ export const messages = {
   Diagram: "다이어그램",
   Source: "원문",
   "View diagram": "다이어그램 보기",
+  "Expand code block": "코드블록 가로 확장",
+  "Restore code block width": "코드블록 너비 복원",
   "View source": "원문 보기",
   "Mermaid diagram": "Mermaid 다이어그램",
   "Rendering diagram…": "다이어그램 그리는 중…",

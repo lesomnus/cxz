@@ -27,6 +27,7 @@ npm run storybook
 - `Conversation/Session menu`: 입력 툴바의 더보기 메뉴만 자동으로 열어 보여주는 예제. 기본·작업 중·중지·처리 대기·Claude 상태에서 세션 작업, 도구 목록과 하단 편집 옵션을 확인합니다. `AlwaysOpen`은 바깥 클릭·포커스 이동·Escape·항목 선택으로도 닫히지 않아 DevTools로 디자인을 확인하기에 적합합니다.
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
   `MermaidResponse`는 실제 대화 응답 안의 Mermaid 코드 블록을 다이어그램으로 표시합니다.
+  `WideCodeBlock`은 일반·목록 안 코드블록의 가로 확장/복원을 보여줍니다. 복사 버튼 왼쪽 토글로 코드와 다이어그램 본문만 대화 패널 양끝까지 넓히며, 일반 본문과 툴바는 기존 폭과 위치를 유지합니다. 오른쪽 에디터 분할과 화면 크기 변경도 따릅니다.
   `QuestionHistoryInConversation`은 사용자·에이전트 대화 중간에 답변 완료된 Question 기록을 표시합니다.
   대화 응답과 같은 디자인의 카드 본문에서 질문별 탭을 선택해 질문과 기록된 답변을 확인합니다.
   Nox SlidingPages로 질문과 답변이 함께 슬라이드되며 카드와 각 영역의 높이는 유지됩니다.

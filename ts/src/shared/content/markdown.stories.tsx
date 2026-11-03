@@ -19,8 +19,10 @@ const meta = {
   decorators: [
     (Story) => (
       <StrictMode>
-        <div style={{ width: "min(600px, 90vw)" }}>
-          <Story />
+        <div data-code-expand-boundary style={{ width: "min(1100px, 90vw)" }}>
+          <div style={{ maxWidth: 600, marginInline: "auto" }}>
+            <Story />
+          </div>
         </div>
       </StrictMode>
     ),
@@ -29,7 +31,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Hover a code block to show its language chooser and copy icon just above its upper-right edge. The floating toolbar occupies no layout space and remains reachable across the gap. Keyboard focus also reveals controls. Language choices only affect highlighting; copy preserves the literal code without Markdown fences. Menus stay visible while open, and unknown languages fall back to plain text.",
+          "Hover a code block to show its language chooser and copy icon just above its upper-right edge. The expand button left of Copy widens only the code/diagram surface to its containing pane; the floating toolbar keeps its original anchor. The floating toolbar occupies no layout space and remains reachable across the gap. Keyboard focus also reveals controls. Language choices only affect highlighting; copy preserves the literal code without Markdown fences. Menus stay visible while open, and unknown languages fall back to plain text.",
       },
     },
   },
