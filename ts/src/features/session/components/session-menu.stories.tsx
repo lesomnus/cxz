@@ -14,10 +14,12 @@ function MenuPreview({
   state,
   busy,
   agent,
+  alwaysOpen,
 }: {
   state: "idle" | "working" | "stopped";
   busy: boolean;
   agent: "codex" | "claude";
+  alwaysOpen: boolean;
 }) {
   const [session, setSession] = useState(storySession);
   const [terminal, setTerminal] = useState(false);
@@ -50,6 +52,7 @@ function MenuPreview({
               session={session}
               info={{ model: session.model, effort: "medium" }}
               busy={busy}
+              open={alwaysOpen ? true : undefined}
               terminal={{
                 visible: terminal,
                 available: true,
@@ -99,7 +102,7 @@ const meta = {
   title: "Conversation/Session menu",
   component: MenuPreview,
   tags: ["autodocs"],
-  args: { state: "idle", busy: false, agent: "codex" },
+  args: { state: "idle", busy: false, agent: "codex", alwaysOpen: false },
   argTypes: {
     state: { control: "select", options: ["idle", "working", "stopped"] },
     agent: { control: "select", options: ["codex", "claude"] },
@@ -124,6 +127,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+export const AlwaysOpen: Story = {
+  args: { alwaysOpen: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps the real menu mounted and open for DevTools inspection. Outside clicks, focus changes, Escape, trigger clicks and action selection cannot dismiss it. Actions and editor options remain interactive.",
+      },
+    },
+  },
+};
 export const Working: Story = { args: { state: "working" } };
 export const Stopped: Story = { args: { state: "stopped" } };
 export const Busy: Story = { args: { busy: true } };

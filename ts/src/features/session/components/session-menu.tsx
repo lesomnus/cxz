@@ -19,6 +19,8 @@ export type SessionMenuProps = {
   session?: Session;
   info: SessionInfo;
   busy: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   manage: (operation: SessionOperation, run: string) => Promise<boolean>;
   edit: (field: SessionField, value: string) => Promise<Session>;
   fork?: () => void | Promise<unknown>;
@@ -44,6 +46,8 @@ export function SessionMenu({
   session,
   info,
   busy,
+  open: menuOpen,
+  onOpenChange,
   manage,
   edit,
   fork,
@@ -73,6 +77,8 @@ export function SessionMenu({
     <>
       <ActionMenu
         label={t("Session menu")}
+        open={menuOpen}
+        onOpenChange={onOpenChange}
         placement="above"
         gap={toolbarMenuGap}
         scrollbarOffset={8}
