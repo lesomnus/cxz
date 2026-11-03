@@ -73,8 +73,9 @@ Projects with no visible sessions are omitted from the session panel, including
 projects whose sessions are all hidden by this filter. They remain available in
 the Projects view and session creation dialog.
 
-The panel's **More → Enable project collapse** checked action controls
-`session.panel.projectCollapse` (default `true`). Turning it off expands every
+The panel's **More → Disable project collapse / Enable project collapse** action controls
+`session.panel.projectCollapse` (default `true`). The label and chevron icon describe
+the next action, matching Hide/Show stopped sessions. Turning it off expands every
 project and disables project-heading activation. Turning it back on restores the
 current page's previous expanded/collapsed choices. The preference survives reload
 and follows cross-tab synchronization; individual collapsed choices remain local

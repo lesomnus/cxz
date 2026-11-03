@@ -20,6 +20,7 @@ export const messages = {
   "Send pasted content as": "Send pasted content as",
   "Editor options": "Editor options",
   "Show control characters": "Show control characters",
+  "Disable project collapse": "Disable project collapse",
   "Enable project collapse": "Enable project collapse",
   "Word wrap": "Word wrap",
 

@@ -99,7 +99,11 @@ test("project collapse can be disabled persistently without losing the current c
   const count = await rows.count();
   expect(count).toBeGreaterThan(0);
   const menu = page.getByRole("button", { name: "Session panel options" });
-  const toggle = page.getByRole("menuitemcheckbox", {
+  const disable = page.getByRole("menuitem", {
+    name: "Disable project collapse",
+    exact: true,
+  });
+  const enable = page.getByRole("menuitem", {
     name: "Enable project collapse",
     exact: true,
   });
@@ -108,8 +112,9 @@ test("project collapse can be disabled persistently without losing the current c
   await expect(heading).toHaveAttribute("aria-expanded", "false");
   await expect(rows).toHaveCount(0);
   await menu.click();
-  await expect(toggle).toBeChecked();
-  await toggle.click();
+  await expect(disable).toBeVisible();
+  await expect(enable).toHaveCount(0);
+  await disable.click();
   await expect(heading).toBeDisabled();
   await expect(heading).not.toHaveAttribute("aria-expanded");
   await expect(rows).toHaveCount(count);
@@ -120,12 +125,13 @@ test("project collapse can be disabled persistently without losing the current c
 
   // Re-enabling restores this view's previous collapsed choice.
   await menu.click();
-  await expect(toggle).not.toBeChecked();
-  await toggle.click();
+  await expect(enable).toBeVisible();
+  await expect(disable).toHaveCount(0);
+  await enable.click();
   await expect(heading).toBeEnabled();
   await expect(rows).toHaveCount(0);
   await menu.click();
-  await toggle.click();
+  await disable.click();
   await expect(rows).toHaveCount(count);
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem("settings")!)),
@@ -140,7 +146,8 @@ test("project collapse can be disabled persistently without losing the current c
   });
   await expect(heading).toBeDisabled();
   await menu.click();
-  await expect(toggle).not.toBeChecked();
+  await expect(enable).toBeVisible();
+  await expect(disable).toHaveCount(0);
   await page.keyboard.press("Escape");
 
   // The normal storage event path also applies this setting immediately.
