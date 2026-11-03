@@ -45,18 +45,18 @@ test("expanded code ends at the session panel and editor, and tracks split resiz
     left = (await panel.boundingBox())!,
     right = (await editor.boundingBox())!;
   expect(code.x).toBeCloseTo(left.x + left.width, 1);
-  expect(code.x + code.width).toBeLessThanOrEqual(right.x + 1);
-  expect(right.x - code.x - code.width).toBeLessThan(12);
+  const divider = page.getByRole("separator", {
+    name: "Resize workspace editor",
+  });
+  const d = (await divider.boundingBox())!;
+  expect(code.x + code.width).toBeCloseTo(d.x, 1);
+  expect(d.x + d.width).toBeCloseTo(right.x, 1);
   expect(
     await pre.evaluate((el) => {
       const b = el.getBoundingClientRect();
       return el.contains(document.elementFromPoint(b.left + 3, b.top + 4));
     }),
   ).toBe(true);
-  const divider = page.getByRole("separator", {
-    name: "Resize workspace editor",
-  });
-  const d = (await divider.boundingBox())!;
   await page.mouse.move(d.x + d.width / 2, d.y + 200);
   await page.mouse.down();
   await page.mouse.move(d.x + 160, d.y + 200, { steps: 8 });
