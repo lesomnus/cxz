@@ -24,7 +24,7 @@ npm run storybook
 - `Pages/Projects`: Account와 같은 공용 Sessions 테이블을 사용합니다. 이름·alias를 묶은 세션/계정 이동 버튼, 상태 아이콘, 행 선택과 개별·일괄 작업, 세션 추가를 확인합니다.
 - `Resources/Tasks`: 프로젝트 선택과 상태별 작업 보드. `ProjectBoard`, `ManyTasks`, `EmptyProject`, `OlderRuntime`에서 등록·수정, 담당 세션 이동, 정지/이전 run 경고와 Release 확인을 확인합니다. `Simulate agent update`는 열린 편집 내용을 보존하면서 원격 갱신·alias 변경과 저장 충돌을 재현합니다. 실제 Connect 클라이언트와 메모리 서비스 fixture를 사용하며 서버의 Task는 변경하지 않습니다.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
-- `Conversation/Session menu`: 입력 툴바의 더보기 메뉴만 자동으로 열어 보여주는 예제. 기본·작업 중·중지·처리 대기·Claude 상태에서 세션 작업, 도구 목록과 하단 편집 옵션을 확인합니다.
+- `Conversation/Session menu`: 입력 툴바의 더보기 메뉴만 자동으로 열어 보여주는 예제. 기본·작업 중·중지·처리 대기·Claude 상태에서 세션 작업, 도구 목록과 하단 편집 옵션을 확인합니다. `AlwaysOpen`은 바깥 클릭·포커스 이동·Escape·항목 선택으로도 닫히지 않아 DevTools로 디자인을 확인하기에 적합합니다.
 - `Conversation/EventCards`: 사용자 입력, 최종·중간 대화 응답, 작업 진행·완료, 파일 변경, 진단 메시지.
   `MermaidResponse`는 실제 대화 응답 안의 Mermaid 코드 블록을 다이어그램으로 표시합니다.
   `QuestionHistoryInConversation`은 사용자·에이전트 대화 중간에 답변 완료된 Question 기록을 표시합니다.
