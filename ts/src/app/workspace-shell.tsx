@@ -261,8 +261,13 @@ export function Workspace({
                           strokeLinejoin="round"
                           aria-hidden="true"
                         >
-                          <rect x="4" y="4" width="16" height="16" rx="3" />
-                          {projectCollapse && <path d="m8 12 3 3 5-6" />}
+                          <path
+                            d={
+                              projectCollapse
+                                ? "m7 4 5 5 5-5M7 20l5-5 5 5"
+                                : "m7 9 5-5 5 5M7 15l5 5 5-5"
+                            }
+                          />
                         </svg>
                       ),
                       run: () => {
