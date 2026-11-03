@@ -20,6 +20,7 @@ export const messages = {
   "Send pasted content as": "붙여넣은 내용 전송 방식",
   "Editor options": "입력창 설정",
   "Show control characters": "제어문자 표시",
+  "Enable project collapse": "프로젝트 접기 활성화",
   "Word wrap": "자동 줄바꿈",
 
   Logs: "로그",

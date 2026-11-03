@@ -20,6 +20,7 @@ export function SessionTreeGroup({
   selected,
   open,
   toggle,
+  collapsible = true,
   unread = new Set<string>(),
   errors = new Set<string>(),
   background = new Set<string>(),
@@ -30,11 +31,13 @@ export function SessionTreeGroup({
   selected: string;
   open: boolean;
   toggle: () => void;
+  collapsible?: boolean;
   unread?: ReadonlySet<string>;
   errors?: ReadonlySet<string>;
   background?: ReadonlySet<string>;
 }) {
   useLocale();
+  const expanded = !collapsible || open;
   return (
     <section
       className={`session-tree-group ${styles.group}`}
@@ -42,10 +45,11 @@ export function SessionTreeGroup({
     >
       <PanelItem
         className={`tree-project ${styles.project}`}
-        aria-expanded={open}
-        onClick={toggle}
+        aria-expanded={collapsible ? open : undefined}
+        disabled={!collapsible}
+        onClick={collapsible ? toggle : undefined}
         data-unread={
-          (!open &&
+          (!expanded &&
             items.some(
               (s) => unread.has(s.runtimeId) || errors.has(s.runtimeId),
             )) ||
@@ -54,7 +58,7 @@ export function SessionTreeGroup({
       >
         <span>{project.name || project.alias}</span>
       </PanelItem>
-      {open && (
+      {expanded && (
         <div className="tree-sessions">
           {items.map((s) => (
             <PanelLink

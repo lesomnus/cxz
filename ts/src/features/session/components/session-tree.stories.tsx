@@ -14,6 +14,7 @@ function SessionPanel({
   count = 3,
   loading = false,
   expanded = true,
+  collapsible = true,
   unread = false,
   error = false,
   background = false,
@@ -22,6 +23,7 @@ function SessionPanel({
   count?: number;
   loading?: boolean;
   expanded?: boolean;
+  collapsible?: boolean;
   unread?: boolean;
   error?: boolean;
   background?: boolean;
@@ -37,6 +39,7 @@ function SessionPanel({
               count={count}
               loading={loading}
               expanded={expanded}
+              collapsible={collapsible}
               unread={unread}
               error={error}
               background={background}
@@ -46,7 +49,7 @@ function SessionPanel({
         },
         createMemoryHistory({ initialEntries: ["/c/_/session/session-0"] }),
       ),
-    [count, loading, expanded, unread, error, background, states],
+    [count, loading, expanded, collapsible, unread, error, background, states],
   );
   return <RouterProvider router={router} />;
 }
@@ -54,6 +57,7 @@ function SessionList({
   count,
   loading,
   expanded,
+  collapsible,
   unread,
   error,
   background,
@@ -79,6 +83,7 @@ function SessionList({
       <div className="session-tree">
         <SessionTreeGroup
           project={project}
+          collapsible={collapsible}
           items={items}
           loading={loading}
           selected={
@@ -165,3 +170,15 @@ export const LifecycleStates: Story = {
 };
 
 export const UnreadBeyondScroll: Story = { args: { count: 24, unread: true } };
+
+export const CollapseDisabled: Story = {
+  args: { expanded: false, collapsible: false },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Project headings stay readable and all sessions remain visible when project collapsing is disabled in the panel options.",
+      },
+    },
+  },
+};

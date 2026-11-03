@@ -79,6 +79,8 @@ export function Workspace({
   const [addingSession, setAddingSession] = useState(false);
   const { store: settings, snapshot } = useSettings();
   const hideStopped = snapshot.document["session.panel.hideStopped"] === true;
+  const projectCollapse =
+    snapshot.document["session.panel.projectCollapse"] !== false;
   const [panelError, setPanelError] = useState("");
   const sessionPanel = useRef<HTMLElement>(null);
   const positionSessionMenu = useCallback((trigger: DOMRect) => {
@@ -245,6 +247,37 @@ export function Workspace({
                       run: () => setAddingSession(true),
                     },
                     {
+                      label: t("Enable project collapse"),
+                      checked: projectCollapse,
+                      icon: (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <rect x="4" y="4" width="16" height="16" rx="3" />
+                          {projectCollapse && <path d="m8 12 3 3 5-6" />}
+                        </svg>
+                      ),
+                      run: () => {
+                        try {
+                          settings.set(
+                            "session.panel.projectCollapse",
+                            !projectCollapse,
+                          );
+                          setPanelError("");
+                        } catch (error) {
+                          setPanelError(String(error));
+                        }
+                      },
+                    },
+                    {
                       label: hideStopped
                         ? "Show stopped sessions"
                         : "Hide stopped sessions",
@@ -343,6 +376,7 @@ export function Workspace({
                       errors={errors}
                       background={background}
                       open={!collapsed.has(projectId(p))}
+                      collapsible={projectCollapse}
                       toggle={() =>
                         setCollapsed((old) => {
                           const next = new Set(old);

@@ -20,3 +20,7 @@
 .session[data-inactive="true"] :global(.session-heading) {
   opacity: 0.25;
 }
+
+.project.project:disabled {
+  opacity: 1;
+}
