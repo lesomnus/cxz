@@ -1,5 +1,44 @@
 import { expect, test, type Locator } from "@playwright/test";
 
+test("project list stories show resource links, counts, states and empty/loading tables", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--list&viewMode=story");
+  const table = page.getByRole("table", { name: "Projects", exact: true });
+  await expect(table).toBeVisible();
+  await expect(table.locator("tbody tr")).toHaveCount(2);
+  await expect(
+    table.getByRole("link", { name: "Web workspace web", exact: true }),
+  ).toHaveAttribute("href", "/c/_/project/web");
+  await expect(
+    table
+      .locator("tbody tr")
+      .first()
+      .getByRole("img", { name: "2", exact: true }),
+  ).toBeVisible();
+  await expect(table.locator("tbody tr").first()).toContainText("Running");
+  await expect(
+    table.locator("tbody tr").first().locator("time").first(),
+  ).toHaveAttribute("datetime", /T/);
+  await table
+    .getByRole("link", { name: "API workspace api", exact: true })
+    .click();
+  await expect(
+    page.getByRole("combobox", { name: "Select project", exact: true }),
+  ).toHaveText("API workspace");
+  await expect(
+    page.getByRole("table", { name: "Sessions", exact: true }),
+  ).toBeVisible();
+  await page.goto(
+    "/iframe.html?id=pages-projects--list-loading&viewMode=story",
+  );
+  await expect(table).toHaveAttribute("aria-busy", "true");
+  await expect(table.getByRole("status")).toHaveText("Loading projects…");
+  await page.goto("/iframe.html?id=pages-projects--list-empty&viewMode=story");
+  await expect(table.getByRole("status")).toHaveText("No projects yet.");
+  await expect(table.getByRole("columnheader")).toHaveCount(5);
+});
+
 test("project page stories render their selector and states", async ({
   page,
 }) => {

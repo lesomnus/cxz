@@ -75,11 +75,14 @@ test("explicit routes, browser history and reload retain the displayed project",
   await visit(page, "Projects view");
   await expect(picker(page)).toHaveText("Secondary project");
 
-  // A bare list URL still displays its documented default project.
+  // The unscoped project index does not change the remembered project.
   await page.evaluate(() => (location.hash = "/c/_/project"));
-  await expect(picker(page)).toHaveText("Design playground");
+  await expect(
+    page.getByRole("table", { name: "Projects", exact: true }),
+  ).toBeVisible();
+  await expect(picker(page)).toHaveText("Select project");
   await visit(page, "Tasks");
-  await expect(picker(page)).toHaveText("Design playground");
+  await expect(picker(page)).toHaveText("Secondary project");
 });
 
 test("remembered scope does not override an explicit missing project or guess an unscoped task's project", async ({
@@ -103,4 +106,113 @@ test("remembered scope does not override an explicit missing project or guess an
       exact: true,
     }),
   ).toBeVisible();
+});
+
+test("reselecting Projects opens the project table and keeps list URLs and history distinct from details", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/c/_/project/project-2");
+  await expect(picker(page)).toHaveText("Secondary project", {
+    timeout: 45000,
+  });
+  await visit(page, "Projects view");
+  await expect(page).toHaveURL(/#\/c\/_\/project$/);
+  const table = page.getByRole("table", { name: "Projects", exact: true });
+  await expect(table).toBeVisible();
+  await expect(table.getByRole("columnheader")).toHaveText([
+    "Name",
+    "Workspace",
+    "Sessions",
+    "State",
+    "Updated",
+  ]);
+  await expect(table.locator("tbody tr")).toHaveCount(2);
+  await expect(picker(page)).toHaveText("Select project");
+  await expect(
+    table
+      .locator("tbody tr")
+      .first()
+      .getByRole("img", { name: "8", exact: true }),
+  ).toBeVisible();
+  await expect(
+    table
+      .locator("tbody tr")
+      .last()
+      .getByRole("img", { name: "1", exact: true }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(picker(page)).toHaveText("Secondary project");
+  await page.goForward();
+  await expect(table).toBeVisible();
+  await page.reload();
+  await expect(table).toBeVisible({ timeout: 45000 });
+  await expect(page).toHaveURL(/#\/c\/_\/project$/);
+  await table
+    .getByRole("link", { name: "Secondary project project-2", exact: true })
+    .click();
+  await expect(page).toHaveURL(/#\/c\/_\/project\/project-2$/);
+  await expect(picker(page)).toHaveText("Secondary project");
+});
+
+test("reselecting Sessions opens its existing list without forgetting the last conversation or draft", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/c/_/session/session-8");
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await expect(input).toBeVisible({ timeout: 45000 });
+  await input.fill("Keep my draft while browsing the session list");
+  await visit(page, "Sessions view");
+  await expect(page).toHaveURL(/#\/c\/_\/session$/);
+  await expect(
+    page.getByRole("heading", { name: "Sessions", exact: true }),
+  ).toBeVisible();
+  const list = page.getByRole("main");
+  await expect(list.getByRole("link", { name: /session-8/ })).toHaveAttribute(
+    "href",
+    "/sandbox.html#/c/_/session/session-8",
+  );
+  await visit(page, "Sessions view");
+  await expect(page).toHaveURL(/#\/c\/_\/session$/);
+  await visit(page, "Projects view");
+  await expect(picker(page)).toHaveText("Secondary project");
+  await visit(page, "Sessions view");
+  await expect(page).toHaveURL(/#\/c\/_\/session\/session-8$/);
+  await expect(input).toHaveValue(
+    "Keep my draft while browsing the session list",
+  );
+  await visit(page, "Sessions view");
+  await list.getByRole("link", { name: /session-8/ }).click();
+  await expect(input).toHaveValue(
+    "Keep my draft while browsing the session list",
+  );
+});
+
+test("the project table scrolls inside its viewport on narrow screens", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await page.goto("/sandbox.html#/c/_/project");
+  const table = page.getByRole("table", { name: "Projects", exact: true });
+  await expect(table).toBeVisible({ timeout: 45000 });
+  await expect(
+    table.getByRole("link", {
+      name: "Design playground project-1",
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    390,
+  );
+  const viewport = page.locator(
+    "main > .panel-scroll-region > .panel-scroll-content",
+  );
+  expect(await viewport.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
+    true,
+  );
+  await viewport.evaluate((el) => {
+    el.scrollLeft = 200;
+  });
+  expect(await viewport.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+  await page.reload();
+  await expect(table).toBeVisible({ timeout: 45000 });
 });

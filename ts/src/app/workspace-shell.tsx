@@ -71,7 +71,7 @@ export function Workspace({
   ].includes(resource);
   const settingsTopic = route.settingsTopic;
   const lastSession = useRef("");
-  if (route.resource === "sessions")
+  if (route.resource === "sessions" && route.session)
     lastSession.current = selectedSession?.alias || route.session;
   const [settingsFileOpen, setSettingsFileOpen] = useState(false);
   useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
@@ -147,11 +147,13 @@ export function Workspace({
               label={view === "sessions" ? t("Sessions") : t("Projects")}
             >
               <RouteLink
-                {...(view === "projects"
-                  ? projectLocation(currentProject)
-                  : lastSession.current
-                    ? sessionLocation(lastSession.current)
-                    : resourceLocation("sessions"))}
+                {...(route.resource === view
+                  ? resourceLocation(view)
+                  : view === "projects"
+                    ? projectLocation(currentProject)
+                    : lastSession.current
+                      ? sessionLocation(lastSession.current)
+                      : resourceLocation("sessions"))}
                 className={`resource-link ${resource === view ? "active" : ""}`}
                 aria-label={
                   view === "sessions" ? t("Sessions view") : t("Projects view")

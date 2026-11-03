@@ -723,6 +723,10 @@ test("usage, background tasks and auxiliary controls are connected", async ({
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
+  await page
+    .getByRole("table", { name: "Projects", exact: true })
+    .getByRole("link", { name: "Demo project project", exact: true })
+    .click();
   await expect(
     page.getByRole("region", { name: "Recent 30 days", exact: true }),
   ).toBeVisible();

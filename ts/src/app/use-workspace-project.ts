@@ -26,10 +26,9 @@ export function useWorkspaceProject(
             ? route.memoryProject
             : undefined;
   const resolved = useProject(c, projects, selected);
-  // These list pages display the first project when opened without a scope.
+  // These scoped pages display the first project when opened without a scope.
   // An unscoped task detail can instead require an explicit project choice.
   const defaultsToFirst =
-    route.resource === "projects" ||
     route.resource === "memory" ||
     (route.resource === "tasks" &&
       (!route.tasks.task || projects.length === 1));

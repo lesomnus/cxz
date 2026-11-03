@@ -6,6 +6,7 @@ import { projectFixture } from "#src/storybook/project-fixture.ts";
 import { ProjectsPage } from "./projects-page";
 
 function Preview({
+  list = false,
   empty = false,
   loading = false,
   unavailable = false,
@@ -122,7 +123,9 @@ function Preview({
           );
         },
       },
-      createMemoryHistory({ initialEntries: ["/c/_/project"] }),
+      createMemoryHistory({
+        initialEntries: [list || empty ? "/c/_/project" : "/c/_/project/web"],
+      }),
     );
   });
   return <RouterProvider router={router} />;
@@ -136,6 +139,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const List: Story = { args: { list: true } };
+export const ListLoading: Story = {
+  args: { list: true, empty: true, loading: true },
+};
+export const ListEmpty: Story = { args: { list: true, empty: true } };
 export const LongPaths: Story = { args: { longPaths: true } };
 export const HomePaths: Story = { args: { homePaths: true } };
 export const SessionStates: Story = {

@@ -22,6 +22,7 @@ import {
   type ProjectField,
 } from "./project-edit";
 import { ProjectActions } from "./project-actions";
+import { ProjectTable } from "./project-table";
 import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
@@ -65,7 +66,8 @@ export function ProjectsPage({
   });
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
   const { project: selected } = useWorkspaceRoute();
-  const project = useProject(c, visibleProjects, selected);
+  const resolved = useProject(c, visibleProjects, selected);
+  const project = selected ? resolved : undefined;
   return (
     <main className={styles.page} aria-label={t("Project workspace")}>
       <PageToolbar className={styles.toolbar} aria-label={t("Project toolbar")}>
@@ -90,10 +92,18 @@ export function ProjectsPage({
         className={styles.scroll}
         contentClassName={styles.scrollContent}
         scrollbarLabel={t("Project scroll")}
+        horizontalScrollbar={!selected}
       >
         <div className={styles.content}>
           {error && <p role="alert">{error}</p>}
-          {project ? (
+          {!selected ? (
+            <ProjectTable
+              projects={visibleProjects}
+              sessions={sessions}
+              loading={projectsLoading}
+              sessionsLoading={sessionsLoading}
+            />
+          ) : project ? (
             <ProjectDashboard
               key={projectId(project)}
               c={c}
