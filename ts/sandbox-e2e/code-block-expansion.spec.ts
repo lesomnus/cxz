@@ -67,6 +67,8 @@ test("expanded code ends at the session panel and editor, and tracks split resiz
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     1280,
   );
+  await block.hover();
+  await expect(toolbar).toHaveCSS("opacity", "1");
   await block
     .getByRole("button", { name: "Restore code block width", exact: true })
     .click();

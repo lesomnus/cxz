@@ -65,6 +65,9 @@ for (const nested of [false, true]) {
     expect(after.y).toBeCloseTo(before.y, 1);
     expect(after.width).toBeCloseTo(before.width, 1);
     expect((await rect(pre)).width).toBeGreaterThan(original.width + 200);
+    const widened = await rect(pre);
+    await page.mouse.move(widened.x + 4, widened.y + 4);
+    await expect(toolbar).toHaveCSS("opacity", "1");
     await copy.click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       text,
@@ -133,9 +136,7 @@ test("Mermaid expansion applies to both the diagram and its source", async ({
     exact: true,
   });
   await expect(image).toBeVisible();
-  const block = image.locator(
-    "xpath=ancestor::div[@data-code-expanded or ./*[self::pre]][1]",
-  );
+  const block = page.locator(".transcript pre").first().locator("..");
   await block.hover();
   const expand = block.getByRole("button", {
     name: "Expand code block",
