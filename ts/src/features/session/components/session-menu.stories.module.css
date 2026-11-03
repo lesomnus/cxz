@@ -1,0 +1,17 @@
+.preview.preview {
+  width: min(480px, calc(100vw - 32px));
+  height: min(640px, calc(100dvh - 32px));
+  min-height: 360px;
+  padding: 16px;
+}
+.wrapper.wrapper {
+  width: 100%;
+  margin: 0;
+}
+.action {
+  display: block;
+  height: 20px;
+  margin-top: 8px;
+  color: var(--ui-muted);
+  font-size: 0.8rem;
+}
