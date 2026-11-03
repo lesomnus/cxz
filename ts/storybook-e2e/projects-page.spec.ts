@@ -16,10 +16,20 @@ test("project list stories show resource links, counts, states and empty/loading
       .first()
       .getByRole("img", { name: "2", exact: true }),
   ).toBeVisible();
-  await expect(table.locator("tbody tr").first()).toContainText("Running");
   await expect(
-    table.locator("tbody tr").first().locator("time").first(),
-  ).toHaveAttribute("datetime", /T/);
+    table
+      .locator("tbody tr")
+      .first()
+      .getByRole("img", { name: "Running", exact: true }),
+  ).toBeVisible();
+  await expect(table.locator("time")).toHaveCount(0);
+  await expect(table.getByRole("columnheader")).toHaveText([
+    "",
+    "Name",
+    "Sessions",
+    "",
+    "",
+  ]);
   await table
     .getByRole("link", { name: "API workspace api", exact: true })
     .click();
@@ -64,6 +74,182 @@ test("project page stories render their selector and states", async ({
     page.locator("main > .panel-scroll-region > .panel-scroll-content"),
   ).toContainText("Loading projects…");
   expect(errors).toEqual([]);
+});
+
+test("project list checkboxes select rows without navigation and action buttons stay square", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--list&viewMode=story");
+  const table = page.getByRole("table", { name: "Projects", exact: true });
+  const rows = table.locator("tbody tr");
+  const all = table.getByRole("checkbox", {
+    name: "Select all projects",
+    exact: true,
+  });
+  await expect(rows).toHaveCount(2);
+  await rows
+    .first()
+    .locator("td")
+    .first()
+    .click({ position: { x: 2, y: 2 } });
+  await expect(rows.first().getByRole("checkbox")).toBeChecked();
+  await expect(rows.first()).toHaveAttribute("data-selected", "true");
+  await expect(all).toBeChecked({ indeterminate: true });
+  await rows.first().getByRole("checkbox").press("Space");
+  await expect(all).not.toBeChecked();
+  await table
+    .getByRole("columnheader")
+    .first()
+    .click({ position: { x: 2, y: 2 } });
+  await expect(all).toBeChecked();
+  for (const row of await rows.all())
+    await expect(row.getByRole("checkbox")).toBeChecked();
+  await all.uncheck();
+  const more = rows
+    .first()
+    .getByRole("button", { name: "Controls for Web workspace", exact: true });
+  const bounds = (await more.boundingBox())!;
+  const cell = (await rows.first().locator("td").last().boundingBox())!;
+  expect(Math.abs(bounds.width - bounds.height)).toBeLessThan(0.1);
+  expect(
+    Math.abs(
+      bounds.y - cell.y - (cell.y + cell.height - bounds.y - bounds.height),
+    ),
+  ).toBeLessThan(0.1);
+  await more.click();
+  const menu = page.getByRole("menu", {
+    name: "Controls for Web workspace",
+    exact: true,
+  });
+  await expect(menu.getByRole("menuitem")).toHaveText([
+    "Stop",
+    "Start",
+    "Remove",
+    "Erase",
+  ]);
+  await menu.getByRole("menuitem", { name: "Stop", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Stop project",
+    exact: true,
+  });
+  await expect(dialog).toContainText("Web workspace");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(more).toBeFocused();
+  await expect(table).toBeVisible();
+});
+
+test("project list icons cover all container states and menus follow their lifecycle availability", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--list-states&viewMode=story");
+  const rows = page
+    .getByRole("table", { name: "Projects", exact: true })
+    .locator("tbody tr");
+  const states = [
+    { name: "Running", stop: true, start: false, remove: true },
+    { name: "Not started", stop: false, start: true, remove: true },
+    { name: "Stopped", stop: false, start: true, remove: true },
+    { name: "No container", stop: false, start: true, remove: false },
+    { name: "Unknown", stop: false, start: false, remove: false },
+  ];
+  await expect(rows).toHaveCount(states.length);
+  for (const [index, state] of states.entries()) {
+    const row = rows.nth(index);
+    await expect(
+      row.getByRole("img", { name: state.name, exact: true }),
+    ).toBeVisible();
+    await row
+      .getByRole("button", {
+        name: `Controls for ${state.name} workspace`,
+        exact: true,
+      })
+      .click();
+    for (const [action, enabled] of [
+      ["Stop", state.stop],
+      ["Start", state.start],
+      ["Remove", state.remove],
+      ["Erase", true],
+    ] as const) {
+      const item = page.getByRole("menuitem", { name: action, exact: true });
+      if (enabled) await expect(item).toBeEnabled();
+      else await expect(item).toBeDisabled();
+    }
+    await page.keyboard.press("Escape");
+  }
+});
+
+test("project row start uses the shared configuration trust confirmation", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--list-requires-trust&viewMode=story",
+  );
+  const row = page
+    .getByRole("table", { name: "Projects", exact: true })
+    .locator("tbody tr")
+    .first();
+  const more = row.getByRole("button", {
+    name: "Controls for Web workspace",
+    exact: true,
+  });
+  await more.click();
+  await page.getByRole("menuitem", { name: "Start", exact: true }).click();
+  const start = page.getByRole("dialog", {
+    name: "Start project",
+    exact: true,
+  });
+  await start.getByRole("button", { name: "Start", exact: true }).click();
+  const trust = page.getByRole("dialog", {
+    name: "Trust configuration",
+    exact: true,
+  });
+  await expect(trust).toBeVisible();
+  await expect(trust).toContainText("privileged container requested");
+  await trust.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(trust).toHaveCount(0);
+  await expect(
+    row.getByRole("img", { name: "Stopped", exact: true }),
+  ).toBeVisible();
+  await more.click();
+  await page.getByRole("menuitem", { name: "Start", exact: true }).click();
+  await start.getByRole("button", { name: "Start", exact: true }).click();
+  await trust
+    .getByRole("button", { name: "Trust and start", exact: true })
+    .click();
+  await expect(trust).toHaveCount(0);
+  await expect(
+    row.getByRole("img", { name: "Running", exact: true }),
+  ).toBeVisible();
+});
+
+test("project row action failures keep confirmation open and the project unchanged", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--list-unavailable&viewMode=story",
+  );
+  const row = page
+    .getByRole("table", { name: "Projects", exact: true })
+    .locator("tbody tr")
+    .first();
+  await row
+    .getByRole("button", { name: "Controls for Web workspace", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Stop project",
+    exact: true,
+  });
+  await dialog.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "Project stop is unavailable",
+  );
+  await expect(
+    row.getByRole("img", { name: "Running", exact: true }),
+  ).toBeVisible();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
 });
 
 test("project sessions use the account table design with stacked resource links and scoped selection", async ({

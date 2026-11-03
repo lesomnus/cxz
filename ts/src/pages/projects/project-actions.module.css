@@ -44,3 +44,15 @@
 .findings code {
   overflow-wrap: anywhere;
 }
+.menu,
+.menu > :global(.action-menu) {
+  display: flex;
+  width: 100%;
+}
+.menuTrigger.menuTrigger {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: var(--ui-control-inset);
+}

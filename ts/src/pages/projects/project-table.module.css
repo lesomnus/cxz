@@ -2,28 +2,51 @@
   --ui-table-row-height: 44px;
   --ui-table-row-gap: 0px;
   --ui-table-header-height: 28px;
-  min-width: 720px;
+  min-width: 360px;
   table-layout: fixed;
   border-radius: var(--ui-section-radius);
   overflow: clip;
 }
-.nameColumn {
-  width: 164px;
+.selectionColumn {
+  width: 44px;
 }
 .countColumn {
   width: 64px;
 }
 .stateColumn {
-  width: 96px;
+  width: 32px;
 }
-.updatedColumn {
-  width: 180px;
+.actionsColumn {
+  width: calc(var(--ui-table-row-height) + var(--ui-control-inset));
+}
+.nameColumn {
+  width: auto;
+}
+.table .selectionCell {
+  position: relative;
+  padding: 0;
+}
+.table .cellCheckbox {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+}
+.table .actionsCell {
+  padding: var(--ui-control-inset);
+  padding-right: calc(2 * var(--ui-control-inset));
 }
 .table .nameCell {
   padding: var(--ui-control-inset);
 }
+.table td {
+  border-bottom: 0;
+}
+.table tbody tr:not(:last-child) td {
+  box-shadow: inset 0 -1px 0 var(--ui-table-row-border);
+}
 .projectLink.projectLink {
-  --button-background: var(--ui-shade-32);
+  --button-background: var(--project-navigation-background, var(--ui-shade-32));
   --button-hover-background: var(--ui-button-hover-background);
   display: flex;
   align-items: center;
@@ -39,35 +62,35 @@
   width: 100%;
   justify-content: flex-start;
 }
-.identity,
-.updated {
+.identity {
   display: grid;
   min-width: 0;
   gap: 0;
   line-height: 1.3;
 }
 .name,
-.alias,
-.path {
+.alias {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.path {
-  display: block;
-  font-family: var(--ui-font-mono);
-}
-.alias,
-.updated small {
+.alias {
   color: var(--ui-muted);
   font-size: 10px;
-}
-.alias {
   font-family: var(--ui-font-mono);
 }
 .state {
   color: var(--ui-muted);
-  white-space: nowrap;
+  text-align: center;
+}
+.table tbody tr:hover {
+  --project-navigation-background: var(--ui-shade-40);
+}
+.table tbody tr[data-selected] {
+  --project-navigation-background: var(--ui-shade-60);
+}
+.table tbody tr[data-selected] .projectLink {
+  --button-hover-background: var(--ui-shade-72);
 }
 .table .empty {
   color: var(--ui-muted);

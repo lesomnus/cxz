@@ -179,8 +179,45 @@ export function projectFixture(
         }
         const updated = clone(ProjectSchema, projects[index]!);
         updated.status!.containerState = ContainerState.RUNNING;
+        updated.status!.containerId ||= `container-${index + 1}`;
+        updated.status!.containerName ||= `cxz-${updated.alias}-devcontainer`;
         updated.dateUpdated = timestampFromDate(new Date());
         projects[index] = updated;
+        publish();
+        return updated;
+      },
+      remove: (request, context) => {
+        const index = projects.findIndex(
+          (p) =>
+            request.ref?.key.case === "id" &&
+            key(p.id) === key(request.ref.key.value),
+        );
+        if (index < 0)
+          throw new ConnectError("Project not found", Code.NotFound);
+        calls.push({
+          method: "project.remove",
+          project: projectId(projects[index]!),
+          signal: context.signal,
+        });
+        if (unavailable)
+          throw new ConnectError(
+            "Project remove is unavailable",
+            Code.Unavailable,
+          );
+        const updated = clone(ProjectSchema, projects[index]!);
+        updated.status!.containerState = ContainerState.ABSENT;
+        updated.status!.containerId = "";
+        updated.status!.containerName = "";
+        updated.dateUpdated = timestampFromDate(new Date());
+        projects[index] = updated;
+        for (let i = 0; i < sessions.length; i++) {
+          if (projectId(sessions[i]!.project) !== projectId(updated)) continue;
+          const session = clone(SessionSchema, sessions[i]!);
+          session.status!.state = "stopped";
+          session.status!.pending = [];
+          session.project = updated;
+          sessions[i] = session;
+        }
         publish();
         return updated;
       },

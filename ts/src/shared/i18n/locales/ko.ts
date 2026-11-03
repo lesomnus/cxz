@@ -222,6 +222,7 @@ export const messages = {
   "Confirm cancel": "취소 확인",
   "Working…": "처리 중…",
   "Select all sessions": "모든 세션 선택",
+  "Select all projects": "모든 프로젝트 선택",
   "Select {name}": "{name} 선택",
   State: "상태",
   Alias: "별칭",

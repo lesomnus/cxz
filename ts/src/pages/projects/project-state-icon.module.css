@@ -1,0 +1,11 @@
+.icon {
+  display: grid;
+  place-items: center;
+  width: var(--ui-icon-size-small);
+  height: 20px;
+  margin-inline: auto;
+}
+.icon svg {
+  width: 100%;
+  height: var(--ui-icon-size-small);
+}

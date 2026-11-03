@@ -98,10 +98,12 @@ export function ProjectsPage({
           {error && <p role="alert">{error}</p>}
           {!selected ? (
             <ProjectTable
+              c={c}
               projects={visibleProjects}
               sessions={sessions}
               loading={projectsLoading}
               sessionsLoading={sessionsLoading}
+              updated={setSaved}
             />
           ) : project ? (
             <ProjectDashboard

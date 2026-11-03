@@ -120,11 +120,11 @@ test("reselecting Projects opens the project table and keeps list URLs and histo
   const table = page.getByRole("table", { name: "Projects", exact: true });
   await expect(table).toBeVisible();
   await expect(table.getByRole("columnheader")).toHaveText([
+    "",
     "Name",
-    "Workspace",
     "Sessions",
-    "State",
-    "Updated",
+    "",
+    "",
   ]);
   await expect(table.locator("tbody tr")).toHaveCount(2);
   await expect(picker(page)).toHaveText("Select project");
@@ -215,4 +215,74 @@ test("the project table scrolls inside its viewport on narrow screens", async ({
   expect(await viewport.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
   await page.reload();
   await expect(table).toBeVisible({ timeout: 45000 });
+});
+
+test("project row menus confirm lifecycle actions and affect only their project", async ({
+  page,
+}) => {
+  await page.goto("/sandbox.html#/c/_/project");
+  const table = page.getByRole("table", { name: "Projects", exact: true });
+  const rows = table.locator("tbody tr");
+  await expect(rows).toHaveCount(2, { timeout: 45000 });
+  const first = rows.first();
+  const second = rows.last();
+  const more = first.getByRole("button", {
+    name: "Controls for Design playground",
+    exact: true,
+  });
+  await first.getByRole("checkbox").check();
+  await more.click();
+  await page.getByRole("menuitem", { name: "Stop", exact: true }).click();
+  const stop = page.getByRole("dialog", { name: "Stop project", exact: true });
+  await stop.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(stop).toHaveCount(0);
+  await expect(
+    first.getByRole("img", { name: "Running", exact: true }),
+  ).toBeVisible();
+  const confirm = async (action: string, title: string, button = action) => {
+    await more.click();
+    await page.getByRole("menuitem", { name: action, exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: title, exact: true });
+    await expect(dialog).toContainText("Design playground");
+    await dialog.getByRole("button", { name: button, exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+  };
+  await confirm("Stop", "Stop project");
+  await expect(
+    first.getByRole("img", { name: "Stopped", exact: true }),
+  ).toBeVisible();
+  await expect(first.getByRole("checkbox")).toBeChecked();
+  await expect(
+    second.getByRole("img", { name: "Running", exact: true }),
+  ).toBeVisible();
+  await confirm("Start", "Start project");
+  await expect(
+    first.getByRole("img", { name: "Running", exact: true }),
+  ).toBeVisible();
+  await confirm("Remove", "Remove container");
+  await expect(rows).toHaveCount(2);
+  await expect(
+    first.getByRole("img", { name: "No container", exact: true }),
+  ).toBeVisible();
+  await more.click();
+  await expect(
+    page.getByRole("menuitem", { name: "Stop", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("menuitem", { name: "Remove", exact: true }),
+  ).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await confirm("Start", "Start project");
+  await expect(
+    first.getByRole("img", { name: "Running", exact: true }),
+  ).toBeVisible();
+  await confirm("Erase", "Erase project", "Erase permanently");
+  await expect(rows).toHaveCount(1);
+  await expect(
+    rows.getByRole("link", {
+      name: "Secondary project project-2",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/#\/c\/_\/project$/);
 });

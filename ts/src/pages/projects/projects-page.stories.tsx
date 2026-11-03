@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
+import { clone } from "@bufbuild/protobuf";
+import { ContainerState, ProjectSchema } from "#gen/cxz/project_pb";
 import { createWorkspaceRouter } from "#src/app/router.tsx";
 import { projectFixture } from "#src/storybook/project-fixture.ts";
+import { projectFixtureId } from "#src/storybook/project-id.ts";
 import { ProjectsPage } from "./projects-page";
 
 function Preview({
   list = false,
+  projectStates = false,
   empty = false,
   loading = false,
   unavailable = false,
@@ -33,6 +37,28 @@ function Preview({
             ? "trust"
             : "",
     );
+    if (projectStates) {
+      const states = [
+        ["Running", ContainerState.RUNNING],
+        ["Not started", ContainerState.CREATED],
+        ["Stopped", ContainerState.STOPPED],
+        ["No container", ContainerState.ABSENT],
+        ["Unknown", ContainerState.UNSPECIFIED],
+      ] as const;
+      const template = fixture.projects[0]!;
+      fixture.projects.splice(
+        0,
+        fixture.projects.length,
+        ...states.map(([name, state], index) => {
+          const project = clone(ProjectSchema, template);
+          project.id = projectFixtureId(index + 1);
+          project.alias = `project-${index + 1}`;
+          project.name = `${name} workspace`;
+          project.status!.containerState = state;
+          return project;
+        }),
+      );
+    }
     if (longPaths) {
       fixture.projects[0]!.workspace =
         "/host/" + "long-parent-directory/".repeat(10) + "workspace-leaf";
@@ -140,6 +166,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const List: Story = { args: { list: true } };
+export const ListStates: Story = { args: { list: true, projectStates: true } };
+export const ListRequiresTrust: Story = {
+  args: { list: true, stopped: true, requireTrust: true },
+};
+export const ListUnavailable: Story = {
+  args: { list: true, unavailable: true },
+};
 export const ListLoading: Story = {
   args: { list: true, empty: true, loading: true },
 };

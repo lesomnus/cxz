@@ -221,6 +221,7 @@ export const messages = {
   "Confirm cancel": "Confirm cancel",
   "Working…": "Working…",
   "Select all sessions": "Select all sessions",
+  "Select all projects": "Select all projects",
   "Select {name}": "Select {name}",
   State: "State",
   Alias: "Alias",

@@ -1,6 +1,11 @@
 import { projectId } from "#src/shared/api/project-id.ts";
 import { useId, useRef, useState } from "react";
-import { Section, SectionGroup, SectionLayout } from "@lesomnus/nox";
+import {
+  ActionMenu,
+  Section,
+  SectionGroup,
+  SectionLayout,
+} from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import { ContainerState } from "#gen/cxz/project_pb";
@@ -90,14 +95,17 @@ export function ProjectActions({
   sessions,
   erased,
   updated,
+  variant = "sections",
 }: {
   c: Connection;
   project: Project;
   sessions: Session[];
   erased: () => void;
   updated: (project: Project) => void;
+  variant?: "sections" | "menu";
 }) {
   const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
   const id = useId();
   const [target, setTarget] = useState<{ kind: Action; project: Project }>();
   // A start the configuration refused until someone says yes to it: the
@@ -125,47 +133,68 @@ export function ProjectActions({
   ];
   return (
     <>
-      <SectionLayout align="start" maxWidth="none">
-        <SectionGroup>
-          {actions.map((action) => {
-            const description = copy[action.kind].description;
-            const wordEnd = description.search(/\s/u);
-            const emphasisEnd = wordEnd < 0 ? description.length : wordEnd;
-            return (
-              <Section
-                as="button"
-                key={action.kind}
-                type="button"
-                effect="sparkle"
-                className={styles.action}
-                aria-label={copy[action.kind].label}
-                aria-describedby={`${id}-${action.kind}-description`}
-                disabled={action.disabled}
-                onClick={(event) => {
-                  trigger.current = event.currentTarget;
-                  setError("");
-                  setTarget({ kind: action.kind, project });
-                }}
-              >
-                <span className={styles.content}>
-                  <span className={styles.icon} aria-hidden="true">
-                    <SessionActionIcon action={icons[action.kind]} />
-                  </span>
-                  <span
-                    className={styles.description}
-                    id={`${id}-${action.kind}-description`}
-                  >
-                    <strong>{description.slice(0, emphasisEnd)}</strong>
-                    <span className={styles.detail}>
-                      {description.slice(emphasisEnd)}
+      {variant === "menu" ? (
+        <div ref={menu} className={styles.menu}>
+          <ActionMenu
+            label={t("Controls for {name}", { name: label(project) })}
+            triggerClassName={styles.menuTrigger}
+            motion={{ from: "top-right", effect: "reveal" }}
+            items={actions.map((action) => ({
+              label: copy[action.kind].label,
+              icon: <SessionActionIcon action={icons[action.kind]} />,
+              disabled: action.disabled,
+              danger: action.kind === "erase",
+              run: () => {
+                trigger.current = menu.current?.querySelector("button") ?? null;
+                setError("");
+                setTarget({ kind: action.kind, project });
+              },
+            }))}
+          />
+        </div>
+      ) : (
+        <SectionLayout align="start" maxWidth="none">
+          <SectionGroup>
+            {actions.map((action) => {
+              const description = copy[action.kind].description;
+              const wordEnd = description.search(/\s/u);
+              const emphasisEnd = wordEnd < 0 ? description.length : wordEnd;
+              return (
+                <Section
+                  as="button"
+                  key={action.kind}
+                  type="button"
+                  effect="sparkle"
+                  className={styles.action}
+                  aria-label={copy[action.kind].label}
+                  aria-describedby={`${id}-${action.kind}-description`}
+                  disabled={action.disabled}
+                  onClick={(event) => {
+                    trigger.current = event.currentTarget;
+                    setError("");
+                    setTarget({ kind: action.kind, project });
+                  }}
+                >
+                  <span className={styles.content}>
+                    <span className={styles.icon} aria-hidden="true">
+                      <SessionActionIcon action={icons[action.kind]} />
+                    </span>
+                    <span
+                      className={styles.description}
+                      id={`${id}-${action.kind}-description`}
+                    >
+                      <strong>{description.slice(0, emphasisEnd)}</strong>
+                      <span className={styles.detail}>
+                        {description.slice(emphasisEnd)}
+                      </span>
                     </span>
                   </span>
-                </span>
-              </Section>
-            );
-          })}
-        </SectionGroup>
-      </SectionLayout>
+                </Section>
+              );
+            })}
+          </SectionGroup>
+        </SectionLayout>
+      )}
       {target && (
         <ConfirmationDialog
           title={copy[target.kind].title}
