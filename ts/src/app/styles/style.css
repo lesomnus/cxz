@@ -112,7 +112,7 @@ summary {
 a.route-link {
   min-height: 32px;
   border: 0;
-  background: transparent;
+  background: var(--button-background, transparent);
   color: inherit;
   padding: 6px 10px;
   cursor: pointer;
@@ -123,7 +123,7 @@ a.route-link {
   text-decoration: none;
 }
 a.route-link:hover {
-  background: var(--hover);
+  background: var(--button-hover-background, var(--hover));
 }
 a.route-link:active > .button-content {
   transform: scale(var(--press-scale, 0.95));
@@ -244,6 +244,8 @@ header strong {
   font-size: 10px;
 }
 .resource-link.active {
+  --button-background: var(--selected);
+  --button-hover-background: var(--selected-hover);
   color: var(--shade-255);
 }
 .profile-menu {
