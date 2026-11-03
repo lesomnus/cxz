@@ -244,8 +244,8 @@ header strong {
   font-size: 10px;
 }
 .resource-link.active {
-  --button-background: var(--selected);
-  --button-hover-background: var(--selected-hover);
+  --button-background: var(--shade-65);
+  --button-hover-background: var(--shade-72);
   color: var(--shade-255);
 }
 .profile-menu {
