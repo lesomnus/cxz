@@ -48,6 +48,7 @@ editing known settings through the UI.
   "ui.theme": "dark",
   "terminal.copyOnSelect": true,
   "session.panel.hideStopped": false,
+  "session.panel.projectCollapse": true,
   "editor.indentSize": 2,
   "editor.insertSpaces": true,
   "editor.tabSize": 4,
@@ -71,6 +72,13 @@ survives reload and follows the usual cross-tab settings synchronization.
 Projects with no visible sessions are omitted from the session panel, including
 projects whose sessions are all hidden by this filter. They remain available in
 the Projects view and session creation dialog.
+
+The panel's **More → Enable project collapse** checked action controls
+`session.panel.projectCollapse` (default `true`). Turning it off expands every
+project and disables project-heading activation. Turning it back on restores the
+current page's previous expanded/collapsed choices. The preference survives reload
+and follows cross-tab synchronization; individual collapsed choices remain local
+to the current workspace view.
 
 ## Display language and lazy language packs
 

@@ -282,9 +282,13 @@ it("accepts persisted theme preferences and rejects unsupported values without o
   expect(store.snapshot().document["ui.theme"]).toBeUndefined();
 });
 
-it("persists composer display preferences and rejects non-boolean values without losing settings", () => {
+it("persists display preferences and rejects non-boolean values without losing settings", () => {
   const { store, file } = fixture('{"editor.tabSize":8}');
-  for (const key of ["composer.showControlCharacters", "composer.wordWrap"]) {
+  for (const key of [
+    "composer.showControlCharacters",
+    "composer.wordWrap",
+    "session.panel.projectCollapse",
+  ]) {
     for (const value of [true, false]) {
       store.set(key, value);
       expect(parseSettings(file()!)[key]).toBe(value);
