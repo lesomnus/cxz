@@ -10,6 +10,14 @@ import { t } from "#src/shared/i18n/i18n.ts";
 import { SessionMenu } from "./session-menu";
 import styles from "./session-menu.stories.module.css";
 
+function menuSession(state: string, agent: string) {
+  const session = storySession();
+  session.agent = agent;
+  session.status!.state = state;
+  session.status!.runId = "storybook-menu-run";
+  return session;
+}
+
 function MenuPreview({
   state,
   busy,
@@ -21,15 +29,11 @@ function MenuPreview({
   agent: "codex" | "claude";
   alwaysOpen: boolean;
 }) {
-  const [session, setSession] = useState(storySession);
+  const [session, setSession] = useState(() => menuSession(state, agent));
   const [terminal, setTerminal] = useState(false);
   const [action, setAction] = useState("");
   useEffect(() => {
-    const session = storySession();
-    session.agent = agent;
-    session.status!.state = state;
-    session.status!.runId = "storybook-menu-run";
-    setSession(session);
+    setSession(menuSession(state, agent));
     setTerminal(false);
     setAction("");
   }, [state, agent]);
