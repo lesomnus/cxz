@@ -110,9 +110,10 @@
   --project-row-hover-background: var(--ui-table-hover-background);
   --project-navigation-hover-background: color-mix(
     in srgb,
-    var(--project-row-hover-background) 98%,
+    var(--project-row-hover-background) 96%,
     var(--ui-shade-255)
   );
+  transition: background-color var(--ui-button-background-duration) ease-out;
 }
 .table tbody tr[data-selected] {
   --project-row-hover-background: var(--ui-table-selected-hover-background);
@@ -127,7 +128,7 @@
 .table tbody tr:hover {
   --project-navigation-background: color-mix(
     in srgb,
-    var(--project-row-hover-background) 87.5%,
+    var(--project-row-hover-background) 75%,
     var(--ui-shade-0)
   );
 }
