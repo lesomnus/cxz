@@ -27,6 +27,7 @@ import { ProjectActions } from "./project-actions";
 import { projectActivitySessions } from "./project-session-activity";
 import { useSessionActivity } from "./use-session-activity";
 import styles from "./project-table.module.css";
+import linkColors from "#src/shared/components/table-link-colors.module.css";
 
 export function ProjectTable({
   c,
@@ -126,16 +127,15 @@ export function ProjectTable({
         {projects.map((project) => {
           const active = activeSessions.get(key(project.id));
           const state = containerState(project);
+          const inactive =
+            state === ContainerState.ABSENT || state === ContainerState.STOPPED;
           const time = active && activity.get(active.runtimeId)?.time;
           return (
             <TableRow
               key={key(project.id)}
+              className={inactive ? undefined : linkColors.row}
               selected={selected.has(key(project.id))}
-              data-inactive={
-                state === ContainerState.ABSENT ||
-                state === ContainerState.STOPPED ||
-                undefined
-              }
+              data-inactive={inactive || undefined}
             >
               <TableCell className={styles.selectionCell}>
                 <Checkbox

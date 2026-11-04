@@ -29,6 +29,7 @@ import {
 } from "./session-table-controls";
 import controlStyles from "./session-table-controls.module.css";
 import styles from "./session-table.module.css";
+import linkColors from "#src/shared/components/table-link-colors.module.css";
 
 export function SessionTable({
   c,
@@ -219,7 +220,11 @@ export function SessionTable({
               const projectName =
                 projectResource?.name || projectResource?.alias || project;
               return (
-                <tr key={s.runtimeId} data-selected={checked || undefined}>
+                <tr
+                  key={s.runtimeId}
+                  className={linkColors.row}
+                  data-selected={checked || undefined}
+                >
                   <td className={styles.selectionCell}>
                     <Checkbox
                       className={styles.cellCheckbox}

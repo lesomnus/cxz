@@ -3,7 +3,6 @@
   --project-row-background: var(--ui-shade-20);
   --project-row-hover-lift: 12;
   --project-selected-row-hover-lift: 3;
-  --project-card-active-background: var(--ui-shade-0);
   --project-card-inactive-background: var(--ui-shade-17);
   --ui-table-hover-background: rgb(
     from var(--project-row-background) calc(r + var(--project-row-hover-lift))
@@ -67,8 +66,14 @@
   box-shadow: inset 0 -1px 0 var(--ui-table-row-border);
 }
 .projectLink.projectLink {
-  --button-background: var(--project-card-background);
-  --button-hover-background: var(--project-card-hover-background);
+  --button-background: var(
+    --table-link-background,
+    var(--project-card-background)
+  );
+  --button-hover-background: var(
+    --table-link-hover-background,
+    var(--project-card-hover-background)
+  );
   display: flex;
   align-items: center;
   width: 100%;
@@ -123,20 +128,8 @@
   text-align: center;
 }
 .table tbody tr {
-  --project-card-background: var(--project-card-active-background);
   --project-card-row-hover-lift: var(--project-row-hover-lift);
-  --project-card-row-hover-background: rgb(
-    from var(--project-card-background)
-      calc(r + var(--project-card-row-hover-lift))
-      calc(g + var(--project-card-row-hover-lift))
-      calc(b + var(--project-card-row-hover-lift))
-  );
   --project-row-hover-background: var(--ui-table-hover-background);
-  --project-card-hover-background: color-mix(
-    in srgb,
-    var(--project-row-hover-background) 92%,
-    var(--ui-shade-255)
-  );
   background: var(--project-row-background);
   transition: background-color var(--ui-button-background-duration) ease-out;
 }
@@ -146,12 +139,23 @@
 }
 .table tbody tr[data-inactive] {
   --project-card-background: var(--project-card-inactive-background);
+  --project-card-row-hover-background: rgb(
+    from var(--project-card-background)
+      calc(r + var(--project-card-row-hover-lift))
+      calc(g + var(--project-card-row-hover-lift))
+      calc(b + var(--project-card-row-hover-lift))
+  );
+  --project-card-hover-background: color-mix(
+    in srgb,
+    var(--project-row-hover-background) 92%,
+    var(--ui-shade-255)
+  );
 }
 .table tbody tr[data-inactive] .projectLink {
   --ui-muted: var(--ui-shade-140);
   color: var(--ui-shade-181);
 }
-.table tbody tr:hover .projectLink {
+.table tbody tr[data-inactive]:hover .projectLink {
   --button-background: var(--project-card-row-hover-background);
 }
 .table .empty {
