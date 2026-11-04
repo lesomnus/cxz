@@ -69,7 +69,6 @@ export const resourcePaths = {
   tasks: "/c/$connection/task",
   accounts: "/c/$connection/account",
   search: "/c/$connection/search",
-  memory: "/c/$connection/memory",
   auxiliary: "/c/$connection/auxiliary",
 } as const;
 
@@ -95,6 +94,17 @@ export function projectLocation(project?: string) {
         params: { ...selfConnection, projectId: project },
       }
     : resourceLocation("projects");
+}
+export function memoryLocation(project: string, memory?: string) {
+  return memory
+    ? {
+        to: "/c/$connection/project/$projectId/memory/$memoryId" as const,
+        params: { ...selfConnection, projectId: project, memoryId: memory },
+      }
+    : {
+        to: "/c/$connection/project/$projectId/memory" as const,
+        params: { ...selfConnection, projectId: project },
+      };
 }
 export function accountLocation(account?: string) {
   return account

@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import { parse } from "@lesomnus/payday/pdid";
 import {
   matchesResource,
+  memoryLocation,
   resourceHandle,
   resourceRef,
   sessionLocation,
@@ -81,4 +82,19 @@ test("old JSON-quoted sequence links retain the exact sequence value", async () 
   expect(parseRouteSearch("?seq=%2218446744073709551615%22").seq).toBe(
     "18446744073709551615",
   );
+});
+
+test("Memory document links carry stable project and document IDs", () => {
+  expect(memoryLocation(id)).toEqual({
+    to: "/c/$connection/project/$projectId/memory",
+    params: { connection: "_", projectId: id },
+  });
+  expect(memoryLocation(id, "00000000-0000-8000-8007-000000000200")).toEqual({
+    to: "/c/$connection/project/$projectId/memory/$memoryId",
+    params: {
+      connection: "_",
+      projectId: id,
+      memoryId: "00000000-0000-8000-8007-000000000200",
+    },
+  });
 });

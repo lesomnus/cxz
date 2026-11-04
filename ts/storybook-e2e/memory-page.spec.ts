@@ -1,6 +1,19 @@
 import { test, expect, type Page } from "@playwright/test";
-const open = (p: Page, story = "default") =>
-  p.goto(`/iframe.html?id=pages-memory--${story}&viewMode=story`);
+const open = async (p: Page, story = "default", select = true) => {
+  await p.goto(`/iframe.html?id=pages-memory--${story}&viewMode=story`);
+  if (
+    select &&
+    !["empty", "unavailable", "loading", "document"].includes(story)
+  ) {
+    const entry = list(p)
+      .getByRole("link", {
+        name:
+          story === "migrated-documents" ? /runtime.md/ : /Architecture notes/,
+      })
+      .first();
+    await entry.click();
+  }
+};
 const list = (p: Page) =>
   p.getByRole("region", { name: "Project memories", exact: true });
 const doc = (p: Page) =>
@@ -32,10 +45,10 @@ test("flat memories open directly without an editing-session context", async ({
     page.getByRole("button", { name: "Edit", exact: true }),
   ).toBeVisible();
   await expect(
-    list(page).getByRole("button", { name: /Architecture notes/ }),
-  ).toHaveAttribute("aria-pressed", "true");
+    list(page).getByRole("link", { name: /Architecture notes/ }),
+  ).toHaveAttribute("aria-current", "page");
   await list(page)
-    .getByRole("button", { name: /Handoff notes/ })
+    .getByRole("link", { name: /Handoff notes/ })
     .click();
   await expect(
     page.getByRole("heading", { name: "Handoff", exact: true }),
@@ -50,11 +63,14 @@ test("project selection scopes documents", async ({ page }) => {
   await page
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
+  await list(page)
+    .getByRole("link", { name: /API notes/ })
+    .click();
   await expect(
     page.getByRole("heading", { name: "API", exact: true }),
   ).toBeVisible();
   await expect(
-    list(page).getByRole("button", { name: /Architecture notes/ }),
+    list(page).getByRole("link", { name: /Architecture notes/ }),
   ).toHaveCount(0);
 });
 test("an empty project creates and saves its first Memory", async ({
@@ -73,7 +89,7 @@ test("an empty project creates and saves its first Memory", async ({
   await source(page, "# First decision");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    list(page).getByRole("button", { name: /First decision/ }),
+    list(page).getByRole("link", { name: /First decision/ }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "First decision", exact: true }),
@@ -108,7 +124,7 @@ test("edits are guarded on project changes and metadata saves preserve body revi
     doc(page).getByText("Revision 1", { exact: true }),
   ).toBeVisible();
   await expect(
-    list(page).getByRole("button", { name: /Renamed notes/ }),
+    list(page).getByRole("link", { name: /Renamed notes/ }),
   ).toBeVisible();
 });
 test("body edits create versions, show diff and restore as another version", async ({
@@ -179,9 +195,15 @@ test("label filters, trash restoration and purge use the flat resource", async (
     .getByRole("textbox", { name: "Filter labels", exact: true })
     .fill("topic=design");
   await page.getByRole("button", { name: "Search", exact: true }).click();
+  await list(page)
+    .getByRole("link", { name: /Architecture notes/ })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
+  await list(page)
+    .getByRole("link", { name: /Architecture notes/ })
+    .click();
   await page
     .getByRole("button", { name: "Memory actions", exact: true })
     .click();
@@ -189,9 +211,12 @@ test("label filters, trash restoration and purge use the flat resource", async (
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(
-    list(page).getByRole("button", { name: /Architecture notes/ }),
+    list(page).getByRole("link", { name: /Architecture notes/ }),
   ).toHaveCount(0);
   await page.getByRole("radio", { name: "Trash", exact: true }).check();
+  await list(page)
+    .getByRole("link", { name: /Architecture notes/ })
+    .click();
   await expect(
     doc(page).getByRole("button", { name: "Restore", exact: true }),
   ).toBeVisible();
@@ -201,8 +226,11 @@ test("label filters, trash restoration and purge use the flat resource", async (
   ).toBeVisible();
   await page.getByRole("radio", { name: "Memories", exact: true }).check();
   await expect(
-    list(page).getByRole("button", { name: /Architecture notes/ }),
+    list(page).getByRole("link", { name: /Architecture notes/ }),
   ).toBeVisible();
+  await list(page)
+    .getByRole("link", { name: /Architecture notes/ })
+    .click();
   await page
     .getByRole("button", { name: "Memory actions", exact: true })
     .click();
@@ -212,6 +240,9 @@ test("label filters, trash restoration and purge use the flat resource", async (
     .getByRole("button", { name: "Confirm", exact: true })
     .click();
   await page.getByRole("radio", { name: "Trash", exact: true }).check();
+  await list(page)
+    .getByRole("link", { name: /Architecture notes/ })
+    .click();
   await page.getByRole("button", { name: "Purge", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText("all its versions");
   await page
@@ -223,7 +254,7 @@ test("label filters, trash restoration and purge use the flat resource", async (
   ).toBeVisible();
   await page.getByRole("radio", { name: "Memories", exact: true }).check();
   await expect(
-    list(page).getByRole("button", { name: /Architecture notes/ }),
+    list(page).getByRole("link", { name: /Architecture notes/ }),
   ).toHaveCount(0);
   await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
 });
@@ -311,7 +342,7 @@ test("reading and source inspection stay separate from editing, and Cancel prese
     page.getByRole("textbox", { name: "Memory name", exact: true }),
   ).toHaveCount(0);
   await expect(
-    list(page).getByRole("button", { name: /Discarded name/ }),
+    list(page).getByRole("link", { name: /Discarded name/ }),
   ).toHaveCount(0);
 });
 
@@ -322,14 +353,14 @@ test("migrated documents remain compact and preserve provenance on metadata edit
   await open(page, "migrated-documents");
   await expect(
     list(page)
-      .getByRole("button", { name: /runtime.md/ })
+      .getByRole("link", { name: /runtime.md/ })
       .first(),
   ).toBeVisible();
   await expect(list(page)).not.toContainText("legacy.");
   await expect(
     list(page)
       .getByRole("navigation", { name: "Memories", exact: true })
-      .getByRole("button"),
+      .getByRole("link"),
   ).toHaveCount(26);
   await page.getByText("Document details", { exact: true }).click();
   await expect(
@@ -371,7 +402,7 @@ test("version history closes on document selection instead of showing the previo
     page.getByRole("button", { name: "r1", exact: true }),
   ).toBeVisible();
   await list(page)
-    .getByRole("button", { name: /Handoff notes/ })
+    .getByRole("link", { name: /Handoff notes/ })
     .click();
   const history = doc(page)
     .locator("details")
@@ -414,4 +445,38 @@ test("restoring a version explicitly confirms replacement of a dirty draft", asy
   await expect(
     page.getByRole("button", { name: "Save", exact: true }),
   ).toBeEnabled();
+});
+
+test("the project collection shows links without opening a document", async ({
+  page,
+}) => {
+  await open(page, "default", false);
+  const entry = list(page).getByRole("link", { name: /Architecture notes/ });
+  await expect(entry).toHaveAttribute(
+    "href",
+    /\/c\/_\/project\/[\da-f-]{36}\/memory\/[\da-f-]{36}$/,
+  );
+  await expect(doc(page)).toHaveCount(0);
+  await entry.click();
+  await expect(
+    page.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+  await expect(entry).toHaveAttribute("aria-current", "page");
+});
+test("a document route opens its body directly", async ({ page }) => {
+  await open(page, "document");
+  await expect(
+    page.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+});
+test("reselecting the open document preserves its draft", async ({ page }) => {
+  await open(page);
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
+  await name.fill("Keep this name");
+  await list(page)
+    .getByRole("link", { name: /Architecture notes/ })
+    .click();
+  await expect(name).toHaveValue("Keep this name");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });

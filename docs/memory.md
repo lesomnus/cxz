@@ -21,7 +21,11 @@ Copying never moves credentials.
 
 A Memory is one Markdown document in a project, with an optional owner session and
 labels. A session can publish any number of memories. Published documents survive
-session purge. The web Memory page lists documents directly; selecting an editing
+session purge. Each web document has an address at
+`/c/_/project/{project ID}/memory/{memory ID}` using UUIDs; the parent path
+`/c/_/project/{project ID}/memory` shows the project document list. Reload and
+browser history restore selection, and links can open in new tabs.
+The web Memory page lists documents directly; selecting an editing
 session is unnecessary. Reading is the default; Edit opens name/label fields and
 Markdown source with Save/Cancel. Source without Edit is read only. The document
 menu offers copying, reload and trash; history and migration metadata are separate
