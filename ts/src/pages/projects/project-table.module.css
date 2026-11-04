@@ -1,6 +1,10 @@
 .table {
   --project-name-width: 90px;
-  --project-inactive-background: #0f0f0f;
+  --project-navigation-hover-background: color-mix(
+    in srgb,
+    var(--ui-table-hover-background) 87.5%,
+    var(--ui-shade-0)
+  );
   --ui-table-row-height: 44px;
   --ui-table-row-gap: 0px;
   --ui-table-header-height: 28px;
@@ -52,11 +56,8 @@
   box-shadow: inset 0 -1px 0 var(--ui-table-row-border);
 }
 .projectLink.projectLink {
-  --button-background: var(--project-navigation-background, var(--ui-shade-32));
-  --button-hover-background: var(
-    --project-navigation-hover-background,
-    var(--ui-button-hover-background)
-  );
+  --button-background: var(--project-navigation-background, var(--ui-shade-0));
+  --button-hover-background: var(--project-navigation-hover-background);
   display: flex;
   align-items: center;
   width: 100%;
@@ -110,32 +111,21 @@
   color: var(--ui-muted);
   text-align: center;
 }
-.table tbody tr:hover {
-  --project-navigation-background: var(--ui-shade-40);
-}
 .table tbody tr[data-selected] {
-  --project-navigation-background: var(--ui-shade-60);
-  --project-navigation-hover-background: var(--ui-shade-72);
+  --project-navigation-hover-background: color-mix(
+    in srgb,
+    var(--ui-table-selected-hover-background) 87.5%,
+    var(--ui-shade-0)
+  );
 }
 .table tbody tr[data-inactive] {
-  --project-navigation-background: var(--project-inactive-background);
-  --project-navigation-hover-background: var(--ui-shade-40);
+  --project-navigation-background: var(--ui-shade-17);
 }
 .table tbody tr[data-inactive] .projectLink {
   --ui-muted: var(--ui-shade-140);
   color: var(--ui-shade-181);
 }
-.table tbody tr[data-inactive]:hover {
-  --project-navigation-background: var(--ui-shade-36);
-}
-.table tbody tr[data-selected][data-inactive] {
-  --project-navigation-background: var(--ui-shade-56);
-  --project-navigation-hover-background: var(--ui-shade-65);
-}
 .table .empty {
   color: var(--ui-muted);
   padding: var(--ui-dialog-padding);
-}
-:global(:root:is([data-theme="light"], [data-ui-theme="light"])) .table {
-  --project-inactive-background: var(--ui-shade-28);
 }
