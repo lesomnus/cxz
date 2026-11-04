@@ -11,6 +11,7 @@ function Preview({
   loading = false,
   noSessions = false,
   conflict = false,
+  migrated = false,
 } = {}) {
   const [router] = useState(() => {
     const f = memoryFixture({
@@ -18,6 +19,7 @@ function Preview({
       fail,
       delay: loading ? 60000 : 0,
       conflict,
+      migrated,
     });
     return createWorkspaceRouter(
       {
@@ -58,3 +60,5 @@ export const Unavailable: Story = { args: { fail: true } };
 export const Loading: Story = { args: { loading: true } };
 export const NoSessions: Story = { args: { noSessions: true } };
 export const RevisionConflict: Story = { args: { conflict: true } };
+
+export const MigratedDocuments: Story = { args: { migrated: true } };

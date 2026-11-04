@@ -18,6 +18,7 @@ export function memoryFixture({
   fail = false,
   delay = 0,
   conflict = false,
+  migrated = false,
 } = {}) {
   const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
@@ -81,11 +82,36 @@ export function memoryFixture({
     return m;
   }
   if (!empty) {
-    add(
+    const primary = add(
       "Architecture notes",
       "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
     );
     add("Handoff notes", "# Handoff\n\nReview open changes.");
+    primary.dateUpdated = stamp();
+  }
+  if (migrated && !empty) {
+    for (let i = 0; i < 24; i++) {
+      const filename = [
+        "decisions.md",
+        "overview.md",
+        "web-ui.md",
+        "runtime.md",
+      ][i % 4]!;
+      const m = add(
+        filename,
+        `# Project notes ${i + 1}\n\nA migrated document is still one editable Memory.\n\n## Design decisions\n\n- Keep project knowledge available after its session stops.\n- Organize documents with labels.\n\n\`\`\`typescript\nconst memory = { project: 'web', revision: 1 };\n\`\`\``,
+        0,
+        sessions[i % 2],
+      );
+      m.labels = {
+        "legacy.collection": `session-${String(i).padStart(24, "0")}`,
+        "legacy.collection-name": `Session ${String(i).repeat(24)}`,
+        "legacy.filename": filename,
+        "legacy.agent": i % 2 ? "claude" : "codex",
+        ...(i % 3 === 0 ? { topic: "design" } : {}),
+      };
+      if (i % 4 === 0) m.ownerSession = key(projectFixtureId(500 + i));
+    }
   }
   add("API notes", "# API\n\nAPI-specific shared memory.", 1);
   function find(ref?: {
