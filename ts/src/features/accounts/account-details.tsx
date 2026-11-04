@@ -29,6 +29,12 @@ import {
 } from "./account-data";
 import { LoginPanel } from "./login-panel";
 import { AccountQuotaSquare } from "./account-quota-square";
+import { key } from "@lesomnus/payday/store";
+import {
+  ACCOUNT_INFO_TTL,
+  ACCOUNT_LIST_KEY,
+  accountReadPrefix,
+} from "#src/shared/api/read-cache.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 import accountStyles from "./accounts.module.css";
 export function AccountDetails({
@@ -39,6 +45,8 @@ export function AccountDetails({
   sessionsLoading,
   erased,
   saved,
+  refreshMetadata,
+  metadataLoading = false,
 }: {
   c: Connection;
   account: Account;
@@ -47,7 +55,14 @@ export function AccountDetails({
   sessionsLoading: boolean;
   erased: () => void;
   saved: (account: Account) => void;
+  refreshMetadata?: () => void;
+  metadataLoading?: boolean;
 }) {
+  const identity = account.id.length ? key(account.id) : account.alias;
+  const cachePrefix = accountReadPrefix(identity);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [quotaLoading, setQuotaLoading] = useState(false);
   const editable = (field: AccountField, label: string) => (
     <div className={accountStyles.editable}>
       <EditableValue
@@ -57,6 +72,7 @@ export function AccountDetails({
         validate={(value) => validateAccountField(field, value)}
         save={async (value) => {
           const updated = await editAccount(c.accounts, account, field, value);
+          c.reads.invalidatePrefix(cachePrefix);
           c.store.apply("cxz.Account", [{ id: updated.id, value: updated }]);
           saved(updated);
         }}
@@ -65,8 +81,21 @@ export function AccountDetails({
   );
   const status = useRemote(
     (signal) => accountStatus(c, account.alias, signal),
-    [c, account.alias],
+    [c, identity, account.alias],
+    {
+      cache: {
+        store: c.reads,
+        key: `${cachePrefix}auth`,
+        ttl: ACCOUNT_INFO_TTL,
+      },
+    },
   );
+  function refreshAccount() {
+    c.reads.invalidatePrefix(cachePrefix);
+    refreshMetadata?.();
+    status.reload();
+    setRefreshVersion((version) => version + 1);
+  }
   const [login, setLogin] = useState(false),
     [logout, setLogout] = useState(false),
     [erase, setErase] = useState(false),
@@ -206,7 +235,7 @@ export function AccountDetails({
                 target={{ account: account.alias }}
                 complete={() => {
                   setLogin(false);
-                  status.reload();
+                  refreshAccount();
                 }}
                 cancel={() => {
                   setLogin(false);
@@ -220,6 +249,9 @@ export function AccountDetails({
             account={account.alias}
             agent={account.agent}
             sessions={sessions}
+            identity={identity}
+            refreshVersion={refreshVersion}
+            onLoadingChange={setQuotaLoading}
           />
           <Section
             as="button"
@@ -232,11 +264,26 @@ export function AccountDetails({
           >
             <SessionActionIcon action="erase" />
           </Section>
+          <Section
+            as="button"
+            className={accountStyles.refreshAction}
+            aria-label={`Refresh account ${account.name || account.alias}`}
+            loading={
+              metadataLoading || status.loading || usageLoading || quotaLoading
+            }
+            onClick={refreshAccount}
+          >
+            <SessionActionIcon action="restart" />
+          </Section>
         </SectionGroup>
         <UsageReport
           c={c}
           account={account.alias}
+          accountId={account.id}
           className={accountStyles.usageSection}
+          hideRefresh
+          refreshVersion={refreshVersion}
+          onLoadingChange={setUsageLoading}
         />
       </SectionGroup>
       {erase && (
@@ -260,6 +307,8 @@ export function AccountDetails({
                   : accountRef(account.alias),
                 { timeoutMs: 600000 },
               );
+              c.reads.invalidatePrefix(cachePrefix);
+              c.reads.invalidate(ACCOUNT_LIST_KEY);
               didErase.current = true;
               return true;
             } catch (error) {
@@ -292,7 +341,7 @@ export function AccountDetails({
             await c.accounts.logout(accountRef(account.alias), {
               timeoutMs: 10000,
             });
-            status.reload();
+            refreshAccount();
             return true;
           }}
         >

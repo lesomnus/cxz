@@ -7,6 +7,8 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "#src/shared/components/resource-surface.module.css";
 import usageStyles from "./usage-report.module.css";
 import { UsageActivity } from "./usage-activity";
+import { key } from "@lesomnus/payday/store";
+import { accountReadPrefix, USAGE_TTL } from "#src/shared/api/read-cache.ts";
 import {
   usageActivityRange,
   usageDateAge,
@@ -25,13 +27,21 @@ export function UsageReport({
   session = "",
   project = "",
   account = "",
+  accountId,
   className,
+  refreshVersion = 0,
+  hideRefresh = false,
+  onLoadingChange,
 }: {
   c: Connection;
   session?: string;
   project?: string;
   account?: string;
+  accountId?: Uint8Array;
   className?: string;
+  refreshVersion?: number;
+  hideRefresh?: boolean;
+  onLoadingChange?: (loading: boolean) => void;
 }) {
   const { locale } = useLocale();
   const [weeks, setWeeks] = useState<number>();
@@ -44,18 +54,28 @@ export function UsageReport({
     const timer = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(timer);
   }, []);
-  const scope = JSON.stringify([c.clientId, session, project, account]);
+  const identity = accountId?.length ? key(accountId) : account;
+  const cachePrefix = identity
+    ? `${accountReadPrefix(identity)}usage/`
+    : `usage/${encodeURIComponent(JSON.stringify([session, project]))}/`;
+  const scope = JSON.stringify([c.clientId, cachePrefix]);
   const request = {
     session: session ? ref(session) : undefined,
     project: !session && project ? ref(project) : undefined,
-    account: account
-      ? { key: { case: "alias" as const, value: account } }
+    account: identity
+      ? accountId?.length
+        ? { key: { case: "id" as const, value: accountId } }
+        : { key: { case: "alias" as const, value: account } }
       : undefined,
   };
   const stats = useRemote(
     (signal) =>
       c.sessions.conversationStats(request, { signal, timeoutMs: 20000 }),
-    [c, session, project, account],
+    [c, session, project, identity],
+    {
+      cache: { store: c.reads, key: `${cachePrefix}recent`, ttl: USAGE_TTL },
+      refresh: refreshVersion,
+    },
   );
   const history = useRemote(
     async (signal) => {
@@ -65,8 +85,23 @@ export function UsageReport({
         { signal, timeoutMs: 20000 },
       );
     },
-    [c, session, project, account, weeks, stats.data],
+    [c, session, project, identity, weeks, stats.data],
+    {
+      enabled: !!weeks && !!stats.data && !stats.loading,
+      cache:
+        weeks && stats.data
+          ? {
+              store: c.reads,
+              key: `${cachePrefix}history/${weeks}/${stats.data.toMs}`,
+              ttl: USAGE_TTL,
+            }
+          : undefined,
+    },
   );
+  useEffect(() => setNow(Date.now()), [refreshVersion]);
+  useEffect(() => {
+    onLoadingChange?.(stats.loading || history.loading);
+  }, [onLoadingChange, stats.loading, history.loading]);
   const today = new Date(now).toISOString().slice(0, 10);
   const selected = selection?.scope === scope ? selection.day : undefined;
   const date = selected?.date ?? today;
@@ -98,29 +133,32 @@ export function UsageReport({
             </span>
           </Popover>
         )}
-        <Button
-          className={usageStyles.refresh}
-          aria-label="Refresh"
-          loading={stats.loading || history.loading}
-          onClick={() => {
-            setNow(Date.now());
-            stats.reload();
-          }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        {!hideRefresh && (
+          <Button
+            className={usageStyles.refresh}
+            aria-label="Refresh"
+            loading={stats.loading || history.loading}
+            onClick={() => {
+              c.reads.invalidatePrefix(cachePrefix);
+              setNow(Date.now());
+              stats.reload();
+            }}
           >
-            <path d="M13 7a5 5 0 1 0-.8 3.7M13 3v4H9" />
-          </svg>
-        </Button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M13 7a5 5 0 1 0-.8 3.7M13 3v4H9" />
+            </svg>
+          </Button>
+        )}
       </div>
       <section aria-label="Recent 30 days" className={usageStyles.period}>
         <strong className={usageStyles.periodTitle}>Recent 30 days</strong>

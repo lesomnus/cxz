@@ -177,7 +177,17 @@ for (const width of [1280, 390]) {
     ).toHaveCSS("border-radius", "16px");
     expect(authBounds.height).toBe(64);
     expect(authBounds.x + authBounds.width).toBeLessThan(eraseBounds.x);
-    expect(eraseBounds.x + eraseBounds.width).toBe(
+    const refreshBounds = (await work
+      .getByRole("button", {
+        name: "Refresh account Work",
+        exact: true,
+      })
+      .boundingBox())!;
+    expect(refreshBounds.width).toBe(64);
+    expect(refreshBounds.height).toBe(64);
+    expect(eraseBounds.x + eraseBounds.width).toBeLessThan(refreshBounds.x);
+    expect(refreshBounds.y).toBe(authBounds.y);
+    expect(refreshBounds.x + refreshBounds.width).toBe(
       usageBounds.x + usageBounds.width,
     );
     expect(eraseBounds.y).toBe(authBounds.y);
@@ -385,13 +395,23 @@ for (const width of [1280, 390]) {
     ).toHaveCount(0);
     const boxes = await Promise.all(row.map((item) => item.boundingBox()));
     for (let index = 1; index < boxes.length; index++) {
-      expect(boxes[index]!.x).toBeGreaterThanOrEqual(
-        boxes[index - 1]!.x + boxes[index - 1]!.width,
-      );
-      expect(boxes[index]!.y + boxes[index]!.height / 2).toBeCloseTo(
-        boxes[0]!.y + boxes[0]!.height / 2,
-        0,
-      );
+      if (width < 700) {
+        expect(boxes[index]!.y).toBeGreaterThanOrEqual(
+          boxes[0]!.y + boxes[0]!.height,
+        );
+        expect(boxes[index]!.x + boxes[index]!.width / 2).toBeCloseTo(
+          boxes[0]!.x + boxes[0]!.width / 2,
+          0,
+        );
+      } else {
+        expect(boxes[index]!.x).toBeGreaterThanOrEqual(
+          boxes[index - 1]!.x + boxes[index - 1]!.width,
+        );
+        expect(boxes[index]!.y + boxes[index]!.height / 2).toBeCloseTo(
+          boxes[0]!.y + boxes[0]!.height / 2,
+          0,
+        );
+      }
     }
     const main = (await page.getByRole("main").boundingBox())!;
     const card = (await work.boundingBox())!;

@@ -11,6 +11,10 @@ import resourceStyles from "#src/shared/components/resource-surface.module.css";
 import styles from "./accounts.module.css";
 import { matchesResource } from "#src/shared/navigation/resource-route.ts";
 import { key } from "@lesomnus/payday/store";
+import {
+  ACCOUNT_INFO_TTL,
+  ACCOUNT_LIST_KEY,
+} from "#src/shared/api/read-cache.ts";
 export function AccountsView({
   c,
   selected,
@@ -26,7 +30,9 @@ export function AccountsView({
   projects?: Project[];
   sessionsLoading?: boolean;
 }) {
-  const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
+  const accounts = useRemote((signal) => listAccounts(c, signal), [c], {
+    cache: { store: c.reads, key: ACCOUNT_LIST_KEY, ttl: ACCOUNT_INFO_TTL },
+  });
   const [adding, setAdding] = useState(false);
   const content = useRef<HTMLDivElement>(null);
   const add = useRef<HTMLButtonElement>(null);
@@ -87,6 +93,8 @@ export function AccountsView({
                   projects={projects}
                   sessions={sessionsForAccount(account, sessions)}
                   sessionsLoading={sessionsLoading}
+                  refreshMetadata={accounts.reload}
+                  metadataLoading={accounts.loading}
                   saved={(updated) => {
                     accounts.reload();
                     if (

@@ -32,6 +32,7 @@ import { ConversationCache } from "#src/features/session/model/conversation-cach
 import { SessionAttention } from "#src/features/session/model/session-attention.ts";
 import { rpcFetch } from "./stream-fetch";
 import { uploadFetch } from "./upload-fetch";
+import { ReadCache } from "./read-cache";
 import {
   publicUUID,
   rpcDiagnostics,
@@ -41,6 +42,7 @@ import {
 // conversation cache are persisted in localStorage. Drafts use tab-local storage.
 export class Connection {
   readonly clientId = crypto.randomUUID();
+  readonly reads = new ReadCache();
   readonly transport: Transport;
   readonly store;
   readonly queries;
@@ -140,6 +142,7 @@ export class Connection {
     });
   }
   dispose() {
+    this.reads.clear();
     this.taskCatalog.dispose();
     this.conversations.dispose();
     this.attention.dispose();

@@ -21,6 +21,7 @@ export function resourceFixture({
   longAccountDetails = false,
   editFailures = 0,
   quotaRemaining = 64,
+  onRead,
 }: {
   eraseFailures?: number;
   usageDelayMs?: number;
@@ -28,6 +29,7 @@ export function resourceFixture({
   longAccountDetails?: boolean;
   editFailures?: number;
   quotaRemaining?: number | null;
+  onRead?: (kind: "accounts" | "auth" | "usage" | "quota") => void;
 } = {}) {
   const accounts: Pick<
     Account,
@@ -106,7 +108,10 @@ export function resourceFixture({
   ];
   const transport = createRouterTransport((router) => {
     router.service(AccountService, {
-      list: () => ({ items: accounts }),
+      list: () => {
+        onRead?.("accounts");
+        return { items: accounts };
+      },
       get: (request) => {
         const account = accounts.find((a) =>
           request.ref?.key.case === "id"
@@ -176,8 +181,10 @@ export function resourceFixture({
         accounts.push(account);
         return account;
       },
-      status: (ref) =>
-        authStatus(ref.key.case === "alias" ? ref.key.value : ""),
+      status: (ref) => {
+        onRead?.("auth");
+        return authStatus(ref.key.case === "alias" ? ref.key.value : "");
+      },
       logout: (ref) => {
         const alias = ref.key.case === "alias" ? ref.key.value : "";
         const status = authStatus(alias);
@@ -227,6 +234,7 @@ export function resourceFixture({
     });
     router.service(SessionService, {
       transcript: (request) => {
+        onRead?.("quota");
         const id = request.ref?.key.value;
         if (
           quotaRemaining === null ||
@@ -263,6 +271,7 @@ export function resourceFixture({
         };
       },
       conversationStats: async (request) => {
+        onRead?.("usage");
         if (usageDelayMs)
           await new Promise((resolve) => setTimeout(resolve, usageDelayMs));
         if (usageFailures > 0) {

@@ -68,7 +68,9 @@ for (const width of [1280, 390]) {
         .locator("tbody tr"),
     ).toHaveCount(2);
 
-    await usage.getByRole("button", { name: "Refresh", exact: true }).click();
+    await work
+      .getByRole("button", { name: "Refresh account Work", exact: true })
+      .click();
     await expect(activity).toHaveAttribute("aria-busy", "true");
     expect(await panels(work)).toEqual(pending);
     await page.clock.fastForward(1500);
