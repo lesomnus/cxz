@@ -16,6 +16,41 @@ async function readCount(page: Page, kind: string) {
   );
 }
 
+test("cached values paint dashes instead of blanks before initial motion", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=accounts-cache--default&viewMode=story");
+  await ready(page);
+  await expect(page.locator("[data-changing]")).toHaveCount(0);
+  await page.clock.install();
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(new Date(now + 50));
+  const click = (name: string) =>
+    page
+      .getByRole("button", { name, exact: true })
+      .evaluate((node: HTMLButtonElement) => node.click());
+  await click("Leave accounts");
+  await click("Open accounts");
+  const work = page.locator('[data-account="work"]');
+  const name = work.getByRole("button", {
+    name: "Edit Display name",
+    exact: true,
+  });
+  const input = work
+    .getByRole("region", { name: "Recent 30 days", exact: true })
+    .getByRole("img", { name: "4800", exact: true });
+  const outgoing = async (value: import("@playwright/test").Locator) =>
+    value
+      .locator("[data-changing]")
+      .evaluateAll((cells) =>
+        cells.map((cell) => cell.children[1].textContent).join(""),
+      );
+  await expect(name.locator("[data-changing]")).toHaveCount(4);
+  await expect(input.locator("[data-changing]")).toHaveCount(5);
+  expect(await outgoing(name)).toBe("----");
+  expect(await outgoing(input)).toBe("----·");
+});
+
 test("first loads retain compact placeholders and dates stay static", async ({
   page,
 }) => {

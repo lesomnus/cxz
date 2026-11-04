@@ -86,6 +86,9 @@ export function AnimatedValue({
     <AnimatedText
       {...props}
       {...useValueMotion(enabled)}
+      initialValue={
+        props.initialValue ?? "-".repeat(Array.from(String(props.value)).length)
+      }
       className={`${styles.value} ${className}`}
     />
   );
