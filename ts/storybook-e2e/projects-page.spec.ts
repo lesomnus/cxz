@@ -283,6 +283,53 @@ test("inactive project cards are darker, names stay bounded, and state descripti
   await expect(page.getByRole("tooltip")).toBeVisible();
 });
 
+test("selecting a hovered inactive project brightens both row-aware cards", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--list-requires-trust&viewMode=story",
+  );
+  const row = page
+    .getByRole("table", { name: "Projects", exact: true })
+    .locator("tbody tr")
+    .first();
+  const cards = row.getByRole("link");
+  await expect(cards).toHaveCount(2);
+  const tones = () =>
+    cards.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const ctx = document.createElement("canvas").getContext("2d")!;
+        ctx.fillStyle = getComputedStyle(node).backgroundColor;
+        ctx.fillRect(0, 0, 1, 1);
+        return ctx.getImageData(0, 0, 1, 1).data[0]!;
+      }),
+    );
+  const settle = () =>
+    row.evaluate(async (node) => {
+      await Promise.all(
+        node
+          .getAnimations({ subtree: true })
+          .filter((a) => a instanceof CSSTransition)
+          .map((a) => a.finished.catch(() => {})),
+      );
+    });
+  await row.locator("td").nth(4).hover();
+  await settle();
+  const before = await tones();
+  const checkbox = row.getByRole("checkbox");
+  await checkbox.focus();
+  await checkbox.press("Space");
+  await expect(row).toHaveAttribute("data-selected", "true");
+  await expect
+    .poll(async () =>
+      (await tones()).every((value, index) => value > before[index]!),
+    )
+    .toBe(true);
+  await checkbox.press("Space");
+  await expect(row).not.toHaveAttribute("data-selected", "true");
+  await expect.poll(tones).toEqual(before);
+});
+
 test("header actions confirm all eligible checked projects and retain only failures for retry", async ({
   page,
 }) => {
