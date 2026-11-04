@@ -157,6 +157,31 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+it("publishes unread completions separately from questions and errors, even if the badge is already visible", async () => {
+  const f = fixture();
+  f.add(1, "session.question");
+  const tracker = f.tracker();
+  await f.settled();
+  await vi.waitFor(() => expect(tracker.snapshot().has("one")).toBe(true));
+  expect(tracker.completedSnapshot().size).toBe(0);
+  const changed = vi.fn();
+  const stop = tracker.subscribe(changed);
+  f.add(2, "session.failed");
+  f.invalidate();
+  await vi.waitFor(() => expect(tracker.errorSnapshot().has("one")).toBe(true));
+  expect(tracker.completedSnapshot().size).toBe(0);
+  changed.mockClear();
+  f.add(3, "session.completed");
+  f.invalidate();
+  await vi.waitFor(() =>
+    expect(tracker.completedSnapshot().has("one")).toBe(true),
+  );
+  expect(changed).toHaveBeenCalled();
+  tracker.setReading("one", 3n);
+  expect(tracker.completedSnapshot().size).toBe(0);
+  stop();
+});
+
 it("clears badges synchronously before ReadState or MarkRead and preserves new unread arrivals", async () => {
   const f = fixture();
   f.add(9, "session.failed");

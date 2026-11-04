@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { key } from "@lesomnus/payday/store";
 import {
-  CompactNumber,
   Table,
   TableHeader,
   TableBody,
@@ -9,19 +8,25 @@ import {
   TableHead,
   TableCell,
 } from "@lesomnus/nox";
-import type { Project } from "#gen/cxz/project_pb";
+import { ContainerState, type Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
+import { RelativeTime } from "#src/shared/components/date-time.tsx";
+import { SessionActivityDots } from "#src/features/session/components/session-activity-dots.tsx";
+import { isSessionWorking } from "#src/features/session/components/session-activity.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
   projectLocation,
   resourceHandle,
+  sessionLocation,
 } from "#src/shared/navigation/resource-route.ts";
 import { containerState } from "./project-state";
 import { ProjectStateIcon } from "./project-state-icon";
 import { ProjectActions } from "./project-actions";
+import { projectActivitySessions } from "./project-session-activity";
+import { useSessionActivity } from "./use-session-activity";
 import styles from "./project-table.module.css";
 
 export function ProjectTable({
@@ -40,9 +45,8 @@ export function ProjectTable({
   updated: (project: Project) => void;
 }) {
   const [selected, select] = useState<Set<string>>(() => new Set());
-  const selectedCount = projects.filter((project) =>
-    selected.has(key(project.id)),
-  ).length;
+  const chosen = projects.filter((project) => selected.has(key(project.id)));
+  const selectedCount = chosen.length;
   const all = projects.length > 0 && selectedCount === projects.length;
   function toggle(id: string) {
     select((previous) => {
@@ -52,15 +56,22 @@ export function ProjectTable({
       return next;
     });
   }
-  const counts = useMemo(() => {
-    const values = new Map<string, number>();
-    for (const session of sessions) {
-      if (!session.project) continue;
-      const id = key(session.project.id);
-      values.set(id, (values.get(id) ?? 0) + 1);
-    }
-    return values;
-  }, [sessions]);
+  const completed = useSyncExternalStore(
+    c.attention.subscribe,
+    c.attention.completedSnapshot,
+  );
+  const activity = useSessionActivity(c, sessions);
+  const activeSessions = useMemo(
+    () => projectActivitySessions(sessions, completed, activity),
+    [sessions, completed, activity],
+  );
+  function unselect(projects: Project[]) {
+    select((previous) => {
+      const next = new Set(previous);
+      for (const project of projects) next.delete(key(project.id));
+      return next;
+    });
+  }
   return (
     <Table
       className={styles.table}
@@ -70,7 +81,8 @@ export function ProjectTable({
       <colgroup>
         <col className={styles.selectionColumn} />
         <col className={styles.nameColumn} />
-        <col className={styles.countColumn} />
+        <col />
+        <col className={styles.activityColumn} />
         <col className={styles.stateColumn} />
         <col className={styles.actionsColumn} />
       </colgroup>
@@ -93,75 +105,116 @@ export function ProjectTable({
             />
           </TableHead>
           <TableHead>{t("Name")}</TableHead>
-          <TableHead align="right">{t("Sessions")}</TableHead>
+          <TableHead>{t("Recent session")}</TableHead>
+          <TableHead>{t("Last activity")}</TableHead>
           <TableHead aria-label={t("State")} />
-          <TableHead aria-label={t("Actions")} />
+          <TableHead className={styles.actionsCell} aria-label={t("Actions")}>
+            <ProjectActions
+              c={c}
+              projects={chosen}
+              sessions={sessions}
+              updated={updated}
+              erased={(p) => unselect([p])}
+              completed={unselect}
+              variant="menu"
+            />
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {projects.map((project) => (
-          <TableRow
-            key={key(project.id)}
-            selected={selected.has(key(project.id))}
-          >
-            <TableCell className={styles.selectionCell}>
-              <Checkbox
-                className={styles.cellCheckbox}
-                aria-label={t("Select {name}", {
-                  name:
-                    project.name || project.alias || resourceHandle(project),
-                })}
-                checked={selected.has(key(project.id))}
-                onChange={() => toggle(key(project.id))}
-              />
-            </TableCell>
-            <TableCell className={styles.nameCell}>
-              <RouteLink
-                {...projectLocation(resourceHandle(project))}
-                className={styles.projectLink}
-              >
-                <span className={styles.identity}>
-                  <span className={styles.name}>
-                    {project.name || project.alias || resourceHandle(project)}
+        {projects.map((project) => {
+          const active = activeSessions.get(key(project.id));
+          const state = containerState(project);
+          const time = active && activity.get(active.runtimeId)?.time;
+          return (
+            <TableRow
+              key={key(project.id)}
+              selected={selected.has(key(project.id))}
+            >
+              <TableCell className={styles.selectionCell}>
+                <Checkbox
+                  className={styles.cellCheckbox}
+                  aria-label={t("Select {name}", {
+                    name:
+                      project.name || project.alias || resourceHandle(project),
+                  })}
+                  checked={selected.has(key(project.id))}
+                  onChange={() => toggle(key(project.id))}
+                />
+              </TableCell>
+              <TableCell className={styles.nameCell}>
+                <RouteLink
+                  {...projectLocation(resourceHandle(project))}
+                  className={styles.projectLink}
+                  data-inactive={
+                    state === ContainerState.ABSENT ||
+                    state === ContainerState.STOPPED ||
+                    undefined
+                  }
+                >
+                  <span className={styles.identity}>
+                    <span className={styles.name}>
+                      {project.name || project.alias || resourceHandle(project)}
+                    </span>
+                    <small className={styles.alias}>{project.alias}</small>
                   </span>
-                  <small className={styles.alias}>{project.alias}</small>
-                </span>
-              </RouteLink>
-            </TableCell>
-            <TableCell align="right">
-              <CompactNumber
-                value={
-                  sessionsLoading ? NaN : (counts.get(key(project.id)) ?? 0)
-                }
-                mode="integer"
-                digits={3}
-                label={sessionsLoading ? t("Loading sessions…") : undefined}
-              />
-            </TableCell>
-            <TableCell className={styles.state}>
-              <ProjectStateIcon state={containerState(project)} />
-            </TableCell>
-            <TableCell className={styles.actionsCell}>
-              <ProjectActions
-                c={c}
-                project={project}
-                sessions={sessions}
-                updated={updated}
-                erased={() =>
-                  select((previous) => {
-                    const next = new Set(previous);
-                    next.delete(key(project.id));
-                    return next;
-                  })
-                }
-                variant="menu"
-              />
-            </TableCell>
-          </TableRow>
-        ))}
+                </RouteLink>
+              </TableCell>
+              <TableCell className={styles.nameCell}>
+                {active ? (
+                  <RouteLink
+                    {...sessionLocation(active)}
+                    className={`${styles.projectLink} ${styles.sessionLink}`}
+                  >
+                    <span className={styles.identity}>
+                      <span className={styles.name}>
+                        {active.name || active.alias || active.runtimeId}
+                      </span>
+                      <small className={styles.alias}>
+                        {active.alias || active.runtimeId}
+                      </small>
+                    </span>
+                  </RouteLink>
+                ) : (
+                  <span className={styles.muted}>
+                    {sessionsLoading ? t("Loading sessions…") : "—"}
+                  </span>
+                )}
+              </TableCell>
+              <TableCell className={styles.activity}>
+                {active && isSessionWorking(active) ? (
+                  <span
+                    className="session-indicator"
+                    role="img"
+                    aria-label={t("Working")}
+                  >
+                    <SessionActivityDots session={active} />
+                  </span>
+                ) : time ? (
+                  <RelativeTime value={time} />
+                ) : (
+                  <span className={styles.muted}>—</span>
+                )}
+              </TableCell>
+              <TableCell className={styles.state}>
+                <ProjectStateIcon state={state} />
+              </TableCell>
+              <TableCell className={styles.actionsCell}>
+                <ProjectActions
+                  c={c}
+                  project={project}
+                  sessions={sessions}
+                  updated={updated}
+                  erased={(p) => unselect([p])}
+                  variant="menu"
+                />
+              </TableCell>
+            </TableRow>
+          );
+        })}
         {!projects.length && (
           <TableRow>
-            <TableCell colSpan={5} className={styles.empty}>
+            <TableCell colSpan={6} className={styles.empty}>
               <span role="status">
                 {loading ? t("Loading projects…") : t("No projects yet.")}
               </span>

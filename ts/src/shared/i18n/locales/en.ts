@@ -795,5 +795,29 @@ export const messages = {
   "Permanently deletes these sessions and their stored data. This cannot be undone.":
     "Permanently deletes these sessions and their stored data. This cannot be undone.",
   Refresh: "Refresh",
+  "Recent session": "Recent session",
+  "Last activity": "Last activity",
+  "The project container is running.": "The project container is running.",
+  "The project container exists and has not been started.":
+    "The project container exists and has not been started.",
+  "The project container is stopped. Its data is retained.":
+    "The project container is stopped. Its data is retained.",
+  "This project has no container.": "This project has no container.",
+  "The container state is unavailable.": "The container state is unavailable.",
+  "Selected project actions": "Selected project actions",
+  "Stop projects": "Stop projects",
+  "Start projects": "Start projects",
+  "Remove containers": "Remove containers",
+  "Erase projects": "Erase projects",
+  "Stops the selected project containers and all their sessions. Their data is retained.":
+    "Stops the selected project containers and all their sessions. Their data is retained.",
+  "Starts the selected project containers, creating missing containers from their configuration. Agents remain stopped.":
+    "Starts the selected project containers, creating missing containers from their configuration. Agents remain stopped.",
+  "Removes the selected project containers. Projects, sessions, history and volumes are retained.":
+    "Removes the selected project containers. Projects, sessions, history and volumes are retained.",
+  "Permanently deletes the selected projects and their owned data. This cannot be undone.":
+    "Permanently deletes the selected projects and their owned data. This cannot be undone.",
+  "Some project actions failed. Successful projects will not be retried.":
+    "Some project actions failed. Successful projects will not be retried.",
 } as const;
 export type Message = keyof typeof messages;

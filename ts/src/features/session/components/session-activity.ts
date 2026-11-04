@@ -13,6 +13,9 @@ export const activityDots = [
 ] as const;
 const activityColors = ["green", "cyan", "violet"] as const;
 
+export const isSessionWorking = (session: Pick<Session, "status">) =>
+  ["running", "working", "waiting_input"].includes(session.status?.state ?? "");
+
 export function sessionActivity(
   session: Pick<Session, "id" | "runtimeId" | "status">,
 ) {

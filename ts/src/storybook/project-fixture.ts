@@ -1,7 +1,7 @@
 import { key } from "@lesomnus/payday/store";
 import { projectFixtureId, matchesProject } from "./project-id";
 import { projectId } from "#src/shared/api/project-id.ts";
-import { clone, create, isFieldSet } from "@bufbuild/protobuf";
+import { clone, create, isFieldSet, toBinary } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { BinaryWriter, WireType } from "@bufbuild/protobuf/wire";
@@ -17,13 +17,15 @@ import { Connection } from "#src/shared/api/connection.ts";
 import {
   SessionService,
   SessionPatchRequestSchema,
+  SessionNotificationSchema,
 } from "#gen/cxz/session_svc_pb";
+import { NotificationService } from "#gen/cxz/payday/notification_pb";
 
 export function projectFixture(
   unavailable = false,
   stopped = false,
   sessionCount = 2,
-  failure: "" | "control" | "erase" | "trust" = "",
+  failure: "" | "control" | "erase" | "trust" | "project-control" = "",
 ) {
   const now = Date.now();
   const projects = ["Web workspace", "API workspace"].map((name, i) =>
@@ -116,10 +118,48 @@ export function projectFixture(
     confirmed?: boolean;
     signal: AbortSignal;
   }[] = [];
+  const activityTimes = new Map(
+    sessions.map((s, i) => [s.runtimeId, now - (i + 1) * 60000]),
+  );
+  const notifications: { runtimeId: string; kind: string }[] = [];
   const listeners = new Set<() => void>();
   const publish = () => listeners.forEach((listener) => listener());
   let run = 0;
   const transport = createRouterTransport((router) => {
+    router.service(NotificationService, {
+      read: () => ({
+        readerId: new Uint8Array([16]),
+        items: notifications.map((n, i) => ({
+          notification: {
+            id: new Uint8Array([i + 1]),
+            kind: n.kind,
+            payload: {
+              typeUrl: "type.googleapis.com/cxz.SessionNotification",
+              value: toBinary(
+                SessionNotificationSchema,
+                create(SessionNotificationSchema, {
+                  runtimeId: n.runtimeId,
+                  generation: "current-run",
+                  seq: 9n,
+                }),
+              ),
+            },
+          },
+        })),
+      }),
+      async *listen(_request, context) {
+        yield {
+          event: { case: "ready", value: { readerId: new Uint8Array([16]) } },
+        };
+        await new Promise<void>((resolve) => {
+          if (context.signal.aborted) resolve();
+          else
+            context.signal.addEventListener("abort", () => resolve(), {
+              once: true,
+            });
+        });
+      },
+    });
     router.service(AccountService, {
       list: (_request, context) => {
         calls.push({ method: "accounts", signal: context.signal });
@@ -236,6 +276,19 @@ export function projectFixture(
           project: projectId(projects[index]!),
           signal: context.signal,
         });
+        if (
+          failure === "project-control" &&
+          index === 1 &&
+          calls.filter(
+            (call) =>
+              call.method === "project.stop" &&
+              call.project === projectId(projects[index]!),
+          ).length === 1
+        )
+          throw new ConnectError(
+            "Simulated project action failure",
+            Code.Unavailable,
+          );
         if (unavailable)
           throw new ConnectError(
             "Project stop is unavailable",
@@ -365,6 +418,29 @@ export function projectFixture(
       },
     });
     router.service(SessionService, {
+      transcript: (request, context) => {
+        const id = String(request.ref?.key.value);
+        const session = sessions.find((s) => s.runtimeId === id);
+        if (!session)
+          throw new ConnectError("Session not found", Code.NotFound);
+        calls.push({
+          method: "transcript",
+          session: id,
+          signal: context.signal,
+        });
+        const time = activityTimes.get(id);
+        return {
+          events: time
+            ? [
+                {
+                  ...event(9, "assistant", "Latest response"),
+                  timeMs: BigInt(time),
+                },
+              ]
+            : [],
+          snapshotSeq: session.status?.lastSeq,
+        };
+      },
       conversationStats: (request, context) => {
         const project = projects.find((p) =>
           matchesProject(p, request.project),
@@ -582,6 +658,8 @@ export function projectFixture(
     projects,
     sessions,
     calls,
+    activityTimes,
+    notifications,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => {

@@ -796,4 +796,28 @@ export const messages = {
   "Permanently deletes these sessions and their stored data. This cannot be undone.":
     "이 세션들과 저장된 데이터를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
   Refresh: "새로고침",
+  "Recent session": "최근 활동 세션",
+  "Last activity": "마지막 활동",
+  "The project container is running.": "프로젝트 컨테이너가 실행 중입니다.",
+  "The project container exists and has not been started.":
+    "프로젝트 컨테이너가 생성되었지만 아직 시작되지 않았습니다.",
+  "The project container is stopped. Its data is retained.":
+    "프로젝트 컨테이너가 정지되어 있습니다. 데이터는 유지됩니다.",
+  "This project has no container.": "이 프로젝트에는 컨테이너가 없습니다.",
+  "The container state is unavailable.": "컨테이너 상태를 확인할 수 없습니다.",
+  "Selected project actions": "선택한 프로젝트 작업",
+  "Stop projects": "프로젝트 정지",
+  "Start projects": "프로젝트 시작",
+  "Remove containers": "컨테이너 제거",
+  "Erase projects": "프로젝트 삭제",
+  "Stops the selected project containers and all their sessions. Their data is retained.":
+    "선택한 프로젝트 컨테이너와 모든 세션을 정지합니다. 데이터는 유지됩니다.",
+  "Starts the selected project containers, creating missing containers from their configuration. Agents remain stopped.":
+    "선택한 프로젝트의 컨테이너를 시작합니다. 컨테이너가 없다면 설정에 따라 생성하며 에이전트는 정지 상태로 유지됩니다.",
+  "Removes the selected project containers. Projects, sessions, history and volumes are retained.":
+    "선택한 프로젝트의 컨테이너를 제거합니다. 프로젝트, 세션, 대화 기록과 볼륨은 유지됩니다.",
+  "Permanently deletes the selected projects and their owned data. This cannot be undone.":
+    "선택한 프로젝트와 소유 데이터를 영구 삭제합니다. 되돌릴 수 없습니다.",
+  "Some project actions failed. Successful projects will not be retried.":
+    "일부 프로젝트 작업이 실패했습니다. 성공한 프로젝트는 다시 실행하지 않습니다.",
 } satisfies LanguagePack;

@@ -1,8 +1,9 @@
 .table {
+  --project-name-width: 180px;
   --ui-table-row-height: 44px;
   --ui-table-row-gap: 0px;
   --ui-table-header-height: 28px;
-  min-width: 360px;
+  min-width: 600px;
   table-layout: fixed;
   border-radius: var(--ui-section-radius);
   overflow: clip;
@@ -10,8 +11,8 @@
 .selectionColumn {
   width: 44px;
 }
-.countColumn {
-  width: 64px;
+.activityColumn {
+  width: 120px;
 }
 .stateColumn {
   width: 32px;
@@ -20,7 +21,7 @@
   width: calc(var(--ui-table-row-height) + var(--ui-control-inset));
 }
 .nameColumn {
-  width: auto;
+  width: calc(var(--project-name-width) + 2 * var(--ui-control-inset));
 }
 .table .selectionCell {
   position: relative;
@@ -35,6 +36,9 @@
 .table .actionsCell {
   padding: var(--ui-control-inset);
   padding-right: calc(2 * var(--ui-control-inset));
+}
+.table th.actionsCell {
+  padding-block: 0;
 }
 .table .nameCell {
   padding: var(--ui-control-inset);
@@ -51,6 +55,7 @@
   display: flex;
   align-items: center;
   width: 100%;
+  max-width: var(--project-name-width);
   height: calc(var(--ui-table-row-height) - 2 * var(--ui-control-inset));
   min-height: 0;
   padding: 0 var(--ui-control-inline-inset);
@@ -61,6 +66,24 @@
 .projectLink > :global(.button-content) {
   width: 100%;
   justify-content: flex-start;
+}
+.sessionLink.sessionLink {
+  max-width: none;
+}
+.projectLink[data-inactive] {
+  --button-background: var(--ui-shade-20);
+  --button-hover-background: var(--ui-shade-32);
+}
+.table tbody tr[data-selected] .projectLink[data-inactive] {
+  --button-background: var(--ui-shade-24);
+  --button-hover-background: var(--ui-shade-40);
+}
+.activity {
+  color: var(--ui-muted);
+  white-space: nowrap;
+}
+.muted {
+  color: var(--ui-muted);
 }
 .identity {
   display: grid;
