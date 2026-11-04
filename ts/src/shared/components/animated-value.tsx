@@ -1,11 +1,9 @@
 import { useMemo, useRef, type ComponentProps } from "react";
 import {
-  AnimatedText,
   CompactNumber,
   DurationDisplay,
   type TextMotionOptions,
 } from "@lesomnus/nox";
-import styles from "./animated-value.module.css";
 
 // Only value changes start motion. Visibility is sampled against the window
 // and every clipping ancestor; scrolling an already committed value into view
@@ -77,30 +75,14 @@ export function useValueMotion(enabled = true): TextMotionOptions {
   );
 }
 
-export function AnimatedValue({
-  enabled = true,
-  className = "",
+export function AnimatedCompactNumber({
+  animate = true,
   ...props
-}: ComponentProps<typeof AnimatedText> & { enabled?: boolean }) {
-  return (
-    <AnimatedText
-      {...props}
-      {...useValueMotion(enabled)}
-      initialValue={
-        props.initialValue ?? "-".repeat(Array.from(String(props.value)).length)
-      }
-      className={`${styles.value} ${className}`}
-    />
-  );
-}
-
-export function AnimatedCompactNumber(
-  props: ComponentProps<typeof CompactNumber>,
-) {
+}: ComponentProps<typeof CompactNumber> & { animate?: boolean }) {
   return (
     <CompactNumber
       {...props}
-      {...useValueMotion(Number.isFinite(props.value))}
+      {...useValueMotion(animate && Number.isFinite(props.value))}
       motion="slide"
       maxSlideSteps={4}
       duration={600}
@@ -108,13 +90,14 @@ export function AnimatedCompactNumber(
   );
 }
 
-export function AnimatedDurationDisplay(
-  props: ComponentProps<typeof DurationDisplay>,
-) {
+export function AnimatedDurationDisplay({
+  animate = true,
+  ...props
+}: ComponentProps<typeof DurationDisplay> & { animate?: boolean }) {
   return (
     <DurationDisplay
       {...props}
-      {...useValueMotion(props.durationMs !== undefined)}
+      {...useValueMotion(animate && props.durationMs !== undefined)}
       motion="slide"
       maxSlideSteps={4}
       duration={600}

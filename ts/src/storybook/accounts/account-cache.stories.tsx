@@ -111,7 +111,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Account metadata and authentication reuse this connection's browser-memory cache for five minutes; statistics, calendar history and quota use one minute. Leave and reopen to inspect RPC counters. Change account on server simulates an external edit; the square Refresh button after Erase bypasses every account cache. Page reload creates a new connection and clears the cache. No browser disk storage is used.",
+          "Account metadata and authentication reuse this connection's browser-memory cache for five minutes; statistics, calendar history and quota use one minute. Cached values are read synchronously and appear immediately without animation. Account information and authentication text are always static. Fresh remote numeric results slide through bounded intermediate digits. Leave and reopen to inspect RPC counters. Change account on server simulates an external edit; the square Refresh button after Erase bypasses every account cache. Page reload creates a new connection and clears the cache. No browser disk storage is used.",
       },
     },
   },

@@ -16,12 +16,14 @@ async function readCount(page: Page, kind: string) {
   );
 }
 
-test("cached values paint dashes instead of blanks before initial motion", async ({
+test("cached values and account information appear immediately, while a fresh refresh still slides", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=accounts-cache--default&viewMode=story");
   await ready(page);
   await expect(page.locator("[data-changing]")).toHaveCount(0);
+  const kinds = ["accounts", "auth", "usage", "quota"];
+  const before = await Promise.all(kinds.map((kind) => readCount(page, kind)));
   await page.clock.install();
   const now = await page.evaluate(() => Date.now());
   await page.clock.pauseAt(new Date(now + 50));
@@ -39,16 +41,33 @@ test("cached values paint dashes instead of blanks before initial motion", async
   const input = work
     .getByRole("region", { name: "Recent 30 days", exact: true })
     .getByRole("img", { name: "4800", exact: true });
-  const outgoing = async (value: import("@playwright/test").Locator) =>
-    value
+  await expect(name).toHaveText("Work");
+  await expect(input).toHaveText("4.80K");
+  await expect(page.locator("[data-changing]")).toHaveCount(0);
+  await page.clock.runFor(32);
+  await ready(page);
+  await expect(page.locator("[data-changing]")).toHaveCount(0);
+  expect(await Promise.all(kinds.map((kind) => readCount(page, kind)))).toEqual(
+    before,
+  );
+  await click("Change account on server");
+  await expect(page.getByLabel("Server account name")).toHaveText(
+    "Updated account",
+  );
+  await click("Refresh account Work");
+  await expect(name).toHaveText("Updated account");
+  await expect(
+    work
+      .getByRole("region", { name: "Account details", exact: true })
+      .locator("[data-motion]"),
+  ).toHaveCount(0);
+  await expect(
+    work
+      .getByRole("region", { name: "Recent 30 days", exact: true })
+      .getByRole("img", { name: "9600", exact: true })
       .locator("[data-changing]")
-      .evaluateAll((cells) =>
-        cells.map((cell) => cell.children[1].textContent).join(""),
-      );
-  await expect(name.locator("[data-changing]")).toHaveCount(4);
-  await expect(input.locator("[data-changing]")).toHaveCount(5);
-  expect(await outgoing(name)).toBe("----");
-  expect(await outgoing(input)).toBe("----·");
+      .first(),
+  ).toBeAttached();
 });
 
 test("first loads retain compact placeholders and dates stay static", async ({
@@ -123,14 +142,15 @@ test("changed values outside the scroll viewport commit without motion and never
   await page.goto("/iframe.html?id=accounts-cache--default&viewMode=story");
   await ready(page);
   const work = page.locator('[data-account="work"]');
-  const name = work
-    .getByRole("button", { name: "Edit Display name", exact: true })
-    .locator("[data-motion][aria-label]");
+  const input = work
+    .getByRole("region", { name: "Recent 30 days", exact: true })
+    .locator("dd")
+    .first();
   await page
     .getByRole("article", { name: "Personal", exact: true })
     .evaluate((node) => node.scrollIntoView({ block: "start" }));
-  await expect.poll(async () => (await name.boundingBox())!.y).toBeLessThan(0);
-  await expect(name.locator("[data-changing]")).toHaveCount(0);
+  await expect.poll(async () => (await input.boundingBox())!.y).toBeLessThan(0);
+  await expect(input.locator("[data-changing]")).toHaveCount(0);
   await page.clock.install();
   const now = await page.evaluate(() => Date.now());
   await page.clock.pauseAt(new Date(now + 50));
@@ -143,13 +163,15 @@ test("changed values outside the scroll viewport commit without motion and never
   await work
     .getByRole("button", { name: "Refresh account Work", exact: true })
     .evaluate((node: HTMLButtonElement) => node.click());
-  await expect(name).toHaveAttribute("aria-label", "Updated account");
+  await expect(
+    input.getByRole("img", { name: "9600", exact: true }),
+  ).toBeAttached();
   await page.clock.runFor(32);
-  await expect(name.locator("[data-changing]")).toHaveCount(0);
-  await name.evaluate((node) => node.scrollIntoView({ block: "center" }));
+  await expect(input.locator("[data-changing]")).toHaveCount(0);
+  await input.evaluate((node) => node.scrollIntoView({ block: "center" }));
   await page.clock.runFor(32);
-  await expect(name).toBeVisible();
-  await expect(name.locator("[data-changing]")).toHaveCount(0);
+  await expect(input).toBeVisible();
+  await expect(input.locator("[data-changing]")).toHaveCount(0);
 });
 
 test("reduced motion keeps account formatting static", async ({ page }) => {
@@ -176,18 +198,13 @@ test("visible changed values slide from top left with bounded random character d
     name: "Account details",
     exact: true,
   });
-  const field = (label: string) =>
-    information
-      .getByRole("term")
-      .filter({ hasText: label })
-      .locator("..")
-      .getByRole("definition");
-  const name = work
-    .getByRole("button", { name: "Edit Display name", exact: true })
-    .locator("[data-motion][aria-label]");
   const input = work
     .getByRole("region", { name: "Recent 30 days", exact: true })
     .getByRole("img", { name: "9600", exact: true })
+    .locator("[data-motion][aria-label]");
+  const cacheRead = work
+    .getByRole("region", { name: "Recent 30 days", exact: true })
+    .getByRole("img", { name: "24000", exact: true })
     .locator("[data-motion][aria-label]");
   await page.clock.install();
   const now = await page.evaluate(() => Date.now());
@@ -201,9 +218,8 @@ test("visible changed values slide from top left with bounded random character d
   await work
     .getByRole("button", { name: "Refresh account Work", exact: true })
     .evaluate((node: HTMLButtonElement) => node.click());
-  await expect(name).toHaveAttribute("aria-label", "Updated account");
-  await expect(name.locator("[data-changing]").first()).toBeAttached();
   await expect(input.locator("[data-changing]").first()).toBeAttached();
+  await expect(cacheRead.locator("[data-changing]").first()).toBeAttached();
   const delays = async (locator: import("@playwright/test").Locator) =>
     locator
       .locator("[data-changing]")
@@ -214,12 +230,12 @@ test("visible changed values slide from top left with bounded random character d
           ),
         ),
       );
-  const nameDelays = await delays(name);
   const inputDelays = await delays(input);
-  expect(new Set(nameDelays).size).toBeGreaterThan(1);
-  expect(Math.max(...nameDelays) - Math.min(...nameDelays)).toBeLessThanOrEqual(
-    90,
-  );
-  expect(Math.min(...nameDelays)).toBeLessThan(Math.min(...inputDelays));
-  await expect(field("Created").locator("[data-changing]")).toHaveCount(0);
+  const cacheReadDelays = await delays(cacheRead);
+  expect(new Set(inputDelays).size).toBeGreaterThan(1);
+  expect(
+    Math.max(...inputDelays) - Math.min(...inputDelays),
+  ).toBeLessThanOrEqual(90);
+  expect(Math.min(...inputDelays)).toBeLessThan(Math.min(...cacheReadDelays));
+  await expect(information.locator("[data-motion]")).toHaveCount(0);
 });

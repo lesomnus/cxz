@@ -115,12 +115,14 @@ export function AccountQuotaSquare({
             digits={percent === 100 ? 3 : 2}
             value={percent ?? NaN}
             muted={percent === undefined}
+            animate={!quota.fromCache}
           />
           <span className={styles.quotaUnit}>%</span>
         </span>
       </span>
       <span className={styles.quotaReset}>
         <AnimatedDurationDisplay
+          animate={!quota.fromCache}
           durationMs={
             quota.data?.reset === undefined
               ? undefined

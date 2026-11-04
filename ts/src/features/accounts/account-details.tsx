@@ -37,7 +37,6 @@ import {
 } from "#src/shared/api/read-cache.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 import accountStyles from "./accounts.module.css";
-import { AnimatedValue } from "#src/shared/components/animated-value.tsx";
 export function AccountDetails({
   c,
   account,
@@ -70,7 +69,6 @@ export function AccountDetails({
         label={label}
         value={account[field]}
         monospace
-        display={(value) => <AnimatedValue value={value || "—"} />}
         validate={(value) => validateAccountField(field, value)}
         save={async (value) => {
           const updated = await editAccount(c.accounts, account, field, value);
@@ -136,13 +134,13 @@ export function AccountDetails({
                 "Agent",
                 <span className={accountStyles.agent}>
                   <AgentBrand agent={account.agent} />
-                  <AnimatedValue value={account.agent} />
+                  {account.agent}
                 </span>,
               ],
               [
                 "Authentication backend",
                 <span className={accountStyles.fieldValue}>
-                  <AnimatedValue value={account.authBackend || "—"} />
+                  {account.authBackend || "—"}
                 </span>,
               ],
               [
@@ -224,10 +222,7 @@ export function AccountDetails({
                         status.error || status.data?.message || statusText
                       }
                     >
-                      <AnimatedValue
-                        value={statusText}
-                        enabled={!status.loading}
-                      />
+                      <span>{statusText}</span>
                     </Popover>
                   </span>
                 </>

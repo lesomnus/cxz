@@ -98,7 +98,7 @@ for (const width of [1280, 390]) {
     expect(await panels(work)).toEqual(normal);
     const name = work
       .getByRole("button", { name: "Edit Display name", exact: true })
-      .locator("[data-motion][aria-label]");
+      .locator(".button-content");
     expect(await name.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
       true,
     );

@@ -167,6 +167,7 @@ export function UsageReport({
         <UsageMetrics
           values={stats.data?.total}
           unavailable={!stats.data?.total}
+          animate={!stats.fromCache}
         />
       </section>
       <section aria-label="Daily statistics" className={usageStyles.period}>
@@ -194,6 +195,7 @@ export function UsageReport({
         <UsageMetrics
           values={selectedValues}
           unavailable={!historyContainsDate && !stats.data}
+          animate={!(historyContainsDate ? history.fromCache : stats.fromCache)}
         />
       </section>
       <UsageActivity
@@ -212,9 +214,11 @@ export function UsageReport({
 function UsageMetrics({
   values,
   unavailable = false,
+  animate = true,
 }: {
   values?: ConversationStatsValues;
   unavailable?: boolean;
+  animate?: boolean;
 }) {
   const metrics: UsageMetric[] = [
     { label: "Input tokens", value: values?.inputTokens ?? 0n },
@@ -271,6 +275,7 @@ function UsageMetrics({
                   value={unavailable ? NaN : Number(value)}
                   label={unavailable ? "Unavailable" : `${prefix}${value}`}
                   muted={unavailable}
+                  animate={animate}
                 />
               </span>
             )}

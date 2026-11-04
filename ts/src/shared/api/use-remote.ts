@@ -31,11 +31,14 @@ export function useRemote<T>(
   const hit = cache?.store.peek<T>(cache.key);
   const [state, setState] = useState<{
     data?: T;
+    /** Origin of the displayed data, even after a remote result populates the cache. */
+    fromCache: boolean;
     loading: boolean;
     error: string;
   }>(() => {
     return {
       data: hit?.data,
+      fromCache: !!hit,
       loading: options.enabled !== false && !hit?.fresh,
       error: "",
     };
@@ -61,6 +64,7 @@ export function useRemote<T>(
     if (options.enabled === false) {
       setState((old) => ({
         data: sameResource ? old.data : hit?.data,
+        fromCache: sameResource ? old.fromCache : !!hit,
         loading: false,
         error: "",
       }));
@@ -68,7 +72,7 @@ export function useRemote<T>(
       return cancel;
     }
     if (hit?.fresh) {
-      setState({ data: hit.data, loading: false, error: "" });
+      setState({ data: hit.data, fromCache: true, loading: false, error: "" });
       finish();
       return cancel;
     }
@@ -76,6 +80,11 @@ export function useRemote<T>(
       data:
         hit?.data ??
         (sameResource || options.keepPreviousData ? old.data : undefined),
+      fromCache: hit
+        ? true
+        : sameResource || options.keepPreviousData
+          ? old.fromCache
+          : false,
       loading: true,
       error: "",
     }));
@@ -90,13 +99,14 @@ export function useRemote<T>(
     read.then(
       (data) => {
         if (!controller.signal.aborted)
-          setState({ data, loading: false, error: "" });
+          setState({ data, fromCache: false, loading: false, error: "" });
         finish();
       },
       (error) => {
         if (!controller.signal.aborted)
           setState((old) => ({
             data: cache ? old.data : undefined,
+            fromCache: cache ? old.fromCache : false,
             loading: false,
             error: String(error),
           }));
