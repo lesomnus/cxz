@@ -133,13 +133,15 @@ const searchRoute = createRoute({
   path: "search",
   staticData: { resource: "search" },
 });
-const memoryRoute = createRoute({
+const projectMemoryRoute = createRoute({
   getParentRoute: () => connectionRoute,
-  path: "memory",
+  path: "project/$projectId/memory",
   staticData: { resource: "memory" },
-  validateSearch: (s: Record<string, unknown>) => ({
-    project: typeof s.project === "string" ? s.project : undefined,
-  }),
+});
+const memoryDocumentRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "project/$projectId/memory/$memoryId",
+  staticData: { resource: "memory" },
 });
 const auxiliaryRoute = createRoute({
   getParentRoute: () => connectionRoute,
@@ -221,9 +223,9 @@ const notFoundRoute = createRoute({
         }),
         replace: true,
       });
-    if (["search", "memory", "auxiliary"].includes(parts[0]) && !handle)
+    if (["search", "auxiliary"].includes(parts[0]) && !handle)
       throw redirect({
-        ...resourceLocation(parts[0] as "search" | "memory" | "auxiliary"),
+        ...resourceLocation(parts[0] as "search" | "auxiliary"),
         replace: true,
       });
     if (
@@ -254,7 +256,8 @@ const routeTree = rootRoute.addChildren([
     tasksRoute,
     taskRoute,
     searchRoute,
-    memoryRoute,
+    projectMemoryRoute,
+    memoryDocumentRoute,
     auxiliaryRoute,
   ]),
   settingsRoute.addChildren([
@@ -285,6 +288,8 @@ export function useWorkspaceRoute() {
   const match = useRouterState({ select: (state) => state.matches.at(-1) });
   const detailTaskSearch = taskRoute.useSearch({ shouldThrow: false });
   const listTaskSearch = tasksRoute.useSearch({ shouldThrow: false });
+  const memoryDocument = memoryDocumentRoute.useParams({ shouldThrow: false });
+  const memoryProject = projectMemoryRoute.useParams({ shouldThrow: false });
   const connection = connectionRoute.useParams({
     shouldThrow: false,
   })?.connection;
@@ -304,6 +309,7 @@ export function useWorkspaceRoute() {
       ...(detailTaskSearch ?? listTaskSearch ?? {}),
       task: taskRoute.useParams({ shouldThrow: false })?.taskId,
     },
-    memoryProject: memoryRoute.useSearch({ shouldThrow: false })?.project,
+    memoryProject: memoryDocument?.projectId ?? memoryProject?.projectId,
+    memory: memoryDocument?.memoryId,
   };
 }

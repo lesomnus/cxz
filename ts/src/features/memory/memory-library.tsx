@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useId } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, useId } from "react";
 import {
   ActionMenu,
   Button,
@@ -14,6 +14,8 @@ import { MemoryScope, MemoryReadFormat } from "#gen/cxz/memory_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { projectRef } from "#src/shared/api/project-id.ts";
+import { memoryLocation, uuid } from "#src/shared/navigation/resource-route.ts";
+import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { publicUUID } from "#src/shared/logs/rpc-diagnostics.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { useEditorSettings } from "#src/shared/settings/settings.ts";
@@ -72,18 +74,26 @@ export function MemoryLibrary({
   project,
   sessions = [],
   registerGuard,
+  memoryId,
+  onMemoryChange,
+  onDirtyChange,
 }: {
   c: Connection;
   project: string;
   sessions?: Session[];
   registerGuard?: (guard: ((run: () => void) => void) | undefined) => void;
+  memoryId?: string;
+  onMemoryChange?: (id?: string, replace?: boolean) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [trash, setTrash] = useState(false),
     [query, setQuery] = useState(""),
     [filter, setFilter] = useState(""),
     [labelQuery, setLabelQuery] = useState(""),
     [labelFilter, setLabelFilter] = useState<Record<string, string>>({});
-  const [selected, setSelected] = useState<Uint8Array>(),
+  const [selected, setSelected] = useState<Uint8Array | undefined>(() =>
+      memoryId ? uuid(memoryId) : undefined,
+    ),
     [creating, setCreating] = useState(false),
     [draft, setDraft] = useState(""),
     [original, setOriginal] = useState(""),
@@ -102,6 +112,8 @@ export function MemoryLibrary({
     text: string;
     run: () => Promise<unknown>;
   }>();
+  const lastRouteID = useRef(memoryId);
+  const invalidMemoryID = !!(onMemoryChange && memoryId && !uuid(memoryId));
   const formId = useId();
   const mutationPending = useRef(false);
   const createKey = useRef(crypto.randomUUID()),
@@ -174,14 +186,23 @@ export function MemoryLibrary({
   const reading = !creating && (text.loading || (!read && !text.error));
   useEffect(() => {
     if (
+      !onMemoryChange &&
       !creating &&
       !selected &&
+      !invalidMemoryID &&
       !list.loading &&
       list.data?.key === listKey &&
       list.data !== selectionSource.current
     )
-      setSelected(memories[0]?.id);
-  }, [creating, selectedKey, list.loading, list.data, listKey]);
+      selectMemory(memories[0]?.id, true);
+  }, [
+    creating,
+    selectedKey,
+    list.loading,
+    list.data,
+    listKey,
+    invalidMemoryID,
+  ]);
   useEffect(() => {
     if (read) {
       setDraft(read.content);
@@ -197,6 +218,41 @@ export function MemoryLibrary({
       (draft !== original ||
         name !== picked?.name ||
         labels !== labelsText(visibleLabels(picked?.labels ?? {})));
+  // Browser Back can run immediately after an edit commits.
+  useLayoutEffect(() => {
+    onDirtyChange?.(dirty);
+    return () => onDirtyChange?.(false);
+  }, [dirty, onDirtyChange]);
+  useEffect(() => {
+    if (!onMemoryChange || memoryId === lastRouteID.current) return;
+    lastRouteID.current = memoryId;
+    reset();
+    setSelected(memoryId ? uuid(memoryId) : undefined);
+    if (!memoryId) {
+      selectionSource.current = undefined;
+      setTrash(false);
+    }
+    setQuery("");
+    setFilter("");
+    setLabelQuery("");
+    setLabelFilter({});
+  }, [memoryId, onMemoryChange]);
+  useEffect(() => {
+    if (
+      onMemoryChange &&
+      memoryId &&
+      picked &&
+      ownerID(picked.id) === memoryId &&
+      !creating
+    )
+      setTrash(!!picked.dateDeleted);
+  }, [picked?.id, picked?.dateDeleted, creating, memoryId, onMemoryChange]);
+  function selectMemory(id: Uint8Array | undefined, replace = false) {
+    setSelected(id);
+    const publicID = id ? ownerID(id) : undefined;
+    lastRouteID.current = publicID;
+    onMemoryChange?.(publicID, replace);
+  }
   function choose(run: () => void) {
     if (busy) return;
     if (dirty)
@@ -230,7 +286,7 @@ export function MemoryLibrary({
       setBusy(false);
     }
   }
-  function reset() {
+  function reset(updateRoute = false) {
     selectionSource.current = list.data;
     setSelected(undefined);
     setCreating(false);
@@ -243,11 +299,13 @@ export function MemoryLibrary({
     setHistory(false);
     setCompare(undefined);
     setError("");
+    if (updateRoute) selectMemory(undefined, true);
   }
   function newMemory(content = "", title = "", tags = "") {
     choose(() => {
       reset();
       createKey.current = crypto.randomUUID();
+      selectMemory(undefined);
       setCreating(true);
       setEditing(true);
       setDraft(content);
@@ -310,7 +368,7 @@ export function MemoryLibrary({
         });
       }
       setOriginal(draft);
-      setSelected(saved.id);
+      selectMemory(saved.id, true);
       setCreating(false);
       setEditing(false);
       setPreview(true);
@@ -325,7 +383,7 @@ export function MemoryLibrary({
       text: "Move this memory to trash? It can be restored until its deletion deadline.",
       run: async () => {
         await c.memories.erase(memoryRef());
-        reset();
+        reset(true);
       },
     });
   }
@@ -364,7 +422,7 @@ export function MemoryLibrary({
   function cancelEdit() {
     choose(() => {
       if (creating) {
-        reset();
+        reset(true);
         list.reload();
         return;
       }
@@ -386,7 +444,12 @@ export function MemoryLibrary({
           {error || list.error || text.error}
         </p>
       )}
-      <div className={styles.columns}>
+      <div
+        className={styles.columns}
+        data-collection={
+          onMemoryChange && !memoryId && !creating ? "true" : undefined
+        }
+      >
         <Section className={styles.library} aria-label="Project memories">
           <header className={styles.heading}>
             <span className={styles.listTitle}>
@@ -451,7 +514,7 @@ export function MemoryLibrary({
             ]}
             onChange={(v) =>
               choose(() => {
-                reset();
+                reset(true);
                 setTrash(v === "trash");
               })
             }
@@ -463,7 +526,7 @@ export function MemoryLibrary({
               try {
                 const tags = parseLabels(labelQuery);
                 choose(() => {
-                  reset();
+                  reset(true);
                   setFilter(query);
                   setLabelFilter(tags);
                 });
@@ -540,7 +603,7 @@ export function MemoryLibrary({
                   disabled={busy}
                   onClick={() =>
                     choose(() => {
-                      reset();
+                      reset(true);
                       setQuery("");
                       setFilter("");
                       setLabelQuery("");
@@ -583,19 +646,9 @@ export function MemoryLibrary({
               {memories.map((m) => {
                 const owning = ownerFor(m),
                   tags = Object.entries(visibleLabels(m.labels));
-                return (
-                  <Button
-                    key={key(m.id)}
-                    className={styles.memoryItem}
-                    disabled={busy}
-                    aria-pressed={!creating && selectedKey === key(m.id)}
-                    onClick={() =>
-                      choose(() => {
-                        reset();
-                        setSelected(m.id);
-                      })
-                    }
-                  >
+                const selectedItem = !creating && selectedKey === key(m.id);
+                const contents = (
+                  <>
                     <span className={styles.memoryTitle}>
                       <DocumentIcon />
                       <span title={m.name}>{m.name}</span>
@@ -624,6 +677,51 @@ export function MemoryLibrary({
                         {tags.length > 2 && <span>+{tags.length - 2}</span>}
                       </span>
                     )}
+                  </>
+                );
+                const openMemory = () => {
+                  if (selectedItem) return;
+                  choose(() => {
+                    reset();
+                    selectMemory(m.id);
+                  });
+                };
+                return onMemoryChange ? (
+                  <RouteLink
+                    key={key(m.id)}
+                    {...memoryLocation(project, ownerID(m.id))}
+                    className={styles.memoryItem}
+                    data-selected={selectedItem || undefined}
+                    aria-current={selectedItem ? "page" : undefined}
+                    aria-disabled={busy || undefined}
+                    onClick={(event) => {
+                      if (busy) {
+                        event.preventDefault();
+                        return;
+                      }
+                      if (
+                        event.button !== 0 ||
+                        event.metaKey ||
+                        event.ctrlKey ||
+                        event.shiftKey ||
+                        event.altKey
+                      )
+                        return;
+                      event.preventDefault();
+                      openMemory();
+                    }}
+                  >
+                    {contents}
+                  </RouteLink>
+                ) : (
+                  <Button
+                    key={key(m.id)}
+                    className={styles.memoryItem}
+                    disabled={busy}
+                    aria-pressed={selectedItem}
+                    onClick={openMemory}
+                  >
+                    {contents}
                   </Button>
                 );
               })}
@@ -631,7 +729,15 @@ export function MemoryLibrary({
           </PanelScroll>
         </Section>
         <div className={styles.detail}>
-          {creating || selected ? (
+          {invalidMemoryID ? (
+            <Section
+              className={styles.placeholder}
+              aria-label="Memory unavailable"
+            >
+              <strong>Memory unavailable</strong>
+              <p role="alert">Invalid memory ID.</p>
+            </Section>
+          ) : creating || selected ? (
             <Section
               className={styles.section}
               aria-label="Memory document"
@@ -728,7 +834,7 @@ export function MemoryLibrary({
                                 ref: memoryRef(),
                                 dateUpdated: picked!.dateUpdated,
                               });
-                              reset();
+                              reset(true);
                             })
                           }
                         >
@@ -745,7 +851,7 @@ export function MemoryLibrary({
                                   ref: memoryRef(),
                                   dateUpdated: picked!.dateUpdated,
                                 });
-                                reset();
+                                reset(true);
                               },
                             })
                           }

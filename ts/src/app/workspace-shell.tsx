@@ -32,6 +32,7 @@ import { resumableStates } from "#src/features/session/model/session-actions.ts"
 import { useSettings } from "#src/shared/settings/settings.ts";
 import {
   matchesResource,
+  memoryLocation,
   projectLocation,
   resourceLocation,
   sessionLocation,
@@ -103,6 +104,10 @@ export function Workspace({
   );
   const background = useBackgroundSessions(c, inventory.sessions);
   const projects = inventory.projects;
+  const memoryProject =
+    projects.find(
+      (p) => currentProject && matchesResource(p, currentProject),
+    ) ?? projects[0];
   const sessionsByProject = useMemo(() => {
     const grouped = new Map<string, Session[]>();
     for (const session of inventory.sessions) {
@@ -183,10 +188,9 @@ export function Workspace({
                 {...(view === "tasks"
                   ? taskLocation({ project: currentProject })
                   : view === "memory"
-                    ? {
-                        ...resourceLocation("memory"),
-                        search: { project: currentProject },
-                      }
+                    ? memoryProject
+                      ? memoryLocation(projectId(memoryProject)!)
+                      : projectLocation()
                     : resourceLocation(view))}
                 className={`resource-link ${resource === view ? "active" : ""}`}
                 aria-label={
@@ -401,7 +405,14 @@ export function Workspace({
               </div>
             ) : (
               <nav className="settings-topics" aria-label="Resource navigation">
-                <PanelLink {...resourceLocation(resource)} aria-current="page">
+                <PanelLink
+                  {...(resource === "memory"
+                    ? memoryProject
+                      ? memoryLocation(projectId(memoryProject)!)
+                      : projectLocation()
+                    : resourceLocation(resource))}
+                  aria-current="page"
+                >
                   {resource === "memory"
                     ? "Shared memory"
                     : resource === "auxiliary"

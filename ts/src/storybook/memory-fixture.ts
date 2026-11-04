@@ -116,13 +116,18 @@ export function memoryFixture({
   add("API notes", "# API\n\nAPI-specific shared memory.", 1);
   function find(ref?: {
     key: { case?: string; value?: unknown };
-    project?: unknown;
+    project?: { key: { value?: unknown } };
   }) {
     const id = ref?.key.value;
     if (!(id instanceof Uint8Array))
       throw new ConnectError("Memory ID required", Code.InvalidArgument);
     const m = rows.get(key(id));
-    if (!m) throw new ConnectError("Memory not found", Code.NotFound);
+    const project = ref?.project?.key.value;
+    if (
+      !m ||
+      (project instanceof Uint8Array && key(m.project!.id) !== key(project))
+    )
+      throw new ConnectError("Memory not found", Code.NotFound);
     return m;
   }
   const transport = createRouterTransport(({ service }) =>
@@ -270,6 +275,7 @@ export function memoryFixture({
   );
   return {
     c: new Connection("http://storybook", transport),
+    memories: [...rows.values()],
     projects,
     sessions,
   };

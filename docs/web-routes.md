@@ -21,9 +21,17 @@ used for conversation state, drafts, subscriptions or mutations.
 | Account               | `/c/_/account/work1`                                |
 | Project task board    | `/c/_/task?project=cxz`                             |
 | Project task          | `/c/_/task/fix-login?project=cxz`                   |
-| Shared memory         | `/c/_/memory?project=cxz`                           |
+| Project memories      | `/c/_/project/{project ID}/memory`                  |
+| Memory document       | `/c/_/project/{project ID}/memory/{memory ID}`      |
 | Search                | `/c/_/search`                                       |
 | Auxiliary AI          | `/c/_/auxiliary`                                    |
+
+Memory links use stable project and document UUIDs. The project collection shows
+its document list without automatically selecting a document. Selecting a document
+updates the address; deep links, reload and browser Back/Forward restore that
+document. Unsaved edits require confirmation before leaving. Unknown projects or
+documents show an unavailable state instead of opening another document. The old
+`/memory` and `/c/_/memory` addresses have been removed.
 
 Conversation usage reports are available on the project and account pages.
 
@@ -36,7 +44,7 @@ The workspace sidebar carries the currently viewed project into Projects, Tasks
 and Shared memory links. A session's project becomes current when its
 conversation is opened; choosing a project on another page updates that scope.
 The workspace remembers its stable ID while visiting Accounts or Settings, and
-generates links using its latest alias. Explicit addresses and browser history
+generates links using its latest alias (stable UUIDs for Memory). Explicit addresses and browser history
 still determine the displayed selection. An unscoped task detail still requires
 a project choice when several projects exist.
 
