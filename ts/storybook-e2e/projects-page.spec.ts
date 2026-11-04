@@ -20,9 +20,9 @@ test("project list stories show resource links, activity, states and empty/loadi
     table
       .locator("tbody tr")
       .first()
-      .getByRole("img", { name: "Running", exact: true }),
+      .getByRole("img", { name: "Working", exact: true }),
   ).toBeVisible();
-  await expect(table.locator("time")).toHaveCount(0);
+  await expect(table.locator("time")).toHaveCount(2);
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
     "",
@@ -384,7 +384,7 @@ test("project row action failures keep confirmation open and the project unchang
     "Project stop is unavailable",
   );
   await expect(
-    row.getByRole("img", { name: "Running", exact: true }),
+    row.getByRole("img", { name: "Working", exact: true }),
   ).toBeVisible();
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(dialog).toHaveCount(0);

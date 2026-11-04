@@ -14,7 +14,6 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { RelativeTime } from "#src/shared/components/date-time.tsx";
-import { SessionActivityDots } from "#src/features/session/components/session-activity-dots.tsx";
 import { isSessionWorking } from "#src/features/session/components/session-activity.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
@@ -82,7 +81,7 @@ export function ProjectTable({
         <col className={styles.selectionColumn} />
         <col className={styles.stateColumn} />
         <col className={styles.nameColumn} />
-        <col className={styles.sessionColumn} />
+        <col className={styles.nameColumn} />
         <col className={styles.activityColumn} />
         <col />
       </colgroup>
@@ -150,7 +149,12 @@ export function ProjectTable({
                 />
               </TableCell>
               <TableCell className={styles.state}>
-                <ProjectStateIcon state={state} />
+                <ProjectStateIcon
+                  state={state}
+                  working={
+                    active && isSessionWorking(active) ? active : undefined
+                  }
+                />
               </TableCell>
               <TableCell className={styles.nameCell}>
                 <RouteLink
@@ -163,13 +167,14 @@ export function ProjectTable({
                     </span>
                     <small className={styles.alias}>{project.alias}</small>
                   </span>
+                  <NavigationArrow />
                 </RouteLink>
               </TableCell>
               <TableCell className={styles.nameCell}>
                 {active ? (
                   <RouteLink
                     {...sessionLocation(active)}
-                    className={`${styles.projectLink} ${styles.sessionLink}`}
+                    className={styles.projectLink}
                   >
                     <span className={styles.identity}>
                       <span className={styles.name}>
@@ -179,6 +184,7 @@ export function ProjectTable({
                         {active.alias || active.runtimeId}
                       </small>
                     </span>
+                    <NavigationArrow diagonal />
                   </RouteLink>
                 ) : (
                   <span className={styles.muted}>
@@ -187,15 +193,7 @@ export function ProjectTable({
                 )}
               </TableCell>
               <TableCell className={styles.activity}>
-                {active && isSessionWorking(active) ? (
-                  <span
-                    className="session-indicator"
-                    role="img"
-                    aria-label={t("Working")}
-                  >
-                    <SessionActivityDots session={active} />
-                  </span>
-                ) : time ? (
+                {time ? (
                   <RelativeTime value={time} />
                 ) : (
                   <span className={styles.muted}>—</span>
@@ -227,5 +225,22 @@ export function ProjectTable({
         )}
       </TableBody>
     </Table>
+  );
+}
+
+function NavigationArrow({ diagonal = false }: { diagonal?: boolean }) {
+  return (
+    <svg
+      className={styles.arrow}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={diagonal ? "M7 17 17 7M7 7h10v10" : "M5 12h14m-6-6 6 6-6 6"} />
+    </svg>
   );
 }
