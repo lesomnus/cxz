@@ -6,6 +6,8 @@ const list = (p: Page) =>
 const doc = (p: Page) =>
   p.getByRole("region", { name: "Memory document", exact: true });
 async function source(p: Page, text: string) {
+  const edit = p.getByRole("button", { name: "Edit", exact: true });
+  if (await edit.isVisible()) await edit.click();
   const button = p.getByRole("button", { name: "Source", exact: true });
   if (await button.isVisible()) await button.click();
   const editor = p.locator(".monaco-editor textarea");
@@ -23,6 +25,12 @@ test("flat memories open directly without an editing-session context", async ({
   await expect(
     page.getByRole("combobox", { name: "Editing session" }),
   ).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "Memory name", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Edit", exact: true }),
+  ).toBeVisible();
   await expect(
     list(page).getByRole("button", { name: /Architecture notes/ }),
   ).toHaveAttribute("aria-pressed", "true");
@@ -67,7 +75,6 @@ test("an empty project creates and saves its first Memory", async ({
   await expect(
     list(page).getByRole("button", { name: /First decision/ }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "First decision", exact: true }),
   ).toBeVisible();
@@ -80,6 +87,7 @@ test("edits are guarded on project changes and metadata saves preserve body revi
   await expect(
     page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Memory name", exact: true })
     .fill("Renamed notes");
@@ -90,7 +98,10 @@ test("edits are guarded on project changes and metadata saves preserve body revi
   await expect(page.getByRole("dialog")).toContainText(
     "Discard unsaved changes",
   );
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
@@ -125,7 +136,6 @@ test("body edits create versions, show diff and restore as another version", asy
   await expect(
     doc(page).getByText("Revision 3", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
@@ -156,6 +166,9 @@ test("label filters, trash restoration and purge use the flat resource", async (
   await open(page);
   await expect(doc(page)).toBeVisible();
   await page
+    .getByRole("button", { name: "Filter labels", exact: true })
+    .click();
+  await page
     .getByRole("textbox", { name: "Filter labels", exact: true })
     .fill("topic=none");
   await page.getByRole("button", { name: "Search", exact: true }).click();
@@ -169,7 +182,10 @@ test("label filters, trash restoration and purge use the flat resource", async (
   await expect(
     page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Memory actions", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(
@@ -187,7 +203,10 @@ test("label filters, trash restoration and purge use the flat resource", async (
   await expect(
     list(page).getByRole("button", { name: /Architecture notes/ }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Memory actions", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Confirm", exact: true })
@@ -256,3 +275,143 @@ for (const width of [390, 850, 1200])
     } else if (width === 390)
       expect(right.y).toBeGreaterThan(left.y + left.height);
   });
+
+test("reading and source inspection stay separate from editing, and Cancel preserves the document", async ({
+  page,
+}) => {
+  await open(page);
+  await expect(
+    page.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Memory name", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Source", exact: true }).click();
+  await expect(page.locator(".monaco-editor textarea")).toHaveJSProperty(
+    "readOnly",
+    true,
+  );
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.locator(".monaco-editor textarea")).toHaveJSProperty(
+    "readOnly",
+    false,
+  );
+  await page
+    .getByRole("textbox", { name: "Memory name", exact: true })
+    .fill("Discarded name");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Memory name", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    list(page).getByRole("button", { name: /Discarded name/ }),
+  ).toHaveCount(0);
+});
+
+test("migrated documents remain compact and preserve provenance on metadata edits", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await open(page, "migrated-documents");
+  await expect(
+    list(page)
+      .getByRole("button", { name: /runtime.md/ })
+      .first(),
+  ).toBeVisible();
+  await expect(list(page)).not.toContainText("legacy.");
+  await expect(
+    list(page)
+      .getByRole("navigation", { name: "Memories", exact: true })
+      .getByRole("button"),
+  ).toHaveCount(26);
+  await page.getByText("Document details", { exact: true }).click();
+  await expect(
+    doc(page).getByText("legacy.collection", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Memory labels", exact: true }),
+  ).not.toHaveValue(/legacy\./);
+  await page
+    .getByRole("textbox", { name: "Memory name", exact: true })
+    .fill("renamed-runtime.md");
+  await page
+    .getByRole("textbox", { name: "Memory labels", exact: true })
+    .fill("topic=review");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(
+    doc(page).getByText("Revision 1", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Document details", { exact: true }).click();
+  await expect(
+    doc(page).getByText("legacy.collection", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    doc(page).getByText("topic=review", { exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    1200,
+  );
+});
+
+test("version history closes on document selection instead of showing the previous resource history", async ({
+  page,
+}) => {
+  await open(page);
+  await expect(doc(page)).toBeVisible();
+  await page.getByText("Version history", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "r1", exact: true }),
+  ).toBeVisible();
+  await list(page)
+    .getByRole("button", { name: /Handoff notes/ })
+    .click();
+  const history = doc(page)
+    .locator("details")
+    .filter({ has: page.getByText("Version history", { exact: true }) });
+  await expect(history).not.toHaveAttribute("open");
+  await page.getByText("Version history", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "r1", exact: true }),
+  ).toBeVisible();
+});
+
+test("restoring a version explicitly confirms replacement of a dirty draft", async ({
+  page,
+}) => {
+  await open(page);
+  await expect(
+    page.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+  await source(page, "# Version two");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(
+    doc(page).getByText("Revision 2", { exact: true }),
+  ).toBeVisible();
+  await source(page, "# Unsaved version three");
+  await page.getByText("Version history", { exact: true }).click();
+  await page.getByRole("button", { name: "r1", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Use this version", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Replace your unsaved changes",
+  );
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await expect(page.locator(".monaco-editor")).toContainText(
+    "Shared memory belongs to the project.",
+  );
+  await expect(
+    page.getByRole("button", { name: "Save", exact: true }),
+  ).toBeEnabled();
+});

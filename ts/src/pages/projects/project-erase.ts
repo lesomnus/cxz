@@ -6,8 +6,8 @@ import { t } from "#src/shared/i18n/i18n.ts";
 
 type EraseConnection = Pick<
   Connection,
-  "projects" | "store" | "drafts" | "attention" | "conversations" | "inventory"
->;
+  "projects" | "store" | "drafts" | "attention" | "conversations"
+> & { inventory: Pick<Connection["inventory"], "snapshot" | "refresh"> };
 // Erase deletes what the project owns. The ref is the UUID this page is looking
 // at, so there is no string for the server to resolve and no preview needed to
 // check that it resolved to the right thing.

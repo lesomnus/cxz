@@ -1,5 +1,13 @@
-import { useEffect, useState, useRef } from "react";
-import { Button, Section, SegmentedControl } from "@lesomnus/nox";
+import { useEffect, useState, useRef, useId } from "react";
+import {
+  ActionMenu,
+  Button,
+  Section,
+  SegmentedControl,
+  Form,
+  FormField,
+  ValueMenu,
+} from "@lesomnus/nox";
 import { SourceEditor } from "@lesomnus/nox/editor";
 import type { Memory } from "#gen/cxz/memory_pb";
 import { MemoryScope, MemoryReadFormat } from "#gen/cxz/memory_svc_pb";
@@ -12,6 +20,8 @@ import { useEditorSettings } from "#src/shared/settings/settings.ts";
 import { useTheme } from "#src/shared/theme/theme.tsx";
 import { RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
+import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import styles from "./memory-library.module.css";
 
@@ -23,6 +33,29 @@ const labelsText = (labels: Record<string, string>) =>
   Object.entries(labels)
     .map(([k, v]) => `${k}=${v}`)
     .join(", ");
+const visibleLabels = (labels: Record<string, string>) =>
+  Object.fromEntries(
+    Object.entries(labels).filter(([k]) => !k.startsWith("legacy.")),
+  );
+const migrationLabels = (labels: Record<string, string>) =>
+  Object.fromEntries(
+    Object.entries(labels).filter(([k]) => k.startsWith("legacy.")),
+  );
+function DocumentIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <path d="M14 3H6v18h12V7zM14 3v5h4M9 12h6M9 16h6" />
+    </svg>
+  );
+}
 function parseLabels(value: string) {
   const labels: Record<string, string> = {};
   for (const part of value.split(",")) {
@@ -58,6 +91,8 @@ export function MemoryLibrary({
     [labels, setLabels] = useState(""),
     [owner, setOwner] = useState(""),
     [preview, setPreview] = useState(true),
+    [editing, setEditing] = useState(false),
+    [showFilters, setShowFilters] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [history, setHistory] = useState(false),
@@ -67,6 +102,8 @@ export function MemoryLibrary({
     text: string;
     run: () => Promise<unknown>;
   }>();
+  const formId = useId();
+  const mutationPending = useRef(false);
   const createKey = useRef(crypto.randomUUID()),
     theme = useTheme(),
     settings = useEditorSettings();
@@ -100,7 +137,20 @@ export function MemoryLibrary({
     [c, project, scope, filter, labelFilter],
   );
   const selectionSource = useRef<typeof list.data>(undefined);
-  const memories = list.data?.key === listKey ? list.data.items : [];
+  const memories =
+    list.data?.key === listKey
+      ? [...list.data.items].sort((a, b) => {
+          const updated =
+            Number(b.dateUpdated?.seconds ?? 0n) -
+              Number(a.dateUpdated?.seconds ?? 0n) ||
+            (b.dateUpdated?.nanos ?? 0) - (a.dateUpdated?.nanos ?? 0);
+          return (
+            updated ||
+            a.name.localeCompare(b.name) ||
+            key(a.id).localeCompare(key(b.id))
+          );
+        })
+      : [];
   const memoryRef = (id = selected!) => ({
     key: { case: "id" as const, value: id },
     project: projectRef(project),
@@ -121,6 +171,7 @@ export function MemoryLibrary({
   );
   const read = text.data?.key === selectedKey ? text.data : undefined;
   const picked = read?.memory;
+  const reading = !creating && (text.loading || (!read && !text.error));
   useEffect(() => {
     if (
       !creating &&
@@ -136,7 +187,7 @@ export function MemoryLibrary({
       setDraft(read.content);
       setOriginal(read.content);
       setName(read.memory?.name ?? "");
-      setLabels(labelsText(read.memory?.labels ?? {}));
+      setLabels(labelsText(visibleLabels(read.memory?.labels ?? {})));
       setCompare(undefined);
     }
   }, [text.data]);
@@ -145,7 +196,7 @@ export function MemoryLibrary({
     : !!read &&
       (draft !== original ||
         name !== picked?.name ||
-        labels !== labelsText(picked?.labels ?? {}));
+        labels !== labelsText(visibleLabels(picked?.labels ?? {})));
   function choose(run: () => void) {
     if (busy) return;
     if (dirty)
@@ -163,7 +214,8 @@ export function MemoryLibrary({
     return () => registerGuard?.(undefined);
   }, [dirty, busy, registerGuard]);
   async function act(run: () => Promise<unknown>) {
-    if (busy) return false;
+    if (mutationPending.current) return false;
+    mutationPending.current = true;
     setBusy(true);
     setError("");
     try {
@@ -174,6 +226,7 @@ export function MemoryLibrary({
       setError(String(e));
       return false;
     } finally {
+      mutationPending.current = false;
       setBusy(false);
     }
   }
@@ -181,6 +234,8 @@ export function MemoryLibrary({
     selectionSource.current = list.data;
     setSelected(undefined);
     setCreating(false);
+    setEditing(false);
+    setPreview(true);
     setDraft("");
     setOriginal("");
     setName("");
@@ -194,6 +249,7 @@ export function MemoryLibrary({
       reset();
       createKey.current = crypto.randomUUID();
       setCreating(true);
+      setEditing(true);
       setDraft(content);
       setName(title);
       setLabels(tags);
@@ -227,7 +283,10 @@ export function MemoryLibrary({
   );
   async function save() {
     await act(async () => {
-      const tagMap = parseLabels(labels);
+      const tagMap = {
+        ...(!creating ? migrationLabels(picked?.labels ?? {}) : {}),
+        ...parseLabels(labels),
+      };
       let saved: Memory;
       if (creating) {
         saved = await c.memories.add({
@@ -253,6 +312,8 @@ export function MemoryLibrary({
       setOriginal(draft);
       setSelected(saved.id);
       setCreating(false);
+      setEditing(false);
+      setPreview(true);
       text.reload();
       versions.reload();
     });
@@ -268,170 +329,389 @@ export function MemoryLibrary({
       },
     });
   }
+  function restoreVersion() {
+    const restore = async () => {
+      const past = await c.memories.read({
+        ref: memoryRef(),
+        revision: compare,
+        format: MemoryReadFormat.FULL,
+      });
+      setDraft(past.content);
+      setEditing(true);
+      setPreview(false);
+      setCompare(undefined);
+    };
+    if (dirty)
+      setConfirmation({
+        title: "Discard unsaved changes",
+        text: "Replace your unsaved changes with this version?",
+        run: restore,
+      });
+    else void act(restore);
+  }
+  function ownerFor(memory: Memory) {
+    const session = sessions.find((s) => ownerID(s.id) === memory.ownerSession);
+    return {
+      name:
+        session?.alias ||
+        session?.name ||
+        (memory.ownerSession
+          ? `Session ${memory.ownerSession.slice(0, 8)}`
+          : "Project memory"),
+      agent: session?.agent || memory.labels["legacy.agent"] || "",
+    };
+  }
+  function cancelEdit() {
+    choose(() => {
+      if (creating) {
+        reset();
+        list.reload();
+        return;
+      }
+      setDraft(read?.content ?? "");
+      setOriginal(read?.content ?? "");
+      setName(picked?.name ?? "");
+      setLabels(labelsText(visibleLabels(picked?.labels ?? {})));
+      setEditing(false);
+      setPreview(true);
+      setError("");
+    });
+  }
+  const ownerInfo = picked ? ownerFor(picked) : undefined;
+  const tags = picked ? Object.entries(visibleLabels(picked.labels)) : [];
   return (
     <div className={styles.content}>
-      <form
-        className={styles.row}
-        onSubmit={(e) => {
-          e.preventDefault();
-          try {
-            const tags = parseLabels(labelQuery);
-            choose(() => {
-              reset();
-              setFilter(query);
-              setLabelFilter(tags);
-            });
-          } catch (e) {
-            setError(String(e));
-          }
-        }}
-      >
-        <input
-          className={styles.input}
-          aria-label="Search memory"
-          placeholder="Search names and text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <input
-          className={styles.input}
-          aria-label="Filter labels"
-          placeholder="Labels: topic=design, status=current"
-          value={labelQuery}
-          onChange={(e) => setLabelQuery(e.target.value)}
-        />
-        <Button type="submit" disabled={busy}>
-          Search
-        </Button>
-      </form>
-      <div className={styles.tabs}>
-        <SegmentedControl
-          label="Memory scope"
-          size="compact"
-          value={trash ? "trash" : "active"}
-          disabled={busy}
-          options={[
-            { value: "active", label: "Memories" },
-            { value: "trash", label: "Trash" },
-          ]}
-          onChange={(v) =>
-            choose(() => {
-              reset();
-              setTrash(v === "trash");
-            })
-          }
-        />
-        <Button
-          disabled={busy}
-          onClick={() => {
-            list.reload();
-          }}
-        >
-          Refresh
-        </Button>
-        {!trash && (
-          <Button disabled={busy} onClick={() => newMemory()}>
-            New memory
-          </Button>
-        )}
-      </div>
       {(error || list.error || text.error) && (
-        <p role="alert">{error || list.error || text.error}</p>
+        <p role="alert" className={styles.error}>
+          {error || list.error || text.error}
+        </p>
       )}
       <div className={styles.columns}>
         <Section className={styles.library} aria-label="Project memories">
           <header className={styles.heading}>
-            <strong>{trash ? "Trash" : "Memories"}</strong>
-            <span className={styles.muted}>{memories.length}</span>
-          </header>
-          <nav
-            className={styles.memoryList}
-            aria-label="Memories"
-            aria-busy={list.loading}
-          >
-            {list.loading && !list.data && (
-              <p className={styles.empty}>Loading memories…</p>
-            )}
-            {!list.loading && !list.error && !memories.length && (
-              <p className={styles.empty}>
-                {filter || Object.keys(labelFilter).length
-                  ? "No memories match your filters."
-                  : trash
-                    ? "Trash is empty."
-                    : "No memories yet. Create a document to start."}
-              </p>
-            )}
-            {list.error && (
-              <p className={styles.empty}>
-                Memories could not be loaded. Refresh to try again.
-              </p>
-            )}
-            {memories.map((m) => {
-              const owning = sessions.find(
-                (s) => ownerID(s.id) === m.ownerSession,
-              );
-              return (
+            <span className={styles.listTitle}>
+              Memories <span className={styles.count}>{memories.length}</span>
+            </span>
+            <div className={styles.iconActions}>
+              <Button
+                variant="toolbar"
+                disabled={busy || list.loading}
+                aria-label="Refresh"
+                title="Refresh"
+                onClick={() =>
+                  choose(() => {
+                    list.reload();
+                    text.reload();
+                  })
+                }
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  aria-hidden="true"
+                >
+                  <path d="M20 7v5h-5M4 17v-5h5M19 12a7 7 0 0 0-12-5L4 10m1 2a7 7 0 0 0 12 5l3-3" />
+                </svg>
+              </Button>
+              {!trash && (
                 <Button
-                  key={key(m.id)}
-                  className={styles.memoryItem}
+                  variant="toolbar"
                   disabled={busy}
-                  aria-pressed={!creating && selectedKey === key(m.id)}
+                  aria-label="New memory"
+                  title="New memory"
+                  onClick={() => newMemory()}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </Button>
+              )}
+            </div>
+          </header>
+          <SegmentedControl
+            label="Memory scope"
+            size="compact"
+            value={trash ? "trash" : "active"}
+            disabled={busy}
+            options={[
+              { value: "active", label: "Memories" },
+              { value: "trash", label: "Trash" },
+            ]}
+            onChange={(v) =>
+              choose(() => {
+                reset();
+                setTrash(v === "trash");
+              })
+            }
+          />
+          <form
+            className={styles.search}
+            onSubmit={(e) => {
+              e.preventDefault();
+              try {
+                const tags = parseLabels(labelQuery);
+                choose(() => {
+                  reset();
+                  setFilter(query);
+                  setLabelFilter(tags);
+                });
+              } catch (e) {
+                setError(String(e));
+              }
+            }}
+          >
+            <div className={styles.searchRow}>
+              <input
+                className={styles.input}
+                aria-label="Search memory"
+                placeholder="Search documents…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <Button
+                type="submit"
+                variant="toolbar"
+                disabled={busy}
+                aria-label="Search"
+                title="Search"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  aria-hidden="true"
+                >
+                  <circle cx="10" cy="10" r="6" />
+                  <path d="m15 15 5 5" />
+                </svg>
+              </Button>
+              <Button
+                type="button"
+                variant="toolbar"
+                disabled={busy}
+                aria-label="Filter labels"
+                title="Filter labels"
+                aria-pressed={showFilters}
+                onClick={() => setShowFilters((v) => !v)}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  aria-hidden="true"
+                >
+                  <path d="M4 6h16M7 12h10M10 18h4" />
+                </svg>
+              </Button>
+            </div>
+            {showFilters && (
+              <FormField label="Labels">
+                <input
+                  aria-label="Filter labels"
+                  placeholder="topic=design, status=current"
+                  value={labelQuery}
+                  onChange={(e) => setLabelQuery(e.target.value)}
+                />
+              </FormField>
+            )}
+            {(filter || Object.keys(labelFilter).length > 0) && (
+              <div className={styles.filterSummary}>
+                <span>Filtered results</span>
+                <Button
+                  type="button"
+                  disabled={busy}
                   onClick={() =>
                     choose(() => {
                       reset();
-                      setSelected(m.id);
-                      setPreview(true);
+                      setQuery("");
+                      setFilter("");
+                      setLabelQuery("");
+                      setLabelFilter({});
                     })
                   }
                 >
-                  <span className={styles.memoryTitle}>
-                    <span title={m.name}>{m.name}</span>
-                  </span>
-                  <small>
-                    {owning?.alias || owning?.name || "Project memory"} · r
-                    {m.revision.toString()}
-                    {m.dateUpdated && (
-                      <>
-                        {" "}
-                        · <RelativeTime value={m.dateUpdated} />
-                      </>
-                    )}
-                  </small>
-                  {Object.keys(m.labels).length > 0 && (
-                    <small>{labelsText(m.labels)}</small>
-                  )}
+                  Clear
                 </Button>
-              );
-            })}
-          </nav>
+              </div>
+            )}
+          </form>
+          <PanelScroll
+            className={styles.listScroll}
+            viewportClassName={styles.listViewport}
+            scrollbarLabel="Memory list scroll"
+          >
+            <nav
+              className={styles.memoryList}
+              aria-label="Memories"
+              aria-busy={list.loading}
+            >
+              {list.loading && !list.data && (
+                <p className={styles.empty}>Loading memories…</p>
+              )}
+              {!list.loading && !list.error && !memories.length && (
+                <p className={styles.empty}>
+                  {filter || Object.keys(labelFilter).length
+                    ? "No memories match your filters."
+                    : trash
+                      ? "Trash is empty."
+                      : "No memories yet. Create a document to start."}
+                </p>
+              )}
+              {list.error && (
+                <p className={styles.empty}>
+                  Memories could not be loaded. Refresh to try again.
+                </p>
+              )}
+              {memories.map((m) => {
+                const owning = ownerFor(m),
+                  tags = Object.entries(visibleLabels(m.labels));
+                return (
+                  <Button
+                    key={key(m.id)}
+                    className={styles.memoryItem}
+                    disabled={busy}
+                    aria-pressed={!creating && selectedKey === key(m.id)}
+                    onClick={() =>
+                      choose(() => {
+                        reset();
+                        setSelected(m.id);
+                      })
+                    }
+                  >
+                    <span className={styles.memoryTitle}>
+                      <DocumentIcon />
+                      <span title={m.name}>{m.name}</span>
+                      <span className={styles.revision}>
+                        r{m.revision.toString()}
+                      </span>
+                    </span>
+                    <span className={styles.memoryMeta}>
+                      <span className={styles.owner}>
+                        {owning.agent && (
+                          <span aria-hidden="true">
+                            <AgentBrand agent={owning.agent} />
+                          </span>
+                        )}
+                        <span title={owning.name}>{owning.name}</span>
+                      </span>
+                      {m.dateUpdated && <RelativeTime value={m.dateUpdated} />}
+                    </span>
+                    {tags.length > 0 && (
+                      <span className={styles.tags}>
+                        {tags.slice(0, 2).map(([k, v]) => (
+                          <span key={k} title={`${k}=${v}`}>
+                            {k}={v}
+                          </span>
+                        ))}
+                        {tags.length > 2 && <span>+{tags.length - 2}</span>}
+                      </span>
+                    )}
+                  </Button>
+                );
+              })}
+            </nav>
+          </PanelScroll>
         </Section>
         <div className={styles.detail}>
           {creating || selected ? (
             <Section
               className={styles.section}
               aria-label="Memory document"
-              aria-busy={text.loading && !creating}
+              aria-busy={reading}
             >
-              <header className={styles.heading}>
-                <strong>
-                  {creating ? "New memory" : picked?.name || "Memory"}
-                  {dirty ? " · Unsaved" : ""}
-                </strong>
-                {picked && (
-                  <span className={styles.muted}>
-                    Revision {picked.revision.toString()}
-                  </span>
+              <header className={styles.documentHeader}>
+                <div className={styles.documentTitle}>
+                  <DocumentIcon />
+                  <strong>
+                    {creating ? "New memory" : picked?.name || "Memory"}
+                    {dirty ? " · Unsaved" : ""}
+                  </strong>
+                </div>
+                {!creating && picked && (
+                  <ActionMenu
+                    label="Memory actions"
+                    items={[
+                      ...(!trash
+                        ? [
+                            {
+                              label: "Copy",
+                              disabled: busy,
+                              run: () =>
+                                newMemory(draft, `${name} copy`, labels),
+                            },
+                          ]
+                        : []),
+                      {
+                        label: "Reload",
+                        disabled: busy,
+                        run: () => choose(text.reload),
+                      },
+                      ...(!trash
+                        ? [
+                            {
+                              label: "Delete",
+                              danger: true,
+                              disabled: busy,
+                              run: remove,
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
                 )}
               </header>
-              {text.loading && !creating ? (
+              {reading ? (
                 <p className={styles.empty}>Loading memory…</p>
               ) : text.error && !creating ? (
                 <Button onClick={text.reload}>Retry memory</Button>
               ) : (
                 <>
+                  {!creating && picked && (
+                    <div className={styles.documentMeta}>
+                      <span className={styles.owner}>
+                        {ownerInfo?.agent && (
+                          <span aria-hidden="true">
+                            <AgentBrand agent={ownerInfo.agent} />
+                          </span>
+                        )}
+                        <span>{ownerInfo?.name}</span>
+                      </span>
+                      <span>Revision {picked.revision.toString()}</span>
+                      {picked.dateUpdated && (
+                        <RelativeTime value={picked.dateUpdated} />
+                      )}
+                    </div>
+                  )}
+                  {!editing && tags.length > 0 && (
+                    <div className={styles.tags}>
+                      {tags.map(([k, v]) => (
+                        <span key={k}>
+                          {k}={v}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {trash ? (
-                    <>
-                      <p className={styles.muted}>
+                    <div className={styles.trashNotice}>
+                      <p>
                         In trash until{" "}
                         {picked?.dateDeleted
                           ? new Date(
@@ -439,7 +719,7 @@ export function MemoryLibrary({
                             ).toLocaleString()
                           : ""}
                       </p>
-                      <div className={styles.row}>
+                      <div className={styles.actions}>
                         <Button
                           disabled={busy || !picked}
                           onClick={() =>
@@ -473,157 +753,203 @@ export function MemoryLibrary({
                           Purge
                         </Button>
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <>
-                      <label className={styles.field}>
-                        Name
-                        <input
-                          className={styles.input}
-                          aria-label="Memory name"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
+                      {editing && (
+                        <Form
+                          as="fieldset"
+                          columns={1}
                           disabled={busy}
-                        />
-                      </label>
-                      <label className={styles.field}>
-                        Labels
-                        <input
-                          className={styles.input}
-                          aria-label="Memory labels"
-                          placeholder="topic=design"
-                          value={labels}
-                          onChange={(e) => setLabels(e.target.value)}
-                          disabled={busy}
-                        />
-                      </label>
-                      {creating && sessions.length > 0 && (
-                        <label className={styles.field}>
-                          Owner session
-                          <select
-                            className={styles.input}
-                            aria-label="Owner session"
-                            value={owner}
-                            onChange={(e) => setOwner(e.target.value)}
-                          >
-                            <option value="">No owner session</option>
-                            {sessions.map((s) => (
-                              <option key={s.runtimeId} value={ownerID(s.id)}>
-                                {s.alias || s.name || s.runtimeId}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      )}
-                      <div className={styles.row}>
-                        <Button
-                          disabled={
-                            busy || !name.trim() || (!creating && !dirty)
-                          }
-                          loading={busy}
-                          onClick={() => void save()}
+                          className={styles.editFields}
                         >
-                          Save
-                        </Button>
+                          <FormField label="Name" htmlFor={`${formId}-name`}>
+                            <input
+                              id={`${formId}-name`}
+                              aria-label="Memory name"
+                              value={name}
+                              onChange={(e) => setName(e.target.value)}
+                            />
+                          </FormField>
+                          <FormField
+                            label="Labels"
+                            htmlFor={`${formId}-labels`}
+                          >
+                            <input
+                              id={`${formId}-labels`}
+                              aria-label="Memory labels"
+                              placeholder="topic=design"
+                              value={labels}
+                              onChange={(e) => setLabels(e.target.value)}
+                            />
+                          </FormField>
+                          {creating && sessions.length > 0 && (
+                            <FormField label="Owner session">
+                              <ValueMenu
+                                label="Owner session"
+                                value={owner}
+                                options={[
+                                  { value: "", label: "No owner session" },
+                                  ...sessions.map((s) => ({
+                                    value: ownerID(s.id),
+                                    label: s.alias || s.name || s.runtimeId,
+                                  })),
+                                ]}
+                                choose={setOwner}
+                                disabled={busy}
+                              />
+                            </FormField>
+                          )}
+                        </Form>
+                      )}
+                      <div className={styles.documentTools}>
+                        <div className={styles.actions}>
+                          {editing ? (
+                            <>
+                              <Button
+                                disabled={
+                                  busy || !name.trim() || (!creating && !dirty)
+                                }
+                                loading={busy}
+                                onClick={() => void save()}
+                              >
+                                Save
+                              </Button>
+                              <Button disabled={busy} onClick={cancelEdit}>
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              disabled={busy || !picked}
+                              onClick={() => {
+                                setEditing(true);
+                                setPreview(false);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                          )}
+                        </div>
                         <Button
-                          aria-pressed={preview}
-                          onClick={() => setPreview(!preview)}
+                          disabled={busy}
+                          aria-pressed={!preview}
+                          onClick={() => setPreview((v) => !v)}
                         >
                           {preview ? "Source" : "Preview"}
                         </Button>
-                        {!creating && (
-                          <>
-                            <Button
-                              disabled={busy}
-                              onClick={() => choose(text.reload)}
-                            >
-                              Reload
-                            </Button>
-                            <Button
-                              disabled={busy}
-                              onClick={() =>
-                                newMemory(draft, `${name} copy`, labels)
-                              }
-                            >
-                              Copy
-                            </Button>
-                            <Button disabled={busy} onClick={remove}>
-                              Delete
-                            </Button>
-                          </>
-                        )}
                       </div>
                     </>
                   )}
                   {preview || trash ? (
-                    <Markdown text={draft} />
+                    <div className={styles.documentBody}>
+                      {draft.trim() ? (
+                        <Markdown text={draft} />
+                      ) : (
+                        <p className={styles.empty}>This document is empty.</p>
+                      )}
+                    </div>
                   ) : (
                     <div className={styles.editor}>
                       <SourceEditor
                         path={`memory-${selectedKey || "new"}.md`}
                         ariaLabel="Memory content"
                         value={draft}
-                        readOnly={busy}
+                        readOnly={!editing || busy}
                         onChange={setDraft}
                         theme={theme}
                         settings={settings}
                       />
                     </div>
                   )}
-                  {!creating && (
-                    <details onToggle={(e) => setHistory(e.currentTarget.open)}>
-                      <summary>Version history</summary>
-                      {versions.error && <p role="alert">{versions.error}</p>}
-                      <div className={styles.row}>
-                        {versions.data?.versions.map((v) => (
-                          <Button
-                            key={v.revision.toString()}
-                            aria-pressed={compare === v.revision}
-                            onClick={() => setCompare(v.revision)}
-                          >
-                            r{v.revision.toString()}
-                          </Button>
-                        ))}
-                      </div>
-                      {difference.error && (
-                        <p role="alert">{difference.error}</p>
-                      )}
-                      {difference.data && compare !== undefined && (
-                        <>
-                          <pre className={styles.diff}>
-                            {difference.data.diff || "No body changes."}
-                          </pre>
-                          {!trash && (
+                  {!creating && picked && (
+                    <>
+                      <details
+                        className={styles.disclosure}
+                        open={history}
+                        onToggle={(e) => setHistory(e.currentTarget.open)}
+                      >
+                        <summary>Version history</summary>
+                        {versions.loading && (
+                          <p className={styles.empty}>Loading versions…</p>
+                        )}
+                        {versions.error && <p role="alert">{versions.error}</p>}
+                        <div className={styles.versionList}>
+                          {versions.data?.versions.map((v) => (
                             <Button
-                              disabled={busy}
-                              onClick={() =>
-                                choose(() => {
-                                  void act(async () => {
-                                    const past = await c.memories.read({
-                                      ref: memoryRef(),
-                                      revision: compare,
-                                      format: MemoryReadFormat.FULL,
-                                    });
-                                    setDraft(past.content);
-                                    setPreview(false);
-                                    setCompare(undefined);
-                                  });
-                                })
-                              }
+                              key={v.revision.toString()}
+                              aria-pressed={compare === v.revision}
+                              onClick={() => setCompare(v.revision)}
                             >
-                              Use this version
+                              r{v.revision.toString()}
                             </Button>
+                          ))}
+                        </div>
+                        {difference.loading && compare !== undefined && (
+                          <p className={styles.empty}>Loading comparison…</p>
+                        )}
+                        {difference.error && (
+                          <p role="alert">{difference.error}</p>
+                        )}
+                        {difference.data && compare !== undefined && (
+                          <>
+                            {difference.data.format ===
+                            MemoryReadFormat.DIFF ? (
+                              <pre className={styles.diff}>
+                                {difference.data.diff || "No body changes."}
+                              </pre>
+                            ) : (
+                              <p className={styles.empty}>
+                                This version is no longer available for
+                                comparison. Read the current document above.
+                              </p>
+                            )}
+                            {!trash && (
+                              <Button
+                                disabled={
+                                  busy ||
+                                  compare === picked.revision ||
+                                  difference.data.format !==
+                                    MemoryReadFormat.DIFF
+                                }
+                                onClick={restoreVersion}
+                              >
+                                Use this version
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </details>
+                      <details className={styles.disclosure}>
+                        <summary>Document details</summary>
+                        <dl className={styles.metadata}>
+                          <dt>Memory ID</dt>
+                          <dd>{ownerID(picked.id)}</dd>
+                          <dt>Owner session</dt>
+                          <dd>{picked.ownerSession || "No owner session"}</dd>
+                          {Object.entries(migrationLabels(picked.labels)).map(
+                            ([k, v]) => (
+                              <div key={k}>
+                                <dt>{k}</dt>
+                                <dd>{v}</dd>
+                              </div>
+                            ),
                           )}
-                        </>
-                      )}
-                    </details>
+                        </dl>
+                      </details>
+                    </>
                   )}
                 </>
               )}
             </Section>
           ) : (
             <Section className={styles.placeholder} aria-label="Memory preview">
-              <strong>Your project's shared knowledge</strong>
+              <DocumentIcon />
+              <strong>
+                {trash
+                  ? "Select a deleted document"
+                  : "Your project's shared knowledge"}
+              </strong>
               <p>
                 Select a memory to read or edit it. Each memory is one Markdown
                 document; labels organize related notes.

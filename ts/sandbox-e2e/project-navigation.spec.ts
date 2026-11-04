@@ -122,23 +122,15 @@ test("reselecting Projects opens the project table and keeps list URLs and histo
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
     "Name",
-    "Sessions",
+    "Recent session",
+    "Last activity",
     "",
     "",
   ]);
   await expect(table.locator("tbody tr")).toHaveCount(2);
   await expect(picker(page)).toHaveText("Select project");
   await expect(
-    table
-      .locator("tbody tr")
-      .first()
-      .getByRole("img", { name: "8", exact: true }),
-  ).toBeVisible();
-  await expect(
-    table
-      .locator("tbody tr")
-      .last()
-      .getByRole("img", { name: "1", exact: true }),
+    table.locator("tbody tr").first().locator("td").nth(2).getByRole("link"),
   ).toBeVisible();
   await page.goBack();
   await expect(picker(page)).toHaveText("Secondary project");

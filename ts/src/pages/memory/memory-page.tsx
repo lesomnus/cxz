@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Button, PageToolbar, Section } from "@lesomnus/nox";
+import { PageToolbar, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -13,7 +13,6 @@ import {
   matchesResource,
   resourceHandle,
   resourceLocation,
-  projectLocation,
 } from "#src/shared/navigation/resource-route.ts";
 import styles from "./memory-page.module.css";
 
@@ -98,17 +97,12 @@ export function MemoryPage({
                       : "No projects yet"
                     : "Project unavailable"}
               </strong>
-              {!projectsLoading && !sessionsLoading && project && (
-                <>
-                  <p>Choose a project to browse its memory documents.</p>
-                  <Button
-                    onClick={() =>
-                      void navigate(projectLocation(resourceHandle(project)))
-                    }
-                  >
-                    Open project
-                  </Button>
-                </>
+              {!projectsLoading && !sessionsLoading && (
+                <p>
+                  {memoryProject
+                    ? "This project is not available on this connection."
+                    : "Add a project to start sharing memory documents."}
+                </p>
               )}
             </Section>
           )}

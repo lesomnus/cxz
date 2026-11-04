@@ -23,20 +23,50 @@ function Preview({
   failControls = false,
   failErase = false,
   requireTrust = false,
+  listActivity = false,
+  failProjectControls = false,
 }) {
   const [router] = useState(() => {
     const fixture = projectFixture(
       unavailable,
       stopped,
       sessionCount,
-      failControls
-        ? "control"
-        : failErase
-          ? "erase"
-          : requireTrust
-            ? "trust"
-            : "",
+      failProjectControls
+        ? "project-control"
+        : failControls
+          ? "control"
+          : failErase
+            ? "erase"
+            : requireTrust
+              ? "trust"
+              : "",
     );
+    if (listActivity) {
+      const now = Date.now();
+      fixture.sessions.forEach((session, index) => {
+        const position = index % sessionCount;
+        session.name = [
+          "Latest conversation",
+          "Working conversation",
+          "Unread completed conversation",
+        ][position]!;
+        session.status!.state = position === 1 ? "working" : "idle";
+        session.status!.pending = [];
+        fixture.activityTimes.set(
+          session.runtimeId,
+          now - [60_000, 300_000, 1800_000][position]!,
+        );
+      });
+      fixture.notifications.push({
+        runtimeId: fixture.sessions[2]!.runtimeId,
+        kind: "session.completed",
+      });
+      // A question is unread too, but does not outrank active work.
+      fixture.notifications.push({
+        runtimeId: fixture.sessions[3]!.runtimeId,
+        kind: "session.question",
+      });
+    }
     if (projectStates) {
       const states = [
         ["Running", ContainerState.RUNNING],
@@ -112,6 +142,7 @@ function Preview({
           const [liveProjects, setProjects] = useState(projects);
           const [liveSessions, setSessions] = useState(sessions);
           useEffect(() => {
+            if (listActivity) fixture.c.attention.observe(sessions);
             const stop = fixture.subscribe(() => {
               setProjects([...fixture.projects]);
               setSessions([...fixture.sessions]);
@@ -166,6 +197,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const List: Story = { args: { list: true } };
+export const ListActivity: Story = {
+  args: { list: true, listActivity: true, sessionCount: 3 },
+};
+export const ListBatchPartialFailure: Story = {
+  args: { list: true, failProjectControls: true },
+};
 export const ListStates: Story = { args: { list: true, projectStates: true } };
 export const ListRequiresTrust: Story = {
   args: { list: true, stopped: true, requireTrust: true },

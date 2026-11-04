@@ -1,7 +1,9 @@
 import type { Connection } from "#src/shared/api/connection.ts";
 import type { Project } from "#gen/cxz/project_pb";
 
-type Target = Pick<Connection, "projects" | "store" | "inventory">;
+type Target = Pick<Connection, "projects" | "store"> & {
+  inventory: Pick<Connection["inventory"], "refresh">;
+};
 
 // The container's lifecycle, one function per RPC so that what a button says
 // and what it calls cannot drift apart. Stopping keeps the container, starting

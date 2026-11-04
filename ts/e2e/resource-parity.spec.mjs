@@ -669,7 +669,7 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Memory", exact: true }).click();
-  await page.getByRole("button", { name: "Source", exact: true }).click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   const editor = page.locator(".monaco-editor textarea");
   await expect(editor).toBeVisible();
   await editor.focus();
@@ -685,7 +685,10 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
   await expect(
     page.getByText("Research notes · Unsaved", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Memory actions", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Reload", exact: true }).click();
   await expect(
     page.getByRole("dialog", { name: "Discard unsaved changes" }),
   ).toBeVisible();

@@ -24,22 +24,6 @@
   align-items: center;
   gap: calc(2 * var(--ui-space));
 }
-.sessionControl {
-  display: flex;
-  align-items: center;
-  gap: var(--ui-space);
-  margin-inline-start: auto;
-  min-width: 0;
-}
-.sessionControl > :last-child {
-  min-width: 0;
-  max-width: 220px;
-}
-.contextLabel {
-  color: var(--ui-muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
 }
@@ -67,9 +51,5 @@
   .toolbarContent {
     flex-wrap: wrap;
     padding-block: var(--ui-space);
-  }
-  .sessionControl {
-    margin-inline-start: 0;
-    width: 100%;
   }
 }

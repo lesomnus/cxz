@@ -22,7 +22,11 @@ Copying never moves credentials.
 A Memory is one Markdown document in a project, with an optional owner session and
 labels. A session can publish any number of memories. Published documents survive
 session purge. The web Memory page lists documents directly; selecting an editing
-session is unnecessary. The TUI `/memory` view offers direct browsing, copying,
+session is unnecessary. Reading is the default; Edit opens name/label fields and
+Markdown source with Save/Cancel. Source without Edit is read only. The document
+menu offers copying, reload and trash; history and migration metadata are separate
+collapsible sections. Migration labels are retained when editing user labels.
+The TUI `/memory` view offers direct browsing, copying,
 rename, trash/restore/purge, and starting a session seeded from a selected document.
 
 `MemoryService` is independent of `SessionService`:

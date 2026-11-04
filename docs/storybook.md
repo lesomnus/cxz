@@ -22,6 +22,7 @@ npm run storybook
 - `Conversation/TaskDetails`: 작업의 Input/Output/Result를 cxz `DetailTabs`와 Monaco로 표시하는 floating card 연동 예제. 기본 Card와 SourceEditor 자체 예제는 Nox에 있습니다.
 - `Sessions/Panel`: 실제 세션 카드, 선택 하이라이트, 상태 indicator, 프로젝트 접기, 긴 목록의 스크롤. `WorkingPhases`는 여러 working 세션의 시작 위상과 오로라 색상 순서가 서로 다른 예제입니다. 세션 ID와 run ID로 seed를 만들므로 새로고침하거나 프로젝트를 접었다 펼쳐도 같은 배치를 재현하며, 이름 변경이나 일반 상태 갱신은 배치를 바꾸지 않습니다.
 - `Pages/Projects`: Account와 같은 공용 Sessions 테이블을 사용합니다. 이름·alias를 묶은 세션/계정 이동 버튼, 상태 아이콘, 행 선택과 개별·일괄 작업, 세션 추가를 확인합니다.
+- `Pages/Memory`: 문서 목록과 읽기 중심의 본문, 별도 편집 모드와 읽기 전용 원문 보기. `MigratedDocuments`는 같은 파일명·여러 소유 세션·종료된 세션·이관 라벨이 섞인 목록을 확인합니다. 이관 메타데이터는 문서 상세 정보로 접고, 사용자 라벨은 그대로 표시·검색·편집합니다. 저장 충돌, 빈 프로젝트, 로딩·오류와 버전·휴지통 예제도 제공합니다.
 - `Resources/Tasks`: 프로젝트 선택과 상태별 작업 보드. `ProjectBoard`, `ManyTasks`, `EmptyProject`, `OlderRuntime`에서 등록·수정, 담당 세션 이동, 정지/이전 run 경고와 Release 확인을 확인합니다. `Simulate agent update`는 열린 편집 내용을 보존하면서 원격 갱신·alias 변경과 저장 충돌을 재현합니다. 실제 Connect 클라이언트와 메모리 서비스 fixture를 사용하며 서버의 Task는 변경하지 않습니다.
 - `Conversation/Composer`: Markdown, 코드블록, 붙여넣기 chip, 명령어 제안, 전송 대기, 작업 중 glow, 모델·effort와 usage 표시.
 - `Accounts/Cache`: 계정 정보·인증 상태는 5분, usage·잔디밭·남은 사용량은 1분 캐시합니다. 화면을 닫고 다시 열 때의 RPC 횟수와 Erase 오른쪽 새로고침 버튼의 강제 갱신을 확인합니다. 캐시는 연결별 브라우저 메모리에만 있으며 브라우저 새로고침·연결 해제 시 초기화됩니다.
