@@ -72,6 +72,7 @@ function parseLabels(value: string) {
 export function MemoryLibrary({
   c,
   project,
+  projectHandle = project,
   sessions = [],
   registerGuard,
   memoryId,
@@ -80,6 +81,7 @@ export function MemoryLibrary({
 }: {
   c: Connection;
   project: string;
+  projectHandle?: string;
   sessions?: Session[];
   registerGuard?: (guard: ((run: () => void) => void) | undefined) => void;
   memoryId?: string;
@@ -689,7 +691,7 @@ export function MemoryLibrary({
                 return onMemoryChange ? (
                   <RouteLink
                     key={key(m.id)}
-                    {...memoryLocation(project, ownerID(m.id))}
+                    {...memoryLocation(projectHandle, ownerID(m.id))}
                     className={styles.memoryItem}
                     data-selected={selectedItem || undefined}
                     aria-current={selectedItem ? "page" : undefined}

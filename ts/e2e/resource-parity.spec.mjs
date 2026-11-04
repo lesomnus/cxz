@@ -22,11 +22,12 @@ async function fixture(
   helpers = false,
   extraProject = false,
   initialPath = "/",
+  projectAlias = "project",
 ) {
   const id = (value) => Buffer.from(value.padEnd(16, "0")).toString("base64");
   const project = {
     id: projectFixture().id,
-    alias: "project",
+    alias: projectAlias,
     name: "Demo project",
     workspace: "/workspace",
     status: { containerState: "CONTAINER_STATE_RUNNING" },
@@ -922,7 +923,7 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await expect(create).toBeVisible();
 });
 
-const memoryProjectPath = `/c/_/project/${projectFixture().uuid}/memory`;
+const memoryProjectPath = "/c/_/project/project/memory";
 function memoryFixtureUUID(name) {
   const hex = Buffer.from(name.padEnd(16, "0")).toString("hex");
   return [
@@ -1033,3 +1034,80 @@ for (const [name, path, message] of [
     ).toHaveCount(0);
     await expect(page).toHaveURL(new RegExp(`${path}$`));
   });
+
+for (const document of [false, true])
+  test(`Memory UUID ${document ? "document" : "collection"} bookmarks stay valid while links prefer aliases`, async ({
+    page,
+  }) => {
+    const path = `/c/_/project/${projectFixture().uuid}/memory${document ? `/${memoryFixtureUUID("memory")}` : ""}`;
+    const requests = await fixture(page, false, false, path);
+    const research = page.getByRole("link", { name: /Research notes/ });
+    await expect(research).toHaveAttribute("href", researchPath);
+    await expect(
+      page.getByRole("link", { name: "Memory", exact: true }),
+    ).toHaveAttribute("href", memoryProjectPath);
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    if (document) {
+      await expect(
+        page.getByRole("heading", { name: "Shared notes", exact: true }),
+      ).toBeVisible();
+      expect(
+        requests.find((r) => r.path === "/cxz.MemoryService/Read").q.ref.project
+          .id,
+      ).toBe(projectFixture().id);
+    } else await expect(memoryDocument(page)).toHaveCount(0);
+    expect(
+      requests.find((r) => r.path === "/cxz.MemoryService/List").q.project.id,
+    ).toBe(projectFixture().id);
+    await page.getByRole("link", { name: /Handoff notes/ }).click();
+    await expect(page).toHaveURL(new RegExp(`${handoffPath}$`));
+    await expect(
+      page.getByRole("heading", { name: "Handoff", exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Handoff", exact: true }),
+    ).toBeVisible();
+  });
+test("Memory links fall back to project UUIDs without an alias", async ({
+  page,
+}) => {
+  const path = `/c/_/project/${projectFixture().uuid}/memory`;
+  await fixture(page, false, false, path, "");
+  await expect(
+    page.getByRole("link", { name: "Memory", exact: true }),
+  ).toHaveAttribute("href", path);
+  await expect(
+    page.getByRole("link", { name: /Research notes/ }),
+  ).toHaveAttribute("href", `${path}/${memoryFixtureUUID("memory")}`);
+  await page.getByRole("link", { name: /Research notes/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+});
+test("Memory project picker navigates using the chosen project's alias", async ({
+  page,
+}) => {
+  const requests = await fixture(page, false, true, memoryProjectPath);
+  await expect(
+    page.getByRole("link", { name: /Research notes/ }),
+  ).toBeVisible();
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Docs playground", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/c\/_\/project\/docs-playground\/memory$/);
+  await expect(
+    page.getByRole("link", { name: "Memory", exact: true }),
+  ).toHaveAttribute("href", "/c/_/project/docs-playground/memory");
+  await expect
+    .poll(
+      () =>
+        requests.filter((r) => r.path === "/cxz.MemoryService/List").at(-1)?.q
+          .project.id,
+    )
+    .toBe(projectFixture(2).id);
+  await expect(memoryDocument(page)).toHaveCount(0);
+});

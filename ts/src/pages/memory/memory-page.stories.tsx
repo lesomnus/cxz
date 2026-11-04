@@ -58,7 +58,7 @@ function Preview({
     router.history.replace(
       router.buildLocation(
         memoryLocation(
-          projectId(f.projects[0])!,
+          f.projects[0]!,
           document && first ? resourceHandle(first) : undefined,
         ),
       ).href,
