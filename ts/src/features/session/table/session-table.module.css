@@ -87,8 +87,6 @@
   white-space: nowrap;
 }
 .navigationButton.navigationButton {
-  --button-background: var(--table-link-background, var(--ui-shade-32));
-  background: var(--button-background);
   display: flex;
   width: 100%;
   height: calc(var(--session-row-height) - 2 * var(--ui-control-inset));
@@ -97,12 +95,6 @@
   border-radius: var(--session-cell-radius);
   text-align: left;
   font: inherit;
-}
-.navigationButton.navigationButton:hover {
-  background: var(
-    --table-link-hover-background,
-    var(--ui-button-hover-background)
-  );
 }
 .navigationButton > :global(.button-content) {
   width: 100%;

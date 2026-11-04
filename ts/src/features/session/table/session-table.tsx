@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
-import { Button, EditableValue } from "@lesomnus/nox";
+import { Button, EditableValue, TableRow } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -29,7 +29,6 @@ import {
 } from "./session-table-controls";
 import controlStyles from "./session-table-controls.module.css";
 import styles from "./session-table.module.css";
-import linkColors from "#src/shared/components/table-link-colors.module.css";
 
 export function SessionTable({
   c,
@@ -220,11 +219,7 @@ export function SessionTable({
               const projectName =
                 projectResource?.name || projectResource?.alias || project;
               return (
-                <tr
-                  key={s.runtimeId}
-                  className={linkColors.row}
-                  data-selected={checked || undefined}
-                >
+                <TableRow key={s.runtimeId} selected={checked}>
                   <td className={styles.selectionCell}>
                     <Checkbox
                       className={styles.cellCheckbox}
@@ -242,6 +237,7 @@ export function SessionTable({
                   {compact ? (
                     <td className={`${styles.name} ${styles.cardCell}`}>
                       <RouteLink
+                        rowAware
                         {...sessionLocation(s)}
                         className={styles.navigationButton}
                         title={name}
@@ -287,6 +283,7 @@ export function SessionTable({
                     <td className={styles.cardCell}>
                       {accountAlias ? (
                         <RouteLink
+                          rowAware
                           {...accountLocation(accountAlias)}
                           className={styles.navigationButton}
                           title={accountName}
@@ -318,6 +315,7 @@ export function SessionTable({
                     <td className={styles.cardCell}>
                       {project ? (
                         <RouteLink
+                          rowAware
                           {...projectLocation(project)}
                           className={styles.navigationButton}
                           title={projectName}
@@ -351,7 +349,7 @@ export function SessionTable({
                       disabled={loading}
                     />
                   </td>
-                </tr>
+                </TableRow>
               );
             })}
           </tbody>

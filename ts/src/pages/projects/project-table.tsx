@@ -27,7 +27,6 @@ import { ProjectActions } from "./project-actions";
 import { projectActivitySessions } from "./project-session-activity";
 import { useSessionActivity } from "./use-session-activity";
 import styles from "./project-table.module.css";
-import linkColors from "#src/shared/components/table-link-colors.module.css";
 
 export function ProjectTable({
   c,
@@ -133,7 +132,6 @@ export function ProjectTable({
           return (
             <TableRow
               key={key(project.id)}
-              className={inactive ? undefined : linkColors.row}
               selected={selected.has(key(project.id))}
               data-inactive={inactive || undefined}
             >
@@ -158,6 +156,7 @@ export function ProjectTable({
               </TableCell>
               <TableCell className={styles.nameCell}>
                 <RouteLink
+                  rowAware
                   {...projectLocation(resourceHandle(project))}
                   className={styles.projectLink}
                 >
@@ -173,6 +172,7 @@ export function ProjectTable({
               <TableCell className={styles.nameCell}>
                 {active ? (
                   <RouteLink
+                    rowAware
                     {...sessionLocation(active)}
                     className={styles.projectLink}
                   >
