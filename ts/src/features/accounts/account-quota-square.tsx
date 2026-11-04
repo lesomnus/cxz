@@ -1,8 +1,8 @@
-import { Section } from "@lesomnus/nox";
 import {
+  Section,
   AnimatedCompactNumber,
   AnimatedDurationDisplay,
-} from "#src/shared/components/animated-value.tsx";
+} from "@lesomnus/nox";
 import { useEffect, useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";

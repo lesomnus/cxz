@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Button, CompactNumber, Popover, Section } from "@lesomnus/nox";
+import {
+  AnimatedCompactNumber,
+  Button,
+  CompactNumber,
+  Popover,
+  Section,
+} from "@lesomnus/nox";
 import type { ConversationStatsValues } from "#gen/cxz/session_svc_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -9,7 +15,6 @@ import usageStyles from "./usage-report.module.css";
 import { UsageActivity } from "./usage-activity";
 import { key } from "@lesomnus/payday/store";
 import { accountReadPrefix, USAGE_TTL } from "#src/shared/api/read-cache.ts";
-import { AnimatedCompactNumber } from "#src/shared/components/animated-value.tsx";
 import {
   usageActivityRange,
   usageDateAge,
