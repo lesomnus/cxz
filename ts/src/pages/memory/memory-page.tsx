@@ -34,9 +34,14 @@ export function MemoryPage({
   const navigate = useNavigate();
   const { memoryProject, memory } = useWorkspaceRoute();
   const [dirty, setDirty] = useState(false);
+  const dirtyRef = useRef(false);
+  const onDirtyChange = useCallback((value: boolean) => {
+    dirtyRef.current = value;
+    setDirty(value);
+  }, []);
   const blocker = useBlocker({
     shouldBlockFn: ({ current, next }) =>
-      dirty && current.pathname !== next.pathname,
+      dirtyRef.current && current.pathname !== next.pathname,
     enableBeforeUnload: dirty,
     withResolver: true,
   });
@@ -108,7 +113,7 @@ export function MemoryPage({
               registerGuard={registerGuard}
               memoryId={memory}
               onMemoryChange={selectMemory}
-              onDirtyChange={setDirty}
+              onDirtyChange={onDirtyChange}
             />
           ) : (
             <Section className={styles.empty}>

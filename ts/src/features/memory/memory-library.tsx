@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useId } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, useId } from "react";
 import {
   ActionMenu,
   Button,
@@ -218,7 +218,8 @@ export function MemoryLibrary({
       (draft !== original ||
         name !== picked?.name ||
         labels !== labelsText(visibleLabels(picked?.labels ?? {})));
-  useEffect(() => {
+  // Browser Back can run immediately after an edit commits.
+  useLayoutEffect(() => {
     onDirtyChange?.(dirty);
     return () => onDirtyChange?.(false);
   }, [dirty, onDirtyChange]);
