@@ -25,9 +25,9 @@ test("project list stories show resource links, activity, states and empty/loadi
   await expect(table.locator("time")).toHaveCount(0);
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
+    "",
     "Name",
     "Recent session",
-    "Last activity",
     "",
     "",
   ]);
@@ -233,11 +233,11 @@ test("project activity favors unread completed turns over work, and questions do
   const rows = page
     .getByRole("table", { name: "Projects", exact: true })
     .locator("tbody tr");
-  const unread = rows.first().locator("td").nth(2).getByRole("link");
+  const unread = rows.first().locator("td").nth(3).getByRole("link");
   await expect(unread).toHaveText("Unread completed conversationsession-3");
   await expect(unread).toHaveAttribute("href", "/c/_/session/session-3");
   await expect(rows.first().locator("time")).toHaveText("30 minutes ago");
-  await expect(rows.last().locator("td").nth(2)).toHaveText(
+  await expect(rows.last().locator("td").nth(3)).toHaveText(
     "Working conversationelm",
   );
   await expect(
@@ -254,7 +254,7 @@ test("inactive project cards are darker, names stay bounded, and state descripti
     .getByRole("table", { name: "Projects", exact: true })
     .locator("tbody tr");
   const link = (index: number) =>
-    rows.nth(index).locator("td").nth(1).getByRole("link");
+    rows.nth(index).locator("td").nth(2).getByRole("link");
   const lightness = (index: number) =>
     link(index).evaluate((node) => {
       const probe = document.createElement("span");

@@ -80,11 +80,11 @@ export function ProjectTable({
     >
       <colgroup>
         <col className={styles.selectionColumn} />
-        <col className={styles.nameColumn} />
-        <col />
-        <col className={styles.activityColumn} />
         <col className={styles.stateColumn} />
-        <col className={styles.actionsColumn} />
+        <col className={styles.nameColumn} />
+        <col className={styles.sessionColumn} />
+        <col className={styles.activityColumn} />
+        <col />
       </colgroup>
       <TableHeader>
         <TableRow>
@@ -104,20 +104,22 @@ export function ProjectTable({
               }
             />
           </TableHead>
+          <TableHead aria-label={t("State")} />
           <TableHead>{t("Name")}</TableHead>
           <TableHead>{t("Recent session")}</TableHead>
-          <TableHead>{t("Last activity")}</TableHead>
-          <TableHead aria-label={t("State")} />
+          <TableHead aria-label={t("Last activity")} />
           <TableHead className={styles.actionsCell} aria-label={t("Actions")}>
-            <ProjectActions
-              c={c}
-              projects={chosen}
-              sessions={sessions}
-              updated={updated}
-              erased={(p) => unselect([p])}
-              completed={unselect}
-              variant="menu"
-            />
+            <div className={styles.actionSlot}>
+              <ProjectActions
+                c={c}
+                projects={chosen}
+                sessions={sessions}
+                updated={updated}
+                erased={(p) => unselect([p])}
+                completed={unselect}
+                variant="menu"
+              />
+            </div>
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -130,6 +132,11 @@ export function ProjectTable({
             <TableRow
               key={key(project.id)}
               selected={selected.has(key(project.id))}
+              data-inactive={
+                state === ContainerState.ABSENT ||
+                state === ContainerState.STOPPED ||
+                undefined
+              }
             >
               <TableCell className={styles.selectionCell}>
                 <Checkbox
@@ -142,15 +149,13 @@ export function ProjectTable({
                   onChange={() => toggle(key(project.id))}
                 />
               </TableCell>
+              <TableCell className={styles.state}>
+                <ProjectStateIcon state={state} />
+              </TableCell>
               <TableCell className={styles.nameCell}>
                 <RouteLink
                   {...projectLocation(resourceHandle(project))}
                   className={styles.projectLink}
-                  data-inactive={
-                    state === ContainerState.ABSENT ||
-                    state === ContainerState.STOPPED ||
-                    undefined
-                  }
                 >
                   <span className={styles.identity}>
                     <span className={styles.name}>
@@ -196,18 +201,17 @@ export function ProjectTable({
                   <span className={styles.muted}>—</span>
                 )}
               </TableCell>
-              <TableCell className={styles.state}>
-                <ProjectStateIcon state={state} />
-              </TableCell>
               <TableCell className={styles.actionsCell}>
-                <ProjectActions
-                  c={c}
-                  project={project}
-                  sessions={sessions}
-                  updated={updated}
-                  erased={(p) => unselect([p])}
-                  variant="menu"
-                />
+                <div className={styles.actionSlot}>
+                  <ProjectActions
+                    c={c}
+                    project={project}
+                    sessions={sessions}
+                    updated={updated}
+                    erased={(p) => unselect([p])}
+                    variant="menu"
+                  />
+                </div>
               </TableCell>
             </TableRow>
           );
