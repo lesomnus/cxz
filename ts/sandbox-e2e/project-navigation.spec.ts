@@ -46,7 +46,7 @@ test("the viewed session carries its project into other pages and picks up later
   await visit(page, "Tasks");
   await expect(picker(page)).toHaveText("Secondary project");
   await visit(page, "Memory");
-  await expect(page).toHaveURL(/#\/c\/_\/project\/[\da-f-]{36}\/memory$/);
+  await expect(page).toHaveURL(/#\/c\/_\/project\/project-2\/memory$/);
   await expect(picker(page)).toHaveText("Secondary project");
   await expect(
     page.getByRole("main", { name: "Shared memory workspace", exact: true }),

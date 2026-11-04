@@ -95,15 +95,20 @@ export function projectLocation(project?: string) {
       }
     : resourceLocation("projects");
 }
-export function memoryLocation(project: string, memory?: string) {
+export function memoryLocation(
+  project: string | Parameters<typeof resourceHandle>[0],
+  memory?: string,
+) {
+  const projectId =
+    typeof project === "string" ? project : resourceHandle(project);
   return memory
     ? {
         to: "/c/$connection/project/$projectId/memory/$memoryId" as const,
-        params: { ...selfConnection, projectId: project, memoryId: memory },
+        params: { ...selfConnection, projectId, memoryId: memory },
       }
     : {
         to: "/c/$connection/project/$projectId/memory" as const,
-        params: { ...selfConnection, projectId: project },
+        params: { ...selfConnection, projectId },
       };
 }
 export function accountLocation(account?: string) {

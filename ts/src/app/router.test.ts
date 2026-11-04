@@ -32,6 +32,12 @@ test.each([
     { projectId: project, memoryId: memory },
   ],
   [`/c/_/project/${project}`, "projects", { projectId: project }],
+  ["/c/_/project/oak/memory", "memory", { projectId: "oak" }],
+  [
+    `/c/_/project/oak/memory/${memory}`,
+    "memory",
+    { projectId: "oak", memoryId: memory },
+  ],
 ])(
   "project and Memory routes remain distinct: %s",
   async (path, resource, params) => {

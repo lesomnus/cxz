@@ -189,7 +189,7 @@ export function Workspace({
                   ? taskLocation({ project: currentProject })
                   : view === "memory"
                     ? memoryProject
-                      ? memoryLocation(projectId(memoryProject)!)
+                      ? memoryLocation(memoryProject)
                       : projectLocation()
                     : resourceLocation(view))}
                 className={`resource-link ${resource === view ? "active" : ""}`}
@@ -408,7 +408,7 @@ export function Workspace({
                 <PanelLink
                   {...(resource === "memory"
                     ? memoryProject
-                      ? memoryLocation(projectId(memoryProject)!)
+                      ? memoryLocation(memoryProject)
                       : projectLocation()
                     : resourceLocation(resource))}
                   aria-current="page"

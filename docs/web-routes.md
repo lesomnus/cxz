@@ -11,23 +11,24 @@ alias and fall back to its UUID. The same segment accepts either form; a UUID is
 always interpreted as an ID. Resolving an address does not change the stable IDs
 used for conversation state, drafts, subscriptions or mutations.
 
-| Page                  | Address                                             |
-| --------------------- | --------------------------------------------------- |
-| Session library       | `/c/_/session`                                      |
-| Session               | `/c/_/session/oak`                                  |
-| Session by UUID       | `/c/_/session/00000000-0000-8000-8007-000000000001` |
-| Conversation position | `/c/_/session/oak?seq=120`                          |
-| Project dashboard     | `/c/_/project/cxz`                                  |
-| Account               | `/c/_/account/work1`                                |
-| Project task board    | `/c/_/task?project=cxz`                             |
-| Project task          | `/c/_/task/fix-login?project=cxz`                   |
-| Project memories      | `/c/_/project/{project ID}/memory`                  |
-| Memory document       | `/c/_/project/{project ID}/memory/{memory ID}`      |
-| Search                | `/c/_/search`                                       |
-| Auxiliary AI          | `/c/_/auxiliary`                                    |
+| Page                  | Address                                                 |
+| --------------------- | ------------------------------------------------------- |
+| Session library       | `/c/_/session`                                          |
+| Session               | `/c/_/session/oak`                                      |
+| Session by UUID       | `/c/_/session/00000000-0000-8000-8007-000000000001`     |
+| Conversation position | `/c/_/session/oak?seq=120`                              |
+| Project dashboard     | `/c/_/project/cxz`                                      |
+| Account               | `/c/_/account/work1`                                    |
+| Project task board    | `/c/_/task?project=cxz`                                 |
+| Project task          | `/c/_/task/fix-login?project=cxz`                       |
+| Project memories      | `/c/_/project/{project alias or ID}/memory`             |
+| Memory document       | `/c/_/project/{project alias or ID}/memory/{memory ID}` |
+| Search                | `/c/_/search`                                           |
+| Auxiliary AI          | `/c/_/auxiliary`                                        |
 
-Memory links use stable project and document UUIDs. The project collection shows
-its document list without automatically selecting a document. Selecting a document
+Memory paths accept project aliases or UUIDs. Generated links prefer the project
+alias and fall back to its UUID; the document segment always uses its UUID.
+The project collection shows its document list without automatically selecting a document. Selecting a document
 updates the address; deep links, reload and browser Back/Forward restore that
 document. Unsaved edits require confirmation before leaving. Unknown projects or
 documents show an unavailable state instead of opening another document. The old
@@ -44,7 +45,7 @@ The workspace sidebar carries the currently viewed project into Projects, Tasks
 and Shared memory links. A session's project becomes current when its
 conversation is opened; choosing a project on another page updates that scope.
 The workspace remembers its stable ID while visiting Accounts or Settings, and
-generates links using its latest alias (stable UUIDs for Memory). Explicit addresses and browser history
+generates links using its latest alias. Explicit addresses and browser history
 still determine the displayed selection. An unscoped task detail still requires
 a project choice when several projects exist.
 
