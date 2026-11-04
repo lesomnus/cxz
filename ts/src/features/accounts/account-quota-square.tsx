@@ -110,18 +110,13 @@ export function AccountQuotaSquare({
             percent === undefined ? undefined : `${percent}% remaining`
           }
         >
-          {percent === undefined ? (
-            "—"
-          ) : (
-            <>
-              <AnimatedCompactNumber
-                mode="integer"
-                digits={percent === 100 ? 3 : 2}
-                value={percent}
-              />
-              <span className={styles.quotaUnit}>%</span>
-            </>
-          )}
+          <AnimatedCompactNumber
+            mode="integer"
+            digits={percent === 100 ? 3 : 2}
+            value={percent ?? NaN}
+            muted={percent === undefined}
+          />
+          <span className={styles.quotaUnit}>%</span>
         </span>
       </span>
       <span className={styles.quotaReset}>

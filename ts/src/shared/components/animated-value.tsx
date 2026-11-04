@@ -61,6 +61,7 @@ export function useValueMotion(enabled = true): TextMotionOptions {
       animateInitial: enabled,
       duration: 400,
       shouldAnimate: (element: HTMLElement) => {
+        if (!enabled) return false;
         const delay = visibleOrigin(element);
         if (delay === undefined) return false;
         origin.current = delay;
@@ -97,6 +98,9 @@ export function AnimatedCompactNumber(
     <CompactNumber
       {...props}
       {...useValueMotion(Number.isFinite(props.value))}
+      motion="slide"
+      maxSlideSteps={4}
+      duration={600}
     />
   );
 }
@@ -108,6 +112,9 @@ export function AnimatedDurationDisplay(
     <DurationDisplay
       {...props}
       {...useValueMotion(props.durationMs !== undefined)}
+      motion="slide"
+      maxSlideSteps={4}
+      duration={600}
     />
   );
 }

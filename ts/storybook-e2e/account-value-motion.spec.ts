@@ -16,6 +16,40 @@ async function readCount(page: Page, kind: string) {
   );
 }
 
+test("first loads retain compact placeholders and dates stay static", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-11-04T12:00:00Z") });
+  await page.clock.pauseAt(new Date("2026-11-04T12:00:01Z"));
+  await page.goto(
+    "/iframe.html?id=resources-views--accounts-loading&viewMode=story",
+  );
+  const work = page.locator('[data-account="work"]');
+  const usage = work.getByRole("region", {
+    name: "Conversation usage",
+    exact: true,
+  });
+  const placeholder = usage.getByRole("img", {
+    name: "Unavailable",
+    exact: true,
+  });
+  await expect(placeholder).toHaveCount(16);
+  for (const number of await placeholder.all())
+    await expect(number).toHaveText("----·");
+  const first = usage
+    .getByRole("region", { name: "Recent 30 days", exact: true })
+    .locator("dd")
+    .first();
+  await page.clock.runFor(1500);
+  await expect(
+    first.getByRole("img", { name: "4800", exact: true }),
+  ).toBeAttached();
+  // Values stay mounted across loading so the first slide starts from a dash.
+  await expect(first.locator('[data-slide-steps="4"]').first()).toBeAttached();
+  await expect(work.locator("time [data-motion]")).toHaveCount(0);
+  await expect(usage.locator("strong [data-motion]")).toHaveCount(0);
+});
+
 test("account refresh immediately gates repeated clicks through the complete usage chain", async ({
   page,
 }) => {

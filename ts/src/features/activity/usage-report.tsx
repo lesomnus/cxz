@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Popover, Section } from "@lesomnus/nox";
+import { Button, CompactNumber, Popover, Section } from "@lesomnus/nox";
 import type { ConversationStatsValues } from "#gen/cxz/session_svc_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -9,10 +9,7 @@ import usageStyles from "./usage-report.module.css";
 import { UsageActivity } from "./usage-activity";
 import { key } from "@lesomnus/payday/store";
 import { accountReadPrefix, USAGE_TTL } from "#src/shared/api/read-cache.ts";
-import {
-  AnimatedValue,
-  AnimatedCompactNumber,
-} from "#src/shared/components/animated-value.tsx";
+import { AnimatedCompactNumber } from "#src/shared/components/animated-value.tsx";
 import {
   usageActivityRange,
   usageDateAge,
@@ -174,14 +171,12 @@ export function UsageReport({
       </section>
       <section aria-label="Daily statistics" className={usageStyles.period}>
         <div className={usageStyles.dayHeader}>
-          <strong className={usageStyles.periodTitle}>
-            <AnimatedValue value={date} />
-          </strong>
+          <strong className={usageStyles.periodTitle}>{date}</strong>
           <span className={usageStyles.date}>
             <time dateTime={date} aria-label={age.label}>
               {age.parts.map((part, index) =>
                 part.type === "integer" ? (
-                  <AnimatedCompactNumber
+                  <CompactNumber
                     key={index}
                     value={age.days}
                     label={part.value}
@@ -257,24 +252,25 @@ function UsageMetrics({
             )}
           </dt>
           <dd>
-            {unavailable || value === undefined ? (
+            {!unavailable && value === undefined ? (
               <span
                 className={usageStyles.missing}
                 role="img"
-                aria-label={unavailable ? "Unavailable" : "Not reported"}
+                aria-label="Not reported"
               >
                 -
               </span>
             ) : (
               <span className={usageStyles.value}>
-                {prefix && (
+                {prefix && !unavailable && (
                   <span className={usageStyles.prefix} aria-hidden="true">
                     {prefix}
                   </span>
                 )}
                 <AnimatedCompactNumber
-                  value={Number(value)}
-                  label={`${prefix}${value}`}
+                  value={unavailable ? NaN : Number(value)}
+                  label={unavailable ? "Unavailable" : `${prefix}${value}`}
+                  muted={unavailable}
                 />
               </span>
             )}

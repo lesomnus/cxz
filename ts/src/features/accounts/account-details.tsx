@@ -148,18 +148,18 @@ export function AccountDetails({
               [
                 "Created",
                 <span className={accountStyles.fieldValue}>
-                  <DateTime value={account.dateCreated} animated />
+                  <DateTime value={account.dateCreated} />
                 </span>,
                 undefined,
-                <RelativeTime value={account.dateCreated} animated />,
+                <RelativeTime value={account.dateCreated} />,
               ],
               [
                 "Updated",
                 <span className={accountStyles.fieldValue}>
-                  <DateTime value={account.dateUpdated} animated />
+                  <DateTime value={account.dateUpdated} />
                 </span>,
                 undefined,
-                <RelativeTime value={account.dateUpdated} animated />,
+                <RelativeTime value={account.dateUpdated} />,
               ],
             ]}
           />

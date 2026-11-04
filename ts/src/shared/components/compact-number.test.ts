@@ -17,7 +17,10 @@ describe("compact metric numbers", () => {
       [123_000, "0123K"],
       [1_230_000, "1.23M"],
       [999_400, "0999K"],
-      [999_500, "1.00M"],
+      [999_500, "0999K"],
+      [999_999, "0999K"],
+      [12_345, "12.3K"],
+      [6_547_000, "6.54M"],
     ] as const)
       expect(text(value)).toBe(expected);
   });
@@ -34,10 +37,10 @@ describe("compact metric numbers", () => {
     });
     expect(formatCompactNumber(1230).leading).toBe("");
   });
-  it("uses a smaller unit when it preserves more of the original number", () => {
-    expect(text(1_234_567)).toBe("1235K");
-    expect(text(1_234_000)).toBe("1234K");
-    expect(text(0.001234)).toBe("1234µ");
+  it("keeps canonical units and truncates to three readable significant digits", () => {
+    expect(text(1_234_567)).toBe("1.23M");
+    expect(text(1_234_000)).toBe("1.23M");
+    expect(text(0.001234)).toBe("1.23m");
   });
   it("keeps ordinary counters integral without a unit cell", () => {
     for (const [value, expected] of [
@@ -50,7 +53,7 @@ describe("compact metric numbers", () => {
       expect(number.unit).toBe("");
     }
   });
-  it("retains small cost magnitude and promotes units after rounding", () => {
+  it("retains small cost magnitude", () => {
     expect(text(0.0001)).toBe("0100µ");
     expect(text(0.01)).toBe("10.0m");
     expect(text(0.000_000_000_001)).toBe("<001n");
