@@ -17,7 +17,12 @@ function stream(rows) {
   });
   return Buffer.concat([...frames, Buffer.from([2, 0, 0, 0, 2, 123, 125])]);
 }
-async function fixture(page, helpers = false, extraProject = false) {
+async function fixture(
+  page,
+  helpers = false,
+  extraProject = false,
+  initialPath = "/",
+) {
   const id = (value) => Buffer.from(value.padEnd(16, "0")).toString("base64");
   const project = {
     id: projectFixture().id,
@@ -66,6 +71,7 @@ async function fixture(page, helpers = false, extraProject = false) {
     dateCreated: "2026-11-02T00:00:00Z",
     dateUpdated: "2026-11-02T00:00:00Z",
   };
+  const handoff = { ...memory, id: id("handoff"), name: "Handoff notes" };
   let content = "# Shared notes\nOriginal content";
   const events = [
     {
@@ -268,15 +274,27 @@ async function fixture(page, helpers = false, extraProject = false) {
         { summary: { hits: 1, sessions: 1, projects: 1 } },
       ]);
     if (path === "/cxz.MemoryService/List")
-      return send({ items: q.scope === "MEMORY_SCOPE_TRASH" ? [] : [memory] });
-    if (path === "/cxz.MemoryService/Get") return send(memory);
-    if (path === "/cxz.MemoryService/Read")
       return send({
-        memory,
-        content,
-        revision: memory.revision,
+        items:
+          q.scope === "MEMORY_SCOPE_TRASH"
+            ? []
+            : [memory, handoff].filter(
+                (m) => !q.project?.id || m.project.id === q.project.id,
+              ),
+      });
+    if (path === "/cxz.MemoryService/Get") return send(memory);
+    if (path === "/cxz.MemoryService/Read") {
+      const selected = [memory, handoff].find(
+        (m) => m.id === q.ref?.id && m.project.id === q.ref?.project?.id,
+      );
+      if (!selected) return error("not_found", "Memory not found");
+      return send({
+        memory: selected,
+        content: selected === memory ? content : "# Handoff\nNext steps",
+        revision: selected.revision,
         format: "MEMORY_READ_FORMAT_FULL",
       });
+    }
     if (path === "/cxz.MemoryService/Patch") {
       if (q.content?.includes("conflict")) {
         memory.revision = "2";
@@ -327,7 +345,7 @@ async function fixture(page, helpers = false, extraProject = false) {
     headers: { Origin: "https://127.0.0.1:18081" },
     data: { token: "a".repeat(32) },
   });
-  await page.goto("/");
+  await page.goto(initialPath);
   return requests;
 }
 test("every resource tab has its own body and navigation", async ({ page }) => {
@@ -669,6 +687,7 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Memory", exact: true }).click();
+  await page.getByRole("link", { name: /Research notes/ }).click();
   await page.getByRole("button", { name: "Edit", exact: true }).click();
   const editor = page.locator(".monaco-editor textarea");
   await expect(editor).toBeVisible();
@@ -902,3 +921,115 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await search.press("Escape");
   await expect(create).toBeVisible();
 });
+
+const memoryProjectPath = `/c/_/project/${projectFixture().uuid}/memory`;
+function memoryFixtureUUID(name) {
+  const hex = Buffer.from(name.padEnd(16, "0")).toString("hex");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join("-");
+}
+const researchPath = `${memoryProjectPath}/${memoryFixtureUUID("memory")}`;
+const handoffPath = `${memoryProjectPath}/${memoryFixtureUUID("handoff")}`;
+const memoryDocument = (page) =>
+  page.getByRole("region", { name: "Memory document", exact: true });
+test("Memory collection, document links, reload and browser history agree", async ({
+  page,
+}) => {
+  const requests = await fixture(page, false, false, memoryProjectPath);
+  const research = page.getByRole("link", { name: /Research notes/ });
+  const handoff = page.getByRole("link", { name: /Handoff notes/ });
+  await expect(research).toHaveAttribute("href", researchPath);
+  await expect(handoff).toHaveAttribute("href", handoffPath);
+  await expect(memoryDocument(page)).toHaveCount(0);
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/Read"),
+  ).toHaveLength(0);
+  await research.click();
+  await expect(page).toHaveURL(new RegExp(`${researchPath}$`));
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await handoff.click();
+  await expect(page).toHaveURL(new RegExp(`${handoffPath}$`));
+  await expect(
+    page.getByRole("heading", { name: "Handoff", exact: true }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
+  await expect(memoryDocument(page)).toHaveCount(0);
+  await page.goForward();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
+  await expect(memoryDocument(page)).toHaveCount(0);
+});
+test("Memory browser navigation confirms dirty drafts before changing the selected document", async ({
+  page,
+}) => {
+  await fixture(page, false, false, researchPath);
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: /Handoff notes/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Handoff", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
+  await name.fill("Uncommitted name");
+  await page.goBack();
+  const dialog = page.getByRole("dialog", {
+    name: "Discard unsaved changes",
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${handoffPath}$`));
+  await expect(name).toHaveValue("Uncommitted name");
+  await page.goBack();
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${researchPath}$`));
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+});
+for (const [name, path, message] of [
+  ["invalid ID", `${memoryProjectPath}/bad-id`, "Invalid memory ID."],
+  [
+    "missing document",
+    `${memoryProjectPath}/${memoryFixtureUUID("missing")}`,
+    "Memory not found",
+  ],
+  [
+    "wrong project",
+    `/c/_/project/${projectFixture(2).uuid}/memory/${memoryFixtureUUID("memory")}`,
+    "Memory not found",
+  ],
+])
+  test(`Memory deep links never substitute another document: ${name}`, async ({
+    page,
+  }) => {
+    await fixture(page, false, true, path);
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      message,
+    );
+    await expect(
+      page.getByRole("heading", { name: "Shared notes", exact: true }),
+    ).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+  });

@@ -288,6 +288,8 @@ export function useWorkspaceRoute() {
   const match = useRouterState({ select: (state) => state.matches.at(-1) });
   const detailTaskSearch = taskRoute.useSearch({ shouldThrow: false });
   const listTaskSearch = tasksRoute.useSearch({ shouldThrow: false });
+  const memoryDocument = memoryDocumentRoute.useParams({ shouldThrow: false });
+  const memoryProject = projectMemoryRoute.useParams({ shouldThrow: false });
   const connection = connectionRoute.useParams({
     shouldThrow: false,
   })?.connection;
@@ -307,9 +309,7 @@ export function useWorkspaceRoute() {
       ...(detailTaskSearch ?? listTaskSearch ?? {}),
       task: taskRoute.useParams({ shouldThrow: false })?.taskId,
     },
-    memoryProject:
-      memoryDocumentRoute.useParams({ shouldThrow: false })?.projectId ??
-      projectMemoryRoute.useParams({ shouldThrow: false })?.projectId,
-    memory: memoryDocumentRoute.useParams({ shouldThrow: false })?.memoryId,
+    memoryProject: memoryDocument?.projectId ?? memoryProject?.projectId,
+    memory: memoryDocument?.memoryId,
   };
 }
