@@ -229,7 +229,7 @@ test("project row menus confirm lifecycle actions and affect only their project"
   await stop.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(stop).toHaveCount(0);
   await expect(
-    first.getByRole("img", { name: "Running", exact: true }),
+    first.getByRole("img", { name: /^(Running|Working)$/, exact: true }),
   ).toBeVisible();
   const confirm = async (action: string, title: string, button = action) => {
     await more.click();
@@ -245,7 +245,7 @@ test("project row menus confirm lifecycle actions and affect only their project"
   ).toBeVisible();
   await expect(first.getByRole("checkbox")).toBeChecked();
   await expect(
-    second.getByRole("img", { name: "Running", exact: true }),
+    second.getByRole("img", { name: /^(Running|Working)$/, exact: true }),
   ).toBeVisible();
   await confirm("Start", "Start project");
   await expect(

@@ -68,6 +68,10 @@ function Preview({
       });
     }
     if (projectStates) {
+      for (const session of fixture.sessions) {
+        session.status!.state = "idle";
+        session.status!.pending = [];
+      }
       const states = [
         ["Running", ContainerState.RUNNING],
         ["Not started", ContainerState.CREATED],
