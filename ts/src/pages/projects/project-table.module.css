@@ -1,10 +1,5 @@
 .table {
   --project-name-width: 90px;
-  --project-navigation-hover-background: color-mix(
-    in srgb,
-    var(--ui-table-hover-background) 87.5%,
-    var(--ui-shade-0)
-  );
   --ui-table-row-height: 44px;
   --ui-table-row-gap: 0px;
   --ui-table-header-height: 28px;
@@ -111,12 +106,16 @@
   color: var(--ui-muted);
   text-align: center;
 }
-.table tbody tr[data-selected] {
+.table tbody tr {
+  --project-row-hover-background: var(--ui-table-hover-background);
   --project-navigation-hover-background: color-mix(
     in srgb,
-    var(--ui-table-selected-hover-background) 87.5%,
-    var(--ui-shade-0)
+    var(--project-row-hover-background) 98%,
+    var(--ui-shade-255)
   );
+}
+.table tbody tr[data-selected] {
+  --project-row-hover-background: var(--ui-table-selected-hover-background);
 }
 .table tbody tr[data-inactive] {
   --project-navigation-background: var(--ui-shade-17);
@@ -124,6 +123,13 @@
 .table tbody tr[data-inactive] .projectLink {
   --ui-muted: var(--ui-shade-140);
   color: var(--ui-shade-181);
+}
+.table tbody tr:hover {
+  --project-navigation-background: color-mix(
+    in srgb,
+    var(--project-row-hover-background) 87.5%,
+    var(--ui-shade-0)
+  );
 }
 .table .empty {
   color: var(--ui-muted);
