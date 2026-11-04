@@ -7,6 +7,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  useRangeSelection,
 } from "@lesomnus/nox";
 import { ContainerState, type Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -45,16 +46,12 @@ export function ProjectTable({
 }) {
   const [selected, select] = useState<Set<string>>(() => new Set());
   const chosen = projects.filter((project) => selected.has(key(project.id)));
-  const selectedCount = chosen.length;
-  const all = projects.length > 0 && selectedCount === projects.length;
-  function toggle(id: string) {
-    select((previous) => {
-      const next = new Set(previous);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const selection = useRangeSelection({
+    items: projects.map((project) => key(project.id)),
+    selected,
+    onSelectionChange: select,
+    disabled: loading,
+  });
   const completed = useSyncExternalStore(
     c.attention.subscribe,
     c.attention.completedSnapshot,
@@ -91,16 +88,7 @@ export function ProjectTable({
             <Checkbox
               className={styles.cellCheckbox}
               aria-label={t("Select all projects")}
-              checked={all}
-              indeterminate={selectedCount > 0 && !all}
-              disabled={loading || !projects.length}
-              onChange={() =>
-                select(
-                  all
-                    ? new Set()
-                    : new Set(projects.map((project) => key(project.id))),
-                )
-              }
+              {...selection.getSelectAllProps()}
             />
           </TableHead>
           <TableHead aria-label={t("State")} />
@@ -142,8 +130,7 @@ export function ProjectTable({
                     name:
                       project.name || project.alias || resourceHandle(project),
                   })}
-                  checked={selected.has(key(project.id))}
-                  onChange={() => toggle(key(project.id))}
+                  {...selection.getCheckboxProps(key(project.id))}
                 />
               </TableCell>
               <TableCell className={styles.state}>
