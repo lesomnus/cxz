@@ -140,6 +140,67 @@ test("project list checkboxes select rows without navigation and action buttons 
   await expect(table).toBeVisible();
 });
 
+test("project index checkboxes toggle on down, drag, and Shift without release toggling", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--list&viewMode=story");
+  const table = page.getByRole("table", { name: "Projects", exact: true }),
+    rows = table.locator("tbody tr");
+  const first = rows.first().getByRole("checkbox"),
+    second = rows.last().getByRole("checkbox");
+  const move = async (target: Locator) => {
+    const box = (await target.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  };
+  await move(first);
+  await page.mouse.down();
+  await expect(first).toBeChecked();
+  await move(second);
+  await expect(second).toBeChecked();
+  await page.mouse.up();
+  await expect(first).toBeChecked();
+  await expect(second).toBeChecked();
+  const all = table.getByRole("checkbox", {
+    name: "Select all projects",
+    exact: true,
+  });
+  await move(all);
+  await page.mouse.down();
+  await expect(first).not.toBeChecked();
+  await expect(second).not.toBeChecked();
+  await page.mouse.up();
+  await first.click();
+  await second.click({ modifiers: ["Shift"] });
+  await expect(first).toBeChecked();
+  await expect(second).toBeChecked();
+});
+
+test("project session table uses the reusable down/drag/Shift selection", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--long-sessions&viewMode=story",
+  );
+  const table = page.getByRole("table", { name: "Sessions", exact: true }),
+    rows = table.locator("tbody tr");
+  const first = rows.first().getByRole("checkbox"),
+    sixth = rows.nth(5).getByRole("checkbox");
+  const start = (await first.boundingBox())!,
+    end = (await sixth.boundingBox())!;
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await expect(first).toBeChecked();
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2);
+  await expect(table.locator("tbody input:checked")).toHaveCount(6);
+  await page.mouse.up();
+  await expect(table.locator("tbody input:checked")).toHaveCount(6);
+  await rows
+    .nth(6)
+    .getByRole("checkbox")
+    .click({ modifiers: ["Shift"] });
+  await expect(table.locator("tbody input:checked")).toHaveCount(7);
+});
+
 test("project list icons cover all container states and menus follow their lifecycle availability", async ({
   page,
 }) => {

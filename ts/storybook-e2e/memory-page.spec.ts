@@ -454,7 +454,7 @@ test("the project collection shows links without opening a document", async ({
   const entry = list(page).getByRole("link", { name: /Architecture notes/ });
   await expect(entry).toHaveAttribute(
     "href",
-    /\/c\/_\/project\/[\da-f-]{36}\/memory\/[\da-f-]{36}$/,
+    /\/c\/_\/project\/web\/memory\/[\da-f-]{36}$/,
   );
   await expect(doc(page)).toHaveCount(0);
   await entry.click();

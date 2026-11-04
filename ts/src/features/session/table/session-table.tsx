@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
-import { Button, EditableValue, TableRow } from "@lesomnus/nox";
+import {
+  Button,
+  EditableValue,
+  TableRow,
+  useRangeSelection,
+} from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -78,16 +83,12 @@ export function SessionTable({
     () => new Map(projects.map((project) => [key(project.id), project])),
     [projects],
   );
-  const count = chosen.length;
-  const all = sessions.length > 0 && count === sessions.length;
-  function toggle(id: string) {
-    select((previous) => {
-      const next = new Set(previous);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const selection = useRangeSelection({
+    items: sessions.map((session) => session.runtimeId),
+    selected,
+    onSelectionChange: select,
+    disabled: !!(controls.busy || loading),
+  });
   const addControl = addSession && (
     <Button
       type="button"
@@ -162,16 +163,7 @@ export function SessionTable({
                 <Checkbox
                   className={styles.cellCheckbox}
                   aria-label={t("Select all sessions")}
-                  checked={all}
-                  disabled={!sessions.length || controls.busy || loading}
-                  indeterminate={count > 0 && !all}
-                  onChange={() =>
-                    select(
-                      all
-                        ? new Set()
-                        : new Set(sessions.map((s) => s.runtimeId)),
-                    )
-                  }
+                  {...selection.getSelectAllProps()}
                 />
               </th>
               {!compact && <th scope="col" aria-label={t("Agent")} />}
@@ -224,9 +216,7 @@ export function SessionTable({
                     <Checkbox
                       className={styles.cellCheckbox}
                       aria-label={t("Select {name}", { name })}
-                      checked={checked}
-                      disabled={controls.busy || loading}
-                      onChange={() => toggle(s.runtimeId)}
+                      {...selection.getCheckboxProps(s.runtimeId)}
                     />
                   </td>
                   {!compact && (

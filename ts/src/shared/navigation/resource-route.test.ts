@@ -84,7 +84,7 @@ test("old JSON-quoted sequence links retain the exact sequence value", async () 
   );
 });
 
-test("Memory document links carry stable project and document IDs", () => {
+test("Memory document links keep their document ID and accept explicit project references", () => {
   expect(memoryLocation(id)).toEqual({
     to: "/c/$connection/project/$projectId/memory",
     params: { connection: "_", projectId: id },
@@ -97,4 +97,14 @@ test("Memory document links carry stable project and document IDs", () => {
       memoryId: "00000000-0000-8000-8007-000000000200",
     },
   });
+});
+
+test("Memory links prefer the project alias with UUID fallback", () => {
+  expect(memoryLocation(resource).params.projectId).toBe("oak");
+  expect(memoryLocation(resource, id).params).toMatchObject({
+    projectId: "oak",
+    memoryId: id,
+  });
+  expect(memoryLocation({ ...resource, alias: "" }).params.projectId).toBe(id);
+  expect(memoryLocation("oak").params.projectId).toBe("oak");
 });

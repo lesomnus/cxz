@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useNavigate, useBlocker } from "@tanstack/react-router";
 import { PageToolbar, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
@@ -12,6 +12,7 @@ import { useWorkspaceRoute } from "#src/app/router.tsx";
 import {
   matchesResource,
   memoryLocation,
+  resourceHandle,
 } from "#src/shared/navigation/resource-route.ts";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import styles from "./memory-page.module.css";
@@ -49,20 +50,18 @@ export function MemoryPage({
     ? projects.find((p) => matchesResource(p, memoryProject))
     : projects[0];
   const id = projectId(project) ?? "";
+  const handle = project ? resourceHandle(project) : "";
   const selectMemory = useCallback(
     (selected?: string, replace = false) => {
-      if (id && (memoryProject !== id || memory !== selected))
+      if (handle && (memoryProject !== handle || memory !== selected))
         void navigate({
-          ...memoryLocation(id, selected),
+          ...memoryLocation(handle, selected),
           replace,
           ignoreBlocker: true,
         });
     },
-    [navigate, id, memoryProject, memory],
+    [navigate, handle, memoryProject, memory],
   );
-  useEffect(() => {
-    if (id && memoryProject !== id) selectMemory(memory, true);
-  }, [id, memory, memoryProject, selectMemory]);
   const scoped = sessions.filter(
     (s) => s.project && projectId(s.project) === id,
   );
@@ -85,7 +84,7 @@ export function MemoryPage({
               guard.current(() => {
                 const chosen = projects.find((p) => projectId(p) === value)!;
                 void navigate({
-                  ...memoryLocation(projectId(chosen)!),
+                  ...memoryLocation(chosen),
                   ignoreBlocker: true,
                 });
               })
@@ -109,6 +108,7 @@ export function MemoryPage({
               key={id}
               c={c}
               project={id}
+              projectHandle={handle}
               sessions={scoped}
               registerGuard={registerGuard}
               memoryId={memory}
