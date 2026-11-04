@@ -1,4 +1,8 @@
-import { CompactNumber, DurationDisplay, Section } from "@lesomnus/nox";
+import { Section } from "@lesomnus/nox";
+import {
+  AnimatedCompactNumber,
+  AnimatedDurationDisplay,
+} from "#src/shared/components/animated-value.tsx";
 import { useEffect, useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -110,7 +114,7 @@ export function AccountQuotaSquare({
             "—"
           ) : (
             <>
-              <CompactNumber
+              <AnimatedCompactNumber
                 mode="integer"
                 digits={percent === 100 ? 3 : 2}
                 value={percent}
@@ -121,7 +125,7 @@ export function AccountQuotaSquare({
         </span>
       </span>
       <span className={styles.quotaReset}>
-        <DurationDisplay
+        <AnimatedDurationDisplay
           durationMs={
             quota.data?.reset === undefined
               ? undefined

@@ -72,4 +72,5 @@ export type RemoteReadOptions = {
   cache?: { store: ReadCache; key: string; ttl: number };
   refresh?: number;
   enabled?: boolean;
+  keepPreviousData?: boolean;
 };

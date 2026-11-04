@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, CompactNumber, Popover, Section } from "@lesomnus/nox";
+import { Button, Popover, Section } from "@lesomnus/nox";
 import type { ConversationStatsValues } from "#gen/cxz/session_svc_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -9,6 +9,10 @@ import usageStyles from "./usage-report.module.css";
 import { UsageActivity } from "./usage-activity";
 import { key } from "@lesomnus/payday/store";
 import { accountReadPrefix, USAGE_TTL } from "#src/shared/api/read-cache.ts";
+import {
+  AnimatedValue,
+  AnimatedCompactNumber,
+} from "#src/shared/components/animated-value.tsx";
 import {
   usageActivityRange,
   usageDateAge,
@@ -88,6 +92,7 @@ export function UsageReport({
     [c, session, project, identity, weeks, stats.data],
     {
       enabled: !!weeks && !!stats.data && !stats.loading,
+      keepPreviousData: !!identity,
       cache:
         weeks && stats.data
           ? {
@@ -138,10 +143,10 @@ export function UsageReport({
             className={usageStyles.refresh}
             aria-label="Refresh"
             loading={stats.loading || history.loading}
-            onClick={() => {
+            onClick={async () => {
               c.reads.invalidatePrefix(cachePrefix);
               setNow(Date.now());
-              stats.reload();
+              await stats.reload();
             }}
           >
             <svg
@@ -169,12 +174,14 @@ export function UsageReport({
       </section>
       <section aria-label="Daily statistics" className={usageStyles.period}>
         <div className={usageStyles.dayHeader}>
-          <strong className={usageStyles.periodTitle}>{date}</strong>
+          <strong className={usageStyles.periodTitle}>
+            <AnimatedValue value={date} />
+          </strong>
           <span className={usageStyles.date}>
             <time dateTime={date} aria-label={age.label}>
               {age.parts.map((part, index) =>
                 part.type === "integer" ? (
-                  <CompactNumber
+                  <AnimatedCompactNumber
                     key={index}
                     value={age.days}
                     label={part.value}
@@ -265,7 +272,7 @@ function UsageMetrics({
                     {prefix}
                   </span>
                 )}
-                <CompactNumber
+                <AnimatedCompactNumber
                   value={Number(value)}
                   label={`${prefix}${value}`}
                 />

@@ -7,36 +7,54 @@ import {
   type DateTimeValue,
 } from "./date-time-format";
 import styles from "./date-time.module.css";
+import { AnimatedValue } from "./animated-value";
 
 export function DateTime({
   value,
   title,
+  animated = false,
 }: {
   value?: DateTimeValue;
   title?: string;
+  animated?: boolean;
 }) {
   useLocale();
   const date = dateTimeDate(value);
   if (!date) return <>—</>;
   return (
     <time className={styles.time} dateTime={date.toISOString()} title={title}>
-      {formatOffsetDateTime(date)
-        .split(/(\D+)/)
-        .map((part, index) =>
-          /\D/.test(part) ? (
-            <span key={index} className={styles.separator}>
-              {part}
-            </span>
-          ) : (
-            part
-          ),
-        )}
+      {animated ? (
+        <AnimatedValue
+          value={formatOffsetDateTime(date)}
+          characterClassName={(character) =>
+            /\D/.test(character) ? styles.separator : undefined
+          }
+        />
+      ) : (
+        formatOffsetDateTime(date)
+          .split(/(\D+)/)
+          .map((part, index) =>
+            /\D/.test(part) ? (
+              <span key={index} className={styles.separator}>
+                {part}
+              </span>
+            ) : (
+              part
+            ),
+          )
+      )}
     </time>
   );
 }
 
 // A separate label detail keeps the absolute timestamp available in the value.
-export function RelativeTime({ value }: { value?: DateTimeValue }) {
+export function RelativeTime({
+  value,
+  animated = false,
+}: {
+  value?: DateTimeValue;
+  animated?: boolean;
+}) {
   const { locale } = useLocale();
   const [now, setNow] = useState(Date.now);
   const date = dateTimeDate(value);
@@ -50,7 +68,11 @@ export function RelativeTime({ value }: { value?: DateTimeValue }) {
   if (!date) return null;
   return (
     <time className={styles.time} dateTime={date.toISOString()}>
-      {formatRelativeDateTime(date, locale, now)}
+      {animated ? (
+        <AnimatedValue value={formatRelativeDateTime(date, locale, now)} />
+      ) : (
+        formatRelativeDateTime(date, locale, now)
+      )}
     </time>
   );
 }

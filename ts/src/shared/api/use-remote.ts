@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, type DependencyList } from "react";
 import type { RemoteReadOptions } from "./read-cache";
 
+const sameDependencies = (left: DependencyList, right: DependencyList) =>
+  left.length === right.length &&
+  left.every((value, index) => Object.is(value, right[index]));
+
 // Reads belong to the currently selected resource. Late replies cannot replace
 // a newer selection, and leaving a view cancels its request.
 export function useRemote<T>(
@@ -11,15 +15,25 @@ export function useRemote<T>(
   const latest = useRef(read);
   latest.current = read;
   const [revision, setRevision] = useState(0);
-  const previousDeps = useRef<DependencyList | undefined>(undefined);
-  const previousRefresh = useRef(options.refresh);
   const cache = options.cache;
+  const resourceDeps = [...deps, cache?.store, cache?.key];
+  const previousDeps = useRef<DependencyList>(resourceDeps);
+  const previousRefresh = useRef(options.refresh);
+  const previousRevision = useRef(revision);
+  const previousEnabled = useRef(options.enabled);
+  const waiting = useRef<(() => void)[]>([]);
+  useEffect(
+    () => () => {
+      for (const resolve of waiting.current.splice(0)) resolve();
+    },
+    [],
+  );
+  const hit = cache?.store.peek<T>(cache.key);
   const [state, setState] = useState<{
     data?: T;
     loading: boolean;
     error: string;
   }>(() => {
-    const hit = cache?.store.peek<T>(cache.key);
     return {
       data: hit?.data,
       loading: options.enabled !== false && !hit?.fresh,
@@ -28,13 +42,18 @@ export function useRemote<T>(
   });
   useEffect(() => {
     const controller = new AbortController();
-    const resourceDeps = [...deps, cache?.store, cache?.key];
-    const sameResource =
-      previousDeps.current?.length === resourceDeps.length &&
-      resourceDeps.every((value, index) =>
-        Object.is(value, previousDeps.current?.[index]),
-      );
+    const completions = waiting.current.splice(0);
+    const finish = () => {
+      for (const resolve of completions.splice(0)) resolve();
+    };
+    const cancel = () => {
+      controller.abort();
+      finish();
+    };
+    const sameResource = sameDependencies(previousDeps.current, resourceDeps);
     previousDeps.current = resourceDeps;
+    previousRevision.current = revision;
+    previousEnabled.current = options.enabled;
     if (sameResource && previousRefresh.current !== options.refresh)
       cache?.store.invalidate(cache.key);
     previousRefresh.current = options.refresh;
@@ -45,14 +64,18 @@ export function useRemote<T>(
         loading: false,
         error: "",
       }));
-      return () => controller.abort();
+      finish();
+      return cancel;
     }
     if (hit?.fresh) {
       setState({ data: hit.data, loading: false, error: "" });
-      return () => controller.abort();
+      finish();
+      return cancel;
     }
     setState((old) => ({
-      data: hit?.data ?? (sameResource ? old.data : undefined),
+      data:
+        hit?.data ??
+        (sameResource || options.keepPreviousData ? old.data : undefined),
       loading: true,
       error: "",
     }));
@@ -68,6 +91,7 @@ export function useRemote<T>(
       (data) => {
         if (!controller.signal.aborted)
           setState({ data, loading: false, error: "" });
+        finish();
       },
       (error) => {
         if (!controller.signal.aborted)
@@ -76,9 +100,10 @@ export function useRemote<T>(
             loading: false,
             error: String(error),
           }));
+        finish();
       },
     );
-    return () => controller.abort();
+    return cancel;
   }, [
     ...deps,
     revision,
@@ -89,9 +114,24 @@ export function useRemote<T>(
   ]);
   return {
     ...state,
+    // Dependent requests become busy in the render that changes their inputs,
+    // without an idle frame between a summary response and its calendar read.
+    loading:
+      options.enabled !== false &&
+      (state.loading ||
+        ((!sameDependencies(previousDeps.current, resourceDeps) ||
+          previousRevision.current !== revision ||
+          previousRefresh.current !== options.refresh ||
+          previousEnabled.current !== options.enabled) &&
+          (!hit?.fresh || previousRefresh.current !== options.refresh))),
     reload: () => {
       cache?.store.invalidate(cache.key);
+      setState((old) => ({ ...old, loading: true, error: "" }));
+      const done = new Promise<void>((resolve) =>
+        waiting.current.push(resolve),
+      );
       setRevision((n) => n + 1);
+      return done;
     },
     revalidate: () => setRevision((n) => n + 1),
   };

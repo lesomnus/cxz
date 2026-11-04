@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { create } from "@bufbuild/protobuf";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
@@ -10,7 +10,8 @@ import { accountRef } from "#src/features/accounts/account-data.ts";
 import { resourceFixture } from "../resource-fixture";
 import { projectFixtureId } from "../project-id";
 
-function CachePreview() {
+function CachePreview({ usageDelayMs = 0 }: { usageDelayMs?: number }) {
+  const serverRevision = useRef(1);
   const [visible, setVisible] = useState(true);
   const [serverChanged, setServerChanged] = useState(false);
   const [counts, setCounts] = useState({
@@ -21,6 +22,8 @@ function CachePreview() {
   });
   const [c] = useState(() =>
     resourceFixture({
+      usageDelayMs,
+      usageMultiplier: () => serverRevision.current,
       onRead: (kind) =>
         setCounts((counts) => ({ ...counts, [kind]: counts[kind] + 1 })),
     }),
@@ -72,6 +75,7 @@ function CachePreview() {
               dateUpdated: account.dateUpdated,
               name: "Updated account",
             });
+            serverRevision.current++;
             setServerChanged(true);
           }}
         >
@@ -115,3 +119,4 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const SlowRefresh: Story = { args: { usageDelayMs: 600 } };

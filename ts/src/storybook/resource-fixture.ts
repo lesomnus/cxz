@@ -22,6 +22,7 @@ export function resourceFixture({
   editFailures = 0,
   quotaRemaining = 64,
   onRead,
+  usageMultiplier,
 }: {
   eraseFailures?: number;
   usageDelayMs?: number;
@@ -30,6 +31,7 @@ export function resourceFixture({
   editFailures?: number;
   quotaRemaining?: number | null;
   onRead?: (kind: "accounts" | "auth" | "usage" | "quota") => void;
+  usageMultiplier?: () => number;
 } = {}) {
   const accounts: Pick<
     Account,
@@ -293,6 +295,7 @@ export function resourceFixture({
           ["2026-10-31", 2, 400, 50, 0.08],
           ["2026-11-01", 1, 200, 50, 0.04],
         ] as const;
+        const scale = usageMultiplier?.() ?? 1;
         const recorded = days
           .filter(([date]) => {
             const start = Date.parse(`${date}T00:00:00Z`);
@@ -301,14 +304,14 @@ export function resourceFixture({
           .map(([date, turns, output, cacheWrite, cost]) => ({
             date,
             values: {
-              finishedTurns: BigInt(turns),
-              inputTokens: BigInt(Number(turns) * 400),
-              outputTokens: BigInt(output),
-              cacheReadTokens: BigInt(Number(turns) * 1000),
-              cacheWriteTokens: BigInt(cacheWrite),
-              tokenReportedTurns: BigInt(turns),
-              costReportedTurns: BigInt(turns),
-              reportedCostUsd: Number(cost),
+              finishedTurns: BigInt(turns * scale),
+              inputTokens: BigInt(Number(turns) * 400 * scale),
+              outputTokens: BigInt(output * scale),
+              cacheReadTokens: BigInt(Number(turns) * 1000 * scale),
+              cacheWriteTokens: BigInt(cacheWrite * scale),
+              tokenReportedTurns: BigInt(turns * scale),
+              costReportedTurns: BigInt(turns * scale),
+              reportedCostUsd: Number(cost) * scale,
             },
           }));
         const total = {
