@@ -1033,11 +1033,17 @@ test("Memory collection, document links, reload and browser history agree", asyn
   await expect(
     page.getByRole("heading", { name: "Shared notes", exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Back to memories", exact: true })
+    .click();
   await handoff.click();
   await expect(page).toHaveURL(new RegExp(`${handoffPath}$`));
   await expect(
     page.getByRole("heading", { name: "Handoff", exact: true }),
   ).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
+  await expect(memoryDocument(page)).toHaveCount(0);
   await page.goBack();
   await expect(
     page.getByRole("heading", { name: "Shared notes", exact: true }),
@@ -1060,6 +1066,9 @@ test("Memory browser navigation confirms dirty drafts before changing the select
   await expect(
     page.getByRole("heading", { name: "Shared notes", exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Back to memories", exact: true })
+    .click();
   await page.getByRole("link", { name: /Handoff notes/ }).click();
   await expect(
     page.getByRole("heading", { name: "Handoff", exact: true }),
@@ -1078,7 +1087,8 @@ test("Memory browser navigation confirms dirty drafts before changing the select
   await expect(name).toHaveValue("Uncommitted name");
   await page.goBack();
   await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`${researchPath}$`));
+  await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
+  await page.getByRole("link", { name: /Research notes/ }).click();
   await expect(
     page.getByRole("heading", { name: "Shared notes", exact: true }),
   ).toBeVisible();
@@ -1116,7 +1126,6 @@ for (const document of [false, true])
     const path = `/c/_/project/${projectFixture().uuid}/memory${document ? `/${memoryFixtureUUID("memory")}` : ""}`;
     const requests = await fixture(page, false, false, path);
     const research = page.getByRole("link", { name: /Research notes/ });
-    await expect(research).toHaveAttribute("href", researchPath);
     await expect(
       page.getByRole("link", { name: "Memory", exact: true }),
     ).toHaveAttribute("href", memoryProjectPath);
@@ -1129,7 +1138,14 @@ for (const document of [false, true])
         requests.find((r) => r.path === "/cxz.MemoryService/Read").q.ref.project
           .id,
       ).toBe(projectFixture().id);
+      const back = page.getByRole("link", {
+        name: "Back to memories",
+        exact: true,
+      });
+      await expect(back).toHaveAttribute("href", memoryProjectPath);
+      await back.click();
     } else await expect(memoryDocument(page)).toHaveCount(0);
+    await expect(research).toHaveAttribute("href", researchPath);
     expect(
       requests.find((r) => r.path === "/cxz.MemoryService/List").q.project.id,
     ).toBe(projectFixture().id);

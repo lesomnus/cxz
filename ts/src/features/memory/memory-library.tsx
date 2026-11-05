@@ -74,20 +74,24 @@ export function MemoryLibrary({
   c,
   project,
   projectHandle = project,
+  catalog = true,
   sessions = [],
   registerGuard,
   memoryId,
   onMemoryChange,
   onDirtyChange,
+  onCreatingChange,
 }: {
   c: Connection;
   project: string;
   projectHandle?: string;
+  catalog?: boolean;
   sessions?: Session[];
   registerGuard?: (guard: ((run: () => void) => void) | undefined) => void;
   memoryId?: string;
   onMemoryChange?: (id?: string, replace?: boolean) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onCreatingChange?: (creating: boolean) => void;
 }) {
   const [trash, setTrash] = useState(false),
     [query, setQuery] = useState(""),
@@ -150,6 +154,7 @@ export function MemoryLibrary({
       return { items, key: listKey };
     },
     [c, project, scope, filter, labelFilter],
+    { enabled: catalog },
   );
   const selectionSource = useRef<typeof list.data>(undefined);
   const memories =
@@ -308,6 +313,7 @@ export function MemoryLibrary({
     choose(() => {
       reset();
       createKey.current = crypto.randomUUID();
+      onCreatingChange?.(true);
       selectMemory(undefined);
       setCreating(true);
       setEditing(true);
@@ -426,6 +432,7 @@ export function MemoryLibrary({
     choose(() => {
       if (creating) {
         reset(true);
+        onCreatingChange?.(false);
         list.reload();
         return;
       }
@@ -449,47 +456,31 @@ export function MemoryLibrary({
       )}
       <div
         className={styles.columns}
+        data-catalog={catalog}
         data-collection={
-          onMemoryChange && !memoryId && !creating ? "true" : undefined
+          catalog && onMemoryChange && !memoryId && !creating
+            ? "true"
+            : undefined
         }
       >
-        <Section className={styles.library} aria-label="Project memories">
-          <header className={styles.heading}>
-            <span className={styles.listTitle}>
-              Memories <span className={styles.count}>{memories.length}</span>
-            </span>
-            <div className={styles.iconActions}>
-              <Button
-                variant="toolbar"
-                disabled={busy || list.loading}
-                aria-label="Refresh"
-                title="Refresh"
-                onClick={() =>
-                  choose(() => {
-                    list.reload();
-                    text.reload();
-                  })
-                }
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  aria-hidden="true"
-                >
-                  <path d="M20 7v5h-5M4 17v-5h5M19 12a7 7 0 0 0-12-5L4 10m1 2a7 7 0 0 0 12 5l3-3" />
-                </svg>
-              </Button>
-              {!trash && (
+        {catalog && (
+          <Section className={styles.library} aria-label="Project memories">
+            <header className={styles.heading}>
+              <span className={styles.listTitle}>
+                Memories <span className={styles.count}>{memories.length}</span>
+              </span>
+              <div className={styles.iconActions}>
                 <Button
                   variant="toolbar"
-                  disabled={busy}
-                  aria-label="New memory"
-                  title="New memory"
-                  onClick={() => newMemory()}
+                  disabled={busy || list.loading}
+                  aria-label="Refresh"
+                  title="Refresh"
+                  onClick={() =>
+                    choose(() => {
+                      list.reload();
+                      text.reload();
+                    })
+                  }
                 >
                   <svg
                     width="14"
@@ -500,237 +491,260 @@ export function MemoryLibrary({
                     strokeWidth="1.5"
                     aria-hidden="true"
                   >
-                    <path d="M12 5v14M5 12h14" />
+                    <path d="M20 7v5h-5M4 17v-5h5M19 12a7 7 0 0 0-12-5L4 10m1 2a7 7 0 0 0 12 5l3-3" />
                   </svg>
                 </Button>
-              )}
-            </div>
-          </header>
-          <SegmentedControl
-            label="Memory scope"
-            size="compact"
-            value={trash ? "trash" : "active"}
-            disabled={busy}
-            options={[
-              { value: "active", label: "Memories" },
-              { value: "trash", label: "Trash" },
-            ]}
-            onChange={(v) =>
-              choose(() => {
-                reset(true);
-                setTrash(v === "trash");
-              })
-            }
-          />
-          <form
-            className={styles.search}
-            onSubmit={(e) => {
-              e.preventDefault();
-              try {
-                const tags = parseLabels(labelQuery);
+                {!trash && (
+                  <Button
+                    variant="toolbar"
+                    disabled={busy}
+                    aria-label="New memory"
+                    title="New memory"
+                    onClick={() => newMemory()}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </Button>
+                )}
+              </div>
+            </header>
+            <SegmentedControl
+              label="Memory scope"
+              size="compact"
+              value={trash ? "trash" : "active"}
+              disabled={busy}
+              options={[
+                { value: "active", label: "Memories" },
+                { value: "trash", label: "Trash" },
+              ]}
+              onChange={(v) =>
                 choose(() => {
                   reset(true);
-                  setFilter(query);
-                  setLabelFilter(tags);
-                });
-              } catch (e) {
-                setError(String(e));
+                  setTrash(v === "trash");
+                })
               }
-            }}
-          >
-            <div className={styles.searchRow}>
-              <input
-                className={styles.input}
-                aria-label="Search memory"
-                placeholder="Search documents…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              <Button
-                type="submit"
-                variant="toolbar"
-                disabled={busy}
-                aria-label="Search"
-                title="Search"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  aria-hidden="true"
-                >
-                  <circle cx="10" cy="10" r="6" />
-                  <path d="m15 15 5 5" />
-                </svg>
-              </Button>
-              <Button
-                type="button"
-                variant="toolbar"
-                disabled={busy}
-                aria-label="Filter labels"
-                title="Filter labels"
-                aria-pressed={showFilters}
-                onClick={() => setShowFilters((v) => !v)}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  aria-hidden="true"
-                >
-                  <path d="M4 6h16M7 12h10M10 18h4" />
-                </svg>
-              </Button>
-            </div>
-            {showFilters && (
-              <FormField label="Labels">
+            />
+            <form
+              className={styles.search}
+              onSubmit={(e) => {
+                e.preventDefault();
+                try {
+                  const tags = parseLabels(labelQuery);
+                  choose(() => {
+                    reset(true);
+                    setFilter(query);
+                    setLabelFilter(tags);
+                  });
+                } catch (e) {
+                  setError(String(e));
+                }
+              }}
+            >
+              <div className={styles.searchRow}>
                 <input
-                  aria-label="Filter labels"
-                  placeholder="topic=design, status=current"
-                  value={labelQuery}
-                  onChange={(e) => setLabelQuery(e.target.value)}
+                  className={styles.input}
+                  aria-label="Search memory"
+                  placeholder="Search documents…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
                 />
-              </FormField>
-            )}
-            {(filter || Object.keys(labelFilter).length > 0) && (
-              <div className={styles.filterSummary}>
-                <span>Filtered results</span>
+                <Button
+                  type="submit"
+                  variant="toolbar"
+                  disabled={busy}
+                  aria-label="Search"
+                  title="Search"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    aria-hidden="true"
+                  >
+                    <circle cx="10" cy="10" r="6" />
+                    <path d="m15 15 5 5" />
+                  </svg>
+                </Button>
                 <Button
                   type="button"
+                  variant="toolbar"
                   disabled={busy}
-                  onClick={() =>
-                    choose(() => {
-                      reset(true);
-                      setQuery("");
-                      setFilter("");
-                      setLabelQuery("");
-                      setLabelFilter({});
-                    })
-                  }
+                  aria-label="Filter labels"
+                  title="Filter labels"
+                  aria-pressed={showFilters}
+                  onClick={() => setShowFilters((v) => !v)}
                 >
-                  Clear
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 6h16M7 12h10M10 18h4" />
+                  </svg>
                 </Button>
               </div>
-            )}
-          </form>
-          <PanelScroll
-            className={styles.listScroll}
-            viewportClassName={styles.listViewport}
-            scrollbarLabel="Memory list scroll"
-          >
-            <nav
-              className={styles.memoryList}
-              aria-label="Memories"
-              aria-busy={list.loading}
-            >
-              {list.loading && !list.data && (
-                <p className={styles.empty}>Loading memories…</p>
+              {showFilters && (
+                <FormField label="Labels">
+                  <input
+                    aria-label="Filter labels"
+                    placeholder="topic=design, status=current"
+                    value={labelQuery}
+                    onChange={(e) => setLabelQuery(e.target.value)}
+                  />
+                </FormField>
               )}
-              {!list.loading && !list.error && !memories.length && (
-                <p className={styles.empty}>
-                  {filter || Object.keys(labelFilter).length
-                    ? "No memories match your filters."
-                    : trash
-                      ? "Trash is empty."
-                      : "No memories yet. Create a document to start."}
-                </p>
-              )}
-              {list.error && (
-                <p className={styles.empty}>
-                  Memories could not be loaded. Refresh to try again.
-                </p>
-              )}
-              {memories.map((m) => {
-                const owning = ownerFor(m),
-                  tags = Object.entries(visibleLabels(m.labels));
-                const selectedItem = !creating && selectedKey === key(m.id);
-                const contents = (
-                  <>
-                    <span className={styles.memoryTitle}>
-                      <DocumentIcon />
-                      <span title={m.name}>{m.name}</span>
-                      <span className={styles.revision}>
-                        r{m.revision.toString()}
-                      </span>
-                    </span>
-                    <span className={styles.memoryMeta}>
-                      <span className={styles.owner}>
-                        {owning.agent && (
-                          <span aria-hidden="true">
-                            <AgentBrand agent={owning.agent} />
-                          </span>
-                        )}
-                        <span title={owning.name}>{owning.name}</span>
-                      </span>
-                      {m.dateUpdated && <RelativeTime value={m.dateUpdated} />}
-                    </span>
-                    {tags.length > 0 && (
-                      <span className={styles.tags}>
-                        {tags.slice(0, 2).map(([k, v]) => (
-                          <span key={k} title={`${k}=${v}`}>
-                            {k}={v}
-                          </span>
-                        ))}
-                        {tags.length > 2 && <span>+{tags.length - 2}</span>}
-                      </span>
-                    )}
-                  </>
-                );
-                const openMemory = () => {
-                  if (selectedItem) return;
-                  choose(() => {
-                    reset();
-                    selectMemory(m.id);
-                  });
-                };
-                return onMemoryChange ? (
-                  <RouteLink
-                    key={key(m.id)}
-                    {...memoryLocation(projectHandle, ownerID(m.id))}
-                    className={styles.memoryItem}
-                    data-selected={selectedItem || undefined}
-                    aria-current={selectedItem ? "page" : undefined}
-                    aria-disabled={busy || undefined}
-                    onClick={(event) => {
-                      if (busy) {
-                        event.preventDefault();
-                        return;
-                      }
-                      if (
-                        event.button !== 0 ||
-                        event.metaKey ||
-                        event.ctrlKey ||
-                        event.shiftKey ||
-                        event.altKey
-                      )
-                        return;
-                      event.preventDefault();
-                      openMemory();
-                    }}
-                  >
-                    {contents}
-                  </RouteLink>
-                ) : (
+              {(filter || Object.keys(labelFilter).length > 0) && (
+                <div className={styles.filterSummary}>
+                  <span>Filtered results</span>
                   <Button
-                    key={key(m.id)}
-                    className={styles.memoryItem}
+                    type="button"
                     disabled={busy}
-                    aria-pressed={selectedItem}
-                    onClick={openMemory}
+                    onClick={() =>
+                      choose(() => {
+                        reset(true);
+                        setQuery("");
+                        setFilter("");
+                        setLabelQuery("");
+                        setLabelFilter({});
+                      })
+                    }
                   >
-                    {contents}
+                    Clear
                   </Button>
-                );
-              })}
-            </nav>
-          </PanelScroll>
-        </Section>
+                </div>
+              )}
+            </form>
+            <PanelScroll
+              className={styles.listScroll}
+              viewportClassName={styles.listViewport}
+              scrollbarLabel="Memory list scroll"
+            >
+              <nav
+                className={styles.memoryList}
+                aria-label="Memories"
+                aria-busy={list.loading}
+              >
+                {list.loading && !list.data && (
+                  <p className={styles.empty}>Loading memories…</p>
+                )}
+                {!list.loading && !list.error && !memories.length && (
+                  <p className={styles.empty}>
+                    {filter || Object.keys(labelFilter).length
+                      ? "No memories match your filters."
+                      : trash
+                        ? "Trash is empty."
+                        : "No memories yet. Create a document to start."}
+                  </p>
+                )}
+                {list.error && (
+                  <p className={styles.empty}>
+                    Memories could not be loaded. Refresh to try again.
+                  </p>
+                )}
+                {memories.map((m) => {
+                  const owning = ownerFor(m),
+                    tags = Object.entries(visibleLabels(m.labels));
+                  const selectedItem = !creating && selectedKey === key(m.id);
+                  const contents = (
+                    <>
+                      <span className={styles.memoryTitle}>
+                        <DocumentIcon />
+                        <span title={m.name}>{m.name}</span>
+                        <span className={styles.revision}>
+                          r{m.revision.toString()}
+                        </span>
+                      </span>
+                      <span className={styles.memoryMeta}>
+                        <span className={styles.owner}>
+                          {owning.agent && (
+                            <span aria-hidden="true">
+                              <AgentBrand agent={owning.agent} />
+                            </span>
+                          )}
+                          <span title={owning.name}>{owning.name}</span>
+                        </span>
+                        {m.dateUpdated && (
+                          <RelativeTime value={m.dateUpdated} />
+                        )}
+                      </span>
+                      {tags.length > 0 && (
+                        <span className={styles.tags}>
+                          {tags.slice(0, 2).map(([k, v]) => (
+                            <span key={k} title={`${k}=${v}`}>
+                              {k}={v}
+                            </span>
+                          ))}
+                          {tags.length > 2 && <span>+{tags.length - 2}</span>}
+                        </span>
+                      )}
+                    </>
+                  );
+                  const openMemory = () => {
+                    if (selectedItem) return;
+                    choose(() => {
+                      reset();
+                      selectMemory(m.id);
+                    });
+                  };
+                  return onMemoryChange ? (
+                    <RouteLink
+                      key={key(m.id)}
+                      {...memoryLocation(projectHandle, ownerID(m.id))}
+                      className={styles.memoryItem}
+                      data-selected={selectedItem || undefined}
+                      aria-current={selectedItem ? "page" : undefined}
+                      aria-disabled={busy || undefined}
+                      onClick={(event) => {
+                        if (busy) {
+                          event.preventDefault();
+                          return;
+                        }
+                        if (
+                          event.button !== 0 ||
+                          event.metaKey ||
+                          event.ctrlKey ||
+                          event.shiftKey ||
+                          event.altKey
+                        )
+                          return;
+                        event.preventDefault();
+                        openMemory();
+                      }}
+                    >
+                      {contents}
+                    </RouteLink>
+                  ) : (
+                    <Button
+                      key={key(m.id)}
+                      className={styles.memoryItem}
+                      disabled={busy}
+                      aria-pressed={selectedItem}
+                      onClick={openMemory}
+                    >
+                      {contents}
+                    </Button>
+                  );
+                })}
+              </nav>
+            </PanelScroll>
+          </Section>
+        )}
         <div className={styles.detail}>
           {invalidMemoryID ? (
             <Section

@@ -19,6 +19,7 @@ export function memoryFixture({
   delay = 0,
   conflict = false,
   migrated = false,
+  cards = false,
 } = {}) {
   const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
@@ -111,6 +112,29 @@ export function memoryFixture({
         ...(i % 3 === 0 ? { topic: "design" } : {}),
       };
       if (i % 4 === 0) m.ownerSession = key(projectFixtureId(500 + i));
+    }
+  }
+  if (cards && !empty) {
+    const names = [
+      "Choosing a storage model for project memories",
+      "A long memory title that wraps across several lines without changing the card height",
+      "Release checklist",
+      "Notes without a session owner",
+      "A retained session's architectural decisions",
+      "Web accessibility review",
+    ];
+    for (const [i, name] of names.entries()) {
+      const m = add(name, `# ${name}`, 0, sessions[i % 2]);
+      if (i === 3) m.ownerSession = "";
+      if (i === 4) {
+        m.ownerSession = key(projectFixtureId(700));
+        m.labels["legacy.agent"] = "claude";
+      }
+      m.revision = BigInt(i + 2);
+      versions.get(key(m.id))!.set(m.revision, m.content);
+      m.dateUpdated = timestampFromDate(
+        new Date(Date.now() - (i + 1) * 3600000),
+      );
     }
   }
   add("API notes", "# API\n\nAPI-specific shared memory.", 1);

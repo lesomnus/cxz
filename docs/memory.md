@@ -27,8 +27,12 @@ both resolve; generated links prefer the alias with UUID fallback. Memory IDs
 remain UUIDs, and API calls use the resolved stable project ID. The parent path
 `/c/_/project/{project alias or ID}/memory` shows the project document list. Reload and
 browser history restore selection, and links can open in new tabs.
-The web Memory page lists documents directly; selecting an editing
-session is unnecessary. Reading is the default; Edit opens name/label fields and
+The web Memory collection is a responsive grid of rectangular cards. Each card
+shows its owner's agent logo and session name, the document title at conversation
+body size, and a footer with the revision on the left and relative update time
+on the right. The collection loads only paged metadata; opening a card loads its
+separate document page, without a catalog sidebar. A back link returns to the
+collection. Selecting an editing session is unnecessary. Reading is the default; Edit opens name/label fields and
 Markdown source with Save/Cancel. Source without Edit is read only. The document
 menu offers copying, reload and trash; history and migration metadata are separate
 collapsible sections. Migration labels are retained when editing user labels.
