@@ -99,6 +99,10 @@ func TestMemoryConcurrentBodyWritesAndPurgedOwner(t *testing.T) {
 	if err != nil || len(history.GetVersions()) != 2 {
 		t.Fatal(history, err)
 	}
+	latest := history.GetVersions()[0]
+	if !latest.HasLinesAdded() || !latest.HasLinesRemoved() || latest.GetLinesAdded() != 1 || latest.GetLinesRemoved() != 1 {
+		t.Fatal("concurrent winner lost line stats", latest)
+	}
 	layer, _ := resource.Find[Layer](stack)
 	if _, err = layer.Next().Session().Erase(ctx, resource.SessionById(projectid.Bytes(f.sessions[0].Id))); err != nil {
 		t.Fatal(err)

@@ -375,3 +375,14 @@
 .columns[data-collection="true"] > .detail {
   display: none;
 }
+
+.versionList > button > :global(.button-content) {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.versionStats {
+  color: var(--ui-muted);
+  font-size: 9px;
+  white-space: nowrap;
+}

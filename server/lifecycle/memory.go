@@ -417,7 +417,7 @@ func (s MemoryServer) Versions(ctx context.Context, r *resource.MemoryVersionsRe
 	if before == 0 {
 		before = m.GetRevision() + 1
 	}
-	rows, err := s.shared.db.QueryContext(ctx, `SELECT revision,content_hash,date_created FROM memory_version WHERE memory_id=? AND revision<? ORDER BY revision DESC LIMIT ?`, projectid.String(m.GetId()), before, limit+1)
+	rows, err := s.shared.db.QueryContext(ctx, `SELECT revision,content_hash,date_created,lines_added,lines_removed FROM memory_version WHERE memory_id=? AND revision<? ORDER BY revision DESC LIMIT ?`, projectid.String(m.GetId()), before, limit+1)
 	if err != nil {
 		return nil, err
 	}
@@ -427,10 +427,16 @@ func (s MemoryServer) Versions(ctx context.Context, r *resource.MemoryVersionsRe
 		var rev uint64
 		var hash string
 		var created time.Time
-		if err = rows.Scan(&rev, &hash, &created); err != nil {
+		var added, removed sql.NullInt64
+		if err = rows.Scan(&rev, &hash, &created, &added, &removed); err != nil {
 			return nil, err
 		}
-		versions = append(versions, resource.MemoryVersion_builder{MemoryId: m.GetId(), Revision: rev, ContentHash: hash, DateCreated: timestamppb.New(created)}.Build())
+		version := resource.MemoryVersion_builder{MemoryId: m.GetId(), Revision: rev, ContentHash: hash, DateCreated: timestamppb.New(created)}
+		if added.Valid && removed.Valid {
+			version.LinesAdded = ptr(uint32(added.Int64))
+			version.LinesRemoved = ptr(uint32(removed.Int64))
+		}
+		versions = append(versions, version.Build())
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err

@@ -2910,15 +2910,17 @@ func (b0 MemoryVersionsReply_builder) Build() *MemoryVersionsReply {
 }
 
 type MemoryVersion struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_MemoryId    []byte                 `protobuf:"bytes,1,opt,name=memory_id,json=memoryId"`
-	xxx_hidden_Revision    uint64                 `protobuf:"varint,2,opt,name=revision"`
-	xxx_hidden_ContentHash string                 `protobuf:"bytes,3,opt,name=content_hash,json=contentHash"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_MemoryId     []byte                 `protobuf:"bytes,1,opt,name=memory_id,json=memoryId"`
+	xxx_hidden_Revision     uint64                 `protobuf:"varint,2,opt,name=revision"`
+	xxx_hidden_ContentHash  string                 `protobuf:"bytes,3,opt,name=content_hash,json=contentHash"`
+	xxx_hidden_DateCreated  *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_LinesAdded   uint32                 `protobuf:"varint,5,opt,name=lines_added,json=linesAdded"`
+	xxx_hidden_LinesRemoved uint32                 `protobuf:"varint,6,opt,name=lines_removed,json=linesRemoved"`
+	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
+	XXX_presence            [1]uint32
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *MemoryVersion) Reset() {
@@ -2974,12 +2976,26 @@ func (x *MemoryVersion) GetDateCreated() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *MemoryVersion) GetLinesAdded() uint32 {
+	if x != nil {
+		return x.xxx_hidden_LinesAdded
+	}
+	return 0
+}
+
+func (x *MemoryVersion) GetLinesRemoved() uint32 {
+	if x != nil {
+		return x.xxx_hidden_LinesRemoved
+	}
+	return 0
+}
+
 func (x *MemoryVersion) SetMemoryId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_MemoryId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
 }
 
 func (x *MemoryVersion) SetRevision(v uint64) {
@@ -2992,6 +3008,16 @@ func (x *MemoryVersion) SetContentHash(v string) {
 
 func (x *MemoryVersion) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
+}
+
+func (x *MemoryVersion) SetLinesAdded(v uint32) {
+	x.xxx_hidden_LinesAdded = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
+}
+
+func (x *MemoryVersion) SetLinesRemoved(v uint32) {
+	x.xxx_hidden_LinesRemoved = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
 }
 
 func (x *MemoryVersion) HasMemoryId() bool {
@@ -3008,6 +3034,20 @@ func (x *MemoryVersion) HasDateCreated() bool {
 	return x.xxx_hidden_DateCreated != nil
 }
 
+func (x *MemoryVersion) HasLinesAdded() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *MemoryVersion) HasLinesRemoved() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
 func (x *MemoryVersion) ClearMemoryId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_MemoryId = nil
@@ -3017,6 +3057,16 @@ func (x *MemoryVersion) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
 
+func (x *MemoryVersion) ClearLinesAdded() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_LinesAdded = 0
+}
+
+func (x *MemoryVersion) ClearLinesRemoved() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_LinesRemoved = 0
+}
+
 type MemoryVersion_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -3024,6 +3074,10 @@ type MemoryVersion_builder struct {
 	Revision    uint64
 	ContentHash string
 	DateCreated *timestamppb.Timestamp
+	// Changes against revision - 1, excluding diff context and headers.
+	// Both are absent for the first revision or an unavailable predecessor.
+	LinesAdded   *uint32
+	LinesRemoved *uint32
 }
 
 func (b0 MemoryVersion_builder) Build() *MemoryVersion {
@@ -3031,12 +3085,20 @@ func (b0 MemoryVersion_builder) Build() *MemoryVersion {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.MemoryId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
 		x.xxx_hidden_MemoryId = b.MemoryId
 	}
 	x.xxx_hidden_Revision = b.Revision
 	x.xxx_hidden_ContentHash = b.ContentHash
 	x.xxx_hidden_DateCreated = b.DateCreated
+	if b.LinesAdded != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
+		x.xxx_hidden_LinesAdded = *b.LinesAdded
+	}
+	if b.LinesRemoved != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		x.xxx_hidden_LinesRemoved = *b.LinesRemoved
+	}
 	return m0
 }
 
@@ -3710,12 +3772,15 @@ const file_cxz_memory_svc_g_proto_rawDesc = "" +
 	"\x04size\x18\x03 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\"q\n" +
 	"\x13MemoryVersionsReply\x12.\n" +
 	"\bversions\x18\x01 \x03(\v2\x12.cxz.MemoryVersionR\bversions\x12*\n" +
-	"\rnext_revision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\fnextRevision\"\xb8\x01\n" +
+	"\rnext_revision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\fnextRevision\"\x8c\x02\n" +
 	"\rMemoryVersion\x12\x1b\n" +
 	"\tmemory_id\x18\x01 \x01(\fR\bmemoryId\x12!\n" +
 	"\brevision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\brevision\x12(\n" +
 	"\fcontent_hash\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\vcontentHash\x12=\n" +
-	"\fdate_created\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"{\n" +
+	"\fdate_created\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12&\n" +
+	"\vlines_added\x18\x05 \x01(\rB\x05\xaa\x01\x02\b\x01R\n" +
+	"linesAdded\x12*\n" +
+	"\rlines_removed\x18\x06 \x01(\rB\x05\xaa\x01\x02\b\x01R\flinesRemoved\"{\n" +
 	"\x14MemoryChangesRequest\x12)\n" +
 	"\aproject\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12\x1d\n" +
 	"\x06cursor\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06cursor\x12\x19\n" +

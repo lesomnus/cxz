@@ -25,6 +25,7 @@ import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.t
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { Markdown } from "#src/shared/content/markdown.tsx";
+import { MemoryVersionChanges } from "./memory-version-changes";
 import styles from "./memory-library.module.css";
 
 const ownerID = (id: Uint8Array) =>
@@ -987,9 +988,15 @@ export function MemoryLibrary({
                             <Button
                               key={v.revision.toString()}
                               aria-pressed={compare === v.revision}
+                              aria-label={`r${v.revision}`}
+                              aria-describedby={`${formId}-version-${v.revision}`}
                               onClick={() => setCompare(v.revision)}
                             >
-                              r{v.revision.toString()}
+                              <span>r{v.revision.toString()}</span>
+                              <MemoryVersionChanges
+                                version={v}
+                                id={`${formId}-version-${v.revision}`}
+                              />
                             </Button>
                           ))}
                         </div>
