@@ -340,3 +340,60 @@ test("existing project-query bookmarks redirect and preserve session/run filters
     page.getByRole("button", { name: "Show all project tasks", exact: true }),
   ).toHaveText(/elm.*This run/);
 });
+
+test("paged initial loading publishes all sorted tasks together", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(
+    "/iframe.html?id=resources-tasks--paged-loading&viewMode=story",
+  );
+  await expect(page.getByText("Loading tasks…", { exact: true })).toBeVisible();
+  await page.evaluate(() => {
+    const counts: number[] = [];
+    const observe = () =>
+      counts.push(document.querySelectorAll("tr[data-task-alias]").length);
+    const observer = new MutationObserver(observe);
+    observer.observe(document.body, { subtree: true, childList: true });
+    Object.assign(window, {
+      taskLoadCounts: counts,
+      taskLoadObserver: observer,
+    });
+    observe();
+  });
+  const rows = page
+    .getByRole("table", { name: "Tasks", exact: true })
+    .locator("tbody tr[data-task-alias]");
+  await expect(rows).toHaveCount(12);
+  const observed = await page.evaluate(() => {
+    const state = window as typeof window & {
+      taskLoadCounts: number[];
+      taskLoadObserver: MutationObserver;
+    };
+    state.taskLoadObserver.disconnect();
+    return state.taskLoadCounts;
+  });
+  expect(observed).toContain(0);
+  expect(observed).toContain(12);
+  expect(observed.every((count) => count === 0 || count === 12)).toBe(true);
+  expect(
+    await rows.evaluateAll((rows) =>
+      rows.map((row) => row.getAttribute("data-task-alias")),
+    ),
+  ).toEqual([
+    "task-12",
+    "task-11",
+    "task-10",
+    "task-9",
+    "task-8",
+    "task-7",
+    "task-4",
+    "task-3",
+    "task-2",
+    "task-1",
+    "task-6",
+    "task-5",
+  ]);
+  expect(errors).toEqual([]);
+});

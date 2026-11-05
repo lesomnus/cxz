@@ -11,12 +11,18 @@ function TaskPreview({
   count,
   unavailable = false,
   initialPath = "/c/_/project/workspace/task",
+  pageSize = 500,
+  pageDelay = 0,
 }: {
   count: number;
   unavailable?: boolean;
   initialPath?: string;
+  pageSize?: number;
+  pageDelay?: number;
 }) {
-  const [fixture] = useState(() => taskFixture(count, unavailable));
+  const [fixture] = useState(() =>
+    taskFixture(count, unavailable, { pageSize, pageDelay }),
+  );
   useEffect(() => () => fixture.c.dispose(), [fixture]);
   const [router] = useState(() =>
     createWorkspaceRouter(
@@ -82,5 +88,17 @@ export const TaskById: Story = {
 export const ExistingBookmark: Story = {
   args: {
     initialPath: "/c/_/task/task-3?project=workspace&assignee=elm&run=elm-run",
+  },
+};
+
+export const PagedLoading: Story = {
+  args: { count: 12, pageSize: 3, pageDelay: 300 },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The changes-only Watch is ready before List starts. Delayed List pages accumulate offscreen, then all rows appear together in creation order with Done last. Cached rows stay visible during a refresh.",
+      },
+    },
   },
 };

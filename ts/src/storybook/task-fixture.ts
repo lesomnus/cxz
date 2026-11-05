@@ -6,9 +6,14 @@ import { ContainerState, ProjectSchema } from "#gen/cxz/project_pb";
 import { SessionSchema } from "#gen/cxz/session_pb";
 import { TaskSchema, TaskStatus, type Task } from "#gen/cxz/task_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
+import { key } from "@lesomnus/payday/store";
 import { Connection } from "#src/shared/api/connection.ts";
 
-export function taskFixture(count = 9, unavailable = false) {
+export function taskFixture(
+  count = 9,
+  unavailable = false,
+  options: { pageSize?: number; pageDelay?: number } = {},
+) {
   const id = (value: number) => {
     const id = new Uint8Array(16);
     new DataView(id.buffer).setUint32(12, value);
@@ -146,33 +151,112 @@ export function taskFixture(count = 9, unavailable = false) {
     "https://task-preview.invalid",
     createRouterTransport((router) => {
       router.service(TaskService, {
-        async *watch(request, context) {
+        async list(request, context) {
           if (unavailable)
             throw new ConnectError("Update the runtime", Code.Unimplemented);
-          while (!context.signal.aborted) {
-            yield {
-              items: rows
-                .filter(
-                  (task) =>
-                    !!task.project &&
-                    matchesProject(task.project, request.project),
-                )
-                .map((value) => ({
-                  id: value.id,
-                  value: clone(TaskSchema, value),
-                })),
-            };
-            await new Promise<void>((resolve) => {
-              const done = () => {
-                listeners.delete(done);
-                context.signal.removeEventListener("abort", done);
+          if (options.pageDelay)
+            await new Promise<void>((resolve, reject) => {
+              const finish = () => {
+                context.signal.removeEventListener("abort", abort);
                 resolve();
               };
-              listeners.add(done);
-              context.signal.addEventListener("abort", done, { once: true });
-              if (context.signal.aborted) done();
+              const timer = setTimeout(finish, options.pageDelay);
+              const abort = () => {
+                clearTimeout(timer);
+                reject(new ConnectError("Canceled", Code.Canceled));
+              };
+              context.signal.addEventListener("abort", abort, { once: true });
             });
-          }
+          const ordered = rows
+            .filter(
+              (task) =>
+                !!task.project && matchesProject(task.project, request.project),
+            )
+            .sort((a, b) => {
+              const age =
+                Number(
+                  (a.dateCreated?.seconds ?? 0n) -
+                    (b.dateCreated?.seconds ?? 0n),
+                ) ||
+                (a.dateCreated?.nanos ?? 0) - (b.dateCreated?.nanos ?? 0) ||
+                key(a.id).localeCompare(key(b.id));
+              return request.reverse ? -age : age;
+            });
+          const start = request.after
+            ? ordered.findIndex((task) => key(task.id) === request.after) + 1
+            : 0;
+          const size = Math.min(request.size || 100, options.pageSize || 500);
+          const items = ordered.slice(start, start + size);
+          return {
+            items: items.map((task) => clone(TaskSchema, task)),
+            next: start + size < ordered.length ? key(items.at(-1)!.id) : "",
+          };
+        },
+        watch(request, context) {
+          if (unavailable)
+            throw new ConnectError("Update the runtime", Code.Unimplemented);
+          const current = () =>
+            rows.filter(
+              (task) =>
+                !!task.project && matchesProject(task.project, request.project),
+            );
+          const versions = () =>
+            new Map(
+              current().map((task) => [
+                key(task.id),
+                `${task.dateUpdated?.seconds}:${task.dateUpdated?.nanos}`,
+              ]),
+            );
+          let previous = versions(),
+            dirty = false;
+          let wake: (() => void) | undefined;
+          const changed = () => {
+            dirty = true;
+            wake?.();
+          };
+          listeners.add(changed);
+          const abort = () => {
+            listeners.delete(changed);
+            wake?.();
+          };
+          context.signal.addEventListener("abort", abort, { once: true });
+          context.responseHeader.set("cxz-watch-ready", "1");
+          return (async function* () {
+            try {
+              yield {
+                items: request.skipSnapshot
+                  ? []
+                  : current().map((value) => ({
+                      id: value.id,
+                      value: clone(TaskSchema, value),
+                    })),
+              };
+              while (!context.signal.aborted) {
+                if (!dirty)
+                  await new Promise<void>((resolve) => {
+                    wake = resolve;
+                    if (context.signal.aborted) resolve();
+                  });
+                if (context.signal.aborted) break;
+                dirty = false;
+                const next = versions();
+                const items = current()
+                  .filter(
+                    (task) =>
+                      previous.get(key(task.id)) !== next.get(key(task.id)),
+                  )
+                  .map((value) => ({
+                    id: value.id,
+                    value: clone(TaskSchema, value),
+                  }));
+                previous = next;
+                if (items.length) yield { items };
+              }
+            } finally {
+              listeners.delete(changed);
+              context.signal.removeEventListener("abort", abort);
+            }
+          })();
         },
         get: (request) => clone(TaskSchema, find(request)),
         add: (request) => {

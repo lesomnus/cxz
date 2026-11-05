@@ -7,7 +7,28 @@ import { key } from "@lesomnus/payday/store";
 import type { TaskCache } from "./task-cache";
 
 type Snapshot = { tasks: Task[]; loading: boolean; error: string };
-type TaskClient = Pick<Client<typeof TaskService>, "watch">;
+type TaskClient = Pick<Client<typeof TaskService>, "watch" | "list">;
+type Changes = Map<string, Task | undefined>;
+
+function compareVersion(a: Task, b: Task) {
+  const seconds =
+    (a.dateUpdated?.seconds ?? 0n) - (b.dateUpdated?.seconds ?? 0n);
+  return seconds === 0n
+    ? (a.dateUpdated?.nanos ?? 0) - (b.dateUpdated?.nanos ?? 0)
+    : seconds > 0n
+      ? 1
+      : -1;
+}
+function upsert(rows: Map<string, Task>, task: Task) {
+  const id = key(task.id),
+    previous = rows.get(id);
+  if (!previous || compareVersion(task, previous) >= 0) rows.set(id, task);
+}
+function bufferChange(changes: Changes, id: string, task: Task | undefined) {
+  const previous = changes.get(id);
+  if (!task || !previous || compareVersion(task, previous) >= 0)
+    changes.set(id, task);
+}
 
 // Consumers of a project share its subscription and cached snapshot.
 export class ProjectTasks {
@@ -16,7 +37,8 @@ export class ProjectTasks {
   private listeners = new Set<() => void>();
   private controller?: AbortController;
   private cache?: TaskCache;
-  private changed = false;
+  private complete = false;
+  private pending?: Changes;
   private disposed = false;
   constructor(
     private client: TaskClient,
@@ -27,13 +49,15 @@ export class ProjectTasks {
     void cache?.then((value) => {
       if (this.disposed || !value) return;
       this.cache = value;
-      if (this.changed) {
+      if (this.complete) {
         value.write(this.project, [...this.rows.values()]);
         return;
       }
       const tasks = value.read(this.project);
       if (tasks) {
-        this.rows = new Map(tasks.map((task) => [key(task.id), task]));
+        const hydrated = new Map(tasks.map((task) => [key(task.id), task]));
+        for (const task of this.rows.values()) upsert(hydrated, task);
+        this.rows = hydrated;
         this.publish(false, this.state.error);
       }
     });
@@ -53,8 +77,8 @@ export class ProjectTasks {
   }
   apply(task: Task) {
     if (this.disposed) return;
-    this.changed = true;
-    this.rows.set(key(task.id), task);
+    upsert(this.rows, task);
+    if (this.pending) bufferChange(this.pending, key(task.id), task);
     this.cache?.write(this.project, [...this.rows.values()]);
     this.publish(false, this.state.error);
   }
@@ -74,28 +98,118 @@ export class ProjectTasks {
     this.disposed = true;
     this.stop();
   }
-  private async watch(signal: AbortSignal) {
-    let retry = 0;
-    while (!signal.aborted) {
-      let first = true;
-      try {
-        for await (const frame of this.client.watch(
-          { project: projectRef(this.project) },
-          { signal },
-        )) {
-          if (signal.aborted) return;
-          if (first) this.rows.clear();
-          first = false;
-          retry = 0;
-          for (const item of frame.items) {
-            if (item.value) this.rows.set(key(item.id), item.value);
-            else this.rows.delete(key(item.id));
-          }
-          this.changed = true;
+  private async reconcile(
+    signal: AbortSignal,
+    synchronized: () => void,
+  ): Promise<never> {
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    signal.addEventListener("abort", abort, { once: true });
+    if (signal.aborted) abort();
+    const changes: Changes = new Map();
+    this.pending = changes;
+    let syncing = true;
+    let ready!: () => void, rejectReady!: (error: unknown) => void;
+    const subscriptionReady = new Promise<void>((resolve, reject) => {
+      ready = resolve;
+      rejectReady = reject;
+    });
+    const readinessError = () =>
+      new ConnectError(
+        "Task Watch did not confirm its subscription. Update the Manager and project runtime, then retry.",
+        Code.FailedPrecondition,
+      );
+    const timer = setTimeout(() => rejectReady(readinessError()), 15_000);
+    const watching = (async (): Promise<never> => {
+      for await (const frame of this.client.watch(
+        { project: projectRef(this.project), skipSnapshot: true },
+        {
+          signal: controller.signal,
+          timeoutMs: 0,
+          onHeader: (headers) => {
+            clearTimeout(timer);
+            if (headers.get("cxz-watch-ready") !== "1")
+              rejectReady(readinessError());
+            else ready();
+          },
+        },
+      )) {
+        if (controller.signal.aborted)
+          throw new ConnectError("Task subscription canceled", Code.Canceled);
+        for (const item of frame.items) {
+          if (syncing) bufferChange(changes, key(item.id), item.value);
+          else if (item.value) upsert(this.rows, item.value);
+          else this.rows.delete(key(item.id));
+        }
+        if (!syncing && frame.items.length) {
           this.cache?.write(this.project, [...this.rows.values()]);
           this.publish(false);
         }
-        throw new Error("Task subscription disconnected.");
+      }
+      throw new ConnectError(
+        "Task subscription disconnected.",
+        Code.Unavailable,
+      );
+    })();
+    // The watcher remains live while List is pending and after it has committed.
+    void watching.catch(() => {});
+    try {
+      await Promise.race([subscriptionReady, watching]);
+      const listing = (async () => {
+        const rows = new Map<string, Task>();
+        const cursors = new Set<string>();
+        let after: string | undefined;
+        do {
+          const page = await this.client.list(
+            {
+              project: projectRef(this.project),
+              reverse: true,
+              size: 500,
+              after,
+            },
+            { signal: controller.signal, timeoutMs: 15_000 },
+          );
+          for (const task of page.items) upsert(rows, task);
+          after = page.next || undefined;
+          if (after && cursors.has(after))
+            throw new ConnectError(
+              "Task List repeated its pagination cursor.",
+              Code.DataLoss,
+            );
+          if (after) cursors.add(after);
+        } while (after);
+        return rows;
+      })();
+      const rows = await Promise.race([listing, watching]);
+      if (controller.signal.aborted)
+        throw new ConnectError("Task synchronization canceled", Code.Canceled);
+      for (const [id, task] of changes) {
+        if (task) upsert(rows, task);
+        else rows.delete(id);
+      }
+      this.rows = rows;
+      this.complete = true;
+      syncing = false;
+      this.pending = undefined;
+      this.cache?.write(this.project, [...this.rows.values()]);
+      this.publish(false);
+      synchronized();
+      return await watching;
+    } finally {
+      clearTimeout(timer);
+      controller.abort();
+      signal.removeEventListener("abort", abort);
+      if (this.pending === changes) this.pending = undefined;
+    }
+  }
+
+  private async watch(signal: AbortSignal) {
+    let retry = 0;
+    while (!signal.aborted) {
+      try {
+        await this.reconcile(signal, () => {
+          retry = 0;
+        });
       } catch (error) {
         if (signal.aborted) return;
         const code = ConnectError.from(error).code;
@@ -106,9 +220,12 @@ export class ProjectTasks {
             : String(error),
         );
         if (
-          [Code.Unimplemented, Code.InvalidArgument, Code.NotFound].includes(
-            code,
-          )
+          [
+            Code.Unimplemented,
+            Code.InvalidArgument,
+            Code.NotFound,
+            Code.FailedPrecondition,
+          ].includes(code)
         )
           return;
       }

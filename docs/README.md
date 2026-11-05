@@ -50,6 +50,7 @@ start. This is the map of everything else.
 | | |
 |---|---|
 | [architecture.md](architecture.md) | Ownership, the chain, durability, the resource API |
+| [task-synchronization.md](task-synchronization.md) | Task List baselines, changes-only Watch readiness, caching and reconnects |
 | [glossary.md](glossary.md) | Names for the parts, and names to avoid |
 | [development.md](development.md) | Building, tests, images, diagnostic recordings |
 
