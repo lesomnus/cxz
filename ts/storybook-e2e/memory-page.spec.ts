@@ -304,3 +304,86 @@ test("migrated filenames remain distinct cards without provenance labels", async
   expect(new Set(hrefs).size).toBe(26);
   await expect(grid(page)).not.toContainText("legacy.");
 });
+
+async function chooseSession(page: Page, name: string) {
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name, exact: true }).click();
+}
+test("session dropdown filters owner cards and All sessions includes unowned and retained memories", async ({
+  page,
+}) => {
+  await open(page, "card-grid");
+  await expect(grid(page).getByRole("link")).toHaveCount(8);
+  await chooseSession(page, "New editing session");
+  await expect(grid(page).getByRole("link")).toHaveCount(2);
+  await expect(card(page, "Release checklist")).toBeVisible();
+  await expect(card(page, "Architecture notes")).toHaveCount(0);
+  await card(page, "Release checklist").click();
+  await expect(
+    page.getByRole("heading", { name: "Release checklist", exact: true }),
+  ).toBeVisible();
+  await back(page);
+  await expect(grid(page).getByRole("link")).toHaveCount(2);
+  await chooseSession(page, "Design decisions");
+  await expect(grid(page).getByRole("link")).toHaveCount(4);
+  await expect(card(page, "Architecture notes")).toBeVisible();
+  await chooseSession(page, "All sessions");
+  await expect(grid(page).getByRole("link")).toHaveCount(8);
+  await expect(card(page, "Notes without a session owner")).toBeVisible();
+});
+test("project changes reset the session filter and offer only the current project's sessions", async ({
+  page,
+}) => {
+  await open(page, "card-grid");
+  await chooseSession(page, "New editing session");
+  await expect(grid(page).getByRole("link")).toHaveCount(2);
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "API workspace", exact: true })
+    .click();
+  const session = page.getByRole("combobox", {
+    name: "Select session",
+    exact: true,
+  });
+  await expect(session).toContainText("All sessions");
+  await expect(card(page, "API notes")).toBeVisible();
+  await session.click();
+  await expect(
+    page.getByRole("option", { name: "API implementation", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("option", { name: "Design decisions", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("option", { name: "API implementation", exact: true })
+    .click();
+  await expect(card(page, "API notes")).toBeVisible();
+});
+test("changing session from a document guards drafts and returns to the filtered collection", async ({
+  page,
+}) => {
+  await open(page, "document");
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
+  await name.fill("Draft name");
+  await chooseSession(page, "New editing session");
+  const dialog = page.getByRole("dialog", {
+    name: "Discard unsaved changes",
+    exact: true,
+  });
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(name).toHaveValue("Draft name");
+  await expect(
+    page.getByRole("combobox", { name: "Select session", exact: true }),
+  ).toContainText("All sessions");
+  await chooseSession(page, "New editing session");
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(doc(page)).toHaveCount(0);
+  await expect(grid(page)).toContainText("No memories for this session.");
+  await chooseSession(page, "All sessions");
+  await expect(card(page, "Architecture notes")).toBeVisible();
+});

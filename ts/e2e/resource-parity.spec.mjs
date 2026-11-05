@@ -67,13 +67,19 @@ async function fixture(
   const memory = {
     id: id("memory"),
     name: "Research notes",
+    ownerSession: memoryFixtureUUID("fixture"),
     project,
     revision: "1",
     labels: { topic: "design" },
     dateCreated: "2026-11-02T00:00:00Z",
     dateUpdated: "2026-11-02T00:00:00Z",
   };
-  const handoff = { ...memory, id: id("handoff"), name: "Handoff notes" };
+  const handoff = {
+    ...memory,
+    id: id("handoff"),
+    name: "Handoff notes",
+    ownerSession: "",
+  };
   let content = "# Shared notes\nOriginal content";
   const events = [
     {
@@ -281,7 +287,11 @@ async function fixture(
           q.scope === "MEMORY_SCOPE_TRASH"
             ? []
             : [memory, handoff].filter(
-                (m) => !q.project?.id || m.project.id === q.project.id,
+                (m) =>
+                  (!q.project?.id || m.project.id === q.project.id) &&
+                  (!q.session?.id ||
+                    (q.session.id === id("fixture") &&
+                      m.ownerSession === memoryFixtureUUID("fixture"))),
               ),
       });
     if (path === "/cxz.MemoryService/Get") return send(memory);
@@ -1012,6 +1022,54 @@ const researchPath = `${memoryProjectPath}/${memoryFixtureUUID("memory")}`;
 const handoffPath = `${memoryProjectPath}/${memoryFixtureUUID("handoff")}`;
 const memoryDocument = (page) =>
   page.getByRole("region", { name: "Memory document", exact: true });
+test("Memory session picker sends stable project and session references and clears its filter", async ({
+  page,
+}) => {
+  const requests = await fixture(page, false, false, memoryProjectPath);
+  await expect(
+    page
+      .getByRole("region", { name: "Project memories", exact: true })
+      .getByRole("link"),
+  ).toHaveCount(2);
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Research session", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("region", { name: "Project memories", exact: true })
+      .getByRole("link"),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
+  const request = requests
+    .filter((r) => r.path === "/cxz.MemoryService/List")
+    .at(-1).q;
+  expect(request.project.id).toBe(projectFixture().id);
+  expect(request.session.id).toBe(
+    Buffer.from("fixture".padEnd(16, "0")).toString("base64"),
+  );
+  expect(request.scope).toBe("MEMORY_SCOPE_ACTIVE");
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/Read"),
+  ).toHaveLength(0);
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "All sessions", exact: true }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "Project memories", exact: true })
+      .getByRole("link"),
+  ).toHaveCount(2);
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List").at(-1).q
+      .session,
+  ).toBeUndefined();
+});
 test("Memory collection, document links, reload and browser history agree", async ({
   page,
 }) => {

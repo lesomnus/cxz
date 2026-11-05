@@ -32,7 +32,11 @@ shows its owner's agent logo and session name at the top left, relative update
 time at the top right, the title at conversation body size below, and the
 revision at the bottom left. The collection loads only paged metadata; opening a card loads its
 separate document page, without a catalog sidebar. A back link returns to the
-collection. Selecting an editing session is unnecessary. Reading is the default; Edit opens name/label fields and
+collection. A searchable session picker beside the project picker filters by owner
+using `MemoryService.List(project, session)`. All sessions includes unowned and
+retained-owner documents. Project changes reset the session filter; returning
+from a document preserves the selected filter. Changing it while editing guards
+unsaved changes. Selecting an editing session is unnecessary. Reading is the default; Edit opens name/label fields and
 Markdown source with Save/Cancel. Source without Edit is read only. The document
 menu offers copying, reload and trash; history and migration metadata are separate
 collapsible sections. Migration labels are retained when editing user labels.
