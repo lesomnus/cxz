@@ -6,10 +6,12 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   Button,
+  Card,
+  CardActions,
   DialogReveal,
-  MenuSurface,
   ScrollArea,
   SegmentedControl,
   CompactNumber,
@@ -38,7 +40,6 @@ export function ErrorCenter({
   const [tab, setTab] = useState("active");
   const trigger = useRef<HTMLButtonElement>(null);
   const popup = useRef<HTMLDivElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
   const id = useId();
   const active = entries.filter((entry) => entry.status === "active");
   const history = entries.filter((entry) => entry.status !== "active");
@@ -56,7 +57,9 @@ export function ErrorCenter({
       panel.style.top = `${Math.max(8, Math.min(anchor.bottom - panel.offsetHeight, innerHeight - panel.offsetHeight - 8))}px`;
     };
     position();
-    closeButton.current?.focus({ preventScroll: true });
+    panel
+      .querySelector<HTMLButtonElement>(".card-close")
+      ?.focus({ preventScroll: true });
     const resize = new ResizeObserver(position);
     resize.observe(panel);
     resize.observe(trigger.current);
@@ -114,180 +117,187 @@ export function ErrorCenter({
           {t("{count} active errors", { count: String(active.length) })}
         </span>
       </Button>
-      {open && (
-        <MenuSurface
-          ref={popup}
-          anchor={trigger.current}
-          id={id}
-          role="dialog"
-          aria-label={t("Errors")}
-          className={styles.popup}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.preventDefault();
-              event.stopPropagation();
-              close(true);
-            }
-          }}
-          onBlur={(event) => {
-            const next = event.relatedTarget as Node | null;
-            if (
-              next &&
-              !popup.current?.contains(next) &&
-              !trigger.current?.contains(next)
-            )
-              close();
-          }}
-        >
-          <DialogReveal
-            from="left"
-            className={styles.reveal}
-            contentClassName={styles.reveal}
+      {open &&
+        createPortal(
+          <div
+            ref={popup}
+            className={styles.popup}
+            id={id}
+            role="dialog"
+            aria-label={t("Errors")}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                close(true);
+              }
+            }}
+            onBlur={(event) => {
+              const next = event.relatedTarget as Node | null;
+              if (
+                next &&
+                !popup.current?.contains(next) &&
+                !trigger.current?.contains(next)
+              )
+                close();
+            }}
           >
-            <header className={styles.header}>
-              <strong>{t("Errors")}</strong>
-              <SegmentedControl
-                label={t("Error status")}
-                size="compact"
-                value={tab}
-                onChange={setTab}
-                options={[
-                  {
-                    value: "active",
-                    label: `${t("Active")} ${active.length}`,
-                    display: (
-                      <>
-                        {t("Active")}
-                        <CompactNumber
-                          value={active.length}
-                          mode="integer"
-                          digits={3}
-                        />
-                      </>
-                    ),
-                  },
-                  {
-                    value: "history",
-                    label: `${t("History")} ${history.length}`,
-                    display: (
-                      <>
-                        {t("History")}
-                        <CompactNumber
-                          value={history.length}
-                          mode="integer"
-                          digits={3}
-                        />
-                      </>
-                    ),
-                  },
-                ]}
-              />
-              <Button
-                ref={closeButton}
-                variant="toolbar"
-                aria-label={t("Close errors")}
-                onClick={() => close(true)}
-              >
-                ×
-              </Button>
-            </header>
-            <ScrollArea
-              className={styles.list}
-              aria-label={t("Error list")}
-              scrollbarLabel={t("Scroll errors")}
+            <DialogReveal
+              from="left"
+              className={styles.reveal}
+              contentClassName={styles.reveal}
             >
-              {!shown.length ? (
-                <p className={styles.empty}>
-                  {tab === "active"
-                    ? t("No active errors")
-                    : t("No error history")}
-                </p>
-              ) : (
-                <ul>
-                  {shown.map((entry) => (
-                    <li key={entry.id} data-status={entry.status}>
-                      <div className={styles.row}>
-                        <span className={styles.state}>
-                          {t(
-                            entry.status === "active"
-                              ? "Active"
-                              : entry.status === "resolved"
-                                ? "Resolved"
-                                : "Dismissed",
-                          )}
-                        </span>
-                        <span className={styles.time}>
-                          <RelativeTime value={entry.lastSeen} />
-                        </span>
-                        {entry.status === "active" && (
-                          <Button
-                            className={styles.dismiss}
-                            onClick={() => store.dismiss(entry.id)}
-                          >
-                            {t("Dismiss")}
-                          </Button>
-                        )}
-                      </div>
-                      <p className={styles.message}>{entry.message}</p>
-                      {entry.method && (
-                        <code className={styles.method}>{entry.method}</code>
-                      )}
-                      {entry.target && (
-                        <code className={styles.method}>{entry.target}</code>
-                      )}
-                      <div className={styles.details}>
-                        {entry.code && <span>{entry.code}</span>}
-                        {entry.count > 1 && (
-                          <span>
+              <Card
+                title={t("Errors")}
+                close={() => close(true)}
+                closeLabel={t("Close errors")}
+                bodyPadding={0}
+                headerCenter={
+                  <SegmentedControl
+                    label={t("Error status")}
+                    size="compact"
+                    value={tab}
+                    onChange={setTab}
+                    options={[
+                      {
+                        value: "active",
+                        label: `${t("Active")} ${active.length}`,
+                        display: (
+                          <>
+                            {t("Active")}
                             <CompactNumber
-                              value={entry.count}
+                              value={active.length}
                               mode="integer"
                               digits={3}
-                            />{" "}
-                            {t("occurrences")}
-                          </span>
-                        )}
-                        {entry.connection && <span>{entry.connection}</span>}
-                      </div>
-                      <div className={styles.details}>
-                        <span>
-                          {t("First seen")}:{" "}
-                          <DateTime value={entry.firstSeen} />
-                        </span>
-                        {entry.closedAt && (
-                          <span>
-                            {t(
-                              entry.status === "resolved"
-                                ? "Resolved"
-                                : "Dismissed",
-                            )}
-                            : <DateTime value={entry.closedAt} />
-                          </span>
-                        )}
-                      </div>
-                      {(entry.session || entry.project) && (
-                        <code className={styles.method}>
-                          {entry.session
-                            ? `Session ${entry.session}`
-                            : `Project ${entry.project}`}
-                        </code>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </ScrollArea>
-            <footer className={styles.footer}>
-              <Button
-                disabled={!history.length}
-                onClick={() => store.clearHistory()}
+                            />
+                          </>
+                        ),
+                      },
+                      {
+                        value: "history",
+                        label: `${t("History")} ${history.length}`,
+                        display: (
+                          <>
+                            {t("History")}
+                            <CompactNumber
+                              value={history.length}
+                              mode="integer"
+                              digits={3}
+                            />
+                          </>
+                        ),
+                      },
+                    ]}
+                  />
+                }
+                footer={
+                  <CardActions>
+                    <Button
+                      disabled={!history.length}
+                      onClick={() => store.clearHistory()}
+                    >
+                      {t("Clear history")}
+                    </Button>
+                  </CardActions>
+                }
               >
-                {t("Clear history")}
-              </Button>
-            </footer>
-          </DialogReveal>
-        </MenuSurface>
-      )}
+                <ScrollArea
+                  className={styles.list}
+                  aria-label={t("Error list")}
+                  scrollbarLabel={t("Scroll errors")}
+                >
+                  {!shown.length ? (
+                    <p className={styles.empty}>
+                      {tab === "active"
+                        ? t("No active errors")
+                        : t("No error history")}
+                    </p>
+                  ) : (
+                    <ul>
+                      {shown.map((entry) => (
+                        <li key={entry.id} data-status={entry.status}>
+                          <div className={styles.row}>
+                            <span className={styles.state}>
+                              {t(
+                                entry.status === "active"
+                                  ? "Active"
+                                  : entry.status === "resolved"
+                                    ? "Resolved"
+                                    : "Dismissed",
+                              )}
+                            </span>
+                            <span className={styles.time}>
+                              <RelativeTime value={entry.lastSeen} />
+                            </span>
+                            {entry.status === "active" && (
+                              <Button
+                                className={styles.dismiss}
+                                onClick={() => store.dismiss(entry.id)}
+                              >
+                                {t("Dismiss")}
+                              </Button>
+                            )}
+                          </div>
+                          <p className={styles.message}>{entry.message}</p>
+                          {entry.method && (
+                            <code className={styles.method}>
+                              {entry.method}
+                            </code>
+                          )}
+                          {entry.target && (
+                            <code className={styles.method}>
+                              {entry.target}
+                            </code>
+                          )}
+                          <div className={styles.details}>
+                            {entry.code && <span>{entry.code}</span>}
+                            {entry.count > 1 && (
+                              <span>
+                                <CompactNumber
+                                  value={entry.count}
+                                  mode="integer"
+                                  digits={3}
+                                />{" "}
+                                {t("occurrences")}
+                              </span>
+                            )}
+                            {entry.connection && (
+                              <span>{entry.connection}</span>
+                            )}
+                          </div>
+                          <div className={styles.details}>
+                            <span>
+                              {t("First seen")}:{" "}
+                              <DateTime value={entry.firstSeen} />
+                            </span>
+                            {entry.closedAt && (
+                              <span>
+                                {t(
+                                  entry.status === "resolved"
+                                    ? "Resolved"
+                                    : "Dismissed",
+                                )}
+                                : <DateTime value={entry.closedAt} />
+                              </span>
+                            )}
+                          </div>
+                          {(entry.session || entry.project) && (
+                            <code className={styles.method}>
+                              {entry.session
+                                ? `Session ${entry.session}`
+                                : `Project ${entry.project}`}
+                            </code>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </ScrollArea>
+              </Card>
+            </DialogReveal>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

@@ -27,6 +27,8 @@
   background: var(--ui-shade-24);
 }
 .popup {
+  position: fixed;
+  z-index: 1100;
   width: 480px;
   max-width: calc(100vw - 16px);
 }
@@ -34,29 +36,10 @@
   display: block;
   min-width: 0;
 }
-.header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--ui-space);
-  padding: var(--ui-space) calc(2 * var(--ui-space));
-}
-.header strong {
-  justify-self: start;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-}
-.header > button {
-  justify-self: end;
-}
 .list {
   height: min(390px, calc(100dvh - 160px));
   min-height: 0;
-  margin-top: var(--ui-space);
-  border-radius: var(--menu-inner-radius);
+  border-radius: inherit;
 }
 .list ul {
   list-style: none;
@@ -118,15 +101,6 @@
 .details > span {
   min-width: 0;
   overflow-wrap: anywhere;
-}
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid var(--ui-shade-48);
-  padding: var(--ui-space);
-}
-.footer button {
-  font-size: 11px;
 }
 .empty {
   display: grid;
