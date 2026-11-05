@@ -4,6 +4,7 @@ import type { Memory } from "#gen/cxz/memory_pb";
 import { MemoryScope } from "#gen/cxz/memory_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
+import { sessionRef, sessionUUID } from "#src/shared/api/session-id.ts";
 import { projectRef } from "#src/shared/api/project-id.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
@@ -86,13 +87,16 @@ export function MemoryGrid({
   project,
   projectHandle,
   sessions,
+  session,
 }: {
   c: Connection;
   project: string;
   projectHandle: string;
   sessions: readonly Session[];
+  session?: Uint8Array;
 }) {
   const prefix = useId();
+  const sessionId = sessionUUID(session);
   const list = useRemote(
     async (signal) => {
       const items = new Map<string, Memory>();
@@ -102,6 +106,7 @@ export function MemoryGrid({
         const page = await c.memories.list(
           {
             project: projectRef(project),
+            session: session ? sessionRef(session) : undefined,
             scope: MemoryScope.ACTIVE,
             size: 500,
             after,
@@ -117,6 +122,7 @@ export function MemoryGrid({
       } while (after);
       return {
         project,
+        sessionId,
         items: [...items.values()].sort(
           (a, b) =>
             Number(
@@ -130,9 +136,12 @@ export function MemoryGrid({
         ),
       };
     },
-    [c, project],
+    [c, project, sessionId],
   );
-  const memories = list.data?.project === project ? list.data.items : [];
+  const memories =
+    list.data?.project === project && list.data.sessionId === sessionId
+      ? list.data.items
+      : [];
   return (
     <section
       className={styles.collection}
@@ -151,7 +160,9 @@ export function MemoryGrid({
           Loading memories…
         </p>
       ) : !memories.length ? (
-        <p className={styles.state}>No memories yet.</p>
+        <p className={styles.state}>
+          {sessionId ? "No memories for this session." : "No memories yet."}
+        </p>
       ) : (
         <nav className={styles.grid} aria-label="Memories">
           {memories.map((memory) => (
