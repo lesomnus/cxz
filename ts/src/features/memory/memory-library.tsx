@@ -17,6 +17,7 @@ import { projectRef } from "#src/shared/api/project-id.ts";
 import { memoryLocation, uuid } from "#src/shared/navigation/resource-route.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { publicUUID } from "#src/shared/logs/rpc-diagnostics.ts";
+import { memoryListKey } from "#src/shared/api/read-cache.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { useEditorSettings } from "#src/shared/settings/settings.ts";
 import { useTheme } from "#src/shared/theme/theme.tsx";
@@ -376,6 +377,7 @@ export function MemoryLibrary({
           baseRevision: read!.revision,
         });
       }
+      c.reads.invalidate(memoryListKey(project));
       setOriginal(draft);
       selectMemory(saved.id, true);
       setCreating(false);
@@ -392,6 +394,7 @@ export function MemoryLibrary({
       text: "Move this memory to trash? It can be restored until its deletion deadline.",
       run: async () => {
         await c.memories.erase(memoryRef());
+        c.reads.invalidate(memoryListKey(project));
         reset(true);
       },
     });
@@ -477,6 +480,7 @@ export function MemoryLibrary({
                   title="Refresh"
                   onClick={() =>
                     choose(() => {
+                      c.reads.invalidate(memoryListKey(project));
                       list.reload();
                       text.reload();
                     })
@@ -785,7 +789,11 @@ export function MemoryLibrary({
                       {
                         label: "Reload",
                         disabled: busy,
-                        run: () => choose(text.reload),
+                        run: () =>
+                          choose(() => {
+                            c.reads.invalidate(memoryListKey(project));
+                            void text.reload();
+                          }),
                       },
                       ...(!trash
                         ? [
@@ -851,6 +859,7 @@ export function MemoryLibrary({
                                 ref: memoryRef(),
                                 dateUpdated: picked!.dateUpdated,
                               });
+                              c.reads.invalidate(memoryListKey(project));
                               reset(true);
                             })
                           }
@@ -868,6 +877,7 @@ export function MemoryLibrary({
                                   ref: memoryRef(),
                                   dateUpdated: picked!.dateUpdated,
                                 });
+                                c.reads.invalidate(memoryListKey(project));
                                 reset(true);
                               },
                             })

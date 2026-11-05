@@ -1,11 +1,12 @@
-import { useId } from "react";
+import { useEffect, useId } from "react";
 import { Button } from "@lesomnus/nox";
 import type { Memory } from "#gen/cxz/memory_pb";
 import { MemoryScope } from "#gen/cxz/memory_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
-import { sessionRef, sessionUUID } from "#src/shared/api/session-id.ts";
+import { sessionUUID } from "#src/shared/api/session-id.ts";
 import { projectRef } from "#src/shared/api/project-id.ts";
+import { MEMORY_LIST_TTL, memoryListKey } from "#src/shared/api/read-cache.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { RelativeTime } from "#src/shared/components/date-time.tsx";
@@ -97,6 +98,7 @@ export function MemoryGrid({
 }) {
   const prefix = useId();
   const sessionId = sessionUUID(session);
+  const cacheKey = memoryListKey(project);
   const list = useRemote(
     async (signal) => {
       const items = new Map<string, Memory>();
@@ -106,7 +108,6 @@ export function MemoryGrid({
         const page = await c.memories.list(
           {
             project: projectRef(project),
-            session: session ? sessionRef(session) : undefined,
             scope: MemoryScope.ACTIVE,
             size: 500,
             after,
@@ -122,7 +123,6 @@ export function MemoryGrid({
       } while (after);
       return {
         project,
-        sessionId,
         items: [...items.values()].sort(
           (a, b) =>
             Number(
@@ -136,30 +136,38 @@ export function MemoryGrid({
         ),
       };
     },
-    [c, project, sessionId],
+    [c, project],
+    { cache: { store: c.reads, key: cacheKey, ttl: MEMORY_LIST_TTL } },
   );
+  // Selection is local. Check freshness without canceling an in-flight project read.
+  useEffect(() => {
+    if (!list.loading && c.reads.peek(cacheKey)?.fresh === false)
+      list.revalidate();
+  }, [c, project, sessionId]);
+  const data = list.data?.project === project ? list.data : undefined;
   const memories =
-    list.data?.project === project && list.data.sessionId === sessionId
-      ? list.data.items
-      : [];
+    data?.items.filter(
+      (memory) => !sessionId || memory.ownerSession === sessionId,
+    ) ?? [];
   return (
     <section
       className={styles.collection}
       aria-label="Project memories"
       aria-busy={list.loading}
     >
-      {list.error ? (
+      {list.error && (
         <div className={styles.state}>
           <p role="alert">Memories could not be loaded. {list.error}</p>
           <Button variant="toolbar" onClick={() => void list.reload()}>
             Retry
           </Button>
         </div>
-      ) : list.loading && !memories.length ? (
+      )}
+      {list.loading && !data ? (
         <p className={styles.state} role="status">
           Loading memories…
         </p>
-      ) : !memories.length ? (
+      ) : !data && list.error ? null : !memories.length ? (
         <p className={styles.state}>
           {sessionId ? "No memories for this session." : "No memories yet."}
         </p>

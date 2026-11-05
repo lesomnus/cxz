@@ -3,6 +3,9 @@ type Entry = { result?: Result };
 
 export const ACCOUNT_INFO_TTL = 5 * 60_000;
 export const USAGE_TTL = 60_000;
+export const MEMORY_LIST_TTL = 60_000;
+export const memoryListKey = (project: string) =>
+  `memory/${encodeURIComponent(project)}/active`;
 export const ACCOUNT_LIST_KEY = "account-list";
 export const accountReadPrefix = (identity: string) =>
   `account/${encodeURIComponent(identity)}/`;

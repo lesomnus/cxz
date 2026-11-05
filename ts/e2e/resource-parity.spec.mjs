@@ -1022,7 +1022,7 @@ const researchPath = `${memoryProjectPath}/${memoryFixtureUUID("memory")}`;
 const handoffPath = `${memoryProjectPath}/${memoryFixtureUUID("handoff")}`;
 const memoryDocument = (page) =>
   page.getByRole("region", { name: "Memory document", exact: true });
-test("Memory session picker sends stable project and session references and clears its filter", async ({
+test("Memory session filtering reuses cached project metadata from the first selection", async ({
   page,
 }) => {
   const requests = await fixture(page, false, false, memoryProjectPath);
@@ -1049,9 +1049,10 @@ test("Memory session picker sends stable project and session references and clea
     .filter((r) => r.path === "/cxz.MemoryService/List")
     .at(-1).q;
   expect(request.project.id).toBe(projectFixture().id);
-  expect(request.session.id).toBe(
-    Buffer.from("fixture".padEnd(16, "0")).toString("base64"),
-  );
+  expect(request.session).toBeUndefined();
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List"),
+  ).toHaveLength(1);
   expect(request.scope).toBe("MEMORY_SCOPE_ACTIVE");
   expect(
     requests.filter((r) => r.path === "/cxz.MemoryService/Read"),
@@ -1069,6 +1070,119 @@ test("Memory session picker sends stable project and session references and clea
     requests.filter((r) => r.path === "/cxz.MemoryService/List").at(-1).q
       .session,
   ).toBeUndefined();
+  await page.getByRole("link", { name: "Research notes", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Back to memories", exact: true })
+    .click();
+  await expect(
+    page.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List"),
+  ).toHaveLength(1);
+});
+test("Memory cache expiry refreshes in the background without hiding filtered cards", async ({
+  page,
+}) => {
+  const start = new Date("2026-11-05T13:00:00Z");
+  await page.clock.setFixedTime(start);
+  const requests = await fixture(page, false, false, memoryProjectPath);
+  const memories = page.getByRole("region", {
+    name: "Project memories",
+    exact: true,
+  });
+  await expect(memories.getByRole("link")).toHaveCount(2);
+  let release;
+  const pending = new Promise((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/cxz.MemoryService/List", async (route) => {
+    await pending;
+    await route.fallback();
+  });
+  await page.clock.setFixedTime(new Date(start.getTime() + 60_001));
+  const refreshing = page.waitForRequest("**/cxz.MemoryService/List");
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Research session", exact: true })
+    .click();
+  await refreshing;
+  await expect(memories).toHaveAttribute("aria-busy", "true");
+  await expect(
+    memories.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
+  await expect(
+    memories.getByText("Loading memories…", { exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "All sessions", exact: true }).click();
+  await expect(memories.getByRole("link")).toHaveCount(2);
+  await expect(memories).toHaveAttribute("aria-busy", "true");
+  release();
+  await expect(memories).toHaveAttribute("aria-busy", "false");
+  await expect(memories.getByRole("alert")).toHaveCount(0);
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List"),
+  ).toHaveLength(2);
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Research session", exact: true })
+    .click();
+  await expect(memories.getByRole("link")).toHaveCount(1);
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List"),
+  ).toHaveLength(2);
+});
+test("Memory refresh failures retain cached cards and allow a retry", async ({
+  page,
+}) => {
+  const start = new Date("2026-11-05T13:00:00Z");
+  await page.clock.setFixedTime(start);
+  await fixture(page, false, false, memoryProjectPath);
+  const memories = page.getByRole("region", {
+    name: "Project memories",
+    exact: true,
+  });
+  await expect(memories.getByRole("link")).toHaveCount(2);
+  const fail = (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "unavailable",
+        message: "Refresh temporarily unavailable",
+      }),
+    });
+  await page.route("**/cxz.MemoryService/List", fail);
+  await page.clock.setFixedTime(new Date(start.getTime() + 60_001));
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Research session", exact: true })
+    .click();
+  await expect(memories.getByRole("alert")).toContainText(
+    "Refresh temporarily unavailable",
+  );
+  await expect(
+    memories.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
+  await page.unroute("**/cxz.MemoryService/List", fail);
+  await memories.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(memories.getByRole("alert")).toHaveCount(0);
+  await expect(memories).toHaveAttribute("aria-busy", "false");
+  await expect(
+    memories.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
 });
 test("Memory collection, document links, reload and browser history agree", async ({
   page,
