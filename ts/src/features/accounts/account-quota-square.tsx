@@ -87,12 +87,20 @@ export function AccountQuotaSquare({
     >
       <span className={styles.quotaGauge}>
         <span
-          className={styles.quotaEmpty}
-          style={{
-            height: `calc((100% - 2 * var(--account-quota-empty-inset)) * ${remaining === undefined ? 0 : (100 - remaining) / 100})`,
-          }}
+          className={styles.quotaVessel}
+          data-quota-vessel=""
           aria-hidden="true"
-        />
+        >
+          <span
+            className={styles.quotaLiquid}
+            data-quota-liquid=""
+            style={{
+              transform: `translateY(${remaining === undefined ? 100 : 100 - remaining}%)`,
+            }}
+          >
+            <span className={styles.quotaSurface} data-quota-surface="" />
+          </span>
+        </span>
         <span
           className={styles.quotaValue}
           role={percent === undefined ? "img" : "meter"}

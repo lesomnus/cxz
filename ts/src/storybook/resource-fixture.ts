@@ -29,7 +29,7 @@ export function resourceFixture({
   usageFailures?: number;
   longAccountDetails?: boolean;
   editFailures?: number;
-  quotaRemaining?: number | null;
+  quotaRemaining?: number | null | (() => number | null);
   onRead?: (kind: "accounts" | "auth" | "usage" | "quota") => void;
   usageMultiplier?: () => number;
 } = {}) {
@@ -238,13 +238,14 @@ export function resourceFixture({
       transcript: (request) => {
         onRead?.("quota");
         const id = request.ref?.key.value;
-        if (
-          quotaRemaining === null ||
-          !["demo", "demo-review"].includes(String(id))
-        )
+        const available =
+          typeof quotaRemaining === "function"
+            ? quotaRemaining()
+            : quotaRemaining;
+        if (available === null || !["demo", "demo-review"].includes(String(id)))
           return {};
         const older = id === "demo";
-        const remaining = older ? 12 : quotaRemaining;
+        const remaining = older ? 12 : available;
         return {
           metadata: [
             {

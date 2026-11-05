@@ -213,19 +213,20 @@ for (const width of [1280, 390]) {
     ).toBe(2);
     expect(
       await gauge.evaluate((node) => getComputedStyle(node).borderRadius),
-    ).toBe("14px");
+    ).toBe("14px / 6px");
     expect(gaugeBounds.x + 14).toBe(quotaBounds.x + 16);
-    expect(gaugeBounds.y + 14).toBe(quotaBounds.y + 16);
-    expect(gaugeBounds.y + gaugeBounds.height - 14).toBe(
-      quotaBounds.y + quotaBounds.height - 16,
-    );
     await expect(quota.getByRole("meter")).toHaveAttribute(
       "aria-valuenow",
       "64",
     );
-    const empty = gauge.locator(':scope > span[aria-hidden="true"]');
+    const empty = gauge.locator("[data-quota-vessel]");
+    const liquid = empty.locator("[data-quota-liquid]");
     await expect
-      .poll(() => empty.evaluate((node) => node.getBoundingClientRect().height))
+      .poll(() =>
+        liquid.evaluate(
+          (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42,
+        ),
+      )
       .toBeCloseTo(58 * 0.36, 0);
     const emptyBounds = (await empty.boundingBox())!;
     expect(emptyBounds.x - gaugeBounds.x).toBe(1);
@@ -233,7 +234,13 @@ for (const width of [1280, 390]) {
     expect(
       gaugeBounds.x + gaugeBounds.width - emptyBounds.x - emptyBounds.width,
     ).toBe(1);
-    await expect(empty).toHaveCSS("border-radius", "13px");
+    expect(emptyBounds.height).toBe(58);
+    await expect(empty).toHaveCSS("border-radius", "13px / 5px");
+    const surface = (await liquid
+      .locator("[data-quota-surface]")
+      .boundingBox())!;
+    expect(surface.width).toBe(30);
+    expect(surface.height).toBe(10);
     await expect(quota).toContainText(/00d02h2[56]m/);
     const reset = quota.getByRole("img", { name: /milliseconds/ });
     const resetRows = await reset
@@ -256,8 +263,10 @@ for (const width of [1280, 390]) {
       }
     }
     await expect(
-      personal.getByRole("region", { name: "Remaining agent usage" }),
-    ).toContainText("—");
+      personal
+        .getByRole("region", { name: "Remaining agent usage" })
+        .getByRole("img", { name: "Not reported", exact: true }),
+    ).toBeVisible();
     await expect(work.getByRole("switch")).toHaveCount(0);
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>

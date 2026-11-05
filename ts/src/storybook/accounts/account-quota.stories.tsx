@@ -1,6 +1,6 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { SectionGroup } from "@lesomnus/nox";
+import { SectionGroup, Slider } from "@lesomnus/nox";
 import { create } from "@bufbuild/protobuf";
 import { SessionSchema } from "#gen/cxz/session_pb";
 import { AccountQuotaSquare } from "#src/features/accounts/account-quota-square.tsx";
@@ -11,7 +11,11 @@ const sessions = [
 ];
 
 function QuotaFixture({ remaining }: { remaining: number | null }) {
-  const [c] = useState(() => resourceFixture({ quotaRemaining: remaining }));
+  const current = useRef(remaining);
+  current.current = remaining;
+  const [c] = useState(() =>
+    resourceFixture({ quotaRemaining: () => current.current }),
+  );
   useEffect(() => () => c.dispose(), [c]);
   return (
     <SectionGroup
@@ -26,13 +30,14 @@ function QuotaFixture({ remaining }: { remaining: number | null }) {
         account="work"
         agent="codex"
         sessions={sessions}
+        refreshVersion={remaining ?? -1}
       />
     </SectionGroup>
   );
 }
 
 function QuotaPreview({ remaining = 64 }: { remaining: number | null }) {
-  return <QuotaFixture key={remaining ?? "unknown"} remaining={remaining} />;
+  return <QuotaFixture remaining={remaining} />;
 }
 
 const meta = {
@@ -50,7 +55,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The Accounts page's actual 64×64 quota display, backed by an isolated in-memory RPC fixture. The container has a 16px radius; the 32×60 gauge has a 2px inset and a 14px radius so their left corner centers align. The gauge stays tinted across its full height. An empty-area box with a 13px radius (gauge radius minus its 1px inset) grows downward from the top as quota is used, inset 1px inside the gauge; its maximum height leaves a 1px bottom gap too. The percentage stays above both layers and uses CompactNumber. The reset countdown stacks days, hours and minutes to its right. Critical usage is below 10%, warning is 10–30%, and normal is above 30%. Use the theme toolbar to compare dark and light appearances. No Manager, provider or saved account is used.",
+          "The Accounts page's actual remaining-usage display, backed by an isolated in-memory RPC fixture. A fixed elliptical liquid surface moves down as usage is consumed, keeping its shape near full capacity. A slightly brighter surface distinguishes the top from the liquid body. The inset vessel clips the liquid as it empties; dimensions and motion live in CSS tokens. The percentage remains centered above the gauge and the reset countdown stays beside it. Existing warning and critical colors follow the remaining quota. Water Level lets you drain and refill the same mounted gauge; use the theme toolbar to compare appearances.",
       },
     },
   },
@@ -69,7 +74,7 @@ export const Comparison: Story = {
         paddingBlock: 24,
       }}
     >
-      {[0, 1, 8, 10, 30, 31, 64, 99, 100, null].map((remaining) => (
+      {[0, 1, 8, 10, 30, 31, 64, 90, 95, 98, 99, 100, null].map((remaining) => (
         <figure
           key={remaining ?? "unknown"}
           aria-label={
@@ -89,4 +94,28 @@ export const Comparison: Story = {
 };
 
 export const Interactive: Story = {};
+export const WaterLevel: Story = {
+  render: function WaterLevel() {
+    const [remaining, setRemaining] = useState(95);
+    return (
+      <div
+        style={{
+          display: "grid",
+          gap: "var(--ui-section-layout-gap)",
+          width: "min(280px, calc(100vw - 48px))",
+        }}
+      >
+        <QuotaPreview remaining={remaining} />
+        <Slider
+          label="Remaining usage"
+          value={remaining}
+          onChange={setRemaining}
+          min={0}
+          max={100}
+        />
+      </div>
+    );
+  },
+  parameters: { controls: { disable: true } },
+};
 export const NotReported: Story = { args: { remaining: null } };
