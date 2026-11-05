@@ -232,7 +232,7 @@ export const Default: Story = {
     docs: {
       description: {
         story:
-          "Dashboard sessions use the project index layout: selection, status, fixed-width session and account links, flexible space, then trailing controls. Resource-link widths share the project index token. The session list keeps its reserved height and independent scroll position. Container names retain the installation prefix and abbreviate the storage ID, with in-place expansion and full-name copy. Top-right icon actions use the account action-button style in Erase, Remove, Stop, Start, Refresh order. Actions retain confirmation and state eligibility; Refresh reloads project metadata, inventory, accounts and usage.",
+          "Dashboard sessions use the project index layout: selection, status, fixed-width session and account links, flexible space, then trailing controls. Resource-link widths share the project index token. Sessions fills the height below Information to align with the actions and usage column, with independent scrolling. Sections use the same tight group spacing and shared column-height tokens as Accounts. Container names retain the installation prefix and abbreviate the storage ID, with in-place expansion and full-name copy. Top-right icon actions use the account action-button style in Erase, Remove, Stop, Start, Refresh order. Actions retain confirmation and state eligibility; Refresh reloads project metadata, inventory, accounts and usage.",
       },
     },
   },

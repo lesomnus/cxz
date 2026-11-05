@@ -1,0 +1,8 @@
+.layout {
+  --resource-action-size: 64px;
+  --resource-usage-height: 482px;
+  --resource-column-height: calc(
+    var(--resource-action-size) + var(--ui-section-group-gap) +
+      var(--resource-usage-height)
+  );
+}

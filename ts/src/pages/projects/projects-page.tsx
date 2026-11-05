@@ -11,6 +11,7 @@ import {
   Button,
   EditableValue,
   Section,
+  SectionGroup,
   SlidingPages,
   SlidingPage,
 } from "@lesomnus/nox";
@@ -37,6 +38,7 @@ import { listAccounts } from "#src/features/accounts/account-data.ts";
 import type { Account } from "#gen/cxz/account_pb";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import styles from "./projects-page.module.css";
+import dashboardStyles from "#src/shared/components/resource-dashboard.module.css";
 import {
   projectLocation,
   resourceHandle,
@@ -265,9 +267,9 @@ function ProjectDashboard({
     }
   }
   return (
-    <div className={styles.dashboard}>
+    <div className={`${styles.dashboard} ${dashboardStyles.layout}`}>
       <div className={styles.columns}>
-        <div className={styles.information}>
+        <SectionGroup className={styles.information}>
           <Section aria-label={t("Information")}>
             <Fields
               rows={[
@@ -334,6 +336,7 @@ function ProjectDashboard({
               variant="overview"
               showToolbar={false}
               horizontalScrollbar
+              fillHeight
               addSession={() => setAddingSession(true)}
             />
             {addingSession && (
@@ -353,8 +356,8 @@ function ProjectDashboard({
               </div>
             )}
           </Section>
-        </div>
-        <div className={styles.usageColumn}>
+        </SectionGroup>
+        <SectionGroup className={styles.usageColumn}>
           <section className={styles.actions} aria-label={t("Actions")}>
             <ProjectActions
               c={c}
@@ -374,7 +377,7 @@ function ProjectDashboard({
             refreshVersion={refreshVersion}
             onLoadingChange={setUsageLoading}
           />
-        </div>
+        </SectionGroup>
       </div>
     </div>
   );

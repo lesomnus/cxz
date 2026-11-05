@@ -38,6 +38,7 @@ import {
 import styles from "#src/shared/components/resource-surface.module.css";
 import accountStyles from "./accounts.module.css";
 import actionStyles from "#src/shared/components/resource-action.module.css";
+import dashboardStyles from "#src/shared/components/resource-dashboard.module.css";
 export function AccountDetails({
   c,
   account,
@@ -120,7 +121,7 @@ export function AccountDetails({
       ? labels[status.data.state ?? AuthState.UNSPECIFIED]
       : "Status unavailable";
   return (
-    <div className={accountStyles.details}>
+    <div className={`${accountStyles.details} ${dashboardStyles.layout}`}>
       <SectionGroup className={accountStyles.summaryColumn}>
         <Section
           aria-label="Account details"

@@ -22,23 +22,17 @@
 .details {
   /* Preserve the loaded card's dimensions while data or text changes. */
   --account-info-height: 163px;
-  --account-auth-height: 64px;
-  --account-usage-height: 482px;
-  --account-column-height: calc(
-    var(--account-auth-height) + var(--ui-section-group-gap) +
-      var(--account-usage-height)
-  );
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   gap: var(--ui-section-group-gap);
 }
 .summaryColumn {
-  height: var(--account-column-height);
+  height: var(--resource-column-height);
   grid-template-rows: var(--account-info-height) minmax(0, 1fr);
 }
 .usageColumn {
-  grid-template-rows: var(--account-auth-height) var(--account-usage-height);
+  grid-template-rows: var(--resource-action-size) var(--resource-usage-height);
 }
 .authenticationGroup {
   --resource-action-radius: 16px;

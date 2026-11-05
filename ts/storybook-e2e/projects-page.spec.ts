@@ -238,14 +238,14 @@ test("project session table uses the reusable down/drag/Shift selection", async 
   const table = page.getByRole("table", { name: "Sessions", exact: true }),
     rows = table.locator("tbody tr");
   const first = rows.first().getByRole("checkbox"),
-    sixth = rows.nth(5).getByRole("checkbox");
+    fourth = rows.nth(3).getByRole("checkbox");
   const start = (await first.boundingBox())!,
-    end = (await sixth.boundingBox())!;
+    end = (await fourth.boundingBox())!;
   await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
   await page.mouse.down();
   await expect(first).toBeChecked();
   await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2);
-  await expect(table.locator("tbody input:checked")).toHaveCount(6);
+  await expect(table.locator("tbody input:checked")).toHaveCount(4);
   await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
   await expect(table.locator("tbody input:checked")).toHaveCount(1);
   await page.mouse.up();
@@ -711,7 +711,7 @@ test("project sessions use the index column layout with bounded resource links a
   ).toHaveCount(0);
 });
 
-test("session table reserves seven and a half rows with a sticky header and independent scrolling", async ({
+test("session table fills the aligned dashboard column with a sticky header and independent scrolling", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1100 });
@@ -723,11 +723,22 @@ test("session table reserves seven and a half rows with a sticky header and inde
   const cards = list.locator("tbody tr");
   await expect(cards).toHaveCount(16);
   const frame = (await viewport.boundingBox())!;
-  const eighth = (await cards.nth(7).boundingBox())!;
-  // Rows include their divider; the former inset cards did not.
+  const section = page.getByRole("region", {
+    name: "Project sessions",
+    exact: true,
+  });
+  const usage = page.getByRole("region", {
+    name: "Conversation usage",
+    exact: true,
+  });
+  const sectionBox = (await section.boundingBox())!,
+    usageBox = (await usage.boundingBox())!;
   expect(
-    Math.abs(frame.y + frame.height - eighth.y - eighth.height / 2),
-  ).toBeLessThanOrEqual(1);
+    Math.abs(sectionBox.y + sectionBox.height - usageBox.y - usageBox.height),
+  ).toBeLessThan(1);
+  expect(frame.y + frame.height).toBeLessThanOrEqual(
+    sectionBox.y + sectionBox.height,
+  );
   const header = list.getByRole("columnheader").first();
   const headerBefore = (await header.boundingBox())!;
   const outer = page.locator(
@@ -743,10 +754,6 @@ test("session table reserves seven and a half rows with a sticky header and inde
   expect(await outer.evaluate((el) => el.scrollTop)).toBe(outerTop);
   expect((await header.boundingBox())!.y).toBe(headerBefore.y);
   const scrolled = await viewport.evaluate((el) => el.scrollTop);
-  const section = page.getByRole("region", {
-    name: "Project sessions",
-    exact: true,
-  });
   const before = await section.boundingBox();
   await cards.nth(10).getByRole("checkbox").check();
   await expect(cards.nth(10)).toHaveAttribute("data-selected", "true");
@@ -848,13 +855,19 @@ test("dashboard scopes project usage and places sessions below Info", async ({
   expect(infoBox.width).toBe(420);
   expect(sessionsBox.x).toBe(infoBox.x);
   expect(sessionsBox.width).toBe(infoBox.width);
-  expect(sessionsBox.y).toBeGreaterThanOrEqual(infoBox.y + infoBox.height);
+  const gap = await main.evaluate((element) =>
+    parseFloat(
+      getComputedStyle(element).getPropertyValue("--ui-section-group-gap"),
+    ),
+  );
+  expect(sessionsBox.y - infoBox.y - infoBox.height).toBe(gap);
   const actionsBox = (await main
     .getByRole("region", { name: "Actions", exact: true })
     .boundingBox())!;
   expect(actionsBox.y).toBe(infoBox.y);
-  expect(usageBox.y).toBe(actionsBox.y + actionsBox.height + 10);
-  expect(usageBox.x - infoBox.x - infoBox.width).toBe(10);
+  expect(usageBox.y).toBe(actionsBox.y + actionsBox.height + gap);
+  expect(usageBox.x - infoBox.x - infoBox.width).toBe(gap);
+  expect(sessionsBox.y + sessionsBox.height).toBe(usageBox.y + usageBox.height);
   expect(usageBox.width).toBe(420);
   const all = sessions.getByRole("checkbox", {
     name: "Select all sessions",
