@@ -204,9 +204,10 @@ function TaskEditor({
               <Button
                 type="submit"
                 form={id}
+                loading={busy}
                 disabled={busy || !name.trim() || conflict}
               >
-                {busy ? "Saving…" : task ? "Save" : "Add"}
+                {task ? "Save" : "Confirm"}
               </Button>
               <Button type="button" disabled={busy} onClick={close}>
                 Cancel

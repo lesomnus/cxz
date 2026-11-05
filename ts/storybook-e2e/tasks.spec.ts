@@ -63,7 +63,7 @@ test("task table creates and edits work, and releases a stopped owner's task onl
   await add
     .getByRole("textbox", { name: "Description", exact: true })
     .fill("Verify the project workflow.");
-  await add.getByRole("button", { name: "Add", exact: true }).click();
+  await add.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(add).toHaveCount(0);
   const tasks = page.getByRole("table", { name: "Tasks", exact: true });
   await tasks
@@ -192,7 +192,7 @@ test("project selection isolates work and remains available in the narrow layout
   await add
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("Documentation only");
-  await add.getByRole("button", { name: "Add", exact: true }).click();
+  await add.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(
     page.getByRole("button", {
       name: "Open task: Documentation only",

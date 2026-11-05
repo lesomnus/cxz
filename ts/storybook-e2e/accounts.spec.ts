@@ -698,7 +698,7 @@ test("the top add action opens a modal and creates an account card", async ({
   await dialog
     .getByRole("textbox", { name: "Display name", exact: true })
     .fill("New team account");
-  await dialog.getByRole("button", { name: "Add", exact: true }).click();
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const card = page.getByRole("article", {
     name: "New team account",

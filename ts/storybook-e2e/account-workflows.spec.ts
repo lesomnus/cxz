@@ -74,7 +74,7 @@ test("account creation uses the actual form and Reset clears its isolated state"
   await page.keyboard.press("Escape");
   await aliasInput.fill("INVALID_ALIAS");
   await expect(
-    form.getByRole("button", { name: "Add", exact: true }),
+    form.getByRole("button", { name: "Confirm", exact: true }),
   ).toBeDisabled();
   await form
     .getByRole("textbox", { name: "Alias", exact: true })
@@ -82,7 +82,7 @@ test("account creation uses the actual form and Reset clears its isolated state"
   await form
     .getByRole("textbox", { name: "Display name", exact: true })
     .fill("Design account");
-  await form.getByRole("button", { name: "Add", exact: true }).click();
+  await form.getByRole("button", { name: "Confirm", exact: true }).click();
   const card = page.getByRole("article", {
     name: "Design account",
     exact: true,
@@ -612,6 +612,9 @@ test("session creation performs its scoped login and reuses the creation key", a
   await open(page, "session-creation-requires-login");
   await page.getByRole("button", { name: "Add session", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Add session", exact: true });
+  await expect(
+    form.getByRole("textbox", { name: "Model", exact: true }),
+  ).toHaveCount(0);
   await form.getByRole("combobox", { name: "Account", exact: true }).click();
   const account = form.getByRole("option", {
     name: "Claude work account work1",
@@ -624,9 +627,7 @@ test("session creation performs its scoped login and reuses the creation key", a
   await form
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("Authenticated preview");
-  await form
-    .getByRole("button", { name: "Create session", exact: true })
-    .click();
+  await form.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(loginPanel(page)).toBeVisible();
   await expect(
     form.getByRole("textbox", { name: "Title", exact: true }),
@@ -684,9 +685,7 @@ test("session account logos keep visible space from both names in the list and s
     expect(Math.abs(anchor.x - aligned.x)).toBeLessThan(1);
     await option.click();
   }
-  await form
-    .getByRole("button", { name: "Create session", exact: true })
-    .click();
+  await form.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(form).toHaveCount(0);
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),

@@ -395,11 +395,9 @@ test("Add session inside the header menu opens the create form for the current p
     .fill("Created from projects");
   await dialog.getByRole("combobox", { name: "Account", exact: true }).click();
   await page
-    .getByRole("option", { name: "Work account · codex", exact: true })
+    .getByRole("option", { name: "Work account work", exact: true })
     .click();
-  await dialog
-    .getByRole("button", { name: "Create session", exact: true })
-    .click();
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(rows(page)).toHaveCount(3);
   await expect(

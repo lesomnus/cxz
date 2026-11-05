@@ -81,9 +81,10 @@ export function AccountAddForm({
               <Button
                 type="submit"
                 form={id}
+                loading={busy}
                 disabled={busy || !/^[a-z][a-z0-9-]{0,62}$/.test(alias.trim())}
               >
-                {busy ? "Adding…" : "Add"}
+                Confirm
               </Button>
               <Button
                 type="button"

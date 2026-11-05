@@ -49,7 +49,6 @@ export function SessionCreate({
   const [project, setProject] = useState(projectId(projects[0]) ?? "");
   const [alias, setAlias] = useState("");
   const [title, setTitle] = useState("");
-  const [model, setModel] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [login, setLogin] = useState<LoginTarget>();
@@ -64,7 +63,7 @@ export function SessionCreate({
     pending.current = true;
     const controller = new AbortController();
     request.current = controller;
-    const signature = JSON.stringify([project, alias, title, model]);
+    const signature = JSON.stringify([project, alias, title]);
     if (creation.current.signature !== signature)
       creation.current = { signature, id: crypto.randomUUID() };
     const clientId = creation.current.id;
@@ -82,7 +81,6 @@ export function SessionCreate({
           account,
           authBinding: { key: { case: "bindingId", value: binding.bindingId } },
           name: title,
-          model,
           clientId,
         },
         { signal: controller.signal, timeoutMs: 120000 },
@@ -135,9 +133,10 @@ export function SessionCreate({
               <Button
                 type="submit"
                 form={formId}
+                loading={busy}
                 disabled={busy || !project || !selected || !!login}
               >
-                {busy ? "Creating…" : "Create session"}
+                Confirm
               </Button>
               <Button
                 type="button"
@@ -194,15 +193,6 @@ export function SessionCreate({
                   autoFocus
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  disabled={busy || !!login}
-                />
-              </FormField>
-              <FormField label="Model" htmlFor={`${formId}-model`}>
-                <input
-                  id={`${formId}-model`}
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  placeholder="Provider default"
                   disabled={busy || !!login}
                 />
               </FormField>
