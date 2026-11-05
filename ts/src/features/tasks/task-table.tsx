@@ -7,12 +7,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  useRangeSelection,
 } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Task } from "#gen/cxz/task_pb";
 import { TaskStatus } from "#gen/cxz/task_pb";
-import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { TaskPriority, TaskStatusIcon, TaskTime } from "./task-indicators";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
@@ -45,12 +43,6 @@ export function TaskTable({
     () => new Map(sessions.map((session) => [session.runtimeId, session])),
     [sessions],
   );
-  const [selected, select] = useState<Set<string>>(() => new Set());
-  const selection = useRangeSelection({
-    items: rows.map(taskKey),
-    selected,
-    onSelectionChange: select,
-  });
   const { locale } = useLocale();
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -61,34 +53,23 @@ export function TaskTable({
   }, []);
   return (
     <Table
-      {...selection.getContainerProps()}
       className={`${styles.table} ${resourceStyles.layout}`}
       aria-label="Tasks"
     >
       <colgroup>
-        <col className={styles.selectionColumn} />
         <col className={styles.statusColumn} />
         <col />
         <col className={styles.ownerColumn} />
         <col className={styles.priorityColumn} />
         <col className={styles.dateColumn} />
-        <col className={styles.dateColumn} />
       </colgroup>
       <TableHeader>
         <TableRow>
-          <TableHead className={styles.selectionCell} aria-label="Selection">
-            <Checkbox
-              className={styles.cellCheckbox}
-              aria-label="Select all tasks"
-              {...selection.getSelectAllProps()}
-            />
-          </TableHead>
           <TableHead aria-label="Status" />
           <TableHead>Task</TableHead>
           <TableHead>Assignee</TableHead>
-          <TableHead align="center">Priority</TableHead>
+          <TableHead aria-label="Priority" />
           <TableHead>Updated</TableHead>
-          <TableHead>Created</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -101,15 +82,7 @@ export function TaskTable({
               data-task-alias={task.alias}
               data-task-status={taskStatusName(task.status)}
               data-done={task.status === TaskStatus.DONE || undefined}
-              selected={selected.has(taskKey(task))}
             >
-              <TableCell className={styles.selectionCell}>
-                <Checkbox
-                  className={styles.cellCheckbox}
-                  aria-label={`Select ${task.name}`}
-                  {...selection.getCheckboxProps(taskKey(task))}
-                />
-              </TableCell>
               <TableCell className={styles.status}>
                 <TaskStatusIcon status={task.status} />
               </TableCell>
@@ -158,6 +131,18 @@ export function TaskTable({
                         {issue || owner.name}
                       </span>
                     </span>
+                    <svg
+                      className={styles.openIcon}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M7 17 17 7M7 7h10v10" />
+                    </svg>
                   </RouteLink>
                 ) : (
                   <span className={styles.secondary}>
@@ -175,15 +160,12 @@ export function TaskTable({
               <TableCell className={styles.time}>
                 <TaskTime value={task.dateUpdated} now={now} locale={locale} />
               </TableCell>
-              <TableCell className={styles.time}>
-                <TaskTime value={task.dateCreated} now={now} locale={locale} />
-              </TableCell>
             </TableRow>
           );
         })}
         {!rows.length && (
           <TableRow>
-            <TableCell colSpan={7} className={styles.empty}>
+            <TableCell colSpan={5} className={styles.empty}>
               <span role="status">No tasks</span>
             </TableCell>
           </TableRow>

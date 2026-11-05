@@ -2,16 +2,13 @@
   --ui-table-row-height: var(--resource-table-control-size);
   --ui-table-row-gap: 0px;
   --ui-table-header-height: 28px;
-  min-width: 720px;
+  min-width: 560px;
   table-layout: fixed;
   border-radius: var(--ui-section-radius);
   overflow: clip;
 }
 .priorityColumn {
   width: 64px;
-}
-.selectionColumn {
-  width: var(--resource-table-selection-width);
 }
 .statusColumn {
   width: var(--resource-table-state-width);
@@ -125,14 +122,4 @@
 }
 .time {
   font-family: var(--ui-font-mono);
-}
-.table .selectionCell {
-  position: relative;
-  padding: 0;
-}
-.table .cellCheckbox {
-  position: absolute;
-  inset: 0;
-  width: auto;
-  height: auto;
 }

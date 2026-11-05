@@ -16,11 +16,11 @@ test("task table creates and edits work, and releases a stopped owner's task onl
     page.getByText("Session stopped", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Previous run", { exact: true })).toHaveCount(1);
-  const created = page
+  const updated = page
     .locator('[data-task-alias="task-1"] td')
     .last()
     .locator("time");
-  await expect(created).toHaveAttribute("datetime", /T.*Z$/);
+  await expect(updated).toHaveAttribute("datetime", /T.*Z$/);
   await expect(page.getByRole("link", { name: /elm/ })).toHaveAttribute(
     "href",
     "/c/_/session/elm",
@@ -257,18 +257,16 @@ test("task columns show status icons, sized priority dots and relative times", a
   const tasks = page.getByRole("table", { name: "Tasks", exact: true });
   await expect(tasks.getByRole("columnheader")).toHaveText([
     "",
-    "",
     "Task",
     "Assignee",
-    "Priority",
+    "",
     "Updated",
-    "Created",
   ]);
   const first = tasks.locator('[data-task-alias="task-9"]');
-  expect((await first.locator("td").nth(0).boundingBox())!.width).toBe(44);
-  expect((await first.locator("td").nth(1).boundingBox())!.width).toBe(32);
+  await expect(tasks.getByRole("checkbox")).toHaveCount(0);
+  expect((await first.locator("td").nth(0).boundingBox())!.width).toBe(32);
   await expect(
-    first.locator("td").nth(1).getByRole("img", { name: "Todo", exact: true }),
+    first.locator("td").nth(0).getByRole("img", { name: "Todo", exact: true }),
   ).toBeVisible();
   const highest = tasks
     .locator('[data-task-alias="task-1"]')
@@ -287,41 +285,15 @@ test("task columns show status icons, sized priority dots and relative times", a
   await highest.hover();
   await expect(page.getByRole("tooltip")).toHaveText("Highest priority");
   await page.mouse.move(0, 0);
-  const created = first.locator("td").last().locator("time");
-  const updated = first.locator("td").nth(5).locator("time");
-  await expect(created).toHaveText(/hour/);
+  const updated = first.locator("td").last().locator("time");
+  await expect(first.locator("time")).toHaveCount(1);
   await expect(updated).toHaveText(/minute/);
-  await created.hover();
+  await updated.hover();
   await expect(page.getByRole("tooltip").locator("time")).toHaveAttribute(
     "datetime",
-    (await created.getAttribute("datetime"))!,
+    (await updated.getAttribute("datetime"))!,
   );
   await page.mouse.move(0, 0);
-});
-
-test("task checkbox selection shares Shift ranges and gesture undo/redo", async ({
-  page,
-}) => {
-  await page.goto(taskPage);
-  const tasks = page.getByRole("table", { name: "Tasks", exact: true });
-  const first = tasks.getByRole("checkbox", {
-    name: "Select Add browser coverage",
-    exact: true,
-  });
-  const third = tasks.getByRole("checkbox", {
-    name: "Select Restore interrupted work",
-    exact: true,
-  });
-  await first.click();
-  await third.click({ modifiers: ["Shift"] });
-  await expect(tasks.locator("tbody input:checked")).toHaveCount(3);
-  await page.keyboard.press("Control+z");
-  await expect(tasks.locator("tbody input:checked")).toHaveCount(1);
-  await page.keyboard.press("Control+Shift+z");
-  await expect(tasks.locator("tbody input:checked")).toHaveCount(3);
-  await expect(
-    tasks.getByRole("checkbox", { name: "Select all tasks", exact: true }),
-  ).toHaveJSProperty("indeterminate", true);
 });
 
 for (const story of ["task-details", "task-by-id"]) {
