@@ -1,0 +1,114 @@
+.content {
+  width: min(100%, var(--conversation-width, 600px));
+  margin-inline: auto;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  font-size: 12px;
+}
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+}
+.projectPicker {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+}
+.projectPicker > :global(.value-menu) {
+  flex: 0 1 auto;
+  width: max-content;
+  max-width: min(240px, 60vw);
+  min-width: 0;
+}
+.projectPicker :global(.meta-value) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.filterCount {
+  font: 10px var(--ui-font-mono);
+  color: var(--ui-muted);
+}
+.filters.filters {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: var(--ui-section-radius);
+  background: var(--ui-shade-24);
+}
+.toolFilter {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.summary,
+.muted,
+.status {
+  margin: 0;
+  color: var(--ui-muted);
+}
+.status {
+  font: 11px var(--ui-font-mono);
+  overflow-wrap: anywhere;
+}
+.error {
+  margin: 0;
+  color: var(--ui-action-error-color);
+  overflow-wrap: anywhere;
+}
+.section {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding-block: 12px;
+  border-top: 1px solid var(--ui-shade-40);
+}
+.resultHeading {
+  display: grid;
+  gap: 4px;
+  padding: 0 8px 6px;
+  min-width: 0;
+}
+.resultHeading strong {
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.resultHeading small {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.item {
+  display: block;
+  min-width: 0;
+  padding: 10px 8px;
+  border-radius: var(--ui-section-radius);
+  text-decoration: none;
+  color: var(--ui-shade-237);
+  text-align: left;
+}
+.item > :global(.button-content) {
+  display: block;
+}
+.item:hover {
+  background: var(--ui-hover);
+}
+.snippet {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.item small {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  color: var(--ui-muted);
+  font: 10px var(--ui-font-mono);
+}
