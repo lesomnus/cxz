@@ -382,7 +382,7 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
 test("resource bodies fit a mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await fixture(page);
-  for (const name of ["Accounts", "Memory"]) {
+  for (const name of ["Accounts", "Memory", "Search"]) {
     await page.getByRole("link", { name, exact: true }).click();
     await expect(page.locator("main")).toBeVisible();
     const bounds = await page.locator("main").boundingBox();
