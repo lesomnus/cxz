@@ -20,6 +20,7 @@ import {
   type LoginTarget,
 } from "#src/features/accounts/login-panel.tsx";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 
@@ -179,6 +180,11 @@ export function SessionCreate({
                     ...(accounts.data ?? []).map((a) => ({
                       value: a.alias,
                       label: `${a.name || a.alias} · ${a.agent}`,
+                      trailing: (
+                        <span aria-hidden="true">
+                          <AgentBrand agent={a.agent} />
+                        </span>
+                      ),
                     })),
                   ]}
                   choose={setAlias}
