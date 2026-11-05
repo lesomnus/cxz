@@ -30,8 +30,9 @@ test("resource addresses prefer aliases with UUID fallback and explicit self sco
   expect(
     taskLocation({ project: "cxz", task: "fix-login", run: "run-1" }),
   ).toMatchObject({
-    params: { connection: "_", taskId: "fix-login" },
-    search: { project: "cxz", run: "run-1" },
+    to: "/c/$connection/project/$projectId/task/$taskId",
+    params: { connection: "_", projectId: "cxz", taskId: "fix-login" },
+    search: { run: "run-1" },
   });
 });
 
@@ -107,4 +108,33 @@ test("Memory links prefer the project alias with UUID fallback", () => {
   });
   expect(memoryLocation({ ...resource, alias: "" }).params.projectId).toBe(id);
   expect(memoryLocation("oak").params.projectId).toBe("oak");
+});
+
+test("Task links nest under their project, preferring both aliases with UUID fallback", () => {
+  expect(
+    taskLocation({
+      project: resource,
+      task: { ...resource, alias: "fix-login" },
+      assignee: "oak",
+      run: "run-1",
+    }),
+  ).toEqual({
+    to: "/c/$connection/project/$projectId/task/$taskId",
+    params: { connection: "_", projectId: "oak", taskId: "fix-login" },
+    search: { assignee: "oak", run: "run-1" },
+  });
+  expect(
+    taskLocation({
+      project: { ...resource, alias: "" },
+      task: { ...resource, alias: "" },
+    }).params,
+  ).toMatchObject({
+    projectId: id,
+    taskId: id,
+  });
+  expect(taskLocation({ project: resource })).toEqual({
+    to: "/c/$connection/project/$projectId/task",
+    params: { connection: "_", projectId: "oak" },
+    search: {},
+  });
 });

@@ -2,9 +2,9 @@ import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
 import { TaskSchema, TaskStatus } from "#gen/cxz/task_pb";
 import { SessionSchema } from "#gen/cxz/session_pb";
-import { boardTasks, ownerIssue } from "./task-model";
+import { tableTasks, ownerIssue } from "./task-model";
 
-describe("task board projection", () => {
+describe("task table projection", () => {
   it("distinguishes stopped, previous-run and removed owners without changing the task", () => {
     const task = create(TaskSchema, {
       status: TaskStatus.IN_PROGRESS,
@@ -26,14 +26,45 @@ describe("task board projection", () => {
     task.status = TaskStatus.DONE;
     expect(ownerIssue(task, [])).toBe("");
   });
-  it("filters a session run and keeps recent completions ahead of older ones", () => {
+  it("orders by creation time rather than priority or updates, putting Done last", () => {
+    const row = (
+      alias: string,
+      status: TaskStatus,
+      seconds: bigint,
+      nanos = 0,
+    ) => create(TaskSchema, { alias, status, dateCreated: { seconds, nanos } });
+    const tasks = [
+      row("old-todo", TaskStatus.TODO, 10n),
+      row("new-done", TaskStatus.DONE, 100n),
+      row("old-done", TaskStatus.DONE, 5n),
+      row("working", TaskStatus.IN_PROGRESS, 20n, 1),
+      row("canceled", TaskStatus.CANCELED, 30n),
+      row("waiting", TaskStatus.WAITING, 20n, 2),
+    ];
+    tasks[0].priority = 0;
+    tasks[0].dateUpdated = {
+      $typeName: "google.protobuf.Timestamp",
+      seconds: 200n,
+      nanos: 0,
+    };
+    expect(tableTasks(tasks).map((task) => task.alias)).toEqual([
+      "canceled",
+      "waiting",
+      "working",
+      "old-todo",
+      "new-done",
+      "old-done",
+    ]);
+    expect(tasks[0].alias).toBe("old-todo");
+  });
+  it("keeps session/run filters and includes every completed task", () => {
     const tasks = Array.from({ length: 20 }, (_, i) =>
       create(TaskSchema, {
         alias: `task-${i}`,
         status: TaskStatus.DONE,
         assignee: "oak",
         assigneeRun: "run",
-        dateUpdated: { seconds: BigInt(i) },
+        dateCreated: { seconds: BigInt(i) },
       }),
     );
     tasks.push(
@@ -42,18 +73,15 @@ describe("task board projection", () => {
         assignee: "oak",
         assigneeRun: "old-run",
       }),
+      create(TaskSchema, {
+        status: TaskStatus.IN_PROGRESS,
+        assignee: "elm",
+        assigneeRun: "run",
+      }),
     );
-    const board = boardTasks(tasks, "oak", "run");
-    expect(
-      board.find((column) => column.value === TaskStatus.IN_PROGRESS)?.total,
-    ).toBe(0);
-    const done = board.find((column) => column.value === TaskStatus.DONE)!;
-    expect(done.items[0].alias).toBe("task-19");
-    expect(done.items.length).toBeLessThan(done.total);
-    expect(
-      boardTasks(tasks, "oak", "run", true).find(
-        (column) => column.value === TaskStatus.DONE,
-      )?.items,
-    ).toHaveLength(20);
+    const result = tableTasks(tasks, "oak", "run");
+    expect(result).toHaveLength(20);
+    expect(result[0].alias).toBe("task-19");
+    expect(result.every((task) => task.status === TaskStatus.DONE)).toBe(true);
   });
 });

@@ -99,7 +99,7 @@ test("remembered scope does not override an explicit missing project or guess an
   await visit(page, "Projects view");
   await expect(picker(page)).toHaveText("Secondary project");
   await page.evaluate(
-    () => (location.hash = "/c/_/task?project=missing-project"),
+    () => (location.hash = "/c/_/project/missing-project/task"),
   );
   await expect(
     page.getByText("Project not found. Choose another project.", {

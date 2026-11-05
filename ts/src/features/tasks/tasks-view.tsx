@@ -1,20 +1,18 @@
 import { useProject } from "#src/shared/api/use-project.ts";
-import {
-  projectId as projectUUID,
-  projectRef,
-} from "#src/shared/api/project-id.ts";
+import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
 import { useRef, useState } from "react";
 import { Id } from "@lesomnus/payday/pdid";
-import { Button, PageToolbar } from "@lesomnus/nox";
+import { Button, PageToolbar, SectionLayout } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Task } from "#gen/cxz/task_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { useProjectTasks } from "./task-catalog";
-import { TaskBoard } from "./task-board";
+import { TaskTable } from "./task-table";
 import { TaskDialog } from "./task-dialog";
 import { taskKey } from "./task-model";
+import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import styles from "./tasks.module.css";
 import {
   matchesResource,
@@ -95,9 +93,22 @@ export function TasksView({
   return (
     <>
       <main className={styles.page} aria-label="Project tasks">
-        <PageToolbar
-          aria-label="Task toolbar"
-          actions={
+        <PageToolbar className={styles.toolbar} aria-label="Task toolbar">
+          <div className={styles.toolbarContent}>
+            <ProjectPicker
+              projects={projects}
+              value={projectId}
+              loading={projectsLoading}
+              choose={(project) => {
+                setAdding(false);
+                select({
+                  project: resourceHandle(
+                    projects.find((p) => projectUUID(p) === project)!,
+                  ),
+                  ...(needsProject ? { task: selection.task } : {}),
+                });
+              }}
+            />
             <Button
               type="button"
               variant="toolbar"
@@ -119,79 +130,71 @@ export function TasksView({
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </Button>
-          }
-        >
-          <ProjectPicker
-            projects={projects}
-            value={projectId}
-            loading={projectsLoading}
-            choose={(project) => {
-              setAdding(false);
-              select({
-                project: resourceHandle(
-                  projects.find((p) => projectUUID(p) === project)!,
-                ),
-                ...(needsProject ? { task: selection.task } : {}),
-              });
-            }}
-          />
+          </div>
         </PageToolbar>
-        <div className={styles.body}>
-          {project ? (
-            <>
-              {!!selection.assignee && (
-                <Button
-                  type="button"
-                  className={styles.filter}
-                  onClick={() => select({ project: resourceHandle(project) })}
-                  aria-label="Show all project tasks"
-                >
-                  {assigned?.alias ?? "Assigned tasks"}
-                  {selection.run ? " · This run" : ""} ×
-                </Button>
-              )}
-              {state.loading && !state.tasks.length && (
-                <p role="status" className={styles.message}>
-                  Loading tasks…
-                </p>
-              )}
-              {state.error && (
-                <div className={styles.message}>
-                  <p role="alert">{state.error}</p>
-                  <span>
-                    Tasks are stored in the project runtime. Start the project
-                    if it is stopped.
-                  </span>
-                  <Button type="button" onClick={state.refresh}>
-                    Retry
+        <PanelScroll
+          className={styles.body}
+          contentClassName={styles.scrollContent}
+          horizontalScrollbar
+          scrollbarLabel="Scroll tasks"
+        >
+          <SectionLayout className={styles.content}>
+            {project ? (
+              <>
+                {!!selection.assignee && (
+                  <Button
+                    type="button"
+                    className={styles.filter}
+                    onClick={() => select({ project: resourceHandle(project) })}
+                    aria-label="Show all project tasks"
+                  >
+                    {assigned?.alias ?? "Assigned tasks"}
+                    {selection.run ? " · This run" : ""} ×
                   </Button>
-                </div>
-              )}
-              {(!state.loading || !!state.tasks.length) &&
-                (!state.error || !!state.tasks.length) && (
-                  <TaskBoard
-                    key={projectId}
-                    tasks={state.tasks}
-                    sessions={sessions}
-                    sessionsLoading={sessionsLoading}
-                    assignee={selection.assignee}
-                    run={selection.run}
-                    open={open}
-                  />
                 )}
-            </>
-          ) : (
-            <p className={styles.message}>
-              {projectsLoading
-                ? "Loading projects…"
-                : needsProject
-                  ? "Choose a project to open this task."
-                  : selection.project
-                    ? "Project not found. Choose another project."
-                    : "Add a project to start tracking shared work."}
-            </p>
-          )}
-        </div>
+                {state.loading && !state.tasks.length && (
+                  <p role="status" className={styles.message}>
+                    Loading tasks…
+                  </p>
+                )}
+                {state.error && (
+                  <div className={styles.message}>
+                    <p role="alert">{state.error}</p>
+                    <span>
+                      Tasks are stored in the project runtime. Start the project
+                      if it is stopped.
+                    </span>
+                    <Button type="button" onClick={state.refresh}>
+                      Retry
+                    </Button>
+                  </div>
+                )}
+                {(!state.loading || !!state.tasks.length) &&
+                  (!state.error || !!state.tasks.length) && (
+                    <TaskTable
+                      key={projectId}
+                      tasks={state.tasks}
+                      sessions={sessions}
+                      sessionsLoading={sessionsLoading}
+                      assignee={selection.assignee}
+                      run={selection.run}
+                      open={open}
+                    />
+                  )}
+              </>
+            ) : (
+              <p className={styles.message}>
+                {projectsLoading
+                  ? "Loading projects…"
+                  : needsProject
+                    ? "Choose a project to open this task."
+                    : selection.project
+                      ? "Project not found. Choose another project."
+                      : "Add a project to start tracking shared work."}
+              </p>
+            )}
+          </SectionLayout>
+        </PanelScroll>
       </main>
       {project && (adding || selection.task) && (
         <TaskDialog

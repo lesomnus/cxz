@@ -98,7 +98,7 @@ test("Tasks survive reload while Watch is pending, reconcile remote changes and 
     });
   });
   try {
-    await page.goto("/c/_/task?project=demo");
+    await page.goto("/c/_/project/demo/task");
     await expect(
       page.getByRole("button", {
         name: "Open task: Task saved before reload",
@@ -228,7 +228,7 @@ test("Tasks remain live when IndexedDB is unavailable", async ({ page }) => {
       ]),
     });
   });
-  await page.goto("/c/_/task?project=demo");
+  await page.goto("/c/_/project/demo/task");
   await expect(
     page.getByRole("button", {
       name: "Open task: Live task without browser storage",

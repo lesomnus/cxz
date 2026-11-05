@@ -14,7 +14,7 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await expect(input).toBeVisible({ timeout: 45000 });
   await page.getByRole("link", { name: "Tasks", exact: true }).click();
-  await expect(page).toHaveURL(/#\/c\/_\/task/);
+  await expect(page).toHaveURL(/#\/c\/_\/project\/[^/]+\/task/);
   await expect(page.getByRole("complementary")).toHaveCount(0);
   await expect(
     page.locator('header[aria-label="Task toolbar"] svg'),
@@ -103,7 +103,7 @@ test("Tasks project toolbar switches projects and keeps Add accessible on mobile
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/sandbox.html#/c/_/task?project=project-2");
+  await page.goto("/sandbox.html#/c/_/project/project-2/task");
   const picker = page.getByRole("combobox", {
     name: "Select project",
     exact: true,
@@ -114,7 +114,7 @@ test("Tasks project toolbar switches projects and keeps Add accessible on mobile
   await page
     .getByRole("option", { name: "Design playground", exact: true })
     .click();
-  await expect(page).toHaveURL(new RegExp(`#/c/_/task[?]project=project-1$`));
+  await expect(page).toHaveURL(new RegExp(`#/c/_/project/project-1/task$`));
   await expect(picker).toHaveText("Design playground");
   const add = page.getByRole("button", { name: "Add task", exact: true });
   await expect(add).toBeEnabled();

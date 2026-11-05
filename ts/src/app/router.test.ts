@@ -74,3 +74,32 @@ test.each([
     history.destroy();
   }
 });
+
+test.each([
+  ["/c/_/project/cxz/task", { projectId: "cxz" }],
+  [
+    "/c/_/project/cxz/task/fix-login",
+    { projectId: "cxz", taskId: "fix-login" },
+  ],
+  [
+    `/c/_/project/${project}/task/${memory}`,
+    { projectId: project, taskId: memory },
+  ],
+])(
+  "Task addresses keep project and task references in the path: %s",
+  async (path, params) => {
+    const history = createMemoryHistory({ initialEntries: [path] });
+    const router = createWorkspaceRouter(
+      { shell: () => null, view: () => null },
+      history,
+    );
+    try {
+      await router.load();
+      expect(router.state.matches.at(-1)?.staticData.resource).toBe("tasks");
+      expect(router.state.matches.at(-1)?.params).toMatchObject(params);
+      expect(router.state.location.pathname).toBe(path);
+    } finally {
+      history.destroy();
+    }
+  },
+);

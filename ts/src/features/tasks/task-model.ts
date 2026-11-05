@@ -30,9 +30,6 @@ export const taskOwner = (task: Task) => ({
   session: { key: { case: "runtimeId" as const, value: task.assignee } },
   runId: task.assigneeRun,
 });
-export const taskTime = (task: Task) =>
-  Number(task.dateUpdated?.seconds ?? 0n) * 1000 +
-  (task.dateUpdated?.nanos ?? 0) / 1000000;
 export const activeTask = (task: Task) =>
   task.status === TaskStatus.IN_PROGRESS || task.status === TaskStatus.WAITING;
 
@@ -46,34 +43,23 @@ export function ownerIssue(task: Task, sessions: Session[], loading = false) {
   return "";
 }
 
-export function boardTasks(
-  tasks: Task[],
-  assignee = "",
-  run = "",
-  allDone = false,
-) {
-  const visible = tasks.filter(
-    (task) =>
-      (!assignee || task.assignee === assignee) &&
-      (!run || task.assigneeRun === run),
-  );
-  return taskStatuses.map((column) => {
-    const items = visible
-      .filter((task) => task.status === column.value)
-      .sort((a, b) =>
-        column.value === TaskStatus.DONE
-          ? taskTime(b) - taskTime(a)
-          : a.priority - b.priority || taskTime(b) - taskTime(a),
-      );
-    return {
-      ...column,
-      total: items.length,
-      items:
-        column.value === TaskStatus.DONE && !allDone
-          ? items.slice(0, 12)
-          : items,
-    };
-  });
+export function tableTasks(tasks: Task[], assignee = "", run = "") {
+  return tasks
+    .filter(
+      (task) =>
+        (!assignee || task.assignee === assignee) &&
+        (!run || task.assigneeRun === run),
+    )
+    .sort(
+      (a, b) =>
+        Number(a.status === TaskStatus.DONE) -
+          Number(b.status === TaskStatus.DONE) ||
+        Number(
+          (b.dateCreated?.seconds ?? 0n) - (a.dateCreated?.seconds ?? 0n),
+        ) ||
+        (b.dateCreated?.nanos ?? 0) - (a.dateCreated?.nanos ?? 0) ||
+        taskKey(b).localeCompare(taskKey(a)),
+    );
 }
 
 export const sessionInProject = (session: Session, project: Project) =>

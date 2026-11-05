@@ -50,7 +50,8 @@ export function taskFixture(count = 9, unavailable = false) {
       status: { state: "stopped", runId: "elm-run" },
     }),
   ];
-  let revision = Date.now(),
+  const fixtureTime = Date.now();
+  let revision = fixtureTime,
     serial = 100;
   const stamp = () => timestampFromDate(new Date(++revision));
   const make = (index: number, init: MessageInitShape<typeof TaskSchema>) =>
@@ -68,7 +69,7 @@ export function taskFixture(count = 9, unavailable = false) {
   const names = [
     "Implement Task MCP tools",
     "Review project isolation",
-    "Connect the task board",
+    "Connect the task table",
     "Wait for CI",
     "Verify claim concurrency",
     "Document the agent workflow",
@@ -103,7 +104,13 @@ export function taskFixture(count = 9, unavailable = false) {
       sourceSession: "oak",
       sourceRun: "oak-run",
       labels: { area: i % 2 ? "api" : "web" },
-      priority: i === 1 ? 1 : 2,
+      priority: i % 5,
+      dateCreated: timestampFromDate(
+        new Date(fixtureTime - (count - i) * 3_600_000),
+      ),
+      dateUpdated: timestampFromDate(
+        new Date(fixtureTime - (count - i) * 300_000),
+      ),
     });
   });
   const listeners = new Set<() => void>();

@@ -116,17 +116,53 @@ const taskSearch = (
     run: value("run"),
   };
 };
+const taskFilters = (search: Record<string, unknown>) => {
+  const { assignee, run } = taskSearch(search);
+  return { assignee, run };
+};
+const projectTasksRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "project/$projectId/task",
+  staticData: { resource: "tasks" },
+  validateSearch: taskFilters,
+});
+const projectTaskRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "project/$projectId/task/$taskId",
+  staticData: { resource: "tasks" },
+  validateSearch: taskFilters,
+});
 const tasksRoute = createRoute({
   getParentRoute: () => connectionRoute,
   path: "task",
   staticData: { resource: "tasks" },
   validateSearch: taskSearch,
+  beforeLoad: ({ search, params }) => {
+    if (search.project) {
+      const location = taskLocation(search);
+      throw redirect({
+        ...location,
+        params: { ...location.params, connection: params.connection },
+        replace: true,
+      });
+    }
+  },
 });
 const taskRoute = createRoute({
   getParentRoute: () => connectionRoute,
   path: "task/$taskId",
   staticData: { resource: "tasks" },
   validateSearch: taskSearch,
+  beforeLoad: ({ search, params }) => {
+    if (search.project) {
+      const location = taskLocation({ ...search, task: params.taskId });
+      throw redirect({
+        ...location,
+        params: { ...location.params, connection: params.connection },
+        replace: true,
+      });
+    }
+  },
 });
 const searchRoute = createRoute({
   getParentRoute: () => connectionRoute,
@@ -255,6 +291,8 @@ const routeTree = rootRoute.addChildren([
     accountRoute,
     tasksRoute,
     taskRoute,
+    projectTasksRoute,
+    projectTaskRoute,
     searchRoute,
     projectMemoryRoute,
     memoryDocumentRoute,
@@ -286,6 +324,11 @@ export function createWorkspaceRouter(
 }
 export function useWorkspaceRoute() {
   const match = useRouterState({ select: (state) => state.matches.at(-1) });
+  const scopedTask = projectTaskRoute.useParams({ shouldThrow: false });
+  const scopedTasks = projectTasksRoute.useParams({ shouldThrow: false });
+  const legacyTask = taskRoute.useParams({ shouldThrow: false });
+  const scopedTaskSearch = projectTaskRoute.useSearch({ shouldThrow: false });
+  const scopedTasksSearch = projectTasksRoute.useSearch({ shouldThrow: false });
   const detailTaskSearch = taskRoute.useSearch({ shouldThrow: false });
   const listTaskSearch = tasksRoute.useSearch({ shouldThrow: false });
   const memoryDocument = memoryDocumentRoute.useParams({ shouldThrow: false });
@@ -306,8 +349,17 @@ export function useWorkspaceRoute() {
     account: accountRoute.useParams({ shouldThrow: false })?.accountId ?? "",
     project: projectRoute.useParams({ shouldThrow: false })?.projectId,
     tasks: {
-      ...(detailTaskSearch ?? listTaskSearch ?? {}),
-      task: taskRoute.useParams({ shouldThrow: false })?.taskId,
+      ...(scopedTaskSearch ??
+        scopedTasksSearch ??
+        detailTaskSearch ??
+        listTaskSearch ??
+        {}),
+      project:
+        scopedTask?.projectId ??
+        scopedTasks?.projectId ??
+        detailTaskSearch?.project ??
+        listTaskSearch?.project,
+      task: scopedTask?.taskId ?? legacyTask?.taskId,
     },
     memoryProject: memoryDocument?.projectId ?? memoryProject?.projectId,
     memory: memoryDocument?.memoryId,

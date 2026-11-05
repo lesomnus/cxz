@@ -7,16 +7,18 @@ the Connection and shared resource inventory alive during navigation. RPC,
 SessionHistory, draft caching and transcript scroll physics remain in their existing
 components; the router does not preload session data or restore transcript scroll.
 
-| Route                  | View                                      |
-| ---------------------- | ----------------------------------------- |
-| `/sessions`            | Session catalog                           |
-| `/sessions/$sessionId` | Conversation identified by its runtime ID |
-| `/projects`            | Project catalog                           |
-| `/tasks`               | Project Task board                        |
-| `/settings/general`    | General settings                          |
-| `/settings/editor`     | Editor settings                           |
+| Route                                  | View                                     |
+| -------------------------------------- | ---------------------------------------- |
+| `/c/_/session`                         | Session catalog                          |
+| `/c/_/session/$sessionId`              | Conversation identified by alias or UUID |
+| `/c/_/project`                         | Project catalog                          |
+| `/c/_/project/$projectId`              | Project dashboard                        |
+| `/c/_/project/$projectId/task`         | Project task table                       |
+| `/c/_/project/$projectId/task/$taskId` | Task details                             |
+| `/setting/general`                     | General settings                         |
+| `/setting/editor`                      | Editor settings                          |
 
-`/` redirects to `/sessions`, and `/settings` redirects to `/settings/general`.
+`/` redirects to `/c/_/session`, and `/setting` redirects to `/setting/general`.
 Unknown routes show a recoverable page within the workspace. Signing in preserves
 the requested deep link. General and Editor share their parent view so changing the
 settings topic keeps the JSON editor, unsaved text and Undo history mounted.
@@ -26,19 +28,22 @@ settings topic keeps the JSON editor, unsaved text and Undo history mounted.
 new-tab and copy-link behavior. Browser back/forward follows URL history; accepted
 conversation drafts stay scoped to their existing Connection and session.
 
-The Tasks route accepts `project` (runtime ID), `task` (stable Task ID or alias),
-`assignee` (session runtime ID) and `run` search parameters. Opening a card uses
-its stable ID so an alias rename does not break the detail selection. The
-owner/run filter can be cleared to return to the project's full board.
+Task addresses nest under their project. Both path references accept aliases or
+UUIDs; generated links prefer aliases. The `assignee` (session runtime ID) and
+`run` query parameters filter the table. Clearing the filter returns to the
+project's full table. The unscoped Tasks entry chooses the first available
+project; legacy project-query bookmarks redirect to the nested address. An
+unscoped task detail with several projects still requires a project choice.
+Selected task identity remains stable while an alias is edited.
 
-The Go gateway serves `index.html` for HTML navigation to client routes. Missing
+The HTTP server serves `index.html` for HTML navigation to client routes. Missing
 assets, non-HTML requests and auth/RPC/editor/terminal paths keep their normal
 responses. This fallback is needed for direct navigation and reload in installed
 builds; Vite also provides the SPA fallback during local development.
 
 The WASM sandbox shares the same route tree through hash history, preserving its
 `/sandbox.html` entry point without requiring a separate server fallback. For
-example, `/sandbox.html#/sessions/session-2` opens that scenario directly. The
+example, `/sandbox.html#/c/_/session/session-2` opens that scenario directly. The
 scenario selector follows navigation history, and selecting a scenario navigates
 to the corresponding session route.
 

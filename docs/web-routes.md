@@ -19,8 +19,8 @@ used for conversation state, drafts, subscriptions or mutations.
 | Conversation position | `/c/_/session/oak?seq=120`                              |
 | Project dashboard     | `/c/_/project/cxz`                                      |
 | Account               | `/c/_/account/work1`                                    |
-| Project task board    | `/c/_/task?project=cxz`                                 |
-| Project task          | `/c/_/task/fix-login?project=cxz`                       |
+| Project task table    | `/c/_/project/cxz/task`                                 |
+| Project task          | `/c/_/project/cxz/task/fix-login`                       |
 | Project memories      | `/c/_/project/{project alias or ID}/memory`             |
 | Memory document       | `/c/_/project/{project alias or ID}/memory/{memory ID}` |
 | Search                | `/c/_/search`                                           |
@@ -37,7 +37,9 @@ documents show an unavailable state instead of opening another document. The old
 Conversation usage reports are available on the project and account pages.
 
 Project, account and task references accept UUIDs as well. Task storage is
-project-scoped, so task links include a project reference. With several projects,
+project-scoped, so both the project and task references live in the path; each
+accepts an alias or UUID and generated links prefer aliases. Session and run
+filters remain query parameters. With several projects,
 a task address lacking that scope asks the user to choose a project. Collection
 addresses omit the resource reference.
 

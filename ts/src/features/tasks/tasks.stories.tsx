@@ -10,9 +10,11 @@ import styles from "./tasks.module.css";
 function TaskPreview({
   count,
   unavailable = false,
+  initialPath = "/c/_/project/workspace/task",
 }: {
   count: number;
   unavailable?: boolean;
+  initialPath?: string;
 }) {
   const [fixture] = useState(() => taskFixture(count, unavailable));
   useEffect(() => () => fixture.c.dispose(), [fixture]);
@@ -31,9 +33,7 @@ function TaskPreview({
         ),
       },
       createMemoryHistory({
-        initialEntries: [
-          "/c/_/task?project=00000000-0000-8000-8007-000000000001",
-        ],
+        initialEntries: [initialPath],
       }),
     ),
   );
@@ -56,7 +56,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Project-scoped live Task board with a shared page toolbar, project icon and compact project selector on every screen size. Open a task to edit, follow its owner, or explicitly release abandoned work. The same connection shares one Watch between consumers. Simulate agent update while editing to preview conflict handling without losing the draft. Narrow boards stack status groups.",
+          "Project-scoped live task table centered like the Projects and Accounts views. Rows are ordered by creation time, newest first, with Done tasks after every other status. Canceled work stays in the same list and all completions remain available. Open a task to edit, follow its assignee, or explicitly release abandoned work. Columns show selection, status icons, task identity, assignee, priority dots and relative update/creation times. Priority dots vary in size and color; icon and time popovers provide their full labels and timestamps. Checkbox gestures and undo/redo use the same Nox selection hook as Projects. Task links nest under their project and prefer aliases with UUID fallback. The project selector and Add control align with the table; narrow screens scroll the table horizontally. The same connection shares one Watch between consumers. Simulate agent update while editing to preview conflict handling without losing the draft.",
       },
     },
   },
@@ -64,7 +64,23 @@ const meta = {
 } satisfies Meta<typeof TaskPreview>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const ProjectBoard: Story = {};
+export const ProjectTable: Story = {};
 export const ManyTasks: Story = { args: { count: 90 } };
 export const EmptyProject: Story = { args: { count: 0 } };
 export const OlderRuntime: Story = { args: { unavailable: true } };
+
+export const TaskDetails: Story = {
+  args: { initialPath: "/c/_/project/workspace/task/task-3" },
+};
+export const TaskById: Story = {
+  args: {
+    initialPath:
+      "/c/_/project/00000000-0000-8000-8007-000000000001/task/00000000-0000-0000-0000-00000000000c",
+  },
+};
+
+export const ExistingBookmark: Story = {
+  args: {
+    initialPath: "/c/_/task/task-3?project=workspace&assignee=elm&run=elm-run",
+  },
+};
