@@ -69,14 +69,7 @@
   --quota-tint: #b0485b;
 }
 .quotaGauge {
-  --account-quota-surface-radius: 6px;
   --account-quota-vessel-inset: 1px;
-  --account-quota-inner-surface-radius: max(
-    0px,
-    calc(
-      var(--account-quota-surface-radius) - var(--account-quota-vessel-inset)
-    )
-  );
   --account-quota-gauge-radius: calc(
     var(--ui-section-radius) - var(--account-quota-inset)
   );
@@ -85,8 +78,7 @@
   width: 32px;
   height: 60px;
   place-items: center;
-  border-radius: var(--account-quota-gauge-radius) /
-    var(--account-quota-surface-radius);
+  border-radius: var(--account-quota-gauge-radius);
   overflow: hidden;
   isolation: isolate;
   background: color-mix(
@@ -103,50 +95,21 @@
   );
 }
 .quotaVessel {
+  --account-quota-inner-radius: max(
+    0px,
+    calc(var(--account-quota-gauge-radius) - var(--account-quota-vessel-inset))
+  );
   position: absolute;
   inset: var(--account-quota-vessel-inset);
-  border-radius: max(
-      0px,
-      calc(
-        var(--account-quota-gauge-radius) - var(--account-quota-vessel-inset)
-      )
-    ) /
-    var(--account-quota-inner-surface-radius);
+  border-radius: var(--account-quota-inner-radius);
   overflow: hidden;
-  background: var(--ui-section-background);
 }
-.quotaLiquid {
+.quotaEmpty {
   position: absolute;
   inset: 0;
+  border-radius: inherit;
+  background: var(--ui-section-background);
   transition: transform var(--account-quota-motion-duration, 300ms) ease;
-}
-.quotaLiquid::before {
-  content: "";
-  position: absolute;
-  inset: var(--account-quota-inner-surface-radius) 0 0;
-  background: color-mix(
-    in srgb,
-    var(--ui-section-background),
-    var(--quota-tint) 16%
-  );
-}
-.quotaSurface {
-  position: absolute;
-  inset: 0 0 auto;
-  height: calc(2 * var(--account-quota-inner-surface-radius));
-  border-radius: 50%;
-  background: color-mix(
-    in srgb,
-    var(--ui-section-background),
-    var(--quota-tint) 24%
-  );
-}
-.quotaSquare[data-quota-level="unknown"] .quotaVessel {
-  background: color-mix(
-    in srgb,
-    var(--ui-section-background),
-    var(--quota-tint) 4%
-  );
 }
 .quotaValue {
   position: relative;
@@ -170,7 +133,7 @@
   gap: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .quotaLiquid {
+  .quotaEmpty {
     transition: none;
   }
 }

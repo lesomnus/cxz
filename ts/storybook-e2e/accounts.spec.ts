@@ -213,21 +213,21 @@ for (const width of [1280, 390]) {
     ).toBe(2);
     expect(
       await gauge.evaluate((node) => getComputedStyle(node).borderRadius),
-    ).toBe("14px / 6px");
+    ).toBe("14px");
     expect(gaugeBounds.x + 14).toBe(quotaBounds.x + 16);
     await expect(quota.getByRole("meter")).toHaveAttribute(
       "aria-valuenow",
       "64",
     );
     const empty = gauge.locator("[data-quota-vessel]");
-    const liquid = empty.locator("[data-quota-liquid]");
+    const cap = empty.locator("[data-quota-empty]");
     await expect
       .poll(() =>
-        liquid.evaluate(
+        cap.evaluate(
           (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42,
         ),
       )
-      .toBeCloseTo(58 * 0.36, 0);
+      .toBeCloseTo(-58 * 0.64, 0);
     const emptyBounds = (await empty.boundingBox())!;
     expect(emptyBounds.x - gaugeBounds.x).toBe(1);
     expect(emptyBounds.y - gaugeBounds.y).toBe(1);
@@ -235,12 +235,11 @@ for (const width of [1280, 390]) {
       gaugeBounds.x + gaugeBounds.width - emptyBounds.x - emptyBounds.width,
     ).toBe(1);
     expect(emptyBounds.height).toBe(58);
-    await expect(empty).toHaveCSS("border-radius", "13px / 5px");
-    const surface = (await liquid
-      .locator("[data-quota-surface]")
-      .boundingBox())!;
-    expect(surface.width).toBe(30);
-    expect(surface.height).toBe(10);
+    await expect(empty).toHaveCSS("border-radius", "13px");
+    await expect(cap).toHaveCSS("border-radius", "13px");
+    const capBounds = (await cap.boundingBox())!;
+    expect(capBounds.width).toBe(30);
+    expect(capBounds.height).toBeCloseTo(58, 3);
     await expect(quota).toContainText(/00d02h2[56]m/);
     const reset = quota.getByRole("img", { name: /milliseconds/ });
     const resetRows = await reset

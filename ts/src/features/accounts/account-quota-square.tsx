@@ -92,14 +92,12 @@ export function AccountQuotaSquare({
           aria-hidden="true"
         >
           <span
-            className={styles.quotaLiquid}
-            data-quota-liquid=""
+            className={styles.quotaEmpty}
+            data-quota-empty=""
             style={{
-              transform: `translateY(${remaining === undefined ? 100 : 100 - remaining}%)`,
+              transform: `translateY(-${remaining ?? 100}%)`,
             }}
-          >
-            <span className={styles.quotaSurface} data-quota-surface="" />
-          </span>
+          />
         </span>
         <span
           className={styles.quotaValue}

@@ -55,7 +55,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The Accounts page's actual remaining-usage display, backed by an isolated in-memory RPC fixture. A fixed elliptical liquid surface moves down as usage is consumed, keeping its shape near full capacity. A slightly brighter surface distinguishes the top from the liquid body. The inset vessel clips the liquid as it empties; dimensions and motion live in CSS tokens. The percentage remains centered above the gauge and the reset countdown stays beside it. Existing warning and critical colors follow the remaining quota. Water Level lets you drain and refill the same mounted gauge; use the theme toolbar to compare appearances.",
+          "The Accounts page's actual remaining-usage display, backed by an isolated in-memory RPC fixture. The original rounded narrow tube and single liquid tint are retained. The liquid has a concave meniscus: higher against the walls and lower at the center. A fixed-size empty cap moves down as usage is consumed, so its curve never compresses near full capacity. The tube clips the cap at its ends; dimensions and motion live in CSS tokens. The percentage remains centered above the gauge and the reset countdown stays beside it. Existing warning and critical colors follow the remaining quota. Water Level lets you drain and refill the same mounted gauge; use the theme toolbar to compare appearances.",
       },
     },
   },
