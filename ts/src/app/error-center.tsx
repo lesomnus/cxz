@@ -154,37 +154,29 @@ export function ErrorCenter({
                 options={[
                   {
                     value: "active",
-                    label: `${t("Active")} (${active.length})`,
+                    label: `${t("Active")} ${active.length}`,
                     display: (
                       <>
                         {t("Active")}
-                        <span>
-                          (
-                          <CompactNumber
-                            value={active.length}
-                            mode="integer"
-                            digits={3}
-                          />
-                          )
-                        </span>
+                        <CompactNumber
+                          value={active.length}
+                          mode="integer"
+                          digits={3}
+                        />
                       </>
                     ),
                   },
                   {
                     value: "history",
-                    label: `${t("History")} (${history.length})`,
+                    label: `${t("History")} ${history.length}`,
                     display: (
                       <>
                         {t("History")}
-                        <span>
-                          (
-                          <CompactNumber
-                            value={history.length}
-                            mode="integer"
-                            digits={3}
-                          />
-                          )
-                        </span>
+                        <CompactNumber
+                          value={history.length}
+                          mode="integer"
+                          digits={3}
+                        />
                       </>
                     ),
                   },

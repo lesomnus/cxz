@@ -45,12 +45,12 @@ test("centralizes failures, preserves recovery history and keeps canceled retrie
   await expect(trigger).not.toHaveAttribute("data-active");
   await trigger.click();
   await expect(dialog).toContainText("No active errors");
-  await dialog.getByRole("radio", { name: "History (1)", exact: true }).click();
+  await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
   await expect(dialog).toContainText("Resolved");
   await expect(dialog).toContainText("2 occurrences");
   await page.reload();
   await trigger.click();
-  await dialog.getByRole("radio", { name: "History (1)", exact: true }).click();
+  await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
   await expect(dialog).toContainText("Account service is offline");
   await expect(dialog).toContainText("Resolved");
 });
@@ -67,7 +67,7 @@ test("retains dismissed errors separately, keeps active errors when clearing his
   await trigger.click();
   await dialog.getByRole("button", { name: "Dismiss", exact: true }).click();
   await expect(trigger).not.toHaveAttribute("data-active");
-  await dialog.getByRole("radio", { name: "History (1)", exact: true }).click();
+  await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
   await expect(dialog).toContainText("Dismissed");
   await page.keyboard.press("Escape");
   await action("Fail stream").click();
@@ -76,16 +76,16 @@ test("retains dismissed errors separately, keeps active errors when clearing his
   await dialog
     .getByRole("button", { name: "Clear history", exact: true })
     .click();
-  await dialog.getByRole("radio", { name: "Active (1)", exact: true }).click();
+  await dialog.getByRole("radio", { name: "Active 1", exact: true }).click();
   await expect(dialog).toContainText("Conversation stream disconnected");
   await expect(
-    dialog.getByRole("radio", { name: "History (0)", exact: true }),
+    dialog.getByRole("radio", { name: "History 0", exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await action("Recover stream").click();
   await expect(trigger).not.toHaveAttribute("data-active");
   await trigger.click();
-  await dialog.getByRole("radio", { name: "History (1)", exact: true }).click();
+  await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
   await expect(dialog).toContainText("Resolved");
   await expect(dialog).toContainText("Session: seal");
 });
