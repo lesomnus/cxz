@@ -6,18 +6,22 @@ import styles from "./identifier-value.module.css";
 export function IdentifierValue({
   value,
   label,
+  prefixLength = 7,
   copying = false,
   onCopy,
 }: {
   value?: string;
   label?: string;
+  prefixLength?: number;
   copying?: boolean;
   onCopy?: () => Promise<void>;
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   if (!value) return <>—</>;
-  const prefix = <span className={styles.text}>{value.slice(0, 7)}</span>;
+  const prefix = (
+    <span className={styles.text}>{value.slice(0, prefixLength)}</span>
+  );
   if (onCopy)
     return (
       <>
@@ -42,7 +46,7 @@ export function IdentifierValue({
         </Button>
         <Popover
           anchor={anchor}
-          open={open && value.length > 7}
+          open={open && value.length > prefixLength}
           onOpenChange={setOpen}
           placement="in-place"
           content={value}
@@ -51,7 +55,7 @@ export function IdentifierValue({
     );
   return (
     <span className={styles.value}>
-      {value.length > 7 ? (
+      {value.length > prefixLength ? (
         <Popover content={value} placement="in-place">
           {prefix}
         </Popover>

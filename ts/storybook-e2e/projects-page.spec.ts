@@ -811,7 +811,7 @@ test("dashboard scopes project usage and places sessions below Info", async ({
     name: "Conversation usage",
     exact: true,
   });
-  await expect(info).toContainText("cxz-web-devcontainer");
+  await expect(info).toContainText("cxz-012345abcdef-0123456");
   for (const panel of [
     info,
     sessions,
@@ -863,7 +863,7 @@ test("dashboard scopes project usage and places sessions below Info", async ({
   await page
     .getByRole("option", { name: "API workspace", exact: true })
     .click();
-  await expect(info).toContainText("cxz-api-devcontainer");
+  await expect(info).toContainText("cxz-012345abcdef-fedcba9");
   await expect(info).toContainText("Backend services and API contracts");
   await expect(info).not.toContainText("Frontend and design system");
   await expect(
@@ -897,7 +897,7 @@ test("stopped and unavailable runtimes retain the session table and account name
   await page.goto("/iframe.html?id=pages-projects--unavailable&viewMode=story");
   await expect(
     main.getByRole("region", { name: "Information", exact: true }),
-  ).toContainText("cxz-web-devcontainer");
+  ).toContainText("cxz-012345abcdef-0123456");
   await expect(
     main
       .locator("tbody tr")
@@ -962,6 +962,63 @@ test("live inventory preserves row selection and account labels", async ({
     })
     .toContain("Work account");
   expect(await row.boundingBox()).toEqual(before);
+});
+
+test("container names preview through seven storage ID characters and expand and copy the full actual name", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const info = page.getByRole("region", { name: "Information", exact: true });
+  const row = info.locator("dl > div").filter({
+    has: page.locator("dt > span:first-child", {
+      hasText: /^Container name$/,
+    }),
+  });
+  const trigger = row.getByRole("button", {
+    name: "Copy: Container name",
+    exact: true,
+  });
+  const fullName = "cxz-012345abcdef-0123456789abcdef01234567-dev-1";
+  await expect(trigger).toHaveText("cxz-012345abcdef-0123456");
+  const before = await trigger.boundingBox();
+  await trigger.hover();
+  const full = page.getByRole("tooltip", { name: fullName, exact: true });
+  await expect(full).toBeVisible();
+  await expectAlignedText(trigger);
+  expect(
+    await full.evaluate((element) => element.parentElement === document.body),
+  ).toBe(true);
+  expect(await trigger.boundingBox()).toEqual(before);
+  await trigger.click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(fullName);
+  await expect(row.getByRole("status")).toHaveText("copied!");
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "API workspace", exact: true })
+    .click();
+  await expect(trigger).toHaveText("cxz-012345abcdef-fedcba9");
+  const otherName = "cxz-012345abcdef-fedcba987654321001234567-dev-1";
+  await trigger.focus();
+  await expect(
+    page.getByRole("tooltip", { name: otherName, exact: true }),
+  ).toBeVisible();
+  await expectAlignedText(trigger);
+  await trigger.press("Enter");
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(otherName);
+  await expect(trigger).toBeFocused();
+  await page.setViewportSize({ width: 390, height: 650 });
+  const cell = (await row.locator("dd").boundingBox())!;
+  const button = (await trigger.boundingBox())!;
+  expect(button.x + button.width).toBeLessThanOrEqual(cell.x + cell.width);
 });
 
 test("project metadata shows short IDs, copy complete values, and use machine-readable dates", async ({
@@ -1029,6 +1086,7 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
     .toBe("00000000-0000-8000-8007-000000000001");
   await page.keyboard.press("Escape");
   await copyId.evaluate((node) => node.blur());
+  await expect(copyId).not.toHaveAttribute("data-loading");
   await copyId.focus();
   await page.evaluate(() =>
     navigator.clipboard.writeText("keyboard-copy-check"),

@@ -46,7 +46,7 @@ export function projectFixture(
         remoteWorkspace: "/workspace",
         remoteUser: "developer",
         containerId: `container-${i + 1}`,
-        containerName: i ? "cxz-api-devcontainer" : "cxz-web-devcontainer",
+        containerName: `cxz-012345abcdef-${i ? "fedcba987654321001234567" : "0123456789abcdef01234567"}-dev-1`,
         provisionState: "ready",
         error: unavailable ? "Workspace is unavailable" : "",
       },

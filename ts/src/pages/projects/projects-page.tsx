@@ -30,6 +30,7 @@ import {
 } from "./project-edit";
 import { ProjectActions } from "./project-actions";
 import { ProjectTable } from "./project-table";
+import { containerNamePrefixLength } from "./project-container-name";
 import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
@@ -262,7 +263,14 @@ function ProjectDashboard({
                   fullWidth: true,
                   path: true,
                 },
-                [t("Container name"), p.status?.containerName],
+                {
+                  label: t("Container name"),
+                  value: p.status?.containerName,
+                  identifier: true,
+                  identifierLength: containerNamePrefixLength(
+                    p.status?.containerName,
+                  ),
+                },
                 {
                   label: t("Container ID"),
                   value: p.status?.containerId,

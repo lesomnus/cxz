@@ -227,7 +227,7 @@ export const Default: Story = {
     docs: {
       description: {
         story:
-          "Dashboard sessions use the project index layout: selection, status, fixed-width session and account links, flexible space, then trailing controls. Resource-link widths share the project index token. The session list keeps its reserved height and independent scroll position.",
+          "Dashboard sessions use the project index layout: selection, status, fixed-width session and account links, flexible space, then trailing controls. Resource-link widths share the project index token. The session list keeps its reserved height and independent scroll position. Container names retain the installation prefix and abbreviate the storage ID, with in-place expansion and full-name copy.",
       },
     },
   },
