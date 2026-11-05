@@ -1,7 +1,7 @@
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import {
   Button,
   CardActions,
@@ -32,7 +32,7 @@ import {
   taskStatuses,
   ownerIssue,
 } from "./task-model";
-import { TaskPrioritySymbol } from "./task-indicators";
+import { TaskPrioritySymbol, taskPriorityMask } from "./task-indicators";
 import styles from "./tasks.module.css";
 
 function TaskEditor({
@@ -186,6 +186,13 @@ function TaskEditor({
         <Card
           className={task ? styles.taskHeader : undefined}
           data-priority={task ? priority : undefined}
+          style={
+            task
+              ? ({
+                  "--task-priority-mask": taskPriorityMask(priority),
+                } as CSSProperties)
+              : undefined
+          }
           data-previous-run={issue === "Previous run" || undefined}
           title={task ? alias || task.alias : "Add task"}
           close={busy ? undefined : close}

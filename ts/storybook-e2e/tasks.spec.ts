@@ -283,7 +283,7 @@ test("many tasks remain one scrollable table with every completion at the end", 
   ).toBe(true);
 });
 
-test("task columns show status icons, sized priority dots and relative times", async ({
+test("task columns show status icons, distinct priority symbols and relative times", async ({
   page,
 }) => {
   await page.goto(taskPage);
@@ -305,16 +305,20 @@ test("task columns show status icons, sized priority dots and relative times", a
     .locator('[data-task-alias="task-1"]')
     .getByRole("img", { name: "Highest priority", exact: true });
   const low = first.getByRole("img", { name: "Low priority", exact: true });
-  const dot = (indicator: import("@playwright/test").Locator) =>
-    indicator.locator(":scope > span");
-  expect((await dot(highest).boundingBox())!.width).toBeGreaterThan(
-    (await dot(low).boundingBox())!.width,
+  const glyph = (indicator: import("@playwright/test").Locator) =>
+    indicator.locator(":scope > svg");
+  expect((await glyph(highest).boundingBox())!.width).toBe(
+    (await glyph(low).boundingBox())!.width,
   );
   expect(
-    await dot(highest).evaluate((el) => getComputedStyle(el).backgroundColor),
-  ).not.toBe(
-    await dot(low).evaluate((el) => getComputedStyle(el).backgroundColor),
-  );
+    await glyph(highest).evaluate((el) => getComputedStyle(el).color),
+  ).not.toBe(await glyph(low).evaluate((el) => getComputedStyle(el).color));
+  const symbols = tasks.locator("tbody td:nth-child(4) svg");
+  const paths = await symbols
+    .locator("path")
+    .evaluateAll((paths) => paths.map((path) => path.getAttribute("d")));
+  expect(new Set(paths).size).toBe(5);
+  await expect(symbols.locator("circle")).toHaveCount(0);
   await highest.hover();
   await expect(page.getByRole("tooltip")).toHaveText("Highest priority");
   await page.mouse.move(0, 0);

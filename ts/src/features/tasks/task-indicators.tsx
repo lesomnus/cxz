@@ -10,13 +10,36 @@ import { taskPriorities, taskStatusName } from "./task-model";
 import styles from "./task-table.module.css";
 import taskStyles from "./tasks.module.css";
 
+const priorityPaths = [
+  "M5.5 3v6m5-6v6M5.5 12h.01m4.99 0h.01",
+  "M8 13V3M4 7l4-4 4 4",
+  "M4 6h8M4 10h8",
+  "M8 3v10M4 9l4 4 4-4",
+  "m4 4 4 4 4-4m-8 5 4 4 4-4",
+] as const;
+const priorityPath = (priority: number) =>
+  priorityPaths[priority] ?? "M6 6a2 2 0 1 1 3 1.75C8 8.25 8 9 8 9.5M8 12h.01";
+
+export function taskPriorityMask(priority: number) {
+  return `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${priorityPath(priority)}"/></svg>`)}")`;
+}
+
 export function TaskPrioritySymbol({ priority }: { priority: number }) {
   return (
-    <span
-      className={`${styles.priorityDot} ${taskStyles.priority}`}
+    <svg
+      className={`${styles.priorityGlyph} ${taskStyles.priority}`}
       data-priority={priority}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden="true"
-    />
+      focusable="false"
+    >
+      <path d={priorityPath(priority)} />
+    </svg>
   );
 }
 
