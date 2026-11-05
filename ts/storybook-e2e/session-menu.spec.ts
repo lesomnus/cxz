@@ -67,3 +67,52 @@ for (const theme of ["dark", "light"]) {
     }
   });
 }
+
+for (const height of [801, 400])
+  test(`Erase is last in the scrolling menu, above fixed editor options at height ${height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1000, height });
+    await page.goto(
+      "/iframe.html?id=conversation-session-menu--always-open&viewMode=story",
+    );
+    const menu = page.getByRole("menu", { name: "Session menu", exact: true });
+    const erase = menu.getByRole("menuitem", { name: "Erase", exact: true });
+    await expect(erase).toBeEnabled();
+    await expect(menu.getByRole("menuitem").last()).toHaveText("Erase");
+    const popup = page.locator(".action-menu-popup");
+    const footer = popup.locator('[data-menu-fixed="footer"]');
+    await expect(
+      footer.getByRole("button", { name: "Word wrap", exact: true }),
+    ).toBeVisible();
+    expect(
+      await erase.evaluate(
+        (node) =>
+          !!node.closest("[data-menu-body]") &&
+          !node.closest("[data-menu-fixed]"),
+      ),
+    ).toBe(true);
+    await erase.scrollIntoViewIfNeeded();
+    const er = await erase.boundingBox(),
+      foot = await footer.boundingBox();
+    expect(er!.y + er!.height).toBeLessThanOrEqual(foot!.y + 1);
+    await erase.click();
+    const dialog = page.getByRole("dialog", {
+      name: "Erase session",
+      exact: true,
+    });
+    await expect(dialog).toContainText("This cannot be undone.");
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByLabel("Last action", { exact: true })).toHaveText(
+      "",
+    );
+    await erase.click();
+    await dialog.getByRole("button", { name: "Erase", exact: true }).click();
+    await expect(page.getByLabel("Last action", { exact: true })).toHaveText(
+      "erase",
+    );
+    await expect(
+      page.getByRole("button", { name: "Session menu", exact: true }),
+    ).toBeDisabled();
+  });
