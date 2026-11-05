@@ -1,6 +1,4 @@
 .page {
-  --resource-page-content-width: 850px;
-  --resource-page-gutter: 24px;
   grid-column: 2 / -1;
   container: resource-page / inline-size;
   display: flex;
@@ -29,6 +27,16 @@
   flex: none;
   align-items: center;
   margin-left: auto;
+  min-height: var(--resource-toolbar-row-height);
+}
+@container resource-page (width < 892px) {
+  .toolbarContent,
+  .content {
+    max-width: var(--resource-page-column-width);
+  }
+  .toolbarContent {
+    flex-wrap: wrap;
+  }
 }
 @container resource-page (width < 600px) {
   .toolbarContent {

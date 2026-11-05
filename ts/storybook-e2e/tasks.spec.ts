@@ -563,36 +563,37 @@ test("toolbar session filtering scopes choices to the project and can be cleared
   await expect(rows).toHaveCount(9);
 });
 
-test("Tasks and Memory toolbars share the same alignment and control spacing", async ({
+test("Projects, Tasks and Memory toolbars share the reference alignment", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto(taskPage);
-  const boxes = async () =>
-    Promise.all([
-      page
-        .getByRole("combobox", { name: "Select project", exact: true })
-        .boundingBox(),
-      page
-        .getByRole("combobox", { name: "Select session", exact: true })
-        .boundingBox(),
-    ]);
-  await expect(
-    page.getByRole("combobox", { name: "Select session", exact: true }),
-  ).toBeVisible();
-  const tasks = await boxes();
-  const taskHeight = (await page.locator("main > header").boundingBox())!
-    .height;
-  await page.goto("/iframe.html?id=pages-memory--default&viewMode=story");
-  await expect(
-    page.getByRole("combobox", { name: "Select session", exact: true }),
-  ).toBeVisible();
-  const memories = await boxes();
-  for (let i = 0; i < tasks.length; i++) {
-    expect(Math.abs(tasks[i]!.x - memories[i]!.x)).toBeLessThan(0.5);
-    expect(Math.abs(tasks[i]!.width - memories[i]!.width)).toBeLessThan(0.5);
+  for (const width of [1440, 800]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const boxes = [];
+    for (const story of [
+      "pages-projects--default",
+      "resources-tasks--project-table",
+      "pages-memory--default",
+    ]) {
+      await page.goto(`/iframe.html?id=${story}&viewMode=story`);
+      const trigger = page.getByRole("combobox", {
+        name: "Select project",
+        exact: true,
+      });
+      await expect(trigger).toBeVisible();
+      const box = (await trigger.boundingBox())!;
+      const header = (await page.locator("main > header").boundingBox())!;
+      boxes.push({
+        x: box.x,
+        y: box.y - header.y,
+        width: box.width,
+        height: header.height,
+      });
+    }
+    for (const box of boxes.slice(1)) {
+      expect(Math.abs(box.x - boxes[0].x)).toBeLessThan(0.5);
+      expect(Math.abs(box.width - boxes[0].width)).toBeLessThan(0.5);
+      expect(Math.abs(box.y - boxes[0].y)).toBeLessThan(0.5);
+      if (width === 1440) expect(box.height).toBe(boxes[0].height);
+    }
   }
-  expect((await page.locator("main > header").boundingBox())!.height).toBe(
-    taskHeight,
-  );
 });
