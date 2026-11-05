@@ -192,13 +192,39 @@ test("project session table uses the reusable down/drag/Shift selection", async 
   await expect(first).toBeChecked();
   await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2);
   await expect(table.locator("tbody input:checked")).toHaveCount(6);
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await expect(table.locator("tbody input:checked")).toHaveCount(1);
   await page.mouse.up();
-  await expect(table.locator("tbody input:checked")).toHaveCount(6);
+  await expect(table.locator("tbody input:checked")).toHaveCount(1);
   await rows
     .nth(6)
     .getByRole("checkbox")
     .click({ modifiers: ["Shift"] });
   await expect(table.locator("tbody input:checked")).toHaveCount(7);
+});
+
+test("session checkbox Shift ranges shrink until the modifier is released", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--long-sessions&viewMode=story",
+  );
+  const table = page.getByRole("table", { name: "Sessions", exact: true }),
+    rows = table.locator("tbody tr");
+  await rows.first().getByRole("checkbox").check();
+  await page.keyboard.down("Shift");
+  await rows.nth(4).getByRole("checkbox").click();
+  await expect(table.locator("tbody input:checked")).toHaveCount(5);
+  await rows.nth(2).getByRole("checkbox").click();
+  await expect(table.locator("tbody input:checked")).toHaveCount(3);
+  await expect(rows.nth(3).getByRole("checkbox")).not.toBeChecked();
+  await expect(rows.nth(4).getByRole("checkbox")).not.toBeChecked();
+  await page.keyboard.up("Shift");
+  await page.keyboard.down("Shift");
+  await rows.nth(1).getByRole("checkbox").click();
+  await expect(table.locator("tbody input:checked")).toHaveCount(1);
+  await expect(rows.nth(2).getByRole("checkbox")).toBeChecked();
+  await page.keyboard.up("Shift");
 });
 
 test("project list icons cover all container states and menus follow their lifecycle availability", async ({
