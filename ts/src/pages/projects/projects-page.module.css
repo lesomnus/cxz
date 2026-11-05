@@ -17,6 +17,13 @@
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
 }
+.pages {
+  flex: 1;
+}
+.pages > .slide {
+  display: flex;
+  flex-direction: column;
+}
 .page > .toolbar {
   padding-inline: var(--project-page-gutter);
 }

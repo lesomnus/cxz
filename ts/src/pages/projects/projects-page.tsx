@@ -1,12 +1,19 @@
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
-import { PageToolbar, Button, EditableValue, Section } from "@lesomnus/nox";
+import {
+  PageToolbar,
+  Button,
+  EditableValue,
+  Section,
+  SlidingPages,
+  SlidingPage,
+} from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -68,6 +75,22 @@ export function ProjectsPage({
   const { project: selected } = useWorkspaceRoute();
   const resolved = useProject(c, visibleProjects, selected);
   const project = selected ? resolved : undefined;
+  const visitedList = useRef<DashboardConnection | undefined>(
+    selected ? undefined : c,
+  );
+  const previousProject = useRef<
+    { c: DashboardConnection; project: Project } | undefined
+  >(project ? { c, project } : undefined);
+  useLayoutEffect(() => {
+    if (!selected) visitedList.current = c;
+    if (project) previousProject.current = { c, project };
+  }, [c, selected, project]);
+  // Keep the outgoing dashboard present while it slides back offscreen.
+  const detail = selected
+    ? project
+    : previousProject.current?.c === c
+      ? previousProject.current.project
+      : undefined;
   return (
     <main className={styles.page} aria-label={t("Project workspace")}>
       <PageToolbar className={styles.toolbar} aria-label={t("Project toolbar")}>
@@ -88,66 +111,90 @@ export function ProjectsPage({
           />
         </div>
       </PageToolbar>
-      <PanelScroll
-        className={styles.scroll}
-        contentClassName={styles.scrollContent}
-        scrollbarLabel={t("Project scroll")}
-        horizontalScrollbar={!selected}
+      <SlidingPages
+        className={styles.pages}
+        value={selected ? "detail" : "list"}
+        resize="none"
       >
-        <div className={styles.content}>
-          {error && <p role="alert">{error}</p>}
-          {!selected ? (
-            <ProjectTable
-              c={c}
-              projects={visibleProjects}
-              sessions={sessions}
-              loading={projectsLoading}
-              sessionsLoading={sessionsLoading}
-              updated={setSaved}
-            />
-          ) : project ? (
-            <ProjectDashboard
-              key={projectId(project)}
-              c={c}
-              project={project}
-              saved={(updated) => {
-                setSaved(updated);
-                if (
-                  selected === project.alias &&
-                  !uuid(selected) &&
-                  updated.alias !== project.alias
-                )
-                  void navigate({
-                    ...projectLocation(resourceHandle(updated)),
-                    replace: true,
-                  });
-              }}
-              erased={() => {
-                setSaved(undefined);
-                const next = visibleProjects.find(
-                  (p) => key(p.id) !== key(project.id),
-                );
-                void navigate(projectLocation(next && resourceHandle(next)));
-              }}
-              sessions={sessions.filter(
-                (s) => s.project && key(s.project.id) === key(project.id),
-              )}
-              accounts={accounts.data ?? []}
-              accountsError={accounts.error}
-              reloadAccounts={accounts.reload}
-              sessionsLoading={sessionsLoading}
-            />
-          ) : (
-            <p className="muted">
-              {projectsLoading
-                ? t("Loading projects…")
-                : selected
-                  ? t("Project unavailable")
-                  : t("No projects yet.")}
-            </p>
+        <SlidingPage value="list" className={styles.slide}>
+          {(!selected || visitedList.current === c) && (
+            <PanelScroll
+              className={styles.scroll}
+              contentClassName={styles.scrollContent}
+              scrollbarLabel={t("Project scroll")}
+              horizontalScrollbar
+            >
+              <div className={styles.content}>
+                {error && <p role="alert">{error}</p>}
+                <ProjectTable
+                  c={c}
+                  projects={visibleProjects}
+                  sessions={sessions}
+                  loading={projectsLoading}
+                  sessionsLoading={sessionsLoading}
+                  updated={setSaved}
+                />
+              </div>
+            </PanelScroll>
           )}
-        </div>
-      </PanelScroll>
+        </SlidingPage>
+        <SlidingPage value="detail" className={styles.slide}>
+          {(selected || detail) && (
+            <PanelScroll
+              className={styles.scroll}
+              contentClassName={styles.scrollContent}
+              scrollbarLabel={t("Project scroll")}
+            >
+              <div className={styles.content}>
+                {error && <p role="alert">{error}</p>}
+                {detail ? (
+                  <ProjectDashboard
+                    key={projectId(detail)}
+                    c={c}
+                    project={detail}
+                    saved={(updated) => {
+                      setSaved(updated);
+                      if (
+                        selected === detail.alias &&
+                        !uuid(selected) &&
+                        updated.alias !== detail.alias
+                      )
+                        void navigate({
+                          ...projectLocation(resourceHandle(updated)),
+                          replace: true,
+                        });
+                    }}
+                    erased={() => {
+                      setSaved(undefined);
+                      const next = visibleProjects.find(
+                        (p) => key(p.id) !== key(detail.id),
+                      );
+                      void navigate(
+                        projectLocation(next && resourceHandle(next)),
+                      );
+                    }}
+                    sessions={sessions.filter(
+                      (s) => s.project && key(s.project.id) === key(detail.id),
+                    )}
+                    accounts={accounts.data ?? []}
+                    accountsError={accounts.error}
+                    reloadAccounts={accounts.reload}
+                    sessionsLoading={sessionsLoading}
+                  />
+                ) : (
+                  <p className="muted">
+                    {projectsLoading
+                      ? t("Loading projects…")
+                      : selected
+                        ? t("Project unavailable")
+                        : t("No projects yet.")}
+                  </p>
+                )}
+              </div>
+            </PanelScroll>
+          )}
+        </SlidingPage>
+      </SlidingPages>
     </main>
   );
 }

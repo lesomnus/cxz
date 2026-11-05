@@ -72,7 +72,9 @@ test("project page stories render their selector and states", async ({
   await page.goto("/iframe.html?id=pages-projects--loading&viewMode=story");
   await expect(picker).toBeDisabled();
   await expect(
-    page.locator("main > .panel-scroll-region > .panel-scroll-content"),
+    page.locator(
+      "[data-sliding-page][data-active] > .panel-scroll-region > .panel-scroll-content",
+    ),
   ).toContainText("Loading projects…");
   expect(errors).toEqual([]);
 });
@@ -696,7 +698,7 @@ test("session table reserves seven and a half rows with a sticky header and inde
   const header = list.getByRole("columnheader").first();
   const headerBefore = (await header.boundingBox())!;
   const outer = page.locator(
-    "main > .panel-scroll-region > .panel-scroll-content",
+    "[data-sliding-page][data-active] > .panel-scroll-region > .panel-scroll-content",
   );
   const outerTop = await outer.evaluate((el) => el.scrollTop);
   const target = await viewport.evaluate((el) =>
@@ -979,11 +981,6 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
     exact: true,
   });
   await expect(projectId.locator("dd svg")).toHaveCount(0);
-  await copyId.click();
-  await expect(projectId.getByRole("status")).toHaveText("copied!");
-  await expect
-    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-    .toBe("00000000-0000-8000-8007-000000000001");
   await copyId.hover();
   await expect(
     page.getByRole("tooltip", {
@@ -992,6 +989,11 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
     }),
   ).toBeVisible();
   await expectAlignedText(copyId);
+  await copyId.click();
+  await expect(projectId.getByRole("status")).toHaveText("copied!");
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe("00000000-0000-8000-8007-000000000001");
   await page.keyboard.press("Escape");
   await copyId.evaluate((node) => node.blur());
   await copyId.focus();

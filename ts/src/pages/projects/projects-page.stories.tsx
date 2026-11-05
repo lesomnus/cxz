@@ -7,6 +7,7 @@ import { createWorkspaceRouter } from "#src/app/router.tsx";
 import { projectFixture } from "#src/storybook/project-fixture.ts";
 import { projectFixtureId } from "#src/storybook/project-id.ts";
 import { ProjectsPage } from "./projects-page";
+import { Button } from "@lesomnus/nox";
 
 function Preview({
   list = false,
@@ -25,6 +26,7 @@ function Preview({
   requireTrust = false,
   listActivity = false,
   failProjectControls = false,
+  navigation = false,
 }) {
   const [router] = useState(() => {
     const fixture = projectFixture(
@@ -129,6 +131,9 @@ function Preview({
     }
     const projects = empty ? [] : fixture.projects;
     const sessions = empty ? [] : fixture.sessions;
+    const history = createMemoryHistory({
+      initialEntries: [list || empty ? "/c/_/project" : "/c/_/project/web"],
+    });
     return createWorkspaceRouter(
       {
         shell: ({ children }) => (
@@ -137,8 +142,28 @@ function Preview({
               display: "grid",
               height: "100vh",
               gridTemplateColumns: "0 minmax(0, 1fr)",
+              gridTemplateRows: navigation ? "auto minmax(0, 1fr)" : undefined,
             }}
           >
+            {navigation && (
+              <nav
+                aria-label="Preview history"
+                style={{
+                  gridColumn: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--ui-space)",
+                  padding: "var(--ui-space)",
+                }}
+              >
+                <Button onClick={() => history.back()}>Back</Button>
+                <Button onClick={() => history.forward()}>Forward</Button>
+                <span>
+                  Open a project, then use Back and Forward to preview both
+                  directions.
+                </span>
+              </nav>
+            )}
             {children}
           </div>
         ),
@@ -184,9 +209,7 @@ function Preview({
           );
         },
       },
-      createMemoryHistory({
-        initialEntries: [list || empty ? "/c/_/project" : "/c/_/project/web"],
-      }),
+      history,
     );
   });
   return <RouterProvider router={router} />;
@@ -201,6 +224,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const List: Story = { args: { list: true } };
+export const Navigation: Story = {
+  args: { list: true, navigation: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Open a project from the list: its dashboard slides in from the right below the fixed toolbar. Back reverses the transition; Forward opens it again. Each page keeps its scroll position and list selection. Direct links start in place, and reduced-motion preferences disable the slide.",
+      },
+    },
+  },
+};
 export const ListActivity: Story = {
   args: { list: true, listActivity: true, sessionCount: 3 },
 };
