@@ -109,8 +109,10 @@ test("path copy feedback resets its timeout and reports clipboard failure", asyn
   const copy = field.getByRole("button");
   await copy.click();
   await expect(field.getByRole("status")).toHaveText("copied!");
+  await expect(copy).not.toHaveAttribute("aria-busy", "true");
   await page.clock.fastForward(1500);
   await copy.click();
+  await expect(copy).not.toHaveAttribute("aria-busy", "true");
   await page.clock.fastForward(1000);
   await expect(field.getByRole("status")).toHaveText("copied!");
   await page.clock.fastForward(1100);
