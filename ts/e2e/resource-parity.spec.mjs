@@ -360,7 +360,10 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
       "Accounts",
       page.getByRole("article", { name: "Work account", exact: true }),
     ],
-    ["Search", page.getByRole("heading", { name: "Search", exact: true })],
+    [
+      "Search",
+      page.getByRole("main", { name: "Search workspace", exact: true }),
+    ],
     [
       "Memory",
       page.getByRole("main", { name: "Shared memory workspace", exact: true }),
@@ -621,13 +624,82 @@ test("account registration, session creation and confirmed erasure use resource 
     requests.some((r) => /SessionService\/(Restore|Purge)$/.test(r.path)),
   ).toBe(false);
 });
+test("Search has no resource panel and submits its filters only on search", async ({
+  page,
+}) => {
+  const requests = await fixture(page, false, true);
+  await page.getByRole("link", { name: "Search", exact: true }).click();
+  await expect(page.locator(".resource-panel")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Search", exact: true }),
+  ).toHaveCount(0);
+  const input = page.getByRole("searchbox", {
+    name: "Search conversations",
+    exact: true,
+  });
+  await input.fill("Earlier");
+  await page
+    .getByRole("combobox", { name: "Search project", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Docs playground", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Match case", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Use regular expression", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Filters", exact: true }).click();
+  await page
+    .getByRole("switch", { name: "Include tools", exact: true })
+    .click();
+  await page.getByLabel("From (UTC)", { exact: true }).fill("2026-10-01");
+  await page
+    .getByLabel("Until (UTC, exclusive)", { exact: true })
+    .fill("2026-11-05");
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Search"),
+  ).toHaveLength(0);
+  await input.press("Enter");
+  await expect(
+    page.getByRole("link", { name: /Earlier response/ }),
+  ).toBeVisible();
+  const request = requests.find(
+    (r) => r.path === "/cxz.SessionService/Search",
+  ).q;
+  expect(request).toMatchObject({
+    query: "Earlier",
+    match: "regex",
+    includeTools: true,
+    projects: [projectFixture(2).uuid],
+    since: "2026-10-01T00:00:00Z",
+    until: "2026-11-05T00:00:00Z",
+  });
+  expect(request.ignoreCase ?? false).toBe(false);
+  await page
+    .getByRole("button", { name: "Reset filters", exact: true })
+    .click();
+  await expect(
+    page.getByRole("link", { name: /Earlier response/ }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect
+    .poll(
+      () =>
+        requests.filter((r) => r.path === "/cxz.SessionService/Search").length,
+    )
+    .toBe(2);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Search").at(-1).q
+      .projects ?? [],
+  ).toEqual([]);
+});
 test("search opens the matched response and queue recall preserves its text", async ({
   page,
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Search", exact: true }).click();
   await page
-    .getByRole("textbox", { name: "Search conversations" })
+    .getByRole("searchbox", { name: "Search conversations" })
     .fill("Earlier");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.getByRole("link", { name: /Earlier response/ }).click();

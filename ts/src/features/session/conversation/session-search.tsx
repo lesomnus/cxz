@@ -21,6 +21,7 @@ import { searchLoadedMessages, type LoadedSearchHit } from "./loaded-search";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./session-search.module.css";
+import bar from "#src/shared/components/search-bar.module.css";
 import { useSearchHighlights, type SearchLocation } from "./search-highlights";
 import { messageDate, relativeMessageTime } from "./message-time";
 import {
@@ -222,17 +223,17 @@ export function SessionSearch({
       ref={overlay}
       role="search"
       aria-label={t("Search current conversation")}
-      className={styles.search}
+      className={`${bar.surface} ${styles.search}`}
     >
       <form
-        className={styles.controls}
+        className={bar.controls}
         onSubmit={(event) => {
           event.preventDefault();
           void nextMatch();
         }}
       >
         <svg
-          className={styles.icon}
+          className={bar.icon}
           width="16"
           height="16"
           viewBox="0 0 24 24"
@@ -246,7 +247,7 @@ export function SessionSearch({
         </svg>
         <input
           ref={input}
-          className={styles.input}
+          className={bar.input}
           type="search"
           value={query}
           aria-label={t("Search this conversation")}
@@ -291,13 +292,13 @@ export function SessionSearch({
           </span>
         </div>
         <div
-          className={styles.modes}
+          className={bar.modes}
           role="group"
           aria-label={t("Search options")}
         >
           <Popover content={t("Match case")}>
             <ToggleButton
-              className={styles.mode}
+              className={bar.mode}
               variant="toolbar"
               aria-label={t("Match case")}
               pressed={options.matchCase}
@@ -308,20 +309,20 @@ export function SessionSearch({
           </Popover>
           <Popover content={t("Match whole word")}>
             <ToggleButton
-              className={styles.mode}
+              className={bar.mode}
               variant="toolbar"
               aria-label={t("Match whole word")}
               pressed={options.wholeWord}
               onPressedChange={(pressed) => changeOption("wholeWord", pressed)}
             >
-              <span className={styles.word} aria-hidden="true">
+              <span className={bar.word} aria-hidden="true">
                 ab
               </span>
             </ToggleButton>
           </Popover>
           <Popover content={t("Use regular expression")}>
             <ToggleButton
-              className={styles.mode}
+              className={bar.mode}
               variant="toolbar"
               aria-label={t("Use regular expression")}
               pressed={options.useRegex}
@@ -332,7 +333,7 @@ export function SessionSearch({
           </Popover>
         </div>
         <Button
-          className={styles.close}
+          className={bar.action}
           variant="toolbar"
           type="button"
           aria-label={t("Close search")}

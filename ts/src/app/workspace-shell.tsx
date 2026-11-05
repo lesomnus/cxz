@@ -69,6 +69,7 @@ export function Workspace({
     "tasks",
     "projects",
     "memory",
+    "search",
   ].includes(resource);
   const settingsTopic = route.settingsTopic;
   const lastSession = useRef("");
