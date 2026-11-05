@@ -27,6 +27,36 @@ test("task table creates and edits work, and releases a stopped owner's task onl
   );
   await page.getByRole("button", { name: "Add task", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add task", exact: true });
+  const priority = add.getByRole("radiogroup", {
+    name: "Priority",
+    exact: true,
+  });
+  await expect(priority.getByRole("radio")).toHaveCount(5);
+  await expect(
+    priority.getByRole("radio", { name: "Normal", exact: true }),
+  ).toBeChecked();
+  await priority.getByRole("radio", { name: "High", exact: true }).check();
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    priority.getByRole("radio", { name: "Normal", exact: true }),
+  ).toBeChecked();
+  await page.keyboard.press("ArrowLeft");
+  await expect(
+    priority.getByRole("radio", { name: "High", exact: true }),
+  ).toBeChecked();
+  const widths = await priority
+    .locator("label")
+    .evaluateAll((labels) =>
+      labels.map((label) => label.getBoundingClientRect().width),
+    );
+  expect(Math.max(...widths) - Math.min(...widths)).toBeLessThan(0.1);
+  const groupBox = (await priority.boundingBox())!;
+  const titleBox = (await add
+    .getByRole("textbox", { name: "Title", exact: true })
+    .boundingBox())!;
+  expect(Math.abs(groupBox.width - titleBox.width)).toBeLessThan(0.1);
+  expect(Math.abs(groupBox.x - titleBox.x)).toBeLessThan(0.1);
+  await add.screenshot({ path: "/tmp/task-add-priority.png" });
   await add
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("Ship the task table");
@@ -46,6 +76,9 @@ test("task table creates and edits work, and releases a stopped owner's task onl
     name: "Task details",
     exact: true,
   });
+  await expect(
+    detail.getByRole("combobox", { name: "Priority", exact: true }),
+  ).toHaveText("High");
   await expect(
     detail.getByRole("textbox", { name: "Description", exact: true }),
   ).toHaveValue("Verify the project workflow.");

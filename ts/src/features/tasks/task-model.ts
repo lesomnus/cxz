@@ -12,6 +12,13 @@ export const taskStatuses = [
   { value: TaskStatus.WAITING, label: "Waiting" },
   { value: TaskStatus.DONE, label: "Done" },
 ] as const;
+export const taskPriorities = [
+  "Highest",
+  "High",
+  "Normal",
+  "Low",
+  "Lowest",
+] as const;
 export const taskStatusName = (status: TaskStatus) =>
   taskStatuses.find((item) => item.value === status)?.label ??
   (status === TaskStatus.CANCELED ? "Canceled" : "Unknown");

@@ -8,6 +8,7 @@ import {
   Card,
   Form,
   FormField,
+  SegmentedControl,
   ValueMenu,
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
@@ -23,6 +24,7 @@ import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { AgentIdentity } from "#src/shared/components/agent-identity.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
+  taskPriorities,
   taskOwner,
   taskRef,
   taskLookup,
@@ -30,6 +32,7 @@ import {
   taskStatuses,
   ownerIssue,
 } from "./task-model";
+import { TaskPrioritySymbol } from "./task-indicators";
 import styles from "./tasks.module.css";
 
 function TaskEditor({
@@ -217,17 +220,38 @@ function TaskEditor({
             disabled={busy}
             aria-label="Task fields"
           >
-            <FormField label="Priority">
-              <ValueMenu
-                label="Priority"
-                alignItemWithTrigger
-                value={String(priority)}
-                options={["Highest", "High", "Normal", "Low", "Lowest"].map(
-                  (label, value) => ({ value: String(value), label }),
-                )}
-                choose={(value) => setPriority(Number(value))}
-                disabled={busy}
-              />
+            <FormField label="Priority" fullWidth={!task}>
+              {task ? (
+                <ValueMenu
+                  label="Priority"
+                  alignItemWithTrigger
+                  value={String(priority)}
+                  options={taskPriorities.map((label, value) => ({
+                    value: String(value),
+                    label,
+                  }))}
+                  choose={(value) => setPriority(Number(value))}
+                  disabled={busy}
+                />
+              ) : (
+                <div className={styles.priorityControl}>
+                  <SegmentedControl
+                    label="Priority"
+                    value={String(priority)}
+                    options={taskPriorities.map((label, value) => ({
+                      value: String(value),
+                      label,
+                      icon: (
+                        <span className={styles.prioritySymbol}>
+                          <TaskPrioritySymbol priority={value} />
+                        </span>
+                      ),
+                    }))}
+                    onChange={(value) => setPriority(Number(value))}
+                    disabled={busy}
+                  />
+                </div>
+              )}
             </FormField>
             {task && (
               <FormField label="Status">

@@ -6,11 +6,19 @@ import {
   dateTimeDate,
   formatRelativeDateTime,
 } from "#src/shared/components/date-time-format.ts";
-import { taskStatusName } from "./task-model";
+import { taskPriorities, taskStatusName } from "./task-model";
 import styles from "./task-table.module.css";
 import taskStyles from "./tasks.module.css";
 
-const priorities = ["Highest", "High", "Normal", "Low", "Lowest"];
+export function TaskPrioritySymbol({ priority }: { priority: number }) {
+  return (
+    <span
+      className={`${styles.priorityDot} ${taskStyles.priority}`}
+      data-priority={priority}
+      aria-hidden="true"
+    />
+  );
+}
 
 export function TaskStatusIcon({ status }: { status: TaskStatus }) {
   const label = taskStatusName(status);
@@ -54,17 +62,16 @@ export function TaskStatusIcon({ status }: { status: TaskStatus }) {
 }
 
 export function TaskPriority({ priority }: { priority: number }) {
-  const label = `${priorities[priority] ?? "Unknown"} priority`;
+  const label = `${taskPriorities[priority] ?? "Unknown"} priority`;
   return (
     <Popover content={label}>
       <span
-        className={`${styles.indicator} ${taskStyles.priority}`}
-        data-priority={priority}
+        className={styles.indicator}
         role="img"
         aria-label={label}
         tabIndex={0}
       >
-        <span className={styles.priorityDot} aria-hidden="true" />
+        <TaskPrioritySymbol priority={priority} />
       </span>
     </Popover>
   );

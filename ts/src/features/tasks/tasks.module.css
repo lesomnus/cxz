@@ -135,6 +135,22 @@
   min-height: 6lh;
   max-height: 25dvh;
 }
+.priorityControl {
+  flex: none;
+  width: calc(100% + 2 * var(--ui-form-control-radius));
+  margin-inline: calc(-1 * var(--ui-form-control-radius));
+}
+.priorityControl :global(.segment) > span {
+  flex-direction: column;
+  gap: var(--ui-space);
+}
+.prioritySymbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+}
 .details {
   display: grid;
   gap: calc(2 * var(--space));
