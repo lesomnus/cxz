@@ -1,9 +1,9 @@
 package lifecycle
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
-	"github.com/lesomnus/cxz/internal/projectid"
 	"net"
 	"path/filepath"
 	"sync"
@@ -13,6 +13,8 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/internal/taskapi"
 	"github.com/lesomnus/cxz/internal/taskapitest"
 	"github.com/lesomnus/cxz/internal/taskmcp"
 	"github.com/lesomnus/cxz/internal/taskmcptest"
@@ -254,6 +256,26 @@ func TestTaskManagerForwardsWithoutShadowStorage(t *testing.T) {
 	if err != nil || frame.GetItems()[0].GetValue().GetName() != "Updated inside project" {
 		t.Fatalf("forwarded change: %v %v", frame, err)
 	}
+	readyCtx, stopReady := context.WithCancel(ctx)
+	defer stopReady()
+	readyWatch, err := client.Watch(readyCtx, resource.TaskWatchRequest_builder{Project: project, SkipSnapshot: true}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	headers, err := readyWatch.Header()
+	if err != nil || len(headers.Get(taskapi.WatchReadyHeader)) != 1 || headers.Get(taskapi.WatchReadyHeader)[0] != "1" {
+		t.Fatalf("forwarded readiness: %v %v", headers, err)
+	}
+	current := frame.GetItems()[0].GetValue()
+	_, err = child.Task().Patch(ctx, resource.TaskPatchRequest_builder{Ref: resource.TaskRef_builder{Id: current.GetId(), Project: projectRef(f.p.Id)}.Build(), DateUpdated: current.GetDateUpdated(), Name: ptr("After readiness")}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	readyFrame, err := readyWatch.Recv()
+	if err != nil || len(readyFrame.GetItems()) != 1 || readyFrame.GetItems()[0].GetValue().GetName() != "After readiness" {
+		t.Fatalf("forwarded changes-only stream: %v %v", readyFrame, err)
+	}
+
 	var local, remote int
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM task").Scan(&local); err != nil {
 		t.Fatal(err)
@@ -268,5 +290,37 @@ func TestTaskManagerForwardsWithoutShadowStorage(t *testing.T) {
 	_, err = client.List(ctx, resource.TaskListRequest_builder{Project: project}.Build())
 	if status.Code(err) != codes.Unavailable {
 		t.Fatalf("offline project fell back to manager: %v", err)
+	}
+}
+
+func TestTaskChangesOnlyErasureIsScoped(t *testing.T) {
+	f, stack, _ := taskStack(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	client := resource.NewTaskServiceClient(taskConn(t, stack))
+	own, err := client.Add(ctx, resource.TaskAddRequest_builder{Project: projectRef(f.p.Id), ClientId: "erased-own", Name: "Owned"}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := client.Add(ctx, resource.TaskAddRequest_builder{Project: projectRef("other-project"), ClientId: "erased-other", Name: "Other"}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	stream, err := client.Watch(ctx, resource.TaskWatchRequest_builder{Project: projectRef(f.p.Id), SkipSnapshot: true}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if headers, err := stream.Header(); err != nil || len(headers.Get(taskapi.WatchReadyHeader)) != 1 {
+		t.Fatalf("readiness: %v %v", headers, err)
+	}
+	layer, _ := resource.Find[Layer](stack)
+	for _, value := range []*resource.Task{other, own} {
+		if _, err := layer.Next().Task().Erase(ctx, resource.TaskRef_builder{Id: value.GetId()}.Build()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	frame, err := stream.Recv()
+	if err != nil || len(frame.GetItems()) != 1 || !bytes.Equal(frame.GetItems()[0].GetId(), own.GetId()) || frame.GetItems()[0].HasValue() {
+		t.Fatalf("scoped erasure: %v %v", frame, err)
 	}
 }

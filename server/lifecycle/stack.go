@@ -106,7 +106,7 @@ func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log, options .
 		return nil, err
 	}
 	w := watch.New(broker)
-	sink, err := pd.NewSink(client, bare.WithMinter(pd.Minter()), bare.WithScope(pd.Wall()), bare.WithRecorder(bare.Recorders{memoryVersionRecorder{}, managementAudit{pd.Recorder(audit.Contents{})}, pd.WatchRecorder(w)}))
+	sink, err := pd.NewSink(client, bare.WithMinter(pd.Minter()), bare.WithScope(pd.Wall()), bare.WithRecorder(bare.Recorders{memoryVersionRecorder{}, managementAudit{pd.Recorder(audit.Contents{})}, taskWatchRecorder{Recorder: pd.WatchRecorder(w), watch: w}}))
 	if err != nil {
 		return nil, err
 	}

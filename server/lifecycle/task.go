@@ -263,6 +263,14 @@ func (s taskClientServer) Watch(r *resource.TaskWatchRequest, out grpc.ServerStr
 	if err != nil {
 		return err
 	}
+	headers, err := stream.Header()
+	if err != nil {
+		return err
+	}
+	if err := out.SendHeader(headers); err != nil {
+		return err
+	}
+
 	for {
 		value, err := stream.Recv()
 		if err == io.EOF {
@@ -301,7 +309,41 @@ func (s taskInventory) Patch(ctx context.Context, r *resource.TaskPatchRequest) 
 // the same broker that publishes generated Sink writes after commit.
 func (s taskInventory) Watch(r *resource.TaskWatchRequest, out grpc.ServerStreamingServer[resource.TaskWatchResponse]) error {
 	ctx := out.Context()
-	return streamInventory(ctx, s.shared.watch, pd.TaskService, r.GetSkipSnapshot(),
+	read := func(id []byte) (*resource.Task, bool, error) {
+		filters := make([]*resource.TaskFilter, 0, len(r.GetFilters()))
+		for _, original := range r.GetFilters() {
+			if original.HasRef() {
+				v, err := s.TaskServiceServer.Get(ctx, resource.TaskGetRequest_builder{Ref: original.GetRef(), Select: resource.TaskSelect_builder{All: ptr(true)}.Build()}.Build())
+				if status.Code(err) == codes.NotFound {
+					continue
+				}
+				if err != nil {
+					return nil, false, err
+				}
+				if !bytes.Equal(v.GetId(), id) {
+					continue
+				}
+			}
+			f := proto.Clone(original).(*resource.TaskFilter)
+			f.SetRef(resource.TaskRef_builder{Id: id}.Build())
+			filters = append(filters, f)
+		}
+		if len(filters) == 0 {
+			return nil, false, nil
+		}
+		page, err := s.TaskServiceServer.List(ctx, resource.TaskListRequest_builder{Filters: filters, Size: 1}.Build())
+		if err != nil {
+			return nil, false, err
+		}
+		if len(page.GetItems()) == 0 {
+			return nil, false, nil
+		}
+		return page.GetItems()[0], true, nil
+	}
+	if r.GetSkipSnapshot() {
+		return s.watchChanges(r, out, read)
+	}
+	return streamInventory(ctx, s.shared.watch, pd.TaskService, false,
 		func(after string) ([]*resource.Task, string, error) {
 			page, err := s.TaskServiceServer.List(ctx, resource.TaskListRequest_builder{Filters: r.GetFilters(), After: after}.Build())
 			if err != nil {
@@ -309,37 +351,7 @@ func (s taskInventory) Watch(r *resource.TaskWatchRequest, out grpc.ServerStream
 			}
 			return page.GetItems(), page.GetNext(), nil
 		},
-		func(id []byte) (*resource.Task, bool, error) {
-			filters := make([]*resource.TaskFilter, 0, len(r.GetFilters()))
-			for _, original := range r.GetFilters() {
-				if original.HasRef() {
-					v, err := s.TaskServiceServer.Get(ctx, resource.TaskGetRequest_builder{Ref: original.GetRef(), Select: resource.TaskSelect_builder{All: ptr(true)}.Build()}.Build())
-					if status.Code(err) == codes.NotFound {
-						continue
-					}
-					if err != nil {
-						return nil, false, err
-					}
-					if !bytes.Equal(v.GetId(), id) {
-						continue
-					}
-				}
-				f := proto.Clone(original).(*resource.TaskFilter)
-				f.SetRef(resource.TaskRef_builder{Id: id}.Build())
-				filters = append(filters, f)
-			}
-			if len(filters) == 0 {
-				return nil, false, nil
-			}
-			page, err := s.TaskServiceServer.List(ctx, resource.TaskListRequest_builder{Filters: filters, Size: 1}.Build())
-			if err != nil {
-				return nil, false, err
-			}
-			if len(page.GetItems()) == 0 {
-				return nil, false, nil
-			}
-			return page.GetItems()[0], true, nil
-		},
+		read,
 		func(rows []inventoryRow[*resource.Task], _ *bool) error {
 			items := make([]*resource.TaskWatchItem, 0, len(rows))
 			for _, row := range rows {
