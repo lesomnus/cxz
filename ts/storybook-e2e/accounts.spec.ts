@@ -221,13 +221,12 @@ for (const width of [1280, 390]) {
     );
     const empty = gauge.locator("[data-quota-vessel]");
     const cap = empty.locator("[data-quota-empty]");
+    const contour = cap.locator("[data-quota-contour]");
     await expect
       .poll(() =>
-        cap.evaluate(
-          (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42,
-        ),
+        contour.evaluate((node) => (node as SVGPathElement).getBBox().height),
       )
-      .toBeCloseTo(-58 * 0.64, 0);
+      .toBeCloseTo(58 * 0.36, 0);
     const emptyBounds = (await empty.boundingBox())!;
     expect(emptyBounds.x - gaugeBounds.x).toBe(1);
     expect(emptyBounds.y - gaugeBounds.y).toBe(1);
@@ -236,7 +235,6 @@ for (const width of [1280, 390]) {
     ).toBe(1);
     expect(emptyBounds.height).toBe(58);
     await expect(empty).toHaveCSS("border-radius", "13px");
-    await expect(cap).toHaveCSS("border-radius", "13px");
     const capBounds = (await cap.boundingBox())!;
     expect(capBounds.width).toBe(30);
     expect(capBounds.height).toBeCloseTo(58, 3);

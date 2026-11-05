@@ -107,9 +107,12 @@
 .quotaEmpty {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  background: var(--ui-section-background);
-  transition: transform var(--account-quota-motion-duration, 300ms) ease;
+  width: 100%;
+  height: 100%;
+  fill: var(--ui-section-background);
+}
+.quotaEmpty path {
+  transition: d var(--account-quota-motion-duration, 300ms) ease;
 }
 .quotaValue {
   position: relative;
@@ -133,7 +136,7 @@
   gap: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .quotaEmpty {
+  .quotaEmpty path {
     transition: none;
   }
 }

@@ -8,6 +8,10 @@ import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { readAccountQuota } from "./account-quota";
+import {
+  QUOTA_TUBE_VIEWBOX,
+  quotaEmptyContour,
+} from "./account-quota-meniscus";
 import { accountReadPrefix, USAGE_TTL } from "#src/shared/api/read-cache.ts";
 import styles from "./accounts.module.css";
 
@@ -91,13 +95,14 @@ export function AccountQuotaSquare({
           data-quota-vessel=""
           aria-hidden="true"
         >
-          <span
+          <svg
             className={styles.quotaEmpty}
             data-quota-empty=""
-            style={{
-              transform: `translateY(-${remaining ?? 100}%)`,
-            }}
-          />
+            viewBox={QUOTA_TUBE_VIEWBOX}
+            preserveAspectRatio="none"
+          >
+            <path data-quota-contour="" d={quotaEmptyContour(remaining)} />
+          </svg>
         </span>
         <span
           className={styles.quotaValue}

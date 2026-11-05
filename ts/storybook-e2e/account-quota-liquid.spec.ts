@@ -1,19 +1,17 @@
 import { expect, test, type Locator } from "@playwright/test";
 
-const offset = (node: Locator) =>
-  node.evaluate(
-    (element) => new DOMMatrixReadOnly(getComputedStyle(element).transform).m42,
-  );
+const depth = (node: Locator) =>
+  node.evaluate((element) => (element as SVGPathElement).getBBox().height);
 
 for (const theme of ["dark", "light"]) {
-  test(`quota preserves the original tube and a concave meniscus in ${theme} mode`, async ({
+  test(`quota keeps rounded air-pocket ends and a concave meniscus in ${theme} mode`, async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(
       `/iframe.html?id=accounts-quota--comparison&viewMode=story&globals=theme:${theme}`,
     );
-    for (const value of [64, 90, 95, 98, 99, 100]) {
+    for (const value of [0, 31, 64, 90, 95, 98, 99, 100]) {
       const figure = page.getByRole("figure", {
         name: `${value}% remaining`,
         exact: true,
@@ -22,28 +20,47 @@ for (const theme of ["dark", "light"]) {
       await expect(meter).toHaveAttribute("aria-valuenow", String(value));
       const gauge = meter.locator("..");
       await expect(gauge).toHaveCSS("border-radius", "14px");
-      const vessel = gauge.locator("[data-quota-vessel]");
-      const cap = vessel.locator("[data-quota-empty]");
-      await expect.poll(() => offset(cap)).toBeCloseTo((-58 * value) / 100, 2);
-      await expect(cap).toHaveCSS("border-radius", "13px");
-      const box = (await cap.boundingBox())!;
-      expect(box.width).toBe(30);
-      expect(box.height).toBe(58);
-      if (value === 64 || value === 90) {
-        await meter.evaluate((element) => {
-          (element as HTMLElement).style.pointerEvents = "none";
+      const contour = gauge.locator("[data-quota-contour]");
+      await expect
+        .poll(() => depth(contour))
+        .toBeCloseTo((58 * (100 - value)) / 100, 2);
+      await meter.evaluate((element) => {
+        (element as HTMLElement).style.pointerEvents = "none";
+      });
+      if (value === 100) continue;
+      // The whole closed outline must fit inside the tube, including its tips.
+      const samples = await contour.evaluate((element) => {
+        const path = element as SVGPathElement;
+        const box = path.getBBox();
+        const matrix = path.getScreenCTM()!;
+        const length = path.getTotalLength();
+        return Array.from({ length: 96 }, (_, index) => {
+          const edge = path.getPointAtLength((length * index) / 96);
+          const inside = new DOMPoint(
+            edge.x * 0.97 + (box.x + box.width / 2) * 0.03,
+            edge.y * 0.97 + (box.y + box.height / 2) * 0.03,
+          ).matrixTransform(matrix);
+          return document.elementFromPoint(inside.x, inside.y) === path;
         });
-        const shape = await cap.evaluate((element) => {
-          const box = element.getBoundingClientRect();
-          const y = box.bottom - 0.5;
-          const center = document.elementFromPoint(box.x + box.width / 2, y);
+      });
+      expect(samples.every(Boolean), `unclipped outline at ${value}%`).toBe(
+        true,
+      );
+      if (value === 64 || value === 90) {
+        const shape = await contour.evaluate((element) => {
+          const tube = element.parentElement!.parentElement!;
+          const box = tube.getBoundingClientRect();
+          const path = element as SVGPathElement;
+          const y = box.y + path.getBBox().height - 0.5;
           const left = document.elementFromPoint(box.x + 6, y);
           const right = document.elementFromPoint(box.right - 6, y);
-          const vessel = element.parentElement!;
+          const liquid = (node: Element | null) =>
+            node === tube || node === path.parentElement;
           return {
-            centerEmpty: center === element,
-            leftLiquid: left === vessel,
-            rightLiquid: right === vessel,
+            centerEmpty:
+              document.elementFromPoint(box.x + box.width / 2, y) === path,
+            leftLiquid: liquid(left),
+            rightLiquid: liquid(right),
           };
         });
         expect(shape).toEqual({
@@ -53,15 +70,6 @@ for (const theme of ["dark", "light"]) {
         });
       }
     }
-    const exhausted = page.getByRole("figure", {
-      name: "0% remaining",
-      exact: true,
-    });
-    await expect(exhausted.getByRole("meter")).toHaveAttribute(
-      "aria-valuenow",
-      "0",
-    );
-    expect(await offset(exhausted.locator("[data-quota-empty]"))).toBe(0);
     const unknown = page.getByRole("figure", {
       name: "Not reported",
       exact: true,
@@ -70,12 +78,23 @@ for (const theme of ["dark", "light"]) {
     await expect(
       unknown.getByRole("img", { name: "Not reported", exact: true }),
     ).toBeVisible();
-    expect(await offset(unknown.locator("[data-quota-empty]"))).toBe(-58);
-    await page.screenshot({ path: `/tmp/account-quota-meniscus-${theme}.png` });
+    expect(await depth(unknown.locator("[data-quota-contour]"))).toBe(0);
+    await page.screenshot({ path: `/tmp/account-quota-soft-${theme}.png` });
+    const nearFull = page.getByRole("figure", {
+      name: "90% remaining",
+      exact: true,
+    });
+    await nearFull.evaluate((element) => {
+      (element as HTMLElement).style.cssText =
+        "position:fixed;left:32px;top:32px;margin:0;transform:scale(6);transform-origin:top left;z-index:10";
+    });
+    await nearFull.screenshot({
+      path: `/tmp/account-quota-soft-closeup-${theme}.png`,
+    });
   });
 }
 
-test("changing quota translates the same empty cap without deforming the meniscus", async ({
+test("changing quota morphs the same soft meniscus without changing the account layout", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=accounts-quota--water-level&viewMode=story");
@@ -85,9 +104,9 @@ test("changing quota translates the same empty cap without deforming the meniscu
   });
   const meter = quota.getByRole("meter");
   await expect(meter).toHaveAttribute("aria-valuenow", "95");
-  const cap = quota.locator("[data-quota-empty]");
-  await expect.poll(() => offset(cap)).toBeCloseTo(-55.1, 2);
-  const original = await cap.elementHandle();
+  const contour = quota.locator("[data-quota-contour]");
+  await expect.poll(() => depth(contour)).toBeCloseTo(2.9, 2);
+  const original = await contour.elementHandle();
   const before = await quota.boundingBox();
   await quota.evaluate((element) =>
     (element as HTMLElement).style.setProperty(
@@ -102,15 +121,14 @@ test("changing quota translates the same empty cap without deforming the meniscu
   await slider.focus();
   await slider.press("Home");
   await expect(meter).toHaveAttribute("aria-valuenow", "0");
-  await expect.poll(() => offset(cap)).toBeGreaterThan(-55);
-  expect(await offset(cap)).toBeLessThan(0);
-  await expect.poll(() => offset(cap)).toBeCloseTo(0, 2);
+  await expect.poll(() => depth(contour)).toBeGreaterThan(3);
+  expect(await depth(contour)).toBeLessThan(58);
+  await expect.poll(() => depth(contour)).toBeCloseTo(58, 2);
   await slider.press("End");
   await expect(meter).toHaveAttribute("aria-valuenow", "100");
-  await expect.poll(() => offset(cap)).toBeCloseTo(-58, 2);
+  await expect.poll(() => depth(contour)).toBeCloseTo(0, 2);
   expect(await original!.evaluate((element) => element.isConnected)).toBe(true);
   expect(await quota.boundingBox()).toEqual(before);
-  expect((await cap.boundingBox())!.height).toBe(58);
 });
 
 test("reduced motion updates liquid level immediately", async ({ page }) => {
@@ -118,7 +136,7 @@ test("reduced motion updates liquid level immediately", async ({ page }) => {
   await page.goto("/iframe.html?id=accounts-quota--water-level&viewMode=story");
   const meter = page.getByRole("meter");
   await expect(meter).toHaveAttribute("aria-valuenow", "95");
-  const cap = page.locator("[data-quota-empty]");
+  const contour = page.locator("[data-quota-contour]");
   const slider = page.getByRole("slider", {
     name: "Remaining usage",
     exact: true,
@@ -126,8 +144,8 @@ test("reduced motion updates liquid level immediately", async ({ page }) => {
   await slider.focus();
   await slider.press("Home");
   await expect(meter).toHaveAttribute("aria-valuenow", "0");
-  expect(await offset(cap)).toBe(0);
-  expect(await cap.evaluate((element) => element.getAnimations().length)).toBe(
-    0,
-  );
+  expect(await depth(contour)).toBe(58);
+  expect(
+    await contour.evaluate((element) => element.getAnimations().length),
+  ).toBe(0);
 });
