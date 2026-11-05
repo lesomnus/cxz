@@ -87,9 +87,23 @@
   height: var(--ui-icon-size-small);
   color: var(--ui-muted);
 }
-.table tr[data-done] .name,
-.table tr[data-done] .status {
-  color: var(--ui-muted);
+.table tbody tr[data-done] {
+  --ui-muted: var(--ui-shade-140);
+  color: var(--ui-shade-181);
+}
+.table tr[data-done] :is(.taskButton, .ownerButton) {
+  --button-background: var(--ui-shade-17);
+  --ui-table-button-row-hover-lift: 12;
+  --ui-table-button-selected-lift: 12;
+  --ui-table-button-hover-lift: 33;
+  color: inherit;
+}
+.table tr[data-done] .priorityDot {
+  background: color-mix(
+    in srgb,
+    var(--task-priority-color, var(--ui-muted)),
+    var(--ui-shade-17) 40%
+  );
 }
 .table .empty {
   padding: var(--ui-dialog-padding);
