@@ -1,4 +1,6 @@
 .picker {
+  flex: none;
+  min-height: var(--resource-toolbar-row-height);
   min-width: 0;
   max-width: 100%;
 }
@@ -6,8 +8,8 @@
   opacity: 1;
 }
 .picker > :global(.value-menu) {
-  flex: 0 1 180px;
-  width: 180px;
+  flex: 0 1 var(--resource-picker-width);
+  width: var(--resource-picker-width);
   min-width: 0;
 }
 .picker :global(.meta-value) {

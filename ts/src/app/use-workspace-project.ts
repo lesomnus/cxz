@@ -4,7 +4,9 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { resourceHandle } from "#src/shared/navigation/resource-route.ts";
-import { useEffect, useRef } from "react";
+import { useResourceSelection } from "#src/shared/api/resource-selection.ts";
+import { sessionUUID } from "#src/shared/api/session-id.ts";
+import { useEffect } from "react";
 import type { useWorkspaceRoute } from "./router";
 
 // Keep identity rather than an alias so project renames survive page changes.
@@ -14,7 +16,8 @@ export function useWorkspaceProject(
   route: ReturnType<typeof useWorkspaceRoute>,
   session?: Session,
 ) {
-  const remembered = useRef<{ connection: Connection; id: string }>(undefined);
+  const selection = useResourceSelection(c);
+  const retained = projects.find((p) => projectId(p) === selection.project);
   const selected =
     route.resource === "sessions"
       ? session?.project && projectId(session.project)
@@ -25,7 +28,11 @@ export function useWorkspaceProject(
           : route.resource === "memory"
             ? route.memoryProject
             : undefined;
-  const resolved = useProject(c, projects, selected);
+  const resolved = useProject(
+    c,
+    projects,
+    selected || (retained && projectId(retained)),
+  );
   // These scoped pages display the first project when opened without a scope.
   // An unscoped task detail can instead require an explicit project choice.
   const defaultsToFirst =
@@ -35,12 +42,17 @@ export function useWorkspaceProject(
   const active = selected || defaultsToFirst ? resolved : undefined;
   const id = active && projectId(active);
   useEffect(() => {
-    if (id) remembered.current = { connection: c, id };
-  }, [c, id]);
-  const retained =
-    remembered.current?.connection === c
-      ? projects.find((p) => projectId(p) === remembered.current?.id)
-      : undefined;
+    if (!id) return;
+    if (route.resource === "sessions" && session)
+      c.selection.chooseSession(id, sessionUUID(session.id), session.runtimeId);
+    else c.selection.chooseProject(id);
+  }, [
+    c,
+    id,
+    route.resource,
+    session && sessionUUID(session.id),
+    session?.runtimeId,
+  ]);
   const project = active ?? retained;
   return project && resourceHandle(project);
 }
