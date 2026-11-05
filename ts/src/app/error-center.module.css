@@ -35,18 +35,28 @@
   min-width: 0;
 }
 .header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
+  gap: var(--ui-space);
   padding: var(--ui-space) calc(2 * var(--ui-space));
 }
 .header strong {
+  justify-self: start;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 500;
+}
+.header > button {
+  justify-self: end;
 }
 .list {
   height: min(390px, calc(100dvh - 160px));
   min-height: 0;
   margin-top: var(--ui-space);
+  border-radius: var(--menu-inner-radius);
 }
 .list ul {
   list-style: none;

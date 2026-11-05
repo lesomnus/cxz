@@ -146,6 +146,22 @@ export function ErrorCenter({
           >
             <header className={styles.header}>
               <strong>{t("Errors")}</strong>
+              <SegmentedControl
+                label={t("Error status")}
+                size="compact"
+                value={tab}
+                onChange={setTab}
+                options={[
+                  {
+                    value: "active",
+                    label: `${t("Active")} (${active.length})`,
+                  },
+                  {
+                    value: "history",
+                    label: `${t("History")} (${history.length})`,
+                  },
+                ]}
+              />
               <Button
                 ref={closeButton}
                 variant="toolbar"
@@ -155,19 +171,6 @@ export function ErrorCenter({
                 ×
               </Button>
             </header>
-            <SegmentedControl
-              label={t("Error status")}
-              size="compact"
-              value={tab}
-              onChange={setTab}
-              options={[
-                { value: "active", label: `${t("Active")} (${active.length})` },
-                {
-                  value: "history",
-                  label: `${t("History")} (${history.length})`,
-                },
-              ]}
-            />
             <ScrollArea
               className={styles.list}
               aria-label={t("Error list")}
