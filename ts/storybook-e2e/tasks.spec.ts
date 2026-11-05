@@ -318,7 +318,17 @@ test("task columns show status icons, distinct priority symbols and relative tim
     .locator("path")
     .evaluateAll((paths) => paths.map((path) => path.getAttribute("d")));
   expect(new Set(paths).size).toBe(5);
-  await expect(symbols.locator("circle")).toHaveCount(0);
+  const normalCircle = tasks
+    .getByRole("img", { name: "Normal priority", exact: true })
+    .first()
+    .locator("path");
+  const smallCircle = tasks
+    .getByRole("img", { name: "Lowest priority", exact: true })
+    .first()
+    .locator("path");
+  expect((await normalCircle.boundingBox())!.width).toBeGreaterThan(
+    (await smallCircle.boundingBox())!.width,
+  );
   await highest.hover();
   await expect(page.getByRole("tooltip")).toHaveText("Highest priority");
   await page.mouse.move(0, 0);
