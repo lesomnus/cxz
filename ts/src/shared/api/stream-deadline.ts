@@ -61,6 +61,7 @@ export async function* alive<T>(
   beat: (value: T) => boolean,
   stall: number,
   what: string,
+  health?: (error?: unknown) => void,
 ): AsyncGenerator<T> {
   const stream = source[Symbol.asyncIterator]();
   let armed = false;
@@ -70,12 +71,16 @@ export async function* alive<T>(
         ? readBy(stream.next(), stall, what)
         : stream.next());
       if (next.done) return;
+      health?.();
       if (beat(next.value)) {
         armed = true;
         continue;
       }
       yield next.value;
     }
+  } catch (error) {
+    health?.(error);
+    throw error;
   } finally {
     release(stream);
   }

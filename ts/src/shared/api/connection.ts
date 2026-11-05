@@ -35,8 +35,13 @@ import { uploadFetch } from "./upload-fetch";
 import { ReadCache } from "./read-cache";
 import {
   publicUUID,
-  rpcDiagnostics,
+  diagnosticTransport,
 } from "#src/shared/logs/rpc-diagnostics.ts";
+import {
+  ClientErrors,
+  clientErrors,
+  operationHealth,
+} from "#src/shared/errors/client-errors.ts";
 
 // All client state belongs to one authenticated Connection. No credentials or
 // conversation cache are persisted in localStorage. Drafts use tab-local storage.
@@ -65,6 +70,7 @@ export class Connection {
   readonly drafts;
   readonly editors = new Map<string, EditorState>();
   readonly inProcess: boolean;
+  readonly errors: ClientErrors;
   private taskCache?: Promise<TaskCache | undefined>;
   constructor(
     readonly baseUrl = location.origin,
@@ -74,8 +80,10 @@ export class Connection {
     // as itself; see composer-upload's Transfer.
     readonly transfer?: Transfer,
     cacheIdentity?: string,
+    errors?: ClientErrors,
   ) {
     this.inProcess = !!transport;
+    this.errors = errors ?? (transport ? new ClientErrors() : clientErrors());
     try {
       sessionStorage.removeItem(
         `cxz.attention.v1:${encodeURIComponent(baseUrl)}`,
@@ -84,7 +92,7 @@ export class Connection {
       /* Legacy tab-local read state is no longer authoritative. */
     }
     this.drafts = new SessionDrafts(baseUrl, this.pastes);
-    this.transport = transport ?? this.httpTransport(rpcFetch);
+    this.transport = this.observe(transport ?? this.httpTransport(rpcFetch));
     this.store = Store.open(entities, {
       name: "cxz",
       identity: crypto.randomUUID(),
@@ -109,11 +117,20 @@ export class Connection {
       this.projects,
       this.sessions,
       this.store,
+      (kind, error) =>
+        operationHealth(
+          this.errors,
+          JSON.stringify([this.baseUrl, "subscription-health", kind]),
+          {
+            connection: this.baseUrl,
+            method: `cxz.${kind === "projects" ? "Project" : "Session"}Service/Watch`,
+          },
+        )(error),
     );
   }
   uploadTransport(progress?: UploadProgress): Transport {
     return progress && !this.inProcess
-      ? this.httpTransport(uploadFetch(progress))
+      ? this.observe(this.httpTransport(uploadFetch(progress)))
       : this.transport;
   }
   private httpTransport(fetcher: typeof fetch) {
@@ -121,24 +138,26 @@ export class Connection {
       baseUrl: this.baseUrl,
       jsonOptions: { registry: createRegistry(SessionNotificationSchema) },
       fetch: fetcher,
-      interceptors: [
-        rpcDiagnostics(this.baseUrl, {
-          resolve: (kind, ref): string | undefined => {
-            const rows =
-              kind === "session"
-                ? this.inventory?.snapshot().sessions
-                : this.inventory?.snapshot().projects;
-            const resource = rows?.find((row) =>
-              ref.key?.case === "runtimeId" && "runtimeId" in row
-                ? row.runtimeId === ref.key.value
-                : ref.key?.case === "alias" && row.alias === ref.key.value,
-            );
-            return resource
-              ? publicUUID({ key: { case: "id", value: resource.id } })
-              : undefined;
-          },
-        }),
-      ],
+    });
+  }
+  private observe(transport: Transport) {
+    return diagnosticTransport(transport, this.baseUrl, {
+      errors: this.errors,
+      ...(this.inProcess ? { write: () => {} } : {}),
+      resolve: (kind, ref): string | undefined => {
+        const rows =
+          kind === "session"
+            ? this.inventory?.snapshot().sessions
+            : this.inventory?.snapshot().projects;
+        const resource = rows?.find((row) =>
+          ref.key?.case === "runtimeId" && "runtimeId" in row
+            ? row.runtimeId === ref.key.value
+            : ref.key?.case === "alias" && row.alias === ref.key.value,
+        );
+        return resource
+          ? publicUUID({ key: { case: "id", value: resource.id } })
+          : undefined;
+      },
     });
   }
   dispose() {

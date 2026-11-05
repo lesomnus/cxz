@@ -54,6 +54,7 @@ export class ResourceInventory {
     private projects: Pick<Client<typeof ProjectService>, "list" | "watch">,
     private sessions: Pick<Client<typeof SessionService>, "list" | "watch">,
     private store: Pick<Store, "apply">,
+    private health?: (kind: Kind, error?: unknown) => void,
   ) {}
 
   snapshot = () => this.state;
@@ -222,6 +223,7 @@ export class ResourceInventory {
               this.settled[kind] = true;
             }
             this.publish(kind, rows, false);
+            this.health?.(kind);
           }
         } finally {
           release(stream);
@@ -230,6 +232,7 @@ export class ResourceInventory {
           throw new Error("Resource subscription disconnected");
       } catch (error) {
         if (signal.aborted) return;
+        this.health?.(kind, error);
         const code = ConnectError.from(error).code;
         if (code === Code.InvalidArgument || code === Code.Unimplemented) {
           // Older managers only allow watches naming individual resource IDs.
@@ -247,8 +250,9 @@ export class ResourceInventory {
             }
             rows = listed;
             this.settled[kind] = true;
-            error = new Error(
+            error = new ConnectError(
               "Update the cxz Manager to enable shared resource subscriptions.",
+              code,
             );
           } catch (failure) {
             error = failure;

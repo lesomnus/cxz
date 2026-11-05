@@ -1,14 +1,78 @@
-import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
+import {
+  Code,
+  ConnectError,
+  createContextValues,
+  type Interceptor,
+  type Transport,
+} from "@connectrpc/connect";
+import { runUnaryCall, runStreamingCall } from "@connectrpc/connect/protocol";
 import { Id } from "@lesomnus/payday/pdid";
 import { clientLogs } from "./client-logs";
 import type { LogContext, LogInput } from "./log-entry";
+import {
+  clientErrors,
+  type ClientErrors,
+} from "#src/shared/errors/client-errors.ts";
 
 export type ResourceReference = { key?: { case?: string; value?: unknown } };
 type ResourceKind = "session" | "project";
 type Options = {
   write?: (entry: LogInput) => void;
   resolve?: (kind: ResourceKind, ref: ResourceReference) => string | undefined;
+  errors?: ClientErrors;
 };
+
+// Reference fields only. Never include prompts, search text, settings or headers
+// in a recovery key. Different accounts/tasks/pages must not resolve each other.
+function references(message: unknown, depth = 0): string {
+  if (!message || typeof message !== "object" || depth > 2) return "{}";
+  const body = message as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const name of [
+    "ref",
+    "project",
+    "session",
+    "account",
+    "authBinding",
+    "path",
+  ] as const) {
+    const value = body[name];
+    if (typeof value === "string") result[name] = value.slice(0, 256);
+    else if (value && typeof value === "object") {
+      const key = (value as ResourceReference).key;
+      if (
+        key?.case &&
+        (typeof key.value === "string" || key.value instanceof Uint8Array)
+      )
+        result[name] = [
+          key.case,
+          typeof key.value === "string"
+            ? key.value
+            : [...key.value]
+                .map((byte) => byte.toString(16).padStart(2, "0"))
+                .join(""),
+        ];
+    }
+  }
+  if (body.query && typeof body.query === "object") {
+    const nested = references(body.query, depth + 1);
+    if (nested !== "{}") result.query = nested;
+  }
+  return JSON.stringify(result);
+}
+function referenceDescription(message: unknown, service: string) {
+  const refs = JSON.parse(references(message)) as Record<string, unknown>;
+  return Object.entries(refs)
+    .flatMap(([name, value]) => {
+      if (name === "query") return [];
+      const label =
+        name === "ref"
+          ? service.replace(/^cxz\./, "").replace(/Service$/, "")
+          : name;
+      return [`${label}: ${Array.isArray(value) ? value[1] : value}`];
+    })
+    .join(" · ");
+}
 export function publicUUID(ref?: ResourceReference) {
   const value = ref?.key?.value;
   return ref?.key?.case === "id" &&
@@ -48,6 +112,7 @@ export function rpcDiagnostics(
   options: Options = {},
 ): Interceptor {
   const failures = new Map<string, { since: number; attempts: number }>();
+  const errors = options.errors ?? clientErrors();
   const sink =
     options.write ?? ((entry: LogInput) => clientLogs().write(entry));
   const write = (entry: LogInput) => {
@@ -65,7 +130,14 @@ export function rpcDiagnostics(
     };
     const started = Date.now();
     let connected = false;
+    let target = "";
+    let targetDescription = "";
     const identify = (message: unknown) => {
+      target = references(message);
+      targetDescription = referenceDescription(
+        message,
+        request.service.typeName,
+      );
       if (!message || typeof message !== "object") return;
       const body = message as {
         ref?: ResourceReference;
@@ -85,8 +157,7 @@ export function rpcDiagnostics(
           publicUUID(body.project) ??
           options.resolve?.("project", body.project);
     };
-    const key = () =>
-      `${context.method}:${context.session ?? context.project ?? ""}`;
+    const key = () => JSON.stringify([connection, context.method, target]);
     const retry = () => {
       const failure = failures.get(key());
       if (failure)
@@ -102,7 +173,7 @@ export function rpcDiagnostics(
         });
     };
     const success = () => {
-      if (connected) return;
+      if (connected || request.signal.aborted) return;
       connected = true;
       const failure = failures.get(key());
       if (request.stream || failure)
@@ -119,6 +190,7 @@ export function rpcDiagnostics(
           },
         });
       failures.delete(key());
+      errors.resolve(key());
     };
     const failed = (error: unknown) => {
       if (
@@ -133,6 +205,12 @@ export function rpcDiagnostics(
       });
       if (failures.size > 256) failures.delete(failures.keys().next().value!);
       const failure = ConnectError.from(error);
+      errors.report(key(), failure, {
+        ...context,
+        source: "rpc",
+        code: Code[failure.code],
+        target: targetDescription,
+      });
       write({
         ...context,
         level: request.stream ? "warn" : "error",
@@ -197,5 +275,66 @@ export function rpcDiagnostics(
       failed(error);
       throw error;
     }
+  };
+}
+
+/** Observe every transport, including local router fixtures and upload transports. */
+export function diagnosticTransport(
+  transport: Transport,
+  connection: string,
+  options: Options = {},
+): Transport {
+  const interceptors = [rpcDiagnostics(connection, options)];
+  return {
+    unary(method, signal, timeoutMs, header, input, contextValues) {
+      return runUnaryCall({
+        signal,
+        interceptors,
+        req: {
+          stream: false,
+          service: method.parent,
+          method,
+          url: `${connection}/${method.parent.typeName}/${method.name}`,
+          requestMethod: "POST",
+          header: new Headers(header),
+          message: input,
+          contextValues: contextValues ?? createContextValues(),
+        },
+        next: (request) =>
+          transport.unary(
+            method,
+            request.signal,
+            timeoutMs,
+            request.header,
+            request.message,
+            request.contextValues,
+          ),
+      });
+    },
+    stream(method, signal, timeoutMs, header, input, contextValues) {
+      return runStreamingCall({
+        signal,
+        interceptors,
+        req: {
+          stream: true,
+          service: method.parent,
+          method,
+          url: `${connection}/${method.parent.typeName}/${method.name}`,
+          requestMethod: "POST",
+          header: new Headers(header),
+          message: input,
+          contextValues: contextValues ?? createContextValues(),
+        },
+        next: (request) =>
+          transport.stream(
+            method,
+            request.signal,
+            timeoutMs,
+            request.header,
+            request.message,
+            request.contextValues,
+          ),
+      });
+    },
   };
 }

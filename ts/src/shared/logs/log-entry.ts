@@ -53,6 +53,10 @@ export function diagnosticText(value: string, limit = 2048) {
     })
     .replace(/\bBearer\s+[^\s,;"']+/gi, "Bearer [redacted]")
     .replace(
+      /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g,
+      "[redacted]",
+    )
+    .replace(
       /\b(?:gh[pousr]_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+)/g,
       "[redacted]",
     )
