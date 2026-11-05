@@ -613,9 +613,14 @@ test("session creation performs its scoped login and reuses the creation key", a
   await page.getByRole("button", { name: "Add session", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Add session", exact: true });
   await form.getByRole("combobox", { name: "Account", exact: true }).click();
-  await form
-    .getByRole("option", { name: "Claude work account · claude", exact: true })
-    .click();
+  const account = form.getByRole("option", {
+    name: "Claude work account work1",
+    exact: true,
+  });
+  await expect(account.locator("small")).toHaveText("work1");
+  await expect(account.locator("small")).toHaveCSS("font-size", "10px");
+  await expect(account.locator("small")).toHaveCSS("margin", "0px");
+  await account.click();
   await form
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("Authenticated preview");

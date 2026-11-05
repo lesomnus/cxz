@@ -179,12 +179,9 @@ export function SessionCreate({
                     { value: "", label: "Choose an account" },
                     ...(accounts.data ?? []).map((a) => ({
                       value: a.alias,
-                      label: `${a.name || a.alias} · ${a.agent}`,
-                      trailing: (
-                        <span aria-hidden="true">
-                          <AgentBrand agent={a.agent} />
-                        </span>
-                      ),
+                      label: a.name || a.alias,
+                      description: a.alias,
+                      icon: <AgentBrand agent={a.agent} />,
                     })),
                   ]}
                   choose={setAlias}
