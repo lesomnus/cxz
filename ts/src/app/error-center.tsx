@@ -11,7 +11,6 @@ import {
   Button,
   Card,
   CardActions,
-  DialogReveal,
   ScrollArea,
   SegmentedControl,
   CompactNumber,
@@ -142,159 +141,148 @@ export function ErrorCenter({
                 close();
             }}
           >
-            <DialogReveal
-              from="left"
-              className={styles.reveal}
-              contentClassName={styles.reveal}
+            <Card
+              revealFrom="left"
+              title={t("Errors")}
+              close={() => close(true)}
+              closeLabel={t("Close errors")}
+              bodyPadding={0}
+              headerCenter={
+                <SegmentedControl
+                  label={t("Error status")}
+                  size="compact"
+                  value={tab}
+                  onChange={setTab}
+                  options={[
+                    {
+                      value: "active",
+                      label: `${t("Active")} ${active.length}`,
+                      display: (
+                        <>
+                          {t("Active")}
+                          <CompactNumber
+                            value={active.length}
+                            mode="integer"
+                            digits={3}
+                          />
+                        </>
+                      ),
+                    },
+                    {
+                      value: "history",
+                      label: `${t("History")} ${history.length}`,
+                      display: (
+                        <>
+                          {t("History")}
+                          <CompactNumber
+                            value={history.length}
+                            mode="integer"
+                            digits={3}
+                          />
+                        </>
+                      ),
+                    },
+                  ]}
+                />
+              }
+              footer={
+                <CardActions>
+                  <Button
+                    disabled={!history.length}
+                    onClick={() => store.clearHistory()}
+                  >
+                    {t("Clear history")}
+                  </Button>
+                </CardActions>
+              }
             >
-              <Card
-                title={t("Errors")}
-                close={() => close(true)}
-                closeLabel={t("Close errors")}
-                bodyPadding={0}
-                headerCenter={
-                  <SegmentedControl
-                    label={t("Error status")}
-                    size="compact"
-                    value={tab}
-                    onChange={setTab}
-                    options={[
-                      {
-                        value: "active",
-                        label: `${t("Active")} ${active.length}`,
-                        display: (
-                          <>
-                            {t("Active")}
-                            <CompactNumber
-                              value={active.length}
-                              mode="integer"
-                              digits={3}
-                            />
-                          </>
-                        ),
-                      },
-                      {
-                        value: "history",
-                        label: `${t("History")} ${history.length}`,
-                        display: (
-                          <>
-                            {t("History")}
-                            <CompactNumber
-                              value={history.length}
-                              mode="integer"
-                              digits={3}
-                            />
-                          </>
-                        ),
-                      },
-                    ]}
-                  />
-                }
-                footer={
-                  <CardActions>
-                    <Button
-                      disabled={!history.length}
-                      onClick={() => store.clearHistory()}
-                    >
-                      {t("Clear history")}
-                    </Button>
-                  </CardActions>
-                }
+              <ScrollArea
+                className={styles.list}
+                aria-label={t("Error list")}
+                scrollbarLabel={t("Scroll errors")}
               >
-                <ScrollArea
-                  className={styles.list}
-                  aria-label={t("Error list")}
-                  scrollbarLabel={t("Scroll errors")}
-                >
-                  {!shown.length ? (
-                    <p className={styles.empty}>
-                      {tab === "active"
-                        ? t("No active errors")
-                        : t("No error history")}
-                    </p>
-                  ) : (
-                    <ul>
-                      {shown.map((entry) => (
-                        <li key={entry.id} data-status={entry.status}>
-                          <div className={styles.row}>
-                            <span className={styles.state}>
-                              {t(
-                                entry.status === "active"
-                                  ? "Active"
-                                  : entry.status === "resolved"
-                                    ? "Resolved"
-                                    : "Dismissed",
-                              )}
-                            </span>
-                            <span className={styles.time}>
-                              <RelativeTime value={entry.lastSeen} />
-                            </span>
-                            {entry.status === "active" && (
-                              <Button
-                                className={styles.dismiss}
-                                onClick={() => store.dismiss(entry.id)}
-                              >
-                                {t("Dismiss")}
-                              </Button>
+                {!shown.length ? (
+                  <p className={styles.empty}>
+                    {tab === "active"
+                      ? t("No active errors")
+                      : t("No error history")}
+                  </p>
+                ) : (
+                  <ul>
+                    {shown.map((entry) => (
+                      <li key={entry.id} data-status={entry.status}>
+                        <div className={styles.row}>
+                          <span className={styles.state}>
+                            {t(
+                              entry.status === "active"
+                                ? "Active"
+                                : entry.status === "resolved"
+                                  ? "Resolved"
+                                  : "Dismissed",
                             )}
-                          </div>
-                          <p className={styles.message}>{entry.message}</p>
-                          {entry.method && (
-                            <code className={styles.method}>
-                              {entry.method}
-                            </code>
+                          </span>
+                          <span className={styles.time}>
+                            <RelativeTime value={entry.lastSeen} />
+                          </span>
+                          {entry.status === "active" && (
+                            <Button
+                              className={styles.dismiss}
+                              onClick={() => store.dismiss(entry.id)}
+                            >
+                              {t("Dismiss")}
+                            </Button>
                           )}
-                          {entry.target && (
-                            <code className={styles.method}>
-                              {entry.target}
-                            </code>
-                          )}
-                          <div className={styles.details}>
-                            {entry.code && <span>{entry.code}</span>}
-                            {entry.count > 1 && (
-                              <span>
-                                <CompactNumber
-                                  value={entry.count}
-                                  mode="integer"
-                                  digits={3}
-                                />{" "}
-                                {t("occurrences")}
-                              </span>
-                            )}
-                            {entry.connection && (
-                              <span>{entry.connection}</span>
-                            )}
-                          </div>
-                          <div className={styles.details}>
+                        </div>
+                        <p className={styles.message}>{entry.message}</p>
+                        {entry.method && (
+                          <code className={styles.method}>{entry.method}</code>
+                        )}
+                        {entry.target && (
+                          <code className={styles.method}>{entry.target}</code>
+                        )}
+                        <div className={styles.details}>
+                          {entry.code && <span>{entry.code}</span>}
+                          {entry.count > 1 && (
                             <span>
-                              {t("First seen")}:{" "}
-                              <DateTime value={entry.firstSeen} />
+                              <CompactNumber
+                                value={entry.count}
+                                mode="integer"
+                                digits={3}
+                              />{" "}
+                              {t("occurrences")}
                             </span>
-                            {entry.closedAt && (
-                              <span>
-                                {t(
-                                  entry.status === "resolved"
-                                    ? "Resolved"
-                                    : "Dismissed",
-                                )}
-                                : <DateTime value={entry.closedAt} />
-                              </span>
-                            )}
-                          </div>
-                          {(entry.session || entry.project) && (
-                            <code className={styles.method}>
-                              {entry.session
-                                ? `Session ${entry.session}`
-                                : `Project ${entry.project}`}
-                            </code>
                           )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </ScrollArea>
-              </Card>
-            </DialogReveal>
+                          {entry.connection && <span>{entry.connection}</span>}
+                        </div>
+                        <div className={styles.details}>
+                          <span>
+                            {t("First seen")}:{" "}
+                            <DateTime value={entry.firstSeen} />
+                          </span>
+                          {entry.closedAt && (
+                            <span>
+                              {t(
+                                entry.status === "resolved"
+                                  ? "Resolved"
+                                  : "Dismissed",
+                              )}
+                              : <DateTime value={entry.closedAt} />
+                            </span>
+                          )}
+                        </div>
+                        {(entry.session || entry.project) && (
+                          <code className={styles.method}>
+                            {entry.session
+                              ? `Session ${entry.session}`
+                              : `Project ${entry.project}`}
+                          </code>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </ScrollArea>
+            </Card>
           </div>,
           document.body,
         )}

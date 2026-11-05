@@ -32,10 +32,6 @@
   width: 480px;
   max-width: calc(100vw - 16px);
 }
-.reveal {
-  display: block;
-  min-width: 0;
-}
 .list {
   height: min(390px, calc(100dvh - 160px));
   min-height: 0;
