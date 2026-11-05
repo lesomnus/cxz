@@ -1,9 +1,11 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useBlocker } from "@tanstack/react-router";
 import { PageToolbar, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
+import { MemoryGrid } from "#src/features/memory/memory-grid.tsx";
+import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -35,6 +37,7 @@ export function MemoryPage({
   const navigate = useNavigate();
   const { memoryProject, memory } = useWorkspaceRoute();
   const [dirty, setDirty] = useState(false);
+  const [creatingProject, setCreatingProject] = useState<string>();
   const dirtyRef = useRef(false);
   const onDirtyChange = useCallback((value: boolean) => {
     dirtyRef.current = value;
@@ -51,14 +54,21 @@ export function MemoryPage({
     : projects[0];
   const id = projectId(project) ?? "";
   const handle = project ? resourceHandle(project) : "";
+  useEffect(() => setCreatingProject(undefined), [id]);
+  const onCreatingChange = useCallback(
+    (creating: boolean) => setCreatingProject(creating ? id : undefined),
+    [id],
+  );
   const selectMemory = useCallback(
     (selected?: string, replace = false) => {
-      if (handle && (memoryProject !== handle || memory !== selected))
-        void navigate({
+      if (handle && (memoryProject !== handle || memory !== selected)) {
+        const navigation = navigate({
           ...memoryLocation(handle, selected),
           replace,
           ignoreBlocker: true,
         });
+        if (selected) void navigation.then(() => setCreatingProject(undefined));
+      }
     },
     [navigate, handle, memoryProject, memory],
   );
@@ -76,6 +86,27 @@ export function MemoryPage({
     <main className={styles.page} aria-label="Shared memory workspace">
       <PageToolbar className={styles.toolbar}>
         <div className={styles.toolbarContent}>
+          {memory && (
+            <RouteLink
+              {...memoryLocation(handle || memoryProject!)}
+              variant="toolbar"
+              className={styles.back}
+              aria-label="Back to memories"
+              title="Back to memories"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                aria-hidden="true"
+              >
+                <path d="m14 5-7 7 7 7M7 12h13" />
+              </svg>
+            </RouteLink>
+          )}
           <ProjectPicker
             projects={projects}
             value={id}
@@ -104,17 +135,29 @@ export function MemoryPage({
             </p>
           )}
           {project ? (
-            <MemoryLibrary
-              key={id}
-              c={c}
-              project={id}
-              projectHandle={handle}
-              sessions={scoped}
-              registerGuard={registerGuard}
-              memoryId={memory}
-              onMemoryChange={selectMemory}
-              onDirtyChange={onDirtyChange}
-            />
+            memory || creatingProject === id ? (
+              <MemoryLibrary
+                key={id}
+                c={c}
+                project={id}
+                projectHandle={handle}
+                catalog={false}
+                sessions={scoped}
+                registerGuard={registerGuard}
+                memoryId={memory}
+                onMemoryChange={selectMemory}
+                onDirtyChange={onDirtyChange}
+                onCreatingChange={onCreatingChange}
+              />
+            ) : (
+              <MemoryGrid
+                key={id}
+                c={c}
+                project={id}
+                projectHandle={handle}
+                sessions={scoped}
+              />
+            )
           ) : (
             <Section className={styles.empty}>
               <strong>

@@ -15,6 +15,7 @@ function Preview({
   noSessions = false,
   conflict = false,
   migrated = false,
+  cards = false,
   document = false,
 } = {}) {
   const [router] = useState(() => {
@@ -24,6 +25,7 @@ function Preview({
       delay: loading ? 60000 : 0,
       conflict,
       migrated,
+      cards,
     });
     const router = createWorkspaceRouter(
       {
@@ -83,3 +85,5 @@ export const NoSessions: Story = { args: { noSessions: true } };
 export const RevisionConflict: Story = { args: { conflict: true } };
 
 export const MigratedDocuments: Story = { args: { migrated: true } };
+
+export const CardGrid: Story = { args: { cards: true } };

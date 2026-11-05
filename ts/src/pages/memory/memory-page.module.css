@@ -53,3 +53,9 @@
     padding-block: var(--ui-space);
   }
 }
+
+.back.back {
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+}
