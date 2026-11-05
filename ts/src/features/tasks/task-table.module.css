@@ -63,6 +63,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.name {
+  font-size: 1rem;
+}
 .ownerAlias {
   font-family: var(--ui-font-mono);
 }
