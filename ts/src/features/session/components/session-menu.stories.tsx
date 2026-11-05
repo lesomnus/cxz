@@ -30,11 +30,13 @@ function MenuPreview({
   alwaysOpen: boolean;
 }) {
   const [session, setSession] = useState(() => menuSession(state, agent));
+  const [erased, setErased] = useState(false);
   const [terminal, setTerminal] = useState(false);
   const [action, setAction] = useState("");
   useEffect(() => {
     setSession(menuSession(state, agent));
     setTerminal(false);
+    setErased(false);
     setAction("");
   }, [state, agent]);
   const tools = [
@@ -53,7 +55,7 @@ function MenuPreview({
         <div className={`composer-wrapper ${styles.wrapper}`}>
           <div className="composer-toolbar">
             <SessionMenu
-              session={session}
+              session={erased ? undefined : session}
               info={{ model: session.model, effort: "medium" }}
               busy={busy}
               open={alwaysOpen ? true : undefined}
@@ -75,6 +77,11 @@ function MenuPreview({
                 setAction(directory ? "Upload folder" : "Upload files")
               }
               fork={() => setAction("Fork")}
+              erase={async () => {
+                setErased(true);
+                setAction("erase");
+                return true;
+              }}
               manage={async (operation) => {
                 setSession((session) => ({
                   ...session,
@@ -115,7 +122,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The actual composer SessionMenu, without a transcript or editor. The menu opens automatically for design inspection. Session actions, tools, uploads and the fixed editor-option footer use the production components. Actions are simulated locally; editor options use the Storybook origin's saved settings. Change the theme toolbar to compare dark and light surfaces.",
+          "The actual composer SessionMenu, without a transcript or editor. The menu opens automatically for design inspection. Session actions, tools, uploads, Erase at the bottom of the scrolling body and the fixed editor-option footer use the production components. Actions are simulated locally; editor options use the Storybook origin's saved settings. Change the theme toolbar to compare dark and light surfaces.",
       },
     },
   },

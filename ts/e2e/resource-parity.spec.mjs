@@ -1185,3 +1185,90 @@ test("Memory project picker navigates using the chosen project's alias", async (
     .toBe(projectFixture(2).id);
   await expect(memoryDocument(page)).toHaveCount(0);
 });
+
+test("conversation menu Erase confirms, cancels and removes the session by stable ID", async ({
+  page,
+}) => {
+  const requests = await fixture(page);
+  await page
+    .getByRole("link", { name: /Research session oak/ })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toBeVisible();
+  const openErase = async () => {
+    await page
+      .getByRole("button", { name: "Session menu", exact: true })
+      .click();
+    const menu = page.getByRole("menu", { name: "Session menu", exact: true });
+    await expect(menu.getByRole("menuitem").last()).toHaveText("Erase");
+    await menu.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  };
+  await openErase();
+  const dialog = page.getByRole("dialog", {
+    name: "Erase session",
+    exact: true,
+  });
+  await expect(dialog).toContainText("Research session");
+  await expect(dialog).toContainText("This cannot be undone.");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
+  ).toHaveLength(0);
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toBeVisible();
+  await openErase();
+  await dialog.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(page).toHaveURL(/\/c\/_\/session$/);
+  await expect(
+    page
+      .getByRole("table", { name: "Sessions", exact: true })
+      .locator("tbody tr"),
+  ).toHaveCount(0);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
+  ).toHaveLength(1);
+  expect(
+    requests.find((r) => r.path === "/cxz.SessionService/Erase").q,
+  ).toEqual({ id: Buffer.from("fixture".padEnd(16, "0")).toString("base64") });
+});
+test("failed conversation menu Erase preserves the session and draft for retry", async ({
+  page,
+}) => {
+  const requests = await fixture(page);
+  await page
+    .getByRole("link", { name: /Research session oak/ })
+    .first()
+    .click();
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.fill("Keep this draft");
+  const eraseEndpoint = "**/cxz.SessionService/Erase";
+  await page.route(eraseEndpoint, (route) =>
+    route.fulfill({
+      status: 503,
+      json: { code: "unavailable", message: "Erase unavailable" },
+    }),
+  );
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Erase session",
+    exact: true,
+  });
+  await dialog.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Action failed");
+  await expect(input).toHaveValue("Keep this draft");
+  await expect(page).toHaveURL(/\/c\/_\/session\/oak$/);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
+  ).toHaveLength(0);
+  await page.unroute(eraseEndpoint);
+  await dialog.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(page).toHaveURL(/\/c\/_\/session$/);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
+  ).toHaveLength(1);
+});
