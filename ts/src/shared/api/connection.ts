@@ -33,6 +33,7 @@ import { SessionAttention } from "#src/features/session/model/session-attention.
 import { rpcFetch } from "./stream-fetch";
 import { uploadFetch } from "./upload-fetch";
 import { ReadCache } from "./read-cache";
+import { createResourceSelection } from "./resource-selection";
 import {
   publicUUID,
   diagnosticTransport,
@@ -48,6 +49,7 @@ import {
 export class Connection {
   readonly clientId = crypto.randomUUID();
   readonly reads = new ReadCache();
+  readonly selection;
   readonly transport: Transport;
   readonly store;
   readonly queries;
@@ -83,6 +85,10 @@ export class Connection {
     errors?: ClientErrors,
   ) {
     this.inProcess = !!transport;
+    this.selection = createResourceSelection(
+      baseUrl,
+      this.inProcess ? undefined : cacheIdentity,
+    );
     this.errors = errors ?? (transport ? new ClientErrors() : clientErrors());
     try {
       sessionStorage.removeItem(

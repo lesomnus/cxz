@@ -12,11 +12,13 @@ import { SessionPicker } from "#src/shared/components/session-picker.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { sessionUUID } from "#src/shared/api/session-id.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
+import { useResourceSelection } from "#src/shared/api/resource-selection.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import {
   matchesResource,
   memoryLocation,
   resourceHandle,
+  uuid,
 } from "#src/shared/navigation/resource-route.ts";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import styles from "./memory-page.module.css";
@@ -40,10 +42,7 @@ export function MemoryPage({
   const { memoryProject, memory } = useWorkspaceRoute();
   const [dirty, setDirty] = useState(false);
   const [creatingProject, setCreatingProject] = useState<string>();
-  const [sessionSelection, setSessionSelection] = useState<{
-    project: string;
-    id: Uint8Array;
-  }>();
+  const selection = useResourceSelection(c);
   const dirtyRef = useRef(false);
   const onDirtyChange = useCallback((value: boolean) => {
     dirtyRef.current = value;
@@ -57,13 +56,13 @@ export function MemoryPage({
   });
   const project = memoryProject
     ? projects.find((p) => matchesResource(p, memoryProject))
-    : projects[0];
+    : (projects.find((p) => projectId(p) === selection.project) ?? projects[0]);
   const id = projectId(project) ?? "";
   const handle = project ? resourceHandle(project) : "";
   useEffect(() => {
     setCreatingProject(undefined);
-    setSessionSelection(undefined);
-  }, [id]);
+    if (id) c.selection.chooseProject(id);
+  }, [c, id]);
   const onCreatingChange = useCallback(
     (creating: boolean) => setCreatingProject(creating ? id : undefined),
     [id],
@@ -85,7 +84,7 @@ export function MemoryPage({
     (s) => s.project && projectId(s.project) === id,
   );
   const sessionFilter =
-    sessionSelection?.project === id ? sessionSelection.id : undefined;
+    selection.project === id ? uuid(selection.session) : undefined;
   const guard = useRef<(run: () => void) => void>((run) => run());
   const registerGuard = useCallback(
     (next: ((run: () => void) => void) | undefined) => {
@@ -104,6 +103,7 @@ export function MemoryPage({
             choose={(value) =>
               guard.current(() => {
                 const chosen = projects.find((p) => projectId(p) === value)!;
+                c.selection.chooseProject(value);
                 void navigate({
                   ...memoryLocation(chosen),
                   ignoreBlocker: true,
@@ -119,8 +119,10 @@ export function MemoryPage({
             choose={(value) =>
               guard.current(() => {
                 const session = scoped.find((s) => sessionUUID(s.id) === value);
-                setSessionSelection(
-                  session ? { project: id, id: session.id } : undefined,
+                c.selection.chooseSession(
+                  id,
+                  sessionUUID(session?.id),
+                  session?.runtimeId ?? "",
                 );
                 if (memory || creatingProject === id) {
                   setCreatingProject(undefined);
