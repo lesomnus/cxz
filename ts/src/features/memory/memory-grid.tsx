@@ -1,5 +1,5 @@
 import { useEffect, useId } from "react";
-import { Button } from "@lesomnus/nox";
+import { Button, CompactNumber } from "@lesomnus/nox";
 import type { Memory } from "#gen/cxz/memory_pb";
 import { MemoryScope } from "#gen/cxz/memory_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -78,7 +78,15 @@ function MemoryCard({
         {memory.name}
       </span>
       <span id={`${prefix}-${id}-footer`} className={styles.footer}>
-        <span className={styles.revision}>r{memory.revision.toString()}</span>
+        <span className={styles.revision}>
+          r
+          <CompactNumber
+            value={Number(memory.revision)}
+            mode="integer"
+            digits={3}
+            label={`Revision ${memory.revision}`}
+          />
+        </span>
       </span>
     </RouteLink>
   );

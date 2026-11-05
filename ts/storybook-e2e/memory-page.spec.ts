@@ -46,7 +46,9 @@ test("the collection replaces old panels and controls with rectangular memory ca
   await expect(
     item.getByRole("img", { name: "Claude", exact: true }),
   ).toBeVisible();
-  await expect(item.getByText("r1", { exact: true })).toBeVisible();
+  await expect(
+    item.getByRole("img", { name: "Revision 1", exact: true }),
+  ).toBeVisible();
   await expect(item.locator("time")).toHaveText("now");
   await expect(grid(page)).not.toContainText("topic=design");
 });
@@ -82,7 +84,10 @@ for (const width of [390, 850, 1200])
       .boundingBox();
     const title = item.getByText("Architecture notes", { exact: true });
     const titleBox = await title.boundingBox();
-    const revision = await item.getByText("r1", { exact: true }).boundingBox();
+    const revision = await item
+      .getByRole("img", { name: "Revision 1", exact: true })
+      .locator("..")
+      .boundingBox();
     const time = await item.locator("time").boundingBox();
     const box = await item.boundingBox();
     expect(owner!.y).toBeLessThan(titleBox!.y);
@@ -199,7 +204,12 @@ test("saving metadata refreshes the card without changing its body revision", as
     doc(page).getByText("Revision 1", { exact: true }),
   ).toBeVisible();
   await back(page);
-  await expect(card(page, "Renamed notes")).toContainText("r1");
+  await expect(
+    card(page, "Renamed notes").getByRole("img", {
+      name: "Revision 1",
+      exact: true,
+    }),
+  ).toBeVisible();
 });
 test("returning to the grid guards unsaved edits", async ({ page }) => {
   await open(page);
