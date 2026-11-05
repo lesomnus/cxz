@@ -1,15 +1,13 @@
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Button,
   ToggleButton,
   Popover,
   PrefixValueMenu,
-  Form,
-  FormField,
-  Switch,
+  DatePicker,
 } from "@lesomnus/nox";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import type {
@@ -29,12 +27,9 @@ export function ConversationSearch({
   c: Connection;
   projects: Project[];
 }) {
-  const [showFilters, setShowFilters] = useState(false);
-  const filterId = useId();
   const [query, setQuery] = useState("");
   const [match, setMatch] = useState("substring");
   const [project, setProject] = useState("");
-  const [tools, setTools] = useState(false);
   const [ignoreCase, setIgnoreCase] = useState(true);
   const [since, setSince] = useState("");
   const [until, setUntil] = useState("");
@@ -47,7 +42,6 @@ export function ConversationSearch({
   const submitted = useRef({
     query: "",
     match,
-    includeTools: tools,
     ignoreCase,
     projects: [] as string[],
     since: undefined as { seconds: bigint; nanos: number } | undefined,
@@ -86,7 +80,6 @@ export function ConversationSearch({
       submitted.current = {
         query,
         match,
-        includeTools: tools,
         ignoreCase,
         projects: project ? [project] : [],
         since: stamp(since),
@@ -297,39 +290,44 @@ export function ConversationSearch({
               setProject(value);
             }}
           />
-          <ToggleButton
-            variant="toolbar"
-            pressed={showFilters}
-            aria-expanded={showFilters}
-            aria-controls={filterId}
-            onPressedChange={setShowFilters}
+          <div
+            className={styles.dateRange}
+            role="group"
+            aria-label="Date range (UTC, end exclusive)"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              aria-hidden="true"
-            >
-              <path d="M4 6h16M7 12h10M10 18h4" />
-            </svg>
-            Filters
-            {(tools || since || until) && (
-              <span className={styles.filterCount}>
-                {Number(tools) + Number(!!since) + Number(!!until)}
-              </span>
-            )}
-          </ToggleButton>
-          {(project || tools || since || until) && (
+            <DatePicker
+              label="From (UTC)"
+              name="since"
+              placeholder="From"
+              className={styles.datePicker}
+              value={since || null}
+              onChange={(value) => {
+                invalidate();
+                setSince(value ?? "");
+              }}
+            />
+            <span className={styles.dateSeparator} aria-hidden="true">
+              –
+            </span>
+            <DatePicker
+              label="Until (UTC, exclusive)"
+              name="until"
+              placeholder="Until"
+              className={styles.datePicker}
+              value={until || null}
+              onChange={(value) => {
+                invalidate();
+                setUntil(value ?? "");
+              }}
+            />
+          </div>
+          {(project || since || until) && (
             <Button
               variant="toolbar"
               type="button"
               onClick={() => {
                 invalidate();
                 setProject("");
-                setTools(false);
                 setSince("");
                 setUntil("");
               }}
@@ -338,53 +336,6 @@ export function ConversationSearch({
             </Button>
           )}
         </div>
-        {showFilters && (
-          <Form
-            as="fieldset"
-            id={filterId}
-            className={styles.filters}
-            columns={2}
-            role="group"
-            aria-label="Search filters"
-          >
-            <FormField label="From (UTC)" htmlFor={`${filterId}-since`}>
-              <input
-                type="date"
-                id={`${filterId}-since`}
-                value={since}
-                onChange={(event) => {
-                  invalidate();
-                  setSince(event.target.value);
-                }}
-              />
-            </FormField>
-            <FormField
-              label="Until (UTC, exclusive)"
-              htmlFor={`${filterId}-until`}
-            >
-              <input
-                type="date"
-                id={`${filterId}-until`}
-                value={until}
-                onChange={(event) => {
-                  invalidate();
-                  setUntil(event.target.value);
-                }}
-              />
-            </FormField>
-            <div className={styles.toolFilter}>
-              <span>Include tools</span>
-              <Switch
-                label="Include tools"
-                checked={tools}
-                onChange={(value) => {
-                  invalidate();
-                  setTools(value);
-                }}
-              />
-            </div>
-          </Form>
-        )}
       </form>
       {error && (
         <p className={styles.error} role="alert">

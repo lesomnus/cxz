@@ -28,22 +28,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.filterCount {
-  font: 10px var(--ui-font-mono);
-  color: var(--ui-muted);
-}
-.filters.filters {
-  margin-top: 10px;
-  padding: 12px;
-  border-radius: var(--ui-section-radius);
-  background: var(--ui-shade-24);
-}
-.toolFilter {
-  grid-column: 1/-1;
+.dateRange {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.datePicker {
+  --ui-date-picker-trigger-width: 132px;
+}
+.dateSeparator {
+  color: var(--ui-text-separator);
 }
 .summary,
 .muted,

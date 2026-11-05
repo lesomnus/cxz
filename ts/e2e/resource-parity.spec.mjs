@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { pickSearchDate } from "../test-support/search-dates.ts";
 import { projectFixture } from "../test-support/projects.ts";
 import { expectChipDisplay } from "../test-support/chip-display.ts";
 test.use({
@@ -627,6 +628,7 @@ test("account registration, session creation and confirmed erasure use resource 
 test("Search has no resource panel and submits its filters only on search", async ({
   page,
 }) => {
+  await page.clock.setFixedTime(new Date("2026-11-05T12:00:00Z"));
   const requests = await fixture(page, false, true);
   await page.getByRole("link", { name: "Search", exact: true }).click();
   await expect(page.locator(".resource-panel")).toHaveCount(0);
@@ -648,14 +650,14 @@ test("Search has no resource panel and submits its filters only on search", asyn
   await page
     .getByRole("button", { name: "Use regular expression", exact: true })
     .click();
-  await page.getByRole("button", { name: "Filters", exact: true }).click();
-  await page
-    .getByRole("switch", { name: "Include tools", exact: true })
-    .click();
-  await page.getByLabel("From (UTC)", { exact: true }).fill("2026-10-01");
-  await page
-    .getByLabel("Until (UTC, exclusive)", { exact: true })
-    .fill("2026-11-05");
+  await expect(
+    page.getByRole("button", { name: "Filters", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("switch", { name: "Include tools", exact: true }),
+  ).toHaveCount(0);
+  await pickSearchDate(page, "From (UTC)", "2026-11-01");
+  await pickSearchDate(page, "Until (UTC, exclusive)", "2026-11-05");
   expect(
     requests.filter((r) => r.path === "/cxz.SessionService/Search"),
   ).toHaveLength(0);
@@ -669,12 +671,12 @@ test("Search has no resource panel and submits its filters only on search", asyn
   expect(request).toMatchObject({
     query: "Earlier",
     match: "regex",
-    includeTools: true,
     projects: [projectFixture(2).uuid],
-    since: "2026-10-01T00:00:00Z",
+    since: "2026-11-01T00:00:00Z",
     until: "2026-11-05T00:00:00Z",
   });
   expect(request.ignoreCase ?? false).toBe(false);
+  expect(request.includeTools ?? false).toBe(false);
   await page
     .getByRole("button", { name: "Reset filters", exact: true })
     .click();
