@@ -67,10 +67,10 @@ for (const width of [390, 850, 1200])
     const columns = boxes.filter(
       (box) => Math.abs(box.y - boxes[0].y) < 1,
     ).length;
-    expect(columns).toBe(width === 1200 ? 3 : width === 850 ? 2 : 1);
+    expect(columns).toBe(width === 1200 ? 5 : width === 850 ? 4 : 2);
     expect(
       boxes.every(
-        (box) => box.width / box.height > 1.5 && box.width / box.height < 2,
+        (box) => box.width / box.height > 0.7 && box.width / box.height < 0.8,
       ),
     ).toBe(true);
     expect(
@@ -87,9 +87,15 @@ for (const width of [390, 850, 1200])
     const box = await item.boundingBox();
     expect(owner!.y).toBeLessThan(titleBox!.y);
     expect(titleBox!.y).toBeLessThan(revision!.y);
-    expect(revision!.x - box!.x).toBeCloseTo(17, 0);
-    expect(box!.x + box!.width - time!.x - time!.width).toBeCloseTo(17, 0);
-    expect(Math.abs(revision!.y - time!.y)).toBeLessThan(3);
+    expect(revision!.x - box!.x).toBeCloseTo(12, 0);
+    expect(box!.x + box!.width - time!.x - time!.width).toBeCloseTo(12, 0);
+    expect(Math.abs(owner!.y - time!.y)).toBeLessThan(3);
+    expect(time!.y).toBeLessThan(titleBox!.y);
+    expect(box!.y + box!.height - revision!.y - revision!.height).toBeCloseTo(
+      12,
+      0,
+    );
+    await expect(item).toHaveCSS("border-top-width", "0px");
     await expect(title).toHaveCSS("font-size", "14px");
     await expect(
       card(page, "Choosing a storage model for project memories").locator(

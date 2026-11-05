@@ -49,32 +49,34 @@ function MemoryCard({
       aria-label={memory.name}
       aria-describedby={`${prefix}-${id}-owner ${prefix}-${id}-footer`}
     >
-      <span id={`${prefix}-${id}-owner`} className={styles.owner}>
-        <span className={styles.logo}>
-          {["codex", "claude"].includes(owning.agent) ? (
-            <AgentBrand agent={owning.agent} />
-          ) : (
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              aria-hidden="true"
-            >
-              <path d="M14 3H6v18h12V7zM14 3v5h4M9 12h6M9 16h6" />
-            </svg>
-          )}
+      <span id={`${prefix}-${id}-owner`} className={styles.header}>
+        <span className={styles.owner}>
+          <span className={styles.logo}>
+            {["codex", "claude"].includes(owning.agent) ? (
+              <AgentBrand agent={owning.agent} />
+            ) : (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden="true"
+              >
+                <path d="M14 3H6v18h12V7zM14 3v5h4M9 12h6M9 16h6" />
+              </svg>
+            )}
+          </span>
+          <span title={owning.name}>{owning.name}</span>
         </span>
-        <span title={owning.name}>{owning.name}</span>
+        <RelativeTime value={memory.dateUpdated ?? memory.dateCreated} />
       </span>
       <span className={styles.title} title={memory.name}>
         {memory.name}
       </span>
       <span id={`${prefix}-${id}-footer`} className={styles.footer}>
         <span className={styles.revision}>r{memory.revision.toString()}</span>
-        <RelativeTime value={memory.dateUpdated ?? memory.dateCreated} />
       </span>
     </RouteLink>
   );
