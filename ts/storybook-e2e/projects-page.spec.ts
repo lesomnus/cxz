@@ -175,6 +175,58 @@ test("project index checkboxes toggle on down, drag, and Shift without release t
   await expect(second).toBeChecked();
 });
 
+test("project checkbox history commits a drag and select-all independently", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--list&viewMode=story");
+  const table = page.getByRole("table", { name: "Projects", exact: true });
+  const rows = table.locator("tbody tr");
+  const first = rows.first().getByRole("checkbox"),
+    last = rows.last().getByRole("checkbox");
+  const start = (await first.boundingBox())!,
+    end = (await last.boundingBox())!;
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2);
+  await page.mouse.up();
+  await expect(table.locator("tbody input:checked")).toHaveCount(2);
+  await page.keyboard.press("Control+z");
+  await expect(table.locator("tbody input:checked")).toHaveCount(0);
+  await page.keyboard.press("Control+Shift+z");
+  await expect(table.locator("tbody input:checked")).toHaveCount(2);
+  await table
+    .getByRole("checkbox", { name: "Select all projects", exact: true })
+    .click();
+  await expect(table.locator("tbody input:checked")).toHaveCount(0);
+  await page.keyboard.press("Control+z");
+  await expect(table.locator("tbody input:checked")).toHaveCount(2);
+  await page.keyboard.press("Control+z");
+  await expect(table.locator("tbody input:checked")).toHaveCount(0);
+});
+
+test("session checkbox history groups repeated Shift endpoints until release", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--long-sessions&viewMode=story",
+  );
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  const rows = table.locator("tbody tr");
+  await rows.first().getByRole("checkbox").check();
+  await page.keyboard.down("Shift");
+  await rows.nth(5).getByRole("checkbox").click();
+  await rows.nth(2).getByRole("checkbox").click();
+  await page.keyboard.up("Shift");
+  await expect(table.locator("tbody input:checked")).toHaveCount(3);
+  await page.keyboard.press("Control+z");
+  await expect(table.locator("tbody input:checked")).toHaveCount(1);
+  await page.keyboard.press("Control+Shift+z");
+  await expect(table.locator("tbody input:checked")).toHaveCount(3);
+  await page.keyboard.press("Control+z");
+  await page.keyboard.press("Control+z");
+  await expect(table.locator("tbody input:checked")).toHaveCount(0);
+});
+
 test("project session table uses the reusable down/drag/Shift selection", async ({
   page,
 }) => {

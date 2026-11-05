@@ -141,6 +141,7 @@ export function SessionTable({
         scrollbarLabel={t("Session list")}
       >
         <table
+          {...selection.getContainerProps()}
           className={styles.table}
           aria-label={t("Sessions")}
           aria-busy={loading}

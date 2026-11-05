@@ -70,6 +70,7 @@ export function ProjectTable({
   }
   return (
     <Table
+      {...selection.getContainerProps()}
       className={styles.table}
       aria-label={t("Projects")}
       aria-busy={loading || undefined}
