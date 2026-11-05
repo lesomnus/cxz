@@ -1,46 +1,68 @@
 import { expect, test } from "@playwright/test";
 
-test("bottom-left Erase action requires confirmation and leaves other projects intact", async ({
+test("top-right icon actions follow the requested order and Erase keeps its confirmation", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const actions = page.getByRole("region", { name: "Actions", exact: true });
   await expect(actions).toBeVisible();
-  const sections = actions.locator("..").locator(":scope > section");
-  await expect(sections.last()).toHaveAttribute("aria-label", "Actions");
-  const description = actions.getByText(
-    "Erase this project and its owned data permanently.",
-    { exact: true },
-  );
   const trigger = actions.getByRole("button", { name: "Erase", exact: true });
-  const descriptionBox = (await description.boundingBox())!;
   const buttonBox = (await trigger.boundingBox())!;
   await expect(actions.locator('[data-section-layout="layout"]')).toHaveCount(
-    1,
+    0,
   );
   await expect(actions.locator('[data-section-layout="group"]')).toHaveCount(1);
   const sectionSurfaces = actions.locator('[data-section-layout="section"]');
-  await expect(sectionSurfaces).toHaveCount(4);
+  await expect(sectionSurfaces).toHaveCount(5);
   await expect(
     sectionSurfaces
       .first()
       .getByRole("heading", { name: "Actions", exact: true }),
   ).toHaveCount(0);
   await expect(sectionSurfaces.first()).toHaveJSProperty("tagName", "BUTTON");
-  for (const name of ["Stop", "Start", "Remove", "Erase"]) {
+  const order = ["Erase", "Remove", "Stop", "Start", "Refresh"];
+  await expect
+    .poll(() =>
+      actions
+        .getByRole("button")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("aria-label")),
+        ),
+    )
+    .toEqual(order);
+  for (const name of order) {
     const action = actions.getByRole("button", { name, exact: true });
-    await expect(action.locator("strong")).toHaveText(name);
+    await expect(action).toHaveText("");
+    await expect(action.locator("svg")).toHaveCount(1);
+    const box = (await action.boundingBox())!;
+    expect(box.width).toBe(64);
+    expect(box.height).toBe(box.width);
+    expect(box.y).toBe(buttonBox.y);
     await expect(action.locator("h2, h3")).toHaveCount(0);
   }
-  await expect(actions.getByRole("button")).toHaveCount(4);
+  const info = page.getByRole("region", { name: "Information", exact: true });
+  const usage = page.getByRole("region", {
+    name: "Conversation usage",
+    exact: true,
+  });
+  const infoBox = (await info.boundingBox())!,
+    usageBox = (await usage.boundingBox())!;
+  const refreshBox = (await actions
+    .getByRole("button", { name: "Refresh", exact: true })
+    .boundingBox())!;
+  expect(buttonBox.y).toBe(infoBox.y);
+  expect(buttonBox.x).toBeGreaterThan(infoBox.x + infoBox.width);
+  expect(refreshBox.x + refreshBox.width).toBe(usageBox.x + usageBox.width);
+  expect(usageBox.y).toBeGreaterThan(buttonBox.y + buttonBox.height);
+  await expect(actions.getByRole("button")).toHaveCount(5);
   await expect(trigger).toHaveAttribute("data-section-layout", "section");
   await expect(trigger).toHaveAttribute("data-effect", "sparkle");
   await expect(trigger.locator("button")).toHaveCount(0);
-  expect(descriptionBox.x).toBeGreaterThanOrEqual(buttonBox.x);
-  expect(descriptionBox.x + descriptionBox.width).toBeLessThanOrEqual(
-    buttonBox.x + buttonBox.width,
-  );
-  await description.click();
+  await trigger.hover();
+  await expect(
+    page.getByRole("tooltip", { name: "Erase", exact: true }),
+  ).toBeVisible();
+  await trigger.click();
   const dialog = page.getByRole("dialog", {
     name: "Erase project",
     exact: true,
@@ -97,6 +119,116 @@ test("bottom-left Erase action requires confirmation and leaves other projects i
   await expect(
     page.getByText("No projects yet.", { exact: true }),
   ).toBeVisible();
+});
+
+test("Refresh reloads the project without resetting session selection or layout", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/iframe.html?id=pages-projects--refreshing&viewMode=story");
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  const refresh = actions.getByRole("button", { name: "Refresh", exact: true });
+  const usage = page.getByRole("region", {
+    name: "Conversation usage",
+    exact: true,
+  });
+  await expect(
+    usage.getByRole("button", { name: "Refresh", exact: true }),
+  ).toHaveCount(0);
+  await expect(refresh).toBeEnabled();
+  const table = page.getByRole("table", { name: "Sessions", exact: true });
+  const checkbox = table.locator("tbody tr").first().getByRole("checkbox");
+  await checkbox.check();
+  const before = await table.boundingBox();
+  await refresh.click();
+  await expect(refresh).toHaveAttribute("aria-busy", "true");
+  await expect(refresh).toBeEnabled();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(checkbox).toBeChecked();
+  expect(await table.boundingBox()).toEqual(before);
+  expect(errors).toEqual([]);
+});
+
+test("Refresh failure is overlaid at its trigger and retains project details", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-projects--refresh-failure&viewMode=story",
+  );
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  const refresh = actions.getByRole("button", { name: "Refresh", exact: true });
+  await expect(refresh).toBeEnabled();
+  const before = await actions.boundingBox();
+  await refresh.click();
+  const error = page.getByRole("alert");
+  await expect(error).toContainText("Project refresh is unavailable");
+  await expect(
+    page.getByRole("region", { name: "Information", exact: true }),
+  ).toContainText("Web workspace");
+  expect(await actions.boundingBox()).toEqual(before);
+  await error
+    .getByRole("button", { name: "Dismiss error", exact: true })
+    .click();
+  await expect(error).toHaveCount(0);
+  await expect(refresh).toBeEnabled();
+});
+
+test("narrow project pages keep the icon actions at the top right without overflow", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 760 });
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  const info = page.getByRole("region", { name: "Information", exact: true });
+  const actionBox = (await actions.boundingBox())!,
+    infoBox = (await info.boundingBox())!;
+  expect(infoBox.y).toBeGreaterThan(actionBox.y + actionBox.height);
+  const buttons = actions.getByRole("button");
+  await expect(buttons).toHaveCount(5);
+  const boxes = await buttons.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const box = node.getBoundingClientRect();
+      return { x: box.x, y: box.y, width: box.width, height: box.height };
+    }),
+  );
+  for (const box of boxes) {
+    expect(box.width).toBeCloseTo(box.height, 1);
+    expect(box.y).toBe(actionBox.y);
+  }
+  const last = boxes.at(-1)!;
+  expect(last.x + last.width).toBeCloseTo(infoBox.x + infoBox.width, 1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    320,
+  );
+});
+
+test("Remove confirms container removal while retaining sessions and the project", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const actions = page.getByRole("region", { name: "Actions", exact: true });
+  await actions.getByRole("button", { name: "Remove", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Remove container",
+    exact: true,
+  });
+  await expect(dialog).toContainText(
+    "sessions, conversation history and volumes are retained",
+  );
+  await dialog.getByRole("button", { name: "Remove", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(
+    actions.getByRole("button", { name: "Remove", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    actions.getByRole("button", { name: "Start", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page
+      .getByRole("table", { name: "Sessions", exact: true })
+      .locator("tbody tr"),
+  ).toHaveCount(2);
 });
 
 test("project erase failure retains the confirmation and selected project", async ({

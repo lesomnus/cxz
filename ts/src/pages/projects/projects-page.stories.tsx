@@ -27,21 +27,26 @@ function Preview({
   listActivity = false,
   failProjectControls = false,
   navigation = false,
+  failRefresh = false,
+  refreshDelayMs = 0,
 }) {
   const [router] = useState(() => {
     const fixture = projectFixture(
       unavailable,
       stopped,
       sessionCount,
-      failProjectControls
-        ? "project-control"
-        : failControls
-          ? "control"
-          : failErase
-            ? "erase"
-            : requireTrust
-              ? "trust"
-              : "",
+      failRefresh
+        ? "refresh"
+        : failProjectControls
+          ? "project-control"
+          : failControls
+            ? "control"
+            : failErase
+              ? "erase"
+              : requireTrust
+                ? "trust"
+                : "",
+      refreshDelayMs,
     );
     if (listActivity) {
       const now = Date.now();
@@ -227,7 +232,7 @@ export const Default: Story = {
     docs: {
       description: {
         story:
-          "Dashboard sessions use the project index layout: selection, status, fixed-width session and account links, flexible space, then trailing controls. Resource-link widths share the project index token. The session list keeps its reserved height and independent scroll position. Container names retain the installation prefix and abbreviate the storage ID, with in-place expansion and full-name copy.",
+          "Dashboard sessions use the project index layout: selection, status, fixed-width session and account links, flexible space, then trailing controls. Resource-link widths share the project index token. The session list keeps its reserved height and independent scroll position. Container names retain the installation prefix and abbreviate the storage ID, with in-place expansion and full-name copy. Top-right icon actions use the account action-button style in Erase, Remove, Stop, Start, Refresh order. Actions retain confirmation and state eligibility; Refresh reloads project metadata, inventory, accounts and usage.",
       },
     },
   },
@@ -281,3 +286,5 @@ export const LiveInventory: Story = { args: { streaming: true } };
 
 export const PartialFailure: Story = { args: { failControls: true } };
 export const EraseFailure: Story = { args: { failErase: true } };
+export const RefreshFailure: Story = { args: { failRefresh: true } };
+export const Refreshing: Story = { args: { refreshDelayMs: 650 } };

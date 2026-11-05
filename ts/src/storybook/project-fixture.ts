@@ -25,7 +25,14 @@ export function projectFixture(
   unavailable = false,
   stopped = false,
   sessionCount = 2,
-  failure: "" | "control" | "erase" | "trust" | "project-control" = "",
+  failure:
+    | ""
+    | "control"
+    | "erase"
+    | "trust"
+    | "project-control"
+    | "refresh" = "",
+  refreshDelayMs = 0,
 ) {
   const now = Date.now();
   const projects = ["Web workspace", "API workspace"].map((name, i) =>
@@ -335,7 +342,16 @@ export function projectFixture(
         publish();
         return { erased: true };
       },
-      get: (request) => {
+      get: async (request, context) => {
+        if (refreshDelayMs) {
+          await new Promise((resolve) => setTimeout(resolve, refreshDelayMs));
+          context.signal.throwIfAborted();
+        }
+        if (failure === "refresh")
+          throw new ConnectError(
+            "Project refresh is unavailable",
+            Code.Unavailable,
+          );
         const project = projects.find((p) =>
           request.ref?.key.case === "id"
             ? p.id.every(

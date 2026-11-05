@@ -849,7 +849,11 @@ test("dashboard scopes project usage and places sessions below Info", async ({
   expect(sessionsBox.x).toBe(infoBox.x);
   expect(sessionsBox.width).toBe(infoBox.width);
   expect(sessionsBox.y).toBeGreaterThanOrEqual(infoBox.y + infoBox.height);
-  expect(usageBox.y).toBe(infoBox.y);
+  const actionsBox = (await main
+    .getByRole("region", { name: "Actions", exact: true })
+    .boundingBox())!;
+  expect(actionsBox.y).toBe(infoBox.y);
+  expect(usageBox.y).toBe(actionsBox.y + actionsBox.height + 10);
   expect(usageBox.x - infoBox.x - infoBox.width).toBe(10);
   expect(usageBox.width).toBe(420);
   const all = sessions.getByRole("checkbox", {

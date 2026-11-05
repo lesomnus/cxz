@@ -63,6 +63,12 @@
   min-width: 0;
   align-content: start;
 }
+.usageColumn {
+  display: grid;
+  min-width: 0;
+  gap: var(--project-panel-gap);
+  align-content: start;
+}
 .actions {
   width: 100%;
   max-width: var(--project-panel-width);
@@ -90,6 +96,18 @@
   }
   .columns {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .usageColumn {
+    display: contents;
+  }
+  .actions {
+    grid-row: 1;
+  }
+  .information {
+    grid-row: 2;
+  }
+  .usageSection {
+    grid-row: 3;
   }
 }
 

@@ -1,10 +1,11 @@
 import { projectId } from "#src/shared/api/project-id.ts";
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActionMenu,
+  ActionError,
+  Popover,
   Section,
   SectionGroup,
-  SectionLayout,
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Project } from "#gen/cxz/project_pb";
@@ -20,6 +21,7 @@ import {
   stopContainer,
 } from "./project-container";
 import styles from "./project-actions.module.css";
+import actionStyles from "#src/shared/components/resource-action.module.css";
 import {
   canControlProject,
   projectOperations,
@@ -31,7 +33,7 @@ type Action = ProjectOperation;
 
 // What a button says is the name of the call it makes. Stopping keeps the
 // container, starting brings it back, removing throws the container away and
-// keeps everything else, and purging is the one that deletes data.
+// keeps everything else, and erasing is the one that deletes data.
 // See docs/plans/project-lifecycle-api.md.
 // Each action's glyph. Erasing borrows the trash: it is the one that deletes.
 const icons: Record<Action, "stop" | "resume" | "remove" | "erase"> = {
@@ -45,7 +47,6 @@ const copy: Record<
   Action,
   {
     label: string;
-    description: string;
     title: string;
     confirm: string;
     body: string;
@@ -54,7 +55,6 @@ const copy: Record<
 > = {
   stop: {
     label: t("Stop"),
-    description: t("Stop the project container and its sessions."),
     title: t("Stop project"),
     confirm: t("Stop"),
     body: t(
@@ -64,7 +64,6 @@ const copy: Record<
   },
   start: {
     label: t("Start"),
-    description: t("Start the project container and its runtime."),
     title: t("Start project"),
     confirm: t("Start"),
     body: t(
@@ -74,7 +73,6 @@ const copy: Record<
   },
   remove: {
     label: t("Remove"),
-    description: t("Remove the project container, keeping everything else."),
     title: t("Remove container"),
     confirm: t("Remove"),
     body: t(
@@ -84,7 +82,6 @@ const copy: Record<
   },
   erase: {
     label: t("Erase"),
-    description: t("Erase this project and its owned data permanently."),
     title: t("Erase project"),
     confirm: t("Erase permanently"),
     body: t(
@@ -100,8 +97,10 @@ export function ProjectActions({
   sessions,
   erased,
   updated,
-  variant = "sections",
+  variant = "buttons",
   completed,
+  refresh,
+  refreshing = false,
 }: {
   c: Connection;
   project?: Project;
@@ -109,12 +108,15 @@ export function ProjectActions({
   sessions: Session[];
   erased: (project: Project) => void;
   updated: (project: Project) => void;
-  variant?: "sections" | "menu";
+  variant?: "buttons" | "menu";
   completed?: (projects: Project[]) => void;
+  refresh?: () => Promise<void>;
+  refreshing?: boolean;
 }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
-  const id = useId();
+  const refreshTrigger = useRef<HTMLButtonElement>(null);
+  const [refreshError, setRefreshError] = useState("");
   type Failure = { project: Project; error: string };
   const [target, setTarget] = useState<{
     kind: Action;
@@ -135,7 +137,11 @@ export function ProjectActions({
   const advanceTrust = useRef(false);
   const bulk = !project;
   const scope = project ? [project] : projects;
-  const actions = projectOperations.map((kind) => ({
+  const order: readonly Action[] =
+    variant === "menu"
+      ? projectOperations
+      : ["erase", "remove", "stop", "start"];
+  const actions = order.map((kind) => ({
     kind,
     disabled: busy || !scope.some((p) => canControlProject(p, kind)),
   }));
@@ -283,45 +289,58 @@ export function ProjectActions({
           />
         </div>
       ) : (
-        <SectionLayout align="start" maxWidth="none">
-          <SectionGroup>
-            {actions.map((action) => {
-              const description = copy[action.kind].description;
-              const wordEnd = description.search(/\s/u);
-              const emphasisEnd = wordEnd < 0 ? description.length : wordEnd;
-              return (
-                <Section
-                  as="button"
-                  key={action.kind}
-                  type="button"
-                  effect="sparkle"
-                  className={styles.action}
-                  aria-label={copy[action.kind].label}
-                  aria-describedby={`${id}-${action.kind}-description`}
-                  disabled={action.disabled}
-                  onClick={(event) => {
-                    request(action.kind, event.currentTarget);
-                  }}
-                >
-                  <span className={styles.content}>
-                    <span className={styles.icon} aria-hidden="true">
-                      <SessionActionIcon action={icons[action.kind]} />
-                    </span>
-                    <span
-                      className={styles.description}
-                      id={`${id}-${action.kind}-description`}
-                    >
-                      <strong>{description.slice(0, emphasisEnd)}</strong>
-                      <span className={styles.detail}>
-                        {description.slice(emphasisEnd)}
-                      </span>
-                    </span>
-                  </span>
-                </Section>
-              );
-            })}
-          </SectionGroup>
-        </SectionLayout>
+        <SectionGroup className={styles.buttons}>
+          {actions.map((action) => (
+            <Popover
+              key={action.kind}
+              content={copy[action.kind].label}
+              placement="top"
+            >
+              <Section
+                as="button"
+                type="button"
+                effect="sparkle"
+                className={`${actionStyles.button} ${styles.action} ${action.kind === "erase" ? actionStyles.danger : ""}`}
+                aria-label={copy[action.kind].label}
+                disabled={action.disabled}
+                onClick={(event) => {
+                  request(action.kind, event.currentTarget);
+                }}
+              >
+                <SessionActionIcon action={icons[action.kind]} />
+              </Section>
+            </Popover>
+          ))}
+          {refresh && (
+            <Popover content={t("Refresh")} placement="top">
+              <Section
+                as="button"
+                ref={refreshTrigger}
+                className={`${actionStyles.button} ${styles.action}`}
+                aria-label={t("Refresh")}
+                loading={refreshing || busy}
+                onClick={async () => {
+                  setRefreshError("");
+                  try {
+                    await refresh();
+                  } catch (error) {
+                    setRefreshError(String(error));
+                  }
+                }}
+              >
+                <SessionActionIcon action="restart" />
+              </Section>
+            </Popover>
+          )}
+        </SectionGroup>
+      )}
+      {refreshError && (
+        <ActionError
+          anchor={refreshTrigger.current}
+          onDismiss={() => setRefreshError("")}
+        >
+          {refreshError}
+        </ActionError>
       )}
       {target && (
         <ConfirmationDialog

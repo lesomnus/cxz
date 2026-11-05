@@ -41,38 +41,21 @@
   grid-template-rows: var(--account-auth-height) var(--account-usage-height);
 }
 .authenticationGroup {
-  --account-action-radius: 16px;
+  --resource-action-radius: 16px;
   --ui-section-radius: var(--ui-section-inner-radius);
   grid-template-columns: minmax(0, 1fr) 64px 64px 64px;
   height: 64px;
 }
-.eraseAction.eraseAction,
-.refreshAction.refreshAction,
 .quotaSquare.quotaSquare {
-  --ui-section-radius: var(--account-action-radius, 16px);
+  --ui-section-radius: var(--resource-action-radius, 16px);
   --ui-section-inner-radius: var(--ui-section-radius);
   border-radius: var(--ui-section-radius);
-}
-.eraseAction.eraseAction,
-.refreshAction.refreshAction {
-  width: 64px;
-  height: 64px;
-  padding: 0;
-  place-items: center;
-  font-size: 12px;
 }
 .authenticationSection {
   container: account-auth / inline-size;
   height: 64px;
   min-height: 0;
   align-content: center;
-}
-.eraseAction.eraseAction > :global(.button-content),
-.refreshAction.refreshAction > :global(.button-content) {
-  justify-content: center;
-}
-.eraseAction.eraseAction:not(:disabled):hover {
-  color: var(--ui-action-error-color);
 }
 .quotaSquare.quotaSquare {
   --quota-tint: #7c8b4f;

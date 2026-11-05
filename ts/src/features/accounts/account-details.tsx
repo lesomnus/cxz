@@ -37,6 +37,7 @@ import {
 } from "#src/shared/api/read-cache.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 import accountStyles from "./accounts.module.css";
+import actionStyles from "#src/shared/components/resource-action.module.css";
 export function AccountDetails({
   c,
   account,
@@ -255,7 +256,7 @@ export function AccountDetails({
           />
           <Section
             as="button"
-            className={accountStyles.eraseAction}
+            className={`${actionStyles.button} ${actionStyles.danger}`}
             aria-label={`Erase account ${account.name || account.alias}`}
             onClick={() => {
               setEraseError("");
@@ -266,7 +267,7 @@ export function AccountDetails({
           </Section>
           <Section
             as="button"
-            className={accountStyles.refreshAction}
+            className={actionStyles.button}
             aria-label={`Refresh account ${account.name || account.alias}`}
             loading={
               metadataLoading || status.loading || usageLoading || quotaLoading

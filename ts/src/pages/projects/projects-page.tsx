@@ -1,7 +1,7 @@
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
@@ -217,7 +217,7 @@ function ProjectDashboard({
   erased: () => void;
   accounts: Account[];
   accountsError: string;
-  reloadAccounts: () => void;
+  reloadAccounts: () => Promise<void>;
   sessions: Session[];
   sessionsLoading?: boolean;
 }) {
@@ -238,6 +238,32 @@ function ProjectDashboard({
     </div>
   );
   const [addingSession, setAddingSession] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const refreshRequest = useRef<AbortController | undefined>(undefined);
+  useEffect(() => () => refreshRequest.current?.abort(), []);
+  async function refreshProject() {
+    const controller = new AbortController();
+    refreshRequest.current?.abort();
+    refreshRequest.current = controller;
+    c.inventory.refresh();
+    setRefreshVersion((version) => version + 1);
+    try {
+      const [updated] = await Promise.all([
+        c.projects.get(
+          { ref: { key: { case: "id", value: p.id } }, select: { all: true } },
+          { signal: controller.signal, timeoutMs: 10000 },
+        ),
+        reloadAccounts(),
+      ]);
+      controller.signal.throwIfAborted();
+      c.store.apply("cxz.Project", [{ id: updated.id, value: updated }]);
+      saved(updated);
+    } finally {
+      if (refreshRequest.current === controller)
+        refreshRequest.current = undefined;
+    }
+  }
   return (
     <div className={styles.dashboard}>
       <div className={styles.columns}>
@@ -328,21 +354,28 @@ function ProjectDashboard({
             )}
           </Section>
         </div>
-        <UsageReport
-          c={c}
-          project={projectId(p)}
-          className={styles.usageSection}
-        />
+        <div className={styles.usageColumn}>
+          <section className={styles.actions} aria-label={t("Actions")}>
+            <ProjectActions
+              c={c}
+              project={p}
+              sessions={sessions}
+              erased={erased}
+              updated={saved}
+              refresh={refreshProject}
+              refreshing={usageLoading}
+            />
+          </section>
+          <UsageReport
+            c={c}
+            project={projectId(p)}
+            className={styles.usageSection}
+            hideRefresh
+            refreshVersion={refreshVersion}
+            onLoadingChange={setUsageLoading}
+          />
+        </div>
       </div>
-      <section className={styles.actions} aria-label={t("Actions")}>
-        <ProjectActions
-          c={c}
-          project={p}
-          sessions={sessions}
-          erased={erased}
-          updated={saved}
-        />
-      </section>
     </div>
   );
 }
