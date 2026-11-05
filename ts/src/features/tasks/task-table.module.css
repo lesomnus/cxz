@@ -112,6 +112,14 @@
   padding: var(--ui-dialog-padding);
   color: var(--ui-muted);
 }
+.table .history {
+  padding: var(--ui-control-inset);
+  text-align: center;
+}
+.history button {
+  width: 100%;
+  min-height: var(--ui-table-row-height);
+}
 
 .indicator {
   display: inline-flex;

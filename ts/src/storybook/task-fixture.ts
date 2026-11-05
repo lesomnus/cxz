@@ -12,7 +12,7 @@ import { Connection } from "#src/shared/api/connection.ts";
 export function taskFixture(
   count = 9,
   unavailable = false,
-  options: { pageSize?: number; pageDelay?: number } = {},
+  options: { pageSize?: number; pageDelay?: number; olderDone?: number } = {},
 ) {
   const id = (value: number) => {
     const id = new Uint8Array(16);
@@ -118,6 +118,23 @@ export function taskFixture(
       ),
     });
   });
+  const historyStart = new Date(fixtureTime);
+  historyStart.setHours(0, 0, 0, 0);
+  historyStart.setDate(historyStart.getDate() - 2);
+  for (let i = 0; i < (options.olderDone ?? 0); i++) {
+    const date = timestampFromDate(
+      new Date(historyStart.getTime() - i * 3_600_000),
+    );
+    rows.push(
+      make(1000 + i, {
+        alias: `completed-${i + 1}`,
+        name: `Completed task ${i + 1}`,
+        status: TaskStatus.DONE,
+        dateCreated: date,
+        dateUpdated: date,
+      }),
+    );
+  }
   const listeners = new Set<() => void>();
   const notify = () => listeners.forEach((listener) => listener());
   const update = (task: Task, patch: Partial<Task>) => {

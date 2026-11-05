@@ -38,6 +38,13 @@ mutation. Removals delete their IDs. The catalog publishes and caches the
 merged list once; the view sorts newest-created first with Done rows last.
 Subsequent Watch batches update the live list and cache normally.
 
+The table initially hides Done rows whose last update predates yesterday's local
+midnight; Task has no separate completion timestamp. Non-Done rows remain visible
+regardless of age. The bottom Load more control reveals older cached Done rows in
+batches of 50, without another network read. Switching projects or session/run
+filters resets this display allowance. Hidden rows remain cached and accessible
+through their detail routes.
+
 Watch is a live state stream, not a durable event log. On disconnect the catalog
 retains the visible list, opens a new Watch, and repeats the barrier and full
 List reconciliation. Canceling the last subscriber cancels both requests.

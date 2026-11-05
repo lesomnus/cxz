@@ -172,7 +172,11 @@ export function TasksView({
                 {(!state.loading || !!state.tasks.length) &&
                   (!state.error || !!state.tasks.length) && (
                     <TaskTable
-                      key={projectId}
+                      key={JSON.stringify([
+                        projectId,
+                        selection.assignee,
+                        selection.run,
+                      ])}
                       tasks={state.tasks}
                       sessions={sessions}
                       sessionsLoading={sessionsLoading}

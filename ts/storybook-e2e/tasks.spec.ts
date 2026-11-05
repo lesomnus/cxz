@@ -397,3 +397,69 @@ test("paged initial loading publishes all sorted tasks together", async ({
   ]);
   expect(errors).toEqual([]);
 });
+
+test("older completions load in batches of 50 and reset when switching projects", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=resources-tasks--completed-history&viewMode=story",
+  );
+  const tasks = page.getByRole("table", { name: "Tasks", exact: true });
+  const rows = tasks.locator("tbody tr[data-task-alias]");
+  const more = tasks.getByRole("button", { name: "Load more", exact: true });
+  await expect(rows).toHaveCount(9);
+  await expect(tasks.locator("tbody tr[data-done]")).toHaveCount(2);
+  await expect(
+    tasks.getByRole("button", {
+      name: "Open task: Completed task 1",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  for (const count of [59, 109, 134]) {
+    await more.click();
+    await expect(rows).toHaveCount(count);
+  }
+  await expect(more).toHaveCount(0);
+  await expect(tasks.locator("tbody tr[data-done]")).toHaveCount(127);
+  await tasks
+    .getByRole("button", { name: "Open task: Completed task 125", exact: true })
+    .click();
+  const detail = page.getByRole("dialog", {
+    name: "Task details",
+    exact: true,
+  });
+  await expect(
+    detail.getByRole("textbox", { name: "Title", exact: true }),
+  ).toHaveValue("Completed task 125");
+  await detail.getByRole("button", { name: "Cancel", exact: true }).click();
+  const project = page.getByRole("combobox", {
+    name: "Select project",
+    exact: true,
+  });
+  await project.click();
+  await page
+    .getByRole("option", { name: "Documentation", exact: true })
+    .click();
+  await expect(page.getByText("No tasks", { exact: true })).toBeVisible();
+  await expect(more).toHaveCount(0);
+  await project.click();
+  await page.getByRole("option", { name: "Workspace", exact: true }).click();
+  await expect(rows).toHaveCount(9);
+  await expect(more).toBeVisible();
+});
+
+test("a project containing only older completions still offers Load more", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=resources-tasks--completed-history&viewMode=story&args=count:0",
+  );
+  const tasks = page.getByRole("table", { name: "Tasks", exact: true });
+  await expect(
+    tasks.getByRole("button", { name: "Load more", exact: true }),
+  ).toBeVisible();
+  await expect(tasks.locator("tbody tr[data-task-alias]")).toHaveCount(0);
+  await expect(page.getByText("No tasks", { exact: true })).toHaveCount(0);
+  await tasks.getByRole("button", { name: "Load more", exact: true }).click();
+  await expect(tasks.locator("tbody tr[data-task-alias]")).toHaveCount(50);
+});

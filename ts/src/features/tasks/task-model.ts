@@ -62,5 +62,36 @@ export function tableTasks(tasks: Task[], assignee = "", run = "") {
     );
 }
 
+export const taskHistoryPageSize = 50;
+
+export function taskTablePage(
+  tasks: readonly Task[],
+  now: number,
+  olderDone = 0,
+) {
+  const yesterday = new Date(now);
+  yesterday.setHours(0, 0, 0, 0);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const cutoff = yesterday.getTime();
+  let remaining = olderDone;
+  let hidden = 0;
+  const rows = tasks.filter((task) => {
+    if (task.status !== TaskStatus.DONE) return true;
+    const updated = task.dateUpdated ?? task.dateCreated;
+    if (
+      updated &&
+      Number(updated.seconds) * 1000 + updated.nanos / 1e6 >= cutoff
+    )
+      return true;
+    if (remaining > 0) {
+      remaining--;
+      return true;
+    }
+    hidden++;
+    return false;
+  });
+  return { rows, hidden };
+}
+
 export const sessionInProject = (session: Session, project: Project) =>
   !!session.project && key(session.project.id) === key(project.id);

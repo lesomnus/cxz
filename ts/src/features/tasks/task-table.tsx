@@ -4,6 +4,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -16,7 +17,14 @@ import { TaskPriority, TaskStatusIcon, TaskTime } from "./task-indicators";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
-import { ownerIssue, tableTasks, taskKey, taskStatusName } from "./task-model";
+import {
+  ownerIssue,
+  tableTasks,
+  taskTablePage,
+  taskHistoryPageSize,
+  taskKey,
+  taskStatusName,
+} from "./task-model";
 import styles from "./task-table.module.css";
 import resourceStyles from "#src/shared/components/resource-table.module.css";
 
@@ -35,7 +43,7 @@ export function TaskTable({
   run?: string;
   open: (task: Task) => void;
 }) {
-  const rows = useMemo(
+  const ordered = useMemo(
     () => tableTasks(tasks, assignee, run),
     [tasks, assignee, run],
   );
@@ -45,6 +53,11 @@ export function TaskTable({
   );
   const { locale } = useLocale();
   const [now, setNow] = useState(Date.now);
+  const [olderDone, setOlderDone] = useState(0);
+  const { rows, hidden } = useMemo(
+    () => taskTablePage(ordered, now, olderDone),
+    [ordered, now, olderDone],
+  );
   useEffect(() => {
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") setNow(Date.now());
@@ -163,7 +176,7 @@ export function TaskTable({
             </TableRow>
           );
         })}
-        {!rows.length && (
+        {!rows.length && !hidden && (
           <TableRow>
             <TableCell colSpan={5} className={styles.empty}>
               <span role="status">No tasks</span>
@@ -171,6 +184,22 @@ export function TaskTable({
           </TableRow>
         )}
       </TableBody>
+      {hidden > 0 && (
+        <TableFooter>
+          <TableRow>
+            <TableCell colSpan={5} className={styles.history}>
+              <Button
+                type="button"
+                onClick={() =>
+                  setOlderDone((count) => count + taskHistoryPageSize)
+                }
+              >
+                Load more
+              </Button>
+            </TableCell>
+          </TableRow>
+        </TableFooter>
+      )}
     </Table>
   );
 }
