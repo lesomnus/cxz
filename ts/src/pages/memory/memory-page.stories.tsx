@@ -1,12 +1,37 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
-import { createWorkspaceRouter } from "#src/app/router.tsx";
+import { RouteLink } from "#src/shared/navigation/route-link.tsx";
+import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
+import { useWorkspaceRoute, createWorkspaceRouter } from "#src/app/router.tsx";
 import { memoryFixture } from "#src/storybook/memory-fixture.ts";
 import { memoryLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { resourceHandle } from "#src/shared/navigation/resource-route.ts";
 import { MemoryPage } from "./memory-page";
+
+// Keep a minimal application navigation link beside the isolated page so its
+// document-to-collection flow also works in Storybook.
+function MemoryNavigation() {
+  const { memoryProject } = useWorkspaceRoute();
+  if (!memoryProject) return null;
+  return (
+    <nav
+      aria-label="Resource navigation"
+      style={{ position: "absolute", top: 8, left: 0, zIndex: 1 }}
+    >
+      <RouteLink
+        {...memoryLocation(memoryProject)}
+        variant="toolbar"
+        aria-label="Memory"
+        aria-current="page"
+        style={{ width: 20, minHeight: 24, padding: 0 }}
+      >
+        <ResourceIcon kind="memory" />
+      </RouteLink>
+    </nav>
+  );
+}
 
 function Preview({
   empty = false,
@@ -37,6 +62,7 @@ function Preview({
               gridTemplateColumns: "0 minmax(0, 1fr)",
             }}
           >
+            <MemoryNavigation />
             {children}
           </div>
         ),

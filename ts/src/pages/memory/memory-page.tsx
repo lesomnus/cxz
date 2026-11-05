@@ -5,7 +5,6 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { MemoryGrid } from "#src/features/memory/memory-grid.tsx";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { SessionPicker } from "#src/shared/components/session-picker.tsx";
@@ -97,27 +96,6 @@ export function MemoryPage({
     <main className={styles.page} aria-label="Shared memory workspace">
       <PageToolbar className={styles.toolbar}>
         <div className={styles.toolbarContent}>
-          {memory && (
-            <RouteLink
-              {...memoryLocation(handle || memoryProject!)}
-              variant="toolbar"
-              className={styles.back}
-              aria-label="Back to memories"
-              title="Back to memories"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                aria-hidden="true"
-              >
-                <path d="m14 5-7 7 7 7M7 12h13" />
-              </svg>
-            </RouteLink>
-          )}
           <ProjectPicker
             projects={projects}
             value={id}
