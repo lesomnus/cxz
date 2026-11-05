@@ -18,7 +18,8 @@
   --ui-scroll-area-background: var(--ui-shade-20);
 }
 .pages {
-  --ui-sliding-pages-easing: cubic-bezier(0.65, 0, 0.35, 1);
+  --ui-sliding-pages-duration: 500ms;
+  --ui-sliding-pages-easing: cubic-bezier(0.97, 0, 0.3, 0.9);
   flex: 1;
 }
 .pages > .slide {
