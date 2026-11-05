@@ -30,7 +30,16 @@ enum MemoryScope { MEMORY_SCOPE_UNSPECIFIED = 0; MEMORY_SCOPE_ACTIVE = 1; MEMORY
 enum MemoryReadFormat { MEMORY_READ_FORMAT_UNSPECIFIED = 0; MEMORY_READ_FORMAT_FULL = 1; MEMORY_READ_FORMAT_AUTO = 2; MEMORY_READ_FORMAT_DIFF = 3; }
 message MemoryReadRequest { MemoryRef ref = 1; uint64 base_revision = 2 [features.field_presence = IMPLICIT]; uint64 revision = 3 [features.field_presence = IMPLICIT]; MemoryReadFormat format = 4 [features.field_presence = IMPLICIT]; }
 message MemoryReadReply { Memory memory = 1; uint64 base_revision = 2 [features.field_presence = IMPLICIT]; uint64 revision = 3 [features.field_presence = IMPLICIT]; MemoryReadFormat format = 4 [features.field_presence = IMPLICIT]; string content = 5 [features.field_presence = IMPLICIT]; string diff = 6 [features.field_presence = IMPLICIT]; string fallback_reason = 7 [features.field_presence = IMPLICIT]; }
-message MemoryVersion { bytes memory_id = 1; uint64 revision = 2 [features.field_presence = IMPLICIT]; string content_hash = 3 [features.field_presence = IMPLICIT]; google.protobuf.Timestamp date_created = 4; }
+message MemoryVersion {
+  bytes memory_id = 1;
+  uint64 revision = 2 [features.field_presence = IMPLICIT];
+  string content_hash = 3 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 4;
+  // Changes against revision - 1, excluding diff context and headers.
+  // Both are absent for the first revision or an unavailable predecessor.
+  uint32 lines_added = 5 [features.field_presence = EXPLICIT];
+  uint32 lines_removed = 6 [features.field_presence = EXPLICIT];
+}
 message MemoryVersionsRequest { MemoryRef ref = 1; uint64 before_revision = 2 [features.field_presence = IMPLICIT]; int32 size = 3 [features.field_presence = IMPLICIT]; }
 message MemoryVersionsReply { repeated MemoryVersion versions = 1; uint64 next_revision = 2 [features.field_presence = IMPLICIT]; }
 message MemoryChangesRequest { ProjectRef project = 1; string cursor = 2 [features.field_presence = IMPLICIT]; int32 size = 3 [features.field_presence = IMPLICIT]; }

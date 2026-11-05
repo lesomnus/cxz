@@ -45,12 +45,20 @@ rename, trash/restore/purge, and starting a session seeded from a selected docum
   `date_updated`; body edits also require `base_revision`. Labels can be cleared
   explicitly with `clear_labels`. Apply is intentionally unavailable.
 - Each changed body gets an increasing `revision` and an immutable full-body
-  MemoryVersion with a SHA-256 hash. Changing metadata does not advance the body
-  revision. Reverting A → B → A creates three versions; the two A hashes match.
+  MemoryVersion with a SHA-256 hash. Its optional `lines_added` and
+  `lines_removed` fields count changes against revision − 1, excluding diff headers,
+  context and EOF marker lines. Zero is a known count; absence means the first
+  revision or a missing predecessor. New counts commit with the body, and schema
+  migration backfills retained adjacent bodies without rewriting their contents,
+  hashes or timestamps. Changing metadata does not advance the body revision or
+  recompute its counts. Reverting A → B → A creates three versions; the two A
+  hashes match.
   The current row caches the latest body. Versions and the resource commit in one
   transaction. Audit keeps management metadata, without duplicating body payloads.
 - `Read` defaults to full text. An explicit `revision` reads a retained version;
-  `Versions` lists retained revisions. With `base_revision`, `format=DIFF` requests
+  `Versions` lists retained revisions and their stored line counts. The web history
+  displays `+added −removed` and labels revision 1 as Created. With `base_revision`,
+  `format=DIFF` requests
   a contextual unified diff. `AUTO` chooses a smaller diff, otherwise full text.
   A missing base returns full text with `fallback_reason`. Smaller byte size is a
   heuristic, not a tokenizer or a guarantee of model comprehension.
