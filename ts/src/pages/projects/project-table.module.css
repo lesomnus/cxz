@@ -1,6 +1,5 @@
 .table {
-  --project-name-width: 90px;
-  --ui-table-row-height: 44px;
+  --ui-table-row-height: var(--resource-table-control-size);
   --ui-table-row-gap: 0px;
   --ui-table-header-height: 28px;
   min-width: 440px;
@@ -9,16 +8,16 @@
   overflow: clip;
 }
 .selectionColumn {
-  width: 44px;
+  width: var(--resource-table-selection-width);
 }
 .activityColumn {
   width: 120px;
 }
 .stateColumn {
-  width: 32px;
+  width: var(--resource-table-state-width);
 }
 .nameColumn {
-  width: calc(var(--project-name-width) + 2 * var(--ui-control-inset));
+  width: calc(var(--resource-table-button-width) + 2 * var(--ui-control-inset));
 }
 .actionSlot {
   width: calc(var(--ui-table-row-height) - 2 * var(--ui-control-inset));
@@ -54,7 +53,7 @@
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: var(--project-name-width);
+  max-width: var(--resource-table-button-width);
   height: calc(var(--ui-table-row-height) - 2 * var(--ui-control-inset));
   min-height: 0;
   padding: 0 var(--ui-control-inline-inset);

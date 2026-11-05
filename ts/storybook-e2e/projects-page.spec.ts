@@ -578,16 +578,16 @@ test("project row action failures keep confirmation open and the project unchang
   await expect(dialog).toHaveCount(0);
 });
 
-test("project sessions use the account table design with stacked resource links and scoped selection", async ({
+test("project sessions use the index column layout with bounded resource links and scoped selection", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
+    "",
     "Name",
     "Account",
-    "",
     "",
   ]);
   await expect(
@@ -606,6 +606,39 @@ test("project sessions use the account table design with stacked resource links 
     .getByRole("link", { name: "Work account work", exact: true });
   await expect(session).toHaveAttribute("href", "/c/_/session/oak");
   await expect(account).toHaveAttribute("href", "/c/_/account/work");
+  await expect(
+    rows.first().locator("td").nth(1).locator(".session-indicator"),
+  ).toBeVisible();
+  await expect(
+    rows.first().locator("td").nth(2).getByRole("link"),
+  ).toHaveAttribute("href", "/c/_/session/oak");
+  const linkWidth = await table.evaluate((element) =>
+    parseFloat(
+      getComputedStyle(element).getPropertyValue(
+        "--resource-table-button-width",
+      ),
+    ),
+  );
+  const sessionBox = (await session.boundingBox())!;
+  const accountBox = (await account.boundingBox())!;
+  expect(sessionBox.width).toBe(linkWidth);
+  expect(accountBox.width).toBe(linkWidth);
+  const more = rows.first().getByRole("button", { name: /Controls for/ });
+  const moreBox = (await more.boundingBox())!;
+  const menuCell = (await rows.first().locator("td").last().boundingBox())!;
+  expect(moreBox.x - accountBox.x - accountBox.width).toBeGreaterThan(
+    linkWidth / 2,
+  );
+  expect(moreBox.width).toBe(moreBox.height);
+  const rightInset = await rows
+    .first()
+    .locator("td")
+    .last()
+    .evaluate((element) => parseFloat(getComputedStyle(element).paddingRight));
+  expect(menuCell.x + menuCell.width - moreBox.x - moreBox.width).toBe(
+    rightInset,
+  );
+  await page.screenshot({ path: "/tmp/cxz-project-session-layout.png" });
   await expect(account.locator(".agent-brand-codex")).toBeVisible();
   await expect(
     rows
@@ -720,7 +753,7 @@ test("session table reserves seven and a half rows with a sticky header and inde
   expect(await viewport.evaluate((el) => el.scrollTop)).toBe(scrolled);
   expect(await viewport.boundingBox()).toEqual(frame);
   expect(await section.boundingBox()).toEqual(before);
-  await expect(cards.nth(10).locator("td").nth(1)).toContainText("Session 11");
+  await expect(cards.nth(10).locator("td").nth(2)).toContainText("Session 11");
   for (const story of ["default", "empty-sessions"]) {
     await page.goto(`/iframe.html?id=pages-projects--${story}&viewMode=story`);
     await expect(list).toBeVisible();
@@ -742,12 +775,12 @@ test("session states use the same status icons as account sessions", async ({
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(9);
   await expect(table.locator(".agent-brand")).toHaveCount(9);
-  await expect(rows.locator("td:nth-child(4) .session-indicator")).toHaveCount(
+  await expect(rows.locator("td:nth-child(2) .session-indicator")).toHaveCount(
     9,
   );
   expect(
     await rows
-      .locator("td:nth-child(4) [role=img]")
+      .locator("td:nth-child(2) [role=img]")
       .evaluateAll((nodes) =>
         nodes.map((node) => node.getAttribute("aria-label")),
       ),
@@ -919,13 +952,13 @@ test("live inventory preserves row selection and account labels", async ({
     .first();
   const check = row.getByRole("checkbox");
   await check.check();
-  await expect(row.locator("td").nth(2)).toContainText("Work account");
+  await expect(row.locator("td").nth(3)).toContainText("Work account");
   // Several inventory revisions occur while checking selection and card position.
   const before = await row.boundingBox();
   await expect
     .poll(async () => {
       await expect(check).toBeChecked();
-      return row.locator("td").nth(2).textContent();
+      return row.locator("td").nth(3).textContent();
     })
     .toContain("Work account");
   expect(await row.boundingBox()).toEqual(before);

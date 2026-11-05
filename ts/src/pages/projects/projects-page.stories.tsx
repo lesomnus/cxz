@@ -222,7 +222,16 @@ const meta = {
 } satisfies Meta<typeof Preview>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+export const Default: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Dashboard sessions use the project index layout: selection, status, fixed-width session and account links, flexible space, then trailing controls. Resource-link widths share the project index token. The session list keeps its reserved height and independent scroll position.",
+      },
+    },
+  },
+};
 export const List: Story = { args: { list: true } };
 export const Navigation: Story = {
   args: { list: true, navigation: true },

@@ -74,6 +74,36 @@
 .compact .stateColumn {
   width: 32px;
 }
+.overview {
+  --session-row-height: var(--resource-table-control-size);
+  --session-account-column-width: calc(
+    var(--resource-table-button-width) + 2 * var(--ui-control-inset)
+  );
+  --session-table-min-width: calc(
+    var(--resource-table-selection-width) + var(--resource-table-state-width) +
+      2 * var(--session-account-column-width) + var(--session-row-height) +
+      var(--ui-control-inset)
+  );
+}
+.overview .selectionColumn {
+  width: var(--resource-table-selection-width);
+}
+.overview .stateColumn {
+  width: var(--resource-table-state-width);
+}
+.overview .nameColumn {
+  width: var(--session-account-column-width);
+}
+.overview .actionsColumn {
+  width: auto;
+}
+.overview .navigationButton {
+  max-width: var(--resource-table-button-width);
+}
+.overview .actions :global(.action-menu) {
+  width: calc(var(--session-row-height) - 2 * var(--ui-control-inset));
+  margin-inline-start: auto;
+}
 .identity {
   display: grid;
   flex: 1;

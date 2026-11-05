@@ -28,6 +28,7 @@ import { ProjectActions } from "./project-actions";
 import { projectActivitySessions } from "./project-session-activity";
 import { useSessionActivity } from "./use-session-activity";
 import styles from "./project-table.module.css";
+import resourceTableStyles from "#src/shared/components/resource-table.module.css";
 
 export function ProjectTable({
   c,
@@ -71,7 +72,7 @@ export function ProjectTable({
   return (
     <Table
       {...selection.getContainerProps()}
-      className={styles.table}
+      className={`${styles.table} ${resourceTableStyles.layout}`}
       aria-label={t("Projects")}
       aria-busy={loading || undefined}
     >

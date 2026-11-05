@@ -34,6 +34,7 @@ import {
 } from "./session-table-controls";
 import controlStyles from "./session-table-controls.module.css";
 import styles from "./session-table.module.css";
+import resourceTableStyles from "#src/shared/components/resource-table.module.css";
 
 export function SessionTable({
   c,
@@ -62,9 +63,10 @@ export function SessionTable({
   title?: string;
   horizontalScrollbar?: boolean;
   fillHeight?: boolean;
-  variant?: "default" | "compact";
+  variant?: "default" | "compact" | "overview";
 }) {
-  const compact = variant === "compact";
+  const compact = variant !== "default";
+  const overview = variant === "overview";
   const [selected, select] = useState<Set<string>>(() => new Set());
   const controls = useSessionControls(c, (ids) =>
     select((previous) => {
@@ -89,6 +91,11 @@ export function SessionTable({
     onSelectionChange: select,
     disabled: !!(controls.busy || loading),
   });
+  const stateHeading = (
+    <th scope="col" aria-label={compact ? t("State") : undefined}>
+      {!compact && t("State")}
+    </th>
+  );
   const addControl = addSession && (
     <Button
       type="button"
@@ -135,7 +142,7 @@ export function SessionTable({
         wheelBehavior="instant"
         scrollbarOffset={0}
         horizontalScrollbar={horizontalScrollbar}
-        className={`${styles.scroll} ${compact ? styles.compact : ""} ${fillHeight ? styles.fillHeight : ""}`}
+        className={`${styles.scroll} ${compact ? styles.compact : ""} ${overview ? `${styles.overview} ${resourceTableStyles.layout}` : ""} ${fillHeight ? styles.fillHeight : ""}`}
         role="region"
         aria-label={t("Session list")}
         scrollbarLabel={t("Session list")}
@@ -150,12 +157,13 @@ export function SessionTable({
         >
           <colgroup>
             <col className={styles.selectionColumn} />
+            {overview && <col className={styles.stateColumn} />}
             {!compact && <col className={styles.agentColumn} />}
             <col className={styles.nameColumn} />
             {!compact && <col className={styles.aliasColumn} />}
             {showAccount && <col className={styles.accountColumn} />}
             {showProject && <col className={styles.projectColumn} />}
-            <col className={styles.stateColumn} />
+            {!overview && <col className={styles.stateColumn} />}
             <col className={styles.actionsColumn} />
           </colgroup>
           <thead>
@@ -167,14 +175,13 @@ export function SessionTable({
                   {...selection.getSelectAllProps()}
                 />
               </th>
+              {overview && stateHeading}
               {!compact && <th scope="col" aria-label={t("Agent")} />}
               <th scope="col">{t("Name")}</th>
               {!compact && <th scope="col">{t("Alias")}</th>}
               {showAccount && <th scope="col">{t("Account")}</th>}
               {showProject && <th scope="col">{t("Project")}</th>}
-              <th scope="col" aria-label={compact ? t("State") : undefined}>
-                {!compact && t("State")}
-              </th>
+              {!overview && stateHeading}
               <th
                 scope="col"
                 className={styles.actions}
@@ -211,6 +218,17 @@ export function SessionTable({
                 projectResource && resourceHandle(projectResource);
               const projectName =
                 projectResource?.name || projectResource?.alias || project;
+              const state = (
+                <td className={styles.state}>
+                  {compact ? (
+                    <span className={styles.stateIndicator}>
+                      <SessionIndicator session={s} variant="status" />
+                    </span>
+                  ) : (
+                    stateLabel(s)
+                  )}
+                </td>
+              );
               return (
                 <TableRow key={s.runtimeId} selected={checked}>
                   <td className={styles.selectionCell}>
@@ -220,6 +238,7 @@ export function SessionTable({
                       {...selection.getCheckboxProps(s.runtimeId)}
                     />
                   </td>
+                  {overview && state}
                   {!compact && (
                     <td className={styles.agent}>
                       <AgentBrand agent={s.agent} />
@@ -324,15 +343,7 @@ export function SessionTable({
                       )}
                     </td>
                   )}
-                  <td className={styles.state}>
-                    {compact ? (
-                      <span className={styles.stateIndicator}>
-                        <SessionIndicator session={s} variant="status" />
-                      </span>
-                    ) : (
-                      stateLabel(s)
-                    )}
-                  </td>
+                  {!overview && state}
                   <td className={`${styles.cardCell} ${styles.actions}`}>
                     <SessionTableMenu
                       sessions={[s]}

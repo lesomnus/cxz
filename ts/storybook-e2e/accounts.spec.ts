@@ -543,14 +543,16 @@ test("account sessions use compact read-only identities and keep selection scope
       (node) => getComputedStyle(node).backgroundColor,
     );
     expect(background).not.toBe("rgba(0, 0, 0, 0)");
-    const shades = await link.evaluate((node) => ({
-      button: Number(getComputedStyle(node).backgroundColor.match(/\d+/)?.[0]),
-      table: Number(
-        getComputedStyle(node.closest("section")!).backgroundColor.match(
-          /\d+/,
-        )?.[0],
-      ),
-    }));
+    const shades = await link.evaluate((node) => {
+      const context = document.createElement("canvas").getContext("2d")!;
+      const shade = (element: Element) => {
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = getComputedStyle(element).backgroundColor;
+        context.fillRect(0, 0, 1, 1);
+        return context.getImageData(0, 0, 1, 1).data[0]!;
+      };
+      return { button: shade(node), table: shade(node.closest("section")!) };
+    });
     expect(shades.button).toBeGreaterThan(shades.table);
     expect(shades.button - shades.table).toBeLessThan(24);
     await link.hover();
@@ -596,55 +598,46 @@ test("account sessions use compact read-only identities and keep selection scope
     .evaluate((node) => getComputedStyle(node).backgroundColor);
   await rows.nth(1).hover({ position: { x: 16, y: 20 } });
   await expect(rows.nth(1)).not.toHaveCSS("background-color", before);
+  const colors = () =>
+    rows
+      .first()
+      .evaluate((node) =>
+        [node, ...node.querySelectorAll("a")].map(
+          (element) => getComputedStyle(element).backgroundColor,
+        ),
+      );
+  await page.mouse.move(0, 0);
+  await rows.first().evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation instanceof CSSTransition)
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
+  const selectedColors = await colors();
   for (const row of [rows.nth(1), rows.first()]) {
     await row.hover({ position: { x: 16, y: 20 } });
     await expect
       .poll(() =>
         row.evaluate((node) => {
-          const rowShade = Number(
-            getComputedStyle(node).backgroundColor.match(/\d+/)?.[0],
-          );
+          const context = document.createElement("canvas").getContext("2d")!;
+          const shade = (element: Element) => {
+            context.clearRect(0, 0, 1, 1);
+            context.fillStyle = getComputedStyle(element).backgroundColor;
+            context.fillRect(0, 0, 1, 1);
+            return context.getImageData(0, 0, 1, 1).data[0]!;
+          };
+          const rowShade = shade(node);
           return [...node.querySelectorAll("a")].every(
-            (button) =>
-              Number(
-                getComputedStyle(button).backgroundColor.match(/\d+/)?.[0],
-              ) > rowShade,
+            (button) => shade(button) > rowShade,
           );
         }),
       )
       .toBe(true);
   }
-  await rows
-    .first()
-    .getByRole("link")
-    .evaluateAll((links) =>
-      Promise.all(
-        links.flatMap((link) =>
-          link
-            .getAnimations()
-            .map((animation) => animation.finished.catch(() => {})),
-        ),
-      ),
-    );
-  const selectedColors = await rows
-    .first()
-    .evaluate((node) =>
-      [node, ...node.querySelectorAll("a")].map(
-        (element) => getComputedStyle(element).backgroundColor,
-      ),
-    );
   await page.mouse.move(0, 0);
-  await expect
-    .poll(() =>
-      rows
-        .first()
-        .evaluate((node) =>
-          [node, ...node.querySelectorAll("a")].map(
-            (element) => getComputedStyle(element).backgroundColor,
-          ),
-        ),
-    )
-    .toEqual(selectedColors);
+  await expect.poll(colors).toEqual(selectedColors);
   const viewport = work.locator('[data-scroll-area="viewport"]');
   expect(
     await viewport.evaluate((node) => node.scrollWidth <= node.clientWidth),
