@@ -1074,9 +1074,18 @@ test("Memory session filtering reuses cached project metadata from the first sel
   await expect(
     page.getByRole("heading", { name: "Shared notes", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("link", { name: "Back to memories", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
+  await name.fill("Unsaved memory name");
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Discard unsaved changes",
+    exact: true,
+  });
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(name).toHaveValue("Unsaved memory name");
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(
     page.getByRole("link", { name: "Research notes", exact: true }),
   ).toBeVisible();
@@ -1205,9 +1214,10 @@ test("Memory collection, document links, reload and browser history agree", asyn
   await expect(
     page.getByRole("heading", { name: "Shared notes", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("link", { name: "Back to memories", exact: true })
-    .click();
+  await expect(
+    page.getByRole("link", { name: "Back to memories", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
   await handoff.click();
   await expect(page).toHaveURL(new RegExp(`${handoffPath}$`));
   await expect(
@@ -1238,9 +1248,7 @@ test("Memory browser navigation confirms dirty drafts before changing the select
   await expect(
     page.getByRole("heading", { name: "Shared notes", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("link", { name: "Back to memories", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
   await page.getByRole("link", { name: /Handoff notes/ }).click();
   await expect(
     page.getByRole("heading", { name: "Handoff", exact: true }),
@@ -1311,7 +1319,7 @@ for (const document of [false, true])
           .id,
       ).toBe(projectFixture().id);
       const back = page.getByRole("link", {
-        name: "Back to memories",
+        name: "Memory",
         exact: true,
       });
       await expect(back).toHaveAttribute("href", memoryProjectPath);
