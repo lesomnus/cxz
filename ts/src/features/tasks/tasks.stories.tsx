@@ -64,7 +64,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Project-scoped live task table centered like the Projects and Accounts views. Rows are ordered by creation time, newest first, with Done tasks after every other status. Canceled work stays in the same list. Done tasks updated today or yesterday remain visible; Load more reveals 50 older cached completions at a time, using local calendar days. Open a task to edit, follow its assignee, or explicitly release abandoned work. Columns show status icons, task identity, assignee, priority symbols and relative update times. Priority uses a square, triangle, medium circle, slash and small circle from Highest to Lowest; icon and time popovers provide their full labels and timestamps. Task links nest under their project and prefer aliases with UUID fallback. The project selector and Add control align with the table; narrow screens scroll the table horizontally. The same connection shares one Watch between consumers. Simulate agent update while editing to preview conflict handling without losing the draft.",
+          "Project-scoped live task table centered like the Projects and Accounts views. Rows are ordered by creation time, newest first, with Done tasks after every other status. Canceled work stays in the same list. Done tasks updated today or yesterday remain visible; Load more reveals 50 older cached completions at a time, using local calendar days. Open a task to edit, follow its assignee, or explicitly release abandoned work. Columns show status icons, task identity, assignee, priority symbols and relative update times. Priority uses a square, triangle, medium circle, slash and small circle from Highest to Lowest; icon and time popovers provide their full labels and timestamps. Task links nest under their project and prefer aliases with UUID fallback. The project and session selectors share the Memory toolbar layout; session selection filters assigned work locally and changing project clears the filter. The selectors and Add control align with the table; narrow screens scroll the table horizontally. The same connection shares one Watch between consumers. Simulate agent update while editing to preview conflict handling without losing the draft.",
       },
     },
   },
@@ -76,6 +76,9 @@ export const ProjectTable: Story = {};
 export const ManyTasks: Story = { args: { count: 90 } };
 export const CompletedHistory: Story = { args: { olderDone: 125 } };
 export const EmptyProject: Story = { args: { count: 0 } };
+export const SessionFilter: Story = {
+  args: { initialPath: "/c/_/project/workspace/task?assignee=oak" },
+};
 export const OlderRuntime: Story = { args: { unavailable: true } };
 
 export const TaskDetails: Story = {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useBlocker } from "@tanstack/react-router";
-import { PageToolbar, PrefixValueMenu, Section } from "@lesomnus/nox";
+import { PageToolbar, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -8,8 +8,8 @@ import { MemoryGrid } from "#src/features/memory/memory-grid.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
+import { SessionPicker } from "#src/shared/components/session-picker.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
-import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { sessionUUID } from "#src/shared/api/session-id.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -86,9 +86,6 @@ export function MemoryPage({
   );
   const sessionFilter =
     sessionSelection?.project === id ? sessionSelection.id : undefined;
-  const selectedSession = scoped.find(
-    (s) => sessionUUID(s.id) === sessionUUID(sessionFilter),
-  );
   const guard = useRef<(run: () => void) => void>((run) => run());
   const registerGuard = useCallback(
     (next: ((run: () => void) => void) | undefined) => {
@@ -135,30 +132,11 @@ export function MemoryPage({
               })
             }
           />
-          <PrefixValueMenu
-            className={styles.sessionPicker}
-            prefix={<ResourceIcon kind="sessions" />}
-            label="Select session"
+          <SessionPicker
+            sessions={scoped}
+            project={id}
             value={sessionUUID(sessionFilter)}
-            display={
-              sessionsLoading
-                ? "Loading sessions…"
-                : selectedSession?.name ||
-                  selectedSession?.alias ||
-                  (sessionFilter
-                    ? `Session ${sessionUUID(sessionFilter).slice(0, 8)}`
-                    : "All sessions")
-            }
-            options={[
-              { value: "", label: "All sessions" },
-              ...scoped.map((session) => ({
-                value: sessionUUID(session.id),
-                label: session.name || session.alias || sessionUUID(session.id),
-                searchText: `${session.alias} ${sessionUUID(session.id)}`,
-              })),
-            ]}
-            searchable
-            disabled={!id || sessionsLoading}
+            loading={sessionsLoading}
             choose={(value) =>
               guard.current(() => {
                 const session = scoped.find((s) => sessionUUID(s.id) === value);

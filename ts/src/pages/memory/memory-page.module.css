@@ -1,34 +1,20 @@
 .page {
-  --memory-content-width: 850px;
-  --memory-page-gutter: 24px;
-  grid-column: 2 / -1;
-  container: memory-page / inline-size;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
+  composes: page from "../../shared/components/resource-page.module.css";
 }
-.page > .toolbar {
-  padding-inline: var(--memory-page-gutter);
-}
-.toolbarContent,
-.content {
-  width: 100%;
-  max-width: var(--memory-content-width);
-  margin-inline: auto;
-  min-width: 0;
+.toolbar {
+  composes: toolbar from "../../shared/components/resource-page.module.css";
 }
 .toolbarContent {
-  display: flex;
-  align-items: center;
-  gap: calc(2 * var(--ui-space));
+  composes: toolbarContent from "../../shared/components/resource-page.module.css";
+}
+.content {
+  composes: content from "../../shared/components/resource-page.module.css";
 }
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
 }
 .scroll .scrollContent {
-  padding: 12px var(--memory-page-gutter);
+  padding: calc(3 * var(--ui-space)) var(--resource-page-gutter);
 }
 .error {
   color: var(--ui-action-error-color);
@@ -44,35 +30,8 @@
 .empty button {
   justify-self: start;
 }
-@container memory-page (width < 600px) {
-  .page > .toolbar {
-    height: auto;
-  }
-  .toolbarContent {
-    flex-wrap: wrap;
-    padding-block: var(--ui-space);
-  }
-}
-
 .back.back {
   width: 28px;
   min-height: 28px;
   padding: 0;
-}
-
-.sessionPicker {
-  min-width: 0;
-  max-width: 100%;
-}
-.sessionPicker.sessionPicker::before {
-  opacity: 1;
-}
-.sessionPicker > :global(.value-menu) {
-  flex: 0 1 180px;
-  width: 180px;
-  min-width: 0;
-}
-.sessionPicker :global(.meta-value) {
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
