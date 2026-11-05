@@ -31,8 +31,8 @@ The web Memory collection is a dense responsive grid of borderless portrait card
 shows its owner's agent logo and session name at the top left, relative update
 time at the top right, the title at conversation body size below, and the
 revision at the bottom left. The collection loads only paged metadata; opening a card loads its
-separate document page, without a catalog sidebar. A back link returns to the
-collection. A searchable session picker beside the project picker filters by owner
+separate document page, without a catalog sidebar. Clicking Memory in the application sidebar returns to the current project
+collection; the document toolbar has no separate back button. A searchable session picker beside the project picker filters by owner
 using the complete project metadata cached on the authenticated connection.
 Session changes filter that metadata locally, including the first selection,
 without a list request. The cache expires after one minute; returning to a

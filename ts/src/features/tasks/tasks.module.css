@@ -1,12 +1,5 @@
 .page {
-  --task-content-width: calc(2 * 420px + var(--ui-section-group-gap));
-  --task-page-gutter: 24px;
-  grid-column: 2 / -1;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  composes: page from "../../shared/components/resource-page.module.css";
 }
 .preview {
   display: flex;
@@ -16,21 +9,14 @@
 .preview > .page {
   flex: 1;
 }
-.page > .toolbar {
-  padding-inline: var(--task-page-gutter);
-}
-.toolbarContent,
-.content {
-  width: 100%;
-  max-width: var(--task-content-width);
-  min-width: 0;
-  margin-inline: auto;
+.toolbar {
+  composes: toolbar from "../../shared/components/resource-page.module.css";
 }
 .toolbarContent {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--ui-space);
+  composes: toolbarContent from "../../shared/components/resource-page.module.css";
+}
+.toolbarActions {
+  composes: toolbarActions from "../../shared/components/resource-page.module.css";
 }
 .body {
   --ui-scroll-area-background: var(--ui-shade-20);
@@ -38,10 +24,11 @@
   min-height: 0;
 }
 .body .scrollContent {
-  padding: calc(3 * var(--ui-space)) var(--task-page-gutter);
+  padding: calc(3 * var(--ui-space)) var(--resource-page-gutter);
 }
 .content {
-  --section-layout-max-width: var(--task-content-width);
+  composes: content from "../../shared/components/resource-page.module.css";
+  --section-layout-max-width: var(--resource-page-content-width);
   gap: calc(2 * var(--ui-space));
 }
 .quiet {
@@ -189,8 +176,4 @@
 .labels dd {
   margin: 0;
   overflow-wrap: anywhere;
-}
-.filter {
-  flex: 0 0 auto;
-  align-self: flex-start;
 }

@@ -42,7 +42,9 @@ The table initially hides Done rows whose last update predates yesterday's local
 midnight; Task has no separate completion timestamp. Non-Done rows remain visible
 regardless of age. The bottom Load more control reveals older cached Done rows in
 batches of 50, without another network read. Switching projects or session/run
-filters resets this display allowance. Hidden rows remain cached and accessible
+filters resets this display allowance. The toolbar session selector filters the
+cached assignee rows locally and preserves session/run links; it does not open
+another Watch or issue another List. Hidden rows remain cached and accessible
 through their detail routes.
 
 Watch is a live state stream, not a durable event log. On disconnect the catalog

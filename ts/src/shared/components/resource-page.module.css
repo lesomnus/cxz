@@ -1,0 +1,38 @@
+.page {
+  --resource-page-content-width: 850px;
+  --resource-page-gutter: 24px;
+  grid-column: 2 / -1;
+  container: resource-page / inline-size;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.page > .toolbar {
+  padding-inline: var(--resource-page-gutter);
+}
+.toolbarContent,
+.content {
+  width: 100%;
+  max-width: var(--resource-page-content-width);
+  margin-inline: auto;
+  min-width: 0;
+}
+.toolbarContent {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
+}
+.toolbarActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  margin-left: auto;
+}
+@container resource-page (width < 600px) {
+  .toolbarContent {
+    flex-wrap: wrap;
+    padding-block: var(--ui-space);
+  }
+}

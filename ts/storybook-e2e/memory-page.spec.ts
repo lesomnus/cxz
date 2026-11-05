@@ -10,7 +10,7 @@ const doc = (page: Page) =>
 const card = (page: Page, name: string) =>
   grid(page).getByRole("link", { name, exact: true });
 const back = (page: Page) =>
-  page.getByRole("link", { name: "Back to memories", exact: true }).click();
+  page.getByRole("link", { name: "Memory", exact: true }).click();
 async function editSource(page: Page, text: string) {
   await page.getByRole("button", { name: "Edit", exact: true }).click();
   const editor = page.locator(".monaco-editor textarea");
@@ -144,6 +144,9 @@ test("card selection opens a document without the former catalog sidebar", async
     page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
   await expect(grid(page)).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Back to memories", exact: true }),
+  ).toHaveCount(0);
   await expect(
     page.getByRole("textbox", { name: "Search memory", exact: true }),
   ).toHaveCount(0);

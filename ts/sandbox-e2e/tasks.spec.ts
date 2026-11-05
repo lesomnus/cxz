@@ -18,7 +18,7 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
   await expect(page.getByRole("complementary")).toHaveCount(0);
   await expect(
     page.locator('header[aria-label="Task toolbar"] svg'),
-  ).toHaveCount(2);
+  ).toHaveCount(3);
   await page.getByRole("button", { name: "Add task", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add task", exact: true });
   await add

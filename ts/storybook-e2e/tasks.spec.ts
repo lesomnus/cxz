@@ -383,9 +383,18 @@ test("existing project-query bookmarks redirect and preserve session/run filters
       .getByRole("table", { name: "Tasks", exact: true })
       .locator("tbody tr[data-task-alias]"),
   ).toHaveCount(1);
+  const session = page.getByRole("combobox", {
+    name: "Select session",
+    exact: true,
+  });
+  await expect(session).toHaveText("UI refinement · This run");
+  await session.click();
+  await page.getByRole("option", { name: "All sessions", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Show all project tasks", exact: true }),
-  ).toHaveText(/elm.*This run/);
+    page
+      .getByRole("table", { name: "Tasks", exact: true })
+      .locator("tbody tr[data-task-alias]"),
+  ).toHaveCount(9);
 });
 
 test("paged initial loading publishes all sorted tasks together", async ({
@@ -509,4 +518,81 @@ test("a project containing only older completions still offers Load more", async
   await expect(page.getByText("No tasks", { exact: true })).toHaveCount(0);
   await tasks.getByRole("button", { name: "Load more", exact: true }).click();
   await expect(tasks.locator("tbody tr[data-task-alias]")).toHaveCount(50);
+});
+
+test("toolbar session filtering scopes choices to the project and can be cleared", async ({
+  page,
+}) => {
+  await page.goto(taskPage);
+  const rows = page
+    .getByRole("table", { name: "Tasks", exact: true })
+    .locator("tbody tr[data-task-alias]");
+  const session = page.getByRole("combobox", {
+    name: "Select session",
+    exact: true,
+  });
+  await expect(session).toHaveText("All sessions");
+  await expect(rows).toHaveCount(9);
+  await session.click();
+  await page.getByRole("option", { name: "Task API", exact: true }).click();
+  await expect(rows).toHaveCount(5);
+  await expect(session).toHaveText("Task API");
+  await session.click();
+  await page
+    .getByRole("option", { name: "UI refinement", exact: true })
+    .click();
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toHaveAttribute("data-task-alias", "task-3");
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Documentation", exact: true })
+    .click();
+  await expect(session).toHaveText("All sessions");
+  await session.click();
+  await expect(page.getByRole("option")).toHaveCount(1);
+  await expect(
+    page.getByRole("option", { name: "All sessions", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Workspace", exact: true }).click();
+  await expect(rows).toHaveCount(9);
+});
+
+test("Tasks and Memory toolbars share the same alignment and control spacing", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(taskPage);
+  const boxes = async () =>
+    Promise.all([
+      page
+        .getByRole("combobox", { name: "Select project", exact: true })
+        .boundingBox(),
+      page
+        .getByRole("combobox", { name: "Select session", exact: true })
+        .boundingBox(),
+    ]);
+  await expect(
+    page.getByRole("combobox", { name: "Select session", exact: true }),
+  ).toBeVisible();
+  const tasks = await boxes();
+  const taskHeight = (await page.locator("main > header").boundingBox())!
+    .height;
+  await page.goto("/iframe.html?id=pages-memory--default&viewMode=story");
+  await expect(
+    page.getByRole("combobox", { name: "Select session", exact: true }),
+  ).toBeVisible();
+  const memories = await boxes();
+  for (let i = 0; i < tasks.length; i++) {
+    expect(Math.abs(tasks[i]!.x - memories[i]!.x)).toBeLessThan(0.5);
+    expect(Math.abs(tasks[i]!.width - memories[i]!.width)).toBeLessThan(0.5);
+  }
+  expect((await page.locator("main > header").boundingBox())!.height).toBe(
+    taskHeight,
+  );
 });
