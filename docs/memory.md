@@ -33,7 +33,14 @@ time at the top right, the title at conversation body size below, and the
 revision at the bottom left. The collection loads only paged metadata; opening a card loads its
 separate document page, without a catalog sidebar. A back link returns to the
 collection. A searchable session picker beside the project picker filters by owner
-using `MemoryService.List(project, session)`. All sessions includes unowned and
+using the complete project metadata cached on the authenticated connection.
+Session changes filter that metadata locally, including the first selection,
+without a list request. The cache expires after one minute; returning to a
+project or changing session then refreshes in the background while retaining
+existing cards. Save, copy, delete, restore, purge and explicit reload invalidate
+the affected project list. Refresh failures retain cached cards and offer retry.
+The cache is bounded and cleared when the connection is disposed, with no
+browser storage persistence. All sessions includes unowned and
 retained-owner documents. Project changes reset the session filter; returning
 from a document preserves the selected filter. Changing it while editing guards
 unsaved changes. Selecting an editing session is unnecessary. Reading is the default; Edit opens name/label fields and
