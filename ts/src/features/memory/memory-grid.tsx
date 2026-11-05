@@ -165,7 +165,9 @@ export function MemoryGrid({
     >
       {list.error && (
         <div className={styles.state}>
-          <p role="alert">Memories could not be loaded. {list.error}</p>
+          <ErrorNotice error={list.error}>
+            Memories could not be loaded. {list.error}
+          </ErrorNotice>
           <Button variant="toolbar" onClick={() => void list.reload()}>
             Retry
           </Button>
@@ -195,3 +197,4 @@ export function MemoryGrid({
     </section>
   );
 }
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";

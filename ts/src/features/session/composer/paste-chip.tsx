@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLocalError } from "#src/shared/errors/error-context.tsx";
 import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
 import {
   CompactNumber,
@@ -38,6 +39,7 @@ export function PasteChip({
   onLayout?: (label: string, width: number) => void;
 }) {
   const attachment = paste.attachment;
+  const uploadError = useLocalError(paste.secret?.error ?? attachment?.error);
   const state = paste.secret ?? attachment;
   const textPaste = isTextPaste(paste);
   const imagePaste = isImagePaste(paste);
@@ -136,14 +138,14 @@ export function PasteChip({
         aria-description={textPaste || imagePaste ? bytes : undefined}
         title={
           paste.secret
-            ? (paste.secret.error ??
-              `${paste.secret.kind ?? "Secret"} · ${paste.secret.state === "uploading" ? "Preparing secret file…" : "Secret file reference"}`)
+            ? uploadError ||
+              `${paste.secret.kind ?? "Secret"} · ${paste.secret.state === "uploading" ? "Preparing secret file…" : "Secret file reference"}`
             : textPaste
               ? undefined
-              : (attachment?.error ??
+              : uploadError ||
                 (attachment?.state === "uploading"
                   ? t("Uploading…")
-                  : `${bytes} · ${t("View source · Ctrl+P")}`))
+                  : `${bytes} · ${t("View source · Ctrl+P")}`)
         }
         onPointerEnter={(event) => {
           if (textPaste && event.pointerType !== "touch") setOpen(true);

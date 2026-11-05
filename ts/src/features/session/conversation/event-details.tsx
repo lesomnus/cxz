@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import type { EventSource } from "#src/features/session/model/event-source.ts";
 import { useEffect, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
@@ -39,7 +40,7 @@ export function EventDetails({
   const event = source();
   useLocale();
   const state = useEventDetails(event, loadDetails);
-  if (state.error) return <p role="alert">{state.error}</p>;
+  if (state.error) return <ErrorNotice error={state.error} />;
   if (!state.events) return <p className="muted">{t("Loading…")}</p>;
   const sections: DetailSection[] = [];
   for (const e of state.events) {

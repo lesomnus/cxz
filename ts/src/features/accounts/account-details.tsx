@@ -1,13 +1,9 @@
+import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
+import { useLocalError } from "#src/shared/errors/error-context.tsx";
 import { useRef, useState } from "react";
 import { ConnectError } from "@connectrpc/connect";
-import {
-  Button,
-  EditableValue,
-  Popover,
-  SectionGroup,
-  Section,
-} from "@lesomnus/nox";
+import { Button, Popover, SectionGroup, Section } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -115,11 +111,14 @@ export function AccountDetails({
       status.data.state === AuthState.SESSION_SCOPED
     : account.agent === "claude";
   const signedIn = status.data?.state === AuthState.READY;
+  const statusError = useLocalError(status.error);
   const statusText = status.loading
     ? "Checking login…"
     : status.data
       ? labels[status.data.state ?? AuthState.UNSPECIFIED]
-      : "Status unavailable";
+      : status.error && !statusError
+        ? "-"
+        : "Status unavailable";
   return (
     <div className={`${accountStyles.details} ${dashboardStyles.layout}`}>
       <SectionGroup className={accountStyles.summaryColumn}>
@@ -216,12 +215,12 @@ export function AccountDetails({
                   </Button>
                   <span
                     className={accountStyles.authenticationStatus}
-                    role={status.error ? "alert" : undefined}
-                    aria-description={status.error || undefined}
+                    role={statusError ? "alert" : undefined}
+                    aria-description={statusError || undefined}
                   >
                     <Popover
                       content={
-                        status.error || status.data?.message || statusText
+                        statusError || status.data?.message || statusText
                       }
                     >
                       <span>{statusText}</span>

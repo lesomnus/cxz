@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { SidebarHint } from "#src/shared/navigation/sidebar-hint.tsx";
 import { useBackgroundSessions } from "#src/features/session/model/use-background-sessions.ts";
@@ -16,6 +17,8 @@ import { ContainerState } from "#gen/cxz/project_pb";
 import { ActionMenu } from "@lesomnus/nox";
 import { Connection } from "#src/shared/api/connection.ts";
 import { ProfileMenu } from "./profile-menu";
+import { ErrorCenter } from "./error-center";
+import { ErrorCenterProvider } from "#src/shared/errors/error-context.tsx";
 import { SessionTreeGroup } from "#src/features/session/components/session-tree.tsx";
 import { ResourcePanel } from "#src/shared/components/resource-panel.tsx";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
@@ -38,22 +41,47 @@ import {
   sessionLocation,
   taskLocation,
 } from "#src/shared/navigation/resource-route.ts";
-export function Workspace({
+type WorkspaceProps = {
+  connection: Connection;
+  logout: () => Promise<void>;
+  exitLabel?: string;
+} & PropsWithChildren;
+export function Workspace(props: WorkspaceProps) {
+  return (
+    <ErrorCenterProvider store={props.connection.errors}>
+      <WorkspaceContent {...props} />
+    </ErrorCenterProvider>
+  );
+}
+function WorkspaceContent({
   connection: c,
   logout,
   exitLabel = t("Sign out"),
   children,
-}: {
-  connection: Connection;
-  logout: () => Promise<void>;
-  exitLabel?: string;
-} & PropsWithChildren) {
+}: WorkspaceProps) {
   useLocale();
   useScrollbars();
   useEffect(() => c.conversations.mount(), [c]);
   const route = useWorkspaceRoute();
   const resource = route.resource === "not-found" ? "sessions" : route.resource;
   const inventory = useResourceInventory(c);
+  useEffect(() => {
+    for (const project of inventory.projects) {
+      if (!project.status) continue;
+      const id = projectId(project);
+      c.errors.observe(
+        JSON.stringify([c.baseUrl, "project-status", id]),
+        project.status.error ?? "",
+        {
+          source: "resource",
+          connection: c.baseUrl,
+          project: id,
+          method: "Project runtime",
+          target: project.name || project.alias || id,
+        },
+      );
+    }
+  }, [c, inventory.projects]);
   const selectedSession = inventory.sessions.find((s) =>
     matchesResource(s, route.session),
   );
@@ -205,11 +233,15 @@ export function Workspace({
               </RouteLink>
             </SidebarHint>
           ))}
-          <ProfileMenu
-            logout={logout}
-            exitLabel={exitLabel}
-            openSettings={() => setSettingsFileOpen(false)}
-          />
+          <div className="sidebar-footer">
+            <ErrorCenter store={c.errors} />
+            <ProfileMenu
+              errors={c.errors}
+              logout={logout}
+              exitLabel={exitLabel}
+              openSettings={() => setSettingsFileOpen(false)}
+            />
+          </div>
         </nav>
         {hasResourcePanel && (
           <ResourcePanel
@@ -423,12 +455,14 @@ export function Workspace({
               </nav>
             )}
             {!!(inventory.errors.projects || inventory.errors.sessions) && (
-              <p role="alert">
-                {String(inventory.errors.projects || inventory.errors.sessions)}
-              </p>
+              <ErrorNotice
+                error={String(
+                  inventory.errors.projects || inventory.errors.sessions,
+                )}
+              />
             )}
             {resource === "sessions" && panelError && (
-              <p role="alert">{panelError}</p>
+              <ErrorNotice error={panelError} />
             )}
             {inventory.loading.projects && !projects.length && (
               <p className="muted">{t("Loading projects…")}</p>

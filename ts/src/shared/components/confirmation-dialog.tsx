@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import {
   Button,
@@ -76,9 +77,9 @@ export function ConfirmationDialog({
       <DialogBody>
         <div>{children}</div>
         {failed && (
-          <p role="alert">
-            {failureMessage ?? t("Action failed. Please try again.")}
-          </p>
+          <ErrorNotice
+            error={failureMessage ?? t("Action failed. Please try again.")}
+          />
         )}
       </DialogBody>
       <DialogFooter>

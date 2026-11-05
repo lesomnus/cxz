@@ -820,4 +820,23 @@ export const messages = {
     "선택한 프로젝트와 소유 데이터를 영구 삭제합니다. 되돌릴 수 없습니다.",
   "Some project actions failed. Successful projects will not be retried.":
     "일부 프로젝트 작업이 실패했습니다. 성공한 프로젝트는 다시 실행하지 않습니다.",
+  Errors: "오류",
+  "{count} active errors": "활성 오류 {count}개",
+  "Close errors": "오류 닫기",
+  "Error status": "오류 상태",
+  "Error list": "오류 목록",
+  "Scroll errors": "오류 스크롤",
+  "No active errors": "활성 오류 없음",
+  "No error history": "오류 기록 없음",
+  History: "기록",
+  Resolved: "해결됨",
+  Dismissed: "확인 후 닫음",
+  Dismiss: "확인 후 닫기",
+  occurrences: "회 발생",
+  "First seen": "처음 발생",
+  "Clear history": "기록 지우기",
+  "Invalid terminal response": "잘못된 터미널 응답",
+  Active: "활성",
+  "The result may be unknown after a disconnect; inspect the conversation before retrying.":
+    "연결이 끊긴 경우 작업 결과가 불확실할 수 있습니다. 다시 시도하기 전에 대화 내용을 확인하세요.",
 } satisfies LanguagePack;

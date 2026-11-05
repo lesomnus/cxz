@@ -1,0 +1,139 @@
+.root {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+.trigger.trigger {
+  color: var(--ui-muted);
+}
+.symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  border: 1px solid var(--ui-shade-72);
+  border-radius: 8px;
+}
+.trigger[data-active] {
+  color: #ff526d;
+}
+.trigger[data-active] .symbol {
+  border-color: currentColor;
+}
+.trigger:is(:hover, [aria-expanded="true"]) .symbol {
+  background: var(--ui-shade-24);
+}
+.popup {
+  width: 480px;
+  max-width: calc(100vw - 16px);
+}
+.reveal {
+  display: block;
+  min-width: 0;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ui-space) calc(2 * var(--ui-space));
+}
+.header strong {
+  font-weight: 500;
+}
+.list {
+  height: min(390px, calc(100dvh - 160px));
+  min-height: 0;
+  margin-top: var(--ui-space);
+}
+.list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.list li {
+  padding: calc(2 * var(--ui-space));
+  border-bottom: 1px solid var(--ui-shade-48);
+}
+.list li:last-child {
+  border-bottom: 0;
+}
+.row,
+.details {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
+  flex-wrap: wrap;
+}
+.row {
+  font-size: 11px;
+}
+.state,
+.time,
+.details,
+.method {
+  color: var(--ui-muted);
+}
+[data-status="active"] > .row > .state {
+  color: #ff526d;
+}
+.time {
+  margin-left: auto;
+}
+.dismiss.dismiss {
+  min-height: 24px;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.message {
+  margin: var(--ui-space) 0;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.method {
+  display: block;
+  font: 10px/1.5 var(--ui-font-mono);
+  overflow-wrap: anywhere;
+}
+.details {
+  margin-top: var(--ui-space);
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.details > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--ui-shade-48);
+  padding: var(--ui-space);
+}
+.footer button {
+  font-size: 11px;
+}
+.empty {
+  display: grid;
+  place-content: center;
+  height: 100%;
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

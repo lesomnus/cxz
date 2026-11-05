@@ -819,5 +819,24 @@ export const messages = {
     "Permanently deletes the selected projects and their owned data. This cannot be undone.",
   "Some project actions failed. Successful projects will not be retried.":
     "Some project actions failed. Successful projects will not be retried.",
+  Errors: "Errors",
+  "{count} active errors": "{count} active errors",
+  "Close errors": "Close errors",
+  "Error status": "Error status",
+  "Error list": "Error list",
+  "Scroll errors": "Scroll errors",
+  "No active errors": "No active errors",
+  "No error history": "No error history",
+  History: "History",
+  Resolved: "Resolved",
+  Dismissed: "Dismissed",
+  Dismiss: "Dismiss",
+  occurrences: "occurrences",
+  "First seen": "First seen",
+  "Clear history": "Clear history",
+  "Invalid terminal response": "Invalid terminal response",
+  Active: "Active",
+  "The result may be unknown after a disconnect; inspect the conversation before retrying.":
+    "The result may be unknown after a disconnect; inspect the conversation before retrying.",
 } as const;
 export type Message = keyof typeof messages;

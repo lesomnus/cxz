@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useBlocker } from "@tanstack/react-router";
 import { PageToolbar, PrefixValueMenu, Section } from "@lesomnus/nox";
@@ -183,11 +184,7 @@ export function MemoryPage({
         scrollbarLabel="Shared memory scroll"
       >
         <div className={styles.content}>
-          {error && (
-            <p className={styles.error} role="alert">
-              {error}
-            </p>
-          )}
+          {error && <ErrorNotice className={styles.error} error={error} />}
           {project ? (
             memory || creatingProject === id ? (
               <MemoryLibrary

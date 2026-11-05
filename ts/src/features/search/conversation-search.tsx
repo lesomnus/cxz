@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
@@ -337,11 +338,7 @@ export function ConversationSearch({
           )}
         </div>
       </form>
-      {error && (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      )}
+      {error && <ErrorNotice className={styles.error} error={error} />}
       {progress && (
         <p className={styles.status} role="status">
           {progress}

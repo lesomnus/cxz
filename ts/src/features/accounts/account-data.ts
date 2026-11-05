@@ -91,7 +91,13 @@ export async function accountStatus(
     });
   } catch (error) {
     if (ConnectError.from(error).code === Code.Unimplemented)
-      throw new Error("Login status unavailable. Update the Manager.");
+      throw new ConnectError(
+        "Login status unavailable. Update the Manager.",
+        Code.Unimplemented,
+        undefined,
+        undefined,
+        error,
+      );
     throw error;
   }
 }

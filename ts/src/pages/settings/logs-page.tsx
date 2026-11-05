@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -199,7 +200,7 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
           )}
         </p>
       )}
-      {error && <p role="alert">{error}</p>}
+      {error && <ErrorNotice error={error} />}
       <TableScrollArea className={styles.scroll} scrollbarLabel={t("Logs")}>
         <Table className={styles.table} aria-label={t("Client logs")}>
           <TableHeader>

@@ -33,6 +33,7 @@ start. This is the map of everything else.
 | [client-support.md](client-support.md) | Current CLI, TUI and web support, partial implementations and gaps |
 | [web-design.md](web-design.md) | Web design direction: visual simplicity, compact spacing, comfortable controls, stable alignment and meaningful motion |
 | [web-settings.md](web-settings.md) | Browser settings file, editor inheritance, language and theme |
+| [client-errors.md](client-errors.md) | Browser API error center, recovery signals and bounded history |
 | [web-conversation-scroll.md](web-conversation-scroll.md) | Accepted conversation scroll experience and regression reference |
 | [storybook.md](storybook.md) | Shared web component previews |
 

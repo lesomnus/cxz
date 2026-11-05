@@ -133,11 +133,16 @@ export function rpcDiagnostics(
     let target = "";
     let targetDescription = "";
     const identify = (message: unknown) => {
-      target = references(message);
-      targetDescription = referenceDescription(
-        message,
-        request.service.typeName,
-      );
+      const refs = references(message);
+      // Bidirectional streams name their target in the first frame; later
+      // input/ack frames must retain that identity.
+      if (!target || refs !== "{}") {
+        target = refs;
+        targetDescription = referenceDescription(
+          message,
+          request.service.typeName,
+        );
+      }
       if (!message || typeof message !== "object") return;
       const body = message as {
         ref?: ResourceReference;

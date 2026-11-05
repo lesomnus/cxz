@@ -249,8 +249,13 @@ header strong {
   --button-hover-background: var(--selected-hover);
   color: var(--shade-255);
 }
-.profile-menu {
+.sidebar-footer {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.profile-menu {
   flex-shrink: 0;
   width: 100%;
 }
@@ -288,13 +293,6 @@ header strong {
   :root:not([data-theme="light"]) .profile-avatar {
     transition: none;
   }
-}
-.profile-error {
-  width: 56px;
-  max-width: 100%;
-  font-size: 10px;
-  overflow-wrap: anywhere;
-  color: var(--shade-255);
 }
 .settings-page {
   --settings-column-width: 320px;

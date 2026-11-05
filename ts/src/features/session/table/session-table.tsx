@@ -1,11 +1,7 @@
+import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
-import {
-  Button,
-  EditableValue,
-  TableRow,
-  useRangeSelection,
-} from "@lesomnus/nox";
+import { Button, TableRow, useRangeSelection } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";

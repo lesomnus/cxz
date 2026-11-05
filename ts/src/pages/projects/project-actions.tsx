@@ -1,4 +1,8 @@
 import { projectId } from "#src/shared/api/project-id.ts";
+import {
+  useLocalError,
+  useLocalErrors,
+} from "#src/shared/errors/error-context.tsx";
 import { useRef, useState } from "react";
 import {
   ActionMenu,
@@ -117,6 +121,7 @@ export function ProjectActions({
   const menu = useRef<HTMLDivElement>(null);
   const refreshTrigger = useRef<HTMLButtonElement>(null);
   const [refreshError, setRefreshError] = useState("");
+  const localRefreshError = useLocalError(refreshError);
   type Failure = { project: Project; error: string };
   const [target, setTarget] = useState<{
     kind: Action;
@@ -132,6 +137,8 @@ export function ProjectActions({
     }[]
   >([]);
   const [trustFailures, setTrustFailures] = useState<Failure[]>([]);
+  const visibleFailures = useLocalErrors(target?.failures ?? []);
+  const visibleTrustFailures = useLocalErrors(trustFailures);
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const advanceTrust = useRef(false);
@@ -334,12 +341,12 @@ export function ProjectActions({
           )}
         </SectionGroup>
       )}
-      {refreshError && (
+      {localRefreshError && (
         <ActionError
           anchor={refreshTrigger.current}
           onDismiss={() => setRefreshError("")}
         >
-          {refreshError}
+          {localRefreshError}
         </ActionError>
       )}
       {target && (
@@ -378,9 +385,9 @@ export function ProjectActions({
               : copy[target.kind].body}
           </p>
           <p className="muted">{copy[target.kind].note}</p>
-          {target.failures.length > 1 && (
+          {visibleFailures.length > 1 && (
             <ul className={styles.failures}>
-              {target.failures.map((f) => (
+              {visibleFailures.map((f) => (
                 <li key={projectId(f.project)}>
                   {label(f.project)}: {f.error}
                 </li>
@@ -428,9 +435,9 @@ export function ProjectActions({
           <p className="muted">
             {t("You will be asked again if the configuration changes.")}
           </p>
-          {trustFailures.length > 1 && (
+          {visibleTrustFailures.length > 1 && (
             <ul className={styles.failures}>
-              {trustFailures.map((f) => (
+              {visibleTrustFailures.map((f) => (
                 <li key={projectId(f.project)}>
                   {label(f.project)}: {f.error}
                 </li>

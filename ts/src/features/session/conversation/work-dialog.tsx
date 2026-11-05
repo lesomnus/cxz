@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { eventListSource } from "#src/features/session/model/event-source.ts";
 import { useId, useRef, useState, type ReactNode } from "react";
 import {
@@ -185,7 +186,7 @@ export function WorkDialog({
               }}
             >
               {t(loadingOlder ? "Loading…" : "Load earlier tasks")}
-              {historyError && <span role="alert">{historyError}</span>}
+              {historyError && <ErrorNotice as="span" error={historyError} />}
             </Button>
           )
         }

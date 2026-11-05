@@ -1,4 +1,5 @@
 import type { Session } from "#gen/cxz/session_pb";
+import { useLocalErrors } from "#src/shared/errors/error-context.tsx";
 import { ActionMenu, Button } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
@@ -117,6 +118,7 @@ export function SessionTableMenu({
 
 export function SessionTableConfirmation({ controls }: { controls: Controls }) {
   const pending = controls.confirmation;
+  const failures = useLocalErrors(pending?.failures ?? []);
   if (!pending) return null;
   const single = pending.targets.length === 1;
   return (
@@ -184,9 +186,9 @@ export function SessionTableConfirmation({ controls }: { controls: Controls }) {
           </li>
         ))}
       </ul>
-      {!!pending.failures.length && (
+      {!!failures.length && (
         <ul className={styles.failures} role="alert">
-          {pending.failures.map((failure) => (
+          {failures.map((failure) => (
             <li key={failure.target.runtimeId}>
               {failure.target.name}: {failure.error}
             </li>
@@ -204,13 +206,14 @@ export function SessionTableFeedback({
   controls: Controls;
   inline?: boolean;
 }) {
-  if (!controls.errors.length) return null;
+  const errors = useLocalErrors(controls.errors);
+  if (!errors.length) return null;
   return (
     <div
       className={`${styles.feedback} ${inline ? styles.inlineFeedback : ""}`}
     >
       <ul className={styles.failures} role="alert">
-        {controls.errors.map((failure) => (
+        {errors.map((failure) => (
           <li key={failure.target.runtimeId}>
             {failure.target.name}: {failure.error}
           </li>

@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { AuxKind } from "#gen/cxz/installation_pb";
@@ -80,7 +81,7 @@ export function AuxiliaryControls({
           </Button>
         </div>
       ))}
-      {error && <p role="alert">{error}</p>}
+      {error && <ErrorNotice error={error} />}
       {state?.message && <p className={styles.muted}>{state.message}</p>}
       {state?.current && (
         <div>

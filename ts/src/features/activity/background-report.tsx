@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef } from "react";
 import { Button } from "@lesomnus/nox";
 import { Connection } from "#src/shared/api/connection.ts";
@@ -47,7 +48,7 @@ export function BackgroundReport({
         <strong>Background tasks</strong>
         <Button onClick={snapshot.reload}>Refresh</Button>
       </div>
-      {snapshot.error && <p role="alert">{snapshot.error}</p>}
+      {snapshot.error && <ErrorNotice error={snapshot.error} />}
       {snapshot.data?.map((task) => (
         <div key={task.task_id}>
           <strong>{task.description || task.task_id}</strong>

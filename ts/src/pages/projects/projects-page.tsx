@@ -1,3 +1,5 @@
+import { EditableValue } from "#src/shared/components/editable-value.tsx";
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -9,7 +11,6 @@ import { Id } from "@lesomnus/payday/pdid";
 import {
   PageToolbar,
   Button,
-  EditableValue,
   Section,
   SectionGroup,
   SlidingPages,
@@ -128,7 +129,7 @@ export function ProjectsPage({
               horizontalScrollbar
             >
               <div className={styles.content}>
-                {error && <p role="alert">{error}</p>}
+                {error && <ErrorNotice error={error} />}
                 <ProjectTable
                   c={c}
                   projects={visibleProjects}
@@ -149,7 +150,7 @@ export function ProjectsPage({
               scrollbarLabel={t("Project scroll")}
             >
               <div className={styles.content}>
-                {error && <p role="alert">{error}</p>}
+                {error && <ErrorNotice error={error} />}
                 {detail ? (
                   <ProjectDashboard
                     key={projectId(detail)}
@@ -319,9 +320,11 @@ function ProjectDashboard({
               ]}
             />
             {p.status?.error && (
-              <p className={styles.errors} role="alert">
-                {p.status.error}
-              </p>
+              <ErrorNotice
+                api
+                className={styles.errors}
+                error={p.status.error}
+              />
             )}
           </Section>
           <Section
@@ -349,7 +352,7 @@ function ProjectDashboard({
             )}
             {accountsError && (
               <div className={styles.empty}>
-                <p role="alert">{accountsError}</p>
+                <ErrorNotice error={accountsError} />
                 <Button type="button" onClick={reloadAccounts}>
                   {t("Retry")}
                 </Button>

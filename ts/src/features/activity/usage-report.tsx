@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocalError } from "#src/shared/errors/error-context.tsx";
 import {
   AnimatedCompactNumber,
   Button,
@@ -105,6 +106,7 @@ export function UsageReport({
           : undefined,
     },
   );
+  const readError = useLocalError(stats.error || history.error);
   useEffect(() => setNow(Date.now()), [refreshVersion]);
   useEffect(() => {
     onLoadingChange?.(stats.loading || history.loading);
@@ -129,11 +131,11 @@ export function UsageReport({
     >
       <div className={`${styles.row} ${usageStyles.header}`}>
         <strong>Conversation usage</strong>
-        {(stats.error || history.error) && (
-          <Popover content={stats.error || history.error}>
+        {readError && (
+          <Popover content={readError}>
             <span
               role="alert"
-              aria-label={stats.error || history.error}
+              aria-label={readError}
               className={usageStyles.error}
             >
               !

@@ -1,3 +1,5 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
+import { isAPIError } from "#src/shared/errors/client-errors.ts";
 import {
   sessionLocation,
   resourceLocation,
@@ -668,10 +670,14 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       return true;
     } catch (e) {
       setError(
-        t(
-          "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.",
-          { error: String(e) },
-        ),
+        isAPIError(e, c.errors)
+          ? t(
+              "The result may be unknown after a disconnect; inspect the conversation before retrying.",
+            )
+          : t(
+              "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.",
+              { error: String(e) },
+            ),
       );
       return false;
     } finally {
@@ -1129,12 +1135,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         ))}
       </FloatingCardHost>
       {!!(error || current.error) && (
-        <p
+        <ErrorNotice
           className={`error ${errorStyles.error} ${errorStyles.notice}`}
-          role="alert"
-        >
-          {error || String(current.error)}
-        </p>
+          error={error || String(current.error)}
+        />
       )}
       {needsLogin && (
         <div

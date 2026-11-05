@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
@@ -380,7 +381,9 @@ function TaskEditor({
               version.
             </p>
           )}
-          {(reloadError || error) && <p role="alert">{reloadError || error}</p>}
+          {(reloadError || error) && (
+            <ErrorNotice error={reloadError || error} />
+          )}
           {task && (changed || conflict || reloadError) && (
             <Button type="button" disabled={busy} onClick={reload}>
               Reload latest task
@@ -493,7 +496,7 @@ export function TaskDialog({
         >
           {detail.error ? (
             <>
-              <p role="alert">{detail.error}</p>
+              <ErrorNotice error={detail.error} />
               <Button type="button" onClick={detail.reload}>
                 Retry
               </Button>

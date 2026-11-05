@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import {
   useEffect,
   useLayoutEffect,
@@ -98,7 +99,7 @@ export function SecretPreviewBody({ preview }: { preview: SecretPreview }) {
       document.removeEventListener("visibilitychange", conceal);
     };
   }, [snapshot.state]);
-  if (snapshot.state === "error") return <p role="alert">{snapshot.error}</p>;
+  if (snapshot.state === "error") return <ErrorNotice error={snapshot.error} />;
   if (snapshot.state !== "ready") return <p role="status">Loading secret…</p>;
   return snapshot.value;
 }

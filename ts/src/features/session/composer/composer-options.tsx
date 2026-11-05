@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useState } from "react";
 import { SegmentedControl, ToggleButton } from "@lesomnus/nox";
 import { useSettings } from "#src/shared/settings/settings.ts";
@@ -108,9 +109,7 @@ export function ComposerOptions() {
         </div>
       </div>
       {error && (
-        <small className={styles.error} role="alert">
-          {error}
-        </small>
+        <ErrorNotice as="small" className={styles.error} error={error} />
       )}
     </>
   );

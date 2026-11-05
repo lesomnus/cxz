@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -300,9 +301,7 @@ export function WorkspaceEditor({
         )}
       </header>
       {value.error && (
-        <p className="editor-error" role="alert">
-          {value.error}
-        </p>
+        <ErrorNotice className="editor-error" error={value.error} />
       )}
       {value.phase === "connected" && !value.simulated ? (
         <iframe
@@ -384,9 +383,7 @@ export function WorkspaceEditor({
               <div className="file-empty">{t("Select a file to preview.")}</div>
             )}
             {browseError && (
-              <p className="editor-error" role="alert">
-                {browseError}
-              </p>
+              <ErrorNotice className="editor-error" error={browseError} />
             )}
             <footer>
               <span>{active?.path.replace(root + "/", "") || ""}</span>

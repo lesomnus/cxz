@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef, useState } from "react";
 import { Button, SectionLayout } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
@@ -76,7 +77,7 @@ export function AccountsView({
             {accounts.loading && !accounts.data && (
               <p className={resourceStyles.muted}>Loading accounts…</p>
             )}
-            {accounts.error && <p role="alert">{accounts.error}</p>}
+            {accounts.error && <ErrorNotice error={accounts.error} />}
             {!accounts.loading && !accounts.data?.length && (
               <p className={resourceStyles.muted}>No accounts yet.</p>
             )}

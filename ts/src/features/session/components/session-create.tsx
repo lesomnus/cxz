@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { useEffect, useId, useRef, useState } from "react";
@@ -198,7 +199,7 @@ export function SessionCreate({
               </FormField>
             </Form>
             {(error || accounts.error) && (
-              <p role="alert">{error || accounts.error}</p>
+              <ErrorNotice error={error || accounts.error} />
             )}
             {login && (
               <LoginPanel

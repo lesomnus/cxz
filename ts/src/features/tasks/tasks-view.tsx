@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
 import { useRef, useState } from "react";
@@ -159,11 +160,13 @@ export function TasksView({
                 )}
                 {state.error && (
                   <div className={styles.message}>
-                    <p role="alert">{state.error}</p>
-                    <span>
-                      Tasks are stored in the project runtime. Start the project
-                      if it is stopped.
-                    </span>
+                    <ErrorNotice as="div" error={state.error}>
+                      <p>{state.error}</p>
+                      <span>
+                        Tasks are stored in the project runtime. Start the
+                        project if it is stopped.
+                      </span>
+                    </ErrorNotice>
                     <Button type="button" onClick={state.refresh}>
                       Retry
                     </Button>

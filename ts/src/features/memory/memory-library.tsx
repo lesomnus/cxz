@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useLayoutEffect, useState, useRef, useId } from "react";
 import {
   ActionMenu,
@@ -453,9 +454,10 @@ export function MemoryLibrary({
   return (
     <div className={styles.content}>
       {(error || list.error || text.error) && (
-        <p role="alert" className={styles.error}>
-          {error || list.error || text.error}
-        </p>
+        <ErrorNotice
+          className={styles.error}
+          error={error || list.error || text.error}
+        />
       )}
       <div
         className={styles.columns}
@@ -657,9 +659,9 @@ export function MemoryLibrary({
                   </p>
                 )}
                 {list.error && (
-                  <p className={styles.empty}>
+                  <ErrorNotice error={list.error} className={styles.empty}>
                     Memories could not be loaded. Refresh to try again.
-                  </p>
+                  </ErrorNotice>
                 )}
                 {memories.map((m) => {
                   const owning = ownerFor(m),
@@ -1006,7 +1008,9 @@ export function MemoryLibrary({
                         {versions.loading && (
                           <p className={styles.empty}>Loading versions…</p>
                         )}
-                        {versions.error && <p role="alert">{versions.error}</p>}
+                        {versions.error && (
+                          <ErrorNotice error={versions.error} />
+                        )}
                         <div className={styles.versionList}>
                           {versions.data?.versions.map((v) => (
                             <Button
@@ -1028,7 +1032,7 @@ export function MemoryLibrary({
                           <p className={styles.empty}>Loading comparison…</p>
                         )}
                         {difference.error && (
-                          <p role="alert">{difference.error}</p>
+                          <ErrorNotice error={difference.error} />
                         )}
                         {difference.data && compare !== undefined && (
                           <>
