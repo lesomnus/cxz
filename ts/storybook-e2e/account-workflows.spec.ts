@@ -647,6 +647,52 @@ test("session creation performs its scoped login and reuses the creation key", a
   ).toHaveCount(0);
 });
 
+test("session account logos keep visible space from both names in the list and selected value", async ({
+  page,
+}) => {
+  await open(page, "session-creation-requires-login");
+  await page.getByRole("button", { name: "Add session", exact: true }).click();
+  const form = page.getByRole("dialog", { name: "Add session", exact: true });
+  const trigger = form.getByRole("combobox", { name: "Account", exact: true });
+  const visibleGap = async (row: ReturnType<Page["locator"]>) =>
+    row.evaluate((node) => {
+      const logo = node.querySelector(".agent-brand :is(svg,img)")!;
+      const name = node.querySelector(
+        ".setting-match-label > span, .meta-value > span",
+      )!;
+      const range = document.createRange();
+      range.selectNodeContents(name);
+      const glyph = range.getBoundingClientRect();
+      return glyph.left - logo.getBoundingClientRect().right;
+    });
+  for (const [agent, name] of [
+    ["claude", "Claude work account work1"],
+    ["codex", "Codex work account code1"],
+  ]) {
+    await trigger.click();
+    const option = form.getByRole("option", { name, exact: true });
+    await expect(option.locator(`.agent-brand-${agent}`)).toBeVisible();
+    await expect.poll(() => visibleGap(option)).toBeGreaterThanOrEqual(7.5);
+    await option.click();
+    await expect.poll(() => visibleGap(trigger)).toBeGreaterThanOrEqual(7.5);
+    const anchor = (await trigger.locator(".meta-value").boundingBox())!;
+    await trigger.click();
+    await expect.poll(() => visibleGap(option)).toBeGreaterThanOrEqual(7.5);
+    const aligned = (await option
+      .locator(".setting-match-label")
+      .boundingBox())!;
+    expect(Math.abs(anchor.x - aligned.x)).toBeLessThan(1);
+    await option.click();
+  }
+  await form
+    .getByRole("button", { name: "Create session", exact: true })
+    .click();
+  await expect(form).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toBeVisible();
+});
+
 test("sending discovers expired OAuth and login resumes without replaying the input", async ({
   page,
 }) => {

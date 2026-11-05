@@ -113,6 +113,15 @@ export function accountWorkflowFixture(
     dateCreated: timestampFromDate(new Date("2026-10-20T09:00:00Z")),
   });
   const accounts = scenario === "add" ? [] : [account];
+  if (scenario === "create-session")
+    accounts.push(
+      create(AccountSchema, {
+        id: projectFixtureId(11),
+        alias: "code1",
+        name: "Codex work account",
+        agent: "codex",
+      }),
+    );
   const signedIn = new Set(scenario === "signed-in" ? [account.alias] : []);
   const authenticatedSessions = new Set<string>();
   const project = create(ProjectSchema, {
@@ -317,13 +326,26 @@ export function accountWorkflowFixture(
         },
         add: (request) => {
           calls.push(`create:${request.clientId}`);
-          if (!authenticatedSessions.has(request.clientId))
+          const alias =
+            request.account?.key.case === "alias"
+              ? request.account.key.value
+              : account.alias;
+          const selected =
+            accounts.find((item) => item.alias === alias) ?? account;
+          if (
+            selected.agent === "claude" &&
+            !authenticatedSessions.has(request.clientId)
+          )
             throw loginRequired(request.clientId);
           session = create(SessionSchema, {
             ...session,
+            account: selected,
+            agent: selected.agent,
             clientId: request.clientId,
             name: request.name || session.name,
-            model: request.model || session.model,
+            model:
+              request.model ||
+              (selected.agent === "claude" ? "claude-sonnet" : "gpt-6.1"),
           });
           session.status!.state = "idle";
           needsLogin = false;
