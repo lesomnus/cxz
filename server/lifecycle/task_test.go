@@ -266,6 +266,9 @@ func TestTaskManagerForwardsWithoutShadowStorage(t *testing.T) {
 	if err != nil || len(headers.Get(taskapi.WatchReadyHeader)) != 1 || headers.Get(taskapi.WatchReadyHeader)[0] != "1" {
 		t.Fatalf("forwarded readiness: %v %v", headers, err)
 	}
+	if ready, err := readyWatch.Recv(); err != nil || len(ready.GetItems()) != 0 {
+		t.Fatalf("forwarded readiness frame: %v %v", ready, err)
+	}
 	current := frame.GetItems()[0].GetValue()
 	_, err = child.Task().Patch(ctx, resource.TaskPatchRequest_builder{Ref: resource.TaskRef_builder{Id: current.GetId(), Project: projectRef(f.p.Id)}.Build(), DateUpdated: current.GetDateUpdated(), Name: ptr("After readiness")}.Build())
 	if err != nil {
@@ -312,6 +315,9 @@ func TestTaskChangesOnlyErasureIsScoped(t *testing.T) {
 	}
 	if headers, err := stream.Header(); err != nil || len(headers.Get(taskapi.WatchReadyHeader)) != 1 {
 		t.Fatalf("readiness: %v %v", headers, err)
+	}
+	if ready, err := stream.Recv(); err != nil || len(ready.GetItems()) != 0 {
+		t.Fatalf("readiness frame: %v %v", ready, err)
 	}
 	layer, _ := resource.Find[Layer](stack)
 	for _, value := range []*resource.Task{other, own} {

@@ -79,6 +79,9 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	if err != nil || len(headers.Get(taskapi.WatchReadyHeader)) != 1 || headers.Get(taskapi.WatchReadyHeader)[0] != "1" {
 		t.Fatalf("changes-only readiness: %v %v", headers, err)
 	}
+	if ready, err := changes.Recv(); err != nil || len(ready.GetItems()) != 0 {
+		t.Fatalf("changes-only readiness frame: %v %v", ready, err)
+	}
 	v := add("shared-work")
 	frame, err = watch.Recv()
 	if err != nil || len(frame.GetItems()) != 1 || !bytes.Equal(frame.GetItems()[0].GetId(), v.GetId()) {
@@ -213,6 +216,9 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	}
 	if headers, err := quiet.Header(); err != nil || len(headers.Get(taskapi.WatchReadyHeader)) != 1 {
 		t.Fatalf("filtered readiness: %v %v", headers, err)
+	}
+	if ready, err := quiet.Recv(); err != nil || len(ready.GetItems()) != 0 {
+		t.Fatalf("filtered readiness frame: %v %v", ready, err)
 	}
 	if _, err := client.Add(ctx, resource.TaskAddRequest_builder{Project: f.OtherProject, ClientId: "private-other-project", Name: "Other project"}.Build()); err != nil {
 		t.Fatal(err)

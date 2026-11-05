@@ -282,7 +282,7 @@ func (m *Memory) Watch(r *resource.TaskWatchRequest, out grpc.ServerStreamingSer
 			}
 		}
 		m.mu.Unlock()
-		if first {
+		if first && r.GetSkipSnapshot() {
 			if err := WatchReady(out); err != nil {
 				return err
 			}
