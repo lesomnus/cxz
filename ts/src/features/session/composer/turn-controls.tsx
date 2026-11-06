@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Button } from "@lesomnus/nox";
 import { ElapsedTime } from "@lesomnus/nox";
@@ -107,15 +108,7 @@ export function TurnControls({
           disabled={!turn.active || busy}
           onClick={() => confirm("click")}
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <rect x="6" y="6" width="12" height="12" rx="1.5" />
-          </svg>
+          <Icon name="stop" width="18" height="18" aria-hidden="true" />
         </Button>
         <span id={hint} className="send-shortcut" role="tooltip">
           {armed

@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -113,18 +114,11 @@ export function TaskTable({
                     <span className={styles.name}>{task.name}</span>
                     <span className={styles.alias}>{task.alias}</span>
                   </span>
-                  <svg
+                  <Icon
+                    name="open-details"
                     className={styles.openIcon}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
                     aria-hidden="true"
-                  >
-                    <path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" />
-                  </svg>
+                  />
                 </Button>
               </TableCell>
               <TableCell className={styles.buttonCell}>
@@ -144,18 +138,11 @@ export function TaskTable({
                         {issue || owner.name}
                       </span>
                     </span>
-                    <svg
+                    <Icon
+                      name="open-external"
                       className={styles.openIcon}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
                       aria-hidden="true"
-                    >
-                      <path d="M7 17 17 7M7 7h10v10" />
-                    </svg>
+                    />
                   </RouteLink>
                 ) : (
                   <span className={styles.secondary}>

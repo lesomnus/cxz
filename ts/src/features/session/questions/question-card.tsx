@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useId, useRef, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -127,25 +128,12 @@ export function QuestionCard({
             aria-controls={panel}
             onClick={toggle}
           >
-            <svg
+            <Icon
+              name={expanded ? "collapse" : "expand"}
               width="16"
               height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
               aria-hidden="true"
-            >
-              <path
-                d={
-                  expanded
-                    ? "M2 6h4V2M10 2v4h4M14 10h-4v4M6 14v-4H2"
-                    : "M6 2H2v4M10 2h4v4M14 10v4h-4M6 14H2v-4"
-                }
-              />
-            </svg>
+            />
           </Button>
         </header>
       )}

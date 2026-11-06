@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { Popover } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -17,25 +18,11 @@ export function FieldLabel({
       {description && (
         <span className={styles.help}>
           <Popover content={description}>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
+            <Icon
+              name="info"
               role="img"
               aria-label={t("About {label}", { label })}
-            >
-              <circle cx="12" cy="12" r="8" />
-              <path d="M12 11v6" />
-              <circle
-                cx="12"
-                cy="7.5"
-                r=".75"
-                fill="currentColor"
-                stroke="none"
-              />
-            </svg>
+            />
           </Popover>
         </span>
       )}

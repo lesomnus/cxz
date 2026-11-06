@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { SidebarHint } from "#src/shared/navigation/sidebar-hint.tsx";
@@ -285,17 +286,12 @@ function WorkspaceContent({
                     {
                       label: "Add session",
                       icon: (
-                        <svg
+                        <Icon
+                          name="add"
                           width="16"
                           height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
                           aria-hidden="true"
-                        >
-                          <path d="M12 5v14M5 12h14" />
-                        </svg>
+                        />
                       ),
                       run: () => setAddingSession(true),
                     },
@@ -304,25 +300,16 @@ function WorkspaceContent({
                         ? t("Disable project collapse")
                         : t("Enable project collapse"),
                       icon: (
-                        <svg
+                        <Icon
+                          name={
+                            projectCollapse
+                              ? "collapse-projects"
+                              : "expand-projects"
+                          }
                           width="16"
                           height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
                           aria-hidden="true"
-                        >
-                          <path
-                            d={
-                              projectCollapse
-                                ? "m7 9 5-5 5 5M7 15l5 5 5-5"
-                                : "m7 4 5 5 5-5M7 20l5-5 5 5"
-                            }
-                          />
-                        </svg>
+                        />
                       ),
                       run: () => {
                         try {
@@ -341,26 +328,12 @@ function WorkspaceContent({
                         ? "Show stopped sessions"
                         : "Hide stopped sessions",
                       icon: (
-                        <svg
+                        <Icon
+                          name={hideStopped ? "show" : "hide"}
                           width="16"
                           height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
                           aria-hidden="true"
-                        >
-                          {hideStopped ? (
-                            <>
-                              <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </>
-                          ) : (
-                            <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A12 12 0 0 1 12 5c5.5 0 9 7 9 7a18 18 0 0 1-3.2 4.1M6.2 6.2A18 18 0 0 0 3 12s3.5 7 9 7a10 10 0 0 0 4.1-.9" />
-                          )}
-                        </svg>
+                        />
                       ),
                       run: () => {
                         try {

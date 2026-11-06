@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
@@ -149,19 +150,13 @@ export function ConversationSearch({
       >
         <div className={bar.surface}>
           <div className={bar.controls}>
-            <svg
+            <Icon
+              name="search"
               className={bar.icon}
               width="16"
               height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
               aria-hidden="true"
-            >
-              <circle cx="10" cy="10" r="6" />
-              <path d="m15 15 5 5" />
-            </svg>
+            />
             <input
               className={bar.input}
               type="search"
@@ -232,15 +227,7 @@ export function ConversationSearch({
                   setProgress("Search stopped.");
                 }}
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <rect x="4" y="4" width="8" height="8" rx="1" />
-                </svg>
+                <Icon name="stop" width="14" height="14" aria-hidden="true" />
               </Button>
             ) : (
               <Button
@@ -251,17 +238,12 @@ export function ConversationSearch({
                 title="Search"
                 disabled={!query.trim()}
               >
-                <svg
+                <Icon
+                  name="run-search"
                   width="16"
                   height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
                   aria-hidden="true"
-                >
-                  <path d="M5 12h14m-5-5 5 5-5 5" />
-                </svg>
+                />
               </Button>
             )}
           </div>

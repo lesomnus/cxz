@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useState } from "react";
 import { SegmentedControl, ToggleButton } from "@lesomnus/nox";
@@ -123,45 +124,23 @@ function EditorOptionIcon({
   pressed: boolean;
 }) {
   return (
-    <svg
+    <Icon
+      name={
+        option === "controls"
+          ? pressed
+            ? "show-controls"
+            : "hide-controls"
+          : option === "indent"
+            ? pressed
+              ? "indent-spaces"
+              : "indent-tab"
+            : pressed
+              ? "word-wrap"
+              : "no-word-wrap"
+      }
       width="16"
       height="16"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       aria-hidden="true"
-    >
-      {option === "controls" ? (
-        <>
-          <path d="M11 16V4H8a3 3 0 0 0 0 6h3m3-6v12M8 4h8" />
-          {!pressed && <path d="m3 3 14 14" />}
-        </>
-      ) : option === "indent" ? (
-        pressed ? (
-          <>
-            <path d="M3 5v10m14-10v10" />
-            {[6, 10, 14].map((x) => (
-              <circle
-                key={x}
-                cx={x}
-                cy="10"
-                r="0.8"
-                fill="currentColor"
-                stroke="none"
-              />
-            ))}
-          </>
-        ) : (
-          <path d="M3 10h11m-4-4 4 4-4 4m7-10v12" />
-        )
-      ) : pressed ? (
-        <path d="M3 4h14M3 9h11a3 3 0 0 1 0 6h-4m3-3-3 3 3 3M3 14h3" />
-      ) : (
-        <path d="M3 4h14M3 9h14M3 14h9m2-2 3 2-3 2" />
-      )}
-    </svg>
+    />
   );
 }

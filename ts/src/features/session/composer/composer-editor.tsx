@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useTheme } from "#src/shared/theme/theme.tsx";
 import { t, translateKnown, currentLocale } from "#src/shared/i18n/i18n.ts";
@@ -725,19 +726,7 @@ export function ComposerEditor({
       >
         {dragging && (
           <div className="composer-file-drop-overlay" role="status">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 15V3m-4 4 4-4 4 4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" />
-            </svg>
+            <Icon name="upload" width="24" height="24" aria-hidden="true" />
             <span>{t("Drop files or folders here")}</span>
           </div>
         )}

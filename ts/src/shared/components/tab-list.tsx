@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { Button, type ButtonProps } from "@lesomnus/nox";
 import type { ReactNode } from "react";
 
@@ -59,20 +60,11 @@ export function TabList({
               data-answered={item.answered}
               aria-hidden="true"
             >
-              <svg
+              <Icon
+                name={item.answered ? "question-answered" : "question-open"}
                 width="16"
                 height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="7" cy="9" r="4" strokeWidth="1" />
-                {item.answered && (
-                  <path d="m2 8.5 3.2 3 7.3-8" strokeWidth="2.6" />
-                )}
-              </svg>
+              />
             </span>
           )}
           <span className="tab-label">{item.label}</span>

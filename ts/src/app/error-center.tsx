@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import {
   useEffect,
   useId,
@@ -100,17 +101,7 @@ export function ErrorCenter({
         }}
       >
         <span className={styles.symbol} aria-hidden="true">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <path d="m12 3 10 18H2L12 3Z" strokeLinejoin="round" />
-            <path d="M12 9v5m0 3v.1" strokeLinecap="round" />
-          </svg>
+          <Icon name="warning" width="20" height="20" />
         </span>
         <span className={styles.srOnly} role="status">
           {t("{count} active errors", { count: String(active.length) })}

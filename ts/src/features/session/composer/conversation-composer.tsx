@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import {
   useId,
   useImperativeHandle,
@@ -209,19 +210,12 @@ export function ConversationComposer({
                 aria-label={t("Latest")}
                 onClick={onLatest}
               >
-                <svg
+                <Icon
+                  name="latest-message"
                   width="18"
                   height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                   aria-hidden="true"
-                >
-                  <path d="M12 5v14m-6-6 6 6 6-6" />
-                </svg>
+                />
               </Button>
             </span>
             {approvals}
@@ -240,19 +234,12 @@ export function ConversationComposer({
                 aria-describedby={sendHint}
                 disabled={!canSend || !ready}
               >
-                <svg
+                <Icon
+                  name="send-message"
                   width="18"
                   height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                   aria-hidden="true"
-                >
-                  <path d="M12 19V5m-6 6 6-6 6 6" />
-                </svg>
+                />
               </Button>
               <span id={sendHint} className="send-shortcut" role="tooltip">
                 ctrl+enter

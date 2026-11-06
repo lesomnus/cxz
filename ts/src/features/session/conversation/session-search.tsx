@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import type { EventListSource } from "#src/features/session/model/event-source.ts";
 import {
   useEffect,
@@ -232,19 +233,13 @@ export function SessionSearch({
           void nextMatch();
         }}
       >
-        <svg
+        <Icon
+          name="search"
           className={bar.icon}
           width="16"
           height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
           aria-hidden="true"
-        >
-          <circle cx="10" cy="10" r="6" />
-          <path d="m15 15 5 5" />
-        </svg>
+        />
         <input
           ref={input}
           className={bar.input}

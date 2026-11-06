@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
@@ -100,16 +101,7 @@ export function SessionTable({
       disabled={loading || controls.busy}
       onClick={addSession}
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        aria-hidden="true"
-      >
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      <Icon name="add" aria-hidden="true" />
       <span>{t("Session")}</span>
     </Button>
   );
@@ -396,17 +388,10 @@ function stateLabel(s: Session) {
 
 function OpenArrow() {
   return (
-    <svg
+    <Icon
+      name="open-external"
       className={styles.openArrow}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       aria-hidden="true"
-    >
-      <path d="M7 17 17 7M7 7h10v10" />
-    </svg>
+    />
   );
 }

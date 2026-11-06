@@ -1,3 +1,4 @@
+import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import type { Session } from "#gen/cxz/session_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -92,34 +93,16 @@ export function SessionIndicator({
   );
 }
 
+const stateIcons: Record<string, IconName> = {
+  stopped: "state-stopped",
+  interrupted: "interrupted",
+  waiting: "waiting",
+  failed: "failed",
+  idle: "idle",
+};
+
 function StateIcon({ state }: { state: string }) {
   return (
-    <svg
-      className={styles.stateIcon}
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {state === "stopped" ? (
-        <path d="M2.83 9.88a5.5 5.5 0 0 1 7.05-7.05m3.29 3.29a5.5 5.5 0 0 1-7.05 7.05M2.5 13.5l11-11" />
-      ) : state === "interrupted" ? (
-        <path d="m8 2.5 5.5 11h-11Z" />
-      ) : state === "waiting" ? (
-        <path d="M6 4v8m4-8v8" />
-      ) : (
-        <>
-          <circle cx="8" cy="8" r="5.5" />
-          {state === "failed" ? (
-            <path d="M8 4.5V8m0 3h.01" />
-          ) : state !== "idle" ? (
-            <path d="M6.5 6.25a1.5 1.5 0 1 1 2 1.4c-.5.2-.5.6-.5 1.1M8 11h.01" />
-          ) : null}
-        </>
-      )}
-    </svg>
+    <Icon name={stateIcons[state] ?? "unknown"} className={styles.stateIcon} />
   );
 }

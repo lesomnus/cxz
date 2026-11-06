@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import type { InputHTMLAttributes } from "react";
 import styles from "./checkbox.module.css";
 
@@ -19,17 +20,7 @@ export function Checkbox({
         }}
       />
       <span className={styles.box} aria-hidden="true">
-        <svg
-          viewBox="0 0 18 18"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path className={styles.check} d="m4.5 9 3 3 6-6" />
-          <path className={styles.mixed} d="M5 9h8" />
-        </svg>
+        <Icon name="checkbox" />
       </span>
     </label>
   );

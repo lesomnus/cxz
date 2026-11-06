@@ -1,0 +1,25 @@
+.catalogue {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--ui-space);
+  padding: var(--ui-space);
+  margin: 0;
+  list-style: none;
+}
+.catalogue li {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
+  padding: calc(2 * var(--ui-space));
+  border-radius: var(--ui-space);
+  background: var(--ui-shade-24);
+}
+.catalogue code {
+  font-family: var(--ui-font-mono);
+  font-size: inherit;
+}
+.glyph {
+  flex: none;
+  width: var(--ui-icon-size);
+  height: var(--ui-icon-size);
+}

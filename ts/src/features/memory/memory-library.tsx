@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useLayoutEffect, useState, useRef, useId } from "react";
 import {
@@ -47,19 +48,7 @@ const migrationLabels = (labels: Record<string, string>) =>
     Object.entries(labels).filter(([k]) => k.startsWith("legacy.")),
   );
 function DocumentIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      aria-hidden="true"
-    >
-      <path d="M14 3H6v18h12V7zM14 3v5h4M9 12h6M9 16h6" />
-    </svg>
-  );
+  return <Icon name="document" width="14" height="14" aria-hidden="true" />;
 }
 function parseLabels(value: string) {
   const labels: Record<string, string> = {};
@@ -488,17 +477,7 @@ export function MemoryLibrary({
                     })
                   }
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    aria-hidden="true"
-                  >
-                    <path d="M20 7v5h-5M4 17v-5h5M19 12a7 7 0 0 0-12-5L4 10m1 2a7 7 0 0 0 12 5l3-3" />
-                  </svg>
+                  <Icon name="sync" width="14" height="14" aria-hidden="true" />
                 </Button>
                 {!trash && (
                   <Button
@@ -508,17 +487,12 @@ export function MemoryLibrary({
                     title="New memory"
                     onClick={() => newMemory()}
                   >
-                    <svg
+                    <Icon
+                      name="add"
                       width="14"
                       height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
                       aria-hidden="true"
-                    >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
+                    />
                   </Button>
                 )}
               </div>
@@ -570,18 +544,12 @@ export function MemoryLibrary({
                   aria-label="Search"
                   title="Search"
                 >
-                  <svg
+                  <Icon
+                    name="search"
                     width="14"
                     height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
                     aria-hidden="true"
-                  >
-                    <circle cx="10" cy="10" r="6" />
-                    <path d="m15 15 5 5" />
-                  </svg>
+                  />
                 </Button>
                 <Button
                   type="button"
@@ -592,17 +560,12 @@ export function MemoryLibrary({
                   aria-pressed={showFilters}
                   onClick={() => setShowFilters((v) => !v)}
                 >
-                  <svg
+                  <Icon
+                    name="filter"
                     width="14"
                     height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
                     aria-hidden="true"
-                  >
-                    <path d="M4 6h16M7 12h10M10 18h4" />
-                  </svg>
+                  />
                 </Button>
               </div>
               {showFilters && (

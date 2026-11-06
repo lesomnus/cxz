@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useId } from "react";
 import { Button } from "@lesomnus/nox";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -22,20 +23,7 @@ export function CopyButton({
         aria-describedby={tooltip}
         onClick={() => navigator.clipboard.writeText(value).catch(() => {})}
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <rect x="8" y="8" width="12" height="12" rx="2" />
-          <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
-        </svg>
+        <Icon name="copy" width="16" height="16" aria-hidden="true" />
       </Button>
       <span id={tooltip} className="meta-tooltip" role="tooltip">
         {t("Copy")}

@@ -35,16 +35,15 @@
   width: 100%;
   height: 100%;
 }
-.check,
-.mixed {
+.box :global([data-icon-part]) {
   visibility: hidden;
 }
 .input:is(:checked, :indeterminate) + .box {
   background: var(--ui-shade-237);
   border-color: var(--ui-shade-237);
 }
-.input:checked:not(:indeterminate) + .box .check,
-.input:indeterminate + .box .mixed {
+.input:checked:not(:indeterminate) + .box :global([data-icon-part="check"]),
+.input:indeterminate + .box :global([data-icon-part="mixed"]) {
   visibility: visible;
 }
 .control:hover .input:not(:disabled) + .box {

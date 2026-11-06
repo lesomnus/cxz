@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { key } from "@lesomnus/payday/store";
 import {
@@ -219,17 +220,10 @@ export function ProjectTable({
 
 function NavigationArrow({ diagonal = false }: { diagonal?: boolean }) {
   return (
-    <svg
+    <Icon
+      name={diagonal ? "open-external" : "open-project"}
       className={styles.arrow}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       aria-hidden="true"
-    >
-      <path d={diagonal ? "M7 17 17 7M7 7h10v10" : "M5 12h14m-6-6 6 6-6 6"} />
-    </svg>
+    />
   );
 }

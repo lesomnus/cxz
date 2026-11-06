@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useEffect, useState } from "react";
 import { useLocalError } from "#src/shared/errors/error-context.tsx";
 import {
@@ -153,19 +154,7 @@ export function UsageReport({
               await stats.reload();
             }}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M13 7a5 5 0 1 0-.8 3.7M13 3v4H9" />
-            </svg>
+            <Icon name="refresh" width="16" height="16" aria-hidden="true" />
           </Button>
         )}
       </div>

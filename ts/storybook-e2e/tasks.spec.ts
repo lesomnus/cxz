@@ -314,18 +314,18 @@ test("task columns show status icons, distinct priority symbols and relative tim
     await glyph(highest).evaluate((el) => getComputedStyle(el).color),
   ).not.toBe(await glyph(low).evaluate((el) => getComputedStyle(el).color));
   const symbols = tasks.locator("tbody td:nth-child(4) svg");
-  const paths = await symbols
-    .locator("path")
-    .evaluateAll((paths) => paths.map((path) => path.getAttribute("d")));
-  expect(new Set(paths).size).toBe(5);
+  const names = await symbols.evaluateAll((icons) =>
+    icons.map((icon) => icon.getAttribute("data-icon")),
+  );
+  expect(new Set(names).size).toBe(5);
   const normalCircle = tasks
     .getByRole("img", { name: "Normal priority", exact: true })
     .first()
-    .locator("path");
+    .locator("svg > :first-child");
   const smallCircle = tasks
     .getByRole("img", { name: "Lowest priority", exact: true })
     .first()
-    .locator("path");
+    .locator("svg > :first-child");
   expect((await normalCircle.boundingBox())!.width).toBeGreaterThan(
     (await smallCircle.boundingBox())!.width,
   );

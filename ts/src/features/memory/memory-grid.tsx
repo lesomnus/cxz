@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useEffect, useId } from "react";
 import { Button, CompactNumber } from "@lesomnus/nox";
 import type { Memory } from "#gen/cxz/memory_pb";
@@ -57,17 +58,7 @@ function MemoryCard({
             {["codex", "claude"].includes(owning.agent) ? (
               <AgentBrand agent={owning.agent} />
             ) : (
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <path d="M14 3H6v18h12V7zM14 3v5h4M9 12h6M9 16h6" />
-              </svg>
+              <Icon name="document" width="14" height="14" aria-hidden="true" />
             )}
           </span>
           <span title={owning.name}>{owning.name}</span>

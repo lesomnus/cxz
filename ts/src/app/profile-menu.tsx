@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ActionMenu } from "@lesomnus/nox";
@@ -44,11 +45,7 @@ export function ProfileMenu({
         triggerClassName="resource-link profile-trigger"
         triggerContent={
           <span className="profile-avatar" aria-hidden="true">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-              <circle cx="18" cy="18" r="8" stroke="white" strokeWidth="1.5" />
-              <circle cx="18" cy="18" r="2" fill="white" />
-              <circle cx="18" cy="10" r="2" fill="white" />
-            </svg>
+            <Icon name="profile" color="white" width="36" height="36" />
           </span>
         }
         items={[
@@ -64,17 +61,7 @@ export function ProfileMenu({
             label: exitLabel,
             disabled: busy,
             icon: (
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <path d="M10 4H4v16h6M8 12h13m-5-5 5 5-5 5" />
-              </svg>
+              <Icon name="sign-out" width="20" height="20" aria-hidden="true" />
             ),
             run: () => void signOut(),
           },
