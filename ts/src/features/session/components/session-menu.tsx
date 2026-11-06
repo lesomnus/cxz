@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import { ActionMenu } from "@lesomnus/nox";
 import { ComposerOptions } from "#src/features/session/composer/composer-options.tsx";
@@ -29,7 +29,12 @@ export type SessionMenuProps = {
     available: boolean;
     toggle: () => void;
   };
-  tools?: { label: string; run: () => void; disabled?: boolean }[];
+  tools?: {
+    label: string;
+    icon?: ReactNode;
+    run: () => void;
+    disabled?: boolean;
+  }[];
 };
 
 // Mirror the button's inset across the wrapper's visible top border.

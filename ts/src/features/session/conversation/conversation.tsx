@@ -30,6 +30,7 @@ import {
   saveContainerDownload,
 } from "#src/features/session/composer/composer-download.ts";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { Button } from "@lesomnus/nox";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { authenticationRequired } from "#src/features/session/model/session-auth.ts";
@@ -1254,15 +1255,25 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             tools={[
               {
                 label: "Insert secret",
+                icon: <Icon name="hide" />,
                 disabled: !s?.status?.runId || !projectId || busy,
                 run: () => openSecret(),
               },
-              { label: "Shared memory", run: () => localOpen("memory") },
-              { label: "Auxiliary AI", run: () => localOpen("aux") },
+              {
+                label: "Shared memory",
+                icon: <Icon name="memory" />,
+                run: () => localOpen("memory"),
+              },
+              {
+                label: "Auxiliary AI",
+                icon: <Icon name="auxiliary" />,
+                run: () => localOpen("aux"),
+              },
               ...(s?.agent === "claude"
                 ? [
                     {
                       label: "Log in",
+                      icon: <Icon name="accounts" />,
                       disabled:
                         busy ||
                         !["idle", "stopped", "failed", "interrupted"].includes(

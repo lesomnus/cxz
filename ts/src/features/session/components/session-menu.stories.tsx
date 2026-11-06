@@ -7,6 +7,7 @@ import {
 } from "#src/features/session/cards/floating-card.tsx";
 import { storySession } from "#src/storybook/fixtures.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { SessionMenu } from "./session-menu";
 import styles from "./session-menu.stories.module.css";
 
@@ -40,10 +41,12 @@ function MenuPreview({
     setAction("");
   }, [state, agent]);
   const tools = [
-    "Insert secret",
-    "Shared memory",
-    "Auxiliary AI",
-    ...(agent === "claude" ? ["Log in"] : []),
+    { label: "Insert secret", icon: <Icon name="hide" /> },
+    { label: "Shared memory", icon: <Icon name="memory" /> },
+    { label: "Auxiliary AI", icon: <Icon name="auxiliary" /> },
+    ...(agent === "claude"
+      ? [{ label: "Log in", icon: <Icon name="accounts" /> }]
+      : []),
   ];
   return (
     <FloatingCardProvider>
@@ -61,8 +64,9 @@ function MenuPreview({
                 available: true,
                 toggle: () => setTerminal((value) => !value),
               }}
-              tools={tools.map((label) => ({
+              tools={tools.map(({ label, icon }) => ({
                 label,
+                icon,
                 disabled:
                   label === "Insert secret"
                     ? busy
