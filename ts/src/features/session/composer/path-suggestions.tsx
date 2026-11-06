@@ -20,6 +20,7 @@ import {
   type SuggestionGridLayout,
 } from "@lesomnus/nox";
 import { PathGrid } from "./path-grid";
+import { useLocalError } from "#src/shared/errors/error-context.tsx";
 
 export function usePathSuggestions({
   value,
@@ -71,12 +72,16 @@ export function usePathSuggestions({
     listing?.lookup === lookup && listing?.parent === parent
       ? listing
       : undefined;
+  const localError = useLocalError(current?.error);
   const matches = token && current ? matchPaths(current.entries, token) : [];
   const selected =
     choice.text === signature
       ? Math.min(choice.index, Math.max(0, matches.length - 1))
       : 0;
-  const open = !!token && !(choice.text === signature && choice.dismissed);
+  const open =
+    !!token &&
+    !(choice.text === signature && choice.dismissed) &&
+    !(current?.error && !localError);
   function updateSelection() {
     const el = input.current;
     if (!el) return;
@@ -207,9 +212,7 @@ export function usePathSuggestions({
         caret={selection.start}
         onLayoutChange={setLayout}
         message={
-          !current
-            ? t("Loading paths…")
-            : (current.error ?? t("No matching paths"))
+          !current ? t("Loading paths…") : localError || t("No matching paths")
         }
       />
     ),

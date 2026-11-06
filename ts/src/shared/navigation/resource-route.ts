@@ -69,7 +69,6 @@ export const resourcePaths = {
   tasks: "/c/$connection/task",
   accounts: "/c/$connection/account",
   search: "/c/$connection/search",
-  memory: "/c/$connection/memory",
   auxiliary: "/c/$connection/auxiliary",
 } as const;
 
@@ -96,6 +95,22 @@ export function projectLocation(project?: string) {
       }
     : resourceLocation("projects");
 }
+export function memoryLocation(
+  project: string | Parameters<typeof resourceHandle>[0],
+  memory?: string,
+) {
+  const projectId =
+    typeof project === "string" ? project : resourceHandle(project);
+  return memory
+    ? {
+        to: "/c/$connection/project/$projectId/memory/$memoryId" as const,
+        params: { ...selfConnection, projectId, memoryId: memory },
+      }
+    : {
+        to: "/c/$connection/project/$projectId/memory" as const,
+        params: { ...selfConnection, projectId },
+      };
+}
 export function accountLocation(account?: string) {
   return account
     ? {
@@ -106,17 +121,34 @@ export function accountLocation(account?: string) {
 }
 export function taskLocation({
   task,
+  project,
   ...search
 }: {
-  task?: string;
-  project?: string;
+  task?: string | Parameters<typeof resourceHandle>[0];
+  project?: string | Parameters<typeof resourceHandle>[0];
   assignee?: string;
   run?: string;
 }) {
-  return task
+  const projectId =
+    typeof project === "string" ? project : project && resourceHandle(project);
+  const taskId = typeof task === "string" ? task : task && resourceHandle(task);
+  if (projectId) {
+    return taskId
+      ? {
+          to: "/c/$connection/project/$projectId/task/$taskId" as const,
+          params: { ...selfConnection, projectId, taskId },
+          search,
+        }
+      : {
+          to: "/c/$connection/project/$projectId/task" as const,
+          params: { ...selfConnection, projectId },
+          search,
+        };
+  }
+  return taskId
     ? {
         to: "/c/$connection/task/$taskId" as const,
-        params: { ...selfConnection, taskId: task },
+        params: { ...selfConnection, taskId },
         search,
       }
     : { ...resourceLocation("tasks"), search };

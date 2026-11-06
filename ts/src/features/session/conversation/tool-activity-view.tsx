@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import type { SnapshotSource } from "#src/features/session/model/event-source.ts";
 import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
 import { DetailTabs, type DetailSection } from "./detail-tabs";
@@ -135,7 +136,7 @@ function ToolDetails({
   const anchor = original.call ?? original.output[0] ?? original.result!;
   const summary = !!anchor.toolSummary;
   const state = useEventDetails(anchor, summary ? loadDetails : undefined);
-  if (summary && state.error) return <p role="alert">{state.error}</p>;
+  if (summary && state.error) return <ErrorNotice error={state.error} />;
   if (summary && !state.events) return <p className="muted">{t("Loading…")}</p>;
   // The records EventDetails returns are this tool's, so they assemble into
   // this tool's activity -- no searching for which group belongs to the row.

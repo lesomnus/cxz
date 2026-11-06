@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/taskapi"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/header"
 	"google.golang.org/grpc"
@@ -68,11 +69,29 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	if err != nil || len(frame.GetItems()) != 0 {
 		t.Fatalf("empty snapshot: %v %v", frame, err)
 	}
+	changesCtx, stopChanges := context.WithCancel(ctx)
+	defer stopChanges()
+	changes, err := client.Watch(changesCtx, resource.TaskWatchRequest_builder{Project: f.Project, SkipSnapshot: true}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	headers, err := changes.Header()
+	if err != nil || len(headers.Get(taskapi.WatchReadyHeader)) != 1 || headers.Get(taskapi.WatchReadyHeader)[0] != "1" {
+		t.Fatalf("changes-only readiness: %v %v", headers, err)
+	}
+	if ready, err := changes.Recv(); err != nil || len(ready.GetItems()) != 0 {
+		t.Fatalf("changes-only readiness frame: %v %v", ready, err)
+	}
 	v := add("shared-work")
 	frame, err = watch.Recv()
 	if err != nil || len(frame.GetItems()) != 1 || !bytes.Equal(frame.GetItems()[0].GetId(), v.GetId()) {
 		t.Fatalf("committed Add: %v %v", frame, err)
 	}
+	change, err := changes.Recv()
+	if err != nil || len(change.GetItems()) != 1 || !bytes.Equal(change.GetItems()[0].GetId(), v.GetId()) || !change.GetItems()[0].HasValue() {
+		t.Fatalf("changes-only first Add: %v %v", change, err)
+	}
+	stopChanges()
 	stopWatch()
 	if frame.GetItems()[0].GetAction() != resource.TaskService_Add_FullMethodName {
 		t.Fatalf("missing Add action: %v", frame)
@@ -189,6 +208,21 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	if err != nil || len(frame.GetItems()) != 1 {
 		t.Fatalf("owned snapshot: %v %v", frame, err)
 	}
+	quietCtx, stopQuiet := context.WithCancel(ctx)
+	defer stopQuiet()
+	quiet, err := client.Watch(quietCtx, resource.TaskWatchRequest_builder{Project: f.Project, SkipSnapshot: true, Filters: []*resource.TaskFilter{resource.TaskFilter_builder{Assignee: proto.String(owned.GetAssignee())}.Build()}}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if headers, err := quiet.Header(); err != nil || len(headers.Get(taskapi.WatchReadyHeader)) != 1 {
+		t.Fatalf("filtered readiness: %v %v", headers, err)
+	}
+	if ready, err := quiet.Recv(); err != nil || len(ready.GetItems()) != 0 {
+		t.Fatalf("filtered readiness frame: %v %v", ready, err)
+	}
+	if _, err := client.Add(ctx, resource.TaskAddRequest_builder{Project: f.OtherProject, ClientId: "private-other-project", Name: "Other project"}.Build()); err != nil {
+		t.Fatal(err)
+	}
 	released, err := client.Release(ctx, resource.TaskClaimRequest_builder{Ref: ref(owned), DateUpdated: owned.GetDateUpdated(), Actor: winner.actor}.Build())
 	if err != nil {
 		t.Fatal(err)
@@ -197,6 +231,11 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	if err != nil || len(frame.GetItems()) != 1 || frame.GetItems()[0].HasValue() {
 		t.Fatalf("filtered removal: %v %v", frame, err)
 	}
+	change, err = quiet.Recv()
+	if err != nil || len(change.GetItems()) != 1 || !bytes.Equal(change.GetItems()[0].GetId(), owned.GetId()) || change.GetItems()[0].HasValue() {
+		t.Fatalf("unseen filter exit without unrelated project IDs: %v %v", change, err)
+	}
+	stopQuiet()
 	stopFiltered()
 	if frame.GetItems()[0].GetAction() != resource.TaskService_Release_FullMethodName {
 		t.Fatalf("missing Release action: %v", frame)
@@ -237,6 +276,31 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	}
 	if len(ids) != 6 {
 		t.Fatalf("pagination lost tasks: %d", len(ids))
+	}
+	var reverse []*resource.Task
+	after = ""
+	for {
+		page, err := client.List(ctx, resource.TaskListRequest_builder{Project: f.Project, Size: 2, Reverse: true, After: after}.Build())
+		if err != nil {
+			t.Fatal(err)
+		}
+		reverse = append(reverse, page.GetItems()...)
+		if page.GetNext() == "" {
+			break
+		}
+		if _, err := client.List(ctx, resource.TaskListRequest_builder{Project: f.Project, After: page.GetNext()}.Build()); status.Code(err) != codes.InvalidArgument {
+			t.Fatalf("reverse cursor accepted in forward order: %v", err)
+		}
+		after = page.GetNext()
+	}
+	if len(reverse) != 6 {
+		t.Fatalf("reverse pagination lost tasks: %d", len(reverse))
+	}
+	for i := 1; i < len(reverse); i++ {
+		a, b := reverse[i-1], reverse[i]
+		if a.GetDateCreated().AsTime().Before(b.GetDateCreated().AsTime()) || (a.GetDateCreated().AsTime().Equal(b.GetDateCreated().AsTime()) && bytes.Compare(a.GetId(), b.GetId()) < 0) {
+			t.Fatal("reverse order is not newest first")
+		}
 	}
 	_, err = client.List(ctx, resource.TaskListRequest_builder{Project: f.Project, After: "broken"}.Build())
 	wantCode(err, codes.InvalidArgument)

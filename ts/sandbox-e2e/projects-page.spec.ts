@@ -8,7 +8,7 @@ test.use({
 test("projects use the full workspace with a persistent project picker and scoped sessions", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/_/project/project-1");
   const main = page.getByRole("main", { name: "Project workspace" });
   await expect(main).toBeVisible({ timeout: 45000 });
   const picker = main.getByRole("combobox", {
@@ -66,7 +66,7 @@ test("projects use the full workspace with a persistent project picker and scope
     .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
   const pageInset = await main
     .locator(
-      ":scope > .panel-scroll-region > .panel-scroll-content > .panel-scroll-inner",
+      '[data-sliding-page="detail"][data-active] > .panel-scroll-region > .panel-scroll-content > .panel-scroll-inner',
     )
     .evaluate((el) => parseFloat(getComputedStyle(el).paddingTop));
   const informationBounds = (await information.boundingBox())!;
@@ -128,7 +128,7 @@ test("projects use the full workspace with a persistent project picker and scope
 
 test("project dropdown respects reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/_/project/project-1");
   const picker = page.getByRole("combobox", {
     name: "Select project",
     exact: true,
@@ -158,7 +158,7 @@ test("project toolbar stays above the scrolling body on narrow screens", async (
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 400 });
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/_/project/project-1");
   const header = page.locator('main > header[aria-label="Project toolbar"]');
   await expect(header).toBeVisible({ timeout: 45000 });
   await expect(
@@ -166,7 +166,7 @@ test("project toolbar stays above the scrolling body on narrow screens", async (
   ).toHaveText("Design playground");
   const before = await header.boundingBox();
   const viewport = page.locator(
-    "main > .panel-scroll-region > .panel-scroll-content",
+    'main [data-sliding-page="detail"][data-active] > .panel-scroll-region > .panel-scroll-content',
   );
   await viewport.evaluate((el) => (el.scrollTop = el.scrollHeight));
   expect(await viewport.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
@@ -179,7 +179,7 @@ test("project toolbar stays above the scrolling body on narrow screens", async (
 test("project row and bulk controls use the sandbox session lifecycle", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/_/project/project-1");
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   await expect(table).toBeVisible({ timeout: 45000 });
   const rows = table.locator("tbody tr");
@@ -237,7 +237,7 @@ test("project row and bulk controls use the sandbox session lifecycle", async ({
 test("project session identities use stacked navigation buttons in the sandbox", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/_/project/project-1");
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   await expect(table).toBeVisible({ timeout: 45000 });
   const row = table.locator("tbody tr").first();
@@ -290,7 +290,7 @@ test("project Session add opens the shared creation dialog scoped to the selecte
 test("project metadata persists through Project.Patch and inventory Watch", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/_/project/project-1");
   const section = page.getByRole("region", {
     name: "Information",
     exact: true,
@@ -344,7 +344,7 @@ test("project metadata persists through Project.Patch and inventory Watch", asyn
 test("project Erase removes only the confirmed sandbox project", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/_/project/project-1");
   const actions = page.getByRole("region", { name: "Actions", exact: true });
   await expect(actions).toBeVisible({ timeout: 45000 });
   await actions.getByRole("button", { name: "Erase", exact: true }).click();
@@ -377,7 +377,7 @@ test("project Erase removes only the confirmed sandbox project", async ({
 test("project Stop retains the sandbox project and conversation records", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/_/project/project-1");
   const actions = page.getByRole("region", { name: "Actions", exact: true });
   const stop = actions.getByRole("button", { name: "Stop", exact: true });
   await expect(stop).toBeEnabled({ timeout: 45000 });
@@ -428,7 +428,7 @@ test("project Stop retains the sandbox project and conversation records", async 
 test("project Stop, Start and Remove move the container and keep the project", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/_/project/project-1");
   const actions = page.getByRole("region", { name: "Actions", exact: true });
   const button = (name: string) =>
     actions.getByRole("button", { name, exact: true });

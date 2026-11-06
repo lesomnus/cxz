@@ -50,7 +50,7 @@ test("row controls confirm stop/restart and resume the intended session", async 
   const accountCell = (await rows(page)
     .first()
     .locator("td")
-    .nth(2)
+    .nth(3)
     .boundingBox())!;
   expect(button.width).toBeCloseTo(button.height, 1);
   expect(button.y).toBeGreaterThanOrEqual(account.y);
@@ -272,35 +272,40 @@ test("stacked session and account links preserve selected-row emphasis and cell 
     await expect(link).toHaveCSS("border-top-width", "0px");
     await expect(link).toHaveCSS("box-shadow", "none");
   }
-  await row.getByRole("checkbox").check();
-  await row.hover({ position: { x: 16, y: 20 } });
-  await expect
-    .poll(() =>
-      row.evaluate((node) => {
-        const shade = (element: Element) =>
-          Number(getComputedStyle(element).backgroundColor.match(/\d+/)?.[0]);
-        return [...node.querySelectorAll("a")].every(
-          (link) => shade(link) > shade(node),
-        );
-      }),
-    )
-    .toBe(true);
-  await links.evaluateAll((nodes) =>
-    Promise.all(
-      nodes.flatMap((node) =>
-        node
-          .getAnimations()
-          .map((animation) => animation.finished.catch(() => {})),
-      ),
-    ),
-  );
   const colors = () =>
     row.evaluate((node) =>
       [node, ...node.querySelectorAll("a")].map(
         (element) => getComputedStyle(element).backgroundColor,
       ),
     );
+  await row.getByRole("checkbox").check();
+  await page.mouse.move(0, 0);
+  await row.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation instanceof CSSTransition)
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
   const selected = await colors();
+  await row.hover({ position: { x: 16, y: 20 } });
+  await expect
+    .poll(() =>
+      row.evaluate((node) => {
+        const context = document.createElement("canvas").getContext("2d")!;
+        const shade = (element: Element) => {
+          context.clearRect(0, 0, 1, 1);
+          context.fillStyle = getComputedStyle(element).backgroundColor;
+          context.fillRect(0, 0, 1, 1);
+          return context.getImageData(0, 0, 1, 1).data[0]!;
+        };
+        return [...node.querySelectorAll("a")].every(
+          (link) => shade(link) > shade(node),
+        );
+      }),
+    )
+    .toBe(true);
   await page.mouse.move(0, 0);
   await expect.poll(colors).toEqual(selected);
   await expect(row.getByRole("checkbox")).toBeChecked();
@@ -390,11 +395,9 @@ test("Add session inside the header menu opens the create form for the current p
     .fill("Created from projects");
   await dialog.getByRole("combobox", { name: "Account", exact: true }).click();
   await page
-    .getByRole("option", { name: "Work account · codex", exact: true })
+    .getByRole("option", { name: "Work account work", exact: true })
     .click();
-  await dialog
-    .getByRole("button", { name: "Create session", exact: true })
-    .click();
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(rows(page)).toHaveCount(3);
   await expect(

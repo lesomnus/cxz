@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import {
   t,
   translateKnown,
@@ -154,7 +155,7 @@ export function SettingsPage({
   const feedback = (
     <>
       {(error || snapshot.error) && (
-        <p role="alert">{error || snapshot.error}</p>
+        <ErrorNotice error={error || snapshot.error} />
       )}
       {message && <p role="status">{translateKnown(message)}</p>}
     </>

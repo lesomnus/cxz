@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { ValueMenu } from "@lesomnus/nox";
@@ -177,7 +178,7 @@ export function FontFamilyControl({
           </Button>
         </p>
       )}
-      {error && <p role="alert">{error}</p>}
+      {error && <ErrorNotice error={error} />}
     </div>
   );
 }

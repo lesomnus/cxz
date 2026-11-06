@@ -74,7 +74,7 @@ test("account creation uses the actual form and Reset clears its isolated state"
   await page.keyboard.press("Escape");
   await aliasInput.fill("INVALID_ALIAS");
   await expect(
-    form.getByRole("button", { name: "Add", exact: true }),
+    form.getByRole("button", { name: "Confirm", exact: true }),
   ).toBeDisabled();
   await form
     .getByRole("textbox", { name: "Alias", exact: true })
@@ -82,7 +82,7 @@ test("account creation uses the actual form and Reset clears its isolated state"
   await form
     .getByRole("textbox", { name: "Display name", exact: true })
     .fill("Design account");
-  await form.getByRole("button", { name: "Add", exact: true }).click();
+  await form.getByRole("button", { name: "Confirm", exact: true }).click();
   const card = page.getByRole("article", {
     name: "Design account",
     exact: true,
@@ -612,16 +612,22 @@ test("session creation performs its scoped login and reuses the creation key", a
   await open(page, "session-creation-requires-login");
   await page.getByRole("button", { name: "Add session", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Add session", exact: true });
+  await expect(
+    form.getByRole("textbox", { name: "Model", exact: true }),
+  ).toHaveCount(0);
   await form.getByRole("combobox", { name: "Account", exact: true }).click();
-  await form
-    .getByRole("option", { name: "Claude work account · claude", exact: true })
-    .click();
+  const account = form.getByRole("option", {
+    name: "Claude work account work1",
+    exact: true,
+  });
+  await expect(account.locator("small")).toHaveText("work1");
+  await expect(account.locator("small")).toHaveCSS("font-size", "10px");
+  await expect(account.locator("small")).toHaveCSS("margin", "0px");
+  await account.click();
   await form
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("Authenticated preview");
-  await form
-    .getByRole("button", { name: "Create session", exact: true })
-    .click();
+  await form.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(loginPanel(page)).toBeVisible();
   await expect(
     form.getByRole("textbox", { name: "Title", exact: true }),
@@ -640,6 +646,50 @@ test("session creation performs its scoped login and reuses the creation key", a
   await expect(
     page.getByRole("button", { name: "Log in again", exact: true }),
   ).toHaveCount(0);
+});
+
+test("session account logos keep visible space from both names in the list and selected value", async ({
+  page,
+}) => {
+  await open(page, "session-creation-requires-login");
+  await page.getByRole("button", { name: "Add session", exact: true }).click();
+  const form = page.getByRole("dialog", { name: "Add session", exact: true });
+  const trigger = form.getByRole("combobox", { name: "Account", exact: true });
+  const visibleGap = async (row: ReturnType<Page["locator"]>) =>
+    row.evaluate((node) => {
+      const logo = node.querySelector(".agent-brand :is(svg,img)")!;
+      const name = node.querySelector(
+        ".setting-match-label > span, .meta-value > span",
+      )!;
+      const range = document.createRange();
+      range.selectNodeContents(name);
+      const glyph = range.getBoundingClientRect();
+      return glyph.left - logo.getBoundingClientRect().right;
+    });
+  for (const [agent, name] of [
+    ["claude", "Claude work account work1"],
+    ["codex", "Codex work account code1"],
+  ]) {
+    await trigger.click();
+    const option = form.getByRole("option", { name, exact: true });
+    await expect(option.locator(`.agent-brand-${agent}`)).toBeVisible();
+    await expect.poll(() => visibleGap(option)).toBeGreaterThanOrEqual(7.5);
+    await option.click();
+    await expect.poll(() => visibleGap(trigger)).toBeGreaterThanOrEqual(7.5);
+    const anchor = (await trigger.locator(".meta-value").boundingBox())!;
+    await trigger.click();
+    await expect.poll(() => visibleGap(option)).toBeGreaterThanOrEqual(7.5);
+    const aligned = (await option
+      .locator(".setting-match-label")
+      .boundingBox())!;
+    expect(Math.abs(anchor.x - aligned.x)).toBeLessThan(1);
+    await option.click();
+  }
+  await form.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(form).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toBeVisible();
 });
 
 test("sending discovers expired OAuth and login resumes without replaying the input", async ({

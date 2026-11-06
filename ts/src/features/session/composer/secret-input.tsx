@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useState } from "react";
 import { Button } from "@lesomnus/nox";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -39,7 +40,7 @@ export function SecretInput({
         Only the temporary file path enters the prompt. The agent can read this
         file and may expose its contents in its response.
       </small>
-      {error && <p role="alert">{error}</p>}
+      {error && <ErrorNotice error={error} />}
       <Button
         disabled={busy || !value}
         onClick={async () => {

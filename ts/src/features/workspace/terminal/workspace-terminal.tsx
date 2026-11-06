@@ -1,4 +1,5 @@
 import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
+import { useLocalError } from "#src/shared/errors/error-context.tsx";
 import { useQuery } from "@lesomnus/payday/react";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -42,11 +43,12 @@ export function WorkspaceTerminal({
     ref: { key: { case: "id", value: projectId } },
     select: { all: true },
   });
+  const error = useLocalError(project.error);
   return (
     <TerminalWorkbench
       visible={visible}
       hide={hide}
-      projectError={project.error ? String(project.error) : ""}
+      projectError={error}
       renderSession={(props) => (
         <TerminalSession
           {...props}

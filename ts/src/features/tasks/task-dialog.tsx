@@ -1,13 +1,15 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import {
   Button,
   CardActions,
   Card,
   Form,
   FormField,
+  SegmentedControl,
   ValueMenu,
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
@@ -23,6 +25,7 @@ import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { AgentIdentity } from "#src/shared/components/agent-identity.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
+  taskPriorities,
   taskOwner,
   taskRef,
   taskLookup,
@@ -30,6 +33,7 @@ import {
   taskStatuses,
   ownerIssue,
 } from "./task-model";
+import { TaskPrioritySymbol, taskPriorityMask } from "./task-indicators";
 import styles from "./tasks.module.css";
 
 function TaskEditor({
@@ -183,6 +187,13 @@ function TaskEditor({
         <Card
           className={task ? styles.taskHeader : undefined}
           data-priority={task ? priority : undefined}
+          style={
+            task
+              ? ({
+                  "--task-priority-mask": taskPriorityMask(priority),
+                } as CSSProperties)
+              : undefined
+          }
           data-previous-run={issue === "Previous run" || undefined}
           title={task ? alias || task.alias : "Add task"}
           close={busy ? undefined : close}
@@ -201,9 +212,10 @@ function TaskEditor({
               <Button
                 type="submit"
                 form={id}
+                loading={busy}
                 disabled={busy || !name.trim() || conflict}
               >
-                {busy ? "Saving…" : task ? "Save" : "Add"}
+                {task ? "Save" : "Confirm"}
               </Button>
               <Button type="button" disabled={busy} onClick={close}>
                 Cancel
@@ -217,17 +229,38 @@ function TaskEditor({
             disabled={busy}
             aria-label="Task fields"
           >
-            <FormField label="Priority">
-              <ValueMenu
-                label="Priority"
-                alignItemWithTrigger
-                value={String(priority)}
-                options={["Highest", "High", "Normal", "Low", "Lowest"].map(
-                  (label, value) => ({ value: String(value), label }),
-                )}
-                choose={(value) => setPriority(Number(value))}
-                disabled={busy}
-              />
+            <FormField label="Priority" fullWidth={!task}>
+              {task ? (
+                <ValueMenu
+                  label="Priority"
+                  alignItemWithTrigger
+                  value={String(priority)}
+                  options={taskPriorities.map((label, value) => ({
+                    value: String(value),
+                    label,
+                  }))}
+                  choose={(value) => setPriority(Number(value))}
+                  disabled={busy}
+                />
+              ) : (
+                <div className={styles.priorityControl}>
+                  <SegmentedControl
+                    label="Priority"
+                    value={String(priority)}
+                    options={taskPriorities.map((label, value) => ({
+                      value: String(value),
+                      label,
+                      icon: (
+                        <span className={styles.prioritySymbol}>
+                          <TaskPrioritySymbol priority={value} />
+                        </span>
+                      ),
+                    }))}
+                    onChange={(value) => setPriority(Number(value))}
+                    disabled={busy}
+                  />
+                </div>
+              )}
             </FormField>
             {task && (
               <FormField label="Status">
@@ -348,7 +381,9 @@ function TaskEditor({
               version.
             </p>
           )}
-          {(reloadError || error) && <p role="alert">{reloadError || error}</p>}
+          {(reloadError || error) && (
+            <ErrorNotice error={reloadError || error} />
+          )}
           {task && (changed || conflict || reloadError) && (
             <Button type="button" disabled={busy} onClick={reload}>
               Reload latest task
@@ -461,7 +496,7 @@ export function TaskDialog({
         >
           {detail.error ? (
             <>
-              <p role="alert">{detail.error}</p>
+              <ErrorNotice error={detail.error} />
               <Button type="button" onClick={detail.reload}>
                 Retry
               </Button>

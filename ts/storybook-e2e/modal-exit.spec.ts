@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const action of ["Cancel", "Close", "Escape", "backdrop", "Add"]) {
+for (const action of ["Cancel", "Close", "Escape", "backdrop", "Confirm"]) {
   test(`account-login Add account uses the shared modal exit after ${action}`, async ({
     page,
   }) => {
@@ -69,7 +69,7 @@ for (const action of ["Cancel", "Close", "Escape", "backdrop", "Add"]) {
     });
     await expect(page.locator("dialog")).toHaveCount(0);
     await expect(launch).toBeFocused();
-    await expect(added).toHaveCount(action === "Add" ? 1 : 0);
+    await expect(added).toHaveCount(action === "Confirm" ? 1 : 0);
   });
 }
 

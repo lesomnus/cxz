@@ -3,27 +3,35 @@ import { useNavigate } from "@tanstack/react-router";
 import { ActionMenu } from "@lesomnus/nox";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
+import {
+  clientErrors,
+  type ClientErrors,
+} from "#src/shared/errors/client-errors.ts";
 
 export function ProfileMenu({
   logout,
   exitLabel,
   openSettings,
+  errors = clientErrors(),
 }: {
   logout: () => Promise<void>;
   exitLabel: string;
   openSettings: () => void;
+  errors?: ClientErrors;
 }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   async function signOut() {
     if (busy) return;
     setBusy(true);
-    setError("");
     try {
       await logout();
+      errors.resolve("http:auth/logout");
     } catch (e) {
-      setError(String(e));
+      errors.report("http:auth/logout", e, {
+        source: "http",
+        method: "POST /auth/logout",
+      });
     } finally {
       setBusy(false);
     }
@@ -72,11 +80,6 @@ export function ProfileMenu({
           },
         ]}
       />
-      {error && (
-        <p className="profile-error" role="alert">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

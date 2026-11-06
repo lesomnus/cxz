@@ -1,11 +1,11 @@
-import type { CSSProperties } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { resumableStates } from "#src/features/session/model/session-actions.ts";
 import { UnreadBadge } from "#src/shared/notifications/unread-badge.tsx";
 import styles from "./session-indicator.module.css";
-import { activityDots, sessionActivity } from "./session-activity";
+import { isSessionWorking } from "./session-activity";
+import { SessionActivityDots } from "./session-activity-dots";
 
 export function SessionIndicator({
   session,
@@ -32,7 +32,7 @@ export function SessionIndicator({
     return <span className="session-indicator" aria-hidden="true" />;
   const question =
     !resumableStates.has(state) && !!session.status?.pending.length;
-  const working = ["running", "working", "waiting_input"].includes(state);
+  const working = isSessionWorking(session);
   const label =
     variant === "activity"
       ? state
@@ -55,7 +55,6 @@ export function SessionIndicator({
         <UnreadBadge />
       </span>
     );
-  const activity = sessionActivity(session);
   return (
     <span
       className={`session-indicator ${question ? "attention" : ""}`}
@@ -78,32 +77,12 @@ export function SessionIndicator({
       {question ? (
         "?"
       ) : working || background ? (
-        <svg
-          key={activity.seed}
+        <SessionActivityDots
+          session={session}
           className={
             !working && background ? styles.backgroundActivity : undefined
           }
-          width="12"
-          height="16"
-          viewBox="0 0 12 16"
-          aria-hidden="true"
-        >
-          {activityDots.map(([cx, cy], index) => (
-            <circle
-              className="session-activity-dot"
-              key={index}
-              cx={cx}
-              cy={cy}
-              r="1.3"
-              style={
-                {
-                  animationDelay: `calc((${index} + ${activity.phase}) * var(--session-dot-step) * -1)`,
-                  "--session-dot-highlight": `var(--aurora-${activity.colors[index]})`,
-                } as CSSProperties
-              }
-            />
-          ))}
-        </svg>
+        />
       ) : variant === "status" ? (
         <StateIcon state={state} />
       ) : (

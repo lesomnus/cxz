@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectAPIError } from "../test-support/client-errors";
 
 function gate() {
   let release!: () => void;
@@ -103,7 +104,7 @@ test("initial load failure is visible until an automatic retry succeeds", async 
       .getByRole("status")
       .filter({ hasText: "Retrying conversation…" });
     await expect(status).toBeVisible();
-    await expect(status).toContainText("Temporarily offline");
+    await expectAPIError(page, "Temporarily offline");
     await expect.poll(() => requests).toBeGreaterThan(1);
     await expect(
       page.getByRole("status").filter({ hasText: "Loading conversation…" }),

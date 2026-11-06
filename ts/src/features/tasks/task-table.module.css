@@ -1,0 +1,151 @@
+.table {
+  --ui-table-row-height: var(--resource-table-control-size);
+  --ui-table-row-gap: 0px;
+  --ui-table-header-height: 28px;
+  min-width: 560px;
+  table-layout: fixed;
+  border-radius: var(--ui-section-radius);
+  overflow: clip;
+}
+.priorityColumn {
+  width: 64px;
+}
+.statusColumn {
+  width: var(--resource-table-state-width);
+}
+.ownerColumn {
+  width: 136px;
+}
+.dateColumn {
+  width: 112px;
+}
+.table tbody tr {
+  background: var(--ui-shade-20);
+}
+.table .buttonCell {
+  padding: var(--ui-control-inset);
+}
+.taskButton.taskButton,
+.ownerButton.ownerButton {
+  display: flex;
+  width: 100%;
+  height: calc(var(--ui-table-row-height) - 2 * var(--ui-control-inset));
+  min-height: 0;
+  padding: 0 var(--ui-control-inline-inset);
+  border-radius: var(--ui-space);
+  font: inherit;
+  text-align: left;
+}
+.taskButton > :global(.button-content),
+.ownerButton > :global(.button-content) {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+  gap: var(--ui-space);
+}
+.ownerButton {
+  --agent-logo-size: var(--ui-icon-size-small);
+}
+.ownerButton > :global(.button-content) {
+  justify-content: flex-start;
+}
+.identity {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0;
+  line-height: 1.3;
+}
+.name,
+.alias,
+.ownerAlias {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.name {
+  font-size: 1rem;
+}
+.ownerAlias {
+  font-family: var(--ui-font-mono);
+}
+.alias {
+  color: var(--ui-muted);
+  font: 10px/1.3 var(--ui-font-mono);
+}
+.status {
+  white-space: nowrap;
+}
+.secondary,
+.time {
+  color: var(--ui-muted);
+}
+.time {
+  white-space: nowrap;
+  font-size: 10px;
+}
+.openIcon {
+  flex: none;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+  color: var(--ui-muted);
+}
+.table tbody tr[data-done] {
+  --ui-muted: var(--ui-shade-140);
+  color: var(--ui-shade-181);
+}
+.table tr[data-done] :is(.taskButton, .ownerButton) {
+  --button-background: var(--ui-shade-17);
+  --ui-table-button-row-hover-lift: 12;
+  --ui-table-button-selected-lift: 12;
+  --ui-table-button-hover-lift: 33;
+  color: inherit;
+}
+.table tr[data-done] .priorityGlyph {
+  color: color-mix(
+    in srgb,
+    var(--task-priority-color, var(--ui-muted)),
+    var(--ui-shade-17) 40%
+  );
+}
+.table .empty {
+  padding: var(--ui-dialog-padding);
+  color: var(--ui-muted);
+}
+.table .history {
+  padding: var(--ui-control-inset);
+  text-align: center;
+}
+.history button {
+  width: 100%;
+  min-height: var(--ui-table-row-height);
+}
+
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+  vertical-align: middle;
+  color: var(--ui-muted);
+}
+.indicator svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.priorityGlyph {
+  display: block;
+  flex: none;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+  color: var(--task-priority-color, var(--ui-muted));
+}
+.status,
+.priorityCell {
+  text-align: center;
+}
+.time {
+  font-family: var(--ui-font-mono);
+}

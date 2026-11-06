@@ -1,4 +1,5 @@
 import { expect, test, devices, type Page } from "@playwright/test";
+import { expectAPIError } from "../test-support/client-errors";
 
 test.use({
   ...devices["Desktop Chrome"],
@@ -139,7 +140,7 @@ test("failed sends preserve the draft and reduced motion sends without decorativ
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("/effort invalid");
   await input.press("Control+Enter");
-  await expect(page.getByRole("alert")).toContainText("effort not supported");
+  await expectAPIError(page, "effort not supported");
   await expect(input).toHaveValue("/effort invalid");
   await expect(input).toBeEditable();
   await expect(page.locator(".composer-input")).toHaveAttribute(

@@ -204,9 +204,10 @@ export function TerminalSession({
     }),
     [],
   );
+  const visibleState = useLocalError(state);
   useEffect(
-    () => onStatus(id, { state, ended, clipboardNotice }),
-    [id, state, ended, clipboardNotice, onStatus],
+    () => onStatus(id, { state: visibleState, ended, clipboardNotice }),
+    [id, visibleState, ended, clipboardNotice, onStatus],
   );
   useLayoutEffect(() => {
     const host = getHost(groupId);
@@ -229,3 +230,4 @@ export function TerminalSession({
     mount,
   );
 }
+import { useLocalError } from "#src/shared/errors/error-context.tsx";

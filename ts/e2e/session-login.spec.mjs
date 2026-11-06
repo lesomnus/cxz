@@ -3,6 +3,7 @@ import { BinaryWriter, WireType } from "@bufbuild/protobuf/wire";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { projectFixture } from "../test-support/projects.ts";
+import { expectAPIError } from "../test-support/client-errors.ts";
 
 test.use({
   viewport: { width: 1280, height: 900 },
@@ -268,7 +269,7 @@ test("canceling or failing OAuth never resumes; login can be retried", async ({
   f.sockets[0].socket.send(
     JSON.stringify({ error: "Provider login canceled" }),
   );
-  await expect(panel.getByRole("alert")).toHaveText("Provider login canceled");
+  await expectAPIError(page, "Provider login canceled");
   await panel.getByRole("button", { name: "Retry login" }).click();
   await expect.poll(() => f.sockets.length).toBe(2);
   await panel.getByRole("button", { name: "Cancel", exact: true }).click();

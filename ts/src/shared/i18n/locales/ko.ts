@@ -3,6 +3,8 @@ export const messages = {
   Diagram: "다이어그램",
   Source: "원문",
   "View diagram": "다이어그램 보기",
+  "Expand code block": "코드블록 가로 확장",
+  "Restore code block width": "코드블록 너비 복원",
   "View source": "원문 보기",
   "Mermaid diagram": "Mermaid 다이어그램",
   "Rendering diagram…": "다이어그램 그리는 중…",
@@ -20,6 +22,8 @@ export const messages = {
   "Send pasted content as": "붙여넣은 내용 전송 방식",
   "Editor options": "입력창 설정",
   "Show control characters": "제어문자 표시",
+  "Disable project collapse": "프로젝트 접기 비활성화",
+  "Enable project collapse": "프로젝트 접기 활성화",
   "Word wrap": "자동 줄바꿈",
 
   Logs: "로그",
@@ -218,6 +222,7 @@ export const messages = {
   "Confirm cancel": "취소 확인",
   "Working…": "처리 중…",
   "Select all sessions": "모든 세션 선택",
+  "Select all projects": "모든 프로젝트 선택",
   "Select {name}": "{name} 선택",
   State: "상태",
   Alias: "별칭",
@@ -791,4 +796,47 @@ export const messages = {
   "Permanently deletes these sessions and their stored data. This cannot be undone.":
     "이 세션들과 저장된 데이터를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
   Refresh: "새로고침",
+  "Recent session": "최근 활동 세션",
+  "Last activity": "마지막 활동",
+  "The project container is running.": "프로젝트 컨테이너가 실행 중입니다.",
+  "The project container exists and has not been started.":
+    "프로젝트 컨테이너가 생성되었지만 아직 시작되지 않았습니다.",
+  "The project container is stopped. Its data is retained.":
+    "프로젝트 컨테이너가 정지되어 있습니다. 데이터는 유지됩니다.",
+  "This project has no container.": "이 프로젝트에는 컨테이너가 없습니다.",
+  "The container state is unavailable.": "컨테이너 상태를 확인할 수 없습니다.",
+  "Selected project actions": "선택한 프로젝트 작업",
+  "Stop projects": "프로젝트 정지",
+  "Start projects": "프로젝트 시작",
+  "Remove containers": "컨테이너 제거",
+  "Erase projects": "프로젝트 삭제",
+  "Stops the selected project containers and all their sessions. Their data is retained.":
+    "선택한 프로젝트 컨테이너와 모든 세션을 정지합니다. 데이터는 유지됩니다.",
+  "Starts the selected project containers, creating missing containers from their configuration. Agents remain stopped.":
+    "선택한 프로젝트의 컨테이너를 시작합니다. 컨테이너가 없다면 설정에 따라 생성하며 에이전트는 정지 상태로 유지됩니다.",
+  "Removes the selected project containers. Projects, sessions, history and volumes are retained.":
+    "선택한 프로젝트의 컨테이너를 제거합니다. 프로젝트, 세션, 대화 기록과 볼륨은 유지됩니다.",
+  "Permanently deletes the selected projects and their owned data. This cannot be undone.":
+    "선택한 프로젝트와 소유 데이터를 영구 삭제합니다. 되돌릴 수 없습니다.",
+  "Some project actions failed. Successful projects will not be retried.":
+    "일부 프로젝트 작업이 실패했습니다. 성공한 프로젝트는 다시 실행하지 않습니다.",
+  Errors: "오류",
+  "{count} active errors": "활성 오류 {count}개",
+  "Close errors": "오류 닫기",
+  "Error status": "오류 상태",
+  "Error list": "오류 목록",
+  "Scroll errors": "오류 스크롤",
+  "No active errors": "활성 오류 없음",
+  "No error history": "오류 기록 없음",
+  History: "기록",
+  Resolved: "해결됨",
+  Dismissed: "확인 후 닫음",
+  Dismiss: "확인 후 닫기",
+  occurrences: "회 발생",
+  "First seen": "처음 발생",
+  "Clear history": "기록 지우기",
+  "Invalid terminal response": "잘못된 터미널 응답",
+  Active: "활성",
+  "The result may be unknown after a disconnect; inspect the conversation before retrying.":
+    "연결이 끊긴 경우 작업 결과가 불확실할 수 있습니다. 다시 시도하기 전에 대화 내용을 확인하세요.",
 } satisfies LanguagePack;

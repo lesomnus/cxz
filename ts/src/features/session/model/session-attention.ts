@@ -64,6 +64,7 @@ export class SessionAttention {
   private reading = { id: "", through: 0n };
   private value = new Set<string>();
   private errors = new Set<string>();
+  private completed = new Set<string>();
   private stopped = false;
   private unsupported = false;
   constructor(
@@ -75,6 +76,7 @@ export class SessionAttention {
   ) {}
   snapshot = () => this.value;
   errorSnapshot = () => this.errors;
+  completedSnapshot = () => this.completed;
   subscribe = (fn: () => void) => {
     this.listeners.add(fn);
     return () => {
@@ -103,15 +105,21 @@ export class SessionAttention {
     const errors = new Set(
       unread.filter((n) => n.kind === "error").map((n) => n.session),
     );
+    const completed = new Set(
+      unread.filter((n) => n.kind === "complete").map((n) => n.session),
+    );
     if (
       next.size === this.value.size &&
       [...next].every((id) => this.value.has(id)) &&
       errors.size === this.errors.size &&
-      [...errors].every((id) => this.errors.has(id))
+      [...errors].every((id) => this.errors.has(id)) &&
+      completed.size === this.completed.size &&
+      [...completed].every((id) => this.completed.has(id))
     )
       return;
     this.value = next;
     this.errors = errors;
+    this.completed = completed;
     this.listeners.forEach((fn) => fn());
   }
   observe(sessions: Session[]) {

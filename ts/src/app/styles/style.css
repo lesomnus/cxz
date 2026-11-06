@@ -63,6 +63,14 @@
   --scroll-fade-depth: 24px;
   --scroll-fade-extension: 24px;
   --resource-panel-width: 180px;
+  --resource-page-column-width: 420px;
+  --resource-page-column-gap: var(--ui-section-group-gap);
+  --resource-page-gutter: 24px;
+  --resource-picker-width: 180px;
+  --resource-toolbar-row-height: calc(8 * var(--ui-space));
+  --resource-page-content-width: calc(
+    2 * var(--resource-page-column-width) + var(--resource-page-column-gap)
+  );
   --session-pane-width: 800px;
   --session-pane-min-width: 360px;
   --session-other-min-width: 360px;
@@ -112,7 +120,7 @@ summary {
 a.route-link {
   min-height: 32px;
   border: 0;
-  background: transparent;
+  background: var(--button-background, transparent);
   color: inherit;
   padding: 6px 10px;
   cursor: pointer;
@@ -123,7 +131,7 @@ a.route-link {
   text-decoration: none;
 }
 a.route-link:hover {
-  background: var(--hover);
+  background: var(--button-hover-background, var(--hover));
 }
 a.route-link:active > .button-content {
   transform: scale(var(--press-scale, 0.95));
@@ -224,6 +232,7 @@ header strong {
   margin: 4px 0 16px;
 }
 .resource-link {
+  --button-hover-background: var(--shade-32);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -244,10 +253,17 @@ header strong {
   font-size: 10px;
 }
 .resource-link.active {
+  --button-background: var(--selected);
+  --button-hover-background: var(--selected-hover);
   color: var(--shade-255);
 }
-.profile-menu {
+.sidebar-footer {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.profile-menu {
   flex-shrink: 0;
   width: 100%;
 }
@@ -285,13 +301,6 @@ header strong {
   :root:not([data-theme="light"]) .profile-avatar {
     transition: none;
   }
-}
-.profile-error {
-  width: 56px;
-  max-width: 100%;
-  font-size: 10px;
-  overflow-wrap: anywhere;
-  color: var(--shade-255);
 }
 .settings-page {
   --settings-column-width: 320px;

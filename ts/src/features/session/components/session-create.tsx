@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { useEffect, useId, useRef, useState } from "react";
@@ -20,6 +21,7 @@ import {
   type LoginTarget,
 } from "#src/features/accounts/login-panel.tsx";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import styles from "#src/shared/components/resource-surface.module.css";
 
@@ -48,7 +50,6 @@ export function SessionCreate({
   const [project, setProject] = useState(projectId(projects[0]) ?? "");
   const [alias, setAlias] = useState("");
   const [title, setTitle] = useState("");
-  const [model, setModel] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [login, setLogin] = useState<LoginTarget>();
@@ -63,7 +64,7 @@ export function SessionCreate({
     pending.current = true;
     const controller = new AbortController();
     request.current = controller;
-    const signature = JSON.stringify([project, alias, title, model]);
+    const signature = JSON.stringify([project, alias, title]);
     if (creation.current.signature !== signature)
       creation.current = { signature, id: crypto.randomUUID() };
     const clientId = creation.current.id;
@@ -81,7 +82,6 @@ export function SessionCreate({
           account,
           authBinding: { key: { case: "bindingId", value: binding.bindingId } },
           name: title,
-          model,
           clientId,
         },
         { signal: controller.signal, timeoutMs: 120000 },
@@ -134,9 +134,10 @@ export function SessionCreate({
               <Button
                 type="submit"
                 form={formId}
+                loading={busy}
                 disabled={busy || !project || !selected || !!login}
               >
-                {busy ? "Creating…" : "Create session"}
+                Confirm
               </Button>
               <Button
                 type="button"
@@ -178,7 +179,9 @@ export function SessionCreate({
                     { value: "", label: "Choose an account" },
                     ...(accounts.data ?? []).map((a) => ({
                       value: a.alias,
-                      label: `${a.name || a.alias} · ${a.agent}`,
+                      label: a.name || a.alias,
+                      description: a.alias,
+                      icon: <AgentBrand agent={a.agent} />,
                     })),
                   ]}
                   choose={setAlias}
@@ -194,18 +197,9 @@ export function SessionCreate({
                   disabled={busy || !!login}
                 />
               </FormField>
-              <FormField label="Model" htmlFor={`${formId}-model`}>
-                <input
-                  id={`${formId}-model`}
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  placeholder="Provider default"
-                  disabled={busy || !!login}
-                />
-              </FormField>
             </Form>
             {(error || accounts.error) && (
-              <p role="alert">{error || accounts.error}</p>
+              <ErrorNotice error={error || accounts.error} />
             )}
             {login && (
               <LoginPanel

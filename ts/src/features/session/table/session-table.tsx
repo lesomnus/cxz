@@ -1,6 +1,7 @@
+import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
-import { Button, EditableValue } from "@lesomnus/nox";
+import { Button, TableRow, useRangeSelection } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -29,6 +30,7 @@ import {
 } from "./session-table-controls";
 import controlStyles from "./session-table-controls.module.css";
 import styles from "./session-table.module.css";
+import resourceTableStyles from "#src/shared/components/resource-table.module.css";
 
 export function SessionTable({
   c,
@@ -57,9 +59,10 @@ export function SessionTable({
   title?: string;
   horizontalScrollbar?: boolean;
   fillHeight?: boolean;
-  variant?: "default" | "compact";
+  variant?: "default" | "compact" | "overview";
 }) {
-  const compact = variant === "compact";
+  const compact = variant !== "default";
+  const overview = variant === "overview";
   const [selected, select] = useState<Set<string>>(() => new Set());
   const controls = useSessionControls(c, (ids) =>
     select((previous) => {
@@ -78,16 +81,17 @@ export function SessionTable({
     () => new Map(projects.map((project) => [key(project.id), project])),
     [projects],
   );
-  const count = chosen.length;
-  const all = sessions.length > 0 && count === sessions.length;
-  function toggle(id: string) {
-    select((previous) => {
-      const next = new Set(previous);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const selection = useRangeSelection({
+    items: sessions.map((session) => session.runtimeId),
+    selected,
+    onSelectionChange: select,
+    disabled: !!(controls.busy || loading),
+  });
+  const stateHeading = (
+    <th scope="col" aria-label={compact ? t("State") : undefined}>
+      {!compact && t("State")}
+    </th>
+  );
   const addControl = addSession && (
     <Button
       type="button"
@@ -134,12 +138,13 @@ export function SessionTable({
         wheelBehavior="instant"
         scrollbarOffset={0}
         horizontalScrollbar={horizontalScrollbar}
-        className={`${styles.scroll} ${compact ? styles.compact : ""} ${fillHeight ? styles.fillHeight : ""}`}
+        className={`${styles.scroll} ${compact ? styles.compact : ""} ${overview ? `${styles.overview} ${resourceTableStyles.layout}` : ""} ${fillHeight ? styles.fillHeight : ""}`}
         role="region"
         aria-label={t("Session list")}
         scrollbarLabel={t("Session list")}
       >
         <table
+          {...selection.getContainerProps()}
           className={styles.table}
           aria-label={t("Sessions")}
           aria-busy={loading}
@@ -148,12 +153,13 @@ export function SessionTable({
         >
           <colgroup>
             <col className={styles.selectionColumn} />
+            {overview && <col className={styles.stateColumn} />}
             {!compact && <col className={styles.agentColumn} />}
             <col className={styles.nameColumn} />
             {!compact && <col className={styles.aliasColumn} />}
             {showAccount && <col className={styles.accountColumn} />}
             {showProject && <col className={styles.projectColumn} />}
-            <col className={styles.stateColumn} />
+            {!overview && <col className={styles.stateColumn} />}
             <col className={styles.actionsColumn} />
           </colgroup>
           <thead>
@@ -162,26 +168,16 @@ export function SessionTable({
                 <Checkbox
                   className={styles.cellCheckbox}
                   aria-label={t("Select all sessions")}
-                  checked={all}
-                  disabled={!sessions.length || controls.busy || loading}
-                  indeterminate={count > 0 && !all}
-                  onChange={() =>
-                    select(
-                      all
-                        ? new Set()
-                        : new Set(sessions.map((s) => s.runtimeId)),
-                    )
-                  }
+                  {...selection.getSelectAllProps()}
                 />
               </th>
+              {overview && stateHeading}
               {!compact && <th scope="col" aria-label={t("Agent")} />}
               <th scope="col">{t("Name")}</th>
               {!compact && <th scope="col">{t("Alias")}</th>}
               {showAccount && <th scope="col">{t("Account")}</th>}
               {showProject && <th scope="col">{t("Project")}</th>}
-              <th scope="col" aria-label={compact ? t("State") : undefined}>
-                {!compact && t("State")}
-              </th>
+              {!overview && stateHeading}
               <th
                 scope="col"
                 className={styles.actions}
@@ -218,17 +214,27 @@ export function SessionTable({
                 projectResource && resourceHandle(projectResource);
               const projectName =
                 projectResource?.name || projectResource?.alias || project;
+              const state = (
+                <td className={styles.state}>
+                  {compact ? (
+                    <span className={styles.stateIndicator}>
+                      <SessionIndicator session={s} variant="status" />
+                    </span>
+                  ) : (
+                    stateLabel(s)
+                  )}
+                </td>
+              );
               return (
-                <tr key={s.runtimeId} data-selected={checked || undefined}>
+                <TableRow key={s.runtimeId} selected={checked}>
                   <td className={styles.selectionCell}>
                     <Checkbox
                       className={styles.cellCheckbox}
                       aria-label={t("Select {name}", { name })}
-                      checked={checked}
-                      disabled={controls.busy || loading}
-                      onChange={() => toggle(s.runtimeId)}
+                      {...selection.getCheckboxProps(s.runtimeId)}
                     />
                   </td>
+                  {overview && state}
                   {!compact && (
                     <td className={styles.agent}>
                       <AgentBrand agent={s.agent} />
@@ -237,6 +243,7 @@ export function SessionTable({
                   {compact ? (
                     <td className={`${styles.name} ${styles.cardCell}`}>
                       <RouteLink
+                        rowAware
                         {...sessionLocation(s)}
                         className={styles.navigationButton}
                         title={name}
@@ -282,6 +289,7 @@ export function SessionTable({
                     <td className={styles.cardCell}>
                       {accountAlias ? (
                         <RouteLink
+                          rowAware
                           {...accountLocation(accountAlias)}
                           className={styles.navigationButton}
                           title={accountName}
@@ -313,6 +321,7 @@ export function SessionTable({
                     <td className={styles.cardCell}>
                       {project ? (
                         <RouteLink
+                          rowAware
                           {...projectLocation(project)}
                           className={styles.navigationButton}
                           title={projectName}
@@ -330,15 +339,7 @@ export function SessionTable({
                       )}
                     </td>
                   )}
-                  <td className={styles.state}>
-                    {compact ? (
-                      <span className={styles.stateIndicator}>
-                        <SessionIndicator session={s} variant="status" />
-                      </span>
-                    ) : (
-                      stateLabel(s)
-                    )}
-                  </td>
+                  {!overview && state}
                   <td className={`${styles.cardCell} ${styles.actions}`}>
                     <SessionTableMenu
                       sessions={[s]}
@@ -346,7 +347,7 @@ export function SessionTable({
                       disabled={loading}
                     />
                   </td>
-                </tr>
+                </TableRow>
               );
             })}
           </tbody>

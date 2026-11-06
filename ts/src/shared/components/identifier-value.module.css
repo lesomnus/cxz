@@ -25,6 +25,12 @@
   --press-scale: 1;
   --button-hover-background: transparent;
   min-height: var(--ui-icon-size);
+  max-width: 100%;
   padding: 0;
   border-radius: var(--ui-control-inset);
+}
+.copyValue .text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

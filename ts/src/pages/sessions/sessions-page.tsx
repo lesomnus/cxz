@@ -1,4 +1,5 @@
 import { t } from "#src/shared/i18n/i18n.ts";
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   useCallback,
@@ -62,8 +63,8 @@ export function SessionsPage({
     ) : (
       <div className="session-workspace">
         {resolved.error ? (
-          <div role="alert">
-            <p>{resolved.error}</p>
+          <div>
+            <ErrorNotice error={resolved.error} />
             <Button onClick={resolved.reload}>Retry</Button>
           </div>
         ) : (

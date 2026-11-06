@@ -21,8 +21,33 @@ Copying never moves credentials.
 
 A Memory is one Markdown document in a project, with an optional owner session and
 labels. A session can publish any number of memories. Published documents survive
-session purge. The web Memory page lists documents directly; selecting an editing
-session is unnecessary. The TUI `/memory` view offers direct browsing, copying,
+session purge. Each web document has an address at
+`/c/_/project/{project alias or ID}/memory/{memory ID}`. Project aliases and UUIDs
+both resolve; generated links prefer the alias with UUID fallback. Memory IDs
+remain UUIDs, and API calls use the resolved stable project ID. The parent path
+`/c/_/project/{project alias or ID}/memory` shows the project document list. Reload and
+browser history restore selection, and links can open in new tabs.
+The web Memory collection is a dense responsive grid of borderless portrait cards. Each card
+shows its owner's agent logo and session name at the top left, relative update
+time at the top right, the title at conversation body size below, and the
+revision at the bottom left. The collection loads only paged metadata; opening a card loads its
+separate document page, without a catalog sidebar. Clicking Memory in the application sidebar returns to the current project
+collection; the document toolbar has no separate back button. A searchable session picker beside the project picker filters by owner
+using the complete project metadata cached on the authenticated connection.
+Session changes filter that metadata locally, including the first selection,
+without a list request. The cache expires after one minute; returning to a
+project or changing session then refreshes in the background while retaining
+existing cards. Save, copy, delete, restore, purge and explicit reload invalidate
+the affected project list. Refresh failures retain cached cards and offer retry.
+The cache is bounded and cleared when the connection is disposed, with no
+browser storage persistence. All sessions includes unowned and
+retained-owner documents. Project changes reset the session filter; returning
+from a document preserves the selected filter. Changing it while editing guards
+unsaved changes. Selecting an editing session is unnecessary. Reading is the default; Edit opens name/label fields and
+Markdown source with Save/Cancel. Source without Edit is read only. The document
+menu offers copying, reload and trash; history and migration metadata are separate
+collapsible sections. Migration labels are retained when editing user labels.
+The TUI `/memory` view offers direct browsing, copying,
 rename, trash/restore/purge, and starting a session seeded from a selected document.
 
 `MemoryService` is independent of `SessionService`:
@@ -35,12 +60,20 @@ rename, trash/restore/purge, and starting a session seeded from a selected docum
   `date_updated`; body edits also require `base_revision`. Labels can be cleared
   explicitly with `clear_labels`. Apply is intentionally unavailable.
 - Each changed body gets an increasing `revision` and an immutable full-body
-  MemoryVersion with a SHA-256 hash. Changing metadata does not advance the body
-  revision. Reverting A → B → A creates three versions; the two A hashes match.
+  MemoryVersion with a SHA-256 hash. Its optional `lines_added` and
+  `lines_removed` fields count changes against revision − 1, excluding diff headers,
+  context and EOF marker lines. Zero is a known count; absence means the first
+  revision or a missing predecessor. New counts commit with the body, and schema
+  migration backfills retained adjacent bodies without rewriting their contents,
+  hashes or timestamps. Changing metadata does not advance the body revision or
+  recompute its counts. Reverting A → B → A creates three versions; the two A
+  hashes match.
   The current row caches the latest body. Versions and the resource commit in one
   transaction. Audit keeps management metadata, without duplicating body payloads.
 - `Read` defaults to full text. An explicit `revision` reads a retained version;
-  `Versions` lists retained revisions. With `base_revision`, `format=DIFF` requests
+  `Versions` lists retained revisions and their stored line counts. The web history
+  displays `+added −removed` and labels revision 1 as Created. With `base_revision`,
+  `format=DIFF` requests
   a contextual unified diff. `AUTO` chooses a smaller diff, otherwise full text.
   A missing base returns full text with `fallback_reason`. Smaller byte size is a
   heuristic, not a tokenizer or a guarantee of model comprehension.

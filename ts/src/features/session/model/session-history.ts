@@ -3,6 +3,10 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { alive, STREAM_STALL_MS } from "#src/shared/api/stream-deadline.ts";
 import type { SessionEvent } from "#gen/cxz/session_pb";
+import {
+  operationHealth,
+  type ClientErrors,
+} from "#src/shared/errors/client-errors.ts";
 
 export type HistoryPage = {
   events: SessionEvent[];
@@ -40,6 +44,7 @@ export class SessionHistory {
     private sessions: Connection["sessions"],
     private id: string,
     private clientId: string,
+    private diagnostics?: { errors?: ClientErrors; baseUrl?: string },
   ) {}
   nativePage(afterSeq: bigint, signal: AbortSignal) {
     return this.sessions.history(
@@ -98,6 +103,21 @@ export class SessionHistory {
       (row) => !row.event,
       STREAM_STALL_MS,
       stalled,
+      operationHealth(
+        this.diagnostics?.errors,
+        JSON.stringify([
+          this.diagnostics?.baseUrl,
+          "stream-health",
+          this.id,
+          "rows",
+        ]),
+        {
+          connection: this.diagnostics?.baseUrl,
+          method: "cxz.SessionService/Rows",
+          target: `Session: ${this.id}`,
+        },
+        signal,
+      ),
     );
     try {
       for await (const row of published) {

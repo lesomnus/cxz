@@ -1,38 +1,18 @@
-.content {
+.buttons.buttons {
   display: flex;
   width: 100%;
-  align-items: center;
-  gap: calc(2 * var(--ui-space));
+  justify-content: flex-end;
 }
-.description {
-  display: block;
-  flex: 1;
+.buttons > span {
+  display: flex;
+  flex: 0 1 var(--resource-action-size, 64px);
   min-width: 0;
-  line-height: 1.5;
 }
-.description strong {
-  font-weight: 500;
-}
-.detail {
-  color: var(--ui-muted);
-}
-.action {
-  --ui-section-padding: calc(2 * var(--ui-space));
-  --button-hover-background: var(--ui-confirm-button-background);
-  height: 64px;
-  font-size: 12px;
-}
-.icon {
-  display: grid;
-  place-items: center;
-  align-self: center;
-  flex: none;
-  width: var(--ui-icon-size);
+.buttons .action.action {
+  width: 100%;
+  min-height: 0;
+  height: auto;
   aspect-ratio: 1;
-}
-.icon svg {
-  width: var(--ui-icon-size-small);
-  height: var(--ui-icon-size-small);
 }
 .findings {
   display: grid;
@@ -42,5 +22,40 @@
   font-size: 12px;
 }
 .findings code {
+  overflow-wrap: anywhere;
+}
+.menu,
+.menu > :global(.action-menu) {
+  display: flex;
+  width: 100%;
+}
+.menuTrigger.menuTrigger {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: var(--ui-control-inset);
+}
+.menu > :global(.action-menu) {
+  justify-content: center;
+}
+.headerMenuTrigger.headerMenuTrigger {
+  width: var(--ui-table-header-height);
+  height: var(--ui-table-header-height);
+  min-height: 0;
+  padding: var(--ui-control-inset);
+}
+.targets {
+  display: grid;
+  gap: var(--ui-space);
+  max-height: 30vh;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.failures {
+  color: var(--ui-error);
+  font-size: 12px;
   overflow-wrap: anywhere;
 }

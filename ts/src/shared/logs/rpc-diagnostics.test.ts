@@ -8,6 +8,9 @@ import {
 import { SessionService } from "#gen/cxz/session_svc_pb";
 import { rpcDiagnostics, RPCStreamError } from "./rpc-diagnostics";
 import type { LogInput } from "./log-entry";
+import { ClientErrors } from "#src/shared/errors/client-errors.ts";
+import { diagnosticTransport } from "./rpc-diagnostics";
+import { AccountService } from "#gen/cxz/account_svc_pb";
 
 it("records stream iteration failures, retries and recovery at the same public session UUID", async () => {
   const logs: LogInput[] = [];
@@ -139,4 +142,115 @@ it("preserves close metadata through a ConnectError cause and ignores a failing 
       throw error;
     })(request as never),
   ).rejects.toBe(error);
+});
+
+it("tracks unary recovery by method and target for custom transports without recording bodies", async () => {
+  const errors = new ClientErrors();
+  let fail = true;
+  const raw = createRouterTransport((router) =>
+    router.service(AccountService, {
+      get: (request) => {
+        if (
+          fail &&
+          request.ref?.key.case === "alias" &&
+          request.ref.key.value === "work"
+        )
+          throw new ConnectError("offline", Code.Unavailable);
+        return {};
+      },
+      status: () => ({}),
+    }),
+  );
+  const client = createClient(
+    AccountService,
+    diagnosticTransport(raw, "https://host.invalid", {
+      errors,
+      write: () => {},
+    }),
+  );
+  await expect(
+    client.get({ ref: { key: { case: "alias", value: "work" } } }),
+  ).rejects.toThrow("offline");
+  await client.get({ ref: { key: { case: "alias", value: "other" } } });
+  await client.status({});
+  expect(errors.snapshot()[0].status).toBe("active");
+  fail = false;
+  await client.get({ ref: { key: { case: "alias", value: "work" } } });
+  expect(errors.snapshot()[0].status).toBe("resolved");
+});
+
+it("keeps stream failures active during retries until the first new data, and does not resolve on cancellation", async () => {
+  const errors = new ClientErrors();
+  let mode = "fail";
+  let release: (() => void) | undefined;
+  const raw = createRouterTransport((router) =>
+    router.service(SessionService, {
+      events: async function* () {
+        if (mode === "fail")
+          throw new ConnectError("disconnected", Code.Unavailable);
+        if (mode === "wait")
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+        yield { heartbeat: true };
+      },
+    }),
+  );
+  const client = createClient(
+    SessionService,
+    diagnosticTransport(raw, "https://host.invalid", {
+      errors,
+      write: () => {},
+    }),
+  );
+  const request = { ref: { key: { case: "alias" as const, value: "seal" } } };
+  const read = async (signal?: AbortSignal) => {
+    for await (const _ of client.events(request, { signal })) {
+    }
+  };
+  await expect(read()).rejects.toThrow("disconnected");
+  const abort = new AbortController();
+  abort.abort();
+  await expect(read(abort.signal)).rejects.toThrow();
+  expect(errors.snapshot()[0].status).toBe("active");
+  mode = "wait";
+  const pending = read();
+  for (let i = 0; i < 20 && !release; i++)
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(errors.snapshot()[0].status).toBe("active");
+  release!();
+  await pending;
+  expect(errors.snapshot()[0].status).toBe("resolved");
+});
+
+it("does not resolve an error when a canceled retry later returns successfully", async () => {
+  const errors = new ClientErrors();
+  const interceptor = rpcDiagnostics("https://host.invalid", {
+    errors,
+    write: () => {},
+  });
+  const abort = new AbortController();
+  const request = {
+    stream: false,
+    signal: abort.signal,
+    service: AccountService,
+    method: AccountService.method.get,
+    message: { ref: { key: { case: "alias", value: "work" } } },
+  };
+  await expect(
+    interceptor(async () => {
+      throw new ConnectError("offline", Code.Unavailable);
+    })(request as never),
+  ).rejects.toThrow();
+  let finish!: () => void;
+  const retry = interceptor(async () => {
+    await new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    return { stream: false } as never;
+  })(request as never);
+  abort.abort();
+  finish();
+  await retry;
+  expect(errors.snapshot()[0].status).toBe("active");
 });

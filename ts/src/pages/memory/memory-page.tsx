@@ -1,20 +1,26 @@
-import { useCallback, useRef } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { Button, PageToolbar, Section } from "@lesomnus/nox";
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useBlocker } from "@tanstack/react-router";
+import { PageToolbar, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
+import { MemoryGrid } from "#src/features/memory/memory-grid.tsx";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
+import { SessionPicker } from "#src/shared/components/session-picker.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import { sessionUUID } from "#src/shared/api/session-id.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
+import { useResourceSelection } from "#src/shared/api/resource-selection.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import {
   matchesResource,
+  memoryLocation,
   resourceHandle,
-  resourceLocation,
-  projectLocation,
+  uuid,
 } from "#src/shared/navigation/resource-route.ts";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import styles from "./memory-page.module.css";
 
 export function MemoryPage({
@@ -33,14 +39,52 @@ export function MemoryPage({
   error?: string;
 }) {
   const navigate = useNavigate();
-  const { memoryProject } = useWorkspaceRoute();
+  const { memoryProject, memory } = useWorkspaceRoute();
+  const [dirty, setDirty] = useState(false);
+  const [creatingProject, setCreatingProject] = useState<string>();
+  const selection = useResourceSelection(c);
+  const dirtyRef = useRef(false);
+  const onDirtyChange = useCallback((value: boolean) => {
+    dirtyRef.current = value;
+    setDirty(value);
+  }, []);
+  const blocker = useBlocker({
+    shouldBlockFn: ({ current, next }) =>
+      dirtyRef.current && current.pathname !== next.pathname,
+    enableBeforeUnload: dirty,
+    withResolver: true,
+  });
   const project = memoryProject
     ? projects.find((p) => matchesResource(p, memoryProject))
-    : projects[0];
+    : (projects.find((p) => projectId(p) === selection.project) ?? projects[0]);
   const id = projectId(project) ?? "";
+  const handle = project ? resourceHandle(project) : "";
+  useEffect(() => {
+    setCreatingProject(undefined);
+    if (id) c.selection.chooseProject(id);
+  }, [c, id]);
+  const onCreatingChange = useCallback(
+    (creating: boolean) => setCreatingProject(creating ? id : undefined),
+    [id],
+  );
+  const selectMemory = useCallback(
+    (selected?: string, replace = false) => {
+      if (handle && (memoryProject !== handle || memory !== selected)) {
+        const navigation = navigate({
+          ...memoryLocation(handle, selected),
+          replace,
+          ignoreBlocker: true,
+        });
+        if (selected) void navigation.then(() => setCreatingProject(undefined));
+      }
+    },
+    [navigate, handle, memoryProject, memory],
+  );
   const scoped = sessions.filter(
     (s) => s.project && projectId(s.project) === id,
   );
+  const sessionFilter =
+    selection.project === id ? uuid(selection.session) : undefined;
   const guard = useRef<(run: () => void) => void>((run) => run());
   const registerGuard = useCallback(
     (next: ((run: () => void) => void) | undefined) => {
@@ -59,10 +103,34 @@ export function MemoryPage({
             choose={(value) =>
               guard.current(() => {
                 const chosen = projects.find((p) => projectId(p) === value)!;
+                c.selection.chooseProject(value);
                 void navigate({
-                  ...resourceLocation("memory"),
-                  search: { project: resourceHandle(chosen) },
+                  ...memoryLocation(chosen),
+                  ignoreBlocker: true,
                 });
+              })
+            }
+          />
+          <SessionPicker
+            sessions={scoped}
+            project={id}
+            value={sessionUUID(sessionFilter)}
+            loading={sessionsLoading}
+            choose={(value) =>
+              guard.current(() => {
+                const session = scoped.find((s) => sessionUUID(s.id) === value);
+                c.selection.chooseSession(
+                  id,
+                  sessionUUID(session?.id),
+                  session?.runtimeId ?? "",
+                );
+                if (memory || creatingProject === id) {
+                  setCreatingProject(undefined);
+                  void navigate({
+                    ...memoryLocation(handle),
+                    ignoreBlocker: true,
+                  });
+                }
               })
             }
           />
@@ -74,19 +142,32 @@ export function MemoryPage({
         scrollbarLabel="Shared memory scroll"
       >
         <div className={styles.content}>
-          {error && (
-            <p className={styles.error} role="alert">
-              {error}
-            </p>
-          )}
+          {error && <ErrorNotice className={styles.error} error={error} />}
           {project ? (
-            <MemoryLibrary
-              key={id}
-              c={c}
-              project={id}
-              sessions={scoped}
-              registerGuard={registerGuard}
-            />
+            memory || creatingProject === id ? (
+              <MemoryLibrary
+                key={id}
+                c={c}
+                project={id}
+                projectHandle={handle}
+                catalog={false}
+                sessions={scoped}
+                registerGuard={registerGuard}
+                memoryId={memory}
+                onMemoryChange={selectMemory}
+                onDirtyChange={onDirtyChange}
+                onCreatingChange={onCreatingChange}
+              />
+            ) : (
+              <MemoryGrid
+                key={id}
+                c={c}
+                project={id}
+                projectHandle={handle}
+                sessions={scoped}
+                session={sessionFilter}
+              />
+            )
           ) : (
             <Section className={styles.empty}>
               <strong>
@@ -98,22 +179,30 @@ export function MemoryPage({
                       : "No projects yet"
                     : "Project unavailable"}
               </strong>
-              {!projectsLoading && !sessionsLoading && project && (
-                <>
-                  <p>Choose a project to browse its memory documents.</p>
-                  <Button
-                    onClick={() =>
-                      void navigate(projectLocation(resourceHandle(project)))
-                    }
-                  >
-                    Open project
-                  </Button>
-                </>
+              {!projectsLoading && !sessionsLoading && (
+                <p>
+                  {memoryProject
+                    ? "This project is not available on this connection."
+                    : "Add a project to start sharing memory documents."}
+                </p>
               )}
             </Section>
           )}
         </div>
       </PanelScroll>
+      {blocker.status === "blocked" && (
+        <ConfirmationDialog
+          title="Discard unsaved changes"
+          confirmLabel="Confirm"
+          close={() => blocker.reset?.()}
+          execute={() => {
+            blocker.proceed?.();
+            return true;
+          }}
+        >
+          <p>This memory has unsaved changes. Discard them?</p>
+        </ConfirmationDialog>
+      )}
     </main>
   );
 }

@@ -40,7 +40,7 @@ export const AddAccount: Story = {
     docs: {
       description: {
         story:
-          "Start with an empty account list. Use Add account, select Codex or Claude, enter an alias and display name, then Add. Codex accounts support a shared account login; Claude accounts explain that login belongs to each session. Duplicate aliases show the actual form's error state.",
+          "Start with an empty account list. Use Add account, select Codex or Claude, enter an alias and display name, then Confirm. Codex accounts support a shared account login; Claude accounts explain that login belongs to each session. Duplicate aliases show the actual form's error state.",
       },
     },
   },
@@ -95,7 +95,7 @@ export const SessionCreationRequiresLogin: Story = {
     docs: {
       description: {
         story:
-          "Click Add session, choose the Claude work account and Create session. The fixture returns the real PROJECT_LOGIN_REQUIRED ErrorInfo contract. Login opens inside the creation form. Submitting demo-code retries creation with the same creation key and opens the new conversation. Cancel does not create a session.",
+          "Click Add session, choose the Claude work account and Confirm. The fixture returns the real PROJECT_LOGIN_REQUIRED ErrorInfo contract. Login opens inside the creation form. Submitting demo-code retries creation with the same creation key and opens the new conversation. Cancel does not create a session.",
       },
     },
   },

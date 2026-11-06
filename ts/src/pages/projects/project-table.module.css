@@ -1,0 +1,120 @@
+.table {
+  --ui-table-row-height: var(--resource-table-control-size);
+  --ui-table-row-gap: 0px;
+  --ui-table-header-height: 28px;
+  min-width: 440px;
+  table-layout: fixed;
+  border-radius: var(--ui-section-radius);
+  overflow: clip;
+}
+.selectionColumn {
+  width: var(--resource-table-selection-width);
+}
+.activityColumn {
+  width: 120px;
+}
+.stateColumn {
+  width: var(--resource-table-state-width);
+}
+.nameColumn {
+  width: calc(var(--resource-table-button-width) + 2 * var(--ui-control-inset));
+}
+.actionSlot {
+  width: calc(var(--ui-table-row-height) - 2 * var(--ui-control-inset));
+  margin-inline-start: auto;
+}
+.table .selectionCell {
+  position: relative;
+  padding: 0;
+}
+.table .cellCheckbox {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+}
+.table .actionsCell {
+  padding: var(--ui-control-inset);
+  padding-right: calc(2 * var(--ui-control-inset));
+}
+.table th.actionsCell {
+  padding-block: 0;
+}
+.table .nameCell {
+  padding: var(--ui-control-inset);
+}
+.table td {
+  border-bottom: 0;
+}
+.table tbody tr:not(:last-child) td {
+  box-shadow: inset 0 -1px 0 var(--ui-table-row-border);
+}
+.projectLink.projectLink {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: var(--resource-table-button-width);
+  height: calc(var(--ui-table-row-height) - 2 * var(--ui-control-inset));
+  min-height: 0;
+  padding: 0 var(--ui-control-inline-inset);
+  border-radius: var(--ui-space);
+  font: inherit;
+  text-align: left;
+}
+.projectLink > :global(.button-content) {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+  gap: var(--ui-space);
+}
+.activity {
+  color: var(--ui-muted);
+  white-space: nowrap;
+  text-align: center;
+}
+.muted {
+  color: var(--ui-muted);
+}
+.identity {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 0;
+  line-height: 1.3;
+}
+.arrow {
+  flex: none;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+  color: var(--ui-muted);
+}
+.name,
+.alias {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.alias {
+  color: var(--ui-muted);
+  font-size: 10px;
+  font-family: var(--ui-font-mono);
+}
+.state {
+  color: var(--ui-muted);
+  text-align: center;
+}
+.table tbody tr {
+  background: var(--ui-shade-20);
+}
+.table tbody tr[data-inactive] .projectLink {
+  --button-background: var(--ui-shade-17);
+  --ui-table-button-row-hover-lift: 12;
+  --ui-table-button-selected-lift: 12;
+  --ui-table-button-hover-lift: 33;
+  --ui-muted: var(--ui-shade-140);
+  color: var(--ui-shade-181);
+}
+.table .empty {
+  color: var(--ui-muted);
+  padding: var(--ui-dialog-padding);
+}

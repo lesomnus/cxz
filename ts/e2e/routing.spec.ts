@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { expect, test, devices } from "@playwright/test";
+import { expectAPIError } from "../test-support/client-errors";
 
 test.use({
   ...devices["Desktop Chrome"],
@@ -126,7 +127,7 @@ test("profile sign out failures stay visible and can be retried", async ({
   const profile = page.getByRole("button", { name: "Profile", exact: true });
   await profile.click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
-  await expect(page.locator(".profile-error")).toContainText("Sign out failed");
+  await expectAPIError(page, "Sign out failed");
   await page.unroute("**/auth/logout");
   await profile.click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();

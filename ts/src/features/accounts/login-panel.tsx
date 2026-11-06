@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useContext, useEffect, useId, useRef, useState } from "react";
 import {
   Button,
@@ -44,6 +45,12 @@ export function LoginPanel({
   const input = useRef<HTMLInputElement>(null);
   const codeId = useId();
   const onComplete = useRef(complete);
+  const failureKey = JSON.stringify([
+    c.baseUrl,
+    "provider-login",
+    target.account,
+    target.project ?? "",
+  ]);
   onComplete.current = modal ? () => dialogClose.complete(complete) : complete;
   useEffect(() => {
     if (c.inProcess && !connect) {
@@ -64,7 +71,23 @@ export function LoginPanel({
       url.searchParams.set("project", target.project);
       url.searchParams.set("key", target.key!);
     }
-    const ws = connect ? connect(url) : new WebSocket(url);
+    const failed = (message: string) => {
+      c.errors.report(failureKey, new Error(message), {
+        source: "http",
+        connection: c.baseUrl,
+        method: "Provider login",
+        project: target.project,
+        target: `Account: ${target.account}`,
+      });
+      setError(message);
+    };
+    let ws: LoginSocket;
+    try {
+      ws = connect ? connect(url) : new WebSocket(url);
+    } catch (e) {
+      failed(String(e));
+      return;
+    }
     socket.current = ws;
     let ended = false;
     ws.onopen = () => setReady(true);
@@ -76,7 +99,7 @@ export function LoginPanel({
       } catch {
         ended = true;
         setReady(false);
-        setError("Invalid login response.");
+        failed("Invalid login response.");
         ws.close();
         return;
       }
@@ -85,11 +108,12 @@ export function LoginPanel({
       if (frame.error) {
         ended = true;
         setReady(false);
-        setError(frame.error);
+        failed(frame.error);
         ws.close();
         return;
       }
       if (frame.done) {
+        c.errors.resolve(failureKey);
         ended = true;
         setReady(false);
         ws.close();
@@ -99,11 +123,11 @@ export function LoginPanel({
     ws.onerror = () => {
       ended = true;
       setReady(false);
-      setError("Login connection failed.");
+      failed("Login connection failed.");
     };
     ws.onclose = () => {
       setReady(false);
-      if (!ended) setError("Login connection closed before completion.");
+      if (!ended) failed("Login connection closed before completion.");
     };
     const stop = () => {
       ended = true;
@@ -135,7 +159,7 @@ export function LoginPanel({
       <div className={styles.status}>
         <Markdown text={output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "")} />
       </div>
-      {error && <p role="alert">{error}</p>}
+      {error && <ErrorNotice error={error} />}
     </>
   );
   const codeField = (

@@ -3,6 +3,7 @@ import { createClient } from "@connectrpc/connect";
 import { create } from "@bufbuild/protobuf";
 import { ConnectionService } from "#gen/cxz/connection_svc_pb";
 import { ConnectionSchema, type Connection } from "#gen/cxz/connection_pb";
+import { diagnosticTransport } from "#src/shared/logs/rpc-diagnostics.ts";
 
 // Where this browser is attached, and where else it has been told it could
 // attach. The manager answers Unimplemented for this service, because a
@@ -128,5 +129,10 @@ export function client(
   origin: string = location.origin,
   storage: Storage = localStorage,
 ) {
-  return createClient(ConnectionService, transport(origin, storage));
+  return createClient(
+    ConnectionService,
+    diagnosticTransport(transport(origin, storage), origin, {
+      write: () => {},
+    }),
+  );
 }

@@ -116,30 +116,68 @@ const taskSearch = (
     run: value("run"),
   };
 };
+const taskFilters = (search: Record<string, unknown>) => {
+  const { assignee, run } = taskSearch(search);
+  return { assignee, run };
+};
+const projectTasksRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "project/$projectId/task",
+  staticData: { resource: "tasks" },
+  validateSearch: taskFilters,
+});
+const projectTaskRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "project/$projectId/task/$taskId",
+  staticData: { resource: "tasks" },
+  validateSearch: taskFilters,
+});
 const tasksRoute = createRoute({
   getParentRoute: () => connectionRoute,
   path: "task",
   staticData: { resource: "tasks" },
   validateSearch: taskSearch,
+  beforeLoad: ({ search, params }) => {
+    if (search.project) {
+      const location = taskLocation(search);
+      throw redirect({
+        ...location,
+        params: { ...location.params, connection: params.connection },
+        replace: true,
+      });
+    }
+  },
 });
 const taskRoute = createRoute({
   getParentRoute: () => connectionRoute,
   path: "task/$taskId",
   staticData: { resource: "tasks" },
   validateSearch: taskSearch,
+  beforeLoad: ({ search, params }) => {
+    if (search.project) {
+      const location = taskLocation({ ...search, task: params.taskId });
+      throw redirect({
+        ...location,
+        params: { ...location.params, connection: params.connection },
+        replace: true,
+      });
+    }
+  },
 });
 const searchRoute = createRoute({
   getParentRoute: () => connectionRoute,
   path: "search",
   staticData: { resource: "search" },
 });
-const memoryRoute = createRoute({
+const projectMemoryRoute = createRoute({
   getParentRoute: () => connectionRoute,
-  path: "memory",
+  path: "project/$projectId/memory",
   staticData: { resource: "memory" },
-  validateSearch: (s: Record<string, unknown>) => ({
-    project: typeof s.project === "string" ? s.project : undefined,
-  }),
+});
+const memoryDocumentRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "project/$projectId/memory/$memoryId",
+  staticData: { resource: "memory" },
 });
 const auxiliaryRoute = createRoute({
   getParentRoute: () => connectionRoute,
@@ -221,9 +259,9 @@ const notFoundRoute = createRoute({
         }),
         replace: true,
       });
-    if (["search", "memory", "auxiliary"].includes(parts[0]) && !handle)
+    if (["search", "auxiliary"].includes(parts[0]) && !handle)
       throw redirect({
-        ...resourceLocation(parts[0] as "search" | "memory" | "auxiliary"),
+        ...resourceLocation(parts[0] as "search" | "auxiliary"),
         replace: true,
       });
     if (
@@ -253,8 +291,11 @@ const routeTree = rootRoute.addChildren([
     accountRoute,
     tasksRoute,
     taskRoute,
+    projectTasksRoute,
+    projectTaskRoute,
     searchRoute,
-    memoryRoute,
+    projectMemoryRoute,
+    memoryDocumentRoute,
     auxiliaryRoute,
   ]),
   settingsRoute.addChildren([
@@ -283,8 +324,15 @@ export function createWorkspaceRouter(
 }
 export function useWorkspaceRoute() {
   const match = useRouterState({ select: (state) => state.matches.at(-1) });
+  const scopedTask = projectTaskRoute.useParams({ shouldThrow: false });
+  const scopedTasks = projectTasksRoute.useParams({ shouldThrow: false });
+  const legacyTask = taskRoute.useParams({ shouldThrow: false });
+  const scopedTaskSearch = projectTaskRoute.useSearch({ shouldThrow: false });
+  const scopedTasksSearch = projectTasksRoute.useSearch({ shouldThrow: false });
   const detailTaskSearch = taskRoute.useSearch({ shouldThrow: false });
   const listTaskSearch = tasksRoute.useSearch({ shouldThrow: false });
+  const memoryDocument = memoryDocumentRoute.useParams({ shouldThrow: false });
+  const memoryProject = projectMemoryRoute.useParams({ shouldThrow: false });
   const connection = connectionRoute.useParams({
     shouldThrow: false,
   })?.connection;
@@ -301,9 +349,19 @@ export function useWorkspaceRoute() {
     account: accountRoute.useParams({ shouldThrow: false })?.accountId ?? "",
     project: projectRoute.useParams({ shouldThrow: false })?.projectId,
     tasks: {
-      ...(detailTaskSearch ?? listTaskSearch ?? {}),
-      task: taskRoute.useParams({ shouldThrow: false })?.taskId,
+      ...(scopedTaskSearch ??
+        scopedTasksSearch ??
+        detailTaskSearch ??
+        listTaskSearch ??
+        {}),
+      project:
+        scopedTask?.projectId ??
+        scopedTasks?.projectId ??
+        detailTaskSearch?.project ??
+        listTaskSearch?.project,
+      task: scopedTask?.taskId ?? legacyTask?.taskId,
     },
-    memoryProject: memoryRoute.useSearch({ shouldThrow: false })?.project,
+    memoryProject: memoryDocument?.projectId ?? memoryProject?.projectId,
+    memory: memoryDocument?.memoryId,
   };
 }

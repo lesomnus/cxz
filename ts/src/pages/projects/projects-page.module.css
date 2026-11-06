@@ -1,35 +1,31 @@
 .page {
+  composes: page from "../../shared/components/resource-page.module.css";
   --project-section-gap: calc(3 * var(--ui-space));
-  --project-panel-width: 420px;
-  --project-panel-gap: 10px;
-  --project-page-gutter: 24px;
-  --project-content-width: calc(
-    2 * var(--project-panel-width) + var(--project-panel-gap)
-  );
-  container: project-page / inline-size;
-  grid-column: 2 / -1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
+  --project-panel-width: var(--resource-page-column-width);
+  --project-panel-gap: var(--resource-page-column-gap);
+  --project-page-gutter: var(--resource-page-gutter);
+  container-name: resource-page project-page;
 }
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
 }
-.page > .toolbar {
-  padding-inline: var(--project-page-gutter);
+.pages {
+  --ui-sliding-pages-duration: 500ms;
+  --ui-sliding-pages-easing: cubic-bezier(0.97, 0, 0.3, 0.9);
+  flex: 1;
 }
-.toolbarContent,
+.pages > .slide {
+  display: flex;
+  flex-direction: column;
+}
+.toolbar {
+  composes: toolbar from "../../shared/components/resource-page.module.css";
+}
 .content {
-  width: 100%;
-  max-width: var(--project-content-width);
-  min-width: 0;
-  margin-inline: auto;
+  composes: content from "../../shared/components/resource-page.module.css";
 }
 .toolbarContent {
-  display: flex;
-  align-items: center;
+  composes: toolbarContent from "../../shared/components/resource-page.module.css";
 }
 .scroll .scrollContent {
   padding: var(--project-section-gap) var(--project-page-gutter);
@@ -42,16 +38,27 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--project-panel-gap);
-  align-items: start;
+  align-items: stretch;
 }
 .information {
   display: grid;
   min-width: 0;
+  min-height: 0;
+  height: var(--resource-column-height);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: var(--project-panel-gap);
-  align-content: start;
 }
 .usageSection {
   min-width: 0;
+  min-height: 0;
+  height: var(--resource-usage-height);
+  align-content: start;
+}
+.usageColumn {
+  display: grid;
+  min-width: 0;
+  gap: var(--project-panel-gap);
+  grid-template-rows: var(--resource-action-size) var(--resource-usage-height);
   align-content: start;
 }
 .actions {
@@ -62,6 +69,10 @@
   gap: var(--ui-space);
 }
 .sessionSection.sessionSection {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
   padding-top: var(--ui-section-group-gap);
   padding-inline: 0;
 }
@@ -73,14 +84,21 @@
 .errors {
   color: var(--ui-error, #db7979);
 }
-/* Two 420px panels, their 10px gap and both 24px page gutters. */
-@container project-page (width < 898px) {
-  .toolbarContent,
-  .content {
-    max-width: var(--project-panel-width);
-  }
+@container project-page (width < 892px) {
   .columns {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .usageColumn {
+    display: contents;
+  }
+  .actions {
+    grid-row: 1;
+  }
+  .information {
+    grid-row: 2;
+  }
+  .usageSection {
+    grid-row: 3;
   }
 }
 

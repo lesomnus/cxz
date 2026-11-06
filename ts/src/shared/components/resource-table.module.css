@@ -1,0 +1,6 @@
+.layout {
+  --resource-table-selection-width: 44px;
+  --resource-table-state-width: 32px;
+  --resource-table-button-width: 90px;
+  --resource-table-control-size: 44px;
+}

@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { Connection } from "#gen/cxz/connection_pb";
@@ -53,7 +54,7 @@ export function ConnectionsPage({
                 </small>
               </div>
             </header>
-            {error ? <p role="alert">{error}</p> : null}
+            {error ? <ErrorNotice error={error} /> : null}
             <div className="settings-editor-groups">
               <section className="settings-group">
                 <table className="connection-list">

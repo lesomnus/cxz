@@ -177,7 +177,17 @@ for (const width of [1280, 390]) {
     ).toHaveCSS("border-radius", "16px");
     expect(authBounds.height).toBe(64);
     expect(authBounds.x + authBounds.width).toBeLessThan(eraseBounds.x);
-    expect(eraseBounds.x + eraseBounds.width).toBe(
+    const refreshBounds = (await work
+      .getByRole("button", {
+        name: "Refresh account Work",
+        exact: true,
+      })
+      .boundingBox())!;
+    expect(refreshBounds.width).toBe(64);
+    expect(refreshBounds.height).toBe(64);
+    expect(eraseBounds.x + eraseBounds.width).toBeLessThan(refreshBounds.x);
+    expect(refreshBounds.y).toBe(authBounds.y);
+    expect(refreshBounds.x + refreshBounds.width).toBe(
       usageBounds.x + usageBounds.width,
     );
     expect(eraseBounds.y).toBe(authBounds.y);
@@ -205,17 +215,17 @@ for (const width of [1280, 390]) {
       await gauge.evaluate((node) => getComputedStyle(node).borderRadius),
     ).toBe("14px");
     expect(gaugeBounds.x + 14).toBe(quotaBounds.x + 16);
-    expect(gaugeBounds.y + 14).toBe(quotaBounds.y + 16);
-    expect(gaugeBounds.y + gaugeBounds.height - 14).toBe(
-      quotaBounds.y + quotaBounds.height - 16,
-    );
     await expect(quota.getByRole("meter")).toHaveAttribute(
       "aria-valuenow",
       "64",
     );
-    const empty = gauge.locator(':scope > span[aria-hidden="true"]');
+    const empty = gauge.locator("[data-quota-vessel]");
+    const cap = empty.locator("[data-quota-empty]");
+    const contour = cap.locator("[data-quota-contour]");
     await expect
-      .poll(() => empty.evaluate((node) => node.getBoundingClientRect().height))
+      .poll(() =>
+        contour.evaluate((node) => (node as SVGPathElement).getBBox().height),
+      )
       .toBeCloseTo(58 * 0.36, 0);
     const emptyBounds = (await empty.boundingBox())!;
     expect(emptyBounds.x - gaugeBounds.x).toBe(1);
@@ -223,7 +233,11 @@ for (const width of [1280, 390]) {
     expect(
       gaugeBounds.x + gaugeBounds.width - emptyBounds.x - emptyBounds.width,
     ).toBe(1);
+    expect(emptyBounds.height).toBe(58);
     await expect(empty).toHaveCSS("border-radius", "13px");
+    const capBounds = (await cap.boundingBox())!;
+    expect(capBounds.width).toBe(30);
+    expect(capBounds.height).toBeCloseTo(58, 3);
     await expect(quota).toContainText(/00d02h2[56]m/);
     const reset = quota.getByRole("img", { name: /milliseconds/ });
     const resetRows = await reset
@@ -246,8 +260,10 @@ for (const width of [1280, 390]) {
       }
     }
     await expect(
-      personal.getByRole("region", { name: "Remaining agent usage" }),
-    ).toContainText("—");
+      personal
+        .getByRole("region", { name: "Remaining agent usage" })
+        .getByRole("img", { name: "Not reported", exact: true }),
+    ).toBeVisible();
     await expect(work.getByRole("switch")).toHaveCount(0);
     if (width === 1280) {
       const widthLimit = await layout.evaluate((node) =>
@@ -385,13 +401,23 @@ for (const width of [1280, 390]) {
     ).toHaveCount(0);
     const boxes = await Promise.all(row.map((item) => item.boundingBox()));
     for (let index = 1; index < boxes.length; index++) {
-      expect(boxes[index]!.x).toBeGreaterThanOrEqual(
-        boxes[index - 1]!.x + boxes[index - 1]!.width,
-      );
-      expect(boxes[index]!.y + boxes[index]!.height / 2).toBeCloseTo(
-        boxes[0]!.y + boxes[0]!.height / 2,
-        0,
-      );
+      if (width < 700) {
+        expect(boxes[index]!.y).toBeGreaterThanOrEqual(
+          boxes[0]!.y + boxes[0]!.height,
+        );
+        expect(boxes[index]!.x + boxes[index]!.width / 2).toBeCloseTo(
+          boxes[0]!.x + boxes[0]!.width / 2,
+          0,
+        );
+      } else {
+        expect(boxes[index]!.x).toBeGreaterThanOrEqual(
+          boxes[index - 1]!.x + boxes[index - 1]!.width,
+        );
+        expect(boxes[index]!.y + boxes[index]!.height / 2).toBeCloseTo(
+          boxes[0]!.y + boxes[0]!.height / 2,
+          0,
+        );
+      }
     }
     const main = (await page.getByRole("main").boundingBox())!;
     const card = (await work.boundingBox())!;
@@ -523,14 +549,16 @@ test("account sessions use compact read-only identities and keep selection scope
       (node) => getComputedStyle(node).backgroundColor,
     );
     expect(background).not.toBe("rgba(0, 0, 0, 0)");
-    const shades = await link.evaluate((node) => ({
-      button: Number(getComputedStyle(node).backgroundColor.match(/\d+/)?.[0]),
-      table: Number(
-        getComputedStyle(node.closest("section")!).backgroundColor.match(
-          /\d+/,
-        )?.[0],
-      ),
-    }));
+    const shades = await link.evaluate((node) => {
+      const context = document.createElement("canvas").getContext("2d")!;
+      const shade = (element: Element) => {
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = getComputedStyle(element).backgroundColor;
+        context.fillRect(0, 0, 1, 1);
+        return context.getImageData(0, 0, 1, 1).data[0]!;
+      };
+      return { button: shade(node), table: shade(node.closest("section")!) };
+    });
     expect(shades.button).toBeGreaterThan(shades.table);
     expect(shades.button - shades.table).toBeLessThan(24);
     await link.hover();
@@ -576,55 +604,46 @@ test("account sessions use compact read-only identities and keep selection scope
     .evaluate((node) => getComputedStyle(node).backgroundColor);
   await rows.nth(1).hover({ position: { x: 16, y: 20 } });
   await expect(rows.nth(1)).not.toHaveCSS("background-color", before);
+  const colors = () =>
+    rows
+      .first()
+      .evaluate((node) =>
+        [node, ...node.querySelectorAll("a")].map(
+          (element) => getComputedStyle(element).backgroundColor,
+        ),
+      );
+  await page.mouse.move(0, 0);
+  await rows.first().evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation instanceof CSSTransition)
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
+  const selectedColors = await colors();
   for (const row of [rows.nth(1), rows.first()]) {
     await row.hover({ position: { x: 16, y: 20 } });
     await expect
       .poll(() =>
         row.evaluate((node) => {
-          const rowShade = Number(
-            getComputedStyle(node).backgroundColor.match(/\d+/)?.[0],
-          );
+          const context = document.createElement("canvas").getContext("2d")!;
+          const shade = (element: Element) => {
+            context.clearRect(0, 0, 1, 1);
+            context.fillStyle = getComputedStyle(element).backgroundColor;
+            context.fillRect(0, 0, 1, 1);
+            return context.getImageData(0, 0, 1, 1).data[0]!;
+          };
+          const rowShade = shade(node);
           return [...node.querySelectorAll("a")].every(
-            (button) =>
-              Number(
-                getComputedStyle(button).backgroundColor.match(/\d+/)?.[0],
-              ) > rowShade,
+            (button) => shade(button) > rowShade,
           );
         }),
       )
       .toBe(true);
   }
-  await rows
-    .first()
-    .getByRole("link")
-    .evaluateAll((links) =>
-      Promise.all(
-        links.flatMap((link) =>
-          link
-            .getAnimations()
-            .map((animation) => animation.finished.catch(() => {})),
-        ),
-      ),
-    );
-  const selectedColors = await rows
-    .first()
-    .evaluate((node) =>
-      [node, ...node.querySelectorAll("a")].map(
-        (element) => getComputedStyle(element).backgroundColor,
-      ),
-    );
   await page.mouse.move(0, 0);
-  await expect
-    .poll(() =>
-      rows
-        .first()
-        .evaluate((node) =>
-          [node, ...node.querySelectorAll("a")].map(
-            (element) => getComputedStyle(element).backgroundColor,
-          ),
-        ),
-    )
-    .toEqual(selectedColors);
+  await expect.poll(colors).toEqual(selectedColors);
   const viewport = work.locator('[data-scroll-area="viewport"]');
   expect(
     await viewport.evaluate((node) => node.scrollWidth <= node.clientWidth),
@@ -679,7 +698,7 @@ test("the top add action opens a modal and creates an account card", async ({
   await dialog
     .getByRole("textbox", { name: "Display name", exact: true })
     .fill("New team account");
-  await dialog.getByRole("button", { name: "Add", exact: true }).click();
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const card = page.getByRole("article", {
     name: "New team account",

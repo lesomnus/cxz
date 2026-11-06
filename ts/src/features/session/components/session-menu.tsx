@@ -13,14 +13,21 @@ import {
   resumableStates,
   type SessionOperation,
 } from "#src/features/session/model/session-actions.ts";
+import {
+  controlTarget,
+  type SessionTarget,
+} from "#src/features/session/model/session-control-batch.ts";
 import type { SessionInfo } from "#src/features/session/model/session-info.ts";
 
 export type SessionMenuProps = {
   session?: Session;
   info: SessionInfo;
   busy: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   manage: (operation: SessionOperation, run: string) => Promise<boolean>;
   edit: (field: SessionField, value: string) => Promise<Session>;
+  erase?: (target: SessionTarget) => Promise<boolean>;
   fork?: () => void | Promise<unknown>;
   upload?: (directory?: boolean) => void;
   terminal?: {
@@ -44,8 +51,11 @@ export function SessionMenu({
   session,
   info,
   busy,
+  open: menuOpen,
+  onOpenChange,
   manage,
   edit,
+  erase,
   fork,
   upload,
   terminal,
@@ -57,15 +67,13 @@ export function SessionMenu({
   const unavailable = busy || !session?.status?.runId;
   const run = session?.status?.runId ?? "";
   const [confirmation, setConfirmation] = useState<{
-    sessionId: string;
-    run: string;
-    kind: "stop" | "restart";
+    target: SessionTarget;
+    kind: "stop" | "restart" | "erase";
   }>();
-  function confirm(kind: "stop" | "restart") {
+  function confirm(kind: "stop" | "restart" | "erase") {
     if (session)
       setConfirmation({
-        sessionId: session.runtimeId,
-        run,
+        target: controlTarget(session),
         kind,
       });
   }
@@ -73,6 +81,8 @@ export function SessionMenu({
     <>
       <ActionMenu
         label={t("Session menu")}
+        open={menuOpen}
+        onOpenChange={onOpenChange}
         placement="above"
         gap={toolbarMenuGap}
         scrollbarOffset={8}
@@ -160,41 +170,68 @@ export function SessionMenu({
                     ),
                   }),
               },
+              {
+                label: t("Erase"),
+                icon: <SessionActionIcon action="erase" />,
+                danger: true,
+                disabled: busy || !erase,
+                run: () => confirm("erase"),
+              },
             ],
           },
         ]}
       />
-      {confirmation?.sessionId === session?.runtimeId && confirmation && (
-        <ConfirmationDialog
-          key={`${confirmation.sessionId}:${confirmation.kind}:${confirmation.run}`}
-          title={
-            confirmation.kind === "restart"
-              ? t("Restart session")
-              : t("Stop session")
-          }
-          confirmLabel={
-            confirmation.kind === "restart" ? t("Restart") : t("Stop")
-          }
-          close={() => setConfirmation(undefined)}
-          failureMessage={t(
-            "Action failed. Check session status before retrying.",
-          )}
-          execute={() => manage(confirmation.kind, confirmation.run)}
-        >
-          <p>
-            {t(
-              "Active work stops and pending approvals are cleared. Conversation history, login and permission policy are retained.",
+      {confirmation?.target.runtimeId === session?.runtimeId &&
+        confirmation && (
+          <ConfirmationDialog
+            key={`${confirmation.target.runtimeId}:${confirmation.kind}:${confirmation.target.run}`}
+            title={
+              confirmation.kind === "erase"
+                ? t("Erase session")
+                : confirmation.kind === "restart"
+                  ? t("Restart session")
+                  : t("Stop session")
+            }
+            confirmLabel={
+              confirmation.kind === "erase"
+                ? t("Erase")
+                : confirmation.kind === "restart"
+                  ? t("Restart")
+                  : t("Stop")
+            }
+            close={() => setConfirmation(undefined)}
+            failureMessage={t(
+              "Action failed. Check session status before retrying.",
             )}
-          </p>
-          {confirmation.kind === "restart" && (
-            <p className="muted">
-              {t(
-                "This restarts the agent; it does not recreate the project container.",
-              )}
+            execute={() =>
+              confirmation.kind === "erase"
+                ? (erase?.(confirmation.target) ?? false)
+                : manage(confirmation.kind, confirmation.target.run)
+            }
+          >
+            {confirmation.kind === "erase" && (
+              <p>
+                <strong>{confirmation.target.name}</strong>
+              </p>
+            )}
+            <p>
+              {confirmation.kind === "erase"
+                ? t(
+                    "Permanently deletes this session and its stored data. This cannot be undone.",
+                  )
+                : t(
+                    "Active work stops and pending approvals are cleared. Conversation history, login and permission policy are retained.",
+                  )}
             </p>
-          )}
-        </ConfirmationDialog>
-      )}
+            {confirmation.kind === "restart" && (
+              <p className="muted">
+                {t(
+                  "This restarts the agent; it does not recreate the project container.",
+                )}
+              </p>
+            )}
+          </ConfirmationDialog>
+        )}
     </>
   );
 }

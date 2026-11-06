@@ -19,6 +19,7 @@ import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./markdown-code-block.module.css";
 import { useMermaid } from "./use-mermaid";
+import { useCodeBlockExpansion } from "./use-code-block-expansion";
 
 export function MarkdownCodeBlock({
   container,
@@ -34,6 +35,7 @@ export function MarkdownCodeBlock({
   surface?: "default" | "input";
 }) {
   useLocale();
+  const expansion = useCodeBlockExpansion(container);
   const [selected, setSelected] = useState(codeSyntax(language));
   const [showSource, setShowSource] = useState(false);
   useEffect(() => setSelected(codeSyntax(language)), [language]);
@@ -109,6 +111,44 @@ export function MarkdownCodeBlock({
               onClick={() => setShowSource((value) => !value)}
             >
               {showSource ? t("Diagram") : t("Source")}
+            </Button>
+          )}
+          {expansion.available && (
+            <Button
+              type="button"
+              variant="toolbar"
+              aria-label={
+                expansion.expanded
+                  ? t("Restore code block width")
+                  : t("Expand code block")
+              }
+              title={
+                expansion.expanded
+                  ? t("Restore code block width")
+                  : t("Expand code block")
+              }
+              aria-pressed={expansion.expanded}
+              onClick={expansion.toggle}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d={
+                    expansion.expanded
+                      ? "m4 8 4 4-4 4m16-8-4 4 4 4M2 12h6m8 0h6"
+                      : "m8 8-4 4 4 4m8-8 4 4-4 4M4 12h16"
+                  }
+                />
+              </svg>
             </Button>
           )}
           <CopyButton value={text} />

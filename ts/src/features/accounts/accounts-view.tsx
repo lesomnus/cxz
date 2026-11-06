@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef, useState } from "react";
 import { Button, SectionLayout } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
@@ -11,6 +12,10 @@ import resourceStyles from "#src/shared/components/resource-surface.module.css";
 import styles from "./accounts.module.css";
 import { matchesResource } from "#src/shared/navigation/resource-route.ts";
 import { key } from "@lesomnus/payday/store";
+import {
+  ACCOUNT_INFO_TTL,
+  ACCOUNT_LIST_KEY,
+} from "#src/shared/api/read-cache.ts";
 export function AccountsView({
   c,
   selected,
@@ -26,7 +31,9 @@ export function AccountsView({
   projects?: Project[];
   sessionsLoading?: boolean;
 }) {
-  const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
+  const accounts = useRemote((signal) => listAccounts(c, signal), [c], {
+    cache: { store: c.reads, key: ACCOUNT_LIST_KEY, ttl: ACCOUNT_INFO_TTL },
+  });
   const [adding, setAdding] = useState(false);
   const content = useRef<HTMLDivElement>(null);
   const add = useRef<HTMLButtonElement>(null);
@@ -70,7 +77,7 @@ export function AccountsView({
             {accounts.loading && !accounts.data && (
               <p className={resourceStyles.muted}>Loading accounts…</p>
             )}
-            {accounts.error && <p role="alert">{accounts.error}</p>}
+            {accounts.error && <ErrorNotice error={accounts.error} />}
             {!accounts.loading && !accounts.data?.length && (
               <p className={resourceStyles.muted}>No accounts yet.</p>
             )}
@@ -87,6 +94,8 @@ export function AccountsView({
                   projects={projects}
                   sessions={sessionsForAccount(account, sessions)}
                   sessionsLoading={sessionsLoading}
+                  refreshMetadata={accounts.reload}
+                  metadataLoading={accounts.loading}
                   saved={(updated) => {
                     accounts.reload();
                     if (

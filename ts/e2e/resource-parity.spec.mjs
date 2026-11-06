@@ -1,8 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { pickSearchDate } from "../test-support/search-dates.ts";
 import { projectFixture } from "../test-support/projects.ts";
 import { expectChipDisplay } from "../test-support/chip-display.ts";
+import { expectAPIError } from "../test-support/client-errors.ts";
 test.use({
   viewport: { width: 1280, height: 900 },
   isMobile: false,
@@ -17,11 +19,17 @@ function stream(rows) {
   });
   return Buffer.concat([...frames, Buffer.from([2, 0, 0, 0, 2, 123, 125])]);
 }
-async function fixture(page, helpers = false, extraProject = false) {
+async function fixture(
+  page,
+  helpers = false,
+  extraProject = false,
+  initialPath = "/",
+  projectAlias = "project",
+) {
   const id = (value) => Buffer.from(value.padEnd(16, "0")).toString("base64");
   const project = {
     id: projectFixture().id,
-    alias: "project",
+    alias: projectAlias,
     name: "Demo project",
     workspace: "/workspace",
     status: { containerState: "CONTAINER_STATE_RUNNING" },
@@ -60,11 +68,18 @@ async function fixture(page, helpers = false, extraProject = false) {
   const memory = {
     id: id("memory"),
     name: "Research notes",
+    ownerSession: memoryFixtureUUID("fixture"),
     project,
     revision: "1",
     labels: { topic: "design" },
     dateCreated: "2026-11-02T00:00:00Z",
     dateUpdated: "2026-11-02T00:00:00Z",
+  };
+  const handoff = {
+    ...memory,
+    id: id("handoff"),
+    name: "Handoff notes",
+    ownerSession: "",
   };
   let content = "# Shared notes\nOriginal content";
   const events = [
@@ -268,15 +283,31 @@ async function fixture(page, helpers = false, extraProject = false) {
         { summary: { hits: 1, sessions: 1, projects: 1 } },
       ]);
     if (path === "/cxz.MemoryService/List")
-      return send({ items: q.scope === "MEMORY_SCOPE_TRASH" ? [] : [memory] });
-    if (path === "/cxz.MemoryService/Get") return send(memory);
-    if (path === "/cxz.MemoryService/Read")
       return send({
-        memory,
-        content,
-        revision: memory.revision,
+        items:
+          q.scope === "MEMORY_SCOPE_TRASH"
+            ? []
+            : [memory, handoff].filter(
+                (m) =>
+                  (!q.project?.id || m.project.id === q.project.id) &&
+                  (!q.session?.id ||
+                    (q.session.id === id("fixture") &&
+                      m.ownerSession === memoryFixtureUUID("fixture"))),
+              ),
+      });
+    if (path === "/cxz.MemoryService/Get") return send(memory);
+    if (path === "/cxz.MemoryService/Read") {
+      const selected = [memory, handoff].find(
+        (m) => m.id === q.ref?.id && m.project.id === q.ref?.project?.id,
+      );
+      if (!selected) return error("not_found", "Memory not found");
+      return send({
+        memory: selected,
+        content: selected === memory ? content : "# Handoff\nNext steps",
+        revision: selected.revision,
         format: "MEMORY_READ_FORMAT_FULL",
       });
+    }
     if (path === "/cxz.MemoryService/Patch") {
       if (q.content?.includes("conflict")) {
         memory.revision = "2";
@@ -327,7 +358,7 @@ async function fixture(page, helpers = false, extraProject = false) {
     headers: { Origin: "https://127.0.0.1:18081" },
     data: { token: "a".repeat(32) },
   });
-  await page.goto("/");
+  await page.goto(initialPath);
   return requests;
 }
 test("every resource tab has its own body and navigation", async ({ page }) => {
@@ -341,7 +372,10 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
       "Accounts",
       page.getByRole("article", { name: "Work account", exact: true }),
     ],
-    ["Search", page.getByRole("heading", { name: "Search", exact: true })],
+    [
+      "Search",
+      page.getByRole("main", { name: "Search workspace", exact: true }),
+    ],
     [
       "Memory",
       page.getByRole("main", { name: "Shared memory workspace", exact: true }),
@@ -360,7 +394,7 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
 test("resource bodies fit a mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await fixture(page);
-  for (const name of ["Accounts", "Memory"]) {
+  for (const name of ["Accounts", "Memory", "Search"]) {
     await page.getByRole("link", { name, exact: true }).click();
     await expect(page.locator("main")).toBeVisible();
     const bounds = await page.locator("main").boundingBox();
@@ -428,7 +462,7 @@ test("account registration, session creation and confirmed erasure use resource 
   await add
     .getByRole("textbox", { name: "Alias", exact: true })
     .fill("personal");
-  await add.getByRole("button", { name: "Add", exact: true }).click();
+  await add.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect
     .poll(() =>
       requests.some(
@@ -523,6 +557,17 @@ test("account registration, session creation and confirmed erasure use resource 
     .click();
   const create = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(create).toBeVisible();
+  await create.evaluate((node) =>
+    Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) =>
+            animation.effect?.getComputedTiming().endTime !== Infinity,
+        )
+        .map((animation) => animation.finished),
+    ),
+  );
   const box = await create.boundingBox();
   const viewport = page.viewportSize();
   expect(box.x + box.width / 2).toBeCloseTo(viewport.width / 2, 0);
@@ -555,11 +600,11 @@ test("account registration, session creation and confirmed erasure use resource 
     .getByRole("menuitem", { name: "Add session", exact: true })
     .click();
   await page.getByRole("combobox", { name: "Account", exact: true }).click();
-  await page.getByRole("option", { name: "Work account · codex" }).click();
+  await page.getByRole("option", { name: /Work account/ }).click();
   await page
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("New title");
-  await page.getByRole("button", { name: "Create session" }).click();
+  await create.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect
     .poll(() =>
       requests.some(
@@ -602,13 +647,83 @@ test("account registration, session creation and confirmed erasure use resource 
     requests.some((r) => /SessionService\/(Restore|Purge)$/.test(r.path)),
   ).toBe(false);
 });
+test("Search has no resource panel and submits its filters only on search", async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date("2026-11-05T12:00:00Z"));
+  const requests = await fixture(page, false, true);
+  await page.getByRole("link", { name: "Search", exact: true }).click();
+  await expect(page.locator(".resource-panel")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Search", exact: true }),
+  ).toHaveCount(0);
+  const input = page.getByRole("searchbox", {
+    name: "Search conversations",
+    exact: true,
+  });
+  await input.fill("Earlier");
+  await page
+    .getByRole("combobox", { name: "Search project", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Docs playground", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Match case", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Use regular expression", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Filters", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("switch", { name: "Include tools", exact: true }),
+  ).toHaveCount(0);
+  await pickSearchDate(page, "From (UTC)", "2026-11-01");
+  await pickSearchDate(page, "Until (UTC, exclusive)", "2026-11-05");
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Search"),
+  ).toHaveLength(0);
+  await input.press("Enter");
+  await expect(
+    page.getByRole("link", { name: /Earlier response/ }),
+  ).toBeVisible();
+  const request = requests.find(
+    (r) => r.path === "/cxz.SessionService/Search",
+  ).q;
+  expect(request).toMatchObject({
+    query: "Earlier",
+    match: "regex",
+    projects: [projectFixture(2).uuid],
+    since: "2026-11-01T00:00:00Z",
+    until: "2026-11-05T00:00:00Z",
+  });
+  expect(request.ignoreCase ?? false).toBe(false);
+  expect(request.includeTools ?? false).toBe(false);
+  await page
+    .getByRole("button", { name: "Reset filters", exact: true })
+    .click();
+  await expect(
+    page.getByRole("link", { name: /Earlier response/ }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect
+    .poll(
+      () =>
+        requests.filter((r) => r.path === "/cxz.SessionService/Search").length,
+    )
+    .toBe(2);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Search").at(-1).q
+      .projects ?? [],
+  ).toEqual([]);
+});
 test("search opens the matched response and queue recall preserves its text", async ({
   page,
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Search", exact: true }).click();
   await page
-    .getByRole("textbox", { name: "Search conversations" })
+    .getByRole("searchbox", { name: "Search conversations" })
     .fill("Earlier");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.getByRole("link", { name: /Earlier response/ }).click();
@@ -669,23 +784,25 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Memory", exact: true }).click();
-  await page.getByRole("button", { name: "Source", exact: true }).click();
+  await page.getByRole("link", { name: /Research notes/ }).click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   const editor = page.locator(".monaco-editor textarea");
   await expect(editor).toBeVisible();
   await editor.focus();
   await editor.press("Control+a");
   await editor.fill("conflict");
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(page.locator('main p[role="alert"]')).toContainText(
-    "Document changed",
-  );
+  await expectAPIError(page, "Document changed");
   expect(
     requests.find((r) => r.path === "/cxz.MemoryService/Patch")?.q.baseRevision,
   ).toBe("1");
   await expect(
     page.getByText("Research notes · Unsaved", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Memory actions", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Reload", exact: true }).click();
   await expect(
     page.getByRole("dialog", { name: "Discard unsaved changes" }),
   ).toBeVisible();
@@ -723,6 +840,10 @@ test("usage, background tasks and auxiliary controls are connected", async ({
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
+  await page
+    .getByRole("table", { name: "Projects", exact: true })
+    .getByRole("link", { name: "Demo project project", exact: true })
+    .click();
   await expect(
     page.getByRole("region", { name: "Recent 30 days", exact: true }),
   ).toBeVisible();
@@ -871,7 +992,11 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
     page.getByRole("option", { name: "Docs playground", exact: true }),
   ).toBeVisible();
   await search.fill("not-a-project");
-  await expect(page.getByRole("status")).toHaveText("No matches");
+  await expect(
+    page
+      .getByRole("listbox", { name: "Project choices", exact: true })
+      .getByRole("status"),
+  ).toHaveText("No matches");
   await search.press("Enter");
   await expect(search).toBeVisible();
   await search.fill("DOCS");
@@ -894,4 +1019,466 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   ).toBeVisible();
   await search.press("Escape");
   await expect(create).toBeVisible();
+});
+
+const memoryProjectPath = "/c/_/project/project/memory";
+function memoryFixtureUUID(name) {
+  const hex = Buffer.from(name.padEnd(16, "0")).toString("hex");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join("-");
+}
+const researchPath = `${memoryProjectPath}/${memoryFixtureUUID("memory")}`;
+const handoffPath = `${memoryProjectPath}/${memoryFixtureUUID("handoff")}`;
+const memoryDocument = (page) =>
+  page.getByRole("region", { name: "Memory document", exact: true });
+test("Memory session filtering reuses cached project metadata from the first selection", async ({
+  page,
+}) => {
+  const requests = await fixture(page, false, false, memoryProjectPath);
+  await expect(
+    page
+      .getByRole("region", { name: "Project memories", exact: true })
+      .getByRole("link"),
+  ).toHaveCount(2);
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Research session", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("region", { name: "Project memories", exact: true })
+      .getByRole("link"),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
+  const request = requests
+    .filter((r) => r.path === "/cxz.MemoryService/List")
+    .at(-1).q;
+  expect(request.project.id).toBe(projectFixture().id);
+  expect(request.session).toBeUndefined();
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List"),
+  ).toHaveLength(1);
+  expect(request.scope).toBe("MEMORY_SCOPE_ACTIVE");
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/Read"),
+  ).toHaveLength(0);
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "All sessions", exact: true }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "Project memories", exact: true })
+      .getByRole("link"),
+  ).toHaveCount(2);
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List").at(-1).q
+      .session,
+  ).toBeUndefined();
+  await page.getByRole("link", { name: "Research notes", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
+  await name.fill("Unsaved memory name");
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Discard unsaved changes",
+    exact: true,
+  });
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(name).toHaveValue("Unsaved memory name");
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List"),
+  ).toHaveLength(1);
+});
+test("Memory cache expiry refreshes in the background without hiding filtered cards", async ({
+  page,
+}) => {
+  const start = new Date("2026-11-05T13:00:00Z");
+  await page.clock.setFixedTime(start);
+  const requests = await fixture(page, false, false, memoryProjectPath);
+  const memories = page.getByRole("region", {
+    name: "Project memories",
+    exact: true,
+  });
+  await expect(memories.getByRole("link")).toHaveCount(2);
+  let release;
+  const pending = new Promise((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/cxz.MemoryService/List", async (route) => {
+    await pending;
+    await route.fallback();
+  });
+  await page.clock.setFixedTime(new Date(start.getTime() + 60_001));
+  const refreshing = page.waitForRequest("**/cxz.MemoryService/List");
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Research session", exact: true })
+    .click();
+  await refreshing;
+  await expect(memories).toHaveAttribute("aria-busy", "true");
+  await expect(
+    memories.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
+  await expect(
+    memories.getByText("Loading memories…", { exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "All sessions", exact: true }).click();
+  await expect(memories.getByRole("link")).toHaveCount(2);
+  await expect(memories).toHaveAttribute("aria-busy", "true");
+  release();
+  await expect(memories).toHaveAttribute("aria-busy", "false");
+  await expect(memories.getByRole("alert")).toHaveCount(0);
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List"),
+  ).toHaveLength(2);
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Research session", exact: true })
+    .click();
+  await expect(memories.getByRole("link")).toHaveCount(1);
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/List"),
+  ).toHaveLength(2);
+});
+test("Memory refresh failures retain cached cards and allow a retry", async ({
+  page,
+}) => {
+  const start = new Date("2026-11-05T13:00:00Z");
+  await page.clock.setFixedTime(start);
+  await fixture(page, false, false, memoryProjectPath);
+  const memories = page.getByRole("region", {
+    name: "Project memories",
+    exact: true,
+  });
+  await expect(memories.getByRole("link")).toHaveCount(2);
+  const fail = (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "unavailable",
+        message: "Refresh temporarily unavailable",
+      }),
+    });
+  await page.route("**/cxz.MemoryService/List", fail);
+  await page.clock.setFixedTime(new Date(start.getTime() + 60_001));
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Research session", exact: true })
+    .click();
+  await expectAPIError(page, "Refresh temporarily unavailable");
+  await expect(
+    memories.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
+  await page.unroute("**/cxz.MemoryService/List", fail);
+  await memories.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(memories.getByRole("alert")).toHaveCount(0);
+  await expect(memories).toHaveAttribute("aria-busy", "false");
+  await expect(
+    memories.getByRole("link", { name: "Research notes", exact: true }),
+  ).toBeVisible();
+});
+test("Memory collection, document links, reload and browser history agree", async ({
+  page,
+}) => {
+  const requests = await fixture(page, false, false, memoryProjectPath);
+  const research = page.getByRole("link", { name: /Research notes/ });
+  const handoff = page.getByRole("link", { name: /Handoff notes/ });
+  await expect(research).toHaveAttribute("href", researchPath);
+  await expect(handoff).toHaveAttribute("href", handoffPath);
+  await expect(memoryDocument(page)).toHaveCount(0);
+  expect(
+    requests.filter((r) => r.path === "/cxz.MemoryService/Read"),
+  ).toHaveLength(0);
+  await research.click();
+  await expect(page).toHaveURL(new RegExp(`${researchPath}$`));
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Back to memories", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
+  await handoff.click();
+  await expect(page).toHaveURL(new RegExp(`${handoffPath}$`));
+  await expect(
+    page.getByRole("heading", { name: "Handoff", exact: true }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
+  await expect(memoryDocument(page)).toHaveCount(0);
+  await page.goBack();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
+  await expect(memoryDocument(page)).toHaveCount(0);
+  await page.goForward();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
+  await expect(memoryDocument(page)).toHaveCount(0);
+});
+test("Memory browser navigation confirms dirty drafts before changing the selected document", async ({
+  page,
+}) => {
+  await fixture(page, false, false, researchPath);
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
+  await page.getByRole("link", { name: /Handoff notes/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Handoff", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
+  await name.fill("Uncommitted name");
+  await page.goBack();
+  const dialog = page.getByRole("dialog", {
+    name: "Discard unsaved changes",
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${handoffPath}$`));
+  await expect(name).toHaveValue("Uncommitted name");
+  await page.goBack();
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
+  await page.getByRole("link", { name: /Research notes/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+});
+for (const [name, path, message] of [
+  ["invalid ID", `${memoryProjectPath}/bad-id`, "Invalid memory ID."],
+  [
+    "missing document",
+    `${memoryProjectPath}/${memoryFixtureUUID("missing")}`,
+    "Memory not found",
+  ],
+  [
+    "wrong project",
+    `/c/_/project/${projectFixture(2).uuid}/memory/${memoryFixtureUUID("memory")}`,
+    "Memory not found",
+  ],
+])
+  test(`Memory deep links never substitute another document: ${name}`, async ({
+    page,
+  }) => {
+    await fixture(page, false, true, path);
+    if (name === "invalid ID")
+      await expect(page.getByRole("main").getByRole("alert")).toContainText(
+        message,
+      );
+    else await expectAPIError(page, message);
+    await expect(
+      page.getByRole("heading", { name: "Shared notes", exact: true }),
+    ).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+  });
+
+for (const document of [false, true])
+  test(`Memory UUID ${document ? "document" : "collection"} bookmarks stay valid while links prefer aliases`, async ({
+    page,
+  }) => {
+    const path = `/c/_/project/${projectFixture().uuid}/memory${document ? `/${memoryFixtureUUID("memory")}` : ""}`;
+    const requests = await fixture(page, false, false, path);
+    const research = page.getByRole("link", { name: /Research notes/ });
+    await expect(
+      page.getByRole("link", { name: "Memory", exact: true }),
+    ).toHaveAttribute("href", memoryProjectPath);
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    if (document) {
+      await expect(
+        page.getByRole("heading", { name: "Shared notes", exact: true }),
+      ).toBeVisible();
+      expect(
+        requests.find((r) => r.path === "/cxz.MemoryService/Read").q.ref.project
+          .id,
+      ).toBe(projectFixture().id);
+      const back = page.getByRole("link", {
+        name: "Memory",
+        exact: true,
+      });
+      await expect(back).toHaveAttribute("href", memoryProjectPath);
+      await back.click();
+    } else await expect(memoryDocument(page)).toHaveCount(0);
+    await expect(research).toHaveAttribute("href", researchPath);
+    expect(
+      requests.find((r) => r.path === "/cxz.MemoryService/List").q.project.id,
+    ).toBe(projectFixture().id);
+    await page.getByRole("link", { name: /Handoff notes/ }).click();
+    await expect(page).toHaveURL(new RegExp(`${handoffPath}$`));
+    await expect(
+      page.getByRole("heading", { name: "Handoff", exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Handoff", exact: true }),
+    ).toBeVisible();
+  });
+test("Memory links fall back to project UUIDs without an alias", async ({
+  page,
+}) => {
+  const path = `/c/_/project/${projectFixture().uuid}/memory`;
+  await fixture(page, false, false, path, "");
+  await expect(
+    page.getByRole("link", { name: "Memory", exact: true }),
+  ).toHaveAttribute("href", path);
+  await expect(
+    page.getByRole("link", { name: /Research notes/ }),
+  ).toHaveAttribute("href", `${path}/${memoryFixtureUUID("memory")}`);
+  await page.getByRole("link", { name: /Research notes/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Shared notes", exact: true }),
+  ).toBeVisible();
+});
+test("Memory project picker navigates using the chosen project's alias", async ({
+  page,
+}) => {
+  const requests = await fixture(page, false, true, memoryProjectPath);
+  await expect(
+    page.getByRole("link", { name: /Research notes/ }),
+  ).toBeVisible();
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("option", { name: "Docs playground", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/c\/_\/project\/docs-playground\/memory$/);
+  await expect(
+    page.getByRole("link", { name: "Memory", exact: true }),
+  ).toHaveAttribute("href", "/c/_/project/docs-playground/memory");
+  await expect
+    .poll(
+      () =>
+        requests.filter((r) => r.path === "/cxz.MemoryService/List").at(-1)?.q
+          .project.id,
+    )
+    .toBe(projectFixture(2).id);
+  await expect(memoryDocument(page)).toHaveCount(0);
+});
+
+test("conversation menu Erase confirms, cancels and removes the session by stable ID", async ({
+  page,
+}) => {
+  const requests = await fixture(page);
+  await page
+    .getByRole("link", { name: /Research session oak/ })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toBeVisible();
+  const openErase = async () => {
+    await page
+      .getByRole("button", { name: "Session menu", exact: true })
+      .click();
+    const menu = page.getByRole("menu", { name: "Session menu", exact: true });
+    await expect(menu.getByRole("menuitem").last()).toHaveText("Erase");
+    await menu.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  };
+  await openErase();
+  const dialog = page.getByRole("dialog", {
+    name: "Erase session",
+    exact: true,
+  });
+  await expect(dialog).toContainText("Research session");
+  await expect(dialog).toContainText("This cannot be undone.");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
+  ).toHaveLength(0);
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toBeVisible();
+  await openErase();
+  await dialog.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(page).toHaveURL(/\/c\/_\/session$/);
+  await expect(
+    page
+      .getByRole("table", { name: "Sessions", exact: true })
+      .locator("tbody tr"),
+  ).toHaveCount(0);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
+  ).toHaveLength(1);
+  expect(
+    requests.find((r) => r.path === "/cxz.SessionService/Erase").q,
+  ).toEqual({ id: Buffer.from("fixture".padEnd(16, "0")).toString("base64") });
+});
+test("failed conversation menu Erase preserves the session and draft for retry", async ({
+  page,
+}) => {
+  const requests = await fixture(page);
+  await page
+    .getByRole("link", { name: /Research session oak/ })
+    .first()
+    .click();
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  await input.fill("Keep this draft");
+  const eraseEndpoint = "**/cxz.SessionService/Erase";
+  await page.route(eraseEndpoint, (route) =>
+    route.fulfill({
+      status: 503,
+      json: { code: "unavailable", message: "Erase unavailable" },
+    }),
+  );
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Erase", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Erase session",
+    exact: true,
+  });
+  await dialog.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Action failed");
+  await expect(input).toHaveValue("Keep this draft");
+  await expect(page).toHaveURL(/\/c\/_\/session\/oak$/);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
+  ).toHaveLength(0);
+  await page.unroute(eraseEndpoint);
+  await dialog.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(page).toHaveURL(/\/c\/_\/session$/);
+  expect(
+    requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
+  ).toHaveLength(1);
 });

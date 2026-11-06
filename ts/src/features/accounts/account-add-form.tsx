@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef, useState, useId } from "react";
 import {
   Button,
@@ -81,9 +82,10 @@ export function AccountAddForm({
               <Button
                 type="submit"
                 form={id}
+                loading={busy}
                 disabled={busy || !/^[a-z][a-z0-9-]{0,62}$/.test(alias.trim())}
               >
-                {busy ? "Adding…" : "Add"}
+                Confirm
               </Button>
               <Button
                 type="button"
@@ -147,7 +149,7 @@ export function AccountAddForm({
                 ? "Codex uses a central login shared by this account's sessions."
                 : "Claude uses an independent login for each session."}
             </small>
-            {error && <p role="alert">{error}</p>}
+            {error && <ErrorNotice error={error} />}
           </Form>
         </Card>
       </form>

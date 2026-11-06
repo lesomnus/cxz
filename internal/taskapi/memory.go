@@ -163,6 +163,9 @@ func (m *Memory) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*reso
 }
 
 func matches(v *resource.Task, filters []*resource.TaskFilter) bool {
+	if v.GetDateErased() != nil {
+		return false
+	}
 	for _, f := range filters {
 		if f.HasProject() && !bytes.Equal(f.GetProject().GetId(), v.GetProject().GetId()) {
 			continue
@@ -199,21 +202,27 @@ func less(a, b *resource.Task) bool {
 func (m *Memory) List(_ context.Context, r *resource.TaskListRequest) (*resource.TaskListResponse, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	ordered := func(a, b *resource.Task) bool {
+		if r.GetReverse() {
+			return less(b, a)
+		}
+		return less(a, b)
+	}
 	var after *resource.Task
 	if r.GetAfter() != "" {
-		id, err := base64.RawURLEncoding.DecodeString(r.GetAfter())
-		if err != nil || len(id) != 16 || m.rows[string(id)] == nil {
+		cursor, err := base64.RawURLEncoding.DecodeString(r.GetAfter())
+		if err != nil || len(cursor) != 17 || (cursor[0] == 1) != r.GetReverse() || cursor[0] > 1 || m.rows[string(cursor[1:])] == nil {
 			return nil, invalid("invalid task cursor")
 		}
-		after = m.rows[string(id)]
+		after = m.rows[string(cursor[1:])]
 	}
 	items := make([]*resource.Task, 0)
 	for _, v := range m.rows {
-		if matches(v, r.GetFilters()) && (after == nil || less(after, v)) {
+		if matches(v, r.GetFilters()) && (after == nil || ordered(after, v)) {
 			items = append(items, clone(v))
 		}
 	}
-	sort.Slice(items, func(i, j int) bool { return less(items[i], items[j]) })
+	sort.Slice(items, func(i, j int) bool { return ordered(items[i], items[j]) })
 	size := int(r.GetSize())
 	if size <= 0 {
 		size = 100
@@ -224,7 +233,11 @@ func (m *Memory) List(_ context.Context, r *resource.TaskListRequest) (*resource
 	next := ""
 	if len(items) > size {
 		items = items[:size]
-		next = base64.RawURLEncoding.EncodeToString(items[len(items)-1].GetId())
+		direction := byte(0)
+		if r.GetReverse() {
+			direction = 1
+		}
+		next = base64.RawURLEncoding.EncodeToString(append([]byte{direction}, items[len(items)-1].GetId()...))
 	}
 	return resource.TaskListResponse_builder{Items: items, Next: next}.Build(), nil
 }
@@ -239,13 +252,22 @@ func (m *Memory) Watch(r *resource.TaskWatchRequest, out grpc.ServerStreamingSer
 		items := make([]*resource.TaskWatchItem, 0)
 		for id, v := range m.rows {
 			match := matches(v, r.GetFilters())
-			if first && r.GetSkipSnapshot() {
-				if match {
-					versions[id] = v.GetDateUpdated()
+			scope := len(r.GetFilters()) == 0
+			for _, filter := range r.GetFilters() {
+				if bytes.Equal(filter.GetProject().GetId(), v.GetProject().GetId()) {
+					scope = true
+					break
 				}
+			}
+			if !scope {
 				continue
 			}
-			if match && !proto.Equal(versions[id], v.GetDateUpdated()) {
+			if first && r.GetSkipSnapshot() {
+				versions[id] = v.GetDateUpdated()
+				continue
+			}
+			changed := !proto.Equal(versions[id], v.GetDateUpdated())
+			if match && changed {
 				versions[id] = v.GetDateUpdated()
 				seen[id] = true
 				action := ""
@@ -253,13 +275,18 @@ func (m *Memory) Watch(r *resource.TaskWatchRequest, out grpc.ServerStreamingSer
 					action = m.actions[id]
 				}
 				items = append(items, resource.TaskWatchItem_builder{Id: v.GetId(), Value: clone(v), Action: action}.Build())
-			} else if !match && seen[id] {
+			} else if !match && (seen[id] || (r.GetSkipSnapshot() && changed)) {
 				delete(seen, id)
-				delete(versions, id)
+				versions[id] = v.GetDateUpdated()
 				items = append(items, resource.TaskWatchItem_builder{Id: v.GetId(), Action: m.actions[id]}.Build())
 			}
 		}
 		m.mu.Unlock()
+		if first && r.GetSkipSnapshot() {
+			if err := WatchReady(out); err != nil {
+				return err
+			}
+		}
 		if len(items) > 0 || (first && !r.GetSkipSnapshot()) {
 			if err := out.Send(resource.TaskWatchResponse_builder{Items: items}.Build()); err != nil {
 				return err

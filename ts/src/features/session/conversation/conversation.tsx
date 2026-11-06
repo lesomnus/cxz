@@ -1,4 +1,9 @@
-import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
+import { isAPIError } from "#src/shared/errors/client-errors.ts";
+import {
+  sessionLocation,
+  resourceLocation,
+} from "#src/shared/navigation/resource-route.ts";
 import {
   projectId as projectUUID,
   projectRef,
@@ -33,8 +38,9 @@ import {
   prepareSessionLogin,
   sessionLoginSnapshot,
 } from "#src/features/session/model/session-actions.ts";
+import { performSessionControl } from "#src/features/session/model/session-control-batch.ts";
 import { editSession } from "#src/features/session/model/session-edit.ts";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -121,6 +127,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const conversationArea = useRef<HTMLElement>(null);
   useLocale();
   const navigate = useNavigate();
+  const router = useRouter();
   const openCard = useFloatingCard();
   const workspaceContext = useContext(WorkspaceContext);
   const feed = useMemo(() => c.conversations.get(id), [c, id]);
@@ -663,10 +670,14 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       return true;
     } catch (e) {
       setError(
-        t(
-          "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.",
-          { error: String(e) },
-        ),
+        isAPIError(e, c.errors)
+          ? t(
+              "The result may be unknown after a disconnect; inspect the conversation before retrying.",
+            )
+          : t(
+              "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.",
+              { error: String(e) },
+            ),
       );
       return false;
     } finally {
@@ -1124,12 +1135,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         ))}
       </FloatingCardHost>
       {!!(error || current.error) && (
-        <p
+        <ErrorNotice
           className={`error ${errorStyles.error} ${errorStyles.notice}`}
-          role="alert"
-        >
-          {error || String(current.error)}
-        </p>
+          error={error || String(current.error)}
+        />
       )}
       {needsLogin && (
         <div
@@ -1274,6 +1283,14 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                 { id: updated.id, value: updated },
               ]);
               return updated;
+            }}
+            erase={(target) => {
+              const location = router.state.location.href;
+              return action(async () => {
+                await performSessionControl(c, target, "erase");
+                if (router.state.location.href === location)
+                  await navigate(resourceLocation("sessions"));
+              });
             }}
             manage={(operation, run) =>
               action(async (session) => {

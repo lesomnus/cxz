@@ -10,12 +10,14 @@ import { advanceTurn, snapshotTurn, type TurnProgress } from "./turn-progress";
 import type { ConversationLoad } from "../conversation/conversation-loading";
 import type { TranscriptViewport } from "../conversation/virtual-messages";
 import { CachedSessionAux } from "./session-aux-cache";
+import { operationHealth } from "#src/shared/errors/client-errors.ts";
 
 export const MAX_IDLE_CONVERSATIONS = 8;
 export const MAX_CONVERSATION_BYTES = 8 << 20;
 export const MAX_IDLE_CONVERSATION_BYTES = 32 << 20;
 type Update<T> = T | ((old: T) => T);
-type Client = Pick<Connection, "sessions" | "clientId" | "attention">;
+type Client = Pick<Connection, "sessions" | "clientId" | "attention"> &
+  Partial<Pick<Connection, "errors" | "baseUrl">>;
 export type ConversationSnapshot = {
   events: SessionEvent[];
   metadata: SessionEvent[];
@@ -165,7 +167,12 @@ export class CachedConversation {
     readonly id: string,
     private changed: () => void,
   ) {
-    this.history = new SessionHistory(client.sessions, id, client.clientId);
+    this.history = new SessionHistory(
+      client.sessions,
+      id,
+      client.clientId,
+      client,
+    );
     this.aux = new CachedSessionAux(client.sessions, id, changed);
   }
   snapshot = () => this.state;
@@ -538,6 +545,21 @@ export class CachedConversation {
             (e) => e.heartbeat,
             STREAM_STALL_MS,
             "The session stream stopped responding.",
+            operationHealth(
+              this.client.errors,
+              JSON.stringify([
+                this.client.baseUrl,
+                "stream-health",
+                this.id,
+                "events",
+              ]),
+              {
+                connection: this.client.baseUrl,
+                method: "cxz.SessionService/Events",
+                target: `Session: ${this.id}`,
+              },
+              signal,
+            ),
           );
           for await (const e of records) {
             if (signal.aborted) return;

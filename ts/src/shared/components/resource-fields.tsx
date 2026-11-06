@@ -14,6 +14,7 @@ type ResourceField = {
   fullWidth?: boolean;
   path?: boolean;
   identifier?: boolean;
+  identifierLength?: number;
 };
 
 export type ResourceFieldRow =
@@ -71,6 +72,7 @@ function Field({
   fullWidth,
   path,
   identifier,
+  identifierLength,
 }: ResourceField) {
   useLocale();
   const [feedback, setFeedback] = useState<{
@@ -119,6 +121,7 @@ function Field({
         {copyValue && identifier ? (
           <IdentifierValue
             value={copyValue}
+            prefixLength={identifierLength}
             label={`${t("Copy")}: ${label}`}
             copying={copying}
             onCopy={copy}

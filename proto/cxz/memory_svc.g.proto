@@ -272,6 +272,10 @@ message MemoryVersion {
   uint64 revision = 2 [features.field_presence = IMPLICIT];
   string content_hash = 3 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 4;
+  // Changes against revision - 1, excluding diff context and headers.
+  // Both are absent for the first revision or an unavailable predecessor.
+  uint32 lines_added = 5 [features.field_presence = EXPLICIT];
+  uint32 lines_removed = 6 [features.field_presence = EXPLICIT];
 }
 
 message MemoryChangesRequest {

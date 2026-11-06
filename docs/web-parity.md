@@ -40,7 +40,10 @@ authentication store, search index, or memory library.
   filter by project, match type, tools, case and UTC date window, continue result
   pages, and open the matched event. Index progress, unavailable projects and
   trimmed conversations are reported instead of appearing complete.
-- **Shared memory**: list project-scoped documents directly, search names/body,
+- **Shared memory**: a recent-first document browser with owner identity and update
+  time, a reading view, separate Edit/Save/Cancel and read-only source inspection.
+  Migration labels stay available under Document details and are preserved during
+  user-label edits. Search names/body,
   filter labels, preview/edit Markdown, create/copy, rename, inspect versions and
   contextual diffs, restore old bodies as new revisions, trash/restore/purge.
   Body saves carry revision and metadata version checks; conflicts preserve drafts.

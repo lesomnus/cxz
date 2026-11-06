@@ -1,9 +1,16 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
-import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@lesomnus/nox";
+import {
+  Button,
+  ToggleButton,
+  Popover,
+  PrefixValueMenu,
+  DatePicker,
+} from "@lesomnus/nox";
+import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import type {
   SessionSearchVisit,
   SessionSearchSummary,
@@ -11,7 +18,8 @@ import type {
 import type { Project } from "#gen/cxz/project_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import styles from "#src/shared/components/resource-surface.module.css";
+import styles from "./conversation-search.module.css";
+import bar from "#src/shared/components/search-bar.module.css";
 
 export function ConversationSearch({
   c,
@@ -23,7 +31,6 @@ export function ConversationSearch({
   const [query, setQuery] = useState("");
   const [match, setMatch] = useState("substring");
   const [project, setProject] = useState("");
-  const [tools, setTools] = useState(false);
   const [ignoreCase, setIgnoreCase] = useState(true);
   const [since, setSince] = useState("");
   const [until, setUntil] = useState("");
@@ -36,7 +43,6 @@ export function ConversationSearch({
   const submitted = useRef({
     query: "",
     match,
-    includeTools: tools,
     ignoreCase,
     projects: [] as string[],
     since: undefined as { seconds: bigint; nanos: number } | undefined,
@@ -47,8 +53,16 @@ export function ConversationSearch({
     active.current?.abort();
     setLoading(false);
     setSummary(undefined);
+    setVisits([]);
+    setProgress("");
+    setError("");
   }
   async function search(more = false) {
+    if (!more && !query.trim()) return;
+    if (!more && since && until && since >= until) {
+      setError("Choose an end date after the start date.");
+      return;
+    }
     active.current?.abort();
     const controller = new AbortController();
     active.current = controller;
@@ -67,7 +81,6 @@ export function ConversationSearch({
       submitted.current = {
         query,
         match,
-        includeTools: tools,
         ignoreCase,
         projects: project ? [project] : [],
         since: stamp(since),
@@ -127,123 +140,212 @@ export function ConversationSearch({
   return (
     <div className={styles.content}>
       <form
-        className={styles.section}
-        onSubmit={(e) => {
-          e.preventDefault();
-          void search();
+        role="search"
+        aria-label="Search conversations"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!loading) void search();
         }}
       >
-        <label className={styles.field}>
-          Search conversations
-          <input
-            value={query}
-            onChange={(e) => {
-              invalidate();
-              setQuery(e.target.value);
-            }}
-          />
-        </label>
-        <div className={styles.row}>
-          <ValueMenu
-            label="Match"
-            value={match}
-            options={["substring", "regex", "fuzzy"].map((value) => ({
-              value,
-              label: value,
-            }))}
-            choose={(v) => {
-              invalidate();
-              setMatch(v);
-            }}
-          />
-          <ValueMenu
-            label="Project"
+        <div className={bar.surface}>
+          <div className={bar.controls}>
+            <svg
+              className={bar.icon}
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              aria-hidden="true"
+            >
+              <circle cx="10" cy="10" r="6" />
+              <path d="m15 15 5 5" />
+            </svg>
+            <input
+              className={bar.input}
+              type="search"
+              aria-label="Search conversations"
+              placeholder="Search conversations"
+              autoComplete="off"
+              value={query}
+              onChange={(event) => {
+                invalidate();
+                setQuery(event.target.value);
+              }}
+            />
+            <div className={bar.modes} role="group" aria-label="Search options">
+              <Popover content="Match case">
+                <ToggleButton
+                  className={bar.mode}
+                  variant="toolbar"
+                  aria-label="Match case"
+                  pressed={!ignoreCase}
+                  onPressedChange={(pressed) => {
+                    invalidate();
+                    setIgnoreCase(!pressed);
+                  }}
+                >
+                  <span aria-hidden="true">Aa</span>
+                </ToggleButton>
+              </Popover>
+              <Popover content="Use regular expression">
+                <ToggleButton
+                  className={bar.mode}
+                  variant="toolbar"
+                  aria-label="Use regular expression"
+                  pressed={match === "regex"}
+                  onPressedChange={(pressed) => {
+                    invalidate();
+                    setMatch(pressed ? "regex" : "substring");
+                  }}
+                >
+                  <span aria-hidden="true">.*</span>
+                </ToggleButton>
+              </Popover>
+              <Popover content="Fuzzy search">
+                <ToggleButton
+                  className={bar.mode}
+                  variant="toolbar"
+                  aria-label="Fuzzy search"
+                  pressed={match === "fuzzy"}
+                  onPressedChange={(pressed) => {
+                    invalidate();
+                    setMatch(pressed ? "fuzzy" : "substring");
+                  }}
+                >
+                  <span aria-hidden="true">≈</span>
+                </ToggleButton>
+              </Popover>
+            </div>
+            {loading ? (
+              <Button
+                className={bar.action}
+                variant="toolbar"
+                type="button"
+                aria-label="Stop search"
+                title="Stop search"
+                onClick={(event) => {
+                  event.preventDefault();
+                  active.current?.abort();
+                  setLoading(false);
+                  setProgress("Search stopped.");
+                }}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <rect x="4" y="4" width="8" height="8" rx="1" />
+                </svg>
+              </Button>
+            ) : (
+              <Button
+                className={bar.action}
+                variant="toolbar"
+                type="submit"
+                aria-label="Search"
+                title="Search"
+                disabled={!query.trim()}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14m-5-5 5 5-5 5" />
+                </svg>
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className={styles.filterBar}>
+          <PrefixValueMenu
+            prefix={<ResourceIcon kind="projects" />}
+            label="Search project"
             value={project}
+            className={styles.projectPicker}
+            display={
+              projects.find((p) => projectId(p) === project)?.name ||
+              projects.find((p) => projectId(p) === project)?.alias ||
+              "All projects"
+            }
             options={[
               { value: "", label: "All projects" },
               ...projects.map((p) => ({
                 value: projectId(p),
                 label: p.name || p.alias,
+                searchText: `${p.alias} ${p.workspace}`,
               })),
             ]}
-            choose={(v) => {
+            searchable
+            choose={(value) => {
               invalidate();
-              setProject(v);
+              setProject(value);
             }}
           />
-        </div>
-        <div className={styles.row}>
-          <label>
-            <input
-              type="checkbox"
-              checked={ignoreCase}
-              onChange={(e) => {
+          <div
+            className={styles.dateRange}
+            role="group"
+            aria-label="Date range (UTC, end exclusive)"
+          >
+            <DatePicker
+              label="From (UTC)"
+              name="since"
+              placeholder="From"
+              className={styles.datePicker}
+              value={since || null}
+              onChange={(value) => {
                 invalidate();
-                setIgnoreCase(e.target.checked);
-              }}
-            />{" "}
-            Ignore case
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={tools}
-              onChange={(e) => {
-                invalidate();
-                setTools(e.target.checked);
-              }}
-            />{" "}
-            Include tools
-          </label>
-        </div>
-        <div className={styles.row}>
-          <label className={styles.field}>
-            From (UTC)
-            <input
-              type="date"
-              value={since}
-              onChange={(e) => {
-                invalidate();
-                setSince(e.target.value);
+                setSince(value ?? "");
               }}
             />
-          </label>
-          <label className={styles.field}>
-            Until (UTC, exclusive)
-            <input
-              type="date"
-              value={until}
-              onChange={(e) => {
+            <span className={styles.dateSeparator} aria-hidden="true">
+              –
+            </span>
+            <DatePicker
+              label="Until (UTC, exclusive)"
+              name="until"
+              placeholder="Until"
+              className={styles.datePicker}
+              value={until || null}
+              onChange={(value) => {
                 invalidate();
-                setUntil(e.target.value);
+                setUntil(value ?? "");
               }}
             />
-          </label>
-        </div>
-        <div className={styles.row}>
-          <Button type="submit" disabled={loading || !query.trim()}>
-            Search
-          </Button>
-          {loading && (
+          </div>
+          {(project || since || until) && (
             <Button
+              variant="toolbar"
+              type="button"
               onClick={() => {
-                active.current?.abort();
-                setLoading(false);
+                invalidate();
+                setProject("");
+                setSince("");
+                setUntil("");
               }}
             >
-              Stop search
+              Reset filters
             </Button>
           )}
         </div>
       </form>
-      {error && <p role="alert">{error}</p>}
+      {error && <ErrorNotice className={styles.error} error={error} />}
       {progress && (
         <p className={styles.status} role="status">
           {progress}
         </p>
       )}
       {summary && (
-        <p className={styles.muted}>
+        <p className={styles.summary} role="status">
           {summary.hits} matches · {summary.sessions} sessions
           {summary.unavailable
             ? ` · ${summary.unavailable} unavailable projects`
@@ -253,11 +355,13 @@ export function ConversationSearch({
       )}
       {visits.map((visit) => (
         <section className={styles.section} key={visit.sessionId}>
-          <strong>{visit.title || visit.alias}</strong>
-          <small className={styles.muted}>
-            {visit.projectName} · {visit.alias}
-            {visit.truncated ? " · Older history was trimmed" : ""}
-          </small>
+          <header className={styles.resultHeading}>
+            <strong>{visit.title || visit.alias}</strong>
+            <small className={styles.muted}>
+              {visit.projectName} · {visit.alias}
+              {visit.truncated ? " · Older history was trimmed" : ""}
+            </small>
+          </header>
           {visit.hits.map((hit) => (
             <RouteLink
               className={styles.item}
@@ -265,7 +369,7 @@ export function ConversationSearch({
               {...sessionLocation(visit.alias || visit.sessionId)}
               search={{ seq: hit.seq.toString() }}
             >
-              <span>
+              <span className={styles.snippet}>
                 {hit.snippet}
                 <small>
                   {hit.kind} · <DateTime value={hit.timeMs} />

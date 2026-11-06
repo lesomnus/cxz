@@ -12,6 +12,13 @@ export const taskStatuses = [
   { value: TaskStatus.WAITING, label: "Waiting" },
   { value: TaskStatus.DONE, label: "Done" },
 ] as const;
+export const taskPriorities = [
+  "Highest",
+  "High",
+  "Normal",
+  "Low",
+  "Lowest",
+] as const;
 export const taskStatusName = (status: TaskStatus) =>
   taskStatuses.find((item) => item.value === status)?.label ??
   (status === TaskStatus.CANCELED ? "Canceled" : "Unknown");
@@ -30,9 +37,6 @@ export const taskOwner = (task: Task) => ({
   session: { key: { case: "runtimeId" as const, value: task.assignee } },
   runId: task.assigneeRun,
 });
-export const taskTime = (task: Task) =>
-  Number(task.dateUpdated?.seconds ?? 0n) * 1000 +
-  (task.dateUpdated?.nanos ?? 0) / 1000000;
 export const activeTask = (task: Task) =>
   task.status === TaskStatus.IN_PROGRESS || task.status === TaskStatus.WAITING;
 
@@ -46,34 +50,54 @@ export function ownerIssue(task: Task, sessions: Session[], loading = false) {
   return "";
 }
 
-export function boardTasks(
-  tasks: Task[],
-  assignee = "",
-  run = "",
-  allDone = false,
+export function tableTasks(tasks: Task[], assignee = "", run = "") {
+  return tasks
+    .filter(
+      (task) =>
+        (!assignee || task.assignee === assignee) &&
+        (!run || task.assigneeRun === run),
+    )
+    .sort(
+      (a, b) =>
+        Number(a.status === TaskStatus.DONE) -
+          Number(b.status === TaskStatus.DONE) ||
+        Number(
+          (b.dateCreated?.seconds ?? 0n) - (a.dateCreated?.seconds ?? 0n),
+        ) ||
+        (b.dateCreated?.nanos ?? 0) - (a.dateCreated?.nanos ?? 0) ||
+        taskKey(b).localeCompare(taskKey(a)),
+    );
+}
+
+export const taskHistoryPageSize = 50;
+
+export function taskTablePage(
+  tasks: readonly Task[],
+  now: number,
+  olderDone = 0,
 ) {
-  const visible = tasks.filter(
-    (task) =>
-      (!assignee || task.assignee === assignee) &&
-      (!run || task.assigneeRun === run),
-  );
-  return taskStatuses.map((column) => {
-    const items = visible
-      .filter((task) => task.status === column.value)
-      .sort((a, b) =>
-        column.value === TaskStatus.DONE
-          ? taskTime(b) - taskTime(a)
-          : a.priority - b.priority || taskTime(b) - taskTime(a),
-      );
-    return {
-      ...column,
-      total: items.length,
-      items:
-        column.value === TaskStatus.DONE && !allDone
-          ? items.slice(0, 12)
-          : items,
-    };
+  const yesterday = new Date(now);
+  yesterday.setHours(0, 0, 0, 0);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const cutoff = yesterday.getTime();
+  let remaining = olderDone;
+  let hidden = 0;
+  const rows = tasks.filter((task) => {
+    if (task.status !== TaskStatus.DONE) return true;
+    const updated = task.dateUpdated ?? task.dateCreated;
+    if (
+      updated &&
+      Number(updated.seconds) * 1000 + updated.nanos / 1e6 >= cutoff
+    )
+      return true;
+    if (remaining > 0) {
+      remaining--;
+      return true;
+    }
+    hidden++;
+    return false;
   });
+  return { rows, hidden };
 }
 
 export const sessionInProject = (session: Session, project: Project) =>

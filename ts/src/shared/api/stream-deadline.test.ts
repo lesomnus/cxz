@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { alive } from "./stream-deadline";
+import {
+  ClientErrors,
+  operationHealth,
+} from "#src/shared/errors/client-errors.ts";
 
 const frames = (...values: { beat?: boolean; text?: string }[]) =>
   (async function* () {
@@ -8,6 +12,53 @@ const frames = (...values: { beat?: boolean; text?: string }[]) =>
   })();
 
 describe("reading a stream that says it is alive", () => {
+  it("records client-detected silence and resolves on a new heartbeat, never merely reopening", async () => {
+    vi.useFakeTimers();
+    try {
+      const errors = new ClientErrors();
+      const health = operationHealth(errors, "session-rows", {
+        method: "cxz.SessionService/Rows",
+      });
+      const first = (async () => {
+        for await (const _ of alive(
+          frames({ beat: true }),
+          (v) => !!v.beat,
+          1000,
+          "stalled",
+          health,
+        )) {
+          /* wait */
+        }
+      })();
+      const rejected = expect(first).rejects.toThrow("stalled");
+      await vi.advanceTimersByTimeAsync(1000);
+      await rejected;
+      expect(errors.snapshot()[0].status).toBe("active");
+      let release!: () => void;
+      const retry = (async () => {
+        for await (const _ of alive(
+          (async function* () {
+            await new Promise<void>((resolve) => {
+              release = resolve;
+            });
+            yield { beat: true };
+          })(),
+          (v) => !!v.beat,
+          1000,
+          "stalled",
+          health,
+        )) {
+          /* heartbeat only */
+        }
+      })();
+      expect(errors.snapshot()[0].status).toBe("active");
+      release();
+      await retry;
+      expect(errors.snapshot()[0].status).toBe("resolved");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   // Both streams of a conversation are heartbeated by the same runtime, so one
   // reader serves both: the row stream says it with a row that has no event,
   // the record stream with a frame that says so. See cxz#188 and cxz#191.

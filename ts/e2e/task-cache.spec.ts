@@ -2,13 +2,65 @@ import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
 import { create, toJson } from "@bufbuild/protobuf";
 import { TaskSchema, TaskStatus } from "../gen/cxz/task_pb";
-import { browserProject } from "../test-support/projects";
 
 test.use({
   viewport: { width: 1440, height: 1000 },
   isMobile: false,
   hasTouch: false,
 });
+
+// Keep the changes-only stream open without relying on Task support in the
+// browser fixture's project runtime. Initial rows come from List below.
+async function readyWatch(page: Page) {
+  await page.routeWebSocket("**/rpc-stream/cxz.TaskService/Watch", (socket) => {
+    let ready = false;
+    socket.onMessage(() => {
+      if (ready) return;
+      ready = true;
+      socket.send(
+        JSON.stringify({
+          status: 200,
+          headers: {
+            "content-type": "application/connect+json",
+            "cxz-watch-ready": "1",
+          },
+        }),
+      );
+    });
+  });
+  await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (
+        !new URL(url, location.href).pathname.endsWith("/cxz.TaskService/Watch")
+      )
+        return originalFetch(input, init);
+      const signal =
+        init?.signal ?? (input instanceof Request ? input.signal : null);
+      let abort: (() => void) | undefined;
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            abort = () =>
+              controller.error(new DOMException("Aborted", "AbortError"));
+            if (signal?.aborted) abort();
+            else signal?.addEventListener("abort", abort, { once: true });
+          },
+          cancel() {
+            if (abort) signal?.removeEventListener("abort", abort);
+          },
+        }),
+        {
+          headers: {
+            "Content-Type": "application/connect+json",
+            "cxz-watch-ready": "1",
+          },
+        },
+      );
+    };
+  });
+}
 
 async function cachedRows(page: Page) {
   return page.evaluate(async () => {
@@ -41,22 +93,22 @@ async function cachedRows(page: Page) {
   });
 }
 
-test("Tasks survive reload while Watch is pending, reconcile remote changes and are removed on sign-out", async ({
+test("Tasks survive reload while List is pending, reconcile remote changes and are removed on sign-out", async ({
   page,
+  baseURL,
 }) => {
+  const origin = new URL(baseURL!).origin;
   await page.request.post("/auth/login", {
-    headers: { Origin: "https://127.0.0.1:18081" },
+    headers: { Origin: origin },
     data: { token: "a".repeat(32) },
   });
-  const project = await browserProject(page.request);
   const value = create(TaskSchema, {
     id: Buffer.from("0000000000008000800b000000000001", "hex"),
     alias: "cached-work",
     name: "Task saved before reload",
-    desc: "Full description restored from the cached Watch row.",
+    desc: "Full description restored from the cached Task row.",
     priority: 2,
     status: TaskStatus.TODO,
-    project: { id: Buffer.from(project.id, "base64") },
     dateUpdated: { seconds: 1793358000n },
   });
   let hold = false,
@@ -74,31 +126,13 @@ test("Tasks survive reload while Watch is pending, reconcile remote changes and 
     await getPending;
     await route.fulfill({ json: toJson(TaskSchema, value) });
   });
-  await page.route("**/cxz.TaskService/Watch", async (route) => {
+  await readyWatch(page);
+  await page.route("**/cxz.TaskService/List", async (route) => {
     if (hold) await pending;
-    const body = Buffer.from(
-      JSON.stringify({
-        items: [
-          {
-            id: Buffer.from(value.id).toString("base64"),
-            value: toJson(TaskSchema, value),
-          },
-        ],
-      }),
-    );
-    const header = Buffer.alloc(5);
-    header.writeUInt32BE(body.length, 1);
-    await route.fulfill({
-      contentType: "application/connect+json",
-      body: Buffer.concat([
-        header,
-        body,
-        Buffer.from([2, 0, 0, 0, 2, 123, 125]),
-      ]),
-    });
+    await route.fulfill({ json: { items: [toJson(TaskSchema, value)] } });
   });
   try {
-    await page.goto("/c/_/task?project=demo");
+    await page.goto("/c/_/project/demo/task");
     await expect(
       page.getByRole("button", {
         name: "Open task: Task saved before reload",
@@ -140,7 +174,7 @@ test("Tasks survive reload while Watch is pending, reconcile remote changes and 
     await expect(title).toHaveValue("Task saved before reload");
     await expect(
       detail.getByRole("textbox", { name: "Description", exact: true }),
-    ).toHaveValue("Full description restored from the cached Watch row.");
+    ).toHaveValue("Full description restored from the cached Task row.");
     await expect(
       detail.getByText("Loading task…", { exact: true }),
     ).toHaveCount(0);
@@ -183,7 +217,10 @@ test("Tasks survive reload while Watch is pending, reconcile remote changes and 
   }
 });
 
-test("Tasks remain live when IndexedDB is unavailable", async ({ page }) => {
+test("Tasks remain live when IndexedDB is unavailable", async ({
+  page,
+  baseURL,
+}) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.addInitScript(() => {
@@ -196,10 +233,11 @@ test("Tasks remain live when IndexedDB is unavailable", async ({ page }) => {
     });
   });
   await page.request.post("/auth/login", {
-    headers: { Origin: "https://127.0.0.1:18081" },
+    headers: { Origin: new URL(baseURL!).origin },
     data: { token: "a".repeat(32) },
   });
-  await page.route("**/cxz.TaskService/Watch", async (route) => {
+  await readyWatch(page);
+  await page.route("**/cxz.TaskService/List", async (route) => {
     const value = create(TaskSchema, {
       id: Buffer.from("0000000000008000800b000000000002", "hex"),
       alias: "live-only",
@@ -207,28 +245,9 @@ test("Tasks remain live when IndexedDB is unavailable", async ({ page }) => {
       priority: 2,
       status: TaskStatus.TODO,
     });
-    const body = Buffer.from(
-      JSON.stringify({
-        items: [
-          {
-            id: Buffer.from(value.id).toString("base64"),
-            value: toJson(TaskSchema, value),
-          },
-        ],
-      }),
-    );
-    const header = Buffer.alloc(5);
-    header.writeUInt32BE(body.length, 1);
-    await route.fulfill({
-      contentType: "application/connect+json",
-      body: Buffer.concat([
-        header,
-        body,
-        Buffer.from([2, 0, 0, 0, 2, 123, 125]),
-      ]),
-    });
+    await route.fulfill({ json: { items: [toJson(TaskSchema, value)] } });
   });
-  await page.goto("/c/_/task?project=demo");
+  await page.goto("/c/_/project/demo/task");
   await expect(
     page.getByRole("button", {
       name: "Open task: Live task without browser storage",

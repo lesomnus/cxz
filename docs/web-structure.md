@@ -58,6 +58,15 @@ ts/
 
 `shared` contains application-wide connection/inventory, settings, translations, fonts, navigation primitives and other utilities. It is still cxz application code: shared API connection state uses feature-owned draft/cache type contracts. It is not the package boundary for reuse by another application. Keep reusable controls in `@lesomnus/nox`, and keep session-specific card hosting in the session feature.
 
+`Connection.selection` owns the current project and session scope shared by Tasks,
+Memory and workspace navigation. It stores stable project/session IDs plus the
+session's runtime identifier used by Task assignees. Changing project clears the
+session; selecting All sessions clears it across pages. Explicit Task link filters
+override the remembered scope, while a run filter remains specific to the Task
+URL. Authenticated connections retain the selection in `sessionStorage`, keyed
+by server origin and reader identity; tabs remain independent, and sign-out clears
+the selection. This is navigation state rather than a `settings.json` preference.
+
 Modal boundaries use Nox `Dialog`, including account/session/task forms. The cxz
 `AnchoredDialog` adapter owns only positioning and trigger decoration; it uses
 `frame={false}` when its caller already supplies a Card. Conditionally mounted
@@ -70,6 +79,11 @@ In the UI package, each component folder contains its implementation, CSS Module
 Tests stay beside the behavior they verify. Application stories stay beside their components; package-control stories demonstrating cxz validation or action policy live under `src/storybook/components`. Standalone Nox stories live only in the Nox submodule and are registered by `.storybook-ui`; the cxz `.storybook` catalog discovers only `src` stories and does not duplicate library examples. Package browser checks use `ui-e2e`, while product integration checks use `storybook-e2e`. Shared preview framing and synthetic session data stay under `src/storybook` and are not used by application entries. Both Storybooks discover stories recursively, so directory moves do not require individual registration.
 
 Global application layout CSS lives under `src/app/styles`; component CSS lives in its UI component folder. Shared native scrollbar styling remains under `src/shared/scroll`. CSS tokens and behavior implementations are the source of truth for design values. Generated protocol files remain under `ts/gen`, and generated UI distribution and Storybook outputs remain excluded from Git.
+
+Projects, Tasks and Memory share `resource-page.module.css` for their centered
+toolbar/body frames and responsive alignment. Their column width, gap, gutter,
+picker width and toolbar row height come from the resource layout tokens in
+`app/styles/style.css`; pages should not maintain separate numeric copies.
 
 ## Module imports
 

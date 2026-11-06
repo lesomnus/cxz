@@ -20,7 +20,7 @@ test("context reveals above with stable numeric slots and a stationary donut", a
       "data-enter-from",
       "from-bottom-right",
     );
-    await expect(content).toHaveCSS("filter", "blur(0px)");
+    await expect(content).toHaveCSS("filter", "none");
     const box = (await popup.boundingBox())!;
     expect(box.x).toBeLessThan(before.x);
     expect(box.x + box.width).toBeGreaterThan(before.x + before.width);
@@ -50,7 +50,10 @@ test("context reveals above with stable numeric slots and a stationary donut", a
       };
     });
     expect(colors.unit).toBe(colors.slash);
-    expect(colors.value).not.toBe(colors.unit);
+    if (story === "unreported")
+      // Unknown values and their unit use the same muted placeholder tone.
+      expect(colors.value).toBe(colors.unit);
+    else expect(colors.value).not.toBe(colors.unit);
     expect(parseFloat(colors.padding)).toBeGreaterThan(0);
     await page.mouse.move(trigger.x + trigger.width / 2, trigger.y - 1);
     await expect(popup).toBeVisible();

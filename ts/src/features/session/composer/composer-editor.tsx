@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useTheme } from "#src/shared/theme/theme.tsx";
 import { t, translateKnown, currentLocale } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -1466,10 +1467,10 @@ function AttachmentPreview({
             <span role="status"> · {t("Uploading…")}</span>
           )}
           {paste.attachment.error && (
-            <span role="alert">
+            <ErrorNotice as="span" error={paste.attachment.error}>
               {" "}
               · {translateKnown(paste.attachment.error)}
-            </span>
+            </ErrorNotice>
           )}
         </p>
       )}
@@ -1484,7 +1485,7 @@ function AttachmentPreview({
           {paste.secret.state === "uploading" ? (
             <span role="status">Preparing secret file…</span>
           ) : paste.secret.error ? (
-            <span role="alert">{paste.secret.error}</span>
+            <ErrorNotice as="span" error={paste.secret.error} />
           ) : (
             <>
               Secret file · <code>{paste.secret.path}</code>

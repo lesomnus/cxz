@@ -31,9 +31,9 @@ export function ProjectEditorPane({
     />
   ) : (
     <aside className="workspace-editor" aria-label={t("Workspace editor")}>
-      <p role={project.error ? "alert" : "status"}>
-        {project.error ? String(project.error) : t("Loading workspace…")}
-      </p>
+      project.error ? <ErrorNotice error={project.error} /> :
+      <p role="status">{t("Loading workspace…")}</p>
     </aside>
   );
 }
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";

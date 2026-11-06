@@ -1,4 +1,5 @@
 import { t } from "#src/shared/i18n/i18n.ts";
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./conversation-loading.module.css";
 
@@ -28,7 +29,9 @@ export function ConversationLoading({ stage, error }: ConversationLoad) {
           <path d="M12 3a9 9 0 0 1 9 9" />
         </svg>
         <span>{label}</span>
-        {error && <small className={styles.error}>{error}</small>}
+        {error && (
+          <ErrorNotice as="small" className={styles.error} error={error} />
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,16 @@
+.button.button {
+  --ui-section-radius: var(--resource-action-radius, 16px);
+  --ui-section-inner-radius: var(--ui-section-radius);
+  width: var(--resource-action-size, 64px);
+  height: var(--resource-action-size, 64px);
+  padding: 0;
+  border-radius: var(--ui-section-radius);
+  place-items: center;
+  font-size: 12px;
+}
+.button.button > :global(.button-content) {
+  justify-content: center;
+}
+.danger:not(:disabled):hover {
+  color: var(--ui-action-error-color);
+}

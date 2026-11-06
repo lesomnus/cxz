@@ -7,6 +7,7 @@ import {
 } from "./log-entry";
 import { MemoryLogStorage, type LogStorage } from "./log-storage";
 import type { WorkerRequest } from "./log-worker";
+import { clientErrors } from "#src/shared/errors/client-errors.ts";
 
 type Command = WorkerRequest extends infer R
   ? R extends WorkerRequest
@@ -216,6 +217,14 @@ export function clientLogs() {
   ));
 }
 export function recordClientError(error: unknown, message?: string) {
+  clientErrors().report(
+    JSON.stringify([
+      "client",
+      message ?? (error instanceof Error ? error.message : String(error)),
+    ]),
+    error,
+    { source: "client", method: message },
+  );
   clientLogs().write({
     level: "error",
     category: "client",
@@ -234,7 +243,12 @@ export function recordClientError(error: unknown, message?: string) {
 }
 export function installClientLogs() {
   const logs = clientLogs();
-  const error = (event: ErrorEvent) =>
+  const error = (event: ErrorEvent) => {
+    clientErrors().report(
+      JSON.stringify(["client", event.filename, event.lineno, event.message]),
+      event.error ?? event.message,
+      { source: "client", method: "JavaScript" },
+    );
     logs.write({
       level: "error",
       category: "client",
@@ -246,7 +260,19 @@ export function installClientLogs() {
         column: event.colno,
       },
     });
-  const rejection = (event: PromiseRejectionEvent) =>
+  };
+  const rejection = (event: PromiseRejectionEvent) => {
+    clientErrors().report(
+      JSON.stringify([
+        "client",
+        "rejection",
+        event.reason instanceof Error
+          ? event.reason.message
+          : String(event.reason),
+      ]),
+      event.reason,
+      { source: "client", method: "Unhandled promise" },
+    );
     logs.write({
       level: "error",
       category: "client",
@@ -260,6 +286,7 @@ export function installClientLogs() {
         stack: event.reason instanceof Error ? event.reason.stack : undefined,
       },
     });
+  };
   const flush = () => {
     void logs.flush();
   };

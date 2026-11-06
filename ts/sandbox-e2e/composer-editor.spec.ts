@@ -211,6 +211,8 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
   await expect(input).toHaveValue("\n");
   await input.fill("keep draft");
   await paste(page, "x".repeat(1024 * 1024 + 1));
-  await expect(page.getByRole("status")).toContainText("1 MiB");
+  await expect(
+    page.getByRole("status").filter({ hasText: "1 MiB" }),
+  ).toBeVisible();
   await expect(input).toHaveValue("keep draft");
 });

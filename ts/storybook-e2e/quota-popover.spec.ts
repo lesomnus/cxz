@@ -35,7 +35,7 @@ test("quota hover opens above the stationary outlined graph with stable columns"
             : "—",
     );
     await expect(content).toHaveCSS("animation-duration", "0.36s");
-    await expect(content).toHaveCSS("filter", "blur(0px)");
+    await expect(content).toHaveCSS("filter", "none");
     await expect(tooltip).toHaveCSS("font-size", "10px");
     await expect(tooltip).toHaveCSS("border-top-width", "0px");
     if (story === "weekly") await expect(tooltip).toContainText("weekly");

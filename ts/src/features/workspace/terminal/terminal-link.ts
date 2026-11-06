@@ -5,6 +5,8 @@ import type { ProjectTerminalRequestSchema } from "#gen/cxz/project_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { createTerminalAcknowledger } from "./terminal-acknowledger.ts";
+import { ConnectError } from "@connectrpc/connect";
+import { clientErrors } from "#src/shared/errors/client-errors.ts";
 
 type Frame = MessageInitShape<typeof ProjectTerminalRequestSchema>;
 export type TerminalStatus = {
@@ -57,6 +59,20 @@ export function openTerminal(
   status: (status: TerminalStatus) => void,
 ): TerminalLink {
   const encoder = new TextEncoder();
+  const errors = c.errors ?? clientErrors();
+  const errorKey = JSON.stringify([c.baseUrl, "terminal", project]);
+  const errorContext = {
+    source: "resource" as const,
+    connection: c.baseUrl,
+    method: "Project terminal",
+    project,
+  };
+  const deliverStatus = (frame: TerminalStatus) => {
+    if (frame.error)
+      errors.report(errorKey, new Error(frame.error), errorContext);
+    else if (frame.ready) errors.resolve(errorKey);
+    status(frame);
+  };
   if (c.inProcess) {
     const abort = new AbortController();
     const queue = new InputQueue();
@@ -79,10 +95,13 @@ export function openTerminal(
               abort.signal.addEventListener("abort", consumed, { once: true });
               output(frame.output!, consumed);
             });
-          if (frame.ready || frame.exited || frame.error) status(frame);
+          if (frame.ready || frame.exited || frame.error) deliverStatus(frame);
         }
       } catch (error) {
-        if (!abort.signal.aborted) status({ error: String(error) });
+        if (!abort.signal.aborted)
+          (error instanceof ConnectError ? status : deliverStatus)({
+            error: String(error),
+          });
       } finally {
         queue.close();
       }
@@ -111,18 +130,28 @@ export function openTerminal(
   let closed = false;
   const acknowledger = createTerminalAcknowledger((ack) => {
     // Input congestion must not prevent output credit from reaching the server.
-    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ ack }));
+    if (ws.readyState === WebSocket.OPEN) write(JSON.stringify({ ack }));
   });
+  const write = (data: string | Uint8Array) => {
+    try {
+      ws.send(data);
+    } catch (error) {
+      closed = true;
+      deliverStatus({ error: String(error) });
+      ws.close();
+    }
+  };
   const send = (data: string | Uint8Array) => {
     if (ws.readyState !== WebSocket.OPEN) return;
     if (ws.bufferedAmount > 1 << 20) {
-      status({
+      closed = true;
+      deliverStatus({
         error: t("Terminal input is congested; reconnect to try again"),
       });
       ws.close();
       return;
     }
-    ws.send(data);
+    write(data);
   };
   ws.onmessage = (event) => {
     if (event.data instanceof ArrayBuffer) {
@@ -134,15 +163,29 @@ export function openTerminal(
         acknowledger.parsed(bytes.length);
       });
     } else {
-      const frame: TerminalStatus = JSON.parse(event.data);
+      let frame: TerminalStatus;
+      try {
+        frame = JSON.parse(event.data);
+      } catch {
+        closed = true;
+        deliverStatus({ error: t("Invalid terminal response") });
+        ws.close();
+        return;
+      }
       if (frame.exited || frame.error) closed = true;
-      status(frame);
+      deliverStatus(frame);
     }
   };
-  ws.onclose = () => {
+  ws.onclose = (event) => {
     acknowledger.dispose();
-    if (!closed)
-      status({ error: t("Terminal disconnected; reconnect to try again") });
+    if (!closed) {
+      const message = t("Terminal disconnected; reconnect to try again");
+      errors.report(errorKey, new Error(message), {
+        ...errorContext,
+        code: String(event.code),
+      });
+      status({ error: message });
+    }
   };
   return {
     input: (text) => {

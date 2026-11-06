@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { ResourceValue as ValueMenu } from "#src/shared/components/resource-value.tsx";
 import { useEffect, useState } from "react";
 import { Button } from "@lesomnus/nox";
@@ -6,7 +7,10 @@ import { create } from "@bufbuild/protobuf";
 import { AgentProfileSchema } from "#gen/cxz/installation_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { accountRef, listAccounts } from "#src/features/accounts/account-data.ts";
+import {
+  accountRef,
+  listAccounts,
+} from "#src/features/accounts/account-data.ts";
 import { LoginPanel } from "#src/features/accounts/login-panel.tsx";
 import { auxKinds } from "./auxiliary-controls";
 import styles from "#src/shared/components/resource-surface.module.css";
@@ -41,7 +45,7 @@ export function AuxiliarySettings({ c }: { c: Connection }) {
         whether these tasks run automatically.
       </p>
       {(error || configuration.error || accounts.error) && (
-        <p role="alert">{error || configuration.error || accounts.error}</p>
+        <ErrorNotice error={error || configuration.error || accounts.error} />
       )}
       {profiles.map((profile) => (
         <AuxiliaryProfile
@@ -154,7 +158,7 @@ function AuxiliaryProfile({
         ]}
         choose={(effort) => update({ effort })}
       />
-      {models.error && <p role="alert">{models.error}</p>}
+      {models.error && <ErrorNotice error={models.error} />}
       {models.data?.needsLogin && (
         <p className={styles.muted}>This profile needs a login.</p>
       )}

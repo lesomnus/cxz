@@ -3,6 +3,8 @@ export const messages = {
   Diagram: "Diagram",
   Source: "Source",
   "View diagram": "View diagram",
+  "Expand code block": "Expand code block",
+  "Restore code block width": "Restore code block width",
   "View source": "View source",
   "Mermaid diagram": "Mermaid diagram",
   "Rendering diagram…": "Rendering diagram…",
@@ -20,6 +22,8 @@ export const messages = {
   "Send pasted content as": "Send pasted content as",
   "Editor options": "Editor options",
   "Show control characters": "Show control characters",
+  "Disable project collapse": "Disable project collapse",
+  "Enable project collapse": "Enable project collapse",
   "Word wrap": "Word wrap",
 
   Logs: "Logs",
@@ -217,6 +221,7 @@ export const messages = {
   "Confirm cancel": "Confirm cancel",
   "Working…": "Working…",
   "Select all sessions": "Select all sessions",
+  "Select all projects": "Select all projects",
   "Select {name}": "Select {name}",
   State: "State",
   Alias: "Alias",
@@ -790,5 +795,48 @@ export const messages = {
   "Permanently deletes these sessions and their stored data. This cannot be undone.":
     "Permanently deletes these sessions and their stored data. This cannot be undone.",
   Refresh: "Refresh",
+  "Recent session": "Recent session",
+  "Last activity": "Last activity",
+  "The project container is running.": "The project container is running.",
+  "The project container exists and has not been started.":
+    "The project container exists and has not been started.",
+  "The project container is stopped. Its data is retained.":
+    "The project container is stopped. Its data is retained.",
+  "This project has no container.": "This project has no container.",
+  "The container state is unavailable.": "The container state is unavailable.",
+  "Selected project actions": "Selected project actions",
+  "Stop projects": "Stop projects",
+  "Start projects": "Start projects",
+  "Remove containers": "Remove containers",
+  "Erase projects": "Erase projects",
+  "Stops the selected project containers and all their sessions. Their data is retained.":
+    "Stops the selected project containers and all their sessions. Their data is retained.",
+  "Starts the selected project containers, creating missing containers from their configuration. Agents remain stopped.":
+    "Starts the selected project containers, creating missing containers from their configuration. Agents remain stopped.",
+  "Removes the selected project containers. Projects, sessions, history and volumes are retained.":
+    "Removes the selected project containers. Projects, sessions, history and volumes are retained.",
+  "Permanently deletes the selected projects and their owned data. This cannot be undone.":
+    "Permanently deletes the selected projects and their owned data. This cannot be undone.",
+  "Some project actions failed. Successful projects will not be retried.":
+    "Some project actions failed. Successful projects will not be retried.",
+  Errors: "Errors",
+  "{count} active errors": "{count} active errors",
+  "Close errors": "Close errors",
+  "Error status": "Error status",
+  "Error list": "Error list",
+  "Scroll errors": "Scroll errors",
+  "No active errors": "No active errors",
+  "No error history": "No error history",
+  History: "History",
+  Resolved: "Resolved",
+  Dismissed: "Dismissed",
+  Dismiss: "Dismiss",
+  occurrences: "occurrences",
+  "First seen": "First seen",
+  "Clear history": "Clear history",
+  "Invalid terminal response": "Invalid terminal response",
+  Active: "Active",
+  "The result may be unknown after a disconnect; inspect the conversation before retrying.":
+    "The result may be unknown after a disconnect; inspect the conversation before retrying.",
 } as const;
 export type Message = keyof typeof messages;

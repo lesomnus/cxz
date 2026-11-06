@@ -18,6 +18,8 @@ export function memoryFixture({
   fail = false,
   delay = 0,
   conflict = false,
+  migrated = false,
+  cards = false,
 } = {}) {
   const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
@@ -81,22 +83,75 @@ export function memoryFixture({
     return m;
   }
   if (!empty) {
-    add(
+    const primary = add(
       "Architecture notes",
       "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
     );
     add("Handoff notes", "# Handoff\n\nReview open changes.");
+    primary.dateUpdated = stamp();
+  }
+  if (migrated && !empty) {
+    for (let i = 0; i < 24; i++) {
+      const filename = [
+        "decisions.md",
+        "overview.md",
+        "web-ui.md",
+        "runtime.md",
+      ][i % 4]!;
+      const m = add(
+        filename,
+        `# Project notes ${i + 1}\n\nA migrated document is still one editable Memory.\n\n## Design decisions\n\n- Keep project knowledge available after its session stops.\n- Organize documents with labels.\n\n\`\`\`typescript\nconst memory = { project: 'web', revision: 1 };\n\`\`\``,
+        0,
+        sessions[i % 2],
+      );
+      m.labels = {
+        "legacy.collection": `session-${String(i).padStart(24, "0")}`,
+        "legacy.collection-name": `Session ${String(i).repeat(24)}`,
+        "legacy.filename": filename,
+        "legacy.agent": i % 2 ? "claude" : "codex",
+        ...(i % 3 === 0 ? { topic: "design" } : {}),
+      };
+      if (i % 4 === 0) m.ownerSession = key(projectFixtureId(500 + i));
+    }
+  }
+  if (cards && !empty) {
+    const names = [
+      "Choosing a storage model for project memories",
+      "A long memory title that wraps across several lines without changing the card height",
+      "Release checklist",
+      "Notes without a session owner",
+      "A retained session's architectural decisions",
+      "Web accessibility review",
+    ];
+    for (const [i, name] of names.entries()) {
+      const m = add(name, `# ${name}`, 0, sessions[i % 2]);
+      if (i === 3) m.ownerSession = "";
+      if (i === 4) {
+        m.ownerSession = key(projectFixtureId(700));
+        m.labels["legacy.agent"] = "claude";
+      }
+      m.revision = BigInt(i + 2);
+      versions.get(key(m.id))!.set(m.revision, m.content);
+      m.dateUpdated = timestampFromDate(
+        new Date(Date.now() - (i + 1) * 3600000),
+      );
+    }
   }
   add("API notes", "# API\n\nAPI-specific shared memory.", 1);
   function find(ref?: {
     key: { case?: string; value?: unknown };
-    project?: unknown;
+    project?: { key: { value?: unknown } };
   }) {
     const id = ref?.key.value;
     if (!(id instanceof Uint8Array))
       throw new ConnectError("Memory ID required", Code.InvalidArgument);
     const m = rows.get(key(id));
-    if (!m) throw new ConnectError("Memory not found", Code.NotFound);
+    const project = ref?.project?.key.value;
+    if (
+      !m ||
+      (project instanceof Uint8Array && key(m.project!.id) !== key(project))
+    )
+      throw new ConnectError("Memory not found", Code.NotFound);
     return m;
   }
   const transport = createRouterTransport(({ service }) =>
@@ -244,6 +299,7 @@ export function memoryFixture({
   );
   return {
     c: new Connection("http://storybook", transport),
+    memories: [...rows.values()],
     projects,
     sessions,
   };

@@ -1,9 +1,18 @@
-import { CompactNumber, DurationDisplay, Section } from "@lesomnus/nox";
+import {
+  Section,
+  AnimatedCompactNumber,
+  AnimatedDurationDisplay,
+} from "@lesomnus/nox";
 import { useEffect, useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { readAccountQuota } from "./account-quota";
+import {
+  QUOTA_TUBE_VIEWBOX,
+  quotaEmptyContour,
+} from "./account-quota-meniscus";
+import { accountReadPrefix, USAGE_TTL } from "#src/shared/api/read-cache.ts";
 import styles from "./accounts.module.css";
 
 export function AccountQuotaSquare({
@@ -11,18 +20,36 @@ export function AccountQuotaSquare({
   account,
   agent,
   sessions,
+  identity = account,
+  refreshVersion = 0,
+  onLoadingChange,
 }: {
   c: Connection;
   account: string;
   agent: string;
   sessions: Session[];
+  identity?: string;
+  refreshVersion?: number;
+  onLoadingChange?: (loading: boolean) => void;
 }) {
   const identities = JSON.stringify(
     sessions.map((session) => session.runtimeId).sort(),
   );
   const quota = useRemote(
     (signal) => readAccountQuota(c, agent, sessions, signal),
-    [c, account, agent, identities],
+    [c, identity, agent, identities],
+    {
+      cache: {
+        store: c.reads,
+        key: `${accountReadPrefix(identity)}quota/${agent}/${identities}`,
+        ttl: USAGE_TTL,
+      },
+      refresh: refreshVersion,
+    },
+  );
+  useEffect(
+    () => onLoadingChange?.(quota.loading),
+    [onLoadingChange, quota.loading],
   );
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -35,7 +62,7 @@ export function AccountQuotaSquare({
   }, [quota.data?.reset]);
   useEffect(() => {
     const refresh = () => {
-      if (document.visibilityState === "visible") quota.reload();
+      if (document.visibilityState === "visible") quota.revalidate();
     };
     const timer = setInterval(refresh, 60000);
     window.addEventListener("focus", refresh);
@@ -45,7 +72,7 @@ export function AccountQuotaSquare({
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [c, account, agent, identities]);
+  }, [c, identity, agent, identities]);
   const remaining = quota.data?.remaining;
   const percent = remaining === undefined ? undefined : Math.round(remaining);
   const level =
@@ -64,12 +91,19 @@ export function AccountQuotaSquare({
     >
       <span className={styles.quotaGauge}>
         <span
-          className={styles.quotaEmpty}
-          style={{
-            height: `calc((100% - 2 * var(--account-quota-empty-inset)) * ${remaining === undefined ? 0 : (100 - remaining) / 100})`,
-          }}
+          className={styles.quotaVessel}
+          data-quota-vessel=""
           aria-hidden="true"
-        />
+        >
+          <svg
+            className={styles.quotaEmpty}
+            data-quota-empty=""
+            viewBox={QUOTA_TUBE_VIEWBOX}
+            preserveAspectRatio="none"
+          >
+            <path data-quota-contour="" d={quotaEmptyContour(remaining)} />
+          </svg>
+        </span>
         <span
           className={styles.quotaValue}
           role={percent === undefined ? "img" : "meter"}
@@ -87,22 +121,19 @@ export function AccountQuotaSquare({
             percent === undefined ? undefined : `${percent}% remaining`
           }
         >
-          {percent === undefined ? (
-            "—"
-          ) : (
-            <>
-              <CompactNumber
-                mode="integer"
-                digits={percent === 100 ? 3 : 2}
-                value={percent}
-              />
-              <span className={styles.quotaUnit}>%</span>
-            </>
-          )}
+          <AnimatedCompactNumber
+            mode="integer"
+            digits={percent === 100 ? 3 : 2}
+            value={percent ?? NaN}
+            muted={percent === undefined}
+            animate={!quota.fromCache}
+          />
+          <span className={styles.quotaUnit}>%</span>
         </span>
       </span>
       <span className={styles.quotaReset}>
-        <DurationDisplay
+        <AnimatedDurationDisplay
+          animate={!quota.fromCache}
           durationMs={
             quota.data?.reset === undefined
               ? undefined

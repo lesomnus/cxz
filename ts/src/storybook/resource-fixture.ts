@@ -21,13 +21,17 @@ export function resourceFixture({
   longAccountDetails = false,
   editFailures = 0,
   quotaRemaining = 64,
+  onRead,
+  usageMultiplier,
 }: {
   eraseFailures?: number;
   usageDelayMs?: number;
   usageFailures?: number;
   longAccountDetails?: boolean;
   editFailures?: number;
-  quotaRemaining?: number | null;
+  quotaRemaining?: number | null | (() => number | null);
+  onRead?: (kind: "accounts" | "auth" | "usage" | "quota") => void;
+  usageMultiplier?: () => number;
 } = {}) {
   const accounts: Pick<
     Account,
@@ -106,7 +110,10 @@ export function resourceFixture({
   ];
   const transport = createRouterTransport((router) => {
     router.service(AccountService, {
-      list: () => ({ items: accounts }),
+      list: () => {
+        onRead?.("accounts");
+        return { items: accounts };
+      },
       get: (request) => {
         const account = accounts.find((a) =>
           request.ref?.key.case === "id"
@@ -176,8 +183,10 @@ export function resourceFixture({
         accounts.push(account);
         return account;
       },
-      status: (ref) =>
-        authStatus(ref.key.case === "alias" ? ref.key.value : ""),
+      status: (ref) => {
+        onRead?.("auth");
+        return authStatus(ref.key.case === "alias" ? ref.key.value : "");
+      },
       logout: (ref) => {
         const alias = ref.key.case === "alias" ? ref.key.value : "";
         const status = authStatus(alias);
@@ -227,14 +236,16 @@ export function resourceFixture({
     });
     router.service(SessionService, {
       transcript: (request) => {
+        onRead?.("quota");
         const id = request.ref?.key.value;
-        if (
-          quotaRemaining === null ||
-          !["demo", "demo-review"].includes(String(id))
-        )
+        const available =
+          typeof quotaRemaining === "function"
+            ? quotaRemaining()
+            : quotaRemaining;
+        if (available === null || !["demo", "demo-review"].includes(String(id)))
           return {};
         const older = id === "demo";
-        const remaining = older ? 12 : quotaRemaining;
+        const remaining = older ? 12 : available;
         return {
           metadata: [
             {
@@ -263,6 +274,7 @@ export function resourceFixture({
         };
       },
       conversationStats: async (request) => {
+        onRead?.("usage");
         if (usageDelayMs)
           await new Promise((resolve) => setTimeout(resolve, usageDelayMs));
         if (usageFailures > 0) {
@@ -284,6 +296,7 @@ export function resourceFixture({
           ["2026-10-31", 2, 400, 50, 0.08],
           ["2026-11-01", 1, 200, 50, 0.04],
         ] as const;
+        const scale = usageMultiplier?.() ?? 1;
         const recorded = days
           .filter(([date]) => {
             const start = Date.parse(`${date}T00:00:00Z`);
@@ -292,14 +305,14 @@ export function resourceFixture({
           .map(([date, turns, output, cacheWrite, cost]) => ({
             date,
             values: {
-              finishedTurns: BigInt(turns),
-              inputTokens: BigInt(Number(turns) * 400),
-              outputTokens: BigInt(output),
-              cacheReadTokens: BigInt(Number(turns) * 1000),
-              cacheWriteTokens: BigInt(cacheWrite),
-              tokenReportedTurns: BigInt(turns),
-              costReportedTurns: BigInt(turns),
-              reportedCostUsd: Number(cost),
+              finishedTurns: BigInt(turns * scale),
+              inputTokens: BigInt(Number(turns) * 400 * scale),
+              outputTokens: BigInt(output * scale),
+              cacheReadTokens: BigInt(Number(turns) * 1000 * scale),
+              cacheWriteTokens: BigInt(cacheWrite * scale),
+              tokenReportedTurns: BigInt(turns * scale),
+              costReportedTurns: BigInt(turns * scale),
+              reportedCostUsd: Number(cost) * scale,
             },
           }));
         const total = {

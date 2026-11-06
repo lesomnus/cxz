@@ -1,3 +1,4 @@
+import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { SidebarHint } from "#src/shared/navigation/sidebar-hint.tsx";
 import { useBackgroundSessions } from "#src/features/session/model/use-background-sessions.ts";
@@ -16,6 +17,8 @@ import { ContainerState } from "#gen/cxz/project_pb";
 import { ActionMenu } from "@lesomnus/nox";
 import { Connection } from "#src/shared/api/connection.ts";
 import { ProfileMenu } from "./profile-menu";
+import { ErrorCenter } from "./error-center";
+import { ErrorCenterProvider } from "#src/shared/errors/error-context.tsx";
 import { SessionTreeGroup } from "#src/features/session/components/session-tree.tsx";
 import { ResourcePanel } from "#src/shared/components/resource-panel.tsx";
 import { SessionCreate } from "#src/features/session/components/session-create.tsx";
@@ -32,27 +35,67 @@ import { resumableStates } from "#src/features/session/model/session-actions.ts"
 import { useSettings } from "#src/shared/settings/settings.ts";
 import {
   matchesResource,
+  memoryLocation,
   projectLocation,
   resourceLocation,
   sessionLocation,
   taskLocation,
 } from "#src/shared/navigation/resource-route.ts";
-export function Workspace({
+type WorkspaceProps = {
+  connection: Connection;
+  logout: () => Promise<void>;
+  exitLabel?: string;
+} & PropsWithChildren;
+export function Workspace(props: WorkspaceProps) {
+  const route = useWorkspaceRoute();
+  const [compact, setCompact] = useState(
+    () => window.matchMedia("(max-width: 700px)").matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 700px)");
+    const update = () => setCompact(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  return (
+    <ErrorCenterProvider
+      store={props.connection.errors}
+      localErrors={compact && route.resource === "sessions" && !!route.session}
+    >
+      <WorkspaceContent {...props} />
+    </ErrorCenterProvider>
+  );
+}
+function WorkspaceContent({
   connection: c,
   logout,
   exitLabel = t("Sign out"),
   children,
-}: {
-  connection: Connection;
-  logout: () => Promise<void>;
-  exitLabel?: string;
-} & PropsWithChildren) {
+}: WorkspaceProps) {
   useLocale();
   useScrollbars();
   useEffect(() => c.conversations.mount(), [c]);
   const route = useWorkspaceRoute();
   const resource = route.resource === "not-found" ? "sessions" : route.resource;
   const inventory = useResourceInventory(c);
+  useEffect(() => {
+    for (const project of inventory.projects) {
+      if (!project.status) continue;
+      const id = projectId(project);
+      c.errors.observe(
+        JSON.stringify([c.baseUrl, "project-status", id]),
+        project.status.error ?? "",
+        {
+          source: "resource",
+          connection: c.baseUrl,
+          project: id,
+          method: "Project runtime",
+          target: project.name || project.alias || id,
+        },
+      );
+    }
+  }, [c, inventory.projects]);
   const selectedSession = inventory.sessions.find((s) =>
     matchesResource(s, route.session),
   );
@@ -68,10 +111,11 @@ export function Workspace({
     "tasks",
     "projects",
     "memory",
+    "search",
   ].includes(resource);
   const settingsTopic = route.settingsTopic;
   const lastSession = useRef("");
-  if (route.resource === "sessions")
+  if (route.resource === "sessions" && route.session)
     lastSession.current = selectedSession?.alias || route.session;
   const [settingsFileOpen, setSettingsFileOpen] = useState(false);
   useEffect(() => setSettingsFileOpen(false), [resource, settingsTopic]);
@@ -79,6 +123,8 @@ export function Workspace({
   const [addingSession, setAddingSession] = useState(false);
   const { store: settings, snapshot } = useSettings();
   const hideStopped = snapshot.document["session.panel.hideStopped"] === true;
+  const projectCollapse =
+    snapshot.document["session.panel.projectCollapse"] !== false;
   const [panelError, setPanelError] = useState("");
   const sessionPanel = useRef<HTMLElement>(null);
   const positionSessionMenu = useCallback((trigger: DOMRect) => {
@@ -101,6 +147,10 @@ export function Workspace({
   );
   const background = useBackgroundSessions(c, inventory.sessions);
   const projects = inventory.projects;
+  const memoryProject =
+    projects.find(
+      (p) => currentProject && matchesResource(p, currentProject),
+    ) ?? projects[0];
   const sessionsByProject = useMemo(() => {
     const grouped = new Map<string, Session[]>();
     for (const session of inventory.sessions) {
@@ -145,11 +195,13 @@ export function Workspace({
               label={view === "sessions" ? t("Sessions") : t("Projects")}
             >
               <RouteLink
-                {...(view === "projects"
-                  ? projectLocation(currentProject)
-                  : lastSession.current
-                    ? sessionLocation(lastSession.current)
-                    : resourceLocation("sessions"))}
+                {...(route.resource === view
+                  ? resourceLocation(view)
+                  : view === "projects"
+                    ? projectLocation(currentProject)
+                    : lastSession.current
+                      ? sessionLocation(lastSession.current)
+                      : resourceLocation("sessions"))}
                 className={`resource-link ${resource === view ? "active" : ""}`}
                 aria-label={
                   view === "sessions" ? t("Sessions view") : t("Projects view")
@@ -179,10 +231,9 @@ export function Workspace({
                 {...(view === "tasks"
                   ? taskLocation({ project: currentProject })
                   : view === "memory"
-                    ? {
-                        ...resourceLocation("memory"),
-                        search: { project: currentProject },
-                      }
+                    ? memoryProject
+                      ? memoryLocation(memoryProject)
+                      : projectLocation()
                     : resourceLocation(view))}
                 className={`resource-link ${resource === view ? "active" : ""}`}
                 aria-label={
@@ -196,11 +247,15 @@ export function Workspace({
               </RouteLink>
             </SidebarHint>
           ))}
-          <ProfileMenu
-            logout={logout}
-            exitLabel={exitLabel}
-            openSettings={() => setSettingsFileOpen(false)}
-          />
+          <div className="sidebar-footer">
+            <ErrorCenter store={c.errors} />
+            <ProfileMenu
+              errors={c.errors}
+              logout={logout}
+              exitLabel={exitLabel}
+              openSettings={() => setSettingsFileOpen(false)}
+            />
+          </div>
         </nav>
         {hasResourcePanel && (
           <ResourcePanel
@@ -243,6 +298,43 @@ export function Workspace({
                         </svg>
                       ),
                       run: () => setAddingSession(true),
+                    },
+                    {
+                      label: projectCollapse
+                        ? t("Disable project collapse")
+                        : t("Enable project collapse"),
+                      icon: (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d={
+                              projectCollapse
+                                ? "m7 9 5-5 5 5M7 15l5 5 5-5"
+                                : "m7 4 5 5 5-5M7 20l5-5 5 5"
+                            }
+                          />
+                        </svg>
+                      ),
+                      run: () => {
+                        try {
+                          settings.set(
+                            "session.panel.projectCollapse",
+                            !projectCollapse,
+                          );
+                          setPanelError("");
+                        } catch (error) {
+                          setPanelError(String(error));
+                        }
+                      },
                     },
                     {
                       label: hideStopped
@@ -343,6 +435,7 @@ export function Workspace({
                       errors={errors}
                       background={background}
                       open={!collapsed.has(projectId(p))}
+                      collapsible={projectCollapse}
                       toggle={() =>
                         setCollapsed((old) => {
                           const next = new Set(old);
@@ -359,7 +452,14 @@ export function Workspace({
               </div>
             ) : (
               <nav className="settings-topics" aria-label="Resource navigation">
-                <PanelLink {...resourceLocation(resource)} aria-current="page">
+                <PanelLink
+                  {...(resource === "memory"
+                    ? memoryProject
+                      ? memoryLocation(memoryProject)
+                      : projectLocation()
+                    : resourceLocation(resource))}
+                  aria-current="page"
+                >
                   {resource === "memory"
                     ? "Shared memory"
                     : resource === "auxiliary"
@@ -369,12 +469,14 @@ export function Workspace({
               </nav>
             )}
             {!!(inventory.errors.projects || inventory.errors.sessions) && (
-              <p role="alert">
-                {String(inventory.errors.projects || inventory.errors.sessions)}
-              </p>
+              <ErrorNotice
+                error={String(
+                  inventory.errors.projects || inventory.errors.sessions,
+                )}
+              />
             )}
             {resource === "sessions" && panelError && (
-              <p role="alert">{panelError}</p>
+              <ErrorNotice error={panelError} />
             )}
             {inventory.loading.projects && !projects.length && (
               <p className="muted">{t("Loading projects…")}</p>
