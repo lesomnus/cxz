@@ -32,7 +32,10 @@ import {
   inlineCodeRanges,
   listNewlineEdit,
 } from "./composer-markdown";
-import { controlCharacters } from "./control-characters";
+import {
+  ControlCharacter,
+  controlCharacters,
+} from "#src/shared/content/control-characters.tsx";
 import {
   useSettings,
   useEditorSettings,
@@ -1373,12 +1376,12 @@ export function ComposerEditor({
                     <div className="editor-control-line" key={index}>
                       {controlCharacters(line, hidden)}
                       {index < lines.length - 1 && (
-                        <span
-                          className="editor-control-character editor-line-end"
-                          data-symbol="¶"
+                        <ControlCharacter
+                          className="editor-line-end"
+                          symbol="¶"
                         >
                           {"\u200b"}
-                        </span>
+                        </ControlCharacter>
                       )}
                       {!line && "\u200b"}
                     </div>

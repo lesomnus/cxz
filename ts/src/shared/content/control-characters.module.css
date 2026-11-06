@@ -1,0 +1,10 @@
+.character {
+  position: relative;
+}
+.character::after {
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: attr(data-symbol);
+  color: var(--control-character-color, var(--ui-muted));
+}

@@ -83,17 +83,19 @@ test("detail controls retain wrapping, show priority symbols and preserve read-o
     exact: true,
   });
   const wrap = detail(page).getByRole("button", {
-    name: "Word wrap",
+    name: "Break words",
     exact: true,
   });
   const save = detail(page).getByRole("button", { name: "Save", exact: true });
-  await expect(wrap).toHaveAttribute("aria-pressed", "true");
+  await expect(wrap).toHaveAttribute("aria-pressed", "false");
+  await expect(description).toHaveCSS("word-break", "keep-all");
   await wrap.click();
-  await expect(description).toHaveAttribute("wrap", "off");
+  await expect(description).toHaveAttribute("wrap", "soft");
+  await expect(description).toHaveCSS("word-break", "break-all");
   await expect(save).toBeDisabled();
   await description.fill("x".repeat(600));
   expect(
-    await description.evaluate((node) => node.scrollWidth > node.clientWidth),
+    await description.evaluate((node) => node.scrollWidth <= node.clientWidth),
   ).toBe(true);
   await expect(
     detail(page).getByRole("combobox", { name: "Status", exact: true }),
@@ -116,13 +118,119 @@ test("detail controls retain wrapping, show priority symbols and preserve read-o
   await title(page).focus();
   await title(page).press("Enter");
   await expect(save).toBeDisabled();
-  await expect(description).toHaveAttribute("wrap", "off");
+  await expect(description).toHaveAttribute("wrap", "soft");
+  await expect(description).toHaveCSS("word-break", "break-all");
   await expect(
     detail(page).getByLabel("Status", { exact: true }),
   ).toContainText("In progress");
   await expect(priority).toHaveText("High");
   await wrap.click();
   await expect(description).toHaveAttribute("wrap", "soft");
+  await expect(description).toHaveCSS("word-break", "keep-all");
+  await expect(save).toBeDisabled();
+});
+
+test("description keeps words whole and control markers preserve text, selection and scroll", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(story());
+  const description = detail(page).getByRole("textbox", {
+    name: "Description",
+    exact: true,
+  });
+  const controls = detail(page).getByRole("button", {
+    name: "Show control characters",
+    exact: true,
+  });
+  const words = detail(page).getByRole("button", {
+    name: "Break words",
+    exact: true,
+  });
+  const save = detail(page).getByRole("button", { name: "Save", exact: true });
+  await expect(description).toHaveCSS("word-break", "keep-all");
+  await controls.click();
+  await expect(save).toBeDisabled();
+  const value = (
+    "wordboundary 단어경계를유지합니다 mango pear banana ".repeat(4) + "\tend\n"
+  ).repeat(20);
+  await description.fill(value);
+  const overlay = detail(page).locator("[data-control-character-overlay]");
+  await expect(overlay).toBeVisible();
+  expect(await overlay.evaluate((node) => node.textContent)).toBe(value);
+  for (const symbol of ["·", "→", "¶"])
+    expect(
+      await overlay.locator(`[data-symbol="${symbol}"]`).count(),
+    ).toBeGreaterThan(0);
+  const splitWords = () =>
+    overlay.evaluate((root) => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node: Node | null,
+        split = 0;
+      while ((node = walker.nextNode())) {
+        if (
+          !/^\S+$/u.test(node.textContent ?? "") ||
+          node.parentElement?.hasAttribute("data-symbol")
+        )
+          continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        if (range.getClientRects().length > 1) split++;
+      }
+      return split;
+    });
+  expect(await splitWords()).toBe(0);
+  await description.evaluate((node) =>
+    (node as HTMLTextAreaElement).setSelectionRange(5, 19),
+  );
+  await words.click();
+  await expect(description).toHaveCSS("word-break", "break-all");
+  await expect.poll(splitWords).toBeGreaterThan(0);
+  await expect(description).toHaveAttribute("wrap", "soft");
+  await expect(description).toHaveValue(value);
+  expect(
+    await description.evaluate((node) => [
+      (node as HTMLTextAreaElement).selectionStart,
+      (node as HTMLTextAreaElement).selectionEnd,
+    ]),
+  ).toEqual([5, 19]);
+  const top = await description.evaluate((node) => {
+    node.scrollTop = 120;
+    node.dispatchEvent(new Event("scroll"));
+    return node.scrollTop;
+  });
+  expect(top).toBeGreaterThan(0);
+  const translated = await overlay
+    .locator(":scope > div")
+    .evaluate(
+      (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42,
+    );
+  expect(translated).toBe(-top);
+  const measured = await overlay.evaluate((node) => {
+    const input = node.parentElement!.querySelector("textarea")!;
+    const a = node.getBoundingClientRect(),
+      b = input.getBoundingClientRect();
+    return {
+      x: a.x - b.x,
+      y: a.y - b.y,
+      width: a.width,
+      nativeWidth:
+        parseFloat(getComputedStyle(input).width) -
+        input.offsetWidth +
+        input.clientWidth,
+    };
+  });
+  expect(measured.x).toBeCloseTo(0, 1);
+  expect(measured.y).toBeCloseTo(0, 1);
+  expect(measured.width).toBeCloseTo(measured.nativeWidth, 1);
+  await save.click();
+  await expect(save).toBeDisabled();
+  await expect(description).toHaveValue(value);
+  await expect(controls).toHaveAttribute("aria-pressed", "true");
+  await expect(words).toHaveAttribute("aria-pressed", "true");
+  await controls.click();
+  await expect(overlay).toHaveCount(0);
+  await expect(description).toHaveValue(value);
   await expect(save).toBeDisabled();
 });
 

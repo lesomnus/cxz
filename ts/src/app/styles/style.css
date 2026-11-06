@@ -3325,25 +3325,13 @@ summary:hover {
   user-select: none;
 }
 .editor-control-mirror {
+  --control-character-color: var(--shade-119);
   position: relative;
   color: transparent;
   overflow-wrap: anywhere;
 }
 .editor-control-line {
   min-height: 1.5em;
-}
-.editor-control-character {
-  position: relative;
-}
-.editor-control-character::after {
-  position: absolute;
-  left: 0;
-  top: 0;
-  content: attr(data-symbol);
-  color: var(--shade-119);
-}
-.editor-line-end {
-  display: inline;
 }
 .composer-editor[data-word-wrap="false"]
   :is(textarea, .editor-mirror, .editor-control-mirror) {

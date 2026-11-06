@@ -9,7 +9,6 @@ import {
   FormField,
   SegmentedControl,
   ValueMenu,
-  ToggleButton,
   Section,
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
@@ -35,8 +34,12 @@ import {
   TaskStatusIcon,
   taskPriorityMask,
 } from "./task-indicators";
-import { Icon } from "#src/shared/icons/icon.tsx";
 import { TaskTitleField } from "./task-title-field";
+import {
+  TaskDescriptionField,
+  defaultDescriptionOptions,
+  type TaskDescriptionOptions,
+} from "./task-description-field";
 import detailStyles from "./task-detail-panels.module.css";
 import styles from "./tasks.module.css";
 import { TaskDetailPanels, TaskMetadata } from "./task-detail-panels";
@@ -54,8 +57,8 @@ function TaskEditor({
   reloadError,
   presentation = "dialog",
   onDirtyChange,
-  wordWrap = true,
-  onWordWrapChange = () => {},
+  descriptionOptions = defaultDescriptionOptions,
+  onDescriptionOptionsChange = () => {},
 }: {
   c: Connection;
   project: Project;
@@ -69,8 +72,8 @@ function TaskEditor({
   reloadError?: string;
   presentation?: "dialog" | "page";
   onDirtyChange?: (dirty: boolean) => void;
-  wordWrap?: boolean;
-  onWordWrapChange?: (value: boolean) => void;
+  descriptionOptions?: TaskDescriptionOptions;
+  onDescriptionOptionsChange?: (value: TaskDescriptionOptions) => void;
 }) {
   const id = useId();
   const [name, setName] = useState(task?.name ?? "");
@@ -253,40 +256,29 @@ function TaskEditor({
       />
     </FormField>
   );
-  const descriptionField = (
-    <FormField
-      label="Description"
-      htmlFor={`${id}-description`}
-      fullWidth
-      className={
-        presentation === "page" ? detailStyles.descriptionField : undefined
-      }
-    >
-      {presentation === "page" && (
-        <ToggleButton
-          type="button"
-          variant="toolbar"
-          className={detailStyles.wrapToggle}
-          aria-label="Word wrap"
-          title="Word wrap"
-          pressed={wordWrap}
-          onPressedChange={onWordWrapChange}
-        >
-          <Icon name={wordWrap ? "word-wrap" : "no-word-wrap"} />
-        </ToggleButton>
-      )}
-      <textarea
+  const descriptionField =
+    presentation === "page" ? (
+      <TaskDescriptionField
         id={`${id}-description`}
-        className={styles.description}
-        wrap={wordWrap ? "soft" : "off"}
-        rows={5}
-        disabled={busy}
-        maxLength={65536}
         value={desc}
-        onChange={(event) => setDesc(event.target.value)}
+        disabled={busy}
+        change={setDesc}
+        options={descriptionOptions}
+        setOptions={onDescriptionOptionsChange}
       />
-    </FormField>
-  );
+    ) : (
+      <FormField label="Description" htmlFor={`${id}-description`} fullWidth>
+        <textarea
+          id={`${id}-description`}
+          className={styles.description}
+          rows={5}
+          disabled={busy}
+          maxLength={65536}
+          value={desc}
+          onChange={(event) => setDesc(event.target.value)}
+        />
+      </FormField>
+    );
   const actions = (
     <>
       {owned && (
@@ -471,7 +463,9 @@ export function TaskDetails({
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [task, setTask] = useState(latest);
-  const [wordWrap, setWordWrap] = useState(true);
+  const [descriptionOptions, setDescriptionOptions] = useState(
+    defaultDescriptionOptions,
+  );
   const [editRevision, setEditRevision] = useState(0);
   const forceReload = useRef(false);
   useEffect(() => {
@@ -530,8 +524,8 @@ export function TaskDetails({
           close={close}
           presentation={presentation}
           onDirtyChange={onDirtyChange}
-          wordWrap={wordWrap}
-          onWordWrapChange={setWordWrap}
+          descriptionOptions={descriptionOptions}
+          onDescriptionOptionsChange={setDescriptionOptions}
           saved={(value) => {
             setBusy(false);
             onDirtyChange?.(false);
