@@ -46,6 +46,16 @@ test("title reserves two clamped lines and identity fields share one row with re
         label: node.querySelector("dt")!.textContent!.trim(),
         x: node.getBoundingClientRect().x,
         y: node.getBoundingClientRect().y,
+        right: node.getBoundingClientRect().right,
+        labelX: node.querySelector("dt")!.getBoundingClientRect().x,
+        buttonX: node.querySelector("a")!.getBoundingClientRect().x,
+        buttonRight: node.querySelector("a")!.getBoundingClientRect().right,
+        inset: parseFloat(
+          getComputedStyle(node).getPropertyValue("--ui-form-control-radius"),
+        ),
+        gap: parseFloat(
+          getComputedStyle(node).getPropertyValue("--ui-section-group-gap"),
+        ),
       })),
     );
   expect(fields.map((field) => field.label)).toEqual([
@@ -56,6 +66,16 @@ test("title reserves two clamped lines and identity fields share one row with re
   expect(new Set(fields.map((field) => field.y)).size).toBe(1);
   expect(fields[1].x).toBeGreaterThan(fields[0].x);
   expect(fields[2].x).toBeGreaterThan(fields[1].x);
+  for (const [index, field] of fields.entries()) {
+    expect(field.buttonX).toBeCloseTo(field.x, 1);
+    expect(field.buttonRight).toBeCloseTo(field.right, 1);
+    expect(field.labelX - field.buttonX).toBeCloseTo(field.inset, 1);
+    if (index > 0)
+      expect(field.buttonX - fields[index - 1].buttonRight).toBeCloseTo(
+        field.gap,
+        1,
+      );
+  }
   const controls = await information
     .getByRole("group", { name: "Task fields", exact: true })
     .locator(":scope > *")
@@ -79,11 +99,14 @@ test("title reserves two clamped lines and identity fields share one row with re
       nodes.map((node) => ({
         label: node.querySelector("dt")!.textContent!,
         y: node.getBoundingClientRect().y,
+        time: node.querySelector("dd time")!.textContent!,
       })),
     );
   expect(dates[0].label).toContain("Created");
   expect(dates[1].label).toContain("Updated");
   expect(dates[0].y).toBe(dates[1].y);
+  for (const date of dates)
+    expect(date.time).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
   const links = information.getByRole("link");
   await expect(links).toHaveCount(3);
   for (const link of await links.all())
@@ -432,6 +455,15 @@ test("task details use resource panels with information and actions beside the l
   await expect(
     actions.getByRole("button", { name: "Save", exact: true }),
   ).toBeVisible();
+  for (const label of ["Release", "Save", "Discard changes"]) {
+    const button = actions.getByRole("button", { name: label, exact: true });
+    await expect(button).toHaveAttribute("data-section-action", "button");
+    await expect(button).toHaveCSS("border-radius", "16px");
+    const bounds = (await button.boundingBox())!;
+    expect(bounds.width).toBe(64);
+    expect(bounds.height).toBe(64);
+    await expect(button.locator("[data-icon]")).toHaveCount(1);
+  }
   await expect(detail(page).locator(".floating-card")).toHaveCount(0);
   const infoBounds = (await information.boundingBox())!;
   const titleBounds = (await content.boundingBox())!;

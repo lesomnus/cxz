@@ -250,6 +250,10 @@ control markers without changing the text, selection or clipboard contents. Both
 view options survive saving and do not dirty the task. Priority, Status and Task ID
 share the first row, followed by Alias. Project, assignment and creation source
 share one metadata row, with Created and Updated together at the bottom.
+Navigation values expand back across their label inset like form inputs, with
+section-sized gaps between the buttons. Created and Updated show local timestamps
+without a visible UTC offset. Release, Save and Discard changes use individual
+panel buttons matching the Project detail actions, with icons and hover labels.
 Session and project links reuse the resource navigation buttons, including their
 upper-right arrow. The
 left group sizes to its contents, with an independent metadata scroll area when

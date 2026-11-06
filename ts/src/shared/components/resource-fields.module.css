@@ -33,6 +33,18 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+.controls {
+  column-gap: var(--ui-section-group-gap);
+}
+.controls > div {
+  padding-inline: var(--ui-form-control-radius);
+}
+.fields.controls dd > :is(a, button) {
+  width: calc(100% + 2 * var(--ui-form-control-radius));
+  max-width: none;
+  margin-inline: calc(-1 * var(--ui-form-control-radius));
+  border-radius: var(--ui-form-control-radius);
+}
 
 .labelDetail {
   color: var(--ui-shade-136);

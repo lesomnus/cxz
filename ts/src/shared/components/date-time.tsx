@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
   dateTimeDate,
+  formatLocalDateTime,
   formatOffsetDateTime,
   formatRelativeDateTime,
   type DateTimeValue,
@@ -11,16 +12,18 @@ import styles from "./date-time.module.css";
 export function DateTime({
   value,
   title,
+  showOffset = true,
 }: {
   value?: DateTimeValue;
   title?: string;
+  showOffset?: boolean;
 }) {
   useLocale();
   const date = dateTimeDate(value);
   if (!date) return <>—</>;
   return (
     <time className={styles.time} dateTime={date.toISOString()} title={title}>
-      {formatOffsetDateTime(date)
+      {(showOffset ? formatOffsetDateTime(date) : formatLocalDateTime(date))
         .split(/(\D+)/)
         .map((part, index) =>
           /\D/.test(part) ? (

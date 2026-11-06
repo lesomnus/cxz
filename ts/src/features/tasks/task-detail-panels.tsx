@@ -49,9 +49,13 @@ export function TaskDetailPanels({
               {notices}
             </ScrollArea>
           </Section>
-          <Section aria-label="Task actions" className={styles.actions}>
+          <SectionGroup
+            role="region"
+            aria-label="Task actions"
+            className={styles.actions}
+          >
             {actions}
-          </Section>
+          </SectionGroup>
         </SectionGroup>
         <SectionGroup className={styles.content}>
           <Section aria-label="Task title" className={styles.title}>
@@ -83,6 +87,7 @@ export function TaskMetadata({
     <>
       <ResourceFields
         columns={3}
+        variant="controls"
         rows={[
           [
             "Project",
@@ -144,13 +149,13 @@ export function TaskMetadata({
         rows={[
           [
             "Created",
-            <DateTime value={task.dateCreated} />,
+            <DateTime value={task.dateCreated} showOffset={false} />,
             undefined,
             <RelativeTime value={task.dateCreated} />,
           ],
           [
             "Updated",
-            <DateTime value={task.dateUpdated} />,
+            <DateTime value={task.dateUpdated} showOffset={false} />,
             undefined,
             <RelativeTime value={task.dateUpdated} />,
           ],

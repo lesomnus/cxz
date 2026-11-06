@@ -10,6 +10,8 @@ import {
   SegmentedControl,
   ValueMenu,
   Section,
+  Popover,
+  type ButtonProps,
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { Code, ConnectError } from "@connectrpc/connect";
@@ -45,6 +47,29 @@ import {
 import detailStyles from "./task-detail-panels.module.css";
 import styles from "./tasks.module.css";
 import { TaskDetailPanels, TaskMetadata } from "./task-detail-panels";
+import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
+import actionStyles from "#src/shared/components/resource-action.module.css";
+
+function TaskActionButton({
+  panel,
+  label,
+  icon,
+  ...props
+}: ButtonProps & { panel: boolean; label: string; icon: IconName }) {
+  if (!panel) return <Button {...props}>{label}</Button>;
+  return (
+    <Popover content={label} placement="top">
+      <Section
+        {...props}
+        as="button"
+        aria-label={label}
+        className={actionStyles.button}
+      >
+        <Icon name={icon} />
+      </Section>
+    </Popover>
+  );
+}
 
 function TaskEditor({
   c,
@@ -299,15 +324,19 @@ function TaskEditor({
   const actions = (
     <>
       {owned && (
-        <Button
+        <TaskActionButton
+          panel={presentation === "page"}
+          label="Release"
+          icon="sign-out"
           type="button"
           disabled={busy}
           onClick={() => setConfirmRelease(true)}
-        >
-          Release
-        </Button>
+        />
       )}
-      <Button
+      <TaskActionButton
+        panel={presentation === "page"}
+        label={task ? "Save" : "Confirm"}
+        icon="save"
         type="submit"
         form={id}
         loading={busy}
@@ -317,10 +346,11 @@ function TaskEditor({
           conflict ||
           (presentation === "page" && !dirty)
         }
-      >
-        {task ? "Save" : "Confirm"}
-      </Button>
-      <Button
+      />
+      <TaskActionButton
+        panel={presentation === "page"}
+        label={presentation === "dialog" ? "Cancel" : "Discard changes"}
+        icon="undo"
         type="button"
         disabled={busy || (presentation === "page" && !dirty)}
         onClick={
@@ -333,9 +363,7 @@ function TaskEditor({
                 setPriority(task?.priority ?? 2);
               }
         }
-      >
-        {presentation === "dialog" ? "Cancel" : "Discard changes"}
-      </Button>
+      />
     </>
   );
   const notices = (

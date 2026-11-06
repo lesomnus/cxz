@@ -34,11 +34,18 @@
 }
 .actions {
   flex: none;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: var(--ui-space);
+  display: flex;
+  justify-content: flex-end;
 }
-.actions button {
-  min-height: 40px;
+.actions > span {
+  display: flex;
+  flex: 0 1 var(--resource-action-size);
+  min-width: 0;
+}
+.actions.actions button {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
 }
 .content {
   grid-template-rows: auto minmax(0, 1fr);

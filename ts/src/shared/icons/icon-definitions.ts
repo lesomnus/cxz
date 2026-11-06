@@ -98,6 +98,11 @@ export const iconDefinitions = {
   close,
   deny: close,
   check,
+  save: line([
+    path("M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2Z"),
+    path("M7 3v6h10V3M7 21v-8h10v8"),
+  ]),
+  undo: line([path("M9 4 4 9l5 5M4 9h10a6 6 0 0 1 0 12h-2")]),
   allow: check,
   copy: line([
     rect(8, 8, 12, 12, 2),

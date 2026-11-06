@@ -30,13 +30,16 @@ export type ResourceFieldRow =
 export function ResourceFields({
   rows,
   columns = 2,
+  variant = "default",
 }: {
   rows: readonly ResourceFieldRow[];
   columns?: 1 | 2 | 3;
+  /** Align interactive values like Form controls, with section-sized gaps. */
+  variant?: "default" | "controls";
 }) {
   return (
     <dl
-      className={styles.fields}
+      className={`${styles.fields} ${variant === "controls" ? styles.controls : ""}`}
       style={{ "--resource-field-columns": columns } as CSSProperties}
     >
       {rows.map((row) => {
