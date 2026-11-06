@@ -80,10 +80,28 @@ Tests stay beside the behavior they verify. Application stories stay beside thei
 
 Global application layout CSS lives under `src/app/styles`; component CSS lives in its UI component folder. Shared native scrollbar styling remains under `src/shared/scroll`. CSS tokens and behavior implementations are the source of truth for design values. Generated protocol files remain under `ts/gen`, and generated UI distribution and Storybook outputs remain excluded from Git.
 
-Projects, Tasks and Memory share `resource-page.module.css` for their centered
+Accounts, Projects, Tasks and Memory share `resource-page.module.css` for their centered
 toolbar/body frames and responsive alignment. Their column width, gap, gutter,
 picker width and toolbar row height come from the resource layout tokens in
 `app/styles/style.css`; pages should not maintain separate numeric copies.
+
+Accounts and Projects compose `ResourceLayout`, `ResourceDashboard`,
+`ResourceDashboardColumn` and `ResourceSessionSection` from
+`shared/components/resource-layout.tsx`. These apply the resource width policy to
+Nox's SectionLayout/SectionGroup/Section primitives. The shared dashboard owns the
+two-column grid, column heights, facing corner radii, action/usage rows and session
+section insets. Use `contentPadding` from `resource-page.module.css` for the same
+body gutters with either native scrolling or PanelScroll.
+
+`--resource-page-column-width` is the single panel-width setting (420px by default).
+The two-column content width is derived in the shared page scope from it and the
+shared gap, so page-local token overrides also resize the toolbar and body.
+`--resource-action-size` and `--resource-action-radius` similarly own action tile
+dimensions; account quota geometry is derived from the same size. The single
+responsive breakpoint in `resource-page.module.css` changes the toolbar, content
+bound and dashboard together. Do not introduce per-page widths or breakpoints for
+these dashboards. Pages supply content, content-specific information heights and
+the optional `actionsFirstOnNarrow` ordering; they do not redefine the layout.
 
 ## Module imports
 

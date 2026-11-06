@@ -66,12 +66,11 @@
   --resource-page-column-width: 420px;
   --resource-page-column-gap: var(--ui-section-group-gap);
   --resource-page-gutter: 24px;
+  --resource-action-size: 64px;
+  --resource-action-radius: 16px;
   --resource-picker-width: 180px;
   --resource-toolbar-row-height: calc(8 * var(--ui-space));
   --resource-toolbar-icon-size: 18px;
-  --resource-page-content-width: calc(
-    2 * var(--resource-page-column-width) + var(--resource-page-column-gap)
-  );
   --session-pane-width: 800px;
   --session-pane-min-width: 360px;
   --session-other-min-width: 360px;

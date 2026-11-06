@@ -10,56 +10,37 @@
 .toolbarActions {
   composes: toolbarActions from "../../shared/components/resource-page.module.css";
 }
-.layout {
-  --account-column-width: 424px;
-  --section-layout-max-width: calc(
-    2 * var(--account-column-width) + var(--ui-section-group-gap)
-  );
-}
 .card {
-  container: account / inline-size;
   min-width: 0;
   scroll-margin-top: calc(3 * var(--space));
 }
 .details {
-  /* Preserve the loaded card's dimensions while data or text changes. */
-  --account-info-height: 163px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: stretch;
-  gap: var(--ui-section-group-gap);
-}
-.summaryColumn {
-  height: var(--resource-column-height);
-  grid-template-rows: var(--account-info-height) minmax(0, 1fr);
-}
-.usageColumn {
-  grid-template-rows: var(--resource-action-size) var(--resource-usage-height);
+  /* The account's fixed metadata height is content-specific; columns are shared. */
+  --resource-information-height: 163px;
 }
 .authenticationGroup {
-  --resource-action-radius: 16px;
   --ui-section-radius: var(--ui-section-inner-radius);
-  grid-template-columns: minmax(0, 1fr) 64px 64px 64px;
-  height: 64px;
+  grid-template-columns: minmax(0, 1fr) repeat(3, var(--resource-action-size));
+  height: var(--resource-action-size);
 }
 .quotaSquare.quotaSquare {
-  --ui-section-radius: var(--resource-action-radius, 16px);
+  --ui-section-radius: var(--resource-action-radius);
   --ui-section-inner-radius: var(--ui-section-radius);
   border-radius: var(--ui-section-radius);
 }
 .authenticationSection {
   container: account-auth / inline-size;
-  height: 64px;
+  height: var(--resource-action-size);
   min-height: 0;
   align-content: center;
 }
 .quotaSquare.quotaSquare {
   --quota-tint: #7c8b4f;
   --account-quota-inset: 2px;
-  width: 64px;
-  height: 64px;
+  width: var(--resource-action-size);
+  height: var(--resource-action-size);
   padding: var(--account-quota-inset);
-  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-columns: calc(var(--resource-action-size) / 2) minmax(0, 1fr);
   gap: 2px;
   align-items: center;
   overflow: hidden;
@@ -77,8 +58,8 @@
   );
   position: relative;
   display: grid;
-  width: 32px;
-  height: 60px;
+  width: calc(var(--resource-action-size) / 2);
+  height: calc(var(--resource-action-size) - 2 * var(--account-quota-inset));
   place-items: center;
   border-radius: var(--account-quota-gauge-radius);
   overflow: hidden;
@@ -142,13 +123,9 @@
     transition: none;
   }
 }
-.informationDetails,
-.usageSection {
+.informationDetails {
   align-content: start;
   min-height: 0;
-}
-.usageSection {
-  height: 100%;
 }
 .informationDetails dl > div {
   height: 41px;
@@ -178,28 +155,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.sessionsColumn.sessionsColumn {
-  display: flex;
-  flex-direction: column;
-  padding-top: var(--ui-section-group-gap);
-  padding-inline: 0;
-  overflow: visible;
-  min-height: 0;
-  height: 100%;
-}
-@container account (min-width: 700px) {
-  .details {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .details .summaryColumn > [data-section-layout="section"] {
-    border-start-end-radius: var(--ui-section-inner-radius);
-    border-end-end-radius: var(--ui-section-inner-radius);
-  }
-  .details .usageColumn > [data-section-layout="section"] {
-    border-start-start-radius: var(--ui-section-inner-radius);
-    border-end-start-radius: var(--ui-section-inner-radius);
-  }
 }
 .agent {
   display: flex;
