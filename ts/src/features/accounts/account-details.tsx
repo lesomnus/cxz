@@ -173,7 +173,7 @@ export function AccountDetails({
             projects={projects}
             accounts={[account]}
             loading={sessionsLoading}
-            variant="compact"
+            variant="overview"
             showAccount={false}
             showProject
             showToolbar={false}
