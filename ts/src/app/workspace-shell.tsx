@@ -207,6 +207,7 @@ function WorkspaceContent({
                     : lastSession.current
                       ? sessionLocation(lastSession.current)
                       : resourceLocation("sessions"))}
+                activeOptions={{ exact: true }}
                 className={`resource-link ${resource === view ? "active" : ""}`}
                 aria-label={
                   view === "sessions" ? t("Sessions view") : t("Projects view")
@@ -240,6 +241,7 @@ function WorkspaceContent({
                       ? memoryLocation(memoryProject)
                       : projectLocation()
                     : resourceLocation(view))}
+                activeOptions={{ exact: true }}
                 className={`resource-link ${resource === view ? "active" : ""}`}
                 aria-label={
                   view === "auxiliary"
