@@ -1,0 +1,5 @@
+.icon {
+  flex: none;
+  width: var(--resource-toolbar-icon-size);
+  height: var(--resource-toolbar-icon-size);
+}

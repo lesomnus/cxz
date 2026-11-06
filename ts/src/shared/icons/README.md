@@ -20,6 +20,11 @@ Icons inherit `currentColor`. Use `size`, `width`/`height` or a class for sizing
 `ICON_STROKE_WIDTH` in the definition file. Ordinary button icons are decorative
 by default. Provide `aria-label` when the icon itself needs an accessible name.
 
+For icon-only page toolbar actions, use
+`shared/components/toolbar-icon-button.tsx`, passing a semantic `icon`, `label`
+and behavior. It owns the Nox toolbar button appearance and the icon size through
+`--resource-toolbar-icon-size`; pages do not specify their own SVG dimensions.
+
 Simple play, stop, priority and work-summary shapes are filled. Outlines that
 communicate an unanswered question, an unchecked control, absence or partial
 progress retain that distinction. Dynamic charts, quota rings and loading

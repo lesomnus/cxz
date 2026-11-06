@@ -68,6 +68,7 @@
   --resource-page-gutter: 24px;
   --resource-picker-width: 180px;
   --resource-toolbar-row-height: calc(8 * var(--ui-space));
+  --resource-toolbar-icon-size: 18px;
   --resource-page-content-width: calc(
     2 * var(--resource-page-column-width) + var(--resource-page-column-gap)
   );

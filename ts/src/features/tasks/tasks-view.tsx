@@ -1,4 +1,4 @@
-import { Icon } from "#src/shared/icons/icon.tsx";
+import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
@@ -125,16 +125,12 @@ export function TasksView({
               }
             />
             <div className={styles.toolbarActions}>
-              <Button
-                type="button"
-                variant="toolbar"
-                aria-label="Add task"
-                title="Add task"
+              <ToolbarIconButton
+                icon="add"
+                label="Add task"
                 disabled={!project}
                 onClick={() => setAdding(true)}
-              >
-                <Icon name="add" width="18" height="18" aria-hidden="true" />
-              </Button>
+              />
             </div>
           </div>
         </PageToolbar>

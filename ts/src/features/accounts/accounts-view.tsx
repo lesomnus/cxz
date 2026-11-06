@@ -1,7 +1,7 @@
-import { Icon } from "#src/shared/icons/icon.tsx";
+import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef, useState } from "react";
-import { Button, PageToolbar, SectionLayout } from "@lesomnus/nox";
+import { PageToolbar, SectionLayout } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -55,16 +55,12 @@ export function AccountsView({
         <PageToolbar className={styles.toolbar} aria-label="Account toolbar">
           <div className={styles.toolbarContent}>
             <div className={styles.toolbarActions}>
-              <Button
+              <ToolbarIconButton
                 ref={add}
-                type="button"
-                variant="toolbar"
-                aria-label="Add account"
-                title="Add account"
+                icon="add"
+                label="Add account"
                 onClick={() => setAdding(true)}
-              >
-                <Icon name="add" width="16" height="16" aria-hidden="true" />
-              </Button>
+              />
             </div>
           </div>
         </PageToolbar>
