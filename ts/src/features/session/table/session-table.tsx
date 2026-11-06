@@ -11,7 +11,7 @@ import { SessionIndicator } from "#src/features/session/components/session-indic
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
+import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
 import {
   projectLocation,
   accountLocation,
@@ -234,18 +234,11 @@ export function SessionTable({
                   )}
                   {compact ? (
                     <td className={`${styles.name} ${styles.cardCell}`}>
-                      <RouteLink
-                        rowAware
+                      <ResourceNavigationButton
                         {...sessionLocation(s)}
-                        className={styles.navigationButton}
-                        title={name}
-                      >
-                        <span className={styles.identity}>
-                          <span className={styles.title}>{name}</span>
-                          <span className={styles.subtitle}>{s.alias}</span>
-                        </span>
-                        <OpenArrow />
-                      </RouteLink>
+                        name={name}
+                        alias={s.alias}
+                      />
                     </td>
                   ) : (
                     (["name", "alias"] as const).map((field) => (
@@ -280,30 +273,23 @@ export function SessionTable({
                   {showAccount && (
                     <td className={styles.cardCell}>
                       {accountAlias ? (
-                        <RouteLink
-                          rowAware
+                        <ResourceNavigationButton
                           {...accountLocation(accountAlias)}
-                          className={styles.navigationButton}
-                          title={accountName}
-                        >
-                          <span
-                            className={styles.accountAgent}
-                            aria-hidden="true"
-                          >
-                            <AgentBrand
-                              agent={
-                                account?.agent || s.account?.agent || s.agent
-                              }
-                            />
-                          </span>
-                          <span className={styles.identity}>
-                            <span className={styles.title}>{accountName}</span>
-                            <span className={styles.subtitle}>
-                              {accountAlias}
+                          name={accountName}
+                          alias={accountAlias}
+                          leading={
+                            <span
+                              className={styles.accountAgent}
+                              aria-hidden="true"
+                            >
+                              <AgentBrand
+                                agent={
+                                  account?.agent || s.account?.agent || s.agent
+                                }
+                              />
                             </span>
-                          </span>
-                          <OpenArrow />
-                        </RouteLink>
+                          }
+                        />
                       ) : (
                         accountName
                       )}
@@ -312,20 +298,11 @@ export function SessionTable({
                   {showProject && (
                     <td className={styles.cardCell}>
                       {project ? (
-                        <RouteLink
-                          rowAware
+                        <ResourceNavigationButton
                           {...projectLocation(project)}
-                          className={styles.navigationButton}
-                          title={projectName}
-                        >
-                          <span className={styles.identity}>
-                            <span className={styles.title}>{projectName}</span>
-                            <span className={styles.subtitle}>
-                              {projectResource?.alias}
-                            </span>
-                          </span>
-                          <OpenArrow />
-                        </RouteLink>
+                          name={projectName || project}
+                          alias={projectResource?.alias}
+                        />
                       ) : (
                         "—"
                       )}
@@ -384,14 +361,4 @@ function stateLabel(s: Session) {
     default:
       return t("Unknown");
   }
-}
-
-function OpenArrow() {
-  return (
-    <Icon
-      name="open-external"
-      className={styles.openArrow}
-      aria-hidden="true"
-    />
-  );
 }

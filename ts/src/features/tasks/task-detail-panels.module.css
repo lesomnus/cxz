@@ -9,6 +9,7 @@
 }
 .layout {
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: var(--resource-page-column-gap);
 }
 .sidebar,
@@ -17,10 +18,14 @@
   min-height: 0;
 }
 .sidebar {
-  grid-template-rows: minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  max-height: 100%;
 }
 .information {
   display: flex;
+  flex: 0 1 auto;
   min-height: 0;
 }
 .metadata {
@@ -28,6 +33,7 @@
   min-height: 0;
 }
 .actions {
+  flex: none;
   grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: var(--ui-space);
 }
@@ -38,9 +44,60 @@
   grid-template-rows: auto minmax(0, 1fr);
 }
 .title {
-  font-size: 24px;
-  line-height: 1.5;
+  font-size: 20px;
+  line-height: 1.4;
   font-weight: 500;
+}
+.titleField > div {
+  position: relative;
+}
+.titleField textarea {
+  height: calc(2lh + 2 * var(--ui-form-control-padding-block));
+  min-height: 0;
+  resize: none;
+  overflow: auto;
+}
+.titleField textarea:not(:focus) {
+  color: transparent;
+}
+.titlePreview {
+  position: absolute;
+  top: var(--ui-form-control-padding-block);
+  inset-inline: calc(
+    var(--ui-form-control-padding-inline) - var(--ui-form-control-radius)
+  );
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.titleField textarea:focus + .titlePreview {
+  visibility: hidden;
+}
+.titleField textarea:disabled + .titlePreview {
+  color: var(--ui-muted);
+}
+.descriptionField {
+  position: relative;
+  --ui-toolbar-button-width: 24px;
+}
+.descriptionField > label {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+}
+.descriptionField .wrapToggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.readonlyStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+  min-height: 32px;
 }
 .description {
   font-size: 16px;
@@ -63,13 +120,14 @@
   font-size: 16px;
   line-height: 1.6;
 }
-.session {
-  color: inherit;
-  text-decoration: none;
-  border-radius: var(--ui-form-control-radius);
+.description textarea[wrap="soft"] {
+  white-space: pre-wrap;
+  word-break: break-all;
 }
-.session:hover {
-  background: var(--ui-hover);
+.description textarea[wrap="off"] {
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 @container resource-page (width < 892px) {
   .viewportContent,
@@ -77,11 +135,12 @@
     height: auto;
     min-height: 100%;
   }
+  .sidebar {
+    max-height: none;
+  }
   .layout {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .sidebar {
-    height: 300px;
+    grid-template-rows: auto auto;
   }
   .content {
     height: 420px;

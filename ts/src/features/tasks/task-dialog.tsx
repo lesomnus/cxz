@@ -9,13 +9,14 @@ import {
   FormField,
   SegmentedControl,
   ValueMenu,
+  ToggleButton,
   Section,
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
-import { TaskStatus, type Task } from "#gen/cxz/task_pb";
+import type { Task } from "#gen/cxz/task_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -26,10 +27,17 @@ import {
   taskOwner,
   taskRef,
   taskLookup,
-  taskStatuses,
+  taskStatusName,
   ownerIssue,
 } from "./task-model";
-import { TaskPrioritySymbol, taskPriorityMask } from "./task-indicators";
+import {
+  TaskPrioritySymbol,
+  TaskStatusIcon,
+  taskPriorityMask,
+} from "./task-indicators";
+import { Icon } from "#src/shared/icons/icon.tsx";
+import { TaskTitleField } from "./task-title-field";
+import detailStyles from "./task-detail-panels.module.css";
 import styles from "./tasks.module.css";
 import { TaskDetailPanels, TaskMetadata } from "./task-detail-panels";
 
@@ -46,6 +54,8 @@ function TaskEditor({
   reloadError,
   presentation = "dialog",
   onDirtyChange,
+  wordWrap = true,
+  onWordWrapChange = () => {},
 }: {
   c: Connection;
   project: Project;
@@ -59,19 +69,19 @@ function TaskEditor({
   reloadError?: string;
   presentation?: "dialog" | "page";
   onDirtyChange?: (dirty: boolean) => void;
+  wordWrap?: boolean;
+  onWordWrapChange?: (value: boolean) => void;
 }) {
   const id = useId();
   const [name, setName] = useState(task?.name ?? "");
   const [alias, setAlias] = useState(task?.alias ?? "");
   const [desc, setDesc] = useState(task?.desc ?? "");
   const [priority, setPriority] = useState(task?.priority ?? 2);
-  const [status, setStatus] = useState(task?.status ?? TaskStatus.TODO);
   const dirty =
     name !== (task?.name ?? "") ||
     alias !== (task?.alias ?? "") ||
     desc !== (task?.desc ?? "") ||
-    priority !== (task?.priority ?? 2) ||
-    status !== (task?.status ?? TaskStatus.TODO);
+    priority !== (task?.priority ?? 2);
   useEffect(() => {
     onDirtyChange?.(dirty);
     return () => onDirtyChange?.(false);
@@ -99,18 +109,6 @@ function TaskEditor({
         (task.dateUpdated?.seconds ?? 0n) &&
         (latest.dateUpdated?.nanos ?? 0) > (task.dateUpdated?.nanos ?? 0)));
   const owned = !!task?.assignee;
-  const executable =
-    owned &&
-    owner?.status?.runId === task?.assigneeRun &&
-    ["idle", "working", "waiting_input"].includes(owner?.status?.state ?? "");
-  const statusOptions = taskStatuses.filter((item) =>
-    owned
-      ? executable
-        ? item.value !== TaskStatus.TODO
-        : item.value === task?.status
-      : item.value === TaskStatus.TODO,
-  );
-
   async function mutate(release = false) {
     if (pending.current) return false;
     pending.current = true;
@@ -139,14 +137,6 @@ function TaskEditor({
                 alias: alias.trim(),
                 desc,
                 priority,
-                ...(status !== task.status
-                  ? {
-                      status,
-                      ...(status !== TaskStatus.CANCELED && owned
-                        ? { actor: taskOwner(task) }
-                        : {}),
-                    }
-                  : {}),
               },
               options,
             )
@@ -196,6 +186,7 @@ function TaskEditor({
           options={taskPriorities.map((label, value) => ({
             value: String(value),
             label,
+            icon: <TaskPrioritySymbol priority={value} />,
           }))}
           choose={(value) => setPriority(Number(value))}
           disabled={busy}
@@ -223,35 +214,33 @@ function TaskEditor({
   );
   const statusField = task && (
     <FormField label="Status">
-      <ValueMenu
-        label="Status"
-        alignItemWithTrigger
-        value={String(status)}
-        options={[
-          ...statusOptions.map((item) => ({
-            value: String(item.value),
-            label: item.label,
-          })),
-          { value: String(TaskStatus.CANCELED), label: "Canceled" },
-        ]}
-        choose={(value) => setStatus(Number(value) as TaskStatus)}
-        disabled={busy}
-      />
+      <div className={detailStyles.readonlyStatus} aria-label="Status">
+        <TaskStatusIcon status={task.status} />
+        <span>{taskStatusName(task.status)}</span>
+      </div>
     </FormField>
   );
-  const titleField = (
-    <FormField label="Title" htmlFor={`${id}-title`} fullWidth>
-      <input
+  const titleField =
+    presentation === "page" ? (
+      <TaskTitleField
         id={`${id}-title`}
-        autoFocus={presentation === "dialog"}
-        required
-        disabled={busy}
-        maxLength={256}
         value={name}
-        onChange={(event) => setName(event.target.value)}
+        disabled={busy}
+        change={setName}
       />
-    </FormField>
-  );
+    ) : (
+      <FormField label="Title" htmlFor={`${id}-title`} fullWidth>
+        <input
+          id={`${id}-title`}
+          autoFocus={presentation === "dialog"}
+          required
+          disabled={busy}
+          maxLength={256}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </FormField>
+    );
   const aliasField = (
     <FormField label="Alias" htmlFor={`${id}-alias`} fullWidth>
       <input
@@ -265,10 +254,31 @@ function TaskEditor({
     </FormField>
   );
   const descriptionField = (
-    <FormField label="Description" htmlFor={`${id}-description`} fullWidth>
+    <FormField
+      label="Description"
+      htmlFor={`${id}-description`}
+      fullWidth
+      className={
+        presentation === "page" ? detailStyles.descriptionField : undefined
+      }
+    >
+      {presentation === "page" && (
+        <ToggleButton
+          type="button"
+          variant="toolbar"
+          className={detailStyles.wrapToggle}
+          aria-label="Word wrap"
+          title="Word wrap"
+          pressed={wordWrap}
+          onPressedChange={onWordWrapChange}
+        >
+          <Icon name={wordWrap ? "word-wrap" : "no-word-wrap"} />
+        </ToggleButton>
+      )}
       <textarea
         id={`${id}-description`}
         className={styles.description}
+        wrap={wordWrap ? "soft" : "off"}
         rows={5}
         disabled={busy}
         maxLength={65536}
@@ -312,7 +322,6 @@ function TaskEditor({
                 setAlias(task?.alias ?? "");
                 setDesc(task?.desc ?? "");
                 setPriority(task?.priority ?? 2);
-                setStatus(task?.status ?? TaskStatus.TODO);
               }
         }
       >
@@ -363,6 +372,7 @@ function TaskEditor({
               task && (
                 <TaskMetadata
                   task={task}
+                  project={project}
                   owner={owner}
                   source={source}
                   issue={issue}
@@ -407,6 +417,7 @@ function TaskEditor({
               {task && (
                 <TaskMetadata
                   task={task}
+                  project={project}
                   owner={owner}
                   source={source}
                   issue={issue}
@@ -460,6 +471,7 @@ export function TaskDetails({
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [task, setTask] = useState(latest);
+  const [wordWrap, setWordWrap] = useState(true);
   const [editRevision, setEditRevision] = useState(0);
   const forceReload = useRef(false);
   useEffect(() => {
@@ -518,6 +530,8 @@ export function TaskDetails({
           close={close}
           presentation={presentation}
           onDirtyChange={onDirtyChange}
+          wordWrap={wordWrap}
+          onWordWrapChange={setWordWrap}
           saved={(value) => {
             setBusy(false);
             onDirtyChange?.(false);
