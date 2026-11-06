@@ -12,7 +12,7 @@ import {
   SectionGroup,
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
-import type { Project } from "#gen/cxz/project_pb";
+import { ContainerState, type Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
@@ -308,6 +308,12 @@ export function ProjectActions({
                 type="button"
                 effect="sparkle"
                 className={`${actionStyles.button} ${styles.action} ${action.kind === "erase" ? actionStyles.danger : ""}`}
+                data-highlighted={
+                  (action.kind === "start" &&
+                    project?.status?.containerState ===
+                      ContainerState.STOPPED) ||
+                  undefined
+                }
                 aria-label={copy[action.kind].label}
                 disabled={action.disabled}
                 onClick={(event) => {
