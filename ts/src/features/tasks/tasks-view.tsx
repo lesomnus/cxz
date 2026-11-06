@@ -2,7 +2,8 @@ import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.ts
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useBlocker } from "@tanstack/react-router";
 import { Id } from "@lesomnus/payday/pdid";
 import { Button, PageToolbar, SectionLayout } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
@@ -14,6 +15,8 @@ import { SessionPicker } from "#src/shared/components/session-picker.tsx";
 import { useProjectTasks } from "./task-catalog";
 import { TaskTable } from "./task-table";
 import { TaskDialog } from "./task-dialog";
+import { TaskDetailPage } from "./task-detail-page";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { taskKey } from "./task-model";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import styles from "./tasks.module.css";
@@ -43,7 +46,7 @@ export function TasksView({
   projectsLoading?: boolean;
   sessionsLoading?: boolean;
   selection: TaskSelection;
-  select: (value: TaskSelection) => void;
+  select: (value: TaskSelection, options?: { replace?: boolean }) => void;
 }) {
   const resolved = useProject(c, projects, selection.project);
   const needsProject =
@@ -75,12 +78,32 @@ export function TasksView({
     ? new Id(selectedTask.id).toString()
     : selection.task;
   const [adding, setAdding] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [editorRevision, setEditorRevision] = useState(0);
+  const dirtyRef = useRef(false);
+  const onDirtyChange = useCallback((value: boolean) => {
+    dirtyRef.current = value;
+    setDirty(value);
+  }, []);
+  const blocker = useBlocker({
+    shouldBlockFn: ({ current, next }) =>
+      !!selection.task &&
+      dirtyRef.current &&
+      (current.pathname !== next.pathname ||
+        JSON.stringify(current.search) !== JSON.stringify(next.search)),
+    enableBeforeUnload: dirty,
+    withResolver: true,
+  });
   const open = (task: Task) =>
-    select({
-      ...selection,
-      project: project && resourceHandle(project),
-      task: resourceHandle(task),
-    });
+    select(
+      {
+        ...selection,
+        project: project && resourceHandle(project),
+        task: resourceHandle(task),
+      },
+      { replace: true },
+    );
   const close = () => {
     setAdding(false);
     if (selection.task)
@@ -134,76 +157,113 @@ export function TasksView({
             </div>
           </div>
         </PageToolbar>
-        <PanelScroll
-          className={styles.body}
-          contentClassName={styles.scrollContent}
-          horizontalScrollbar
-          scrollbarLabel="Scroll tasks"
-        >
-          <SectionLayout className={styles.content}>
-            {project ? (
-              <>
-                {state.loading && !state.tasks.length && (
-                  <p role="status" className={styles.message}>
-                    Loading tasks…
-                  </p>
-                )}
-                {state.error && (
-                  <div className={styles.message}>
-                    <ErrorNotice as="div" error={state.error}>
-                      <p>{state.error}</p>
-                      <span>
-                        Tasks are stored in the project runtime. Start the
-                        project if it is stopped.
-                      </span>
-                    </ErrorNotice>
-                    <Button type="button" onClick={state.refresh}>
-                      Retry
-                    </Button>
-                  </div>
-                )}
-                {(!state.loading || !!state.tasks.length) &&
-                  (!state.error || !!state.tasks.length) && (
-                    <TaskTable
-                      key={JSON.stringify([
-                        projectId,
-                        selection.assignee,
-                        selection.run,
-                      ])}
-                      tasks={state.tasks}
-                      sessions={sessions}
-                      sessionsLoading={sessionsLoading}
-                      assignee={selection.assignee}
-                      run={selection.run}
-                      open={open}
-                    />
+        {project && selection.task ? (
+          <TaskDetailPage
+            c={c}
+            project={project}
+            tasks={state.tasks}
+            sessions={sessions}
+            selected={selectedTaskId!}
+            latest={selectedTask}
+            assignee={selection.assignee}
+            run={selection.run}
+            open={open}
+            close={close}
+            saved={open}
+            busy={busy}
+            setBusy={setBusy}
+            onDirtyChange={onDirtyChange}
+            editorRevision={editorRevision}
+          />
+        ) : (
+          <PanelScroll
+            className={styles.body}
+            contentClassName={styles.scrollContent}
+            horizontalScrollbar
+            scrollbarLabel="Scroll tasks"
+          >
+            <SectionLayout className={styles.content}>
+              {project ? (
+                <>
+                  {state.loading && !state.tasks.length && (
+                    <p role="status" className={styles.message}>
+                      Loading tasks…
+                    </p>
                   )}
-              </>
-            ) : (
-              <p className={styles.message}>
-                {projectsLoading
-                  ? "Loading projects…"
-                  : needsProject
-                    ? "Choose a project to open this task."
-                    : selection.project
-                      ? "Project not found. Choose another project."
-                      : "Add a project to start tracking shared work."}
-              </p>
-            )}
-          </SectionLayout>
-        </PanelScroll>
+                  {state.error && (
+                    <div className={styles.message}>
+                      <ErrorNotice as="div" error={state.error}>
+                        <p>{state.error}</p>
+                        <span>
+                          Tasks are stored in the project runtime. Start the
+                          project if it is stopped.
+                        </span>
+                      </ErrorNotice>
+                      <Button type="button" onClick={state.refresh}>
+                        Retry
+                      </Button>
+                    </div>
+                  )}
+                  {(!state.loading || !!state.tasks.length) &&
+                    (!state.error || !!state.tasks.length) && (
+                      <TaskTable
+                        key={JSON.stringify([
+                          projectId,
+                          selection.assignee,
+                          selection.run,
+                        ])}
+                        tasks={state.tasks}
+                        sessions={sessions}
+                        sessionsLoading={sessionsLoading}
+                        project={project}
+                        assignee={selection.assignee}
+                        run={selection.run}
+                      />
+                    )}
+                </>
+              ) : (
+                <p className={styles.message}>
+                  {projectsLoading
+                    ? "Loading projects…"
+                    : needsProject
+                      ? "Choose a project to open this task."
+                      : selection.project
+                        ? "Project not found. Choose another project."
+                        : "Add a project to start tracking shared work."}
+                </p>
+              )}
+            </SectionLayout>
+          </PanelScroll>
+        )}
       </main>
-      {project && (adding || selection.task) && (
+      {project && adding && (
         <TaskDialog
-          key={`${projectId}:${adding ? "add" : selectedTaskId}`}
+          key={`${projectId}:add`}
           c={c}
           project={project}
-          selected={adding ? undefined : selectedTaskId}
-          latest={selectedTask}
           sessions={sessions}
-          close={close}
-          saved={() => close()}
+          close={() => setAdding(false)}
+          saved={() => setAdding(false)}
         />
+      )}
+      {blocker.status === "blocked" && (
+        <ConfirmationDialog
+          title="Discard unsaved changes"
+          confirmLabel="Discard changes"
+          close={() => blocker.reset?.()}
+          failureMessage="Wait for the task request to finish before leaving."
+          execute={() => {
+            if (busy) return false;
+            onDirtyChange(false);
+            setEditorRevision((revision) => revision + 1);
+            blocker.proceed?.();
+            return true;
+          }}
+        >
+          <p>
+            This task has unsaved changes. Discard them and leave this task?
+          </p>
+        </ConfirmationDialog>
       )}
     </>
   );

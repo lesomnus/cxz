@@ -12,12 +12,16 @@ import {
 } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Task } from "#gen/cxz/task_pb";
+import type { Project } from "#gen/cxz/project_pb";
 import { TaskStatus } from "#gen/cxz/task_pb";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { TaskPriority, TaskStatusIcon, TaskTime } from "./task-indicators";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
+import {
+  sessionLocation,
+  taskLocation,
+} from "#src/shared/navigation/resource-route.ts";
 import {
   ownerIssue,
   tableTasks,
@@ -35,14 +39,14 @@ export function TaskTable({
   sessionsLoading,
   assignee = "",
   run = "",
-  open,
+  project,
 }: {
   tasks: Task[];
   sessions: Session[];
   sessionsLoading?: boolean;
   assignee?: string;
   run?: string;
-  open: (task: Task) => void;
+  project: Project;
 }) {
   const ordered = useMemo(
     () => tableTasks(tasks, assignee, run),
@@ -101,13 +105,16 @@ export function TaskTable({
                 <TaskStatusIcon status={task.status} />
               </TableCell>
               <TableCell className={styles.buttonCell}>
-                <Button
+                <RouteLink
+                  {...taskLocation({
+                    project,
+                    task,
+                    assignee: assignee || undefined,
+                    run: run || undefined,
+                  })}
                   rowAware
                   className={styles.taskButton}
-                  type="button"
-                  onClick={() => open(task)}
                   aria-label={`Open task: ${task.name}`}
-                  aria-haspopup="dialog"
                   title={task.name}
                 >
                   <span className={styles.identity}>
@@ -115,11 +122,11 @@ export function TaskTable({
                     <span className={styles.alias}>{task.alias}</span>
                   </span>
                   <Icon
-                    name="open-details"
+                    name="open-project"
                     className={styles.openIcon}
                     aria-hidden="true"
                   />
-                </Button>
+                </RouteLink>
               </TableCell>
               <TableCell className={styles.buttonCell}>
                 {owner ? (

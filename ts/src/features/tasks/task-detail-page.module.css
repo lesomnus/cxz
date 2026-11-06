@@ -1,0 +1,90 @@
+.stage {
+  --task-page-duration: 380ms;
+  --ui-sliding-pages-duration: var(--task-page-duration);
+  --ui-sliding-pages-easing: cubic-bezier(0.65, 0, 0.35, 1);
+  --task-detail-width: 600px;
+  --task-neighbor-peek: calc(9 * var(--ui-space));
+  --task-panel-gap: calc(3 * var(--ui-space));
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: var(--task-neighbor-peek) minmax(0, 1fr) var(
+      --task-neighbor-peek
+    );
+  gap: var(--task-panel-gap);
+  padding-inline: var(--resource-page-gutter);
+  outline: none;
+}
+.pages,
+.peek {
+  width: 100%;
+  max-width: var(--task-detail-width);
+  margin-inline: auto;
+  min-width: 0;
+}
+.pages,
+.panel {
+  min-height: 0;
+  height: 100%;
+}
+.peek {
+  position: relative;
+  overflow: hidden;
+}
+.neighbor.neighbor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: calc(2 * var(--task-neighbor-peek));
+  min-height: 0;
+  --ui-section-radius: var(--ui-dialog-radius);
+  padding: var(--ui-space) var(--ui-dialog-padding);
+  opacity: 0.55;
+  transition:
+    opacity 160ms ease,
+    background-color var(--ui-button-background-duration) ease-out;
+}
+.neighbor:hover,
+.neighbor:focus-visible {
+  opacity: 1;
+}
+.previous .neighbor {
+  bottom: 0;
+  align-content: end;
+}
+.next .neighbor {
+  top: 0;
+  align-content: start;
+}
+.neighbor > :global(.button-content) {
+  height: calc(var(--task-neighbor-peek) - 2 * var(--ui-space));
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
+}
+.identity {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  flex: 1;
+}
+.identity strong {
+  font-size: 12px;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.identity small {
+  font: 10px/12px var(--ui-font-mono);
+  color: var(--ui-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage {
+    --task-page-duration: 0ms;
+  }
+  .neighbor {
+    transition: none;
+  }
+}

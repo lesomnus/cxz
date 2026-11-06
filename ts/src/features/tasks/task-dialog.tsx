@@ -11,6 +11,7 @@ import {
   FormField,
   SegmentedControl,
   ValueMenu,
+  ScrollArea,
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { Code, ConnectError } from "@connectrpc/connect";
@@ -47,6 +48,8 @@ function TaskEditor({
   setBusy,
   reload,
   reloadError,
+  presentation = "dialog",
+  onDirtyChange,
 }: {
   c: Connection;
   project: Project;
@@ -58,6 +61,8 @@ function TaskEditor({
   setBusy: (busy: boolean) => void;
   reload: () => void;
   reloadError?: string;
+  presentation?: "dialog" | "page";
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const id = useId();
   const [name, setName] = useState(task?.name ?? "");
@@ -65,6 +70,16 @@ function TaskEditor({
   const [desc, setDesc] = useState(task?.desc ?? "");
   const [priority, setPriority] = useState(task?.priority ?? 2);
   const [status, setStatus] = useState(task?.status ?? TaskStatus.TODO);
+  const dirty =
+    name !== (task?.name ?? "") ||
+    alias !== (task?.alias ?? "") ||
+    desc !== (task?.desc ?? "") ||
+    priority !== (task?.priority ?? 2) ||
+    status !== (task?.status ?? TaskStatus.TODO);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    return () => onDirtyChange?.(false);
+  }, [dirty, onDirtyChange]);
   const [busy, busyState] = useState(false);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
@@ -178,6 +193,7 @@ function TaskEditor({
   return (
     <>
       <form
+        className={presentation === "page" ? styles.pageEditor : undefined}
         id={id}
         onSubmit={(event) => {
           event.preventDefault();
@@ -185,6 +201,7 @@ function TaskEditor({
         }}
       >
         <Card
+          fill={presentation === "page"}
           className={task ? styles.taskHeader : undefined}
           data-priority={task ? priority : undefined}
           style={
@@ -196,7 +213,7 @@ function TaskEditor({
           }
           data-previous-run={issue === "Previous run" || undefined}
           title={task ? alias || task.alias : "Add task"}
-          close={busy ? undefined : close}
+          close={busy || presentation === "page" ? undefined : close}
           closeLabel="Close"
           footer={
             <CardActions>
@@ -213,182 +230,204 @@ function TaskEditor({
                 type="submit"
                 form={id}
                 loading={busy}
-                disabled={busy || !name.trim() || conflict}
+                disabled={
+                  busy ||
+                  !name.trim() ||
+                  conflict ||
+                  (presentation === "page" && !dirty)
+                }
               >
                 {task ? "Save" : "Confirm"}
               </Button>
-              <Button type="button" disabled={busy} onClick={close}>
-                Cancel
+              <Button
+                type="button"
+                disabled={busy || (presentation === "page" && !dirty)}
+                onClick={
+                  presentation === "dialog"
+                    ? close
+                    : () => {
+                        setName(task?.name ?? "");
+                        setAlias(task?.alias ?? "");
+                        setDesc(task?.desc ?? "");
+                        setPriority(task?.priority ?? 2);
+                        setStatus(task?.status ?? TaskStatus.TODO);
+                      }
+                }
+              >
+                {presentation === "dialog" ? "Cancel" : "Discard changes"}
               </Button>
             </CardActions>
           }
         >
-          <Form
-            as="fieldset"
-            columns={2}
-            disabled={busy}
-            aria-label="Task fields"
-          >
-            <FormField label="Priority" fullWidth={!task}>
-              {task ? (
-                <ValueMenu
-                  label="Priority"
-                  alignItemWithTrigger
-                  value={String(priority)}
-                  options={taskPriorities.map((label, value) => ({
-                    value: String(value),
-                    label,
-                  }))}
-                  choose={(value) => setPriority(Number(value))}
-                  disabled={busy}
-                />
-              ) : (
-                <div className={styles.priorityControl}>
-                  <SegmentedControl
+          <TaskEditorBody page={presentation === "page"}>
+            <Form
+              as="fieldset"
+              columns={2}
+              disabled={busy}
+              aria-label="Task fields"
+            >
+              <FormField label="Priority" fullWidth={!task}>
+                {task ? (
+                  <ValueMenu
                     label="Priority"
+                    alignItemWithTrigger
                     value={String(priority)}
                     options={taskPriorities.map((label, value) => ({
                       value: String(value),
                       label,
-                      icon: (
-                        <span className={styles.prioritySymbol}>
-                          <TaskPrioritySymbol priority={value} />
-                        </span>
-                      ),
                     }))}
-                    onChange={(value) => setPriority(Number(value))}
+                    choose={(value) => setPriority(Number(value))}
                     disabled={busy}
                   />
-                </div>
+                ) : (
+                  <div className={styles.priorityControl}>
+                    <SegmentedControl
+                      label="Priority"
+                      value={String(priority)}
+                      options={taskPriorities.map((label, value) => ({
+                        value: String(value),
+                        label,
+                        icon: (
+                          <span className={styles.prioritySymbol}>
+                            <TaskPrioritySymbol priority={value} />
+                          </span>
+                        ),
+                      }))}
+                      onChange={(value) => setPriority(Number(value))}
+                      disabled={busy}
+                    />
+                  </div>
+                )}
+              </FormField>
+              {task && (
+                <FormField label="Status">
+                  <ValueMenu
+                    label="Status"
+                    alignItemWithTrigger
+                    value={String(status)}
+                    options={[
+                      ...statusOptions.map((item) => ({
+                        value: String(item.value),
+                        label: item.label,
+                      })),
+                      { value: String(TaskStatus.CANCELED), label: "Canceled" },
+                    ]}
+                    choose={(value) => setStatus(Number(value) as TaskStatus)}
+                    disabled={busy}
+                  />
+                </FormField>
               )}
-            </FormField>
-            {task && (
-              <FormField label="Status">
-                <ValueMenu
-                  label="Status"
-                  alignItemWithTrigger
-                  value={String(status)}
-                  options={[
-                    ...statusOptions.map((item) => ({
-                      value: String(item.value),
-                      label: item.label,
-                    })),
-                    { value: String(TaskStatus.CANCELED), label: "Canceled" },
-                  ]}
-                  choose={(value) => setStatus(Number(value) as TaskStatus)}
-                  disabled={busy}
+              <FormField label="Title" htmlFor={`${id}-title`} fullWidth>
+                <input
+                  id={`${id}-title`}
+                  autoFocus={presentation === "dialog"}
+                  required
+                  maxLength={256}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                 />
               </FormField>
-            )}
-            <FormField label="Title" htmlFor={`${id}-title`} fullWidth>
-              <input
-                id={`${id}-title`}
-                autoFocus
-                required
-                maxLength={256}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </FormField>
-            <FormField label="Alias" htmlFor={`${id}-alias`} fullWidth>
-              <input
-                id={`${id}-alias`}
-                maxLength={63}
-                value={alias}
-                placeholder={task ? undefined : "Generated automatically"}
-                onChange={(event) => setAlias(event.target.value)}
-              />
-            </FormField>
-            <FormField
-              label="Description"
-              htmlFor={`${id}-description`}
-              fullWidth
-            >
-              <textarea
-                id={`${id}-description`}
-                className={styles.description}
-                rows={5}
-                maxLength={65536}
-                value={desc}
-                onChange={(event) => setDesc(event.target.value)}
-              />
-            </FormField>
-          </Form>
-          {task && (
-            <div className={styles.details}>
-              <div>
-                <span>Assigned to</span>
-                {owner ? (
-                  <RouteLink
-                    {...sessionLocation(owner)}
-                    className={styles.sessionLink}
-                  >
-                    <AgentIdentity
-                      agent={owner.agent}
-                      name={owner.name || owner.alias}
-                      alias={owner.alias}
-                    />
-                  </RouteLink>
-                ) : (
-                  <span>
-                    {task.assignee ? "Session unavailable" : "Unassigned"}
-                  </span>
-                )}
-              </div>
-              {issue && (
-                <p className={styles.ownerIssue}>
-                  {issue}. Release makes this task available to another session.
-                </p>
-              )}
-              {source && (
+              <FormField label="Alias" htmlFor={`${id}-alias`} fullWidth>
+                <input
+                  id={`${id}-alias`}
+                  maxLength={63}
+                  value={alias}
+                  placeholder={task ? undefined : "Generated automatically"}
+                  onChange={(event) => setAlias(event.target.value)}
+                />
+              </FormField>
+              <FormField
+                label="Description"
+                htmlFor={`${id}-description`}
+                fullWidth
+              >
+                <textarea
+                  id={`${id}-description`}
+                  className={styles.description}
+                  rows={5}
+                  maxLength={65536}
+                  value={desc}
+                  onChange={(event) => setDesc(event.target.value)}
+                />
+              </FormField>
+            </Form>
+            {task && (
+              <div className={styles.details}>
                 <div>
-                  <span>Created from</span>
-                  <RouteLink
-                    {...sessionLocation(source)}
-                    search={
-                      task.sourceSeq ? { seq: String(task.sourceSeq) } : {}
-                    }
-                    className={styles.sessionLink}
-                  >
-                    {source.name || source.alias}
-                  </RouteLink>
+                  <span>Assigned to</span>
+                  {owner ? (
+                    <RouteLink
+                      {...sessionLocation(owner)}
+                      className={styles.sessionLink}
+                    >
+                      <AgentIdentity
+                        agent={owner.agent}
+                        name={owner.name || owner.alias}
+                        alias={owner.alias}
+                      />
+                    </RouteLink>
+                  ) : (
+                    <span>
+                      {task.assignee ? "Session unavailable" : "Unassigned"}
+                    </span>
+                  )}
                 </div>
-              )}
-              {!source && task.sourceSession && (
-                <p className={styles.quiet}>
-                  Created by a session that is no longer available.
-                </p>
-              )}
-              {!!Object.keys(task.labels).length && (
-                <dl className={styles.labels}>
-                  {Object.entries(task.labels).map(([label, value]) => (
-                    <div key={label}>
-                      <dt>{label}</dt>
-                      <dd>{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-              <small className={styles.quiet}>
-                {taskStatusName(task.status)} · Updated{" "}
-                <DateTime value={task.dateUpdated} />
-              </small>
-            </div>
-          )}
-          {changed && !error && (
-            <p role="status" className={styles.quiet}>
-              This task was updated elsewhere. Reload to edit its latest
-              version.
-            </p>
-          )}
-          {(reloadError || error) && (
-            <ErrorNotice error={reloadError || error} />
-          )}
-          {task && (changed || conflict || reloadError) && (
-            <Button type="button" disabled={busy} onClick={reload}>
-              Reload latest task
-            </Button>
-          )}
+                {issue && (
+                  <p className={styles.ownerIssue}>
+                    {issue}. Release makes this task available to another
+                    session.
+                  </p>
+                )}
+                {source && (
+                  <div>
+                    <span>Created from</span>
+                    <RouteLink
+                      {...sessionLocation(source)}
+                      search={
+                        task.sourceSeq ? { seq: String(task.sourceSeq) } : {}
+                      }
+                      className={styles.sessionLink}
+                    >
+                      {source.name || source.alias}
+                    </RouteLink>
+                  </div>
+                )}
+                {!source && task.sourceSession && (
+                  <p className={styles.quiet}>
+                    Created by a session that is no longer available.
+                  </p>
+                )}
+                {!!Object.keys(task.labels).length && (
+                  <dl className={styles.labels}>
+                    {Object.entries(task.labels).map(([label, value]) => (
+                      <div key={label}>
+                        <dt>{label}</dt>
+                        <dd>{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                <small className={styles.quiet}>
+                  {taskStatusName(task.status)} · Updated{" "}
+                  <DateTime value={task.dateUpdated} />
+                </small>
+              </div>
+            )}
+            {changed && !error && (
+              <p role="status" className={styles.quiet}>
+                This task was updated elsewhere. Reload to edit its latest
+                version.
+              </p>
+            )}
+            {(reloadError || error) && (
+              <ErrorNotice error={reloadError || error} />
+            )}
+            {task && (changed || conflict || reloadError) && (
+              <Button type="button" disabled={busy} onClick={reload}>
+                Reload latest task
+              </Button>
+            )}
+          </TaskEditorBody>
         </Card>
       </form>
       {confirmRelease && (
@@ -410,7 +449,27 @@ function TaskEditor({
   );
 }
 
-export function TaskDialog({
+function TaskEditorBody({
+  page,
+  children,
+}: {
+  page: boolean;
+  children: React.ReactNode;
+}) {
+  return page ? (
+    <ScrollArea
+      className={styles.editorScroll}
+      aria-label="Task content"
+      scrollbarLabel="Scroll task details"
+    >
+      {children}
+    </ScrollArea>
+  ) : (
+    <>{children}</>
+  );
+}
+
+export function TaskDetails({
   c,
   project,
   selected,
@@ -418,6 +477,9 @@ export function TaskDialog({
   sessions,
   close,
   saved,
+  presentation = "dialog",
+  setBusy = () => {},
+  onDirtyChange,
 }: {
   c: Connection;
   project: Project;
@@ -426,9 +488,10 @@ export function TaskDialog({
   sessions: Session[];
   close: () => void;
   saved: (task: Task) => void;
+  presentation?: "dialog" | "page";
+  setBusy?: (busy: boolean) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
-  const dialogClose = useDialogClose(close);
-  const [busy, setBusy] = useState(false);
   const [task, setTask] = useState(latest);
   const [editRevision, setEditRevision] = useState(0);
   const forceReload = useRef(false);
@@ -459,14 +522,7 @@ export function TaskDialog({
     [c, projectId(project), selected, !!latest],
   );
   return (
-    <AnchoredDialog
-      title={selected ? "Task details" : "Add task"}
-      centered
-      open={dialogClose.open}
-      close={dialogClose.dismiss}
-      onClosed={dialogClose.onClosed}
-      busy={busy}
-    >
+    <>
       {!selected || task ? (
         <TaskEditor
           key={
@@ -479,8 +535,18 @@ export function TaskDialog({
           task={task}
           latest={latest ?? detail.data}
           sessions={sessions}
-          close={dialogClose.dismiss}
-          saved={(value) => dialogClose.complete(() => saved(value))}
+          close={close}
+          presentation={presentation}
+          onDirtyChange={onDirtyChange}
+          saved={(value) => {
+            setBusy(false);
+            onDirtyChange?.(false);
+            if (presentation === "page") {
+              setTask(value);
+              setEditRevision((revision) => revision + 1);
+            }
+            saved(value);
+          }}
           setBusy={setBusy}
           reloadError={detail.error}
           reload={() => {
@@ -490,12 +556,16 @@ export function TaskDialog({
         />
       ) : (
         <Card
+          fill={presentation === "page"}
           title="Task details"
-          close={dialogClose.dismiss}
+          close={presentation === "dialog" ? close : undefined}
           closeLabel="Close"
         >
           {detail.error ? (
             <>
+              <p role="status">
+                This task is unavailable. Retry or return to the task list.
+              </p>
               <ErrorNotice error={detail.error} />
               <Button type="button" onClick={detail.reload}>
                 Retry
@@ -506,6 +576,28 @@ export function TaskDialog({
           )}
         </Card>
       )}
+    </>
+  );
+}
+
+export function TaskDialog(props: React.ComponentProps<typeof TaskDetails>) {
+  const dialogClose = useDialogClose(props.close);
+  const [busy, setBusy] = useState(false);
+  return (
+    <AnchoredDialog
+      title={props.selected ? "Task details" : "Add task"}
+      centered
+      open={dialogClose.open}
+      close={dialogClose.dismiss}
+      onClosed={dialogClose.onClosed}
+      busy={busy}
+    >
+      <TaskDetails
+        {...props}
+        setBusy={setBusy}
+        close={dialogClose.dismiss}
+        saved={(value) => dialogClose.complete(() => props.saved(value))}
+      />
     </AnchoredDialog>
   );
 }

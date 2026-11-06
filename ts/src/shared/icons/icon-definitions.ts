@@ -138,6 +138,8 @@ export const iconDefinitions = {
   folder: line([path("M2 4h5l1.5 2H14v7H2ZM8 11V7m-2 2 2-2 2 2")], "0 0 16 16"),
   "open-external": line([path("M7 17 17 7M7 7h10v10")]),
   "open-project": line([path("M5 12h14m-6-6 6 6-6 6")]),
+  "previous-task": line([path("m6 15 6-6 6 6")]),
+  "next-task": line([path("m6 9 6 6 6-6")]),
   "open-details": line([path("M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5")]),
   "run-search": line([path("M5 12h14m-5-5 5 5-5 5")]),
   "sign-out": line([path("M10 4H4v16h6M8 12h13m-5-5 5 5-5 5")]),

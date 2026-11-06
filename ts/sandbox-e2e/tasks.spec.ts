@@ -33,9 +33,9 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
     .fill("wasm-tasks");
   await add.getByRole("button", { name: "Confirm", exact: true }).click();
   await page
-    .getByRole("button", { name: "Open task: Verify WASM tasks", exact: true })
+    .getByRole("link", { name: "Open task: Verify WASM tasks", exact: true })
     .click();
-  const detail = page.getByRole("dialog", {
+  const detail = page.getByRole("region", {
     name: "Task details",
     exact: true,
   });
@@ -86,7 +86,11 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
     .fill("WASM task verified");
   await detail.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    page.getByRole("button", {
+    detail.getByRole("button", { name: "Save", exact: true }),
+  ).toBeDisabled();
+  await page.goBack();
+  await expect(
+    page.getByRole("link", {
       name: "Open task: WASM task verified",
       exact: true,
     }),
@@ -99,7 +103,7 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
     .click();
   await page.getByRole("option", { name: "All sessions", exact: true }).click();
   await expect(
-    page.getByRole("button", {
+    page.getByRole("link", {
       name: "Open task: WASM task verified",
       exact: true,
     }),

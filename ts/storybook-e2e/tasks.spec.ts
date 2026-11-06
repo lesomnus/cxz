@@ -67,12 +67,12 @@ test("task table creates and edits work, and releases a stopped owner's task onl
   await expect(add).toHaveCount(0);
   const tasks = page.getByRole("table", { name: "Tasks", exact: true });
   await tasks
-    .getByRole("button", {
+    .getByRole("link", {
       name: "Open task: Ship the task table",
       exact: true,
     })
     .click();
-  const detail = page.getByRole("dialog", {
+  const detail = page.getByRole("region", {
     name: "Task details",
     exact: true,
   });
@@ -87,13 +87,17 @@ test("task table creates and edits work, and releases a stopped owner's task onl
     .fill("Ship the verified task table");
   await detail.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    tasks.getByRole("button", {
+    detail.getByRole("button", { name: "Save", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(
+    tasks.getByRole("link", {
       name: "Open task: Ship the verified task table",
       exact: true,
     }),
   ).toBeVisible();
   await page
-    .getByRole("button", {
+    .getByRole("link", {
       name: "Open task: Connect the task table",
       exact: true,
     })
@@ -105,17 +109,22 @@ test("task table creates and edits work, and releases a stopped owner's task onl
   });
   await expect(confirm).toBeVisible();
   await confirm.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(confirm).toHaveCount(0);
   await expect(detail).toBeVisible();
   await detail.getByRole("button", { name: "Release", exact: true }).click();
   await confirm.getByRole("button", { name: "Release", exact: true }).click();
   await expect(
-    tasks.getByRole("button", {
+    detail.getByRole("button", { name: "Release", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(
+    tasks.getByRole("link", {
       name: "Open task: Connect the task table",
       exact: true,
     }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", {
+    page.getByRole("link", {
       name: "Open task: Clean up the old experiment",
       exact: true,
     }),
@@ -128,12 +137,12 @@ test("a remote change preserves the draft and requires an explicit reload after 
 }) => {
   await page.goto(taskPage);
   await page
-    .getByRole("button", {
+    .getByRole("link", {
       name: "Open task: Implement Task MCP tools",
       exact: true,
     })
     .click();
-  const detail = page.getByRole("dialog", {
+  const detail = page.getByRole("region", {
     name: "Task details",
     exact: true,
   });
@@ -157,7 +166,7 @@ test("a remote change preserves the draft and requires an explicit reload after 
     .getByRole("button", { name: "Reload latest task", exact: true })
     .click();
   await expect(title).toHaveValue("Agent updated the task");
-  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(detail).toHaveCount(0);
 });
 
@@ -194,7 +203,7 @@ test("project selection isolates work and remains available in the narrow layout
     .fill("Documentation only");
   await add.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(
-    page.getByRole("button", {
+    page.getByRole("link", {
       name: "Open task: Documentation only",
       exact: true,
     }),
@@ -203,7 +212,7 @@ test("project selection isolates work and remains available in the narrow layout
   await page.getByRole("option", { name: "Workspace", exact: true }).click();
   await expect(page.getByText("No tasks", { exact: true })).toHaveCount(1);
   await expect(
-    page.getByRole("button", {
+    page.getByRole("link", {
       name: "Open task: Documentation only",
       exact: true,
     }),
@@ -247,7 +256,7 @@ test("task rows stay newest-created first with Done last after a live update", a
     .getByRole("button", { name: "Simulate agent update", exact: true })
     .click();
   await expect(
-    tasks.getByRole("button", {
+    tasks.getByRole("link", {
       name: "Open task: Agent updated the task",
       exact: true,
     }),
@@ -274,7 +283,7 @@ test("many tasks remain one scrollable table with every completion at the end", 
         .every((row) => row.getAttribute("data-task-status") === "Done"),
     ),
   ).toBe(true);
-  await rows.last().getByRole("button").first().scrollIntoViewIfNeeded();
+  await rows.last().getByRole("link").first().scrollIntoViewIfNeeded();
   await expect(rows.last()).toBeInViewport();
   expect(
     await page.evaluate(
@@ -348,14 +357,14 @@ for (const story of ["task-details", "task-by-id"]) {
     page,
   }) => {
     await page.goto(`/iframe.html?id=resources-tasks--${story}&viewMode=story`);
-    const detail = page.getByRole("dialog", {
+    const detail = page.getByRole("region", {
       name: "Task details",
       exact: true,
     });
     await expect(
       detail.getByRole("textbox", { name: "Title", exact: true }),
     ).toHaveValue("Connect the task table");
-    await detail.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.getByRole("button", { name: "Back", exact: true }).click();
     await expect(detail).toHaveCount(0);
     await expect(
       page.getByRole("table", { name: "Tasks", exact: true }),
@@ -369,14 +378,14 @@ test("existing project-query bookmarks redirect and preserve session/run filters
   await page.goto(
     "/iframe.html?id=resources-tasks--existing-bookmark&viewMode=story",
   );
-  const detail = page.getByRole("dialog", {
+  const detail = page.getByRole("region", {
     name: "Task details",
     exact: true,
   });
   await expect(
     detail.getByRole("textbox", { name: "Title", exact: true }),
   ).toHaveValue("Connect the task table");
-  await detail.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(detail).toHaveCount(0);
   await expect(
     page
@@ -466,7 +475,7 @@ test("older completions load in batches of 50 and reset when switching projects"
   await expect(rows).toHaveCount(9);
   await expect(tasks.locator("tbody tr[data-done]")).toHaveCount(2);
   await expect(
-    tasks.getByRole("button", {
+    tasks.getByRole("link", {
       name: "Open task: Completed task 1",
       exact: true,
     }),
@@ -478,16 +487,16 @@ test("older completions load in batches of 50 and reset when switching projects"
   await expect(more).toHaveCount(0);
   await expect(tasks.locator("tbody tr[data-done]")).toHaveCount(127);
   await tasks
-    .getByRole("button", { name: "Open task: Completed task 125", exact: true })
+    .getByRole("link", { name: "Open task: Completed task 125", exact: true })
     .click();
-  const detail = page.getByRole("dialog", {
+  const detail = page.getByRole("region", {
     name: "Task details",
     exact: true,
   });
   await expect(
     detail.getByRole("textbox", { name: "Title", exact: true }),
   ).toHaveValue("Completed task 125");
-  await detail.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   const project = page.getByRole("combobox", {
     name: "Select project",
     exact: true,

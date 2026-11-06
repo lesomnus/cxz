@@ -23,6 +23,14 @@
   flex: 1;
   min-height: 0;
 }
+.pageEditor {
+  height: 100%;
+  min-height: 0;
+}
+.editorScroll {
+  flex: 1;
+  min-height: 0;
+}
 .body .scrollContent {
   padding: calc(3 * var(--ui-space)) var(--resource-page-gutter);
 }

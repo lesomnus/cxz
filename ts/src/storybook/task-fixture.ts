@@ -12,7 +12,12 @@ import { Connection } from "#src/shared/api/connection.ts";
 export function taskFixture(
   count = 9,
   unavailable = false,
-  options: { pageSize?: number; pageDelay?: number; olderDone?: number } = {},
+  options: {
+    pageSize?: number;
+    pageDelay?: number;
+    olderDone?: number;
+    longDetails?: boolean;
+  } = {},
 ) {
   const id = (value: number) => {
     const id = new Uint8Array(16);
@@ -119,6 +124,19 @@ export function taskFixture(
     });
   });
   const historyStart = new Date(fixtureTime);
+  if (options.longDetails && rows[2]) {
+    rows[2].desc =
+      "Implementation notes\n\n" +
+      "Keep task navigation independent of the editor's scroll position.\n".repeat(
+        50,
+      );
+    rows[2].labels = Object.fromEntries(
+      Array.from({ length: 36 }, (_, index) => [
+        `milestone-${index + 1}`,
+        `Acceptance criterion ${index + 1}`,
+      ]),
+    );
+  }
   historyStart.setHours(0, 0, 0, 0);
   historyStart.setDate(historyStart.getDate() - 2);
   for (let i = 0; i < (options.olderDone ?? 0); i++) {

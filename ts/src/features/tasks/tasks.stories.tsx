@@ -7,6 +7,16 @@ import { TasksPage } from "#src/pages/tasks/tasks-page.tsx";
 import { taskFixture } from "#src/storybook/task-fixture.ts";
 import styles from "./tasks.module.css";
 
+function taskListPath(path: string) {
+  const url = new URL(path, "https://storybook.invalid");
+  const project =
+    url.pathname.match(/^\/c\/_\/project\/([^/]+)\/task/)?.[1] ??
+    url.searchParams.get("project") ??
+    "workspace";
+  url.searchParams.delete("project");
+  return `/c/_/project/${project}/task${url.search}`;
+}
+
 function TaskPreview({
   count,
   unavailable = false,
@@ -14,6 +24,7 @@ function TaskPreview({
   pageSize = 500,
   pageDelay = 0,
   olderDone = 0,
+  longDetails = false,
 }: {
   count: number;
   unavailable?: boolean;
@@ -21,9 +32,15 @@ function TaskPreview({
   pageSize?: number;
   pageDelay?: number;
   olderDone?: number;
+  longDetails?: boolean;
 }) {
   const [fixture] = useState(() =>
-    taskFixture(count, unavailable, { pageSize, pageDelay, olderDone }),
+    taskFixture(count, unavailable, {
+      pageSize,
+      pageDelay,
+      olderDone,
+      longDetails,
+    }),
   );
   useEffect(() => () => fixture.c.dispose(), [fixture]);
   const [router] = useState(() =>
@@ -41,9 +58,18 @@ function TaskPreview({
         ),
       },
       createMemoryHistory({
-        initialEntries: [initialPath],
+        initialEntries:
+          initialPath === taskListPath(initialPath)
+            ? [initialPath]
+            : [taskListPath(initialPath), initialPath],
       }),
     ),
+  );
+  const [path, setPath] = useState(initialPath);
+  useEffect(
+    () =>
+      router.subscribe("onResolved", () => setPath(router.state.location.href)),
+    [router],
   );
   return (
     <>
@@ -51,6 +77,22 @@ function TaskPreview({
         <Button type="button" onClick={fixture.agentUpdate}>
           Simulate agent update
         </Button>
+        <Button type="button" onClick={() => router.history.back()}>
+          Back
+        </Button>
+        <Button type="button" onClick={() => router.history.forward()}>
+          Forward
+        </Button>
+        <output
+          aria-label="Preview route"
+          style={{
+            font: "10px var(--ui-font-mono)",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {path}
+        </output>
       </div>
       <RouterProvider router={router} />
     </>
@@ -83,6 +125,29 @@ export const OlderRuntime: Story = { args: { unavailable: true } };
 
 export const TaskDetails: Story = {
   args: { initialPath: "/c/_/project/workspace/task/task-3" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A dedicated task detail page with vertically sliding Nox pages. Previous and next task panels peek in from the viewport edges and can be clicked. Wheel or swipe on the page background moves one task per gesture, in table order with the active session/run filter. Scrolling inside the detail panel stays inside the task. Moving between tasks replaces the current history entry: Back returns to the page before entering details, and Forward restores the last viewed task. Unsaved edits require confirmation before navigation; Add remains a dialog. Alias/UUID deep links keep working.",
+      },
+    },
+  },
+};
+export const LongTaskDetails: Story = {
+  ...TaskDetails,
+  args: {
+    initialPath: "/c/_/project/workspace/task/task-3",
+    longDetails: true,
+  },
+};
+export const SingleTaskDetails: Story = {
+  ...TaskDetails,
+  args: { count: 1, initialPath: "/c/_/project/workspace/task/task-1" },
+};
+export const MissingTaskDetails: Story = {
+  ...TaskDetails,
+  args: { initialPath: "/c/_/project/workspace/task/missing" },
 };
 export const TaskById: Story = {
   args: {

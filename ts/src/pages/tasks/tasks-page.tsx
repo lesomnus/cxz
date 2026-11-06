@@ -81,7 +81,7 @@ export function TasksPage(props: {
     <TasksView
       {...props}
       selection={selected}
-      select={(next) => {
+      select={(next, options) => {
         const target = props.projects.find(
           (p) => next.project && matchesResource(p, next.project),
         );
@@ -104,7 +104,7 @@ export function TasksPage(props: {
             next.assignee ?? "",
           );
         }
-        void navigate(taskLocation(next));
+        void navigate({ ...taskLocation(next), ...options });
       }}
     />
   );
