@@ -273,6 +273,7 @@ export function AccountDetails({
             as="button"
             className={actionStyles.button}
             aria-label={`Refresh account ${account.name || account.alias}`}
+            minLoadingDuration={500}
             loading={
               metadataLoading || status.loading || usageLoading || quotaLoading
             }

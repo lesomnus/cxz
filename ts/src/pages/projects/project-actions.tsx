@@ -329,6 +329,7 @@ export function ProjectActions({
                 className={`${actionStyles.button} ${styles.action}`}
                 aria-label={t("Refresh")}
                 loading={refreshing || busy}
+                minLoadingDuration={500}
                 onClick={async () => {
                   setRefreshError("");
                   try {
