@@ -79,7 +79,6 @@ export function SessionMenu({
         scrollbarOffset={8}
         motion={{ from: "bottom-right", effect: "reveal" }}
         disabled={!session}
-        status={session?.status?.state}
         footer={<ComposerOptions />}
         groups={[
           {
