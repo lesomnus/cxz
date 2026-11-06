@@ -12,3 +12,12 @@ test("control markers ignore chip geometry while preserving surrounding whitespa
   expect(html).not.toContain('data-symbol="¦"');
   expect(html).toContain(reservation);
 });
+
+test("visible spaces, tabs and newlines do not replace the original text", () => {
+  const original = "alpha beta\tgamma\n";
+  const html = renderToStaticMarkup(<>{controlCharacters(original)}</>);
+  expect(html).toContain('data-symbol="·"');
+  expect(html).toContain('data-symbol="→"');
+  expect(html).toContain('data-symbol="¶"');
+  expect(html.replace(/<[^>]*>/g, "")).toBe(original);
+});

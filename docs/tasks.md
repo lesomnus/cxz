@@ -242,8 +242,12 @@ latest task action lets the operator start from the new record. Stable Task IDs
 keep an open detail view associated with its record across alias changes.
 
 The title reserves two lines and clamps excess text with an ellipsis when it is
-not focused; focus reveals the editable text. Description has a right-aligned
-word-wrap toggle that does not dirty the task and survives saving. Task ID,
+not focused; focus reveals the editable text. Description always wraps to its
+available width. Its right-aligned Break words
+toggle chooses between whole-word wrapping (including Korean words) and breaking
+inside words. Show control characters overlays spaces, tabs, newlines and other
+control markers without changing the text, selection or clipboard contents. Both
+view options survive saving and do not dirty the task. Task ID,
 assignment and creation source share one metadata row. Session and project links
 reuse the resource navigation buttons, including their upper-right arrow. The
 left group sizes to its contents, with an independent metadata scroll area when

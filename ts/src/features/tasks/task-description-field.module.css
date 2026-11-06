@@ -1,0 +1,28 @@
+.field {
+  position: relative;
+  --ui-toolbar-button-width: 24px;
+}
+.field > label {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+}
+.field > div {
+  position: relative;
+}
+.tools {
+  position: absolute;
+  right: calc(-1 * var(--ui-form-control-radius));
+  bottom: calc(100% + var(--ui-space));
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+}
+.field textarea {
+  white-space: pre-wrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+.field[data-break-words="true"] textarea {
+  word-break: break-all;
+}
