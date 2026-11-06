@@ -2,7 +2,7 @@ import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.ts
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useBlocker } from "@tanstack/react-router";
 import { Id } from "@lesomnus/payday/pdid";
 import { Button } from "@lesomnus/nox";
@@ -16,6 +16,7 @@ import { useProjectTasks } from "./task-catalog";
 import { TaskTable } from "./task-table";
 import { TaskDialog } from "./task-dialog";
 import { TaskDetailPage } from "./task-detail-page";
+import { ResourceDetailPages } from "#src/shared/components/resource-detail-pages.tsx";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { taskKey } from "./task-model";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -88,10 +89,16 @@ export function TasksView({
   const [dirty, setDirty] = useState(false);
   const [editorRevision, setEditorRevision] = useState(0);
   const dirtyRef = useRef(false);
+  const detailOpen = !!(project && selection.task);
+  const detailActive = useRef(detailOpen);
+  detailActive.current = detailOpen;
   const onDirtyChange = useCallback((value: boolean) => {
-    dirtyRef.current = value;
-    setDirty(value);
+    dirtyRef.current = value && detailActive.current;
+    setDirty(dirtyRef.current);
   }, []);
+  useLayoutEffect(() => {
+    if (!detailOpen) onDirtyChange(false);
+  }, [detailOpen, onDirtyChange]);
   const blocker = useBlocker({
     shouldBlockFn: ({ current, next }) =>
       !!selection.task &&
@@ -101,7 +108,8 @@ export function TasksView({
     enableBeforeUnload: dirty,
     withResolver: true,
   });
-  const open = (task: Task) =>
+  const open = (task: Task) => {
+    if (!detailActive.current) return;
     select(
       {
         ...selection,
@@ -110,6 +118,7 @@ export function TasksView({
       },
       { replace: true },
     );
+  };
   const close = () => {
     setAdding(false);
     if (selection.task)
@@ -163,84 +172,92 @@ export function TasksView({
             }
           />
         </ResourceToolbar>
-        {project && selection.task ? (
-          <TaskDetailPage
-            c={c}
-            project={project}
-            tasks={state.tasks}
-            sessions={sessions}
-            selected={selectedTaskId!}
-            latest={selectedTask}
-            assignee={selection.assignee}
-            run={selection.run}
-            open={open}
-            close={close}
-            saved={open}
-            busy={busy}
-            setBusy={setBusy}
-            onDirtyChange={onDirtyChange}
-            editorRevision={editorRevision}
-          />
-        ) : (
-          <PanelScroll
-            className={styles.body}
-            contentClassName={pageStyles.contentPadding}
-            horizontalScrollbar
-            scrollbarLabel="Scroll tasks"
-          >
-            <ResourceLayout className={styles.content}>
-              {project ? (
-                <>
-                  {state.loading && !state.tasks.length && (
-                    <p role="status" className={styles.message}>
-                      Loading tasks…
-                    </p>
-                  )}
-                  {state.error && (
-                    <div className={styles.message}>
-                      <ErrorNotice as="div" error={state.error}>
-                        <p>{state.error}</p>
-                        <span>
-                          Tasks are stored in the project runtime. Start the
-                          project if it is stopped.
-                        </span>
-                      </ErrorNotice>
-                      <Button type="button" onClick={state.refresh}>
-                        Retry
-                      </Button>
-                    </div>
-                  )}
-                  {(!state.loading || !!state.tasks.length) &&
-                    (!state.error || !!state.tasks.length) && (
-                      <TaskTable
-                        key={JSON.stringify([
-                          projectId,
-                          selection.assignee,
-                          selection.run,
-                        ])}
-                        tasks={state.tasks}
-                        sessions={sessions}
-                        sessionsLoading={sessionsLoading}
-                        project={project}
-                        assignee={selection.assignee}
-                        run={selection.run}
-                      />
+        <ResourceDetailPages
+          key={projectId}
+          scope={c}
+          open={detailOpen}
+          list={
+            <PanelScroll
+              className={styles.body}
+              contentClassName={pageStyles.contentPadding}
+              horizontalScrollbar
+              scrollbarLabel="Scroll tasks"
+            >
+              <ResourceLayout className={styles.content}>
+                {project ? (
+                  <>
+                    {state.loading && !state.tasks.length && (
+                      <p role="status" className={styles.message}>
+                        Loading tasks…
+                      </p>
                     )}
-                </>
-              ) : (
-                <p className={styles.message}>
-                  {projectsLoading
-                    ? "Loading projects…"
-                    : needsProject
-                      ? "Choose a project to open this task."
-                      : selection.project
-                        ? "Project not found. Choose another project."
-                        : "Add a project to start tracking shared work."}
-                </p>
-              )}
-            </ResourceLayout>
-          </PanelScroll>
-        )}
+                    {state.error && (
+                      <div className={styles.message}>
+                        <ErrorNotice as="div" error={state.error}>
+                          <p>{state.error}</p>
+                          <span>
+                            Tasks are stored in the project runtime. Start the
+                            project if it is stopped.
+                          </span>
+                        </ErrorNotice>
+                        <Button type="button" onClick={state.refresh}>
+                          Retry
+                        </Button>
+                      </div>
+                    )}
+                    {(!state.loading || !!state.tasks.length) &&
+                      (!state.error || !!state.tasks.length) && (
+                        <TaskTable
+                          key={JSON.stringify([
+                            projectId,
+                            selection.assignee,
+                            selection.run,
+                          ])}
+                          tasks={state.tasks}
+                          sessions={sessions}
+                          sessionsLoading={sessionsLoading}
+                          project={project}
+                          assignee={selection.assignee}
+                          run={selection.run}
+                        />
+                      )}
+                  </>
+                ) : (
+                  <p className={styles.message}>
+                    {projectsLoading
+                      ? "Loading projects…"
+                      : needsProject
+                        ? "Choose a project to open this task."
+                        : selection.project
+                          ? "Project not found. Choose another project."
+                          : "Add a project to start tracking shared work."}
+                  </p>
+                )}
+              </ResourceLayout>
+            </PanelScroll>
+          }
+          detail={
+            project && selection.task ? (
+              <TaskDetailPage
+                c={c}
+                project={project}
+                tasks={state.tasks}
+                sessions={sessions}
+                selected={selectedTaskId!}
+                latest={selectedTask}
+                assignee={selection.assignee}
+                run={selection.run}
+                open={open}
+                close={close}
+                saved={open}
+                busy={busy}
+                setBusy={setBusy}
+                onDirtyChange={onDirtyChange}
+                editorRevision={editorRevision}
+              />
+            ) : null
+          }
+        />
       </ResourcePage>
       {project && adding && (
         <TaskDialog

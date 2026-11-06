@@ -98,7 +98,15 @@ function Preview({
 const meta = {
   title: "Pages/Memory",
   component: Preview,
-  parameters: { layout: "fullscreen" },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        component:
+          "The collection and document use the same horizontal page transition as Projects and Tasks, below a fixed toolbar. The collection keeps its scroll position and session filter, refreshes after document edits, and stays inert behind the detail. Returning reverses the slide; rapid re-entry starts with saved content. Reduced-motion preferences disable the transition.",
+      },
+    },
+  },
 } satisfies Meta<typeof Preview>;
 export default meta;
 type Story = StoryObj<typeof meta>;

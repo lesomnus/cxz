@@ -88,12 +88,14 @@ export function MemoryGrid({
   projectHandle,
   sessions,
   session,
+  active = true,
 }: {
   c: Connection;
   project: string;
   projectHandle: string;
   sessions: readonly Session[];
   session?: Uint8Array;
+  active?: boolean;
 }) {
   const prefix = useId();
   const sessionId = sessionUUID(session);
@@ -136,13 +138,16 @@ export function MemoryGrid({
       };
     },
     [c, project],
-    { cache: { store: c.reads, key: cacheKey, ttl: MEMORY_LIST_TTL } },
+    {
+      enabled: active,
+      cache: { store: c.reads, key: cacheKey, ttl: MEMORY_LIST_TTL },
+    },
   );
   // Selection is local. Check freshness without canceling an in-flight project read.
   useEffect(() => {
-    if (!list.loading && c.reads.peek(cacheKey)?.fresh === false)
+    if (active && !list.loading && !c.reads.peek(cacheKey)?.fresh)
       list.revalidate();
-  }, [c, project, sessionId]);
+  }, [c, project, sessionId, active]);
   const data = list.data?.project === project ? list.data : undefined;
   const memories =
     data?.items.filter(

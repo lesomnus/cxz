@@ -1,15 +1,6 @@
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
 }
-.pages {
-  --ui-sliding-pages-duration: 500ms;
-  --ui-sliding-pages-easing: cubic-bezier(0.97, 0, 0.3, 0.9);
-  flex: 1;
-}
-.pages > .slide {
-  display: flex;
-  flex-direction: column;
-}
 .empty {
   color: var(--ui-muted);
   font-size: 11px;

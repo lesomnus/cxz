@@ -273,7 +273,7 @@ export const Navigation: Story = {
     docs: {
       description: {
         story:
-          "Open a project from the list: its dashboard slides in from the right below the fixed toolbar. Back reverses the transition; Forward opens it again. Each page keeps its scroll position and list selection. Direct links start in place, and reduced-motion preferences disable the slide.",
+          "Open a project from the list: its dashboard slides in from the right below the fixed toolbar, using the shared Tasks and Memory page transition. Back reverses the transition; Forward opens it again. Each page keeps its scroll position and list selection. Direct links start in place, and reduced-motion preferences disable the slide.",
       },
     },
   },

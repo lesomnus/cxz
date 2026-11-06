@@ -3,12 +3,12 @@ import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
-import { Button, Section, SlidingPages, SlidingPage } from "@lesomnus/nox";
+import { Button, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -32,6 +32,7 @@ import { listAccounts } from "#src/features/accounts/account-data.ts";
 import type { Account } from "#gen/cxz/account_pb";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import styles from "./projects-page.module.css";
+import { ResourceDetailPages } from "#src/shared/components/resource-detail-pages.tsx";
 import {
   ResourceLayout,
   ResourcePage,
@@ -81,22 +82,6 @@ export function ProjectsPage({
   const { project: selected } = useWorkspaceRoute();
   const resolved = useProject(c, visibleProjects, selected);
   const project = selected ? resolved : undefined;
-  const visitedList = useRef<DashboardConnection | undefined>(
-    selected ? undefined : c,
-  );
-  const previousProject = useRef<
-    { c: DashboardConnection; project: Project } | undefined
-  >(project ? { c, project } : undefined);
-  useLayoutEffect(() => {
-    if (!selected) visitedList.current = c;
-    if (project) previousProject.current = { c, project };
-  }, [c, selected, project]);
-  // Keep the outgoing dashboard present while it slides back offscreen.
-  const detail = selected
-    ? project
-    : previousProject.current?.c === c
-      ? previousProject.current.project
-      : undefined;
   return (
     <ResourcePage aria-label={t("Project workspace")}>
       <ResourceToolbar aria-label={t("Project toolbar")}>
@@ -115,35 +100,31 @@ export function ProjectsPage({
           }
         />
       </ResourceToolbar>
-      <SlidingPages
-        className={styles.pages}
-        value={selected ? "detail" : "list"}
-        resize="none"
-      >
-        <SlidingPage value="list" className={styles.slide}>
-          {(!selected || visitedList.current === c) && (
-            <PanelScroll
-              className={styles.scroll}
-              contentClassName={pageStyles.contentPadding}
-              scrollbarLabel={t("Project scroll")}
-              horizontalScrollbar
-            >
-              <ResourceLayout>
-                {error && <ErrorNotice error={error} />}
-                <ProjectTable
-                  c={c}
-                  projects={visibleProjects}
-                  sessions={sessions}
-                  loading={projectsLoading}
-                  sessionsLoading={sessionsLoading}
-                  updated={setSaved}
-                />
-              </ResourceLayout>
-            </PanelScroll>
-          )}
-        </SlidingPage>
-        <SlidingPage value="detail" className={styles.slide}>
-          {(selected || detail) && (
+      <ResourceDetailPages
+        scope={c}
+        open={!!selected}
+        list={
+          <PanelScroll
+            className={styles.scroll}
+            contentClassName={pageStyles.contentPadding}
+            scrollbarLabel={t("Project scroll")}
+            horizontalScrollbar
+          >
+            <ResourceLayout>
+              {error && <ErrorNotice error={error} />}
+              <ProjectTable
+                c={c}
+                projects={visibleProjects}
+                sessions={sessions}
+                loading={projectsLoading}
+                sessionsLoading={sessionsLoading}
+                updated={setSaved}
+              />
+            </ResourceLayout>
+          </PanelScroll>
+        }
+        detail={
+          selected ? (
             <PanelScroll
               className={styles.scroll}
               contentClassName={pageStyles.contentPadding}
@@ -151,17 +132,17 @@ export function ProjectsPage({
             >
               <ResourceLayout>
                 {error && <ErrorNotice error={error} />}
-                {detail ? (
+                {project ? (
                   <ProjectDashboard
-                    key={projectId(detail)}
+                    key={projectId(project)}
                     c={c}
-                    project={detail}
+                    project={project}
                     saved={(updated) => {
                       setSaved(updated);
                       if (
-                        selected === detail.alias &&
+                        selected === project.alias &&
                         !uuid(selected) &&
-                        updated.alias !== detail.alias
+                        updated.alias !== project.alias
                       )
                         void navigate({
                           ...projectLocation(resourceHandle(updated)),
@@ -171,14 +152,14 @@ export function ProjectsPage({
                     erased={() => {
                       setSaved(undefined);
                       const next = visibleProjects.find(
-                        (p) => key(p.id) !== key(detail.id),
+                        (p) => key(p.id) !== key(project.id),
                       );
                       void navigate(
                         projectLocation(next && resourceHandle(next)),
                       );
                     }}
                     sessions={sessions.filter(
-                      (s) => s.project && key(s.project.id) === key(detail.id),
+                      (s) => s.project && key(s.project.id) === key(project.id),
                     )}
                     accounts={accounts.data ?? []}
                     accountsError={accounts.error}
@@ -196,9 +177,9 @@ export function ProjectsPage({
                 )}
               </ResourceLayout>
             </PanelScroll>
-          )}
-        </SlidingPage>
-      </SlidingPages>
+          ) : null
+        }
+      />
     </ResourcePage>
   );
 }
