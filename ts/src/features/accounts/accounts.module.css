@@ -1,18 +1,20 @@
 .page {
-  grid-column: 2 / -1;
+  composes: page from "../../shared/components/resource-page.module.css";
+}
+.toolbar {
+  composes: toolbar from "../../shared/components/resource-page.module.css";
+}
+.toolbarContent {
+  composes: toolbarContent from "../../shared/components/resource-page.module.css";
+}
+.toolbarActions {
+  composes: toolbarActions from "../../shared/components/resource-page.module.css";
 }
 .layout {
   --account-column-width: 424px;
   --section-layout-max-width: calc(
     2 * var(--account-column-width) + var(--ui-section-group-gap)
   );
-}
-.header {
-  display: flex;
-  justify-content: flex-end;
-}
-.add {
-  width: var(--toolbar-button-width);
 }
 .card {
   container: account / inline-size;

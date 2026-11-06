@@ -1,7 +1,7 @@
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef, useState } from "react";
-import { Button, SectionLayout } from "@lesomnus/nox";
+import { Button, PageToolbar, SectionLayout } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -52,19 +52,24 @@ export function AccountsView({
   return (
     <>
       <main className={`${resourceStyles.page} ${styles.page}`}>
-        <div className={resourceStyles.body}>
-          <SectionLayout ref={content} className={styles.layout}>
-            <header className={styles.header}>
+        <PageToolbar className={styles.toolbar} aria-label="Account toolbar">
+          <div className={styles.toolbarContent}>
+            <div className={styles.toolbarActions}>
               <Button
                 ref={add}
                 type="button"
-                className={styles.add}
+                variant="toolbar"
                 aria-label="Add account"
+                title="Add account"
                 onClick={() => setAdding(true)}
               >
                 <Icon name="add" width="16" height="16" aria-hidden="true" />
               </Button>
-            </header>
+            </div>
+          </div>
+        </PageToolbar>
+        <div className={resourceStyles.body}>
+          <SectionLayout ref={content} className={styles.layout}>
             {accounts.loading && !accounts.data && (
               <p className={resourceStyles.muted}>Loading accounts…</p>
             )}

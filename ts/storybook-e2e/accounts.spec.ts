@@ -421,13 +421,17 @@ for (const width of [1280, 390]) {
     }
     const main = (await page.getByRole("main").boundingBox())!;
     const card = (await work.boundingBox())!;
-    const add = (await page
+    const toolbar = page.getByLabel("Account toolbar", { exact: true });
+    const toolbarBox = (await toolbar.boundingBox())!;
+    const add = (await toolbar
       .getByRole("button", { name: "Add account", exact: true })
       .boundingBox())!;
     expect(
       Math.abs(card.x + card.width / 2 - main.x - main.width / 2),
     ).toBeLessThan(1);
-    expect(add.x + add.width).toBeCloseTo(card.x + card.width, 0);
+    expect(
+      Math.abs(add.y + add.height / 2 - toolbarBox.y - toolbarBox.height / 2),
+    ).toBeLessThan(1);
     expect(add.y + add.height).toBeLessThan(card.y);
     expect(
       await page.evaluate(
