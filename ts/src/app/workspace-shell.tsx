@@ -461,6 +461,7 @@ function WorkspaceContent({
           <SessionCreate
             c={c}
             projects={projects}
+            initialProject={projectId(selectedSession?.project)}
             centered
             close={() => setAddingSession(false)}
           />

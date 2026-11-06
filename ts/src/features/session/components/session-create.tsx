@@ -28,6 +28,7 @@ import styles from "#src/shared/components/resource-surface.module.css";
 export function SessionCreate({
   c,
   projects,
+  initialProject,
   anchor,
   trigger,
   centered = true,
@@ -35,6 +36,7 @@ export function SessionCreate({
 }: {
   c: Connection;
   projects: Project[];
+  initialProject?: string;
   anchor?: HTMLElement | null;
   trigger?: HTMLElement | null;
   centered?: boolean;
@@ -47,7 +49,9 @@ export function SessionCreate({
   const request = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => request.current?.abort(), []);
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
-  const [project, setProject] = useState(projectId(projects[0]) ?? "");
+  const defaultProject =
+    projects.find((p) => projectId(p) === initialProject) ?? projects[0];
+  const [project, setProject] = useState(() => projectId(defaultProject));
   const [alias, setAlias] = useState("");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
@@ -56,8 +60,8 @@ export function SessionCreate({
   const creation = useRef({ signature: "", id: "" });
   const selected = accounts.data?.find((a) => a.alias === alias);
   useEffect(() => {
-    if (!project && projects[0]) setProject(projectId(projects[0]));
-  }, [projects, project]);
+    if (!project && defaultProject) setProject(projectId(defaultProject));
+  }, [defaultProject, project]);
   async function createSession(afterLogin = false) {
     if (!selected || !project || pending.current || (login && !afterLogin))
       return;
