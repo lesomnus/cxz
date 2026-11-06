@@ -1,18 +1,24 @@
 .picker {
+  display: flex;
+  align-items: center;
   flex: none;
   min-height: var(--resource-toolbar-row-height);
   min-width: 0;
   max-width: 100%;
 }
-.picker.picker::before {
+.field {
+  min-width: 0;
+  max-width: 100%;
+}
+.field.field::before {
   opacity: 1;
 }
-.picker > :global(.value-menu) {
+.field > :global(.value-menu) {
   flex: 0 1 var(--resource-picker-width);
   width: var(--resource-picker-width);
   min-width: 0;
 }
-.picker :global(.meta-value) {
+.field :global(.meta-value) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
