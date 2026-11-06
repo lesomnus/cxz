@@ -85,7 +85,14 @@ toolbar/body frames and responsive alignment. Their column width, gap, gutter,
 picker width and toolbar row height come from the resource layout tokens in
 `app/styles/style.css`; pages should not maintain separate numeric copies.
 
-Accounts and Projects compose `ResourceLayout`, `ResourceDashboard`,
+All four pages render their frame with `ResourcePage`, `ResourceToolbar` and
+`ResourceLayout` from `shared/components/resource-layout.tsx`. The frame owns the
+named container and content-width derivation; the toolbar owns its aligned inner
+row and action slot. Import these components directly rather than composing their
+CSS Module class lists into page-specific modules: a live update can otherwise
+retain an old transitive class name and lose the frame's width constraints.
+
+Accounts and Projects additionally compose `ResourceDashboard`,
 `ResourceDashboardColumn` and `ResourceSessionSection` from
 `shared/components/resource-layout.tsx`. These apply the resource width policy to
 Nox's SectionLayout/SectionGroup/Section primitives. The shared dashboard owns the

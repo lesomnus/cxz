@@ -1,20 +1,5 @@
-.page {
-  composes: page from "../../shared/components/resource-page.module.css";
-}
-.toolbar {
-  composes: toolbar from "../../shared/components/resource-page.module.css";
-}
-.toolbarContent {
-  composes: toolbarContent from "../../shared/components/resource-page.module.css";
-}
-.content {
-  composes: content from "../../shared/components/resource-page.module.css";
-}
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
-}
-.scroll .scrollContent {
-  padding: calc(3 * var(--ui-space)) var(--resource-page-gutter);
 }
 .error {
   color: var(--ui-action-error-color);

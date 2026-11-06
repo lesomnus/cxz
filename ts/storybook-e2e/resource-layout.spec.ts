@@ -1,5 +1,68 @@
 import { expect, test } from "@playwright/test";
 
+for (const width of [1000, 800, 360]) {
+  test(`resource frames bound Memory and Task content and toolbars at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    for (const story of [
+      "resources-views--accounts",
+      "pages-projects--default",
+      "pages-memory--default",
+      "resources-tasks--project-table",
+      "resources-tasks--task-details",
+    ]) {
+      await page.goto(`/iframe.html?id=${story}&viewMode=story`);
+      const main = page.locator("[data-resource-page]");
+      await expect(main).toBeVisible();
+      await main.evaluate((node, width) => {
+        node.style.flex = "none";
+        node.style.width = `${width}px`;
+      }, width);
+      // Details reserve space inside the frame for their own scrollbar.
+      const layout = story.endsWith("--task-details")
+        ? main.locator("[data-sliding-pages]")
+        : main.locator("[data-resource-layout]").first();
+      await expect(layout).toBeVisible();
+      const toolbar = main.locator("[data-resource-toolbar-content]");
+      const dimensions = await main.evaluate((node) => {
+        const css = getComputedStyle(node);
+        return {
+          column: parseFloat(
+            css.getPropertyValue("--resource-page-column-width"),
+          ),
+          gap: parseFloat(css.getPropertyValue("--resource-page-column-gap")),
+          gutter: parseFloat(css.getPropertyValue("--resource-page-gutter")),
+        };
+      });
+      const expected = Math.min(
+        width < 892
+          ? dimensions.column
+          : 2 * dimensions.column + dimensions.gap,
+        width - 2 * dimensions.gutter,
+      );
+      await expect
+        .poll(() =>
+          layout.evaluate((node) => node.getBoundingClientRect().width),
+        )
+        .toBe(expected);
+      expect((await toolbar.boundingBox())!.width).toBe(expected);
+      if (width === 1000) {
+        await main.evaluate((node) => {
+          node.style.setProperty("--resource-page-column-width", "384px");
+          node.style.setProperty("--resource-page-column-gap", "8px");
+        });
+        await expect
+          .poll(() =>
+            layout.evaluate((node) => node.getBoundingClientRect().width),
+          )
+          .toBe(776);
+        expect((await toolbar.boundingBox())!.width).toBe(776);
+      }
+    }
+  });
+}
+
 for (const width of [1000, 892, 891, 700, 360]) {
   test(`account and project dashboards share their layout at ${width}px`, async ({
     page,

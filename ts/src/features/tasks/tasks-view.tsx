@@ -5,7 +5,7 @@ import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
 import { useCallback, useRef, useState } from "react";
 import { useBlocker } from "@tanstack/react-router";
 import { Id } from "@lesomnus/payday/pdid";
-import { Button, PageToolbar, SectionLayout } from "@lesomnus/nox";
+import { Button } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Task } from "#gen/cxz/task_pb";
@@ -19,6 +19,12 @@ import { TaskDetailPage } from "./task-detail-page";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { taskKey } from "./task-model";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import {
+  ResourceLayout,
+  ResourcePage,
+  ResourceToolbar,
+} from "#src/shared/components/resource-layout.tsx";
+import pageStyles from "#src/shared/components/resource-page.module.css";
 import styles from "./tasks.module.css";
 import {
   matchesResource,
@@ -115,48 +121,48 @@ export function TasksView({
   };
   return (
     <>
-      <main className={styles.page} aria-label="Project tasks">
-        <PageToolbar className={styles.toolbar} aria-label="Task toolbar">
-          <div className={styles.toolbarContent}>
-            <ProjectPicker
-              projects={projects}
-              value={projectId}
-              loading={projectsLoading}
-              choose={(project) => {
-                setAdding(false);
-                select({
-                  project: resourceHandle(
-                    projects.find((p) => projectUUID(p) === project)!,
-                  ),
-                  ...(needsProject ? { task: selection.task } : {}),
-                });
-              }}
+      <ResourcePage aria-label="Project tasks">
+        <ResourceToolbar
+          aria-label="Task toolbar"
+          actions={
+            <ToolbarIconButton
+              icon="add"
+              label="Add task"
+              disabled={!project}
+              onClick={() => setAdding(true)}
             />
-            <SessionPicker
-              sessions={sessions}
-              project={projectId}
-              value={selection.assignee}
-              loading={sessionsLoading}
-              suffix={selection.run ? " · This run" : ""}
-              getValue={(session) => session.runtimeId}
-              choose={(assignee) =>
-                select({
-                  ...selection,
-                  assignee: assignee || undefined,
-                  run: undefined,
-                })
-              }
-            />
-            <div className={styles.toolbarActions}>
-              <ToolbarIconButton
-                icon="add"
-                label="Add task"
-                disabled={!project}
-                onClick={() => setAdding(true)}
-              />
-            </div>
-          </div>
-        </PageToolbar>
+          }
+        >
+          <ProjectPicker
+            projects={projects}
+            value={projectId}
+            loading={projectsLoading}
+            choose={(project) => {
+              setAdding(false);
+              select({
+                project: resourceHandle(
+                  projects.find((p) => projectUUID(p) === project)!,
+                ),
+                ...(needsProject ? { task: selection.task } : {}),
+              });
+            }}
+          />
+          <SessionPicker
+            sessions={sessions}
+            project={projectId}
+            value={selection.assignee}
+            loading={sessionsLoading}
+            suffix={selection.run ? " · This run" : ""}
+            getValue={(session) => session.runtimeId}
+            choose={(assignee) =>
+              select({
+                ...selection,
+                assignee: assignee || undefined,
+                run: undefined,
+              })
+            }
+          />
+        </ResourceToolbar>
         {project && selection.task ? (
           <TaskDetailPage
             c={c}
@@ -178,11 +184,11 @@ export function TasksView({
         ) : (
           <PanelScroll
             className={styles.body}
-            contentClassName={styles.scrollContent}
+            contentClassName={pageStyles.contentPadding}
             horizontalScrollbar
             scrollbarLabel="Scroll tasks"
           >
-            <SectionLayout className={styles.content}>
+            <ResourceLayout className={styles.content}>
               {project ? (
                 <>
                   {state.loading && !state.tasks.length && (
@@ -232,10 +238,10 @@ export function TasksView({
                         : "Add a project to start tracking shared work."}
                 </p>
               )}
-            </SectionLayout>
+            </ResourceLayout>
           </PanelScroll>
         )}
-      </main>
+      </ResourcePage>
       {project && adding && (
         <TaskDialog
           key={`${projectId}:add`}

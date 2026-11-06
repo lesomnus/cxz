@@ -1,15 +1,3 @@
-.page {
-  composes: page from "../../shared/components/resource-page.module.css";
-}
-.toolbar {
-  composes: toolbar from "../../shared/components/resource-page.module.css";
-}
-.toolbarContent {
-  composes: toolbarContent from "../../shared/components/resource-page.module.css";
-}
-.toolbarActions {
-  composes: toolbarActions from "../../shared/components/resource-page.module.css";
-}
 .card {
   min-width: 0;
   scroll-margin-top: calc(3 * var(--space));

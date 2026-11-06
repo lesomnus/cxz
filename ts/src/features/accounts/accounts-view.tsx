@@ -1,7 +1,6 @@
 import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef, useState } from "react";
-import { PageToolbar } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -9,7 +8,11 @@ import { useRemote } from "#src/shared/api/use-remote.ts";
 import { listAccounts, sessionsForAccount } from "./account-data";
 import { AccountAddForm } from "./account-add-form";
 import { AccountDetails } from "./account-details";
-import { ResourceLayout } from "#src/shared/components/resource-layout.tsx";
+import {
+  ResourceLayout,
+  ResourcePage,
+  ResourceToolbar,
+} from "#src/shared/components/resource-layout.tsx";
 import pageStyles from "#src/shared/components/resource-page.module.css";
 import resourceStyles from "#src/shared/components/resource-surface.module.css";
 import styles from "./accounts.module.css";
@@ -53,19 +56,18 @@ export function AccountsView({
   }, [selected, accounts.data]);
   return (
     <>
-      <main className={`${resourceStyles.page} ${styles.page}`}>
-        <PageToolbar className={styles.toolbar} aria-label="Account toolbar">
-          <div className={styles.toolbarContent}>
-            <div className={styles.toolbarActions}>
-              <ToolbarIconButton
-                ref={add}
-                icon="add"
-                label="Add account"
-                onClick={() => setAdding(true)}
-              />
-            </div>
-          </div>
-        </PageToolbar>
+      <ResourcePage>
+        <ResourceToolbar
+          aria-label="Account toolbar"
+          actions={
+            <ToolbarIconButton
+              ref={add}
+              icon="add"
+              label="Add account"
+              onClick={() => setAdding(true)}
+            />
+          }
+        />
         <div className={`${resourceStyles.body} ${pageStyles.contentPadding}`}>
           <ResourceLayout ref={content}>
             {accounts.loading && !accounts.data && (
@@ -108,7 +110,7 @@ export function AccountsView({
             ))}
           </ResourceLayout>
         </div>
-      </main>
+      </ResourcePage>
       {adding && (
         <AccountAddForm
           c={c}

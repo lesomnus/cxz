@@ -1,7 +1,7 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useBlocker } from "@tanstack/react-router";
-import { PageToolbar, Section } from "@lesomnus/nox";
+import { Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -10,6 +10,12 @@ import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { SessionPicker } from "#src/shared/components/session-picker.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import {
+  ResourceLayout,
+  ResourcePage,
+  ResourceToolbar,
+} from "#src/shared/components/resource-layout.tsx";
+import pageStyles from "#src/shared/components/resource-page.module.css";
 import { sessionUUID } from "#src/shared/api/session-id.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { useResourceSelection } from "#src/shared/api/resource-selection.ts";
@@ -93,55 +99,53 @@ export function MemoryPage({
     [],
   );
   return (
-    <main className={styles.page} aria-label="Shared memory workspace">
-      <PageToolbar className={styles.toolbar}>
-        <div className={styles.toolbarContent}>
-          <ProjectPicker
-            projects={projects}
-            value={id}
-            loading={projectsLoading}
-            choose={(value) =>
-              guard.current(() => {
-                const chosen = projects.find((p) => projectId(p) === value)!;
-                c.selection.chooseProject(value);
+    <ResourcePage aria-label="Shared memory workspace">
+      <ResourceToolbar>
+        <ProjectPicker
+          projects={projects}
+          value={id}
+          loading={projectsLoading}
+          choose={(value) =>
+            guard.current(() => {
+              const chosen = projects.find((p) => projectId(p) === value)!;
+              c.selection.chooseProject(value);
+              void navigate({
+                ...memoryLocation(chosen),
+                ignoreBlocker: true,
+              });
+            })
+          }
+        />
+        <SessionPicker
+          sessions={scoped}
+          project={id}
+          value={sessionUUID(sessionFilter)}
+          loading={sessionsLoading}
+          choose={(value) =>
+            guard.current(() => {
+              const session = scoped.find((s) => sessionUUID(s.id) === value);
+              c.selection.chooseSession(
+                id,
+                sessionUUID(session?.id),
+                session?.runtimeId ?? "",
+              );
+              if (memory || creatingProject === id) {
+                setCreatingProject(undefined);
                 void navigate({
-                  ...memoryLocation(chosen),
+                  ...memoryLocation(handle),
                   ignoreBlocker: true,
                 });
-              })
-            }
-          />
-          <SessionPicker
-            sessions={scoped}
-            project={id}
-            value={sessionUUID(sessionFilter)}
-            loading={sessionsLoading}
-            choose={(value) =>
-              guard.current(() => {
-                const session = scoped.find((s) => sessionUUID(s.id) === value);
-                c.selection.chooseSession(
-                  id,
-                  sessionUUID(session?.id),
-                  session?.runtimeId ?? "",
-                );
-                if (memory || creatingProject === id) {
-                  setCreatingProject(undefined);
-                  void navigate({
-                    ...memoryLocation(handle),
-                    ignoreBlocker: true,
-                  });
-                }
-              })
-            }
-          />
-        </div>
-      </PageToolbar>
+              }
+            })
+          }
+        />
+      </ResourceToolbar>
       <PanelScroll
         className={styles.scroll}
-        contentClassName={styles.scrollContent}
+        contentClassName={pageStyles.contentPadding}
         scrollbarLabel="Shared memory scroll"
       >
-        <div className={styles.content}>
+        <ResourceLayout>
           {error && <ErrorNotice className={styles.error} error={error} />}
           {project ? (
             memory || creatingProject === id ? (
@@ -188,7 +192,7 @@ export function MemoryPage({
               )}
             </Section>
           )}
-        </div>
+        </ResourceLayout>
       </PanelScroll>
       {blocker.status === "blocked" && (
         <ConfirmationDialog
@@ -203,6 +207,6 @@ export function MemoryPage({
           <p>This memory has unsaved changes. Discard them?</p>
         </ConfirmationDialog>
       )}
-    </main>
+    </ResourcePage>
   );
 }

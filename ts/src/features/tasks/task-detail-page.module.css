@@ -2,7 +2,6 @@
   --task-page-duration: 380ms;
   --ui-sliding-pages-duration: var(--task-page-duration);
   --ui-sliding-pages-easing: cubic-bezier(0.65, 0, 0.35, 1);
-  --task-detail-width: var(--resource-page-content-width);
   --task-neighbor-peek: calc(9 * var(--ui-space));
   --task-panel-gap: calc(3 * var(--ui-space));
   flex: 1;
@@ -16,13 +15,6 @@
   gap: var(--task-panel-gap);
   padding-inline: var(--resource-page-gutter);
   outline: none;
-}
-.pages,
-.peek {
-  width: 100%;
-  max-width: var(--task-detail-width);
-  margin-inline: auto;
-  min-width: 0;
 }
 .pages,
 .panel {

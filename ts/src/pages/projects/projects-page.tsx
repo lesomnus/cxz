@@ -8,13 +8,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
-import {
-  PageToolbar,
-  Button,
-  Section,
-  SlidingPages,
-  SlidingPage,
-} from "@lesomnus/nox";
+import { Button, Section, SlidingPages, SlidingPage } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -40,11 +34,14 @@ import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import styles from "./projects-page.module.css";
 import {
   ResourceLayout,
+  ResourcePage,
+  ResourceToolbar,
   ResourceDashboard,
   ResourceDashboardColumn,
   ResourceSessionSection,
 } from "#src/shared/components/resource-layout.tsx";
 import dashboardStyles from "#src/shared/components/resource-dashboard.module.css";
+import pageStyles from "#src/shared/components/resource-page.module.css";
 import {
   projectLocation,
   resourceHandle,
@@ -101,25 +98,23 @@ export function ProjectsPage({
       ? previousProject.current.project
       : undefined;
   return (
-    <main className={styles.page} aria-label={t("Project workspace")}>
-      <PageToolbar className={styles.toolbar} aria-label={t("Project toolbar")}>
-        <div className={styles.toolbarContent}>
-          <ProjectPicker
-            projects={visibleProjects}
-            value={projectId(project) ?? ""}
-            loading={projectsLoading}
-            choose={(project) =>
-              void navigate(
-                projectLocation(
-                  resourceHandle(
-                    visibleProjects.find((p) => projectId(p) === project)!,
-                  ),
+    <ResourcePage aria-label={t("Project workspace")}>
+      <ResourceToolbar aria-label={t("Project toolbar")}>
+        <ProjectPicker
+          projects={visibleProjects}
+          value={projectId(project) ?? ""}
+          loading={projectsLoading}
+          choose={(project) =>
+            void navigate(
+              projectLocation(
+                resourceHandle(
+                  visibleProjects.find((p) => projectId(p) === project)!,
                 ),
-              )
-            }
-          />
-        </div>
-      </PageToolbar>
+              ),
+            )
+          }
+        />
+      </ResourceToolbar>
       <SlidingPages
         className={styles.pages}
         value={selected ? "detail" : "list"}
@@ -129,7 +124,7 @@ export function ProjectsPage({
           {(!selected || visitedList.current === c) && (
             <PanelScroll
               className={styles.scroll}
-              contentClassName={styles.scrollContent}
+              contentClassName={pageStyles.contentPadding}
               scrollbarLabel={t("Project scroll")}
               horizontalScrollbar
             >
@@ -151,7 +146,7 @@ export function ProjectsPage({
           {(selected || detail) && (
             <PanelScroll
               className={styles.scroll}
-              contentClassName={styles.scrollContent}
+              contentClassName={pageStyles.contentPadding}
               scrollbarLabel={t("Project scroll")}
             >
               <ResourceLayout>
@@ -204,7 +199,7 @@ export function ProjectsPage({
           )}
         </SlidingPage>
       </SlidingPages>
-    </main>
+    </ResourcePage>
   );
 }
 

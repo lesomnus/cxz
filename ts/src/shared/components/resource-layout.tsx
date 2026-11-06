@@ -1,7 +1,42 @@
-import { Section, SectionGroup, SectionLayout } from "@lesomnus/nox";
-import type { ComponentPropsWithRef } from "react";
+import {
+  PageToolbar,
+  Section,
+  SectionGroup,
+  SectionLayout,
+} from "@lesomnus/nox";
+import type { ComponentProps, ComponentPropsWithRef } from "react";
 import pageStyles from "./resource-page.module.css";
 import dashboardStyles from "./resource-dashboard.module.css";
+
+/** Own the width derivation and named container without transitive CSS composition. */
+export function ResourcePage({
+  className = "",
+  ...props
+}: ComponentPropsWithRef<"main">) {
+  return (
+    <main
+      {...props}
+      className={`${pageStyles.page} ${className}`}
+      data-resource-page
+    />
+  );
+}
+
+export function ResourceToolbar({
+  children,
+  actions,
+  className = "",
+  ...props
+}: ComponentProps<typeof PageToolbar>) {
+  return (
+    <PageToolbar {...props} className={`${pageStyles.toolbar} ${className}`}>
+      <div className={pageStyles.toolbarContent} data-resource-toolbar-content>
+        {children}
+        {actions && <div className={pageStyles.toolbarActions}>{actions}</div>}
+      </div>
+    </PageToolbar>
+  );
+}
 
 /** Resource entries share the toolbar's width and responsive column policy. */
 export function ResourceLayout({
@@ -12,6 +47,7 @@ export function ResourceLayout({
     <SectionLayout
       {...props}
       className={`${pageStyles.content} ${className}`}
+      data-resource-layout
     />
   );
 }

@@ -1,6 +1,3 @@
-.page {
-  composes: page from "../../shared/components/resource-page.module.css";
-}
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-20);
 }
@@ -12,15 +9,6 @@
 .pages > .slide {
   display: flex;
   flex-direction: column;
-}
-.toolbar {
-  composes: toolbar from "../../shared/components/resource-page.module.css";
-}
-.toolbarContent {
-  composes: toolbarContent from "../../shared/components/resource-page.module.css";
-}
-.scrollContent {
-  composes: contentPadding from "../../shared/components/resource-page.module.css";
 }
 .empty {
   color: var(--ui-muted);

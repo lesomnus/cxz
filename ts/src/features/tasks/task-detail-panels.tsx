@@ -1,10 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  ScrollArea,
-  Section,
-  SectionGroup,
-  SectionLayout,
-} from "@lesomnus/nox";
+import { ScrollArea, Section, SectionGroup } from "@lesomnus/nox";
 import { Id } from "@lesomnus/payday/pdid";
 import type { Task } from "#gen/cxz/task_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -14,6 +9,7 @@ import { AgentIdentity } from "#src/shared/components/agent-identity.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import styles from "./task-detail-panels.module.css";
+import { ResourceLayout } from "#src/shared/components/resource-layout.tsx";
 
 export function TaskDetailPanels({
   controls,
@@ -37,7 +33,7 @@ export function TaskDetailPanels({
       aria-label="Task content"
       scrollbarLabel="Scroll task details"
     >
-      <SectionLayout className={styles.layout}>
+      <ResourceLayout className={styles.layout}>
         <SectionGroup className={styles.sidebar}>
           <Section className={styles.information} aria-label="Task information">
             <ScrollArea
@@ -62,7 +58,7 @@ export function TaskDetailPanels({
             {description}
           </Section>
         </SectionGroup>
-      </SectionLayout>
+      </ResourceLayout>
     </ScrollArea>
   );
 }

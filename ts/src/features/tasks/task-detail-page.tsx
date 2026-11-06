@@ -10,6 +10,7 @@ import { TaskStatusIcon } from "./task-indicators";
 import { tableTasks, taskKey } from "./task-model";
 import { TaskPageWheel } from "./task-page-wheel";
 import styles from "./task-detail-page.module.css";
+import pageStyles from "#src/shared/components/resource-page.module.css";
 
 export function TaskDetailPage({
   c,
@@ -160,7 +161,9 @@ export function TaskDetailPage({
         }
       }}
     >
-      <div className={`${styles.peek} ${styles.previous}`}>
+      <div
+        className={`${pageStyles.content} ${styles.peek} ${styles.previous}`}
+      >
         {previous && (
           <Neighbor
             task={previous}
@@ -174,7 +177,7 @@ export function TaskDetailPage({
         value={current}
         orientation="vertical"
         resize="none"
-        className={styles.pages}
+        className={`${pageStyles.content} ${styles.pages}`}
       >
         {pages.map(({ value, task }) => (
           <SlidingPage
@@ -201,7 +204,7 @@ export function TaskDetailPage({
           </SlidingPage>
         ))}
       </SlidingPages>
-      <div className={`${styles.peek} ${styles.next}`}>
+      <div className={`${pageStyles.content} ${styles.peek} ${styles.next}`}>
         {next && (
           <Neighbor task={next} direction="next" disabled={busy} open={open} />
         )}

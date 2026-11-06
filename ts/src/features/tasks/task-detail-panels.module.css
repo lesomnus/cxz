@@ -8,7 +8,6 @@
   --ui-scroll-area-background: var(--ui-shade-20);
 }
 .layout {
-  --section-layout-max-width: var(--resource-page-content-width);
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: var(--resource-page-column-gap);
 }
