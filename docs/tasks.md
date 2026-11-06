@@ -233,11 +233,22 @@ runtime is stopped or does not implement Tasks, the view reports that condition
 and offers Retry.
 
 Use Add to register work or open a card to edit its title, alias, description,
-priority and permitted status. The dialog reads the current Task, then saves
-against that observed version. Incoming updates do not overwrite an open edit.
+and priority on its detail page. Status is read-only; execution transitions belong
+to the agent tools, and Release remains an explicit recovery action. The editor
+reads the current Task, then saves against that observed version. Incoming updates
+do not overwrite an open edit.
 After a version conflict, the draft remains visible and an explicit Reload
 latest task action lets the operator start from the new record. Stable Task IDs
 keep an open detail view associated with its record across alias changes.
+
+The title reserves two lines and clamps excess text with an ellipsis when it is
+not focused; focus reveals the editable text. Description has a right-aligned
+word-wrap toggle that does not dirty the task and survives saving. Task ID,
+assignment and creation source share one metadata row. Session and project links
+reuse the resource navigation buttons, including their upper-right arrow. The
+left group sizes to its contents, with an independent metadata scroll area when
+long content exceeds the available desktop height; narrow pages scroll the groups
+together.
 
 Stopped, unavailable and previous-run owners are flagged rather than silently
 reassigned. Release requires confirmation and clears the stored owner/run under

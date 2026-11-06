@@ -3,11 +3,15 @@ import { ScrollArea, Section, SectionGroup } from "@lesomnus/nox";
 import { Id } from "@lesomnus/payday/pdid";
 import type { Task } from "#gen/cxz/task_pb";
 import type { Session } from "#gen/cxz/session_pb";
+import type { Project } from "#gen/cxz/project_pb";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
-import { AgentIdentity } from "#src/shared/components/agent-identity.tsx";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
+import {
+  sessionLocation,
+  projectLocation,
+  resourceHandle,
+} from "#src/shared/navigation/resource-route.ts";
+import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
 import styles from "./task-detail-panels.module.css";
 import { ResourceLayout } from "#src/shared/components/resource-layout.tsx";
 
@@ -65,80 +69,91 @@ export function TaskDetailPanels({
 
 export function TaskMetadata({
   task,
+  project = task.project,
   owner,
   source,
   issue,
 }: {
   task: Task;
+  project?: Project;
   owner?: Session;
   source?: Session;
   issue: string;
 }) {
   return (
-    <ResourceFields
-      columns={1}
-      rows={[
-        {
-          label: "Task ID",
-          value: task.id.length === 16 ? new Id(task.id).toString() : undefined,
-          identifier: true,
-        },
-        [
-          "Assigned to",
-          owner ? (
-            <RouteLink {...sessionLocation(owner)} className={styles.session}>
-              <AgentIdentity
-                agent={owner.agent}
+    <>
+      <ResourceFields
+        columns={3}
+        rows={[
+          {
+            label: "Task ID",
+            value:
+              task.id.length === 16 ? new Id(task.id).toString() : undefined,
+            identifier: true,
+          },
+          [
+            "Assigned to",
+            owner ? (
+              <ResourceNavigationButton
+                {...sessionLocation(owner)}
                 name={owner.name || owner.alias}
                 alias={owner.alias}
               />
-            </RouteLink>
-          ) : task.assignee ? (
-            "Session unavailable"
-          ) : (
-            "Unassigned"
+            ) : task.assignee ? (
+              "Session unavailable"
+            ) : (
+              "Unassigned"
+            ),
+            issue
+              ? `${issue}. Release makes this task available to another session.`
+              : undefined,
+          ],
+          [
+            "Created from",
+            source ? (
+              <ResourceNavigationButton
+                {...sessionLocation(source)}
+                search={task.sourceSeq ? { seq: String(task.sourceSeq) } : {}}
+                name={source.name || source.alias}
+                alias={source.alias}
+              />
+            ) : task.sourceSession ? (
+              "Session unavailable"
+            ) : undefined,
+          ],
+        ]}
+      />
+      <ResourceFields
+        columns={2}
+        rows={[
+          [
+            "Project",
+            project ? (
+              <ResourceNavigationButton
+                {...projectLocation(resourceHandle(project))}
+                name={project.name || project.alias || resourceHandle(project)}
+                alias={project.alias}
+              />
+            ) : undefined,
+          ],
+          ...(issue ? [["Assignment", issue] as const] : []),
+          [
+            "Created",
+            <DateTime value={task.dateCreated} />,
+            undefined,
+            <RelativeTime value={task.dateCreated} />,
+          ],
+          [
+            "Updated",
+            <DateTime value={task.dateUpdated} />,
+            undefined,
+            <RelativeTime value={task.dateUpdated} />,
+          ],
+          ...Object.entries(task.labels).map(
+            ([label, value]) => [label, value] as const,
           ),
-          issue
-            ? `${issue}. Release makes this task available to another session.`
-            : undefined,
-        ],
-        ...(issue ? [["Assignment", issue] as const] : []),
-        ...(source || task.sourceSession
-          ? [
-              [
-                "Created from",
-                source ? (
-                  <RouteLink
-                    {...sessionLocation(source)}
-                    search={
-                      task.sourceSeq ? { seq: String(task.sourceSeq) } : {}
-                    }
-                    className={styles.session}
-                  >
-                    {source.name || source.alias}
-                  </RouteLink>
-                ) : (
-                  "Session unavailable"
-                ),
-              ] as const,
-            ]
-          : []),
-        [
-          "Created",
-          <DateTime value={task.dateCreated} />,
-          undefined,
-          <RelativeTime value={task.dateCreated} />,
-        ],
-        [
-          "Updated",
-          <DateTime value={task.dateUpdated} />,
-          undefined,
-          <RelativeTime value={task.dateUpdated} />,
-        ],
-        ...Object.entries(task.labels).map(
-          ([label, value]) => [label, value] as const,
-        ),
-      ]}
-    />
+        ]}
+      />
+    </>
   );
 }

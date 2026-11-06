@@ -97,44 +97,9 @@
 .overview .actionsColumn {
   width: auto;
 }
-.overview .navigationButton {
-  max-width: var(--resource-table-button-width);
-}
 .overview .actions :global(.action-menu) {
   width: calc(var(--session-row-height) - 2 * var(--ui-control-inset));
   margin-inline-start: auto;
-}
-.identity {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-  line-height: 1.3;
-}
-.title,
-.subtitle {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.navigationButton.navigationButton {
-  display: flex;
-  width: 100%;
-  height: calc(var(--session-row-height) - 2 * var(--ui-control-inset));
-  min-height: 0;
-  padding: 0 var(--ui-control-inline-inset);
-  border-radius: var(--session-cell-radius);
-  text-align: left;
-  font: inherit;
-}
-.navigationButton > :global(.button-content) {
-  width: 100%;
-  min-width: 0;
-  justify-content: space-between;
-  gap: var(--ui-space);
-}
-.subtitle {
-  color: var(--ui-muted);
-  font: 10px/1.3 var(--ui-font-mono);
 }
 .stateIndicator {
   display: flex;
@@ -204,11 +169,6 @@
 }
 .table td.cardCell {
   padding: var(--ui-control-inset);
-}
-.openArrow {
-  flex: none;
-  width: var(--ui-icon-size-small);
-  height: var(--ui-icon-size-small);
 }
 .state {
   color: var(--ui-muted);

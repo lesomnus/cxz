@@ -7,6 +7,125 @@ const detail = (page: import("@playwright/test").Page) =>
 const title = (page: import("@playwright/test").Page) =>
   detail(page).getByRole("textbox", { name: "Title", exact: true });
 
+test("title reserves two clamped lines and identity fields share one row with resource buttons", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(story());
+  await expect(title(page)).toHaveValue("Connect the task table");
+  await page.evaluate(() => document.fonts.ready);
+  const titlePanel = detail(page).getByRole("region", {
+    name: "Task title",
+    exact: true,
+  });
+  const before = (await titlePanel.boundingBox())!.height;
+  const long =
+    "Explain the task navigation and resource metadata with a clear title that remains readable across two lines. ".repeat(
+      2,
+    );
+  await title(page).fill(long);
+  await detail(page)
+    .getByRole("textbox", { name: "Description", exact: true })
+    .focus();
+  const preview = titlePanel.locator('textarea + span[aria-hidden="true"]');
+  await expect(preview).toHaveCSS("-webkit-line-clamp", "2");
+  expect((await titlePanel.boundingBox())!.height).toBeCloseTo(before, 2);
+  expect(
+    await preview.evaluate((node) => node.scrollHeight > node.clientHeight),
+  ).toBe(true);
+  const information = detail(page).getByRole("region", {
+    name: "Task information",
+    exact: true,
+  });
+  const fields = await information
+    .locator("dl")
+    .first()
+    .locator(":scope > div")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        label: node.querySelector("dt")!.textContent!.trim(),
+        x: node.getBoundingClientRect().x,
+        y: node.getBoundingClientRect().y,
+      })),
+    );
+  expect(fields.map((field) => field.label)).toEqual([
+    "Task ID",
+    "Assigned to",
+    "Created from",
+  ]);
+  expect(new Set(fields.map((field) => field.y)).size).toBe(1);
+  expect(fields[1].x).toBeGreaterThan(fields[0].x);
+  expect(fields[2].x).toBeGreaterThan(fields[1].x);
+  const links = information.getByRole("link");
+  await expect(links).toHaveCount(3);
+  for (const link of await links.all())
+    await expect(link.locator('[data-icon="open-external"]')).toBeVisible();
+  expect(
+    await links.evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("href")),
+    ),
+  ).toEqual(["/c/_/session/elm", "/c/_/session/oak", "/c/_/project/workspace"]);
+  const sidebar = (await information.locator("..").boundingBox())!;
+  const description = (await detail(page)
+    .getByRole("region", { name: "Task description", exact: true })
+    .boundingBox())!;
+  expect(sidebar.y + sidebar.height).toBeLessThan(
+    description.y + description.height,
+  );
+});
+
+test("detail controls retain wrapping, show priority symbols and preserve read-only status on save", async ({
+  page,
+}) => {
+  await page.goto(story());
+  const description = detail(page).getByRole("textbox", {
+    name: "Description",
+    exact: true,
+  });
+  const wrap = detail(page).getByRole("button", {
+    name: "Word wrap",
+    exact: true,
+  });
+  const save = detail(page).getByRole("button", { name: "Save", exact: true });
+  await expect(wrap).toHaveAttribute("aria-pressed", "true");
+  await wrap.click();
+  await expect(description).toHaveAttribute("wrap", "off");
+  await expect(save).toBeDisabled();
+  await description.fill("x".repeat(600));
+  expect(
+    await description.evaluate((node) => node.scrollWidth > node.clientWidth),
+  ).toBe(true);
+  await expect(
+    detail(page).getByRole("combobox", { name: "Status", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    detail(page).getByLabel("Status", { exact: true }),
+  ).toContainText("In progress");
+  const priority = detail(page).getByRole("combobox", {
+    name: "Priority",
+    exact: true,
+  });
+  await expect(priority.locator('svg[data-priority="2"]')).toBeVisible();
+  await priority.click();
+  for (let value = 0; value < 5; value++)
+    await expect(
+      page.getByRole("listbox").locator(`svg[data-priority="${value}"]`),
+    ).toBeVisible();
+  await page.getByRole("option", { name: "High", exact: true }).click();
+  await expect(priority.locator('svg[data-priority="1"]')).toBeVisible();
+  await title(page).focus();
+  await title(page).press("Enter");
+  await expect(save).toBeDisabled();
+  await expect(description).toHaveAttribute("wrap", "off");
+  await expect(
+    detail(page).getByLabel("Status", { exact: true }),
+  ).toContainText("In progress");
+  await expect(priority).toHaveText("High");
+  await wrap.click();
+  await expect(description).toHaveAttribute("wrap", "soft");
+  await expect(save).toBeDisabled();
+});
+
 test("dedicated details show neighboring panels and background wheel advances one task per gesture", async ({
   page,
 }) => {
@@ -75,7 +194,9 @@ for (const width of [1280, 390]) {
     await page.goto(story("long-task-details"));
     await expect(title(page)).toHaveValue("Connect the task table");
     const viewport = detail(page)
-      .getByLabel("Task metadata", { exact: true })
+      .getByLabel(width >= 892 ? "Task metadata" : "Task content", {
+        exact: true,
+      })
       .locator('[data-scroll-area="viewport"]')
       .first();
     const before = await viewport.evaluate((node) => ({

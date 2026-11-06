@@ -32,7 +32,7 @@ export function ResourceFields({
   columns = 2,
 }: {
   rows: readonly ResourceFieldRow[];
-  columns?: 1 | 2;
+  columns?: 1 | 2 | 3;
 }) {
   return (
     <dl

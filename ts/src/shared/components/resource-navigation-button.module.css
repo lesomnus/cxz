@@ -1,0 +1,40 @@
+.link.link {
+  display: flex;
+  width: 100%;
+  max-width: var(--resource-table-button-width);
+  height: calc(
+    var(--resource-table-control-size) - 2 * var(--ui-control-inset)
+  );
+  min-height: 0;
+  padding: 0 var(--ui-control-inline-inset);
+  border-radius: var(--ui-space);
+  text-align: left;
+  font: inherit;
+}
+.link > :global(.button-content) {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+  gap: var(--ui-space);
+}
+.identity {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+.title,
+.subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.subtitle {
+  color: var(--ui-muted);
+  font: 10px/1.3 var(--ui-font-mono);
+}
+.arrow {
+  flex: none;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+}
