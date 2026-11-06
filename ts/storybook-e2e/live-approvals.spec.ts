@@ -171,7 +171,10 @@ for (const width of [1280, 390]) {
     await expect(group).toHaveAttribute("data-pending-count", "1");
     await expect(current).toContainText("git diff --stat");
     await expect(stack.locator("[data-card-stack-back]")).toHaveCount(0);
-    await group.getByRole("button", { name: "Allow", exact: true }).focus();
+    const allow = group.getByRole("button", { name: "Allow", exact: true });
+    await expect(allow).toBeEnabled();
+    await allow.focus();
+    await expect(allow).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(group).toHaveAttribute("data-pending-count", "0");
     await expect(
