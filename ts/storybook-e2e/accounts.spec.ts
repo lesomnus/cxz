@@ -444,7 +444,7 @@ for (const width of [1280, 390]) {
   });
 }
 
-test("account sessions use compact read-only identities and keep selection scoped to the account", async ({
+test("account sessions use overview read-only identities and keep selection scoped to the account", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -456,9 +456,9 @@ test("account sessions use compact read-only identities and keep selection scope
   await expect(rows).toHaveCount(2);
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
+    "",
     "Name",
     "Project",
-    "",
     "",
   ]);
   await expect(
