@@ -43,8 +43,6 @@ function MenuPreview({
     "Insert secret",
     "Shared memory",
     "Auxiliary AI",
-    "Conversation usage",
-    "Background tasks",
     ...(agent === "claude" ? ["Log in"] : []),
   ];
   return (
@@ -56,7 +54,6 @@ function MenuPreview({
           <div className="composer-toolbar">
             <SessionMenu
               session={erased ? undefined : session}
-              info={{ model: session.model, effort: "medium" }}
               busy={busy}
               open={alwaysOpen ? true : undefined}
               terminal={{
@@ -92,11 +89,6 @@ function MenuPreview({
                 }));
                 setAction(operation);
                 return true;
-              }}
-              edit={async (field, value) => {
-                const updated = { ...session, [field]: value };
-                setSession(updated);
-                return updated;
               }}
             />
           </div>

@@ -279,7 +279,7 @@ export const ForkConversation: Story = {
     docs: {
       description: {
         story:
-          "Open Session menu → Fork to simulate a new session identity and alias while preserving the conversation, model and effort. Open Details to inspect the new identity. This preview stays local; the connected app uses Session.Fork and navigates to the new session. Active turns and pending questions or queued input disable Fork.",
+          "Open Session menu → Fork to simulate a new session identity and alias while preserving the conversation, model and effort. This preview stays local; the connected app uses Session.Fork and navigates to the new session. Active turns and pending questions or queued input disable Fork.",
       },
     },
   },
@@ -290,7 +290,7 @@ export const StoppedSession: Story = {
     docs: {
       description: {
         story:
-          "Open Session menu to resume the simulated stopped session, restart it, inspect session details or review a session erasure confirmation. These actions affect only this preview; no server or filesystem is used.",
+          "Open Session menu to resume the simulated stopped session, restart it or review a session erasure confirmation. These actions affect only this preview; no server or filesystem is used.",
       },
     },
   },

@@ -3,12 +3,9 @@ import type { Session } from "#gen/cxz/session_pb";
 import { ActionMenu } from "@lesomnus/nox";
 import { ComposerOptions } from "#src/features/session/composer/composer-options.tsx";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
-import { useFloatingCard } from "#src/features/session/cards/floating-card.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { SessionActionIcon } from "./session-action-icon";
-import { SessionDetails } from "./session-details";
-import type { SessionField } from "#src/features/session/model/session-edit.ts";
 import {
   resumableStates,
   type SessionOperation,
@@ -17,16 +14,13 @@ import {
   controlTarget,
   type SessionTarget,
 } from "#src/features/session/model/session-control-batch.ts";
-import type { SessionInfo } from "#src/features/session/model/session-info.ts";
 
 export type SessionMenuProps = {
   session?: Session;
-  info: SessionInfo;
   busy: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   manage: (operation: SessionOperation, run: string) => Promise<boolean>;
-  edit: (field: SessionField, value: string) => Promise<Session>;
   erase?: (target: SessionTarget) => Promise<boolean>;
   fork?: () => void | Promise<unknown>;
   upload?: (directory?: boolean) => void;
@@ -49,12 +43,10 @@ function toolbarMenuGap(trigger: HTMLButtonElement) {
 
 export function SessionMenu({
   session,
-  info,
   busy,
   open: menuOpen,
   onOpenChange,
   manage,
-  edit,
   erase,
   fork,
   upload,
@@ -62,7 +54,6 @@ export function SessionMenu({
   tools = [],
 }: SessionMenuProps) {
   useLocale();
-  const open = useFloatingCard();
   const resume = resumableStates.has(session?.status?.state ?? "");
   const unavailable = busy || !session?.status?.runId;
   const run = session?.status?.runId ?? "";
@@ -155,21 +146,6 @@ export function SessionMenu({
                     },
                   ]
                 : []),
-              {
-                label: t("Details"),
-                icon: <SessionActionIcon action="details" />,
-                run: () =>
-                  open({
-                    title: t("Session details"),
-                    content: () => (
-                      <SessionDetails
-                        session={session!}
-                        info={info}
-                        edit={edit}
-                      />
-                    ),
-                  }),
-              },
               {
                 label: t("Erase"),
                 icon: <SessionActionIcon action="erase" />,

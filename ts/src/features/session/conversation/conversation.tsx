@@ -39,7 +39,6 @@ import {
   sessionLoginSnapshot,
 } from "#src/features/session/model/session-actions.ts";
 import { performSessionControl } from "#src/features/session/model/session-control-batch.ts";
-import { editSession } from "#src/features/session/model/session-edit.ts";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
@@ -1250,7 +1249,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               available: !!s?.project?.id.length,
               toggle: () => showTerminal(!terminalVisibleRef.current),
             }}
-            info={info}
             busy={busy}
             fork={() => forkConversation()}
             tools={[
@@ -1261,8 +1259,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               },
               { label: "Shared memory", run: () => localOpen("memory") },
               { label: "Auxiliary AI", run: () => localOpen("aux") },
-              { label: "Conversation usage", run: () => localOpen("usage") },
-              { label: "Background tasks", run: () => localOpen("background") },
               ...(s?.agent === "claude"
                 ? [
                     {
@@ -1281,13 +1277,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                 : []),
             ]}
             upload={pick}
-            edit={async (field, value) => {
-              const updated = await editSession(c.sessions, id, field, value);
-              c.store.apply("cxz.Session", [
-                { id: updated.id, value: updated },
-              ]);
-              return updated;
-            }}
             erase={(target) => {
               const location = router.state.location.href;
               return action(async () => {
