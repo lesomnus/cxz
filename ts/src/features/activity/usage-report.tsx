@@ -30,17 +30,7 @@ type UsageMetric = {
   prefix?: string;
 };
 
-export function UsageReport({
-  c,
-  session = "",
-  project = "",
-  account = "",
-  accountId,
-  className,
-  refreshVersion = 0,
-  hideRefresh = false,
-  onLoadingChange,
-}: {
+type UsageReportProps = {
   c: Connection;
   session?: string;
   project?: string;
@@ -50,7 +40,31 @@ export function UsageReport({
   refreshVersion?: number;
   hideRefresh?: boolean;
   onLoadingChange?: (loading: boolean) => void;
-}) {
+};
+
+export function UsageReport(props: UsageReportProps) {
+  const { c, session = "", project = "", account = "", accountId } = props;
+  const identity = accountId?.length ? key(accountId) : account;
+  // A refresh keeps this view mounted; a different resource starts a clean view.
+  return (
+    <UsageReportView
+      key={JSON.stringify([c.clientId, session, project, identity])}
+      {...props}
+    />
+  );
+}
+
+function UsageReportView({
+  c,
+  session = "",
+  project = "",
+  account = "",
+  accountId,
+  className,
+  refreshVersion = 0,
+  hideRefresh = false,
+  onLoadingChange,
+}: UsageReportProps) {
   const { locale } = useLocale();
   const [weeks, setWeeks] = useState<number>();
   const [selection, setSelection] = useState<{
@@ -96,7 +110,8 @@ export function UsageReport({
     [c, session, project, identity, weeks, stats.data],
     {
       enabled: !!weeks && !!stats.data && !stats.loading,
-      keepPreviousData: !!identity,
+      keepPreviousData: true,
+      refresh: refreshVersion,
       cache:
         weeks && stats.data
           ? {
