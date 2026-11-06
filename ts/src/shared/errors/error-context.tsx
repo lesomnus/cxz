@@ -7,26 +7,34 @@ import {
 import { isAPIError, type ClientErrors } from "./client-errors";
 
 const ErrorContext = createContext<ClientErrors | null>(null);
+const LocalErrorsContext = createContext(false);
 export const useErrorCenter = () => useContext(ErrorContext);
 /** Standalone components retain feedback when no central error UI is mounted. */
 export function ErrorCenterProvider({
   store,
+  localErrors = false,
   children,
 }: {
   store: ClientErrors;
+  localErrors?: boolean;
   children: ReactNode;
 }) {
   return (
-    <ErrorContext.Provider value={store}>{children}</ErrorContext.Provider>
+    <ErrorContext.Provider value={store}>
+      <LocalErrorsContext.Provider value={localErrors}>
+        {children}
+      </LocalErrorsContext.Provider>
+    </ErrorContext.Provider>
   );
 }
 const noSubscribe = () => () => {};
 export function useLocalError(error: unknown, api = false) {
   const errors = useContext(ErrorContext);
+  const localErrors = useContext(LocalErrorsContext);
   const hidden = useSyncExternalStore(
     errors?.subscribe ?? noSubscribe,
-    () => !!errors && (api || isAPIError(error, errors)),
-    () => !!errors && (api || isAPIError(error, errors)),
+    () => !localErrors && !!errors && (api || isAPIError(error, errors)),
+    () => !localErrors && !!errors && (api || isAPIError(error, errors)),
   );
   return !error || hidden ? "" : String(error);
 }
@@ -34,9 +42,12 @@ export function useLocalErrors<T extends { error: unknown }>(
   items: readonly T[],
 ) {
   const errors = useContext(ErrorContext);
+  const localErrors = useContext(LocalErrorsContext);
   const mask = () =>
     items
-      .map((item) => (errors && isAPIError(item.error, errors) ? "0" : "1"))
+      .map((item) =>
+        !localErrors && errors && isAPIError(item.error, errors) ? "0" : "1",
+      )
       .join("");
   const visible = useSyncExternalStore(
     errors?.subscribe ?? noSubscribe,

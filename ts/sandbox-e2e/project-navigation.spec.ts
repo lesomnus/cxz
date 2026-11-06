@@ -28,7 +28,9 @@ test("the viewed session carries its project into other pages and picks up later
   await expect(page).toHaveURL(/#\/c\/_\/project\/project-2$/);
   await visit(page, "Tasks");
   await expect(picker(page)).toHaveText("Secondary project");
-  await expect(page).toHaveURL(/#\/c\/_\/task\?project=project-2$/);
+  await expect(page).toHaveURL(
+    /#\/c\/_\/project\/project-2\/task\?assignee=session-8$/,
+  );
 
   await visit(page, "Accounts");
   await page.evaluate(() => (location.hash = "/setting/general"));
@@ -196,7 +198,7 @@ test("the project table scrolls inside its viewport on narrow screens", async ({
     390,
   );
   const viewport = page.locator(
-    "main > .panel-scroll-region > .panel-scroll-content",
+    'main [data-sliding-page="list"][data-active] > .panel-scroll-region > .panel-scroll-content',
   );
   expect(await viewport.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
     true,

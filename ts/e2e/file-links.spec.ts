@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expectAPIError } from "../test-support/client-errors";
 
 for (const width of [2000, 390]) {
   test(`response file links open in the workspace preview at ${width}px`, async ({
@@ -69,9 +70,7 @@ for (const width of [2000, 390]) {
     await page
       .getByRole("link", { name: "missing report", exact: true })
       .click();
-    await expect(editor.getByRole("alert")).toContainText(
-      "report does not exist",
-    );
+    await expectAPIError(page, "report does not exist");
     if (width < 1600)
       await editor
         .getByRole("button", { name: "Close file preview", exact: true })

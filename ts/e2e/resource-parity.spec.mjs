@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { pickSearchDate } from "../test-support/search-dates.ts";
 import { projectFixture } from "../test-support/projects.ts";
 import { expectChipDisplay } from "../test-support/chip-display.ts";
+import { expectAPIError } from "../test-support/client-errors.ts";
 test.use({
   viewport: { width: 1280, height: 900 },
   isMobile: false,
@@ -461,7 +462,7 @@ test("account registration, session creation and confirmed erasure use resource 
   await add
     .getByRole("textbox", { name: "Alias", exact: true })
     .fill("personal");
-  await add.getByRole("button", { name: "Add", exact: true }).click();
+  await add.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect
     .poll(() =>
       requests.some(
@@ -556,6 +557,17 @@ test("account registration, session creation and confirmed erasure use resource 
     .click();
   const create = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(create).toBeVisible();
+  await create.evaluate((node) =>
+    Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) =>
+            animation.effect?.getComputedTiming().endTime !== Infinity,
+        )
+        .map((animation) => animation.finished),
+    ),
+  );
   const box = await create.boundingBox();
   const viewport = page.viewportSize();
   expect(box.x + box.width / 2).toBeCloseTo(viewport.width / 2, 0);
@@ -588,11 +600,11 @@ test("account registration, session creation and confirmed erasure use resource 
     .getByRole("menuitem", { name: "Add session", exact: true })
     .click();
   await page.getByRole("combobox", { name: "Account", exact: true }).click();
-  await page.getByRole("option", { name: "Work account · codex" }).click();
+  await page.getByRole("option", { name: /Work account/ }).click();
   await page
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("New title");
-  await page.getByRole("button", { name: "Create session" }).click();
+  await create.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect
     .poll(() =>
       requests.some(
@@ -780,9 +792,7 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
   await editor.press("Control+a");
   await editor.fill("conflict");
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(page.locator('main p[role="alert"]')).toContainText(
-    "Document changed",
-  );
+  await expectAPIError(page, "Document changed");
   expect(
     requests.find((r) => r.path === "/cxz.MemoryService/Patch")?.q.baseRevision,
   ).toBe("1");
@@ -982,7 +992,11 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
     page.getByRole("option", { name: "Docs playground", exact: true }),
   ).toBeVisible();
   await search.fill("not-a-project");
-  await expect(page.getByRole("status")).toHaveText("No matches");
+  await expect(
+    page
+      .getByRole("listbox", { name: "Project choices", exact: true })
+      .getByRole("status"),
+  ).toHaveText("No matches");
   await search.press("Enter");
   await expect(search).toBeVisible();
   await search.fill("DOCS");
@@ -1179,9 +1193,7 @@ test("Memory refresh failures retain cached cards and allow a retry", async ({
   await page
     .getByRole("option", { name: "Research session", exact: true })
     .click();
-  await expect(memories.getByRole("alert")).toContainText(
-    "Refresh temporarily unavailable",
-  );
+  await expectAPIError(page, "Refresh temporarily unavailable");
   await expect(
     memories.getByRole("link", { name: "Research notes", exact: true }),
   ).toBeVisible();
@@ -1290,9 +1302,11 @@ for (const [name, path, message] of [
     page,
   }) => {
     await fixture(page, false, true, path);
-    await expect(page.getByRole("main").getByRole("alert")).toContainText(
-      message,
-    );
+    if (name === "invalid ID")
+      await expect(page.getByRole("main").getByRole("alert")).toContainText(
+        message,
+      );
+    else await expectAPIError(page, message);
     await expect(
       page.getByRole("heading", { name: "Shared notes", exact: true }),
     ).toHaveCount(0);

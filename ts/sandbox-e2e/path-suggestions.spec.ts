@@ -1,4 +1,5 @@
 import { expect, test, devices } from "@playwright/test";
+import { expectAPIError } from "../test-support/client-errors";
 import { readFile } from "node:fs/promises";
 
 test.use({
@@ -159,7 +160,7 @@ test("download completes its path and saves bytes without sending a prompt; fail
   await expect(input).toHaveValue("");
   await input.fill("/download /workspace/missing.txt");
   await input.press("Control+Enter");
-  await expect(page.getByRole("alert")).toContainText("sandbox file not found");
+  await expectAPIError(page, "sandbox file not found");
   await expect(input).toHaveValue("/download /workspace/missing.txt");
   await expect(input).not.toHaveAttribute("readonly");
 });

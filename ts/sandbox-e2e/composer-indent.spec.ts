@@ -87,7 +87,9 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await expect(input).toHaveValue("one\ntwo\nthree");
   await input.fill("keep draft");
   await input.press("Control+m");
-  await expect(page.getByRole("status")).toContainText("Move focus");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Move focus" }),
+  ).toBeVisible();
   await input.press("Tab");
   await expect(
     page.getByRole("combobox", { name: "Model", exact: true }),

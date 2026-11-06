@@ -47,8 +47,22 @@ type WorkspaceProps = {
   exitLabel?: string;
 } & PropsWithChildren;
 export function Workspace(props: WorkspaceProps) {
+  const route = useWorkspaceRoute();
+  const [compact, setCompact] = useState(
+    () => window.matchMedia("(max-width: 700px)").matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 700px)");
+    const update = () => setCompact(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
   return (
-    <ErrorCenterProvider store={props.connection.errors}>
+    <ErrorCenterProvider
+      store={props.connection.errors}
+      localErrors={compact && route.resource === "sessions" && !!route.session}
+    >
       <WorkspaceContent {...props} />
     </ErrorCenterProvider>
   );

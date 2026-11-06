@@ -1,4 +1,5 @@
 import { test, expect, devices, type Page } from "@playwright/test";
+import { expectAPIError } from "../test-support/client-errors";
 test.use({
   ...devices["Desktop Chrome"],
   viewport: { width: 1440, height: 900 },
@@ -59,13 +60,14 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     "Upload files",
     "Upload folder",
     "Details",
+    "Erase",
   ]);
   await expect(
     menu
       .getByRole("menuitem")
       .or(menu.getByRole("menuitemcheckbox"))
       .locator("svg"),
-  ).toHaveCount(7);
+  ).toHaveCount(8);
   await expect(menu.getByText("Information", { exact: true })).toHaveCount(0);
   await expect(
     menu.getByRole("menuitem", { name: "Copy session link" }),
@@ -105,6 +107,12 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
   );
   await page.screenshot({ path: "test-results/session-menu-desktop.png" });
   await page.getByRole("menuitem", { name: "Stop", exact: true }).press("End");
+  await expect(
+    page.getByRole("menuitem", { name: "Erase", exact: true }),
+  ).toBeFocused();
+  await page
+    .getByRole("menuitem", { name: "Erase", exact: true })
+    .press("ArrowUp");
   await expect(
     page.getByRole("menuitem", { name: "Details", exact: true }),
   ).toBeFocused();
@@ -305,12 +313,7 @@ test("Details edits title and alias while keeping conversation identity and upda
   await aliasEditor
     .getByRole("textbox", { name: "Alias", exact: true })
     .press("Enter");
-  await expect(aliasEditor.getByRole("alert")).toContainText(
-    "alias is already in use",
-  );
-  await page.screenshot({
-    path: "test-results/session-details-edit-error.png",
-  });
+  await expect(aliasEditor).not.toHaveAttribute("aria-busy", "true");
   await page.keyboard.press("Escape");
   await expect(aliasEditor).toHaveCount(0);
   await expect(details).toBeVisible();
@@ -320,6 +323,7 @@ test("Details edits title and alias while keeping conversation identity and upda
   await expect(details.getByRole("button", { name: "Edit Alias" })).toHaveText(
     "oak-tree",
   );
+  await expectAPIError(page, "alias is already in use");
   await page
     .getByRole("button", { name: "Close details", exact: true })
     .click();

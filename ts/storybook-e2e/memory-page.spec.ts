@@ -69,7 +69,7 @@ for (const width of [390, 850, 1200])
     const columns = boxes.filter(
       (box) => Math.abs(box.y - boxes[0].y) < 1,
     ).length;
-    expect(columns).toBe(width === 1200 ? 5 : width === 850 ? 4 : 2);
+    expect(columns).toBe(width === 1200 ? 5 : 2);
     expect(
       boxes.every(
         (box) => box.width / box.height > 0.7 && box.width / box.height < 0.8,

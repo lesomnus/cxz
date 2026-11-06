@@ -66,7 +66,7 @@ test("projects use the full workspace with a persistent project picker and scope
     .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
   const pageInset = await main
     .locator(
-      ":scope > .panel-scroll-region > .panel-scroll-content > .panel-scroll-inner",
+      '[data-sliding-page="detail"][data-active] > .panel-scroll-region > .panel-scroll-content > .panel-scroll-inner',
     )
     .evaluate((el) => parseFloat(getComputedStyle(el).paddingTop));
   const informationBounds = (await information.boundingBox())!;
@@ -166,7 +166,7 @@ test("project toolbar stays above the scrolling body on narrow screens", async (
   ).toHaveText("Design playground");
   const before = await header.boundingBox();
   const viewport = page.locator(
-    "main > .panel-scroll-region > .panel-scroll-content",
+    'main [data-sliding-page="detail"][data-active] > .panel-scroll-region > .panel-scroll-content',
   );
   await viewport.evaluate((el) => (el.scrollTop = el.scrollHeight));
   expect(await viewport.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);

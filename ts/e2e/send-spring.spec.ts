@@ -1,4 +1,5 @@
 import { test, expect, devices } from "@playwright/test";
+import { expectAPIError } from "../test-support/client-errors";
 test.use({
   ...devices["Desktop Chrome"],
   viewport: { width: 1440, height: 1000 },
@@ -39,9 +40,9 @@ test("pending input pulls down without fading and a failed send springs back wit
   await expect(mirror).toHaveCSS("opacity", "1");
   expect(await source.boundingBox()).toEqual(bounds);
   release();
-  await expect(page.getByRole("alert")).toContainText("Test send failure");
   await expect(page.locator(".composer-send-ghost")).toHaveCount(0);
   await expect(input).toHaveValue("Keep my failed draft");
   await expect(input).toBeEditable();
   await expect(source).not.toHaveAttribute("data-send-exiting", "true");
+  await expectAPIError(page, "Test send failure");
 });

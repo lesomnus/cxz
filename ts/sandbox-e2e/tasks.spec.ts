@@ -19,6 +19,10 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
   await expect(
     page.locator('header[aria-label="Task toolbar"] svg'),
   ).toHaveCount(3);
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "All sessions", exact: true }).click();
   await page.getByRole("button", { name: "Add task", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add task", exact: true });
   await add
@@ -27,7 +31,7 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
   await add
     .getByRole("textbox", { name: "Alias", exact: true })
     .fill("wasm-tasks");
-  await add.getByRole("button", { name: "Add", exact: true }).click();
+  await add.getByRole("button", { name: "Confirm", exact: true }).click();
   await page
     .getByRole("button", { name: "Open task: Verify WASM tasks", exact: true })
     .click();
@@ -90,6 +94,10 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(input).toBeVisible();
   await page.getByRole("link", { name: "Tasks", exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "All sessions", exact: true }).click();
   await expect(
     page.getByRole("button", {
       name: "Open task: WASM task verified",

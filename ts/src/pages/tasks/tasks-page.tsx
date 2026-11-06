@@ -26,10 +26,12 @@ export function TasksPage(props: {
   const stored = useResourceSelection(props.c);
   const project = tasks.project
     ? props.projects.find((p) => matchesResource(p, tasks.project!))
-    : (props.projects.find((p) => projectId(p) === stored.project) ??
-      (!tasks.task || props.projects.length === 1
+    : tasks.task
+      ? props.projects.length === 1
         ? props.projects[0]
-        : undefined));
+        : undefined
+      : (props.projects.find((p) => projectId(p) === stored.project) ??
+        props.projects[0]);
   const id = projectId(project);
   const selected = {
     ...tasks,
