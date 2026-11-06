@@ -162,6 +162,7 @@ function UsageReportView({
           <Button
             className={usageStyles.refresh}
             aria-label="Refresh"
+            minLoadingDuration={500}
             loading={stats.loading || history.loading}
             onClick={async () => {
               c.reads.invalidatePrefix(cachePrefix);
