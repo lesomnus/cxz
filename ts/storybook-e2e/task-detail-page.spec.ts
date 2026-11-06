@@ -75,6 +75,7 @@ for (const width of [1280, 390]) {
     await page.goto(story("long-task-details"));
     await expect(title(page)).toHaveValue("Connect the task table");
     const viewport = detail(page)
+      .getByLabel("Task metadata", { exact: true })
       .locator('[data-scroll-area="viewport"]')
       .first();
     const before = await viewport.evaluate((node) => ({
@@ -148,6 +149,50 @@ test("leaving a dirty task requires confirmation and discarded edits do not retu
     })
     .click();
   await expect(title(page)).toHaveValue("Connect the task table");
+});
+
+test("task details use resource panels with information and actions beside the larger content", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await page.goto(story());
+  await expect(title(page)).toHaveValue("Connect the task table");
+  const information = detail(page).getByRole("region", {
+    name: "Task information",
+    exact: true,
+  });
+  const actions = detail(page).getByRole("region", {
+    name: "Task actions",
+    exact: true,
+  });
+  const content = detail(page).getByRole("region", {
+    name: "Task title",
+    exact: true,
+  });
+  await expect(
+    information.getByRole("textbox", { name: "Alias", exact: true }),
+  ).toHaveValue("task-3");
+  await expect(
+    actions.getByRole("button", { name: "Save", exact: true }),
+  ).toBeVisible();
+  await expect(detail(page).locator(".floating-card")).toHaveCount(0);
+  const infoBounds = (await information.boundingBox())!;
+  const titleBounds = (await content.boundingBox())!;
+  const actionsBounds = (await actions.boundingBox())!;
+  expect(titleBounds.x).toBeGreaterThanOrEqual(infoBounds.x + infoBounds.width);
+  expect(actionsBounds.x).toBeCloseTo(infoBounds.x);
+  expect(actionsBounds.width).toBeCloseTo(infoBounds.width);
+  const fontSize = (node: import("@playwright/test").Locator) =>
+    node.evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
+  const titleSize = await fontSize(title(page));
+  const descriptionSize = await fontSize(
+    detail(page).getByRole("textbox", { name: "Description", exact: true }),
+  );
+  const aliasSize = await fontSize(
+    information.getByRole("textbox", { name: "Alias", exact: true }),
+  );
+  expect(titleSize).toBeGreaterThan(descriptionSize);
+  expect(descriptionSize).toBeGreaterThan(aliasSize);
 });
 
 test("saving keeps the detail page open and updates the alias route", async ({

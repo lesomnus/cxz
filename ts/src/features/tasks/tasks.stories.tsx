@@ -129,7 +129,7 @@ export const TaskDetails: Story = {
     docs: {
       description: {
         story:
-          "A dedicated task detail page with vertically sliding Nox pages. Previous and next task panels peek in from the viewport edges and can be clicked. Wheel or swipe on the page background moves one task per gesture, in table order with the active session/run filter. Scrolling inside the detail panel stays inside the task. Moving between tasks replaces the current history entry: Back returns to the page before entering details, and Forward restores the last viewed task. Unsaved edits require confirmation before navigation; Add remains a dialog. Alias/UUID deep links keep working.",
+          "A dedicated task detail page using the same Nox SectionGroup and Section surfaces as Projects and Accounts. Metadata and actions occupy the left column; a larger title and description occupy the right. Narrow screens stack the columns. Previous and next task panels peek in from the viewport edges and can be clicked. Wheel or swipe on the page background moves one task per gesture, in table order with the active session/run filter. The metadata scrolls independently and long details scroll within the task. Moving between tasks replaces the current history entry: Back returns to the page before entering details, and Forward restores the last viewed task. Unsaved edits require confirmation before navigation; Add remains a dialog. Alias/UUID deep links keep working.",
       },
     },
   },

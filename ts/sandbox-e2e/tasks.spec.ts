@@ -57,8 +57,8 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
   const title = (await detail
     .getByRole("textbox", { name: "Title", exact: true })
     .boundingBox())!;
-  expect(title.y).toBeGreaterThan(left.y + left.height);
-  expect(title.height).toBe(left.height);
+  expect(title.x).toBeGreaterThan(right.x + right.width);
+  expect(title.height).toBeGreaterThan(left.height);
   await detail.screenshot({ path: testInfo.outputPath("task-details.png") });
   for (const trigger of [priority, status]) {
     const anchor = (await trigger.locator(".meta-value").boundingBox())!;

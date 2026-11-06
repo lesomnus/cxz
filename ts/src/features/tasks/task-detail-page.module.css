@@ -2,7 +2,7 @@
   --task-page-duration: 380ms;
   --ui-sliding-pages-duration: var(--task-page-duration);
   --ui-sliding-pages-easing: cubic-bezier(0.65, 0, 0.35, 1);
-  --task-detail-width: 600px;
+  --task-detail-width: var(--resource-page-content-width);
   --task-neighbor-peek: calc(9 * var(--ui-space));
   --task-panel-gap: calc(3 * var(--ui-space));
   flex: 1;
@@ -39,8 +39,7 @@
   right: 0;
   height: calc(2 * var(--task-neighbor-peek));
   min-height: 0;
-  --ui-section-radius: var(--ui-dialog-radius);
-  padding: var(--ui-space) var(--ui-dialog-padding);
+  padding: var(--ui-space) var(--ui-section-padding);
   opacity: 0.55;
   transition:
     opacity 160ms ease,
