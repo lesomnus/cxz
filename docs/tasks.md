@@ -247,9 +247,11 @@ available width. Its right-aligned Break words
 toggle chooses between whole-word wrapping (including Korean words) and breaking
 inside words. Show control characters overlays spaces, tabs, newlines and other
 control markers without changing the text, selection or clipboard contents. Both
-view options survive saving and do not dirty the task. Task ID,
-assignment and creation source share one metadata row. Session and project links
-reuse the resource navigation buttons, including their upper-right arrow. The
+view options survive saving and do not dirty the task. Priority, Status and Task ID
+share the first row, followed by Alias. Project, assignment and creation source
+share one metadata row, with Created and Updated together at the bottom.
+Session and project links reuse the resource navigation buttons, including their
+upper-right arrow. The
 left group sizes to its contents, with an independent metadata scroll area when
 long content exceeds the available desktop height; narrow pages scroll the groups
 together.

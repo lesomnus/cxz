@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { ScrollArea, Section, SectionGroup } from "@lesomnus/nox";
-import { Id } from "@lesomnus/payday/pdid";
 import type { Task } from "#gen/cxz/task_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
@@ -85,12 +84,16 @@ export function TaskMetadata({
       <ResourceFields
         columns={3}
         rows={[
-          {
-            label: "Task ID",
-            value:
-              task.id.length === 16 ? new Id(task.id).toString() : undefined,
-            identifier: true,
-          },
+          [
+            "Project",
+            project ? (
+              <ResourceNavigationButton
+                {...projectLocation(resourceHandle(project))}
+                name={project.name || project.alias || resourceHandle(project)}
+                alias={project.alias}
+              />
+            ) : undefined,
+          ],
           [
             "Assigned to",
             owner ? (
@@ -123,20 +126,22 @@ export function TaskMetadata({
           ],
         ]}
       />
+      {(issue || Object.keys(task.labels).length > 0) && (
+        <ResourceFields
+          columns={2}
+          rows={[
+            ...(issue
+              ? [{ label: "Assignment", value: issue, fullWidth: true }]
+              : []),
+            ...Object.entries(task.labels).map(
+              ([label, value]) => [label, value] as const,
+            ),
+          ]}
+        />
+      )}
       <ResourceFields
         columns={2}
         rows={[
-          [
-            "Project",
-            project ? (
-              <ResourceNavigationButton
-                {...projectLocation(resourceHandle(project))}
-                name={project.name || project.alias || resourceHandle(project)}
-                alias={project.alias}
-              />
-            ) : undefined,
-          ],
-          ...(issue ? [["Assignment", issue] as const] : []),
           [
             "Created",
             <DateTime value={task.dateCreated} />,
@@ -149,9 +154,6 @@ export function TaskMetadata({
             undefined,
             <RelativeTime value={task.dateUpdated} />,
           ],
-          ...Object.entries(task.labels).map(
-            ([label, value]) => [label, value] as const,
-          ),
         ]}
       />
     </>

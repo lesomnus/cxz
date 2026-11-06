@@ -13,6 +13,8 @@ import {
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { Code, ConnectError } from "@connectrpc/connect";
+import { Id } from "@lesomnus/payday/pdid";
+import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Task } from "#gen/cxz/task_pb";
@@ -223,6 +225,21 @@ function TaskEditor({
       </div>
     </FormField>
   );
+  const taskIdField = task && (
+    <div className={detailStyles.taskId}>
+      <ResourceFields
+        columns={1}
+        rows={[
+          {
+            label: "Task ID",
+            value:
+              task.id.length === 16 ? new Id(task.id).toString() : undefined,
+            identifier: true,
+          },
+        ]}
+      />
+    </div>
+  );
   const titleField =
     presentation === "page" ? (
       <TaskTitleField
@@ -352,11 +369,13 @@ function TaskEditor({
               <Form
                 as="fieldset"
                 columns={2}
+                className={detailStyles.controls}
                 disabled={busy}
                 aria-label="Task fields"
               >
                 {priorityField}
                 {statusField}
+                {taskIdField}
                 {aliasField}
               </Form>
             }
@@ -397,11 +416,13 @@ function TaskEditor({
               <Form
                 as="fieldset"
                 columns={2}
+                className={task ? detailStyles.controls : undefined}
                 disabled={busy}
                 aria-label="Task fields"
               >
                 {priorityField}
                 {statusField}
+                {taskIdField}
                 {titleField}
                 {aliasField}
                 {descriptionField}

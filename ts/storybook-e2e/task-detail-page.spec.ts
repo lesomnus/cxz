@@ -39,7 +39,7 @@ test("title reserves two clamped lines and identity fields share one row with re
   });
   const fields = await information
     .locator("dl")
-    .first()
+    .nth(1)
     .locator(":scope > div")
     .evaluateAll((nodes) =>
       nodes.map((node) => ({
@@ -49,13 +49,41 @@ test("title reserves two clamped lines and identity fields share one row with re
       })),
     );
   expect(fields.map((field) => field.label)).toEqual([
-    "Task ID",
+    "Project",
     "Assigned to",
     "Created from",
   ]);
   expect(new Set(fields.map((field) => field.y)).size).toBe(1);
   expect(fields[1].x).toBeGreaterThan(fields[0].x);
   expect(fields[2].x).toBeGreaterThan(fields[1].x);
+  const controls = await information
+    .getByRole("group", { name: "Task fields", exact: true })
+    .locator(":scope > *")
+    .evaluateAll((nodes) =>
+      nodes.slice(0, 3).map((node) => ({
+        y: node.getBoundingClientRect().y,
+        x: node.getBoundingClientRect().x,
+        text: node.textContent,
+      })),
+    );
+  expect(controls[0].text).toContain("Priority");
+  expect(controls[1].text).toContain("Status");
+  expect(controls[2].text).toContain("Task ID");
+  expect(new Set(controls.map((control) => control.y)).size).toBe(1);
+  expect(controls[2].x).toBeGreaterThan(controls[1].x);
+  const dates = await information
+    .locator("dl")
+    .last()
+    .locator(":scope > div")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        label: node.querySelector("dt")!.textContent!,
+        y: node.getBoundingClientRect().y,
+      })),
+    );
+  expect(dates[0].label).toContain("Created");
+  expect(dates[1].label).toContain("Updated");
+  expect(dates[0].y).toBe(dates[1].y);
   const links = information.getByRole("link");
   await expect(links).toHaveCount(3);
   for (const link of await links.all())
@@ -64,7 +92,7 @@ test("title reserves two clamped lines and identity fields share one row with re
     await links.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute("href")),
     ),
-  ).toEqual(["/c/_/session/elm", "/c/_/session/oak", "/c/_/project/workspace"]);
+  ).toEqual(["/c/_/project/workspace", "/c/_/session/elm", "/c/_/session/oak"]);
   const sidebar = (await information.locator("..").boundingBox())!;
   const description = (await detail(page)
     .getByRole("region", { name: "Task description", exact: true })

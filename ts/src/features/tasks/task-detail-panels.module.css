@@ -85,6 +85,23 @@
   gap: var(--ui-space);
   min-height: 32px;
 }
+.controls {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.taskId {
+  min-width: 0;
+}
+.taskId > dl {
+  margin: 0;
+}
+.taskId > dl > div {
+  padding: 0 var(--ui-form-control-radius);
+  gap: var(--ui-space);
+}
+.taskId dd {
+  min-height: 32px;
+  align-items: center;
+}
 .description {
   font-size: 16px;
   line-height: 1.6;
