@@ -1,5 +1,5 @@
 .pages {
-  --ui-sliding-pages-duration: 1s;
+  --ui-sliding-pages-duration: 500ms;
   --ui-sliding-pages-easing: cubic-bezier(0.4, 0.85, 0, 0.95);
   flex: 1;
   min-height: 0;

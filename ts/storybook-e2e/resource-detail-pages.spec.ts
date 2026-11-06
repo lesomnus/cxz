@@ -75,7 +75,7 @@ for (const resource of resources) {
         .trim(),
     }));
     expect(policy).toEqual({
-      duration: "1s",
+      duration: "500ms",
       easing: "cubic-bezier(0.4, 0.85, 0, 0.95)",
     });
     const entering = await midpoint(root);
