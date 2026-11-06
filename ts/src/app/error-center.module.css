@@ -14,17 +14,16 @@
   width: 36px;
   height: 36px;
   box-sizing: border-box;
-  border: 1px solid var(--ui-shade-72);
+  border: 0;
   border-radius: 8px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  transition: background-color var(--ui-button-background-duration) ease-out;
 }
 .trigger[data-active] {
   color: #ff526d;
 }
-.trigger[data-active] .symbol {
-  border-color: currentColor;
-}
 .trigger:is(:hover, [aria-expanded="true"]) .symbol {
-  background: var(--ui-shade-24);
+  background: color-mix(in srgb, currentColor 18%, transparent);
 }
 .popup {
   position: fixed;
