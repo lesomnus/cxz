@@ -104,6 +104,7 @@ import { AuxiliaryControls } from "#src/features/auxiliary/auxiliary-controls.ts
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import { BackgroundReport } from "#src/features/activity/background-report.tsx";
 import { useSessionBackground } from "#src/features/session/model/use-session-background.ts";
+import { backgroundAvailable } from "#src/features/session/model/background-availability.ts";
 import { useVisibleApprovals } from "#src/features/session/model/use-visible-approvals.ts";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { LoginPanel } from "#src/features/accounts/login-panel.tsx";
@@ -165,10 +166,12 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const downloadRequest = useRef<AbortController | null>(null);
   useEffect(() => () => downloadRequest.current?.abort(), []);
   const visibleApprovals = useVisibleApprovals(pending);
+  const backgroundEnabled = backgroundAvailable(current.data, projects);
   const background = useSessionBackground(
     c,
     current.data?.id,
     turn.runId || current.data?.status?.runId || "",
+    backgroundEnabled,
   );
   const [error, setError] = useState("");
   const [draft, setDraft] = useState(c.drafts.get(id) ?? "");
@@ -824,6 +827,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             c={c}
             session={s?.id}
             run={turn.runId || s?.status?.runId || ""}
+            available={backgroundEnabled}
           />
         ),
       });

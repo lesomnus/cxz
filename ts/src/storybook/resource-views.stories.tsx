@@ -149,7 +149,12 @@ function ResourcePreview({
       ) : view === "usage" ? (
         <UsageReport c={c} />
       ) : view === "background" ? (
-        <BackgroundReport c={c} session={sessionFixtureId()} run="run" />
+        <BackgroundReport
+          c={c}
+          session={sessionFixtureId()}
+          run="run"
+          available
+        />
       ) : (
         <AuxiliarySettings c={c} />
       )}

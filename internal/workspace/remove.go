@@ -118,12 +118,6 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 	if err := removeProjectDocker(ctx, run, m.Owner, storage, m.Container); err != nil {
 		return err
 	}
-	m.historyMu.Lock()
-	if c := m.historyClients[id]; c != nil {
-		c.conn.Close()
-		delete(m.historyClients, id)
-	}
-	m.historyMu.Unlock()
 	// Serialize with cached stream writes and block late frames from recreating
 	// history or derived summaries after removal. These guards contain no content.
 	m.writeMu.Lock()

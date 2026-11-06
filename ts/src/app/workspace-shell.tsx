@@ -146,7 +146,11 @@ function WorkspaceContent({
     inventory.sessions,
     resource === "sessions" ? session : "",
   );
-  const background = useBackgroundSessions(c, inventory.sessions);
+  const background = useBackgroundSessions(
+    c,
+    inventory.sessions,
+    inventory.projects,
+  );
   const projects = inventory.projects;
   const memoryProject =
     projects.find(

@@ -14,19 +14,21 @@ export function useSessionBackground(
   c: Connection,
   session: Uint8Array | undefined,
   run: string,
+  enabled: boolean,
 ) {
   const uuid = sessionUUID(session);
-  const store = useMemo(() => new BackgroundJobs(run), [c, uuid, run]);
+  const store = useMemo(() => new BackgroundJobs(run), [c, uuid, run, enabled]);
   const latest = useRef(store);
   latest.current = store;
+  const available = useRef(enabled);
+  available.current = enabled;
   const snapshot = useSyncExternalStore(store.subscribe, store.snapshot);
   const refresh = useRef<() => void>(() => {});
-  const receive = useCallback(
-    (event: SessionEvent) => latest.current.receive(event),
-    [],
-  );
+  const receive = useCallback((event: SessionEvent) => {
+    if (available.current) latest.current.receive(event);
+  }, []);
   useEffect(() => {
-    if (!run || !uuid || !session) return;
+    if (!enabled || !run || !uuid || !session) return;
     let controller: AbortController | undefined;
     let disposed = false;
     const read = () => {
@@ -60,10 +62,12 @@ export function useSessionBackground(
       refresh.current = () => {};
       document.removeEventListener("visibilitychange", visible);
     };
-  }, [c, uuid, run, store]);
+  }, [c, uuid, run, store, enabled]);
   return {
-    count: snapshot.count,
+    count: enabled ? snapshot.count : undefined,
     receive,
-    refresh: useCallback(() => refresh.current(), []),
+    refresh: useCallback(() => {
+      if (available.current) refresh.current();
+    }, []),
   };
 }
