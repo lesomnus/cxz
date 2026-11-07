@@ -37,6 +37,12 @@ func TestTaskContract(t *testing.T) {
 		},
 	})
 }
+func TestTaskHistoryContract(t *testing.T) {
+	s := New(42, time.Millisecond)
+	defer s.Close()
+	actor := resource.TaskActor_builder{Session: resource.SessionRef_builder{RuntimeId: proto.String(s.sessions[0].value.GetRuntimeId())}.Build(), RunId: proto.String(s.sessions[0].value.GetStatus().GetRunId())}.Build()
+	taskapitest.RunHistory(t, taskConnection(t, s), taskapitest.Fixture{Project: resource.ProjectRef_builder{RuntimeId: proto.String("project-1")}.Build(), OtherProject: resource.ProjectRef_builder{RuntimeId: proto.String("project-2")}.Build(), Actors: []*resource.TaskActor{actor}})
+}
 
 func taskConnection(t *testing.T, s *Server) *grpc.ClientConn {
 	t.Helper()

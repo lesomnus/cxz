@@ -92,6 +92,27 @@ func taskConn(t *testing.T, stack resource.Server) *grpc.ClientConn {
 	return conn
 }
 
+func TestTaskHistoryContract(t *testing.T) {
+	f, stack, db := taskStack(t)
+	conn := taskConn(t, stack)
+	actor := resource.TaskActor_builder{Session: sessionRef(f.s.Id), RunId: &f.s.RunId}.Build()
+	taskapitest.RunHistory(t, conn, taskapitest.Fixture{Project: projectRef(f.p.Id), OtherProject: projectRef("other-project"), Actors: []*resource.TaskActor{actor}})
+	var before, after int
+	if err := db.QueryRowContext(t.Context(), "SELECT COUNT(*) FROM audit").Scan(&before); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := resource.NewTaskServiceClient(conn).List(t.Context(), resource.TaskListRequest_builder{Project: projectRef(f.p.Id)}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := resource.NewTaskServiceClient(conn).History(t.Context(), resource.TaskHistoryRequest_builder{Ref: resource.TaskRef_builder{Id: rows.GetItems()[0].GetId(), Project: projectRef(f.p.Id)}.Build()}.Build()); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.QueryRowContext(t.Context(), "SELECT COUNT(*) FROM audit").Scan(&after); err != nil || before != after {
+		t.Fatalf("history read wrote audit: %d -> %d: %v", before, after, err)
+	}
+}
+
 func TestTaskContract(t *testing.T) {
 	f, stack, _ := taskStack(t)
 	actors := make([]*resource.TaskActor, 0)
@@ -296,10 +317,22 @@ func TestTaskManagerForwardsWithoutShadowStorage(t *testing.T) {
 	if local != 0 || remote != 1 {
 		t.Fatalf("shadow task storage: manager=%d runtime=%d", local, remote)
 	}
+	history, err := client.History(ctx, resource.TaskHistoryRequest_builder{Ref: ref}.Build())
+	if err != nil || len(history.GetItems()) < 2 {
+		t.Fatalf("forwarded history: %v %v", history, err)
+	}
+	for _, row := range history.GetItems() {
+		if !bytes.Equal(row.GetObjectId(), v.GetId()) {
+			t.Fatal("history returned another task")
+		}
+	}
 	managerFixture.offline.Store(true)
 	_, err = client.List(ctx, resource.TaskListRequest_builder{Project: project}.Build())
 	if status.Code(err) != codes.Unavailable {
 		t.Fatalf("offline project fell back to manager: %v", err)
+	}
+	if _, err := client.History(ctx, resource.TaskHistoryRequest_builder{Ref: ref}.Build()); status.Code(err) != codes.Unavailable {
+		t.Fatalf("offline history fell back to manager: %v", err)
 	}
 }
 

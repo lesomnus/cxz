@@ -80,6 +80,27 @@ func (s Service) Get(ctx context.Context, r *resource.TaskGetRequest) (*resource
 	return s.TaskServiceServer.Get(ctx, request)
 }
 
+func (s Service) History(ctx context.Context, r *resource.TaskHistoryRequest) (*resource.AuditListResponse, error) {
+	task, err := s.read(ctx, r.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	if r.GetSize() < 0 {
+		return nil, invalid("history size must not be negative")
+	}
+	request := proto.Clone(r).(*resource.TaskHistoryRequest)
+	request.SetRef(resource.TaskRef_builder{Id: task.GetId(), Project: resource.ProjectRef_builder{Id: task.GetProject().GetId()}.Build()}.Build())
+	size := r.GetSize()
+	if size == 0 {
+		size = 20
+	}
+	if size > 100 {
+		size = 100
+	}
+	request.SetSize(size)
+	return s.TaskServiceServer.History(ctx, request)
+}
+
 func (s Service) Add(ctx context.Context, r *resource.TaskAddRequest) (*resource.Task, error) {
 	p, err := s.scope(ctx, r.GetProject())
 	if err != nil {

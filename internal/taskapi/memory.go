@@ -25,12 +25,13 @@ type Memory struct {
 	resource.UnimplementedTaskServiceServer
 	mu      sync.Mutex
 	rows    map[string]*resource.Task
+	trail   map[string][]*resource.Audit
 	actions map[string]string
 	changed chan struct{}
 }
 
 func NewMemory() *Memory {
-	return &Memory{rows: map[string]*resource.Task{}, actions: map[string]string{}, changed: make(chan struct{})}
+	return &Memory{rows: map[string]*resource.Task{}, trail: map[string][]*resource.Audit{}, actions: map[string]string{}, changed: make(chan struct{})}
 }
 func clone(v *resource.Task) *resource.Task { return proto.Clone(v).(*resource.Task) }
 func (m *Memory) notify()                   { close(m.changed); m.changed = make(chan struct{}) }
@@ -79,6 +80,7 @@ func (m *Memory) Add(ctx context.Context, r *resource.TaskAddRequest) (*resource
 	now := timestamppb.Now()
 	v := resource.Task_builder{Id: id, Alias: r.GetAlias(), ClientId: r.GetClientId(), Name: r.GetName(), Desc: r.GetDesc(), Project: resource.Project_builder{Id: r.GetProject().GetId()}.Build(), Status: r.GetStatus(), Priority: r.GetPriority(), Labels: r.GetLabels(), SourceSession: r.GetSourceSession(), SourceRun: r.GetSourceRun(), SourceSeq: r.GetSourceSeq(), DateCreated: now, DateUpdated: now}.Build()
 	m.rows[string(id)] = clone(v)
+	m.record(ctx, v, resource.TaskService_Add_FullMethodName, r)
 	m.actions[string(id)], _ = ctx.Value(actionKey{}).(string)
 	m.notify()
 	return clone(v), nil
@@ -157,6 +159,7 @@ func (m *Memory) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*reso
 		now = v.GetDateUpdated().AsTime().Add(time.Nanosecond)
 	}
 	v.SetDateUpdated(timestamppb.New(now))
+	m.record(ctx, v, resource.TaskService_Patch_FullMethodName, r)
 	m.actions[string(v.GetId())], _ = ctx.Value(actionKey{}).(string)
 	m.notify()
 	return clone(v), nil

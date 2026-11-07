@@ -3,6 +3,7 @@ package cxz;
 import "cxz/task.proto";
 import "cxz/project_svc.g.proto";
 import "cxz/session_svc.g.proto";
+import "cxz/payday/audit_svc.g.proto";
 import "google/protobuf/timestamp.proto";
 option go_package = "github.com/lesomnus/cxz/resource";
 
@@ -11,6 +12,8 @@ service TaskService {
   rpc Claim(TaskClaimRequest) returns (Task);
   // Explicitly return owned work to Todo, including after its session stopped.
   rpc Release(TaskClaimRequest) returns (Task);
+  // Newest-first committed changes from the authoritative project's audit trail.
+  rpc History(TaskHistoryRequest) returns (AuditListResponse);
 }
 
 // Scope is mandatory even when addressing an ID. It routes to the authoritative
@@ -30,4 +33,9 @@ message TaskClaimRequest {
   TaskRef ref = 1;
   TaskActor actor = 2;
   google.protobuf.Timestamp date_updated = 3;
+}
+message TaskHistoryRequest {
+  TaskRef ref = 1;
+  int32 size = 2;
+  string after = 3;
 }

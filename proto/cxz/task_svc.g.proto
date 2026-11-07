@@ -1,6 +1,7 @@
 edition = "2023";
 package cxz;
 
+import "cxz/payday/audit_svc.g.proto";
 import "cxz/project_svc.g.proto";
 import "cxz/session_svc.g.proto";
 import "cxz/task.proto";
@@ -38,6 +39,8 @@ service TaskService {
   rpc Claim(TaskClaimRequest) returns (Task);
   // Explicitly return owned work to Todo, including after its session stopped.
   rpc Release(TaskClaimRequest) returns (Task);
+  // Newest-first committed changes from the authoritative project's audit trail.
+  rpc History(TaskHistoryRequest) returns (AuditListResponse);
 }
 
 message TaskAddRequest {
@@ -232,4 +235,10 @@ message TaskClaimRequest {
   TaskRef ref = 1;
   TaskActor actor = 2;
   google.protobuf.Timestamp date_updated = 3;
+}
+
+message TaskHistoryRequest {
+  TaskRef ref = 1;
+  int32 size = 2;
+  string after = 3;
 }
