@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { Button, CardStack, CompactNumber } from "@lesomnus/nox";
 import type { SessionEvent } from "#gen/cxz/session_pb";
@@ -102,18 +103,7 @@ export function ApprovalControls({
           disabled={disabled}
           onClick={() => decide(false)}
         >
-          <svg
-            viewBox="0 0 16 16"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="m4 4 8 8M12 4l-8 8" />
-          </svg>
+          <Icon name="deny" width="14" height="14" aria-hidden="true" />
         </Button>
         <Button
           type="button"
@@ -124,19 +114,7 @@ export function ApprovalControls({
           disabled={disabled || unsupported}
           onClick={() => decide(true)}
         >
-          <svg
-            viewBox="0 0 16 16"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="m3 8 3.2 3.2L13 4.5" />
-          </svg>
+          <Icon name="allow" width="14" height="14" aria-hidden="true" />
         </Button>
       </div>
       <CardStack

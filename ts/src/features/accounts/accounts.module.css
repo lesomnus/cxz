@@ -1,63 +1,34 @@
-.page {
-  grid-column: 2 / -1;
-}
-.layout {
-  --account-column-width: 424px;
-  --section-layout-max-width: calc(
-    2 * var(--account-column-width) + var(--ui-section-group-gap)
-  );
-}
-.header {
-  display: flex;
-  justify-content: flex-end;
-}
-.add {
-  width: var(--toolbar-button-width);
-}
 .card {
-  container: account / inline-size;
   min-width: 0;
   scroll-margin-top: calc(3 * var(--space));
 }
 .details {
-  /* Preserve the loaded card's dimensions while data or text changes. */
-  --account-info-height: 163px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: stretch;
-  gap: var(--ui-section-group-gap);
-}
-.summaryColumn {
-  height: var(--resource-column-height);
-  grid-template-rows: var(--account-info-height) minmax(0, 1fr);
-}
-.usageColumn {
-  grid-template-rows: var(--resource-action-size) var(--resource-usage-height);
+  /* The account's fixed metadata height is content-specific; columns are shared. */
+  --resource-information-height: 163px;
 }
 .authenticationGroup {
-  --resource-action-radius: 16px;
   --ui-section-radius: var(--ui-section-inner-radius);
-  grid-template-columns: minmax(0, 1fr) 64px 64px 64px;
-  height: 64px;
+  grid-template-columns: minmax(0, 1fr) repeat(3, var(--resource-action-size));
+  height: var(--resource-action-size);
 }
 .quotaSquare.quotaSquare {
-  --ui-section-radius: var(--resource-action-radius, 16px);
+  --ui-section-radius: var(--resource-action-radius);
   --ui-section-inner-radius: var(--ui-section-radius);
   border-radius: var(--ui-section-radius);
 }
 .authenticationSection {
   container: account-auth / inline-size;
-  height: 64px;
+  height: var(--resource-action-size);
   min-height: 0;
   align-content: center;
 }
 .quotaSquare.quotaSquare {
   --quota-tint: #7c8b4f;
   --account-quota-inset: 2px;
-  width: 64px;
-  height: 64px;
+  width: var(--resource-action-size);
+  height: var(--resource-action-size);
   padding: var(--account-quota-inset);
-  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-columns: calc(var(--resource-action-size) / 2) minmax(0, 1fr);
   gap: 2px;
   align-items: center;
   overflow: hidden;
@@ -69,58 +40,10 @@
   --quota-tint: #b0485b;
 }
 .quotaGauge {
-  --account-quota-vessel-inset: 1px;
-  --account-quota-gauge-radius: calc(
-    var(--ui-section-radius) - var(--account-quota-inset)
-  );
-  position: relative;
-  display: grid;
-  width: 32px;
-  height: 60px;
-  place-items: center;
-  border-radius: var(--account-quota-gauge-radius);
-  overflow: hidden;
-  isolation: isolate;
-  background: color-mix(
-    in srgb,
-    var(--ui-section-background),
-    var(--quota-tint) 16%
-  );
-}
-.quotaSquare[data-quota-level="unknown"] .quotaGauge {
-  background: color-mix(
-    in srgb,
-    var(--ui-section-background),
-    var(--quota-tint) 4%
-  );
-}
-.quotaVessel {
-  --account-quota-inner-radius: max(
-    0px,
-    calc(var(--account-quota-gauge-radius) - var(--account-quota-vessel-inset))
-  );
-  position: absolute;
-  inset: var(--account-quota-vessel-inset);
-  border-radius: var(--account-quota-inner-radius);
-  overflow: hidden;
-}
-.quotaEmpty {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  fill: var(--ui-section-background);
-}
-.quotaEmpty path {
-  transition: d var(--account-quota-motion-duration, 300ms) ease;
-}
-.quotaValue {
-  position: relative;
-  display: inline-flex;
-  align-items: baseline;
-  color: var(--shade-170);
-  font: 12px/1 var(--ui-font-mono);
-  font-variant-numeric: tabular-nums;
+  --ui-liquid-height: var(--resource-action-size);
+  --ui-liquid-outer-inset: var(--account-quota-inset);
+  --ui-liquid-tint: var(--quota-tint);
+  --ui-liquid-background: var(--ui-section-background);
 }
 .quotaUnit {
   color: var(--muted);
@@ -135,18 +58,9 @@
   width: 3ch;
   gap: 3px;
 }
-@media (prefers-reduced-motion: reduce) {
-  .quotaEmpty path {
-    transition: none;
-  }
-}
-.informationDetails,
-.usageSection {
+.informationDetails {
   align-content: start;
   min-height: 0;
-}
-.usageSection {
-  height: 100%;
 }
 .informationDetails dl > div {
   height: 41px;
@@ -176,28 +90,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.sessionsColumn.sessionsColumn {
-  display: flex;
-  flex-direction: column;
-  padding-top: var(--ui-section-group-gap);
-  padding-inline: 0;
-  overflow: visible;
-  min-height: 0;
-  height: 100%;
-}
-@container account (min-width: 700px) {
-  .details {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .details .summaryColumn > [data-section-layout="section"] {
-    border-start-end-radius: var(--ui-section-inner-radius);
-    border-end-end-radius: var(--ui-section-inner-radius);
-  }
-  .details .usageColumn > [data-section-layout="section"] {
-    border-start-start-radius: var(--ui-section-inner-radius);
-    border-end-start-radius: var(--ui-section-inner-radius);
-  }
 }
 .agent {
   display: flex;

@@ -7,9 +7,11 @@ import { AccountService } from "#gen/cxz/account_svc_pb";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
+import type { ErrorContext } from "#src/shared/errors/client-errors.ts";
 import { ClientErrors } from "#src/shared/errors/client-errors.ts";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { createWorkspaceRouter } from "./router";
+import { ErrorsPage } from "#src/pages/errors/errors-page.tsx";
+import { useWorkspaceRoute, createWorkspaceRouter } from "./router";
 import { Workspace } from "./workspace-shell";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
 
@@ -167,7 +169,13 @@ function Controls({ fixture: f }: { fixture: ReturnType<typeof makeFixture> }) {
     </main>
   );
 }
-function Preview() {
+function Preview({
+  page = false,
+  overview = false,
+}: {
+  page?: boolean;
+  overview?: boolean;
+}) {
   const [fixture] = useState(makeFixture);
   const [router] = useState(() =>
     createWorkspaceRouter(
@@ -182,12 +190,166 @@ function Preview() {
             {children}
           </Workspace>
         ),
-        view: () => <Controls fixture={fixture} />,
+        view: () =>
+          useWorkspaceRoute().resource === "errors" ? (
+            <ErrorsPage store={fixture.errors} />
+          ) : (
+            <Controls fixture={fixture} />
+          ),
       },
-      createMemoryHistory({ initialEntries: ["/c/_/account"] }),
+      createMemoryHistory({
+        initialEntries: [page ? "/c/_/errors" : "/c/_/account"],
+      }),
     ),
   );
   useEffect(() => {
+    if (!fixture.errors.snapshot().length) {
+      if (overview) {
+        const examples = [
+          [
+            "The project container is unavailable. Start the container to reconnect its sessions.",
+            "Project runtime",
+            "Project: Web workspace",
+          ],
+          [
+            "Conversation stream disconnected while waiting for the next response.",
+            "cxz.SessionService/Events",
+            "Session: seal",
+          ],
+          [
+            "Account service is offline",
+            "cxz.AccountService/Get",
+            "Account: work",
+          ],
+          [
+            "File upload failed before the server confirmed receipt.",
+            "Upload",
+            "Project: API workspace",
+          ],
+          [
+            "Memory revision changed. Read the current revision before saving the document.",
+            "cxz.MemoryService/Patch",
+            "Memory: Architecture decisions",
+          ],
+          [
+            "A background operation failed before completion.",
+            "Background refresh",
+            "",
+          ],
+          [
+            "Provider login was interrupted",
+            "Provider login",
+            "Account: personal",
+          ],
+          [
+            "Project status could not be refreshed",
+            "cxz.ProjectService/Get",
+            "Project: API workspace",
+          ],
+          [
+            "Editor preview could not be rendered",
+            "Markdown preview",
+            "Session: review",
+          ],
+        ];
+        const contexts: ErrorContext[] = [
+          {
+            source: "resource",
+            origin: { kind: "runtime", operation: "project-status" },
+            subject: { kind: "project", name: "Web workspace" },
+          },
+          {
+            source: "rpc",
+            origin: {
+              kind: "rpc",
+              service: "cxz.SessionService",
+              method: "Events",
+            },
+            subject: {
+              kind: "session",
+              name: "Release review",
+              alias: "seal",
+              runtimeId: "89502035e952a2c227802d29",
+            },
+          },
+          {
+            source: "rpc",
+            origin: {
+              kind: "rpc",
+              service: "cxz.AccountService",
+              method: "Get",
+            },
+            subject: { kind: "account", alias: "work" },
+          },
+          {
+            source: "http",
+            origin: {
+              kind: "http",
+              method: "POST",
+              path: "/upload",
+              status: 503,
+            },
+            subject: { kind: "file", name: "design.png" },
+          },
+          {
+            source: "rpc",
+            origin: {
+              kind: "rpc",
+              service: "cxz.MemoryService",
+              method: "Patch",
+            },
+            subject: { kind: "memory", name: "Architecture decisions" },
+          },
+          {
+            source: "client",
+            origin: { kind: "client", operation: "unhandled-rejection" },
+          },
+          {
+            source: "http",
+            origin: {
+              kind: "connection",
+              purpose: "provider-login",
+              transport: "websocket",
+              closeCode: 1006,
+            },
+            subject: { kind: "account", alias: "personal" },
+          },
+          {
+            source: "rpc",
+            origin: {
+              kind: "rpc",
+              service: "cxz.ProjectService",
+              method: "Get",
+            },
+            subject: { kind: "project", name: "API workspace" },
+          },
+          {
+            source: "client",
+            origin: { kind: "client", operation: "exception" },
+          },
+        ];
+        examples.forEach(([message, method, target], index) => {
+          const context = {
+            ...contexts[index],
+            method,
+            target,
+            connection: "https://workspace.example.com",
+            code: index === 4 ? "Aborted" : "Unavailable",
+            request: crypto.randomUUID(),
+          };
+          const id = fixture.errors.report(
+            `overview-${index}`,
+            message,
+            context,
+          );
+          if (index === 0)
+            fixture.errors.report(`overview-${index}`, message, context);
+          if (index === 6 || index === 7)
+            fixture.errors.resolve(`overview-${index}`);
+          if (index === 8 && id) fixture.errors.dismiss(id);
+        });
+      } else if (page) void fixture.request("fail").catch(() => {});
+    }
     window.addEventListener("pagehide", fixture.errors.flush);
     return () => {
       window.removeEventListener("pagehide", fixture.errors.flush);
@@ -204,3 +366,9 @@ const meta = {
 } satisfies Meta<typeof Preview>;
 export default meta;
 export const Recovery: StoryObj<typeof meta> = {};
+
+export const Page: StoryObj<typeof meta> = { args: { page: true } };
+
+export const Overview: StoryObj<typeof meta> = {
+  args: { page: true, overview: true },
+};

@@ -77,7 +77,7 @@ test("working sessions retain distinct seeded phases and colors after remount an
           duration: Number(
             dot.getAnimations()[0]?.effect?.getComputedTiming().duration,
           ),
-          color: dot.style.getPropertyValue("--session-dot-highlight"),
+          color: dot.style.getPropertyValue("--ui-activity-dot-highlight"),
         })),
       ),
     );

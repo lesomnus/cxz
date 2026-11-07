@@ -71,9 +71,16 @@ export function LoginPanel({
       url.searchParams.set("project", target.project);
       url.searchParams.set("key", target.key!);
     }
-    const failed = (message: string) => {
+    const failed = (message: string, closeCode?: number) => {
       c.errors.report(failureKey, new Error(message), {
         source: "http",
+        origin: {
+          kind: "connection",
+          purpose: "provider-login",
+          transport: "websocket",
+          closeCode,
+        },
+        subject: { kind: "account", alias: target.account },
         connection: c.baseUrl,
         method: "Provider login",
         project: target.project,
@@ -125,9 +132,10 @@ export function LoginPanel({
       setReady(false);
       failed("Login connection failed.");
     };
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       setReady(false);
-      if (!ended) failed("Login connection closed before completion.");
+      if (!ended)
+        failed("Login connection closed before completion.", event.code);
     };
     const stop = () => {
       ended = true;

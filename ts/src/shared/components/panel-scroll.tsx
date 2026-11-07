@@ -9,15 +9,23 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 export function PanelScroll({
   className = "",
   classNames,
+  contentClassName = "",
   scrollbarLabel,
   viewportRef: suppliedViewport,
   unreadSelector,
+  "data-unread-selector": forwardedUnreadSelector,
   ...props
-}: ComponentProps<typeof ScrollArea> & { unreadSelector?: string }) {
+}: ComponentProps<typeof ScrollArea> & {
+  unreadSelector?: string;
+  "data-unread-selector"?: string;
+}) {
   useLocale();
   const localViewport = useRef<HTMLDivElement>(null);
   const viewport = suppliedViewport ?? localViewport;
-  const hidden = useHiddenItems(viewport, unreadSelector);
+  const hidden = useHiddenItems(
+    viewport,
+    unreadSelector ?? forwardedUnreadSelector,
+  );
   return (
     <ScrollArea
       {...props}
@@ -28,7 +36,7 @@ export function PanelScroll({
       className={`panel-scroll-region ${styles.area} ${className}`}
       classNames={{
         viewport: "panel-scroll-content",
-        content: "panel-scroll-inner",
+        content: `panel-scroll-inner ${contentClassName}`,
         rail: "panel-scroll-rail",
         thumb: "panel-scroll-thumb",
         handle: "panel-scroll-handle",

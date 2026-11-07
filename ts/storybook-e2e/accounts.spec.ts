@@ -219,9 +219,9 @@ for (const width of [1280, 390]) {
       "aria-valuenow",
       "64",
     );
-    const empty = gauge.locator("[data-quota-vessel]");
-    const cap = empty.locator("[data-quota-empty]");
-    const contour = cap.locator("[data-quota-contour]");
+    const empty = gauge.locator("[data-liquid-vessel]");
+    const cap = empty.locator("[data-liquid-empty]");
+    const contour = cap.locator("[data-liquid-contour]");
     await expect
       .poll(() =>
         contour.evaluate((node) => (node as SVGPathElement).getBBox().height),
@@ -278,7 +278,15 @@ for (const width of [1280, 390]) {
         informationBounds.x + informationBounds.width,
       );
       expect(usageBounds.width).toBeCloseTo(informationBounds.width, 0);
-      expect(informationBounds.width).toBe(424);
+      expect(informationBounds.width).toBe(
+        await work.evaluate((node) =>
+          parseFloat(
+            getComputedStyle(node).getPropertyValue(
+              "--resource-page-column-width",
+            ),
+          ),
+        ),
+      );
       expect(sessionsBounds.y + sessionsBounds.height).toBeCloseTo(
         informationBounds.y + informationBounds.height,
         0,
@@ -421,13 +429,17 @@ for (const width of [1280, 390]) {
     }
     const main = (await page.getByRole("main").boundingBox())!;
     const card = (await work.boundingBox())!;
-    const add = (await page
+    const toolbar = page.getByLabel("Account toolbar", { exact: true });
+    const toolbarBox = (await toolbar.boundingBox())!;
+    const add = (await toolbar
       .getByRole("button", { name: "Add account", exact: true })
       .boundingBox())!;
     expect(
       Math.abs(card.x + card.width / 2 - main.x - main.width / 2),
     ).toBeLessThan(1);
-    expect(add.x + add.width).toBeCloseTo(card.x + card.width, 0);
+    expect(
+      Math.abs(add.y + add.height / 2 - toolbarBox.y - toolbarBox.height / 2),
+    ).toBeLessThan(1);
     expect(add.y + add.height).toBeLessThan(card.y);
     expect(
       await page.evaluate(
@@ -440,7 +452,7 @@ for (const width of [1280, 390]) {
   });
 }
 
-test("account sessions use compact read-only identities and keep selection scoped to the account", async ({
+test("account sessions use overview read-only identities and keep selection scoped to the account", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -452,15 +464,17 @@ test("account sessions use compact read-only identities and keep selection scope
   await expect(rows).toHaveCount(2);
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
+    "",
     "Name",
     "Project",
-    "",
     "",
   ]);
   await expect(
     table.getByRole("columnheader", { name: "Account", exact: true }),
   ).toHaveCount(0);
-  await expect(table.locator(".agent-brand")).toHaveCount(0);
+  await expect(
+    table.locator("[data-session-navigation] .agent-brand"),
+  ).toHaveCount(2);
   await expect(table.locator(".editable-value-trigger, fieldset")).toHaveCount(
     0,
   );

@@ -11,6 +11,10 @@ import { BackgroundReport } from "#src/features/activity/background-report.tsx";
 import type { BackgroundTask } from "#src/features/activity/background-tasks.ts";
 import { useSessionBackground } from "#src/features/session/model/use-session-background.ts";
 import { storyEvent, sessionFixtureId } from "#src/storybook/fixtures.ts";
+import { create } from "@bufbuild/protobuf";
+import { ContainerState, ProjectSchema } from "#gen/cxz/project_pb";
+import { SessionSchema } from "#gen/cxz/session_pb";
+import { WorkspaceContext } from "#src/app/workspace-context.tsx";
 
 const meta = {
   title: "Conversation/BackgroundJobs",
@@ -121,6 +125,7 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
           c={fixture.c}
           session={sessionFixtureId()}
           run="preview"
+          available
         />
       }
     />
@@ -157,6 +162,13 @@ export const EmptyJobList: Story = {
 
 function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
   const [requests, setRequests] = useState(0);
+  const [session] = useState(() =>
+    create(SessionSchema, {
+      id: sessionFixtureId(),
+      project: { id: sessionFixtureId() },
+      status: { state: "idle", runId: "preview" },
+    }),
+  );
   const connection = useMemo(
     () =>
       ({
@@ -178,7 +190,13 @@ function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
       }) as unknown as Connection,
     [],
   );
-  const jobs = useSessionBackground(connection, sessionFixtureId(), "preview");
+  const [enabled, setEnabled] = useState(true);
+  const jobs = useSessionBackground(
+    connection,
+    sessionFixtureId(),
+    "preview",
+    enabled,
+  );
   const sequence = useRef(0);
   const active = useRef<string[]>([]);
   const emit = (data: Record<string, unknown>) => {
@@ -198,11 +216,33 @@ function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
       tasks: active.current.map((task_id) => ({ task_id })),
     });
   return (
-    <>
+    <WorkspaceContext.Provider
+      value={{
+        c: connection,
+        sessions: [session],
+        projects: [
+          create(ProjectSchema, {
+            id: session.project!.id,
+            status: {
+              containerState: enabled
+                ? ContainerState.RUNNING
+                : ContainerState.ABSENT,
+            },
+          }),
+        ],
+        projectsLoading: false,
+        settingsFileOpen: false,
+        setSettingsFileOpen: () => {},
+      }}
+    >
       <div
         data-background-requests={requests}
         style={{ display: "flex", gap: 4 }}
       >
+        <Button onClick={() => setEnabled(!enabled)}>
+          {enabled ? "Stop project" : "Start project"}
+        </Button>
+        <Button onClick={jobs.refresh}>Refresh snapshot</Button>
         <Button
           onClick={() => {
             const id = `task-${sequence.current + 1}`;
@@ -246,8 +286,18 @@ function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
           </>
         )}
       </div>
-      <ComponentPreview backgroundJobs={jobs.count} />
-    </>
+      <ComponentPreview
+        backgroundJobs={jobs.count}
+        backgroundReport={
+          <BackgroundReport
+            c={connection}
+            session={session.id}
+            run="preview"
+            available
+          />
+        }
+      />
+    </WorkspaceContext.Provider>
   );
 }
 

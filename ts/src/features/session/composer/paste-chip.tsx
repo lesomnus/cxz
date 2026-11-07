@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Icon, iconMask } from "#src/shared/icons/icon.tsx";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { useLocalError } from "#src/shared/errors/error-context.tsx";
 import { currentLocale, t } from "#src/shared/i18n/i18n.ts";
 import {
@@ -16,6 +24,10 @@ import {
 import styles from "./paste-chip.module.css";
 import { presentPaste, type PastePresentation } from "./paste-presentation";
 import { pasteExcerpt } from "./paste-chip-layout";
+
+const imageIconStyle = {
+  "--paste-chip-image-icon": iconMask("image"),
+} as CSSProperties;
 
 export function PasteChip({
   paste,
@@ -93,6 +105,7 @@ export function PasteChip({
       <FileChip
         ref={setAnchor}
         className={`paste-chip ${styles.chip}`}
+        style={imagePaste ? imageIconStyle : undefined}
         pixelLayout
         leading={
           textPaste ? (
@@ -236,37 +249,8 @@ export function PasteChip({
 }
 
 function TextModeIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 8V5h16v3M12 5v14M8 19h8" />
-    </svg>
-  );
+  return <Icon name="paste-text" width="12" height="12" aria-hidden="true" />;
 }
 function FileModeIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z" />
-      <path d="M14 3v6h6" />
-    </svg>
-  );
+  return <Icon name="paste-file" width="12" height="12" aria-hidden="true" />;
 }

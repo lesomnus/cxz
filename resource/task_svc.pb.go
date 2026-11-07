@@ -2671,11 +2671,144 @@ func (b0 TaskClaimRequest_builder) Build() *TaskClaimRequest {
 	return m0
 }
 
+type TaskHistoryRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *TaskRef               `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Size        int32                  `protobuf:"varint,2,opt,name=size"`
+	xxx_hidden_After       *string                `protobuf:"bytes,3,opt,name=after"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *TaskHistoryRequest) Reset() {
+	*x = TaskHistoryRequest{}
+	mi := &file_cxz_task_svc_g_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskHistoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskHistoryRequest) ProtoMessage() {}
+
+func (x *TaskHistoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_task_svc_g_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *TaskHistoryRequest) GetRef() *TaskRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *TaskHistoryRequest) GetSize() int32 {
+	if x != nil {
+		return x.xxx_hidden_Size
+	}
+	return 0
+}
+
+func (x *TaskHistoryRequest) GetAfter() string {
+	if x != nil {
+		if x.xxx_hidden_After != nil {
+			return *x.xxx_hidden_After
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *TaskHistoryRequest) SetRef(v *TaskRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *TaskHistoryRequest) SetSize(v int32) {
+	x.xxx_hidden_Size = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+}
+
+func (x *TaskHistoryRequest) SetAfter(v string) {
+	x.xxx_hidden_After = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *TaskHistoryRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *TaskHistoryRequest) HasSize() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *TaskHistoryRequest) HasAfter() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *TaskHistoryRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *TaskHistoryRequest) ClearSize() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Size = 0
+}
+
+func (x *TaskHistoryRequest) ClearAfter() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_After = nil
+}
+
+type TaskHistoryRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref   *TaskRef
+	Size  *int32
+	After *string
+}
+
+func (b0 TaskHistoryRequest_builder) Build() *TaskHistoryRequest {
+	m0 := &TaskHistoryRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	if b.Size != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		x.xxx_hidden_Size = *b.Size
+	}
+	if b.After != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_After = b.After
+	}
+	return m0
+}
+
 var File_cxz_task_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_task_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14cxz/task_svc.g.proto\x12\x03cxz\x1a\x17cxz/project_svc.g.proto\x1a\x17cxz/session_svc.g.proto\x1a\x0ecxz/task.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\x8f\x05\n" +
+	"\x14cxz/task_svc.g.proto\x12\x03cxz\x1a\x1ccxz/payday/audit_svc.g.proto\x1a\x17cxz/project_svc.g.proto\x1a\x17cxz/session_svc.g.proto\x1a\x0ecxz/task.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\x8f\x05\n" +
 	"\x0eTaskAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -2783,7 +2916,11 @@ const file_cxz_task_svc_g_proto_rawDesc = "" +
 	"\x10TaskClaimRequest\x12\x1e\n" +
 	"\x03ref\x18\x01 \x01(\v2\f.cxz.TaskRefR\x03ref\x12$\n" +
 	"\x05actor\x18\x02 \x01(\v2\x0e.cxz.TaskActorR\x05actor\x12=\n" +
-	"\fdate_updated\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated2\xa7\x03\n" +
+	"\fdate_updated\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\"^\n" +
+	"\x12TaskHistoryRequest\x12\x1e\n" +
+	"\x03ref\x18\x01 \x01(\v2\f.cxz.TaskRefR\x03ref\x12\x12\n" +
+	"\x04size\x18\x02 \x01(\x05R\x04size\x12\x14\n" +
+	"\x05after\x18\x03 \x01(\tR\x05after2\xe3\x03\n" +
 	"\vTaskService\x12%\n" +
 	"\x03Add\x12\x13.cxz.TaskAddRequest\x1a\t.cxz.Task\x12%\n" +
 	"\x03Get\x12\x13.cxz.TaskGetRequest\x1a\t.cxz.Task\x12)\n" +
@@ -2793,9 +2930,10 @@ const file_cxz_task_svc_g_proto_rawDesc = "" +
 	"\x04List\x12\x14.cxz.TaskListRequest\x1a\x15.cxz.TaskListResponse\x128\n" +
 	"\x05Watch\x12\x15.cxz.TaskWatchRequest\x1a\x16.cxz.TaskWatchResponse0\x01\x12)\n" +
 	"\x05Claim\x12\x15.cxz.TaskClaimRequest\x1a\t.cxz.Task\x12+\n" +
-	"\aRelease\x12\x15.cxz.TaskClaimRequest\x1a\t.cxz.TaskB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"\aRelease\x12\x15.cxz.TaskClaimRequest\x1a\t.cxz.Task\x12:\n" +
+	"\aHistory\x12\x17.cxz.TaskHistoryRequest\x1a\x16.cxz.AuditListResponseB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_task_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_cxz_task_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_cxz_task_svc_g_proto_goTypes = []any{
 	(*TaskAddRequest)(nil),        // 0: cxz.TaskAddRequest
 	(*TaskGetRequest)(nil),        // 1: cxz.TaskGetRequest
@@ -2812,68 +2950,73 @@ var file_cxz_task_svc_g_proto_goTypes = []any{
 	(*TaskWatchResponse)(nil),     // 12: cxz.TaskWatchResponse
 	(*TaskWatchItem)(nil),         // 13: cxz.TaskWatchItem
 	(*TaskClaimRequest)(nil),      // 14: cxz.TaskClaimRequest
-	nil,                           // 15: cxz.TaskAddRequest.LabelsEntry
-	nil,                           // 16: cxz.TaskPatchRequest.LabelsEntry
-	(*timestamppb.Timestamp)(nil), // 17: google.protobuf.Timestamp
-	(*ProjectRef)(nil),            // 18: cxz.ProjectRef
-	(TaskStatus)(0),               // 19: cxz.TaskStatus
-	(*ProjectSelect)(nil),         // 20: cxz.ProjectSelect
-	(*SessionRef)(nil),            // 21: cxz.SessionRef
-	(*patchpb.Patch)(nil),         // 22: patch.Patch
-	(*Task)(nil),                  // 23: cxz.Task
+	(*TaskHistoryRequest)(nil),    // 15: cxz.TaskHistoryRequest
+	nil,                           // 16: cxz.TaskAddRequest.LabelsEntry
+	nil,                           // 17: cxz.TaskPatchRequest.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
+	(*ProjectRef)(nil),            // 19: cxz.ProjectRef
+	(TaskStatus)(0),               // 20: cxz.TaskStatus
+	(*ProjectSelect)(nil),         // 21: cxz.ProjectSelect
+	(*SessionRef)(nil),            // 22: cxz.SessionRef
+	(*patchpb.Patch)(nil),         // 23: patch.Patch
+	(*Task)(nil),                  // 24: cxz.Task
+	(*AuditListResponse)(nil),     // 25: cxz.AuditListResponse
 }
 var file_cxz_task_svc_g_proto_depIdxs = []int32{
-	15, // 0: cxz.TaskAddRequest.labels:type_name -> cxz.TaskAddRequest.LabelsEntry
-	17, // 1: cxz.TaskAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	18, // 2: cxz.TaskAddRequest.project:type_name -> cxz.ProjectRef
-	19, // 3: cxz.TaskAddRequest.status:type_name -> cxz.TaskStatus
+	16, // 0: cxz.TaskAddRequest.labels:type_name -> cxz.TaskAddRequest.LabelsEntry
+	18, // 1: cxz.TaskAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	19, // 2: cxz.TaskAddRequest.project:type_name -> cxz.ProjectRef
+	20, // 3: cxz.TaskAddRequest.status:type_name -> cxz.TaskStatus
 	2,  // 4: cxz.TaskGetRequest.ref:type_name -> cxz.TaskRef
 	3,  // 5: cxz.TaskGetRequest.select:type_name -> cxz.TaskSelect
-	18, // 6: cxz.TaskRef.project:type_name -> cxz.ProjectRef
-	20, // 7: cxz.TaskSelect.project:type_name -> cxz.ProjectSelect
+	19, // 6: cxz.TaskRef.project:type_name -> cxz.ProjectRef
+	21, // 7: cxz.TaskSelect.project:type_name -> cxz.ProjectSelect
 	2,  // 8: cxz.TaskPatchRequest.ref:type_name -> cxz.TaskRef
-	16, // 9: cxz.TaskPatchRequest.labels:type_name -> cxz.TaskPatchRequest.LabelsEntry
-	17, // 10: cxz.TaskPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	19, // 11: cxz.TaskPatchRequest.status:type_name -> cxz.TaskStatus
+	17, // 9: cxz.TaskPatchRequest.labels:type_name -> cxz.TaskPatchRequest.LabelsEntry
+	18, // 10: cxz.TaskPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	20, // 11: cxz.TaskPatchRequest.status:type_name -> cxz.TaskStatus
 	5,  // 12: cxz.TaskPatchRequest.actor:type_name -> cxz.TaskActor
-	21, // 13: cxz.TaskActor.session:type_name -> cxz.SessionRef
+	22, // 13: cxz.TaskActor.session:type_name -> cxz.SessionRef
 	2,  // 14: cxz.TaskApplyRequest.ref:type_name -> cxz.TaskRef
-	22, // 15: cxz.TaskApplyRequest.patch:type_name -> patch.Patch
+	23, // 15: cxz.TaskApplyRequest.patch:type_name -> patch.Patch
 	10, // 16: cxz.TaskListRequest.filters:type_name -> cxz.TaskFilter
-	18, // 17: cxz.TaskListRequest.project:type_name -> cxz.ProjectRef
-	23, // 18: cxz.TaskListResponse.items:type_name -> cxz.Task
+	19, // 17: cxz.TaskListRequest.project:type_name -> cxz.ProjectRef
+	24, // 18: cxz.TaskListResponse.items:type_name -> cxz.Task
 	2,  // 19: cxz.TaskFilter.ref:type_name -> cxz.TaskRef
-	18, // 20: cxz.TaskFilter.project:type_name -> cxz.ProjectRef
+	19, // 20: cxz.TaskFilter.project:type_name -> cxz.ProjectRef
 	10, // 21: cxz.TaskWatchRequest.filters:type_name -> cxz.TaskFilter
-	18, // 22: cxz.TaskWatchRequest.project:type_name -> cxz.ProjectRef
+	19, // 22: cxz.TaskWatchRequest.project:type_name -> cxz.ProjectRef
 	13, // 23: cxz.TaskWatchResponse.items:type_name -> cxz.TaskWatchItem
-	23, // 24: cxz.TaskWatchItem.value:type_name -> cxz.Task
+	24, // 24: cxz.TaskWatchItem.value:type_name -> cxz.Task
 	2,  // 25: cxz.TaskClaimRequest.ref:type_name -> cxz.TaskRef
 	5,  // 26: cxz.TaskClaimRequest.actor:type_name -> cxz.TaskActor
-	17, // 27: cxz.TaskClaimRequest.date_updated:type_name -> google.protobuf.Timestamp
-	0,  // 28: cxz.TaskService.Add:input_type -> cxz.TaskAddRequest
-	1,  // 29: cxz.TaskService.Get:input_type -> cxz.TaskGetRequest
-	4,  // 30: cxz.TaskService.Patch:input_type -> cxz.TaskPatchRequest
-	6,  // 31: cxz.TaskService.Apply:input_type -> cxz.TaskApplyRequest
-	2,  // 32: cxz.TaskService.Erase:input_type -> cxz.TaskRef
-	8,  // 33: cxz.TaskService.List:input_type -> cxz.TaskListRequest
-	11, // 34: cxz.TaskService.Watch:input_type -> cxz.TaskWatchRequest
-	14, // 35: cxz.TaskService.Claim:input_type -> cxz.TaskClaimRequest
-	14, // 36: cxz.TaskService.Release:input_type -> cxz.TaskClaimRequest
-	23, // 37: cxz.TaskService.Add:output_type -> cxz.Task
-	23, // 38: cxz.TaskService.Get:output_type -> cxz.Task
-	23, // 39: cxz.TaskService.Patch:output_type -> cxz.Task
-	23, // 40: cxz.TaskService.Apply:output_type -> cxz.Task
-	7,  // 41: cxz.TaskService.Erase:output_type -> cxz.TaskEraseResponse
-	9,  // 42: cxz.TaskService.List:output_type -> cxz.TaskListResponse
-	12, // 43: cxz.TaskService.Watch:output_type -> cxz.TaskWatchResponse
-	23, // 44: cxz.TaskService.Claim:output_type -> cxz.Task
-	23, // 45: cxz.TaskService.Release:output_type -> cxz.Task
-	37, // [37:46] is the sub-list for method output_type
-	28, // [28:37] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	18, // 27: cxz.TaskClaimRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 28: cxz.TaskHistoryRequest.ref:type_name -> cxz.TaskRef
+	0,  // 29: cxz.TaskService.Add:input_type -> cxz.TaskAddRequest
+	1,  // 30: cxz.TaskService.Get:input_type -> cxz.TaskGetRequest
+	4,  // 31: cxz.TaskService.Patch:input_type -> cxz.TaskPatchRequest
+	6,  // 32: cxz.TaskService.Apply:input_type -> cxz.TaskApplyRequest
+	2,  // 33: cxz.TaskService.Erase:input_type -> cxz.TaskRef
+	8,  // 34: cxz.TaskService.List:input_type -> cxz.TaskListRequest
+	11, // 35: cxz.TaskService.Watch:input_type -> cxz.TaskWatchRequest
+	14, // 36: cxz.TaskService.Claim:input_type -> cxz.TaskClaimRequest
+	14, // 37: cxz.TaskService.Release:input_type -> cxz.TaskClaimRequest
+	15, // 38: cxz.TaskService.History:input_type -> cxz.TaskHistoryRequest
+	24, // 39: cxz.TaskService.Add:output_type -> cxz.Task
+	24, // 40: cxz.TaskService.Get:output_type -> cxz.Task
+	24, // 41: cxz.TaskService.Patch:output_type -> cxz.Task
+	24, // 42: cxz.TaskService.Apply:output_type -> cxz.Task
+	7,  // 43: cxz.TaskService.Erase:output_type -> cxz.TaskEraseResponse
+	9,  // 44: cxz.TaskService.List:output_type -> cxz.TaskListResponse
+	12, // 45: cxz.TaskService.Watch:output_type -> cxz.TaskWatchResponse
+	24, // 46: cxz.TaskService.Claim:output_type -> cxz.Task
+	24, // 47: cxz.TaskService.Release:output_type -> cxz.Task
+	25, // 48: cxz.TaskService.History:output_type -> cxz.AuditListResponse
+	39, // [39:49] is the sub-list for method output_type
+	29, // [29:39] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_cxz_task_svc_g_proto_init() }
@@ -2881,6 +3024,7 @@ func file_cxz_task_svc_g_proto_init() {
 	if File_cxz_task_svc_g_proto != nil {
 		return
 	}
+	file_cxz_payday_audit_svc_g_proto_init()
 	file_cxz_project_svc_g_proto_init()
 	file_cxz_session_svc_g_proto_init()
 	file_cxz_task_proto_init()
@@ -2895,7 +3039,7 @@ func file_cxz_task_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_task_svc_g_proto_rawDesc), len(file_cxz_task_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -1,18 +1,40 @@
 import { projectFixtureId, matchesProject } from "./project-id";
-import { create, clone, type MessageInitShape } from "@bufbuild/protobuf";
+import {
+  create,
+  clone,
+  isFieldSet,
+  type MessageInitShape,
+} from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { ContainerState, ProjectSchema } from "#gen/cxz/project_pb";
 import { SessionSchema } from "#gen/cxz/session_pb";
+import {
+  SessionService,
+  type SessionSendRequest,
+} from "#gen/cxz/session_svc_pb";
 import { TaskSchema, TaskStatus, type Task } from "#gen/cxz/task_pb";
-import { TaskService } from "#gen/cxz/task_svc_pb";
+import { TaskService, TaskPatchRequestSchema } from "#gen/cxz/task_svc_pb";
+import { AuditSchema, type Audit } from "#gen/cxz/payday/audit_pb";
 import { key } from "@lesomnus/payday/store";
 import { Connection } from "#src/shared/api/connection.ts";
 
 export function taskFixture(
   count = 9,
   unavailable = false,
-  options: { pageSize?: number; pageDelay?: number; olderDone?: number } = {},
+  options: {
+    pageSize?: number;
+    pageDelay?: number;
+    olderDone?: number;
+    longDetails?: boolean;
+    longDoneTitle?: boolean;
+    historyCount?: number;
+    historyUnavailable?: boolean;
+    historyDelay?: number;
+    onHistory?: (alias: string) => void;
+    actionDelay?: number;
+    onReview?: (request: SessionSendRequest) => void;
+  } = {},
 ) {
   const id = (value: number) => {
     const id = new Uint8Array(16);
@@ -119,6 +141,23 @@ export function taskFixture(
     });
   });
   const historyStart = new Date(fixtureTime);
+  if (options.longDoneTitle && rows[4]) {
+    rows[4].name =
+      "Verify that a completed task title remains stable when selecting, focusing, and copying long text without changing its line breaks. Preserve the full title while keeping a two-line preview with an ellipsis.";
+  }
+  if (options.longDetails && rows[2]) {
+    rows[2].desc =
+      "Implementation notes\n\n" +
+      "Keep task navigation independent of the editor's scroll position.\n".repeat(
+        50,
+      );
+    rows[2].labels = Object.fromEntries(
+      Array.from({ length: 36 }, (_, index) => [
+        `milestone-${index + 1}`,
+        `Acceptance criterion ${index + 1}`,
+      ]),
+    );
+  }
   historyStart.setHours(0, 0, 0, 0);
   historyStart.setDate(historyStart.getDate() - 2);
   for (let i = 0; i < (options.olderDone ?? 0); i++) {
@@ -135,10 +174,50 @@ export function taskFixture(
       }),
     );
   }
+  let historySerial = 50000;
+  const history = new Map<string, Audit[]>();
+  const record = (
+    task: Task,
+    action: string,
+    fields: number[],
+    date = task.dateUpdated,
+  ) => {
+    const row = create(AuditSchema, {
+      id: id(historySerial++),
+      objectId: task.id,
+      domain: 11,
+      action: `/cxz.TaskService/${action}`,
+      fields,
+      dateCreated: date,
+    });
+    history.set(key(task.id), [...(history.get(key(task.id)) ?? []), row]);
+  };
+  for (const task of rows) {
+    record(task, "Add", [4, 5, 6, 7, 8, 9, 10], task.dateCreated);
+    for (let i = 1; i < (options.historyCount ?? 1); i++)
+      record(
+        task,
+        "Patch",
+        [5, 10],
+        timestampFromDate(
+          new Date(fixtureTime - (options.historyCount! - i) * 60000),
+        ),
+      );
+  }
   const listeners = new Set<() => void>();
   const notify = () => listeners.forEach((listener) => listener());
-  const update = (task: Task, patch: Partial<Task>) => {
+  const update = (task: Task, patch: Partial<Task>, action = "Patch") => {
     Object.assign(task, patch, { dateUpdated: stamp() });
+    record(
+      task,
+      action,
+      Object.keys(patch)
+        .map(
+          (name) =>
+            TaskSchema.field[name as keyof typeof TaskSchema.field]?.number,
+        )
+        .filter((field): field is number => field !== undefined),
+    );
     notify();
     return clone(TaskSchema, task);
   };
@@ -164,6 +243,11 @@ export function taskFixture(
     )
       throw new ConnectError("Task version changed", Code.FailedPrecondition);
   };
+  const reviews = new Map<string, SessionSendRequest>();
+  const actionDelay = () =>
+    new Promise<void>((resolve) =>
+      setTimeout(resolve, options.actionDelay ?? 0),
+    );
   const c = new Connection(
     "https://task-preview.invalid",
     createRouterTransport((router) => {
@@ -276,6 +360,41 @@ export function taskFixture(
           })();
         },
         get: (request) => clone(TaskSchema, find(request)),
+        history: async (request, context) => {
+          const task = find(request);
+          options.onHistory?.(task.alias);
+          if (options.historyDelay)
+            await new Promise<void>((resolve, reject) => {
+              const finish = () => {
+                context.signal.removeEventListener("abort", abort);
+                resolve();
+              };
+              const timer = setTimeout(finish, options.historyDelay);
+              const abort = () => {
+                clearTimeout(timer);
+                reject(new ConnectError("Canceled", Code.Canceled));
+              };
+              context.signal.addEventListener("abort", abort, { once: true });
+            });
+          if (options.historyUnavailable)
+            throw new ConnectError("History unavailable", Code.Unimplemented);
+          const ordered = [...(history.get(key(task.id)) ?? [])].reverse();
+          const index = request.after
+            ? ordered.findIndex((row) => key(row.id) === request.after)
+            : -1;
+          if (request.after && index < 0)
+            throw new ConnectError(
+              "Invalid history cursor",
+              Code.InvalidArgument,
+            );
+          const start = index + 1,
+            size = Math.min(request.size || 20, 100);
+          const items = ordered.slice(start, start + size);
+          return {
+            items: items.map((row) => clone(AuditSchema, row)),
+            next: start + size < ordered.length ? key(items.at(-1)!.id) : "",
+          };
+        },
         add: (request) => {
           const existing = rows.find(
             (task) => task.clientId === request.clientId,
@@ -293,33 +412,123 @@ export function taskFixture(
             ),
           });
           rows.push(task);
+          record(task, "Add", [4, 5, 6, 7, 8, 9, 10]);
           notify();
           return clone(TaskSchema, task);
         },
         patch: (request) => {
           const task = find(request);
           check(task, request);
-          return update(task, {
-            name: request.name ?? task.name,
-            alias: request.alias ?? task.alias,
-            desc: request.desc ?? task.desc,
-            priority: request.priority ?? task.priority,
-            status: request.status || task.status,
-          });
+          if (task.status === TaskStatus.DONE)
+            throw new ConnectError(
+              "Completed tasks are immutable",
+              Code.FailedPrecondition,
+            );
+          const fields = [
+            "name",
+            "alias",
+            "desc",
+            "priority",
+            "status",
+          ] as const;
+          return update(
+            task,
+            Object.fromEntries(
+              fields
+                .filter((field) =>
+                  isFieldSet(request, TaskPatchRequestSchema.field[field]),
+                )
+                .map((field) => [field, request[field]]),
+            ),
+          );
+        },
+        claim: async (request) => {
+          await actionDelay();
+          const task = find(request);
+          check(task, request);
+          const owner = sessions.find(
+            (session) =>
+              session.runtimeId === request.actor?.session?.key.value,
+          );
+          if (
+            task.assignee ||
+            task.status !== TaskStatus.TODO ||
+            !owner ||
+            !owner.project ||
+            !task.project ||
+            key(owner.project.id) !== key(task.project.id) ||
+            !request.actor?.runId ||
+            owner.status?.runId !== request.actor.runId ||
+            !["idle", "working", "waiting_input"].includes(owner.status.state)
+          )
+            throw new ConnectError(
+              "Task or session changed",
+              Code.FailedPrecondition,
+            );
+          return update(
+            task,
+            {
+              assignee: owner.runtimeId,
+              assigneeRun: request.actor.runId,
+              status: TaskStatus.IN_PROGRESS,
+            },
+            "Claim",
+          );
         },
         release: (request) => {
           const task = find(request);
           check(task, request);
           if (
+            task.status === TaskStatus.DONE ||
+            task.status === TaskStatus.IN_PROGRESS
+          )
+            throw new ConnectError(
+              "Task assignment is locked",
+              Code.FailedPrecondition,
+            );
+          if (
             request.actor?.session?.key.value !== task.assignee ||
             request.actor?.runId !== task.assigneeRun
           )
             throw new ConnectError("Owner changed", Code.FailedPrecondition);
-          return update(task, {
-            assignee: "",
-            assigneeRun: "",
-            status: TaskStatus.TODO,
-          });
+          return update(
+            task,
+            {
+              assignee: "",
+              assigneeRun: "",
+              status: TaskStatus.TODO,
+            },
+            "Release",
+          );
+        },
+      });
+      router.service(SessionService, {
+        send: async (request) => {
+          await actionDelay();
+          const previous = reviews.get(request.clientId);
+          if (previous) {
+            if (JSON.stringify(previous) !== JSON.stringify(request))
+              throw new ConnectError("Client ID reused", Code.InvalidArgument);
+            return { clientId: request.clientId, status: "queued" };
+          }
+          const session = sessions.find(
+            (session) => session.runtimeId === request.ref?.key.value,
+          );
+          if (
+            !session ||
+            session.status?.runId !== request.runId ||
+            !["idle", "working", "waiting_input"].includes(session.status.state)
+          )
+            throw new ConnectError(
+              "Session run changed",
+              Code.FailedPrecondition,
+            );
+          reviews.set(request.clientId, request);
+          options.onReview?.(request);
+          return {
+            clientId: request.clientId,
+            status: session.status.state === "idle" ? "accepted" : "queued",
+          };
         },
       });
     }),
@@ -328,6 +537,7 @@ export function taskFixture(
     c,
     projects,
     sessions,
+    reviews,
     agentUpdate: () => {
       const task = rows[0];
       if (task)

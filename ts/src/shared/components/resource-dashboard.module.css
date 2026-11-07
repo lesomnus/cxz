@@ -1,8 +1,56 @@
 .layout {
-  --resource-action-size: 64px;
   --resource-usage-height: 482px;
   --resource-column-height: calc(
     var(--resource-action-size) + var(--ui-section-group-gap) +
       var(--resource-usage-height)
   );
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  min-width: 0;
+  gap: var(--resource-page-column-gap);
+}
+.information {
+  min-height: 0;
+  height: var(--resource-column-height);
+  grid-template-rows: var(--resource-information-height, auto) minmax(0, 1fr);
+}
+.activity {
+  min-height: 0;
+  grid-template-rows: var(--resource-action-size) var(--resource-usage-height);
+  align-content: start;
+}
+.information > [data-section-layout="section"]:first-child {
+  border-start-end-radius: var(--resource-dashboard-joining-radius);
+}
+.information > [data-section-layout="section"]:last-child {
+  border-end-end-radius: var(--resource-dashboard-joining-radius);
+}
+.activity > [data-section-layout="section"]:first-child {
+  border-start-start-radius: var(--resource-dashboard-joining-radius);
+}
+.activity > [data-section-layout="section"]:last-child {
+  border-end-start-radius: var(--resource-dashboard-joining-radius);
+}
+.actions {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: var(--resource-page-column-width);
+  gap: var(--ui-space);
+}
+.usageSection {
+  min-width: 0;
+  min-height: 0;
+  height: var(--resource-usage-height);
+  align-content: start;
+}
+.sessions.sessions {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding-top: var(--ui-section-group-gap);
+  padding-inline: 0;
+  overflow: visible;
 }

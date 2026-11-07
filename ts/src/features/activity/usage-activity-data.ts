@@ -5,9 +5,10 @@ import type {
 
 const dayMs = 86400000;
 
-export function usageActivityWeeks(width: number, size: number, gap: number) {
-  return Math.max(1, Math.min(52, Math.floor((width + gap) / (size + gap))));
-}
+export {
+  activityHeatmapWeeks as usageActivityWeeks,
+  activityHeatmapCells as usageActivityCells,
+} from "@lesomnus/nox";
 
 export function usageActivityRange(weeks: number, toMs: bigint) {
   const last = new Date(Number(toMs) - 1);
@@ -40,19 +41,6 @@ export type ActivityDay = {
   values: ConversationStatsDay["values"];
   level: number;
 };
-
-// Pad partial weeks, keeping future days outside the recorded data.
-export function usageActivityCells(days: ActivityDay[]) {
-  if (!days.length) return [];
-  const offset = new Date(`${days[0].date}T00:00:00Z`).getUTCDay();
-  const first = Date.parse(`${days[0].date}T00:00:00Z`) - offset * dayMs;
-  const count = Math.ceil((offset + days.length) / 7) * 7;
-  return Array.from({ length: count }, (_, i) => ({
-    date: new Date(first + i * dayMs).toISOString().slice(0, 10),
-    day: days[i - offset] as ActivityDay | undefined,
-    future: i >= offset + days.length,
-  }));
-}
 
 // Stats use UTC dates and a half-open time range. Missing dates have no
 // recorded activity; padding outside the requested range is not a zero day.

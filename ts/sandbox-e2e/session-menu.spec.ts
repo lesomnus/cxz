@@ -1,5 +1,4 @@
 import { test, expect, devices, type Page } from "@playwright/test";
-import { expectAPIError } from "../test-support/client-errors";
 test.use({
   ...devices["Desktop Chrome"],
   viewport: { width: 1440, height: 900 },
@@ -14,20 +13,7 @@ async function choose(page: Page, name: string) {
   await page.getByRole("button", { name: "Session menu", exact: true }).click();
   await page.getByRole("menuitem", { name, exact: true }).click();
 }
-async function runId(page: Page) {
-  await choose(page, "Details");
-  const value = await page
-    .locator(".session-details > div")
-    .filter({ has: page.getByText("Run ID", { exact: true }) })
-    .locator("dd")
-    .innerText();
-  await page
-    .getByRole("button", { name: "Close details", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  return value;
-}
-test("composer session menu stays in the viewport, supports keyboard navigation and shows session details", async ({
+test("composer session menu stays in the viewport, supports keyboard navigation and retains upload actions", async ({
   page,
 }) => {
   await ready(page);
@@ -54,12 +40,9 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     "Insert secret",
     "Shared memory",
     "Auxiliary AI",
-    "Conversation usage",
-    "Background tasks",
     "Log in",
     "Upload files",
     "Upload folder",
-    "Details",
     "Erase",
   ]);
   await expect(
@@ -67,7 +50,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
       .getByRole("menuitem")
       .or(menu.getByRole("menuitemcheckbox"))
       .locator("svg"),
-  ).toHaveCount(8);
+  ).toHaveCount(11);
   await expect(menu.getByText("Information", { exact: true })).toHaveCount(0);
   await expect(
     menu.getByRole("menuitem", { name: "Copy session link" }),
@@ -114,20 +97,10 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     .getByRole("menuitem", { name: "Erase", exact: true })
     .press("ArrowUp");
   await expect(
-    page.getByRole("menuitem", { name: "Details", exact: true }),
+    page.getByRole("menuitem", { name: "Upload folder", exact: true }),
   ).toBeFocused();
-  await page
-    .getByRole("menuitem", { name: "Details", exact: true })
-    .press("Enter");
-  await expect(
-    page.getByRole("dialog", { name: "Session details" }),
-  ).toBeVisible();
-  await expect(page.locator(".session-details")).toContainText("/workspace");
-  await expect(page.locator(".session-details")).toContainText(
-    "session-1-run-1",
-  );
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(menu).toHaveCount(0);
   await expect(trigger).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
   await trigger.click();
@@ -166,7 +139,6 @@ test("Stop and Resume toggle, while Restart requires confirmation and preserves 
   page,
 }) => {
   await ready(page);
-  const initial = await runId(page);
   const message = await page
     .locator("article.input .message-body")
     .last()
@@ -179,7 +151,6 @@ test("Stop and Resume toggle, while Restart requires confirmation and preserves 
   ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(stop).toHaveCount(0);
-  expect(await runId(page)).toBe(initial);
   await choose(page, "Stop");
   await page
     .getByRole("dialog", { name: "Stop session" })
@@ -190,19 +161,15 @@ test("Stop and Resume toggle, while Restart requires confirmation and preserves 
     page.getByRole("menuitem", { name: "Resume", exact: true }),
   ).toBeVisible();
   await page.getByRole("menuitem", { name: "Resume", exact: true }).click();
-  expect(await runId(page)).not.toBe(initial);
-  const resumed = await runId(page);
   await choose(page, "Restart");
   await expect(
     page.getByRole("dialog", { name: "Restart session" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  expect(await runId(page)).toBe(resumed);
   await choose(page, "Restart");
   await page.getByRole("button", { name: "Restart", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  expect(await runId(page)).not.toBe(resumed);
   await expect(page.locator("article.input .message-body").last()).toHaveText(
     message,
   );
@@ -250,93 +217,4 @@ test("lifecycle actions share one scrolling row and Purge is absent", async ({
   await expect(
     footer.getByRole("radiogroup", { name: "Tab input" }),
   ).toBeVisible();
-});
-
-test("Details edits title and alias while keeping conversation identity and updating the alias address", async ({
-  page,
-}) => {
-  await ready(page);
-  const originalRun = await runId(page);
-  const originalMessage = await page
-    .locator("article.input .message-body")
-    .last()
-    .innerText();
-  await choose(page, "Details");
-  const details = page.getByRole("dialog", {
-    name: "Session details",
-    exact: true,
-  });
-  await details.getByRole("button", { name: "Edit Title" }).click();
-  const titleEditor = page.getByRole("dialog", {
-    name: "Edit Title",
-    exact: true,
-  });
-  await titleEditor
-    .getByRole("textbox", { name: "Title", exact: true })
-    .fill("Updated project review");
-  await titleEditor
-    .getByRole("textbox", { name: "Title", exact: true })
-    .press("Enter");
-  await expect(titleEditor).toHaveCount(0);
-  await expect(details.getByRole("button", { name: "Edit Title" })).toHaveText(
-    "Updated project review",
-  );
-  await expect(
-    page
-      .locator(".resource-panel .tree-session")
-      .filter({ hasText: "session-1" }),
-  ).toContainText("Updated project review");
-  await details.getByRole("button", { name: "Edit Alias" }).click();
-  const aliasEditor = page.getByRole("dialog", {
-    name: "Edit Alias",
-    exact: true,
-  });
-  await aliasEditor
-    .getByRole("textbox", { name: "Alias", exact: true })
-    .fill("oak-tree");
-  await aliasEditor
-    .getByRole("button", { name: "Confirm", exact: true })
-    .click();
-  await expect(aliasEditor).toHaveCount(0);
-  await expect(details.getByRole("button", { name: "Edit Alias" })).toHaveText(
-    "oak-tree",
-  );
-  await expect(
-    page
-      .locator(".resource-panel .tree-session")
-      .filter({ hasText: "Updated project review" }),
-  ).toContainText("oak-tree");
-  await details.getByRole("button", { name: "Edit Alias" }).click();
-  await aliasEditor
-    .getByRole("textbox", { name: "Alias", exact: true })
-    .fill("session-2");
-  await aliasEditor
-    .getByRole("textbox", { name: "Alias", exact: true })
-    .press("Enter");
-  await expect(aliasEditor).not.toHaveAttribute("aria-busy", "true");
-  await page.keyboard.press("Escape");
-  await expect(aliasEditor).toHaveCount(0);
-  await expect(details).toBeVisible();
-  await expect(
-    details.getByRole("button", { name: "Edit Alias" }),
-  ).toBeFocused();
-  await expect(details.getByRole("button", { name: "Edit Alias" })).toHaveText(
-    "oak-tree",
-  );
-  await expectAPIError(page, "alias is already in use");
-  await page
-    .getByRole("button", { name: "Close details", exact: true })
-    .click();
-  expect(await runId(page)).toBe(originalRun);
-  await expect(page).toHaveURL(/#\/c\/_\/session\/oak-tree$/);
-  await expect(page.locator("article.input .message-body").last()).toHaveText(
-    originalMessage,
-  );
-  await choose(page, "Details");
-  await expect(details.getByRole("button", { name: "Edit Title" })).toHaveText(
-    "Updated project review",
-  );
-  await expect(details.getByRole("button", { name: "Edit Alias" })).toHaveText(
-    "oak-tree",
-  );
 });

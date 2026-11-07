@@ -1,0 +1,13 @@
+.surface {
+  position: absolute;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+.mirror {
+  box-sizing: border-box;
+  width: 100%;
+  color: transparent;
+  transform-origin: top left;
+}

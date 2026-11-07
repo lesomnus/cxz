@@ -65,7 +65,7 @@ test("project details slide in from the right below a stable toolbar and reverse
   expect(errors).toEqual([]);
 });
 
-test("project page navigation retains each scroll position and index selection without document overflow", async ({
+test("project page navigation retains list scroll and selection while reopening a fresh detail without document overflow", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 650 });
@@ -104,7 +104,7 @@ test("project page navigation retains each scroll position and index selection w
   await history.getByRole("button", { name: "Forward", exact: true }).click();
   await expect(root).toHaveAttribute("data-value", "detail");
   await expect.poll(() => offset(detail)).toBe(0);
-  expect(await detailScroll.evaluate((element) => element.scrollTop)).toBe(180);
+  expect(await detailScroll.evaluate((element) => element.scrollTop)).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     390,
   );

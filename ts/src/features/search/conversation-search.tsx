@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
@@ -5,8 +6,12 @@ import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useEffect, useRef, useState } from "react";
 import {
   Button,
-  ToggleButton,
-  Popover,
+  FindBar,
+  FindBarControls,
+  FindBarIcon,
+  FindBarInput,
+  FindBarOptions,
+  FindBarAction,
   PrefixValueMenu,
   DatePicker,
 } from "@lesomnus/nox";
@@ -19,7 +24,6 @@ import type { Project } from "#gen/cxz/project_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import styles from "./conversation-search.module.css";
-import bar from "#src/shared/components/search-bar.module.css";
 
 export function ConversationSearch({
   c,
@@ -147,23 +151,10 @@ export function ConversationSearch({
           if (!loading) void search();
         }}
       >
-        <div className={bar.surface}>
-          <div className={bar.controls}>
-            <svg
-              className={bar.icon}
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              aria-hidden="true"
-            >
-              <circle cx="10" cy="10" r="6" />
-              <path d="m15 15 5 5" />
-            </svg>
-            <input
-              className={bar.input}
+        <FindBar aria-label="Search conversations">
+          <FindBarControls>
+            <FindBarIcon />
+            <FindBarInput
               type="search"
               aria-label="Search conversations"
               placeholder="Search conversations"
@@ -174,53 +165,35 @@ export function ConversationSearch({
                 setQuery(event.target.value);
               }}
             />
-            <div className={bar.modes} role="group" aria-label="Search options">
-              <Popover content="Match case">
-                <ToggleButton
-                  className={bar.mode}
-                  variant="toolbar"
-                  aria-label="Match case"
-                  pressed={!ignoreCase}
-                  onPressedChange={(pressed) => {
-                    invalidate();
-                    setIgnoreCase(!pressed);
-                  }}
-                >
-                  <span aria-hidden="true">Aa</span>
-                </ToggleButton>
-              </Popover>
-              <Popover content="Use regular expression">
-                <ToggleButton
-                  className={bar.mode}
-                  variant="toolbar"
-                  aria-label="Use regular expression"
-                  pressed={match === "regex"}
-                  onPressedChange={(pressed) => {
-                    invalidate();
-                    setMatch(pressed ? "regex" : "substring");
-                  }}
-                >
-                  <span aria-hidden="true">.*</span>
-                </ToggleButton>
-              </Popover>
-              <Popover content="Fuzzy search">
-                <ToggleButton
-                  className={bar.mode}
-                  variant="toolbar"
-                  aria-label="Fuzzy search"
-                  pressed={match === "fuzzy"}
-                  onPressedChange={(pressed) => {
-                    invalidate();
-                    setMatch(pressed ? "fuzzy" : "substring");
-                  }}
-                >
-                  <span aria-hidden="true">≈</span>
-                </ToggleButton>
-              </Popover>
-            </div>
+            <FindBarOptions
+              options={[
+                {
+                  id: "matchCase",
+                  label: "Match case",
+                  symbol: "Aa",
+                  pressed: !ignoreCase,
+                },
+                {
+                  id: "regex",
+                  label: "Use regular expression",
+                  symbol: ".*",
+                  pressed: match === "regex",
+                },
+                {
+                  id: "fuzzy",
+                  label: "Fuzzy search",
+                  symbol: "≈",
+                  pressed: match === "fuzzy",
+                },
+              ]}
+              onChange={(id, pressed) => {
+                invalidate();
+                if (id === "matchCase") setIgnoreCase(!pressed);
+                else setMatch(pressed ? id : "substring");
+              }}
+            />
             {loading ? (
-              <Button
-                className={bar.action}
+              <FindBarAction
                 variant="toolbar"
                 type="button"
                 aria-label="Stop search"
@@ -232,40 +205,26 @@ export function ConversationSearch({
                   setProgress("Search stopped.");
                 }}
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <rect x="4" y="4" width="8" height="8" rx="1" />
-                </svg>
-              </Button>
+                <Icon name="stop" width="14" height="14" aria-hidden="true" />
+              </FindBarAction>
             ) : (
-              <Button
-                className={bar.action}
+              <FindBarAction
                 variant="toolbar"
                 type="submit"
                 aria-label="Search"
                 title="Search"
                 disabled={!query.trim()}
               >
-                <svg
+                <Icon
+                  name="run-search"
                   width="16"
                   height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
                   aria-hidden="true"
-                >
-                  <path d="M5 12h14m-5-5 5 5-5 5" />
-                </svg>
-              </Button>
+                />
+              </FindBarAction>
             )}
-          </div>
-        </div>
+          </FindBarControls>
+        </FindBar>
         <div className={styles.filterBar}>
           <PrefixValueMenu
             prefix={<ResourceIcon kind="projects" />}

@@ -26,6 +26,7 @@ export type ResourceView =
   | "accounts"
   | "search"
   | "memory"
+  | "errors"
   | "auxiliary"
   | "not-found";
 export type SettingsTopic = "general" | "editor" | "connections" | "logs";
@@ -164,6 +165,11 @@ const taskRoute = createRoute({
     }
   },
 });
+const errorsRoute = createRoute({
+  getParentRoute: () => connectionRoute,
+  path: "errors",
+  staticData: { resource: "errors" },
+});
 const searchRoute = createRoute({
   getParentRoute: () => connectionRoute,
   path: "search",
@@ -294,6 +300,7 @@ const routeTree = rootRoute.addChildren([
     projectTasksRoute,
     projectTaskRoute,
     searchRoute,
+    errorsRoute,
     projectMemoryRoute,
     memoryDocumentRoute,
     auxiliaryRoute,

@@ -39,6 +39,7 @@ type Runtime interface {
 	SetSessionTitle(context.Context, string, string) (string, error)
 }
 type shared struct {
+	resources  *ent.Client
 	db         *sql.DB
 	transition sync.RWMutex
 	mu         sync.Mutex
@@ -111,7 +112,7 @@ func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log, options .
 		return nil, err
 	}
 	// Publish each committed Sink call, including background projection writes.
-	shared := &shared{runtime: r, db: db, watch: w, observe: o}
+	shared := &shared{runtime: r, db: db, resources: client, watch: w, observe: o}
 	if len(options) > 0 {
 		shared.retainedMemory = options[0].RetainedMemory
 	}

@@ -10,18 +10,23 @@ import {
   type RefObject,
 } from "react";
 import {
-  Button,
-  CompactNumber,
   DateTime,
   Popover,
-  ScrollArea,
-  ToggleButton,
+  FindBar,
+  FindBarControls,
+  FindBarIcon,
+  FindBarInput,
+  FindBarCounter,
+  FindBarOptions,
+  FindBarClose,
+  FindBarResults,
+  FindBarResult,
+  FindBarMessage,
 } from "@lesomnus/nox";
 import { searchLoadedMessages, type LoadedSearchHit } from "./loaded-search";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./session-search.module.css";
-import bar from "#src/shared/components/search-bar.module.css";
 import { useSearchHighlights, type SearchLocation } from "./search-highlights";
 import { messageDate, relativeMessageTime } from "./message-time";
 import {
@@ -219,35 +224,17 @@ export function SessionSearch({
   }, [selectedIndex]);
   if (!open) return null;
   return (
-    <section
+    <FindBar
+      motion
       ref={overlay}
       role="search"
       aria-label={t("Search current conversation")}
-      className={`${bar.surface} ${styles.search}`}
+      className={styles.search}
     >
-      <form
-        className={bar.controls}
-        onSubmit={(event) => {
-          event.preventDefault();
-          void nextMatch();
-        }}
-      >
-        <svg
-          className={bar.icon}
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          aria-hidden="true"
-        >
-          <circle cx="10" cy="10" r="6" />
-          <path d="m15 15 5 5" />
-        </svg>
-        <input
+      <FindBarControls>
+        <FindBarIcon />
+        <FindBarInput
           ref={input}
-          className={bar.input}
           type="search"
           value={query}
           aria-label={t("Search this conversation")}
@@ -261,6 +248,11 @@ export function SessionSearch({
           }}
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) return;
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void nextMatch();
+              return;
+            }
             if (
               !visible.length ||
               !["ArrowDown", "ArrowUp"].includes(event.key)
@@ -274,92 +266,53 @@ export function SessionSearch({
             );
           }}
         />
-        <div
-          className={styles.counter}
-          role="status"
-          aria-label={t("Result {current} of {count}", {
-            current: visible.length ? selectedIndex + 1 : 0,
-            count: visible.length,
-          })}
-        >
-          <span aria-hidden="true">
-            <CompactNumber
-              value={visible.length ? selectedIndex + 1 : 0}
-              mode="integer"
-            />
-            <span className={styles.separator}>/</span>
-            <CompactNumber value={visible.length} mode="integer" />
-          </span>
-        </div>
-        <div
-          className={bar.modes}
-          role="group"
-          aria-label={t("Search options")}
-        >
-          <Popover content={t("Match case")}>
-            <ToggleButton
-              className={bar.mode}
-              variant="toolbar"
-              aria-label={t("Match case")}
-              pressed={options.matchCase}
-              onPressedChange={(pressed) => changeOption("matchCase", pressed)}
-            >
-              <span aria-hidden="true">Aa</span>
-            </ToggleButton>
-          </Popover>
-          <Popover content={t("Match whole word")}>
-            <ToggleButton
-              className={bar.mode}
-              variant="toolbar"
-              aria-label={t("Match whole word")}
-              pressed={options.wholeWord}
-              onPressedChange={(pressed) => changeOption("wholeWord", pressed)}
-            >
-              <span className={bar.word} aria-hidden="true">
-                ab
-              </span>
-            </ToggleButton>
-          </Popover>
-          <Popover content={t("Use regular expression")}>
-            <ToggleButton
-              className={bar.mode}
-              variant="toolbar"
-              aria-label={t("Use regular expression")}
-              pressed={options.useRegex}
-              onPressedChange={(pressed) => changeOption("useRegex", pressed)}
-            >
-              <span aria-hidden="true">.*</span>
-            </ToggleButton>
-          </Popover>
-        </div>
-        <Button
-          className={bar.action}
-          variant="toolbar"
-          type="button"
-          aria-label={t("Close search")}
-          onClick={close}
-        >
-          ×
-        </Button>
-      </form>
+        <FindBarCounter
+          current={visible.length ? selectedIndex + 1 : 0}
+          count={visible.length}
+        />
+        <FindBarOptions
+          options={[
+            {
+              id: "matchCase",
+              label: t("Match case"),
+              symbol: "Aa",
+              pressed: options.matchCase,
+            },
+            {
+              id: "wholeWord",
+              label: t("Match whole word"),
+              symbol: "ab",
+              pressed: options.wholeWord,
+            },
+            {
+              id: "useRegex",
+              label: t("Use regular expression"),
+              symbol: ".*",
+              pressed: options.useRegex,
+            },
+          ]}
+          onChange={(id, pressed) =>
+            changeOption(id as keyof SearchOptions, pressed)
+          }
+        />
+        <FindBarClose onClick={close} />
+      </FindBarControls>
       {!!searchQuery && (
         <>
           {compiled.error ? (
-            <p className={styles.empty} id={errorId} role="alert">
+            <FindBarMessage id={errorId} role="alert">
               <Popover content={compiled.error}>
                 {t("Invalid regular expression")}
               </Popover>
-            </p>
+            </FindBarMessage>
           ) : (
             visible.length === 0 && (
-              <p className={styles.empty}>{t("No matches")}</p>
+              <FindBarMessage>{t("No matches")}</FindBarMessage>
             )
           )}
           {visible.length > 0 && (
-            <ScrollArea
-              className={styles.results}
-              contentClassName={styles.resultContent}
-              scrollbarOffset={5}
+            <FindBarResults
+              scrollbarOffset={-5}
               scrollbarLabel={t("Search results")}
               viewportRef={results}
               style={
@@ -370,9 +323,8 @@ export function SessionSearch({
                 const date = messageDate(hit.timeMs);
                 const relative = date ? relativeMessageTime(date, now) : "";
                 return (
-                  <Button
+                  <FindBarResult
                     key={hit.seq.toString()}
-                    className={styles.result}
                     type="button"
                     data-search-index={index}
                     data-seq={hit.seq.toString()}
@@ -389,14 +341,14 @@ export function SessionSearch({
                       )}
                     </span>
                     <SearchSnippet hit={hit} />
-                  </Button>
+                  </FindBarResult>
                 );
               })}
-            </ScrollArea>
+            </FindBarResults>
           )}
         </>
       )}
-    </section>
+    </FindBar>
   );
 }
 

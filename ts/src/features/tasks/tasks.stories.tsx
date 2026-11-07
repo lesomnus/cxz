@@ -7,6 +7,16 @@ import { TasksPage } from "#src/pages/tasks/tasks-page.tsx";
 import { taskFixture } from "#src/storybook/task-fixture.ts";
 import styles from "./tasks.module.css";
 
+function taskListPath(path: string) {
+  const url = new URL(path, "https://storybook.invalid");
+  const project =
+    url.pathname.match(/^\/c\/_\/project\/([^/]+)\/task/)?.[1] ??
+    url.searchParams.get("project") ??
+    "workspace";
+  url.searchParams.delete("project");
+  return `/c/_/project/${project}/task${url.search}`;
+}
+
 function TaskPreview({
   count,
   unavailable = false,
@@ -14,6 +24,11 @@ function TaskPreview({
   pageSize = 500,
   pageDelay = 0,
   olderDone = 0,
+  longDetails = false,
+  longDoneTitle = false,
+  historyCount = 1,
+  historyUnavailable = false,
+  historyDelay = 0,
 }: {
   count: number;
   unavailable?: boolean;
@@ -21,9 +36,29 @@ function TaskPreview({
   pageSize?: number;
   pageDelay?: number;
   olderDone?: number;
+  longDetails?: boolean;
+  longDoneTitle?: boolean;
+  historyCount?: number;
+  historyUnavailable?: boolean;
+  historyDelay?: number;
 }) {
+  const [reviewCount, setReviewCount] = useState(0);
+  const [historyRequests, setHistoryRequests] = useState<string[]>([]);
   const [fixture] = useState(() =>
-    taskFixture(count, unavailable, { pageSize, pageDelay, olderDone }),
+    taskFixture(count, unavailable, {
+      pageSize,
+      pageDelay,
+      olderDone,
+      longDetails,
+      longDoneTitle,
+      historyCount,
+      historyUnavailable,
+      historyDelay,
+      onHistory: (alias) =>
+        setHistoryRequests((previous) => [...previous, alias]),
+      actionDelay: 200,
+      onReview: () => setReviewCount((count) => count + 1),
+    }),
   );
   useEffect(() => () => fixture.c.dispose(), [fixture]);
   const [router] = useState(() =>
@@ -41,16 +76,45 @@ function TaskPreview({
         ),
       },
       createMemoryHistory({
-        initialEntries: [initialPath],
+        initialEntries:
+          initialPath === taskListPath(initialPath)
+            ? [initialPath]
+            : [taskListPath(initialPath), initialPath],
       }),
     ),
   );
+  const [path, setPath] = useState(initialPath);
+  useEffect(
+    () =>
+      router.subscribe("onResolved", () => setPath(router.state.location.href)),
+    [router],
+  );
   return (
     <>
-      <div style={{ height: 36, display: "flex", alignItems: "center" }}>
+      <div
+        data-history-requests={historyRequests.join(",")}
+        style={{ height: 36, display: "flex", alignItems: "center" }}
+      >
+        <output aria-label="Review requests sent">{reviewCount}</output>
         <Button type="button" onClick={fixture.agentUpdate}>
           Simulate agent update
         </Button>
+        <Button type="button" onClick={() => router.history.back()}>
+          Back
+        </Button>
+        <Button type="button" onClick={() => router.history.forward()}>
+          Forward
+        </Button>
+        <output
+          aria-label="Preview route"
+          style={{
+            font: "10px var(--ui-font-mono)",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {path}
+        </output>
       </div>
       <RouterProvider router={router} />
     </>
@@ -83,6 +147,60 @@ export const OlderRuntime: Story = { args: { unavailable: true } };
 
 export const TaskDetails: Story = {
   args: { initialPath: "/c/_/project/workspace/task/task-3" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A dedicated task detail page using the same Nox SectionGroup and Section surfaces as Projects and Accounts. A two-line clamped title and description occupy the left; metadata and actions size to their content on the right. Assigned to offers random assignment for unassigned Todo work and a confirmed chat review for previous-run ownership; other states show a disabled dot. Status is read-only and priority values include their symbols. Narrow screens stack the columns. The collection and detail share the horizontal page transition used by Projects and Memory, below the fixed toolbar. Previous and next task panels peek in from the viewport edges and can be clicked. Wheel or swipe on the page background moves one task per gesture, in table order with the active session/run filter. Long metadata scrolls independently on wide screens; narrow pages scroll the stacked groups. Moving between tasks replaces the current history entry: Back returns to the page before entering details, and Forward restores the last viewed task. Unsaved edits require confirmation before navigation; Add remains a dialog. Alias/UUID deep links keep working.",
+      },
+    },
+  },
+};
+export const LongTaskDetails: Story = {
+  ...TaskDetails,
+  args: {
+    initialPath: "/c/_/project/workspace/task/task-3",
+    longDetails: true,
+  },
+};
+export const ReadOnlyLongTitle: Story = {
+  ...TaskDetails,
+  args: {
+    initialPath: "/c/_/project/workspace/task/task-5",
+    longDoneTitle: true,
+  },
+};
+export const ChangeHistory: Story = {
+  ...TaskDetails,
+  args: { ...TaskDetails.args, historyCount: 28 },
+};
+export const SlowChangeHistory: Story = {
+  ...TaskDetails,
+  args: { ...TaskDetails.args, historyCount: 28, historyDelay: 800 },
+};
+export const HistoryUnavailable: Story = {
+  ...TaskDetails,
+  args: { ...TaskDetails.args, historyUnavailable: true },
+};
+export const SingleTaskDetails: Story = {
+  ...TaskDetails,
+  args: { count: 1, initialPath: "/c/_/project/workspace/task/task-1" },
+};
+export const FirstTaskDetails: Story = {
+  ...TaskDetails,
+  args: { initialPath: "/c/_/project/workspace/task/task-9" },
+};
+export const LastTaskDetails: Story = {
+  ...TaskDetails,
+  args: { initialPath: "/c/_/project/workspace/task/task-5" },
+};
+export const AssignmentActions: Story = {
+  ...TaskDetails,
+  args: { initialPath: "/c/_/project/workspace/task/task-7" },
+};
+export const MissingTaskDetails: Story = {
+  ...TaskDetails,
+  args: { initialPath: "/c/_/project/workspace/task/missing" },
 };
 export const TaskById: Story = {
   args: {

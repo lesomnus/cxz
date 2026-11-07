@@ -2,10 +2,11 @@
 
 `category-rounded-wght300.svg` is the official Google Material Symbols Rounded
 `category` icon, using the lighter weight requested for the work summary.
-The source SVG is stored unchanged. `shared/components/category-icon.tsx` renders
-its original viewBox and path directly as inline SVG, using `currentColor` to follow
-the surrounding text color in both themes. It does not require CSS masking, an
-icon font or a runtime download.
+The source SVG is stored unchanged. The `work` icon in
+`shared/icons/icon-definitions.ts` derives solid shapes from its outer contours;
+the inner outline cutouts are removed to match cxz's filled basic shapes.
+`shared/components/category-icon.tsx` references that semantic icon. It inherits
+`currentColor` in both themes without an icon font or a runtime download.
 
 - [Official SVG](https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/category/wght300/24px.svg)
 - [Material Symbols guide](https://developers.google.com/fonts/docs/material_symbols)

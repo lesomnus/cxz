@@ -46,7 +46,7 @@ test("projects use the full workspace with a persistent project picker and scope
   );
   await page.mouse.move(0, 0);
   expect(
-    await main.locator(".icon-value-menu").evaluate((el) => {
+    await main.locator(".prefix-value-menu").evaluate((el) => {
       const style = getComputedStyle(el, "::before");
       return { opacity: style.opacity, background: style.backgroundColor };
     }),
@@ -241,9 +241,7 @@ test("project session identities use stacked navigation buttons in the sandbox",
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   await expect(table).toBeVisible({ timeout: 45000 });
   const row = table.locator("tbody tr").first();
-  await expect(
-    table.locator(".agent-brand, .editable-value-trigger"),
-  ).toHaveCount(0);
+  await expect(table.locator(".editable-value-trigger")).toHaveCount(0);
   const session = row.locator('a[href*="/session/"]');
   await expect(session).toBeVisible();
   const href = (await session.getAttribute("href"))!;

@@ -28,6 +28,7 @@ const (
 	TaskService_Watch_FullMethodName   = "/cxz.TaskService/Watch"
 	TaskService_Claim_FullMethodName   = "/cxz.TaskService/Claim"
 	TaskService_Release_FullMethodName = "/cxz.TaskService/Release"
+	TaskService_History_FullMethodName = "/cxz.TaskService/History"
 )
 
 // TaskServiceClient is the client API for TaskService service.
@@ -62,6 +63,8 @@ type TaskServiceClient interface {
 	Claim(ctx context.Context, in *TaskClaimRequest, opts ...grpc.CallOption) (*Task, error)
 	// Explicitly return owned work to Todo, including after its session stopped.
 	Release(ctx context.Context, in *TaskClaimRequest, opts ...grpc.CallOption) (*Task, error)
+	// Newest-first committed changes from the authoritative project's audit trail.
+	History(ctx context.Context, in *TaskHistoryRequest, opts ...grpc.CallOption) (*AuditListResponse, error)
 }
 
 type taskServiceClient struct {
@@ -171,6 +174,16 @@ func (c *taskServiceClient) Release(ctx context.Context, in *TaskClaimRequest, o
 	return out, nil
 }
 
+func (c *taskServiceClient) History(ctx context.Context, in *TaskHistoryRequest, opts ...grpc.CallOption) (*AuditListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuditListResponse)
+	err := c.cc.Invoke(ctx, TaskService_History_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TaskServiceServer is the server API for TaskService service.
 // All implementations must embed UnimplementedTaskServiceServer
 // for forward compatibility.
@@ -203,6 +216,8 @@ type TaskServiceServer interface {
 	Claim(context.Context, *TaskClaimRequest) (*Task, error)
 	// Explicitly return owned work to Todo, including after its session stopped.
 	Release(context.Context, *TaskClaimRequest) (*Task, error)
+	// Newest-first committed changes from the authoritative project's audit trail.
+	History(context.Context, *TaskHistoryRequest) (*AuditListResponse, error)
 	mustEmbedUnimplementedTaskServiceServer()
 }
 
@@ -239,6 +254,9 @@ func (UnimplementedTaskServiceServer) Claim(context.Context, *TaskClaimRequest) 
 }
 func (UnimplementedTaskServiceServer) Release(context.Context, *TaskClaimRequest) (*Task, error) {
 	return nil, status.Error(codes.Unimplemented, "method Release not implemented")
+}
+func (UnimplementedTaskServiceServer) History(context.Context, *TaskHistoryRequest) (*AuditListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method History not implemented")
 }
 func (UnimplementedTaskServiceServer) mustEmbedUnimplementedTaskServiceServer() {}
 func (UnimplementedTaskServiceServer) testEmbeddedByValue()                     {}
@@ -416,6 +434,24 @@ func _TaskService_Release_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskService_History_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TaskHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).History(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_History_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).History(ctx, req.(*TaskHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TaskService_ServiceDesc is the grpc.ServiceDesc for TaskService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -454,6 +490,10 @@ var TaskService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Release",
 			Handler:    _TaskService_Release_Handler,
+		},
+		{
+			MethodName: "History",
+			Handler:    _TaskService_History_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -321,13 +321,6 @@ export function ComponentPreview({
         menu={(pick) => (
           <SessionMenu
             session={session}
-            info={{
-              model: session.model,
-              effort: "medium",
-              remaining: 72,
-              contextUsed: 48000,
-              contextWindow: 200000,
-            }}
             busy={sending}
             fork={async () => {
               const next = {
@@ -341,11 +334,6 @@ export function ComponentPreview({
               setGeneration((value) => value + 1);
             }}
             upload={uploadMode ? pick : undefined}
-            edit={async (field, value) => {
-              identityRef.current = { ...identityRef.current, [field]: value };
-              setIdentity(identityRef.current);
-              return { ...session, ...identityRef.current };
-            }}
             manage={async (operation) => {
               setStopped(operation === "stop");
               if (operation !== "stop") setGeneration((value) => value + 1);

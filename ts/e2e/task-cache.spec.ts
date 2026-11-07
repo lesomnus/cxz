@@ -134,7 +134,7 @@ test("Tasks survive reload while List is pending, reconcile remote changes and a
   try {
     await page.goto("/c/_/project/demo/task");
     await expect(
-      page.getByRole("button", {
+      page.getByRole("link", {
         name: "Open task: Task saved before reload",
         exact: true,
       }),
@@ -149,24 +149,24 @@ test("Tasks survive reload while List is pending, reconcile remote changes and a
     };
     await page.reload();
     await expect(
-      page.getByRole("button", {
+      page.getByRole("link", {
         name: "Open task: Task saved before reload",
         exact: true,
       }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", {
+      page.getByRole("link", {
         name: "Open task: Task updated while the browser was away",
         exact: true,
       }),
     ).toHaveCount(0);
     await page
-      .getByRole("button", {
+      .getByRole("link", {
         name: "Open task: Task saved before reload",
         exact: true,
       })
       .click();
-    const detail = page.getByRole("dialog", {
+    const detail = page.getByRole("region", {
       name: "Task details",
       exact: true,
     });
@@ -194,15 +194,15 @@ test("Tasks survive reload while List is pending, reconcile remote changes and a
     await expect(title).toHaveValue("Keep this draft while the server updates");
     releaseGet();
     await expect(title).toHaveValue("Task updated while the browser was away");
-    await detail.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.goBack();
     await expect(
-      page.getByRole("button", {
+      page.getByRole("link", {
         name: "Open task: Task updated while the browser was away",
         exact: true,
       }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", {
+      page.getByRole("link", {
         name: "Open task: Task saved before reload",
         exact: true,
       }),
@@ -249,7 +249,7 @@ test("Tasks remain live when IndexedDB is unavailable", async ({
   });
   await page.goto("/c/_/project/demo/task");
   await expect(
-    page.getByRole("button", {
+    page.getByRole("link", {
       name: "Open task: Live task without browser storage",
       exact: true,
     }),

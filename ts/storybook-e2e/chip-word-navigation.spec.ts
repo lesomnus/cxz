@@ -49,6 +49,31 @@ test("Ctrl+Left crosses a whole chip and continues to the preceding word; Ctrl+R
   await expect.poll(() => selection(input)).toMatchObject({ start: end, end });
 });
 
+test("Left and Right cross chips with a collapsed caret and Shift still selects", async ({
+  page,
+}) => {
+  const input = await pasteChip(page);
+  const end = (await selection(input)).end;
+  await input.press("ArrowLeft");
+  await expect.poll(() => selection(input)).toMatchObject({ start: 6, end: 6 });
+  await input.press("ArrowLeft");
+  await expect.poll(() => selection(input)).toMatchObject({ start: 5, end: 5 });
+  await input.press("ArrowRight");
+  await input.press("ArrowRight");
+  await expect.poll(() => selection(input)).toMatchObject({ start: end, end });
+  await input.press("Shift+ArrowLeft");
+  await expect
+    .poll(() => selection(input))
+    .toEqual({ start: 6, end, direction: "backward" });
+  await input.press("ArrowLeft");
+  await expect.poll(() => selection(input)).toMatchObject({ start: 6, end: 6 });
+  await input.press("Shift+ArrowRight");
+  await expect.poll(() => selection(input)).toMatchObject({ start: 6, end });
+  await input.press("ArrowRight");
+  await expect.poll(() => selection(input)).toMatchObject({ start: end, end });
+  await expect(page.locator(".paste-chip")).toHaveCount(1);
+});
+
 test("Ctrl+Shift+Left selects the chip atomically and preserves the backward anchor", async ({
   page,
 }) => {
@@ -77,7 +102,7 @@ test("Ctrl+Shift+Left selects the chip atomically and preserves the backward anc
   await expect.poll(() => selection(input)).toMatchObject({ start: end, end });
 });
 
-test("word movement across adjacent chips progresses one chip at a time without editing the draft", async ({
+test("caret and word movement across adjacent chips progresses one chip at a time without editing the draft", async ({
   page,
 }) => {
   const input = await pasteChip(page, "");
@@ -100,6 +125,18 @@ test("word movement across adjacent chips progresses one chip at a time without 
   await input.press("Control+End");
   const original = await input.inputValue();
   const end = (await selection(input)).end;
+  for (const position of [firstEnd, 0]) {
+    await input.press("ArrowLeft");
+    await expect
+      .poll(() => selection(input))
+      .toMatchObject({ start: position, end: position });
+  }
+  for (const position of [firstEnd, end]) {
+    await input.press("ArrowRight");
+    await expect
+      .poll(() => selection(input))
+      .toMatchObject({ start: position, end: position });
+  }
   await input.press("Control+ArrowLeft");
   await expect
     .poll(() => selection(input))

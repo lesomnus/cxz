@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useEffect, useState } from "react";
 import { useLocalError } from "#src/shared/errors/error-context.tsx";
 import {
@@ -29,17 +30,7 @@ type UsageMetric = {
   prefix?: string;
 };
 
-export function UsageReport({
-  c,
-  session = "",
-  project = "",
-  account = "",
-  accountId,
-  className,
-  refreshVersion = 0,
-  hideRefresh = false,
-  onLoadingChange,
-}: {
+type UsageReportProps = {
   c: Connection;
   session?: string;
   project?: string;
@@ -49,7 +40,31 @@ export function UsageReport({
   refreshVersion?: number;
   hideRefresh?: boolean;
   onLoadingChange?: (loading: boolean) => void;
-}) {
+};
+
+export function UsageReport(props: UsageReportProps) {
+  const { c, session = "", project = "", account = "", accountId } = props;
+  const identity = accountId?.length ? key(accountId) : account;
+  // A refresh keeps this view mounted; a different resource starts a clean view.
+  return (
+    <UsageReportView
+      key={JSON.stringify([c.clientId, session, project, identity])}
+      {...props}
+    />
+  );
+}
+
+function UsageReportView({
+  c,
+  session = "",
+  project = "",
+  account = "",
+  accountId,
+  className,
+  refreshVersion = 0,
+  hideRefresh = false,
+  onLoadingChange,
+}: UsageReportProps) {
   const { locale } = useLocale();
   const [weeks, setWeeks] = useState<number>();
   const [selection, setSelection] = useState<{
@@ -95,7 +110,8 @@ export function UsageReport({
     [c, session, project, identity, weeks, stats.data],
     {
       enabled: !!weeks && !!stats.data && !stats.loading,
-      keepPreviousData: !!identity,
+      keepPreviousData: true,
+      refresh: refreshVersion,
       cache:
         weeks && stats.data
           ? {
@@ -146,6 +162,7 @@ export function UsageReport({
           <Button
             className={usageStyles.refresh}
             aria-label="Refresh"
+            minLoadingDuration={500}
             loading={stats.loading || history.loading}
             onClick={async () => {
               c.reads.invalidatePrefix(cachePrefix);
@@ -153,19 +170,7 @@ export function UsageReport({
               await stats.reload();
             }}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M13 7a5 5 0 1 0-.8 3.7M13 3v4H9" />
-            </svg>
+            <Icon name="refresh" width="16" height="16" aria-hidden="true" />
           </Button>
         )}
       </div>

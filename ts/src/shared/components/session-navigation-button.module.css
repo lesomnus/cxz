@@ -1,0 +1,14 @@
+.button.button {
+  /* The field or table column supplies the available width. */
+  max-width: none;
+}
+.logo {
+  --agent-logo-size: var(--ui-icon-size-small);
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--agent-logo-size);
+  height: var(--agent-logo-size);
+  /* Add to the shared card gap, keeping the arrow's gap unchanged. */
+  margin-inline-end: var(--ui-space);
+}

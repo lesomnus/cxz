@@ -35,23 +35,25 @@ export function SessionPicker({
     selected?.alias ||
     (value ? `Session ${value.slice(0, 8)}` : "All sessions");
   return (
-    <PrefixValueMenu
-      className={styles.picker}
-      prefix={<ResourceIcon kind="sessions" />}
-      label="Select session"
-      value={value}
-      display={loading ? "Loading sessions…" : display + suffix}
-      options={[
-        { value: "", label: "All sessions" },
-        ...scoped.map((session) => ({
-          value: getValue(session),
-          label: session.name || session.alias || getValue(session),
-          searchText: `${session.alias} ${sessionUUID(session.id)} ${session.runtimeId}`,
-        })),
-      ]}
-      searchable
-      disabled={!project || loading}
-      choose={choose}
-    />
+    <div className={styles.picker}>
+      <PrefixValueMenu
+        className={styles.field}
+        prefix={<ResourceIcon kind="sessions" />}
+        label="Select session"
+        value={value}
+        display={loading ? "Loading sessions…" : display + suffix}
+        options={[
+          { value: "", label: "All sessions" },
+          ...scoped.map((session) => ({
+            value: getValue(session),
+            label: session.name || session.alias || getValue(session),
+            searchText: `${session.alias} ${sessionUUID(session.id)} ${session.runtimeId}`,
+          })),
+        ]}
+        searchable
+        disabled={!project || loading}
+        choose={choose}
+      />
+    </div>
   );
 }

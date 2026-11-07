@@ -30,6 +30,7 @@ import {
   saveContainerDownload,
 } from "#src/features/session/composer/composer-download.ts";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { Button } from "@lesomnus/nox";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { authenticationRequired } from "#src/features/session/model/session-auth.ts";
@@ -39,7 +40,6 @@ import {
   sessionLoginSnapshot,
 } from "#src/features/session/model/session-actions.ts";
 import { performSessionControl } from "#src/features/session/model/session-control-batch.ts";
-import { editSession } from "#src/features/session/model/session-edit.ts";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
@@ -104,6 +104,7 @@ import { AuxiliaryControls } from "#src/features/auxiliary/auxiliary-controls.ts
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import { BackgroundReport } from "#src/features/activity/background-report.tsx";
 import { useSessionBackground } from "#src/features/session/model/use-session-background.ts";
+import { backgroundAvailable } from "#src/features/session/model/background-availability.ts";
 import { useVisibleApprovals } from "#src/features/session/model/use-visible-approvals.ts";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { LoginPanel } from "#src/features/accounts/login-panel.tsx";
@@ -165,10 +166,12 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const downloadRequest = useRef<AbortController | null>(null);
   useEffect(() => () => downloadRequest.current?.abort(), []);
   const visibleApprovals = useVisibleApprovals(pending);
+  const backgroundEnabled = backgroundAvailable(current.data, projects);
   const background = useSessionBackground(
     c,
     current.data?.id,
     turn.runId || current.data?.status?.runId || "",
+    backgroundEnabled,
   );
   const [error, setError] = useState("");
   const [draft, setDraft] = useState(c.drafts.get(id) ?? "");
@@ -824,6 +827,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             c={c}
             session={s?.id}
             run={turn.runId || s?.status?.runId || ""}
+            available={backgroundEnabled}
           />
         ),
       });
@@ -1246,23 +1250,30 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               available: !!s?.project?.id.length,
               toggle: () => showTerminal(!terminalVisibleRef.current),
             }}
-            info={info}
             busy={busy}
             fork={() => forkConversation()}
             tools={[
               {
                 label: "Insert secret",
+                icon: <Icon name="hide" />,
                 disabled: !s?.status?.runId || !projectId || busy,
                 run: () => openSecret(),
               },
-              { label: "Shared memory", run: () => localOpen("memory") },
-              { label: "Auxiliary AI", run: () => localOpen("aux") },
-              { label: "Conversation usage", run: () => localOpen("usage") },
-              { label: "Background tasks", run: () => localOpen("background") },
+              {
+                label: "Shared memory",
+                icon: <Icon name="memory" />,
+                run: () => localOpen("memory"),
+              },
+              {
+                label: "Auxiliary AI",
+                icon: <Icon name="auxiliary" />,
+                run: () => localOpen("aux"),
+              },
               ...(s?.agent === "claude"
                 ? [
                     {
                       label: "Log in",
+                      icon: <Icon name="accounts" />,
                       disabled:
                         busy ||
                         !["idle", "stopped", "failed", "interrupted"].includes(
@@ -1277,13 +1288,6 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                 : []),
             ]}
             upload={pick}
-            edit={async (field, value) => {
-              const updated = await editSession(c.sessions, id, field, value);
-              c.store.apply("cxz.Session", [
-                { id: updated.id, value: updated },
-              ]);
-              return updated;
-            }}
             erase={(target) => {
               const location = router.state.location.href;
               return action(async () => {

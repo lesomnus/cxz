@@ -1,34 +1,17 @@
-.page {
-  composes: page from "../../shared/components/resource-page.module.css";
-}
 .preview {
   display: flex;
   height: calc(100dvh - 36px);
   min-width: 0;
 }
-.preview > .page {
-  flex: 1;
-}
-.toolbar {
-  composes: toolbar from "../../shared/components/resource-page.module.css";
-}
-.toolbarContent {
-  composes: toolbarContent from "../../shared/components/resource-page.module.css";
-}
-.toolbarActions {
-  composes: toolbarActions from "../../shared/components/resource-page.module.css";
-}
 .body {
-  --ui-scroll-area-background: var(--ui-shade-20);
   flex: 1;
   min-height: 0;
 }
-.body .scrollContent {
-  padding: calc(3 * var(--ui-space)) var(--resource-page-gutter);
+.pageEditor {
+  height: 100%;
+  min-height: 0;
 }
 .content {
-  composes: content from "../../shared/components/resource-page.module.css";
-  --section-layout-max-width: var(--resource-page-content-width);
   gap: calc(2 * var(--ui-space));
 }
 .quiet {
@@ -175,5 +158,9 @@
 }
 .labels dd {
   margin: 0;
+  overflow-wrap: anywhere;
+}
+.reviewMessage {
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

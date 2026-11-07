@@ -20,7 +20,7 @@ for (const theme of ["dark", "light"]) {
       await expect(meter).toHaveAttribute("aria-valuenow", String(value));
       const gauge = meter.locator("..");
       await expect(gauge).toHaveCSS("border-radius", "14px");
-      const contour = gauge.locator("[data-quota-contour]");
+      const contour = gauge.locator("[data-liquid-contour]");
       await expect
         .poll(() => depth(contour))
         .toBeCloseTo((58 * (100 - value)) / 100, 2);
@@ -78,7 +78,7 @@ for (const theme of ["dark", "light"]) {
     await expect(
       unknown.getByRole("img", { name: "Not reported", exact: true }),
     ).toBeVisible();
-    expect(await depth(unknown.locator("[data-quota-contour]"))).toBe(0);
+    expect(await depth(unknown.locator("[data-liquid-contour]"))).toBe(0);
     await page.screenshot({ path: `/tmp/account-quota-soft-${theme}.png` });
     const nearFull = page.getByRole("figure", {
       name: "90% remaining",
@@ -104,7 +104,7 @@ test("changing quota morphs the same soft meniscus without changing the account 
   });
   const meter = quota.getByRole("meter");
   await expect(meter).toHaveAttribute("aria-valuenow", "95");
-  const contour = quota.locator("[data-quota-contour]");
+  const contour = quota.locator("[data-liquid-contour]");
   await expect.poll(() => depth(contour)).toBeCloseTo(2.9, 2);
   const original = await contour.elementHandle();
   const before = await quota.boundingBox();
@@ -136,7 +136,7 @@ test("reduced motion updates liquid level immediately", async ({ page }) => {
   await page.goto("/iframe.html?id=accounts-quota--water-level&viewMode=story");
   const meter = page.getByRole("meter");
   await expect(meter).toHaveAttribute("aria-valuenow", "95");
-  const contour = page.locator("[data-quota-contour]");
+  const contour = page.locator("[data-liquid-contour]");
   const slider = page.getByRole("slider", {
     name: "Remaining usage",
     exact: true,

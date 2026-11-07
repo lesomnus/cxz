@@ -115,6 +115,8 @@ export class SessionHistory {
           connection: this.diagnostics?.baseUrl,
           method: "cxz.SessionService/Rows",
           target: `Session: ${this.id}`,
+          origin: { kind: "runtime", operation: "session-history" },
+          subject: { kind: "session", runtimeId: this.id },
         },
         signal,
       ),

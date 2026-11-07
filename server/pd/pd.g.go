@@ -8924,6 +8924,11 @@ func (s interceptTask) Release(ctx context.Context, req *resource.TaskClaimReque
 		resource.TaskService_Release_FullMethodName, req, s.TaskServiceServer.Release)
 }
 
+func (s interceptTask) History(ctx context.Context, req *resource.TaskHistoryRequest) (*resource.AuditListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TaskServiceServer,
+		resource.TaskService_History_FullMethodName, req, s.TaskServiceServer.History)
+}
+
 func (s Intercept) TaskLink() resource.TaskLinkServiceServer {
 	return interceptTaskLink{s, s.Next().TaskLink()}
 }
@@ -11358,6 +11363,8 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.TaskClaimRequest{}
 	case resource.TaskService_Release_FullMethodName:
 		v = &resource.TaskClaimRequest{}
+	case resource.TaskService_History_FullMethodName:
+		v = &resource.TaskHistoryRequest{}
 	case resource.TaskLinkService_Add_FullMethodName:
 		v = &resource.TaskLinkAddRequest{}
 	case resource.TaskLinkService_Get_FullMethodName:
@@ -11608,6 +11615,8 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.Task().Claim(ctx, v.(*resource.TaskClaimRequest))
 	case resource.TaskService_Release_FullMethodName:
 		res, err = s.Task().Release(ctx, v.(*resource.TaskClaimRequest))
+	case resource.TaskService_History_FullMethodName:
+		res, err = s.Task().History(ctx, v.(*resource.TaskHistoryRequest))
 	case resource.TaskLinkService_Add_FullMethodName:
 		res, err = s.TaskLink().Add(ctx, v.(*resource.TaskLinkAddRequest))
 	case resource.TaskLinkService_Get_FullMethodName:

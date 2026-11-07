@@ -1,9 +1,11 @@
+import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
-import { useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useBlocker } from "@tanstack/react-router";
 import { Id } from "@lesomnus/payday/pdid";
-import { Button, PageToolbar, SectionLayout } from "@lesomnus/nox";
+import { Button } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Task } from "#gen/cxz/task_pb";
@@ -13,8 +15,17 @@ import { SessionPicker } from "#src/shared/components/session-picker.tsx";
 import { useProjectTasks } from "./task-catalog";
 import { TaskTable } from "./task-table";
 import { TaskDialog } from "./task-dialog";
+import { TaskDetailPage } from "./task-detail-page";
+import { ListDetailPages } from "@lesomnus/nox";
+import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { taskKey } from "./task-model";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import {
+  ResourceLayout,
+  ResourcePage,
+  ResourceToolbar,
+} from "#src/shared/components/resource-layout.tsx";
+import pageStyles from "#src/shared/components/resource-page.module.css";
 import styles from "./tasks.module.css";
 import {
   matchesResource,
@@ -42,7 +53,7 @@ export function TasksView({
   projectsLoading?: boolean;
   sessionsLoading?: boolean;
   selection: TaskSelection;
-  select: (value: TaskSelection) => void;
+  select: (value: TaskSelection, options?: { replace?: boolean }) => void;
 }) {
   const resolved = useProject(c, projects, selection.project);
   const needsProject =
@@ -74,12 +85,40 @@ export function TasksView({
     ? new Id(selectedTask.id).toString()
     : selection.task;
   const [adding, setAdding] = useState(false);
-  const open = (task: Task) =>
-    select({
-      ...selection,
-      project: project && resourceHandle(project),
-      task: resourceHandle(task),
-    });
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [editorRevision, setEditorRevision] = useState(0);
+  const dirtyRef = useRef(false);
+  const detailOpen = !!(project && selection.task);
+  const detailActive = useRef(detailOpen);
+  detailActive.current = detailOpen;
+  const onDirtyChange = useCallback((value: boolean) => {
+    dirtyRef.current = value && detailActive.current;
+    setDirty(dirtyRef.current);
+  }, []);
+  useLayoutEffect(() => {
+    if (!detailOpen) onDirtyChange(false);
+  }, [detailOpen, onDirtyChange]);
+  const blocker = useBlocker({
+    shouldBlockFn: ({ current, next }) =>
+      !!selection.task &&
+      dirtyRef.current &&
+      (current.pathname !== next.pathname ||
+        JSON.stringify(current.search) !== JSON.stringify(next.search)),
+    enableBeforeUnload: dirty,
+    withResolver: true,
+  });
+  const open = (task: Task) => {
+    if (!detailActive.current) return;
+    select(
+      {
+        ...selection,
+        project: project && resourceHandle(project),
+        task: resourceHandle(task),
+      },
+      { replace: true },
+    );
+  };
   const close = () => {
     setAdding(false);
     if (selection.task)
@@ -91,133 +130,163 @@ export function TasksView({
   };
   return (
     <>
-      <main className={styles.page} aria-label="Project tasks">
-        <PageToolbar className={styles.toolbar} aria-label="Task toolbar">
-          <div className={styles.toolbarContent}>
-            <ProjectPicker
-              projects={projects}
-              value={projectId}
-              loading={projectsLoading}
-              choose={(project) => {
-                setAdding(false);
-                select({
-                  project: resourceHandle(
-                    projects.find((p) => projectUUID(p) === project)!,
-                  ),
-                  ...(needsProject ? { task: selection.task } : {}),
-                });
-              }}
+      <ResourcePage aria-label="Project tasks">
+        <ResourceToolbar
+          aria-label="Task toolbar"
+          actions={
+            <ToolbarIconButton
+              icon="add"
+              label="Add task"
+              disabled={!project}
+              onClick={() => setAdding(true)}
             />
-            <SessionPicker
-              sessions={sessions}
-              project={projectId}
-              value={selection.assignee}
-              loading={sessionsLoading}
-              suffix={selection.run ? " · This run" : ""}
-              getValue={(session) => session.runtimeId}
-              choose={(assignee) =>
-                select({
-                  ...selection,
-                  assignee: assignee || undefined,
-                  run: undefined,
-                })
-              }
-            />
-            <div className={styles.toolbarActions}>
-              <Button
-                type="button"
-                variant="toolbar"
-                aria-label="Add task"
-                title="Add task"
-                disabled={!project}
-                onClick={() => setAdding(true)}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-              </Button>
-            </div>
-          </div>
-        </PageToolbar>
-        <PanelScroll
-          className={styles.body}
-          contentClassName={styles.scrollContent}
-          horizontalScrollbar
-          scrollbarLabel="Scroll tasks"
+          }
         >
-          <SectionLayout className={styles.content}>
-            {project ? (
-              <>
-                {state.loading && !state.tasks.length && (
-                  <p role="status" className={styles.message}>
-                    Loading tasks…
+          <ProjectPicker
+            projects={projects}
+            value={projectId}
+            loading={projectsLoading}
+            choose={(project) => {
+              setAdding(false);
+              select({
+                project: resourceHandle(
+                  projects.find((p) => projectUUID(p) === project)!,
+                ),
+                ...(needsProject ? { task: selection.task } : {}),
+              });
+            }}
+          />
+          <SessionPicker
+            sessions={sessions}
+            project={projectId}
+            value={selection.assignee}
+            loading={sessionsLoading}
+            suffix={selection.run ? " · This run" : ""}
+            getValue={(session) => session.runtimeId}
+            choose={(assignee) =>
+              select({
+                ...selection,
+                assignee: assignee || undefined,
+                run: undefined,
+              })
+            }
+          />
+        </ResourceToolbar>
+        <ListDetailPages
+          key={projectId}
+          scope={c}
+          open={detailOpen}
+          list={
+            <PanelScroll
+              className={styles.body}
+              contentClassName={pageStyles.contentPadding}
+              horizontalScrollbar
+              scrollbarLabel="Scroll tasks"
+            >
+              <ResourceLayout className={styles.content}>
+                {project ? (
+                  <>
+                    {state.loading && !state.tasks.length && (
+                      <p role="status" className={styles.message}>
+                        Loading tasks…
+                      </p>
+                    )}
+                    {state.error && (
+                      <div className={styles.message}>
+                        <ErrorNotice as="div" error={state.error}>
+                          <p>{state.error}</p>
+                          <span>
+                            Tasks are stored in the project runtime. Start the
+                            project if it is stopped.
+                          </span>
+                        </ErrorNotice>
+                        <Button type="button" onClick={state.refresh}>
+                          Retry
+                        </Button>
+                      </div>
+                    )}
+                    {(!state.loading || !!state.tasks.length) &&
+                      (!state.error || !!state.tasks.length) && (
+                        <TaskTable
+                          key={JSON.stringify([
+                            projectId,
+                            selection.assignee,
+                            selection.run,
+                          ])}
+                          tasks={state.tasks}
+                          sessions={sessions}
+                          sessionsLoading={sessionsLoading}
+                          project={project}
+                          assignee={selection.assignee}
+                          run={selection.run}
+                        />
+                      )}
+                  </>
+                ) : (
+                  <p className={styles.message}>
+                    {projectsLoading
+                      ? "Loading projects…"
+                      : needsProject
+                        ? "Choose a project to open this task."
+                        : selection.project
+                          ? "Project not found. Choose another project."
+                          : "Add a project to start tracking shared work."}
                   </p>
                 )}
-                {state.error && (
-                  <div className={styles.message}>
-                    <ErrorNotice as="div" error={state.error}>
-                      <p>{state.error}</p>
-                      <span>
-                        Tasks are stored in the project runtime. Start the
-                        project if it is stopped.
-                      </span>
-                    </ErrorNotice>
-                    <Button type="button" onClick={state.refresh}>
-                      Retry
-                    </Button>
-                  </div>
-                )}
-                {(!state.loading || !!state.tasks.length) &&
-                  (!state.error || !!state.tasks.length) && (
-                    <TaskTable
-                      key={JSON.stringify([
-                        projectId,
-                        selection.assignee,
-                        selection.run,
-                      ])}
-                      tasks={state.tasks}
-                      sessions={sessions}
-                      sessionsLoading={sessionsLoading}
-                      assignee={selection.assignee}
-                      run={selection.run}
-                      open={open}
-                    />
-                  )}
-              </>
-            ) : (
-              <p className={styles.message}>
-                {projectsLoading
-                  ? "Loading projects…"
-                  : needsProject
-                    ? "Choose a project to open this task."
-                    : selection.project
-                      ? "Project not found. Choose another project."
-                      : "Add a project to start tracking shared work."}
-              </p>
-            )}
-          </SectionLayout>
-        </PanelScroll>
-      </main>
-      {project && (adding || selection.task) && (
+              </ResourceLayout>
+            </PanelScroll>
+          }
+          detail={
+            project && selection.task ? (
+              <TaskDetailPage
+                c={c}
+                project={project}
+                tasks={state.tasks}
+                sessions={sessions}
+                selected={selectedTaskId!}
+                latest={selectedTask}
+                assignee={selection.assignee}
+                run={selection.run}
+                open={open}
+                close={close}
+                saved={open}
+                busy={busy}
+                setBusy={setBusy}
+                onDirtyChange={onDirtyChange}
+                editorRevision={editorRevision}
+              />
+            ) : null
+          }
+        />
+      </ResourcePage>
+      {project && adding && (
         <TaskDialog
-          key={`${projectId}:${adding ? "add" : selectedTaskId}`}
+          key={`${projectId}:add`}
           c={c}
           project={project}
-          selected={adding ? undefined : selectedTaskId}
-          latest={selectedTask}
           sessions={sessions}
-          close={close}
-          saved={() => close()}
+          close={() => setAdding(false)}
+          saved={() => setAdding(false)}
         />
+      )}
+      {blocker.status === "blocked" && (
+        <ConfirmationDialog
+          title="Discard unsaved changes"
+          confirmLabel="Discard changes"
+          close={() => blocker.reset?.()}
+          failureMessage="Wait for the task request to finish before leaving."
+          execute={() => {
+            if (busy) return false;
+            onDirtyChange(false);
+            setEditorRevision((revision) => revision + 1);
+            blocker.proceed?.();
+            return true;
+          }}
+        >
+          <p>
+            This task has unsaved changes. Discard them and leave this task?
+          </p>
+        </ConfirmationDialog>
       )}
     </>
   );

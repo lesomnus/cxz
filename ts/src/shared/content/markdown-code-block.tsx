@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button, ScrollArea, ValueMenu } from "@lesomnus/nox";
@@ -130,25 +131,12 @@ export function MarkdownCodeBlock({
               aria-pressed={expansion.expanded}
               onClick={expansion.toggle}
             >
-              <svg
+              <Icon
+                name={expansion.expanded ? "collapse-code" : "expand-code"}
                 width="16"
                 height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
                 aria-hidden="true"
-              >
-                <path
-                  d={
-                    expansion.expanded
-                      ? "m4 8 4 4-4 4m16-8-4 4 4 4M2 12h6m8 0h6"
-                      : "m8 8-4 4 4 4m8-8 4 4-4 4M4 12h16"
-                  }
-                />
-              </svg>
+              />
             </Button>
           )}
           <CopyButton value={text} />

@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useLayoutEffect, useState, useRef, useId } from "react";
 import {
@@ -11,7 +12,12 @@ import {
 } from "@lesomnus/nox";
 import { SourceEditor } from "@lesomnus/nox/editor";
 import type { Memory } from "#gen/cxz/memory_pb";
-import { MemoryScope, MemoryReadFormat } from "#gen/cxz/memory_svc_pb";
+import {
+  MemoryService,
+  MemoryScope,
+  MemoryReadFormat,
+  type MemoryReadReply,
+} from "#gen/cxz/memory_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { projectRef } from "#src/shared/api/project-id.ts";
@@ -20,6 +26,7 @@ import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { publicUUID } from "#src/shared/logs/rpc-diagnostics.ts";
 import { memoryListKey } from "#src/shared/api/read-cache.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
+import { useConnectionQuery } from "#src/shared/api/use-query.ts";
 import { useEditorSettings } from "#src/shared/settings/settings.ts";
 import { useTheme } from "#src/shared/theme/theme.tsx";
 import { RelativeTime } from "#src/shared/components/date-time.tsx";
@@ -47,19 +54,7 @@ const migrationLabels = (labels: Record<string, string>) =>
     Object.entries(labels).filter(([k]) => k.startsWith("legacy.")),
   );
 function DocumentIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      aria-hidden="true"
-    >
-      <path d="M14 3H6v18h12V7zM14 3v5h4M9 12h6M9 16h6" />
-    </svg>
-  );
+  return <Icon name="document" width="14" height="14" aria-hidden="true" />;
 }
 function parseLabels(value: string) {
   const labels: Record<string, string> = {};
@@ -178,20 +173,27 @@ export function MemoryLibrary({
     project: projectRef(project),
   });
   const selectedKey = selected ? key(selected) : "";
-  const text = useRemote(
-    async (signal) =>
-      selected && !creating
-        ? {
-            ...(await c.memories.read(
-              { ref: memoryRef(), format: MemoryReadFormat.FULL },
-              { signal, timeoutMs: 30000 },
-            )),
-            key: selectedKey,
-          }
-        : undefined,
-    [c, project, selectedKey, creating],
+  const text = useConnectionQuery(
+    c.queries,
+    MemoryService.method.read,
+    selected && !creating
+      ? { ref: memoryRef(), format: MemoryReadFormat.FULL }
+      : undefined,
+    { watch: false },
   );
-  const read = text.data?.key === selectedKey ? text.data : undefined;
+  const editingRead = useRef<
+    { key: string; data: MemoryReadReply } | undefined
+  >(undefined);
+  if (!editing)
+    editingRead.current = text.data
+      ? { key: selectedKey, data: text.data }
+      : undefined;
+  // An in-progress edit retains the revision it started from. Background reads
+  // must neither overwrite the draft nor silently advance its conflict base.
+  const read =
+    editing && !creating && editingRead.current?.key === selectedKey
+      ? editingRead.current.data
+      : text.data;
   const picked = read?.memory;
   const reading = !creating && (text.loading || (!read && !text.error));
   useEffect(() => {
@@ -213,15 +215,15 @@ export function MemoryLibrary({
     listKey,
     invalidMemoryID,
   ]);
-  useEffect(() => {
-    if (read) {
+  useLayoutEffect(() => {
+    if (read && !editing) {
       setDraft(read.content);
       setOriginal(read.content);
       setName(read.memory?.name ?? "");
       setLabels(labelsText(visibleLabels(read.memory?.labels ?? {})));
       setCompare(undefined);
     }
-  }, [text.data]);
+  }, [read, editing]);
   const dirty = creating
     ? !!(draft || name || labels)
     : !!read &&
@@ -379,12 +381,13 @@ export function MemoryLibrary({
         });
       }
       c.reads.invalidate(memoryListKey(project));
+      if (!creating)
+        await text.refresh((reply) => reply.revision >= saved.revision);
       setOriginal(draft);
       selectMemory(saved.id, true);
       setCreating(false);
       setEditing(false);
       setPreview(true);
-      text.reload();
       versions.reload();
     });
   }
@@ -484,21 +487,12 @@ export function MemoryLibrary({
                     choose(() => {
                       c.reads.invalidate(memoryListKey(project));
                       list.reload();
+                      setEditing(false);
                       text.reload();
                     })
                   }
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    aria-hidden="true"
-                  >
-                    <path d="M20 7v5h-5M4 17v-5h5M19 12a7 7 0 0 0-12-5L4 10m1 2a7 7 0 0 0 12 5l3-3" />
-                  </svg>
+                  <Icon name="sync" width="14" height="14" aria-hidden="true" />
                 </Button>
                 {!trash && (
                   <Button
@@ -508,17 +502,12 @@ export function MemoryLibrary({
                     title="New memory"
                     onClick={() => newMemory()}
                   >
-                    <svg
+                    <Icon
+                      name="add"
                       width="14"
                       height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
                       aria-hidden="true"
-                    >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
+                    />
                   </Button>
                 )}
               </div>
@@ -570,18 +559,12 @@ export function MemoryLibrary({
                   aria-label="Search"
                   title="Search"
                 >
-                  <svg
+                  <Icon
+                    name="search"
                     width="14"
                     height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
                     aria-hidden="true"
-                  >
-                    <circle cx="10" cy="10" r="6" />
-                    <path d="m15 15 5 5" />
-                  </svg>
+                  />
                 </Button>
                 <Button
                   type="button"
@@ -592,17 +575,12 @@ export function MemoryLibrary({
                   aria-pressed={showFilters}
                   onClick={() => setShowFilters((v) => !v)}
                 >
-                  <svg
+                  <Icon
+                    name="filter"
                     width="14"
                     height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
                     aria-hidden="true"
-                  >
-                    <path d="M4 6h16M7 12h10M10 18h4" />
-                  </svg>
+                  />
                 </Button>
               </div>
               {showFilters && (
@@ -794,6 +772,7 @@ export function MemoryLibrary({
                         run: () =>
                           choose(() => {
                             c.reads.invalidate(memoryListKey(project));
+                            setEditing(false);
                             void text.reload();
                           }),
                       },
@@ -813,7 +792,7 @@ export function MemoryLibrary({
               </header>
               {reading ? (
                 <p className={styles.empty}>Loading memory…</p>
-              ) : text.error && !creating ? (
+              ) : text.error && !creating && !read ? (
                 <Button onClick={text.reload}>Retry memory</Button>
               ) : (
                 <>

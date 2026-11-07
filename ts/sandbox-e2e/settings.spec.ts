@@ -295,11 +295,11 @@ test("settings JSON and session files share the editor surface and theme while o
       };
     });
   const expected = await appearance(workspace);
-  expect(expected.background).toBe("rgb(20, 20, 20)");
+  expect(expected.background).toBe("rgba(0, 0, 0, 0)");
+  await expect(
+    workspace.locator("[data-workspace-content] > :last-child"),
+  ).toHaveCSS("background-color", "rgb(20, 20, 20)");
   expect(expected.fontSize).toBe("12px");
-  const headerPadding = await workspace
-    .locator("header")
-    .evaluate((el) => getComputedStyle(el).padding);
   const footerFont = await workspace
     .locator("footer")
     .evaluate((el) => getComputedStyle(el).fontSize);
@@ -310,10 +310,11 @@ test("settings JSON and session files share the editor surface and theme while o
   });
   const input = await file(page);
   await expect(pane.locator(".monaco-editor")).toBeVisible();
-  expect(await appearance(pane)).toEqual(expected);
-  expect(
-    await pane.locator("header").evaluate((el) => getComputedStyle(el).padding),
-  ).toBe(headerPadding);
+  expect(await appearance(pane)).toEqual({
+    ...expected,
+    background: "rgb(20, 20, 20)",
+    gutter: "rgb(20, 20, 20)",
+  });
   expect(
     await pane
       .locator("footer")

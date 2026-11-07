@@ -97,8 +97,9 @@ aliases before forwarding; the runtime independently checks the project scope.
   Reconnect for a fresh snapshot; this is not a replayable event journal.
 - **Patch** updates alias, name, description, priority, labels and status using the
   `date_updated` returned by a read. Force updates and direct ownership edits
-  are rejected. Ordinary unassigned work cannot enter In progress/Waiting
-  through Patch. Owned work returns to Todo through Release. A nonempty labels
+  are rejected. Done tasks reject every Patch, including no-op requests and
+  attempts to reopen or cancel them. Ordinary unassigned work cannot enter
+  In progress/Waiting through Patch. Owned work returns to Todo through Release. A nonempty labels
   map replaces the labels; `clear_labels: true` clears them with the same
   version check. An empty map alone means no edit, since protobuf maps have no
   presence. Combining a nonempty map and `clear_labels` is rejected.
@@ -107,15 +108,20 @@ aliases before forwarding; the runtime independently checks the project scope.
   Two competing claims cannot both win. Retrying for the same current owner
   run returns its current In progress/Waiting record.
 - **Release** compares the version and expected stored owner/run, clears
-  ownership and returns work to Todo. An operator can release stopped,
-  restarted or purged owners by naming their stored runtime ID/run. A stale
-  Release cannot clear a newer claim, even by the same session/run.
+  ownership and returns work to Todo. Working locks the assignee/run and rejects
+  Release, including after the owner stops, restarts or is purged. Move owned
+  work to Waiting or Canceled before releasing. An operator can cancel abandoned
+  Working work and then release it by naming its stored runtime ID/run. Done
+  tasks reject Release and Claim. A stale Release cannot clear a newer claim,
+  even by the same session/run.
 
 In progress, Waiting and Done transitions on owned work require `actor` to
 match the owner and its currently active run. Operators can cancel abandoned
 work or edit descriptive metadata without impersonating that owner. Completion
-retains ownership for attribution. There are no automatic lease expirations,
-automatic task completion or automatic reassignment when a session stops.
+retains ownership for attribution and makes the Task immutable. Include final
+metadata in the same Patch that marks Done; subsequent edits are rejected.
+There are no automatic lease expirations, automatic task completion or automatic
+reassignment when a session stops.
 
 The generated generic Apply/Erase methods are deliberately closed. Use the
 versioned operations above and cancel Tasks rather than deleting shared work
@@ -219,7 +225,7 @@ dedicated CLI/TUI task commands remain a follow-up.
 ## Web board
 
 Open **Tasks** in the resource sidebar and choose a project. The board groups
-work into Todo, In progress, Waiting and Done. Recent completed work appears
+work into Todo, Working, Waiting and Done. Recent completed work appears
 first, with older completed and canceled work available explicitly. Cards show
 the title, alias, owner, last update and ownership warnings. Owner and source
 links open the corresponding session, with the source event selected when its
@@ -233,18 +239,110 @@ runtime is stopped or does not implement Tasks, the view reports that condition
 and offers Retry.
 
 Use Add to register work or open a card to edit its title, alias, description,
-priority and permitted status. The dialog reads the current Task, then saves
-against that observed version. Incoming updates do not overwrite an open edit.
+and priority on its detail page. Status is read-only; execution transitions belong
+to the agent tools, and Release remains an explicit recovery action. The editor
+reads the current Task, then saves against that observed version. Incoming updates
+do not overwrite an open edit.
 After a version conflict, the draft remains visible and an explicit Reload
 latest task action lets the operator start from the new record. Stable Task IDs
 keep an open detail view associated with its record across alias changes.
 
+The title reserves two lines and clamps excess text with an ellipsis. For
+editable tasks, focus reveals the textarea. Completed titles expand on hover or
+focus in a Nox in-place popover: its width and top edge match the title's frame,
+and only its height grows downward. Clicking the title or the expanded text
+copies the full title. Ctrl/Cmd+A/C remains available. Description always wraps to its
+available width. Its right-aligned Break words
+toggle chooses between whole-word wrapping (including Korean words) and breaking
+inside words. Show control characters overlays spaces, tabs, newlines and other
+control markers without changing the text, selection or clipboard contents. Both
+view options survive saving and do not dirty the task. Assigned to and Priority
+lead the right panel in a 2:1 row. The assigned session button matches the Project
+button width inside an expanded control group. The assignment action fills the
+remaining width; its gap to the session button matches the container's inset. The next
+row places Status and Updated at 1:2. Alias, Project, creation source and labels
+remain in the middle; Task ID and Created form the final 1:2 row. ResourceFields
+accepts relative column weights, and ResourceControlGroup owns the inset surface
+and action placement. For an unassigned Todo task, the dice button chooses a
+random running session in the same project and uses version-checked Claim to
+assign its current run. Stopped sessions and sessions without a current run are
+excluded. Claim changes the task to Working; it does not send a chat message.
+With no eligible sessions, the dice button is disabled.
+For a Working or Waiting task owned by a previous run of a running session, the
+send button opens a confirmation containing the target session and review
+message, including the task's alias and UUID. Confirm sends a chat to the captured
+current run using SessionService.Send. A fresh task read prevents sending after
+the task has changed; the run ID prevents retargeting a restarted session. Retries
+within the confirmation keep the same client ID to avoid duplicate messages.
+The review asks the agent to read the latest task and assess it without silently
+changing ownership. Other states show a disabled button with a small centered dot.
+Assignment and review preserve unsaved edits and the session's composer draft.
+The separate Assignment metadata field is omitted; ownership warnings remain on
+Assigned to and in the task table.
+Navigation values expand back across their label inset like form inputs, retaining
+the input's content padding, with section-sized gaps between the buttons.
+Created and Updated show local timestamps
+without a visible UTC offset. Assigned to, Priority, Project and Created from use
+the default control label gap, matching Alias. Priority keeps its input surface
+and stretches to the Assigned to row height; its selected menu row fills the
+menu width. Status/Updated and Task ID/Created opt into compact density, retaining
+the tighter Account editable-value alignment. ResourceFields owns both densities,
+value stretching and input appearance; task pages do not override those metrics
+separately for each field.
+Release, Cancel, Save and Discard changes use individual
+panel buttons matching the Project detail actions, with icons and hover labels.
+They occupy the first row of the right panel, above task information. A change
+history table follows the information. It lists retained Audit metadata newest
+first, twenty rows at a time, and refreshes after committed task updates. Older
+pages use a cursor; no polling or duplicate history store is introduced.
+The history panel and loaded rows stay with their page throughout a Task slide.
+Only the active Task starts history requests; leaving cancels pending requests.
+Returning to a still-mounted page reuses its loaded rows and pagination unless
+the Task version changed, so inactive neighbor pages do not prefetch history.
+
+`TaskService.History` requires a TaskRef with a project, resolves the task in that
+project and reads the authoritative project's existing audit table. The query
+scope is fixed to that Task ID. Its AuditListResponse includes only row ID,
+object ID, domain, time, operation and changed field numbers; actor/tenant/trace
+metadata, patches, snapshots and digests are not exposed through this endpoint.
+The limit defaults to 20 and is capped at 100. Audit retention can remove old
+rows. Sandboxes keep the same field-level response shape in memory. Managers
+forward this RPC to the project runtime and never fall back to shadow storage.
+Both Manager and project runtime need the updated RPC; an older runtime produces
+an update requirement while the rest of the detail page remains available.
+
+Session and project links reuse the resource navigation buttons, including their
+upper-right arrow. The larger title/description group is on the left. The
+right metadata/actions group sizes to its contents, with an independent scroll area when
+long content exceeds the available desktop height; narrow pages scroll the groups
+together.
+The previous/next preview buttons keep padded surfaces at both collection
+boundaries, with empty disabled content where no neighbor exists. Each populated
+button shows the task title/alias, right-aligned assignee identity and priority.
+Their content uses vertical SlidingPages with the same duration and easing as
+the Task details; the button surfaces stay fixed. Vertical spacing belongs to
+the moving rows, so the slide remains visible up to each preview edge. Wheel
+and swipe navigation work over empty space throughout the detail layout,
+including gaps between sections and columns; actual panel surfaces and their
+scrollbars retain their normal input and scrolling. Reduced motion disables
+the slides while retaining navigation.
+The Task status labeled Working corresponds to the unchanged IN_PROGRESS API value.
+
 Stopped, unavailable and previous-run owners are flagged rather than silently
-reassigned. Release requires confirmation and clears the stored owner/run under
-the version precondition, including after the owning session was removed. It
+reassigned. Done fields are read-only and all resource mutation actions are
+disabled. Working disables Release because it changes ownership; descriptive
+fields remain editable. For Waiting/Canceled work, Release requires confirmation
+and clears the stored owner/run under the version precondition, including after
+the owning session was removed. It
 does not stop an agent. Manual claim/reassignment is left to the agent tools;
 the browser provides explicit operator recovery without bypassing the API's
 ownership rules.
+
+Cancel requires confirmation and patches only the status to Canceled using the
+observed version, without impersonating the owner or clearing its assignment.
+It does not stop an agent or session. Unsaved edits are discarded only after a
+successful action; a version conflict preserves the draft for explicit reload.
+Cancel is disabled for Done and Canceled tasks.
 
 The URL preserves project, selected Task and optional owner/run selection.
 Clear an owner/run filter to see the whole project.

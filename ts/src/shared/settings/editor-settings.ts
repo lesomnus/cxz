@@ -54,6 +54,8 @@ export function parseSettings(raw: string): SettingsDocument {
   for (const name of [
     "composer.showControlCharacters",
     "composer.wordWrap",
+    "editor.wordWrap",
+    "editor.showControlCharacters",
     "session.panel.projectCollapse",
   ]) {
     if (Object.hasOwn(value, name) && typeof value[name] !== "boolean")
@@ -152,6 +154,9 @@ export function resolveEditorSettings(
   scope: EditorScope = "global",
 ): EditorSettings {
   const result = { ...defaultEditorSettings, fontFamily: monospaceFont() };
+  result.wordWrap = document["editor.wordWrap"] === true;
+  result.showControlCharacters =
+    document["editor.showControlCharacters"] === true;
   for (const key of editorKeys) {
     const scoped = `session.editor.${key}`;
     const global = `editor.${key}`;

@@ -172,8 +172,8 @@ test("chips are atomic, undoable, previewable and expandable one occurrence at a
       el.selectionStart,
       el.selectionEnd,
     ]),
-  ).toEqual([0, token.length]);
-  await input.press("Enter");
+  ).toEqual([0, 0]);
+  await inspectPaste(page, page.locator(".paste-chip"));
   await expect(
     page.getByRole("dialog", { name: "Paste source" }),
   ).toBeVisible();

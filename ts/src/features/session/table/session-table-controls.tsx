@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import type { Session } from "#gen/cxz/session_pb";
 import { useLocalErrors } from "#src/shared/errors/error-context.tsx";
 import { ActionMenu, Button } from "@lesomnus/nox";
@@ -76,18 +77,7 @@ export function SessionTableMenu({
                 items: [
                   {
                     label: t("Add session"),
-                    icon: (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
-                    ),
+                    icon: <Icon name="add" aria-hidden="true" />,
                     run: addSession,
                   },
                 ],

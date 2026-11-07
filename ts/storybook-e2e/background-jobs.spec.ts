@@ -1,5 +1,70 @@
 import { expect, test } from "@playwright/test";
 
+test("an open background report stops polling when its project disappears and resumes after startup", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-backgroundjobs--live-telemetry&viewMode=story",
+  );
+  const requests = page.locator("[data-background-requests]");
+  await expect(requests).toHaveAttribute("data-background-requests", "1");
+  await page.locator("[data-background-jobs]").click();
+  const report = page.getByRole("dialog", {
+    name: "Background tasks",
+    exact: true,
+  });
+  await expect(report).toBeVisible();
+  await expect(requests).toHaveAttribute("data-background-requests", "2");
+  await page.clock.install();
+  await page.getByRole("button", { name: "Stop project", exact: true }).click();
+  await expect(report).toContainText("The session runtime is not running.");
+  await expect(
+    report.getByRole("button", { name: "Refresh", exact: true }),
+  ).toBeDisabled();
+  await page.clock.fastForward(30_000);
+  await expect(requests).toHaveAttribute("data-background-requests", "2");
+  await page
+    .getByRole("button", { name: "Start project", exact: true })
+    .click();
+  await expect(requests).toHaveAttribute("data-background-requests", "4");
+  await expect(
+    report.getByRole("button", { name: "Refresh", exact: true }),
+  ).toBeEnabled();
+  await page.clock.fastForward(10_000);
+  await expect(requests).toHaveAttribute("data-background-requests", "5");
+});
+
+test("stopping a project gates bootstrap, visibility and manual refresh until it starts again", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-backgroundjobs--live-telemetry&viewMode=story",
+  );
+  const requests = page.locator("[data-background-requests]");
+  const indicator = page.locator("[data-background-jobs]");
+  await expect(requests).toHaveAttribute("data-background-requests", "1");
+  await page.getByRole("button", { name: "Start job", exact: true }).click();
+  await expect(indicator).toHaveText("1");
+  await page.getByRole("button", { name: "Stop project", exact: true }).click();
+  await expect(indicator).toHaveText("—");
+  await page
+    .getByRole("button", { name: "Refresh snapshot", exact: true })
+    .click();
+  await page.evaluate(() =>
+    document.dispatchEvent(new Event("visibilitychange")),
+  );
+  await page.getByRole("button", { name: "Start job", exact: true }).click();
+  await expect(indicator).toHaveText("—");
+  await expect(requests).toHaveAttribute("data-background-requests", "1");
+  await page
+    .getByRole("button", { name: "Start project", exact: true })
+    .click();
+  await expect(requests).toHaveAttribute("data-background-requests", "2");
+  await expect(indicator).toHaveText("0");
+  await page.getByRole("button", { name: "Start job", exact: true }).click();
+  await expect(indicator).toHaveText("1");
+});
+
 test("background details use a public UUID for initial load and refresh", async ({
   page,
 }) => {

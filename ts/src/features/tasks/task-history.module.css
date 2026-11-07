@@ -1,0 +1,49 @@
+.history {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--ui-space);
+}
+.history h2 {
+  margin: 0;
+  font: 12px/1.5 var(--ui-font-mono);
+  color: var(--ui-muted);
+}
+.scroll {
+  --ui-scroll-area-background: var(--ui-section-background);
+  flex: 1;
+  min-height: 64px;
+  max-height: 200px;
+}
+.table {
+  width: 100%;
+  table-layout: fixed;
+  font: 10px/1.5 var(--ui-font-mono);
+}
+.timeColumn {
+  width: 124px;
+}
+.time {
+  color: var(--ui-muted);
+}
+.table th,
+.table td {
+  padding: var(--ui-space);
+  overflow-wrap: anywhere;
+}
+.table small {
+  display: block;
+  color: var(--ui-muted);
+  font: inherit;
+}
+.table thead {
+  position: sticky;
+  top: 0;
+  background: var(--ui-section-background);
+  z-index: 1;
+}
+.empty {
+  color: var(--ui-muted);
+}

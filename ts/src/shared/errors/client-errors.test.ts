@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { ClientErrors, isAPIError } from "./client-errors";
+import { ClientErrors, errorStaleAfter, isAPIError } from "./client-errors";
 
 afterEach(() => vi.useRealTimers());
 function storage() {
@@ -109,4 +109,138 @@ it("recognizes RPC feedback without hiding ordinary validation messages", () => 
   expect(
     isAPIError("Alias must not contain [not_found]", new ClientErrors()),
   ).toBe(false);
+});
+
+it("moves errors into stale history one hour after their last occurrence, including with the dialog closed", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-07T00:00:00Z"));
+  const errors = new ClientErrors();
+  const changed = vi.fn();
+  const stop = errors.subscribe(changed);
+  const id = errors.report("A", "offline")!;
+  const lastSeen = Date.now();
+  vi.advanceTimersByTime(errorStaleAfter - 1);
+  expect(errors.snapshot()[0].status).toBe("active");
+  vi.advanceTimersByTime(1);
+  expect(errors.snapshot()[0]).toMatchObject({
+    id,
+    status: "stale",
+    lastSeen,
+    count: 1,
+    closedAt: lastSeen + errorStaleAfter,
+  });
+  expect(changed).toHaveBeenCalledTimes(2);
+  errors.resolve("A");
+  expect(errors.snapshot()[0].status).toBe("stale");
+  errors.report("A", "offline");
+  expect(errors.snapshot().map((entry) => entry.status)).toEqual([
+    "active",
+    "stale",
+  ]);
+  expect(errors.snapshot()[0].id).not.toBe(id);
+  stop();
+  expect(vi.getTimerCount()).toBe(0);
+});
+it("repeated failures extend the stale deadline and keep the current episode active", () => {
+  vi.useFakeTimers();
+  const errors = new ClientErrors();
+  const stop = errors.subscribe(() => {});
+  const id = errors.report("A", "offline");
+  vi.advanceTimersByTime(errorStaleAfter - 1000);
+  errors.report("A", "still offline");
+  const latest = Date.now();
+  vi.advanceTimersByTime(1000);
+  expect(errors.snapshot()[0]).toMatchObject({
+    id,
+    status: "active",
+    count: 2,
+    lastSeen: latest,
+  });
+  vi.advanceTimersByTime(errorStaleAfter - 1000);
+  expect(errors.snapshot()[0]).toMatchObject({ id, status: "stale", count: 2 });
+  stop();
+});
+it("expires persisted old active records on restore and preserves stale status across tabs and reload", () => {
+  vi.useFakeTimers();
+  const disk = storage();
+  const errors = new ClientErrors({ storage: disk });
+  const id = errors.report("A", "offline");
+  errors.flush();
+  vi.setSystemTime(Date.now() + errorStaleAfter + 1);
+  const restored = new ClientErrors({ storage: disk });
+  expect(restored.snapshot()[0]).toMatchObject({ id, status: "stale" });
+  restored.flush();
+  errors.restore();
+  expect(errors.snapshot()[0].status).toBe("stale");
+  restored.clearHistory();
+  restored.flush();
+  expect(new ClientErrors({ storage: disk }).snapshot()).toEqual([]);
+});
+
+it("dismisses all Active episodes in one update, preserving history, persistence and recurrence", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-07T14:00:00Z"));
+  const disk = storage();
+  const errors = new ClientErrors({ storage: disk });
+  errors.report("old", "Old failure");
+  vi.advanceTimersByTime(errorStaleAfter + 1);
+  errors.report("A", "First failure");
+  errors.report("B", "Second failure");
+  errors.report("B", "Second failure");
+  errors.report("recovered", "Recovered failure");
+  errors.resolve("recovered");
+  const history = errors
+    .snapshot()
+    .filter((entry) => entry.status !== "active");
+  const active = errors.snapshot().filter((entry) => entry.status === "active");
+  const changed = vi.fn();
+  const stop = errors.subscribe(changed);
+  errors.dismissAll();
+  expect(changed).toHaveBeenCalledTimes(1);
+  expect(
+    errors.snapshot().filter((entry) => entry.status === "dismissed"),
+  ).toEqual(
+    active.map((entry) => ({
+      ...entry,
+      status: "dismissed",
+      closedAt: Date.now(),
+      updated: expect.any(Number),
+    })),
+  );
+  for (const entry of history) expect(errors.snapshot()).toContain(entry);
+  expect(errors.snapshot().find((entry) => entry.key === "old")?.status).toBe(
+    "stale",
+  );
+  const snapshot = errors.snapshot();
+  errors.dismissAll();
+  expect(errors.snapshot()).toBe(snapshot);
+  expect(changed).toHaveBeenCalledTimes(1);
+  errors.flush();
+  const restored = new ClientErrors({ storage: disk });
+  expect(restored.snapshot()).toEqual(errors.snapshot());
+  errors.report("A", "First failure");
+  expect(errors.snapshot()[0]).toMatchObject({
+    key: "A",
+    status: "active",
+    count: 1,
+  });
+  expect(errors.snapshot()[0].id).not.toBe(
+    active.find((entry) => entry.key === "A")!.id,
+  );
+  stop();
+});
+
+it("does not restore persisted Active copies when dismissed history is immediately cleared", () => {
+  vi.useFakeTimers();
+  const disk = storage();
+  const errors = new ClientErrors({ storage: disk });
+  errors.report("A", "First failure");
+  errors.report("B", "Second failure");
+  errors.flush();
+  errors.dismissAll();
+  errors.clearHistory();
+  expect(errors.snapshot()).toHaveLength(0);
+  errors.flush();
+  expect(errors.snapshot()).toHaveLength(0);
+  expect(new ClientErrors({ storage: disk }).snapshot()).toHaveLength(0);
 });

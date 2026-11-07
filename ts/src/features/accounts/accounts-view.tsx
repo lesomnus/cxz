@@ -1,6 +1,6 @@
+import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef, useState } from "react";
-import { Button, SectionLayout } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -8,6 +8,12 @@ import { useRemote } from "#src/shared/api/use-remote.ts";
 import { listAccounts, sessionsForAccount } from "./account-data";
 import { AccountAddForm } from "./account-add-form";
 import { AccountDetails } from "./account-details";
+import {
+  ResourceLayout,
+  ResourcePage,
+  ResourceToolbar,
+} from "#src/shared/components/resource-layout.tsx";
+import pageStyles from "#src/shared/components/resource-page.module.css";
 import resourceStyles from "#src/shared/components/resource-surface.module.css";
 import styles from "./accounts.module.css";
 import { matchesResource } from "#src/shared/navigation/resource-route.ts";
@@ -50,30 +56,20 @@ export function AccountsView({
   }, [selected, accounts.data]);
   return (
     <>
-      <main className={`${resourceStyles.page} ${styles.page}`}>
-        <div className={resourceStyles.body}>
-          <SectionLayout ref={content} className={styles.layout}>
-            <header className={styles.header}>
-              <Button
-                ref={add}
-                type="button"
-                className={styles.add}
-                aria-label="Add account"
-                onClick={() => setAdding(true)}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  aria-hidden="true"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-              </Button>
-            </header>
+      <ResourcePage>
+        <ResourceToolbar
+          aria-label="Account toolbar"
+          actions={
+            <ToolbarIconButton
+              ref={add}
+              icon="add"
+              label="Add account"
+              onClick={() => setAdding(true)}
+            />
+          }
+        />
+        <div className={`${resourceStyles.body} ${pageStyles.contentPadding}`}>
+          <ResourceLayout ref={content}>
             {accounts.loading && !accounts.data && (
               <p className={resourceStyles.muted}>Loading accounts…</p>
             )}
@@ -112,9 +108,9 @@ export function AccountsView({
                 />
               </article>
             ))}
-          </SectionLayout>
+          </ResourceLayout>
         </div>
-      </main>
+      </ResourcePage>
       {adding && (
         <AccountAddForm
           c={c}

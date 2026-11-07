@@ -29,6 +29,7 @@ function Preview({
   navigation = false,
   failRefresh = false,
   refreshDelayMs = 0,
+  usageDelayMs = 0,
 }) {
   const [router] = useState(() => {
     const fixture = projectFixture(
@@ -48,6 +49,23 @@ function Preview({
                 : "",
       refreshDelayMs,
     );
+    let usageRevision = 1;
+    if (usageDelayMs) {
+      const readUsage = fixture.c.sessions.conversationStats;
+      fixture.c.sessions.conversationStats = async (
+        ...args: Parameters<typeof readUsage>
+      ) => {
+        await new Promise((resolve) => setTimeout(resolve, usageDelayMs));
+        const stats = await readUsage(...args);
+        if (!args[0].toMs) stats.toMs += BigInt((usageRevision - 1) * 60_000);
+        for (const values of [
+          stats.total,
+          ...stats.days.map((day) => day.values),
+        ])
+          if (values) values.finishedTurns *= BigInt(usageRevision);
+        return stats;
+      };
+    }
     if (listActivity) {
       const now = Date.now();
       fixture.sessions.forEach((session, index) => {
@@ -147,7 +165,8 @@ function Preview({
               display: "grid",
               height: "100vh",
               gridTemplateColumns: "0 minmax(0, 1fr)",
-              gridTemplateRows: navigation ? "auto minmax(0, 1fr)" : undefined,
+              gridTemplateRows:
+                navigation || usageDelayMs ? "auto minmax(0, 1fr)" : undefined,
             }}
           >
             {navigation && (
@@ -167,6 +186,16 @@ function Preview({
                   Open a project, then use Back and Forward to preview both
                   directions.
                 </span>
+              </nav>
+            )}
+            {!!usageDelayMs && (
+              <nav
+                aria-label="Usage preview controls"
+                style={{ gridColumn: 2 }}
+              >
+                <Button onClick={() => usageRevision++}>
+                  Change usage on server
+                </Button>
               </nav>
             )}
             {children}
@@ -244,7 +273,7 @@ export const Navigation: Story = {
     docs: {
       description: {
         story:
-          "Open a project from the list: its dashboard slides in from the right below the fixed toolbar. Back reverses the transition; Forward opens it again. Each page keeps its scroll position and list selection. Direct links start in place, and reduced-motion preferences disable the slide.",
+          "Open a project from the list: its dashboard slides in from the right below the fixed toolbar, using the shared Tasks and Memory page transition. Back reverses the transition; Forward opens it again. Each page keeps its scroll position and list selection. Direct links start in place, and reduced-motion preferences disable the slide.",
       },
     },
   },
@@ -288,3 +317,5 @@ export const PartialFailure: Story = { args: { failControls: true } };
 export const EraseFailure: Story = { args: { failErase: true } };
 export const RefreshFailure: Story = { args: { failRefresh: true } };
 export const Refreshing: Story = { args: { refreshDelayMs: 650 } };
+
+export const UsageRefresh: Story = { args: { usageDelayMs: 600 } };

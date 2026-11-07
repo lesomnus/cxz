@@ -3,19 +3,12 @@ import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
-import {
-  PageToolbar,
-  Button,
-  Section,
-  SectionGroup,
-  SlidingPages,
-  SlidingPage,
-} from "@lesomnus/nox";
+import { Button, Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -39,7 +32,17 @@ import { listAccounts } from "#src/features/accounts/account-data.ts";
 import type { Account } from "#gen/cxz/account_pb";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import styles from "./projects-page.module.css";
+import { ListDetailPages } from "@lesomnus/nox";
+import {
+  ResourceLayout,
+  ResourcePage,
+  ResourceToolbar,
+  ResourceDashboard,
+  ResourceDashboardColumn,
+  ResourceSessionSection,
+} from "#src/shared/components/resource-layout.tsx";
 import dashboardStyles from "#src/shared/components/resource-dashboard.module.css";
+import pageStyles from "#src/shared/components/resource-page.module.css";
 import {
   projectLocation,
   resourceHandle,
@@ -79,89 +82,65 @@ export function ProjectsPage({
   const { project: selected } = useWorkspaceRoute();
   const resolved = useProject(c, visibleProjects, selected);
   const project = selected ? resolved : undefined;
-  const visitedList = useRef<DashboardConnection | undefined>(
-    selected ? undefined : c,
-  );
-  const previousProject = useRef<
-    { c: DashboardConnection; project: Project } | undefined
-  >(project ? { c, project } : undefined);
-  useLayoutEffect(() => {
-    if (!selected) visitedList.current = c;
-    if (project) previousProject.current = { c, project };
-  }, [c, selected, project]);
-  // Keep the outgoing dashboard present while it slides back offscreen.
-  const detail = selected
-    ? project
-    : previousProject.current?.c === c
-      ? previousProject.current.project
-      : undefined;
   return (
-    <main className={styles.page} aria-label={t("Project workspace")}>
-      <PageToolbar className={styles.toolbar} aria-label={t("Project toolbar")}>
-        <div className={styles.toolbarContent}>
-          <ProjectPicker
-            projects={visibleProjects}
-            value={projectId(project) ?? ""}
-            loading={projectsLoading}
-            choose={(project) =>
-              void navigate(
-                projectLocation(
-                  resourceHandle(
-                    visibleProjects.find((p) => projectId(p) === project)!,
-                  ),
+    <ResourcePage aria-label={t("Project workspace")}>
+      <ResourceToolbar aria-label={t("Project toolbar")}>
+        <ProjectPicker
+          projects={visibleProjects}
+          value={projectId(project) ?? ""}
+          loading={projectsLoading}
+          choose={(project) =>
+            void navigate(
+              projectLocation(
+                resourceHandle(
+                  visibleProjects.find((p) => projectId(p) === project)!,
                 ),
-              )
-            }
-          />
-        </div>
-      </PageToolbar>
-      <SlidingPages
-        className={styles.pages}
-        value={selected ? "detail" : "list"}
-        resize="none"
-      >
-        <SlidingPage value="list" className={styles.slide}>
-          {(!selected || visitedList.current === c) && (
+              ),
+            )
+          }
+        />
+      </ResourceToolbar>
+      <ListDetailPages
+        scope={c}
+        open={!!selected}
+        list={
+          <PanelScroll
+            contentClassName={pageStyles.contentPadding}
+            scrollbarLabel={t("Project scroll")}
+            horizontalScrollbar
+          >
+            <ResourceLayout>
+              {error && <ErrorNotice error={error} />}
+              <ProjectTable
+                c={c}
+                projects={visibleProjects}
+                sessions={sessions}
+                loading={projectsLoading}
+                sessionsLoading={sessionsLoading}
+                updated={setSaved}
+              />
+            </ResourceLayout>
+          </PanelScroll>
+        }
+        detail={
+          selected ? (
             <PanelScroll
-              className={styles.scroll}
-              contentClassName={styles.scrollContent}
-              scrollbarLabel={t("Project scroll")}
-              horizontalScrollbar
-            >
-              <div className={styles.content}>
-                {error && <ErrorNotice error={error} />}
-                <ProjectTable
-                  c={c}
-                  projects={visibleProjects}
-                  sessions={sessions}
-                  loading={projectsLoading}
-                  sessionsLoading={sessionsLoading}
-                  updated={setSaved}
-                />
-              </div>
-            </PanelScroll>
-          )}
-        </SlidingPage>
-        <SlidingPage value="detail" className={styles.slide}>
-          {(selected || detail) && (
-            <PanelScroll
-              className={styles.scroll}
-              contentClassName={styles.scrollContent}
+              contentClassName={pageStyles.contentPadding}
               scrollbarLabel={t("Project scroll")}
             >
-              <div className={styles.content}>
+              <ResourceLayout>
                 {error && <ErrorNotice error={error} />}
-                {detail ? (
+                {project ? (
                   <ProjectDashboard
-                    key={projectId(detail)}
+                    key={projectId(project)}
                     c={c}
-                    project={detail}
+                    project={project}
                     saved={(updated) => {
                       setSaved(updated);
                       if (
-                        selected === detail.alias &&
+                        selected === project.alias &&
                         !uuid(selected) &&
-                        updated.alias !== detail.alias
+                        updated.alias !== project.alias
                       )
                         void navigate({
                           ...projectLocation(resourceHandle(updated)),
@@ -171,14 +150,14 @@ export function ProjectsPage({
                     erased={() => {
                       setSaved(undefined);
                       const next = visibleProjects.find(
-                        (p) => key(p.id) !== key(detail.id),
+                        (p) => key(p.id) !== key(project.id),
                       );
                       void navigate(
                         projectLocation(next && resourceHandle(next)),
                       );
                     }}
                     sessions={sessions.filter(
-                      (s) => s.project && key(s.project.id) === key(detail.id),
+                      (s) => s.project && key(s.project.id) === key(project.id),
                     )}
                     accounts={accounts.data ?? []}
                     accountsError={accounts.error}
@@ -194,12 +173,12 @@ export function ProjectsPage({
                         : t("No projects yet.")}
                   </p>
                 )}
-              </div>
+              </ResourceLayout>
             </PanelScroll>
-          )}
-        </SlidingPage>
-      </SlidingPages>
-    </main>
+          ) : null
+        }
+      />
+    </ResourcePage>
   );
 }
 
@@ -268,120 +247,110 @@ function ProjectDashboard({
     }
   }
   return (
-    <div className={`${styles.dashboard} ${dashboardStyles.layout}`}>
-      <div className={styles.columns}>
-        <SectionGroup className={styles.information}>
-          <Section aria-label={t("Information")}>
-            <Fields
-              rows={[
-                {
-                  label: t("Project ID"),
-                  value:
-                    p.id.length === 16 ? new Id(p.id).toString() : undefined,
-                  description: t(
-                    "Canonical UUID used to identify this project across APIs and links.",
-                  ),
-                  identifier: true,
-                },
-                [t("Name"), editable("name", t("Name"))],
-                [t("Alias"), editable("alias", t("Alias"))],
-                [t("Description"), editable("desc", t("Description"))],
-                {
-                  label: t("Workspace"),
-                  value: p.workspace,
-                  fullWidth: true,
-                  path: true,
-                },
-                {
-                  label: t("Container name"),
-                  value: p.status?.containerName,
-                  identifier: true,
-                  identifierLength: containerNamePrefixLength(
-                    p.status?.containerName,
-                  ),
-                },
-                {
-                  label: t("Container ID"),
-                  value: p.status?.containerId,
-                  identifier: true,
-                },
-                [
-                  t("Created"),
-                  <DateTime value={p.dateCreated} />,
-                  undefined,
-                  <RelativeTime value={p.dateCreated} />,
-                ],
-                [
-                  t("Updated"),
-                  <DateTime value={p.dateUpdated} />,
-                  undefined,
-                  <RelativeTime value={p.dateUpdated} />,
-                ],
-              ]}
-            />
-            {p.status?.error && (
-              <ErrorNotice
-                api
-                className={styles.errors}
-                error={p.status.error}
-              />
-            )}
-          </Section>
-          <Section
-            className={styles.sessionSection}
-            aria-label={t("Project sessions")}
-          >
-            <SessionTable
-              c={c}
-              sessions={sessions}
-              accounts={accounts}
-              loading={sessionsLoading}
-              variant="overview"
-              showToolbar={false}
-              horizontalScrollbar
-              fillHeight
-              addSession={() => setAddingSession(true)}
-            />
-            {addingSession && (
-              <SessionCreate
-                c={c}
-                projects={[p]}
-                centered
-                close={() => setAddingSession(false)}
-              />
-            )}
-            {accountsError && (
-              <div className={styles.empty}>
-                <ErrorNotice error={accountsError} />
-                <Button type="button" onClick={reloadAccounts}>
-                  {t("Retry")}
-                </Button>
-              </div>
-            )}
-          </Section>
-        </SectionGroup>
-        <SectionGroup className={styles.usageColumn}>
-          <section className={styles.actions} aria-label={t("Actions")}>
-            <ProjectActions
-              c={c}
-              project={p}
-              sessions={sessions}
-              erased={erased}
-              updated={saved}
-              refresh={refreshProject}
-              refreshing={usageLoading}
-            />
-          </section>
-          <UsageReport
-            c={c}
-            project={projectId(p)}
-            className={styles.usageSection}
-            hideRefresh
-            refreshVersion={refreshVersion}
-            onLoadingChange={setUsageLoading}
+    <ResourceDashboard actionsFirstOnNarrow>
+      <ResourceDashboardColumn kind="information">
+        <Section aria-label={t("Information")}>
+          <Fields
+            rows={[
+              {
+                label: t("Project ID"),
+                value: p.id.length === 16 ? new Id(p.id).toString() : undefined,
+                description: t(
+                  "Canonical UUID used to identify this project across APIs and links.",
+                ),
+                identifier: true,
+              },
+              [t("Name"), editable("name", t("Name"))],
+              [t("Alias"), editable("alias", t("Alias"))],
+              [t("Description"), editable("desc", t("Description"))],
+              {
+                label: t("Workspace"),
+                value: p.workspace,
+                fullWidth: true,
+                path: true,
+              },
+              {
+                label: t("Container name"),
+                value: p.status?.containerName,
+                identifier: true,
+                identifierLength: containerNamePrefixLength(
+                  p.status?.containerName,
+                ),
+              },
+              {
+                label: t("Container ID"),
+                value: p.status?.containerId,
+                identifier: true,
+              },
+              [
+                t("Created"),
+                <DateTime value={p.dateCreated} />,
+                undefined,
+                <RelativeTime value={p.dateCreated} />,
+              ],
+              [
+                t("Updated"),
+                <DateTime value={p.dateUpdated} />,
+                undefined,
+                <RelativeTime value={p.dateUpdated} />,
+              ],
+            ]}
           />
-        </SectionGroup>
-      </div>
-    </div>
+          {p.status?.error && (
+            <ErrorNotice api className={styles.errors} error={p.status.error} />
+          )}
+        </Section>
+        <ResourceSessionSection aria-label={t("Project sessions")}>
+          <SessionTable
+            c={c}
+            sessions={sessions}
+            accounts={accounts}
+            loading={sessionsLoading}
+            variant="overview"
+            showToolbar={false}
+            horizontalScrollbar
+            fillHeight
+            addSession={() => setAddingSession(true)}
+          />
+          {addingSession && (
+            <SessionCreate
+              c={c}
+              projects={[p]}
+              centered
+              close={() => setAddingSession(false)}
+            />
+          )}
+          {accountsError && (
+            <div className={styles.empty}>
+              <ErrorNotice error={accountsError} />
+              <Button type="button" onClick={reloadAccounts}>
+                {t("Retry")}
+              </Button>
+            </div>
+          )}
+        </ResourceSessionSection>
+      </ResourceDashboardColumn>
+      <ResourceDashboardColumn kind="activity">
+        <section className={dashboardStyles.actions} aria-label={t("Actions")}>
+          <ProjectActions
+            c={c}
+            project={p}
+            sessions={sessions}
+            erased={erased}
+            updated={saved}
+            refresh={refreshProject}
+            refreshing={usageLoading}
+          />
+        </section>
+        <UsageReport
+          c={c}
+          project={projectId(p)}
+          className={dashboardStyles.usageSection}
+          hideRefresh
+          refreshVersion={refreshVersion}
+          onLoadingChange={setUsageLoading}
+        />
+      </ResourceDashboardColumn>
+    </ResourceDashboard>
   );
 }

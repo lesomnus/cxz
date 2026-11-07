@@ -14,6 +14,11 @@ import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import { SessionTable } from "#src/features/session/table/session-table.tsx";
+import {
+  ResourceDashboard,
+  ResourceDashboardColumn,
+  ResourceSessionSection,
+} from "#src/shared/components/resource-layout.tsx";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import {
@@ -120,8 +125,8 @@ export function AccountDetails({
         ? "-"
         : "Status unavailable";
   return (
-    <div className={`${accountStyles.details} ${dashboardStyles.layout}`}>
-      <SectionGroup className={accountStyles.summaryColumn}>
+    <ResourceDashboard className={accountStyles.details}>
+      <ResourceDashboardColumn kind="information">
         <Section
           aria-label="Account details"
           className={accountStyles.informationDetails}
@@ -163,27 +168,26 @@ export function AccountDetails({
             ]}
           />
         </Section>
-        <Section
-          aria-label="Sessions using this account"
-          className={accountStyles.sessionsColumn}
-        >
+        <ResourceSessionSection aria-label="Sessions using this account">
           <SessionTable
             c={c}
             sessions={sessions}
             projects={projects}
             accounts={[account]}
             loading={sessionsLoading}
-            variant="compact"
+            variant="overview"
             showAccount={false}
             showProject
             showToolbar={false}
             horizontalScrollbar
             fillHeight
           />
-        </Section>
-      </SectionGroup>
-      <SectionGroup className={accountStyles.usageColumn}>
-        <SectionGroup className={accountStyles.authenticationGroup}>
+        </ResourceSessionSection>
+      </ResourceDashboardColumn>
+      <ResourceDashboardColumn kind="activity">
+        <SectionGroup
+          className={`${accountStyles.authenticationGroup} ${dashboardStyles.actions}`}
+        >
           <Section
             aria-label="Authentication"
             className={accountStyles.authenticationSection}
@@ -269,6 +273,7 @@ export function AccountDetails({
             as="button"
             className={actionStyles.button}
             aria-label={`Refresh account ${account.name || account.alias}`}
+            minLoadingDuration={500}
             loading={
               metadataLoading || status.loading || usageLoading || quotaLoading
             }
@@ -281,12 +286,12 @@ export function AccountDetails({
           c={c}
           account={account.alias}
           accountId={account.id}
-          className={accountStyles.usageSection}
+          className={dashboardStyles.usageSection}
           hideRefresh
           refreshVersion={refreshVersion}
           onLoadingChange={setUsageLoading}
         />
-      </SectionGroup>
+      </ResourceDashboardColumn>
       {erase && (
         <ConfirmationDialog
           title={`Erase account · ${account.name || account.alias}`}
@@ -352,6 +357,6 @@ export function AccountDetails({
           </p>
         </ConfirmationDialog>
       )}
-    </div>
+    </ResourceDashboard>
   );
 }

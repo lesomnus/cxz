@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -11,12 +12,13 @@ import {
 } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Task } from "#gen/cxz/task_pb";
+import type { Project } from "#gen/cxz/project_pb";
 import { TaskStatus } from "#gen/cxz/task_pb";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { TaskPriority, TaskStatusIcon, TaskTime } from "./task-indicators";
-import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
+import { taskLocation } from "#src/shared/navigation/resource-route.ts";
 import {
   ownerIssue,
   tableTasks,
@@ -34,14 +36,14 @@ export function TaskTable({
   sessionsLoading,
   assignee = "",
   run = "",
-  open,
+  project,
 }: {
   tasks: Task[];
   sessions: Session[];
   sessionsLoading?: boolean;
   assignee?: string;
   run?: string;
-  open: (task: Task) => void;
+  project: Project;
 }) {
   const ordered = useMemo(
     () => tableTasks(tasks, assignee, run),
@@ -100,63 +102,35 @@ export function TaskTable({
                 <TaskStatusIcon status={task.status} />
               </TableCell>
               <TableCell className={styles.buttonCell}>
-                <Button
+                <RouteLink
+                  {...taskLocation({
+                    project,
+                    task,
+                    assignee: assignee || undefined,
+                    run: run || undefined,
+                  })}
                   rowAware
                   className={styles.taskButton}
-                  type="button"
-                  onClick={() => open(task)}
                   aria-label={`Open task: ${task.name}`}
-                  aria-haspopup="dialog"
                   title={task.name}
                 >
                   <span className={styles.identity}>
                     <span className={styles.name}>{task.name}</span>
                     <span className={styles.alias}>{task.alias}</span>
                   </span>
-                  <svg
+                  <Icon
+                    name="open-project"
                     className={styles.openIcon}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
                     aria-hidden="true"
-                  >
-                    <path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" />
-                  </svg>
-                </Button>
+                  />
+                </RouteLink>
               </TableCell>
               <TableCell className={styles.buttonCell}>
                 {owner ? (
-                  <RouteLink
-                    rowAware
-                    className={styles.ownerButton}
-                    {...sessionLocation(owner)}
-                    title={owner.name || owner.alias}
-                  >
-                    <AgentBrand agent={owner.agent} />
-                    <span className={styles.identity}>
-                      <span className={styles.ownerAlias}>
-                        {owner.alias || owner.runtimeId}
-                      </span>
-                      <span className={styles.alias}>
-                        {issue || owner.name}
-                      </span>
-                    </span>
-                    <svg
-                      className={styles.openIcon}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M7 17 17 7M7 7h10v10" />
-                    </svg>
-                  </RouteLink>
+                  <SessionNavigationButton
+                    session={owner}
+                    annotation={issue || undefined}
+                  />
                 ) : (
                   <span className={styles.secondary}>
                     {task.assignee

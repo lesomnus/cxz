@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useTheme } from "#src/shared/theme/theme.tsx";
 import { t, translateKnown, currentLocale } from "#src/shared/i18n/i18n.ts";
@@ -31,7 +32,10 @@ import {
   inlineCodeRanges,
   listNewlineEdit,
 } from "./composer-markdown";
-import { controlCharacters } from "./control-characters";
+import {
+  ControlCharacter,
+  controlCharacters,
+} from "#src/shared/content/control-characters.tsx";
 import {
   useSettings,
   useEditorSettings,
@@ -257,7 +261,8 @@ export function ComposerEditor({
     });
   }
   function changePasteMode(paste: ComposerPaste, mode: "text" | "file") {
-    if (readOnly || !isTextPaste(paste)) return;
+    // Lock reservation changes during preedit without dimming the chip.
+    if (readOnly || composing.current || !isTextPaste(paste)) return;
     if (mode === "file" && !upload && !paste.attachment?.path) return;
     paste.sendAs = mode;
     if (mode === "file" && !paste.attachment) {
@@ -725,19 +730,7 @@ export function ComposerEditor({
       >
         {dragging && (
           <div className="composer-file-drop-overlay" role="status">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 15V3m-4 4 4-4 4 4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" />
-            </svg>
+            <Icon name="upload" width="24" height="24" aria-hidden="true" />
             <span>{t("Drop files or folders here")}</span>
           </div>
         )}
@@ -957,9 +950,9 @@ export function ComposerEditor({
               // Native word movement can stop inside a chip's invisible text.
               // Snap to the edge in that direction instead of undoing the move.
               caretMotion.current =
-                event.key === "ArrowLeft"
+                event.key === "ArrowLeft" || event.key === "Home"
                   ? "backward"
-                  : event.key === "ArrowRight"
+                  : event.key === "ArrowRight" || event.key === "End"
                     ? "forward"
                     : undefined;
               if (
@@ -1209,7 +1202,8 @@ export function ComposerEditor({
                 replace(adjacent.start, adjacent.end, "");
               } else if (left || right) {
                 event.preventDefault();
-                el.setSelectionRange(adjacent.start, adjacent.end);
+                const caret = left ? adjacent.start : adjacent.end;
+                el.setSelectionRange(caret, caret);
               }
             }}
           />
@@ -1289,7 +1283,7 @@ export function ComposerEditor({
                         changePasteMode(range.paste, mode)
                       }
                       canSendFile={!!upload || !!range.paste.attachment?.path}
-                      readOnly={readOnly || composition}
+                      readOnly={readOnly}
                     />,
                   ];
                 });
@@ -1384,12 +1378,12 @@ export function ComposerEditor({
                     <div className="editor-control-line" key={index}>
                       {controlCharacters(line, hidden)}
                       {index < lines.length - 1 && (
-                        <span
-                          className="editor-control-character editor-line-end"
-                          data-symbol="¶"
+                        <ControlCharacter
+                          className="editor-line-end"
+                          symbol="¶"
                         >
                           {"\u200b"}
-                        </span>
+                        </ControlCharacter>
                       )}
                       {!line && "\u200b"}
                     </div>

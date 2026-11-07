@@ -48,8 +48,6 @@ type Manager struct {
 	auxMu           sync.Mutex
 	aux             *auxiliary.Controller
 	paths           containerterm.WispPool
-	historyMu       sync.Mutex
-	historyClients  map[string]*historyConnection
 	dockerMu        sync.Mutex
 	filesMu         sync.Mutex
 	opsMu           sync.Mutex
@@ -257,6 +255,9 @@ func (m *Manager) resolve(ctx context.Context, path string) (*Project, error) {
 	return nil, fmt.Errorf("project not found: %s", path)
 }
 func (m *Manager) client(ctx context.Context, p *Project) (*grpc.ClientConn, api.SessionsClient, error) {
+	if p.ContainerID == "" {
+		return nil, nil, &Precondition{Message: "project has no container"}
+	}
 	v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 	if e != nil {
 		return nil, nil, e

@@ -1,11 +1,5 @@
 .table {
-  --ui-table-row-height: var(--resource-table-control-size);
-  --ui-table-row-gap: 0px;
-  --ui-table-header-height: 28px;
   min-width: 440px;
-  table-layout: fixed;
-  border-radius: var(--ui-section-radius);
-  overflow: clip;
 }
 .selectionColumn {
   width: var(--resource-table-selection-width);
@@ -42,12 +36,6 @@
 }
 .table .nameCell {
   padding: var(--ui-control-inset);
-}
-.table td {
-  border-bottom: 0;
-}
-.table tbody tr:not(:last-child) td {
-  box-shadow: inset 0 -1px 0 var(--ui-table-row-border);
 }
 .projectLink.projectLink {
   display: flex;
@@ -103,10 +91,7 @@
   color: var(--ui-muted);
   text-align: center;
 }
-.table tbody tr {
-  background: var(--ui-shade-20);
-}
-.table tbody tr[data-inactive] .projectLink {
+.table tbody tr[data-inactive] :is(.projectLink, [data-session-navigation]) {
   --button-background: var(--ui-shade-17);
   --ui-table-button-row-hover-lift: 12;
   --ui-table-button-selected-lift: 12;

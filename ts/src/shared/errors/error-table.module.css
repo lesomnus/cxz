@@ -1,0 +1,363 @@
+.dialogTable {
+  --error-dismiss-button-width: 44px;
+  --error-dismiss-fade-width: 28px;
+  --error-dismiss-overlay-width: calc(
+    var(--error-dismiss-button-width) + var(--error-dismiss-fade-width) + 2 *
+      var(--ui-control-inset)
+  );
+}
+.frame {
+  container: error-table / inline-size;
+  min-width: 0;
+  width: 100%;
+}
+.table {
+  --error-page-dismiss-size: 30px;
+  --ui-table-row-height: var(--resource-table-control-size);
+  --ui-table-row-gap: 0px;
+  --ui-table-header-height: 28px;
+  table-layout: fixed;
+  border-radius: var(--ui-section-radius);
+  overflow: clip;
+}
+.stateColumn {
+  width: var(--resource-table-state-width);
+}
+.kindColumn {
+  width: 76px;
+}
+.operationColumn {
+  width: 92px;
+}
+.diagnosticsColumn {
+  width: 152px;
+}
+.targetColumn {
+  width: 80px;
+}
+.countColumn {
+  width: 36px;
+}
+.timeColumn {
+  width: 72px;
+}
+.actionsColumn {
+  width: var(--resource-table-control-size);
+}
+.dialogTable tbody tr {
+  background: var(--ui-shade-20);
+}
+.dialogTable td {
+  vertical-align: top;
+}
+.kind,
+.operation,
+.diagnostics,
+.target {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.kind {
+  text-align: center;
+  color: var(--ui-muted);
+}
+.state {
+  color: var(--ui-muted);
+  text-align: center;
+}
+.pageRow[data-status="active"] .state {
+  color: #e6a15a;
+}
+.pageRow[data-status="resolved"] .state {
+  color: #85ba91;
+}
+.pageRow[data-status="stale"] .state {
+  color: var(--ui-muted);
+}
+.message {
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.context {
+  display: none;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ui-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.count {
+  text-align: center;
+}
+.time {
+  font-size: 10px;
+  color: var(--ui-muted);
+  white-space: nowrap;
+}
+.table .actions {
+  position: relative;
+  padding: 0;
+}
+.rowActions {
+  position: absolute;
+  inset: 0;
+  container-type: size;
+}
+.table .rowActions .pageDismissButton {
+  --resource-toolbar-icon-size: 12px;
+  /* Use the actual row height so the three gaps stay equal when text wraps. */
+  --dismiss-inset: calc((100cqh - var(--error-page-dismiss-size)) / 2);
+  position: absolute;
+  top: var(--dismiss-inset);
+  right: var(--dismiss-inset);
+  width: var(--error-page-dismiss-size);
+  height: var(--error-page-dismiss-size);
+  min-height: var(--error-page-dismiss-size);
+  padding: 0;
+}
+.mobileMeta {
+  display: none;
+}
+.fullMessage {
+  margin: 0 0 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.metadata {
+  display: grid;
+  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+  font-size: 11px;
+}
+.metadata > div {
+  min-width: 0;
+}
+.metadata dt {
+  margin: 0 0 4px;
+  color: var(--ui-muted);
+  font-size: 10px;
+}
+.metadata dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--ui-font-mono);
+}
+.table .empty {
+  padding: 24px 8px;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+@container error-table (width < 720px) {
+  .kindColumn,
+  .operationColumn,
+  .diagnosticsColumn,
+  .targetColumn,
+  .countColumn,
+  .timeColumn {
+    width: 0;
+  }
+  .table .kind,
+  .table .operation,
+  .table .diagnostics,
+  .table .target,
+  .table .count,
+  .table .time {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-size: 0;
+  }
+  .kind > *,
+  .operation > *,
+  .diagnostics > *,
+  .count > *,
+  .time > * {
+    display: none;
+  }
+  .actionsColumn {
+    width: var(--resource-table-control-size);
+  }
+  .context {
+    display: block;
+  }
+  .mobileMeta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+    color: var(--ui-muted);
+    font-size: 10px;
+  }
+  .metadata {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dialogTable .summary {
+  position: relative;
+  padding-block: 6px;
+}
+.dialogMessage {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.dialogMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  color: var(--ui-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.dialogOperation {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dialogTime,
+.dialogCount {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.diagnostics {
+  font: 10px/1.5 var(--ui-font-mono);
+  overflow-wrap: anywhere;
+}
+
+.dialogDismiss {
+  position: absolute;
+  /* Include the cell's 1px divider so its padded button has equal vertical gaps. */
+  inset: 0 0 -1px auto;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  width: var(--error-dismiss-overlay-width);
+  padding: var(--ui-control-inset);
+  padding-left: calc(var(--error-dismiss-fade-width) + var(--ui-control-inset));
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--ui-table-hover-background) var(--error-dismiss-fade-width)
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+.dialogRow:is(:hover, :focus-within) .dialogDismiss {
+  opacity: 1;
+  pointer-events: auto;
+}
+.dialogTable .dialogDismiss .dismissButton {
+  align-self: stretch;
+  flex: 0 0 var(--error-dismiss-button-width);
+  width: var(--error-dismiss-button-width);
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border-radius: max(
+    0px,
+    calc(var(--ui-section-radius) - var(--ui-control-inset))
+  );
+}
+.dialogDismiss .dismissButton:focus-visible {
+  outline-offset: -2px;
+}
+@media (hover: none) {
+  .dialogDismiss {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .dialogRow[data-status="active"] .summary {
+    padding-right: calc(
+      var(--ui-table-cell-padding) + var(--error-dismiss-overlay-width)
+    );
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialogDismiss {
+    transition: none;
+  }
+}
+
+.dialogRow[data-animate-enter],
+.pageRow[data-animate-enter] {
+  animation: error-row-enter 240ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+}
+@keyframes error-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialogRow[data-animate-enter],
+  .pageRow[data-animate-enter] {
+    animation: none;
+  }
+}
+
+.detailsDialog.detailsDialog {
+  width: min(640px, calc(100vw - 4 * var(--ui-space)));
+}
+.detailsHeader .detailsTitle {
+  margin-left: calc(var(--ui-dialog-padding) - var(--ui-control-inset));
+}
+.detailsDialog .detailsHeader .detailsClose {
+  margin-left: auto;
+  border-radius: max(
+    0px,
+    calc(
+      var(--card-radius) - var(--card-border-width) - var(--ui-control-inset)
+    )
+  );
+}
+.detailsBody {
+  container: error-details / inline-size;
+}
+@container error-details (width < 480px) {
+  .metadata {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pageRow {
+  cursor: pointer;
+}
+.pageRow:focus-visible {
+  outline: 1px solid var(--ui-shade-122);
+  outline-offset: -1px;
+}

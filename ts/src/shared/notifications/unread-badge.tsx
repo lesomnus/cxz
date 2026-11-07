@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import type { CSSProperties } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -33,9 +34,7 @@ export function UnreadBadge({
       }
     >
       {count === undefined ? (
-        <svg width="6" height="6" viewBox="0 0 6 6" aria-hidden="true">
-          <circle cx="3" cy="3" r="3" fill="currentColor" />
-        </svg>
+        <Icon name="notification" width="6" height="6" aria-hidden="true" />
       ) : (
         <span aria-hidden="true">{count > 99 ? "99+" : count}</span>
       )}

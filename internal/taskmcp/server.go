@@ -117,8 +117,8 @@ func New(conn grpc.ClientConnInterface, binding Binding) (*mcp.Server, error) {
 	mcp.AddTool(s, &mcp.Tool{Name: "task_get", Description: "Read a task's details and current version.", Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true}}, t.get)
 	mcp.AddTool(s, &mcp.Tool{Name: "task_add", Description: "Create unassigned Todo work. Same client_id retries return the original task."}, t.add)
 	mcp.AddTool(s, &mcp.Tool{Name: "task_claim", Description: "Atomically claim unassigned Todo work for this session/run."}, t.claim)
-	mcp.AddTool(s, &mcp.Tool{Name: "task_patch", Description: "Edit unassigned work or this run's task. Execution status changes require ownership."}, t.patch)
-	mcp.AddTool(s, &mcp.Tool{Name: "task_release", Description: "Release this run's task back to Todo for another session."}, t.release)
+	mcp.AddTool(s, &mcp.Tool{Name: "task_patch", Description: "Edit unassigned work or this run's task. Done tasks are immutable. Execution status changes require ownership."}, t.patch)
+	mcp.AddTool(s, &mcp.Tool{Name: "task_release", Description: "Release this run's Waiting or Canceled task back to Todo. Working assignment is locked; Done tasks are immutable."}, t.release)
 	mcp.AddTool(s, &mcp.Tool{Name: "task_link", Description: "Record that a task cannot start until another finishes. A blocked task cannot be claimed. Cycles are refused."}, t.link)
 	mcp.AddTool(s, &mcp.Tool{Name: "task_unlink", Description: "Remove a blocking link that is no longer true."}, t.unlink)
 	return s, nil

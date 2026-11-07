@@ -23,9 +23,9 @@ test("toolbar glow follows composer layout and contains oversized orbs without p
           const wrapper = document
             .querySelector(".composer-wrapper")!
             .getBoundingClientRect();
-          const clip = node.parentElement!.getBoundingClientRect();
+          const clip = node.getBoundingClientRect();
           const clusters = node
-            .querySelector(".aurora-clusters")!
+            .querySelector(":scope > div")!
             .getBoundingClientRect();
           return Math.max(
             Math.abs(clip.left - wrapper.left),
@@ -63,9 +63,13 @@ test("toolbar glow follows composer layout and contains oversized orbs without p
   // Even oversized orbs stay inside the toolbar and its border.
   await field.evaluate((node) => {
     node.setAttribute("data-active", "true");
-    for (const orbit of node.querySelectorAll<HTMLElement>(".aurora-orbit"))
+    for (const orbit of node.querySelectorAll<HTMLElement>(
+      '[data-aurora-part="orbit"]',
+    ))
       orbit.style.transform = "rotate(90deg)";
-    for (const orb of node.querySelectorAll<HTMLElement>(".aurora-orb"))
+    for (const orb of node.querySelectorAll<HTMLElement>(
+      '[data-aurora-part="orb"]',
+    ))
       orb.style.transform = "scale(2)";
   });
   await noPageOverflow();
@@ -240,7 +244,11 @@ test("a real working turn advances animations and visibly moves the colored glow
   await expect(field).toHaveAttribute("data-active", "true");
   await expect(field).toHaveAttribute("data-running", "true");
   await expect
-    .poll(() => field.evaluate((el) => Number(getComputedStyle(el).opacity)))
+    .poll(() =>
+      field
+        .locator(":scope > div")
+        .evaluate((el) => Number(getComputedStyle(el).opacity)),
+    )
     .toBeCloseTo(0.5, 2);
   const animationTime = () =>
     field.evaluate((el) => {
@@ -318,6 +326,10 @@ test("a real working turn advances animations and visibly moves the colored glow
     timeout: 5000,
   });
   await expect
-    .poll(() => field.evaluate((el) => Number(getComputedStyle(el).opacity)))
+    .poll(() =>
+      field
+        .locator(":scope > div")
+        .evaluate((el) => Number(getComputedStyle(el).opacity)),
+    )
     .toBe(0);
 });

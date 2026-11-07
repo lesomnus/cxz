@@ -33,34 +33,24 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
     .fill("wasm-tasks");
   await add.getByRole("button", { name: "Confirm", exact: true }).click();
   await page
-    .getByRole("button", { name: "Open task: Verify WASM tasks", exact: true })
+    .getByRole("link", { name: "Open task: Verify WASM tasks", exact: true })
     .click();
-  const detail = page.getByRole("dialog", {
+  const detail = page.getByRole("region", {
     name: "Task details",
     exact: true,
   });
-  const fields = detail.getByRole("group", { name: "Task fields" });
-  await expect(fields.locator(":scope > div > span")).toHaveText([
-    "Priority",
-    "Status",
-  ]);
   const priority = detail.getByRole("combobox", {
     name: "Priority",
     exact: true,
   });
-  const status = detail.getByRole("combobox", { name: "Status", exact: true });
-  const left = (await priority.boundingBox())!;
-  const right = (await status.boundingBox())!;
-  expect(left.y).toBe(right.y);
-  expect(left.width).toBe(right.width);
-  expect(right.x).toBeGreaterThan(left.x + left.width);
-  const title = (await detail
-    .getByRole("textbox", { name: "Title", exact: true })
-    .boundingBox())!;
-  expect(title.y).toBeGreaterThan(left.y + left.height);
-  expect(title.height).toBe(left.height);
+  await expect(
+    detail.getByRole("status", { name: "Status", exact: true }),
+  ).toHaveText("Todo");
+  await expect(
+    detail.getByRole("textbox", { name: "Title", exact: true }),
+  ).toHaveText("Verify WASM tasks");
   await detail.screenshot({ path: testInfo.outputPath("task-details.png") });
-  for (const trigger of [priority, status]) {
+  for (const trigger of [priority]) {
     const anchor = (await trigger.locator(".meta-value").boundingBox())!;
     await trigger.click();
     const popup = page.locator(".setting-menu");
@@ -86,7 +76,11 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
     .fill("WASM task verified");
   await detail.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    page.getByRole("button", {
+    detail.getByRole("button", { name: "Save", exact: true }),
+  ).toBeDisabled();
+  await page.goBack();
+  await expect(
+    page.getByRole("link", {
       name: "Open task: WASM task verified",
       exact: true,
     }),
@@ -99,7 +93,7 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
     .click();
   await page.getByRole("option", { name: "All sessions", exact: true }).click();
   await expect(
-    page.getByRole("button", {
+    page.getByRole("link", {
       name: "Open task: WASM task verified",
       exact: true,
     }),

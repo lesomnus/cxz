@@ -74,16 +74,79 @@ forms use `useDialogClose` to delay cancellation cleanup or successful navigatio
 until `onClosed`. Cancel ongoing work immediately (for example, disconnect a
 login socket); only visual teardown waits for the exit animation.
 
+Overlay entrances use Nox's shared motion instead of page-local keyframes.
+ActionMenu reveals by default from its resolved trigger-facing edge; explicit
+motion directions and `motion={false}` remain available. Transient FindBar
+surfaces enable `motion`, while permanent search forms remain static. Question
+cards use `dialogEntranceClassName` with a fade to preserve their measured bounds;
+inline EditableValue keeps the input in place while its action popup enters.
+Native Dialog, anchored previews and approval CardStack retain their existing
+presence effects. All of these follow reduced-motion preferences.
+
 In the UI package, each component folder contains its implementation, CSS Module and independent Storybook examples. The optional editor has its own entry. Theme tokens and the translation provider have dedicated directories. Consumers import the public package entries; internal file paths are not an API. Application code uses those public entries directly rather than maintaining one-file re-export wrappers.
 
 Tests stay beside the behavior they verify. Application stories stay beside their components; package-control stories demonstrating cxz validation or action policy live under `src/storybook/components`. Standalone Nox stories live only in the Nox submodule and are registered by `.storybook-ui`; the cxz `.storybook` catalog discovers only `src` stories and does not duplicate library examples. Package browser checks use `ui-e2e`, while product integration checks use `storybook-e2e`. Shared preview framing and synthetic session data stay under `src/storybook` and are not used by application entries. Both Storybooks discover stories recursively, so directory moves do not require individual registration.
 
 Global application layout CSS lives under `src/app/styles`; component CSS lives in its UI component folder. Shared native scrollbar styling remains under `src/shared/scroll`. CSS tokens and behavior implementations are the source of truth for design values. Generated protocol files remain under `ts/gen`, and generated UI distribution and Storybook outputs remain excluded from Git.
 
-Projects, Tasks and Memory share `resource-page.module.css` for their centered
+Accounts, Projects, Tasks and Memory share `resource-page.module.css` for their centered
 toolbar/body frames and responsive alignment. Their column width, gap, gutter,
 picker width and toolbar row height come from the resource layout tokens in
 `app/styles/style.css`; pages should not maintain separate numeric copies.
+
+All four pages render their frame with `ResourcePage`, `ResourceToolbar` and
+`ResourceLayout` from `shared/components/resource-layout.tsx`. The frame owns the
+named container and content-width derivation; the toolbar owns its aligned inner
+row and action slot. Import these components directly rather than composing their
+CSS Module class lists into page-specific modules: a live update can otherwise
+retain an old transitive class name and lose the frame's width constraints.
+
+Accounts and Projects additionally compose `ResourceDashboard`,
+`ResourceDashboardColumn` and `ResourceSessionSection` from
+`shared/components/resource-layout.tsx`. These apply the resource width policy to
+Nox's SectionLayout/SectionGroup/Section primitives. The shared dashboard owns the
+two-column grid, column heights, facing corner radii, action/usage rows and session
+section insets. Use `contentPadding` from `resource-page.module.css` for the same
+body gutters with either native scrolling or PanelScroll.
+
+`--resource-page-column-width` is the single panel-width setting (420px by default).
+The two-column content width is derived in the shared page scope from it and the
+shared gap, so page-local token overrides also resize the toolbar and body.
+`--resource-action-size` and `--resource-action-radius` similarly own action tile
+dimensions; account quota geometry is derived from the same size. The single
+responsive breakpoint in `resource-page.module.css` changes the toolbar, content
+bound and dashboard together. Do not introduce per-page widths or breakpoints for
+these dashboards. Pages supply content, content-specific information heights and
+the optional `actionsFirstOnNarrow` ordering; they do not redefine the layout.
+
+## Shared UI ownership
+
+Nox owns the document UI primitives `ImageViewer`, `PathValue`, `ActivityDots`,
+`LiquidGauge`, `Tabs`, `FindBar`, `ActivityHeatmap` and `ListDetailPages`, plus the
+fine grain texture token. Each has standalone stories and package-local styles.
+Use public Nox exports instead of copying their JSX, gestures or CSS into cxz.
+
+cxz adapters retain only application concerns:
+
+- Image attachment loading supplies an abortable Blob loader; Nox owns zoom,
+  panning, transparency and cleanup.
+- Session identity supplies activity seeds; quota adapters supply remaining
+  values, thresholds and refresh policy.
+- Question tabs supply completion icons. Search supplies event interpretation,
+  snippets, match navigation and focus/shortcut policy. Usage supplies daily
+  aggregation; Nox renders the search surface and heatmap.
+- ResourceFields translates resource metadata and copy feedback into Nox
+  DescriptionList parts. DescriptionList and Form share field layout styles.
+- DateTime converts protobuf timestamps; IdentifierValue and CopyButton retain
+  app-specific prop/layout adaptation. ResourcePanel composes NavigationPanel
+  with unread-aware PanelScroll. ComposerAurora uses AuroraGlow directly.
+- Pages use Nox ListDetailPages directly for lazy mounting, outgoing detail
+  lifetime and fresh editors after rapid reentry. Routing and dirty guards remain
+  with the page.
+
+The reusable package must not import generated protocol types, connection stores,
+resource routes or application translations. Its CSS Modules and theme tokens are
+shared design values' source of truth.
 
 ## Module imports
 

@@ -307,7 +307,11 @@ export function ProjectActions({
                 as="button"
                 type="button"
                 effect="sparkle"
-                className={`${actionStyles.button} ${styles.action} ${action.kind === "erase" ? actionStyles.danger : ""}`}
+                className={`${actionStyles.button} ${styles.action} ${action.kind !== "start" ? actionStyles.danger : ""}`}
+                data-project-action={action.kind}
+                data-highlighted={
+                  (action.kind === "start" && !action.disabled) || undefined
+                }
                 aria-label={copy[action.kind].label}
                 disabled={action.disabled}
                 onClick={(event) => {
@@ -326,6 +330,7 @@ export function ProjectActions({
                 className={`${actionStyles.button} ${styles.action}`}
                 aria-label={t("Refresh")}
                 loading={refreshing || busy}
+                minLoadingDuration={500}
                 onClick={async () => {
                   setRefreshError("");
                   try {

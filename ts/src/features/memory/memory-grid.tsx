@@ -1,3 +1,4 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { useEffect, useId } from "react";
 import { Button, CompactNumber } from "@lesomnus/nox";
 import type { Memory } from "#gen/cxz/memory_pb";
@@ -57,17 +58,7 @@ function MemoryCard({
             {["codex", "claude"].includes(owning.agent) ? (
               <AgentBrand agent={owning.agent} />
             ) : (
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <path d="M14 3H6v18h12V7zM14 3v5h4M9 12h6M9 16h6" />
-              </svg>
+              <Icon name="document" width="14" height="14" aria-hidden="true" />
             )}
           </span>
           <span title={owning.name}>{owning.name}</span>
@@ -97,12 +88,14 @@ export function MemoryGrid({
   projectHandle,
   sessions,
   session,
+  active = true,
 }: {
   c: Connection;
   project: string;
   projectHandle: string;
   sessions: readonly Session[];
   session?: Uint8Array;
+  active?: boolean;
 }) {
   const prefix = useId();
   const sessionId = sessionUUID(session);
@@ -145,13 +138,16 @@ export function MemoryGrid({
       };
     },
     [c, project],
-    { cache: { store: c.reads, key: cacheKey, ttl: MEMORY_LIST_TTL } },
+    {
+      enabled: active,
+      cache: { store: c.reads, key: cacheKey, ttl: MEMORY_LIST_TTL },
+    },
   );
   // Selection is local. Check freshness without canceling an in-flight project read.
   useEffect(() => {
-    if (!list.loading && c.reads.peek(cacheKey)?.fresh === false)
+    if (active && !list.loading && !c.reads.peek(cacheKey)?.fresh)
       list.revalidate();
-  }, [c, project, sessionId]);
+  }, [c, project, sessionId, active]);
   const data = list.data?.project === project ? list.data : undefined;
   const memories =
     data?.items.filter(

@@ -1,8 +1,8 @@
 .button.button {
-  --ui-section-radius: var(--resource-action-radius, 16px);
+  --ui-section-radius: var(--resource-action-radius);
   --ui-section-inner-radius: var(--ui-section-radius);
-  width: var(--resource-action-size, 64px);
-  height: var(--resource-action-size, 64px);
+  width: var(--resource-action-size);
+  height: var(--resource-action-size);
   padding: 0;
   border-radius: var(--ui-section-radius);
   place-items: center;

@@ -53,9 +53,10 @@ test("conversation file links preview the session container without navigating t
     await expect(
       editor.getByRole("tab", { name: filename, exact: true }),
     ).toHaveAttribute("aria-selected", "true");
-    await expect(editor.locator(".file-content")).toContainText(text);
-    await expect(editor).toHaveCSS("opacity", "1");
-    await expect(editor).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+    await expect(editor.locator(".view-lines")).toContainText(text);
+    const frame = page.locator("[data-workspace-preview-frame]");
+    await expect(frame).toHaveCSS("opacity", "1");
+    await expect(frame).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
     const drawer = (await editor.boundingBox())!;
     const workspace = (await page.locator(".session-workspace").boundingBox())!;
     expect(drawer.x).toBeCloseTo(workspace.x, 1);
@@ -183,11 +184,18 @@ test("workspace split, readonly files and simulated connections keep project sta
       async () => (await page.locator(".conversation").boundingBox())!.width,
     )
     .toBe(before);
-  await editor.getByRole("button", { name: "Connect", exact: true }).click();
-  await expect(editor).toContainText("Simulated connection");
+  await editor
+    .getByRole("button", { name: "File actions", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Connect", exact: true }).click();
+  await expect(editor).toContainText("Simulated");
+  await editor
+    .getByRole("button", { name: "File actions", exact: true })
+    .click();
   await expect(
-    editor.getByRole("button", { name: "Disconnect", exact: true }),
+    page.getByRole("menuitem", { name: "Disconnect", exact: true }),
   ).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.locator("iframe")).toHaveCount(0);
   await divider.focus();
   await page.keyboard.press("Shift+ArrowLeft");
@@ -205,24 +213,31 @@ test("workspace split, readonly files and simulated connections keep project sta
       async () => (await page.locator(".conversation").boundingBox())!.width,
     )
     .toBe(chosenConversationWidth);
-  await expect(editor).toContainText("Simulated connection");
+  await expect(editor).toContainText("Simulated");
   await expect(
     editor.getByRole("tab", { name: "main.go", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-8");
-  await expect(editor).toContainText("Secondary project");
+  await expect(editor).not.toContainText("Simulated");
+  await editor
+    .getByRole("button", { name: "File actions", exact: true })
+    .click();
   await expect(
-    editor.getByRole("button", { name: "Connect", exact: true }),
+    page.getByRole("menuitem", { name: "Connect", exact: true }),
   ).toBeVisible();
+  await page.keyboard.press("Escape");
   await editor.getByRole("button", { name: "README.md", exact: true }).click();
   await expect(editor.locator(".view-lines")).toContainText("project-2");
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-2");
-  await expect(editor).toContainText("Simulated connection");
+  await expect(editor).toContainText("Simulated");
   await expect(
     editor.getByRole("tab", { name: "main.go", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
-  await editor.getByRole("button", { name: "Disconnect", exact: true }).click();
-  await expect(editor).toContainText("File preview");
+  await editor
+    .getByRole("button", { name: "File actions", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Disconnect", exact: true }).click();
+  await expect(editor).toContainText("package main");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     2104,
   );

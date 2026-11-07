@@ -115,7 +115,6 @@ test("Tab indents, Shift+Tab outdents, native undo preserves selection and Ctrl+
   await input.press("Home");
   await input.press("Tab");
   await expect(input).toHaveValue("  " + token);
-  await input.press("ArrowRight");
   await input.press("Tab");
   await expect(input).toHaveValue("    " + token);
   await expect(page.locator(".paste-chip")).toHaveCount(1);

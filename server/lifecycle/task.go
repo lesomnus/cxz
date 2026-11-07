@@ -105,6 +105,14 @@ func (s TaskServer) Get(ctx context.Context, r *resource.TaskGetRequest) (*resou
 	defer close()
 	return backend.Get(ctx, r)
 }
+func (s TaskServer) History(ctx context.Context, r *resource.TaskHistoryRequest) (*resource.AuditListResponse, error) {
+	backend, close, err := s.target(ctx, r.GetRef().GetProject())
+	if err != nil {
+		return nil, err
+	}
+	defer close()
+	return backend.History(ctx, r)
+}
 func (s TaskServer) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*resource.Task, error) {
 	backend, close, err := s.target(ctx, r.GetRef().GetProject())
 	if err != nil {
@@ -204,6 +212,11 @@ func (s taskClientServer) Get(ctx context.Context, r *resource.TaskGetRequest) (
 	r = proto.Clone(r).(*resource.TaskGetRequest)
 	r.SetRef(s.ref(r.GetRef()))
 	return s.TaskServiceClient.Get(ctx, r)
+}
+func (s taskClientServer) History(ctx context.Context, r *resource.TaskHistoryRequest) (*resource.AuditListResponse, error) {
+	r = proto.Clone(r).(*resource.TaskHistoryRequest)
+	r.SetRef(s.ref(r.GetRef()))
+	return s.TaskServiceClient.History(ctx, r)
 }
 func (s taskClientServer) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*resource.Task, error) {
 	r = proto.Clone(r).(*resource.TaskPatchRequest)

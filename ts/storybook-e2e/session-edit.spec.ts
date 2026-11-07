@@ -170,71 +170,30 @@ test("pending edits prevent dismissal and duplicate activation", async ({
   await expect(page.getByRole("status")).toHaveText("Parent submissions: 0");
 });
 
-test("Details and composer previews retain both title and alias across sequential edits", async ({
+test("Details preview retains both title and alias across sequential edits", async ({
   page,
 }) => {
-  for (const story of [
-    "components-sessiondetails--default",
-    "conversation-composer--empty",
-  ]) {
-    await page.goto(`/iframe.html?id=${story}&viewMode=story`);
-    if (story.startsWith("conversation")) {
-      await page
-        .getByRole("button", { name: "Session menu", exact: true })
-        .click();
-      await page
-        .getByRole("menuitem", { name: "Details", exact: true })
-        .click();
-    }
-    await page.getByRole("button", { name: "Edit Title", exact: true }).click();
-    const title = page.getByRole("dialog", { name: "Edit Title", exact: true });
-    await title
-      .getByRole("textbox", { name: "Title", exact: true })
-      .fill("Review session identity");
-    await title.getByRole("button", { name: "Confirm", exact: true }).click();
-    await expect(title).toHaveCount(0);
-    await page.getByRole("button", { name: "Edit Alias", exact: true }).click();
-    const alias = page.getByRole("dialog", { name: "Edit Alias", exact: true });
-    await alias
-      .getByRole("textbox", { name: "Alias", exact: true })
-      .fill("oak-tree");
-    await alias.getByRole("button", { name: "Confirm", exact: true }).click();
-    await expect(alias).toHaveCount(0);
-    await expect(
-      page.getByRole("button", { name: "Edit Title", exact: true }),
-    ).toHaveText("Review session identity");
-    await expect(
-      page.getByRole("button", { name: "Edit Alias", exact: true }),
-    ).toHaveText("oak-tree");
-    if (story.startsWith("conversation")) {
-      await page
-        .getByRole("button", { name: "Close details", exact: true })
-        .click();
-      await page
-        .getByRole("button", { name: "Session menu", exact: true })
-        .click();
-      await page
-        .getByRole("menuitem", { name: "Details", exact: true })
-        .click();
-      await expect(
-        page.getByRole("button", { name: "Edit Title", exact: true }),
-      ).toHaveText("Review session identity");
-      await expect(
-        page.getByRole("button", { name: "Edit Alias", exact: true }),
-      ).toHaveText("oak-tree");
-      await expect(
-        page.getByRole("dialog", { name: "Session details", exact: true }),
-      ).toHaveCSS("opacity", "1");
-      await page
-        .locator(".session-details > div")
-        .filter({
-          has: page.getByRole("button", { name: "Edit Title", exact: true }),
-        })
-        .locator("dt")
-        .hover();
-      await page.screenshot({
-        path: "test-results/session-details-storybook.png",
-      });
-    }
-  }
+  await page.goto(
+    "/iframe.html?id=components-sessiondetails--default&viewMode=story",
+  );
+  await page.getByRole("button", { name: "Edit Title", exact: true }).click();
+  const title = page.getByRole("dialog", { name: "Edit Title", exact: true });
+  await title
+    .getByRole("textbox", { name: "Title", exact: true })
+    .fill("Review session identity");
+  await title.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(title).toHaveCount(0);
+  await page.getByRole("button", { name: "Edit Alias", exact: true }).click();
+  const alias = page.getByRole("dialog", { name: "Edit Alias", exact: true });
+  await alias
+    .getByRole("textbox", { name: "Alias", exact: true })
+    .fill("oak-tree");
+  await alias.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(alias).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Edit Title", exact: true }),
+  ).toHaveText("Review session identity");
+  await expect(
+    page.getByRole("button", { name: "Edit Alias", exact: true }),
+  ).toHaveText("oak-tree");
 });

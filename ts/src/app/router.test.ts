@@ -25,6 +25,7 @@ test.each(["/c/_/activity", "/activity"])(
 const project = "00000000-0000-8000-8007-000000000001";
 const memory = "00000000-0000-8000-8007-000000000200";
 test.each([
+  ["/c/_/errors", "errors", {}],
   [`/c/_/project/${project}/memory`, "memory", { projectId: project }],
   [
     `/c/_/project/${project}/memory/${memory}`,
@@ -103,3 +104,20 @@ test.each([
     }
   },
 );
+
+test("Errors accepts old bookmarks without filtering the unified list", async () => {
+  const history = createMemoryHistory({
+    initialEntries: ["/c/_/errors?tab=history"],
+  });
+  const router = createWorkspaceRouter(
+    { shell: () => null, view: () => null },
+    history,
+  );
+  try {
+    await router.load();
+    expect(router.state.matches.at(-1)?.staticData.resource).toBe("errors");
+    expect(router.state.location.href).toBe("/c/_/errors?tab=history");
+  } finally {
+    history.destroy();
+  }
+});

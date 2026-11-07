@@ -1,8 +1,10 @@
 import type { Client } from "@connectrpc/connect";
 import type { SessionService } from "#gen/cxz/session_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
+import type { Project } from "#gen/cxz/project_pb";
 import { BackgroundJobs } from "./background-jobs";
 import { sessionRef, sessionUUID } from "#src/shared/api/session-id.ts";
+import { backgroundAvailable } from "./background-availability";
 
 type Request = {
   id: string;
@@ -45,7 +47,7 @@ export class SessionBackground {
     else this.value.delete(id);
     this.listeners.forEach((listener) => listener());
   }
-  observe(sessions: Session[]) {
+  observe(sessions: Session[], projects: readonly Project[]) {
     const desired = new Map<string, Request>();
     for (const session of sessions) {
       const status = session.status;
@@ -53,7 +55,7 @@ export class SessionBackground {
       if (
         !uuid ||
         !status?.runId ||
-        status.state === "stopped" ||
+        !backgroundAvailable(session, projects) ||
         ["running", "working", "waiting_input", "waiting"].includes(
           status.state,
         )

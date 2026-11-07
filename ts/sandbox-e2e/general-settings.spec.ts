@@ -233,10 +233,9 @@ test("cross-tab theme changes retain the composer Undo, selected file and runnin
   await general(other);
   await chooseSetting(other, "Appearance", "light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await expect(viewer.locator(".monaco-editor")).toHaveCSS(
-    "background-color",
-    "rgb(250, 250, 250)",
-  );
+  await expect(
+    viewer.locator("[data-workspace-content] > :last-child"),
+  ).toHaveCSS("background-color", "rgb(250, 250, 250)");
   await expect(shell.locator(".xterm-viewport")).toHaveCSS(
     "background-color",
     "rgb(251, 251, 251)",

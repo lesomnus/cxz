@@ -19,7 +19,16 @@ it("retains native HTTP failures during a retry, then resolves only the matching
   await expect(
     connectWorkspaceEditor(c, "project-one", signal),
   ).rejects.toThrow("Editor unavailable");
-  expect(errors.snapshot()[0].status).toBe("active");
+  expect(errors.snapshot()[0]).toMatchObject({
+    status: "active",
+    origin: {
+      kind: "http",
+      method: "POST",
+      path: "/editor/connect",
+      status: 503,
+    },
+    subject: { kind: "project", id: "project-one" },
+  });
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => Response.json({ workspace: "/workspace" })),

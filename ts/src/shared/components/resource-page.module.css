@@ -1,6 +1,12 @@
 .page {
+  --ui-scroll-area-background: var(--resource-page-background);
+  background: var(--resource-page-background);
+  --resource-page-content-width: calc(
+    2 * var(--resource-page-column-width) + var(--resource-page-column-gap)
+  );
   grid-column: 2 / -1;
   container: resource-page / inline-size;
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -12,10 +18,15 @@
 }
 .toolbarContent,
 .content {
+  --section-layout-max-width: var(--resource-page-content-width);
+  --resource-dashboard-joining-radius: var(--ui-section-inner-radius);
   width: 100%;
-  max-width: var(--resource-page-content-width);
+  max-width: var(--section-layout-max-width);
   margin-inline: auto;
   min-width: 0;
+}
+.contentPadding.contentPadding {
+  padding: calc(3 * var(--ui-space)) var(--resource-page-gutter);
 }
 .toolbarContent {
   display: flex;
@@ -32,7 +43,33 @@
 @container resource-page (width < 892px) {
   .toolbarContent,
   .content {
-    max-width: var(--resource-page-column-width);
+    --section-layout-max-width: var(--resource-page-column-width);
+    --resource-dashboard-joining-radius: var(--ui-section-radius);
+  }
+  .content [data-resource-dashboard] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .content
+    [data-resource-dashboard][data-actions-first]
+    > [data-resource-dashboard-column="activity"] {
+    display: contents;
+  }
+  .content
+    [data-resource-dashboard][data-actions-first]
+    > [data-resource-dashboard-column="information"] {
+    grid-row: 2;
+  }
+  .content
+    [data-resource-dashboard][data-actions-first]
+    > [data-resource-dashboard-column="activity"]
+    > section:first-child {
+    grid-row: 1;
+  }
+  .content
+    [data-resource-dashboard][data-actions-first]
+    > [data-resource-dashboard-column="activity"]
+    > section:last-child {
+    grid-row: 3;
   }
   .toolbarContent {
     flex-wrap: wrap;

@@ -1,10 +1,16 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { FieldLabel } from "./field-label";
 import { IdentifierValue } from "./identifier-value";
-import { PathValue } from "./path-value";
-import styles from "./resource-fields.module.css";
+import {
+  FieldLabel,
+  PathValue,
+  DescriptionListRoot,
+  DescriptionListRow,
+  DescriptionListTerm,
+  DescriptionListDetails,
+  DescriptionListAnnotation,
+} from "@lesomnus/nox";
 
 type ResourceField = {
   label: string;
@@ -30,15 +36,19 @@ export type ResourceFieldRow =
 export function ResourceFields({
   rows,
   columns = 2,
+  variant = "default",
+  density = "default",
 }: {
   rows: readonly ResourceFieldRow[];
-  columns?: 1 | 2;
+  /** Equal-width count, or relative column weights such as [1, 2]. */
+  columns?: 1 | 2 | 3 | readonly number[];
+  /** Input/readonly values share Form spacing, surface insets and section gaps. */
+  variant?: "default" | "controls";
+  /** Compact controls retain the tighter Account editable-value alignment. */
+  density?: "default" | "compact";
 }) {
   return (
-    <dl
-      className={styles.fields}
-      style={{ "--resource-field-columns": columns } as CSSProperties}
-    >
+    <DescriptionListRoot columns={columns} variant={variant} density={density}>
       {rows.map((row) => {
         const field: ResourceField =
           "label" in row
@@ -60,7 +70,7 @@ export function ResourceFields({
           />
         );
       })}
-    </dl>
+    </DescriptionListRoot>
   );
 }
 
@@ -102,22 +112,19 @@ function Field({
     }
   }
   return (
-    <div className={fullWidth ? styles.fullWidth : undefined}>
-      <dt>
+    <DescriptionListRow fullWidth={fullWidth}>
+      <DescriptionListTerm>
         <FieldLabel label={label} description={description} />
         {labelDetail != null && (
-          <span className={styles.labelDetail}>{labelDetail}</span>
+          <DescriptionListAnnotation>{labelDetail}</DescriptionListAnnotation>
         )}
         {(path || identifier) && (
-          <span
-            className={feedback?.failed ? styles.copyError : styles.labelDetail}
-            role="status"
-          >
+          <DescriptionListAnnotation error={feedback?.failed} role="status">
             {feedback?.message}
-          </span>
+          </DescriptionListAnnotation>
         )}
-      </dt>
-      <dd>
+      </DescriptionListTerm>
+      <DescriptionListDetails>
         {copyValue && identifier ? (
           <IdentifierValue
             value={copyValue}
@@ -138,7 +145,7 @@ function Field({
         ) : (
           value
         )}
-      </dd>
-    </div>
+      </DescriptionListDetails>
+    </DescriptionListRow>
   );
 }

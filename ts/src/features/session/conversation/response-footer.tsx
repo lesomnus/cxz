@@ -1,3 +1,4 @@
+import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import { t, translateKnown, currentLocale } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import {
@@ -21,41 +22,23 @@ const names: Record<string, string> = {
   tool_calls: "Tools",
 };
 
-const icons: Record<string, string> = {
-  duration:
-    "M9 2h6M12 2v3M17 5l2-2M12 9v4l3 2 M20 13a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
-  input_tokens: "M20 4v16M4 12h12M11 7l5 5-5 5",
-  output_tokens: "M4 4v16M20 12H8M13 7l-5 5 5 5",
-  cache_read_tokens:
-    "M4 7V5c0-4 16-4 16 0v2M4 5c0 4 16 4 16 0M4 11v8c0 4 16 4 16 0v-8M4 19c0 4 16 4 16 0M3 12h10M9 9l4 3-4 3",
-  cache_write_tokens:
-    "M4 7V5c0-4 16-4 16 0v2M4 5c0 4 16 4 16 0M4 11v8c0 4 16 4 16 0v-8M4 19c0 4 16 4 16 0M21 12H11M15 9l-4 3 4 3",
-  reasoning_tokens: "M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z",
-  total_tokens: "M19 4H5l7 8-7 8h14",
-  cost_usd: "M12 2v20M18 6c-2-3-12-3-12 2 0 6 12 2 12 8 0 5-10 5-12 2",
-  api_duration_ms: "M4 19a10 10 0 1 1 16 0M12 12l5-5M3 12h2M19 12h2M12 2v2",
-  api_turns: "M20 7H5l4-4M4 17h15l-4 4M20 7v5M4 17v-5",
-  tool_calls:
-    "M14 6a5 5 0 0 0-6 6L3 17a3 3 0 0 0 4 4l5-5a5 5 0 0 0 6-6l-3 3-4-4Z",
+const icons: Record<string, IconName> = {
+  duration: "duration",
+  input_tokens: "tokens-input",
+  output_tokens: "tokens-output",
+  cache_read_tokens: "tokens-cache-read",
+  cache_write_tokens: "tokens-cache-write",
+  reasoning_tokens: "tokens-reasoning",
+  total_tokens: "tokens-total",
+  cost_usd: "cost",
+  api_duration_ms: "api-duration",
+  api_turns: "api-turns",
+  tool_calls: "tool-calls",
 };
 
 function MetricIcon({ kind }: { kind: string }) {
   useLocale();
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={icons[kind]} />
-    </svg>
-  );
+  return <Icon name={icons[kind] ?? "unknown"} size={12} />;
 }
 
 function metricValue(key: string, value: number) {

@@ -16,9 +16,10 @@ test("session notification badge uses the wrapper without changing its icon", as
     "stroke-width",
     "2.500",
   );
-  await expect(
-    icon.locator("[data-badged-icon-content] > svg"),
-  ).toHaveAttribute("stroke-width", "1.5");
+  await expect(icon.locator("[data-badged-icon-content] > svg")).toHaveCSS(
+    "stroke-width",
+    "1.5px",
+  );
 });
 
 test("recording badge masks the microphone instead of painting a background border", async ({
@@ -61,15 +62,16 @@ test("recording badge masks the microphone instead of painting a background bord
   await expect(stop.locator("[data-voice-recording]")).toBeVisible();
   await expect(stop.locator("mask ellipse")).toHaveAttribute(
     "stroke-width",
-    "2.400",
+    "2.000",
   );
   await expect(stop.locator("[data-voice-recording]")).toHaveCSS(
     "border-top-width",
     "0px",
   );
-  await expect(
-    stop.locator("[data-badged-icon-content] > svg"),
-  ).toHaveAttribute("stroke-width", "1.8");
+  await expect(stop.locator("[data-badged-icon-content] > svg")).toHaveCSS(
+    "stroke-width",
+    "1.5px",
+  );
   await stop.click();
   await expect(page.locator("[data-voice-recording]")).toHaveCount(0);
 });
