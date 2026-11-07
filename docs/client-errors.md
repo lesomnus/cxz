@@ -1,10 +1,14 @@
 # Browser error center
 
 The button immediately above Profile opens active errors and their history.
+Its header has an Open errors page link to `/c/_/errors`; the standalone page
+uses the same live store, tabs, record details, Dismiss and Clear history actions.
+The current tab is carried into the page, and `/c/_/errors?tab=history` can be
+bookmarked or reloaded directly.
 Its symbol and border are red while there are active errors. Each record shows
 the failure, operation, target when available, timestamps and repeat count.
 Repeated failures of the same operation and reference share an active entry.
-A failure after recovery starts a new episode.
+A failure after recovery or staleness starts a new episode.
 
 All Connection RPC transports, including uploads and in-process connections,
 report failures here. Terminal/login WebSocket failures, sign-out failures,
@@ -31,13 +35,28 @@ it does not certify the entire server is healthy or guarantee an earlier write
 was applied. Uncaught JavaScript errors have no reliable automatic recovery
 signal: use **Dismiss**, which records a distinct dismissed status.
 
+## Stale history
+
+An active record becomes **Stale** one hour after its last failure was observed.
+A repeat occurrence renews this deadline; opening a panel or retrying without a
+new failure does not. Stale means no recent observation, not confirmed recovery.
+It leaves the active count and appears in History with the last failure time,
+stale timestamp and occurrence count. A later failure starts a new active record
+while retaining the previous stale episode.
+
+The sidebar's store subscription keeps expiration running even while the dialog
+is closed. Restoring persisted records and subscribing after a suspended view
+also expire old records, so reopening the browser does not reset the hour.
+Resolved, Dismissed and Stale remain distinct statuses. Clear history removes
+all three while retaining current active failures.
+
 ## Storage
 
 Up to 200 summaries are stored under `cxz.client-errors.v1` in this browser's
 localStorage, shared across connections with the connection retained on each
 record. Active entries are retained ahead of older history. This is a bounded
 diagnostic list, not an audit log; older entries can be evicted at the limit.
-Resolved and dismissed entries survive reloads. **Clear history** removes only
+Resolved, dismissed and stale entries survive reloads. **Clear history** removes only
 closed entries. Browser storage failure falls back to the current tab's memory.
 
 This list is separate from Settings → Logs, whose detailed client logs rotate
@@ -49,4 +68,5 @@ never contain secrets.
 
 `Workspace/Errors → Recovery` in Storybook exercises the real sidebar and RPC
 transport, including delayed/canceled retries, target isolation, stream recovery,
-editable fields and persistent history. Its data uses an isolated preview key.
+editable fields and persistent history. `Workspace/Errors → Page` opens the
+independent view directly. The previews use an isolated storage key.

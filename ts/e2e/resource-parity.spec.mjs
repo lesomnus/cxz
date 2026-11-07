@@ -1482,3 +1482,25 @@ test("failed conversation menu Erase preserves the session and draft for retry",
     requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
   ).toHaveLength(1);
 });
+
+test("Errors page loads directly and keeps History in its address after a dialog handoff and reload", async ({
+  page,
+}) => {
+  await fixture(page, false, false, "/c/_/errors");
+  const main = page.getByRole("main", { name: "Errors", exact: true });
+  await expect(main).toContainText("No active errors");
+  await page.getByRole("button", { name: "Errors", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
+  await dialog.getByRole("radio", { name: /^History / }).click();
+  const link = dialog.getByRole("link", {
+    name: "Open errors page",
+    exact: true,
+  });
+  await expect(link).toHaveAttribute("href", "/c/_/errors?tab=history");
+  await link.click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/c\/_\/errors\?tab=history$/);
+  await expect(main).toContainText("No error history");
+  await page.reload();
+  await expect(main.getByRole("radio", { name: /^History / })).toBeChecked();
+});

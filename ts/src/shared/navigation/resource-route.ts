@@ -69,6 +69,7 @@ export const resourcePaths = {
   tasks: "/c/$connection/task",
   accounts: "/c/$connection/account",
   search: "/c/$connection/search",
+  errors: "/c/$connection/errors",
   auxiliary: "/c/$connection/auxiliary",
 } as const;
 

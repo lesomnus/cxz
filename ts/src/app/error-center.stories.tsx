@@ -9,7 +9,8 @@ import { SessionService } from "#gen/cxz/session_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { ClientErrors } from "#src/shared/errors/client-errors.ts";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { createWorkspaceRouter } from "./router";
+import { ErrorsPage } from "#src/pages/errors/errors-page.tsx";
+import { useWorkspaceRoute, createWorkspaceRouter } from "./router";
 import { Workspace } from "./workspace-shell";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
 
@@ -167,7 +168,7 @@ function Controls({ fixture: f }: { fixture: ReturnType<typeof makeFixture> }) {
     </main>
   );
 }
-function Preview() {
+function Preview({ page = false }: { page?: boolean }) {
   const [fixture] = useState(makeFixture);
   const [router] = useState(() =>
     createWorkspaceRouter(
@@ -182,12 +183,21 @@ function Preview() {
             {children}
           </Workspace>
         ),
-        view: () => <Controls fixture={fixture} />,
+        view: () =>
+          useWorkspaceRoute().resource === "errors" ? (
+            <ErrorsPage store={fixture.errors} />
+          ) : (
+            <Controls fixture={fixture} />
+          ),
       },
-      createMemoryHistory({ initialEntries: ["/c/_/account"] }),
+      createMemoryHistory({
+        initialEntries: [page ? "/c/_/errors" : "/c/_/account"],
+      }),
     ),
   );
   useEffect(() => {
+    if (page && !fixture.errors.snapshot().length)
+      void fixture.request("fail").catch(() => {});
     window.addEventListener("pagehide", fixture.errors.flush);
     return () => {
       window.removeEventListener("pagehide", fixture.errors.flush);
@@ -204,3 +214,5 @@ const meta = {
 } satisfies Meta<typeof Preview>;
 export default meta;
 export const Recovery: StoryObj<typeof meta> = {};
+
+export const Page: StoryObj<typeof meta> = { args: { page: true } };

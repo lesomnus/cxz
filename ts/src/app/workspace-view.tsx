@@ -1,3 +1,4 @@
+import { ErrorsPage } from "#src/pages/errors/errors-page.tsx";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useContext } from "react";
 import { ConnectionsPage } from "#src/pages/settings/connections-page.tsx";
@@ -26,6 +27,7 @@ export function WorkspaceView() {
     setSettingsFileOpen,
   } = useContext(WorkspaceContext)!;
   const { resource, session, settingsTopic } = useWorkspaceRoute();
+  if (resource === "errors") return <ErrorsPage store={c.errors} />;
   if (resource === "not-found") return <NotFoundPage />;
   if (resource === "tasks")
     return (

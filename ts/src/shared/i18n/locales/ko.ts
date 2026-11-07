@@ -821,6 +821,8 @@ export const messages = {
   "Some project actions failed. Successful projects will not be retried.":
     "일부 프로젝트 작업이 실패했습니다. 성공한 프로젝트는 다시 실행하지 않습니다.",
   Errors: "오류",
+  Stale: "오래됨",
+  "Open errors page": "오류 페이지 열기",
   "{count} active errors": "활성 오류 {count}개",
   "Close errors": "오류 닫기",
   "Error status": "오류 상태",

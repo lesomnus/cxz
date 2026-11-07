@@ -8,7 +8,7 @@ export type ClientError = LogContext & {
   code?: string;
   target?: string;
   source: "rpc" | "http" | "client" | "resource";
-  status: "active" | "resolved" | "dismissed";
+  status: "active" | "resolved" | "dismissed" | "stale";
   firstSeen: number;
   lastSeen: number;
   updated: number;
@@ -23,6 +23,7 @@ export type ErrorContext = LogContext & {
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
 export const errorStorageKey = "cxz.client-errors.v1";
 export const retainedErrors = 200;
+export const errorStaleAfter = 60 * 60_000;
 
 function errorMessage(error: unknown) {
   return diagnosticText(
@@ -45,6 +46,7 @@ export class ClientErrors {
   private entries: readonly ClientError[] = [];
   private listeners = new Set<() => void>();
   private timer?: ReturnType<typeof setTimeout>;
+  private expiryTimer?: ReturnType<typeof setTimeout>;
   private clearedBefore = 0;
   private clock = 0;
   private apiMessages = new Set<string>();
@@ -72,8 +74,10 @@ export class ClientErrors {
   snapshot = () => this.entries;
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
+    this.expire();
     return () => {
       this.listeners.delete(listener);
+      if (!this.listeners.size) clearTimeout(this.expiryTimer);
     };
   };
   private publish(entries: readonly ClientError[]) {
@@ -88,6 +92,7 @@ export class ClientErrors {
           b.updated - a.updated,
       )
       .slice(0, this.limit);
+    this.scheduleExpiry();
     for (const listener of this.listeners) {
       try {
         listener();
@@ -95,6 +100,44 @@ export class ClientErrors {
         /* Diagnostics cannot fail the observed operation. */
       }
     }
+  }
+  private scheduleExpiry() {
+    clearTimeout(this.expiryTimer);
+    this.expiryTimer = undefined;
+    if (!this.listeners.size) return;
+    const deadlines = this.entries
+      .filter((entry) => entry.status === "active")
+      .map((entry) => entry.lastSeen + errorStaleAfter);
+    if (!deadlines.length) return;
+    this.expiryTimer = setTimeout(
+      () => this.expire(),
+      Math.min(2_147_483_647, Math.max(1, Math.min(...deadlines) - Date.now())),
+    );
+  }
+  private expire() {
+    const now = Date.now();
+    if (
+      !this.entries.some(
+        (entry) =>
+          entry.status === "active" && entry.lastSeen + errorStaleAfter <= now,
+      )
+    ) {
+      this.scheduleExpiry();
+      return;
+    }
+    const updated = this.stamp();
+    this.changed(
+      this.entries.map((entry) =>
+        entry.status === "active" && entry.lastSeen + errorStaleAfter <= now
+          ? {
+              ...entry,
+              status: "stale",
+              closedAt: entry.lastSeen + errorStaleAfter,
+              updated,
+            }
+          : entry,
+      ),
+    );
   }
   private stamp() {
     return (this.clock = Math.max(Date.now(), this.clock + 1));
@@ -120,7 +163,9 @@ export class ClientErrors {
           typeof input.id !== "string" ||
           typeof input.key !== "string" ||
           typeof input.message !== "string" ||
-          !["active", "resolved", "dismissed"].includes(input.status) ||
+          !["active", "resolved", "dismissed", "stale"].includes(
+            input.status,
+          ) ||
           !["rpc", "http", "client", "resource"].includes(input.source) ||
           !Number.isFinite(input.firstSeen) ||
           !Number.isFinite(input.lastSeen) ||
@@ -163,6 +208,7 @@ export class ClientErrors {
           merged.set(entry.id, entry);
       }
       this.publish([...merged.values()]);
+      this.expire();
     } catch {
       /* A corrupt/disabled browser store must not break the app. */
     }
@@ -186,6 +232,7 @@ export class ClientErrors {
   };
   report(key: string, error: unknown, context: ErrorContext = {}) {
     if (isCancellation(error)) return;
+    this.expire();
     key = diagnosticText(key);
     const now = Date.now();
     const active = this.entries.find(
@@ -223,6 +270,7 @@ export class ClientErrors {
     return entry.id;
   }
   resolve(key: string) {
+    this.expire();
     key = diagnosticText(key);
     if (
       !this.entries.some(
@@ -241,6 +289,7 @@ export class ClientErrors {
     );
   }
   observe(key: string, error: string, context: ErrorContext) {
+    this.expire();
     key = diagnosticText(key);
     if (!error) {
       this.resolve(key);
@@ -258,6 +307,7 @@ export class ClientErrors {
     this.report(key, error, context);
   }
   dismiss(id: string) {
+    this.expire();
     const now = Date.now(),
       updated = this.stamp();
     this.changed(
@@ -269,6 +319,7 @@ export class ClientErrors {
     );
   }
   clearHistory() {
+    this.expire();
     this.clearedBefore = this.stamp();
     this.changed(this.entries.filter((entry) => entry.status === "active"));
   }
