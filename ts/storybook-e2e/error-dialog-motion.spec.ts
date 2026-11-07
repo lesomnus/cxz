@@ -8,6 +8,21 @@ for (const width of [1200, 390])
   }) => {
     await page.setViewportSize({ width, height: 850 });
     await page.goto(
+      "/iframe.html?id=conversation-session-menu--always-open&viewMode=story",
+    );
+    const menu = page.locator(".action-menu-popup");
+    const firstAction = menu
+      .locator('[data-action-menu-layout="row"] button')
+      .first();
+    await expect(firstAction).toBeVisible();
+    await page.waitForTimeout(400);
+    const menuBox = (await menu.boundingBox())!;
+    const actionBox = (await firstAction.boundingBox())!;
+    const outerInset = actionBox.y - menuBox.y;
+    const inset = await menu.evaluate((element) =>
+      parseFloat(getComputedStyle(element).paddingTop),
+    );
+    await page.goto(
       "/iframe.html?id=workspace-errors--recovery&viewMode=story",
     );
     await page
@@ -25,11 +40,20 @@ for (const width of [1200, 390])
       exact: true,
     });
     expect((await header.boundingBox())!.height).toBe(
-      (await close.boundingBox())!.height,
+      (await close.boundingBox())!.height + 2 * inset,
     );
-    await expect(header).toHaveCSS("padding-top", "0px");
-    await expect(header).toHaveCSS("padding-left", "4px");
-    await expect(header).toHaveCSS("padding-right", "4px");
+    await expect(header).toHaveCSS("padding-top", `${inset}px`);
+    await expect(header).toHaveCSS("padding-bottom", `${inset}px`);
+    await expect(header).toHaveCSS("padding-left", `${inset}px`);
+    await expect(header).toHaveCSS("padding-right", `${inset}px`);
+    const cardBox = (await dialog.locator(".floating-card").boundingBox())!;
+    const closeBox = (await close.boundingBox())!;
+    expect(closeBox.width).toBe(closeBox.height);
+    expect(closeBox.y - cardBox.y).toBeCloseTo(outerInset, 0);
+    expect(cardBox.x + cardBox.width - closeBox.x - closeBox.width).toBeCloseTo(
+      outerInset,
+      0,
+    );
     const row = dialog.getByRole("row");
     await row.hover();
     const dismiss = row.getByRole("button", { name: "Dismiss", exact: true });
