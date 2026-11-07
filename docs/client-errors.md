@@ -15,10 +15,14 @@ normal list rows stay transparent. ResourcePage owns the semantic
 ScrollAreas; Projects, Tasks, Memory, Search, Accounts and Errors reuse it.
 Page components do not repeat background colors. Nested section scroll areas
 can still explicitly use their section surface.
-Active uses a plain orange triangle, Stale a gray square and
-Resolved a green circle; Dismissed keeps the hide icon.
-Details opens a Nox modal with the full message, timestamps and original diagnostic
-references; Escape and Close return focus to the row button. The dialog uses ErrorTable variant="dialog": its first line is the
+Active uses a plain orange triangle, Resolved a small green circle,
+Dismissed a gray square and Stale a gray triangle.
+Clicking a page row, or focusing it and pressing Enter/Space, opens a Nox modal
+with the full message, timestamps and original diagnostic references. Escape and
+Close return focus to the row. No separate Details button is shown. Dismiss
+handles its own click without opening the modal, and selecting row text does
+not open it. Kind (including the heading) and Count are explicitly centered
+through Nox Table alignment. The dialog uses ErrorTable variant="dialog": its first line is the
 message and its second line has muted small kind-specific diagnostic values on
 the left, then elapsed time and count on the right. Dismiss is its only row button. It is hidden at rest and fills the row height on
 a right-side gradient overlay on hover or keyboard focus, without reserving a

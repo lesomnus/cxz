@@ -31,7 +31,7 @@ import styles from "./error-table.module.css";
 const statusIcons = {
   active: "error-active",
   resolved: "error-resolved",
-  dismissed: "hide",
+  dismissed: "error-dismissed",
   stale: "error-stale",
 } as const satisfies Record<ClientError["status"], IconName>;
 function useEntryEntrance(animateEnter: boolean) {
@@ -67,6 +67,32 @@ function ErrorRow({
       data-status={entry.status}
       data-animate-enter={animate || undefined}
       onAnimationEnd={finish}
+      tabIndex={0}
+      aria-haspopup="dialog"
+      onClick={(event) => {
+        if (
+          (event.target as Element).closest(
+            "button, a, input, select, textarea",
+          )
+        )
+          return;
+        const selection = window.getSelection();
+        if (
+          selection &&
+          !selection.isCollapsed &&
+          selection.containsNode(event.currentTarget, true)
+        )
+          return;
+        event.currentTarget.focus({ preventScroll: true });
+        details();
+      }}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          details();
+        }
+      }}
     >
       <TableCell className={styles.state}>
         <span title={status}>
@@ -77,8 +103,10 @@ function ErrorRow({
           />
         </span>
       </TableCell>
-      <TableCell className={styles.kind}>{view.kind}</TableCell>
-      <TableCell className={styles.count}>
+      <TableCell className={styles.kind} align="center">
+        {view.kind}
+      </TableCell>
+      <TableCell className={styles.count} align="center">
         <CompactNumber value={entry.count} mode="integer" digits={3} />
       </TableCell>
       <TableCell className={styles.operation}>{view.operation}</TableCell>
@@ -108,17 +136,14 @@ function ErrorRow({
       </TableCell>
       <TableCell className={styles.actions}>
         <div className={styles.rowActions}>
-          <ToolbarIconButton
-            icon="details"
-            label={t("Details")}
-            aria-haspopup="dialog"
-            onClick={details}
-          />
           {entry.status === "active" && (
             <ToolbarIconButton
               icon="close"
               label={t("Dismiss")}
-              onClick={() => store.dismiss(entry.id)}
+              onClick={(event) => {
+                event.stopPropagation();
+                store.dismiss(entry.id);
+              }}
             />
           )}
         </div>
@@ -241,8 +266,14 @@ export function ErrorTable({
           <TableHeader>
             <TableRow>
               <TableHead className={styles.state} aria-label={t("Status")} />
-              <TableHead className={styles.kind}>{t("Kind")}</TableHead>
-              <TableHead className={styles.count} aria-label={t("Count")} />
+              <TableHead className={styles.kind} align="center">
+                {t("Kind")}
+              </TableHead>
+              <TableHead
+                className={styles.count}
+                align="center"
+                aria-label={t("Count")}
+              />
               <TableHead className={styles.operation}>
                 {t("Operation")}
               </TableHead>

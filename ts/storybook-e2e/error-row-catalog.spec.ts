@@ -14,10 +14,10 @@ for (const kind of ["all", "rpc", "http", "connection", "runtime", "client"])
     const table = page.getByRole("table", { name: "Errors", exact: true });
     await expect(
       table.getByRole("button", { name: "Details", exact: true }),
-    ).toHaveCount(examples.length);
-    const first = table
-      .getByRole("button", { name: "Details", exact: true })
-      .first();
+    ).toHaveCount(0);
+    const rows = table.locator('tbody > tr[aria-haspopup="dialog"]');
+    await expect(rows).toHaveCount(examples.length);
+    const first = rows.first();
     await first.click();
     await expect(
       page.getByRole("dialog", { name: "Error details", exact: true }),

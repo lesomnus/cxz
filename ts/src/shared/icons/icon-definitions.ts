@@ -46,6 +46,7 @@ const solid = (shapes: IconShape[], viewBox = "0 0 16 16"): IconDefinition => ({
 });
 const filled = { fill: "currentColor", stroke: "none" } as const;
 
+const errorTriangle = solid([path("M8 3 14 13H2Z")]);
 const play = solid([path("m5 3 7 5-7 5Z")]);
 const stop = solid([rect(4, 4, 8, 8, 1)]);
 const pause = solid([rect(4.75, 4, 2.5, 8, 0.5), rect(8.75, 4, 2.5, 8, 0.5)]);
@@ -135,8 +136,9 @@ export const iconDefinitions = {
     ],
     "0 0 24 24",
   ),
-  "error-active": solid([path("M8 3 14 13H2Z")]),
-  "error-stale": solid([rect(3, 3, 10, 10)]),
+  "error-active": errorTriangle,
+  "error-stale": errorTriangle,
+  "error-dismissed": solid([rect(3, 3, 10, 10)]),
   "error-resolved": solid([circle(8, 8, 3.5)]),
   details: info,
   terminal: line([path("m3 4 4 4-4 4m6 0h4")], "0 0 16 16"),

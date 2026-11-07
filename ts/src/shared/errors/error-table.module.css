@@ -41,7 +41,7 @@
   width: 72px;
 }
 .actionsColumn {
-  width: 56px;
+  width: 28px;
 }
 .dialogTable tbody tr {
   background: var(--ui-shade-20);
@@ -93,7 +93,7 @@
   white-space: nowrap;
 }
 .count {
-  text-align: right;
+  text-align: center;
 }
 .time {
   font-size: 10px;
@@ -178,7 +178,7 @@
     display: none;
   }
   .actionsColumn {
-    width: 56px;
+    width: 28px;
   }
   .context {
     display: block;
@@ -343,4 +343,12 @@
   .metadata {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.pageRow {
+  cursor: pointer;
+}
+.pageRow:focus-visible {
+  outline: 1px solid var(--ui-shade-122);
+  outline-offset: -1px;
 }
