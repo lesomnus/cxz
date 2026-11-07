@@ -2,11 +2,12 @@
 
 The button immediately above Profile opens active errors and their history.
 Its header has an Open errors page link to `/c/_/errors`; the standalone page
-uses the same live store and status tabs. It follows the Projects/Tasks resource
+uses the same live store, showing every status together with Active first. It follows the Projects/Tasks resource
 layout: an aligned top toolbar with history controls and a compact Nox table
-with kind/status, operation, target, message, occurrence count and last-seen
-columns. Page rows expand their full message, timestamps and original diagnostic
-references. The dialog uses ErrorTable variant="dialog": its first line is the
+with an unlabeled status-icon column, kind, operation, target, message, occurrence count and last-seen
+columns. Table surfaces, row spacing and dividers share the Projects list stylesheet.
+Details opens a Nox modal with the full message, timestamps and original diagnostic
+references; Escape and Close return focus to the row button. The dialog uses ErrorTable variant="dialog": its first line is the
 message and its second line has muted small kind-specific diagnostic values on
 the left, then elapsed time and count on the right. Dismiss is its only row button. It is hidden at rest and fills the row height on
 a right-side gradient overlay on hover or keyboard focus, without reserving a
@@ -19,10 +20,10 @@ no footer, clear button or column-heading row; its body contains only the table.
 Its scrollbar sits outside the right edge (ScrollArea uses a positive handle-center
 offset to produce a negative CSS right). Card reveal/body wrappers allow the
 rail through while the scroll viewport clips the rows. The page does
-not embed or stretch the dialog card. Narrow screens move kind/status, operation/target and count/time into the
-message cell while keeping details readable.
-The current tab is carried into the page, and `/c/_/errors?tab=history` can be
-bookmarked or reloaded directly.
+not embed or stretch the dialog card. Narrow screens keep the status icon and move kind, operation/target and count/time into the
+message cell. Details remains a viewport-limited modal.
+Only the sidebar uses Active/History tabs. Its page link always opens `/c/_/errors`;
+legacy `?tab=history` links also show the unified list.
 Its symbol and border are red while there are active errors. Each record shows
 the failure, operation, target when available, timestamps and repeat count.
 Repeated failures of the same operation and reference share an active entry.
@@ -128,7 +129,7 @@ paths and fallback, both connection purposes/transports, all runtime health
 operations and all client operations. All shows the 40 examples together; RPC,
 HTTP, Connection, Runtime and Client provide focused tables; Dialog uses the
 headerless two-line error panel with an outside scrollbar. RPC details opens a
-page row to show additional metadata for cxz.SessionService/Transcript; the full
+page modal to show additional metadata for cxz.SessionService/Transcript; the full
 RPC name is also visible in every matching summary row. Dismiss is usable in all fixtures
 and details are usable in the page variants. The fixtures are nonpersistent. The fixtures enumerate the actual
 operation registries so newly registered RPC/runtime/client labels also appear.
@@ -176,15 +177,15 @@ height remains 28px with the current token.
 The Dismiss button is 44px wide inside a 2px-padded gradient overlay, with an 8px
 inner radius (section radius 10px minus inset 2px). The overlay width derives from
 button 44px + fade 28px + both side insets; it reserves no separate column. The
-header title has an extra ui-space (4px) left inset without moving the controls.
+header title has an extra four ui-space units (16px) left inset without moving the controls.
 
-While the dialog is open, newly reported episode IDs slide down from above over
+In the page and open dialog, newly reported episode IDs slide down from above over
 240ms. Existing rows, count updates, initial opening and tab switches do not
 replay entrances. Each row owns its animation until completion; the marker is
 cleared afterward so later reordering cannot restart it. Reduced motion disables
 the slide. The known-ID baseline includes both Active and History, stays bounded
 to the store and resets on a fresh mount. Workspace/Errors/Rows/Incoming errors
-provides Add error and Repeat latest error controls for this behavior.
+and Incoming page provide Add error and Repeat latest error controls for this behavior.
 
 
 Active/History body views use Nox SlidingPages inside the shared ScrollArea.

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 const recovery = "/iframe.html?id=workspace-errors--recovery&viewMode=story";
 const pageStory = "/iframe.html?id=workspace-errors--page&viewMode=story";
 
-test("dialog and independent page share errors, tabs, dismiss and clear history", async ({
+test("dialog and independent page share errors while page shows all statuses without tabs", async ({
   page,
 }) => {
   await page.goto(recovery);
@@ -26,11 +26,15 @@ test("dialog and independent page share errors, tabs, dismiss and clear history"
   ).toHaveCount(0);
   await main.getByRole("button", { name: "Dismiss", exact: true }).click();
   await expect(trigger).not.toHaveAttribute("data-active");
-  await main.getByRole("radio", { name: "History 1", exact: true }).click();
-  await expect(main).toContainText("Dismissed");
+  await expect(main.getByRole("radio")).toHaveCount(0);
+  await expect(
+    main.getByRole("img", { name: "Dismissed", exact: true }),
+  ).toBeVisible();
   await trigger.click();
   await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
-  await expect(dialog).toContainText("Dismissed");
+  await expect(
+    dialog.getByRole("row", { name: /Account service is offline/ }),
+  ).toHaveAttribute("title", /^Dismissed/);
   await expect(
     dialog.getByRole("button", { name: "Clear history", exact: true }),
   ).toHaveCount(0);
@@ -38,13 +42,10 @@ test("dialog and independent page share errors, tabs, dismiss and clear history"
   await main
     .getByRole("button", { name: "Clear history", exact: true })
     .click();
-  await expect(main).toContainText("No error history");
-  await expect(
-    main.getByRole("radio", { name: "History 0", exact: true }),
-  ).toBeChecked();
+  await expect(main).toContainText("No errors in recent records");
 });
 
-test("one hour without recurrence becomes Stale while closed, persists and opens the History page", async ({
+test("one hour without recurrence becomes Stale while closed, persists and opens the unified page", async ({
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-11-07T03:00:00Z") });
@@ -66,23 +67,18 @@ test("one hour without recurrence becomes Stale while closed, persists and opens
     name: "Open errors page",
     exact: true,
   });
-  await expect(link).toHaveAttribute("href", "/c/_/errors?tab=history");
+  await expect(link).toHaveAttribute("href", "/c/_/errors");
   await link.click();
   const main = page.getByRole("main", { name: "Errors", exact: true });
+  await expect(main.getByRole("radio")).toHaveCount(0);
   await expect(
-    main.getByRole("radio", { name: "History 1", exact: true }),
-  ).toBeChecked();
-  await expect(main.getByText("Stale", { exact: true }).first()).toBeVisible();
+    main.getByRole("img", { name: "Stale", exact: true }),
+  ).toBeVisible();
   await page.goto(pageStory);
-  await page
-    .getByRole("main", { name: "Errors", exact: true })
-    .getByRole("radio", { name: "History 1", exact: true })
-    .click();
   await expect(
     page
       .getByRole("main", { name: "Errors", exact: true })
-      .getByText("Stale", { exact: true })
-      .first(),
+      .getByRole("img", { name: "Stale", exact: true }),
   ).toBeVisible();
 });
 
@@ -111,18 +107,18 @@ for (const width of [1200, 390])
       (await toolbar.boundingBox())!.width,
       0,
     );
-    await main.getByRole("button", { name: "Details", exact: true }).click();
     const messageWidth = (await table
       .getByRole("columnheader", { name: "Message", exact: true })
       .boundingBox())!.width;
     expect(messageWidth / (await table.boundingBox())!.width).toBeGreaterThan(
       width < 600 ? 0.6 : 0.2,
     );
+    await main.getByRole("button", { name: "Details", exact: true }).click();
     await expect(
-      main.getByRole("region", { name: "Error details", exact: true }),
+      page.getByRole("dialog", { name: "Error details", exact: true }),
     ).toContainText("First seen");
     await expect(
-      main.getByRole("region", { name: "Error details", exact: true }),
+      page.getByRole("dialog", { name: "Error details", exact: true }),
     ).toContainText("cxz.AccountService/Get");
     await expect(
       main.getByRole("button", { name: "Close errors", exact: true }),
@@ -138,42 +134,42 @@ for (const width of [1200, 390])
     expect(list.y + list.height).toBeLessThanOrEqual(box.y + box.height);
   });
 
-test("resource table handles a populated collection and expands complete per-error details", async ({
+test("unified resource table sorts Active first and opens complete details in a modal", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=workspace-errors--overview&viewMode=story");
   const main = page.getByRole("main", { name: "Errors", exact: true });
   const table = main.getByRole("table", { name: "Errors", exact: true });
+  await expect(main.getByRole("radio")).toHaveCount(0);
+  await expect(table.getByRole("row")).toHaveCount(10);
+  const statuses = await table
+    .locator("tbody tr")
+    .evaluateAll((rows) => rows.map((row) => row.getAttribute("data-status")));
+  expect(statuses.slice(0, 6)).toEqual(Array(6).fill("active"));
+  expect(statuses.slice(6)).not.toContain("active");
   await expect(
-    main.getByRole("radio", { name: "Active 6", exact: true }),
-  ).toBeChecked();
-  await expect(table.getByRole("row")).toHaveCount(7);
+    table.getByRole("columnheader", { name: "Status", exact: true }),
+  ).toHaveText("");
   const row = table
     .getByRole("row")
     .filter({ hasText: "Memory revision changed" });
   const details = row.getByRole("button", { name: "Details", exact: true });
   await details.focus();
   await page.keyboard.press("Enter");
-  await expect(details).toHaveAttribute("aria-expanded", "true");
-  const expanded = main.getByRole("region", {
+  const expanded = page.getByRole("dialog", {
     name: "Error details",
     exact: true,
   });
   await expect(expanded).toContainText("cxz.MemoryService/Patch");
   await expect(expanded).toContainText("https://workspace.example.com");
   await expect(expanded).toContainText("Request ID");
-  await main.getByRole("radio", { name: "History 3", exact: true }).click();
-  await expect(table.getByRole("row")).toHaveCount(4);
-  await expect(
-    main.getByRole("region", { name: "Error details", exact: true }),
-  ).toHaveCount(0);
+  await expect(table.locator("tr")).toHaveCount(10);
+  await page.keyboard.press("Escape");
+  await expect(expanded).toHaveCount(0);
+  await expect(details).toBeFocused();
   await main
     .getByRole("button", { name: "Clear history", exact: true })
     .click();
-  await expect(
-    main.getByText("No error history", { exact: true }),
-  ).toBeVisible();
-  await main.getByRole("radio", { name: "Active 6", exact: true }).click();
   await expect(table.getByRole("row")).toHaveCount(7);
 });
 
@@ -198,13 +194,17 @@ test("normalizes mixed error kinds in the sidebar and page, leaving raw transpor
   await expect(upload).toContainText("HTTP");
   await expect(upload).toContainText("HTTP request");
   await upload.getByRole("button", { name: "Details", exact: true }).click();
-  const details = main.getByRole("region", {
+  const details = page.getByRole("dialog", {
     name: "Error details",
     exact: true,
   });
   await expect(details).toContainText("HTTP status");
   await expect(details).toContainText("503");
   await expect(details).toContainText("/upload");
+  await details
+    .getByRole("button", { name: "Close details", exact: true })
+    .click();
+  await expect(details).toHaveCount(0);
   await page.getByRole("button", { name: "Errors", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
   const compact = dialog.getByRole("table", { name: "Errors", exact: true });
@@ -219,4 +219,74 @@ test("normalizes mixed error kinds in the sidebar and page, leaving raw transpor
   await expect(
     dialog.getByRole("button", { name: "Details", exact: true }),
   ).toHaveCount(0);
+});
+
+test("new page rows slide down once and count updates stay still", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=workspace-errors-rows--incoming-page&viewMode=story",
+  );
+  const table = page.getByRole("table", { name: "Errors", exact: true });
+  await expect(
+    table.getByText("Existing error", { exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    const table = document.querySelector(
+      'table[aria-label="Errors"]',
+    )! as HTMLElement;
+    table.dataset.animations = "0";
+    table.addEventListener("animationstart", (event) => {
+      if (
+        !(event.target instanceof HTMLElement) ||
+        !event.target.matches("tr[data-animate-enter]")
+      )
+        return;
+      table.dataset.animations = String(Number(table.dataset.animations) + 1);
+    });
+  });
+  await page.getByRole("button", { name: "Add error", exact: true }).click();
+  await expect(table.locator("tbody tr").first()).toContainText("New error 1");
+  await expect(table).toHaveAttribute("data-animations", "1");
+  await page.waitForTimeout(350);
+  await page
+    .getByRole("button", { name: "Repeat latest error", exact: true })
+    .click();
+  await expect(table.locator("tbody tr").first()).toContainText("002");
+  await page.waitForTimeout(300);
+  await expect(table).toHaveAttribute("data-animations", "1");
+});
+
+test("Errors and Projects lists share row surfaces, spacing and dividers", async ({
+  page,
+}) => {
+  const styles = async () =>
+    page
+      .locator("main table")
+      .first()
+      .evaluate((table) => {
+        const row = table.querySelector("tbody tr")!;
+        const cell = row.querySelector("td")!;
+        const t = getComputedStyle(table),
+          r = getComputedStyle(row),
+          c = getComputedStyle(cell);
+        return {
+          background: t.backgroundColor,
+          rowBackground: r.backgroundColor,
+          rowHeight: t.getPropertyValue("--ui-table-row-height").trim(),
+          gap: t.borderSpacing,
+          radius: t.borderRadius,
+          divider: c.boxShadow,
+          border: c.borderBottomWidth,
+          align: c.verticalAlign,
+        };
+      });
+  await page.goto("/iframe.html?id=pages-projects--list&viewMode=story");
+  await expect(page.locator("main table tbody tr").first()).toBeVisible();
+  const project = await styles();
+  await page.goto("/iframe.html?id=workspace-errors--overview&viewMode=story");
+  await expect(
+    page.getByRole("main", { name: "Errors", exact: true }).getByRole("table"),
+  ).toBeVisible();
+  expect(await styles()).toEqual(project);
 });

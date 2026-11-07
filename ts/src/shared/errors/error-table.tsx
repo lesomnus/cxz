@@ -1,10 +1,9 @@
 import {
-  Fragment,
   useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
   useState,
+  type AnimationEventHandler,
 } from "react";
 import {
   CompactNumber,
@@ -17,151 +16,116 @@ import {
 } from "@lesomnus/nox";
 import type { ClientError, ClientErrors } from "./client-errors";
 import { presentError } from "./error-presentation";
+import {
+  ErrorDetailsDialog,
+  errorStatusLabels as statusLabel,
+} from "./error-details-dialog";
+import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
-import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
+import { RelativeTime } from "#src/shared/components/date-time.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import resourceStyles from "#src/shared/components/resource-table.module.css";
 import styles from "./error-table.module.css";
 
-const statusLabel = {
-  active: "Active",
-  resolved: "Resolved",
-  dismissed: "Dismissed",
-  stale: "Stale",
-} as const;
+const statusIcons = {
+  active: "warning",
+  resolved: "check",
+  dismissed: "hide",
+  stale: "duration",
+} as const satisfies Record<ClientError["status"], IconName>;
+function useEntryEntrance(animateEnter: boolean) {
+  const [animate, setAnimate] = useState(animateEnter);
+  useEffect(() => {
+    if (!animate) return;
+    const timer = setTimeout(() => setAnimate(false), 300);
+    return () => clearTimeout(timer);
+  }, [animate]);
+  const finish: AnimationEventHandler<HTMLTableRowElement> = (event) => {
+    if (event.target === event.currentTarget) setAnimate(false);
+  };
+  return { animate, finish };
+}
 
 function ErrorRow({
   entry,
   store,
+  animateEnter,
+  details,
 }: {
   entry: ClientError;
   store: ClientErrors;
+  animateEnter: boolean;
+  details: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const detailsId = useId();
-  const status = t(statusLabel[entry.status]);
   const view = presentError(entry);
+  const status = t(statusLabel[entry.status]);
+  const { animate, finish } = useEntryEntrance(animateEnter);
   return (
-    <Fragment>
-      <TableRow data-status={entry.status}>
-        <TableCell className={styles.kind}>
-          <span>{view.kind}</span>
-          <span className={styles.status}>{status}</span>
-        </TableCell>
-        <TableCell className={styles.operation}>
-          <div className={styles.operationValue}>{view.diagnostic}</div>
-          {view.operation !== view.diagnostic && (
-            <div className={styles.operationLabel}>{view.operation}</div>
-          )}
-        </TableCell>
-        <TableCell className={styles.target}>{view.target}</TableCell>
-        <TableCell className={styles.summary}>
-          <div className={styles.message}>{entry.message}</div>
-          <div
-            className={styles.context}
-            title={`${view.operation} · ${view.diagnostic} · ${view.target}`}
-          >
-            {view.diagnostic}
-            {view.target !== "—" && ` · ${view.target}`}
-          </div>
-          <div className={styles.mobileMeta}>
-            {view.kind} · {status}
-            <span>·</span>
-            <RelativeTime value={entry.lastSeen} compact />
-            <span>×</span>
-            <CompactNumber value={entry.count} mode="integer" digits={3} />
-          </div>
-        </TableCell>
-        <TableCell className={styles.count}>
-          <CompactNumber value={entry.count} mode="integer" digits={3} />
-        </TableCell>
-        <TableCell className={styles.time}>
+    <TableRow
+      className={styles.pageRow}
+      data-status={entry.status}
+      data-animate-enter={animate || undefined}
+      onAnimationEnd={finish}
+    >
+      <TableCell className={styles.state}>
+        <span title={status}>
+          <Icon
+            name={statusIcons[entry.status]}
+            role="img"
+            aria-label={status}
+          />
+        </span>
+      </TableCell>
+      <TableCell className={styles.kind}>{view.kind}</TableCell>
+      <TableCell className={styles.operation}>
+        <div className={styles.operationValue}>{view.diagnostic}</div>
+        {view.operation !== view.diagnostic && (
+          <div className={styles.operationLabel}>{view.operation}</div>
+        )}
+      </TableCell>
+      <TableCell className={styles.target}>{view.target}</TableCell>
+      <TableCell className={styles.summary}>
+        <div className={styles.message}>{entry.message}</div>
+        <div
+          className={styles.context}
+          title={`${view.operation} · ${view.diagnostic} · ${view.target}`}
+        >
+          {view.diagnostic}
+          {view.target !== "—" && ` · ${view.target}`}
+        </div>
+        <div className={styles.mobileMeta}>
+          {view.kind}
+          <span>·</span>
           <RelativeTime value={entry.lastSeen} compact />
-        </TableCell>
-        <TableCell className={styles.actions}>
-          <div className={styles.rowActions}>
+          <span>×</span>
+          <CompactNumber value={entry.count} mode="integer" digits={3} />
+        </div>
+      </TableCell>
+      <TableCell className={styles.count}>
+        <CompactNumber value={entry.count} mode="integer" digits={3} />
+      </TableCell>
+      <TableCell className={styles.time}>
+        <RelativeTime value={entry.lastSeen} compact />
+      </TableCell>
+      <TableCell className={styles.actions}>
+        <div className={styles.rowActions}>
+          <ToolbarIconButton
+            icon="details"
+            label={t("Details")}
+            aria-haspopup="dialog"
+            onClick={details}
+          />
+          {entry.status === "active" && (
             <ToolbarIconButton
-              icon="details"
-              label={t("Details")}
-              aria-expanded={expanded}
-              aria-controls={detailsId}
-              onClick={() => setExpanded((value) => !value)}
+              icon="close"
+              label={t("Dismiss")}
+              onClick={() => store.dismiss(entry.id)}
             />
-            {entry.status === "active" && (
-              <ToolbarIconButton
-                icon="close"
-                label={t("Dismiss")}
-                onClick={() => store.dismiss(entry.id)}
-              />
-            )}
-          </div>
-        </TableCell>
-      </TableRow>
-      {expanded && (
-        <TableRow className={styles.detailRow}>
-          <TableCell colSpan={7}>
-            <section
-              id={detailsId}
-              aria-label={t("Error details")}
-              className={styles.detail}
-            >
-              <p className={styles.fullMessage}>{entry.message}</p>
-              <dl className={styles.metadata}>
-                <div>
-                  <dt>{t("Status")}</dt>
-                  <dd>{status}</dd>
-                </div>
-                <div>
-                  <dt>{t("Count")}</dt>
-                  <dd>
-                    <CompactNumber
-                      value={entry.count}
-                      mode="integer"
-                      digits={3}
-                    />
-                  </dd>
-                </div>
-                <div>
-                  <dt>{t("First seen")}</dt>
-                  <dd>
-                    <DateTime value={entry.firstSeen} />
-                  </dd>
-                </div>
-                <div>
-                  <dt>{t("Last seen")}</dt>
-                  <dd>
-                    <DateTime value={entry.lastSeen} />
-                  </dd>
-                </div>
-                {entry.closedAt && (
-                  <div>
-                    <dt>{status}</dt>
-                    <dd>
-                      <DateTime value={entry.closedAt} />
-                    </dd>
-                  </div>
-                )}
-                <div>
-                  <dt>{t("Kind")}</dt>
-                  <dd>{view.kind}</dd>
-                </div>
-                <div>
-                  <dt>{t("Operation")}</dt>
-                  <dd>{view.operation}</dd>
-                </div>
-                {view.details.map(([label, value]) => (
-                  <div key={label}>
-                    <dt>{t(label)}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          </TableCell>
-        </TableRow>
-      )}
-    </Fragment>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -174,14 +138,7 @@ function DialogErrorRow({
   store: ClientErrors;
   animateEnter: boolean;
 }) {
-  // A new row keeps its own entrance even if another report arrives mid-animation.
-  const [animate, setAnimate] = useState(animateEnter);
-  useEffect(() => {
-    if (!animate) return;
-    // Also clear reduced/canceled entrances so reordering cannot replay them later.
-    const timer = setTimeout(() => setAnimate(false), 300);
-    return () => clearTimeout(timer);
-  }, [animate]);
+  const { animate, finish } = useEntryEntrance(animateEnter);
   const view = presentError(entry);
   const status = t(statusLabel[entry.status]);
   const context = `${view.diagnostic}${view.target !== "—" ? ` · ${view.target}` : ""}`;
@@ -189,9 +146,7 @@ function DialogErrorRow({
     <TableRow
       className={styles.dialogRow}
       data-animate-enter={animate || undefined}
-      onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget) setAnimate(false);
-      }}
+      onAnimationEnd={finish}
       data-status={entry.status}
       title={`${status} · ${view.target}`}
     >
@@ -247,6 +202,11 @@ export function ErrorTable({
 }) {
   useLocale();
   const dialog = variant === "dialog";
+  const [selected, setSelected] = useState<ClientError>();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detail = selected
+    ? (entries.find((entry) => entry.id === selected.id) ?? selected)
+    : undefined;
   // Baseline includes both tabs. Opening the dialog or changing tabs is not a new error.
   const knownIds = useMemo(
     () => new Set(store.snapshot().map((entry) => entry.id)),
@@ -259,7 +219,7 @@ export function ErrorTable({
   return (
     <div className={styles.frame}>
       <Table
-        className={`${styles.table} ${resourceStyles.layout} ${dialog ? styles.dialogTable : ""}`}
+        className={`${styles.table} ${resourceStyles.layout} ${dialog ? styles.dialogTable : resourceStyles.table}`}
         aria-label={t("Errors")}
       >
         {dialog ? (
@@ -268,6 +228,7 @@ export function ErrorTable({
           </colgroup>
         ) : (
           <colgroup>
+            <col className={styles.stateColumn} />
             <col className={styles.kindColumn} />
             <col className={styles.operationColumn} />
             <col className={styles.targetColumn} />
@@ -280,6 +241,7 @@ export function ErrorTable({
         {!dialog && (
           <TableHeader>
             <TableRow>
+              <TableHead className={styles.state} aria-label={t("Status")} />
               <TableHead className={styles.kind}>{t("Kind")}</TableHead>
               <TableHead className={styles.operation}>
                 {t("Operation")}
@@ -303,20 +265,39 @@ export function ErrorTable({
                   animateEnter={animateNewEntries && !knownIds.has(entry.id)}
                 />
               ) : (
-                <ErrorRow key={entry.id} entry={entry} store={store} />
+                <ErrorRow
+                  key={entry.id}
+                  entry={entry}
+                  store={store}
+                  animateEnter={animateNewEntries && !knownIds.has(entry.id)}
+                  details={() => {
+                    setSelected(entry);
+                    setDetailsOpen(true);
+                  }}
+                />
               ),
             )
           ) : (
             <TableRow>
-              <TableCell colSpan={dialog ? 1 : 7} className={styles.empty}>
-                {tab === "active"
-                  ? t("No active errors")
-                  : t("No error history")}
+              <TableCell colSpan={dialog ? 1 : 8} className={styles.empty}>
+                {tab === "all"
+                  ? t("No errors in recent records")
+                  : tab === "active"
+                    ? t("No active errors")
+                    : t("No error history")}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+      {detail && (
+        <ErrorDetailsDialog
+          entry={detail}
+          open={detailsOpen}
+          close={() => setDetailsOpen(false)}
+          closed={() => setSelected(undefined)}
+        />
+      )}
     </div>
   );
 }

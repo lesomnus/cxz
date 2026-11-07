@@ -11,7 +11,7 @@ for (const width of [1200, 390])
     const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
     await page.waitForTimeout(400);
     const header = dialog.locator(".card-heading");
-    await expect(header.locator("strong")).toHaveCSS("margin-left", "4px");
+    await expect(header.locator("strong")).toHaveCSS("margin-left", "16px");
     const row = dialog.getByRole("row").first();
     await row.hover();
     const button = row.getByRole("button", { name: "Dismiss", exact: true });
