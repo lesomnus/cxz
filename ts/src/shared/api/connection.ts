@@ -130,6 +130,7 @@ export class Connection {
           {
             connection: this.baseUrl,
             method: `cxz.${kind === "projects" ? "Project" : "Session"}Service/Watch`,
+            origin: { kind: "runtime", operation: "inventory" },
           },
         )(error),
     );
@@ -150,6 +151,32 @@ export class Connection {
     return diagnosticTransport(transport, this.baseUrl, {
       errors: this.errors,
       ...(this.inProcess ? { write: () => {} } : {}),
+      describe: (target) => {
+        const rows =
+          target.kind === "session"
+            ? this.inventory?.snapshot().sessions
+            : target.kind === "project"
+              ? this.inventory?.snapshot().projects
+              : undefined;
+        const resource = rows?.find(
+          (row) =>
+            (target.id &&
+              publicUUID({ key: { case: "id", value: row.id } }) ===
+                target.id) ||
+            (target.runtimeId &&
+              "runtimeId" in row &&
+              row.runtimeId === target.runtimeId) ||
+            (target.alias && row.alias === target.alias),
+        );
+        return resource
+          ? {
+              ...target,
+              id: publicUUID({ key: { case: "id", value: resource.id } }),
+              alias: resource.alias,
+              name: resource.name,
+            }
+          : target;
+      },
       resolve: (kind, ref): string | undefined => {
         const rows =
           kind === "session"

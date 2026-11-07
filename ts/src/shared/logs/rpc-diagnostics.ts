@@ -14,12 +14,15 @@ import {
   type ClientErrors,
 } from "#src/shared/errors/client-errors.ts";
 
+import type { ErrorTarget } from "#src/shared/errors/error-origin.ts";
+
 export type ResourceReference = { key?: { case?: string; value?: unknown } };
 type ResourceKind = "session" | "project";
 type Options = {
   write?: (entry: LogInput) => void;
   resolve?: (kind: ResourceKind, ref: ResourceReference) => string | undefined;
   errors?: ClientErrors;
+  describe?: (target: ErrorTarget) => ErrorTarget;
 };
 
 // Reference fields only. Never include prompts, search text, settings or headers
@@ -82,6 +85,70 @@ export function publicUUID(ref?: ResourceReference) {
     : undefined;
 }
 
+const serviceTargets: Record<string, ErrorTarget["kind"]> = {
+  "cxz.SessionService": "session",
+  "cxz.ProjectService": "project",
+  "cxz.AccountService": "account",
+  "cxz.MemoryService": "memory",
+  "cxz.TaskService": "task",
+  "cxz.AuthBindingService": "auth-binding",
+};
+function referenceTarget(
+  message: unknown,
+  service: string,
+): ErrorTarget | undefined {
+  if (!message || typeof message !== "object") return;
+  const body = message as Record<string, unknown>;
+  for (const field of [
+    "ref",
+    "session",
+    "project",
+    "account",
+    "authBinding",
+    "path",
+  ]) {
+    const kind =
+      field === "ref"
+        ? serviceTargets[service]
+        : field === "authBinding"
+          ? "auth-binding"
+          : field === "path"
+            ? "file"
+            : (field as ErrorTarget["kind"]);
+    if (!kind) continue;
+    const value = body[field];
+    if (typeof value === "string" && value)
+      return {
+        kind,
+        name: field === "path" ? value : undefined,
+        alias: field !== "path" ? value : undefined,
+      };
+    if (!value || typeof value !== "object") continue;
+    const ref = value as ResourceReference;
+    if (ref.key?.case === "id") {
+      const id = publicUUID(ref);
+      if (id) return { kind, id };
+    }
+    if (typeof ref.key?.value === "string") {
+      if (ref.key.case === "runtimeId")
+        return { kind, runtimeId: ref.key.value };
+      if (ref.key.case === "alias") return { kind, alias: ref.key.value };
+    }
+  }
+  if (body.query && typeof body.query === "object") {
+    const query = body.query as Record<string, unknown>;
+    // Query metadata is reference-only; do not recurse into arbitrary filters.
+    return referenceTarget(
+      {
+        session: query.session,
+        project: query.project,
+        account: query.account,
+      },
+      service,
+    );
+  }
+}
+
 export class RPCStreamError extends TypeError {
   constructor(
     message: string,
@@ -132,12 +199,14 @@ export function rpcDiagnostics(
     let connected = false;
     let target = "";
     let targetDescription = "";
+    let subject: ErrorTarget | undefined;
     const identify = (message: unknown) => {
       const refs = references(message);
       // Bidirectional streams name their target in the first frame; later
       // input/ack frames must retain that identity.
       if (!target || refs !== "{}") {
         target = refs;
+        subject = referenceTarget(message, request.service.typeName);
         targetDescription = referenceDescription(
           message,
           request.service.typeName,
@@ -213,6 +282,12 @@ export function rpcDiagnostics(
       errors.report(key(), failure, {
         ...context,
         source: "rpc",
+        origin: {
+          kind: "rpc",
+          service: request.service.typeName,
+          method: request.method.name,
+        },
+        subject: subject ? (options.describe?.(subject) ?? subject) : undefined,
         code: Code[failure.code],
         target: targetDescription,
       });

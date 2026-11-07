@@ -63,6 +63,12 @@ export function openTerminal(
   const errorKey = JSON.stringify([c.baseUrl, "terminal", project]);
   const errorContext = {
     source: "resource" as const,
+    origin: {
+      kind: "connection",
+      purpose: "terminal",
+      transport: c.inProcess ? "rpc" : "websocket",
+    } as const,
+    subject: { kind: "project", id: project } as const,
     connection: c.baseUrl,
     method: "Project terminal",
     project,
@@ -183,6 +189,7 @@ export function openTerminal(
       errors.report(errorKey, new Error(message), {
         ...errorContext,
         code: String(event.code),
+        origin: { ...errorContext.origin, closeCode: event.code },
       });
       status({ error: message });
     }

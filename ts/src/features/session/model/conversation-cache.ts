@@ -557,6 +557,8 @@ export class CachedConversation {
                 connection: this.client.baseUrl,
                 method: "cxz.SessionService/Events",
                 target: `Session: ${this.id}`,
+                origin: { kind: "runtime", operation: "conversation-stream" },
+                subject: { kind: "session", runtimeId: this.id },
               },
               signal,
             ),

@@ -89,6 +89,13 @@ function WorkspaceContent({
         project.status.error ?? "",
         {
           source: "resource",
+          origin: { kind: "runtime", operation: "project-status" },
+          subject: {
+            kind: "project",
+            id,
+            alias: project.alias,
+            name: project.name,
+          },
           connection: c.baseUrl,
           project: id,
           method: "Project runtime",

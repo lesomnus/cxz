@@ -12,6 +12,7 @@ export async function connectWorkspaceEditor(
       { signal, timeoutMs: 180000 },
     );
   const errorKey = JSON.stringify([c.baseUrl, "editor/connect", id]);
+  let status: number | undefined;
   try {
     const response = await fetch(new URL("/editor/connect", c.baseUrl), {
       method: "POST",
@@ -20,6 +21,7 @@ export async function connectWorkspaceEditor(
       body: JSON.stringify({ project: id }),
       signal: AbortSignal.any([signal, AbortSignal.timeout(180000)]),
     });
+    status = response.status;
     if (!response.ok) throw new Error(await response.text());
     const result = await response.json();
     if (typeof result.workspace !== "string")
@@ -30,6 +32,13 @@ export async function connectWorkspaceEditor(
     if (!signal.aborted)
       c.errors?.report(errorKey, error, {
         source: "http",
+        origin: {
+          kind: "http",
+          method: "POST",
+          path: "/editor/connect",
+          status,
+        },
+        subject: { kind: "project", id },
         connection: c.baseUrl,
         method: "POST /editor/connect",
         project: id,

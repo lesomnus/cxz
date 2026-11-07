@@ -1,7 +1,17 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import { diagnosticText, type LogContext } from "#src/shared/logs/log-entry.ts";
 
+import {
+  legacyOrigin,
+  sanitizeOrigin,
+  sanitizeTarget,
+  type ErrorOrigin,
+  type ErrorTarget,
+} from "./error-origin";
+
 export type ClientError = LogContext & {
+  origin: ErrorOrigin;
+  subject?: ErrorTarget;
   id: string;
   key: string;
   message: string;
@@ -16,6 +26,8 @@ export type ClientError = LogContext & {
   count: number;
 };
 export type ErrorContext = LogContext & {
+  origin?: ErrorOrigin;
+  subject?: ErrorTarget;
   source?: ClientError["source"];
   code?: string;
   target?: string;
@@ -178,6 +190,16 @@ export class ClientErrors {
           message: diagnosticText(input.message),
           status: input.status,
           source: input.source,
+          origin:
+            sanitizeOrigin(input.origin) ??
+            legacyOrigin({
+              source: input.source,
+              method:
+                typeof input.method === "string"
+                  ? diagnosticText(input.method, 512)
+                  : undefined,
+            }),
+          subject: sanitizeTarget(input.subject),
           firstSeen: input.firstSeen,
           lastSeen: input.lastSeen,
           updated: input.updated,
@@ -238,11 +260,18 @@ export class ClientErrors {
     const active = this.entries.find(
       (entry) => entry.key === key && entry.status === "active",
     );
+    const origin = sanitizeOrigin(context.origin) ?? legacyOrigin(context);
     const entry: ClientError = {
       id: active?.id ?? crypto.randomUUID(),
       key: diagnosticText(key),
       message: errorMessage(error),
-      source: context.source ?? "client",
+      source:
+        context.source ??
+        (origin.kind === "connection" || origin.kind === "runtime"
+          ? "resource"
+          : origin.kind),
+      origin,
+      subject: sanitizeTarget(context.subject),
       status: "active",
       firstSeen: active?.firstSeen ?? now,
       lastSeen: now,

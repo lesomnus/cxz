@@ -31,6 +31,7 @@ export function ProfileMenu({
     } catch (e) {
       errors.report("http:auth/logout", e, {
         source: "http",
+        origin: { kind: "http", method: "POST", path: "/auth/logout" },
         method: "POST /auth/logout",
       });
     } finally {
