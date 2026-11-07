@@ -379,6 +379,7 @@ function TaskEditor({
               alignItemWithTrigger
               minMenuWidth={0}
               value={String(priority)}
+              dirty={priority !== (task?.priority ?? 2)}
               options={taskPriorities.map((label, value) => ({
                 value: String(value),
                 label,
@@ -419,10 +420,16 @@ function TaskEditor({
         value={name}
         disabled={busy}
         readOnly={immutable}
+        dirty={name !== (task?.name ?? "")}
         change={setName}
       />
     ) : (
-      <FormField label="Title" htmlFor={`${id}-title`} fullWidth>
+      <FormField
+        label="Title"
+        htmlFor={`${id}-title`}
+        fullWidth
+        dirty={name !== (task?.name ?? "")}
+      >
         <input
           id={`${id}-title`}
           autoFocus={presentation === "dialog"}
@@ -436,7 +443,12 @@ function TaskEditor({
       </FormField>
     );
   const aliasField = (
-    <FormField label="Alias" htmlFor={`${id}-alias`} fullWidth>
+    <FormField
+      label="Alias"
+      htmlFor={`${id}-alias`}
+      fullWidth
+      dirty={alias !== (task?.alias ?? "")}
+    >
       <input
         id={`${id}-alias`}
         disabled={busy}
@@ -453,6 +465,7 @@ function TaskEditor({
       <TaskDescriptionField
         id={`${id}-description`}
         value={desc}
+        dirty={desc !== (task?.desc ?? "")}
         disabled={busy}
         readOnly={immutable}
         change={setDesc}
@@ -460,7 +473,12 @@ function TaskEditor({
         setOptions={onDescriptionOptionsChange}
       />
     ) : (
-      <FormField label="Description" htmlFor={`${id}-description`} fullWidth>
+      <FormField
+        label="Description"
+        htmlFor={`${id}-description`}
+        fullWidth
+        dirty={desc !== (task?.desc ?? "")}
+      >
         <textarea
           id={`${id}-description`}
           className={styles.description}

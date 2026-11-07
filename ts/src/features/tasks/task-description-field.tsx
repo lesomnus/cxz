@@ -18,6 +18,7 @@ export function TaskDescriptionField({
   value,
   disabled,
   readOnly = false,
+  dirty = false,
   change,
   options,
   setOptions,
@@ -26,6 +27,7 @@ export function TaskDescriptionField({
   value: string;
   disabled: boolean;
   readOnly?: boolean;
+  dirty?: boolean;
   change: (value: string) => void;
   options: TaskDescriptionOptions;
   setOptions: (options: TaskDescriptionOptions) => void;
@@ -36,6 +38,7 @@ export function TaskDescriptionField({
       label="Description"
       htmlFor={id}
       fullWidth
+      dirty={dirty}
       className={styles.field}
       data-break-words={options.breakWords}
     >

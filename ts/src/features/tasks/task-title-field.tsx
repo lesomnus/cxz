@@ -6,12 +6,14 @@ export function TaskTitleField({
   value,
   disabled,
   readOnly = false,
+  dirty = false,
   change,
 }: {
   id: string;
   value: string;
   disabled: boolean;
   readOnly?: boolean;
+  dirty?: boolean;
   change: (value: string) => void;
 }) {
   return (
@@ -19,6 +21,7 @@ export function TaskTitleField({
       label="Title"
       htmlFor={id}
       fullWidth
+      dirty={dirty}
       className={styles.titleField}
     >
       <textarea
