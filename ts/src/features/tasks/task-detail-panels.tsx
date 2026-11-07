@@ -169,9 +169,9 @@ export function TaskAssigneeControl({
   return (
     <ResourceControlGroup
       label="Assigned session controls"
-      // Preserve the former one-of-three-column button width. The Assigned
-      // field now takes two thirds; its surface includes the narrow inset.
-      leadingWidth="calc(50% + var(--ui-control-inset) - var(--ui-section-group-gap) / 3)"
+      // Project occupies half a row and Assigned two thirds. Account for the
+      // group's padding so the session button has the same width as Project.
+      leadingWidth="calc(75% + 1.5 * var(--ui-control-inset))"
       actions={
         <Button type="button" aria-label="Assignment actions">
           <Icon name="overflow" />

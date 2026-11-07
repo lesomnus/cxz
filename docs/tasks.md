@@ -254,8 +254,9 @@ toggle chooses between whole-word wrapping (including Korean words) and breaking
 inside words. Show control characters overlays spaces, tabs, newlines and other
 control markers without changing the text, selection or clipboard contents. Both
 view options survive saving and do not dirty the task. Assigned to and Priority
-lead the right panel in a 2:1 row. The assigned session button keeps its previous
-size inside an expanded control group with a placeholder action button. The next
+lead the right panel in a 2:1 row. The assigned session button matches the Project
+button width inside an expanded control group. The placeholder action fills the
+remaining width; its gap to the session button matches the container's inset. The next
 row places Status and Updated at 1:2. Alias, Project, creation source and labels
 remain in the middle; Task ID and Created form the final 1:2 row. ResourceFields
 accepts relative column weights, and ResourceControlGroup owns the inset surface

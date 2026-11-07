@@ -37,13 +37,11 @@
   display: flex;
   flex: 1;
   min-width: 0;
-  justify-content: flex-end;
   gap: var(--ui-control-inset);
 }
 .actions > button {
-  width: calc(
-    var(--resource-table-control-size, 44px) - 2 * var(--ui-control-inset)
-  );
+  flex: 1;
+  min-width: 0;
   min-height: 0;
   padding: 0;
   border-radius: max(

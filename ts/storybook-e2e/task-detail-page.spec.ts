@@ -96,22 +96,24 @@ test("title reserves two lines and metadata groups assignment, activity and fina
     exact: true,
   });
   const geometry = await assignment.evaluate((group) => {
-    const row = group.closest("dl")!,
-      frame = group.getBoundingClientRect();
+    const frame = group.getBoundingClientRect();
     const button = group.querySelector("a")!.getBoundingClientRect();
+    const action = group.querySelector("button")!.getBoundingClientRect();
     return {
       width: frame.width,
       buttonWidth: button.width,
       buttonHeight: button.height,
-      previousWidth:
-        (row.getBoundingClientRect().width -
-          2 * parseFloat(getComputedStyle(row).columnGap)) /
-        3,
+      leftInset: button.left - frame.left,
+      rightInset: frame.right - action.right,
+      gap: action.left - button.right,
     };
   });
-  expect(geometry.buttonWidth).toBeCloseTo(geometry.previousWidth, 1);
+  const project = (await rows.nth(2).getByRole("link").first().boundingBox())!;
+  expect(geometry.buttonWidth).toBeCloseTo(project.width, 1);
   expect(geometry.buttonHeight).toBe(40);
   expect(geometry.width).toBeGreaterThan(geometry.buttonWidth);
+  expect(geometry.gap).toBeCloseTo(geometry.leftInset, 1);
+  expect(geometry.rightInset).toBeCloseTo(geometry.leftInset, 1);
   await assignment
     .getByRole("button", { name: "Assignment actions", exact: true })
     .click();

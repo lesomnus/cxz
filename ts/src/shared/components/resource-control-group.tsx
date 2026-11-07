@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import styles from "./resource-control-group.module.css";
 
-/** Keep a resource button's size while its surrounding control grows. */
+/** Bound the resource button while its actions fill the remaining control. */
 export function ResourceControlGroup({
   children,
   actions,
