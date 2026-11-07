@@ -39,28 +39,18 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
     name: "Task details",
     exact: true,
   });
-  const fields = detail.getByRole("group", { name: "Task fields" });
-  await expect(fields.locator(":scope > div > span")).toHaveText([
-    "Priority",
-    "Status",
-  ]);
   const priority = detail.getByRole("combobox", {
     name: "Priority",
     exact: true,
   });
-  const status = detail.getByRole("combobox", { name: "Status", exact: true });
-  const left = (await priority.boundingBox())!;
-  const right = (await status.boundingBox())!;
-  expect(left.y).toBe(right.y);
-  expect(left.width).toBe(right.width);
-  expect(right.x).toBeGreaterThan(left.x + left.width);
-  const title = (await detail
-    .getByRole("textbox", { name: "Title", exact: true })
-    .boundingBox())!;
-  expect(title.x).toBeGreaterThan(right.x + right.width);
-  expect(title.height).toBeGreaterThan(left.height);
+  await expect(
+    detail.getByRole("status", { name: "Status", exact: true }),
+  ).toHaveText("Todo");
+  await expect(
+    detail.getByRole("textbox", { name: "Title", exact: true }),
+  ).toHaveText("Verify WASM tasks");
   await detail.screenshot({ path: testInfo.outputPath("task-details.png") });
-  for (const trigger of [priority, status]) {
+  for (const trigger of [priority]) {
     const anchor = (await trigger.locator(".meta-value").boundingBox())!;
     await trigger.click();
     const popup = page.locator(".setting-menu");

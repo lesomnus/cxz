@@ -816,6 +816,7 @@ test("memory edits carry the revision and keep drafts on a conflict", async ({
   await expect(page.locator(".monaco-editor")).toContainText(
     "External version",
   );
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Save", exact: true }),
   ).toBeDisabled();
@@ -931,11 +932,6 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
     name: "Title",
     exact: true,
   });
-  expect(
-    await projectPicker.evaluate((el) => getComputedStyle(el).backgroundColor),
-  ).toBe(
-    await titleInput.evaluate((el) => getComputedStyle(el).backgroundColor),
-  );
   // The anchored creation dialog moves during entrance. Measure the value
   // overlay against its settled trigger, rather than an intermediate frame.
   await create.evaluate((node) =>
@@ -948,6 +944,11 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
         )
         .map((animation) => animation.finished.catch(() => {})),
     ),
+  );
+  await page.mouse.move(0, 0);
+  await expect(projectPicker).toHaveCSS(
+    "background-color",
+    await titleInput.evaluate((el) => getComputedStyle(el).backgroundColor),
   );
   const triggerBounds = await projectPicker
     .locator(".meta-value")

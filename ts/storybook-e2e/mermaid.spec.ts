@@ -80,9 +80,14 @@ test("partial and invalid definitions retain source and recover; unrelated strea
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(story("mermaid-streaming"));
-  await expect(page.getByRole("status")).toHaveText(
-    "Unable to render this Mermaid diagram. Showing source.",
-  );
+  await expect(
+    page
+      .locator(".markdown")
+      .getByRole("status")
+      .filter({
+        hasText: "Unable to render this Mermaid diagram. Showing source.",
+      }),
+  ).toHaveText("Unable to render this Mermaid diagram. Showing source.");
   await expect(page.locator(".markdown pre")).toBeVisible();
   await expect(page.locator(".markdown code")).toHaveText(
     "flowchart LR\n  Input[\n",
@@ -123,9 +128,14 @@ test("partial and invalid definitions retain source and recover; unrelated strea
   await page
     .getByRole("button", { name: "Invalid diagram", exact: true })
     .click();
-  await expect(page.getByRole("status")).toHaveText(
-    "Unable to render this Mermaid diagram. Showing source.",
-  );
+  await expect(
+    page
+      .locator(".markdown")
+      .getByRole("status")
+      .filter({
+        hasText: "Unable to render this Mermaid diagram. Showing source.",
+      }),
+  ).toHaveText("Unable to render this Mermaid diagram. Showing source.");
   await page
     .getByRole("button", { name: "Complete diagram", exact: true })
     .click();

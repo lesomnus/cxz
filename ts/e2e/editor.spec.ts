@@ -34,8 +34,11 @@ test("production file viewer loads under the gateway CSP", async ({ page }) => {
   );
   await expect(editor.locator(".monaco-editor")).toHaveCSS(
     "background-color",
-    "rgb(20, 20, 20)",
+    "rgba(0, 0, 0, 0)",
   );
+  await expect(
+    editor.locator("[data-workspace-content] > :last-child"),
+  ).toHaveCSS("background-color", "rgb(20, 20, 20)");
   await expect(
     page.locator(".markdown span").filter({ hasText: /^style fixture$/ }),
   ).not.toHaveAttribute("style");

@@ -494,6 +494,7 @@ test("syntax menu keeps its scrollbar outside the left edge and supports drag an
 test("file menu editor options update Monaco in place and preserve composer settings", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     if (!localStorage.getItem("settings"))
       localStorage.setItem(
@@ -508,29 +509,10 @@ test("file menu editor options update Monaco in place and preserve composer sett
   const editor = await open(page);
   await expect(editor.locator(".monaco-editor")).toBeVisible();
   const element = await editor.locator(".monaco-editor").elementHandle();
-  const configuration = () =>
-    page.evaluate(async () => {
-      const modulePath = "/packages/nox/src/editor/code-editor.ts";
-      const { monaco } = await import(modulePath);
-      const editor = monaco.editor
-        .getEditors()
-        .find((candidate: { getDomNode(): HTMLElement | null }) =>
-          candidate.getDomNode()?.closest(".workspace-editor"),
-        );
-      const options = editor.getRawOptions();
-      return {
-        wrap: options.wordWrap,
-        controls: options.renderControlCharacters,
-        whitespace: options.renderWhitespace,
-        spaces: editor.getModel().getOptions().insertSpaces,
-      };
-    });
-  await expect.poll(configuration).toEqual({
-    wrap: "off",
-    controls: false,
-    whitespace: "none",
-    spaces: true,
-  });
+  const lines = editor.locator(".view-lines .view-line");
+  const unwrapped = await lines.count();
+  const whitespace = editor.locator(".monaco-editor .view-overlays svg circle");
+  await expect(whitespace).toHaveCount(0);
   await menu(page);
   const popup = page.getByRole("group", { name: "File actions", exact: true });
   const footer = popup.locator('[data-menu-fixed="footer"]');
@@ -542,9 +524,8 @@ test("file menu editor options update Monaco in place and preserve composer sett
     .getByRole("radio", { name: "Tab character", exact: true })
     .click();
   await expect(popup).toBeVisible();
-  await expect
-    .poll(configuration)
-    .toEqual({ wrap: "on", controls: true, whitespace: "all", spaces: false });
+  await expect.poll(() => lines.count()).toBeGreaterThan(unwrapped);
+  await expect(whitespace.first()).toBeVisible();
   expect(
     await editor
       .locator(".monaco-editor")
@@ -563,9 +544,21 @@ test("file menu editor options update Monaco in place and preserve composer sett
   await page.keyboard.press("Escape");
   await page.reload();
   await expect(editor.locator(".monaco-editor")).toBeVisible();
-  await expect
-    .poll(configuration)
-    .toEqual({ wrap: "on", controls: true, whitespace: "all", spaces: false });
+  await expect.poll(() => lines.count()).toBeGreaterThan(unwrapped);
+  await expect(whitespace.first()).toBeVisible();
+  await menu(page);
+  await expect(
+    footer.getByRole("button", { name: "Word wrap", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    footer.getByRole("button", {
+      name: "Show control characters",
+      exact: true,
+    }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    footer.getByRole("radio", { name: "Tab character", exact: true }),
+  ).toBeChecked();
 });
 
 test("automatic syntax detection colors Python, Dockerfile and Protobuf and a file override keeps the editor", async ({

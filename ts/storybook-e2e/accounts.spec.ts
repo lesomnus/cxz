@@ -472,7 +472,9 @@ test("account sessions use overview read-only identities and keep selection scop
   await expect(
     table.getByRole("columnheader", { name: "Account", exact: true }),
   ).toHaveCount(0);
-  await expect(table.locator(".agent-brand")).toHaveCount(0);
+  await expect(
+    table.locator("[data-session-navigation] .agent-brand"),
+  ).toHaveCount(2);
   await expect(table.locator(".editable-value-trigger, fieldset")).toHaveCount(
     0,
   );

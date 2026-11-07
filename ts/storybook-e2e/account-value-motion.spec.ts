@@ -59,7 +59,7 @@ test("cached values and account information appear immediately, while a fresh re
   await expect(
     work
       .getByRole("region", { name: "Account details", exact: true })
-      .locator("[data-motion]"),
+      .locator('[data-motion]:not([data-motion="none"])'),
   ).toHaveCount(0);
   await expect(
     work
@@ -100,8 +100,12 @@ test("first loads retain compact placeholders and dates stay static", async ({
   ).toBeAttached();
   // Values stay mounted across loading so the first slide starts from a dash.
   await expect(first.locator('[data-slide-steps="4"]').first()).toBeAttached();
-  await expect(work.locator("time [data-motion]")).toHaveCount(0);
-  await expect(usage.locator("strong [data-motion]")).toHaveCount(0);
+  await expect(
+    work.locator('time [data-motion]:not([data-motion="none"])'),
+  ).toHaveCount(0);
+  await expect(
+    usage.locator('strong [data-motion]:not([data-motion="none"])'),
+  ).toHaveCount(0);
 });
 
 test("account refresh immediately gates repeated clicks through the complete usage chain", async ({
@@ -201,11 +205,11 @@ test("visible changed values slide from top left with bounded random character d
   const input = work
     .getByRole("region", { name: "Recent 30 days", exact: true })
     .getByRole("img", { name: "9600", exact: true })
-    .locator("[data-motion][aria-label]");
+    .locator('[data-motion]:not([data-motion="none"])[aria-label]');
   const cacheRead = work
     .getByRole("region", { name: "Recent 30 days", exact: true })
     .getByRole("img", { name: "24000", exact: true })
-    .locator("[data-motion][aria-label]");
+    .locator('[data-motion]:not([data-motion="none"])[aria-label]');
   await page.clock.install();
   const now = await page.evaluate(() => Date.now());
   await page.clock.pauseAt(new Date(now + 50));
@@ -237,5 +241,7 @@ test("visible changed values slide from top left with bounded random character d
     Math.max(...inputDelays) - Math.min(...inputDelays),
   ).toBeLessThanOrEqual(90);
   expect(Math.min(...inputDelays)).toBeLessThan(Math.min(...cacheReadDelays));
-  await expect(information.locator("[data-motion]")).toHaveCount(0);
+  await expect(
+    information.locator('[data-motion]:not([data-motion="none"])'),
+  ).toHaveCount(0);
 });

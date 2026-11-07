@@ -781,7 +781,9 @@ test("session states use the same status icons as account sessions", async ({
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(9);
-  await expect(table.locator(".agent-brand")).toHaveCount(9);
+  await expect(
+    table.locator("[data-session-navigation] .agent-brand"),
+  ).toHaveCount(9);
   await expect(rows.locator("td:nth-child(2) .session-indicator")).toHaveCount(
     9,
   );

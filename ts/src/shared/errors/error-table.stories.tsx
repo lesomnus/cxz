@@ -135,7 +135,7 @@ export const RpcDetails: Story = {
   args: { kind: "rpc" },
   play: async ({ canvasElement }) => {
     const row = [...canvasElement.querySelectorAll("tr")].find((row) =>
-      row.textContent?.includes("cxz.SessionService/Transcript"),
+      row.querySelector('[title*="Transcript"]'),
     );
     row?.scrollIntoView({ block: "start" });
     row?.click();

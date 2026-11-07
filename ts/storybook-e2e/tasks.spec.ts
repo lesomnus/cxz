@@ -506,7 +506,7 @@ test("older completions load in batches of 50 and reset when switching projects"
   });
   await expect(
     detail.getByRole("textbox", { name: "Title", exact: true }),
-  ).toHaveValue("Completed task 125");
+  ).toHaveText("Completed task 125");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   const project = page.getByRole("combobox", {
     name: "Select project",

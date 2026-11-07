@@ -541,7 +541,9 @@ test("description keeps words whole and control markers preserve text, selection
   await controls.click();
   await expect(save).toBeDisabled();
   const value = (
-    "wordboundary 단어경계를유지합니다 mango pear banana ".repeat(4) + "\tend\n"
+    (
+      "wordboundary".repeat(12) + " 단어경계를유지합니다 mango pear banana "
+    ).repeat(4) + "\tend\n"
   ).repeat(20);
   await description.fill(value);
   const overlay = detail(page).locator("[data-control-character-overlay]");
@@ -874,7 +876,9 @@ test("single-task boundaries remain stable and Add still opens a dialog", async 
 }) => {
   await page.goto(story("single-task-details"));
   await expect(title(page)).toHaveValue("Implement Task MCP tools");
-  await expect(page.locator("[data-task-neighbor]")).toHaveCount(0);
+  await expect(
+    page.locator("[data-task-neighbor]:not([data-empty])"),
+  ).toHaveCount(0);
   await page
     .locator("[data-task-deck]")
     .dispatchEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true });
