@@ -20,10 +20,26 @@ test("file tab actions copy the current path, retain the active file and close e
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const editor = await open(page);
   await expect(editor.getByRole("tab")).toHaveCount(3);
+  await editor
+    .getByRole("button", { name: "Copy file path", exact: true })
+    .click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe("/workspace/README.md");
   await editor.getByRole("tab", { name: "package.json", exact: true }).click();
   await expect(editor.locator(".view-lines")).toContainText(
     '"workspace-preview"',
   );
+  await expect(
+    editor.getByRole("button", { name: "Copy file path", exact: true }),
+  ).not.toHaveAttribute("aria-busy", "true");
+  await editor
+    .getByRole("button", { name: "Copy file path", exact: true })
+    .focus();
+  await page.keyboard.press("Enter");
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe("/workspace/package.json");
   await (await menu(page))
     .getByRole("menuitem", { name: "Copy file path", exact: true })
     .click();
@@ -89,7 +105,7 @@ for (const theme of ["dark", "light"])
         const footer = picker.closest("footer")!;
         const pickerBounds = picker.getBoundingClientRect();
         const footerBounds = footer.getBoundingClientRect();
-        const path = footer.querySelector("span")!;
+        const path = footer.querySelector("button")!;
         const pathBounds = path.getBoundingClientRect();
         const tabs = content.querySelector('[role="tablist"]')!;
         const entries = tabs.querySelectorAll(".file-tab");
@@ -195,6 +211,7 @@ for (const theme of ["dark", "light"])
     expect(surface.pathRadius).toBe(surface.pickerRadius);
     expect(surface.pickerGaps).toEqual(Array(3).fill(surface.pickerGaps[0]));
     expect(surface.tabRadius).not.toBe("0px");
+    expect(surface.tabRadius).toBe(surface.pathRadius);
     expect(surface.tabGaps).toEqual([
       parseFloat(surface.token),
       ...Array(3).fill(parseFloat(surface.inset)),
@@ -361,6 +378,43 @@ test("syntax menu keeps its scrollbar outside the left edge and supports drag an
     exact: true,
   });
   const list = menu.getByRole("listbox");
+  await menu.evaluate(async (node) => {
+    await Promise.allSettled(
+      node
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished),
+    );
+  });
+  const geometry = await menu.evaluate((node) => {
+    const input = node.querySelector<HTMLInputElement>(".setting-search")!;
+    const trigger = document.querySelector<HTMLElement>(
+      '.workspace-editor [role="combobox"]',
+    )!;
+    const row = input.parentElement!;
+    return {
+      trigger: trigger.getBoundingClientRect().toJSON(),
+      row: row.getBoundingClientRect().toJSON(),
+      input: input.getBoundingClientRect().toJSON(),
+      radius: getComputedStyle(input).borderRadius,
+      padding: [
+        getComputedStyle(row).paddingLeft,
+        getComputedStyle(row).paddingRight,
+      ],
+    };
+  });
+  await testInfo.attach("search-input-geometry", {
+    body: JSON.stringify(geometry, null, 2),
+    contentType: "application/json",
+  });
+  expect(geometry.row.width).toBe(geometry.trigger.width);
+  expect(geometry.row.height).toBe(geometry.trigger.height);
+  expect(geometry.row.x).toBeCloseTo(geometry.trigger.x, 1);
+  expect(geometry.row.y).toBeCloseTo(geometry.trigger.y, 1);
+  expect(geometry.input.width).toBe(
+    geometry.row.width -
+      geometry.padding.reduce((sum, value) => sum + parseFloat(value), 0),
+  );
+  expect(geometry.radius).toBe("0px");
   expect((await menu.boundingBox())!.width).toBeLessThanOrEqual(
     (await picker.boundingBox())!.width + 8,
   );

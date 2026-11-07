@@ -1,4 +1,5 @@
 .viewer {
+  --workspace-editor-control-radius: calc(1.5 * var(--ui-space));
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -38,7 +39,7 @@
 }
 .tabBar :global(.file-tab) {
   overflow: hidden;
-  border-radius: var(--ui-space);
+  border-radius: var(--workspace-editor-control-radius);
   background: var(--ui-shade-20);
 }
 .tabBar :global(.file-tab button) {
@@ -100,20 +101,26 @@
   font-size: 10px;
   color: var(--muted);
 }
-.filePath {
+.filePath.filePath {
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
   padding: var(--ui-control-inset) var(--ui-control-inline-inset);
   line-height: var(--ui-menu-item-line-height);
+  text-align: left;
+}
+.filePath :global(.button-content) {
+  display: block;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.filePath:empty {
+.filePath[data-empty] {
   visibility: hidden;
 }
 .filePath,
 .languagePicker :global(.setting-trigger) {
-  border-radius: calc(1.5 * var(--ui-space));
+  border-radius: var(--workspace-editor-control-radius);
   background: var(--ui-shade-20);
 }
 .languagePicker.languagePicker {

@@ -261,6 +261,9 @@ export function WorkspaceEditor({
     }
   }
   const active = value.files.find((f) => f.path === value.active);
+  const filePathText =
+    (active?.path.replace(root + "/", "") || "") +
+    (value.simulated && value.phase === "connected" ? t(" · Simulated") : "");
   const previewable =
     !!active && /\.(md|markdown|mdown|mkd|mkdn)$/i.test(active.path);
   const preview =
@@ -501,12 +504,20 @@ export function WorkspaceEditor({
               <ErrorNotice className="editor-error" error={browseError} />
             )}
             <footer className={styles.status}>
-              <span className={styles.filePath}>
-                {active?.path.replace(root + "/", "") || ""}
-                {value.simulated && value.phase === "connected"
-                  ? t(" · Simulated")
-                  : ""}
-              </span>
+              <Button
+                className={styles.filePath}
+                aria-label={t("Copy file path")}
+                title={active?.path}
+                data-empty={!filePathText || undefined}
+                disabled={!active}
+                onClick={() =>
+                  active
+                    ? navigator.clipboard.writeText(active.path)
+                    : undefined
+                }
+              >
+                {filePathText}
+              </Button>
               <div className={styles.languagePicker}>
                 <ValueMenu
                   label={t("Syntax highlighting")}
