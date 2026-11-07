@@ -19,9 +19,6 @@
 .dateColumn {
   width: 112px;
 }
-.table tbody tr {
-  background: var(--ui-shade-20);
-}
 .table .buttonCell {
   padding: var(--ui-control-inset);
 }

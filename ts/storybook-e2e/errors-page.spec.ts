@@ -296,7 +296,7 @@ for (const theme of ["dark", "light"])
     );
     await expect(page.locator("main table tbody tr").first()).toBeVisible();
     const { rowBackground: projectRow, ...project } = await styles();
-    expect(projectRow).toBe(project.surface);
+    expect(projectRow).toBe("rgba(0, 0, 0, 0)");
     await page.goto(
       `/iframe.html?id=workspace-errors--overview&viewMode=story&globals=theme:${theme}`,
     );

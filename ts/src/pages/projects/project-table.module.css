@@ -1,9 +1,6 @@
 .table {
   min-width: 440px;
 }
-.table tbody tr {
-  background: var(--ui-shade-20);
-}
 .selectionColumn {
   width: var(--resource-table-selection-width);
 }

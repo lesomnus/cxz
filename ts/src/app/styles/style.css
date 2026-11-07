@@ -63,6 +63,7 @@
   --scroll-fade-depth: 24px;
   --scroll-fade-extension: 24px;
   --resource-panel-width: 180px;
+  --resource-page-background: var(--ui-shade-20);
   --resource-page-column-width: 420px;
   --resource-page-column-gap: var(--ui-section-group-gap);
   --resource-page-gutter: 24px;

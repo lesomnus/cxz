@@ -105,7 +105,6 @@ export function ProjectsPage({
         open={!!selected}
         list={
           <PanelScroll
-            className={styles.scroll}
             contentClassName={pageStyles.contentPadding}
             scrollbarLabel={t("Project scroll")}
             horizontalScrollbar
@@ -126,7 +125,6 @@ export function ProjectsPage({
         detail={
           selected ? (
             <PanelScroll
-              className={styles.scroll}
               contentClassName={pageStyles.contentPadding}
               scrollbarLabel={t("Project scroll")}
             >
