@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { Button, Card, CardActions, ScrollArea } from "@lesomnus/nox";
+import { Card, ScrollArea } from "@lesomnus/nox";
 import { ErrorStatusTabs } from "./error-status-tabs";
 import type { ClientErrors } from "#src/shared/errors/client-errors.ts";
 import { ErrorTable } from "./error-table";
@@ -33,6 +33,7 @@ export function ErrorPanel({
   return (
     <Card
       revealFrom="left"
+      className={styles.panel}
       title={t("Errors")}
       close={close}
       closeLabel={t("Close errors")}
@@ -66,23 +67,19 @@ export function ErrorPanel({
           </RouteLink>
         </div>
       }
-      footer={
-        <CardActions>
-          <Button
-            disabled={!history.length}
-            onClick={() => store.clearHistory()}
-          >
-            {t("Clear history")}
-          </Button>
-        </CardActions>
-      }
     >
       <ScrollArea
         className={styles.list}
+        scrollbarOffset={8}
         aria-label={t("Error list")}
         scrollbarLabel={t("Scroll errors")}
       >
-        <ErrorTable entries={shown} store={store} tab={tab} />
+        <ErrorTable
+          entries={shown}
+          store={store}
+          tab={tab}
+          showHeader={false}
+        />
       </ScrollArea>
     </Card>
   );

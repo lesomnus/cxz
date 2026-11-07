@@ -153,10 +153,12 @@ export function ErrorTable({
   entries,
   store,
   tab,
+  showHeader = true,
 }: {
   entries: readonly ClientError[];
   store: ClientErrors;
   tab: string;
+  showHeader?: boolean;
 }) {
   useLocale();
   return (
@@ -174,17 +176,21 @@ export function ErrorTable({
           <col className={styles.timeColumn} />
           <col className={styles.actionsColumn} />
         </colgroup>
-        <TableHeader>
-          <TableRow>
-            <TableHead className={styles.kind}>{t("Kind")}</TableHead>
-            <TableHead className={styles.operation}>{t("Operation")}</TableHead>
-            <TableHead className={styles.target}>{t("Target")}</TableHead>
-            <TableHead>{t("Message")}</TableHead>
-            <TableHead className={styles.count}>{t("Count")}</TableHead>
-            <TableHead className={styles.time}>{t("Last seen")}</TableHead>
-            <TableHead aria-label={t("Actions")} />
-          </TableRow>
-        </TableHeader>
+        {showHeader && (
+          <TableHeader>
+            <TableRow>
+              <TableHead className={styles.kind}>{t("Kind")}</TableHead>
+              <TableHead className={styles.operation}>
+                {t("Operation")}
+              </TableHead>
+              <TableHead className={styles.target}>{t("Target")}</TableHead>
+              <TableHead>{t("Message")}</TableHead>
+              <TableHead className={styles.count}>{t("Count")}</TableHead>
+              <TableHead className={styles.time}>{t("Last seen")}</TableHead>
+              <TableHead aria-label={t("Actions")} />
+            </TableRow>
+          </TableHeader>
+        )}
         <TableBody key={tab}>
           {entries.length ? (
             entries.map((entry) => (

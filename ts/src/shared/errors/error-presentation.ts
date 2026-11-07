@@ -22,7 +22,7 @@ const services: Record<string, string> = {
   Installation: "Installation",
   Notification: "Notification",
 };
-const rpcActions: Record<string, Message> = {
+export const rpcActions: Record<string, Message> = {
   Get: "Read {resource}",
   List: "List {resource}",
   Watch: "Watch {resource}",
@@ -43,13 +43,13 @@ const rpcActions: Record<string, Message> = {
   Diff: "Compare {resource} revisions",
   Versions: "List {resource} revisions",
 };
-const sessionActions: Record<string, Message> = {
+export const sessionActions: Record<string, Message> = {
   Transcript: "Read conversation",
   Rows: "Watch conversation history",
   Events: "Watch conversation",
   Send: "Send message",
 };
-const runtimeActions = {
+export const runtimeActions = {
   "project-status": "Project runtime",
   inventory: "Watch resource inventory",
   "session-history": "Watch conversation history",
@@ -59,7 +59,7 @@ const runtimeActions = {
   Extract<ErrorOrigin, { kind: "runtime" }>["operation"],
   Message
 >;
-const clientActions = {
+export const clientActions = {
   exception: "Run JavaScript",
   "unhandled-rejection": "Unhandled asynchronous operation",
   operation: "Client operation",

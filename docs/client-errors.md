@@ -7,7 +7,11 @@ layout: an aligned top toolbar with history controls and a compact Nox table
 with kind/status, operation, target, message, occurrence count and last-seen
 columns. The dialog uses the same ErrorTable with a compact layout. Each row
 expands its full message, timestamps and original diagnostic references.
-Dismiss is a row action and Clear history is in the page toolbar. The page does
+Dismiss is a row action and Clear history is in the page toolbar. The dialog has
+no footer, clear button or column-heading row; its body contains only the table.
+Its scrollbar sits outside the right edge (ScrollArea uses a positive handle-center
+offset to produce a negative CSS right). Card reveal/body wrappers allow the
+rail through while the scroll viewport clips the rows. The page does
 not embed or stretch the dialog card. Narrow screens move kind/status, operation/target and count/time into the
 message cell while keeping details readable.
 The current tab is carried into the page, and `/c/_/errors?tab=history` can be
@@ -109,3 +113,12 @@ Invalid or unknown metadata falls back without dropping the error. New fields
 are validated, redacted and copied individually on report and restore, so arbitrary
 objects or credentials cannot be persisted as additional properties. Stable
 operation/reference keys and the existing recovery/stale lifecycle are unchanged.
+
+`Workspace/Errors/Rows` catalogs every registered operation label: generic RPC
+method mappings, session-specific operations, project editor/terminal, known HTTP
+paths and fallback, both connection purposes/transports, all runtime health
+operations and all client operations. All shows the 40 examples together; RPC,
+HTTP, Connection, Runtime and Client provide focused tables; Dialog uses the
+headerless error panel with an outside scrollbar. Dismiss/details remain usable
+inside these isolated, nonpersistent fixtures. The fixtures enumerate the actual
+operation registries so newly registered RPC/runtime/client labels also appear.
