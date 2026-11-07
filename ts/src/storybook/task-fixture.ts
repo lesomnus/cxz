@@ -1,11 +1,16 @@
 import { projectFixtureId, matchesProject } from "./project-id";
-import { create, clone, type MessageInitShape } from "@bufbuild/protobuf";
+import {
+  create,
+  clone,
+  isFieldSet,
+  type MessageInitShape,
+} from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { ContainerState, ProjectSchema } from "#gen/cxz/project_pb";
 import { SessionSchema } from "#gen/cxz/session_pb";
 import { TaskSchema, TaskStatus, type Task } from "#gen/cxz/task_pb";
-import { TaskService } from "#gen/cxz/task_svc_pb";
+import { TaskService, TaskPatchRequestSchema } from "#gen/cxz/task_svc_pb";
 import { key } from "@lesomnus/payday/store";
 import { Connection } from "#src/shared/api/connection.ts";
 
@@ -317,13 +322,23 @@ export function taskFixture(
         patch: (request) => {
           const task = find(request);
           check(task, request);
-          return update(task, {
-            name: request.name ?? task.name,
-            alias: request.alias ?? task.alias,
-            desc: request.desc ?? task.desc,
-            priority: request.priority ?? task.priority,
-            status: request.status || task.status,
-          });
+          const fields = [
+            "name",
+            "alias",
+            "desc",
+            "priority",
+            "status",
+          ] as const;
+          return update(
+            task,
+            Object.fromEntries(
+              fields
+                .filter((field) =>
+                  isFieldSet(request, TaskPatchRequestSchema.field[field]),
+                )
+                .map((field) => [field, request[field]]),
+            ),
+          );
         },
         release: (request) => {
           const task = find(request);

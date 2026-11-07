@@ -90,7 +90,10 @@
   display: flex;
   align-items: center;
   gap: var(--ui-space);
-  min-height: 32px;
+  min-height: calc(1.5em + 2 * var(--ui-space));
+}
+.priorityField {
+  --ui-form-control-padding-block: var(--ui-space);
 }
 .controls {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -106,7 +109,7 @@
   gap: var(--ui-space);
 }
 .taskId dd {
-  min-height: 32px;
+  min-height: calc(1.5em + 2 * var(--ui-space));
   align-items: center;
 }
 .description {

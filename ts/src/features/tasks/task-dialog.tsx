@@ -19,7 +19,7 @@ import { Id } from "@lesomnus/payday/pdid";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
-import type { Task } from "#gen/cxz/task_pb";
+import { TaskStatus, type Task } from "#gen/cxz/task_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -54,11 +54,17 @@ function TaskActionButton({
   panel,
   label,
   icon,
+  description,
   ...props
-}: ButtonProps & { panel: boolean; label: string; icon: IconName }) {
+}: ButtonProps & {
+  panel: boolean;
+  label: string;
+  icon: IconName;
+  description?: string;
+}) {
   if (!panel) return <Button {...props}>{label}</Button>;
   return (
-    <Popover content={label} placement="top">
+    <Popover content={description ?? label} placement="top">
       <Section
         {...props}
         as="button"
@@ -119,7 +125,10 @@ function TaskEditor({
   const [busy, busyState] = useState(false);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
-  const [confirmRelease, setConfirmRelease] = useState(false);
+  const [confirmation, setConfirmation] = useState<"release" | "cancel">();
+  const [activeAction, setActiveAction] = useState<
+    "save" | "release" | "cancel"
+  >();
   const pending = useRef(false),
     controller = useRef<AbortController | undefined>(undefined);
   const creation = useRef(crypto.randomUUID());
@@ -139,10 +148,11 @@ function TaskEditor({
         (task.dateUpdated?.seconds ?? 0n) &&
         (latest.dateUpdated?.nanos ?? 0) > (task.dateUpdated?.nanos ?? 0)));
   const owned = !!task?.assignee;
-  async function mutate(release = false) {
+  async function mutate(action: "save" | "release" | "cancel" = "save") {
     if (pending.current) return false;
     pending.current = true;
     busyState(true);
+    setActiveAction(action);
     setBusy(true);
     setError("");
     const request = new AbortController();
@@ -150,7 +160,7 @@ function TaskEditor({
     try {
       const options = { signal: request.signal, timeoutMs: 15000 };
       const value = task
-        ? release
+        ? action === "release"
           ? await c.tasks.release(
               {
                 ref: taskRef(project, task),
@@ -163,10 +173,9 @@ function TaskEditor({
               {
                 ref: taskRef(project, task),
                 dateUpdated: task.dateUpdated,
-                name: name.trim(),
-                alias: alias.trim(),
-                desc,
-                priority,
+                ...(action === "cancel"
+                  ? { status: TaskStatus.CANCELED }
+                  : { name: name.trim(), alias: alias.trim(), desc, priority }),
               },
               options,
             )
@@ -202,16 +211,22 @@ function TaskEditor({
       pending.current = false;
       if (!request.signal.aborted) {
         busyState(false);
+        setActiveAction(undefined);
         setBusy(false);
       }
     }
   }
   const priorityField = (
-    <FormField label="Priority" fullWidth={!task}>
+    <FormField
+      label="Priority"
+      fullWidth={!task}
+      className={detailStyles.priorityField}
+    >
       {task ? (
         <ValueMenu
           label="Priority"
           alignItemWithTrigger
+          minMenuWidth={0}
           value={String(priority)}
           options={taskPriorities.map((label, value) => ({
             value: String(value),
@@ -327,10 +342,28 @@ function TaskEditor({
         <TaskActionButton
           panel={presentation === "page"}
           label="Release"
+          description="Release assignment and return to Todo"
           icon="sign-out"
           type="button"
+          loading={busy && activeAction === "release"}
           disabled={busy}
-          onClick={() => setConfirmRelease(true)}
+          onClick={() => setConfirmation("release")}
+        />
+      )}
+      {task && (
+        <TaskActionButton
+          panel={presentation === "page"}
+          label={presentation === "page" ? "Cancel" : "Cancel task"}
+          icon="task-canceled"
+          type="button"
+          loading={busy && activeAction === "cancel"}
+          disabled={
+            busy ||
+            conflict ||
+            task.status === TaskStatus.DONE ||
+            task.status === TaskStatus.CANCELED
+          }
+          onClick={() => setConfirmation("cancel")}
         />
       )}
       <TaskActionButton
@@ -339,7 +372,7 @@ function TaskEditor({
         icon="save"
         type="submit"
         form={id}
-        loading={busy}
+        loading={busy && activeAction === "save"}
         disabled={
           busy ||
           !name.trim() ||
@@ -469,19 +502,29 @@ function TaskEditor({
           </Card>
         )}
       </form>
-      {confirmRelease && (
+      {confirmation && (
         <ConfirmationDialog
-          title="Release task?"
-          confirmLabel="Release"
+          title={confirmation === "release" ? "Release task?" : "Cancel task?"}
+          confirmLabel={confirmation === "release" ? "Release" : "Cancel task"}
           failureMessage={
             error ||
-            "Could not release the task. Close this confirmation and reload its latest version."
+            "Could not update the task. Close this confirmation and reload its latest version."
           }
-          close={() => setConfirmRelease(false)}
-          execute={() => mutate(true)}
+          close={() => setConfirmation(undefined)}
+          execute={() => mutate(confirmation)}
         >
-          Return this task to Todo and clear its assignment? This does not stop
-          the agent currently working on it.
+          {confirmation === "release" ? (
+            <>
+              Return this task to Todo and clear its assignment? This does not
+              stop the agent currently working on it.
+            </>
+          ) : (
+            <>
+              Mark this task as Canceled? This does not stop the agent or its
+              session.
+            </>
+          )}
+          {dirty && <p>Unsaved edits will be discarded.</p>}
         </ConfirmationDialog>
       )}
     </>

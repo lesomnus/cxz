@@ -174,8 +174,21 @@ test("detail controls retain wrapping, show priority symbols and preserve read-o
     name: "Priority",
     exact: true,
   });
+  const trigger = (await priority.boundingBox())!;
+  expect(trigger.height).toBe(26);
   await expect(priority.locator('svg[data-priority="2"]')).toBeVisible();
   await priority.click();
+  const selectedOption = page.getByRole("option", { selected: true });
+  await expect(selectedOption).toBeVisible();
+  const selectedGeometry = await selectedOption.evaluate((option) => ({
+    selected: option.getBoundingClientRect().width,
+    content: option
+      .closest('[data-scroll-area="content"]')!
+      .getBoundingClientRect().width,
+    height: option.getBoundingClientRect().height,
+  }));
+  expect(selectedGeometry.selected).toBeCloseTo(selectedGeometry.content, 1);
+  expect(selectedGeometry.height).toBe(trigger.height);
   for (let value = 0; value < 5; value++)
     await expect(
       page.getByRole("listbox").locator(`svg[data-priority="${value}"]`),
@@ -195,6 +208,99 @@ test("detail controls retain wrapping, show priority symbols and preserve read-o
   await expect(description).toHaveAttribute("wrap", "soft");
   await expect(description).toHaveCSS("word-break", "keep-all");
   await expect(save).toBeDisabled();
+});
+
+test("cancel requires confirmation, discards unsaved edits and preserves assignment", async ({
+  page,
+}) => {
+  await page.goto(story());
+  await expect(title(page)).toHaveValue("Connect the task table");
+  const status = detail(page).getByLabel("Status", { exact: true });
+  const cancel = detail(page).getByRole("button", {
+    name: "Cancel",
+    exact: true,
+  });
+  await title(page).fill("Unsaved draft");
+  await cancel.click();
+  const confirmation = page.getByRole("dialog", {
+    name: "Cancel task?",
+    exact: true,
+  });
+  await expect(confirmation).toContainText("Unsaved edits will be discarded");
+  await confirmation
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
+  await expect(status).toContainText("In progress");
+  await expect(title(page)).toHaveValue("Unsaved draft");
+  await cancel.click();
+  await confirmation
+    .getByRole("button", { name: "Cancel task", exact: true })
+    .click();
+  await expect(confirmation).toHaveCount(0);
+  await expect(status).toContainText("Canceled");
+  await expect(title(page)).toHaveValue("Connect the task table");
+  await expect(cancel).toBeDisabled();
+  await expect(
+    detail(page).getByRole("link", { name: /UI refinement/ }),
+  ).toBeVisible();
+  await expect(
+    detail(page).getByRole("button", { name: "Release", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page
+    .getByRole("link", {
+      name: "Open task: Connect the task table",
+      exact: true,
+    })
+    .click();
+  await expect(status).toContainText("Canceled");
+});
+
+test("cancel refuses stale versions and preserves the draft for reload", async ({
+  page,
+}) => {
+  await page.goto(story());
+  await expect(title(page)).toHaveValue("Connect the task table");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page
+    .getByRole("link", {
+      name: "Open task: Implement Task MCP tools",
+      exact: true,
+    })
+    .click();
+  await title(page).fill("Keep this draft");
+  await page
+    .getByRole("button", { name: "Simulate agent update", exact: true })
+    .click();
+  await expect(
+    detail(page).getByText(
+      "This task was updated elsewhere. Reload to edit its latest version.",
+    ),
+  ).toBeVisible();
+  await detail(page)
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
+  const confirmation = page.getByRole("dialog", {
+    name: "Cancel task?",
+    exact: true,
+  });
+  await confirmation
+    .getByRole("button", { name: "Cancel task", exact: true })
+    .click();
+  await expect(confirmation.getByRole("alert")).toContainText(
+    "Your edits are preserved",
+  );
+  await expect(title(page)).toHaveValue("Keep this draft");
+  await confirmation
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
+  await detail(page)
+    .getByRole("button", { name: "Reload latest task", exact: true })
+    .click();
+  await expect(title(page)).toHaveValue("Agent updated the task");
+  await expect(
+    detail(page).getByLabel("Status", { exact: true }),
+  ).toContainText("In progress");
 });
 
 test("description keeps words whole and control markers preserve text, selection and scroll", async ({
@@ -471,7 +577,7 @@ test("task details use resource panels with information and actions beside the l
   await expect(
     actions.getByRole("button", { name: "Save", exact: true }),
   ).toBeVisible();
-  for (const label of ["Release", "Save", "Discard changes"]) {
+  for (const label of ["Release", "Cancel", "Save", "Discard changes"]) {
     const button = actions.getByRole("button", { name: label, exact: true });
     await expect(button).toHaveAttribute("data-section-action", "button");
     await expect(button).toHaveCSS("border-radius", "16px");

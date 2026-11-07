@@ -252,7 +252,9 @@ share the first row, followed by Alias. Project, assignment and creation source
 share one metadata row, with Created and Updated together at the bottom.
 Navigation values expand back across their label inset like form inputs, with
 section-sized gaps between the buttons. Created and Updated show local timestamps
-without a visible UTC offset. Release, Save and Discard changes use individual
+without a visible UTC offset. Priority retains its input background at the same
+height as Account editable values; its selected menu row fills the menu width.
+Release, Cancel, Save and Discard changes use individual
 panel buttons matching the Project detail actions, with icons and hover labels.
 Session and project links reuse the resource navigation buttons, including their
 upper-right arrow. The
@@ -266,6 +268,12 @@ the version precondition, including after the owning session was removed. It
 does not stop an agent. Manual claim/reassignment is left to the agent tools;
 the browser provides explicit operator recovery without bypassing the API's
 ownership rules.
+
+Cancel requires confirmation and patches only the status to Canceled using the
+observed version, without impersonating the owner or clearing its assignment.
+It does not stop an agent or session. Unsaved edits are discarded only after a
+successful action; a version conflict preserves the draft for explicit reload.
+Cancel is disabled for Done and Canceled tasks.
 
 The URL preserves project, selected Task and optional owner/run selection.
 Clear an owner/run filter to see the whole project.
