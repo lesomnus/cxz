@@ -1,3 +1,12 @@
+/* The viewport clips rows; the surrounding card must let the rail sit outside. */
+.panel.panel :global(.card-body),
+.panel > [data-enter-effect],
+.panel > [data-enter-effect] > [data-enter-effect] {
+  overflow: visible;
+}
+.panel.panel :global(.card-body) {
+  margin-bottom: var(--ui-control-inset);
+}
 .list {
   height: min(390px, calc(100dvh - 160px));
   min-height: 0;

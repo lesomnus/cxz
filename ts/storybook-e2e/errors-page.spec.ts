@@ -31,7 +31,11 @@ test("dialog and independent page share errors, tabs, dismiss and clear history"
   await trigger.click();
   await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
   await expect(dialog).toContainText("Dismissed");
-  await dialog
+  await expect(
+    dialog.getByRole("button", { name: "Clear history", exact: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await main
     .getByRole("button", { name: "Clear history", exact: true })
     .click();
   await expect(main).toContainText("No error history");
