@@ -62,7 +62,7 @@ test("file tab actions copy the current path, retain the active file and close e
 });
 
 for (const theme of ["dark", "light"])
-  test(`viewer owns padding around rounded tab/editor content and keeps resizing available in ${theme}`, async ({
+  test(`viewer owns padding and only Monaco has radius while resizing stays available in ${theme}`, async ({
     page,
   }, testInfo) => {
     const editor = await open(page, "tabs", theme);
@@ -81,7 +81,12 @@ for (const theme of ["dark", "light"])
         const css = getComputedStyle(content);
         const outer = getComputedStyle(viewer);
         return {
-          radius: css.borderRadius,
+          radius: getComputedStyle(monaco.closest(".code-editor")!)
+            .borderRadius,
+          contentRadius: css.borderRadius,
+          editorAreaRadius: getComputedStyle(
+            monaco.closest(".code-editor")!.parentElement!,
+          ).borderRadius,
           token: css.getPropertyValue("--ui-section-radius").trim(),
           padding: [
             outer.paddingTop,
@@ -105,6 +110,15 @@ for (const theme of ["dark", "light"])
         };
       });
     expect(surface.radius).toBe(surface.token);
+    expect(surface.contentRadius).toBe("0px");
+    expect(surface.editorAreaRadius).toBe("0px");
+    await expect(editor).not.toContainText("Read only");
+    await expect(
+      editor.getByRole("combobox", {
+        name: "Syntax highlighting",
+        exact: true,
+      }),
+    ).toHaveText("Auto");
     expect(surface.padding).toEqual(Array(4).fill(surface.inset));
     expect(surface.viewerBackground).toBe(surface.explorerBackground);
     expect(surface.contentBackground).toBe(surface.monacoBackground);
@@ -204,6 +218,61 @@ test("the file menu stays on the right while overflowing tabs scroll", async ({
     .getByRole("menuitem", { name: "Close other tabs", exact: true })
     .click();
   await expect(editor.getByRole("tab")).toHaveCount(1);
+});
+
+test("automatic syntax detection colors Python, Dockerfile and Protobuf and a file override keeps the editor", async ({
+  page,
+}) => {
+  const editor = await open(page, "syntax-highlighting");
+  const picker = editor.getByRole("combobox", {
+    name: "Syntax highlighting",
+    exact: true,
+  });
+  const colors = () =>
+    editor
+      .locator(".view-lines")
+      .evaluate(
+        (node) =>
+          new Set(
+            [...node.querySelectorAll("span")]
+              .filter((span) => span.textContent?.trim())
+              .map((span) => getComputedStyle(span).color),
+          ).size,
+      );
+  await expect(picker).toHaveText("Auto");
+  for (const name of ["script.py", "Dockerfile", "api.proto"]) {
+    await editor.getByRole("tab", { name, exact: true }).click();
+    await expect
+      .poll(colors, {
+        message: `${name} should be tokenized and painted in multiple syntax colors`,
+      })
+      .toBeGreaterThan(1);
+  }
+  await editor.getByRole("tab", { name: "scratch", exact: true }).click();
+  await expect.poll(colors).toBe(1);
+  const element = await editor.locator(".monaco-editor").elementHandle();
+  await picker.click();
+  await page.getByRole("option", { name: "TypeScript", exact: true }).click();
+  await expect.poll(colors).toBeGreaterThan(1);
+  expect(
+    await editor
+      .locator(".monaco-editor")
+      .evaluate((node, original) => node === original, element),
+  ).toBe(true);
+  await expect(editor.locator(".view-lines")).toContainText(
+    "export const answer = 42",
+  );
+  await editor.getByRole("tab", { name: "script.py", exact: true }).click();
+  await expect(picker).toHaveText("Auto");
+  await editor.getByRole("tab", { name: "scratch", exact: true }).click();
+  await expect(picker).toHaveText("TypeScript");
+  await picker.click();
+  await page.getByRole("option", { name: "Auto", exact: true }).click();
+  await expect.poll(colors).toBe(1);
+  await picker.click();
+  await page.getByRole("option", { name: /plain text/i }).click();
+  await expect(picker).toHaveText(/plain text/i);
+  await expect.poll(colors).toBe(1);
 });
 
 test("Markdown preview toggles per file, shares the rendered surface and disables unsupported files", async ({

@@ -418,6 +418,9 @@ export const messages = {
   "Close details": "Close details",
   "Close file preview": "Close file preview",
   "File actions": "File actions",
+  Auto: "Auto",
+  "Plain text": "Plain text",
+  "Syntax highlighting": "Syntax highlighting",
   Preview: "Preview",
   "Preview is available for Markdown files.":
     "Preview is available for Markdown files.",

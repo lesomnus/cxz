@@ -17,7 +17,21 @@ const sources = {
   "/workspace/package.json":
     '{\n  "name": "workspace-preview",\n  "private": true\n}\n',
 };
-function fixture(manyTabs: boolean, empty: boolean, rendered: boolean) {
+const syntaxSources = {
+  "/workspace/script.py":
+    "def greet(name):\n    # Highlight Python automatically\n    return f'Hello, {name}'\n\nprint(greet('world'))\n",
+  "/workspace/Dockerfile":
+    'FROM node:22-alpine\nWORKDIR /workspace\nCOPY . .\nRUN npm ci\nCMD ["npm", "start"]\n',
+  "/workspace/api.proto":
+    'syntax = "proto3";\npackage example;\nmessage Greeting {\n  string text = 1;\n}\n',
+  "/workspace/scratch": "export const answer = 42;\nconsole.log('hello');\n",
+};
+function fixture(
+  manyTabs: boolean,
+  empty: boolean,
+  rendered: boolean,
+  languageExamples: boolean,
+) {
   const project = create(ProjectSchema, {
     id: projectFixtureId(1),
     name: "Workspace preview",
@@ -28,6 +42,10 @@ function fixture(manyTabs: boolean, empty: boolean, rendered: boolean) {
   const files = empty
     ? []
     : Object.entries(sources).map(([path, text]) => ({ path, text }));
+  if (languageExamples)
+    files.push(
+      ...Object.entries(syntaxSources).map(([path, text]) => ({ path, text })),
+    );
   if (manyTabs)
     for (let i = 0; i < 16; i++)
       files.push({
@@ -39,7 +57,7 @@ function fixture(manyTabs: boolean, empty: boolean, rendered: boolean) {
       ...file,
       preview: rendered && file.path.endsWith(".md"),
     })),
-    active: files[0]?.path ?? "",
+    active: languageExamples ? "/workspace/script.py" : (files[0]?.path ?? ""),
   });
   const c = {
     inProcess: true,
@@ -53,6 +71,10 @@ function fixture(manyTabs: boolean, empty: boolean, rendered: boolean) {
                 { name: "src", directory: true },
                 { name: "package.json", directory: false },
                 { name: "slow.txt", directory: false },
+                ...Object.keys(syntaxSources).map((path) => ({
+                  name: path.split("/").at(-1)!,
+                  directory: false,
+                })),
               ]
             : [{ name: "main.ts", directory: false }];
         yield { entries };
@@ -62,7 +84,9 @@ function fixture(manyTabs: boolean, empty: boolean, rendered: boolean) {
         if (path.endsWith("slow.txt"))
           await new Promise((resolve) => setTimeout(resolve, 1500));
         const text =
-          sources[path as keyof typeof sources] ?? "A delayed file preview.\n";
+          sources[path as keyof typeof sources] ??
+          syntaxSources[path as keyof typeof syntaxSources] ??
+          "A delayed file preview.\n";
         const data = new TextEncoder().encode(text);
         yield { data, totalSize: BigInt(data.length) };
       },
@@ -79,8 +103,11 @@ function Preview({
   empty = false,
   drawer = false,
   rendered = false,
+  languageExamples = false,
 }) {
-  const [data] = useState(() => fixture(manyTabs, empty, rendered));
+  const [data] = useState(() =>
+    fixture(manyTabs, empty, rendered, languageExamples),
+  );
   const [open, setOpen] = useState(true);
   const editor = (
     <WorkspaceEditor
@@ -104,13 +131,19 @@ function Preview({
 const meta = {
   title: "Workspace/File editor",
   component: Preview,
-  args: { manyTabs: false, empty: false, drawer: false, rendered: false },
+  args: {
+    manyTabs: false,
+    empty: false,
+    drawer: false,
+    rendered: false,
+    languageExamples: false,
+  },
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component:
-          "The file explorer and viewer share one outer background. Viewer padding surrounds a rounded content surface containing the tab bar and Monaco area, both on the editor background. Section radius and compact inset tokens match resource pages. The status strip belongs to the viewer outside content. The eye button before the tab menu toggles rendered Markdown, remembers each file's mode, and is disabled for other files. Preview uses the conversation Markdown renderer and ScrollArea; returning to source restores the Monaco view. The tab menu copies the active container path, closes all/other tabs, and retains Connect/Disconnect. The explorer separator occupies the centered half of the pane and appears on hover, drag or keyboard focus. This preview uses real Monaco with simulated directory/download requests; slow.txt deliberately finishes late so tab closure can be checked during loading. No server is contacted.",
+          "The file explorer and viewer share one outer background. Viewer padding surrounds content containing the tab bar and editor area, both on the Monaco background. Only the Monaco surface has the resource-section radius. The footer's searchable syntax selector defaults to Auto, using registered filenames/extensions/shebangs; a manual language is retained per file and applied without replacing the editor/model. The eye button before the tab menu toggles rendered Markdown, remembers each file's mode, and is disabled for other files. Preview uses the conversation Markdown renderer and ScrollArea; returning to source restores the Monaco view. The tab menu copies the active container path, closes all/other tabs, and retains Connect/Disconnect. The explorer separator occupies the centered half of the pane and appears on hover, drag or keyboard focus. This preview uses real Monaco with simulated directory/download requests; slow.txt deliberately finishes late so tab closure can be checked during loading. No server is contacted.",
       },
     },
   },
@@ -119,6 +152,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Tabs: Story = {};
+export const SyntaxHighlighting: Story = { args: { languageExamples: true } };
 export const RenderedMarkdown: Story = { args: { rendered: true } };
 export const OverflowingTabs: Story = { args: { manyTabs: true } };
 export const Empty: Story = { args: { empty: true } };

@@ -419,6 +419,9 @@ export const messages = {
   "Close details": "세부 정보 닫기",
   "Close file preview": "파일 미리보기 닫기",
   "File actions": "파일 메뉴",
+  Auto: "자동 탐지",
+  "Plain text": "일반 텍스트",
+  "Syntax highlighting": "구문 강조",
   Preview: "미리보기",
   "Preview is available for Markdown files.":
     "Markdown 파일을 미리 볼 수 있습니다.",

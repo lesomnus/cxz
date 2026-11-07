@@ -14,7 +14,6 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border-radius: var(--ui-section-radius);
   background: var(--ui-shade-20);
 }
 .tabBar {
@@ -59,6 +58,9 @@
   min-height: 0;
   overflow: hidden;
 }
+.editorArea > :global(.code-editor) {
+  border-radius: var(--ui-section-radius);
+}
 .status {
   display: flex;
   justify-content: space-between;
@@ -72,6 +74,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.languagePicker.languagePicker {
+  display: flex;
+  flex: none;
+  width: calc(40 * var(--ui-space));
 }
 .divider {
   align-self: center;

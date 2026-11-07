@@ -12,7 +12,17 @@ import {
 import type { Project } from "#gen/cxz/project_pb";
 import type { ProjectPathEntry } from "#gen/cxz/project_svc_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
-import { ActionMenu, Button, ResizeHandle, ScrollArea } from "@lesomnus/nox";
+import {
+  ActionMenu,
+  Button,
+  ResizeHandle,
+  ScrollArea,
+  ValueMenu,
+} from "@lesomnus/nox";
+import {
+  getSourceEditorLanguages,
+  type SourceEditorLanguage,
+} from "@lesomnus/nox/editor";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { Markdown, MarkdownFileLinks } from "#src/shared/content/markdown.tsx";
 import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
@@ -26,6 +36,7 @@ type File = {
   text: string;
   view?: Monaco.editor.ICodeEditorViewState | null;
   preview?: boolean;
+  language?: string;
 };
 type Snapshot = {
   files: File[];
@@ -81,6 +92,21 @@ export function WorkspaceEditor({
     return state;
   });
   const value = useSyncExternalStore(state.subscribe, state.snapshot);
+  const [languages, setLanguages] = useState<SourceEditorLanguage[]>([]);
+  useEffect(() => {
+    if (!value.files.length) return;
+    let canceled = false;
+    void getSourceEditorLanguages()
+      .then((languages) => {
+        if (!canceled) setLanguages(languages);
+      })
+      .catch(() => {
+        // SourceEditor owns import failures; Auto and plain text remain available.
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [value.files.length > 0]);
   const fileArea = useRef<HTMLDivElement>(null);
   const filePane = usePaneWidth(
     fileArea,
@@ -487,13 +513,37 @@ export function WorkspaceEditor({
               <ErrorNotice className="editor-error" error={browseError} />
             )}
             <footer className={styles.status}>
-              <span>{active?.path.replace(root + "/", "") || ""}</span>
               <span>
-                {t("Read only")}
+                {active?.path.replace(root + "/", "") || ""}
                 {value.simulated && value.phase === "connected"
                   ? t(" · Simulated")
                   : ""}
               </span>
+              <div className={styles.languagePicker}>
+                <ValueMenu
+                  label={t("Syntax highlighting")}
+                  variant="compact"
+                  searchable
+                  disabled={!active}
+                  value={active?.language ?? "auto"}
+                  options={[
+                    { value: "auto", label: t("Auto") },
+                    ...(languages.length
+                      ? languages
+                      : [{ id: "plaintext", label: t("Plain text") }]
+                    ).map((language) => ({
+                      value: language.id,
+                      label: language.label,
+                    })),
+                  ]}
+                  choose={(language) => {
+                    if (!active) return;
+                    active.language =
+                      language === "auto" ? undefined : language;
+                    state.update({ files: [...state.value.files] });
+                  }}
+                />
+              </div>
             </footer>
           </div>
         </div>
@@ -530,6 +580,7 @@ function FileEditor({ file }: { file: File }) {
     <SourceEditor
       value={file.text}
       path={file.path}
+      languageId={file.language}
       ariaLabel={t("File preview: {path}", { path: file.path })}
       readOnly
       view={file.view}
