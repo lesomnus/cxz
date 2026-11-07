@@ -14,14 +14,14 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: var(--ui-shade-20);
+  background: transparent;
 }
 .tabBar {
   display: flex;
   flex: 0 0 auto;
   align-items: stretch;
   min-width: 0;
-  background: inherit;
+  background: transparent;
 }
 .tabBar > :global(.file-tabs) {
   flex: 1;
@@ -38,13 +38,14 @@
 .tabBar :global(.file-tab) {
   overflow: hidden;
   border-radius: var(--ui-space);
+  background: var(--ui-shade-20);
 }
 .tabBar :global(.file-tab button) {
   min-height: calc(7 * var(--ui-space));
   height: calc(7 * var(--ui-space));
 }
 .tabBar :global(.file-tab):has([aria-selected="true"]) {
-  background: var(--ui-section-background);
+  background: var(--ui-shade-20);
 }
 .tabBar :global(button[aria-selected="true"]) {
   background: transparent;
@@ -99,7 +100,7 @@
 .languagePicker.languagePicker {
   display: flex;
   flex: none;
-  width: calc(40 * var(--ui-space));
+  width: calc(20 * var(--ui-space));
 }
 .languagePicker :global(.value-menu[data-variant="compact"]) {
   --value-background: var(--ui-shade-20);

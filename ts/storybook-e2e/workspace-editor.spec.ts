@@ -113,11 +113,15 @@ for (const theme of ["dark", "light"])
           contentBackground: css.backgroundColor,
           tabBackground: getComputedStyle(content.firstElementChild!)
             .backgroundColor,
+          tabListBackground: getComputedStyle(tabs).backgroundColor,
+          tabEntryBackground: getComputedStyle(entries[0]).backgroundColor,
+          inactiveTabBackground: getComputedStyle(entries[1]).backgroundColor,
           monacoBackground: getComputedStyle(monaco).backgroundColor,
           editorAreaBackground: getComputedStyle(source.parentElement!)
             .backgroundColor,
           sourceBounds: source.getBoundingClientRect().toJSON(),
           pickerBackground: getComputedStyle(picker).backgroundColor,
+          pickerWidth: pickerBounds.width,
           pickerGaps: [
             pickerBounds.top - footerBounds.top,
             footerBounds.right - pickerBounds.right,
@@ -152,9 +156,13 @@ for (const theme of ["dark", "light"])
     ).toHaveText("Auto");
     expect(surface.padding).toEqual(Array(4).fill(surface.inset));
     expect(surface.viewerBackground).toBe(surface.explorerBackground);
-    expect(surface.contentBackground).toBe(surface.monacoBackground);
-    expect(surface.tabBackground).toBe(surface.monacoBackground);
+    expect(surface.contentBackground).toBe("rgba(0, 0, 0, 0)");
+    expect(surface.tabBackground).toBe("rgba(0, 0, 0, 0)");
+    expect(surface.tabListBackground).toBe("rgba(0, 0, 0, 0)");
+    expect(surface.tabEntryBackground).toBe(surface.monacoBackground);
+    expect(surface.inactiveTabBackground).toBe(surface.monacoBackground);
     expect(surface.pickerBackground).toBe(surface.monacoBackground);
+    expect(surface.pickerWidth).toBe(80);
     expect(surface.pickerGaps).toEqual(Array(3).fill(surface.pickerGaps[0]));
     expect(surface.tabRadius).not.toBe("0px");
     expect(surface.tabGaps).toEqual(Array(4).fill(parseFloat(surface.inset)));
@@ -278,6 +286,57 @@ test("the file menu stays on the right while overflowing tabs scroll", async ({
     .getByRole("menuitem", { name: "Close other tabs", exact: true })
     .click();
   await expect(editor.getByRole("tab")).toHaveCount(1);
+});
+
+test("syntax menu keeps its scrollbar outside the left edge and supports drag and keyboard scrolling", async ({
+  page,
+}, testInfo) => {
+  const editor = await open(page);
+  const picker = editor.getByRole("combobox", {
+    name: "Syntax highlighting",
+    exact: true,
+  });
+  await expect(editor.locator(".monaco-editor")).toBeVisible();
+  await picker.click();
+  const menu = page.getByRole("group", {
+    name: "Syntax highlighting choices",
+    exact: true,
+  });
+  const list = menu.getByRole("listbox");
+  const viewport = list.locator('[data-scroll-area="viewport"]');
+  const rail = list.locator('[data-scroll-area="rail"]');
+  const thumb = list.getByRole("scrollbar");
+  const handle = list.locator('[data-scroll-area="handle"]');
+  await expect(thumb).toBeVisible();
+  await handle.hover();
+  await expect(handle).toHaveCSS("opacity", "1");
+  await expect
+    .poll(async () => {
+      const surface = (await menu.boundingBox())!;
+      const bar = (await handle.boundingBox())!;
+      return surface.x - bar.x - bar.width;
+    })
+    .toBeGreaterThanOrEqual(1);
+  await page.screenshot({ path: testInfo.outputPath("syntax-menu.png") });
+  const bar = (await thumb.boundingBox())!;
+  const track = (await rail.boundingBox())!;
+  await page.mouse.move(bar.x + bar.width / 2, bar.y + bar.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(bar.x + bar.width / 2, track.y + track.height);
+  await page.mouse.up();
+  await expect
+    .poll(() =>
+      viewport.evaluate(
+        (node) => node.scrollHeight - node.clientHeight - node.scrollTop,
+      ),
+    )
+    .toBeLessThan(1);
+  await expect(menu).toBeVisible();
+  await thumb.press("Home");
+  await expect.poll(() => viewport.evaluate((node) => node.scrollTop)).toBe(0);
+  await thumb.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(picker).toBeFocused();
 });
 
 test("automatic syntax detection colors Python, Dockerfile and Protobuf and a file override keeps the editor", async ({
