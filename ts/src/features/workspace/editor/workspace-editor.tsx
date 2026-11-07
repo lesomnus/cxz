@@ -12,11 +12,13 @@ import {
 import type { Project } from "#gen/cxz/project_pb";
 import type { ProjectPathEntry } from "#gen/cxz/project_svc_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
-import { Button, ResizeHandle } from "@lesomnus/nox";
+import { ActionMenu, Button, ResizeHandle } from "@lesomnus/nox";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
 import { connectWorkspaceEditor } from "./editor-connect";
+import styles from "./workspace-editor.module.css";
 
 type File = {
   path: string;
@@ -91,6 +93,7 @@ export function WorkspaceEditor({
   const [loading, setLoading] = useState(new Set<string>());
   const [browseError, setBrowseError] = useState("");
   const pending = useRef(new Map<string, AbortController>());
+  const fileRequests = useRef(new Map<string, AbortController>());
   const desiredFile = useRef("");
   const [opening, setOpening] = useState("");
   const connectRequest = useRef<AbortController | null>(null);
@@ -98,6 +101,7 @@ export function WorkspaceEditor({
   useEffect(
     () => () => {
       pending.current.forEach((c) => c.abort());
+      fileRequests.current.forEach((c) => c.abort());
       connectRequest.current?.abort();
       if (state.value.phase === "connecting") state.update({ phase: "idle" });
     },
@@ -156,12 +160,12 @@ export function WorkspaceEditor({
       state.update({ active: path });
       return;
     }
-    if (pending.current.has(path)) {
+    if (fileRequests.current.has(path)) {
       setOpening(path);
       return;
     }
     const controller = new AbortController();
-    pending.current.set(path, controller);
+    fileRequests.current.set(path, controller);
     setOpening(path);
     try {
       const chunks: Uint8Array[] = [];
@@ -193,8 +197,10 @@ export function WorkspaceEditor({
       if (!controller.signal.aborted && desiredFile.current === path)
         setBrowseError(String(e));
     } finally {
-      pending.current.delete(path);
-      setOpening((current) => (current === path ? "" : current));
+      if (fileRequests.current.get(path) === controller) {
+        fileRequests.current.delete(path);
+        setOpening((current) => (current === path ? "" : current));
+      }
     }
   }
   useEffect(() => {
@@ -227,6 +233,114 @@ export function WorkspaceEditor({
     }
   }
   const active = value.files.find((f) => f.path === value.active);
+  function closeFiles(paths: Set<string>) {
+    for (const path of paths) {
+      fileRequests.current.get(path)?.abort();
+      fileRequests.current.delete(path);
+    }
+    const files = state.value.files.filter((file) => !paths.has(file.path));
+    const active = files.some((file) => file.path === state.value.active)
+      ? state.value.active
+      : (files.at(-1)?.path ?? "");
+    if (paths.has(desiredFile.current)) desiredFile.current = active;
+    setOpening((current) => (paths.has(current) ? "" : current));
+    state.update({ files, active });
+  }
+  function tabPaths() {
+    return [
+      ...state.value.files.map((file) => file.path),
+      ...fileRequests.current.keys(),
+    ];
+  }
+  const tabs = (
+    <div className={styles.tabBar}>
+      <div className="file-tabs" role="tablist" aria-label={t("Open files")}>
+        {value.files.map((file) => (
+          <div className="file-tab" key={file.path}>
+            <Button
+              role="tab"
+              aria-selected={file.path === value.active}
+              title={file.path}
+              onClick={() => {
+                if (state.value.phase === "connected" && !state.value.simulated)
+                  state.update({ phase: "idle", error: "" });
+                void open(file.path);
+              }}
+            >
+              {file.path.split("/").at(-1)}
+            </Button>
+            <Button
+              aria-label={t("Close {name}", {
+                name: file.path.split("/").at(-1)!,
+              })}
+              onClick={() => closeFiles(new Set([file.path]))}
+            >
+              <Icon name="close" />
+            </Button>
+          </div>
+        ))}
+      </div>
+      <div className={styles.tabActions}>
+        <ActionMenu
+          label={t("File actions")}
+          triggerClassName={styles.tabButton}
+          items={[
+            {
+              label: t("Copy file path"),
+              icon: <Icon name="copy" />,
+              disabled: !active,
+              run: () =>
+                active ? navigator.clipboard.writeText(active.path) : undefined,
+            },
+            {
+              label: t("Close all tabs"),
+              icon: <Icon name="close" />,
+              disabled: !value.files.length && !opening,
+              run: () => closeFiles(new Set(tabPaths())),
+            },
+            {
+              label: t("Close other tabs"),
+              icon: <Icon name="close" />,
+              disabled: !active || (value.files.length <= 1 && !opening),
+              run: () =>
+                closeFiles(
+                  new Set(
+                    tabPaths().filter((path) => path !== state.value.active),
+                  ),
+                ),
+            },
+            {
+              label:
+                value.phase === "connected"
+                  ? t("Disconnect")
+                  : value.phase === "connecting"
+                    ? t("Connecting…")
+                    : t("Connect"),
+              icon: (
+                <Icon
+                  name={value.phase === "connected" ? "close" : "open-external"}
+                />
+              ),
+              disabled: value.phase === "connecting",
+              run: () =>
+                value.phase === "connected"
+                  ? state.update({ phase: "idle", error: "" })
+                  : connect(),
+            },
+          ]}
+        />
+        {closePreview && (
+          <Button
+            className={styles.tabButton}
+            aria-label={t("Close file preview")}
+            onClick={closePreview}
+          >
+            <Icon name="close" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
   function tree(path: string, depth: number): React.ReactNode {
     return directories.get(path)?.map((entry) => {
       const target = path.replace(/\/$/, "") + "/" + entry.name;
@@ -264,51 +378,21 @@ export function WorkspaceEditor({
   }
   return (
     <aside className="workspace-editor" aria-label={t("Workspace editor")}>
-      <header>
-        <div>
-          <strong>{project.name || project.alias}</strong>
-          <small>
-            {value.phase === "connecting"
-              ? t("Connecting…")
-              : value.phase === "connected"
-                ? value.simulated
-                  ? t("Simulated connection")
-                  : t("Connected")
-                : t("File preview")}{" "}
-            · {value.workspace || root || t("Workspace unavailable")}
-          </small>
-        </div>
-        {closePreview && (
-          <Button
-            variant="toolbar"
-            aria-label={t("Close file preview")}
-            onClick={closePreview}
-          >
-            ×
-          </Button>
-        )}
-        {value.phase === "connected" ? (
-          <Button onClick={() => state.update({ phase: "idle", error: "" })}>
-            {t("Disconnect")}
-          </Button>
-        ) : (
-          <Button
-            disabled={value.phase === "connecting"}
-            onClick={() => void connect()}
-          >
-            {t("Connect")}
-          </Button>
-        )}
-      </header>
       {value.error && (
         <ErrorNotice className="editor-error" error={value.error} />
       )}
       {value.phase === "connected" && !value.simulated ? (
-        <iframe
-          key={frame}
-          title={t("VS Code workspace")}
-          src={`/editor/${encodeURIComponent(id)}/?folder=${encodeURIComponent(value.workspace)}`}
-        />
+        <div className="file-content">
+          {tabs}
+          <div className={styles.canvas}>
+            <iframe
+              className={styles.ide}
+              key={frame}
+              title={t("VS Code workspace")}
+              src={`/editor/${encodeURIComponent(id)}/?folder=${encodeURIComponent(value.workspace)}`}
+            />
+          </div>
+        </div>
       ) : (
         <div
           className="file-workbench"
@@ -334,54 +418,26 @@ export function WorkspaceEditor({
             {loading.has(root) && <small>{t("Loading files…")}</small>}
             {!root && <small>{t("Workspace unavailable.")}</small>}
           </nav>
-          <ResizeHandle {...filePane} label={t("Resize file explorer")} />
+          <ResizeHandle
+            {...filePane}
+            className={styles.divider}
+            label={t("Resize file explorer")}
+          />
           <div className="file-content">
-            <div
-              className="file-tabs"
-              role="tablist"
-              aria-label={t("Open files")}
-            >
-              {value.files.map((file) => (
-                <div className="file-tab" key={file.path}>
-                  <Button
-                    role="tab"
-                    aria-selected={file.path === value.active}
-                    title={file.path}
-                    onClick={() => void open(file.path)}
-                  >
-                    {file.path.split("/").at(-1)}
-                  </Button>
-                  <Button
-                    aria-label={t("Close {name}", {
-                      name: file.path.split("/").at(-1)!,
-                    })}
-                    onClick={() => {
-                      const files = state.value.files.filter(
-                        (f) => f.path !== file.path,
-                      );
-                      state.update({
-                        files,
-                        active:
-                          state.value.active === file.path
-                            ? (files.at(-1)?.path ?? "")
-                            : state.value.active,
-                      });
-                    }}
-                  >
-                    ×
-                  </Button>
+            {tabs}
+            <div className={styles.canvas}>
+              {opening ? (
+                <div className="file-empty" role="status">
+                  {t("Loading…")}
                 </div>
-              ))}
+              ) : active ? (
+                <FileEditor key={active.path} file={active} />
+              ) : (
+                <div className="file-empty">
+                  {t("Select a file to preview.")}
+                </div>
+              )}
             </div>
-            {opening ? (
-              <div className="file-empty" role="status">
-                {t("Loading…")}
-              </div>
-            ) : active ? (
-              <FileEditor key={active.path} file={active} />
-            ) : (
-              <div className="file-empty">{t("Select a file to preview.")}</div>
-            )}
             {browseError && (
               <ErrorNotice className="editor-error" error={browseError} />
             )}

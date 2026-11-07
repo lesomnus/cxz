@@ -1,0 +1,43 @@
+.tabBar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  min-width: 0;
+  background: var(--shade-24);
+}
+.tabBar > :global(.file-tabs) {
+  flex: 1;
+  min-width: 0;
+}
+.tabActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--ui-control-inset);
+  padding: var(--ui-control-inset);
+}
+.tabButton.tabButton {
+  width: calc(7 * var(--ui-space));
+  height: calc(7 * var(--ui-space));
+  min-height: 0;
+  padding: 0;
+  border-radius: var(--ui-space);
+}
+.canvas {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  margin: var(--ui-control-inset);
+  overflow: hidden;
+  border-radius: var(--ui-section-radius);
+  background: var(--ui-section-background);
+}
+.divider:not(:hover, :focus-visible, :active)::before {
+  background: transparent;
+}
+.ide {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

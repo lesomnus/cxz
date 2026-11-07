@@ -618,7 +618,6 @@ header strong {
     display: flex;
   }
 }
-.workspace-editor > header,
 .settings-file > header {
   flex: 0 0 auto;
   min-height: 56px;
@@ -626,21 +625,8 @@ header strong {
   border-bottom: 1px solid var(--shade-36);
   gap: 8px;
 }
-.workspace-editor > header > div,
 .settings-file > header > div {
   min-width: 0;
-}
-.workspace-editor > header strong,
-.workspace-editor > header small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.workspace-editor > iframe {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  border: 0;
 }
 .file-workbench {
   display: grid;
