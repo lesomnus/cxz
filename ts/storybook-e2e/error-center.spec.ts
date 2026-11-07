@@ -70,6 +70,7 @@ test("retains dismissed errors separately and recovers streams without a dialog 
   const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
   await action("Fail request").click();
   await trigger.click();
+  await dialog.getByRole("row").hover();
   await dialog.getByRole("button", { name: "Dismiss", exact: true }).click();
   await expect(trigger).not.toHaveAttribute("data-active");
   await dialog.getByRole("radio", { name: "History 1", exact: true }).click();

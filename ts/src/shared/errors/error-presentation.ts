@@ -78,7 +78,46 @@ const kindLabels = {
 export function shortReference(value: string) {
   return value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 }
+function rpcTargetLabel(entry: ClientError) {
+  const subject = entry.subject;
+  if (subject)
+    return (
+      subject.name ||
+      subject.alias ||
+      (subject.runtimeId || subject.id)?.slice(0, 7) ||
+      "—"
+    );
+  if (entry.target)
+    return entry.target
+      .split(" · ")
+      .map((part) => {
+        const serviceResource =
+          entry.origin.kind === "rpc"
+            ? entry.origin.service
+                .split(".")
+                .at(-1)!
+                .replace(/Service$/, "")
+            : "";
+        const partValue =
+          serviceResource &&
+          part.toLowerCase().startsWith(`${serviceResource.toLowerCase()}:`)
+            ? part.slice(serviceResource.length + 1).trim()
+            : part;
+        const value = partValue.replace(
+          /^(?:Session|Project|Account|Memory|Task|AuthBinding|Auth binding|session|project|account|authBinding|path):\s*/i,
+          "",
+        );
+        return /^(?:[a-f\d]{16,64}|[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12})$/i.test(
+          value,
+        )
+          ? value.slice(0, 7)
+          : value;
+      })
+      .join(" · ");
+  return (entry.session || entry.project)?.slice(0, 7) || "—";
+}
 function targetLabel(entry: ClientError) {
+  if (entry.origin.kind === "rpc") return rpcTargetLabel(entry);
   const subject = entry.subject;
   if (subject) {
     if (subject.name || subject.alias) return subject.name || subject.alias!;

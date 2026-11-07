@@ -8,7 +8,9 @@ with kind/status, operation, target, message, occurrence count and last-seen
 columns. Page rows expand their full message, timestamps and original diagnostic
 references. The dialog uses ErrorTable variant="dialog": its first line is the
 message and its second line has muted small kind-specific diagnostic values on
-the left, then elapsed time and count on the right. Dismiss is its only row button. Long messages and
+the left, then elapsed time and count on the right. Dismiss is its only row button. It is hidden at rest and fills the row height on
+a right-side gradient overlay on hover or keyboard focus, without reserving a
+button column. Touch devices keep it visible with content padding. Long messages and
 diagnostic summaries ellipsize to retain two lines, with the full text in native titles.
 History status is retained for assistive text and the row title. Details remain
 available from the independent page via the header link.
@@ -153,3 +155,12 @@ request bodies, socket query strings and arbitrary objects remain excluded.
 RPC dialog, HTTP dialog, Connection dialog, Runtime dialog and Client dialog
 stories preview these values directly. Catalog contracts verify both page and
 dialog rows expose each kind's evidence without expanding Details.
+
+
+RPC target cells and dialog summaries omit repeated resource kind prefixes. Real
+names/aliases are retained; ID-only references show exactly the first 7 characters,
+including legacy stored references. Full identifiers remain in page Details.
+Error row ages use Nox RelativeTime compact: English examples include "5m ago"
+and "in 2h"; other locales use their narrow relative units. The public component
+and formatter keep their existing long default. Nox Components/RelativeTime has
+fixed-clock compact, future, Korean and per-unit examples.

@@ -61,7 +61,7 @@ function ErrorRow({
           <div className={styles.mobileMeta}>
             {view.kind} · {status}
             <span>·</span>
-            <RelativeTime value={entry.lastSeen} />
+            <RelativeTime value={entry.lastSeen} compact />
             <span>×</span>
             <CompactNumber value={entry.count} mode="integer" digits={3} />
           </div>
@@ -70,7 +70,7 @@ function ErrorRow({
           <CompactNumber value={entry.count} mode="integer" digits={3} />
         </TableCell>
         <TableCell className={styles.time}>
-          <RelativeTime value={entry.lastSeen} />
+          <RelativeTime value={entry.lastSeen} compact />
         </TableCell>
         <TableCell className={styles.actions}>
           <div className={styles.rowActions}>
@@ -169,7 +169,11 @@ function DialogErrorRow({
   const status = t(statusLabel[entry.status]);
   const context = `${view.diagnostic}${view.target !== "—" ? ` · ${view.target}` : ""}`;
   return (
-    <TableRow data-status={entry.status} title={`${status} · ${view.target}`}>
+    <TableRow
+      className={styles.dialogRow}
+      data-status={entry.status}
+      title={`${status} · ${view.target}`}
+    >
       <TableCell className={styles.summary}>
         <span className={styles.srOnly}>{status}</span>
         <div className={styles.dialogMessage} title={entry.message}>
@@ -183,7 +187,7 @@ function DialogErrorRow({
             {context}
           </span>
           <span className={styles.dialogTime}>
-            <RelativeTime value={entry.lastSeen} />
+            <RelativeTime value={entry.lastSeen} compact />
           </span>
           <span
             className={styles.dialogCount}
@@ -192,17 +196,16 @@ function DialogErrorRow({
             <CompactNumber value={entry.count} mode="integer" digits={3} />
           </span>
         </div>
-      </TableCell>
-      <TableCell className={styles.actions}>
-        <div className={styles.rowActions}>
-          {entry.status === "active" && (
+        {entry.status === "active" && (
+          <div className={styles.dialogDismiss}>
             <ToolbarIconButton
+              className={styles.dismissButton}
               icon="close"
               label={t("Dismiss")}
               onClick={() => store.dismiss(entry.id)}
             />
-          )}
-        </div>
+          </div>
+        )}
       </TableCell>
     </TableRow>
   );
@@ -230,7 +233,6 @@ export function ErrorTable({
         {dialog ? (
           <colgroup>
             <col />
-            <col className={styles.dialogActionsColumn} />
           </colgroup>
         ) : (
           <colgroup>
@@ -269,7 +271,7 @@ export function ErrorTable({
             )
           ) : (
             <TableRow>
-              <TableCell colSpan={dialog ? 2 : 7} className={styles.empty}>
+              <TableCell colSpan={dialog ? 1 : 7} className={styles.empty}>
                 {tab === "active"
                   ? t("No active errors")
                   : t("No error history")}
