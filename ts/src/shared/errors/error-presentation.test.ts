@@ -81,7 +81,7 @@ it("uses aliases, short IDs, missing-target placeholder and a useful fallback fo
   });
   expect(presentError(errors.snapshot()[0])).toMatchObject({
     operation: "Future · Run Operation",
-    target: "Session 89502035…2d29",
+    target: "8950203",
   });
   errors.report("c", "offline", {
     origin: { kind: "client", operation: "unhandled-rejection" },
@@ -309,4 +309,56 @@ it("persists allowlisted runtime/client evidence, redacts source URLs, and valid
     column: undefined,
   });
   restored.flush();
+});
+
+it("omits repeated RPC resource kinds and renders only the first seven ID characters", () => {
+  const errors = new ClientErrors();
+  const origin = {
+    kind: "rpc",
+    service: "cxz.SessionService",
+    method: "Transcript",
+  } as const;
+  const id = "d9981aa9-9b88-8ff5-a112-136c99e59881";
+  const cases = [
+    { subject: { kind: "session" as const, id } },
+    {
+      subject: {
+        kind: "session" as const,
+        runtimeId: "d9981aa99b888ff5a112136c",
+      },
+    },
+    { session: id },
+    { target: `Session: ${id}` },
+  ];
+  for (const context of cases) {
+    errors.report("rpc", "offline", { origin, ...context });
+    expect(presentError(errors.snapshot()[0]).target).toBe("d9981aa");
+  }
+  errors.report("name", "offline", {
+    origin,
+    subject: { kind: "session", name: "Release review", id },
+  });
+  expect(presentError(errors.snapshot()[0]).target).toBe("Release review");
+  errors.report("alias", "offline", {
+    origin,
+    subject: { kind: "session", alias: "review", id },
+  });
+  expect(presentError(errors.snapshot()[0]).target).toBe("review");
+  errors.report("kind-only", "offline", {
+    origin,
+    subject: { kind: "session" },
+  });
+  expect(presentError(errors.snapshot()[0]).target).toBe("—");
+  errors.report("legacy-resource", "offline", {
+    origin: { kind: "rpc", service: "cxz.NotificationService", method: "Get" },
+    target: `Notification: ${id}`,
+  });
+  expect(presentError(errors.snapshot()[0]).target).toBe("d9981aa");
+  errors.report("runtime", "offline", {
+    origin: { kind: "runtime", operation: "project-status" },
+    subject: { kind: "project", id },
+  });
+  expect(presentError(errors.snapshot()[0]).target).toBe(
+    "Project d9981aa9…9881",
+  );
 });

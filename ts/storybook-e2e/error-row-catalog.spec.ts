@@ -117,18 +117,20 @@ for (const width of [1200, 390])
     const count = row.getByTitle("2 occurrences", { exact: true });
     const dismiss = row.getByRole("button", { name: "Dismiss", exact: true });
     await expect(count).toContainText("002");
-    const [m, o, d, c, x] = await Promise.all(
-      [message, operation, time, count, dismiss].map((node) =>
-        node.boundingBox(),
-      ),
+    const [m, o, d, c] = await Promise.all(
+      [message, operation, time, count].map((node) => node.boundingBox()),
     );
     expect(o!.y).toBeGreaterThanOrEqual(m!.y + m!.height);
     expect(o!.x).toBeCloseTo(m!.x, 0);
     expect(o!.x + o!.width).toBeLessThanOrEqual(d!.x);
     expect(d!.x + d!.width).toBeLessThanOrEqual(c!.x);
-    expect(c!.x + c!.width).toBeLessThanOrEqual(x!.x);
+    expect(c!.x + c!.width).toBeLessThanOrEqual(
+      (await row.boundingBox())!.x + (await row.boundingBox())!.width,
+    );
+    await expect(time).toHaveText("1m ago");
     expect(Math.abs(o!.y - d!.y)).toBeLessThan(3);
     expect(Math.abs(d!.y - c!.y)).toBeLessThan(3);
+    await row.hover();
     await dismiss.click();
     await expect(table).toContainText("No active errors");
   });
@@ -174,3 +176,79 @@ for (const { kind, key, values } of diagnosticCases)
           row.getByRole("button", { name: "Details", exact: true }),
         ).toHaveCount(0);
     });
+
+for (const dialog of [false, true])
+  test(`RPC ${dialog ? "dialog" : "page"} targets omit kind labels and use seven ID characters`, async ({
+    page,
+  }) => {
+    await page.goto(
+      `/iframe.html?id=workspace-errors-rows--rpc${dialog ? "-dialog" : ""}&viewMode=story`,
+    );
+    const row = page
+      .getByRole("table", { name: "Errors", exact: true })
+      .getByRole("row")
+      .filter({ hasText: "custom.PreviewService/BuildPreview" });
+    await expect(row).toContainText("d9981aa");
+    await expect(row).not.toContainText("Project d998");
+    await expect(row).not.toContainText("d9981aa9");
+  });
+
+for (const width of [1200, 390])
+  test(`dismiss overlay appears on hover/focus without reserving row width at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 850 });
+    await page.goto(
+      "/iframe.html?id=workspace-errors-rows--rpc-dialog&viewMode=story",
+    );
+    const row = page
+      .getByRole("row")
+      .filter({ hasText: "custom.PreviewService/BuildPreview" });
+    const dismiss = row.getByRole("button", { name: "Dismiss", exact: true });
+    const overlay = dismiss.locator("..");
+    await expect(overlay).toHaveCSS("opacity", "0");
+    await expect(overlay).toHaveCSS("pointer-events", "none");
+    // Wait for the card entrance before comparing overlay and row geometry.
+    await page.waitForTimeout(400);
+    const original = await row.boundingBox();
+    await row.hover();
+    await expect(overlay).toHaveCSS("opacity", "1");
+    await expect(overlay).toHaveCSS("background-image", /linear-gradient/);
+    const button = (await dismiss.boundingBox())!;
+    expect(button.height).toBeGreaterThanOrEqual(original!.height - 2);
+    expect(button.x + button.width).toBeCloseTo(
+      original!.x + original!.width,
+      0,
+    );
+    expect((await row.boundingBox())!.height).toBe(original!.height);
+    await page.mouse.move(0, 0);
+    await expect(overlay).toHaveCSS("opacity", "0");
+    await dismiss.focus();
+    await expect(overlay).toHaveCSS("opacity", "1");
+    await page.keyboard.press("Enter");
+    await expect(row).toHaveCount(0);
+  });
+
+test("touch devices expose a usable full-height dismiss button", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 850 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await page.goto(
+    "/iframe.html?id=workspace-errors-rows--rpc-dialog&viewMode=story",
+  );
+  const row = page
+    .getByRole("row")
+    .filter({ hasText: "custom.PreviewService/BuildPreview" });
+  const dismiss = row.getByRole("button", { name: "Dismiss", exact: true });
+  await expect(dismiss.locator("..")).toHaveCSS("opacity", "1");
+  await dismiss.tap();
+  await expect(row).toHaveCount(0);
+  await context.close();
+});

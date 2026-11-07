@@ -182,10 +182,8 @@
 }
 
 .dialogTable .summary {
+  position: relative;
   padding-block: 6px;
-}
-.dialogActionsColumn {
-  width: 32px;
 }
 .dialogMessage {
   overflow: hidden;
@@ -234,4 +232,51 @@
   margin-top: 2px;
   color: var(--ui-muted);
   font-size: 10px;
+}
+
+.dialogDismiss {
+  position: absolute;
+  inset: 0 0 1px auto;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  width: 56px;
+  padding-left: 24px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--ui-table-hover-background) 24px
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+.dialogRow:is(:hover, :focus-within) .dialogDismiss {
+  opacity: 1;
+  pointer-events: auto;
+}
+.dialogDismiss .dismissButton {
+  align-self: stretch;
+  width: 32px;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+}
+.dialogDismiss .dismissButton:focus-visible {
+  outline-offset: -2px;
+}
+@media (hover: none) {
+  .dialogDismiss {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .dialogRow[data-status="active"] .summary {
+    padding-right: calc(var(--ui-table-cell-padding) + 56px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialogDismiss {
+    transition: none;
+  }
 }

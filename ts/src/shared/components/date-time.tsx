@@ -13,6 +13,12 @@ export function DateTime({
 }) {
   return <NoxDateTime {...props} value={dateTimeDate(value)} empty="—" />;
 }
-export function RelativeTime({ value }: { value?: DateTimeValue }) {
-  return <NoxRelativeTime value={dateTimeDate(value)} />;
+export function RelativeTime({
+  value,
+  compact = false,
+}: {
+  value?: DateTimeValue;
+  compact?: boolean;
+}) {
+  return <NoxRelativeTime value={dateTimeDate(value)} compact={compact} />;
 }
