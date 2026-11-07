@@ -220,7 +220,7 @@ function TaskEditor({
     <FormField
       label="Priority"
       fullWidth={!task}
-      className={detailStyles.priorityField}
+      className={task ? detailStyles.priorityField : undefined}
     >
       {task ? (
         <ValueMenu

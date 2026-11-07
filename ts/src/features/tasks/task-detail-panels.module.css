@@ -94,6 +94,10 @@
 }
 .priorityField {
   --ui-form-control-padding-block: var(--ui-space);
+  row-gap: var(--ui-control-inset);
+}
+.priorityField > div {
+  margin-top: calc(-1 * var(--ui-space));
 }
 .controls {
   grid-template-columns: repeat(3, minmax(0, 1fr));
