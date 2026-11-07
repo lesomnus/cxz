@@ -1,6 +1,3 @@
-.scroll {
-  --ui-scroll-area-background: var(--ui-shade-20);
-}
 .empty {
   color: var(--ui-muted);
   font-size: 11px;

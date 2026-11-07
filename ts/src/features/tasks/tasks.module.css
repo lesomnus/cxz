@@ -4,7 +4,6 @@
   min-width: 0;
 }
 .body {
-  --ui-scroll-area-background: var(--ui-shade-20);
   flex: 1;
   min-height: 0;
 }

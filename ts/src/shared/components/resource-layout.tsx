@@ -8,7 +8,7 @@ import type { ComponentProps, ComponentPropsWithRef } from "react";
 import pageStyles from "./resource-page.module.css";
 import dashboardStyles from "./resource-dashboard.module.css";
 
-/** Own the width derivation and named container without transitive CSS composition. */
+/** Own page layout and surface; nested scroll areas inherit the page background. */
 export function ResourcePage({
   className = "",
   ...props

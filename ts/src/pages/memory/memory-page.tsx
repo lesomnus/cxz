@@ -163,7 +163,6 @@ export function MemoryPage({
         open={detailOpen}
         list={
           <PanelScroll
-            className={styles.scroll}
             contentClassName={pageStyles.contentPadding}
             scrollbarLabel="Shared memory scroll"
           >
@@ -205,7 +204,6 @@ export function MemoryPage({
         detail={
           detailOpen ? (
             <PanelScroll
-              className={styles.scroll}
               contentClassName={pageStyles.contentPadding}
               scrollbarLabel="Shared memory scroll"
             >

@@ -1,6 +1,3 @@
-.scroll {
-  --ui-scroll-area-background: var(--ui-shade-20);
-}
 .error {
   color: var(--ui-action-error-color);
   font-size: 12px;

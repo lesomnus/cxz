@@ -5,10 +5,12 @@ Its header has an Open errors page link to `/c/_/errors`; the standalone page
 uses the same live store, showing every status together with Active first. It follows the Projects/Tasks resource
 layout: an aligned top toolbar with history controls and a compact Nox table
 with an unlabeled status-icon column, kind, operation, target, message, occurrence count and last-seen
-columns. Row spacing and dividers share the Projects list stylesheet. Nox Table defaults
-to transparent; Errors rows keep that default. Its scroll surface matches the
-Projects page (`--ui-shade-20`), whose explicit same-color row background is
-local to Projects. Active uses a plain orange triangle, Stale a gray square and
+columns. Row spacing and dividers share the Projects list stylesheet. Nox Table and
+normal list rows stay transparent. ResourcePage owns the semantic
+`--resource-page-background` surface and supplies the same color to nested
+ScrollAreas; Projects, Tasks, Memory, Search, Accounts and Errors reuse it.
+Page components do not repeat background colors. Nested section scroll areas
+can still explicitly use their section surface. Active uses a plain orange triangle, Stale a gray square and
 Resolved a green circle; Dismissed keeps the hide icon.
 Details opens a Nox modal with the full message, timestamps and original diagnostic
 references; Escape and Close return focus to the row button. The dialog uses ErrorTable variant="dialog": its first line is the

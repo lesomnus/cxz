@@ -1,4 +1,6 @@
 .page {
+  --ui-scroll-area-background: var(--resource-page-background);
+  background: var(--resource-page-background);
   --resource-page-content-width: calc(
     2 * var(--resource-page-column-width) + var(--resource-page-column-gap)
   );
