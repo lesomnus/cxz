@@ -12,8 +12,9 @@ import {
 import type { Project } from "#gen/cxz/project_pb";
 import type { ProjectPathEntry } from "#gen/cxz/project_svc_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
-import { ActionMenu, Button, ResizeHandle } from "@lesomnus/nox";
+import { ActionMenu, Button, ResizeHandle, ScrollArea } from "@lesomnus/nox";
 import { Icon } from "#src/shared/icons/icon.tsx";
+import { Markdown, MarkdownFileLinks } from "#src/shared/content/markdown.tsx";
 import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
@@ -24,6 +25,7 @@ type File = {
   path: string;
   text: string;
   view?: Monaco.editor.ICodeEditorViewState | null;
+  preview?: boolean;
 };
 type Snapshot = {
   files: File[];
@@ -233,6 +235,12 @@ export function WorkspaceEditor({
     }
   }
   const active = value.files.find((f) => f.path === value.active);
+  const previewable =
+    !!active && /\.(md|markdown|mdown|mkd|mkdn)$/i.test(active.path);
+  const preview =
+    previewable &&
+    !!active?.preview &&
+    (value.phase !== "connected" || value.simulated);
   function closeFiles(paths: Set<string>) {
     for (const path of paths) {
       fileRequests.current.get(path)?.abort();
@@ -281,6 +289,33 @@ export function WorkspaceEditor({
         ))}
       </div>
       <div className={styles.tabActions}>
+        <Button
+          className={styles.tabButton}
+          aria-label={t("Preview")}
+          aria-pressed={preview}
+          disabled={!previewable || !!opening || value.phase === "connecting"}
+          title={
+            !previewable
+              ? t("Preview is available for Markdown files.")
+              : preview
+                ? t("View source")
+                : t("Preview")
+          }
+          onClick={() => {
+            if (!active || !previewable) return;
+            active.preview = !preview;
+            state.update({
+              files: [...state.value.files],
+              phase:
+                value.phase === "connected" && !value.simulated
+                  ? "idle"
+                  : value.phase,
+              error: "",
+            });
+          }}
+        >
+          <Icon name="show" />
+        </Button>
         <ActionMenu
           label={t("File actions")}
           triggerClassName={styles.tabButton}
@@ -433,6 +468,12 @@ export function WorkspaceEditor({
                   <div className="file-empty" role="status">
                     {t("Loading…")}
                   </div>
+                ) : active && preview ? (
+                  <FilePreview
+                    key={active.path}
+                    file={active}
+                    open={(path) => void open(path)}
+                  />
                 ) : active ? (
                   <FileEditor key={active.path} file={active} />
                 ) : (
@@ -458,6 +499,28 @@ export function WorkspaceEditor({
         </div>
       )}
     </aside>
+  );
+}
+
+function FilePreview({
+  file,
+  open,
+}: {
+  file: File;
+  open: (path: string) => void;
+}) {
+  useLocale();
+  return (
+    <ScrollArea
+      className={styles.preview}
+      contentClassName={styles.previewContent}
+      role="region"
+      aria-label={t("Markdown preview: {path}", { path: file.path })}
+    >
+      <MarkdownFileLinks.Provider value={{ open }}>
+        <Markdown text={file.text} />
+      </MarkdownFileLinks.Provider>
+    </ScrollArea>
   );
 }
 

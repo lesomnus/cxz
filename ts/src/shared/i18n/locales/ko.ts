@@ -419,6 +419,10 @@ export const messages = {
   "Close details": "세부 정보 닫기",
   "Close file preview": "파일 미리보기 닫기",
   "File actions": "파일 메뉴",
+  Preview: "미리보기",
+  "Preview is available for Markdown files.":
+    "Markdown 파일을 미리 볼 수 있습니다.",
+  "Markdown preview: {path}": "Markdown 미리보기: {path}",
   "Copy file path": "파일 경로 복사",
   "Close all tabs": "모든 탭 닫기",
   "Close other tabs": "다른 탭 닫기",

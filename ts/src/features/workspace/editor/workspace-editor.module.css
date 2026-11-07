@@ -49,6 +49,9 @@
   padding: 0;
   border-radius: var(--ui-space);
 }
+.tabButton[aria-pressed="true"] {
+  background: var(--ui-section-background);
+}
 .editorArea {
   display: flex;
   flex: 1;
@@ -70,8 +73,32 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.divider:not(:hover, :focus-visible, :active)::before {
-  background: transparent;
+.divider {
+  align-self: center;
+  height: 50%;
+}
+.divider::before {
+  border-radius: var(--ui-space);
+  opacity: 0;
+  transition: opacity var(--ui-button-background-duration) ease-out;
+}
+.divider:is(:hover, :focus-visible, :active)::before {
+  opacity: 1;
+}
+.preview {
+  --ui-scroll-area-background: var(--ui-shade-20);
+  min-width: 0;
+}
+.preview .previewContent {
+  padding: var(--ui-section-padding);
+}
+.previewContent > :global(.markdown) {
+  padding: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .divider::before {
+    transition: none;
+  }
 }
 .ide {
   width: 100%;

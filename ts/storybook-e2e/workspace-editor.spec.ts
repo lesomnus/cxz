@@ -131,15 +131,37 @@ for (const theme of ["dark", "light"])
     await page.mouse.move(0, 0);
     await expect
       .poll(() =>
-        divider.evaluate(
-          (node) => getComputedStyle(node, "::before").backgroundColor,
-        ),
+        divider.evaluate((node) => getComputedStyle(node, "::before").opacity),
       )
-      .toBe("rgba(0, 0, 0, 0)");
+      .toBe("0");
+    const handleBounds = (await divider.boundingBox())!;
+    const workbenchBounds = (await editor
+      .locator(".file-workbench")
+      .boundingBox())!;
+    expect(handleBounds.height).toBeCloseTo(workbenchBounds.height / 2, 1);
+    expect(handleBounds.y - workbenchBounds.y).toBeCloseTo(
+      workbenchBounds.height / 4,
+      1,
+    );
+    await divider.hover();
+    await expect
+      .poll(() =>
+        divider.evaluate((node) => getComputedStyle(node, "::before").opacity),
+      )
+      .toBe("1");
     const explorer = editor.getByRole("navigation", {
       name: "Workspace files",
     });
     const before = (await explorer.boundingBox())!.width;
+    await page.mouse.down();
+    await page.mouse.move(
+      handleBounds.x + 24,
+      handleBounds.y + handleBounds.height / 2,
+    );
+    await page.mouse.up();
+    await expect
+      .poll(async () => (await explorer.boundingBox())!.width)
+      .toBeGreaterThan(before);
     await divider.focus();
     await divider.press("ArrowRight");
     await expect
@@ -182,6 +204,87 @@ test("the file menu stays on the right while overflowing tabs scroll", async ({
     .getByRole("menuitem", { name: "Close other tabs", exact: true })
     .click();
   await expect(editor.getByRole("tab")).toHaveCount(1);
+});
+
+test("Markdown preview toggles per file, shares the rendered surface and disables unsupported files", async ({
+  page,
+}, testInfo) => {
+  const editor = await open(page, "rendered-markdown");
+  const toggle = editor.getByRole("button", { name: "Preview", exact: true });
+  await expect(toggle).toBeEnabled();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await toggle.click();
+  await expect(editor.locator(".monaco-editor")).toBeVisible();
+  const bounds = (await toggle.boundingBox())!;
+  const more = (await editor
+    .getByRole("button", { name: "File actions", exact: true })
+    .boundingBox())!;
+  expect(bounds.x + bounds.width).toBeLessThan(more.x);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  const preview = editor.getByRole("region", {
+    name: "Markdown preview: /workspace/README.md",
+    exact: true,
+  });
+  await expect(
+    preview.getByRole("heading", { name: "Workspace preview", exact: true }),
+  ).toBeVisible();
+  await expect(preview.getByRole("table")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("markdown-preview.png") });
+  await expect(preview.locator("[data-scroll-area=viewport]")).toHaveCount(1);
+  await expect(editor.locator(".monaco-editor")).toHaveCount(0);
+  await preview.getByRole("link", { name: "Open source", exact: true }).click();
+  await expect(
+    editor.getByRole("tab", { name: "main.ts", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(toggle).toBeDisabled();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await editor.getByRole("tab", { name: "README.md", exact: true }).click();
+  await expect(preview).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await toggle.click();
+  await expect(preview).toHaveCount(0);
+  await expect(editor.locator(".view-lines")).toContainText(
+    "# Workspace preview",
+  );
+  await expect(editor.locator(".monaco-editor textarea")).toHaveJSProperty(
+    "readOnly",
+    true,
+  );
+  await editor.getByRole("tab", { name: "package.json", exact: true }).click();
+  await expect(toggle).toBeDisabled();
+  await (await menu(page))
+    .getByRole("menuitem", { name: "Close all tabs", exact: true })
+    .click();
+  await expect(toggle).toBeDisabled();
+});
+
+test("returning from rendered preview restores the source scroll position", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1000, height: 300 });
+  const editor = await open(page);
+  await expect(editor.locator(".view-lines")).toBeVisible();
+  const firstVisibleLine = () =>
+    editor.locator(".monaco-editor").evaluate((node) => {
+      const bounds = node.getBoundingClientRect();
+      return [...node.querySelectorAll(".view-line")].find((line) => {
+        const box = line.getBoundingClientRect();
+        return box.bottom > bounds.top && box.top < bounds.bottom;
+      })?.textContent;
+    });
+  const first = await firstVisibleLine();
+  await editor.locator(".view-lines").hover();
+  await page.mouse.wheel(0, 240);
+  await expect.poll(firstVisibleLine).not.toBe(first);
+  const scrolled = await firstVisibleLine();
+  const toggle = editor.getByRole("button", { name: "Preview", exact: true });
+  await toggle.click();
+  await expect(
+    editor.getByRole("heading", { name: "Workspace preview", exact: true }),
+  ).toBeVisible();
+  await toggle.click();
+  await expect.poll(firstVisibleLine).toBe(scrolled);
 });
 
 test("closing tabs cancels file loads so a late response cannot reopen them", async ({

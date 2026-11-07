@@ -11,13 +11,13 @@ import styles from "./workspace-editor.stories.module.css";
 
 const sources = {
   "/workspace/README.md":
-    "# Workspace preview\n\nOpen files from the explorer or manage tabs from the menu.\n",
+    "# Workspace preview\n\nOpen files from the explorer or manage tabs from the menu.\n\n## Features\n\n- Keep a preview mode for each Markdown tab.\n- Return to the same source position.\n\n| File | View |\n| --- | --- |\n| Markdown | Rendered or source |\n| TypeScript | Source |\n\n```typescript\nexport const greeting = 'Hello, workspace';\nconsole.log(greeting);\n```\n\n[Open source](/workspace/src/main.ts)\n\n## Notes\n\nThis rendered document uses the conversation Markdown renderer.\n",
   "/workspace/src/main.ts":
     "export const greeting = 'Hello, workspace';\nconsole.log(greeting);\n",
   "/workspace/package.json":
     '{\n  "name": "workspace-preview",\n  "private": true\n}\n',
 };
-function fixture(manyTabs: boolean, empty: boolean) {
+function fixture(manyTabs: boolean, empty: boolean, rendered: boolean) {
   const project = create(ProjectSchema, {
     id: projectFixtureId(1),
     name: "Workspace preview",
@@ -34,7 +34,13 @@ function fixture(manyTabs: boolean, empty: boolean) {
         path: `/workspace/src/example-component-${i + 1}.tsx`,
         text: `export const example = ${i + 1};\n`,
       });
-  state.update({ files, active: files[0]?.path ?? "" });
+  state.update({
+    files: files.map((file) => ({
+      ...file,
+      preview: rendered && file.path.endsWith(".md"),
+    })),
+    active: files[0]?.path ?? "",
+  });
   const c = {
     inProcess: true,
     editors: new Map([[projectId(project), state]]),
@@ -68,8 +74,13 @@ function fixture(manyTabs: boolean, empty: boolean) {
   return { c, project };
 }
 
-function Preview({ manyTabs = false, empty = false, drawer = false }) {
-  const [data] = useState(() => fixture(manyTabs, empty));
+function Preview({
+  manyTabs = false,
+  empty = false,
+  drawer = false,
+  rendered = false,
+}) {
+  const [data] = useState(() => fixture(manyTabs, empty, rendered));
   const [open, setOpen] = useState(true);
   const editor = (
     <WorkspaceEditor
@@ -93,13 +104,13 @@ function Preview({ manyTabs = false, empty = false, drawer = false }) {
 const meta = {
   title: "Workspace/File editor",
   component: Preview,
-  args: { manyTabs: false, empty: false, drawer: false },
+  args: { manyTabs: false, empty: false, drawer: false, rendered: false },
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component:
-          "The file explorer and viewer share one outer background. Viewer padding surrounds a rounded content surface containing the tab bar and Monaco area, both on the editor background. Section radius and compact inset tokens match resource pages. The status strip belongs to the viewer outside content. The tab menu copies the active container path, closes all/other tabs, and retains Connect/Disconnect. The explorer separator still resizes on drag or keyboard focus. This preview uses real Monaco with simulated directory/download requests; slow.txt deliberately finishes late so tab closure can be checked during loading. No server is contacted.",
+          "The file explorer and viewer share one outer background. Viewer padding surrounds a rounded content surface containing the tab bar and Monaco area, both on the editor background. Section radius and compact inset tokens match resource pages. The status strip belongs to the viewer outside content. The eye button before the tab menu toggles rendered Markdown, remembers each file's mode, and is disabled for other files. Preview uses the conversation Markdown renderer and ScrollArea; returning to source restores the Monaco view. The tab menu copies the active container path, closes all/other tabs, and retains Connect/Disconnect. The explorer separator occupies the centered half of the pane and appears on hover, drag or keyboard focus. This preview uses real Monaco with simulated directory/download requests; slow.txt deliberately finishes late so tab closure can be checked during loading. No server is contacted.",
       },
     },
   },
@@ -108,6 +119,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Tabs: Story = {};
+export const RenderedMarkdown: Story = { args: { rendered: true } };
 export const OverflowingTabs: Story = { args: { manyTabs: true } };
 export const Empty: Story = { args: { empty: true } };
 export const NarrowPreview: Story = {

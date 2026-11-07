@@ -418,6 +418,10 @@ export const messages = {
   "Close details": "Close details",
   "Close file preview": "Close file preview",
   "File actions": "File actions",
+  Preview: "Preview",
+  "Preview is available for Markdown files.":
+    "Preview is available for Markdown files.",
+  "Markdown preview: {path}": "Markdown preview: {path}",
   "Copy file path": "Copy file path",
   "Close all tabs": "Close all tabs",
   "Close other tabs": "Close other tabs",
