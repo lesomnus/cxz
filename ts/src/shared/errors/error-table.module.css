@@ -12,6 +12,7 @@
   width: 100%;
 }
 .table {
+  --error-page-dismiss-size: 30px;
   --ui-table-row-height: var(--resource-table-control-size);
   --ui-table-row-gap: 0px;
   --ui-table-header-height: 28px;
@@ -41,7 +42,7 @@
   width: 72px;
 }
 .actionsColumn {
-  width: 28px;
+  width: var(--resource-table-control-size);
 }
 .dialogTable tbody tr {
   background: var(--ui-shade-20);
@@ -101,16 +102,24 @@
   white-space: nowrap;
 }
 .table .actions {
-  padding: var(--ui-control-inset);
+  position: relative;
+  padding: 0;
 }
 .rowActions {
-  display: flex;
-  align-items: start;
-  justify-content: flex-end;
+  position: absolute;
+  inset: 0;
+  container-type: size;
 }
-.rowActions button {
-  width: 24px;
-  min-height: 24px;
+.table .rowActions .pageDismissButton {
+  --resource-toolbar-icon-size: 12px;
+  /* Use the actual row height so the three gaps stay equal when text wraps. */
+  --dismiss-inset: calc((100cqh - var(--error-page-dismiss-size)) / 2);
+  position: absolute;
+  top: var(--dismiss-inset);
+  right: var(--dismiss-inset);
+  width: var(--error-page-dismiss-size);
+  height: var(--error-page-dismiss-size);
+  min-height: var(--error-page-dismiss-size);
   padding: 0;
 }
 .mobileMeta {
@@ -178,7 +187,7 @@
     display: none;
   }
   .actionsColumn {
-    width: 28px;
+    width: var(--resource-table-control-size);
   }
   .context {
     display: block;
