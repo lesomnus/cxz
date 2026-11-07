@@ -286,6 +286,53 @@ test("detail controls retain wrapping, show priority symbols and preserve read-o
   await expect(save).toBeDisabled();
 });
 
+test("Done is read-only while Working keeps its assignment locked", async ({
+  page,
+}) => {
+  await page.goto(story());
+  await expect(title(page)).toHaveValue("Connect the task table");
+  await expect(
+    detail(page).getByRole("button", { name: "Release", exact: true }),
+  ).toBeDisabled();
+  await expect(title(page)).toHaveJSProperty("readOnly", false);
+  await expect(
+    detail(page).getByRole("combobox", { name: "Priority", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page
+    .getByRole("link", {
+      name: "Open task: Verify claim concurrency",
+      exact: true,
+    })
+    .click();
+  await expect(
+    detail(page).getByLabel("Status", { exact: true }),
+  ).toContainText("Done");
+  for (const label of ["Title", "Alias", "Description"])
+    await expect(
+      detail(page).getByRole("textbox", { name: label, exact: true }),
+    ).toHaveJSProperty("readOnly", true);
+  await expect(
+    detail(page).getByRole("combobox", { name: "Priority", exact: true }),
+  ).toBeDisabled();
+  for (const label of ["Release", "Cancel", "Save", "Discard changes"])
+    await expect(
+      detail(page).getByRole("button", { name: label, exact: true }),
+    ).toBeDisabled();
+  await title(page).focus();
+  await page.keyboard.type("Cannot edit Done");
+  await expect(title(page)).toHaveValue("Verify claim concurrency");
+  await detail(page)
+    .getByRole("button", { name: "Show control characters", exact: true })
+    .click();
+  await expect(
+    detail(page).locator("[data-control-character-overlay]"),
+  ).toBeVisible();
+  await expect(
+    detail(page).getByRole("button", { name: "Copy: Task ID", exact: true }),
+  ).toBeEnabled();
+});
+
 test("cancel requires confirmation, discards unsaved edits and preserves assignment", async ({
   page,
 }) => {

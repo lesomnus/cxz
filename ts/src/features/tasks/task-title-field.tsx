@@ -5,11 +5,13 @@ export function TaskTitleField({
   id,
   value,
   disabled,
+  readOnly = false,
   change,
 }: {
   id: string;
   value: string;
   disabled: boolean;
+  readOnly?: boolean;
   change: (value: string) => void;
 }) {
   return (
@@ -24,13 +26,19 @@ export function TaskTitleField({
         rows={2}
         required
         disabled={disabled}
+        readOnly={readOnly}
         maxLength={256}
         value={value}
         onChange={(event) =>
           change(event.target.value.replace(/[\r\n]+/g, " "))
         }
         onKeyDown={(event) => {
-          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+          if (
+            readOnly ||
+            event.key !== "Enter" ||
+            event.nativeEvent.isComposing
+          )
+            return;
           event.preventDefault();
           const form = event.currentTarget.form;
           const submit = form?.querySelector<HTMLButtonElement>(

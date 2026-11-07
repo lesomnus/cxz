@@ -97,8 +97,9 @@ aliases before forwarding; the runtime independently checks the project scope.
   Reconnect for a fresh snapshot; this is not a replayable event journal.
 - **Patch** updates alias, name, description, priority, labels and status using the
   `date_updated` returned by a read. Force updates and direct ownership edits
-  are rejected. Ordinary unassigned work cannot enter In progress/Waiting
-  through Patch. Owned work returns to Todo through Release. A nonempty labels
+  are rejected. Done tasks reject every Patch, including no-op requests and
+  attempts to reopen or cancel them. Ordinary unassigned work cannot enter
+  In progress/Waiting through Patch. Owned work returns to Todo through Release. A nonempty labels
   map replaces the labels; `clear_labels: true` clears them with the same
   version check. An empty map alone means no edit, since protobuf maps have no
   presence. Combining a nonempty map and `clear_labels` is rejected.
@@ -107,15 +108,20 @@ aliases before forwarding; the runtime independently checks the project scope.
   Two competing claims cannot both win. Retrying for the same current owner
   run returns its current In progress/Waiting record.
 - **Release** compares the version and expected stored owner/run, clears
-  ownership and returns work to Todo. An operator can release stopped,
-  restarted or purged owners by naming their stored runtime ID/run. A stale
-  Release cannot clear a newer claim, even by the same session/run.
+  ownership and returns work to Todo. Working locks the assignee/run and rejects
+  Release, including after the owner stops, restarts or is purged. Move owned
+  work to Waiting or Canceled before releasing. An operator can cancel abandoned
+  Working work and then release it by naming its stored runtime ID/run. Done
+  tasks reject Release and Claim. A stale Release cannot clear a newer claim,
+  even by the same session/run.
 
 In progress, Waiting and Done transitions on owned work require `actor` to
 match the owner and its currently active run. Operators can cancel abandoned
 work or edit descriptive metadata without impersonating that owner. Completion
-retains ownership for attribution. There are no automatic lease expirations,
-automatic task completion or automatic reassignment when a session stops.
+retains ownership for attribution and makes the Task immutable. Include final
+metadata in the same Patch that marks Done; subsequent edits are rejected.
+There are no automatic lease expirations, automatic task completion or automatic
+reassignment when a session stops.
 
 The generated generic Apply/Erase methods are deliberately closed. Use the
 versioned operations above and cancel Tasks rather than deleting shared work
@@ -268,8 +274,11 @@ together.
 The Task status labeled Working corresponds to the unchanged IN_PROGRESS API value.
 
 Stopped, unavailable and previous-run owners are flagged rather than silently
-reassigned. Release requires confirmation and clears the stored owner/run under
-the version precondition, including after the owning session was removed. It
+reassigned. Done fields are read-only and all resource mutation actions are
+disabled. Working disables Release because it changes ownership; descriptive
+fields remain editable. For Waiting/Canceled work, Release requires confirmation
+and clears the stored owner/run under the version precondition, including after
+the owning session was removed. It
 does not stop an agent. Manual claim/reassignment is left to the agent tools;
 the browser provides explicit operator recovery without bypassing the API's
 ownership rules.

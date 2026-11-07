@@ -17,6 +17,7 @@ export function TaskDescriptionField({
   id,
   value,
   disabled,
+  readOnly = false,
   change,
   options,
   setOptions,
@@ -24,6 +25,7 @@ export function TaskDescriptionField({
   id: string;
   value: string;
   disabled: boolean;
+  readOnly?: boolean;
   change: (value: string) => void;
   options: TaskDescriptionOptions;
   setOptions: (options: TaskDescriptionOptions) => void;
@@ -75,6 +77,7 @@ export function TaskDescriptionField({
         wrap="soft"
         rows={5}
         disabled={disabled}
+        readOnly={readOnly}
         maxLength={65536}
         value={value}
         onChange={(event) => change(event.target.value)}

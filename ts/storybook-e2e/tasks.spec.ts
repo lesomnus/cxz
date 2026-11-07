@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const taskPage =
   "/iframe.html?id=resources-tasks--project-table&viewMode=story";
-test("task table creates and edits work, and releases a stopped owner's task only after confirmation", async ({
+test("task table edits work and recovers stopped Working ownership through Cancel then Release", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -102,6 +102,17 @@ test("task table creates and edits work, and releases a stopped owner's task onl
       exact: true,
     })
     .click();
+  await expect(
+    detail.getByRole("button", { name: "Release", exact: true }),
+  ).toBeDisabled();
+  await detail.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Cancel task?", exact: true })
+    .getByRole("button", { name: "Cancel task", exact: true })
+    .click();
+  await expect(detail.getByLabel("Status", { exact: true })).toContainText(
+    "Canceled",
+  );
   await detail.getByRole("button", { name: "Release", exact: true }).click();
   const confirm = page.getByRole("dialog", {
     name: "Release task?",

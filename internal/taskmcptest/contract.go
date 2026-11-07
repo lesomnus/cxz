@@ -151,6 +151,7 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	}
 	reject(b, "task_claim", change(v))
 	reject(b, "task_release", change(v))
+	reject(a, "task_release", change(v))
 	for _, update := range []map[string]any{{"status": "canceled"}, {"name": "Overwrite owned work"}} {
 		update["ref"], update["version"] = v.ID, v.Version
 		reject(b, "task_patch", update)
@@ -181,6 +182,13 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	if v.Status != "done" || v.Assignee != f.Actors[1].Session {
 		t.Fatalf("completion: %+v", v)
 	}
+	update = change(v)
+	update["desc"] = "Changed after completion"
+	reject(b, "task_patch", update)
+	update = change(v)
+	update["status"] = "canceled"
+	reject(b, "task_patch", update)
+	reject(b, "task_release", change(v))
 	foreign, err := resource.NewTaskServiceClient(conn).Add(ctx, resource.TaskAddRequest_builder{Project: f.OtherProject, ClientId: "foreign", Name: "Other project"}.Build())
 	if err != nil {
 		t.Fatal(err)

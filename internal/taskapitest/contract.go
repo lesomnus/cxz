@@ -305,13 +305,80 @@ func Run(t *testing.T, conn *grpc.ClientConn, f Fixture) {
 	_, err = client.List(ctx, resource.TaskListRequest_builder{Project: f.Project, After: "broken"}.Build())
 	wantCode(err, codes.InvalidArgument)
 
+	t.Run("completed tasks are immutable and Working assignments are locked", func(t *testing.T) {
+		v := add("immutable-completed")
+		actor := f.Actors[0]
+		working, err := client.Claim(ctx, resource.TaskClaimRequest_builder{Ref: ref(v), DateUpdated: v.GetDateUpdated(), Actor: actor}.Build())
+		if err != nil {
+			t.Fatal(err)
+		}
+		before := get(working)
+		_, err = client.Release(ctx, resource.TaskClaimRequest_builder{Ref: ref(working), DateUpdated: working.GetDateUpdated(), Actor: actor}.Build())
+		wantCode(err, codes.FailedPrecondition)
+		_, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(working), DateUpdated: working.GetDateUpdated(), Assignee: proto.String("replacement")}.Build())
+		wantCode(err, codes.InvalidArgument)
+		_, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(working), DateUpdated: working.GetDateUpdated(), AssigneeRun: proto.String("replacement-run")}.Build())
+		wantCode(err, codes.InvalidArgument)
+		for _, other := range f.Actors[1:] {
+			_, err = client.Claim(ctx, resource.TaskClaimRequest_builder{Ref: ref(working), DateUpdated: working.GetDateUpdated(), Actor: other}.Build())
+			wantCode(err, codes.FailedPrecondition)
+		}
+		retry, err := client.Claim(ctx, resource.TaskClaimRequest_builder{Ref: ref(working), DateUpdated: working.GetDateUpdated(), Actor: actor}.Build())
+		if err != nil || !proto.Equal(retry.GetDateUpdated(), working.GetDateUpdated()) {
+			t.Fatalf("same-owner retry mutated Working: %v %v", retry, err)
+		}
+		if !proto.Equal(before, get(working)) {
+			t.Fatal("rejected ownership change mutated Working")
+		}
+		done, err := client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(working), DateUpdated: working.GetDateUpdated(), Actor: actor, Status: resource.TaskStatus_TASK_STATUS_DONE.Enum(), Name: proto.String("Final outcome"), Desc: proto.String("Final notes"), Priority: proto.Int32(3)}.Build())
+		if err != nil {
+			t.Fatal(err)
+		}
+		before = get(done)
+		for name, request := range map[string]resource.TaskPatchRequest_builder{
+			"no-op": {}, "name": {Name: proto.String("changed")}, "alias": {Alias: proto.String("changed-alias")},
+			"description": {Desc: proto.String("changed")}, "priority": {Priority: proto.Int32(1)},
+			"labels": {Labels: map[string]string{"changed": "yes"}}, "clear labels": {ClearLabels: proto.Bool(true)},
+			"reopen": {Status: resource.TaskStatus_TASK_STATUS_TODO.Enum()}, "cancel": {Status: resource.TaskStatus_TASK_STATUS_CANCELED.Enum()}, "done retry": {Status: resource.TaskStatus_TASK_STATUS_DONE.Enum()},
+		} {
+			t.Run(name, func(t *testing.T) {
+				request.Ref, request.DateUpdated, request.Actor = ref(done), done.GetDateUpdated(), actor
+				_, err := client.Patch(ctx, request.Build())
+				if status.Code(err) != codes.FailedPrecondition {
+					t.Fatalf("completed mutation: %v", err)
+				}
+			})
+		}
+		_, err = client.Claim(ctx, resource.TaskClaimRequest_builder{Ref: ref(done), DateUpdated: done.GetDateUpdated(), Actor: actor}.Build())
+		wantCode(err, codes.FailedPrecondition)
+		_, err = client.Release(ctx, resource.TaskClaimRequest_builder{Ref: ref(done), DateUpdated: done.GetDateUpdated(), Actor: actor}.Build())
+		wantCode(err, codes.FailedPrecondition)
+		_, err = client.Apply(ctx, resource.TaskApplyRequest_builder{Ref: ref(done)}.Build())
+		wantCode(err, codes.PermissionDenied)
+		_, err = client.Erase(ctx, ref(done))
+		wantCode(err, codes.PermissionDenied)
+		duplicate := add("immutable-completed")
+		if duplicate.GetStatus() != resource.TaskStatus_TASK_STATUS_DONE || duplicate.GetName() != "Final outcome" || !proto.Equal(duplicate.GetDateUpdated(), done.GetDateUpdated()) {
+			t.Fatal("Add retry mutated Done")
+		}
+		if !proto.Equal(before, get(done)) {
+			t.Fatal("rejected mutation changed completed work")
+		}
+	})
 	if f.Restart != nil {
 		f.Restart(claimed.GetAssignee())
 		_, err = client.Claim(ctx, resource.TaskClaimRequest_builder{Ref: ref(claimed), Actor: winner.actor, DateUpdated: claimed.GetDateUpdated()}.Build())
 		wantCode(err, codes.FailedPrecondition)
 		_, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(claimed), Actor: winner.actor, DateUpdated: claimed.GetDateUpdated(), Status: resource.TaskStatus_TASK_STATUS_DONE.Enum()}.Build())
 		wantCode(err, codes.FailedPrecondition)
-		// An explicit release still recovers abandoned work using its stored owner.
+		// Working ownership remains locked even after the owner stops. An
+		// operator must cancel before releasing the abandoned assignment.
+		_, err = client.Release(ctx, resource.TaskClaimRequest_builder{Ref: ref(claimed), Actor: winner.actor, DateUpdated: claimed.GetDateUpdated()}.Build())
+		wantCode(err, codes.FailedPrecondition)
+		claimed, err = client.Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref(claimed), DateUpdated: claimed.GetDateUpdated(), Status: resource.TaskStatus_TASK_STATUS_CANCELED.Enum()}.Build())
+		if err != nil {
+			t.Fatal(err)
+		}
 		_, err = client.Release(ctx, resource.TaskClaimRequest_builder{Ref: ref(claimed), Actor: winner.actor, DateUpdated: claimed.GetDateUpdated()}.Build())
 		if err != nil {
 			t.Fatal(err)

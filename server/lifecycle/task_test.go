@@ -175,6 +175,13 @@ func TestTaskPersistenceAndPurgedSessionReference(t *testing.T) {
 	if err != nil || !proto.Equal(retried.GetDateUpdated(), saved.GetDateUpdated()) {
 		t.Fatalf("creation retry after source purge: %v %v", retried, err)
 	}
+	if _, err := rebuilt.Task().Release(ctx, resource.TaskClaimRequest_builder{Ref: ref, Actor: actor, DateUpdated: saved.GetDateUpdated()}.Build()); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("Working assignment changed after purge: %v", err)
+	}
+	saved, err = rebuilt.Task().Patch(ctx, resource.TaskPatchRequest_builder{Ref: ref, DateUpdated: saved.GetDateUpdated(), Status: resource.TaskStatus_TASK_STATUS_CANCELED.Enum()}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := rebuilt.Task().Release(ctx, resource.TaskClaimRequest_builder{Ref: ref, Actor: actor, DateUpdated: saved.GetDateUpdated()}.Build()); err != nil {
 		t.Fatal(err)
 	}

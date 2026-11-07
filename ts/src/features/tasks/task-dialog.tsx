@@ -147,8 +147,19 @@ function TaskEditor({
         (task.dateUpdated?.seconds ?? 0n) &&
         (latest.dateUpdated?.nanos ?? 0) > (task.dateUpdated?.nanos ?? 0)));
   const owned = !!task?.assignee;
+  const immutable =
+    task?.status === TaskStatus.DONE || latest?.status === TaskStatus.DONE;
+  const assignmentLocked =
+    immutable ||
+    task?.status === TaskStatus.IN_PROGRESS ||
+    latest?.status === TaskStatus.IN_PROGRESS;
   async function mutate(action: "save" | "release" | "cancel" = "save") {
-    if (pending.current) return false;
+    if (
+      pending.current ||
+      immutable ||
+      (action === "release" && assignmentLocked)
+    )
+      return false;
     pending.current = true;
     busyState(true);
     setActiveAction(action);
@@ -254,7 +265,7 @@ function TaskEditor({
               icon: <TaskPrioritySymbol priority={value} />,
             }))}
             choose={(value) => setPriority(Number(value))}
-            disabled={busy}
+            disabled={busy || immutable}
           />,
         ],
         [
@@ -278,6 +289,7 @@ function TaskEditor({
         id={`${id}-title`}
         value={name}
         disabled={busy}
+        readOnly={immutable}
         change={setName}
       />
     ) : (
@@ -287,6 +299,7 @@ function TaskEditor({
           autoFocus={presentation === "dialog"}
           required
           disabled={busy}
+          readOnly={immutable}
           maxLength={256}
           value={name}
           onChange={(event) => setName(event.target.value)}
@@ -298,6 +311,7 @@ function TaskEditor({
       <input
         id={`${id}-alias`}
         disabled={busy}
+        readOnly={immutable}
         maxLength={63}
         value={alias}
         placeholder={task ? undefined : "Generated automatically"}
@@ -311,6 +325,7 @@ function TaskEditor({
         id={`${id}-description`}
         value={desc}
         disabled={busy}
+        readOnly={immutable}
         change={setDesc}
         options={descriptionOptions}
         setOptions={onDescriptionOptionsChange}
@@ -322,6 +337,7 @@ function TaskEditor({
           className={styles.description}
           rows={5}
           disabled={busy}
+          readOnly={immutable}
           maxLength={65536}
           value={desc}
           onChange={(event) => setDesc(event.target.value)}
@@ -334,11 +350,17 @@ function TaskEditor({
         <TaskActionButton
           panel={presentation === "page"}
           label="Release"
-          description="Release assignment and return to Todo"
+          description={
+            immutable
+              ? "Completed tasks are read-only"
+              : assignmentLocked
+                ? "Assignment is locked while Working"
+                : "Release assignment and return to Todo"
+          }
           icon="sign-out"
           type="button"
           loading={busy && activeAction === "release"}
-          disabled={busy}
+          disabled={busy || assignmentLocked}
           onClick={() => setConfirmation("release")}
         />
       )}
@@ -351,6 +373,7 @@ function TaskEditor({
           loading={busy && activeAction === "cancel"}
           disabled={
             busy ||
+            immutable ||
             conflict ||
             task.status === TaskStatus.DONE ||
             task.status === TaskStatus.CANCELED
@@ -367,6 +390,7 @@ function TaskEditor({
         loading={busy && activeAction === "save"}
         disabled={
           busy ||
+          immutable ||
           !name.trim() ||
           conflict ||
           (presentation === "page" && !dirty)

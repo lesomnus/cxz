@@ -322,6 +322,11 @@ export function taskFixture(
         patch: (request) => {
           const task = find(request);
           check(task, request);
+          if (task.status === TaskStatus.DONE)
+            throw new ConnectError(
+              "Completed tasks are immutable",
+              Code.FailedPrecondition,
+            );
           const fields = [
             "name",
             "alias",
@@ -343,6 +348,14 @@ export function taskFixture(
         release: (request) => {
           const task = find(request);
           check(task, request);
+          if (
+            task.status === TaskStatus.DONE ||
+            task.status === TaskStatus.IN_PROGRESS
+          )
+            throw new ConnectError(
+              "Task assignment is locked",
+              Code.FailedPrecondition,
+            );
           if (
             request.actor?.session?.key.value !== task.assignee ||
             request.actor?.runId !== task.assigneeRun

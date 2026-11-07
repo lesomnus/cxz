@@ -156,6 +156,13 @@ func version(at *timestamppb.Timestamp) error {
 	return nil
 }
 
+func editable(v *resource.Task) error {
+	if v.GetStatus() == resource.TaskStatus_TASK_STATUS_DONE {
+		return status.Error(codes.FailedPrecondition, "completed tasks are immutable")
+	}
+	return nil
+}
+
 func (s Service) actor(ctx context.Context, a *resource.TaskActor, p *resource.Project, active bool) (*resource.Session, error) {
 	if a.GetSession() == nil || a.GetRunId() == "" {
 		return nil, invalid("session and run_id are required")
@@ -185,6 +192,9 @@ func (s Service) Patch(ctx context.Context, r *resource.TaskPatchRequest) (*reso
 	}
 	v, err := s.read(ctx, r.GetRef())
 	if err != nil {
+		return nil, err
+	}
+	if err := editable(v); err != nil {
 		return nil, err
 	}
 	next := proto.Clone(v).(*resource.Task)
@@ -256,6 +266,9 @@ func (s Service) Claim(ctx context.Context, r *resource.TaskClaimRequest) (*reso
 	if err != nil {
 		return nil, err
 	}
+	if err := editable(v); err != nil {
+		return nil, err
+	}
 	a, err := s.actor(ctx, r.GetActor(), v.GetProject(), true)
 	if err != nil {
 		return nil, err
@@ -294,6 +307,12 @@ func (s Service) Release(ctx context.Context, r *resource.TaskClaimRequest) (*re
 	v, err := s.read(ctx, r.GetRef())
 	if err != nil {
 		return nil, err
+	}
+	if err := editable(v); err != nil {
+		return nil, err
+	}
+	if v.GetStatus() == resource.TaskStatus_TASK_STATUS_IN_PROGRESS {
+		return nil, status.Error(codes.FailedPrecondition, "assignment is locked while task is Working; move it to Waiting or Canceled before releasing")
 	}
 	// Release is an explicit operator action, not an automatic lease expiry.
 	// Resolve the expected session ID when it exists; a purged session can still
