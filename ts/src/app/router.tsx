@@ -169,9 +169,6 @@ const errorsRoute = createRoute({
   getParentRoute: () => connectionRoute,
   path: "errors",
   staticData: { resource: "errors" },
-  validateSearch: (s: Record<string, unknown>): { tab?: "history" } => ({
-    tab: s.tab === "history" ? "history" : undefined,
-  }),
 });
 const searchRoute = createRoute({
   getParentRoute: () => connectionRoute,
@@ -356,7 +353,6 @@ export function useWorkspaceRoute() {
     settingsTopic: match?.staticData.settingsTopic ?? "general",
     session: sessionRoute.useParams({ shouldThrow: false })?.sessionId ?? "",
     seq: sessionRoute.useSearch({ shouldThrow: false })?.seq,
-    errorTab: errorsRoute.useSearch({ shouldThrow: false })?.tab,
     account: accountRoute.useParams({ shouldThrow: false })?.accountId ?? "",
     project: projectRoute.useParams({ shouldThrow: false })?.projectId,
     tasks: {

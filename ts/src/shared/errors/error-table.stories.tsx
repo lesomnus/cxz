@@ -79,7 +79,7 @@ function RowCatalog({
       {dialog ? (
         <ErrorPanel store={store} tab={tab} onTabChange={setTab} />
       ) : (
-        <ErrorTable entries={entries} store={store} tab="active" />
+        <ErrorTable entries={entries} store={store} tab="all" />
       )}
     </main>
   );
@@ -139,7 +139,7 @@ export const RpcDetails: Story = {
     );
     row?.scrollIntoView({ block: "start" });
     row
-      ?.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')
+      ?.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')
       ?.click();
   },
 };
@@ -169,3 +169,5 @@ export const IncomingErrors: Story = {
     },
   },
 };
+
+export const IncomingPage: Story = { args: { live: true } };

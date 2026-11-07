@@ -105,7 +105,7 @@ test.each([
   },
 );
 
-test("Errors history is a direct bookmark with validated tab state", async () => {
+test("Errors accepts old bookmarks without filtering the unified list", async () => {
   const history = createMemoryHistory({
     initialEntries: ["/c/_/errors?tab=history"],
   });
@@ -116,7 +116,6 @@ test("Errors history is a direct bookmark with validated tab state", async () =>
   try {
     await router.load();
     expect(router.state.matches.at(-1)?.staticData.resource).toBe("errors");
-    expect(router.state.location.search).toMatchObject({ tab: "history" });
     expect(router.state.location.href).toBe("/c/_/errors?tab=history");
   } finally {
     history.destroy();

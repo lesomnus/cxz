@@ -70,7 +70,7 @@ for (const width of [1200, 390])
       0,
     );
     const title = header.locator("strong");
-    await expect(title).toHaveCSS("margin-left", "4px");
+    await expect(title).toHaveCSS("margin-left", "16px");
     const row = dialog.getByRole("row");
     await row.hover();
     const dismiss = row.getByRole("button", { name: "Dismiss", exact: true });

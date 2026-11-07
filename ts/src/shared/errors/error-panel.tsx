@@ -47,7 +47,7 @@ export function ErrorPanel({
           />
           <RouteLink
             {...resourceLocation("errors")}
-            search={{ tab: tab === "history" ? "history" : undefined }}
+            search={{}}
             variant="toolbar"
             className={styles.pageLink}
             aria-label={t("Open errors page")}

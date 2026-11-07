@@ -20,7 +20,7 @@ for (const kind of ["all", "rpc", "http", "connection", "runtime", "client"])
       .first();
     await first.click();
     await expect(
-      page.getByRole("region", { name: "Error details", exact: true }),
+      page.getByRole("dialog", { name: "Error details", exact: true }),
     ).toContainText(examples.at(-1)!.message);
   });
 
@@ -76,7 +76,7 @@ test("RPC details story exposes the full method while summary uses the readable 
   await page.goto(
     "/iframe.html?id=workspace-errors-rows--rpc-details&viewMode=story",
   );
-  const details = page.getByRole("region", {
+  const details = page.getByRole("dialog", {
     name: "Error details",
     exact: true,
   });
@@ -167,7 +167,7 @@ for (const { kind, key, values } of diagnosticCases)
       await expect(row).toHaveCount(1);
       await row.scrollIntoViewIfNeeded();
       await expect(
-        row.getByRole("region", { name: "Error details", exact: true }),
+        row.getByRole("dialog", { name: "Error details", exact: true }),
       ).toHaveCount(0);
       await expect(row).toContainText(key);
       for (const value of values) await expect(row).toContainText(value);

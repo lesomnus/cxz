@@ -5,7 +5,7 @@
   --ui-sliding-pages-easing: var(--error-tabs-easing);
 }
 .panel.panel:global(.floating-card) :global(.card-heading) > strong {
-  margin-left: var(--ui-space);
+  margin-left: calc(4 * var(--ui-space));
 }
 .panel.panel:global(.floating-card) :global(.card-heading) {
   min-height: 24px;
