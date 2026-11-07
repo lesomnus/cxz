@@ -1,3 +1,12 @@
+.panel {
+  --error-tabs-duration: 140ms;
+  --error-tabs-easing: ease-out;
+  --ui-sliding-pages-duration: var(--error-tabs-duration);
+  --ui-sliding-pages-easing: var(--error-tabs-easing);
+}
+.panel.panel:global(.floating-card) :global(.card-heading) > strong {
+  margin-left: var(--ui-space);
+}
 .panel.panel:global(.floating-card) :global(.card-heading) {
   min-height: 24px;
   padding: var(--ui-control-inset);
@@ -38,4 +47,17 @@
   width: 24px;
   min-height: 24px;
   padding: 0;
+}
+
+.headerControls :global(.segment-indicator) {
+  transition-duration: var(--error-tabs-duration);
+  transition-timing-function: var(--error-tabs-easing);
+}
+.pages {
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .headerControls :global(.segment-indicator) {
+    transition: none;
+  }
 }

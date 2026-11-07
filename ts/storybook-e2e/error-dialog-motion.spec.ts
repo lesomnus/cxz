@@ -69,16 +69,18 @@ for (const width of [1200, 390])
       outerInset,
       0,
     );
+    const title = header.locator("strong");
+    await expect(title).toHaveCSS("margin-left", "4px");
     const row = dialog.getByRole("row");
     await row.hover();
     const dismiss = row.getByRole("button", { name: "Dismiss", exact: true });
     const rowBox = (await row.boundingBox())!;
     const buttonBox = (await dismiss.boundingBox())!;
     expect(buttonBox.width).toBe(44);
-    expect(buttonBox.height).toBeGreaterThanOrEqual(rowBox.height - 1);
-    expect(buttonBox.y).toBeCloseTo(rowBox.y, 0);
+    expect(buttonBox.height).toBeGreaterThanOrEqual(rowBox.height - 5);
+    expect(buttonBox.y - rowBox.y).toBeCloseTo(inset, 0);
     expect(buttonBox.x + buttonBox.width).toBeCloseTo(
-      rowBox.x + rowBox.width,
+      rowBox.x + rowBox.width - inset,
       0,
     );
   });
@@ -88,13 +90,12 @@ test("only new error episodes slide down, not initial rows, count updates or tab
 }) => {
   await page.goto(live);
   const table = page.getByRole("table", { name: "Errors", exact: true });
+  const card = page.locator(".floating-card");
   const existing = table.getByRole("row").filter({ hasText: "Existing error" });
   await expect(existing).toBeVisible();
   await expect(existing).not.toHaveAttribute("data-animate-enter");
   await page.evaluate(() => {
-    const table = document.querySelector<HTMLTableElement>(
-      'table[aria-label="Errors"]',
-    )!;
+    const table = document.querySelector<HTMLElement>(".floating-card")!;
     table.dataset.entryAnimations = "0";
     table.addEventListener("animationstart", (event) => {
       if (
@@ -110,7 +111,7 @@ test("only new error episodes slide down, not initial rows, count updates or tab
   await page.getByRole("button", { name: "Add error", exact: true }).click();
   const first = table.getByRole("row").filter({ hasText: "New error 1" });
   await expect(first).toBeVisible();
-  await expect(table).toHaveAttribute("data-entry-animations", "1");
+  await expect(card).toHaveAttribute("data-entry-animations", "1");
   await expect(table.getByRole("row").first()).toContainText("New error 1");
   await expect(existing).not.toHaveAttribute("data-animate-enter");
   const frames = await first.evaluate((element) => {
@@ -136,9 +137,9 @@ test("only new error episodes slide down, not initial rows, count updates or tab
     first.getByTitle("2 occurrences", { exact: true }),
   ).toContainText("002");
   await page.waitForTimeout(300);
-  await expect(table).toHaveAttribute("data-entry-animations", "1");
+  await expect(card).toHaveAttribute("data-entry-animations", "1");
   await page.getByRole("button", { name: "Add error", exact: true }).click();
-  await expect(table).toHaveAttribute("data-entry-animations", "2");
+  await expect(card).toHaveAttribute("data-entry-animations", "2");
   const second = table.getByRole("row").filter({ hasText: "New error 2" });
   await second.hover();
   await second.getByRole("button", { name: "Dismiss", exact: true }).click();
@@ -147,7 +148,7 @@ test("only new error episodes slide down, not initial rows, count updates or tab
     "data-animate-enter",
   );
   await page.waitForTimeout(300);
-  await expect(table).toHaveAttribute("data-entry-animations", "2");
+  await expect(card).toHaveAttribute("data-entry-animations", "2");
 });
 
 test("new error rows respect reduced motion", async ({ page }) => {

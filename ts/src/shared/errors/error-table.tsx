@@ -237,11 +237,13 @@ export function ErrorTable({
   store,
   tab,
   variant = "page",
+  animateNewEntries = true,
 }: {
   entries: readonly ClientError[];
   store: ClientErrors;
   tab: string;
   variant?: "page" | "dialog";
+  animateNewEntries?: boolean;
 }) {
   useLocale();
   const dialog = variant === "dialog";
@@ -298,7 +300,7 @@ export function ErrorTable({
                   key={entry.id}
                   entry={entry}
                   store={store}
-                  animateEnter={!knownIds.has(entry.id)}
+                  animateEnter={animateNewEntries && !knownIds.has(entry.id)}
                 />
               ) : (
                 <ErrorRow key={entry.id} entry={entry} store={store} />
