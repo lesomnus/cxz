@@ -13,6 +13,7 @@ import {
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import pageStyles from "#src/shared/components/resource-page.module.css";
+import styles from "./errors-page.module.css";
 import { ErrorTable } from "#src/shared/errors/error-table.tsx";
 
 export function ErrorsPage({
@@ -46,6 +47,7 @@ export function ErrorsPage({
         }
       />
       <PanelScroll
+        className={styles.scroll}
         contentClassName={pageStyles.contentPadding}
         scrollbarLabel={t("Scroll errors")}
         aria-label={t("Error list")}
