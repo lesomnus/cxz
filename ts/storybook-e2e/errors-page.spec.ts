@@ -460,3 +460,58 @@ test("selecting row text does not open the modal", async ({ page }) => {
     page.getByRole("dialog", { name: "Error details", exact: true }),
   ).toHaveCount(0);
 });
+
+for (const width of [1200, 390])
+  test(`toolbar has small Clear and rightmost Dismiss all actions at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 850 });
+    await page.goto(
+      "/iframe.html?id=workspace-errors--overview&viewMode=story",
+    );
+    const main = page.getByRole("main", { name: "Errors", exact: true });
+    const clear = main.getByRole("button", {
+      name: "Clear history",
+      exact: true,
+    });
+    const dismiss = main.getByRole("button", {
+      name: "Dismiss all",
+      exact: true,
+    });
+    await expect(clear).toBeEnabled();
+    await expect(dismiss).toBeEnabled();
+    expect((await dismiss.boundingBox())!.x).toBeGreaterThan(
+      (await clear.boundingBox())!.x,
+    );
+    const actions = dismiss.locator("..");
+    await expect(actions.getByRole("button").last()).toHaveAccessibleName(
+      "Dismiss all",
+    );
+    for (const button of [clear, dismiss]) {
+      expect((await button.locator("svg").boundingBox())!.width).toBe(12);
+      expect((await button.locator("svg").boundingBox())!.height).toBe(12);
+    }
+    const rows = main.locator("tbody tr[data-status]");
+    await expect(rows).toHaveCount(9);
+    await dismiss.click();
+    await expect(dismiss).toBeDisabled();
+    await expect(rows).toHaveCount(9);
+    await expect(main.locator('tbody tr[data-status="active"]')).toHaveCount(0);
+    await expect(main.locator('tbody tr[data-status="dismissed"]')).toHaveCount(
+      7,
+    );
+    await expect(main.locator('tbody tr[data-status="resolved"]')).toHaveCount(
+      2,
+    );
+    await expect(
+      page.getByRole("dialog", { name: "Error details", exact: true }),
+    ).toHaveCount(0);
+    await expect(clear).toBeEnabled();
+    await clear.click();
+    await expect(main).toContainText("No errors in recent records");
+    await expect(clear).toBeDisabled();
+    await expect(dismiss).toBeDisabled();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBe(width);
+  });

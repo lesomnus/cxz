@@ -13,6 +13,7 @@ import {
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import pageStyles from "#src/shared/components/resource-page.module.css";
+import styles from "./errors-page.module.css";
 import { ErrorTable } from "#src/shared/errors/error-table.tsx";
 
 export function ErrorsPage({
@@ -26,6 +27,7 @@ export function ErrorsPage({
     store.snapshot,
     store.snapshot,
   );
+  const hasActive = entries.some((entry) => entry.status === "active");
   const history = entries.filter((entry) => entry.status !== "active");
   const shown = [...entries].sort(
     (a, b) =>
@@ -35,14 +37,23 @@ export function ErrorsPage({
   return (
     <ResourcePage aria-label={t("Errors")}>
       <ResourceToolbar
+        className={styles.toolbar}
         aria-label={t("Errors")}
         actions={
-          <ToolbarIconButton
-            icon="erase"
-            label={t("Clear history")}
-            disabled={!history.length}
-            onClick={() => store.clearHistory()}
-          />
+          <>
+            <ToolbarIconButton
+              icon="erase"
+              label={t("Clear history")}
+              disabled={!history.length}
+              onClick={() => store.clearHistory()}
+            />
+            <ToolbarIconButton
+              icon="close"
+              label={t("Dismiss all")}
+              disabled={!hasActive}
+              onClick={() => store.dismissAll()}
+            />
+          </>
         }
       />
       <PanelScroll

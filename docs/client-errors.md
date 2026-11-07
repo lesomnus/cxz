@@ -34,7 +34,13 @@ button column. Touch devices keep it visible with content padding. Long messages
 diagnostic summaries ellipsize to retain two lines, with the full text in native titles.
 History status is retained for assistive text and the row title. Details remain
 available from the independent page via the header link.
-Dismiss is a row action and Clear history is in the page toolbar. The dialog has
+Dismiss is a row action. The page toolbar places Clear history first and
+Dismiss all at the far right, both with 12px icons. Dismiss all changes only
+currently Active entries to Dismissed in one store update; existing history is
+preserved and an already expired episode remains Stale. It is disabled when
+there are no Active entries. Clear history removes closed episodes and is
+disabled when history is empty. Pending closures are flushed before clearing
+closed IDs so delayed storage merges cannot restore their older Active copies. The dialog has
 no footer, clear button or column-heading row; its body contains only the table.
 Its scrollbar sits outside the right edge (ScrollArea uses a positive handle-center
 offset to produce a negative CSS right). Card reveal/body wrappers allow the
