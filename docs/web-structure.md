@@ -74,6 +74,15 @@ forms use `useDialogClose` to delay cancellation cleanup or successful navigatio
 until `onClosed`. Cancel ongoing work immediately (for example, disconnect a
 login socket); only visual teardown waits for the exit animation.
 
+Overlay entrances use Nox's shared motion instead of page-local keyframes.
+ActionMenu reveals by default from its resolved trigger-facing edge; explicit
+motion directions and `motion={false}` remain available. Transient FindBar
+surfaces enable `motion`, while permanent search forms remain static. Question
+cards use `dialogEntranceClassName` with a fade to preserve their measured bounds;
+inline EditableValue keeps the input in place while its action popup enters.
+Native Dialog, anchored previews and approval CardStack retain their existing
+presence effects. All of these follow reduced-motion preferences.
+
 In the UI package, each component folder contains its implementation, CSS Module and independent Storybook examples. The optional editor has its own entry. Theme tokens and the translation provider have dedicated directories. Consumers import the public package entries; internal file paths are not an API. Application code uses those public entries directly rather than maintaining one-file re-export wrappers.
 
 Tests stay beside the behavior they verify. Application stories stay beside their components; package-control stories demonstrating cxz validation or action policy live under `src/storybook/components`. Standalone Nox stories live only in the Nox submodule and are registered by `.storybook-ui`; the cxz `.storybook` catalog discovers only `src` stories and does not duplicate library examples. Package browser checks use `ui-e2e`, while product integration checks use `storybook-e2e`. Shared preview framing and synthetic session data stay under `src/storybook` and are not used by application entries. Both Storybooks discover stories recursively, so directory moves do not require individual registration.

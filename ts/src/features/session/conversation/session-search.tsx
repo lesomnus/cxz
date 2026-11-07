@@ -225,6 +225,7 @@ export function SessionSearch({
   if (!open) return null;
   return (
     <FindBar
+      motion
       ref={overlay}
       role="search"
       aria-label={t("Search current conversation")}

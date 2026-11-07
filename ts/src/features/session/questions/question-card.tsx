@@ -3,7 +3,12 @@ import { useId, useRef, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { Button, SlidingPages, SlidingPage } from "@lesomnus/nox";
+import {
+  Button,
+  SlidingPages,
+  SlidingPage,
+  dialogEntranceClassName,
+} from "@lesomnus/nox";
 import { ConfirmButton } from "@lesomnus/nox";
 import {
   FloatingCard,
@@ -85,7 +90,8 @@ export function QuestionCard({
       qs.length === 0);
   return (
     <FloatingCard
-      className={`approval ${qs.length ? "question-card" : ""}`}
+      className={`${dialogEntranceClassName} approval ${qs.length ? "question-card" : ""}`}
+      data-enter-effect="fade"
       hideHeading={qs.length > 0}
       title={title}
       role="region"
