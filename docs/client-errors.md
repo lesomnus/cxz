@@ -168,8 +168,11 @@ fixed-clock compact, future, Korean and per-unit examples.
 
 The sidebar dialog is 420px wide (viewport-limited on small screens). Its heading
 uses the composer menu surface's `--ui-control-inset` (2px) on every side. Its
-close button is 24×24px, so top/bottom/right inset is equal and heading height
-is 28px with the current token.
+close button retains the standard elongated toolbar shape (48×24px). Its top,
+bottom and right inset is equal; do not make it square to achieve equal gaps.
+The button radius is the actual outer card radius minus border thickness and
+control inset, matching the Task card header's concentric-corner rule. Heading
+height remains 28px with the current token.
 The Dismiss button is 44px wide and stretches through the entire row height on a
 72px gradient overlay; it does not reserve a separate column.
 
