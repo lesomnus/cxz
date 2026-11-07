@@ -76,9 +76,9 @@ test("one hour without recurrence becomes Stale while closed, persists and opens
   ).toBeVisible();
   const stale = main.getByRole("img", { name: "Stale", exact: true });
   await expect(stale).toHaveAttribute("data-icon", "error-stale");
-  await expect(stale.locator("rect")).toHaveCount(1);
+  await expect(stale.locator("path")).toHaveCount(1);
   await expect(stale.locator("*")).toHaveCount(1);
-  await expect(stale.locator("rect")).toHaveAttribute("rx", "0");
+  await expect(stale.locator("path")).toHaveAttribute("d", "M8 3 14 13H2Z");
   await page.goto(pageStory);
   await expect(
     page
@@ -118,7 +118,7 @@ for (const width of [1200, 390])
     expect(messageWidth / (await table.boundingBox())!.width).toBeGreaterThan(
       width < 600 ? 0.6 : 0.2,
     );
-    await main.getByRole("button", { name: "Details", exact: true }).click();
+    await table.locator("tbody > tr").first().click();
     await expect(
       page.getByRole("dialog", { name: "Error details", exact: true }),
     ).toContainText("First seen");
@@ -158,7 +158,7 @@ test("unified resource table sorts Active first and opens complete details in a 
   const row = table
     .getByRole("row")
     .filter({ hasText: "Memory revision changed" });
-  const details = row.getByRole("button", { name: "Details", exact: true });
+  const details = row;
   await details.focus();
   await page.keyboard.press("Enter");
   const expanded = page.getByRole("dialog", {
@@ -198,7 +198,7 @@ test("normalizes mixed error kinds in the sidebar and page, leaving raw transpor
     .filter({ hasText: "File upload failed" });
   await expect(upload).toContainText("HTTP");
   await expect(upload).toContainText("HTTP request");
-  await upload.getByRole("button", { name: "Details", exact: true }).click();
+  await upload.click();
   const details = page.getByRole("dialog", {
     name: "Error details",
     exact: true,
@@ -372,6 +372,8 @@ test("error columns separate operation and diagnostics with an unlabeled count a
   await expect(cells.nth(1)).toHaveText("RPC");
   await expect(cells.nth(1)).toHaveCSS("text-align", "center");
   await expect(cells.nth(2)).toContainText("001");
+  await expect(cells.nth(2)).toHaveCSS("text-align", "center");
+  await expect(heads.nth(2)).toHaveCSS("text-align", "center");
   await expect(cells.nth(3)).toHaveText("Update Memory");
   await expect(cells.nth(4)).toHaveText("cxz.MemoryService/Patch · Aborted");
   const runtime = table
@@ -383,4 +385,78 @@ test("error columns separate operation and diagnostics with an unlabeled count a
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     1280,
   );
+});
+
+for (const key of ["click", "Enter", "Space"])
+  test(`error row opens its modal via ${key} and restores row focus`, async ({
+    page,
+  }) => {
+    await page.goto(
+      "/iframe.html?id=workspace-errors--overview&viewMode=story",
+    );
+    const main = page.getByRole("main", { name: "Errors", exact: true });
+    const row = main
+      .getByRole("row")
+      .filter({ hasText: "Memory revision changed" });
+    await expect(
+      main.getByRole("button", { name: "Details", exact: true }),
+    ).toHaveCount(0);
+    await expect(row).toHaveAttribute("tabindex", "0");
+    if (key === "click")
+      await row.getByText(/^Memory revision changed/).click();
+    else {
+      await row.focus();
+      await page.keyboard.press(key);
+    }
+    const modal = page.getByRole("dialog", {
+      name: "Error details",
+      exact: true,
+    });
+    await expect(modal).toContainText("cxz.MemoryService/Patch");
+    await page.keyboard.press("Escape");
+    await expect(modal).toHaveCount(0);
+    await expect(row).toBeFocused();
+  });
+
+test("Dismiss only dismisses the error and uses the gray square glyph", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=workspace-errors--overview&viewMode=story");
+  const row = page
+    .getByRole("main", { name: "Errors", exact: true })
+    .getByRole("row")
+    .filter({ hasText: "Memory revision changed" });
+  await row.getByRole("button", { name: "Dismiss", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Error details", exact: true }),
+  ).toHaveCount(0);
+  await expect(row).toHaveAttribute("data-status", "dismissed");
+  const icon = row.getByRole("img", { name: "Dismissed", exact: true });
+  await expect(icon).toHaveAttribute("data-icon", "error-dismissed");
+  await expect(icon.locator("rect")).toHaveCount(1);
+  await expect(icon.locator("path")).toHaveCount(0);
+  const rgb = await icon.evaluate((icon) =>
+    getComputedStyle(icon).color.match(/\d+/g)!.map(Number),
+  );
+  expect(rgb[0]).toBe(rgb[1]);
+  expect(rgb[1]).toBe(rgb[2]);
+});
+
+test("selecting row text does not open the modal", async ({ page }) => {
+  await page.goto("/iframe.html?id=workspace-errors--overview&viewMode=story");
+  const row = page
+    .getByRole("main", { name: "Errors", exact: true })
+    .getByRole("row")
+    .filter({ hasText: "Memory revision changed" });
+  await row.getByText(/^Memory revision changed/).evaluate((text) => {
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    text.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  await expect(
+    page.getByRole("dialog", { name: "Error details", exact: true }),
+  ).toHaveCount(0);
 });

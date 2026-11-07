@@ -138,9 +138,7 @@ export const RpcDetails: Story = {
       row.textContent?.includes("cxz.SessionService/Transcript"),
     );
     row?.scrollIntoView({ block: "start" });
-    row
-      ?.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')
-      ?.click();
+    row?.click();
   },
 };
 
