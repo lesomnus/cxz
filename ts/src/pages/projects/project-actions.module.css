@@ -14,6 +14,13 @@
   height: auto;
   aspect-ratio: 1;
 }
+.buttons .action[data-project-action="erase"] {
+  --button-hover-background: color-mix(
+    in srgb,
+    var(--ui-action-error-color) 20%,
+    var(--ui-section-background)
+  );
+}
 .buttons .action[data-highlighted="true"] {
   --ui-section-background: color-mix(
     in srgb,

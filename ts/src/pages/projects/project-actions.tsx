@@ -307,7 +307,8 @@ export function ProjectActions({
                 as="button"
                 type="button"
                 effect="sparkle"
-                className={`${actionStyles.button} ${styles.action} ${action.kind === "erase" ? actionStyles.danger : ""}`}
+                className={`${actionStyles.button} ${styles.action} ${action.kind !== "start" ? actionStyles.danger : ""}`}
+                data-project-action={action.kind}
                 data-highlighted={
                   (action.kind === "start" && !action.disabled) || undefined
                 }
