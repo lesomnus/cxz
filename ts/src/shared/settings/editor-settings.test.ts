@@ -103,6 +103,8 @@ it("inherits each missing session field independently, including explicit false"
     tabSize: 8,
     colorPalette: "warm",
     fontFamily: defaultEditorSettings.fontFamily,
+    wordWrap: false,
+    showControlCharacters: false,
   });
   expect(resolveEditorSettings(document, "session")).toEqual({
     indentSize: 4,
@@ -110,8 +112,24 @@ it("inherits each missing session field independently, including explicit false"
     tabSize: 2,
     colorPalette: "warm",
     fontFamily: defaultEditorSettings.fontFamily,
+    wordWrap: false,
+    showControlCharacters: false,
   });
   expect(resolveEditorSettings({})).toEqual(defaultEditorSettings);
+});
+it("resolves Monaco display options independently of composer preferences", () => {
+  const document = parseSettings(
+    JSON.stringify({
+      "editor.wordWrap": true,
+      "editor.showControlCharacters": true,
+      "composer.wordWrap": false,
+      "composer.showControlCharacters": false,
+    }),
+  );
+  expect(resolveEditorSettings(document)).toMatchObject({
+    wordWrap: true,
+    showControlCharacters: true,
+  });
 });
 it("validates known settings and retains unknown future keys in a flat JSON object", () => {
   for (const raw of [
@@ -287,6 +305,8 @@ it("persists display preferences and rejects non-boolean values without losing s
   for (const key of [
     "composer.showControlCharacters",
     "composer.wordWrap",
+    "editor.wordWrap",
+    "editor.showControlCharacters",
     "session.panel.projectCollapse",
   ]) {
     for (const value of [true, false]) {

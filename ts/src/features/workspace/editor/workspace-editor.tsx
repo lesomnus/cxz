@@ -28,6 +28,7 @@ import { Markdown, MarkdownFileLinks } from "#src/shared/content/markdown.tsx";
 import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
 import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
+import { EditorOptions } from "#src/shared/editor/editor-options.tsx";
 import { connectWorkspaceEditor } from "./editor-connect";
 import styles from "./workspace-editor.module.css";
 
@@ -304,15 +305,18 @@ export function WorkspaceEditor({
                 void open(file.path);
               }}
             >
-              {file.path.split("/").at(-1)}
+              <span className={styles.tabName}>
+                {file.path.split("/").at(-1)}
+              </span>
             </Button>
             <Button
+              className={styles.tabClose}
               aria-label={t("Close {name}", {
                 name: file.path.split("/").at(-1)!,
               })}
               onClick={() => closeFiles(new Set([file.path]))}
             >
-              <Icon name="close" />
+              <Icon className={styles.tabCloseIcon} name="close" />
             </Button>
           </div>
         ))}
@@ -348,6 +352,7 @@ export function WorkspaceEditor({
         <ActionMenu
           label={t("File actions")}
           triggerClassName={styles.tabButton}
+          footer={<EditorOptions />}
           items={[
             {
               label: t("Copy file path"),

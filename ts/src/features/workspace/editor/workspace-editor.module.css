@@ -1,5 +1,9 @@
 .viewer {
   --workspace-editor-control-radius: calc(1.5 * var(--ui-space));
+  --workspace-editor-tab-inset: 1px;
+  --workspace-editor-tab-control-size: calc(
+    7 * var(--ui-space) - 2 * var(--workspace-editor-tab-inset)
+  );
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -39,12 +43,31 @@
 }
 .tabBar :global(.file-tab) {
   overflow: hidden;
+  gap: var(--workspace-editor-tab-inset);
+  padding: var(--workspace-editor-tab-inset);
   border-radius: var(--workspace-editor-control-radius);
   background: var(--ui-shade-20);
 }
 .tabBar :global(.file-tab button) {
-  min-height: calc(7 * var(--ui-space));
-  height: calc(7 * var(--ui-space));
+  min-height: 0;
+  height: var(--workspace-editor-tab-control-size);
+  border-radius: calc(
+    var(--workspace-editor-control-radius) - var(--workspace-editor-tab-inset)
+  );
+}
+.tabBar .tabClose.tabClose {
+  flex: none;
+  width: var(--workspace-editor-tab-control-size);
+  padding: 0;
+}
+.tabCloseIcon {
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+}
+.tabBar :global([aria-selected="true"]) .tabName {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: var(--ui-control-inset);
 }
 .tabBar :global(.file-tab):has([aria-selected="true"]) {
   background: var(--ui-shade-20);

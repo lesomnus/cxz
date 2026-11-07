@@ -3,19 +3,28 @@ import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useState } from "react";
 import { SegmentedControl, ToggleButton } from "@lesomnus/nox";
 import { useSettings } from "#src/shared/settings/settings.ts";
-import { resolveEditorSettings } from "#src/shared/settings/editor-settings.ts";
+import {
+  resolveEditorSettings,
+  type EditorScope,
+} from "#src/shared/settings/editor-settings.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import styles from "./composer-options.module.css";
+import styles from "./editor-options.module.css";
 
-export function ComposerOptions() {
+export function EditorOptions({ scope = "global" }: { scope?: EditorScope }) {
   useLocale();
   const { store, snapshot } = useSettings();
   const [error, setError] = useState("");
   const [focused, setFocused] = useState(0);
-  const controls = snapshot.document["composer.showControlCharacters"] === true;
-  const wrap = snapshot.document["composer.wordWrap"] !== false;
-  const editorSettings = resolveEditorSettings(snapshot.document, "session");
+  const prefix = scope === "session" ? "composer" : "editor";
+  const controlsKey = `${prefix}.showControlCharacters`;
+  const wrapKey = `${prefix}.wordWrap`;
+  const controls = snapshot.document[controlsKey] === true;
+  const wrap =
+    scope === "session"
+      ? snapshot.document[wrapKey] !== false
+      : snapshot.document[wrapKey] === true;
+  const editorSettings = resolveEditorSettings(snapshot.document, scope);
   function toggle(key: string, value: boolean) {
     try {
       store.set(key, value);
@@ -45,7 +54,10 @@ export function ComposerOptions() {
             },
           ]}
           onChange={(value) =>
-            toggle("session.editor.insertSpaces", value === "spaces")
+            toggle(
+              `${scope === "session" ? "session." : ""}editor.insertSpaces`,
+              value === "spaces",
+            )
           }
         />
         <div
@@ -84,9 +96,7 @@ export function ComposerOptions() {
             pressed={controls}
             tabIndex={focused === 0 ? 0 : -1}
             onFocus={() => setFocused(0)}
-            onPressedChange={(pressed) =>
-              toggle("composer.showControlCharacters", pressed)
-            }
+            onPressedChange={(pressed) => toggle(controlsKey, pressed)}
           >
             {({ pressed }) => (
               <EditorOptionIcon option="controls" pressed={pressed} />
@@ -96,12 +106,14 @@ export function ComposerOptions() {
             type="button"
             variant="toolbar"
             aria-label={t("Word wrap")}
-            aria-keyshortcuts="Alt+Z"
-            title={`${t("Word wrap")} · Alt+Z`}
+            aria-keyshortcuts={scope === "session" ? "Alt+Z" : undefined}
+            title={
+              scope === "session" ? `${t("Word wrap")} · Alt+Z` : t("Word wrap")
+            }
             pressed={wrap}
             tabIndex={focused === 1 ? 0 : -1}
             onFocus={() => setFocused(1)}
-            onPressedChange={(pressed) => toggle("composer.wordWrap", pressed)}
+            onPressedChange={(pressed) => toggle(wrapKey, pressed)}
           >
             {({ pressed }) => (
               <EditorOptionIcon option="wrap" pressed={pressed} />

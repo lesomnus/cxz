@@ -112,6 +112,14 @@ for (const theme of ["dark", "light"])
         const first = entries[0].getBoundingClientRect();
         const second = entries[1].getBoundingClientRect();
         const tabBounds = tabs.getBoundingClientRect();
+        const firstTitle = entries[0].querySelector('[role="tab"]')!;
+        const firstClose = entries[0].querySelector(
+          'button:not([role="tab"])',
+        )!;
+        const closeBounds = firstClose.getBoundingClientRect();
+        const closeIcon = firstClose
+          .querySelector("svg")!
+          .getBoundingClientRect();
         return {
           radius: getComputedStyle(source).borderRadius,
           monacoRadius: getComputedStyle(monaco).borderRadius,
@@ -162,6 +170,24 @@ for (const theme of ["dark", "light"])
             footerBounds.bottom - pickerBounds.bottom,
           ],
           tabRadius: getComputedStyle(entries[0]).borderRadius,
+          tabCloseSize: [closeBounds.width, closeBounds.height],
+          tabCloseGaps: [
+            closeBounds.top - first.top,
+            first.right - closeBounds.right,
+            first.bottom - closeBounds.bottom,
+            closeBounds.left - firstTitle.getBoundingClientRect().right,
+          ],
+          tabCloseRadius: getComputedStyle(firstClose).borderTopRightRadius,
+          tabCloseIconSize: [closeIcon.width, closeIcon.height],
+          smallIconSize: css.getPropertyValue("--ui-icon-size-small").trim(),
+          tabDecorations: [...entries]
+            .slice(0, 2)
+            .map(
+              (entry) =>
+                getComputedStyle(
+                  entry.querySelector('[role="tab"] .button-content > span')!,
+                ).textDecorationLine,
+            ),
           tabGaps: [
             first.left - tabBounds.left,
             first.top - tabBounds.top,
@@ -212,6 +238,15 @@ for (const theme of ["dark", "light"])
     expect(surface.pickerGaps).toEqual(Array(3).fill(surface.pickerGaps[0]));
     expect(surface.tabRadius).not.toBe("0px");
     expect(surface.tabRadius).toBe(surface.pathRadius);
+    expect(surface.tabCloseSize[0]).toBe(surface.tabCloseSize[1]);
+    expect(surface.tabCloseGaps).toEqual([1, 1, 1, 1]);
+    expect(parseFloat(surface.tabCloseRadius) + 1).toBe(
+      parseFloat(surface.tabRadius),
+    );
+    expect(surface.tabCloseIconSize).toEqual(
+      Array(2).fill(parseFloat(surface.smallIconSize)),
+    );
+    expect(surface.tabDecorations).toEqual(["underline", "none"]);
     expect(surface.tabGaps).toEqual([
       parseFloat(surface.token),
       ...Array(3).fill(parseFloat(surface.inset)),
@@ -454,6 +489,83 @@ test("syntax menu keeps its scrollbar outside the left edge and supports drag an
   await thumb.press("Escape");
   await expect(menu).toHaveCount(0);
   await expect(picker).toBeFocused();
+});
+
+test("file menu editor options update Monaco in place and preserve composer settings", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem("settings"))
+      localStorage.setItem(
+        "settings",
+        JSON.stringify({
+          "composer.wordWrap": false,
+          "composer.showControlCharacters": true,
+          "session.editor.insertSpaces": true,
+        }),
+      );
+  });
+  const editor = await open(page);
+  await expect(editor.locator(".monaco-editor")).toBeVisible();
+  const element = await editor.locator(".monaco-editor").elementHandle();
+  const configuration = () =>
+    page.evaluate(async () => {
+      const modulePath = "/packages/nox/src/editor/code-editor.ts";
+      const { monaco } = await import(modulePath);
+      const editor = monaco.editor
+        .getEditors()
+        .find((candidate: { getDomNode(): HTMLElement | null }) =>
+          candidate.getDomNode()?.closest(".workspace-editor"),
+        );
+      const options = editor.getRawOptions();
+      return {
+        wrap: options.wordWrap,
+        controls: options.renderControlCharacters,
+        whitespace: options.renderWhitespace,
+        spaces: editor.getModel().getOptions().insertSpaces,
+      };
+    });
+  await expect.poll(configuration).toEqual({
+    wrap: "off",
+    controls: false,
+    whitespace: "none",
+    spaces: true,
+  });
+  await menu(page);
+  const popup = page.getByRole("group", { name: "File actions", exact: true });
+  const footer = popup.locator('[data-menu-fixed="footer"]');
+  await footer.getByRole("button", { name: "Word wrap", exact: true }).click();
+  await footer
+    .getByRole("button", { name: "Show control characters", exact: true })
+    .click();
+  await footer
+    .getByRole("radio", { name: "Tab character", exact: true })
+    .click();
+  await expect(popup).toBeVisible();
+  await expect
+    .poll(configuration)
+    .toEqual({ wrap: "on", controls: true, whitespace: "all", spaces: false });
+  expect(
+    await editor
+      .locator(".monaco-editor")
+      .evaluate((node, original) => node === original, element),
+  ).toBe(true);
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem("settings")!)),
+  ).toMatchObject({
+    "editor.wordWrap": true,
+    "editor.showControlCharacters": true,
+    "editor.insertSpaces": false,
+    "composer.wordWrap": false,
+    "composer.showControlCharacters": true,
+    "session.editor.insertSpaces": true,
+  });
+  await page.keyboard.press("Escape");
+  await page.reload();
+  await expect(editor.locator(".monaco-editor")).toBeVisible();
+  await expect
+    .poll(configuration)
+    .toEqual({ wrap: "on", controls: true, whitespace: "all", spaces: false });
 });
 
 test("automatic syntax detection colors Python, Dockerfile and Protobuf and a file override keeps the editor", async ({

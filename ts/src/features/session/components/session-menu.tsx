@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import { ActionMenu } from "@lesomnus/nox";
-import { ComposerOptions } from "#src/features/session/composer/composer-options.tsx";
+import { EditorOptions } from "#src/shared/editor/editor-options.tsx";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -84,7 +84,7 @@ export function SessionMenu({
         scrollbarOffset={-8}
         motion={{ from: "bottom-right", effect: "reveal" }}
         disabled={!session}
-        footer={<ComposerOptions />}
+        footer={<EditorOptions scope="session" />}
         groups={[
           {
             label: "",
