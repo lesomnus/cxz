@@ -4,9 +4,10 @@
   pointer-events: auto;
 }
 .reservation {
-  display: inline;
+  display: inline-block;
   position: relative;
   vertical-align: baseline;
+  white-space: pre;
 }
 .native {
   visibility: hidden;

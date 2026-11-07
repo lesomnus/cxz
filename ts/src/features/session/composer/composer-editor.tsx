@@ -950,9 +950,9 @@ export function ComposerEditor({
               // Native word movement can stop inside a chip's invisible text.
               // Snap to the edge in that direction instead of undoing the move.
               caretMotion.current =
-                event.key === "ArrowLeft"
+                event.key === "ArrowLeft" || event.key === "Home"
                   ? "backward"
-                  : event.key === "ArrowRight"
+                  : event.key === "ArrowRight" || event.key === "End"
                     ? "forward"
                     : undefined;
               if (
@@ -1202,7 +1202,8 @@ export function ComposerEditor({
                 replace(adjacent.start, adjacent.end, "");
               } else if (left || right) {
                 event.preventDefault();
-                el.setSelectionRange(adjacent.start, adjacent.end);
+                const caret = left ? adjacent.start : adjacent.end;
+                el.setSelectionRange(caret, caret);
               }
             }}
           />
