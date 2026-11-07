@@ -82,3 +82,17 @@ export const Connection: Story = { args: { kind: "connection" } };
 export const Runtime: Story = { args: { kind: "runtime" } };
 export const Client: Story = { args: { kind: "client" } };
 export const Dialog: Story = { args: { dialog: true } };
+
+export const RpcDetails: Story = {
+  name: "RPC details",
+  args: { kind: "rpc" },
+  play: async ({ canvasElement }) => {
+    const row = [...canvasElement.querySelectorAll("tr")].find((row) =>
+      row.textContent?.includes("Read conversation"),
+    );
+    row?.scrollIntoView({ block: "start" });
+    row
+      ?.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')
+      ?.click();
+  },
+};

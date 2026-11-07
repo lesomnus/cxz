@@ -149,34 +149,88 @@ function ErrorRow({
   );
 }
 
+function DialogErrorRow({
+  entry,
+  store,
+}: {
+  entry: ClientError;
+  store: ClientErrors;
+}) {
+  const view = presentError(entry);
+  const status = t(statusLabel[entry.status]);
+  return (
+    <TableRow data-status={entry.status} title={`${status} · ${view.target}`}>
+      <TableCell className={styles.summary}>
+        <span className={styles.srOnly}>{status}</span>
+        <div className={styles.dialogMessage} title={entry.message}>
+          {entry.message}
+        </div>
+        <div className={styles.dialogMeta}>
+          <span className={styles.dialogOperation} title={view.operation}>
+            {view.operation}
+          </span>
+          <span className={styles.dialogTime}>
+            <RelativeTime value={entry.lastSeen} />
+          </span>
+          <span
+            className={styles.dialogCount}
+            title={`${entry.count} ${t("occurrences")}`}
+          >
+            <CompactNumber value={entry.count} mode="integer" digits={3} />
+          </span>
+        </div>
+      </TableCell>
+      <TableCell className={styles.actions}>
+        <div className={styles.rowActions}>
+          {entry.status === "active" && (
+            <ToolbarIconButton
+              icon="close"
+              label={t("Dismiss")}
+              onClick={() => store.dismiss(entry.id)}
+            />
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export function ErrorTable({
   entries,
   store,
   tab,
-  showHeader = true,
+  variant = "page",
 }: {
   entries: readonly ClientError[];
   store: ClientErrors;
   tab: string;
-  showHeader?: boolean;
+  variant?: "page" | "dialog";
 }) {
   useLocale();
+  const dialog = variant === "dialog";
   return (
     <div className={styles.frame}>
       <Table
-        className={`${styles.table} ${resourceStyles.layout}`}
+        className={`${styles.table} ${resourceStyles.layout} ${dialog ? styles.dialogTable : ""}`}
         aria-label={t("Errors")}
       >
-        <colgroup>
-          <col className={styles.kindColumn} />
-          <col className={styles.operationColumn} />
-          <col className={styles.targetColumn} />
-          <col />
-          <col className={styles.countColumn} />
-          <col className={styles.timeColumn} />
-          <col className={styles.actionsColumn} />
-        </colgroup>
-        {showHeader && (
+        {dialog ? (
+          <colgroup>
+            <col />
+            <col className={styles.dialogActionsColumn} />
+          </colgroup>
+        ) : (
+          <colgroup>
+            <col className={styles.kindColumn} />
+            <col className={styles.operationColumn} />
+            <col className={styles.targetColumn} />
+            <col />
+            <col className={styles.countColumn} />
+            <col className={styles.timeColumn} />
+            <col className={styles.actionsColumn} />
+          </colgroup>
+        )}
+        {!dialog && (
           <TableHeader>
             <TableRow>
               <TableHead className={styles.kind}>{t("Kind")}</TableHead>
@@ -193,12 +247,16 @@ export function ErrorTable({
         )}
         <TableBody key={tab}>
           {entries.length ? (
-            entries.map((entry) => (
-              <ErrorRow key={entry.id} entry={entry} store={store} />
-            ))
+            entries.map((entry) =>
+              dialog ? (
+                <DialogErrorRow key={entry.id} entry={entry} store={store} />
+              ) : (
+                <ErrorRow key={entry.id} entry={entry} store={store} />
+              ),
+            )
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className={styles.empty}>
+              <TableCell colSpan={dialog ? 2 : 7} className={styles.empty}>
                 {tab === "active"
                   ? t("No active errors")
                   : t("No error history")}
