@@ -22,7 +22,11 @@ with the full message, timestamps and original diagnostic references. Escape and
 Close return focus to the row. No separate Details button is shown. Dismiss
 handles its own click without opening the modal, and selecting row text does
 not open it. Kind (including the heading) and Count are explicitly centered
-through Nox Table alignment. The dialog uses ErrorTable variant="dialog": its first line is the
+through Nox Table alignment.
+The page Dismiss button retains its rendered 30px width and is 30×30px with a
+12px close icon. Its absolute positioning uses the actual action-cell height
+through a size container, keeping top/bottom/right gaps equal even on wrapped
+rows. The sidebar Dismiss overlay keeps its separate layout. The dialog uses ErrorTable variant="dialog": its first line is the
 message and its second line has muted small kind-specific diagnostic values on
 the left, then elapsed time and count on the right. Dismiss is its only row button. It is hidden at rest and fills the row height on
 a right-side gradient overlay on hover or keyboard focus, without reserving a

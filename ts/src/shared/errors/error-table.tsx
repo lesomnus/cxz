@@ -138,6 +138,7 @@ function ErrorRow({
         <div className={styles.rowActions}>
           {entry.status === "active" && (
             <ToolbarIconButton
+              className={styles.pageDismissButton}
               icon="close"
               label={t("Dismiss")}
               onClick={(event) => {
