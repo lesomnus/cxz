@@ -48,7 +48,22 @@ for (const width of [1200, 390])
     await expect(header).toHaveCSS("padding-right", `${inset}px`);
     const cardBox = (await dialog.locator(".floating-card").boundingBox())!;
     const closeBox = (await close.boundingBox())!;
-    expect(closeBox.width).toBe(closeBox.height);
+    expect(closeBox.width).toBe(48);
+    expect(closeBox.height).toBe(24);
+    const outerRadius = await dialog
+      .locator(".floating-card")
+      .evaluate((element) =>
+        parseFloat(getComputedStyle(element).borderTopRightRadius),
+      );
+    const innerRadius = await close.evaluate((element) =>
+      parseFloat(getComputedStyle(element).borderTopRightRadius),
+    );
+    expect(innerRadius + outerInset).toBeCloseTo(outerRadius, 0);
+    expect(closeBox.x + closeBox.width - innerRadius).toBeCloseTo(
+      cardBox.x + cardBox.width - outerRadius,
+      0,
+    );
+    expect(closeBox.y + innerRadius).toBeCloseTo(cardBox.y + outerRadius, 0);
     expect(closeBox.y - cardBox.y).toBeCloseTo(outerInset, 0);
     expect(cardBox.x + cardBox.width - closeBox.x - closeBox.width).toBeCloseTo(
       outerInset,
