@@ -179,3 +179,48 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.dialogTable .summary {
+  padding-block: 6px;
+}
+.dialogActionsColumn {
+  width: 32px;
+}
+.dialogMessage {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.dialogMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  color: var(--ui-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.dialogOperation {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dialogTime,
+.dialogCount {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

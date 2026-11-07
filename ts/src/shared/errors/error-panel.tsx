@@ -74,12 +74,7 @@ export function ErrorPanel({
         aria-label={t("Error list")}
         scrollbarLabel={t("Scroll errors")}
       >
-        <ErrorTable
-          entries={shown}
-          store={store}
-          tab={tab}
-          showHeader={false}
-        />
+        <ErrorTable entries={shown} store={store} tab={tab} variant="dialog" />
       </ScrollArea>
     </Card>
   );

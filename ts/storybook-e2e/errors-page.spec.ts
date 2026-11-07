@@ -58,7 +58,9 @@ test("one hour without recurrence becomes Stale while closed, persists and opens
   const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
   await expect(dialog).toContainText("No active errors");
   await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
-  await expect(dialog.getByText(/RPC · Stale/)).toBeVisible();
+  await expect(
+    dialog.getByRole("row", { name: /Account service is offline/ }),
+  ).toHaveAttribute("title", /^Stale/);
   await expect(dialog.getByText("Resolved", { exact: true })).toHaveCount(0);
   const link = dialog.getByRole("link", {
     name: "Open errors page",
@@ -203,16 +205,15 @@ test("normalizes mixed error kinds in the sidebar and page, leaving raw transpor
   await page.getByRole("button", { name: "Errors", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
   const compact = dialog.getByRole("table", { name: "Errors", exact: true });
-  await expect(compact).toContainText("Watch conversation · Release review");
+  await expect(compact).toContainText("Watch conversation");
   await expect(compact).not.toContainText("89502035e952a2c227802d29");
   await dialog.getByRole("radio", { name: "History 3", exact: true }).click();
   const login = compact
     .getByRole("row")
     .filter({ hasText: "Provider login was interrupted" });
-  await expect(login).toContainText("Connection");
-  await expect(login).toContainText("Provider login · personal");
-  await login.getByRole("button", { name: "Details", exact: true }).click();
+  await expect(login).toContainText("Provider login");
+  await expect(login).toHaveAttribute("title", /personal/);
   await expect(
-    dialog.getByRole("region", { name: "Error details", exact: true }),
-  ).toContainText("1006");
+    dialog.getByRole("button", { name: "Details", exact: true }),
+  ).toHaveCount(0);
 });

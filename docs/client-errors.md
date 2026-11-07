@@ -5,8 +5,13 @@ Its header has an Open errors page link to `/c/_/errors`; the standalone page
 uses the same live store and status tabs. It follows the Projects/Tasks resource
 layout: an aligned top toolbar with history controls and a compact Nox table
 with kind/status, operation, target, message, occurrence count and last-seen
-columns. The dialog uses the same ErrorTable with a compact layout. Each row
-expands its full message, timestamps and original diagnostic references.
+columns. Page rows expand their full message, timestamps and original diagnostic
+references. The dialog uses ErrorTable variant="dialog": its first line is the
+message and its second line has a muted small operation on the left, then elapsed
+time and count on the right. Dismiss is its only row button. Long messages and
+operations ellipsize to retain two lines, with the full text in native titles.
+History status is retained for assistive text and the row title. Details remain
+available from the independent page via the header link.
 Dismiss is a row action and Clear history is in the page toolbar. The dialog has
 no footer, clear button or column-heading row; its body contains only the table.
 Its scrollbar sits outside the right edge (ScrollArea uses a positive handle-center
@@ -119,6 +124,8 @@ method mappings, session-specific operations, project editor/terminal, known HTT
 paths and fallback, both connection purposes/transports, all runtime health
 operations and all client operations. All shows the 40 examples together; RPC,
 HTTP, Connection, Runtime and Client provide focused tables; Dialog uses the
-headerless error panel with an outside scrollbar. Dismiss/details remain usable
-inside these isolated, nonpersistent fixtures. The fixtures enumerate the actual
+headerless two-line error panel with an outside scrollbar. RPC details opens a
+page row to show the full cxz.SessionService/Transcript method; summaries use
+readable operation labels, never full RPC names. Dismiss is usable in all fixtures
+and details are usable in the page variants. The fixtures are nonpersistent. The fixtures enumerate the actual
 operation registries so newly registered RPC/runtime/client labels also appear.

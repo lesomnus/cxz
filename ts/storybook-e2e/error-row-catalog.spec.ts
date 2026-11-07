@@ -69,3 +69,66 @@ for (const width of [1200, 390])
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBe(width);
   });
+
+test("RPC details story exposes the full method while summary uses the readable operation", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=workspace-errors-rows--rpc-details&viewMode=story",
+  );
+  const details = page.getByRole("region", {
+    name: "Error details",
+    exact: true,
+  });
+  await expect(details).toContainText("cxz.SessionService/Transcript");
+  await expect(details).toContainText("Read conversation");
+});
+
+for (const width of [1200, 390])
+  test(`sidebar dialog uses two lines with operation left and time/count right at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 850 });
+    await page.clock.install({ time: new Date("2026-11-07T09:00:00Z") });
+    await page.goto(
+      "/iframe.html?id=workspace-errors--recovery&viewMode=story",
+    );
+    await page
+      .getByRole("button", { name: "Fail request", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Fail request", exact: true })
+      .click();
+    await page.clock.fastForward(65_000);
+    await page.getByRole("button", { name: "Errors", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
+    const table = dialog.getByRole("table", { name: "Errors", exact: true });
+    const row = table.getByRole("row");
+    await expect(row).toHaveCount(1);
+    await expect(
+      table.getByRole("button", { name: "Details", exact: true }),
+    ).toHaveCount(0);
+    await expect(table.getByRole("button")).toHaveCount(1);
+    const message = row.getByTitle("Account service is offline", {
+      exact: true,
+    });
+    const operation = row.getByTitle("Read Account", { exact: true });
+    const time = row.locator("time");
+    const count = row.getByTitle("2 occurrences", { exact: true });
+    const dismiss = row.getByRole("button", { name: "Dismiss", exact: true });
+    await expect(count).toContainText("002");
+    const [m, o, d, c, x] = await Promise.all(
+      [message, operation, time, count, dismiss].map((node) =>
+        node.boundingBox(),
+      ),
+    );
+    expect(o!.y).toBeGreaterThanOrEqual(m!.y + m!.height);
+    expect(o!.x).toBeCloseTo(m!.x, 0);
+    expect(o!.x + o!.width).toBeLessThanOrEqual(d!.x);
+    expect(d!.x + d!.width).toBeLessThanOrEqual(c!.x);
+    expect(c!.x + c!.width).toBeLessThanOrEqual(x!.x);
+    expect(Math.abs(o!.y - d!.y)).toBeLessThan(3);
+    expect(Math.abs(d!.y - c!.y)).toBeLessThan(3);
+    await dismiss.click();
+    await expect(table).toContainText("No active errors");
+  });
