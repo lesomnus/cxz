@@ -315,11 +315,11 @@ test("a pasted chip and the following Korean paragraph keep the same native line
   expect(rows.mirrored).toEqual(rows.native);
 });
 
-test("chips and code controls remain visible throughout Korean composition", async ({
+test("chips retain their colors and code controls remain visible throughout Korean composition", async ({
   page,
 }) => {
   await page.goto(
-    "/iframe.html?id=conversation-playground--interactive&viewMode=story",
+    "/iframe.html?id=conversation-composer--file-uploads&viewMode=story",
   );
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("```typescript\nconst value = 1;\n```\n");
@@ -327,7 +327,7 @@ test("chips and code controls remain visible throughout Korean composition", asy
     node.focus();
     node.setSelectionRange(node.value.length, node.value.length);
     const clipboardData = new DataTransfer();
-    clipboardData.setData("text/plain", "synthetic paste\n".repeat(20));
+    clipboardData.setData("text/plain", "synthetic paste\n".repeat(10));
     node.dispatchEvent(
       new ClipboardEvent("paste", {
         clipboardData,
@@ -338,6 +338,27 @@ test("chips and code controls remain visible throughout Korean composition", asy
   });
   await input.press("Control+End");
   await input.press("Enter");
+  const chip = page.locator(".paste-chip");
+  const appearance = () =>
+    chip.evaluate((node) =>
+      [
+        node,
+        ...node.querySelectorAll(
+          ".segment, .segment svg, .paste-chip-label, .paste-chip-label span",
+        ),
+      ].map((element) => {
+        const style = getComputedStyle(element);
+        return {
+          color: style.color,
+          opacity: style.opacity,
+          visibility: style.visibility,
+        };
+      }),
+    );
+  const before = await appearance();
+  const fileMode = chip.getByRole("radio", { name: "File", exact: true });
+  await expect(chip).toHaveAttribute("data-send-as", "text");
+  await expect(fileMode).toBeEnabled();
   const cdp = await page.context().newCDPSession(page);
   for (const text of ["ㅎ", "하", "한"]) {
     await cdp.send("Input.imeSetComposition", {
@@ -350,11 +371,15 @@ test("chips and code controls remain visible throughout Korean composition", asy
       "true",
     );
     await expect(page.locator(".paste-chip-label")).toBeVisible();
+    expect(await appearance()).toEqual(before);
     await expect(page.locator(".paste-chip-token")).toHaveCount(0);
     await expect(page.locator(".editor-code-controls select")).toBeVisible();
     await expect(
       page.locator(".editor-code-controls .code-close"),
     ).toBeVisible();
+    // A programmatic change must not rewrite the chip reservation mid-preedit.
+    await fileMode.evaluate((node: HTMLInputElement) => node.click());
+    await expect(chip).toHaveAttribute("data-send-as", "text");
   }
   await cdp.send("Input.insertText", { text: "한" });
   await expect(page.locator(".composer-editor")).toHaveAttribute(
@@ -362,8 +387,11 @@ test("chips and code controls remain visible throughout Korean composition", asy
     "false",
   );
   await expect(page.locator(".paste-chip-label")).toBeVisible();
+  expect(await appearance()).toEqual(before);
   await expect(page.locator(".editor-code-controls select")).toBeVisible();
   await expect(input).toHaveValue(/\n한$/);
+  await fileMode.check();
+  await expect(chip).toHaveAttribute("data-send-as", "file");
 });
 
 test("the native caret remains visible immediately after a paste chip", async ({

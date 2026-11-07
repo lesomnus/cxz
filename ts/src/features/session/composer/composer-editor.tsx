@@ -261,7 +261,8 @@ export function ComposerEditor({
     });
   }
   function changePasteMode(paste: ComposerPaste, mode: "text" | "file") {
-    if (readOnly || !isTextPaste(paste)) return;
+    // Lock reservation changes during preedit without dimming the chip.
+    if (readOnly || composing.current || !isTextPaste(paste)) return;
     if (mode === "file" && !upload && !paste.attachment?.path) return;
     paste.sendAs = mode;
     if (mode === "file" && !paste.attachment) {
@@ -1281,7 +1282,7 @@ export function ComposerEditor({
                         changePasteMode(range.paste, mode)
                       }
                       canSendFile={!!upload || !!range.paste.attachment?.path}
-                      readOnly={readOnly || composition}
+                      readOnly={readOnly}
                     />,
                   ];
                 });
