@@ -26,6 +26,7 @@ export function taskFixture(
     pageDelay?: number;
     olderDone?: number;
     longDetails?: boolean;
+    longDoneTitle?: boolean;
     actionDelay?: number;
     onReview?: (request: SessionSendRequest) => void;
   } = {},
@@ -135,6 +136,10 @@ export function taskFixture(
     });
   });
   const historyStart = new Date(fixtureTime);
+  if (options.longDoneTitle && rows[4]) {
+    rows[4].name =
+      "Verify that a completed task title remains stable when selecting, focusing, and copying long text without changing its line breaks. Preserve the full title while keeping a two-line preview with an ellipsis.";
+  }
   if (options.longDetails && rows[2]) {
     rows[2].desc =
       "Implementation notes\n\n" +

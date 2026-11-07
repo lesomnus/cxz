@@ -25,6 +25,7 @@ function TaskPreview({
   pageDelay = 0,
   olderDone = 0,
   longDetails = false,
+  longDoneTitle = false,
 }: {
   count: number;
   unavailable?: boolean;
@@ -33,6 +34,7 @@ function TaskPreview({
   pageDelay?: number;
   olderDone?: number;
   longDetails?: boolean;
+  longDoneTitle?: boolean;
 }) {
   const [reviewCount, setReviewCount] = useState(0);
   const [fixture] = useState(() =>
@@ -41,6 +43,7 @@ function TaskPreview({
       pageDelay,
       olderDone,
       longDetails,
+      longDoneTitle,
       actionDelay: 200,
       onReview: () => setReviewCount((count) => count + 1),
     }),
@@ -143,6 +146,13 @@ export const LongTaskDetails: Story = {
   args: {
     initialPath: "/c/_/project/workspace/task/task-3",
     longDetails: true,
+  },
+};
+export const ReadOnlyLongTitle: Story = {
+  ...TaskDetails,
+  args: {
+    initialPath: "/c/_/project/workspace/task/task-5",
+    longDoneTitle: true,
   },
 };
 export const SingleTaskDetails: Story = {

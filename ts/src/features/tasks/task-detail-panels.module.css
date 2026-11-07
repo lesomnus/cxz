@@ -71,11 +71,15 @@
 .titleField > div {
   position: relative;
 }
-.titleField textarea {
+.titleField textarea,
+.readOnlyTitle {
   height: calc(2lh + 2 * var(--ui-form-control-padding-block));
   min-height: 0;
   resize: none;
   overflow: auto;
+}
+.readOnlyTitle {
+  user-select: text;
 }
 .titleField textarea:not(:focus) {
   color: transparent;
@@ -86,12 +90,15 @@
   inset-inline: calc(
     var(--ui-form-control-padding-inline) - var(--ui-form-control-radius)
   );
+  pointer-events: none;
+}
+.titlePreview,
+.readOnlyTitleText {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
   overflow-wrap: anywhere;
-  pointer-events: none;
 }
 .titleField textarea:focus + .titlePreview {
   visibility: hidden;

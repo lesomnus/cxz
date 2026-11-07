@@ -321,7 +321,8 @@ test("Done is read-only while Working keeps its assignment locked", async ({
   await expect(
     detail(page).getByLabel("Status", { exact: true }),
   ).toContainText("Done");
-  for (const label of ["Title", "Alias", "Description"])
+  await expect(title(page)).toHaveAttribute("aria-readonly", "true");
+  for (const label of ["Alias", "Description"])
     await expect(
       detail(page).getByRole("textbox", { name: label, exact: true }),
     ).toHaveJSProperty("readOnly", true);
@@ -334,7 +335,7 @@ test("Done is read-only while Working keeps its assignment locked", async ({
     ).toBeDisabled();
   await title(page).focus();
   await page.keyboard.type("Cannot edit Done");
-  await expect(title(page)).toHaveValue("Verify claim concurrency");
+  await expect(title(page)).toHaveText("Verify claim concurrency");
   await detail(page)
     .getByRole("button", { name: "Show control characters", exact: true })
     .click();
@@ -345,6 +346,85 @@ test("Done is read-only while Working keeps its assignment locked", async ({
     detail(page).getByRole("button", { name: "Copy: Task ID", exact: true }),
   ).toBeEnabled();
 });
+
+for (const width of [1280, 390]) {
+  test(`readonly long titles keep their line breaks and copy full text at ${width}px`, async ({
+    page,
+    context,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(story("read-only-long-title"));
+    const field = title(page);
+    await expect(field).toHaveAttribute("aria-readonly", "true");
+    await expect(field).toHaveText(
+      /^Verify that a completed task title remains stable/,
+    );
+    await page.evaluate(() => document.fonts.ready);
+    await field.scrollIntoViewIfNeeded();
+    const value = await field.textContent();
+    const text = field.locator("span");
+    await expect(text).toHaveCSS("-webkit-line-clamp", "2");
+    expect(
+      await text.evaluate((node) => node.scrollHeight > node.clientHeight),
+    ).toBe(true);
+    const layout = () =>
+      field.evaluate((node) => {
+        const frame = node.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rounded = (value: number) => Math.round(value * 10) / 10;
+        return {
+          height: rounded(frame.height),
+          width: rounded(frame.width),
+          lines: [...range.getClientRects()].map((rect) => ({
+            top: rounded(rect.top - frame.top),
+            left: rounded(rect.left - frame.left),
+            width: rounded(rect.width),
+            height: rounded(rect.height),
+          })),
+        };
+      });
+    const before = await layout();
+    await field.focus();
+    await expect(field).toBeFocused();
+    expect(await layout()).toEqual(before);
+    const word = await text.evaluate((node) => {
+      const range = document.createRange();
+      range.setStart(node.firstChild!, 0);
+      range.setEnd(node.firstChild!, 6);
+      const rect = range.getBoundingClientRect();
+      return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    });
+    await page.mouse.dblclick(word.x, word.y);
+    await expect
+      .poll(() => page.evaluate(() => window.getSelection()?.toString()))
+      .toBe("Verify");
+    expect(await layout()).toEqual(before);
+    await field.focus();
+    await page.keyboard.press("Control+a");
+    await expect
+      .poll(() => page.evaluate(() => window.getSelection()?.toString()))
+      .toBe(value);
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], {
+      origin: new URL(page.url()).origin,
+    });
+    await page.keyboard.press("Control+c");
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(value);
+    expect(await layout()).toEqual(before);
+    await page.keyboard.type("Cannot replace this title");
+    await expect(field).toHaveText(value!);
+    const description = detail(page).getByRole("textbox", {
+      name: "Description",
+      exact: true,
+    });
+    await expect(description).toHaveJSProperty("readOnly", true);
+    const original = await description.inputValue();
+    await description.focus();
+    await expect(description).toHaveValue(original);
+  });
+}
 
 test("cancel requires confirmation, discards unsaved edits and preserves assignment", async ({
   page,

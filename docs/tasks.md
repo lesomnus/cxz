@@ -247,8 +247,11 @@ After a version conflict, the draft remains visible and an explicit Reload
 latest task action lets the operator start from the new record. Stable Task IDs
 keep an open detail view associated with its record across alias changes.
 
-The title reserves two lines and clamps excess text with an ellipsis when it is
-not focused; focus reveals the editable text. Description always wraps to its
+The title reserves two lines and clamps excess text with an ellipsis. For
+editable tasks, focus reveals the textarea. Completed titles use a single
+selectable readonly textbox: focusing, dragging or copying does not switch
+rendering or change line breaks. Ctrl/Cmd+A selects the full title, including
+clamped text, for copying. Description always wraps to its
 available width. Its right-aligned Break words
 toggle chooses between whole-word wrapping (including Korean words) and breaking
 inside words. Show control characters overlays spaces, tabs, newlines and other
