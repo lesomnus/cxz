@@ -8,7 +8,7 @@ import { resourceRef } from "#src/shared/navigation/resource-route.ts";
 
 export const taskStatuses = [
   { value: TaskStatus.TODO, label: "Todo" },
-  { value: TaskStatus.IN_PROGRESS, label: "In progress" },
+  { value: TaskStatus.IN_PROGRESS, label: "Working" },
   { value: TaskStatus.WAITING, label: "Waiting" },
   { value: TaskStatus.DONE, label: "Done" },
 ] as const;

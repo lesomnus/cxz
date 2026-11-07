@@ -68,6 +68,9 @@
   margin-inline: calc(-1 * var(--ui-form-control-radius));
   border-radius: var(--ui-form-control-radius);
 }
+.fields.controls dd > a {
+  padding-inline: var(--ui-form-control-padding-inline);
+}
 .controls dd > :global(.value-menu) {
   --value-background: var(--ui-form-control-background);
   --value-padding-block: max(

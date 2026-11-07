@@ -37,6 +37,14 @@ export function TaskDetailPanels({
       scrollbarLabel="Scroll task details"
     >
       <ResourceLayout className={styles.layout}>
+        <SectionGroup className={styles.content}>
+          <Section aria-label="Task title" className={styles.title}>
+            {title}
+          </Section>
+          <Section aria-label="Task description" className={styles.description}>
+            {description}
+          </Section>
+        </SectionGroup>
         <SectionGroup className={styles.sidebar}>
           <Section className={styles.information} aria-label="Task information">
             <ScrollArea
@@ -64,14 +72,6 @@ export function TaskDetailPanels({
           >
             {actions}
           </SectionGroup>
-        </SectionGroup>
-        <SectionGroup className={styles.content}>
-          <Section aria-label="Task title" className={styles.title}>
-            {title}
-          </Section>
-          <Section aria-label="Task description" className={styles.description}>
-            {description}
-          </Section>
         </SectionGroup>
       </ResourceLayout>
     </ScrollArea>

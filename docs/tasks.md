@@ -219,7 +219,7 @@ dedicated CLI/TUI task commands remain a follow-up.
 ## Web board
 
 Open **Tasks** in the resource sidebar and choose a project. The board groups
-work into Todo, In progress, Waiting and Done. Recent completed work appears
+work into Todo, Working, Waiting and Done. Recent completed work appears
 first, with older completed and canceled work available explicitly. Cards show
 the title, alias, owner, last update and ownership warnings. Owner and source
 links open the corresponding session, with the source event selected when its
@@ -250,8 +250,9 @@ control markers without changing the text, selection or clipboard contents. Both
 view options survive saving and do not dirty the task. Priority, Status and Task ID
 share the first row, followed by Alias. Project, assignment and creation source
 share one metadata row, with Created and Updated together at the bottom.
-Navigation values expand back across their label inset like form inputs, with
-section-sized gaps between the buttons. Created and Updated show local timestamps
+Navigation values expand back across their label inset like form inputs, retaining
+the input's content padding, with section-sized gaps between the buttons.
+Created and Updated show local timestamps
 without a visible UTC offset. Priority retains its input background at the same
 height as Account editable values; its selected menu row fills the menu width.
 Priority, Status and Task ID all use the shared ResourceFields controls layout.
@@ -260,10 +261,11 @@ override those metrics separately for each field.
 Release, Cancel, Save and Discard changes use individual
 panel buttons matching the Project detail actions, with icons and hover labels.
 Session and project links reuse the resource navigation buttons, including their
-upper-right arrow. The
-left group sizes to its contents, with an independent metadata scroll area when
+upper-right arrow. The larger title/description group is on the left. The
+right metadata/actions group sizes to its contents, with an independent scroll area when
 long content exceeds the available desktop height; narrow pages scroll the groups
 together.
+The Task status labeled Working corresponds to the unchanged IN_PROGRESS API value.
 
 Stopped, unavailable and previous-run owners are flagged rather than silently
 reassigned. Release requires confirmation and clears the stored owner/run under

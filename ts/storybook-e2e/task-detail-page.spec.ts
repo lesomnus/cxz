@@ -50,6 +50,9 @@ test("title reserves two clamped lines and identity fields share one row with re
         labelX: node.querySelector("dt")!.getBoundingClientRect().x,
         buttonX: node.querySelector("a")!.getBoundingClientRect().x,
         buttonRight: node.querySelector("a")!.getBoundingClientRect().right,
+        contentX: node
+          .querySelector("a .button-content > span")!
+          .getBoundingClientRect().left,
         inset: parseFloat(
           getComputedStyle(node).getPropertyValue("--ui-form-control-radius"),
         ),
@@ -66,10 +69,14 @@ test("title reserves two clamped lines and identity fields share one row with re
   expect(new Set(fields.map((field) => field.y)).size).toBe(1);
   expect(fields[1].x).toBeGreaterThan(fields[0].x);
   expect(fields[2].x).toBeGreaterThan(fields[1].x);
+  const inputPadding = await information
+    .getByRole("textbox", { name: "Alias", exact: true })
+    .evaluate((input) => parseFloat(getComputedStyle(input).paddingLeft));
   for (const [index, field] of fields.entries()) {
     expect(field.buttonX).toBeCloseTo(field.x, 1);
     expect(field.buttonRight).toBeCloseTo(field.right, 1);
     expect(field.labelX - field.buttonX).toBeCloseTo(field.inset, 1);
+    expect(field.contentX - field.buttonX).toBeCloseTo(inputPadding, 1);
     if (index > 0)
       expect(field.buttonX - fields[index - 1].buttonRight).toBeCloseTo(
         field.gap,
@@ -238,7 +245,7 @@ test("detail controls retain wrapping, show priority symbols and preserve read-o
   ).toHaveCount(0);
   await expect(
     detail(page).getByLabel("Status", { exact: true }),
-  ).toContainText("In progress");
+  ).toContainText("Working");
   const priority = detail(page).getByRole("combobox", {
     name: "Priority",
     exact: true,
@@ -271,7 +278,7 @@ test("detail controls retain wrapping, show priority symbols and preserve read-o
   await expect(description).toHaveCSS("word-break", "break-all");
   await expect(
     detail(page).getByLabel("Status", { exact: true }),
-  ).toContainText("In progress");
+  ).toContainText("Working");
   await expect(priority).toHaveText("High");
   await wrap.click();
   await expect(description).toHaveAttribute("wrap", "soft");
@@ -299,7 +306,7 @@ test("cancel requires confirmation, discards unsaved edits and preserves assignm
   await confirmation
     .getByRole("button", { name: "Cancel", exact: true })
     .click();
-  await expect(status).toContainText("In progress");
+  await expect(status).toContainText("Working");
   await expect(title(page)).toHaveValue("Unsaved draft");
   await cancel.click();
   await confirmation
@@ -369,7 +376,7 @@ test("cancel refuses stale versions and preserves the draft for reload", async (
   await expect(title(page)).toHaveValue("Agent updated the task");
   await expect(
     detail(page).getByLabel("Status", { exact: true }),
-  ).toContainText("In progress");
+  ).toContainText("Working");
 });
 
 test("description keeps words whole and control markers preserve text, selection and scroll", async ({
@@ -659,7 +666,10 @@ test("task details use resource panels with information and actions beside the l
   const infoBounds = (await information.boundingBox())!;
   const titleBounds = (await content.boundingBox())!;
   const actionsBounds = (await actions.boundingBox())!;
-  expect(titleBounds.x).toBeGreaterThanOrEqual(infoBounds.x + infoBounds.width);
+  expect(infoBounds.x).toBeGreaterThanOrEqual(
+    titleBounds.x + titleBounds.width,
+  );
+  expect(titleBounds.width).toBeGreaterThan(infoBounds.width);
   expect(actionsBounds.x).toBeCloseTo(infoBounds.x);
   expect(actionsBounds.width).toBeCloseTo(infoBounds.width);
   const fontSize = (node: import("@playwright/test").Locator) =>
