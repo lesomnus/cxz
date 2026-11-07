@@ -13,6 +13,12 @@ import { TaskPageWheel } from "./task-page-wheel";
 import styles from "./task-detail-page.module.css";
 import pageStyles from "#src/shared/components/resource-page.module.css";
 
+const insideTaskSurface = (target: EventTarget | null) =>
+  target instanceof Element &&
+  !!target.closest(
+    '[data-task-detail-panel] [data-section-layout="section"], [data-task-detail-panel] [role="scrollbar"]',
+  );
+
 export function TaskDetailPage({
   c,
   project,
@@ -86,15 +92,13 @@ export function TaskDetailPage({
   };
   useEffect(() => {
     const root = stage.current!;
-    const inside = (target: EventTarget | null) =>
-      target instanceof Element && !!target.closest("[data-task-detail-panel]");
     const duration = () =>
       parseFloat(
         getComputedStyle(root).getPropertyValue("--task-page-duration"),
       ) || 0;
     const wheel = (event: WheelEvent) => {
       if (
-        inside(event.target) ||
+        insideTaskSurface(event.target) ||
         event.ctrlKey ||
         Math.abs(event.deltaX) > Math.abs(event.deltaY)
       )
@@ -117,7 +121,7 @@ export function TaskDetailPage({
     const start = (event: TouchEvent) => {
       const point = event.touches[0];
       touch =
-        !inside(event.target) && event.touches.length === 1 && point
+        !insideTaskSurface(event.target) && event.touches.length === 1 && point
           ? { x: point.clientX, y: point.clientY }
           : undefined;
     };
@@ -141,13 +145,14 @@ export function TaskDetailPage({
     const cancel = () => {
       touch = undefined;
     };
-    root.addEventListener("wheel", wheel, { passive: false });
+    // Claim empty-space gestures before an enclosing ScrollArea handles them.
+    root.addEventListener("wheel", wheel, { passive: false, capture: true });
     root.addEventListener("touchstart", start, { passive: true });
     root.addEventListener("touchmove", drag, { passive: false });
     root.addEventListener("touchend", end, { passive: false });
     root.addEventListener("touchcancel", cancel);
     return () => {
-      root.removeEventListener("wheel", wheel);
+      root.removeEventListener("wheel", wheel, true);
       root.removeEventListener("touchstart", start);
       root.removeEventListener("touchmove", drag);
       root.removeEventListener("touchend", end);
@@ -162,8 +167,7 @@ export function TaskDetailPage({
       tabIndex={0}
       aria-label="Task navigation"
       onKeyDown={(event) => {
-        if ((event.target as Element).closest("[data-task-detail-panel]"))
-          return;
+        if (insideTaskSurface(event.target)) return;
         const direction = ["PageUp", "ArrowUp"].includes(event.key)
           ? -1
           : ["PageDown", "ArrowDown"].includes(event.key)

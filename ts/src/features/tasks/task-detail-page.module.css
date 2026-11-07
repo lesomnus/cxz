@@ -32,7 +32,7 @@
   right: 0;
   height: calc(2 * var(--task-neighbor-peek));
   min-height: 0;
-  padding: var(--task-neighbor-padding) var(--ui-section-padding);
+  padding: 0 var(--ui-section-padding);
   opacity: 0.55;
   transition:
     opacity 160ms ease,
@@ -51,7 +51,7 @@
   align-content: start;
 }
 .neighbor > :global(.button-content) {
-  height: calc(var(--task-neighbor-peek) - 2 * var(--task-neighbor-padding));
+  height: var(--task-neighbor-peek);
 }
 .neighborPages,
 .neighborRow {
@@ -62,10 +62,14 @@
   width: 100%;
   align-items: center;
   gap: calc(2 * var(--ui-space));
+  padding-block: var(--task-neighbor-padding);
 }
 .neighborRow > :first-child,
 .neighborRow > :last-child {
   flex: none;
+}
+.neighborRow > :last-child {
+  margin-inline-start: calc(2 * var(--ui-space));
 }
 .identity {
   display: grid;

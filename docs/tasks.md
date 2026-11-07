@@ -316,8 +316,12 @@ The previous/next preview buttons keep padded surfaces at both collection
 boundaries, with empty disabled content where no neighbor exists. Each populated
 button shows the task title/alias, right-aligned assignee identity and priority.
 Their content uses vertical SlidingPages with the same duration and easing as
-the Task details; the button surfaces stay fixed. Reduced motion disables the
-slides while retaining navigation.
+the Task details; the button surfaces stay fixed. Vertical spacing belongs to
+the moving rows, so the slide remains visible up to each preview edge. Wheel
+and swipe navigation work over empty space throughout the detail layout,
+including gaps between sections and columns; actual panel surfaces and their
+scrollbars retain their normal input and scrolling. Reduced motion disables
+the slides while retaining navigation.
 The Task status labeled Working corresponds to the unchanged IN_PROGRESS API value.
 
 Stopped, unavailable and previous-run owners are flagged rather than silently

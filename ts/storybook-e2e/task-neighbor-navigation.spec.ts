@@ -5,6 +5,114 @@ const story = (name = "task-details") =>
 const neighbor = (page: Page, direction: "previous" | "next") =>
   page.locator(`[data-task-neighbor="${direction}"]`);
 
+async function emptyPoint(page: Page, area: string) {
+  return page.evaluate((area) => {
+    const panel = document.querySelector(
+      "[data-task-detail-panel][data-active]",
+    )!;
+    const bounds = (name: string) =>
+      panel.querySelector(`[aria-label="${name}"]`)!.getBoundingClientRect();
+    const title = bounds("Task title"),
+      description = bounds("Task description");
+    const info = bounds("Task information");
+    let x: number, y: number;
+    if (area === "title/description gap") {
+      x = title.x + title.width / 2;
+      y = (title.bottom + description.top) / 2;
+    } else if (area === "column gap") {
+      x = (title.right + info.left) / 2;
+      y = info.y + 20;
+    } else if (area === "below sidebar") {
+      const history = bounds("Task change history");
+      x = info.x + info.width / 2;
+      y = (history.bottom + panel.getBoundingClientRect().bottom) / 2;
+    } else {
+      const buttons = panel.querySelectorAll(
+        '[aria-label="Task actions"] [data-section-layout="section"]',
+      );
+      const a = buttons[0].getBoundingClientRect(),
+        b = buttons[1].getBoundingClientRect();
+      x = (a.right + b.left) / 2;
+      y = a.y + a.height / 2;
+    }
+    const target = document.elementFromPoint(x, y);
+    if (
+      !target ||
+      !panel.contains(target) ||
+      target.closest('[data-section-layout="section"]')
+    )
+      throw new Error(
+        `${area} did not resolve to empty space inside the detail layout`,
+      );
+    return { x, y };
+  }, area);
+}
+
+async function settle(page: Page) {
+  await expect(
+    page
+      .getByRole("region", { name: "Task details", exact: true })
+      .getByRole("textbox", { name: "Title", exact: true }),
+  ).toHaveValue("Connect the task table");
+  await page.evaluate(async () =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter(
+          (animation) => animation.effect?.getTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    ),
+  );
+}
+
+for (const area of [
+  "title/description gap",
+  "column gap",
+  "below sidebar",
+  "action button gap",
+]) {
+  test(`wheel navigation works over the ${area} inside the detail layout`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(story());
+    await settle(page);
+    const point = await emptyPoint(page, area);
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.wheel(0, 100);
+    await expect(
+      page
+        .getByRole("region", { name: "Task details", exact: true })
+        .getByRole("textbox", { name: "Title", exact: true }),
+    ).toHaveValue("Review project isolation");
+  });
+}
+
+test("wheel navigation from a gap still confirms unsaved edits", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(story());
+  await settle(page);
+  const title = page
+    .getByRole("region", { name: "Task details", exact: true })
+    .getByRole("textbox", { name: "Title", exact: true });
+  await title.fill("Preserve my draft");
+  const point = await emptyPoint(page, "column gap");
+  await page.mouse.move(point.x, point.y);
+  await page.mouse.wheel(0, 100);
+  const confirmation = page.getByRole("dialog", {
+    name: "Discard unsaved changes",
+    exact: true,
+  });
+  await expect(confirmation).toBeVisible();
+  await confirmation
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
+  await expect(title).toHaveValue("Preserve my draft");
+});
+
 for (const width of [1280, 390]) {
   test(`neighbor cards keep vertical space and right-aligned ownership and priority at ${width}px`, async ({
     page,
@@ -47,6 +155,11 @@ for (const width of [1280, 390]) {
         const button = row.closest("[data-task-neighbor]")!;
         const clip = button.parentElement!.getBoundingClientRect();
         const frame = row.getBoundingClientRect();
+        const viewport = button
+          .querySelector("[data-sliding-pages]")!
+          .getBoundingClientRect();
+        const buttonStyle = getComputedStyle(button);
+        const rowStyle = getComputedStyle(row);
         const owner = row
           .querySelector('[aria-label="Assigned to"]')!
           .getBoundingClientRect();
@@ -62,11 +175,22 @@ for (const width of [1280, 390]) {
           ownerLeft: owner.left,
           ownerRight: owner.right,
           priorityLeft: priority.left,
+          arrowGap:
+            row.lastElementChild!.getBoundingClientRect().left - priority.right,
+          buttonPadding: [buttonStyle.paddingTop, buttonStyle.paddingBottom],
+          rowPadding: [rowStyle.paddingTop, rowStyle.paddingBottom],
+          viewportTop: viewport.top - clip.top,
+          viewportBottom: clip.bottom - viewport.bottom,
         };
       });
       expect(geometry.visibleHeight).toBeGreaterThan(36);
-      expect(geometry.paddingTop).toBeGreaterThanOrEqual(7.5);
-      expect(geometry.paddingBottom).toBeGreaterThanOrEqual(7.5);
+      expect(geometry.paddingTop).toBeCloseTo(0, 1);
+      expect(geometry.paddingBottom).toBeCloseTo(0, 1);
+      expect(geometry.viewportTop).toBeCloseTo(0, 1);
+      expect(geometry.viewportBottom).toBeCloseTo(0, 1);
+      expect(geometry.buttonPadding).toEqual(["0px", "0px"]);
+      expect(geometry.rowPadding).toEqual(["8px", "8px"]);
+      expect(geometry.arrowGap).toBeGreaterThanOrEqual(15.5);
       expect(geometry.titleRight).toBeLessThan(geometry.ownerLeft);
       expect(geometry.ownerRight).toBeLessThan(geometry.priorityLeft);
     }
