@@ -254,6 +254,9 @@ Navigation values expand back across their label inset like form inputs, with
 section-sized gaps between the buttons. Created and Updated show local timestamps
 without a visible UTC offset. Priority retains its input background at the same
 height as Account editable values; its selected menu row fills the menu width.
+Priority, Status and Task ID all use the shared ResourceFields controls layout.
+It owns label/value spacing, value height and input appearance; task pages do not
+override those metrics separately for each field.
 Release, Cancel, Save and Discard changes use individual
 panel buttons matching the Project detail actions, with icons and hover labels.
 Session and project links reuse the resource navigation buttons, including their

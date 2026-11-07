@@ -78,7 +78,7 @@ test("title reserves two clamped lines and identity fields share one row with re
   }
   const controls = await information
     .getByRole("group", { name: "Task fields", exact: true })
-    .locator(":scope > *")
+    .locator("dl > div")
     .evaluateAll((nodes) =>
       nodes.slice(0, 3).map((node) => ({
         y: node.getBoundingClientRect().y,
@@ -139,6 +139,75 @@ test("title reserves two clamped lines and identity fields share one row with re
   expect(sidebar.y + sidebar.height).toBeLessThan(
     description.y + description.height,
   );
+});
+
+test("shared task field values align with Account editable labels", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(
+    "/iframe.html?id=accounts-workflows--signed-in-account&viewMode=story",
+  );
+  const account = page.getByRole("button", {
+    name: "Edit Display name",
+    exact: true,
+  });
+  await expect(account).toBeVisible();
+  const reference = await account.evaluate((button) => {
+    const label = button.closest("dd")!.previousElementSibling!;
+    const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      if (!node.textContent?.trim()) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      return {
+        gap:
+          range.getBoundingClientRect().top -
+          label.getBoundingClientRect().bottom,
+        height: button.getBoundingClientRect().height,
+      };
+    }
+    throw new Error("Account value text is missing");
+  });
+  await page.goto(story());
+  await expect(title(page)).toHaveValue("Connect the task table");
+  const values = await detail(page)
+    .getByRole("group", { name: "Task fields", exact: true })
+    .locator("dl > div")
+    .evaluateAll((rows) =>
+      rows.map((row) => {
+        const label = row.querySelector("dt")!,
+          value = row.querySelector("dd")!;
+        const walker = document.createTreeWalker(value, NodeFilter.SHOW_TEXT);
+        let node: Node | null;
+        while ((node = walker.nextNode())) {
+          if (!node.textContent?.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          return {
+            label: label.textContent!.trim(),
+            gap:
+              range.getBoundingClientRect().top -
+              label.getBoundingClientRect().bottom,
+            height: value.getBoundingClientRect().height,
+          };
+        }
+        throw new Error("Task value text is missing");
+      }),
+    );
+  expect(values.map((value) => value.label)).toEqual([
+    "Priority",
+    "Status",
+    "Task ID",
+  ]);
+  for (const value of values) {
+    expect(value.gap).toBeCloseTo(reference.gap, 1);
+    expect(value.height).toBe(reference.height);
+  }
+  await expect(
+    detail(page).getByRole("button", { name: "Copy: Task ID", exact: true }),
+  ).toBeVisible();
 });
 
 test("detail controls retain wrapping, show priority symbols and preserve read-only status on save", async ({

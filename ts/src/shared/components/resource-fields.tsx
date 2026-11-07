@@ -34,7 +34,7 @@ export function ResourceFields({
 }: {
   rows: readonly ResourceFieldRow[];
   columns?: 1 | 2 | 3;
-  /** Align interactive values like Form controls, with section-sized gaps. */
+  /** Compact input/readonly values share Account editable spacing and section gaps. */
   variant?: "default" | "controls";
 }) {
   return (

@@ -86,36 +86,6 @@
 .titleField textarea:disabled + .titlePreview {
   color: var(--ui-muted);
 }
-.readonlyStatus {
-  display: flex;
-  align-items: center;
-  gap: var(--ui-space);
-  min-height: calc(1.5em + 2 * var(--ui-space));
-}
-.priorityField {
-  --ui-form-control-padding-block: var(--ui-space);
-  row-gap: var(--ui-control-inset);
-}
-.priorityField > div {
-  margin-top: calc(-1 * var(--ui-space));
-}
-.controls {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.taskId {
-  min-width: 0;
-}
-.taskId > dl {
-  margin: 0;
-}
-.taskId > dl > div {
-  padding: 0 var(--ui-form-control-radius);
-  gap: var(--ui-space);
-}
-.taskId dd {
-  min-height: calc(1.5em + 2 * var(--ui-space));
-  align-items: center;
-}
 .description {
   font-size: 16px;
   line-height: 1.6;

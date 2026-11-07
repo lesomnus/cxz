@@ -34,16 +34,52 @@
   overflow-wrap: anywhere;
 }
 .controls {
+  --ui-form-control-padding-block: var(--ui-space);
   column-gap: var(--ui-section-group-gap);
 }
 .controls > div {
   padding-inline: var(--ui-form-control-radius);
 }
-.fields.controls dd > :is(a, button) {
+.controls dd {
+  margin-top: calc(-1 * var(--ui-space));
+  min-height: calc(1.5em + 2 * var(--ui-space));
+  align-items: center;
+  color: var(--ui-shade-237);
+}
+.controls output {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  gap: var(--ui-space);
+  white-space: nowrap;
+}
+.controls output > :first-child:not(:last-child) {
+  flex-shrink: 0;
+}
+.controls output > :last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fields.controls dd > :is(a, :global(.value-menu)) {
   width: calc(100% + 2 * var(--ui-form-control-radius));
   max-width: none;
   margin-inline: calc(-1 * var(--ui-form-control-radius));
   border-radius: var(--ui-form-control-radius);
+}
+.controls dd > :global(.value-menu) {
+  --value-background: var(--ui-form-control-background);
+  --value-padding-block: max(
+    0px,
+    calc(var(--ui-form-control-padding-block) - (20px - 1.5em) / 2)
+  );
+  --value-padding-inline: var(--ui-form-control-padding-inline);
+  flex: none;
+}
+.controls :global(.setting-trigger) {
+  border-radius: var(--ui-form-control-radius);
+  box-shadow: inset 0 0 0 1px var(--ui-form-control-border);
 }
 
 .labelDetail {

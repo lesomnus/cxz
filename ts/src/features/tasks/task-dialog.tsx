@@ -44,7 +44,6 @@ import {
   defaultDescriptionOptions,
   type TaskDescriptionOptions,
 } from "./task-description-field";
-import detailStyles from "./task-detail-panels.module.css";
 import styles from "./tasks.module.css";
 import { TaskDetailPanels, TaskMetadata } from "./task-detail-panels";
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
@@ -216,69 +215,62 @@ function TaskEditor({
       }
     }
   }
-  const priorityField = (
-    <FormField
-      label="Priority"
-      fullWidth={!task}
-      className={task ? detailStyles.priorityField : undefined}
-    >
-      {task ? (
-        <ValueMenu
+  const priorityField = !task && (
+    <FormField label="Priority" fullWidth>
+      <div className={styles.priorityControl}>
+        <SegmentedControl
           label="Priority"
-          alignItemWithTrigger
-          minMenuWidth={0}
           value={String(priority)}
           options={taskPriorities.map((label, value) => ({
             value: String(value),
             label,
-            icon: <TaskPrioritySymbol priority={value} />,
+            icon: (
+              <span className={styles.prioritySymbol}>
+                <TaskPrioritySymbol priority={value} />
+              </span>
+            ),
           }))}
-          choose={(value) => setPriority(Number(value))}
+          onChange={(value) => setPriority(Number(value))}
           disabled={busy}
         />
-      ) : (
-        <div className={styles.priorityControl}>
-          <SegmentedControl
+      </div>
+    </FormField>
+  );
+  const taskFields = task && (
+    <ResourceFields
+      columns={3}
+      variant="controls"
+      rows={[
+        [
+          "Priority",
+          <ValueMenu
             label="Priority"
+            alignItemWithTrigger
+            minMenuWidth={0}
             value={String(priority)}
             options={taskPriorities.map((label, value) => ({
               value: String(value),
               label,
-              icon: (
-                <span className={styles.prioritySymbol}>
-                  <TaskPrioritySymbol priority={value} />
-                </span>
-              ),
+              icon: <TaskPrioritySymbol priority={value} />,
             }))}
-            onChange={(value) => setPriority(Number(value))}
+            choose={(value) => setPriority(Number(value))}
             disabled={busy}
-          />
-        </div>
-      )}
-    </FormField>
-  );
-  const statusField = task && (
-    <FormField label="Status">
-      <div className={detailStyles.readonlyStatus} aria-label="Status">
-        <TaskStatusIcon status={task.status} />
-        <span>{taskStatusName(task.status)}</span>
-      </div>
-    </FormField>
-  );
-  const taskIdField = task && (
-    <div className={detailStyles.taskId}>
-      <ResourceFields
-        columns={1}
-        rows={[
-          {
-            label: "Task ID",
-            value:
-              task.id.length === 16 ? new Id(task.id).toString() : undefined,
-            identifier: true,
-          },
-        ]}
-      />
-    </div>
+          />,
+        ],
+        [
+          "Status",
+          <output aria-label="Status">
+            <TaskStatusIcon status={task.status} />
+            <span>{taskStatusName(task.status)}</span>
+          </output>,
+        ],
+        {
+          label: "Task ID",
+          value: task.id.length === 16 ? new Id(task.id).toString() : undefined,
+          identifier: true,
+        },
+      ]}
+    />
   );
   const titleField =
     presentation === "page" ? (
@@ -427,18 +419,12 @@ function TaskEditor({
         {presentation === "page" ? (
           <TaskDetailPanels
             controls={
-              <Form
-                as="fieldset"
-                columns={2}
-                className={detailStyles.controls}
-                disabled={busy}
-                aria-label="Task fields"
-              >
-                {priorityField}
-                {statusField}
-                {taskIdField}
-                {aliasField}
-              </Form>
+              <div role="group" aria-label="Task fields">
+                {taskFields}
+                <Form as="fieldset" columns={2} disabled={busy}>
+                  {aliasField}
+                </Form>
+              </div>
             }
             metadata={
               task && (
@@ -474,16 +460,14 @@ function TaskEditor({
             footer={<CardActions>{actions}</CardActions>}
           >
             <>
+              {taskFields}
               <Form
                 as="fieldset"
                 columns={2}
-                className={task ? detailStyles.controls : undefined}
                 disabled={busy}
                 aria-label="Task fields"
               >
                 {priorityField}
-                {statusField}
-                {taskIdField}
                 {titleField}
                 {aliasField}
                 {descriptionField}
