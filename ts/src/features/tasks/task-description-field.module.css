@@ -23,6 +23,9 @@
   word-break: keep-all;
   overflow-wrap: normal;
 }
+.field textarea.input[readonly]:focus {
+  outline: none;
+}
 .field[data-break-words="true"] textarea {
   word-break: break-all;
 }

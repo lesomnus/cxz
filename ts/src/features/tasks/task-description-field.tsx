@@ -77,6 +77,7 @@ export function TaskDescriptionField({
       <textarea
         ref={textarea}
         id={id}
+        className={styles.input}
         wrap="soft"
         rows={5}
         disabled={disabled}
