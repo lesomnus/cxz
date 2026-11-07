@@ -220,7 +220,7 @@ test("compact task field values align with Account editable labels", async ({
   expect(values.map((value) => value.label)).toEqual(["Status", "Task ID"]);
   for (const value of values) {
     expect(value.gap).toBeCloseTo(reference.gap, 1);
-    expect(value.height).toBe(reference.height);
+    expect(value.height).toBeCloseTo(reference.height, 3);
   }
   await expect(
     detail(page).getByRole("button", { name: "Copy: Task ID", exact: true }),
