@@ -112,7 +112,7 @@ for (const width of [1200, 390])
     const message = row.getByTitle("Account service is offline", {
       exact: true,
     });
-    const operation = row.getByTitle("Read Account", { exact: true });
+    const operation = row.getByTitle(/^Read Account · cxz.AccountService\/Get/);
     const time = row.locator("time");
     const count = row.getByTitle("2 occurrences", { exact: true });
     const dismiss = row.getByRole("button", { name: "Dismiss", exact: true });
@@ -132,3 +132,45 @@ for (const width of [1200, 390])
     await dismiss.click();
     await expect(table).toContainText("No active errors");
   });
+
+const diagnosticCases = [
+  {
+    kind: "rpc",
+    key: "cxz.SessionService/Transcript",
+    values: ["NotFound", "Release review"],
+  },
+  { kind: "http", key: "POST /editor/connect", values: ["504", "web"] },
+  {
+    kind: "connection",
+    key: "Provider login",
+    values: ["WebSocket", "1006", "work"],
+  },
+  {
+    kind: "runtime",
+    key: "start-container",
+    values: ["STOPPED", "cxz-web", "Web workspace"],
+  },
+  { kind: "client", key: "TypeError", values: ["conversation.js:42:7"] },
+];
+for (const { kind, key, values } of diagnosticCases)
+  for (const dialog of [false, true])
+    test(`${kind} ${dialog ? "dialog" : "page"} rows expose specific diagnostic evidence without opening Details`, async ({
+      page,
+    }) => {
+      await page.goto(
+        `/iframe.html?id=workspace-errors-rows--${kind}${dialog ? "-dialog" : ""}&viewMode=story`,
+      );
+      const table = page.getByRole("table", { name: "Errors", exact: true });
+      const row = table.getByRole("row").filter({ hasText: key });
+      await expect(row).toHaveCount(1);
+      await row.scrollIntoViewIfNeeded();
+      await expect(
+        row.getByRole("region", { name: "Error details", exact: true }),
+      ).toHaveCount(0);
+      await expect(row).toContainText(key);
+      for (const value of values) await expect(row).toContainText(value);
+      if (dialog)
+        await expect(
+          row.getByRole("button", { name: "Details", exact: true }),
+        ).toHaveCount(0);
+    });

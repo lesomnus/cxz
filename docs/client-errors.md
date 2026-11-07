@@ -7,9 +7,9 @@ layout: an aligned top toolbar with history controls and a compact Nox table
 with kind/status, operation, target, message, occurrence count and last-seen
 columns. Page rows expand their full message, timestamps and original diagnostic
 references. The dialog uses ErrorTable variant="dialog": its first line is the
-message and its second line has a muted small operation on the left, then elapsed
-time and count on the right. Dismiss is its only row button. Long messages and
-operations ellipsize to retain two lines, with the full text in native titles.
+message and its second line has muted small kind-specific diagnostic values on
+the left, then elapsed time and count on the right. Dismiss is its only row button. Long messages and
+diagnostic summaries ellipsize to retain two lines, with the full text in native titles.
 History status is retained for assistive text and the row title. Details remain
 available from the independent page via the header link.
 Dismiss is a row action and Clear history is in the page toolbar. The dialog has
@@ -102,12 +102,13 @@ ID. RPC instrumentation extracts only known reference fields; Connection enriche
 project/session references from its current inventory. Names are captured when a
 failure is reported. No extra lookup RPC is sent to describe an error. Name or
 alias is preferred in the row, then a short identifier, with `—` for no target.
-Full references, raw method, transport/status codes and request ID stay in Details.
+Kind-specific values identify the failure directly in each row. Full additional
+references and request IDs remain available in Details.
 
 `error-presentation.ts` exhaustively maps kinds to common columns and details.
-Known service/method combinations have translated operation names. New RPC
-methods fall back to a readable resource/method label; unknown HTTP endpoints use
-HTTP request with their method/path in Details. Error message text is never parsed
+Translated operation names supplement the diagnostic values; they must never
+replace or hide them. RPC rows show the full service/method even without a label
+mapping. HTTP rows show method/path/status, including unfamiliar endpoints. Error message text is never parsed
 to infer a kind or resource. Add new operations to these adapters and their locale
 messages rather than branching in either view.
 
@@ -125,7 +126,30 @@ paths and fallback, both connection purposes/transports, all runtime health
 operations and all client operations. All shows the 40 examples together; RPC,
 HTTP, Connection, Runtime and Client provide focused tables; Dialog uses the
 headerless two-line error panel with an outside scrollbar. RPC details opens a
-page row to show the full cxz.SessionService/Transcript method; summaries use
-readable operation labels, never full RPC names. Dismiss is usable in all fixtures
+page row to show additional metadata for cxz.SessionService/Transcript; the full
+RPC name is also visible in every matching summary row. Dismiss is usable in all fixtures
 and details are usable in the page variants. The fixtures are nonpersistent. The fixtures enumerate the actual
 operation registries so newly registered RPC/runtime/client labels also appear.
+
+
+Kind adapters supply a shared visible diagnostic value to both page and dialog:
+
+| Kind | Visible values, when recorded |
+| --- | --- |
+| RPC | Full service/method, RPC code and target |
+| HTTP | Method, path, response status and target |
+| Connection | Purpose, WebSocket/RPC transport, close code and target |
+| Runtime | Observed operation/RPC, container state, failing step, container name or short ID, target |
+| Client | Exception name, source filename and line/column, client operation |
+
+The dialog keeps these on its second line before time/count and has no Details
+button. Page rows show the diagnostic values with the translated operation label
+as supplementary text. Never require opening Details to learn the RPC name,
+HTTP endpoint or other identifying diagnostic evidence. Missing values are
+omitted rather than fabricated. Old records remain readable with their available
+metadata. Runtime/client fields are allowlisted and redacted on report/restore;
+request bodies, socket query strings and arbitrary objects remain excluded.
+
+RPC dialog, HTTP dialog, Connection dialog, Runtime dialog and Client dialog
+stories preview these values directly. Catalog contracts verify both page and
+dialog rows expose each kind's evidence without expanding Details.

@@ -88,7 +88,7 @@ export const RpcDetails: Story = {
   args: { kind: "rpc" },
   play: async ({ canvasElement }) => {
     const row = [...canvasElement.querySelectorAll("tr")].find((row) =>
-      row.textContent?.includes("Read conversation"),
+      row.textContent?.includes("cxz.SessionService/Transcript"),
     );
     row?.scrollIntoView({ block: "start" });
     row
@@ -96,3 +96,17 @@ export const RpcDetails: Story = {
       ?.click();
   },
 };
+
+export const RpcDialog: Story = {
+  name: "RPC dialog",
+  args: { kind: "rpc", dialog: true },
+};
+export const HttpDialog: Story = {
+  name: "HTTP dialog",
+  args: { kind: "http", dialog: true },
+};
+export const ConnectionDialog: Story = {
+  args: { kind: "connection", dialog: true },
+};
+export const RuntimeDialog: Story = { args: { kind: "runtime", dialog: true } };
+export const ClientDialog: Story = { args: { kind: "client", dialog: true } };

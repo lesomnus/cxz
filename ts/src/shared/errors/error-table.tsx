@@ -42,12 +42,21 @@ function ErrorRow({
           <span>{view.kind}</span>
           <span className={styles.status}>{status}</span>
         </TableCell>
-        <TableCell className={styles.operation}>{view.operation}</TableCell>
+        <TableCell className={styles.operation}>
+          <div className={styles.operationValue}>{view.diagnostic}</div>
+          {view.operation !== view.diagnostic && (
+            <div className={styles.operationLabel}>{view.operation}</div>
+          )}
+        </TableCell>
         <TableCell className={styles.target}>{view.target}</TableCell>
         <TableCell className={styles.summary}>
           <div className={styles.message}>{entry.message}</div>
-          <div className={styles.context}>
-            {view.operation} · {view.target}
+          <div
+            className={styles.context}
+            title={`${view.operation} · ${view.diagnostic} · ${view.target}`}
+          >
+            {view.diagnostic}
+            {view.target !== "—" && ` · ${view.target}`}
           </div>
           <div className={styles.mobileMeta}>
             {view.kind} · {status}
@@ -158,6 +167,7 @@ function DialogErrorRow({
 }) {
   const view = presentError(entry);
   const status = t(statusLabel[entry.status]);
+  const context = `${view.diagnostic}${view.target !== "—" ? ` · ${view.target}` : ""}`;
   return (
     <TableRow data-status={entry.status} title={`${status} · ${view.target}`}>
       <TableCell className={styles.summary}>
@@ -166,8 +176,11 @@ function DialogErrorRow({
           {entry.message}
         </div>
         <div className={styles.dialogMeta}>
-          <span className={styles.dialogOperation} title={view.operation}>
-            {view.operation}
+          <span
+            className={styles.dialogOperation}
+            title={`${view.operation} · ${context}`}
+          >
+            {context}
           </span>
           <span className={styles.dialogTime}>
             <RelativeTime value={entry.lastSeen} />

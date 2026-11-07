@@ -170,3 +170,143 @@ it("redacts legacy operation metadata before it is persisted into a structured o
     method: "Read token=[redacted]",
   });
 });
+
+it("keeps actionable kind-specific values in the row model instead of replacing them with friendly labels", () => {
+  const cases: [ErrorOrigin, string, string, string?][] = [
+    [
+      { kind: "rpc", service: "cxz.SessionService", method: "Transcript" },
+      "cxz.SessionService/Transcript · NotFound",
+      "Read conversation",
+      "NotFound",
+    ],
+    [
+      { kind: "http", method: "POST", path: "/editor/connect", status: 503 },
+      "POST /editor/connect · 503",
+      "Connect editor",
+    ],
+    [
+      { kind: "http", method: "PUT", path: "/new-endpoint" },
+      "PUT /new-endpoint",
+      "HTTP request",
+    ],
+    [
+      {
+        kind: "connection",
+        purpose: "provider-login",
+        transport: "websocket",
+        closeCode: 1006,
+      },
+      "Provider login · WebSocket · 1006",
+      "Provider login",
+    ],
+    [
+      {
+        kind: "runtime",
+        operation: "project-status",
+        state: "STOPPED",
+        step: "start-container",
+        containerName: "cxz-web",
+      },
+      "Project runtime · STOPPED · start-container · cxz-web",
+      "Project runtime",
+    ],
+    [
+      {
+        kind: "client",
+        operation: "exception",
+        name: "TypeError",
+        file: "https://workspace.example.com/assets/conversation.js",
+        line: 42,
+        column: 7,
+      },
+      "TypeError · conversation.js:42:7 · Run JavaScript",
+      "Run JavaScript",
+    ],
+  ];
+  for (const [origin, diagnostic, operation, code] of cases) {
+    const errors = new ClientErrors();
+    errors.report("a", "offline", { origin, code });
+    expect(presentError(errors.snapshot()[0])).toMatchObject({
+      diagnostic,
+      operation,
+    });
+  }
+  const errors = new ClientErrors();
+  errors.report("stream", "heartbeat missing", {
+    origin: { kind: "runtime", operation: "session-history" },
+    method: "cxz.SessionService/Rows",
+  });
+  expect(presentError(errors.snapshot()[0]).diagnostic).toBe(
+    "cxz.SessionService/Rows",
+  );
+  errors.report("legacy", "offline", { source: "rpc" });
+  expect(presentError(errors.snapshot()[0]).diagnostic).toBe("RPC");
+});
+it("persists allowlisted runtime/client evidence, redacts source URLs, and validates source positions", () => {
+  vi.useFakeTimers();
+  let raw = "";
+  const storage = {
+    getItem: () => raw,
+    setItem: (_: string, value: string) => {
+      raw = value;
+    },
+  };
+  const errors = new ClientErrors({ storage });
+  errors.report("runtime", "offline", {
+    origin: {
+      kind: "runtime",
+      operation: "project-status",
+      state: "STOPPED",
+      step: "start-container",
+      containerName: "cxz-web",
+      containerId: "full-container-id",
+    },
+  });
+  errors.report("client", "failed", {
+    origin: {
+      kind: "client",
+      operation: "exception",
+      name: "TypeError",
+      file: "https://user:private-pass@host.test/app.js?token=private-query",
+      line: 42,
+      column: 7,
+    },
+  });
+  errors.flush();
+  expect(raw).not.toContain("private-pass");
+  expect(raw).not.toContain("private-query");
+  const restored = new ClientErrors({ storage });
+  expect(
+    restored.snapshot().find((e) => e.key === "client")!.origin,
+  ).toMatchObject({
+    name: "TypeError",
+    file: "https://host.test/app.js",
+    line: 42,
+    column: 7,
+  });
+  expect(
+    restored.snapshot().find((e) => e.key === "runtime")!.origin,
+  ).toMatchObject({
+    state: "STOPPED",
+    step: "start-container",
+    containerName: "cxz-web",
+    containerId: "full-container-id",
+  });
+  expect(
+    sanitizeOrigin({
+      kind: "client",
+      operation: "exception",
+      line: -1,
+      column: Infinity,
+      secret: "do-not-store",
+    }),
+  ).toEqual({
+    kind: "client",
+    operation: "exception",
+    name: undefined,
+    file: undefined,
+    line: undefined,
+    column: undefined,
+  });
+  restored.flush();
+});

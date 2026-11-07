@@ -89,7 +89,16 @@ function WorkspaceContent({
         project.status.error ?? "",
         {
           source: "resource",
-          origin: { kind: "runtime", operation: "project-status" },
+          origin: {
+            kind: "runtime",
+            operation: "project-status",
+            state: project.status.containerState
+              ? ContainerState[project.status.containerState]
+              : project.status.provisionState,
+            step: project.status.provisionStep,
+            containerName: project.status.containerName,
+            containerId: project.status.containerId,
+          },
           subject: {
             kind: "project",
             id,

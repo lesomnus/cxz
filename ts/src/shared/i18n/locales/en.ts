@@ -1,5 +1,9 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  Step: "Step",
+  Exception: "Exception",
+  Line: "Line",
+  Column: "Column",
   Memory: "Memory",
   Task: "Task",
   Path: "Path",

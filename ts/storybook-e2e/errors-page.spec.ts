@@ -95,10 +95,13 @@ for (const width of [1200, 390])
     const main = page.getByRole("main", { name: "Errors", exact: true });
     await expect(main).toContainText("Account service is offline");
     await expect(main).toContainText("Read Account");
-    await expect(main).not.toContainText("cxz.AccountService/Get");
+    await expect(main).toContainText("cxz.AccountService/Get");
     await expect(main.locator(".floating-card")).toHaveCount(0);
     const table = main.getByRole("table", { name: "Errors", exact: true });
     await expect(table).toBeVisible();
+    expect(
+      (await table.locator("tbody > tr[data-status]").boundingBox())!.height,
+    ).toBeLessThan(120);
     const toolbar = main.locator("[data-resource-toolbar-content]");
     expect((await table.boundingBox())!.x).toBeCloseTo(
       (await toolbar.boundingBox())!.x,
@@ -188,7 +191,7 @@ test("normalizes mixed error kinds in the sidebar and page, leaving raw transpor
       .getByRole("row")
       .filter({ hasText: "Conversation stream disconnected" }),
   ).toContainText("Release review");
-  await expect(table).not.toContainText("cxz.SessionService/Events");
+  await expect(table).toContainText("cxz.SessionService/Events");
   const upload = table
     .getByRole("row")
     .filter({ hasText: "File upload failed" });
@@ -205,7 +208,7 @@ test("normalizes mixed error kinds in the sidebar and page, leaving raw transpor
   await page.getByRole("button", { name: "Errors", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
   const compact = dialog.getByRole("table", { name: "Errors", exact: true });
-  await expect(compact).toContainText("Watch conversation");
+  await expect(compact).toContainText("cxz.SessionService/Events");
   await expect(compact).not.toContainText("89502035e952a2c227802d29");
   await dialog.getByRole("radio", { name: "History 3", exact: true }).click();
   const login = compact

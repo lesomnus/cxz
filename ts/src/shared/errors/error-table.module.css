@@ -156,6 +156,7 @@
     font-size: 0;
   }
   .kind > *,
+  .operation > *,
   .count > *,
   .time > * {
     display: none;
@@ -223,4 +224,14 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+.operationValue {
+  font: 10px/1.5 var(--ui-font-mono);
+  overflow-wrap: anywhere;
+}
+.operationLabel {
+  margin-top: 2px;
+  color: var(--ui-muted);
+  font-size: 10px;
 }

@@ -18,10 +18,18 @@ export type ErrorOrigin =
         | "session-history"
         | "conversation-stream"
         | "resource";
+      state?: string;
+      step?: string;
+      containerName?: string;
+      containerId?: string;
     }
   | {
       kind: "client";
       operation: "exception" | "unhandled-rejection" | "operation";
+      name?: string;
+      file?: string;
+      line?: number;
+      column?: number;
     };
 export type ErrorTarget = {
   kind:
@@ -57,6 +65,13 @@ const targetKinds = [
 ];
 const text = (value: unknown) =>
   typeof value === "string" ? diagnosticText(value, 512) : "";
+const position = (value: unknown) =>
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value > 0 &&
+  value <= 2_147_483_647
+    ? value
+    : undefined;
 const integer = (value: unknown) =>
   typeof value === "number" &&
   Number.isInteger(value) &&
@@ -106,6 +121,10 @@ export function sanitizeOrigin(value: unknown): ErrorOrigin | undefined {
             ErrorOrigin,
             { kind: "runtime" }
           >["operation"],
+          state: text(input.state) || undefined,
+          step: text(input.step) || undefined,
+          containerName: text(input.containerName) || undefined,
+          containerId: text(input.containerId) || undefined,
         };
       return;
     case "client":
@@ -116,6 +135,10 @@ export function sanitizeOrigin(value: unknown): ErrorOrigin | undefined {
             ErrorOrigin,
             { kind: "client" }
           >["operation"],
+          name: text(input.name) || undefined,
+          file: text(input.file) || undefined,
+          line: position(input.line),
+          column: position(input.column),
         };
   }
 }
