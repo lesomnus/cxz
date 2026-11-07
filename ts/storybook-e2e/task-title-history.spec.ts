@@ -3,6 +3,35 @@ import { expect, test } from "@playwright/test";
 const story = (name: string) =>
   `/iframe.html?id=resources-tasks--${name}&viewMode=story`;
 for (const width of [1280, 390]) {
+  test(`editable title paints only one copy when focused and blurred at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(story("task-details"));
+    const title = page
+      .getByRole("region", { name: "Task details", exact: true })
+      .getByRole("textbox", { name: "Title", exact: true });
+    const value =
+      "Fix session table bottom-edge scroll oscillation and viewport radius";
+    await title.fill(value);
+    const preview = title.locator("+ span");
+    await expect(preview).toHaveText(value);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await title.evaluate((element) => element.blur());
+      await expect(title).toHaveCSS("color", "rgba(0, 0, 0, 0)");
+      await expect(preview).toHaveCSS("visibility", "visible");
+      for (const element of [title, preview]) {
+        await expect(element).toHaveCSS("word-break", "break-all");
+        await expect(element).toHaveCSS("white-space", "pre-wrap");
+      }
+      await title.click();
+      await expect(title).toBeFocused();
+      await expect(title).not.toHaveCSS("color", "rgba(0, 0, 0, 0)");
+      await expect(preview).toHaveCSS("visibility", "hidden");
+      await expect(title).toHaveValue(value);
+    }
+  });
+
   test(`readonly title expands downward at its existing width and copies from the expanded area at ${width}px`, async ({
     page,
     context,

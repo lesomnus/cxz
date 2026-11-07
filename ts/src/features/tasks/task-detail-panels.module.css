@@ -115,8 +115,13 @@
   color: var(--ui-muted);
   font: 10px/1.5 var(--ui-font-mono);
 }
-.titleField textarea:not(:focus) {
+.titleField textarea.titleInput:not(:focus) {
   color: transparent;
+}
+.titleInput,
+.titlePreview {
+  word-break: break-all;
+  white-space: pre-wrap;
 }
 .titlePreview {
   position: absolute;

@@ -127,6 +127,7 @@ export function TaskTitleField({
         <>
           <textarea
             id={id}
+            className={styles.titleInput}
             rows={2}
             required
             disabled={disabled}
