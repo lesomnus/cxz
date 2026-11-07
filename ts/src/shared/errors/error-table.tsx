@@ -1,4 +1,11 @@
-import { Fragment, useId, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   CompactNumber,
   Table,
@@ -161,16 +168,30 @@ function ErrorRow({
 function DialogErrorRow({
   entry,
   store,
+  animateEnter,
 }: {
   entry: ClientError;
   store: ClientErrors;
+  animateEnter: boolean;
 }) {
+  // A new row keeps its own entrance even if another report arrives mid-animation.
+  const [animate, setAnimate] = useState(animateEnter);
+  useEffect(() => {
+    if (!animate) return;
+    // Also clear reduced/canceled entrances so reordering cannot replay them later.
+    const timer = setTimeout(() => setAnimate(false), 300);
+    return () => clearTimeout(timer);
+  }, [animate]);
   const view = presentError(entry);
   const status = t(statusLabel[entry.status]);
   const context = `${view.diagnostic}${view.target !== "—" ? ` · ${view.target}` : ""}`;
   return (
     <TableRow
       className={styles.dialogRow}
+      data-animate-enter={animate || undefined}
+      onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget) setAnimate(false);
+      }}
       data-status={entry.status}
       title={`${status} · ${view.target}`}
     >
@@ -224,6 +245,15 @@ export function ErrorTable({
 }) {
   useLocale();
   const dialog = variant === "dialog";
+  // Baseline includes both tabs. Opening the dialog or changing tabs is not a new error.
+  const knownIds = useMemo(
+    () => new Set(store.snapshot().map((entry) => entry.id)),
+    [store],
+  );
+  useLayoutEffect(() => {
+    knownIds.clear();
+    for (const entry of store.snapshot()) knownIds.add(entry.id);
+  }, [store, entries, knownIds]);
   return (
     <div className={styles.frame}>
       <Table
@@ -264,7 +294,12 @@ export function ErrorTable({
           {entries.length ? (
             entries.map((entry) =>
               dialog ? (
-                <DialogErrorRow key={entry.id} entry={entry} store={store} />
+                <DialogErrorRow
+                  key={entry.id}
+                  entry={entry}
+                  store={store}
+                  animateEnter={!knownIds.has(entry.id)}
+                />
               ) : (
                 <ErrorRow key={entry.id} entry={entry} store={store} />
               ),
