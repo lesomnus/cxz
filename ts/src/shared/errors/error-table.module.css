@@ -236,16 +236,16 @@
 
 .dialogDismiss {
   position: absolute;
-  inset: 0 0 1px auto;
+  inset: 0 0 0 auto;
   z-index: 1;
   display: flex;
   justify-content: flex-end;
-  width: 56px;
-  padding-left: 24px;
+  width: 72px;
+  padding-left: 28px;
   background: linear-gradient(
     to right,
     transparent,
-    var(--ui-table-hover-background) 24px
+    var(--ui-table-hover-background) 28px
   );
   opacity: 0;
   pointer-events: none;
@@ -255,10 +255,11 @@
   opacity: 1;
   pointer-events: auto;
 }
-.dialogDismiss .dismissButton {
+.dialogTable .dialogDismiss .dismissButton {
   align-self: stretch;
-  width: 32px;
-  height: 100%;
+  flex: 0 0 44px;
+  width: 44px;
+  height: auto;
   min-height: 0;
   padding: 0;
   border-radius: 0;
@@ -272,11 +273,30 @@
     pointer-events: auto;
   }
   .dialogRow[data-status="active"] .summary {
-    padding-right: calc(var(--ui-table-cell-padding) + 56px);
+    padding-right: calc(var(--ui-table-cell-padding) + 72px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .dialogDismiss {
     transition: none;
+  }
+}
+
+.dialogRow[data-animate-enter] {
+  animation: error-row-enter 240ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+}
+@keyframes error-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialogRow[data-animate-enter] {
+    animation: none;
   }
 }

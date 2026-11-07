@@ -164,3 +164,17 @@ Error row ages use Nox RelativeTime compact: English examples include "5m ago"
 and "in 2h"; other locales use their narrow relative units. The public component
 and formatter keep their existing long default. Nox Components/RelativeTime has
 fixed-clock compact, future, Korean and per-unit examples.
+
+
+The sidebar dialog is 420px wide (viewport-limited on small screens). Its heading
+is 24px tall with no vertical padding and 4px side padding, matching its controls.
+The Dismiss button is 44px wide and stretches through the entire row height on a
+72px gradient overlay; it does not reserve a separate column.
+
+While the dialog is open, newly reported episode IDs slide down from above over
+240ms. Existing rows, count updates, initial opening and tab switches do not
+replay entrances. Each row owns its animation until completion; the marker is
+cleared afterward so later reordering cannot restart it. Reduced motion disables
+the slide. The known-ID baseline includes both Active and History, stays bounded
+to the store and resets on a fresh mount. Workspace/Errors/Rows/Incoming errors
+provides Add error and Repeat latest error controls for this behavior.

@@ -1,3 +1,8 @@
+.panel.panel:global(.floating-card) :global(.card-heading) {
+  min-height: 24px;
+  padding: 0 4px;
+  gap: 4px;
+}
 /* The viewport clips rows; the surrounding card must let the rail sit outside. */
 .panel.panel :global(.card-body),
 .panel > [data-enter-effect],

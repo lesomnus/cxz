@@ -1,6 +1,7 @@
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { createWorkspaceRouter, useWorkspaceRoute } from "#src/app/router.tsx";
+import { Button } from "@lesomnus/nox";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ClientErrors } from "./client-errors";
 import type { ErrorOrigin } from "./error-origin";
@@ -11,15 +12,28 @@ import { errorRowExamples } from "./error-row-examples";
 function RowCatalog({
   kind = "all",
   dialog = false,
+  live = false,
 }: {
   kind?: ErrorOrigin["kind"] | "all";
   dialog?: boolean;
+  live?: boolean;
 }) {
   const [store] = useState(() => {
     const store = new ClientErrors();
-    for (const item of errorRowExamples)
-      if (kind === "all" || item.context.origin?.kind === kind)
-        store.report(item.id, item.message, item.context);
+    if (live)
+      store.report("initial", "Existing error", {
+        origin: {
+          kind: "rpc",
+          service: "cxz.SessionService",
+          method: "Transcript",
+        },
+        code: "Unavailable",
+        subject: { kind: "session", alias: "existing" },
+      });
+    else
+      for (const item of errorRowExamples)
+        if (kind === "all" || item.context.origin?.kind === kind)
+          store.report(item.id, item.message, item.context);
     return store;
   });
   const entries = useSyncExternalStore(
@@ -28,10 +42,40 @@ function RowCatalog({
     store.snapshot,
   );
   const [tab, setTab] = useState("active");
+  const sequence = useRef(0);
+  const report = (n: number) =>
+    store.report(`live-${n}`, `New error ${n}`, {
+      origin: {
+        kind: "rpc",
+        service: "cxz.SessionService",
+        method: "Transcript",
+      },
+      code: "Unavailable",
+      subject: { kind: "session", alias: `session-${n}` },
+    });
   return (
     <main
-      style={{ padding: 24, maxWidth: dialog ? 528 : 1000, margin: "0 auto" }}
+      style={{ padding: 24, maxWidth: dialog ? 468 : 1000, margin: "0 auto" }}
     >
+      {live && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <Button
+            onClick={() => {
+              report(++sequence.current);
+            }}
+          >
+            Add error
+          </Button>
+          <Button
+            disabled={!sequence.current}
+            onClick={() => {
+              report(sequence.current);
+            }}
+          >
+            Repeat latest error
+          </Button>
+        </div>
+      )}
       {dialog ? (
         <ErrorPanel store={store} tab={tab} onTabChange={setTab} />
       ) : (
@@ -43,9 +87,11 @@ function RowCatalog({
 function Preview({
   kind = "all",
   dialog = false,
+  live = false,
 }: {
   kind?: ErrorOrigin["kind"] | "all";
   dialog?: boolean;
+  live?: boolean;
 }) {
   const router = useMemo(
     () =>
@@ -57,6 +103,7 @@ function Preview({
             return (
               <RowCatalog
                 kind={kind}
+                live={live}
                 dialog={dialog && route.resource !== "errors"}
               />
             );
@@ -64,7 +111,7 @@ function Preview({
         },
         createMemoryHistory({ initialEntries: ["/c/_/session"] }),
       ),
-    [kind, dialog],
+    [kind, dialog, live],
   );
   return <RouterProvider router={router} />;
 }
@@ -110,3 +157,15 @@ export const ConnectionDialog: Story = {
 };
 export const RuntimeDialog: Story = { args: { kind: "runtime", dialog: true } };
 export const ClientDialog: Story = { args: { kind: "client", dialog: true } };
+
+export const IncomingErrors: Story = {
+  args: { dialog: true, live: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Add error creates a new episode that slides down from above. Repeating the same error updates its count without replaying the entrance. Existing rows and tab switches stay still.",
+      },
+    },
+  },
+};
