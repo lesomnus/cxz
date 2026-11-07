@@ -226,7 +226,11 @@ export function recordClientError(error: unknown, message?: string) {
     {
       source: "client",
       method: message,
-      origin: { kind: "client", operation: "operation" },
+      origin: {
+        kind: "client",
+        operation: "operation",
+        name: error instanceof Error ? error.name : undefined,
+      },
     },
   );
   clientLogs().write({
@@ -254,7 +258,14 @@ export function installClientLogs() {
       {
         source: "client",
         method: "JavaScript",
-        origin: { kind: "client", operation: "exception" },
+        origin: {
+          kind: "client",
+          operation: "exception",
+          name: event.error instanceof Error ? event.error.name : undefined,
+          file: event.filename,
+          line: event.lineno,
+          column: event.colno,
+        },
       },
     );
     logs.write({
@@ -282,7 +293,11 @@ export function installClientLogs() {
       {
         source: "client",
         method: "Unhandled promise",
-        origin: { kind: "client", operation: "unhandled-rejection" },
+        origin: {
+          kind: "client",
+          operation: "unhandled-rejection",
+          name: event.reason instanceof Error ? event.reason.name : undefined,
+        },
       },
     );
     logs.write({

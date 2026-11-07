@@ -23,7 +23,7 @@ test("centralizes failures, preserves recovery history and keeps canceled retrie
   );
   await trigger.click();
   await expect(dialog).toContainText("Account service is offline");
-  await expect(dialog).toContainText("Read Account");
+  await expect(dialog).toContainText("cxz.AccountService/Get");
   await expect(
     dialog.getByRole("table", { name: "Errors", exact: true }),
   ).toBeVisible();
@@ -92,7 +92,7 @@ test("retains dismissed errors separately and recovers streams without a dialog 
   await trigger.click();
   await dialog.getByRole("radio", { name: "History 2", exact: true }).click();
   await expect(dialog).toContainText("Resolved");
-  await expect(dialog).toContainText("Watch conversation");
+  await expect(dialog).toContainText("cxz.SessionService/Events");
 });
 
 test("captures sign-out failures and keeps the panel within a small viewport", async ({

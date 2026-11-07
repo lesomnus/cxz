@@ -1,5 +1,9 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  Step: "단계",
+  Exception: "예외 종류",
+  Line: "줄",
+  Column: "열",
   Memory: "메모리",
   Task: "작업",
   Path: "경로",

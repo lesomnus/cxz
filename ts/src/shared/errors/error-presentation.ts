@@ -138,6 +138,57 @@ function operationLabel(origin: ErrorOrigin): string {
     }
   }
 }
+/** Values that identify the failing operation belong in rows, not only Details. */
+function diagnosticValue(entry: ClientError): string {
+  const origin = entry.origin;
+  const join = (...values: (string | number | undefined)[]) =>
+    [
+      ...new Set(values.filter((value) => value !== undefined && value !== "")),
+    ].join(" · ");
+  switch (origin.kind) {
+    case "rpc":
+      return join(
+        origin.service === "RPC" && !entry.method?.includes("/")
+          ? entry.method || t("RPC")
+          : `${origin.service}/${origin.method}`,
+        entry.code,
+      );
+    case "http":
+      return join(
+        origin.path === "—"
+          ? entry.method || t("HTTP")
+          : `${origin.method} ${origin.path}`,
+        origin.status ?? entry.code,
+      );
+    case "connection":
+      return join(
+        operationLabel(origin),
+        origin.transport === "websocket" ? "WebSocket" : "RPC",
+        origin.closeCode ?? entry.code,
+      );
+    case "runtime":
+      return join(
+        entry.method || operationLabel(origin),
+        origin.state,
+        origin.step,
+        origin.containerName ||
+          (origin.containerId ? shortReference(origin.containerId) : undefined),
+      );
+    case "client": {
+      const file =
+        origin.file?.split(/[\\/]/).filter(Boolean).at(-1) || origin.file;
+      const source = file
+        ? `${file}${origin.line ? `:${origin.line}${origin.column ? `:${origin.column}` : ""}` : ""}`
+        : undefined;
+      return join(origin.name, source, entry.method || operationLabel(origin));
+    }
+    default: {
+      const exhaustive: never = origin;
+      return exhaustive;
+    }
+  }
+}
+
 export function presentError(entry: ClientError) {
   const origin = entry.origin;
   const details: [Message, string | number | undefined][] = [
@@ -168,7 +219,20 @@ export function presentError(entry: ClientError) {
       );
       break;
     case "runtime":
+      details.push(
+        ["State", origin.state],
+        ["Step", origin.step],
+        ["Container name", origin.containerName],
+        ["Container ID", origin.containerId],
+      );
+      break;
     case "client":
+      details.push(
+        ["Exception", origin.name],
+        ["File", origin.file],
+        ["Line", origin.line],
+        ["Column", origin.column],
+      );
       break;
     default: {
       const exhaustive: never = origin;
@@ -186,6 +250,7 @@ export function presentError(entry: ClientError) {
   return {
     kind: t(kindLabels[origin.kind]),
     operation: operationLabel(origin),
+    diagnostic: diagnosticValue(entry),
     target: targetLabel(entry),
     details: details.filter(([, value]) => value !== undefined && value !== ""),
   };

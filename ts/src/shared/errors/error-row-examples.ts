@@ -123,8 +123,18 @@ export const errorRowExamples: RowExample[] = [
     { kind: "connection", purpose: "terminal", transport: "rpc" },
     { subject: { kind: "project", alias: "sandbox" } },
   ),
-  ...Object.keys(runtimeActions).map((operation) =>
-    example(
+  ...Object.keys(runtimeActions).map((operation) => {
+    const session =
+      operation === "session-history" || operation === "conversation-stream";
+    const method =
+      operation === "inventory"
+        ? "cxz.ProjectService/Watch"
+        : operation === "session-history"
+          ? "cxz.SessionService/Rows"
+          : operation === "conversation-stream"
+            ? "cxz.SessionService/Events"
+            : "Project runtime";
+    return example(
       `runtime-${operation}`,
       "The resource stopped reporting a healthy state.",
       {
@@ -133,10 +143,23 @@ export const errorRowExamples: RowExample[] = [
           ErrorOrigin,
           { kind: "runtime" }
         >["operation"],
+        ...(operation === "project-status"
+          ? {
+              state: "STOPPED",
+              step: "start-container",
+              containerName: "cxz-web",
+              containerId: "a9981aa99b888ff5a112136c99e59881",
+            }
+          : {}),
       },
-      { subject: { kind: "project", name: "Web workspace" } },
-    ),
-  ),
+      {
+        method,
+        subject: session
+          ? { kind: "session", name: "Release review", alias: "review" }
+          : { kind: "project", name: "Web workspace" },
+      },
+    );
+  }),
   ...Object.keys(clientActions).map((operation) =>
     example(
       `client-${operation}`,
@@ -147,6 +170,27 @@ export const errorRowExamples: RowExample[] = [
           ErrorOrigin,
           { kind: "client" }
         >["operation"],
+        name:
+          operation === "exception"
+            ? "TypeError"
+            : operation === "unhandled-rejection"
+              ? "NetworkError"
+              : "RangeError",
+        ...(operation === "exception"
+          ? {
+              file: "https://workspace.example.com/assets/conversation.js",
+              line: 42,
+              column: 7,
+            }
+          : {}),
+      },
+      {
+        method:
+          operation === "exception"
+            ? "JavaScript"
+            : operation === "unhandled-rejection"
+              ? "Unhandled promise"
+              : "Render preview",
       },
     ),
   ),
