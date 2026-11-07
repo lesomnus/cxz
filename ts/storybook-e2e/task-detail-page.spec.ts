@@ -803,15 +803,33 @@ test("task details use resource panels with information and actions beside the l
     await expect(button.locator("[data-icon]")).toHaveCount(1);
   }
   await expect(detail(page).locator(".floating-card")).toHaveCount(0);
-  const infoBounds = (await information.boundingBox())!;
-  const titleBounds = (await content.boundingBox())!;
-  const actionsBounds = (await actions.boundingBox())!;
+  const { infoBounds, titleBounds, actionsBounds, historyBounds } =
+    await detail(page).evaluate((root) => {
+      const bounds = (label: string) => {
+        const rect = root
+          .querySelector(`[aria-label="${label}"]`)!
+          .getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+      };
+      return {
+        infoBounds: bounds("Task information"),
+        titleBounds: bounds("Task title"),
+        actionsBounds: bounds("Task actions"),
+        historyBounds: bounds("Task change history"),
+      };
+    });
   expect(infoBounds.x).toBeGreaterThanOrEqual(
     titleBounds.x + titleBounds.width,
   );
   expect(titleBounds.width).toBeGreaterThan(infoBounds.width);
   expect(actionsBounds.x).toBeCloseTo(infoBounds.x);
   expect(actionsBounds.width).toBeCloseTo(infoBounds.width);
+  expect(actionsBounds.y + actionsBounds.height).toBeLessThanOrEqual(
+    infoBounds.y,
+  );
+  expect(historyBounds.y).toBeGreaterThanOrEqual(
+    infoBounds.y + infoBounds.height,
+  );
   const fontSize = (node: import("@playwright/test").Locator) =>
     node.evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
   const titleSize = await fontSize(title(page));

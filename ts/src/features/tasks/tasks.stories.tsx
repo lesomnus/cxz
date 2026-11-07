@@ -26,6 +26,8 @@ function TaskPreview({
   olderDone = 0,
   longDetails = false,
   longDoneTitle = false,
+  historyCount = 1,
+  historyUnavailable = false,
 }: {
   count: number;
   unavailable?: boolean;
@@ -35,6 +37,8 @@ function TaskPreview({
   olderDone?: number;
   longDetails?: boolean;
   longDoneTitle?: boolean;
+  historyCount?: number;
+  historyUnavailable?: boolean;
 }) {
   const [reviewCount, setReviewCount] = useState(0);
   const [fixture] = useState(() =>
@@ -44,6 +48,8 @@ function TaskPreview({
       olderDone,
       longDetails,
       longDoneTitle,
+      historyCount,
+      historyUnavailable,
       actionDelay: 200,
       onReview: () => setReviewCount((count) => count + 1),
     }),
@@ -154,6 +160,14 @@ export const ReadOnlyLongTitle: Story = {
     initialPath: "/c/_/project/workspace/task/task-5",
     longDoneTitle: true,
   },
+};
+export const ChangeHistory: Story = {
+  ...TaskDetails,
+  args: { ...TaskDetails.args, historyCount: 28 },
+};
+export const HistoryUnavailable: Story = {
+  ...TaskDetails,
+  args: { ...TaskDetails.args, historyUnavailable: true },
 };
 export const SingleTaskDetails: Story = {
   ...TaskDetails,

@@ -33,6 +33,11 @@
   --task-field-paint-inset: var(--ui-control-inline-inset);
   min-height: 0;
 }
+.history {
+  display: flex;
+  flex: 0 1 auto;
+  min-height: 100px;
+}
 .metadataViewport {
   /* Borrow the Section's existing padding for borders and outside focus rings.
      The content inset restores every field's original position and width. */
@@ -80,6 +85,35 @@
 }
 .readOnlyTitle {
   user-select: text;
+  cursor: copy;
+}
+.expandedTitle {
+  display: block;
+  position: relative;
+}
+.copyTitleText {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: copy;
+  user-select: text;
+}
+.copyFeedback {
+  position: absolute;
+  top: calc(100% + var(--ui-space));
+  right: 0;
+  padding: var(--ui-space);
+  border-radius: var(--ui-space);
+  background: var(--ui-popover-background);
+  color: var(--ui-muted);
+  font: 10px/1.5 var(--ui-font-mono);
 }
 .titleField textarea:not(:focus) {
   color: transparent;

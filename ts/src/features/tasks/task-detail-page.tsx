@@ -189,6 +189,7 @@ export function TaskDetailPage({
             data-task-detail-panel={task?.alias || selected}
           >
             <TaskDetails
+              active={value === current}
               key={`${value}:${editorRevision}`}
               c={c}
               project={project}

@@ -248,10 +248,10 @@ latest task action lets the operator start from the new record. Stable Task IDs
 keep an open detail view associated with its record across alias changes.
 
 The title reserves two lines and clamps excess text with an ellipsis. For
-editable tasks, focus reveals the textarea. Completed titles use a single
-selectable readonly textbox: focusing, dragging or copying does not switch
-rendering or change line breaks. Ctrl/Cmd+A selects the full title, including
-clamped text, for copying. Description always wraps to its
+editable tasks, focus reveals the textarea. Completed titles expand on hover or
+focus in a Nox in-place popover: its width and top edge match the title's frame,
+and only its height grows downward. Clicking the title or the expanded text
+copies the full title. Ctrl/Cmd+A/C remains available. Description always wraps to its
 available width. Its right-aligned Break words
 toggle chooses between whole-word wrapping (including Korean words) and breaking
 inside words. Show control characters overlays spaces, tabs, newlines and other
@@ -291,6 +291,22 @@ value stretching and input appearance; task pages do not override those metrics
 separately for each field.
 Release, Cancel, Save and Discard changes use individual
 panel buttons matching the Project detail actions, with icons and hover labels.
+They occupy the first row of the right panel, above task information. A change
+history table follows the information. It lists retained Audit metadata newest
+first, twenty rows at a time, and refreshes after committed task updates. Older
+pages use a cursor; no polling or duplicate history store is introduced.
+
+`TaskService.History` requires a TaskRef with a project, resolves the task in that
+project and reads the authoritative project's existing audit table. The query
+scope is fixed to that Task ID. Its AuditListResponse includes only row ID,
+object ID, domain, time, operation and changed field numbers; actor/tenant/trace
+metadata, patches, snapshots and digests are not exposed through this endpoint.
+The limit defaults to 20 and is capped at 100. Audit retention can remove old
+rows. Sandboxes keep the same field-level response shape in memory. Managers
+forward this RPC to the project runtime and never fall back to shadow storage.
+Both Manager and project runtime need the updated RPC; an older runtime produces
+an update requirement while the rest of the detail page remains available.
+
 Session and project links reuse the resource navigation buttons, including their
 upper-right arrow. The larger title/description group is on the left. The
 right metadata/actions group sizes to its contents, with an independent scroll area when

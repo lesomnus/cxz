@@ -15,6 +15,7 @@ import {
 } from "#gen/cxz/session_svc_pb";
 import { TaskSchema, TaskStatus, type Task } from "#gen/cxz/task_pb";
 import { TaskService, TaskPatchRequestSchema } from "#gen/cxz/task_svc_pb";
+import { AuditSchema, type Audit } from "#gen/cxz/payday/audit_pb";
 import { key } from "@lesomnus/payday/store";
 import { Connection } from "#src/shared/api/connection.ts";
 
@@ -27,6 +28,8 @@ export function taskFixture(
     olderDone?: number;
     longDetails?: boolean;
     longDoneTitle?: boolean;
+    historyCount?: number;
+    historyUnavailable?: boolean;
     actionDelay?: number;
     onReview?: (request: SessionSendRequest) => void;
   } = {},
@@ -169,10 +172,50 @@ export function taskFixture(
       }),
     );
   }
+  let historySerial = 50000;
+  const history = new Map<string, Audit[]>();
+  const record = (
+    task: Task,
+    action: string,
+    fields: number[],
+    date = task.dateUpdated,
+  ) => {
+    const row = create(AuditSchema, {
+      id: id(historySerial++),
+      objectId: task.id,
+      domain: 11,
+      action: `/cxz.TaskService/${action}`,
+      fields,
+      dateCreated: date,
+    });
+    history.set(key(task.id), [...(history.get(key(task.id)) ?? []), row]);
+  };
+  for (const task of rows) {
+    record(task, "Add", [4, 5, 6, 7, 8, 9, 10], task.dateCreated);
+    for (let i = 1; i < (options.historyCount ?? 1); i++)
+      record(
+        task,
+        "Patch",
+        [5, 10],
+        timestampFromDate(
+          new Date(fixtureTime - (options.historyCount! - i) * 60000),
+        ),
+      );
+  }
   const listeners = new Set<() => void>();
   const notify = () => listeners.forEach((listener) => listener());
-  const update = (task: Task, patch: Partial<Task>) => {
+  const update = (task: Task, patch: Partial<Task>, action = "Patch") => {
     Object.assign(task, patch, { dateUpdated: stamp() });
+    record(
+      task,
+      action,
+      Object.keys(patch)
+        .map(
+          (name) =>
+            TaskSchema.field[name as keyof typeof TaskSchema.field]?.number,
+        )
+        .filter((field): field is number => field !== undefined),
+    );
     notify();
     return clone(TaskSchema, task);
   };
@@ -315,6 +358,27 @@ export function taskFixture(
           })();
         },
         get: (request) => clone(TaskSchema, find(request)),
+        history: (request) => {
+          if (options.historyUnavailable)
+            throw new ConnectError("History unavailable", Code.Unimplemented);
+          const task = find(request);
+          const ordered = [...(history.get(key(task.id)) ?? [])].reverse();
+          const index = request.after
+            ? ordered.findIndex((row) => key(row.id) === request.after)
+            : -1;
+          if (request.after && index < 0)
+            throw new ConnectError(
+              "Invalid history cursor",
+              Code.InvalidArgument,
+            );
+          const start = index + 1,
+            size = Math.min(request.size || 20, 100);
+          const items = ordered.slice(start, start + size);
+          return {
+            items: items.map((row) => clone(AuditSchema, row)),
+            next: start + size < ordered.length ? key(items.at(-1)!.id) : "",
+          };
+        },
         add: (request) => {
           const existing = rows.find(
             (task) => task.clientId === request.clientId,
@@ -332,6 +396,7 @@ export function taskFixture(
             ),
           });
           rows.push(task);
+          record(task, "Add", [4, 5, 6, 7, 8, 9, 10]);
           notify();
           return clone(TaskSchema, task);
         },
@@ -384,11 +449,15 @@ export function taskFixture(
               "Task or session changed",
               Code.FailedPrecondition,
             );
-          return update(task, {
-            assignee: owner.runtimeId,
-            assigneeRun: request.actor.runId,
-            status: TaskStatus.IN_PROGRESS,
-          });
+          return update(
+            task,
+            {
+              assignee: owner.runtimeId,
+              assigneeRun: request.actor.runId,
+              status: TaskStatus.IN_PROGRESS,
+            },
+            "Claim",
+          );
         },
         release: (request) => {
           const task = find(request);
@@ -406,11 +475,15 @@ export function taskFixture(
             request.actor?.runId !== task.assigneeRun
           )
             throw new ConnectError("Owner changed", Code.FailedPrecondition);
-          return update(task, {
-            assignee: "",
-            assigneeRun: "",
-            status: TaskStatus.TODO,
-          });
+          return update(
+            task,
+            {
+              assignee: "",
+              assigneeRun: "",
+              status: TaskStatus.TODO,
+            },
+            "Release",
+          );
         },
       });
       router.service(SessionService, {

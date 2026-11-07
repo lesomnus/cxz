@@ -52,6 +52,7 @@ import {
 } from "./task-detail-panels";
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import actionStyles from "#src/shared/components/resource-action.module.css";
+import { TaskHistory } from "./task-history";
 import {
   taskAssignmentAction,
   randomAssignee,
@@ -90,6 +91,7 @@ function TaskEditor({
   c,
   project,
   task: initialTask,
+  active = true,
   latest,
   sessions,
   saved,
@@ -105,6 +107,7 @@ function TaskEditor({
   c: Connection;
   project: Project;
   task?: Task;
+  active?: boolean;
   latest?: Task;
   sessions: Session[];
   saved: (task: Task) => void;
@@ -611,6 +614,17 @@ function TaskEditor({
             description={descriptionField}
             actions={actions}
             notices={notices}
+            history={
+              task &&
+              active && (
+                <TaskHistory
+                  c={c}
+                  project={project}
+                  task={task}
+                  latest={latest}
+                />
+              )
+            }
           />
         ) : (
           <Card
@@ -704,6 +718,7 @@ export function TaskDetails({
   saved,
   presentation = "dialog",
   setBusy = () => {},
+  active = true,
   onDirtyChange,
 }: {
   c: Connection;
@@ -715,6 +730,7 @@ export function TaskDetails({
   saved: (task: Task) => void;
   presentation?: "dialog" | "page";
   setBusy?: (busy: boolean) => void;
+  active?: boolean;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [task, setTask] = useState(latest);
@@ -774,6 +790,7 @@ export function TaskDetails({
           c={c}
           project={project}
           task={task}
+          active={active}
           latest={latest ?? detail.data}
           sessions={sessions}
           close={close}

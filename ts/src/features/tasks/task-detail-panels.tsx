@@ -25,6 +25,7 @@ export function TaskDetailPanels({
   description,
   actions,
   notices,
+  history,
 }: {
   controls: ReactNode;
   metadata: ReactNode;
@@ -32,6 +33,7 @@ export function TaskDetailPanels({
   description: ReactNode;
   actions: ReactNode;
   notices: ReactNode;
+  history?: ReactNode;
 }) {
   return (
     <ScrollArea
@@ -50,6 +52,13 @@ export function TaskDetailPanels({
           </Section>
         </SectionGroup>
         <SectionGroup className={styles.sidebar}>
+          <SectionGroup
+            role="region"
+            aria-label="Task actions"
+            className={styles.actions}
+          >
+            {actions}
+          </SectionGroup>
           <Section className={styles.information} aria-label="Task information">
             <ScrollArea
               className={styles.metadata}
@@ -71,13 +80,14 @@ export function TaskDetailPanels({
               {notices}
             </ScrollArea>
           </Section>
-          <SectionGroup
-            role="region"
-            aria-label="Task actions"
-            className={styles.actions}
-          >
-            {actions}
-          </SectionGroup>
+          {history && (
+            <Section
+              aria-label="Task change history"
+              className={styles.history}
+            >
+              {history}
+            </Section>
+          )}
         </SectionGroup>
       </ResourceLayout>
     </ScrollArea>

@@ -75,7 +75,7 @@ explained in the mobile plan; it remains Not implemented in the web column.
 
 | ID | CLI | TUI | Web |
 |---|---|---|---|
-| TASK-01 | Shared: built-in agent Task MCP; no task subcommands | Shared: agent Task MCP; no task board or commands | Supported: cached project table, List/changes-only Watch synchronization, details/editing, confirmed Release and owner/source links; shared project/session filters and older-completion paging; agent Task MCP and WASM parity; [Task API](tasks.md), [synchronization](task-synchronization.md) |
+| TASK-01 | Shared: built-in agent Task MCP; no task subcommands | Shared: agent Task MCP; no task board or commands | Supported: cached project table, List/changes-only Watch synchronization, details/editing, confirmed Release and owner/source links; fixed-width readonly title expansion/copy, top actions and paged retained Audit history; shared project/session filters and older-completion paging; agent Task MCP and WASM parity; [Task API](tasks.md), [synchronization](task-synchronization.md) |
 | MEM-01 | No dedicated command | Supported: `/memory` document browsing/search | Supported: project documents, body/label search, preview/source |
 | MEM-02 | No dedicated lifecycle command | Supported: document lifecycle and session seeded from a copy | Supported: create/copy/edit, version history/diff, trash/restore/purge |
 | MEM-03 | Not implemented: no dedicated native-memory browser | Supported: original agent file browser from memory view | Not implemented |
