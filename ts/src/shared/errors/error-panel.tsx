@@ -4,9 +4,9 @@ import {
   Card,
   CardActions,
   ScrollArea,
-  SegmentedControl,
   CompactNumber,
 } from "@lesomnus/nox";
+import { ErrorStatusTabs } from "./error-status-tabs";
 import type { ClientErrors } from "#src/shared/errors/client-errors.ts";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
@@ -20,13 +20,11 @@ export function ErrorPanel({
   store,
   tab,
   onTabChange,
-  mode = "dialog",
   close,
 }: {
   store: ClientErrors;
   tab: string;
   onTabChange: (tab: string) => void;
-  mode?: "dialog" | "page";
   close?: () => void;
 }) {
   useLocale();
@@ -40,72 +38,38 @@ export function ErrorPanel({
   const shown = tab === "history" ? history : active;
   return (
     <Card
-      revealFrom={mode === "dialog" ? "left" : undefined}
-      fill={mode === "page"}
-      className={mode === "page" ? styles.pagePanel : undefined}
+      revealFrom="left"
       title={t("Errors")}
       close={close}
       closeLabel={t("Close errors")}
       bodyPadding={0}
       headerCenter={
         <div className={styles.headerControls}>
-          <SegmentedControl
-            label={t("Error status")}
-            size="compact"
-            value={tab}
+          <ErrorStatusTabs
+            active={active.length}
+            history={history.length}
+            tab={tab}
             onChange={onTabChange}
-            options={[
-              {
-                value: "active",
-                label: `${t("Active")} ${active.length}`,
-                display: (
-                  <>
-                    {t("Active")}
-                    <CompactNumber
-                      value={active.length}
-                      mode="integer"
-                      digits={3}
-                    />
-                  </>
-                ),
-              },
-              {
-                value: "history",
-                label: `${t("History")} ${history.length}`,
-                display: (
-                  <>
-                    {t("History")}
-                    <CompactNumber
-                      value={history.length}
-                      mode="integer"
-                      digits={3}
-                    />
-                  </>
-                ),
-              },
-            ]}
           />
-          {mode === "dialog" && (
-            <RouteLink
-              {...resourceLocation("errors")}
-              search={{ tab: tab === "history" ? "history" : undefined }}
-              variant="toolbar"
-              className={styles.pageLink}
-              aria-label={t("Open errors page")}
-              title={t("Open errors page")}
-              onClick={(event) => {
-                if (
-                  !event.ctrlKey &&
-                  !event.metaKey &&
-                  !event.shiftKey &&
-                  !event.altKey
-                )
-                  close?.();
-              }}
-            >
-              <Icon name="open-external" />
-            </RouteLink>
-          )}
+          <RouteLink
+            {...resourceLocation("errors")}
+            search={{ tab: tab === "history" ? "history" : undefined }}
+            variant="toolbar"
+            className={styles.pageLink}
+            aria-label={t("Open errors page")}
+            title={t("Open errors page")}
+            onClick={(event) => {
+              if (
+                !event.ctrlKey &&
+                !event.metaKey &&
+                !event.shiftKey &&
+                !event.altKey
+              )
+                close?.();
+            }}
+          >
+            <Icon name="open-external" />
+          </RouteLink>
         </div>
       }
       footer={

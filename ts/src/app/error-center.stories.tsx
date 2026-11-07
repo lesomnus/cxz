@@ -168,7 +168,13 @@ function Controls({ fixture: f }: { fixture: ReturnType<typeof makeFixture> }) {
     </main>
   );
 }
-function Preview({ page = false }: { page?: boolean }) {
+function Preview({
+  page = false,
+  overview = false,
+}: {
+  page?: boolean;
+  overview?: boolean;
+}) {
   const [fixture] = useState(makeFixture);
   const [router] = useState(() =>
     createWorkspaceRouter(
@@ -196,8 +202,78 @@ function Preview({ page = false }: { page?: boolean }) {
     ),
   );
   useEffect(() => {
-    if (page && !fixture.errors.snapshot().length)
-      void fixture.request("fail").catch(() => {});
+    if (!fixture.errors.snapshot().length) {
+      if (overview) {
+        const examples = [
+          [
+            "The project container is unavailable. Start the container to reconnect its sessions.",
+            "Project runtime",
+            "Project: Web workspace",
+          ],
+          [
+            "Conversation stream disconnected while waiting for the next response.",
+            "cxz.SessionService/Events",
+            "Session: seal",
+          ],
+          [
+            "Account service is offline",
+            "cxz.AccountService/Get",
+            "Account: work",
+          ],
+          [
+            "File upload failed before the server confirmed receipt.",
+            "Upload",
+            "Project: API workspace",
+          ],
+          [
+            "Memory revision changed. Read the current revision before saving the document.",
+            "cxz.MemoryService/Patch",
+            "Memory: Architecture decisions",
+          ],
+          [
+            "The remote task service did not respond before the request deadline.",
+            "cxz.TaskService/List",
+            "Project: Web workspace",
+          ],
+          [
+            "Provider login was interrupted",
+            "Provider login",
+            "Account: personal",
+          ],
+          [
+            "Project status could not be refreshed",
+            "cxz.ProjectService/Get",
+            "Project: API workspace",
+          ],
+          [
+            "Editor preview could not be rendered",
+            "Markdown preview",
+            "Session: review",
+          ],
+        ];
+        examples.forEach(([message, method, target], index) => {
+          const id = fixture.errors.report(`overview-${index}`, message, {
+            source: "rpc",
+            method,
+            target,
+            connection: "https://workspace.example.com",
+            code: index === 4 ? "Aborted" : "Unavailable",
+            request: crypto.randomUUID(),
+          });
+          if (index === 0)
+            fixture.errors.report(`overview-${index}`, message, {
+              source: "rpc",
+              method,
+              target,
+              connection: "https://workspace.example.com",
+              code: "Unavailable",
+            });
+          if (index === 6 || index === 7)
+            fixture.errors.resolve(`overview-${index}`);
+          if (index === 8 && id) fixture.errors.dismiss(id);
+        });
+      } else if (page) void fixture.request("fail").catch(() => {});
+    }
     window.addEventListener("pagehide", fixture.errors.flush);
     return () => {
       window.removeEventListener("pagehide", fixture.errors.flush);
@@ -216,3 +292,7 @@ export default meta;
 export const Recovery: StoryObj<typeof meta> = {};
 
 export const Page: StoryObj<typeof meta> = { args: { page: true } };
+
+export const Overview: StoryObj<typeof meta> = {
+  args: { page: true, overview: true },
+};

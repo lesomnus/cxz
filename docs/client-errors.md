@@ -2,7 +2,13 @@
 
 The button immediately above Profile opens active errors and their history.
 Its header has an Open errors page link to `/c/_/errors`; the standalone page
-uses the same live store, tabs, record details, Dismiss and Clear history actions.
+uses the same live store and status tabs. It follows the Projects/Tasks resource
+layout: an aligned top toolbar with history controls and a compact Nox table
+with status, message, occurrence count and last-seen columns. Each row expands
+its full message, timestamps, operation/target and resource/request references.
+Dismiss is a row action and Clear history is in the page toolbar. The page does
+not embed or stretch the dialog card. Narrow screens move status/count/time
+into the message row while keeping details readable.
 The current tab is carried into the page, and `/c/_/errors?tab=history` can be
 bookmarked or reloaded directly.
 Its symbol and border are red while there are active errors. Each record shows

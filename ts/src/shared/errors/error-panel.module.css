@@ -83,13 +83,3 @@
   min-height: 24px;
   padding: 0;
 }
-.pagePanel {
-  width: min(100%, 1000px);
-  height: 100%;
-  margin-inline: auto;
-}
-.pagePanel .list {
-  flex: 1;
-  height: auto;
-  min-height: 0;
-}
