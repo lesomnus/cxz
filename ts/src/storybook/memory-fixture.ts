@@ -20,6 +20,7 @@ export function memoryFixture({
   conflict = false,
   migrated = false,
   cards = false,
+  readDelay = 0,
 } = {}) {
   const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
@@ -154,6 +155,7 @@ export function memoryFixture({
       throw new ConnectError("Memory not found", Code.NotFound);
     return m;
   }
+  const readRequests: string[] = [];
   const transport = createRouterTransport(({ service }) =>
     service(MemoryService, {
       list: async (r) => {
@@ -187,7 +189,10 @@ export function memoryFixture({
         };
       },
       get: (r) => ({ ...find(r.ref) }),
-      read: (r) => {
+      read: async (r) => {
+        readRequests.push(key(r.ref!.key.value as Uint8Array));
+        if (readDelay)
+          await new Promise((resolve) => setTimeout(resolve, readDelay));
         const m = find(r.ref),
           history = versions.get(key(m.id))!,
           rev = r.revision || m.revision,
@@ -299,6 +304,7 @@ export function memoryFixture({
   );
   return {
     c: new Connection("http://storybook", transport),
+    readRequests,
     memories: [...rows.values()],
     projects,
     sessions,

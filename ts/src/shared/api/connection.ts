@@ -101,7 +101,7 @@ export class Connection {
     this.transport = this.observe(transport ?? this.httpTransport(rpcFetch));
     this.store = Store.open(entities, {
       name: "cxz",
-      identity: crypto.randomUUID(),
+      identity: cacheIdentity ?? crypto.randomUUID(),
     });
     this.queries = new Queries(this.store, this.transport, entities);
     this.projects = createClient(ProjectService, this.transport);

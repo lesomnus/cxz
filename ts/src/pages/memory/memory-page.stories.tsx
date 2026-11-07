@@ -42,6 +42,8 @@ function Preview({
   migrated = false,
   cards = false,
   document = false,
+  readDelay = 0,
+  cacheControls = false,
 } = {}) {
   const [router] = useState(() => {
     const f = memoryFixture({
@@ -51,6 +53,7 @@ function Preview({
       conflict,
       migrated,
       cards,
+      readDelay,
     });
     const router = createWorkspaceRouter(
       {
@@ -63,6 +66,29 @@ function Preview({
             }}
           >
             <MemoryNavigation />
+            {cacheControls && (
+              <button
+                type="button"
+                style={{ position: "absolute", top: 8, right: 8, zIndex: 10 }}
+                onClick={async () => {
+                  const memory = f.memories[0];
+                  await f.c.memories.patch({
+                    ref: {
+                      key: { case: "id", value: memory.id },
+                      project: {
+                        key: { case: "id", value: memory.project!.id },
+                      },
+                    },
+                    content:
+                      "# Updated remotely\n\nAnother session changed this document.",
+                    baseRevision: memory.revision,
+                    dateUpdated: memory.dateUpdated,
+                  });
+                }}
+              >
+                Update document on server
+              </button>
+            )}
             {children}
           </div>
         ),
@@ -121,3 +147,15 @@ export const RevisionConflict: Story = { args: { conflict: true } };
 export const MigratedDocuments: Story = { args: { migrated: true } };
 
 export const CardGrid: Story = { args: { cards: true } };
+
+export const CachedDocument: Story = {
+  args: { readDelay: 1000, cacheControls: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The full Read RPC is deliberately delayed. Open a document, return to the collection, then reopen it: Payday renders its cached answer immediately and revalidates behind it. Update the server document before reopening to test background refresh and draft/revision protection. This query cache is connection memory; this story does not enable an IndexedDB mirror.",
+      },
+    },
+  },
+};
