@@ -11,6 +11,10 @@ test("images show only progress then size with an image icon and unchanged label
   await expect(image).toHaveAccessibleName("Image attachment");
   await expect(image).not.toContainText("image.png");
   await expect(image.locator("[data-file-chip-label]")).toHaveText(/\d{3}%/);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+  await expect(image.locator("[data-file-chip-label]")).toBeVisible();
   const width = await image
     .locator("[data-file-chip-label]")
     .evaluate((node) => node.getBoundingClientRect().width);

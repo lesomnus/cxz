@@ -3,6 +3,7 @@ import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { createWorkspaceRouter, useWorkspaceRoute } from "#src/app/router.tsx";
 import { Button } from "@lesomnus/nox";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { waitFor } from "storybook/test";
 import { ClientErrors } from "./client-errors";
 import type { ErrorOrigin } from "./error-origin";
 import { ErrorTable } from "./error-table";
@@ -134,11 +135,15 @@ export const RpcDetails: Story = {
   name: "RPC details",
   args: { kind: "rpc" },
   play: async ({ canvasElement }) => {
-    const row = [...canvasElement.querySelectorAll("tr")].find((row) =>
-      row.querySelector('[title*="Transcript"]'),
-    );
-    row?.scrollIntoView({ block: "start" });
-    row?.click();
+    const row = await waitFor(() => {
+      const row = [...canvasElement.querySelectorAll("tr")].find((row) =>
+        row.textContent?.includes("cxz.SessionService/Transcript"),
+      );
+      if (!row) throw new Error("Waiting for the RPC error row");
+      return row;
+    });
+    row.scrollIntoView({ block: "start" });
+    row.click();
   },
 };
 

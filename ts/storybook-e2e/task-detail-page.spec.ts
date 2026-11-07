@@ -777,6 +777,17 @@ test("task details use resource panels with information and actions beside the l
   await page.setViewportSize({ width: 1280, height: 844 });
   await page.goto(story());
   await expect(title(page)).toHaveValue("Connect the task table");
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) =>
+          Number.isFinite(Number(animation.effect?.getTiming().iterations)),
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
   const information = detail(page).getByRole("region", {
     name: "Task information",
     exact: true,
