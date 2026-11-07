@@ -99,7 +99,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Read-only workspace files use the same section radius and compact inset tokens as resource pages. The tab menu copies the active container path, closes all/other tabs, and retains Connect/Disconnect. The explorer's invisible separator still resizes on drag or keyboard focus. This preview uses real Monaco with simulated directory/download requests; slow.txt deliberately finishes late so tab closure can be checked during loading. No server is contacted.",
+          "The file explorer and viewer share one outer background. Viewer padding surrounds a rounded content surface containing the tab bar and Monaco area, both on the editor background. Section radius and compact inset tokens match resource pages. The status strip belongs to the viewer outside content. The tab menu copies the active container path, closes all/other tabs, and retains Connect/Disconnect. The explorer separator still resizes on drag or keyboard focus. This preview uses real Monaco with simulated directory/download requests; slow.txt deliberately finishes late so tab closure can be checked during loading. No server is contacted.",
       },
     },
   },

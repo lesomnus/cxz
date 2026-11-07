@@ -382,15 +382,17 @@ export function WorkspaceEditor({
         <ErrorNotice className="editor-error" error={value.error} />
       )}
       {value.phase === "connected" && !value.simulated ? (
-        <div className="file-content">
-          {tabs}
-          <div className={styles.canvas}>
-            <iframe
-              className={styles.ide}
-              key={frame}
-              title={t("VS Code workspace")}
-              src={`/editor/${encodeURIComponent(id)}/?folder=${encodeURIComponent(value.workspace)}`}
-            />
+        <div className={styles.viewer} data-workspace-viewer>
+          <div className={styles.content} data-workspace-content>
+            {tabs}
+            <div className={styles.editorArea}>
+              <iframe
+                className={styles.ide}
+                key={frame}
+                title={t("VS Code workspace")}
+                src={`/editor/${encodeURIComponent(id)}/?folder=${encodeURIComponent(value.workspace)}`}
+              />
+            </div>
           </div>
         </div>
       ) : (
@@ -423,25 +425,27 @@ export function WorkspaceEditor({
             className={styles.divider}
             label={t("Resize file explorer")}
           />
-          <div className="file-content">
-            {tabs}
-            <div className={styles.canvas}>
-              {opening ? (
-                <div className="file-empty" role="status">
-                  {t("Loading…")}
-                </div>
-              ) : active ? (
-                <FileEditor key={active.path} file={active} />
-              ) : (
-                <div className="file-empty">
-                  {t("Select a file to preview.")}
-                </div>
-              )}
+          <div className={styles.viewer} data-workspace-viewer>
+            <div className={styles.content} data-workspace-content>
+              {tabs}
+              <div className={styles.editorArea}>
+                {opening ? (
+                  <div className="file-empty" role="status">
+                    {t("Loading…")}
+                  </div>
+                ) : active ? (
+                  <FileEditor key={active.path} file={active} />
+                ) : (
+                  <div className="file-empty">
+                    {t("Select a file to preview.")}
+                  </div>
+                )}
+              </div>
             </div>
             {browseError && (
               <ErrorNotice className="editor-error" error={browseError} />
             )}
-            <footer>
+            <footer className={styles.status}>
               <span>{active?.path.replace(root + "/", "") || ""}</span>
               <span>
                 {t("Read only")}

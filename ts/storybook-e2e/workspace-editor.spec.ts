@@ -4,9 +4,9 @@ async function menu(page: Page) {
   await page.getByRole("button", { name: "File actions", exact: true }).click();
   return page.getByRole("menu", { name: "File actions", exact: true });
 }
-async function open(page: Page, story = "tabs") {
+async function open(page: Page, story = "tabs", theme = "dark") {
   await page.goto(
-    `/iframe.html?id=workspace-file-editor--${story}&viewMode=story`,
+    `/iframe.html?id=workspace-file-editor--${story}&viewMode=story&globals=theme:${theme}`,
   );
   const editor = page.getByRole("complementary", { name: "Workspace editor" });
   await expect(editor).toBeVisible();
@@ -61,58 +61,99 @@ test("file tab actions copy the current path, retain the active file and close e
   );
 });
 
-test("file editor uses an inset section surface without a header and keeps resizing available", async ({
-  page,
-}, testInfo) => {
-  const editor = await open(page);
-  await expect(editor.locator(":scope > header")).toHaveCount(0);
-  await expect(editor.locator(".monaco-editor")).toBeVisible();
-  const surface = await editor.locator(".code-editor").evaluate((node) => {
-    const parent = node.parentElement!;
-    const css = getComputedStyle(parent);
-    return {
-      radius: css.borderRadius,
-      token: css.getPropertyValue("--ui-section-radius").trim(),
-      margins: [
-        css.marginTop,
-        css.marginRight,
-        css.marginBottom,
-        css.marginLeft,
-      ],
-      inset: css.getPropertyValue("--ui-control-inset").trim(),
-    };
+for (const theme of ["dark", "light"])
+  test(`viewer owns padding around rounded tab/editor content and keeps resizing available in ${theme}`, async ({
+    page,
+  }, testInfo) => {
+    const editor = await open(page, "tabs", theme);
+    await expect(editor.locator(":scope > header")).toHaveCount(0);
+    await expect(editor.locator(".monaco-editor")).toBeVisible();
+    const surface = await editor
+      .locator("[data-workspace-viewer]")
+      .evaluate((viewer) => {
+        const content = viewer.querySelector<HTMLElement>(
+          "[data-workspace-content]",
+        )!;
+        const explorer = viewer
+          .closest(".file-workbench")!
+          .querySelector(".file-explorer")!;
+        const monaco = content.querySelector(".monaco-editor")!;
+        const css = getComputedStyle(content);
+        const outer = getComputedStyle(viewer);
+        return {
+          radius: css.borderRadius,
+          token: css.getPropertyValue("--ui-section-radius").trim(),
+          padding: [
+            outer.paddingTop,
+            outer.paddingRight,
+            outer.paddingBottom,
+            outer.paddingLeft,
+          ],
+          inset: css.getPropertyValue("--ui-control-inset").trim(),
+          viewerBackground: outer.backgroundColor,
+          explorerBackground: getComputedStyle(explorer).backgroundColor,
+          contentBackground: css.backgroundColor,
+          tabBackground: getComputedStyle(content.firstElementChild!)
+            .backgroundColor,
+          monacoBackground: getComputedStyle(monaco).backgroundColor,
+          children: content.children.length,
+          tabsFirst:
+            !!content.firstElementChild!.querySelector('[role="tablist"]'),
+          editorLast: content.lastElementChild!.contains(monaco),
+          contentBounds: content.getBoundingClientRect().toJSON(),
+          viewerBounds: viewer.getBoundingClientRect().toJSON(),
+        };
+      });
+    expect(surface.radius).toBe(surface.token);
+    expect(surface.padding).toEqual(Array(4).fill(surface.inset));
+    expect(surface.viewerBackground).toBe(surface.explorerBackground);
+    expect(surface.contentBackground).toBe(surface.monacoBackground);
+    expect(surface.tabBackground).toBe(surface.monacoBackground);
+    expect(surface.children).toBe(2);
+    expect(surface.tabsFirst).toBe(true);
+    expect(surface.editorLast).toBe(true);
+    expect(surface.contentBounds.x - surface.viewerBounds.x).toBe(
+      parseFloat(surface.inset),
+    );
+    expect(surface.viewerBounds.right - surface.contentBounds.right).toBe(
+      parseFloat(surface.inset),
+    );
+    expect(surface.contentBounds.y - surface.viewerBounds.y).toBe(
+      parseFloat(surface.inset),
+    );
+    await page.screenshot({
+      path: testInfo.outputPath("workspace-editor.png"),
+    });
+    const divider = editor.getByRole("separator", {
+      name: "Resize file explorer",
+      exact: true,
+    });
+    await page.mouse.move(0, 0);
+    await expect
+      .poll(() =>
+        divider.evaluate(
+          (node) => getComputedStyle(node, "::before").backgroundColor,
+        ),
+      )
+      .toBe("rgba(0, 0, 0, 0)");
+    const explorer = editor.getByRole("navigation", {
+      name: "Workspace files",
+    });
+    const before = (await explorer.boundingBox())!.width;
+    await divider.focus();
+    await divider.press("ArrowRight");
+    await expect
+      .poll(async () => (await explorer.boundingBox())!.width)
+      .toBeGreaterThan(before);
+    await (await menu(page))
+      .getByRole("menuitem", { name: "Connect", exact: true })
+      .click();
+    await expect(editor).toContainText("Simulated");
+    await (await menu(page))
+      .getByRole("menuitem", { name: "Disconnect", exact: true })
+      .click();
+    await expect(editor).not.toContainText("Simulated");
   });
-  expect(surface.radius).toBe(surface.token);
-  expect(surface.margins).toEqual(Array(4).fill(surface.inset));
-  await page.screenshot({ path: testInfo.outputPath("workspace-editor.png") });
-  const divider = editor.getByRole("separator", {
-    name: "Resize file explorer",
-    exact: true,
-  });
-  await page.mouse.move(0, 0);
-  await expect
-    .poll(() =>
-      divider.evaluate(
-        (node) => getComputedStyle(node, "::before").backgroundColor,
-      ),
-    )
-    .toBe("rgba(0, 0, 0, 0)");
-  const explorer = editor.getByRole("navigation", { name: "Workspace files" });
-  const before = (await explorer.boundingBox())!.width;
-  await divider.focus();
-  await divider.press("ArrowRight");
-  await expect
-    .poll(async () => (await explorer.boundingBox())!.width)
-    .toBeGreaterThan(before);
-  await (await menu(page))
-    .getByRole("menuitem", { name: "Connect", exact: true })
-    .click();
-  await expect(editor).toContainText("Simulated");
-  await (await menu(page))
-    .getByRole("menuitem", { name: "Disconnect", exact: true })
-    .click();
-  await expect(editor).not.toContainText("Simulated");
-});
 
 test("the file menu stays on the right while overflowing tabs scroll", async ({
   page,

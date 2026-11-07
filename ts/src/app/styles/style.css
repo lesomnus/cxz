@@ -635,10 +635,11 @@ header strong {
     var(--ui-resize-handle-size) minmax(0, 1fr);
   flex: 1;
   min-height: 0;
+  background: var(--ui-section-background);
 }
 .file-explorer {
   overflow: auto;
-  background: var(--shade-24);
+  background: var(--ui-section-background);
   padding: 4px;
 }
 .file-explorer-heading {
@@ -679,12 +680,6 @@ header strong {
 .file-loading {
   margin-inline-start: 20px;
 }
-.file-content {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-}
 .file-tabs {
   display: flex;
   flex: 0 0 auto;
@@ -723,7 +718,6 @@ header strong {
   min-height: 0;
   overflow: hidden;
 }
-.file-content > footer,
 .settings-file > footer {
   display: flex;
   justify-content: space-between;
@@ -733,7 +727,6 @@ header strong {
   font-size: 10px;
   color: var(--muted);
 }
-.file-content > footer > span:first-child,
 .settings-file > footer > span {
   overflow: hidden;
   text-overflow: ellipsis;

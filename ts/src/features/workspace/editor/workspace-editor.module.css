@@ -1,13 +1,39 @@
+.viewer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--ui-control-inset);
+  background: var(--ui-section-background);
+}
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--ui-section-radius);
+  background: var(--ui-shade-20);
+}
 .tabBar {
   display: flex;
   flex: 0 0 auto;
   align-items: stretch;
   min-width: 0;
-  background: var(--shade-24);
+  background: inherit;
 }
 .tabBar > :global(.file-tabs) {
   flex: 1;
   min-width: 0;
+  background: transparent;
+}
+.tabBar :global(.file-tab):has([aria-selected="true"]) {
+  background: var(--ui-section-background);
+}
+.tabBar :global(button[aria-selected="true"]) {
+  background: transparent;
 }
 .tabActions {
   display: flex;
@@ -23,15 +49,26 @@
   padding: 0;
   border-radius: var(--ui-space);
 }
-.canvas {
+.editorArea {
   display: flex;
   flex: 1;
   min-width: 0;
   min-height: 0;
-  margin: var(--ui-control-inset);
   overflow: hidden;
-  border-radius: var(--ui-section-radius);
-  background: var(--ui-section-background);
+}
+.status {
+  display: flex;
+  justify-content: space-between;
+  gap: calc(2 * var(--ui-space));
+  min-height: 24px;
+  padding: var(--ui-space) calc(2 * var(--ui-space));
+  font-size: 10px;
+  color: var(--muted);
+}
+.status > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .divider:not(:hover, :focus-visible, :active)::before {
   background: transparent;
