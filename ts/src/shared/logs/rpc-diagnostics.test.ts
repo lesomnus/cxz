@@ -173,7 +173,11 @@ it("tracks unary recovery by method and target for custom transports without rec
   ).rejects.toThrow("offline");
   await client.get({ ref: { key: { case: "alias", value: "other" } } });
   await client.status({});
-  expect(errors.snapshot()[0].status).toBe("active");
+  expect(errors.snapshot()[0]).toMatchObject({
+    status: "active",
+    origin: { kind: "rpc", service: "cxz.AccountService", method: "Get" },
+    subject: { kind: "account", alias: "work" },
+  });
   fail = false;
   await client.get({ ref: { key: { case: "alias", value: "work" } } });
   expect(errors.snapshot()[0].status).toBe("resolved");
@@ -253,4 +257,47 @@ it("does not resolve an error when a canceled retry later returns successfully",
   finish();
   await retry;
   expect(errors.snapshot()[0].status).toBe("active");
+});
+
+it("keeps raw RPC reference identity separate from a resolved resource name", async () => {
+  const errors = new ClientErrors();
+  const raw = createRouterTransport((router) =>
+    router.service(SessionService, {
+      transcript: () => {
+        throw new ConnectError("session not found", Code.NotFound);
+      },
+    }),
+  );
+  const client = createClient(
+    SessionService,
+    diagnosticTransport(raw, "https://host.invalid", {
+      errors,
+      write: () => {},
+      describe: (target) => ({
+        ...target,
+        name: "Release review",
+        id: "public-session-id",
+      }),
+    }),
+  );
+  await expect(
+    client.transcript({
+      ref: { key: { case: "runtimeId", value: "runtime-session-id" } },
+    }),
+  ).rejects.toThrow("session not found");
+  const entry = errors.snapshot()[0];
+  expect(entry.subject).toEqual({
+    kind: "session",
+    runtimeId: "runtime-session-id",
+    name: "Release review",
+    id: "public-session-id",
+  });
+  expect(entry.origin).toEqual({
+    kind: "rpc",
+    service: "cxz.SessionService",
+    method: "Transcript",
+  });
+  expect(entry.key).toContain("runtime-session-id");
+  expect(entry.key).not.toContain("Release review");
+  expect(entry.key).not.toContain("public-session-id");
 });

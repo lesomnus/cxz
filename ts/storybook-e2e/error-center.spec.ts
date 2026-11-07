@@ -23,7 +23,10 @@ test("centralizes failures, preserves recovery history and keeps canceled retrie
   );
   await trigger.click();
   await expect(dialog).toContainText("Account service is offline");
-  await expect(dialog).toContainText("Account: work");
+  await expect(dialog).toContainText("Read Account · work");
+  await expect(
+    dialog.getByRole("table", { name: "Errors", exact: true }),
+  ).toBeVisible();
   await expect(
     dialog.getByRole("button", { name: "Close errors" }),
   ).toBeFocused();
@@ -47,7 +50,7 @@ test("centralizes failures, preserves recovery history and keeps canceled retrie
   await expect(dialog).toContainText("No active errors");
   await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
   await expect(dialog).toContainText("Resolved");
-  await expect(dialog).toContainText("2 occurrences");
+  await expect(dialog).toContainText("×002");
   await page.reload();
   await trigger.click();
   await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
@@ -87,7 +90,7 @@ test("retains dismissed errors separately, keeps active errors when clearing his
   await trigger.click();
   await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
   await expect(dialog).toContainText("Resolved");
-  await expect(dialog).toContainText("Session: seal");
+  await expect(dialog).toContainText("Watch conversation · seal");
 });
 
 test("captures sign-out failures and keeps the panel within a small viewport", async ({

@@ -7,6 +7,7 @@ import { AccountService } from "#gen/cxz/account_svc_pb";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
+import type { ErrorContext } from "#src/shared/errors/client-errors.ts";
 import { ClientErrors } from "#src/shared/errors/client-errors.ts";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { ErrorsPage } from "#src/pages/errors/errors-page.tsx";
@@ -231,9 +232,9 @@ function Preview({
             "Memory: Architecture decisions",
           ],
           [
-            "The remote task service did not respond before the request deadline.",
-            "cxz.TaskService/List",
-            "Project: Web workspace",
+            "A background operation failed before completion.",
+            "Background refresh",
+            "",
           ],
           [
             "Provider login was interrupted",
@@ -251,23 +252,98 @@ function Preview({
             "Session: review",
           ],
         ];
-        examples.forEach(([message, method, target], index) => {
-          const id = fixture.errors.report(`overview-${index}`, message, {
+        const contexts: ErrorContext[] = [
+          {
+            source: "resource",
+            origin: { kind: "runtime", operation: "project-status" },
+            subject: { kind: "project", name: "Web workspace" },
+          },
+          {
             source: "rpc",
+            origin: {
+              kind: "rpc",
+              service: "cxz.SessionService",
+              method: "Events",
+            },
+            subject: {
+              kind: "session",
+              name: "Release review",
+              alias: "seal",
+              runtimeId: "89502035e952a2c227802d29",
+            },
+          },
+          {
+            source: "rpc",
+            origin: {
+              kind: "rpc",
+              service: "cxz.AccountService",
+              method: "Get",
+            },
+            subject: { kind: "account", alias: "work" },
+          },
+          {
+            source: "http",
+            origin: {
+              kind: "http",
+              method: "POST",
+              path: "/upload",
+              status: 503,
+            },
+            subject: { kind: "file", name: "design.png" },
+          },
+          {
+            source: "rpc",
+            origin: {
+              kind: "rpc",
+              service: "cxz.MemoryService",
+              method: "Patch",
+            },
+            subject: { kind: "memory", name: "Architecture decisions" },
+          },
+          {
+            source: "client",
+            origin: { kind: "client", operation: "unhandled-rejection" },
+          },
+          {
+            source: "http",
+            origin: {
+              kind: "connection",
+              purpose: "provider-login",
+              transport: "websocket",
+              closeCode: 1006,
+            },
+            subject: { kind: "account", alias: "personal" },
+          },
+          {
+            source: "rpc",
+            origin: {
+              kind: "rpc",
+              service: "cxz.ProjectService",
+              method: "Get",
+            },
+            subject: { kind: "project", name: "API workspace" },
+          },
+          {
+            source: "client",
+            origin: { kind: "client", operation: "exception" },
+          },
+        ];
+        examples.forEach(([message, method, target], index) => {
+          const context = {
+            ...contexts[index],
             method,
             target,
             connection: "https://workspace.example.com",
             code: index === 4 ? "Aborted" : "Unavailable",
             request: crypto.randomUUID(),
-          });
+          };
+          const id = fixture.errors.report(
+            `overview-${index}`,
+            message,
+            context,
+          );
           if (index === 0)
-            fixture.errors.report(`overview-${index}`, message, {
-              source: "rpc",
-              method,
-              target,
-              connection: "https://workspace.example.com",
-              code: "Unavailable",
-            });
+            fixture.errors.report(`overview-${index}`, message, context);
           if (index === 6 || index === 7)
             fixture.errors.resolve(`overview-${index}`);
           if (index === 8 && id) fixture.errors.dismiss(id);

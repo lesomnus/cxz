@@ -19,7 +19,8 @@ test("dialog and independent page share errors, tabs, dismiss and clear history"
   const main = page.getByRole("main", { name: "Errors", exact: true });
   await expect(dialog).toHaveCount(0);
   await expect(main).toContainText("Account service is offline");
-  await expect(main).toContainText("Account: work");
+  await expect(main).toContainText("Read Account");
+  await expect(main).toContainText("work");
   await expect(
     main.getByRole("link", { name: "Open errors page", exact: true }),
   ).toHaveCount(0);
@@ -53,7 +54,7 @@ test("one hour without recurrence becomes Stale while closed, persists and opens
   const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
   await expect(dialog).toContainText("No active errors");
   await dialog.getByRole("radio", { name: "History 1", exact: true }).click();
-  await expect(dialog.getByText("Stale", { exact: true })).toBeVisible();
+  await expect(dialog.getByText(/RPC · Stale/)).toBeVisible();
   await expect(dialog.getByText("Resolved", { exact: true })).toHaveCount(0);
   const link = dialog.getByRole("link", {
     name: "Open errors page",
@@ -87,7 +88,8 @@ for (const width of [1200, 390])
     await page.goto(pageStory);
     const main = page.getByRole("main", { name: "Errors", exact: true });
     await expect(main).toContainText("Account service is offline");
-    await expect(main).toContainText("cxz.AccountService/Get");
+    await expect(main).toContainText("Read Account");
+    await expect(main).not.toContainText("cxz.AccountService/Get");
     await expect(main.locator(".floating-card")).toHaveCount(0);
     const table = main.getByRole("table", { name: "Errors", exact: true });
     await expect(table).toBeVisible();
@@ -105,11 +107,14 @@ for (const width of [1200, 390])
       .getByRole("columnheader", { name: "Message", exact: true })
       .boundingBox())!.width;
     expect(messageWidth / (await table.boundingBox())!.width).toBeGreaterThan(
-      0.6,
+      width < 600 ? 0.6 : 0.2,
     );
     await expect(
       main.getByRole("region", { name: "Error details", exact: true }),
     ).toContainText("First seen");
+    await expect(
+      main.getByRole("region", { name: "Error details", exact: true }),
+    ).toContainText("cxz.AccountService/Get");
     await expect(
       main.getByRole("button", { name: "Close errors", exact: true }),
     ).toHaveCount(0);
@@ -161,4 +166,49 @@ test("resource table handles a populated collection and expands complete per-err
   ).toBeVisible();
   await main.getByRole("radio", { name: "Active 6", exact: true }).click();
   await expect(table.getByRole("row")).toHaveCount(7);
+});
+
+test("normalizes mixed error kinds in the sidebar and page, leaving raw transport fields in details", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=workspace-errors--overview&viewMode=story");
+  const main = page.getByRole("main", { name: "Errors", exact: true });
+  const table = main.getByRole("table", { name: "Errors", exact: true });
+  await expect(
+    table.getByRole("columnheader", { name: "Kind", exact: true }),
+  ).toBeVisible();
+  await expect(
+    table
+      .getByRole("row")
+      .filter({ hasText: "Conversation stream disconnected" }),
+  ).toContainText("Release review");
+  await expect(table).not.toContainText("cxz.SessionService/Events");
+  const upload = table
+    .getByRole("row")
+    .filter({ hasText: "File upload failed" });
+  await expect(upload).toContainText("HTTP");
+  await expect(upload).toContainText("HTTP request");
+  await upload.getByRole("button", { name: "Details", exact: true }).click();
+  const details = main.getByRole("region", {
+    name: "Error details",
+    exact: true,
+  });
+  await expect(details).toContainText("HTTP status");
+  await expect(details).toContainText("503");
+  await expect(details).toContainText("/upload");
+  await page.getByRole("button", { name: "Errors", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Errors", exact: true });
+  const compact = dialog.getByRole("table", { name: "Errors", exact: true });
+  await expect(compact).toContainText("Watch conversation · Release review");
+  await expect(compact).not.toContainText("89502035e952a2c227802d29");
+  await dialog.getByRole("radio", { name: "History 3", exact: true }).click();
+  const login = compact
+    .getByRole("row")
+    .filter({ hasText: "Provider login was interrupted" });
+  await expect(login).toContainText("Connection");
+  await expect(login).toContainText("Provider login · personal");
+  await login.getByRole("button", { name: "Details", exact: true }).click();
+  await expect(
+    dialog.getByRole("region", { name: "Error details", exact: true }),
+  ).toContainText("1006");
 });

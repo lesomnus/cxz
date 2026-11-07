@@ -1,3 +1,8 @@
+.frame {
+  container: error-table / inline-size;
+  min-width: 0;
+  width: 100%;
+}
 .table {
   --ui-table-row-height: var(--resource-table-control-size);
   --ui-table-row-gap: 0px;
@@ -6,14 +11,20 @@
   border-radius: var(--ui-section-radius);
   overflow: clip;
 }
-.statusColumn {
+.kindColumn {
   width: 76px;
+}
+.operationColumn {
+  width: 136px;
+}
+.targetColumn {
+  width: 112px;
 }
 .countColumn {
-  width: 76px;
+  width: 52px;
 }
 .timeColumn {
-  width: 100px;
+  width: 88px;
 }
 .actionsColumn {
   width: 64px;
@@ -24,12 +35,23 @@
 .table td {
   vertical-align: top;
 }
-.status {
-  color: var(--ui-muted);
+.kind,
+.operation,
+.target {
   font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.kind {
+  color: var(--ui-muted);
+}
+.status {
+  display: block;
+  margin-top: 4px;
+  color: var(--ui-muted);
+  font-size: 10px;
   white-space: nowrap;
 }
-[data-status="active"] > .status {
+[data-status="active"] .status {
   color: #ff526d;
 }
 .message {
@@ -42,8 +64,10 @@
   overflow: hidden;
 }
 .context {
-  margin-top: 2px;
-  font: 10px/1.5 var(--ui-font-mono);
+  display: none;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.5;
   color: var(--ui-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -112,13 +136,17 @@
   color: var(--ui-muted);
   font-size: 12px;
 }
-@container resource-page (width < 600px) {
-  .statusColumn,
+@container error-table (width < 720px) {
+  .kindColumn,
+  .operationColumn,
+  .targetColumn,
   .countColumn,
   .timeColumn {
     width: 0;
   }
-  .table .status,
+  .table .kind,
+  .table .operation,
+  .table .target,
   .table .count,
   .table .time {
     width: 0;
@@ -127,13 +155,16 @@
     visibility: hidden;
     font-size: 0;
   }
-  .status > *,
+  .kind > *,
   .count > *,
   .time > * {
     display: none;
   }
   .actionsColumn {
     width: 56px;
+  }
+  .context {
+    display: block;
   }
   .mobileMeta {
     display: flex;
