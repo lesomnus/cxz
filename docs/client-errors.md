@@ -4,11 +4,12 @@ The button immediately above Profile opens active errors and their history.
 Its header has an Open errors page link to `/c/_/errors`; the standalone page
 uses the same live store and status tabs. It follows the Projects/Tasks resource
 layout: an aligned top toolbar with history controls and a compact Nox table
-with status, message, occurrence count and last-seen columns. Each row expands
-its full message, timestamps, operation/target and resource/request references.
+with kind/status, operation, target, message, occurrence count and last-seen
+columns. The dialog uses the same ErrorTable with a compact layout. Each row
+expands its full message, timestamps and original diagnostic references.
 Dismiss is a row action and Clear history is in the page toolbar. The page does
-not embed or stretch the dialog card. Narrow screens move status/count/time
-into the message row while keeping details readable.
+not embed or stretch the dialog card. Narrow screens move kind/status, operation/target and count/time into the
+message cell while keeping details readable.
 The current tab is carried into the page, and `/c/_/errors?tab=history` can be
 bookmarked or reloaded directly.
 Its symbol and border are red while there are active errors. Each record shows
@@ -76,3 +77,35 @@ never contain secrets.
 transport, including delayed/canceled retries, target isolation, stream recovery,
 editable fields and persistent history. `Workspace/Errors → Page` opens the
 independent view directly. The previews use an isolated storage key.
+
+## Structured presentation
+
+`ClientError.origin` is an allowlisted, discriminated union in `error-origin.ts`:
+
+- `rpc`: service and method (the Connect error code remains on the record).
+- `http`: HTTP method, path without query/fragment, and response status when known.
+- `connection`: terminal or provider-login purpose, transport and optional close code.
+- `runtime`: project runtime, inventory or conversation stream health operation.
+- `client`: script exception, unhandled rejection or explicit client operation.
+
+`subject` carries a resource kind with optional name, alias, public ID and runtime
+ID. RPC instrumentation extracts only known reference fields; Connection enriches
+project/session references from its current inventory. Names are captured when a
+failure is reported. No extra lookup RPC is sent to describe an error. Name or
+alias is preferred in the row, then a short identifier, with `—` for no target.
+Full references, raw method, transport/status codes and request ID stay in Details.
+
+`error-presentation.ts` exhaustively maps kinds to common columns and details.
+Known service/method combinations have translated operation names. New RPC
+methods fall back to a readable resource/method label; unknown HTTP endpoints use
+HTTP request with their method/path in Details. Error message text is never parsed
+to infer a kind or resource. Add new operations to these adapters and their locale
+messages rather than branching in either view.
+
+`source` is the older diagnostic provenance field, retained for compatibility and
+transport/health-check deduplication; render `origin.kind` as the error category.
+Records stored before this schema are upgraded from source/method during restore.
+Invalid or unknown metadata falls back without dropping the error. New fields
+are validated, redacted and copied individually on report and restore, so arbitrary
+objects or credentials cannot be persisted as additional properties. Stable
+operation/reference keys and the existing recovery/stale lifecycle are unchanged.
