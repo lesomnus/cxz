@@ -219,9 +219,9 @@ for (const width of [1280, 390]) {
       "aria-valuenow",
       "64",
     );
-    const empty = gauge.locator("[data-quota-vessel]");
-    const cap = empty.locator("[data-quota-empty]");
-    const contour = cap.locator("[data-quota-contour]");
+    const empty = gauge.locator("[data-liquid-vessel]");
+    const cap = empty.locator("[data-liquid-empty]");
+    const contour = cap.locator("[data-liquid-contour]");
     await expect
       .poll(() =>
         contour.evaluate((node) => (node as SVGPathElement).getBBox().height),

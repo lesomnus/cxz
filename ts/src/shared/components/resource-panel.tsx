@@ -1,9 +1,13 @@
 import type { ComponentProps, ReactNode } from "react";
+import {
+  NavigationPanelRoot,
+  NavigationPanelHeader,
+  NavigationPanelTitle,
+  NavigationPanelActions,
+  NavigationPanelScrollBody,
+} from "@lesomnus/nox";
 import { PanelScroll } from "./panel-scroll";
 import styles from "./resource-panel.module.css";
-
-// Persistent resource navigation uses the same distinct header and rounded
-// inset body as Card, without modal behavior or floating-card effects.
 export function ResourcePanel({
   title,
   actions,
@@ -17,12 +21,20 @@ export function ResourcePanel({
   unreadSelector?: string;
 }) {
   return (
-    <aside {...props} className={`resource-panel ${styles.panel} ${className}`}>
-      <header className={styles.header}>
-        <strong className={styles.title}>{title}</strong>
-        {actions && <div className={styles.actions}>{actions}</div>}
-      </header>
-      <PanelScroll unreadSelector={unreadSelector}>{children}</PanelScroll>
-    </aside>
+    <NavigationPanelRoot
+      {...props}
+      className={`resource-panel ${styles.panel} ${className}`}
+    >
+      <NavigationPanelHeader>
+        <NavigationPanelTitle>{title}</NavigationPanelTitle>
+        {actions && <NavigationPanelActions>{actions}</NavigationPanelActions>}
+      </NavigationPanelHeader>
+      <NavigationPanelScrollBody
+        as={PanelScroll}
+        data-unread-selector={unreadSelector}
+      >
+        {children}
+      </NavigationPanelScrollBody>
+    </NavigationPanelRoot>
   );
 }

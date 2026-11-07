@@ -15,6 +15,7 @@ export function ResourceControlGroup({
 }) {
   return (
     <div
+      data-form-control-group
       role="group"
       aria-label={label}
       className={`resource-control-group ${styles.group}`}

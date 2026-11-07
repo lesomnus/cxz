@@ -1,5 +1,6 @@
 import {
   Section,
+  LiquidGauge,
   AnimatedCompactNumber,
   AnimatedDurationDisplay,
 } from "@lesomnus/nox";
@@ -8,10 +9,6 @@ import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { readAccountQuota } from "./account-quota";
-import {
-  QUOTA_TUBE_VIEWBOX,
-  quotaEmptyContour,
-} from "./account-quota-meniscus";
 import { accountReadPrefix, USAGE_TTL } from "#src/shared/api/read-cache.ts";
 import styles from "./accounts.module.css";
 
@@ -89,48 +86,29 @@ export function AccountQuotaSquare({
       aria-label="Remaining agent usage"
       data-quota-level={level}
     >
-      <span className={styles.quotaGauge}>
-        <span
-          className={styles.quotaVessel}
-          data-quota-vessel=""
-          aria-hidden="true"
-        >
-          <svg
-            className={styles.quotaEmpty}
-            data-quota-empty=""
-            viewBox={QUOTA_TUBE_VIEWBOX}
-            preserveAspectRatio="none"
-          >
-            <path data-quota-contour="" d={quotaEmptyContour(remaining)} />
-          </svg>
-        </span>
-        <span
-          className={styles.quotaValue}
-          role={percent === undefined ? "img" : "meter"}
-          aria-label={
-            percent === undefined
-              ? quota.error
-                ? "Usage unavailable"
-                : "Not reported"
-              : "Remaining agent usage"
-          }
-          aria-valuemin={percent === undefined ? undefined : 0}
-          aria-valuemax={percent === undefined ? undefined : 100}
-          aria-valuenow={percent}
-          aria-valuetext={
-            percent === undefined ? undefined : `${percent}% remaining`
-          }
-        >
-          <AnimatedCompactNumber
-            mode="integer"
-            digits={percent === 100 ? 3 : 2}
-            value={percent ?? NaN}
-            muted={percent === undefined}
-            animate={!quota.fromCache}
-          />
-          <span className={styles.quotaUnit}>%</span>
-        </span>
-      </span>
+      <LiquidGauge
+        className={styles.quotaGauge}
+        value={remaining}
+        aria-label={
+          percent === undefined
+            ? quota.error
+              ? "Usage unavailable"
+              : "Not reported"
+            : "Remaining agent usage"
+        }
+        aria-valuetext={
+          percent === undefined ? undefined : `${percent}% remaining`
+        }
+      >
+        <AnimatedCompactNumber
+          mode="integer"
+          digits={percent === 100 ? 3 : 2}
+          value={percent ?? NaN}
+          muted={percent === undefined}
+          animate={!quota.fromCache}
+        />
+        <span className={styles.quotaUnit}>%</span>
+      </LiquidGauge>
       <span className={styles.quotaReset}>
         <AnimatedDurationDisplay
           animate={!quota.fromCache}

@@ -339,7 +339,7 @@ test("the populated options story handles Unicode whole words and keeps narrow c
     .toBe(3);
   await page.setViewportSize({ width: 360, height: 800 });
   const geometry = await search.evaluate((el) => {
-    const form = el.querySelector("form")!;
+    const form = el.querySelector("input")!.parentElement!;
     const input = el.querySelector("input")!.getBoundingClientRect();
     const close = el
       .querySelector<HTMLElement>('button[aria-label="Close search"]')!

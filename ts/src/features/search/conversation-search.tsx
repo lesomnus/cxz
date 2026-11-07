@@ -6,8 +6,12 @@ import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useEffect, useRef, useState } from "react";
 import {
   Button,
-  ToggleButton,
-  Popover,
+  FindBar,
+  FindBarControls,
+  FindBarIcon,
+  FindBarInput,
+  FindBarOptions,
+  FindBarAction,
   PrefixValueMenu,
   DatePicker,
 } from "@lesomnus/nox";
@@ -20,7 +24,6 @@ import type { Project } from "#gen/cxz/project_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import styles from "./conversation-search.module.css";
-import bar from "#src/shared/components/search-bar.module.css";
 
 export function ConversationSearch({
   c,
@@ -148,17 +151,10 @@ export function ConversationSearch({
           if (!loading) void search();
         }}
       >
-        <div className={bar.surface}>
-          <div className={bar.controls}>
-            <Icon
-              name="search"
-              className={bar.icon}
-              width="16"
-              height="16"
-              aria-hidden="true"
-            />
-            <input
-              className={bar.input}
+        <FindBar aria-label="Search conversations">
+          <FindBarControls>
+            <FindBarIcon />
+            <FindBarInput
               type="search"
               aria-label="Search conversations"
               placeholder="Search conversations"
@@ -169,53 +165,35 @@ export function ConversationSearch({
                 setQuery(event.target.value);
               }}
             />
-            <div className={bar.modes} role="group" aria-label="Search options">
-              <Popover content="Match case">
-                <ToggleButton
-                  className={bar.mode}
-                  variant="toolbar"
-                  aria-label="Match case"
-                  pressed={!ignoreCase}
-                  onPressedChange={(pressed) => {
-                    invalidate();
-                    setIgnoreCase(!pressed);
-                  }}
-                >
-                  <span aria-hidden="true">Aa</span>
-                </ToggleButton>
-              </Popover>
-              <Popover content="Use regular expression">
-                <ToggleButton
-                  className={bar.mode}
-                  variant="toolbar"
-                  aria-label="Use regular expression"
-                  pressed={match === "regex"}
-                  onPressedChange={(pressed) => {
-                    invalidate();
-                    setMatch(pressed ? "regex" : "substring");
-                  }}
-                >
-                  <span aria-hidden="true">.*</span>
-                </ToggleButton>
-              </Popover>
-              <Popover content="Fuzzy search">
-                <ToggleButton
-                  className={bar.mode}
-                  variant="toolbar"
-                  aria-label="Fuzzy search"
-                  pressed={match === "fuzzy"}
-                  onPressedChange={(pressed) => {
-                    invalidate();
-                    setMatch(pressed ? "fuzzy" : "substring");
-                  }}
-                >
-                  <span aria-hidden="true">≈</span>
-                </ToggleButton>
-              </Popover>
-            </div>
+            <FindBarOptions
+              options={[
+                {
+                  id: "matchCase",
+                  label: "Match case",
+                  symbol: "Aa",
+                  pressed: !ignoreCase,
+                },
+                {
+                  id: "regex",
+                  label: "Use regular expression",
+                  symbol: ".*",
+                  pressed: match === "regex",
+                },
+                {
+                  id: "fuzzy",
+                  label: "Fuzzy search",
+                  symbol: "≈",
+                  pressed: match === "fuzzy",
+                },
+              ]}
+              onChange={(id, pressed) => {
+                invalidate();
+                if (id === "matchCase") setIgnoreCase(!pressed);
+                else setMatch(pressed ? id : "substring");
+              }}
+            />
             {loading ? (
-              <Button
-                className={bar.action}
+              <FindBarAction
                 variant="toolbar"
                 type="button"
                 aria-label="Stop search"
@@ -228,10 +206,9 @@ export function ConversationSearch({
                 }}
               >
                 <Icon name="stop" width="14" height="14" aria-hidden="true" />
-              </Button>
+              </FindBarAction>
             ) : (
-              <Button
-                className={bar.action}
+              <FindBarAction
                 variant="toolbar"
                 type="submit"
                 aria-label="Search"
@@ -244,10 +221,10 @@ export function ConversationSearch({
                   height="16"
                   aria-hidden="true"
                 />
-              </Button>
+              </FindBarAction>
             )}
-          </div>
-        </div>
+          </FindBarControls>
+        </FindBar>
         <div className={styles.filterBar}>
           <PrefixValueMenu
             prefix={<ResourceIcon kind="projects" />}

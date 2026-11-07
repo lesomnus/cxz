@@ -34,7 +34,7 @@ import {
 } from "#src/shared/navigation/resource-route.ts";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import styles from "./memory-page.module.css";
-import { ResourceDetailPages } from "#src/shared/components/resource-detail-pages.tsx";
+import { ListDetailPages } from "@lesomnus/nox";
 
 export function MemoryPage({
   c,
@@ -157,7 +157,7 @@ export function MemoryPage({
           }
         />
       </ResourceToolbar>
-      <ResourceDetailPages
+      <ListDetailPages
         key={id}
         scope={c}
         open={detailOpen}

@@ -110,6 +110,35 @@ bound and dashboard together. Do not introduce per-page widths or breakpoints fo
 these dashboards. Pages supply content, content-specific information heights and
 the optional `actionsFirstOnNarrow` ordering; they do not redefine the layout.
 
+## Shared UI ownership
+
+Nox owns the document UI primitives `ImageViewer`, `PathValue`, `ActivityDots`,
+`LiquidGauge`, `Tabs`, `FindBar`, `ActivityHeatmap` and `ListDetailPages`, plus the
+fine grain texture token. Each has standalone stories and package-local styles.
+Use public Nox exports instead of copying their JSX, gestures or CSS into cxz.
+
+cxz adapters retain only application concerns:
+
+- Image attachment loading supplies an abortable Blob loader; Nox owns zoom,
+  panning, transparency and cleanup.
+- Session identity supplies activity seeds; quota adapters supply remaining
+  values, thresholds and refresh policy.
+- Question tabs supply completion icons. Search supplies event interpretation,
+  snippets, match navigation and focus/shortcut policy. Usage supplies daily
+  aggregation; Nox renders the search surface and heatmap.
+- ResourceFields translates resource metadata and copy feedback into Nox
+  DescriptionList parts. DescriptionList and Form share field layout styles.
+- DateTime converts protobuf timestamps; IdentifierValue and CopyButton retain
+  app-specific prop/layout adaptation. ResourcePanel composes NavigationPanel
+  with unread-aware PanelScroll. ComposerAurora uses AuroraGlow directly.
+- Pages use Nox ListDetailPages directly for lazy mounting, outgoing detail
+  lifetime and fresh editors after rapid reentry. Routing and dirty guards remain
+  with the page.
+
+The reusable package must not import generated protocol types, connection stores,
+resource routes or application translations. Its CSS Modules and theme tokens are
+shared design values' source of truth.
+
 ## Module imports
 
 `ts/package.json` defines the application's internal paths with the standard `imports` field:

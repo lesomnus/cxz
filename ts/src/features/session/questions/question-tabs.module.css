@@ -38,7 +38,7 @@
 .history :global(.button-content) {
   grid-template-columns: minmax(0, 1fr);
 }
-.tabs :global(.tab-label) {
+.tabs :global([data-tab-label]) {
   display: flex;
   justify-content: center;
   text-align: center;
@@ -54,4 +54,8 @@
 }
 .tabs :global(.tab-answered) path {
   stroke: var(--question-tab-check-color);
+}
+
+.tabs :global([data-tab-icon]) {
+  margin: 0;
 }

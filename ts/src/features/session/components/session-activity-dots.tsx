@@ -1,7 +1,11 @@
-import type { CSSProperties } from "react";
+import { ActivityDots } from "@lesomnus/nox";
 import type { Session } from "#gen/cxz/session_pb";
-import { activityDots, sessionActivity } from "./session-activity";
-
+import { sessionActivity } from "./session-activity";
+const palette = [
+  "var(--aurora-green)",
+  "var(--aurora-cyan)",
+  "var(--aurora-violet)",
+];
 export function SessionActivityDots({
   session,
   className,
@@ -9,31 +13,14 @@ export function SessionActivityDots({
   session: Pick<Session, "id" | "runtimeId" | "status">;
   className?: string;
 }) {
-  const activity = sessionActivity(session);
+  const { seed } = sessionActivity(session);
   return (
-    <svg
-      key={activity.seed}
+    <ActivityDots
+      key={seed}
+      seed={seed}
+      palette={palette}
       className={className}
-      width="12"
-      height="16"
-      viewBox="0 0 12 16"
-      aria-hidden="true"
-    >
-      {activityDots.map(([cx, cy], index) => (
-        <circle
-          className="session-activity-dot"
-          key={index}
-          cx={cx}
-          cy={cy}
-          r="1.3"
-          style={
-            {
-              animationDelay: `calc((${index} + ${activity.phase}) * var(--session-dot-step) * -1)`,
-              "--session-dot-highlight": `var(--aurora-${activity.colors[index]})`,
-            } as CSSProperties
-          }
-        />
-      ))}
-    </svg>
+      dotClassName="session-activity-dot"
+    />
   );
 }

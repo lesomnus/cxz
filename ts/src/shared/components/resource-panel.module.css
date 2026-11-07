@@ -1,64 +1,11 @@
-.panel {
-  --panel-border-color: var(--ui-shade-36);
-  --panel-border-width: 1px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  /* Continue the header's edge past the inset body without adding another
-     border to the body itself. */
-  background:
-    linear-gradient(
-      to left,
-      var(--panel-border-color) var(--panel-border-width),
-      transparent var(--panel-border-width)
-    ),
-    var(--ui-shade-16);
-}
-.header {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: var(--ui-space);
-  /* Share the action-to-container spacing with Card's footer. */
-  padding: var(--ui-space);
-  border-right: var(--panel-border-width) solid var(--panel-border-color);
-}
-.title {
-  flex: 1;
-  min-width: 0;
-  padding: 0 var(--ui-dialog-padding);
-}
-.actions {
-  display: flex;
-  flex: 0 0 auto;
-  justify-content: flex-end;
-  margin-left: auto;
-}
-.actions button {
-  width: var(--ui-toolbar-button-width);
-  border: 0;
-  background: var(--ui-shade-32);
-}
-.panel > :global(.panel-scroll-region) {
-  --ui-scroll-area-background: var(--ui-dialog-body-background);
-  background: var(--ui-scroll-area-background);
-  margin-left: var(--ui-control-inset);
-  margin-right: calc(var(--ui-control-inset) + var(--panel-border-width));
-  border-radius: var(--ui-dialog-radius) var(--ui-dialog-radius) 0 0;
-  overflow: hidden;
-}
-.panel :global(.panel-scroll-inner) {
-  padding: var(--ui-control-inset);
-}
-
-.actions button:global(.session-panel-menu-trigger) {
+.panel
+  :global([data-navigation-panel-actions])
+  button:global(.session-panel-menu-trigger) {
   border: 0;
   background: transparent;
 }
-.actions
+.panel
+  :global([data-navigation-panel-actions])
   button:global(.session-panel-menu-trigger):is(
     :hover,
     [aria-expanded="true"]

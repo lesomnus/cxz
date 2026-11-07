@@ -21,7 +21,7 @@ const resources = [
   },
 ] as const;
 
-const frame = (page: Page) => page.locator("[data-resource-detail-pages]");
+const frame = (page: Page) => page.locator("[data-list-detail-pages]");
 const slot = (root: Locator, value: string) =>
   root.locator(`:scope > [data-sliding-page="${value}"]`);
 async function finish(root: Locator) {
@@ -66,18 +66,21 @@ for (const resource of resources) {
       .elementHandle();
     await page.getByRole("link", { name: resource.item, exact: true }).click();
     await expect(root).toHaveAttribute("data-value", "detail");
-    const policy = await root.evaluate((node) => ({
-      duration: getComputedStyle(node)
+    const policy = await root.evaluate((node) => {
+      const style = getComputedStyle(node);
+      const duration = style
         .getPropertyValue("--ui-sliding-pages-duration")
-        .trim(),
-      easing: getComputedStyle(node)
-        .getPropertyValue("--ui-sliding-pages-easing")
-        .trim(),
-    }));
-    expect(policy).toEqual({
-      duration: "500ms",
-      easing: "cubic-bezier(0.4, 0.85, 0, 0.95)",
+        .trim();
+      return {
+        duration: parseFloat(duration) * (duration.endsWith("ms") ? 1 : 1000),
+        easing: [
+          ...style
+            .getPropertyValue("--ui-sliding-pages-easing")
+            .matchAll(/[\d.]+/g),
+        ].map((part) => Number(part[0])),
+      };
     });
+    expect(policy).toEqual({ duration: 500, easing: [0.4, 0.85, 0, 0.95] });
     const entering = await midpoint(root);
     expect(entering.count).toBeGreaterThan(0);
     expect(entering.offsets[0]).toBeLessThan(0);

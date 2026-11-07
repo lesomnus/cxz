@@ -32,7 +32,7 @@ import { listAccounts } from "#src/features/accounts/account-data.ts";
 import type { Account } from "#gen/cxz/account_pb";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
 import styles from "./projects-page.module.css";
-import { ResourceDetailPages } from "#src/shared/components/resource-detail-pages.tsx";
+import { ListDetailPages } from "@lesomnus/nox";
 import {
   ResourceLayout,
   ResourcePage,
@@ -100,7 +100,7 @@ export function ProjectsPage({
           }
         />
       </ResourceToolbar>
-      <ResourceDetailPages
+      <ListDetailPages
         scope={c}
         open={!!selected}
         list={

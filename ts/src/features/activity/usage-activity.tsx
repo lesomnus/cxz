@@ -1,14 +1,10 @@
-import { useLayoutEffect, useRef } from "react";
+import { ActivityHeatmap } from "@lesomnus/nox";
 import type { ConversationStatsReply } from "#gen/cxz/session_svc_pb";
 import {
   usageActivityDays,
-  usageActivityCells,
-  usageActivityWeeks,
   usageActivityRange,
   type ActivityDay,
 } from "./usage-activity-data";
-import styles from "./usage-activity.module.css";
-
 export function UsageActivity({
   stats,
   loading,
@@ -26,100 +22,22 @@ export function UsageActivity({
   onSelect: (day: ActivityDay) => void;
   onWeeksChange: (weeks: number) => void;
 }) {
-  const grid = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const element = grid.current;
-    if (!element) return;
-    const measure = () => {
-      const style = getComputedStyle(element);
-      const size = parseFloat(style.getPropertyValue("--activity-cell-size"));
-      const gap = parseFloat(style.rowGap);
-      const width = element.getBoundingClientRect().width;
-      onWeeksChange(usageActivityWeeks(width, size, gap));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [onWeeksChange]);
   const days = usageActivityDays(
-    stats ?? {
-      ...usageActivityRange(weeks, toMs),
-      days: [],
-    },
-  );
-  const cells = usageActivityCells(days);
+    stats ?? { ...usageActivityRange(weeks, toMs), days: [] },
+  ).map((day) => ({
+    ...day,
+    label: `${day.date} (UTC): ${day.values?.finishedTurns ?? 0n} finished turns`,
+  }));
   return (
-    <section
-      className={styles.activity}
-      aria-label="Daily activity"
-      aria-busy={loading}
-    >
-      <div className={styles.header}>
-        <span>Daily activity</span>
-        {days.length > 0 && (
-          <span className={styles.period}>
-            {days[0].date} – {days.at(-1)!.date} · UTC
-          </span>
-        )}
-      </div>
-      <div className={styles.calendar}>
-        <div className={styles.weekdays} aria-hidden="true">
-          {["", "Mon", "", "Wed", "", "Fri", ""].map((label, i) => (
-            <span key={i}>{label}</span>
-          ))}
-        </div>
-        <div className={styles.days} ref={grid}>
-          {cells.map(({ date, day, future }) =>
-            day || future ? (
-              <div
-                key={date}
-                className={styles.day}
-                data-date={date}
-                data-month={date.slice(0, 7)}
-                data-month-tone={
-                  Number(date.slice(5, 7)) % 2 === 0 ? "soft" : "dim"
-                }
-              >
-                {day && stats ? (
-                  <button
-                    type="button"
-                    className={styles.cell}
-                    data-level={day.level}
-                    aria-pressed={selectedDate === date}
-                    aria-label={`${date} (UTC): ${day.values?.finishedTurns ?? 0n} finished turns`}
-                    onClick={() => onSelect(day)}
-                  />
-                ) : (
-                  <span
-                    className={styles.cell}
-                    data-future={future || undefined}
-                    data-placeholder={!stats || undefined}
-                    aria-hidden="true"
-                  />
-                )}
-              </div>
-            ) : (
-              <span key={date} aria-hidden="true" />
-            ),
-          )}
-        </div>
-      </div>
-      <div
-        className={styles.legend}
-        aria-label="Color intensity: finished turns per day"
-      >
-        <span>Less</span>
-        {[0, 1, 2, 3, 4].map((level) => (
-          <span
-            key={level}
-            className={styles.cell}
-            data-level={level}
-            aria-hidden="true"
-          />
-        ))}
-        <span>More turns</span>
-      </div>
-    </section>
+    <ActivityHeatmap
+      days={days}
+      loading={loading}
+      placeholder={!stats}
+      selectedDate={selectedDate}
+      onSelect={onSelect}
+      onWeeksChange={onWeeksChange}
+      moreLabel="More turns"
+      legendLabel="Color intensity: finished turns per day"
+    />
   );
 }

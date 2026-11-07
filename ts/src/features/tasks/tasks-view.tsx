@@ -16,7 +16,7 @@ import { useProjectTasks } from "./task-catalog";
 import { TaskTable } from "./task-table";
 import { TaskDialog } from "./task-dialog";
 import { TaskDetailPage } from "./task-detail-page";
-import { ResourceDetailPages } from "#src/shared/components/resource-detail-pages.tsx";
+import { ListDetailPages } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { taskKey } from "./task-model";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -172,7 +172,7 @@ export function TasksView({
             }
           />
         </ResourceToolbar>
-        <ResourceDetailPages
+        <ListDetailPages
           key={projectId}
           scope={c}
           open={detailOpen}

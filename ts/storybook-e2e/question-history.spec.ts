@@ -83,7 +83,7 @@ test("Question dialog keeps status tabs while history shows numbered surface but
   const appearance = (tab: Locator) =>
     tab.evaluate((node) => {
       const style = getComputedStyle(node);
-      const label = node.querySelector(".tab-label")!;
+      const label = node.querySelector("[data-tab-label]")!;
       return {
         width: style.width,
         height: style.height,

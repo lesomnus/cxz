@@ -21,7 +21,7 @@ for (const width of [1000, 800, 360]) {
       }, width);
       // Details reserve space inside the frame for their own scrollbar.
       const layout = story.endsWith("--task-details")
-        ? main.locator("[data-sliding-pages]")
+        ? main.locator('[data-sliding-pages][data-orientation="vertical"]')
         : main.locator("[data-resource-layout]").first();
       await expect(layout).toBeVisible();
       const toolbar = main.locator("[data-resource-toolbar-content]");
