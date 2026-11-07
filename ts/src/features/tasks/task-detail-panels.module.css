@@ -30,7 +30,20 @@
 }
 .metadata {
   --ui-scroll-area-background: var(--ui-section-background);
+  --task-field-paint-inset: var(--ui-control-inline-inset);
   min-height: 0;
+}
+.metadataViewport {
+  /* Borrow the Section's existing padding for borders and outside focus rings.
+     The content inset restores every field's original position and width. */
+  width: calc(100% + 2 * var(--task-field-paint-inset));
+  margin-inline: calc(-1 * var(--task-field-paint-inset));
+}
+.metadataContent {
+  padding-inline-start: var(--task-field-paint-inset);
+  padding-inline-end: calc(
+    var(--task-field-paint-inset) + var(--ui-scroll-area-content-inset, 0px)
+  );
 }
 .actions {
   flex: none;

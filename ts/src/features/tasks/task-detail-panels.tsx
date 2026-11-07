@@ -53,6 +53,8 @@ export function TaskDetailPanels({
           <Section className={styles.information} aria-label="Task information">
             <ScrollArea
               className={styles.metadata}
+              viewportClassName={styles.metadataViewport}
+              contentClassName={styles.metadataContent}
               scrollbarOffset={0}
               style={
                 {

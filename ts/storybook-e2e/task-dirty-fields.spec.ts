@@ -3,6 +3,68 @@ import { expect, test, type Locator } from "@playwright/test";
 const shadow = (input: Locator) =>
   input.evaluate((node) => getComputedStyle(node).boxShadow);
 
+for (const width of [1280, 390]) {
+  test(`Alias borders and focus rings fit inside horizontal clipping boundaries at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(
+      "/iframe.html?id=resources-tasks--task-details&viewMode=story",
+    );
+    const alias = page
+      .getByRole("region", { name: "Task details", exact: true })
+      .getByRole("textbox", { name: "Alias", exact: true });
+    await expect(alias).toHaveValue("task-3");
+    await alias.fill("changed-alias");
+    await alias.scrollIntoViewIfNeeded();
+    await alias.focus();
+    const color = await alias.evaluate((input) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 1;
+      const context = canvas.getContext("2d")!;
+      context.fillStyle = getComputedStyle(input).getPropertyValue(
+        "--ui-color-input-dirty-border",
+      );
+      context.fillRect(0, 0, 1, 1);
+      return [...context.getImageData(0, 0, 1, 1).data];
+    });
+    expect(Math.max(...color.slice(0, 3))).toBeLessThan(130);
+    expect(color[3]).toBe(255);
+    const edges = await alias.evaluate((input) => {
+      const rect = input.getBoundingClientRect();
+      const style = getComputedStyle(input);
+      const outset =
+        parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset);
+      const clips = [];
+      for (let node = input.parentElement; node; node = node.parentElement) {
+        if (
+          !["auto", "scroll", "hidden", "clip"].includes(
+            getComputedStyle(node).overflowX,
+          )
+        )
+          continue;
+        const clip = node.getBoundingClientRect();
+        clips.push({
+          left: rect.left - outset - clip.left,
+          right: clip.right - rect.right - outset,
+        });
+      }
+      return { outset, clips };
+    });
+    expect(edges.outset).toBeGreaterThan(0);
+    expect(edges.clips.length).toBeGreaterThan(0);
+    for (const clip of edges.clips) {
+      expect(clip.left).toBeGreaterThanOrEqual(-0.1);
+      expect(clip.right).toBeGreaterThanOrEqual(-0.1);
+    }
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  });
+}
+
 test("unsaved fields gain a muted border independently and clear on revert, discard and save", async ({
   page,
 }) => {
