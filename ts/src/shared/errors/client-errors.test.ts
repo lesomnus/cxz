@@ -176,3 +176,71 @@ it("expires persisted old active records on restore and preserves stale status a
   restored.flush();
   expect(new ClientErrors({ storage: disk }).snapshot()).toEqual([]);
 });
+
+it("dismisses all Active episodes in one update, preserving history, persistence and recurrence", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-07T14:00:00Z"));
+  const disk = storage();
+  const errors = new ClientErrors({ storage: disk });
+  errors.report("old", "Old failure");
+  vi.advanceTimersByTime(errorStaleAfter + 1);
+  errors.report("A", "First failure");
+  errors.report("B", "Second failure");
+  errors.report("B", "Second failure");
+  errors.report("recovered", "Recovered failure");
+  errors.resolve("recovered");
+  const history = errors
+    .snapshot()
+    .filter((entry) => entry.status !== "active");
+  const active = errors.snapshot().filter((entry) => entry.status === "active");
+  const changed = vi.fn();
+  const stop = errors.subscribe(changed);
+  errors.dismissAll();
+  expect(changed).toHaveBeenCalledTimes(1);
+  expect(
+    errors.snapshot().filter((entry) => entry.status === "dismissed"),
+  ).toEqual(
+    active.map((entry) => ({
+      ...entry,
+      status: "dismissed",
+      closedAt: Date.now(),
+      updated: expect.any(Number),
+    })),
+  );
+  for (const entry of history) expect(errors.snapshot()).toContain(entry);
+  expect(errors.snapshot().find((entry) => entry.key === "old")?.status).toBe(
+    "stale",
+  );
+  const snapshot = errors.snapshot();
+  errors.dismissAll();
+  expect(errors.snapshot()).toBe(snapshot);
+  expect(changed).toHaveBeenCalledTimes(1);
+  errors.flush();
+  const restored = new ClientErrors({ storage: disk });
+  expect(restored.snapshot()).toEqual(errors.snapshot());
+  errors.report("A", "First failure");
+  expect(errors.snapshot()[0]).toMatchObject({
+    key: "A",
+    status: "active",
+    count: 1,
+  });
+  expect(errors.snapshot()[0].id).not.toBe(
+    active.find((entry) => entry.key === "A")!.id,
+  );
+  stop();
+});
+
+it("does not restore persisted Active copies when dismissed history is immediately cleared", () => {
+  vi.useFakeTimers();
+  const disk = storage();
+  const errors = new ClientErrors({ storage: disk });
+  errors.report("A", "First failure");
+  errors.report("B", "Second failure");
+  errors.flush();
+  errors.dismissAll();
+  errors.clearHistory();
+  expect(errors.snapshot()).toHaveLength(0);
+  errors.flush();
+  expect(errors.snapshot()).toHaveLength(0);
+  expect(new ClientErrors({ storage: disk }).snapshot()).toHaveLength(0);
+});

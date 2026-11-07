@@ -902,6 +902,7 @@ export const messages = {
   Resolved: "Resolved",
   Dismissed: "Dismissed",
   Dismiss: "Dismiss",
+  "Dismiss all": "Dismiss all",
   occurrences: "occurrences",
   "First seen": "First seen",
   "Clear history": "Clear history",

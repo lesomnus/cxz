@@ -347,8 +347,24 @@ export class ClientErrors {
       ),
     );
   }
+  dismissAll() {
+    this.expire();
+    if (!this.entries.some((entry) => entry.status === "active")) return;
+    const now = Date.now(),
+      updated = this.stamp();
+    this.changed(
+      this.entries.map((entry) =>
+        entry.status === "active"
+          ? { ...entry, status: "dismissed", closedAt: now, updated }
+          : entry,
+      ),
+    );
+  }
   clearHistory() {
     this.expire();
+    // Persist closures before removing them, so an older stored Active copy
+    // cannot be restored by the next delayed storage merge.
+    this.flush();
     this.clearedBefore = this.stamp();
     this.changed(this.entries.filter((entry) => entry.status === "active"));
   }

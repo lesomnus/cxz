@@ -903,6 +903,7 @@ export const messages = {
   Resolved: "해결됨",
   Dismissed: "확인 후 닫음",
   Dismiss: "확인 후 닫기",
+  "Dismiss all": "모두 확인 후 닫기",
   occurrences: "회 발생",
   "First seen": "처음 발생",
   "Clear history": "기록 지우기",
