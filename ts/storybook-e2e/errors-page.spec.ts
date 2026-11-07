@@ -65,7 +65,7 @@ test("one hour without recurrence becomes Stale while closed, persists and opens
   await expect(
     main.getByRole("radio", { name: "History 1", exact: true }),
   ).toBeChecked();
-  await expect(main.getByText("Stale", { exact: true })).toBeVisible();
+  await expect(main.getByText("Stale", { exact: true }).first()).toBeVisible();
   await page.goto(pageStory);
   await page
     .getByRole("main", { name: "Errors", exact: true })
@@ -74,7 +74,8 @@ test("one hour without recurrence becomes Stale while closed, persists and opens
   await expect(
     page
       .getByRole("main", { name: "Errors", exact: true })
-      .getByText("Stale", { exact: true }),
+      .getByText("Stale", { exact: true })
+      .first(),
   ).toBeVisible();
 });
 
@@ -87,7 +88,28 @@ for (const width of [1200, 390])
     const main = page.getByRole("main", { name: "Errors", exact: true });
     await expect(main).toContainText("Account service is offline");
     await expect(main).toContainText("cxz.AccountService/Get");
-    await expect(main).toContainText("First seen");
+    await expect(main.locator(".floating-card")).toHaveCount(0);
+    const table = main.getByRole("table", { name: "Errors", exact: true });
+    await expect(table).toBeVisible();
+    const toolbar = main.locator("[data-resource-toolbar-content]");
+    expect((await table.boundingBox())!.x).toBeCloseTo(
+      (await toolbar.boundingBox())!.x,
+      0,
+    );
+    expect((await table.boundingBox())!.width).toBeCloseTo(
+      (await toolbar.boundingBox())!.width,
+      0,
+    );
+    await main.getByRole("button", { name: "Details", exact: true }).click();
+    const messageWidth = (await table
+      .getByRole("columnheader", { name: "Message", exact: true })
+      .boundingBox())!.width;
+    expect(messageWidth / (await table.boundingBox())!.width).toBeGreaterThan(
+      0.6,
+    );
+    await expect(
+      main.getByRole("region", { name: "Error details", exact: true }),
+    ).toContainText("First seen");
     await expect(
       main.getByRole("button", { name: "Close errors", exact: true }),
     ).toHaveCount(0);
@@ -101,3 +123,42 @@ for (const width of [1200, 390])
     expect(list.height).toBeGreaterThan(200);
     expect(list.y + list.height).toBeLessThanOrEqual(box.y + box.height);
   });
+
+test("resource table handles a populated collection and expands complete per-error details", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=workspace-errors--overview&viewMode=story");
+  const main = page.getByRole("main", { name: "Errors", exact: true });
+  const table = main.getByRole("table", { name: "Errors", exact: true });
+  await expect(
+    main.getByRole("radio", { name: "Active 6", exact: true }),
+  ).toBeChecked();
+  await expect(table.getByRole("row")).toHaveCount(7);
+  const row = table
+    .getByRole("row")
+    .filter({ hasText: "Memory revision changed" });
+  const details = row.getByRole("button", { name: "Details", exact: true });
+  await details.focus();
+  await page.keyboard.press("Enter");
+  await expect(details).toHaveAttribute("aria-expanded", "true");
+  const expanded = main.getByRole("region", {
+    name: "Error details",
+    exact: true,
+  });
+  await expect(expanded).toContainText("cxz.MemoryService/Patch");
+  await expect(expanded).toContainText("https://workspace.example.com");
+  await expect(expanded).toContainText("Request ID");
+  await main.getByRole("radio", { name: "History 3", exact: true }).click();
+  await expect(table.getByRole("row")).toHaveCount(4);
+  await expect(
+    main.getByRole("region", { name: "Error details", exact: true }),
+  ).toHaveCount(0);
+  await main
+    .getByRole("button", { name: "Clear history", exact: true })
+    .click();
+  await expect(
+    main.getByText("No error history", { exact: true }),
+  ).toBeVisible();
+  await main.getByRole("radio", { name: "Active 6", exact: true }).click();
+  await expect(table.getByRole("row")).toHaveCount(7);
+});

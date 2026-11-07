@@ -1,3 +1,150 @@
-.page {
-  padding: 12px var(--resource-page-gutter);
+.table {
+  --ui-table-row-height: var(--resource-table-control-size);
+  --ui-table-row-gap: 0px;
+  --ui-table-header-height: 28px;
+  table-layout: fixed;
+  border-radius: var(--ui-section-radius);
+  overflow: clip;
+}
+.statusColumn {
+  width: 76px;
+}
+.countColumn {
+  width: 76px;
+}
+.timeColumn {
+  width: 100px;
+}
+.actionsColumn {
+  width: 64px;
+}
+.table tbody tr {
+  background: var(--ui-shade-20);
+}
+.table td {
+  vertical-align: top;
+}
+.status {
+  color: var(--ui-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+[data-status="active"] > .status {
+  color: #ff526d;
+}
+.message {
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.context {
+  margin-top: 2px;
+  font: 10px/1.5 var(--ui-font-mono);
+  color: var(--ui-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.count {
+  text-align: right;
+}
+.time {
+  font-size: 10px;
+  color: var(--ui-muted);
+  white-space: nowrap;
+}
+.table .actions {
+  padding: var(--ui-control-inset);
+}
+.rowActions {
+  display: flex;
+  align-items: start;
+  justify-content: flex-end;
+}
+.rowActions button {
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+}
+.rowActions button[aria-expanded="true"] {
+  background: var(--ui-shade-40);
+}
+.mobileMeta {
+  display: none;
+}
+.detailRow .detail {
+  padding: 8px 4px 16px;
+}
+.fullMessage {
+  margin: 0 0 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.metadata {
+  display: grid;
+  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+  font-size: 11px;
+}
+.metadata > div {
+  min-width: 0;
+}
+.metadata dt {
+  margin: 0 0 4px;
+  color: var(--ui-muted);
+  font-size: 10px;
+}
+.metadata dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--ui-font-mono);
+}
+.table .empty {
+  padding: 24px 8px;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+@container resource-page (width < 600px) {
+  .statusColumn,
+  .countColumn,
+  .timeColumn {
+    width: 0;
+  }
+  .table .status,
+  .table .count,
+  .table .time {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-size: 0;
+  }
+  .status > *,
+  .count > *,
+  .time > * {
+    display: none;
+  }
+  .actionsColumn {
+    width: 56px;
+  }
+  .mobileMeta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+    color: var(--ui-muted);
+    font-size: 10px;
+  }
+  .metadata {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
