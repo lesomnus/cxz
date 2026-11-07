@@ -28,6 +28,7 @@ function TaskPreview({
   longDoneTitle = false,
   historyCount = 1,
   historyUnavailable = false,
+  historyDelay = 0,
 }: {
   count: number;
   unavailable?: boolean;
@@ -39,8 +40,10 @@ function TaskPreview({
   longDoneTitle?: boolean;
   historyCount?: number;
   historyUnavailable?: boolean;
+  historyDelay?: number;
 }) {
   const [reviewCount, setReviewCount] = useState(0);
+  const [historyRequests, setHistoryRequests] = useState<string[]>([]);
   const [fixture] = useState(() =>
     taskFixture(count, unavailable, {
       pageSize,
@@ -50,6 +53,9 @@ function TaskPreview({
       longDoneTitle,
       historyCount,
       historyUnavailable,
+      historyDelay,
+      onHistory: (alias) =>
+        setHistoryRequests((previous) => [...previous, alias]),
       actionDelay: 200,
       onReview: () => setReviewCount((count) => count + 1),
     }),
@@ -85,7 +91,10 @@ function TaskPreview({
   );
   return (
     <>
-      <div style={{ height: 36, display: "flex", alignItems: "center" }}>
+      <div
+        data-history-requests={historyRequests.join(",")}
+        style={{ height: 36, display: "flex", alignItems: "center" }}
+      >
         <output aria-label="Review requests sent">{reviewCount}</output>
         <Button type="button" onClick={fixture.agentUpdate}>
           Simulate agent update
@@ -164,6 +173,10 @@ export const ReadOnlyLongTitle: Story = {
 export const ChangeHistory: Story = {
   ...TaskDetails,
   args: { ...TaskDetails.args, historyCount: 28 },
+};
+export const SlowChangeHistory: Story = {
+  ...TaskDetails,
+  args: { ...TaskDetails.args, historyCount: 28, historyDelay: 800 },
 };
 export const HistoryUnavailable: Story = {
   ...TaskDetails,
