@@ -4,13 +4,18 @@ The button immediately above Profile opens active errors and their history.
 Its header has an Open errors page link to `/c/_/errors`; the standalone page
 uses the same live store, showing every status together with Active first. It follows the Projects/Tasks resource
 layout: an aligned top toolbar with history controls and a compact Nox table
-with an unlabeled status-icon column, kind, operation, target, message, occurrence count and last-seen
-columns. Row spacing and dividers share the Projects list stylesheet. Nox Table and
+with status icon, centered Kind, an unlabeled occurrence count, Operation,
+Diagnostics, Target, Message, Last seen and actions columns. Operation contains
+the readable work name; Diagnostics contains the recorded RPC/HTTP/runtime/client
+evidence. Identical values appear once. The Count heading retains an accessible
+name while remaining visually empty. The resolved circle is 7px across.
+Row spacing and dividers share the Projects list stylesheet. Nox Table and
 normal list rows stay transparent. ResourcePage owns the semantic
 `--resource-page-background` surface and supplies the same color to nested
 ScrollAreas; Projects, Tasks, Memory, Search, Accounts and Errors reuse it.
 Page components do not repeat background colors. Nested section scroll areas
-can still explicitly use their section surface. Active uses a plain orange triangle, Stale a gray square and
+can still explicitly use their section surface.
+Active uses a plain orange triangle, Stale a gray square and
 Resolved a green circle; Dismissed keeps the hide icon.
 Details opens a Nox modal with the full message, timestamps and original diagnostic
 references; Escape and Close return focus to the row button. The dialog uses ErrorTable variant="dialog": its first line is the
