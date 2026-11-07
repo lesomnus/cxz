@@ -465,18 +465,6 @@ export function WorkspaceEditor({
           }
         >
           <nav className="file-explorer" aria-label={t("Workspace files")}>
-            <div className="file-explorer-heading">
-              <span>{t("Files")}</span>
-              <Button
-                aria-label={t("Refresh files")}
-                onClick={() => {
-                  setDirectories(new Map());
-                  if (root) void list(root);
-                }}
-              >
-                ↻
-              </Button>
-            </div>
             {tree(root, 0)}
             {loading.has(root) && <small>{t("Loading files…")}</small>}
             {!root && <small>{t("Workspace unavailable.")}</small>}
@@ -513,7 +501,7 @@ export function WorkspaceEditor({
               <ErrorNotice className="editor-error" error={browseError} />
             )}
             <footer className={styles.status}>
-              <span>
+              <span className={styles.filePath}>
                 {active?.path.replace(root + "/", "") || ""}
                 {value.simulated && value.phase === "connected"
                   ? t(" · Simulated")

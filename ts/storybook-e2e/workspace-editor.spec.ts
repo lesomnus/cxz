@@ -67,6 +67,10 @@ for (const theme of ["dark", "light"])
   }, testInfo) => {
     const editor = await open(page, "tabs", theme);
     await expect(editor.locator(":scope > header")).toHaveCount(0);
+    await expect(editor.locator(".file-explorer-heading")).toHaveCount(0);
+    await expect(
+      editor.getByRole("button", { name: "Refresh files", exact: true }),
+    ).toHaveCount(0);
     await expect(editor.locator(".monaco-editor")).toBeVisible();
     const surface = await editor
       .locator("[data-workspace-viewer]")
@@ -85,6 +89,8 @@ for (const theme of ["dark", "light"])
         const footer = picker.closest("footer")!;
         const pickerBounds = picker.getBoundingClientRect();
         const footerBounds = footer.getBoundingClientRect();
+        const path = footer.querySelector("span")!;
+        const pathBounds = path.getBoundingClientRect();
         const tabs = content.querySelector('[role="tablist"]')!;
         const entries = tabs.querySelectorAll(".file-tab");
         const first = entries[0].getBoundingClientRect();
@@ -125,6 +131,14 @@ for (const theme of ["dark", "light"])
             .backgroundColor,
           sourceBounds: source.getBoundingClientRect().toJSON(),
           pickerBackground: getComputedStyle(picker).backgroundColor,
+          pathBackground: getComputedStyle(path).backgroundColor,
+          pathOffset: pathBounds.left - source.getBoundingClientRect().left,
+          pathHeight: pathBounds.height,
+          pickerHeight: pickerBounds.height,
+          pathPadding: getComputedStyle(path).padding,
+          pickerPadding: getComputedStyle(picker).padding,
+          pathRadius: getComputedStyle(path).borderRadius,
+          pickerRadius: getComputedStyle(picker).borderRadius,
           pickerWidth: pickerBounds.width,
           pickerGaps: [
             pickerBounds.top - footerBounds.top,
@@ -146,11 +160,12 @@ for (const theme of ["dark", "light"])
           viewerBounds: viewer.getBoundingClientRect().toJSON(),
         };
       });
-    expect(surface.radius).toBe(surface.token);
-    expect(surface.monacoRadius).toBe(surface.token);
-    expect(surface.guardRadius).toBe(surface.token);
+    const editorRadius = `${surface.token} 0px 0px ${surface.token}`;
+    expect(surface.radius).toBe(editorRadius);
+    expect(surface.monacoRadius).toBe(editorRadius);
+    expect(surface.guardRadius).toBe(editorRadius);
     expect(surface.contentRadius).toBe("0px");
-    expect(surface.editorAreaRadius).toBe(surface.token);
+    expect(surface.editorAreaRadius).toBe(editorRadius);
     await expect(editor).not.toContainText("Read only");
     await expect(
       editor.getByRole("combobox", {
@@ -173,9 +188,17 @@ for (const theme of ["dark", "light"])
     expect(surface.inactiveTabBackground).toBe(surface.editorAreaBackground);
     expect(surface.pickerBackground).toBe(surface.editorAreaBackground);
     expect(surface.pickerWidth).toBe(80);
+    expect(surface.pathBackground).toBe(surface.pickerBackground);
+    expect(surface.pathOffset).toBe(parseFloat(surface.token));
+    expect(surface.pathHeight).toBe(surface.pickerHeight);
+    expect(surface.pathPadding).toBe(surface.pickerPadding);
+    expect(surface.pathRadius).toBe(surface.pickerRadius);
     expect(surface.pickerGaps).toEqual(Array(3).fill(surface.pickerGaps[0]));
     expect(surface.tabRadius).not.toBe("0px");
-    expect(surface.tabGaps).toEqual(Array(4).fill(parseFloat(surface.inset)));
+    expect(surface.tabGaps).toEqual([
+      parseFloat(surface.token),
+      ...Array(3).fill(parseFloat(surface.inset)),
+    ]);
     expect(surface.children).toBe(2);
     expect(surface.tabsFirst).toBe(true);
     expect(surface.editorLast).toBe(true);
@@ -192,7 +215,7 @@ for (const theme of ["dark", "light"])
       path: testInfo.outputPath("workspace-editor.png"),
     });
     const corner = await page.evaluate(
-      async ({ screenshot, x, y }) => {
+      async ({ screenshot, x, y, right }) => {
         const image = new Image();
         image.src = `data:image/png;base64,${screenshot}`;
         await image.decode();
@@ -201,19 +224,33 @@ for (const theme of ["dark", "light"])
         canvas.height = image.height;
         const context = canvas.getContext("2d")!;
         context.drawImage(image, 0, 0);
-        return [
-          ...context.getImageData(Math.floor(x) + 1, Math.floor(y) + 1, 1, 1)
-            .data,
-        ].slice(0, 3);
+        return {
+          left: [
+            ...context.getImageData(Math.floor(x) + 1, Math.floor(y) + 1, 1, 1)
+              .data,
+          ].slice(0, 3),
+          right: [
+            ...context.getImageData(
+              Math.floor(right) - 2,
+              Math.floor(y) + 1,
+              1,
+              1,
+            ).data,
+          ].slice(0, 3),
+        };
       },
       {
         screenshot: screenshot.toString("base64"),
         x: surface.sourceBounds.x,
         y: surface.sourceBounds.y,
+        right: surface.sourceBounds.right,
       },
     );
-    expect(corner).toEqual(
+    expect(corner.left).toEqual(
       surface.viewerBackground.match(/\d+/g)!.slice(0, 3).map(Number),
+    );
+    expect(corner.right).toEqual(
+      surface.editorAreaBackground.match(/\d+/g)!.slice(0, 3).map(Number),
     );
     expect(surface.editorAreaBackground).not.toBe(surface.viewerBackground);
     await (await menu(page))
@@ -225,7 +262,7 @@ for (const theme of ["dark", "light"])
       "background-color",
       surface.editorAreaBackground,
     );
-    await expect(emptyArea).toHaveCSS("border-radius", surface.token);
+    await expect(emptyArea).toHaveCSS("border-radius", editorRadius);
     await page.screenshot({ path: testInfo.outputPath("empty-editor.png") });
     const divider = editor.getByRole("separator", {
       name: "Resize file explorer",

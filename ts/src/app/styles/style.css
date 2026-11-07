@@ -643,18 +643,6 @@ header strong {
   background: var(--ui-section-background);
   padding: 4px;
 }
-.file-explorer-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-left: 8px;
-  color: var(--muted);
-  font-size: 11px;
-}
-.file-explorer-heading button {
-  min-height: 24px;
-  padding: 4px 8px;
-}
 .file-entry {
   display: block;
   width: 100%;
