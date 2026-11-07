@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ScrollArea, Section, SectionGroup } from "@lesomnus/nox";
 import type { Task } from "#gen/cxz/task_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -41,6 +41,14 @@ export function TaskDetailPanels({
           <Section className={styles.information} aria-label="Task information">
             <ScrollArea
               className={styles.metadata}
+              scrollbarOffset={0}
+              style={
+                {
+                  // Center the handle in the Section's existing right padding,
+                  // rather than reserve an extra gutter inside the fields.
+                  "--scrollbar-offset": "calc(var(--ui-section-padding) / 2)",
+                } as CSSProperties
+              }
               aria-label="Task metadata"
               scrollbarLabel="Scroll task information"
             >

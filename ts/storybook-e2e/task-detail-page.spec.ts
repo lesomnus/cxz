@@ -116,6 +116,22 @@ test("title reserves two clamped lines and identity fields share one row with re
       nodes.map((node) => node.getAttribute("href")),
     ),
   ).toEqual(["/c/_/project/workspace", "/c/_/session/elm", "/c/_/session/oak"]);
+  const margins = await information.evaluate((panel) => {
+    const frame = panel.getBoundingClientRect();
+    const alias = panel.querySelector("input")!.getBoundingClientRect();
+    const links = panel.querySelectorAll("a");
+    const first = links[0].getBoundingClientRect();
+    const last = links[links.length - 1].getBoundingClientRect();
+    return {
+      inputLeft: alias.left - frame.left,
+      inputRight: frame.right - alias.right,
+      buttonsLeft: first.left - frame.left,
+      buttonsRight: frame.right - last.right,
+    };
+  });
+  expect(margins.inputLeft).toBeCloseTo(margins.inputRight, 1);
+  expect(margins.buttonsLeft).toBeCloseTo(margins.buttonsRight, 1);
+  expect(margins.buttonsLeft).toBeCloseTo(margins.inputLeft, 1);
   const sidebar = (await information.locator("..").boundingBox())!;
   const description = (await detail(page)
     .getByRole("region", { name: "Task description", exact: true })
