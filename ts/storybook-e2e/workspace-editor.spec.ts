@@ -62,7 +62,7 @@ test("file tab actions copy the current path, retain the active file and close e
 });
 
 for (const theme of ["dark", "light"])
-  test(`viewer owns padding and only Monaco has radius while resizing stays available in ${theme}`, async ({
+  test(`viewer clips Monaco corners and balances tab and language control insets in ${theme}`, async ({
     page,
   }, testInfo) => {
     const editor = await open(page, "tabs", theme);
@@ -80,9 +80,22 @@ for (const theme of ["dark", "light"])
         const monaco = content.querySelector(".monaco-editor")!;
         const css = getComputedStyle(content);
         const outer = getComputedStyle(viewer);
+        const source = monaco.closest(".code-editor")!;
+        const picker = viewer.querySelector('[role="combobox"]')!;
+        const footer = picker.closest("footer")!;
+        const pickerBounds = picker.getBoundingClientRect();
+        const footerBounds = footer.getBoundingClientRect();
+        const tabs = content.querySelector('[role="tablist"]')!;
+        const entries = tabs.querySelectorAll(".file-tab");
+        const first = entries[0].getBoundingClientRect();
+        const second = entries[1].getBoundingClientRect();
+        const tabBounds = tabs.getBoundingClientRect();
         return {
-          radius: getComputedStyle(monaco.closest(".code-editor")!)
-            .borderRadius,
+          radius: getComputedStyle(source).borderRadius,
+          monacoRadius: getComputedStyle(monaco).borderRadius,
+          guardRadius: getComputedStyle(
+            monaco.querySelector(".overflow-guard")!,
+          ).borderRadius,
           contentRadius: css.borderRadius,
           editorAreaRadius: getComputedStyle(
             monaco.closest(".code-editor")!.parentElement!,
@@ -101,6 +114,22 @@ for (const theme of ["dark", "light"])
           tabBackground: getComputedStyle(content.firstElementChild!)
             .backgroundColor,
           monacoBackground: getComputedStyle(monaco).backgroundColor,
+          editorAreaBackground: getComputedStyle(source.parentElement!)
+            .backgroundColor,
+          sourceBounds: source.getBoundingClientRect().toJSON(),
+          pickerBackground: getComputedStyle(picker).backgroundColor,
+          pickerGaps: [
+            pickerBounds.top - footerBounds.top,
+            footerBounds.right - pickerBounds.right,
+            footerBounds.bottom - pickerBounds.bottom,
+          ],
+          tabRadius: getComputedStyle(entries[0]).borderRadius,
+          tabGaps: [
+            first.left - tabBounds.left,
+            first.top - tabBounds.top,
+            tabBounds.bottom - first.bottom,
+            second.left - first.right,
+          ],
           children: content.children.length,
           tabsFirst:
             !!content.firstElementChild!.querySelector('[role="tablist"]'),
@@ -110,6 +139,8 @@ for (const theme of ["dark", "light"])
         };
       });
     expect(surface.radius).toBe(surface.token);
+    expect(surface.monacoRadius).toBe(surface.token);
+    expect(surface.guardRadius).toBe(surface.token);
     expect(surface.contentRadius).toBe("0px");
     expect(surface.editorAreaRadius).toBe("0px");
     await expect(editor).not.toContainText("Read only");
@@ -123,6 +154,10 @@ for (const theme of ["dark", "light"])
     expect(surface.viewerBackground).toBe(surface.explorerBackground);
     expect(surface.contentBackground).toBe(surface.monacoBackground);
     expect(surface.tabBackground).toBe(surface.monacoBackground);
+    expect(surface.pickerBackground).toBe(surface.monacoBackground);
+    expect(surface.pickerGaps).toEqual(Array(3).fill(surface.pickerGaps[0]));
+    expect(surface.tabRadius).not.toBe("0px");
+    expect(surface.tabGaps).toEqual(Array(4).fill(parseFloat(surface.inset)));
     expect(surface.children).toBe(2);
     expect(surface.tabsFirst).toBe(true);
     expect(surface.editorLast).toBe(true);
@@ -135,9 +170,34 @@ for (const theme of ["dark", "light"])
     expect(surface.contentBounds.y - surface.viewerBounds.y).toBe(
       parseFloat(surface.inset),
     );
-    await page.screenshot({
+    const screenshot = await page.screenshot({
       path: testInfo.outputPath("workspace-editor.png"),
     });
+    const corner = await page.evaluate(
+      async ({ screenshot, x, y }) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${screenshot}`;
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(image, 0, 0);
+        return [
+          ...context.getImageData(Math.floor(x) + 1, Math.floor(y) + 1, 1, 1)
+            .data,
+        ].slice(0, 3);
+      },
+      {
+        screenshot: screenshot.toString("base64"),
+        x: surface.sourceBounds.x,
+        y: surface.sourceBounds.y,
+      },
+    );
+    expect(corner).toEqual(
+      surface.editorAreaBackground.match(/\d+/g)!.slice(0, 3).map(Number),
+    );
+    expect(surface.editorAreaBackground).not.toBe(surface.monacoBackground);
     const divider = editor.getByRole("separator", {
       name: "Resize file explorer",
       exact: true,
