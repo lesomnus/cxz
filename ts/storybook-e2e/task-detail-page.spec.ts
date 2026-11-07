@@ -7,7 +7,7 @@ const detail = (page: import("@playwright/test").Page) =>
 const title = (page: import("@playwright/test").Page) =>
   detail(page).getByRole("textbox", { name: "Title", exact: true });
 
-test("title reserves two clamped lines and identity fields share one row with resource buttons", async ({
+test("title reserves two lines and metadata groups assignment, activity and final identity rows", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -37,83 +37,73 @@ test("title reserves two clamped lines and identity fields share one row with re
     name: "Task information",
     exact: true,
   });
-  const fields = await information
-    .locator("dl")
-    .nth(1)
-    .locator(":scope > div")
-    .evaluateAll((nodes) =>
-      nodes.map((node) => ({
-        label: node.querySelector("dt")!.textContent!.trim(),
-        x: node.getBoundingClientRect().x,
-        y: node.getBoundingClientRect().y,
-        right: node.getBoundingClientRect().right,
-        labelX: node.querySelector("dt")!.getBoundingClientRect().x,
-        buttonX: node.querySelector("a")!.getBoundingClientRect().x,
-        buttonRight: node.querySelector("a")!.getBoundingClientRect().right,
-        contentX: node
-          .querySelector("a .button-content > span")!
-          .getBoundingClientRect().left,
-        inset: parseFloat(
-          getComputedStyle(node).getPropertyValue("--ui-form-control-radius"),
-        ),
-        gap: parseFloat(
-          getComputedStyle(node).getPropertyValue("--ui-section-group-gap"),
-        ),
+  const rows = information.locator("dl");
+  const rowLabels = (index: number) =>
+    rows.nth(index).locator(":scope > div > dt").allTextContents();
+  expect(await rowLabels(0)).toEqual(["Assigned to", "Priority"]);
+  const secondLabels = await rowLabels(1);
+  expect(secondLabels[0]).toBe("Status");
+  expect(secondLabels[1]).toMatch(/^Updated/);
+  expect(await rowLabels(2)).toEqual(["Project", "Created from"]);
+  const finalLabels = await rows
+    .last()
+    .locator(":scope > div > dt")
+    .allTextContents();
+  expect(finalLabels[0]).toBe("Task ID");
+  expect(finalLabels[1]).toMatch(/^Created/);
+  for (const [row, expectedRatio] of [
+    [rows.nth(0), 2],
+    [rows.nth(1), 0.5],
+    [rows.last(), 0.5],
+  ] as const) {
+    const boxes = await row.locator(":scope > div").evaluateAll((fields) =>
+      fields.map((field) => ({
+        width: field.getBoundingClientRect().width,
+        y: field.getBoundingClientRect().y,
       })),
     );
-  expect(fields.map((field) => field.label)).toEqual([
-    "Project",
-    "Assigned to",
-    "Created from",
-  ]);
-  expect(new Set(fields.map((field) => field.y)).size).toBe(1);
-  expect(fields[1].x).toBeGreaterThan(fields[0].x);
-  expect(fields[2].x).toBeGreaterThan(fields[1].x);
+    expect(boxes[0].y).toBe(boxes[1].y);
+    expect(boxes[0].width / boxes[1].width).toBeCloseTo(expectedRatio, 1);
+  }
+  const assignment = information.getByRole("group", {
+    name: "Assigned session controls",
+    exact: true,
+  });
+  const geometry = await assignment.evaluate((group) => {
+    const row = group.closest("dl")!,
+      frame = group.getBoundingClientRect();
+    const button = group.querySelector("a")!.getBoundingClientRect();
+    return {
+      width: frame.width,
+      buttonWidth: button.width,
+      buttonHeight: button.height,
+      previousWidth:
+        (row.getBoundingClientRect().width -
+          2 * parseFloat(getComputedStyle(row).columnGap)) /
+        3,
+    };
+  });
+  expect(geometry.buttonWidth).toBeCloseTo(geometry.previousWidth, 1);
+  expect(geometry.buttonHeight).toBe(40);
+  expect(geometry.width).toBeGreaterThan(geometry.buttonWidth);
+  await assignment
+    .getByRole("button", { name: "Assignment actions", exact: true })
+    .click();
+  await expect(title(page)).toHaveValue(long);
+  const navigation = rows.nth(2).getByRole("link");
   const inputPadding = await information
     .getByRole("textbox", { name: "Alias", exact: true })
     .evaluate((input) => parseFloat(getComputedStyle(input).paddingLeft));
-  for (const [index, field] of fields.entries()) {
-    expect(field.buttonX).toBeCloseTo(field.x, 1);
-    expect(field.buttonRight).toBeCloseTo(field.right, 1);
-    expect(field.labelX - field.buttonX).toBeCloseTo(field.inset, 1);
-    expect(field.contentX - field.buttonX).toBeCloseTo(inputPadding, 1);
-    if (index > 0)
-      expect(field.buttonX - fields[index - 1].buttonRight).toBeCloseTo(
-        field.gap,
-        1,
-      );
+  for (const link of await navigation.all()) {
+    const inset = await link.evaluate(
+      (anchor) =>
+        anchor.querySelector(".button-content > span")!.getBoundingClientRect()
+          .left - anchor.getBoundingClientRect().left,
+    );
+    expect(inset).toBeCloseTo(inputPadding, 1);
   }
-  const controls = await information
-    .getByRole("group", { name: "Task fields", exact: true })
-    .locator("dl > div")
-    .evaluateAll((nodes) =>
-      nodes.slice(0, 3).map((node) => ({
-        y: node.getBoundingClientRect().y,
-        x: node.getBoundingClientRect().x,
-        text: node.textContent,
-      })),
-    );
-  expect(controls[0].text).toContain("Priority");
-  expect(controls[1].text).toContain("Status");
-  expect(controls[2].text).toContain("Task ID");
-  expect(new Set(controls.map((control) => control.y)).size).toBe(1);
-  expect(controls[2].x).toBeGreaterThan(controls[1].x);
-  const dates = await information
-    .locator("dl")
-    .last()
-    .locator(":scope > div")
-    .evaluateAll((nodes) =>
-      nodes.map((node) => ({
-        label: node.querySelector("dt")!.textContent!,
-        y: node.getBoundingClientRect().y,
-        time: node.querySelector("dd time")!.textContent!,
-      })),
-    );
-  expect(dates[0].label).toContain("Created");
-  expect(dates[1].label).toContain("Updated");
-  expect(dates[0].y).toBe(dates[1].y);
-  for (const date of dates)
-    expect(date.time).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
+  for (const time of await information.locator("dd > time").all())
+    await expect(time).toHaveText(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
   const links = information.getByRole("link");
   await expect(links).toHaveCount(3);
   for (const link of await links.all())
@@ -122,23 +112,7 @@ test("title reserves two clamped lines and identity fields share one row with re
     await links.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute("href")),
     ),
-  ).toEqual(["/c/_/project/workspace", "/c/_/session/elm", "/c/_/session/oak"]);
-  const margins = await information.evaluate((panel) => {
-    const frame = panel.getBoundingClientRect();
-    const alias = panel.querySelector("input")!.getBoundingClientRect();
-    const links = panel.querySelectorAll("a");
-    const first = links[0].getBoundingClientRect();
-    const last = links[links.length - 1].getBoundingClientRect();
-    return {
-      inputLeft: alias.left - frame.left,
-      inputRight: frame.right - alias.right,
-      buttonsLeft: first.left - frame.left,
-      buttonsRight: frame.right - last.right,
-    };
-  });
-  expect(margins.inputLeft).toBeCloseTo(margins.inputRight, 1);
-  expect(margins.buttonsLeft).toBeCloseTo(margins.buttonsRight, 1);
-  expect(margins.buttonsLeft).toBeCloseTo(margins.inputLeft, 1);
+  ).toEqual(["/c/_/session/elm", "/c/_/project/workspace", "/c/_/session/oak"]);
   const sidebar = (await information.locator("..").boundingBox())!;
   const description = (await detail(page)
     .getByRole("region", { name: "Task description", exact: true })
@@ -180,28 +154,34 @@ test("shared task field values align with Account editable labels", async ({
   await page.goto(story());
   await expect(title(page)).toHaveValue("Connect the task table");
   const values = await detail(page)
-    .getByRole("group", { name: "Task fields", exact: true })
+    .getByRole("region", { name: "Task information", exact: true })
     .locator("dl > div")
     .evaluateAll((rows) =>
-      rows.map((row) => {
-        const label = row.querySelector("dt")!,
-          value = row.querySelector("dd")!;
-        const walker = document.createTreeWalker(value, NodeFilter.SHOW_TEXT);
-        let node: Node | null;
-        while ((node = walker.nextNode())) {
-          if (!node.textContent?.trim()) continue;
-          const range = document.createRange();
-          range.selectNodeContents(node);
-          return {
-            label: label.textContent!.trim(),
-            gap:
-              range.getBoundingClientRect().top -
-              label.getBoundingClientRect().bottom,
-            height: value.getBoundingClientRect().height,
-          };
-        }
-        throw new Error("Task value text is missing");
-      }),
+      rows
+        .filter((row) =>
+          ["Priority", "Status", "Task ID"].includes(
+            row.querySelector("dt")!.textContent!.trim(),
+          ),
+        )
+        .map((row) => {
+          const label = row.querySelector("dt")!,
+            value = row.querySelector("dd")!;
+          const walker = document.createTreeWalker(value, NodeFilter.SHOW_TEXT);
+          let node: Node | null;
+          while ((node = walker.nextNode())) {
+            if (!node.textContent?.trim()) continue;
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            return {
+              label: label.textContent!.trim(),
+              gap:
+                range.getBoundingClientRect().top -
+                label.getBoundingClientRect().bottom,
+              height: value.getBoundingClientRect().height,
+            };
+          }
+          throw new Error("Task value text is missing");
+        }),
     );
   expect(values.map((value) => value.label)).toEqual([
     "Priority",

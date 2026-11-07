@@ -15,8 +15,8 @@ import {
 } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { Id } from "@lesomnus/payday/pdid";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
+import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { TaskStatus, type Task } from "#gen/cxz/task_pb";
@@ -45,7 +45,11 @@ import {
   type TaskDescriptionOptions,
 } from "./task-description-field";
 import styles from "./tasks.module.css";
-import { TaskDetailPanels, TaskMetadata } from "./task-detail-panels";
+import {
+  TaskAssigneeControl,
+  TaskDetailPanels,
+  TaskMetadata,
+} from "./task-detail-panels";
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import actionStyles from "#src/shared/components/resource-action.module.css";
 
@@ -248,40 +252,56 @@ function TaskEditor({
     </FormField>
   );
   const taskFields = task && (
-    <ResourceFields
-      columns={3}
-      variant="controls"
-      rows={[
-        [
-          "Priority",
-          <ValueMenu
-            label="Priority"
-            alignItemWithTrigger
-            minMenuWidth={0}
-            value={String(priority)}
-            options={taskPriorities.map((label, value) => ({
-              value: String(value),
-              label,
-              icon: <TaskPrioritySymbol priority={value} />,
-            }))}
-            choose={(value) => setPriority(Number(value))}
-            disabled={busy || immutable}
-          />,
-        ],
-        [
-          "Status",
-          <output aria-label="Status">
-            <TaskStatusIcon status={task.status} />
-            <span>{taskStatusName(task.status)}</span>
-          </output>,
-        ],
-        {
-          label: "Task ID",
-          value: task.id.length === 16 ? new Id(task.id).toString() : undefined,
-          identifier: true,
-        },
-      ]}
-    />
+    <>
+      <ResourceFields
+        columns={[2, 1]}
+        variant="controls"
+        rows={[
+          [
+            "Assigned to",
+            <TaskAssigneeControl task={task} owner={owner} />,
+            issue
+              ? `${issue}. Cancel Working work before releasing its assignment.`
+              : undefined,
+          ],
+          [
+            "Priority",
+            <ValueMenu
+              label="Priority"
+              alignItemWithTrigger
+              minMenuWidth={0}
+              value={String(priority)}
+              options={taskPriorities.map((label, value) => ({
+                value: String(value),
+                label,
+                icon: <TaskPrioritySymbol priority={value} />,
+              }))}
+              choose={(value) => setPriority(Number(value))}
+              disabled={busy || immutable}
+            />,
+          ],
+        ]}
+      />
+      <ResourceFields
+        columns={[1, 2]}
+        variant="controls"
+        rows={[
+          [
+            "Status",
+            <output aria-label="Status">
+              <TaskStatusIcon status={task.status} />
+              <span>{taskStatusName(task.status)}</span>
+            </output>,
+          ],
+          [
+            "Updated",
+            <DateTime value={task.dateUpdated} showOffset={false} />,
+            undefined,
+            <RelativeTime value={task.dateUpdated} />,
+          ],
+        ]}
+      />
+    </>
   );
   const titleField =
     presentation === "page" ? (
@@ -455,7 +475,6 @@ function TaskEditor({
                 <TaskMetadata
                   task={task}
                   project={project}
-                  owner={owner}
                   source={source}
                   issue={issue}
                 />
@@ -500,7 +519,6 @@ function TaskEditor({
                 <TaskMetadata
                   task={task}
                   project={project}
-                  owner={owner}
                   source={source}
                   issue={issue}
                 />

@@ -33,14 +33,24 @@ export function ResourceFields({
   variant = "default",
 }: {
   rows: readonly ResourceFieldRow[];
-  columns?: 1 | 2 | 3;
+  /** Equal-width count, or relative column weights such as [1, 2]. */
+  columns?: 1 | 2 | 3 | readonly number[];
   /** Compact input/readonly values share Account editable spacing and section gaps. */
   variant?: "default" | "controls";
 }) {
   return (
     <dl
       className={`${styles.fields} ${variant === "controls" ? styles.controls : ""}`}
-      style={{ "--resource-field-columns": columns } as CSSProperties}
+      style={
+        {
+          "--resource-field-columns":
+            typeof columns === "number" ? columns : columns.length,
+          gridTemplateColumns:
+            typeof columns === "number"
+              ? undefined
+              : columns.map((weight) => `minmax(0, ${weight}fr)`).join(" "),
+        } as CSSProperties
+      }
     >
       {rows.map((row) => {
         const field: ResourceField =

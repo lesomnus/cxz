@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
-import { ScrollArea, Section, SectionGroup } from "@lesomnus/nox";
+import { Button, ScrollArea, Section, SectionGroup } from "@lesomnus/nox";
+import { Id } from "@lesomnus/payday/pdid";
 import type { Task } from "#gen/cxz/task_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
@@ -11,6 +12,8 @@ import {
   resourceHandle,
 } from "#src/shared/navigation/resource-route.ts";
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
+import { ResourceControlGroup } from "#src/shared/components/resource-control-group.tsx";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import styles from "./task-detail-panels.module.css";
 import { ResourceLayout } from "#src/shared/components/resource-layout.tsx";
 
@@ -81,20 +84,18 @@ export function TaskDetailPanels({
 export function TaskMetadata({
   task,
   project = task.project,
-  owner,
   source,
   issue,
 }: {
   task: Task;
   project?: Project;
-  owner?: Session;
   source?: Session;
   issue: string;
 }) {
   return (
     <>
       <ResourceFields
-        columns={3}
+        columns={2}
         variant="controls"
         rows={[
           [
@@ -106,23 +107,6 @@ export function TaskMetadata({
                 alias={project.alias}
               />
             ) : undefined,
-          ],
-          [
-            "Assigned to",
-            owner ? (
-              <ResourceNavigationButton
-                {...sessionLocation(owner)}
-                name={owner.name || owner.alias}
-                alias={owner.alias}
-              />
-            ) : task.assignee ? (
-              "Session unavailable"
-            ) : (
-              "Unassigned"
-            ),
-            issue
-              ? `${issue}. Release makes this task available to another session.`
-              : undefined,
           ],
           [
             "Created from",
@@ -153,22 +137,57 @@ export function TaskMetadata({
         />
       )}
       <ResourceFields
-        columns={2}
+        columns={[1, 2]}
+        variant="controls"
         rows={[
+          {
+            label: "Task ID",
+            value:
+              task.id.length === 16 ? new Id(task.id).toString() : undefined,
+            identifier: true,
+          },
           [
             "Created",
             <DateTime value={task.dateCreated} showOffset={false} />,
             undefined,
             <RelativeTime value={task.dateCreated} />,
           ],
-          [
-            "Updated",
-            <DateTime value={task.dateUpdated} showOffset={false} />,
-            undefined,
-            <RelativeTime value={task.dateUpdated} />,
-          ],
         ]}
       />
     </>
+  );
+}
+
+export function TaskAssigneeControl({
+  task,
+  owner,
+}: {
+  task: Task;
+  owner?: Session;
+}) {
+  return (
+    <ResourceControlGroup
+      label="Assigned session controls"
+      // Preserve the former one-of-three-column button width. The Assigned
+      // field now takes two thirds; its surface includes the narrow inset.
+      leadingWidth="calc(50% + var(--ui-control-inset) - var(--ui-section-group-gap) / 3)"
+      actions={
+        <Button type="button" aria-label="Assignment actions">
+          <Icon name="overflow" />
+        </Button>
+      }
+    >
+      {owner ? (
+        <ResourceNavigationButton
+          {...sessionLocation(owner)}
+          name={owner.name || owner.alias}
+          alias={owner.alias}
+        />
+      ) : task.assignee ? (
+        "Session unavailable"
+      ) : (
+        "Unassigned"
+      )}
+    </ResourceControlGroup>
   );
 }

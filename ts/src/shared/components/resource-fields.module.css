@@ -62,7 +62,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fields.controls dd > :is(a, :global(.value-menu)) {
+.fields.controls
+  dd
+  > :is(a, :global(.value-menu), :global(.resource-control-group)) {
   width: calc(100% + 2 * var(--ui-form-control-radius));
   max-width: none;
   margin-inline: calc(-1 * var(--ui-form-control-radius));

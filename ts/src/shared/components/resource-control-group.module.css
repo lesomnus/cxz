@@ -1,0 +1,56 @@
+.group,
+.group * {
+  box-sizing: border-box;
+}
+.group {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  padding: var(--ui-control-inset);
+  gap: var(--ui-control-inset);
+  border-radius: var(--ui-form-control-radius);
+  background: var(--ui-form-control-background);
+}
+.leading {
+  flex: none;
+  width: var(--resource-control-leading-width);
+  min-width: 0;
+  min-height: calc(
+    var(--resource-table-control-size, 44px) - 2 * var(--ui-control-inset)
+  );
+  display: flex;
+  align-items: center;
+}
+.group .leading > :is(a, button) {
+  width: 100%;
+  max-width: none;
+  padding-inline: max(
+    0px,
+    calc(var(--ui-form-control-padding-inline) - var(--ui-control-inset))
+  );
+  border-radius: max(
+    0px,
+    calc(var(--ui-form-control-radius) - var(--ui-control-inset))
+  );
+}
+.actions {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-end;
+  gap: var(--ui-control-inset);
+}
+.actions > button {
+  width: calc(
+    var(--resource-table-control-size, 44px) - 2 * var(--ui-control-inset)
+  );
+  min-height: 0;
+  padding: 0;
+  border-radius: max(
+    0px,
+    calc(var(--ui-form-control-radius) - var(--ui-control-inset))
+  );
+}
+.actions > button > :global(.button-content) {
+  justify-content: center;
+}
