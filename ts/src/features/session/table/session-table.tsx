@@ -12,11 +12,11 @@ import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
+import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 import {
   projectLocation,
   accountLocation,
   resourceHandle,
-  sessionLocation,
 } from "#src/shared/navigation/resource-route.ts";
 import type { SessionControlConnection } from "#src/features/session/model/session-control-batch.ts";
 import {
@@ -234,11 +234,7 @@ export function SessionTable({
                   )}
                   {compact ? (
                     <td className={`${styles.name} ${styles.cardCell}`}>
-                      <ResourceNavigationButton
-                        {...sessionLocation(s)}
-                        name={name}
-                        alias={s.alias}
-                      />
+                      <SessionNavigationButton session={s} />
                     </td>
                   ) : (
                     (["name", "alias"] as const).map((field) => (

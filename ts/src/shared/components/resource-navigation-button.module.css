@@ -29,6 +29,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.title {
+  font-size: 1rem;
+}
 .subtitle {
   color: var(--ui-muted);
   font: 10px/1.3 var(--ui-font-mono);

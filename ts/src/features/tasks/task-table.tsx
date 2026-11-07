@@ -16,12 +16,9 @@ import type { Project } from "#gen/cxz/project_pb";
 import { TaskStatus } from "#gen/cxz/task_pb";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { TaskPriority, TaskStatusIcon, TaskTime } from "./task-indicators";
-import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import {
-  sessionLocation,
-  taskLocation,
-} from "#src/shared/navigation/resource-route.ts";
+import { taskLocation } from "#src/shared/navigation/resource-route.ts";
 import {
   ownerIssue,
   tableTasks,
@@ -130,27 +127,10 @@ export function TaskTable({
               </TableCell>
               <TableCell className={styles.buttonCell}>
                 {owner ? (
-                  <RouteLink
-                    rowAware
-                    className={styles.ownerButton}
-                    {...sessionLocation(owner)}
-                    title={owner.name || owner.alias}
-                  >
-                    <AgentBrand agent={owner.agent} />
-                    <span className={styles.identity}>
-                      <span className={styles.ownerAlias}>
-                        {owner.alias || owner.runtimeId}
-                      </span>
-                      <span className={styles.alias}>
-                        {issue || owner.name}
-                      </span>
-                    </span>
-                    <Icon
-                      name="open-external"
-                      className={styles.openIcon}
-                      aria-hidden="true"
-                    />
-                  </RouteLink>
+                  <SessionNavigationButton
+                    session={owner}
+                    annotation={issue || undefined}
+                  />
                 ) : (
                   <span className={styles.secondary}>
                     {task.assignee

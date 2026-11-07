@@ -7,12 +7,11 @@ import type { Project } from "#gen/cxz/project_pb";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import {
-  sessionLocation,
   projectLocation,
   resourceHandle,
 } from "#src/shared/navigation/resource-route.ts";
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
-import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 import { ResourceControlGroup } from "#src/shared/components/resource-control-group.tsx";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import type { TaskAssignmentAction } from "./task-assignment";
@@ -111,12 +110,9 @@ export function TaskMetadata({
           [
             "Created from",
             source ? (
-              <ResourceNavigationButton
-                {...sessionLocation(source)}
+              <SessionNavigationButton
+                session={source}
                 search={task.sourceSeq ? { seq: String(task.sourceSeq) } : {}}
-                name={source.name || source.alias}
-                alias={source.alias}
-                leading={<AgentBrand agent={source.agent} />}
               />
             ) : task.sourceSession ? (
               "Session unavailable"
@@ -209,12 +205,7 @@ export function TaskAssigneeControl({
       }
     >
       {owner ? (
-        <ResourceNavigationButton
-          {...sessionLocation(owner)}
-          name={owner.name || owner.alias}
-          alias={owner.alias}
-          leading={<AgentBrand agent={owner.agent} />}
-        />
+        <SessionNavigationButton session={owner} />
       ) : task.assignee ? (
         "Session unavailable"
       ) : (

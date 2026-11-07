@@ -21,7 +21,6 @@ import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
   projectLocation,
   resourceHandle,
-  sessionLocation,
 } from "#src/shared/navigation/resource-route.ts";
 import { containerState } from "./project-state";
 import { ProjectStateIcon } from "./project-state-icon";
@@ -30,6 +29,7 @@ import { projectActivitySessions } from "./project-session-activity";
 import { useSessionActivity } from "./use-session-activity";
 import styles from "./project-table.module.css";
 import resourceTableStyles from "#src/shared/components/resource-table.module.css";
+import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 
 export function ProjectTable({
   c,
@@ -161,21 +161,7 @@ export function ProjectTable({
               </TableCell>
               <TableCell className={styles.nameCell}>
                 {active ? (
-                  <RouteLink
-                    rowAware
-                    {...sessionLocation(active)}
-                    className={styles.projectLink}
-                  >
-                    <span className={styles.identity}>
-                      <span className={styles.name}>
-                        {active.name || active.alias || active.runtimeId}
-                      </span>
-                      <small className={styles.alias}>
-                        {active.alias || active.runtimeId}
-                      </small>
-                    </span>
-                    <NavigationArrow diagonal />
-                  </RouteLink>
+                  <SessionNavigationButton session={active} />
                 ) : (
                   <span className={styles.muted}>
                     {sessionsLoading ? t("Loading sessions…") : "—"}

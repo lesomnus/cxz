@@ -106,7 +106,7 @@
 .table tbody tr {
   background: var(--ui-shade-20);
 }
-.table tbody tr[data-inactive] .projectLink {
+.table tbody tr[data-inactive] :is(.projectLink, [data-session-navigation]) {
   --button-background: var(--ui-shade-17);
   --ui-table-button-row-hover-lift: 12;
   --ui-table-button-selected-lift: 12;

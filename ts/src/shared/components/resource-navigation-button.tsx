@@ -10,10 +10,19 @@ const ResourceNavigationAnchor = forwardRef<
   Omit<ButtonAnchorProps, "children"> & {
     name: string;
     alias?: string;
+    annotation?: string;
     leading?: ReactNode;
   }
 >(function ResourceNavigationAnchor(
-  { name, alias, leading, className = "", rowAware = true, ...props },
+  {
+    name,
+    alias,
+    annotation,
+    leading,
+    className = "",
+    rowAware = true,
+    ...props
+  },
   ref,
 ) {
   return (
@@ -21,13 +30,19 @@ const ResourceNavigationAnchor = forwardRef<
       {...props}
       rowAware={rowAware}
       ref={ref}
-      title={name}
+      title={props.title ?? name}
       className={`route-link ${tableStyles.layout} ${styles.link} ${className}`}
     >
       {leading}
       <span className={styles.identity}>
         <span className={styles.title}>{name}</span>
-        {alias && <span className={styles.subtitle}>{alias}</span>}
+        {(alias || annotation) && (
+          <span className={styles.subtitle}>
+            {alias}
+            {alias && annotation && " · "}
+            {annotation && <span>{annotation}</span>}
+          </span>
+        )}
       </span>
       <Icon name="open-external" className={styles.arrow} />
     </ButtonAnchor>

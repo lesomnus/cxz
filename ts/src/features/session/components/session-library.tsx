@@ -1,7 +1,6 @@
-import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
 import { useRef, useState } from "react";
 import { Button } from "@lesomnus/nox";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
+import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 import { Connection } from "#src/shared/api/connection.ts";
 import { useResourceInventory } from "#src/shared/api/resource-inventory.ts";
 import { SessionCreate } from "./session-create";
@@ -43,19 +42,13 @@ export function SessionLibrary({
             <p className={styles.muted}>Loading sessions…</p>
           )}
           {inventory.sessions.map((session) => (
-            <RouteLink
+            <SessionNavigationButton
               key={session.runtimeId}
-              className={styles.item}
-              {...sessionLocation(session)}
-            >
-              <span>
-                {session.name || session.alias}
-                <small>
-                  {session.alias} · {session.project?.name} ·{" "}
-                  {session.status?.state}
-                </small>
-              </span>
-            </RouteLink>
+              session={session}
+              annotation={[session.project?.name, session.status?.state]
+                .filter(Boolean)
+                .join(" · ")}
+            />
           ))}
           {!inventory.loading.sessions && !inventory.sessions.length && (
             <p className={styles.muted}>No sessions.</p>
