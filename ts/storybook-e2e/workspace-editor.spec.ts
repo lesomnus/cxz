@@ -746,3 +746,135 @@ test("narrow preview closes and reopens from the tab bar without losing tabs", a
     .click();
   await expect(editor.getByRole("tab")).toHaveCount(1);
 });
+
+test("narrow preview resizes at its bottom boundary and keeps its outside close button in the viewport", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const editor = await open(page, "narrow-preview");
+  const frame = page.locator("[data-workspace-preview-frame]");
+  const resize = page.getByRole("separator", {
+    name: "Resize file preview",
+    exact: true,
+  });
+  const close = page.locator("[data-workspace-preview-close]");
+  await expect(editor.locator(".monaco-editor")).toBeVisible();
+  await frame.evaluate(async (node) => {
+    await Promise.allSettled(
+      node
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished),
+    );
+  });
+  await expect(resize).toHaveAttribute("aria-orientation", "horizontal");
+  await expect(resize).toHaveCSS("cursor", "row-resize");
+  const before = (await editor.boundingBox())!;
+  const outside = (await close.boundingBox())!;
+  expect(outside.y).toBeGreaterThan(before.y + before.height);
+  expect(outside.x + outside.width).toBeLessThanOrEqual(
+    before.x + before.width,
+  );
+  const original = await editor.locator(".monaco-editor").elementHandle();
+  const boundary = (await resize.boundingBox())!;
+  await page.mouse.move(
+    boundary.x + boundary.width / 2,
+    boundary.y + boundary.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    boundary.x + boundary.width / 2,
+    boundary.y + boundary.height / 2 + 80,
+    { steps: 4 },
+  );
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await editor.boundingBox())!.height)
+    .toBeCloseTo(before.height + 80, 0);
+  await resize.press("ArrowUp");
+  await expect
+    .poll(async () => (await editor.boundingBox())!.height)
+    .toBeCloseTo(before.height + 64, 0);
+  expect(
+    await editor
+      .locator(".monaco-editor")
+      .evaluate((node, previous) => node === previous, original),
+  ).toBe(true);
+  await close.click();
+  await expect(editor).toBeHidden();
+  await expect(close).toBeHidden();
+  await page
+    .getByRole("button", { name: "Open file preview", exact: true })
+    .click();
+  await expect(editor).toBeVisible();
+  await frame.evaluate(async (node) => {
+    await Promise.allSettled(
+      node
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished),
+    );
+  });
+  expect((await editor.boundingBox())!.height).toBeCloseTo(
+    before.height + 64,
+    0,
+  );
+  expect(
+    await editor
+      .locator(".monaco-editor")
+      .evaluate((node, previous) => node === previous, original),
+  ).toBe(true);
+  await expect(editor.getByRole("tab")).toHaveCount(3);
+  await page.screenshot({ path: testInfo.outputPath("resized-preview.png") });
+  await resize.focus();
+  await resize.press("End");
+  await expect
+    .poll(async () => {
+      const button = (await close.boundingBox())!;
+      return button.y + button.height;
+    })
+    .toBeLessThanOrEqual(844);
+  await page.setViewportSize({ width: 390, height: 360 });
+  await expect
+    .poll(async () => {
+      const button = (await close.boundingBox())!;
+      return button.y + button.height;
+    })
+    .toBeLessThanOrEqual(360);
+  await resize.press("Home");
+  await expect
+    .poll(async () => (await editor.boundingBox())!.height)
+    .toBe(Number(await resize.getAttribute("aria-valuemin")));
+  await resize.dblclick();
+  await expect
+    .poll(async () => (await editor.boundingBox())!.height)
+    .toBeCloseTo(360 * 0.7, 0);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollHeight),
+  ).toBeLessThanOrEqual(360);
+});
+
+test("preview resize and outside close controls hide when the editor docks beside the conversation", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1800, height: 900 });
+  const editor = await open(page, "narrow-preview");
+  await page.locator(".session-workspace").evaluate((node: HTMLElement) => {
+    node.style.maxWidth = "none";
+  });
+  await expect(editor.locator(".monaco-editor")).toBeVisible();
+  await expect(
+    page.getByRole("separator", { name: "Resize file preview", exact: true }),
+  ).toBeHidden();
+  await expect(page.locator("[data-workspace-preview-close]")).toBeHidden();
+  expect((await editor.boundingBox())!.x).toBeGreaterThan(0);
+  const original = await editor.locator(".monaco-editor").elementHandle();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.getByRole("separator", { name: "Resize file preview", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("[data-workspace-preview-close]")).toBeVisible();
+  expect(
+    await editor
+      .locator(".monaco-editor")
+      .evaluate((node, previous) => node === previous, original),
+  ).toBe(true);
+});

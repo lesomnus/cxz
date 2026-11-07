@@ -230,6 +230,7 @@ export const messages = {
   "Resize panes": "분할 크기 조절",
   "Resize workspace editor": "워크스페이스 에디터 크기 조절",
   "Resize file explorer": "파일 탐색기 크기 조절",
+  "Resize file preview": "파일 미리보기 크기 조절",
   "Terminal settings": "터미널 설정",
   "Copy on selection": "선택 시 복사",
   "Automatically copy selected terminal text.":

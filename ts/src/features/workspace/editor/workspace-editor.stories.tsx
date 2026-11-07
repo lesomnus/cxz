@@ -7,6 +7,7 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { projectFixtureId } from "#src/storybook/project-id.ts";
 import { EditorState, WorkspaceEditor } from "./workspace-editor";
+import { WorkspaceEditorLayer } from "./workspace-editor-layer";
 import styles from "./workspace-editor.stories.module.css";
 
 const sources = {
@@ -117,11 +118,18 @@ function Preview({
   );
   return drawer ? (
     <div className={`session-workspace ${styles.drawer}`} data-file-open={open}>
-      <div className={styles.conversation}>
-        <p>The file preview slides over this conversation on narrow screens.</p>
-        <Button onClick={() => setOpen(true)}>Open file preview</Button>
+      <div className="session-split">
+        <div className={styles.conversation}>
+          <p>
+            The file preview slides over this conversation on narrow screens.
+          </p>
+          <Button onClick={() => setOpen(true)}>Open file preview</Button>
+        </div>
+        <div className="session-divider" />
+        <WorkspaceEditorLayer close={() => setOpen(false)}>
+          {editor}
+        </WorkspaceEditorLayer>
       </div>
-      <div className="workspace-editor-layer">{editor}</div>
     </div>
   ) : (
     <div className={styles.editor}>{editor}</div>
@@ -158,4 +166,12 @@ export const OverflowingTabs: Story = { args: { manyTabs: true } };
 export const Empty: Story = { args: { empty: true } };
 export const NarrowPreview: Story = {
   args: { drawer: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The production preview layer slides down over the conversation. Drag its bottom boundary or use the arrow keys to resize; double-click restores the initial height. The outside close button follows its lower-right corner and remains inside the conversation viewport. Closing and reopening retains the chosen height and Monaco instance. At a docked workspace width, the layer releases its layout and hides its resize/close chrome.",
+      },
+    },
+  },
 };

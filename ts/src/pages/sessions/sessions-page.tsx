@@ -17,6 +17,7 @@ import type { Project } from "#gen/cxz/project_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { Conversation } from "#src/features/session/conversation/conversation.tsx";
 import { ProjectEditorPane } from "#src/features/workspace/editor/project-editor-pane.tsx";
+import { WorkspaceEditorLayer } from "#src/features/workspace/editor/workspace-editor-layer.tsx";
 import { SessionLibrary } from "#src/features/session/components/session-library.tsx";
 import { MarkdownFileLinks } from "#src/shared/content/markdown.tsx";
 import { useSession } from "#src/shared/api/use-session.ts";
@@ -147,7 +148,7 @@ function SessionWorkspace({
                 className="session-divider"
                 label={t("Resize workspace editor")}
               />
-              <div className="workspace-editor-layer">
+              <WorkspaceEditorLayer close={() => setFileRequest(undefined)}>
                 <ProjectEditorPane
                   key={Array.from(project.id).join("-")}
                   c={c}
@@ -159,7 +160,7 @@ function SessionWorkspace({
                       : undefined
                   }
                 />
-              </div>
+              </WorkspaceEditorLayer>
             </>
           )}
         </div>

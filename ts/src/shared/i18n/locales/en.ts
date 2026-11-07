@@ -229,6 +229,7 @@ export const messages = {
   "Resize panes": "Resize panes",
   "Resize workspace editor": "Resize workspace editor",
   "Resize file explorer": "Resize file explorer",
+  "Resize file preview": "Resize file preview",
   "Terminal settings": "Terminal settings",
   "Copy on selection": "Copy on selection",
   "Automatically copy selected terminal text.":
