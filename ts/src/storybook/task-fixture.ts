@@ -30,6 +30,8 @@ export function taskFixture(
     longDoneTitle?: boolean;
     historyCount?: number;
     historyUnavailable?: boolean;
+    historyDelay?: number;
+    onHistory?: (alias: string) => void;
     actionDelay?: number;
     onReview?: (request: SessionSendRequest) => void;
   } = {},
@@ -358,10 +360,24 @@ export function taskFixture(
           })();
         },
         get: (request) => clone(TaskSchema, find(request)),
-        history: (request) => {
+        history: async (request, context) => {
+          const task = find(request);
+          options.onHistory?.(task.alias);
+          if (options.historyDelay)
+            await new Promise<void>((resolve, reject) => {
+              const finish = () => {
+                context.signal.removeEventListener("abort", abort);
+                resolve();
+              };
+              const timer = setTimeout(finish, options.historyDelay);
+              const abort = () => {
+                clearTimeout(timer);
+                reject(new ConnectError("Canceled", Code.Canceled));
+              };
+              context.signal.addEventListener("abort", abort, { once: true });
+            });
           if (options.historyUnavailable)
             throw new ConnectError("History unavailable", Code.Unimplemented);
-          const task = find(request);
           const ordered = [...(history.get(key(task.id)) ?? [])].reverse();
           const index = request.after
             ? ordered.findIndex((row) => key(row.id) === request.after)

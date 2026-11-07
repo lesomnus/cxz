@@ -295,6 +295,10 @@ They occupy the first row of the right panel, above task information. A change
 history table follows the information. It lists retained Audit metadata newest
 first, twenty rows at a time, and refreshes after committed task updates. Older
 pages use a cursor; no polling or duplicate history store is introduced.
+The history panel and loaded rows stay with their page throughout a Task slide.
+Only the active Task starts history requests; leaving cancels pending requests.
+Returning to a still-mounted page reuses its loaded rows and pagination unless
+the Task version changed, so inactive neighbor pages do not prefetch history.
 
 `TaskService.History` requires a TaskRef with a project, resolves the task in that
 project and reads the authoritative project's existing audit table. The query

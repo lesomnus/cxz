@@ -615,13 +615,13 @@ function TaskEditor({
             actions={actions}
             notices={notices}
             history={
-              task &&
-              active && (
+              task && (
                 <TaskHistory
                   c={c}
                   project={project}
                   task={task}
                   latest={latest}
+                  active={active}
                 />
               )
             }

@@ -51,19 +51,27 @@ export function TaskHistory({
   project,
   task,
   latest,
+  active = true,
 }: {
   c: Connection;
   project: Project;
   task: Task;
   latest?: Task;
+  active?: boolean;
 }) {
   const [rows, setRows] = useState<Audit[]>([]);
   const [next, setNext] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const request = useRef<AbortController | undefined>(undefined);
+  const source = useRef<{ c: Connection; resource: string } | undefined>(
+    undefined,
+  );
+  const loadedRevision = useRef("");
+  const resource = `${projectId(project)}:${key(task.id)}`;
   const revision = `${task.dateUpdated?.seconds}:${task.dateUpdated?.nanos}:${latest?.dateUpdated?.seconds}:${latest?.dateUpdated?.nanos}`;
   async function load(after = "") {
+    if (!active) return;
     request.current?.abort();
     const controller = new AbortController();
     request.current = controller;
@@ -75,6 +83,7 @@ export function TaskHistory({
         { signal: controller.signal, timeoutMs: 15000 },
       );
       if (controller.signal.aborted) return;
+      loadedRevision.current = revision;
       setRows((previous) =>
         after
           ? [
@@ -97,11 +106,21 @@ export function TaskHistory({
     }
   }
   useEffect(() => {
-    setRows([]);
-    setNext("");
-    void load();
+    if (source.current?.c !== c || source.current.resource !== resource) {
+      source.current = { c, resource };
+      loadedRevision.current = "";
+      setRows([]);
+      setNext("");
+      setError("");
+    }
+    if (!active) {
+      request.current?.abort();
+      setLoading(false);
+      return;
+    }
+    if (loadedRevision.current !== revision) void load();
     return () => request.current?.abort();
-  }, [c, projectId(project), key(task.id), revision]);
+  }, [c, resource, revision, active]);
   return (
     <div className={styles.history}>
       <h2>Change history</h2>
@@ -140,10 +159,10 @@ export function TaskHistory({
             {!rows.length && (
               <TableRow>
                 <TableCell colSpan={2} className={styles.empty}>
-                  {loading
-                    ? "Loading history…"
-                    : error
-                      ? "History unavailable"
+                  {error
+                    ? "History unavailable"
+                    : loading || !loadedRevision.current
+                      ? "Loading history…"
                       : "No retained changes"}
                 </TableCell>
               </TableRow>
@@ -156,7 +175,7 @@ export function TaskHistory({
         <Button
           type="button"
           loading={loading}
-          disabled={loading}
+          disabled={loading || !active}
           onClick={() => void load(error ? "" : next)}
         >
           {error ? "Retry history" : "Load more changes"}
