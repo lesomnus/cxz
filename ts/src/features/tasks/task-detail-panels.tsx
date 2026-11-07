@@ -12,6 +12,7 @@ import {
   resourceHandle,
 } from "#src/shared/navigation/resource-route.ts";
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { ResourceControlGroup } from "#src/shared/components/resource-control-group.tsx";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import type { TaskAssignmentAction } from "./task-assignment";
@@ -115,6 +116,7 @@ export function TaskMetadata({
                 search={task.sourceSeq ? { seq: String(task.sourceSeq) } : {}}
                 name={source.name || source.alias}
                 alias={source.alias}
+                leading={<AgentBrand agent={source.agent} />}
               />
             ) : task.sourceSession ? (
               "Session unavailable"
@@ -211,6 +213,7 @@ export function TaskAssigneeControl({
           {...sessionLocation(owner)}
           name={owner.name || owner.alias}
           alias={owner.alias}
+          leading={<AgentBrand agent={owner.agent} />}
         />
       ) : task.assignee ? (
         "Session unavailable"
