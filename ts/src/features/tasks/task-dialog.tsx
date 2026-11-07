@@ -52,6 +52,12 @@ import {
 } from "./task-detail-panels";
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import actionStyles from "#src/shared/components/resource-action.module.css";
+import {
+  taskAssignmentAction,
+  randomAssignee,
+  taskReviewRequest,
+  sendTaskReview,
+} from "./task-assignment";
 
 function TaskActionButton({
   panel,
@@ -83,7 +89,7 @@ function TaskActionButton({
 function TaskEditor({
   c,
   project,
-  task,
+  task: initialTask,
   latest,
   sessions,
   saved,
@@ -112,6 +118,8 @@ function TaskEditor({
   onDescriptionOptionsChange?: (value: TaskDescriptionOptions) => void;
 }) {
   const id = useId();
+  // Assignment updates its version without remounting the editor or losing drafts.
+  const [task, setTask] = useState(initialTask);
   const [name, setName] = useState(task?.name ?? "");
   const [alias, setAlias] = useState(task?.alias ?? "");
   const [desc, setDesc] = useState(task?.desc ?? "");
@@ -130,8 +138,15 @@ function TaskEditor({
   const [conflict, setConflict] = useState(false);
   const [confirmation, setConfirmation] = useState<"release" | "cancel">();
   const [activeAction, setActiveAction] = useState<
-    "save" | "release" | "cancel"
+    "save" | "release" | "cancel" | "assign" | "review"
   >();
+  const [review, setReview] = useState<{
+    task: Task;
+    session: Session;
+    request: ReturnType<typeof taskReviewRequest>;
+  }>();
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSent, setReviewSent] = useState("");
   const pending = useRef(false),
     controller = useRef<AbortController | undefined>(undefined);
   const creation = useRef(crypto.randomUUID());
@@ -157,12 +172,23 @@ function TaskEditor({
     immutable ||
     task?.status === TaskStatus.IN_PROGRESS ||
     latest?.status === TaskStatus.IN_PROGRESS;
-  async function mutate(action: "save" | "release" | "cancel" = "save") {
+  const assignment = task
+    ? taskAssignmentAction(task, project, sessions)
+    : { kind: "none" as const };
+  async function mutate(
+    action: "save" | "release" | "cancel" | "assign" = "save",
+  ) {
     if (
       pending.current ||
       immutable ||
       (action === "release" && assignmentLocked)
     )
+      return false;
+    const assignee =
+      action === "assign" && assignment.kind === "random"
+        ? randomAssignee(assignment.sessions)
+        : undefined;
+    if (action === "assign" && (!task || !assignee || changed || conflict))
       return false;
     pending.current = true;
     busyState(true);
@@ -174,25 +200,42 @@ function TaskEditor({
     try {
       const options = { signal: request.signal, timeoutMs: 15000 };
       const value = task
-        ? action === "release"
-          ? await c.tasks.release(
+        ? action === "assign" && assignee
+          ? await c.tasks.claim(
               {
                 ref: taskRef(project, task),
                 dateUpdated: task.dateUpdated,
-                actor: taskOwner(task),
+                actor: {
+                  session: ref(assignee.runtimeId),
+                  runId: assignee.status!.runId,
+                },
               },
               options,
             )
-          : await c.tasks.patch(
-              {
-                ref: taskRef(project, task),
-                dateUpdated: task.dateUpdated,
-                ...(action === "cancel"
-                  ? { status: TaskStatus.CANCELED }
-                  : { name: name.trim(), alias: alias.trim(), desc, priority }),
-              },
-              options,
-            )
+          : action === "release"
+            ? await c.tasks.release(
+                {
+                  ref: taskRef(project, task),
+                  dateUpdated: task.dateUpdated,
+                  actor: taskOwner(task),
+                },
+                options,
+              )
+            : await c.tasks.patch(
+                {
+                  ref: taskRef(project, task),
+                  dateUpdated: task.dateUpdated,
+                  ...(action === "cancel"
+                    ? { status: TaskStatus.CANCELED }
+                    : {
+                        name: name.trim(),
+                        alias: alias.trim(),
+                        desc,
+                        priority,
+                      }),
+                },
+                options,
+              )
         : await c.tasks.add(
             {
               project: projectRef(projectId(project)),
@@ -206,7 +249,8 @@ function TaskEditor({
           );
       if (!request.signal.aborted) {
         c.taskCatalog.forProject(projectId(project)).apply(value);
-        saved(value);
+        if (action === "assign") setTask(value);
+        else saved(value);
       }
       return true;
     } catch (failure) {
@@ -219,6 +263,60 @@ function TaskEditor({
             ? "This task changed or its owner is no longer active. Your edits are preserved. Reload the latest task before retrying."
             : String(failure),
         );
+      }
+      return false;
+    } finally {
+      pending.current = false;
+      if (!request.signal.aborted) {
+        busyState(false);
+        setActiveAction(undefined);
+        setBusy(false);
+      }
+    }
+  }
+  function activateAssignment() {
+    if (busy || changed || conflict || immutable) return;
+    if (assignment.kind === "random") void mutate("assign");
+    else if (assignment.kind === "review" && task) {
+      setReviewError("");
+      setReviewSent("");
+      setReview({
+        task,
+        session: assignment.session,
+        request: taskReviewRequest(task, assignment.session),
+      });
+    }
+  }
+  async function requestReview() {
+    if (!review || pending.current) return false;
+    pending.current = true;
+    busyState(true);
+    setActiveAction("review");
+    setBusy(true);
+    setReviewError("");
+    const request = new AbortController();
+    controller.current = request;
+    try {
+      const receipt = await sendTaskReview(
+        c,
+        project,
+        review.task,
+        review.request,
+        {
+          signal: request.signal,
+          timeoutMs: 15000,
+        },
+      );
+      if (!request.signal.aborted)
+        setReviewSent(
+          `Task review request ${receipt.status === "queued" ? "queued for" : "sent to"} ${review.session.alias || review.session.name}.`,
+        );
+      return true;
+    } catch (failure) {
+      if (!request.signal.aborted) {
+        setReviewError(String(failure));
+        if (ConnectError.from(failure).code === Code.FailedPrecondition)
+          setConflict(true);
       }
       return false;
     } finally {
@@ -259,10 +357,20 @@ function TaskEditor({
         rows={[
           [
             "Assigned to",
-            <TaskAssigneeControl task={task} owner={owner} />,
-            issue
-              ? `${issue}. Cancel Working work before releasing its assignment.`
-              : undefined,
+            <TaskAssigneeControl
+              task={task}
+              owner={owner}
+              action={assignment}
+              busy={busy || changed || conflict || immutable}
+              loading={
+                busy && (activeAction === "assign" || activeAction === "review")
+              }
+              activate={activateAssignment}
+            />,
+            issue ||
+              (assignment.kind === "random" && !assignment.sessions.length
+                ? "No running sessions in this project"
+                : undefined),
           ],
           [
             "Priority",
@@ -444,6 +552,11 @@ function TaskEditor({
         </p>
       )}
       {(reloadError || error) && <ErrorNotice error={reloadError || error} />}
+      {reviewSent && (
+        <p role="status" className={styles.quiet}>
+          {reviewSent}
+        </p>
+      )}
       {task && (changed || conflict || reloadError) && (
         <Button type="button" disabled={busy} onClick={reload}>
           Reload latest task
@@ -473,12 +586,7 @@ function TaskEditor({
             }
             metadata={
               task && (
-                <TaskMetadata
-                  task={task}
-                  project={project}
-                  source={source}
-                  issue={issue}
-                />
+                <TaskMetadata task={task} project={project} source={source} />
               )
             }
             title={titleField}
@@ -517,12 +625,7 @@ function TaskEditor({
                 {descriptionField}
               </Form>
               {task && (
-                <TaskMetadata
-                  task={task}
-                  project={project}
-                  source={source}
-                  issue={issue}
-                />
+                <TaskMetadata task={task} project={project} source={source} />
               )}
               {notices}
             </>
@@ -552,6 +655,21 @@ function TaskEditor({
             </>
           )}
           {dirty && <p>Unsaved edits will be discarded.</p>}
+        </ConfirmationDialog>
+      )}
+      {review && (
+        <ConfirmationDialog
+          title="Request task review?"
+          confirmLabel="Send"
+          failureMessage={reviewError || "Could not send the review request."}
+          close={() => setReview(undefined)}
+          execute={requestReview}
+        >
+          <p>
+            Send this message to {review.session.name || review.session.alias} (
+            {review.session.alias})?
+          </p>
+          <p className={styles.reviewMessage}>{review.request.text}</p>
         </ConfirmationDialog>
       )}
     </>

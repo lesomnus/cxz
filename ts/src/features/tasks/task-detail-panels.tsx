@@ -14,6 +14,7 @@ import {
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
 import { ResourceControlGroup } from "#src/shared/components/resource-control-group.tsx";
 import { Icon } from "#src/shared/icons/icon.tsx";
+import type { TaskAssignmentAction } from "./task-assignment";
 import styles from "./task-detail-panels.module.css";
 import { ResourceLayout } from "#src/shared/components/resource-layout.tsx";
 
@@ -85,12 +86,10 @@ export function TaskMetadata({
   task,
   project = task.project,
   source,
-  issue,
 }: {
   task: Task;
   project?: Project;
   source?: Session;
-  issue: string;
 }) {
   return (
     <>
@@ -123,13 +122,10 @@ export function TaskMetadata({
           ],
         ]}
       />
-      {(issue || Object.keys(task.labels).length > 0) && (
+      {Object.keys(task.labels).length > 0 && (
         <ResourceFields
           columns={2}
           rows={[
-            ...(issue
-              ? [{ label: "Assignment", value: issue, fullWidth: true }]
-              : []),
             ...Object.entries(task.labels).map(
               ([label, value]) => [label, value] as const,
             ),
@@ -162,9 +158,17 @@ export function TaskMetadata({
 export function TaskAssigneeControl({
   task,
   owner,
+  action,
+  busy,
+  loading,
+  activate,
 }: {
   task: Task;
   owner?: Session;
+  action: TaskAssignmentAction;
+  busy: boolean;
+  loading: boolean;
+  activate: () => void;
 }) {
   return (
     <ResourceControlGroup
@@ -173,8 +177,32 @@ export function TaskAssigneeControl({
       // group's padding so the session button has the same width as Project.
       leadingWidth="calc(75% + 1.5 * var(--ui-control-inset))"
       actions={
-        <Button type="button" aria-label="Assignment actions">
-          <Icon name="overflow" />
+        <Button
+          type="button"
+          aria-label={
+            action.kind === "random"
+              ? "Assign randomly"
+              : action.kind === "review"
+                ? "Request task review"
+                : "No assignment action"
+          }
+          disabled={
+            busy ||
+            action.kind === "none" ||
+            (action.kind === "random" && !action.sessions.length)
+          }
+          loading={loading}
+          onClick={activate}
+        >
+          <Icon
+            name={
+              action.kind === "random"
+                ? "dice"
+                : action.kind === "review"
+                  ? "send-message"
+                  : "dot"
+            }
+          />
         </Button>
       }
     >

@@ -255,12 +255,27 @@ inside words. Show control characters overlays spaces, tabs, newlines and other
 control markers without changing the text, selection or clipboard contents. Both
 view options survive saving and do not dirty the task. Assigned to and Priority
 lead the right panel in a 2:1 row. The assigned session button matches the Project
-button width inside an expanded control group. The placeholder action fills the
+button width inside an expanded control group. The assignment action fills the
 remaining width; its gap to the session button matches the container's inset. The next
 row places Status and Updated at 1:2. Alias, Project, creation source and labels
 remain in the middle; Task ID and Created form the final 1:2 row. ResourceFields
 accepts relative column weights, and ResourceControlGroup owns the inset surface
-and action placement. The placeholder button does not call an API.
+and action placement. For an unassigned Todo task, the dice button chooses a
+random running session in the same project and uses version-checked Claim to
+assign its current run. Stopped sessions and sessions without a current run are
+excluded. Claim changes the task to Working; it does not send a chat message.
+With no eligible sessions, the dice button is disabled.
+For a Working or Waiting task owned by a previous run of a running session, the
+send button opens a confirmation containing the target session and review
+message, including the task's alias and UUID. Confirm sends a chat to the captured
+current run using SessionService.Send. A fresh task read prevents sending after
+the task has changed; the run ID prevents retargeting a restarted session. Retries
+within the confirmation keep the same client ID to avoid duplicate messages.
+The review asks the agent to read the latest task and assess it without silently
+changing ownership. Other states show a disabled button with a small centered dot.
+Assignment and review preserve unsaved edits and the session's composer draft.
+The separate Assignment metadata field is omitted; ownership warnings remain on
+Assigned to and in the task table.
 Navigation values expand back across their label inset like form inputs, retaining
 the input's content padding, with section-sized gaps between the buttons.
 Created and Updated show local timestamps

@@ -176,6 +176,13 @@ export const iconDefinitions = {
     path("M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9ZM14 3v6h6"),
   ]),
   "send-message": line([path("M12 19V5m-6 6 6-6 6 6")]),
+  dice: line([
+    rect(3, 3, 18, 18, 4),
+    circle(8, 8, 1, filled),
+    circle(12, 12, 1, filled),
+    circle(16, 16, 1, filled),
+  ]),
+  dot: solid([circle(8, 8, 1.5)]),
   "latest-message": line([path("M12 5v14m-6-6 6 6 6-6")]),
   microphone: line([
     rect(9, 2, 6, 12, 3),

@@ -114,9 +114,15 @@ test("title reserves two lines and metadata groups assignment, activity and fina
   expect(geometry.width).toBeGreaterThan(geometry.buttonWidth);
   expect(geometry.gap).toBeCloseTo(geometry.leftInset, 1);
   expect(geometry.rightInset).toBeCloseTo(geometry.leftInset, 1);
-  await assignment
-    .getByRole("button", { name: "Assignment actions", exact: true })
-    .click();
+  const inactiveAction = assignment.getByRole("button", {
+    name: "No assignment action",
+    exact: true,
+  });
+  await expect(inactiveAction).toBeDisabled();
+  await expect(inactiveAction.locator('[data-icon="dot"]')).toBeVisible();
+  await expect(
+    information.locator("dt").filter({ hasText: /^Assignment$/ }),
+  ).toHaveCount(0);
   await expect(title(page)).toHaveValue(long);
   const navigation = rows.nth(2).getByRole("link");
   const inputPadding = await information

@@ -9,6 +9,10 @@ import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { ContainerState, ProjectSchema } from "#gen/cxz/project_pb";
 import { SessionSchema } from "#gen/cxz/session_pb";
+import {
+  SessionService,
+  type SessionSendRequest,
+} from "#gen/cxz/session_svc_pb";
 import { TaskSchema, TaskStatus, type Task } from "#gen/cxz/task_pb";
 import { TaskService, TaskPatchRequestSchema } from "#gen/cxz/task_svc_pb";
 import { key } from "@lesomnus/payday/store";
@@ -22,6 +26,8 @@ export function taskFixture(
     pageDelay?: number;
     olderDone?: number;
     longDetails?: boolean;
+    actionDelay?: number;
+    onReview?: (request: SessionSendRequest) => void;
   } = {},
 ) {
   const id = (value: number) => {
@@ -187,6 +193,11 @@ export function taskFixture(
     )
       throw new ConnectError("Task version changed", Code.FailedPrecondition);
   };
+  const reviews = new Map<string, SessionSendRequest>();
+  const actionDelay = () =>
+    new Promise<void>((resolve) =>
+      setTimeout(resolve, options.actionDelay ?? 0),
+    );
   const c = new Connection(
     "https://task-preview.invalid",
     createRouterTransport((router) => {
@@ -345,6 +356,35 @@ export function taskFixture(
             ),
           );
         },
+        claim: async (request) => {
+          await actionDelay();
+          const task = find(request);
+          check(task, request);
+          const owner = sessions.find(
+            (session) =>
+              session.runtimeId === request.actor?.session?.key.value,
+          );
+          if (
+            task.assignee ||
+            task.status !== TaskStatus.TODO ||
+            !owner ||
+            !owner.project ||
+            !task.project ||
+            key(owner.project.id) !== key(task.project.id) ||
+            !request.actor?.runId ||
+            owner.status?.runId !== request.actor.runId ||
+            !["idle", "working", "waiting_input"].includes(owner.status.state)
+          )
+            throw new ConnectError(
+              "Task or session changed",
+              Code.FailedPrecondition,
+            );
+          return update(task, {
+            assignee: owner.runtimeId,
+            assigneeRun: request.actor.runId,
+            status: TaskStatus.IN_PROGRESS,
+          });
+        },
         release: (request) => {
           const task = find(request);
           check(task, request);
@@ -368,12 +408,42 @@ export function taskFixture(
           });
         },
       });
+      router.service(SessionService, {
+        send: async (request) => {
+          await actionDelay();
+          const previous = reviews.get(request.clientId);
+          if (previous) {
+            if (JSON.stringify(previous) !== JSON.stringify(request))
+              throw new ConnectError("Client ID reused", Code.InvalidArgument);
+            return { clientId: request.clientId, status: "queued" };
+          }
+          const session = sessions.find(
+            (session) => session.runtimeId === request.ref?.key.value,
+          );
+          if (
+            !session ||
+            session.status?.runId !== request.runId ||
+            !["idle", "working", "waiting_input"].includes(session.status.state)
+          )
+            throw new ConnectError(
+              "Session run changed",
+              Code.FailedPrecondition,
+            );
+          reviews.set(request.clientId, request);
+          options.onReview?.(request);
+          return {
+            clientId: request.clientId,
+            status: session.status.state === "idle" ? "accepted" : "queued",
+          };
+        },
+      });
     }),
   );
   return {
     c,
     projects,
     sessions,
+    reviews,
     agentUpdate: () => {
       const task = rows[0];
       if (task)

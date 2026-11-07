@@ -161,3 +161,7 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+.reviewMessage {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

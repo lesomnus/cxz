@@ -34,12 +34,15 @@ function TaskPreview({
   olderDone?: number;
   longDetails?: boolean;
 }) {
+  const [reviewCount, setReviewCount] = useState(0);
   const [fixture] = useState(() =>
     taskFixture(count, unavailable, {
       pageSize,
       pageDelay,
       olderDone,
       longDetails,
+      actionDelay: 200,
+      onReview: () => setReviewCount((count) => count + 1),
     }),
   );
   useEffect(() => () => fixture.c.dispose(), [fixture]);
@@ -74,6 +77,7 @@ function TaskPreview({
   return (
     <>
       <div style={{ height: 36, display: "flex", alignItems: "center" }}>
+        <output aria-label="Review requests sent">{reviewCount}</output>
         <Button type="button" onClick={fixture.agentUpdate}>
           Simulate agent update
         </Button>
@@ -129,7 +133,7 @@ export const TaskDetails: Story = {
     docs: {
       description: {
         story:
-          "A dedicated task detail page using the same Nox SectionGroup and Section surfaces as Projects and Accounts. Metadata and actions size to their content in the left column; a two-line clamped title and a description with word-break and control-character display toggles occupy the right. Status is read-only and priority values include their symbols. Task ID, assignment and creation source share a row, with resource navigation buttons for sessions and the project. Narrow screens stack the columns. The collection and detail share the horizontal page transition used by Projects and Memory, below the fixed toolbar. Previous and next task panels peek in from the viewport edges and can be clicked. Wheel or swipe on the page background moves one task per gesture, in table order with the active session/run filter. Long metadata scrolls independently on wide screens; narrow pages scroll the stacked groups. Moving between tasks replaces the current history entry: Back returns to the page before entering details, and Forward restores the last viewed task. Unsaved edits require confirmation before navigation; Add remains a dialog. Alias/UUID deep links keep working.",
+          "A dedicated task detail page using the same Nox SectionGroup and Section surfaces as Projects and Accounts. A two-line clamped title and description occupy the left; metadata and actions size to their content on the right. Assigned to offers random assignment for unassigned Todo work and a confirmed chat review for previous-run ownership; other states show a disabled dot. Status is read-only and priority values include their symbols. Narrow screens stack the columns. The collection and detail share the horizontal page transition used by Projects and Memory, below the fixed toolbar. Previous and next task panels peek in from the viewport edges and can be clicked. Wheel or swipe on the page background moves one task per gesture, in table order with the active session/run filter. Long metadata scrolls independently on wide screens; narrow pages scroll the stacked groups. Moving between tasks replaces the current history entry: Back returns to the page before entering details, and Forward restores the last viewed task. Unsaved edits require confirmation before navigation; Add remains a dialog. Alias/UUID deep links keep working.",
       },
     },
   },
@@ -144,6 +148,10 @@ export const LongTaskDetails: Story = {
 export const SingleTaskDetails: Story = {
   ...TaskDetails,
   args: { count: 1, initialPath: "/c/_/project/workspace/task/task-1" },
+};
+export const AssignmentActions: Story = {
+  ...TaskDetails,
+  args: { initialPath: "/c/_/project/workspace/task/task-7" },
 };
 export const MissingTaskDetails: Story = {
   ...TaskDetails,
