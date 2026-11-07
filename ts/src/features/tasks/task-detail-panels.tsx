@@ -69,7 +69,8 @@ export function TaskDetailPanels({
                 {
                   // Center the handle in the Section's existing right padding,
                   // rather than reserve an extra gutter inside the fields.
-                  "--scrollbar-offset": "calc(var(--ui-section-padding) / 2)",
+                  "--scrollbar-offset":
+                    "calc(-1 * var(--ui-section-padding) / 2)",
                 } as CSSProperties
               }
               aria-label="Task metadata"

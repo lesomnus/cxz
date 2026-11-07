@@ -73,15 +73,21 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: var(--ui-section-background);
-}
-.editorArea > :global(.code-editor) {
   border-radius: var(--ui-section-radius);
   background: var(--ui-shade-20);
+}
+.editorArea > :global(.code-editor) {
+  border-radius: inherit;
+  background: transparent;
 }
 .editorArea :global(.monaco-editor),
 .editorArea :global(.monaco-editor > .overflow-guard) {
   border-radius: inherit;
+}
+.editorArea :global(.monaco-editor),
+.editorArea :global(.monaco-editor .monaco-editor-background),
+.editorArea :global(.monaco-editor .margin) {
+  background: transparent;
 }
 .status {
   display: flex;

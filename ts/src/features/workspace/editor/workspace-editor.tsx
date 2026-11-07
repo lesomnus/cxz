@@ -524,8 +524,9 @@ export function WorkspaceEditor({
                   label={t("Syntax highlighting")}
                   variant="compact"
                   searchable
+                  minMenuWidth={80}
                   scrollbarSide="left"
-                  scrollbarOffset={8}
+                  scrollbarOffset={-8}
                   disabled={!active}
                   value={active?.language ?? "auto"}
                   options={[

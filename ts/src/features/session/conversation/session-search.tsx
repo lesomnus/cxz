@@ -312,7 +312,7 @@ export function SessionSearch({
           )}
           {visible.length > 0 && (
             <FindBarResults
-              scrollbarOffset={5}
+              scrollbarOffset={-5}
               scrollbarLabel={t("Search results")}
               viewportRef={results}
               style={

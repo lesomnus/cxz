@@ -69,7 +69,7 @@ export function ErrorPanel({
     >
       <ScrollArea
         className={styles.list}
-        scrollbarOffset={8}
+        scrollbarOffset={-8}
         aria-label={t("Error list")}
         scrollbarLabel={t("Scroll errors")}
       >

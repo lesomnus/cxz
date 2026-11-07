@@ -117,6 +117,10 @@ for (const theme of ["dark", "light"])
           tabEntryBackground: getComputedStyle(entries[0]).backgroundColor,
           inactiveTabBackground: getComputedStyle(entries[1]).backgroundColor,
           monacoBackground: getComputedStyle(monaco).backgroundColor,
+          monacoLayerBackgrounds: [
+            source,
+            ...monaco.querySelectorAll(".monaco-editor-background, .margin"),
+          ].map((node) => getComputedStyle(node).backgroundColor),
           editorAreaBackground: getComputedStyle(source.parentElement!)
             .backgroundColor,
           sourceBounds: source.getBoundingClientRect().toJSON(),
@@ -146,7 +150,7 @@ for (const theme of ["dark", "light"])
     expect(surface.monacoRadius).toBe(surface.token);
     expect(surface.guardRadius).toBe(surface.token);
     expect(surface.contentRadius).toBe("0px");
-    expect(surface.editorAreaRadius).toBe("0px");
+    expect(surface.editorAreaRadius).toBe(surface.token);
     await expect(editor).not.toContainText("Read only");
     await expect(
       editor.getByRole("combobox", {
@@ -159,9 +163,15 @@ for (const theme of ["dark", "light"])
     expect(surface.contentBackground).toBe("rgba(0, 0, 0, 0)");
     expect(surface.tabBackground).toBe("rgba(0, 0, 0, 0)");
     expect(surface.tabListBackground).toBe("rgba(0, 0, 0, 0)");
-    expect(surface.tabEntryBackground).toBe(surface.monacoBackground);
-    expect(surface.inactiveTabBackground).toBe(surface.monacoBackground);
-    expect(surface.pickerBackground).toBe(surface.monacoBackground);
+    expect(surface.monacoBackground).toBe("rgba(0, 0, 0, 0)");
+    expect(
+      surface.monacoLayerBackgrounds.every(
+        (color) => color === "rgba(0, 0, 0, 0)",
+      ),
+    ).toBe(true);
+    expect(surface.tabEntryBackground).toBe(surface.editorAreaBackground);
+    expect(surface.inactiveTabBackground).toBe(surface.editorAreaBackground);
+    expect(surface.pickerBackground).toBe(surface.editorAreaBackground);
     expect(surface.pickerWidth).toBe(80);
     expect(surface.pickerGaps).toEqual(Array(3).fill(surface.pickerGaps[0]));
     expect(surface.tabRadius).not.toBe("0px");
@@ -203,9 +213,20 @@ for (const theme of ["dark", "light"])
       },
     );
     expect(corner).toEqual(
-      surface.editorAreaBackground.match(/\d+/g)!.slice(0, 3).map(Number),
+      surface.viewerBackground.match(/\d+/g)!.slice(0, 3).map(Number),
     );
-    expect(surface.editorAreaBackground).not.toBe(surface.monacoBackground);
+    expect(surface.editorAreaBackground).not.toBe(surface.viewerBackground);
+    await (await menu(page))
+      .getByRole("menuitem", { name: "Close all tabs", exact: true })
+      .click();
+    await expect(editor).toContainText("Select a file to preview.");
+    const emptyArea = editor.locator("[data-workspace-content] > :last-child");
+    await expect(emptyArea).toHaveCSS(
+      "background-color",
+      surface.editorAreaBackground,
+    );
+    await expect(emptyArea).toHaveCSS("border-radius", surface.token);
+    await page.screenshot({ path: testInfo.outputPath("empty-editor.png") });
     const divider = editor.getByRole("separator", {
       name: "Resize file explorer",
       exact: true,
@@ -303,6 +324,11 @@ test("syntax menu keeps its scrollbar outside the left edge and supports drag an
     exact: true,
   });
   const list = menu.getByRole("listbox");
+  expect((await menu.boundingBox())!.width).toBeLessThanOrEqual(
+    (await picker.boundingBox())!.width + 8,
+  );
+  await expect(list).toHaveAttribute("data-scrollbar-side", "left");
+  await expect(list).toHaveAttribute("data-scrollbar-offset", "-8");
   const viewport = list.locator('[data-scroll-area="viewport"]');
   const rail = list.locator('[data-scroll-area="rail"]');
   const thumb = list.getByRole("scrollbar");

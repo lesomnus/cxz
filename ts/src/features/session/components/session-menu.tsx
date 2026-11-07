@@ -81,7 +81,7 @@ export function SessionMenu({
         onOpenChange={onOpenChange}
         placement="above"
         gap={toolbarMenuGap}
-        scrollbarOffset={8}
+        scrollbarOffset={-8}
         motion={{ from: "bottom-right", effect: "reveal" }}
         disabled={!session}
         footer={<ComposerOptions />}
