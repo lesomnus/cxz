@@ -68,6 +68,12 @@
 .content {
   grid-template-rows: auto minmax(0, 1fr);
 }
+.content > .title,
+.content > .description {
+  padding-inline: var(--ui-space);
+  /* FormField already contributes its own block inset below the control. */
+  padding-bottom: max(0px, calc(var(--ui-space) - var(--ui-control-inset)));
+}
 .title {
   font-size: 20px;
   line-height: 1.4;
