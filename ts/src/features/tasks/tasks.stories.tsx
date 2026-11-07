@@ -173,6 +173,14 @@ export const SingleTaskDetails: Story = {
   ...TaskDetails,
   args: { count: 1, initialPath: "/c/_/project/workspace/task/task-1" },
 };
+export const FirstTaskDetails: Story = {
+  ...TaskDetails,
+  args: { initialPath: "/c/_/project/workspace/task/task-9" },
+};
+export const LastTaskDetails: Story = {
+  ...TaskDetails,
+  args: { initialPath: "/c/_/project/workspace/task/task-5" },
+};
 export const AssignmentActions: Story = {
   ...TaskDetails,
   args: { initialPath: "/c/_/project/workspace/task/task-7" },

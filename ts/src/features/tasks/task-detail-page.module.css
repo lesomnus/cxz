@@ -2,7 +2,8 @@
   --task-page-duration: 380ms;
   --ui-sliding-pages-duration: var(--task-page-duration);
   --ui-sliding-pages-easing: cubic-bezier(0.65, 0, 0.35, 1);
-  --task-neighbor-peek: calc(9 * var(--ui-space));
+  --task-neighbor-peek: calc(13 * var(--ui-space));
+  --task-neighbor-padding: calc(2 * var(--ui-space));
   --task-panel-gap: calc(3 * var(--ui-space));
   flex: 1;
   min-height: 0;
@@ -31,7 +32,7 @@
   right: 0;
   height: calc(2 * var(--task-neighbor-peek));
   min-height: 0;
-  padding: var(--ui-space) var(--ui-section-padding);
+  padding: var(--task-neighbor-padding) var(--ui-section-padding);
   opacity: 0.55;
   transition:
     opacity 160ms ease,
@@ -50,9 +51,21 @@
   align-content: start;
 }
 .neighbor > :global(.button-content) {
-  height: calc(var(--task-neighbor-peek) - 2 * var(--ui-space));
+  height: calc(var(--task-neighbor-peek) - 2 * var(--task-neighbor-padding));
+}
+.neighborPages,
+.neighborRow {
+  height: 100%;
+}
+.neighborRow {
+  display: flex;
+  width: 100%;
   align-items: center;
   gap: calc(2 * var(--ui-space));
+}
+.neighborRow > :first-child,
+.neighborRow > :last-child {
+  flex: none;
 }
 .identity {
   display: grid;
@@ -68,6 +81,42 @@
   white-space: nowrap;
 }
 .identity small {
+  font: 10px/12px var(--ui-font-mono);
+  color: var(--ui-muted);
+}
+.assignee {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  width: clamp(72px, 24%, 160px);
+  flex: none;
+  text-align: right;
+  font-size: 12px;
+}
+.assignee > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.assignee > :global(.session-heading) {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+.assignee :global(.session-description) {
+  justify-content: flex-end;
+}
+.assignee :global(.session-alias) {
+  font-size: 10px;
+  line-height: 12px;
+}
+.priority {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-space);
+  flex: none;
+  width: 70px;
   font: 10px/12px var(--ui-font-mono);
   color: var(--ui-muted);
 }

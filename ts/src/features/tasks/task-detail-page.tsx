@@ -5,9 +5,10 @@ import type { Session } from "#gen/cxz/session_pb";
 import type { Task } from "#gen/cxz/task_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { Icon } from "#src/shared/icons/icon.tsx";
+import { AgentIdentity } from "#src/shared/components/agent-identity.tsx";
 import { TaskDetails } from "./task-dialog";
-import { TaskStatusIcon } from "./task-indicators";
-import { tableTasks, taskKey } from "./task-model";
+import { TaskPrioritySymbol, TaskStatusIcon } from "./task-indicators";
+import { tableTasks, taskKey, taskPriorities } from "./task-model";
 import { TaskPageWheel } from "./task-page-wheel";
 import styles from "./task-detail-page.module.css";
 import pageStyles from "#src/shared/components/resource-page.module.css";
@@ -59,10 +60,23 @@ export function TaskDetailPage({
   const next = index >= 0 ? ordered[index + 1] : undefined;
   const pages =
     index < 0
-      ? [{ value: current, task: undefined }]
-      : ordered
-          .slice(Math.max(0, index - 1), index + 2)
-          .map((task) => ({ value: taskKey(task), task }));
+      ? [
+          {
+            value: current,
+            task: undefined,
+            previous: undefined,
+            next: undefined,
+          },
+        ]
+      : ordered.slice(Math.max(0, index - 1), index + 2).map((task, offset) => {
+          const position = Math.max(0, index - 1) + offset;
+          return {
+            value: taskKey(task),
+            task,
+            previous: ordered[position - 1],
+            next: ordered[position + 1],
+          };
+        });
   const navigation = useRef({ previous, next, busy, open });
   navigation.current = { previous, next, busy, open };
   const move = (direction: number) => {
@@ -164,14 +178,18 @@ export function TaskDetailPage({
       <div
         className={`${pageStyles.content} ${styles.peek} ${styles.previous}`}
       >
-        {previous && (
-          <Neighbor
-            task={previous}
-            direction="previous"
-            disabled={busy}
-            open={open}
-          />
-        )}
+        <Neighbor
+          value={current}
+          task={previous}
+          pages={pages.map((page) => ({
+            value: page.value,
+            task: page.previous,
+          }))}
+          sessions={sessions}
+          direction="previous"
+          disabled={busy}
+          open={open}
+        />
       </div>
       <SlidingPages
         value={current}
@@ -206,21 +224,33 @@ export function TaskDetailPage({
         ))}
       </SlidingPages>
       <div className={`${pageStyles.content} ${styles.peek} ${styles.next}`}>
-        {next && (
-          <Neighbor task={next} direction="next" disabled={busy} open={open} />
-        )}
+        <Neighbor
+          value={current}
+          task={next}
+          pages={pages.map((page) => ({ value: page.value, task: page.next }))}
+          sessions={sessions}
+          direction="next"
+          disabled={busy}
+          open={open}
+        />
       </div>
     </div>
   );
 }
 
 function Neighbor({
+  value,
   task,
+  pages,
+  sessions,
   direction,
   disabled,
   open,
 }: {
-  task: Task;
+  value: string;
+  task?: Task;
+  pages: { value: string; task?: Task }[];
+  sessions: Session[];
   direction: "previous" | "next";
   disabled: boolean;
   open: (task: Task) => void;
@@ -230,17 +260,69 @@ function Neighbor({
       as="button"
       type="button"
       className={styles.neighbor}
-      disabled={disabled}
-      onClick={() => open(task)}
-      aria-label={`${direction === "previous" ? "Previous" : "Next"} task: ${task.name}`}
+      disabled={disabled || !task}
+      onClick={() => task && open(task)}
+      aria-label={`${direction === "previous" ? "Previous" : "Next"} task${task ? `: ${task.name}` : ""}`}
       data-task-neighbor={direction}
+      data-empty={!task || undefined}
     >
+      <SlidingPages
+        value={value}
+        orientation="vertical"
+        resize="none"
+        focusOnChange={false}
+        className={styles.neighborPages}
+      >
+        {pages.map(({ value, task }) => (
+          <SlidingPage key={value} value={value}>
+            {task && (
+              <NeighborContent
+                task={task}
+                sessions={sessions}
+                direction={direction}
+              />
+            )}
+          </SlidingPage>
+        ))}
+      </SlidingPages>
+    </Section>
+  );
+}
+
+function NeighborContent({
+  task,
+  sessions,
+  direction,
+}: {
+  task: Task;
+  sessions: Session[];
+  direction: "previous" | "next";
+}) {
+  const owner = sessions.find((session) => session.runtimeId === task.assignee);
+  const priority = taskPriorities[task.priority] ?? "Unknown";
+  return (
+    <div className={styles.neighborRow} data-task-neighbor-content={task.alias}>
       <TaskStatusIcon status={task.status} />
       <span className={styles.identity}>
         <strong>{task.name}</strong>
         <small>{task.alias}</small>
       </span>
+      <span className={styles.assignee} aria-label="Assigned to">
+        {owner ? (
+          <AgentIdentity
+            agent={owner.agent}
+            name={owner.name || owner.alias || owner.runtimeId}
+            alias={owner.alias || owner.runtimeId}
+          />
+        ) : (
+          <span>{task.assignee || "Unassigned"}</span>
+        )}
+      </span>
+      <span className={styles.priority} aria-label={`${priority} priority`}>
+        <TaskPrioritySymbol priority={task.priority} />
+        <span>{priority}</span>
+      </span>
       <Icon name={direction === "previous" ? "previous-task" : "next-task"} />
-    </Section>
+    </div>
   );
 }

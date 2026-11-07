@@ -312,6 +312,12 @@ upper-right arrow. The larger title/description group is on the left. The
 right metadata/actions group sizes to its contents, with an independent scroll area when
 long content exceeds the available desktop height; narrow pages scroll the groups
 together.
+The previous/next preview buttons keep padded surfaces at both collection
+boundaries, with empty disabled content where no neighbor exists. Each populated
+button shows the task title/alias, right-aligned assignee identity and priority.
+Their content uses vertical SlidingPages with the same duration and easing as
+the Task details; the button surfaces stay fixed. Reduced motion disables the
+slides while retaining navigation.
 The Task status labeled Working corresponds to the unchanged IN_PROGRESS API value.
 
 Stopped, unavailable and previous-run owners are flagged rather than silently
