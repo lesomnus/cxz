@@ -139,6 +139,7 @@ export function TaskMetadata({
       <ResourceFields
         columns={[1, 2]}
         variant="controls"
+        density="compact"
         rows={[
           {
             label: "Task ID",

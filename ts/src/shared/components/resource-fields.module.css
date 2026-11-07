@@ -34,17 +34,27 @@
   overflow-wrap: anywhere;
 }
 .controls {
-  --ui-form-control-padding-block: var(--ui-space);
+  align-items: stretch;
   column-gap: var(--ui-section-group-gap);
 }
 .controls > div {
   padding-inline: var(--ui-form-control-radius);
+  row-gap: var(--ui-space);
+  grid-template-rows: auto minmax(0, 1fr);
 }
 .controls dd {
-  margin-top: calc(-1 * var(--ui-space));
   min-height: calc(1.5em + 2 * var(--ui-space));
   align-items: center;
   color: var(--ui-shade-237);
+}
+.compact {
+  --ui-form-control-padding-block: var(--ui-space);
+}
+.compact > div {
+  row-gap: var(--ui-control-inset);
+}
+.compact dd {
+  margin-top: calc(-1 * var(--ui-space));
 }
 .controls output {
   display: inline-flex;
@@ -81,8 +91,12 @@
   );
   --value-padding-inline: var(--ui-form-control-padding-inline);
   flex: none;
+  height: 100%;
 }
 .controls :global(.setting-trigger) {
+  display: flex;
+  align-items: center;
+  height: 100%;
   border-radius: var(--ui-form-control-radius);
   box-shadow: inset 0 0 0 1px var(--ui-form-control-border);
 }

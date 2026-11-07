@@ -31,16 +31,19 @@ export function ResourceFields({
   rows,
   columns = 2,
   variant = "default",
+  density = "default",
 }: {
   rows: readonly ResourceFieldRow[];
   /** Equal-width count, or relative column weights such as [1, 2]. */
   columns?: 1 | 2 | 3 | readonly number[];
-  /** Compact input/readonly values share Account editable spacing and section gaps. */
+  /** Input/readonly values share Form spacing, surface insets and section gaps. */
   variant?: "default" | "controls";
+  /** Compact controls retain the tighter Account editable-value alignment. */
+  density?: "default" | "compact";
 }) {
   return (
     <dl
-      className={`${styles.fields} ${variant === "controls" ? styles.controls : ""}`}
+      className={`${styles.fields} ${variant === "controls" ? `${styles.controls} ${density === "compact" ? styles.compact : ""}` : ""}`}
       style={
         {
           "--resource-field-columns":

@@ -285,6 +285,7 @@ function TaskEditor({
       <ResourceFields
         columns={[1, 2]}
         variant="controls"
+        density="compact"
         rows={[
           [
             "Status",

@@ -263,11 +263,13 @@ and action placement. The placeholder button does not call an API.
 Navigation values expand back across their label inset like form inputs, retaining
 the input's content padding, with section-sized gaps between the buttons.
 Created and Updated show local timestamps
-without a visible UTC offset. Priority retains its input background at the same
-height as Account editable values; its selected menu row fills the menu width.
-Priority, Status and Task ID all use the shared ResourceFields controls layout.
-It owns label/value spacing, value height and input appearance; task pages do not
-override those metrics separately for each field.
+without a visible UTC offset. Assigned to, Priority, Project and Created from use
+the default control label gap, matching Alias. Priority keeps its input surface
+and stretches to the Assigned to row height; its selected menu row fills the
+menu width. Status/Updated and Task ID/Created opt into compact density, retaining
+the tighter Account editable-value alignment. ResourceFields owns both densities,
+value stretching and input appearance; task pages do not override those metrics
+separately for each field.
 Release, Cancel, Save and Discard changes use individual
 panel buttons matching the Project detail actions, with icons and hover labels.
 Session and project links reuse the resource navigation buttons, including their

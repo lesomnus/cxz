@@ -38,6 +38,32 @@ test("title reserves two lines and metadata groups assignment, activity and fina
     exact: true,
   });
   const rows = information.locator("dl");
+  const defaultGaps = await information.evaluate((panel) => {
+    const alias = panel.querySelector("input")!;
+    const aliasLabel = alias.parentElement!.previousElementSibling!;
+    return {
+      alias:
+        alias.getBoundingClientRect().top -
+        aliasLabel.getBoundingClientRect().bottom,
+      fields: [...panel.querySelectorAll("dl > div")]
+        .filter((field) =>
+          ["Assigned to", "Priority", "Project", "Created from"].includes(
+            field.querySelector("dt")!.textContent!.trim(),
+          ),
+        )
+        .map((field) => ({
+          label: field.querySelector("dt")!.textContent!.trim(),
+          gap:
+            field
+              .querySelector("dd")!
+              .firstElementChild!.getBoundingClientRect().top -
+            field.querySelector("dt")!.getBoundingClientRect().bottom,
+        })),
+    };
+  });
+  expect(defaultGaps.fields).toHaveLength(4);
+  for (const field of defaultGaps.fields)
+    expect(field.gap, field.label).toBeCloseTo(defaultGaps.alias, 1);
   const rowLabels = (index: number) =>
     rows.nth(index).locator(":scope > div > dt").allTextContents();
   expect(await rowLabels(0)).toEqual(["Assigned to", "Priority"]);
@@ -122,7 +148,7 @@ test("title reserves two lines and metadata groups assignment, activity and fina
   );
 });
 
-test("shared task field values align with Account editable labels", async ({
+test("compact task field values align with Account editable labels", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -159,7 +185,7 @@ test("shared task field values align with Account editable labels", async ({
     .evaluateAll((rows) =>
       rows
         .filter((row) =>
-          ["Priority", "Status", "Task ID"].includes(
+          ["Status", "Task ID"].includes(
             row.querySelector("dt")!.textContent!.trim(),
           ),
         )
@@ -183,11 +209,7 @@ test("shared task field values align with Account editable labels", async ({
           throw new Error("Task value text is missing");
         }),
     );
-  expect(values.map((value) => value.label)).toEqual([
-    "Priority",
-    "Status",
-    "Task ID",
-  ]);
+  expect(values.map((value) => value.label)).toEqual(["Status", "Task ID"]);
   for (const value of values) {
     expect(value.gap).toBeCloseTo(reference.gap, 1);
     expect(value.height).toBe(reference.height);
@@ -231,7 +253,10 @@ test("detail controls retain wrapping, show priority symbols and preserve read-o
     exact: true,
   });
   const trigger = (await priority.boundingBox())!;
-  expect(trigger.height).toBe(26);
+  const assigned = (await detail(page)
+    .getByRole("group", { name: "Assigned session controls", exact: true })
+    .boundingBox())!;
+  expect(trigger.height).toBe(assigned.height);
   await expect(priority.locator('svg[data-priority="2"]')).toBeVisible();
   await priority.click();
   const selectedOption = page.getByRole("option", { selected: true });
