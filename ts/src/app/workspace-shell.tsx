@@ -108,6 +108,7 @@ function WorkspaceContent({
   );
   const session = selectedSession?.runtimeId ?? route.session;
   const hasResourcePanel = ![
+    "errors",
     "accounts",
     "tasks",
     "projects",

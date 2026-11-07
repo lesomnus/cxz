@@ -820,6 +820,8 @@ export const messages = {
   "Some project actions failed. Successful projects will not be retried.":
     "Some project actions failed. Successful projects will not be retried.",
   Errors: "Errors",
+  Stale: "Stale",
+  "Open errors page": "Open errors page",
   "{count} active errors": "{count} active errors",
   "Close errors": "Close errors",
   "Error status": "Error status",
