@@ -51,10 +51,24 @@ for (const width of [1280, 390]) {
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))
       .toBe(value);
     await expect(popup.getByRole("status")).toHaveText("Copied");
+    await expect
+      .poll(async () => (await popup.boundingBox())?.width)
+      .toBeCloseTo(anchor.width, 1);
     await page.keyboard.press("Escape");
     await expect(popup).toHaveCount(0);
     await expect(title).toHaveCSS("opacity", "1");
     await expect(title).toBeFocused();
+    await title.evaluate((element) => element.blur());
+    await page.mouse.move(0, 0);
+    await title.hover();
+    await expect(popup).toBeVisible();
+    await expect
+      .poll(async () => (await popup.boundingBox())?.width)
+      .toBeCloseTo(anchor.width, 1);
+    const reopened = (await popup.boundingBox())!;
+    expect(reopened.x).toBeCloseTo(anchor.x, 1);
+    expect(reopened.y).toBeCloseTo(anchor.y, 1);
+    expect(reopened.height).toBeGreaterThan(anchor.height);
   });
 }
 
