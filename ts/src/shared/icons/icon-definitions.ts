@@ -137,7 +137,7 @@ export const iconDefinitions = {
   ),
   "error-active": solid([path("M8 3 14 13H2Z")]),
   "error-stale": solid([rect(3, 3, 10, 10)]),
-  "error-resolved": solid([circle(8, 8, 5)]),
+  "error-resolved": solid([circle(8, 8, 3.5)]),
   details: info,
   terminal: line([path("m3 4 4 4-4 4m6 0h4")], "0 0 16 16"),
   upload: line([

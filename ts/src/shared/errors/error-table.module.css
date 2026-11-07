@@ -23,22 +23,25 @@
   width: var(--resource-table-state-width);
 }
 .kindColumn {
-  width: 64px;
+  width: 76px;
 }
 .operationColumn {
-  width: 136px;
+  width: 92px;
+}
+.diagnosticsColumn {
+  width: 152px;
 }
 .targetColumn {
-  width: 112px;
+  width: 80px;
 }
 .countColumn {
-  width: 52px;
+  width: 36px;
 }
 .timeColumn {
-  width: 88px;
+  width: 72px;
 }
 .actionsColumn {
-  width: 64px;
+  width: 56px;
 }
 .dialogTable tbody tr {
   background: var(--ui-shade-20);
@@ -48,11 +51,13 @@
 }
 .kind,
 .operation,
+.diagnostics,
 .target {
   font-size: 11px;
   overflow-wrap: anywhere;
 }
 .kind {
+  text-align: center;
   color: var(--ui-muted);
 }
 .state {
@@ -147,6 +152,7 @@
 @container error-table (width < 720px) {
   .kindColumn,
   .operationColumn,
+  .diagnosticsColumn,
   .targetColumn,
   .countColumn,
   .timeColumn {
@@ -154,6 +160,7 @@
   }
   .table .kind,
   .table .operation,
+  .table .diagnostics,
   .table .target,
   .table .count,
   .table .time {
@@ -165,6 +172,7 @@
   }
   .kind > *,
   .operation > *,
+  .diagnostics > *,
   .count > *,
   .time > * {
     display: none;
@@ -232,14 +240,9 @@
   white-space: nowrap;
 }
 
-.operationValue {
+.diagnostics {
   font: 10px/1.5 var(--ui-font-mono);
   overflow-wrap: anywhere;
-}
-.operationLabel {
-  margin-top: 2px;
-  color: var(--ui-muted);
-  font-size: 10px;
 }
 
 .dialogDismiss {

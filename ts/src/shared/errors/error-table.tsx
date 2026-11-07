@@ -78,11 +78,12 @@ function ErrorRow({
         </span>
       </TableCell>
       <TableCell className={styles.kind}>{view.kind}</TableCell>
-      <TableCell className={styles.operation}>
-        <div className={styles.operationValue}>{view.diagnostic}</div>
-        {view.operation !== view.diagnostic && (
-          <div className={styles.operationLabel}>{view.operation}</div>
-        )}
+      <TableCell className={styles.count}>
+        <CompactNumber value={entry.count} mode="integer" digits={3} />
+      </TableCell>
+      <TableCell className={styles.operation}>{view.operation}</TableCell>
+      <TableCell className={styles.diagnostics}>
+        {view.diagnostic !== view.operation ? view.diagnostic : "—"}
       </TableCell>
       <TableCell className={styles.target}>{view.target}</TableCell>
       <TableCell className={styles.summary}>
@@ -96,14 +97,11 @@ function ErrorRow({
         </div>
         <div className={styles.mobileMeta}>
           {view.kind}
-          <span>·</span>
-          <RelativeTime value={entry.lastSeen} compact />
           <span>×</span>
           <CompactNumber value={entry.count} mode="integer" digits={3} />
+          <span>·</span>
+          <RelativeTime value={entry.lastSeen} compact />
         </div>
-      </TableCell>
-      <TableCell className={styles.count}>
-        <CompactNumber value={entry.count} mode="integer" digits={3} />
       </TableCell>
       <TableCell className={styles.time}>
         <RelativeTime value={entry.lastSeen} compact />
@@ -230,10 +228,11 @@ export function ErrorTable({
           <colgroup>
             <col className={styles.stateColumn} />
             <col className={styles.kindColumn} />
+            <col className={styles.countColumn} />
             <col className={styles.operationColumn} />
+            <col className={styles.diagnosticsColumn} />
             <col className={styles.targetColumn} />
             <col />
-            <col className={styles.countColumn} />
             <col className={styles.timeColumn} />
             <col className={styles.actionsColumn} />
           </colgroup>
@@ -243,12 +242,15 @@ export function ErrorTable({
             <TableRow>
               <TableHead className={styles.state} aria-label={t("Status")} />
               <TableHead className={styles.kind}>{t("Kind")}</TableHead>
+              <TableHead className={styles.count} aria-label={t("Count")} />
               <TableHead className={styles.operation}>
                 {t("Operation")}
               </TableHead>
+              <TableHead className={styles.diagnostics}>
+                {t("Diagnostics")}
+              </TableHead>
               <TableHead className={styles.target}>{t("Target")}</TableHead>
               <TableHead>{t("Message")}</TableHead>
-              <TableHead className={styles.count}>{t("Count")}</TableHead>
               <TableHead className={styles.time}>{t("Last seen")}</TableHead>
               <TableHead aria-label={t("Actions")} />
             </TableRow>
@@ -279,7 +281,7 @@ export function ErrorTable({
             )
           ) : (
             <TableRow>
-              <TableCell colSpan={dialog ? 1 : 8} className={styles.empty}>
+              <TableCell colSpan={dialog ? 1 : 9} className={styles.empty}>
                 {tab === "all"
                   ? t("No errors in recent records")
                   : tab === "active"

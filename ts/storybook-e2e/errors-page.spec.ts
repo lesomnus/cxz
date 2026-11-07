@@ -335,3 +335,52 @@ test("status glyphs are plain filled shapes without inner symbols", async ({
   await expect(resolved.locator("circle")).toHaveCount(1);
   await expect(resolved.locator("*")).toHaveCount(1);
 });
+
+test("error columns separate operation and diagnostics with an unlabeled count after centered Kind", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=workspace-errors--overview&viewMode=story");
+  const table = page
+    .getByRole("main", { name: "Errors", exact: true })
+    .getByRole("table");
+  const heads = table.getByRole("columnheader");
+  await expect(heads).toHaveCount(9);
+  expect(
+    await heads.evaluateAll((heads) =>
+      heads.map(
+        (head) => head.getAttribute("aria-label") || head.textContent?.trim(),
+      ),
+    ),
+  ).toEqual([
+    "Status",
+    "Kind",
+    "Count",
+    "Operation",
+    "Diagnostics",
+    "Target",
+    "Message",
+    "Last seen",
+    "Actions",
+  ]);
+  await expect(heads.nth(1)).toHaveCSS("text-align", "center");
+  await expect(heads.nth(2)).toHaveText("");
+  const row = table
+    .getByRole("row")
+    .filter({ hasText: "Memory revision changed" });
+  const cells = row.getByRole("cell");
+  await expect(cells).toHaveCount(9);
+  await expect(cells.nth(1)).toHaveText("RPC");
+  await expect(cells.nth(1)).toHaveCSS("text-align", "center");
+  await expect(cells.nth(2)).toContainText("001");
+  await expect(cells.nth(3)).toHaveText("Update Memory");
+  await expect(cells.nth(4)).toHaveText("cxz.MemoryService/Patch · Aborted");
+  const runtime = table
+    .getByRole("row")
+    .filter({ hasText: "The project container is unavailable" })
+    .getByRole("cell");
+  await expect(runtime.nth(3)).toHaveText("Project runtime");
+  await expect(runtime.nth(4)).toHaveText("—");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    1280,
+  );
+});
