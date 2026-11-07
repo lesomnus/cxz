@@ -29,10 +29,10 @@ import resourceStyles from "#src/shared/components/resource-table.module.css";
 import styles from "./error-table.module.css";
 
 const statusIcons = {
-  active: "warning",
-  resolved: "check",
+  active: "error-active",
+  resolved: "error-resolved",
   dismissed: "hide",
-  stale: "duration",
+  stale: "error-stale",
 } as const satisfies Record<ClientError["status"], IconName>;
 function useEntryEntrance(animateEnter: boolean) {
   const [animate, setAnimate] = useState(animateEnter);

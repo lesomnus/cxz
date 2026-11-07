@@ -60,7 +60,7 @@
   text-align: center;
 }
 .pageRow[data-status="active"] .state {
-  color: #ff526d;
+  color: #e6a15a;
 }
 .pageRow[data-status="resolved"] .state {
   color: #85ba91;

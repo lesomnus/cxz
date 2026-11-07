@@ -74,6 +74,11 @@ test("one hour without recurrence becomes Stale while closed, persists and opens
   await expect(
     main.getByRole("img", { name: "Stale", exact: true }),
   ).toBeVisible();
+  const stale = main.getByRole("img", { name: "Stale", exact: true });
+  await expect(stale).toHaveAttribute("data-icon", "error-stale");
+  await expect(stale.locator("rect")).toHaveCount(1);
+  await expect(stale.locator("*")).toHaveCount(1);
+  await expect(stale.locator("rect")).toHaveAttribute("rx", "0");
   await page.goto(pageStory);
   await expect(
     page
@@ -257,36 +262,76 @@ test("new page rows slide down once and count updates stay still", async ({
   await expect(table).toHaveAttribute("data-animations", "1");
 });
 
-test("Errors and Projects lists share row surfaces, spacing and dividers", async ({
+for (const theme of ["dark", "light"])
+  test(`Errors rows keep Nox transparent defaults on the Projects surface in ${theme} mode`, async ({
+    page,
+  }) => {
+    const styles = async () =>
+      page
+        .locator("main table")
+        .first()
+        .evaluate((table) => {
+          const row = table.querySelector("tbody tr")!;
+          const cell = row.querySelector("td")!;
+          const t = getComputedStyle(table),
+            r = getComputedStyle(row),
+            c = getComputedStyle(cell);
+          return {
+            background: t.backgroundColor,
+            headerBackground: getComputedStyle(table.querySelector("thead")!)
+              .backgroundColor,
+            rowBackground: r.backgroundColor,
+            surface: getComputedStyle(table.closest(".panel-scroll-region")!)
+              .backgroundColor,
+            rowHeight: t.getPropertyValue("--ui-table-row-height").trim(),
+            gap: t.borderSpacing,
+            radius: t.borderRadius,
+            divider: c.boxShadow,
+            border: c.borderBottomWidth,
+            align: c.verticalAlign,
+          };
+        });
+    await page.goto(
+      `/iframe.html?id=pages-projects--list&viewMode=story&globals=theme:${theme}`,
+    );
+    await expect(page.locator("main table tbody tr").first()).toBeVisible();
+    const { rowBackground: projectRow, ...project } = await styles();
+    expect(projectRow).toBe(project.surface);
+    await page.goto(
+      `/iframe.html?id=workspace-errors--overview&viewMode=story&globals=theme:${theme}`,
+    );
+    const table = page
+      .getByRole("main", { name: "Errors", exact: true })
+      .getByRole("table");
+    await expect(table).toBeVisible();
+    const { rowBackground, ...errors } = await styles();
+    expect(rowBackground).toBe("rgba(0, 0, 0, 0)");
+    expect(errors.background).toBe("rgba(0, 0, 0, 0)");
+    expect(errors.headerBackground).toBe("rgba(0, 0, 0, 0)");
+    expect(errors).toEqual(project);
+    await table.locator("tbody tr").first().hover();
+    await expect(table.locator("tbody tr").first()).toHaveCSS(
+      "background-color",
+      theme === "dark" ? "rgb(32, 32, 32)" : "rgb(241, 241, 241)",
+    );
+  });
+
+test("status glyphs are plain filled shapes without inner symbols", async ({
   page,
 }) => {
-  const styles = async () =>
-    page
-      .locator("main table")
-      .first()
-      .evaluate((table) => {
-        const row = table.querySelector("tbody tr")!;
-        const cell = row.querySelector("td")!;
-        const t = getComputedStyle(table),
-          r = getComputedStyle(row),
-          c = getComputedStyle(cell);
-        return {
-          background: t.backgroundColor,
-          rowBackground: r.backgroundColor,
-          rowHeight: t.getPropertyValue("--ui-table-row-height").trim(),
-          gap: t.borderSpacing,
-          radius: t.borderRadius,
-          divider: c.boxShadow,
-          border: c.borderBottomWidth,
-          align: c.verticalAlign,
-        };
-      });
-  await page.goto("/iframe.html?id=pages-projects--list&viewMode=story");
-  await expect(page.locator("main table tbody tr").first()).toBeVisible();
-  const project = await styles();
   await page.goto("/iframe.html?id=workspace-errors--overview&viewMode=story");
-  await expect(
-    page.getByRole("main", { name: "Errors", exact: true }).getByRole("table"),
-  ).toBeVisible();
-  expect(await styles()).toEqual(project);
+  const main = page.getByRole("main", { name: "Errors", exact: true });
+  const active = main.getByRole("img", { name: "Active", exact: true }).first();
+  await expect(active).toHaveAttribute("data-icon", "error-active");
+  await expect(active).toHaveCSS("color", "rgb(230, 161, 90)");
+  await expect(active.locator("path")).toHaveCount(1);
+  await expect(active.locator("path")).toHaveAttribute("d", "M8 3 14 13H2Z");
+  await expect(active).toHaveAttribute("fill", "currentColor");
+  const resolved = main
+    .getByRole("img", { name: "Resolved", exact: true })
+    .first();
+  await expect(resolved).toHaveAttribute("data-icon", "error-resolved");
+  await expect(resolved).toHaveCSS("color", "rgb(133, 186, 145)");
+  await expect(resolved.locator("circle")).toHaveCount(1);
+  await expect(resolved.locator("*")).toHaveCount(1);
 });
