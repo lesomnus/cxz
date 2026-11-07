@@ -1,3 +1,11 @@
+.dialogTable {
+  --error-dismiss-button-width: 44px;
+  --error-dismiss-fade-width: 28px;
+  --error-dismiss-overlay-width: calc(
+    var(--error-dismiss-button-width) + var(--error-dismiss-fade-width) + 2 *
+      var(--ui-control-inset)
+  );
+}
 .frame {
   container: error-table / inline-size;
   min-width: 0;
@@ -236,16 +244,18 @@
 
 .dialogDismiss {
   position: absolute;
-  inset: 0 0 0 auto;
+  /* Include the cell's 1px divider so its padded button has equal vertical gaps. */
+  inset: 0 0 -1px auto;
   z-index: 1;
   display: flex;
   justify-content: flex-end;
-  width: 72px;
-  padding-left: 28px;
+  width: var(--error-dismiss-overlay-width);
+  padding: var(--ui-control-inset);
+  padding-left: calc(var(--error-dismiss-fade-width) + var(--ui-control-inset));
   background: linear-gradient(
     to right,
     transparent,
-    var(--ui-table-hover-background) 28px
+    var(--ui-table-hover-background) var(--error-dismiss-fade-width)
   );
   opacity: 0;
   pointer-events: none;
@@ -257,12 +267,15 @@
 }
 .dialogTable .dialogDismiss .dismissButton {
   align-self: stretch;
-  flex: 0 0 44px;
-  width: 44px;
+  flex: 0 0 var(--error-dismiss-button-width);
+  width: var(--error-dismiss-button-width);
   height: auto;
   min-height: 0;
   padding: 0;
-  border-radius: 0;
+  border-radius: max(
+    0px,
+    calc(var(--ui-section-radius) - var(--ui-control-inset))
+  );
 }
 .dialogDismiss .dismissButton:focus-visible {
   outline-offset: -2px;
@@ -273,7 +286,9 @@
     pointer-events: auto;
   }
   .dialogRow[data-status="active"] .summary {
-    padding-right: calc(var(--ui-table-cell-padding) + 72px);
+    padding-right: calc(
+      var(--ui-table-cell-padding) + var(--error-dismiss-overlay-width)
+    );
   }
 }
 @media (prefers-reduced-motion: reduce) {

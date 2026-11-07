@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { Card, ScrollArea } from "@lesomnus/nox";
+import { Card, ScrollArea, SlidingPages, SlidingPage } from "@lesomnus/nox";
 import { ErrorStatusTabs } from "./error-status-tabs";
 import type { ClientErrors } from "#src/shared/errors/client-errors.ts";
 import { ErrorTable } from "./error-table";
@@ -29,7 +29,6 @@ export function ErrorPanel({
   );
   const active = entries.filter((entry) => entry.status === "active");
   const history = entries.filter((entry) => entry.status !== "active");
-  const shown = tab === "history" ? history : active;
   return (
     <Card
       revealFrom="left"
@@ -74,7 +73,29 @@ export function ErrorPanel({
         aria-label={t("Error list")}
         scrollbarLabel={t("Scroll errors")}
       >
-        <ErrorTable entries={shown} store={store} tab={tab} variant="dialog" />
+        <SlidingPages
+          value={tab === "history" ? "history" : "active"}
+          className={styles.pages}
+        >
+          <SlidingPage value="active">
+            <ErrorTable
+              entries={active}
+              store={store}
+              tab="active"
+              variant="dialog"
+              animateNewEntries={tab !== "history"}
+            />
+          </SlidingPage>
+          <SlidingPage value="history">
+            <ErrorTable
+              entries={history}
+              store={store}
+              tab="history"
+              variant="dialog"
+              animateNewEntries={tab === "history"}
+            />
+          </SlidingPage>
+        </SlidingPages>
       </ScrollArea>
     </Card>
   );

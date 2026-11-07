@@ -215,9 +215,9 @@ for (const width of [1200, 390])
     await expect(overlay).toHaveCSS("opacity", "1");
     await expect(overlay).toHaveCSS("background-image", /linear-gradient/);
     const button = (await dismiss.boundingBox())!;
-    expect(button.height).toBeGreaterThanOrEqual(original!.height - 2);
+    expect(button.height).toBeGreaterThanOrEqual(original!.height - 5);
     expect(button.x + button.width).toBeCloseTo(
-      original!.x + original!.width,
+      original!.x + original!.width - 2,
       0,
     );
     expect((await row.boundingBox())!.height).toBe(original!.height);

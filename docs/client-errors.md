@@ -173,8 +173,10 @@ bottom and right inset is equal; do not make it square to achieve equal gaps.
 The button radius is the actual outer card radius minus border thickness and
 control inset, matching the Task card header's concentric-corner rule. Heading
 height remains 28px with the current token.
-The Dismiss button is 44px wide and stretches through the entire row height on a
-72px gradient overlay; it does not reserve a separate column.
+The Dismiss button is 44px wide inside a 2px-padded gradient overlay, with an 8px
+inner radius (section radius 10px minus inset 2px). The overlay width derives from
+button 44px + fade 28px + both side insets; it reserves no separate column. The
+header title has an extra ui-space (4px) left inset without moving the controls.
 
 While the dialog is open, newly reported episode IDs slide down from above over
 240ms. Existing rows, count updates, initial opening and tab switches do not
@@ -183,3 +185,13 @@ cleared afterward so later reordering cannot restart it. Reduced motion disables
 the slide. The known-ID baseline includes both Active and History, stays bounded
 to the store and resets on a fresh mount. Workspace/Errors/Rows/Incoming errors
 provides Add error and Repeat latest error controls for this behavior.
+
+
+Active/History body views use Nox SlidingPages inside the shared ScrollArea.
+The indicator and body share --error-tabs-duration (140ms) and
+--error-tabs-easing (ease-out); the latter drive the SlidingPages timing tokens.
+Both directions slide and respect reduced motion. The outgoing page remains
+mounted for the transition and is inert/aria-hidden immediately; focus stays in
+external navigation. The outside scrollbar is a sibling of the clipped pages and
+stays usable. Inactive tables skip new-entry entrances while their known-ID
+baseline remains current, so switching tabs does not replay row animations.
