@@ -2,6 +2,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
 import { alive, STREAM_STALL_MS } from "#src/shared/api/stream-deadline.ts";
+import { errorNotificationOptions } from "#src/shared/errors/error-notification.ts";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import {
   operationHealth,
@@ -53,13 +54,20 @@ export class SessionHistory {
     );
   }
   async page(
-    query: { beforeSeq?: bigint; afterSeq?: bigint; snapshotSeq?: bigint },
+    query: {
+      beforeSeq?: bigint;
+      afterSeq?: bigint;
+      snapshotSeq?: bigint;
+      limit?: number;
+    },
     signal: AbortSignal,
   ): Promise<HistoryPage> {
     try {
       return await this.sessions.transcript(
-        { ref: ref(this.id), ...query, limit: HISTORY_PAGE_SIZE },
-        { signal },
+        { ref: ref(this.id), ...query, limit: query.limit ?? HISTORY_PAGE_SIZE },
+        // Page reads belong to the visible conversation, including pagination
+        // after the cache is ready. The caller displays their failure inline.
+        { signal, ...errorNotificationOptions(false) },
       );
     } catch (error) {
       throw outdated(error);

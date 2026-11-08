@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { create } from "@bufbuild/protobuf";
 import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
 import { ConversationLoading } from "#src/features/session/conversation/conversation-loading.tsx";
+import { AccountQuotaSquare } from "#src/features/accounts/account-quota-square.tsx";
+import { useSessionActivity } from "#src/pages/projects/use-session-activity.ts";
 import { SessionsPage } from "#src/pages/sessions/sessions-page.tsx";
 import { errorNotificationOptions } from "#src/shared/errors/error-notification.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -22,9 +24,15 @@ import { EditableValue } from "#src/shared/components/editable-value.tsx";
 
 // Real clients/diagnostic transport and the real workspace sidebar. The fixture
 // controls replies, rather than adding error records directly from buttons.
-type ReadFailure = "lookup" | "session" | "history";
+type ReadFailure =
+  | "lookup"
+  | "session"
+  | "history"
+  | "missing-transcript"
+  | "pagination"
+  | "metadata";
 function makeFixture(readFailure?: ReadFailure) {
-  let failRead = true;
+  let failRead = readFailure !== "pagination";
   const errors = new ClientErrors({
     storage: localStorage,
     storageKey: readFailure
@@ -67,7 +75,7 @@ function makeFixture(readFailure?: ReadFailure) {
     });
     router.service(SessionService, {
       get: () => {
-        if (readFailure && readFailure !== "history" && failRead)
+        if ((readFailure === "lookup" || readFailure === "session") && failRead)
           throw new ConnectError("session not found", Code.NotFound);
         return create(SessionSchema, {
           id: new Uint8Array(16).fill(2),
@@ -77,6 +85,16 @@ function makeFixture(readFailure?: ReadFailure) {
         });
       },
       transcript: () => {
+        if (
+          ["missing-transcript", "pagination", "metadata"].includes(
+            readFailure ?? "",
+          ) &&
+          failRead
+        )
+          throw new ConnectError(
+            "session not found: missing-runtime",
+            Code.Unknown,
+          );
         if (readFailure === "history" && failRead)
           throw new ConnectError(
             "Conversation history is unavailable",
@@ -126,6 +144,9 @@ function makeFixture(readFailure?: ReadFailure) {
     errors,
     recoverRead: () => {
       failRead = false;
+    },
+    failRead: () => {
+      failRead = true;
     },
     quietRequest: () =>
       c.accounts.get(
@@ -220,6 +241,7 @@ function Controls({ fixture: f }: { fixture: ReturnType<typeof makeFixture> }) {
   );
 }
 function ReadPane({ fixture }: { fixture: ReturnType<typeof makeFixture> }) {
+  const [error, setError] = useState("");
   const feed = useMemo(
     () => fixture.c.conversations.get("read-preview"),
     [fixture],
@@ -233,8 +255,61 @@ function ReadPane({ fixture }: { fixture: ReturnType<typeof makeFixture> }) {
       {state.loading ? (
         <ConversationLoading {...state.loading} />
       ) : (
-        state.events.map((event) => <p key={String(event.seq)}>{event.text}</p>)
+        <>
+          {state.events.map((event) => (
+            <p key={String(event.seq)}>{event.text}</p>
+          ))}
+          <Button
+            onClick={async () => {
+              fixture.failRead();
+              try {
+                await feed.history.page(
+                  { beforeSeq: state.events[0]?.seq, limit: 1 },
+                  new AbortController().signal,
+                );
+              } catch (error) {
+                setError(String(error));
+              }
+            }}
+          >
+            Read older messages
+          </Button>
+          <ErrorNotice local error={error} />
+        </>
       )}
+    </section>
+  );
+}
+function MetadataReads({
+  fixture,
+}: {
+  fixture: ReturnType<typeof makeFixture>;
+}) {
+  const [version, setVersion] = useState(0);
+  const sessions = useMemo(
+    () => [
+      create(SessionSchema, {
+        runtimeId: "missing-runtime",
+        agent: "codex",
+        status: { lastSeq: BigInt(version) },
+      }),
+    ],
+    [version],
+  );
+  const activity = useSessionActivity(fixture.c, sessions);
+  return (
+    <section aria-label="Optional session metadata">
+      <Button onClick={() => setVersion((value) => value + 1)}>
+        Refresh metadata
+      </Button>
+      <p>{activity.get("missing-runtime")?.time ?? "Activity unavailable"}</p>
+      <AccountQuotaSquare
+        c={fixture.c}
+        account="work"
+        agent="codex"
+        sessions={sessions}
+        refreshVersion={version}
+      />
     </section>
   );
 }
@@ -281,7 +356,9 @@ function ReadControls({
         </Button>
       </div>
       {shown &&
-        (mode === "lookup" ? (
+        (mode === "metadata" ? (
+          <MetadataReads fixture={fixture} />
+        ) : mode === "lookup" ? (
           <SessionsPage c={fixture.c} id="missing" projects={[]} />
         ) : (
           <ReadPane fixture={fixture} />
@@ -505,4 +582,13 @@ export const AttendedHistory: StoryObj<typeof meta> = {
 };
 export const AttendedLookup: StoryObj<typeof meta> = {
   args: { readFailure: "lookup" },
+};
+export const AttendedMissingTranscript: StoryObj<typeof meta> = {
+  args: { readFailure: "missing-transcript" },
+};
+export const AttendedPagination: StoryObj<typeof meta> = {
+  args: { readFailure: "pagination" },
+};
+export const OptionalSessionMetadata: StoryObj<typeof meta> = {
+  args: { readFailure: "metadata" },
 };

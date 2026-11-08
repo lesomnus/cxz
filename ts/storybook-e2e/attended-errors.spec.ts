@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const mode of ["session", "history", "lookup"])
+for (const mode of ["session", "history", "lookup", "missing-transcript"])
   for (const width of [1200, 390])
     test(`${mode} read failure stays inline and recorded without a sidebar alert at ${width}px`, async ({
       page,
@@ -32,6 +32,72 @@ for (const mode of ["session", "history", "lookup"])
         page.getByRole("dialog", { name: "Error details", exact: true }),
       ).toContainText("Excluded from alerts");
     });
+
+test("a failed foreground page read after loading stays inline without alerting", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=workspace-errors--attended-pagination&viewMode=story",
+  );
+  await expect(
+    page.getByText("Recovered conversation", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Read older messages", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "session not found: missing-runtime",
+  );
+  const trigger = page.getByRole("button", { name: "Errors", exact: true });
+  await expect(trigger).not.toHaveAttribute("data-active");
+  await trigger.click();
+  const panel = page.getByRole("dialog", { name: "Errors", exact: true });
+  await panel
+    .getByRole("link", { name: "Open errors page", exact: true })
+    .click();
+  await page
+    .getByRole("main", { name: "Errors", exact: true })
+    .getByRole("row")
+    .filter({ hasText: "session not found: missing-runtime" })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Error details", exact: true }),
+  ).toContainText("Excluded from alerts");
+});
+
+test("repeated account quota and project activity reads retain diagnostics without alerts", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=workspace-errors--optional-session-metadata&viewMode=story",
+  );
+  await expect(
+    page.getByRole("img", { name: "Usage unavailable", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Refresh metadata", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const saved = JSON.parse(
+          localStorage.getItem("cxz.attended-error-preview.v1:metadata") ??
+            "null",
+        );
+        return saved?.entries[0]?.count ?? 0;
+      }),
+    )
+    .toBeGreaterThanOrEqual(4);
+  const trigger = page.getByRole("button", { name: "Errors", exact: true });
+  await expect(trigger).not.toHaveAttribute("data-active");
+  await expect(trigger.getByRole("status")).toHaveText("0 error alerts");
+  await trigger.click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "Errors", exact: true })
+      .getByRole("table"),
+  ).toContainText("session not found: missing-runtime");
+});
 
 test("an unrelated unattended failure still alerts alongside an attended failure", async ({
   page,

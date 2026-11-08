@@ -6,6 +6,7 @@ import {
 } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { ref } from "#src/shared/api/connection.ts";
+import { errorNotificationOptions } from "#src/shared/errors/error-notification.ts";
 import {
   sessionInfo,
   type QuotaWindow,
@@ -64,7 +65,9 @@ export async function readAccountQuota(
         try {
           const page = await c.sessions.transcript(
             { ref: ref(ids[index]), limit: 1 },
-            { signal, timeoutMs: 10000 },
+            // Optional card metadata: one unavailable session should not raise
+            // a global alert on every scheduled usage refresh.
+            { signal, timeoutMs: 10000, ...errorNotificationOptions(false) },
           );
           snapshots[index] = page.metadata;
           succeeded++;
