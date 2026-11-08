@@ -748,6 +748,9 @@ export const messages = {
   "Unread error": "Unread error",
   "Unread response": "Unread response",
   "{count} unread sessions": "{count} unread sessions",
+  "Included in alerts": "Included in alerts",
+  "Excluded from alerts": "Excluded from alerts",
+  "{count} error alerts": "{count} error alerts",
   Notifications: "Notifications",
   "Notification sounds": "Notification sounds",
   "Play a sound when a response finishes or a new question arrives.":

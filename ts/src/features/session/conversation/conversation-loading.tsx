@@ -30,7 +30,12 @@ export function ConversationLoading({ stage, error }: ConversationLoad) {
         </svg>
         <span>{label}</span>
         {error && (
-          <ErrorNotice as="small" className={styles.error} error={error} />
+          <ErrorNotice
+            local
+            as="small"
+            className={styles.error}
+            error={error}
+          />
         )}
       </div>
     </div>

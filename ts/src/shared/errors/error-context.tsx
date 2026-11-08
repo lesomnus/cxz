@@ -28,13 +28,15 @@ export function ErrorCenterProvider({
   );
 }
 const noSubscribe = () => () => {};
-export function useLocalError(error: unknown, api = false) {
+export function useLocalError(error: unknown, api = false, local = false) {
   const errors = useContext(ErrorContext);
   const localErrors = useContext(LocalErrorsContext);
   const hidden = useSyncExternalStore(
     errors?.subscribe ?? noSubscribe,
-    () => !localErrors && !!errors && (api || isAPIError(error, errors)),
-    () => !localErrors && !!errors && (api || isAPIError(error, errors)),
+    () =>
+      !local && !localErrors && !!errors && (api || isAPIError(error, errors)),
+    () =>
+      !local && !localErrors && !!errors && (api || isAPIError(error, errors)),
   );
   return !error || hidden ? "" : String(error);
 }

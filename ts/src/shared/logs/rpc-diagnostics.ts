@@ -12,8 +12,10 @@ import type { LogContext, LogInput } from "./log-entry";
 import {
   clientErrors,
   type ClientErrors,
+  type ErrorContext,
 } from "#src/shared/errors/client-errors.ts";
 
+import { notifyError } from "#src/shared/errors/error-notification.ts";
 import type { ErrorTarget } from "#src/shared/errors/error-origin.ts";
 
 export type ResourceReference = { key?: { case?: string; value?: unknown } };
@@ -23,6 +25,7 @@ type Options = {
   resolve?: (kind: ResourceKind, ref: ResourceReference) => string | undefined;
   errors?: ClientErrors;
   describe?: (target: ErrorTarget) => ErrorTarget;
+  notify?: (context: ErrorContext) => boolean;
 };
 
 // Reference fields only. Never include prompts, search text, settings or headers
@@ -279,7 +282,7 @@ export function rpcDiagnostics(
       });
       if (failures.size > 256) failures.delete(failures.keys().next().value!);
       const failure = ConnectError.from(error);
-      errors.report(key(), failure, {
+      const attributes: ErrorContext = {
         ...context,
         source: "rpc",
         origin: {
@@ -290,7 +293,10 @@ export function rpcDiagnostics(
         subject: subject ? (options.describe?.(subject) ?? subject) : undefined,
         code: Code[failure.code],
         target: targetDescription,
-      });
+      };
+      attributes.notify =
+        request.contextValues?.get(notifyError) ?? options.notify?.(attributes);
+      errors.report(key(), failure, attributes);
       write({
         ...context,
         level: request.stream ? "warn" : "error",
