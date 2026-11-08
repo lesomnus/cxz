@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Locator } from "@playwright/test";
 const open = async (page: Page, story = "default") => {
   await page.clock.setFixedTime(new Date("2026-11-05T12:00:00Z"));
   await page.goto(`/iframe.html?id=pages-memory--${story}&viewMode=story`);
@@ -24,6 +24,35 @@ async function rename(page: Page, name: string) {
     .fill(name);
   await editor.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(editor).toHaveCount(0);
+}
+
+async function pressCentered(page: Page, button: Locator) {
+  await expect(button).toBeEnabled();
+  await button.hover();
+  const content = button.locator(":scope > .button-content");
+  const resting = (await content.boundingBox())!;
+  const bounds = (await button.boundingBox())!;
+  const scale = await content.evaluate(
+    (node) =>
+      Number(getComputedStyle(node).getPropertyValue("--press-scale")) || 0.95,
+  );
+  await page.mouse.down();
+  try {
+    await expect
+      .poll(async () => (await content.boundingBox())!.width)
+      .toBeCloseTo(resting.width * scale, 1);
+    const pressed = (await content.boundingBox())!;
+    expect(pressed.x + pressed.width / 2).toBeCloseTo(
+      bounds.x + bounds.width / 2,
+      0,
+    );
+    expect(pressed.y + pressed.height / 2).toBeCloseTo(
+      bounds.y + bounds.height / 2,
+      0,
+    );
+  } finally {
+    await page.mouse.up();
+  }
 }
 
 test("the collection replaces old panels and controls with rectangular memory cards", async ({
@@ -421,31 +450,8 @@ for (const width of [390, 1280])
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await expect(trigger).toBeEnabled();
-    const content = trigger.locator(":scope > .button-content");
-    const resting = (await content.boundingBox())!;
-    const button = (await trigger.boundingBox())!;
     const value = (await trigger.locator(".meta-value").boundingBox())!;
-    const pressScale = await content.evaluate(
-      (node) =>
-        Number(getComputedStyle(node).getPropertyValue("--press-scale")) ||
-        0.95,
-    );
-    await trigger.hover();
-    await page.mouse.down();
-    await expect
-      .poll(async () => (await content.boundingBox())!.width)
-      .toBeCloseTo(resting.width * pressScale, 1);
-    const pressed = (await content.boundingBox())!;
-    expect(pressed.x + pressed.width / 2).toBeCloseTo(
-      button.x + button.width / 2,
-      0,
-    );
-    expect(pressed.y + pressed.height / 2).toBeCloseTo(
-      button.y + button.height / 2,
-      0,
-    );
-    await page.mouse.up();
+    await pressCentered(page, trigger);
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     const currentValue = page.locator(
       ".setting-menu .setting-current .meta-value",
@@ -462,7 +468,14 @@ for (const width of [390, 1280])
           : Infinity;
       })
       .toBeLessThan(0.5);
-    await page.keyboard.press("Escape");
+    await pressCentered(page, page.locator(".setting-menu .setting-current"));
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await trigger.click();
+    await pressCentered(
+      page,
+      page.getByRole("option", { name: "Revision r1 · Latest", exact: true }),
+    );
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
 test("document loading keeps the grouped frame and disabled action panels", async ({
