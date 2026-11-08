@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { IdentifierValue } from "./identifier-value";
@@ -18,6 +18,8 @@ type ResourceField = {
   description?: string;
   labelDetail?: ReactNode;
   fullWidth?: boolean;
+  /** Number of grid columns occupied by this field. */
+  columnSpan?: number;
   path?: boolean;
   identifier?: boolean;
   identifierLength?: number;
@@ -38,17 +40,29 @@ export function ResourceFields({
   columns = 2,
   variant = "default",
   density = "default",
+  className,
 }: {
   rows: readonly ResourceFieldRow[];
   /** Equal-width count, or relative column weights such as [1, 2]. */
-  columns?: 1 | 2 | 3 | readonly number[];
+  columns?: number | readonly number[];
   /** Input/readonly values share Form spacing, surface insets and section gaps. */
   variant?: "default" | "controls";
   /** Compact controls retain the tighter Account editable-value alignment. */
   density?: "default" | "compact";
+  className?: string;
 }) {
   return (
-    <DescriptionListRoot columns={columns} variant={variant} density={density}>
+    <DescriptionListRoot
+      columns={typeof columns === "number" ? undefined : columns}
+      style={
+        typeof columns === "number"
+          ? ({ "--field-columns": columns } as CSSProperties)
+          : undefined
+      }
+      variant={variant}
+      density={density}
+      className={className}
+    >
       {rows.map((row) => {
         const field: ResourceField =
           "label" in row
@@ -80,6 +94,7 @@ function Field({
   description,
   labelDetail,
   fullWidth,
+  columnSpan,
   path,
   identifier,
   identifierLength,
@@ -112,7 +127,14 @@ function Field({
     }
   }
   return (
-    <DescriptionListRow fullWidth={fullWidth}>
+    <DescriptionListRow
+      fullWidth={fullWidth}
+      style={
+        columnSpan && !fullWidth
+          ? { gridColumn: `span var(--resource-field-span, ${columnSpan})` }
+          : undefined
+      }
+    >
       <DescriptionListTerm>
         <FieldLabel label={label} description={description} />
         {labelDetail != null && (

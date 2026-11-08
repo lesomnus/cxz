@@ -11,9 +11,16 @@ import {
 import { SourceEditor } from "@lesomnus/nox/editor";
 import type { Memory } from "#gen/cxz/memory_pb";
 import type { Session } from "#gen/cxz/session_pb";
+import type { Project } from "#gen/cxz/project_pb";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
-import { RelativeTime } from "#src/shared/components/date-time.tsx";
-import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
+import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
+import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
+import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
+import {
+  projectLocation,
+  resourceHandle,
+} from "#src/shared/navigation/resource-route.ts";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import { publicUUID } from "#src/shared/logs/rpc-diagnostics.ts";
@@ -32,13 +39,13 @@ export type MemoryDocumentAction = {
 
 export function MemoryDocument({
   memory,
+  project = memory?.project,
   name,
   content,
   loading,
   error,
   busy,
   creating,
-  ownerInfo,
   tags,
   actions,
   rename,
@@ -53,13 +60,13 @@ export function MemoryDocument({
   changeOwner,
 }: {
   memory?: Memory;
+  project?: Project;
   name: string;
   content: string;
   loading: boolean;
   error: string;
   busy: boolean;
   creating: boolean;
-  ownerInfo?: { name: string; agent: string };
   tags: [string, string][];
   actions: MemoryDocumentAction[];
   rename: (value: string) => Promise<void>;
@@ -77,6 +84,28 @@ export function MemoryDocument({
   const theme = useTheme();
   const settings = useEditorSettings();
   const trash = !!memory?.dateDeleted;
+  const ownerSession = sessions.find(
+    (session) => resourceHandle({ id: session.id }) === memory?.ownerSession,
+  );
+  const pending = loading || creating;
+  const unavailable = <span className={styles.unavailable}>—</span>;
+  const title = (
+    <h2 className={styles.title}>
+      {(creating && !busy) || (memory && !trash) ? (
+        <EditableValue
+          label="Memory name"
+          value={name}
+          display={(value) => value || "New memory"}
+          save={rename}
+          validate={(value) =>
+            !value.trim() ? "A memory name is required." : undefined
+          }
+        />
+      ) : (
+        <span>{name || (creating ? "New memory" : "Memory")}</span>
+      )}
+    </h2>
+  );
   return (
     <SectionGroup
       className={styles.document}
@@ -84,36 +113,92 @@ export function MemoryDocument({
       aria-label="Memory document"
       aria-busy={loading}
     >
-      <Section className={styles.titleSection} aria-label="Memory title">
-        <h2 className={styles.title}>
-          {(creating && !busy) || (memory && !trash) ? (
-            <EditableValue
-              label="Memory name"
-              value={name}
-              display={(value) => value || "New memory"}
-              save={rename}
-              validate={(value) =>
-                !value.trim() ? "A memory name is required." : undefined
-              }
-            />
-          ) : (
-            <span>{name || (creating ? "New memory" : "Memory")}</span>
-          )}
-        </h2>
-        {!creating && memory && (
-          <div className={styles.metadata}>
-            <span className={styles.owner}>
-              {ownerInfo?.agent && (
-                <span aria-hidden="true">
-                  <AgentBrand agent={ownerInfo.agent} />
-                </span>
-              )}
-              <span>{ownerInfo?.name}</span>
-            </span>
-            <span>Revision {memory.revision.toString()}</span>
-            {memory.dateUpdated && <RelativeTime value={memory.dateUpdated} />}
-          </div>
-        )}
+      <Section className={styles.information} aria-label="Memory information">
+        <ResourceFields
+          columns={6}
+          className={styles.fields}
+          rows={[
+            { label: "Title", value: title, columnSpan: 3 },
+            {
+              label: "Owner session",
+              value: pending ? (
+                unavailable
+              ) : ownerSession ? (
+                <SessionNavigationButton session={ownerSession} />
+              ) : memory?.ownerSession ? (
+                memory.ownerSession
+              ) : (
+                unavailable
+              ),
+              identifier: !ownerSession,
+              columnSpan: 2,
+            },
+            ["Revision", pending ? unavailable : memory?.revision.toString()],
+            {
+              label: "Memory ID",
+              value: pending
+                ? unavailable
+                : memory && resourceHandle({ id: memory.id }),
+              identifier: true,
+              columnSpan: 2,
+            },
+            {
+              label: "Created",
+              value: pending ? (
+                unavailable
+              ) : (
+                <DateTime value={memory?.dateCreated} showOffset={false} />
+              ),
+              labelDetail: !pending && memory?.dateCreated && (
+                <RelativeTime value={memory.dateCreated} />
+              ),
+              columnSpan: 2,
+            },
+            {
+              label: "Updated",
+              value: pending ? (
+                unavailable
+              ) : (
+                <DateTime value={memory?.dateUpdated} showOffset={false} />
+              ),
+              labelDetail: !pending && memory?.dateUpdated && (
+                <RelativeTime value={memory.dateUpdated} />
+              ),
+              columnSpan: 2,
+            },
+            {
+              label: "Project",
+              value: project ? (
+                <ResourceNavigationButton
+                  {...projectLocation(resourceHandle(project))}
+                  name={
+                    project.name || project.alias || resourceHandle(project)
+                  }
+                  alias={project.alias}
+                />
+              ) : (
+                unavailable
+              ),
+              columnSpan: 2,
+            },
+            {
+              label: "Labels",
+              value:
+                !pending && tags.length ? (
+                  <div className={styles.tags}>
+                    {tags.map(([key, value]) => (
+                      <span key={key}>
+                        {key}={value}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  unavailable
+                ),
+              columnSpan: 4,
+            },
+          ]}
+        />
       </Section>
       <SectionGroup
         className={styles.actions}
@@ -142,15 +227,6 @@ export function MemoryDocument({
           <Button onClick={retry}>Retry memory</Button>
         ) : (
           <>
-            {!creating && tags.length > 0 && (
-              <div className={styles.tags}>
-                {tags.map(([key, value]) => (
-                  <span key={key}>
-                    {key}={value}
-                  </span>
-                ))}
-              </div>
-            )}
             {trash && (
               <div className={styles.trashNotice}>
                 <p>

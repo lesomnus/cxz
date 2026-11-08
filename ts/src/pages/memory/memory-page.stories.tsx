@@ -148,7 +148,7 @@ export const Document: Story = {
     docs: {
       description: {
         story:
-          "Opens the full Memory detail page directly. Its icon-free title uses the shared inline editor; Copy, Reload and Delete are panel actions beside it. Grouped title/body sections show the owner, revision, labels and Markdown preview without source, edit or history controls. Copy opens a new draft.",
+          "Opens the full Memory detail page directly. The Account-style information panel uses shared resource fields in six columns, with three reserved for the inline-editable title. Owner, revision, ID, timestamps, project and labels appear beside it; narrow layouts reduce the column count. Copy, Reload and Delete remain grouped panel actions beside the information panel, followed by the Markdown preview. Copy opens a new draft.",
       },
     },
   },

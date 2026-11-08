@@ -216,6 +216,7 @@ export function MemoryPage({
                   c={c}
                   project={id}
                   projectHandle={handle}
+                  projectInfo={project}
                   catalog={false}
                   sessions={scoped}
                   registerGuard={registerGuard}

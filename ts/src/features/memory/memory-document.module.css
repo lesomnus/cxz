@@ -3,11 +3,30 @@
   grid-template-columns: minmax(0, 1fr) auto;
   min-width: 0;
 }
-.titleSection {
+.information {
+  container: memory-information / inline-size;
   min-height: var(--resource-action-size);
-  align-content: center;
+  align-content: start;
+}
+.fields {
+  align-items: start;
+}
+.fields dt {
+  flex-wrap: wrap;
+}
+.fields dd > :is(a, span) {
+  min-width: 0;
+  max-width: 100%;
+}
+.fields.fields dd > a {
+  flex: 1;
+  max-width: none;
+}
+.unavailable {
+  color: var(--ui-muted);
 }
 .title {
+  flex: 1;
   min-width: 0;
   margin: 0;
   font-size: 16px;
@@ -26,34 +45,6 @@
 .bodySection {
   grid-column: 1 / -1;
   min-width: 0;
-}
-.metadata {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--ui-space) calc(3 * var(--ui-space));
-  color: var(--ui-muted);
-  font-size: 10px;
-  line-height: 1.6;
-}
-.metadata > span:not(.owner),
-.metadata > time {
-  white-space: nowrap;
-}
-.owner {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  gap: var(--ui-space);
-}
-.owner > span:last-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.owner :global(.agent-brand) {
-  --agent-logo-size: 12px;
 }
 .tags {
   display: flex;
@@ -115,5 +106,28 @@
 @container memory-library (width < 600px) {
   .document {
     --resource-action-size: calc(12 * var(--ui-space));
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .actions.actions {
+    justify-self: end;
+  }
+}
+@container memory-information (width < 600px) {
+  .fields.fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    --resource-field-span: 1;
+  }
+  .fields > div:first-child {
+    --resource-field-span: 3;
+  }
+}
+@container memory-information (width < 420px) {
+  .fields.fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fields > div:first-child,
+  .fields > div:has(time),
+  .fields > div:last-child {
+    --resource-field-span: 2;
   }
 }

@@ -207,8 +207,11 @@ test("the inline title refreshes the card without changing its body or revision"
   await card(page, "Architecture notes").click();
   await rename(page, "Renamed notes");
   await expect(
-    doc(page).getByText("Revision 1", { exact: true }),
-  ).toBeVisible();
+    doc(page)
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Revision$/ }) })
+      .locator("dd"),
+  ).toHaveText("1");
   await expect(doc(page)).toContainText("Keep UI decisions together.");
   await expect(doc(page)).toContainText("topic=design");
   await back(page);
@@ -259,11 +262,44 @@ for (const width of [390, 1280])
       await expect(doc(page).getByText(text, { exact: true })).toHaveCount(0);
     await expect(doc(page)).toHaveAttribute("data-section-layout", "group");
     const title = doc(page).getByRole("region", {
-      name: "Memory title",
+      name: "Memory information",
       exact: true,
     });
     await expect(title.locator("h2")).toHaveCSS("font-size", "16px");
     await expect(title.locator("h2 svg")).toHaveCount(0);
+    for (const label of [
+      "Title",
+      "Owner session",
+      "Revision",
+      "Memory ID",
+      "Created",
+      "Updated",
+      "Project",
+      "Labels",
+    ])
+      await expect(
+        title.locator("dt").filter({ hasText: new RegExp(`^${label}`) }),
+      ).toBeVisible();
+    await expect(
+      title.getByRole("link", { name: /Design decisions/ }),
+    ).toBeVisible();
+    await expect(
+      title.getByRole("link", { name: /Web workspace/ }),
+    ).toBeVisible();
+    if (width === 1280) {
+      expect(
+        await title
+          .locator("dl")
+          .evaluate(
+            (node) =>
+              getComputedStyle(node).gridTemplateColumns.split(" ").length,
+          ),
+      ).toBe(6);
+      await expect(title.locator("dl > div").first()).toHaveCSS(
+        "grid-column",
+        "span 3",
+      );
+    }
     const actions = doc(page).getByRole("group", {
       name: "Memory document actions",
       exact: true,
@@ -274,7 +310,7 @@ for (const width of [390, 1280])
       ).toHaveAttribute("data-section-action", "button");
     const layout = await doc(page).evaluate((root) => {
       const title = root
-        .querySelector('[aria-label="Memory title"]')!
+        .querySelector('[aria-label="Memory information"]')!
         .getBoundingClientRect();
       const actions = root
         .querySelector('[aria-label="Memory document actions"]')!
@@ -284,12 +320,16 @@ for (const width of [390, 1280])
         .getBoundingClientRect();
       return {
         titleRight: title.right,
+        titleBottom: title.bottom,
         actionsLeft: actions.left,
+        actionsTop: actions.top,
         headerBottom: Math.max(title.bottom, actions.bottom),
         bodyTop: body.top,
       };
     });
-    expect(layout.actionsLeft).toBeGreaterThan(layout.titleRight);
+    if (width === 1280)
+      expect(layout.actionsLeft).toBeGreaterThan(layout.titleRight);
+    else expect(layout.actionsTop).toBeGreaterThan(layout.titleBottom);
     expect(layout.bodyTop).toBeGreaterThan(layout.headerBottom);
     expect(
       await page.evaluate(
@@ -305,7 +345,7 @@ test("document loading keeps the grouped frame and disabled action panels", asyn
   await expect(doc(page)).toHaveAttribute("aria-busy", "true");
   await expect(doc(page)).toHaveAttribute("data-section-layout", "group");
   await expect(
-    doc(page).getByRole("region", { name: "Memory title", exact: true }),
+    doc(page).getByRole("region", { name: "Memory information", exact: true }),
   ).toContainText("Memory");
   await expect(
     doc(page).getByText("Loading memory…", { exact: true }),
@@ -360,6 +400,10 @@ test("inline rename conflicts keep the attempted title in its editor", async ({
     "Memory revision changed",
   );
   await expect(input).toHaveValue("Unsaved name");
+  await editor
+    .getByRole("button", { name: "Dismiss error", exact: true })
+    .click();
+  await expect(input).toHaveValue("Unsaved name");
   await editor.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(doc(page)).toContainText("Architecture notes");
 });
@@ -377,8 +421,11 @@ test("copy creation stays in the editor until saved, then appears in the grid", 
   await page.keyboard.insertText("# Copied body\n\nNew document content.");
   await doc(page).getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    doc(page).getByText("Revision 1", { exact: true }),
-  ).toBeVisible();
+    doc(page)
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Revision$/ }) })
+      .locator("dd"),
+  ).toHaveText("1");
   await expect(doc(page)).toContainText("New document content.");
   await back(page);
   await expect(card(page, "Copied architecture")).toBeVisible();

@@ -68,7 +68,12 @@ test("background revalidation preserves an inline title draft and metadata saves
   await expect(document(page)).toContainText(
     "Another session changed this document.",
   );
-  await expect(document(page)).toContainText("Revision 2");
+  await expect(
+    document(page)
+      .locator("dl > div")
+      .filter({ has: page.locator("dt", { hasText: /^Revision$/ }) })
+      .locator("dd"),
+  ).toHaveText("2");
 });
 
 test("a confirmed title save is retained for the next visit", async ({

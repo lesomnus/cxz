@@ -44,8 +44,11 @@ browser storage persistence. All sessions includes unowned and
 retained-owner documents. Project changes reset the session filter; returning
 from a document preserves the selected filter. Changing it while editing guards
 unsaved copied-document changes. Selecting an editing session is unnecessary.
-The detail page groups a title section, project-style Copy/Reload/Delete action
-panels and a Markdown preview section. Clicking the larger title opens the shared
+The detail page groups an Account-style information section, project-style
+Copy/Reload/Delete action panels and a Markdown preview section. Information uses
+the shared ResourceFields label/value layout: six columns with three for the title,
+plus owner session, revision, ID, created/updated timestamps, project and labels.
+Narrow layouts reduce the column count. Clicking the larger title opens the shared
 inline value editor; confirming patches only the name under its observed version,
 preserving the body, revision and labels. Existing document bodies remain preview
 only. Copy opens a new draft with source, labels and owner controls and Save/Cancel

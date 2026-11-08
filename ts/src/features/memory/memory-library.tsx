@@ -15,6 +15,7 @@ import {
   MemoryReadFormat,
 } from "#gen/cxz/memory_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
+import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { projectRef } from "#src/shared/api/project-id.ts";
 import { memoryLocation, uuid } from "#src/shared/navigation/resource-route.ts";
@@ -60,6 +61,7 @@ export function MemoryLibrary({
   c,
   project,
   projectHandle = project,
+  projectInfo,
   catalog = true,
   sessions = [],
   registerGuard,
@@ -71,6 +73,7 @@ export function MemoryLibrary({
   c: Connection;
   project: string;
   projectHandle?: string;
+  projectInfo?: Project;
   catalog?: boolean;
   sessions?: Session[];
   registerGuard?: (guard: ((run: () => void) => void) | undefined) => void;
@@ -389,7 +392,6 @@ export function MemoryLibrary({
           run: remove,
         },
       ];
-  const ownerInfo = picked ? ownerFor(picked) : undefined;
   const tags = picked ? Object.entries(visibleLabels(picked.labels)) : [];
   return (
     <div className={styles.content}>
@@ -677,13 +679,13 @@ export function MemoryLibrary({
           ) : creating || selected ? (
             <MemoryDocument
               memory={picked}
+              project={projectInfo}
               name={creating ? name : (picked?.name ?? "")}
               content={draft}
               loading={reading}
               error={text.error}
               busy={busy}
               creating={creating}
-              ownerInfo={ownerInfo}
               tags={tags}
               actions={documentActions}
               rename={renameMemory}
