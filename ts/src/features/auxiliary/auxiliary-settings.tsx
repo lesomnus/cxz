@@ -22,6 +22,7 @@ import { LoginPanel } from "#src/features/accounts/login-panel.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { auxKinds } from "./auxiliary-controls";
+import actionStyles from "#src/shared/components/resource-action.module.css";
 import styles from "./auxiliary-settings.module.css";
 
 const mixedValue = "__mixed__";
@@ -256,27 +257,32 @@ export function AuxiliarySettings({
             setProfiles((old) => old.map((profile) => ({ ...profile, effort })))
           }
         />
-        <Section
-          className={styles.authentication}
-          aria-label="Helper authentication"
-          aria-busy={models.loading}
-        >
-          <span
-            className={styles.authenticationState}
-            role="status"
-            data-needs-login={models.data?.needsLogin || undefined}
+        <div className={styles.actions}>
+          <Section
+            className={styles.authentication}
+            aria-label="Helper authentication"
+            aria-busy={models.loading}
           >
-            <SelectionLabel label="Authentication" value={authentication} />
-          </span>
-          <Button
-            className={styles.login}
-            disabled={disabled || !accountAvailable || models.loading}
-            onClick={() => setLogin(true)}
-          >
-            Log in
-          </Button>
-          <Button
-            className={styles.save}
+            <span
+              className={styles.authenticationState}
+              role="status"
+              data-needs-login={models.data?.needsLogin || undefined}
+            >
+              <SelectionLabel label="Authentication" value={authentication} />
+            </span>
+            <Button
+              className={styles.login}
+              disabled={disabled || !accountAvailable || models.loading}
+              onClick={() => setLogin(true)}
+            >
+              Log in
+            </Button>
+          </Section>
+          <Section
+            as="button"
+            className={actionStyles.button}
+            aria-label="Save configuration"
+            title="Save configuration"
             disabled={
               disabled ||
               !profiles.length ||
@@ -288,18 +294,19 @@ export function AuxiliarySettings({
             }
             onClick={save}
           >
-            Save configuration
-          </Button>
-          <Button
-            className={styles.revert}
+            <Icon name="save" />
+          </Section>
+          <Section
+            as="button"
+            className={actionStyles.button}
             aria-label="Revert changes"
             title="Revert changes"
             disabled={disabled || !dirty}
             onClick={revert}
           >
             <Icon name="undo" />
-          </Button>
-        </Section>
+          </Section>
+        </div>
       </div>
       {(error || configuration.error || accounts.error || models.error) && (
         <ErrorNotice

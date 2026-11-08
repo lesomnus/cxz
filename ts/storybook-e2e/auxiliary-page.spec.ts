@@ -50,7 +50,7 @@ for (const width of [390, 1280])
     const actions = ["Log in", "Save configuration", "Revert changes"];
     const actionBounds = await Promise.all(
       actions.map(async (name) => {
-        const button = authentication.getByRole("button", {
+        const button = page.getByRole("button", {
           name,
           exact: true,
         });
@@ -59,7 +59,11 @@ for (const width of [390, 1280])
       }),
     );
     for (let i = 1; i < actionBounds.length; i++) {
-      expect(actionBounds[i].y).toBeCloseTo(actionBounds[0].y, 0);
+      expect(actionBounds[i].y + actionBounds[i].height / 2).toBeCloseTo(
+        actionBounds[0].y + actionBounds[0].height / 2,
+        0,
+      );
+      expect(actionBounds[i].width).toBe(actionBounds[i].height);
       expect(actionBounds[i].x).toBeGreaterThan(
         actionBounds[i - 1].x + actionBounds[i - 1].width,
       );
@@ -73,13 +77,11 @@ for (const width of [390, 1280])
           ),
         );
       expect(boxes).toHaveLength(4);
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < boxes.length; i++) {
         expect(boxes[i].y).toBeCloseTo(boxes[0].y, 0);
         expect(boxes[i].height).toBeCloseTo(boxes[0].height, 0);
         if (i) expect(boxes[i].x).toBeGreaterThan(boxes[i - 1].right);
       }
-      expect(boxes[3].y).toBeGreaterThanOrEqual(boxes[0].bottom);
-      expect(boxes[3].x).toBeCloseTo(boxes[0].x, 0);
       const panels = await Promise.all(
         ["Summary", "Suggestion", "Title"].map(
           async (name) =>
@@ -370,7 +372,8 @@ test("a pending save retains its label and prevents another click", async ({
   await save.click();
   await expect(save).toBeDisabled();
   await expect(save).toHaveAttribute("aria-busy", "true");
-  await expect(save).toContainText("Save configuration");
+  await expect(save).toHaveAccessibleName("Save configuration");
+  await expect(save.locator('[data-icon="save"]')).toBeVisible();
   await expect(picker(page)).toBeDisabled();
   await expect(save).toBeEnabled();
 });

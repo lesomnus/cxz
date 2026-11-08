@@ -7,7 +7,7 @@
 }
 .configuration {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 152px 112px;
+  grid-template-columns: minmax(0, 1fr) 120px 80px auto;
   gap: var(--ui-section-group-gap);
   align-items: start;
   min-width: 0;
@@ -37,9 +37,15 @@
   white-space: nowrap;
   font: 12px/18px var(--ui-font-mono);
 }
+.actions {
+  --resource-action-size: calc(32px + 2 * var(--ui-section-padding));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(2, var(--resource-action-size));
+  gap: var(--ui-section-group-gap);
+  min-width: 0;
+}
 .authentication.authentication {
-  grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr) repeat(3, auto);
+  grid-template-columns: minmax(0, 1fr) auto;
   height: calc(32px + 2 * var(--ui-section-padding));
   gap: calc(2 * var(--ui-space));
   align-items: center;
@@ -50,18 +56,12 @@
 .authenticationState[data-needs-login] .selectionValue {
   color: var(--ui-muted);
 }
-.login.login,
-.save.save,
-.revert.revert {
+.login.login {
   height: 32px;
   min-height: 32px;
   padding-block: 0;
   padding-inline: calc(2 * var(--ui-space));
   font-size: 12px;
-}
-.revert.revert {
-  width: 32px;
-  padding: 0;
 }
 .muted {
   margin: 0;
@@ -109,19 +109,11 @@
   .configuration {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .account {
+  .account,
+  .actions {
     grid-column: 1 / -1;
   }
   .profiles {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-@container auxiliary-settings (width < 520px) {
-  .authentication.authentication {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    height: auto;
-  }
-  .authenticationState {
-    grid-column: 1 / -1;
   }
 }
