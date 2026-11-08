@@ -15,11 +15,13 @@ function CreatedTasksPreview({
   unavailable = false,
   delay = 0,
   cached = false,
+  scrollable = false,
 }: {
   empty?: boolean;
   unavailable?: boolean;
   delay?: number;
   cached?: boolean;
+  scrollable?: boolean;
 }) {
   const [fixture] = useState(() => {
     const fixture = taskFixture(18, unavailable, { pageDelay: delay });
@@ -58,7 +60,15 @@ function CreatedTasksPreview({
     return {
       ...fixture,
       events: [
-        event(1, "input", "Create Tasks for the next implementation steps."),
+        event(
+          1,
+          "input",
+          scrollable
+            ? "Review the implementation and create Tasks for the next steps.\n\n".repeat(
+                40,
+              )
+            : "Create Tasks for the next implementation steps.",
+        ),
         call(2, "task_list"),
         event(3, "assistant", "I checked the existing work first."),
         ...Array.from({ length: 15 }, (_, index) =>
@@ -115,7 +125,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The Tasks counter and its dialog share the same created-Task list. Reads, claims and edits do not increase the count. Zero-count buttons are disabled; the read-only first batch demonstrates this. The second opens a scrollable list with alias-first links to Task details. A single shared project catalog/cache subscription updates both count and list, including while the dialog is open. Loading starts disabled until data is available; Refreshing keeps cached Tasks available during the refresh. An open trigger retains its focus outline. Escape or Close restores focus; clicking outside dismisses without changing transcript layout.",
+          "The Tasks counter and its dialog share the same created-Task list. Reads, claims and edits do not increase the count. Zero-count buttons are disabled; the read-only first batch demonstrates this. The second opens a scrollable list with alias-first links to Task details. A single shared project catalog/cache subscription updates both count and list, including while the dialog is open. Loading starts disabled until data is available; Refreshing keeps cached Tasks available during the refresh. An open trigger retains its hover background. The dialog follows conversation scrolling and stays open while its trigger remains visible; scrolling inside its list is independent. Escape or Close restores focus; clicking outside dismisses without changing transcript layout.",
       },
     },
   },
@@ -123,6 +133,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const CreatedTasks: Story = {};
+export const ScrollingConversation: Story = { args: { scrollable: true } };
 export const NoCreatedTasks: Story = { args: { empty: true } };
 export const LoadingTasks: Story = { args: { delay: 1800 } };
 export const RefreshingTasks: Story = { args: { delay: 1800, cached: true } };

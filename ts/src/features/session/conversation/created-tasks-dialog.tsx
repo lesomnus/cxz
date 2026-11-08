@@ -83,6 +83,7 @@ export function CreatedTasksDialog({
   useLayoutEffect(() => {
     const node = root.current;
     if (!node) return;
+    let frame = 0;
     const position = () => {
       if (!anchor.isConnected) return close();
       const rect = anchor.getBoundingClientRect();
@@ -95,6 +96,13 @@ export function CreatedTasksDialog({
       node.style.left = `${Math.max(gap, Math.min(rect.left, innerWidth - box.width - gap))}px`;
       node.style.top = `${above ? rect.top - box.height - gap : rect.bottom + gap}px`;
       node.style.visibility = "visible";
+    };
+    const schedulePosition = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        position();
+      });
     };
     position();
     node
@@ -114,18 +122,24 @@ export function CreatedTasksDialog({
       close(true);
     };
     const scroll = (event: Event) => {
-      if (!node.contains(event.target as Node)) close();
+      if (!node.contains(event.target as Node)) schedulePosition();
     };
-    const observer = new ResizeObserver(position);
+    const visibility = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) close();
+    });
+    visibility.observe(anchor);
+    const observer = new ResizeObserver(schedulePosition);
     observer.observe(node);
     observer.observe(anchor);
-    window.addEventListener("resize", position);
+    window.addEventListener("resize", schedulePosition);
     document.addEventListener("pointerdown", outside, true);
     document.addEventListener("keydown", escape, true);
     document.addEventListener("scroll", scroll, true);
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", position);
+      visibility.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", schedulePosition);
       document.removeEventListener("pointerdown", outside, true);
       document.removeEventListener("keydown", escape, true);
       document.removeEventListener("scroll", scroll, true);

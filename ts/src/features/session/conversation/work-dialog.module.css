@@ -17,9 +17,8 @@
   gap: var(--space);
   margin-inline-end: auto;
 }
-.counters button[aria-expanded="true"] {
-  outline: 2px solid var(--ui-shade-237);
-  outline-offset: 2px;
+.counters button[aria-expanded="true"]:not(:disabled) {
+  background: var(--button-hover-background, var(--ui-button-hover-background));
 }
 .service {
   --ui-icon-size: 16px;

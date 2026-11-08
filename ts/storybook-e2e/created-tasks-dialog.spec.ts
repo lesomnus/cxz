@@ -73,7 +73,21 @@ test("WorkSummary opens created Tasks above the trigger without shifting the con
     summaries.last().locator('[data-work-service="cxz_memory"]'),
   ).toBeDisabled();
   const before = (await trigger.boundingBox())!;
+  await trigger.hover();
+  await expect
+    .poll(() =>
+      trigger.evaluate((node) =>
+        node
+          .getAnimations()
+          .every((animation) => animation.playState !== "running"),
+      ),
+    )
+    .toBe(true);
+  const hoverBackground = await trigger.evaluate(
+    (node) => getComputedStyle(node).backgroundColor,
+  );
   await trigger.click();
+  await page.mouse.move(1, 1);
   const dialog = page.getByRole("dialog", dialogName);
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("link")).toHaveCount(15);
@@ -88,8 +102,8 @@ test("WorkSummary opens created Tasks above the trigger without shifting the con
   expect(Math.abs((await trigger.boundingBox())!.y - before.y)).toBeLessThan(1);
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await expect(trigger).not.toBeFocused();
-  await expect(trigger).toHaveCSS("outline-style", "solid");
-  await expect(trigger).toHaveCSS("outline-width", "2px");
+  await expect(trigger).toHaveCSS("outline-style", "none");
+  await expect(trigger).toHaveCSS("background-color", hoverBackground);
   const viewport = dialog.locator(".panel-scroll-content");
   await viewport.evaluate((node) => {
     node.scrollTop = node.scrollHeight;
@@ -173,7 +187,7 @@ test("cached Task counts and open lists update together and preserve trigger sty
   await expect(dialog.getByRole("link")).toHaveCount(15);
   await expect(trigger).toHaveText("015");
   expect((await dialog.boundingBox())!.height).toBe(loading.height);
-  await expect(trigger).toHaveCSS("outline-style", "solid");
+  await expect(trigger).toHaveCSS("outline-style", "none");
   await page.keyboard.press("Escape");
   await page.locator('[data-work-service="cxz_tasks"]').last().click();
   await expect(dialog.getByRole("link")).toHaveCount(15);
@@ -196,5 +210,46 @@ test("cached Tasks remain accessible after a refresh fails", async ({
   await expect(
     page.getByRole("dialog", dialogName).getByRole("button", { name: "Retry" }),
   ).toBeVisible();
-  await expect(trigger).toHaveCSS("outline-style", "solid");
+  await expect(trigger).toHaveCSS("outline-style", "none");
+});
+
+test("the dialog follows conversation scrolling until its trigger leaves the visible viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1000, height: 600 });
+  await page.goto(story("scrolling-conversation"));
+  const transcript = page.locator(".transcript");
+  const trigger = page.locator('[data-work-service="cxz_tasks"]').last();
+  await expect(trigger).toBeEnabled();
+  await trigger.click();
+  await page.mouse.move(1, 1);
+  const dialog = page.getByRole("dialog", dialogName);
+  await expect(dialog.getByRole("link")).toHaveCount(15);
+  const triggerBefore = (await trigger.boundingBox())!;
+  const popupBefore = (await dialog.boundingBox())!;
+  const above = popupBefore.y + popupBefore.height <= triggerBefore.y;
+  const gapBefore = above
+    ? triggerBefore.y - popupBefore.y - popupBefore.height
+    : popupBefore.y - triggerBefore.y - triggerBefore.height;
+  await transcript.evaluate((node) => {
+    node.scrollTop -= 16;
+  });
+  await expect
+    .poll(async () => (await trigger.boundingBox())!.y)
+    .toBeGreaterThan(triggerBefore.y + 10);
+  await expect(dialog).toBeVisible();
+  await expect
+    .poll(async () => {
+      const anchor = (await trigger.boundingBox())!;
+      const popup = (await dialog.boundingBox())!;
+      const gap = above
+        ? anchor.y - popup.y - popup.height
+        : popup.y - anchor.y - anchor.height;
+      return Math.abs(gap - gapBefore);
+    })
+    .toBeLessThan(1);
+  await transcript.evaluate((node) => {
+    node.scrollTop = 0;
+  });
+  await expect(dialog).toHaveCount(0);
 });
