@@ -127,6 +127,12 @@ restored without another upload. Password-field values are excluded. A successfu
 Reply clears that request's draft, including confirmed cancellation; failed
 replies keep it available. Sign-out clears these drafts with the composer drafts.
 
+Ctrl+Shift+V (Cmd+Shift+V on macOS) pastes clipboard text directly into the
+composer, keeping it expanded instead of converting it to a chip or uploading
+it as a file. This explicit text paste also bypasses automatic secret-chip
+conversion. Native selection replacement and undo/redo are retained, with the
+existing 1 MiB paste limit. Ordinary paste keeps its automatic chip behavior.
+
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
 still drive composer indicators, and turn-completion events still supply response
