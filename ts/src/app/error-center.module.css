@@ -6,7 +6,6 @@
 }
 .trigger.trigger {
   --button-background: transparent;
-  --button-hover-background: transparent;
   color: var(--ui-muted);
 }
 .symbol {

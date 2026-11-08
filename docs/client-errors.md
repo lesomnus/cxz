@@ -52,8 +52,8 @@ message cell. Details remains a viewport-limited modal.
 Only the sidebar uses Active/History tabs. Its page link always opens `/c/_/errors`;
 legacy `?tab=history` links also show the unified list.
 Its plain triangle turns red while there are active alerting errors. The button
-and icon wrapper stay transparent, including hover/open states, with no exclamation
-mark or ink effect. Each record shows
+uses the shared sidebar hover background; its idle/open background and icon
+wrapper stay transparent, with no exclamation mark or ink effect. Each record shows
 the failure, operation, target when available, timestamps and repeat count.
 Repeated failures of the same operation and reference share an active entry.
 A failure after recovery or staleness starts a new episode.
