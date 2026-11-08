@@ -123,8 +123,8 @@ function WorkspaceContent({
     selectedSession,
   );
   const session = selectedSession?.runtimeId ?? route.session;
-  // Only session lists and settings own a secondary navigation panel.
-  // Resource pages occupy all remaining columns beside the icon sidebar.
+  // Keep the session panel mounted across list/conversation navigation so its
+  // position and reserved space can animate together.
   const hasResourcePanel = resource === "sessions" || resource === "settings";
   const settingsTopic = route.settingsTopic;
   const lastSession = useRef("");
@@ -200,7 +200,7 @@ function WorkspaceContent({
       }}
     >
       <div
-        className={`workspace ${resource === "accounts" ? "accounts-open" : ""} ${(session && resource === "sessions") || route.resource === "not-found" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : !session || resource !== "sessions" ? "resource-open" : ""}`}
+        className={`workspace ${resource === "sessions" ? "sessions-open" : ""} ${resource === "accounts" ? "accounts-open" : ""} ${(session && resource === "sessions") || route.resource === "not-found" ? "conversation-open" : ""} ${resource === "settings" ? "settings-open" : !session || resource !== "sessions" ? "resource-open" : ""}`}
       >
         <nav className="resource-sidebar" aria-label={t("Resources")}>
           <span className="brand" aria-label="cxz">
@@ -277,175 +277,183 @@ function WorkspaceContent({
           </div>
         </nav>
         {hasResourcePanel && (
-          <ResourcePanel
-            ref={sessionPanel}
-            unreadSelector={
-              resource === "sessions" ? '[data-unread="true"]' : undefined
-            }
-            className={resource === "sessions" ? "session-panel" : ""}
-            title={resource === "sessions" ? t("Sessions") : t("Settings")}
-            actions={
-              resource === "sessions" && (
-                <ActionMenu
-                  label="Session panel options"
-                  placement="right"
-                  motion={{ from: "top-left", effect: "reveal" }}
-                  position={positionSessionMenu}
-                  triggerClassName="session-panel-menu-trigger"
-                  items={[
-                    {
-                      label: "Add session",
-                      icon: (
-                        <Icon
-                          name="add"
-                          width="16"
-                          height="16"
-                          aria-hidden="true"
-                        />
-                      ),
-                      run: () => setAddingSession(true),
-                    },
-                    {
-                      label: projectCollapse
-                        ? t("Disable project collapse")
-                        : t("Enable project collapse"),
-                      icon: (
-                        <Icon
-                          name={
-                            projectCollapse
-                              ? "collapse-projects"
-                              : "expand-projects"
-                          }
-                          width="16"
-                          height="16"
-                          aria-hidden="true"
-                        />
-                      ),
-                      run: () => {
-                        try {
-                          settings.set(
-                            "session.panel.projectCollapse",
-                            !projectCollapse,
-                          );
-                          setPanelError("");
-                        } catch (error) {
-                          setPanelError(String(error));
-                        }
-                      },
-                    },
-                    {
-                      label: hideStopped
-                        ? "Show stopped sessions"
-                        : "Hide stopped sessions",
-                      icon: (
-                        <Icon
-                          name={hideStopped ? "show" : "hide"}
-                          width="16"
-                          height="16"
-                          aria-hidden="true"
-                        />
-                      ),
-                      run: () => {
-                        try {
-                          settings.set(
-                            "session.panel.hideStopped",
-                            !hideStopped,
-                          );
-                          setPanelError("");
-                        } catch (error) {
-                          setPanelError(String(error));
-                        }
-                      },
-                    },
-                  ]}
-                />
-              )
-            }
-            aria-label={
-              resource === "sessions"
-                ? t("Session list")
-                : t("Settings navigation")
-            }
+          <ResourcePanelSlot
+            slide={resource === "sessions"}
+            open={!!route.session}
           >
-            {resource === "settings" ? (
-              <nav
-                className="settings-topics"
-                aria-label={t("Settings topics")}
-              >
-                {(
-                  [
-                    ["general", "/setting/general", t("General")],
-                    ["editor", "/setting/editor", t("Editor")],
-                    ["connections", "/setting/connection", t("Connections")],
-                    ["logs", "/setting/logs", t("Logs")],
-                  ] as const
-                ).map(([topic, to, label]) => (
-                  <PanelLink
-                    key={topic}
-                    to={to}
-                    aria-current={settingsTopic === topic ? "page" : undefined}
-                    aria-controls="settings-editor"
-                    onClick={() => {
-                      setSettingsFileOpen(false);
-                    }}
-                  >
-                    {label}
-                  </PanelLink>
-                ))}
-              </nav>
-            ) : (
-              <div
-                className="session-tree"
-                aria-label={t("Projects and sessions")}
-              >
-                {projects
-                  .filter(
-                    (p) =>
-                      p.status?.containerState !== ContainerState.ABSENT &&
-                      p.status?.containerState !== ContainerState.STOPPED &&
-                      sessionsByProject.has(key(p.id)),
-                  )
-                  .map((p) => (
-                    <SessionTreeGroup
-                      key={projectId(p)}
-                      project={p}
-                      items={sessionsByProject.get(key(p.id)) ?? []}
-                      loading={inventory.loading.sessions}
-                      selected={session}
-                      unread={unread}
-                      errors={errors}
-                      background={background}
-                      open={!collapsed.has(projectId(p))}
-                      collapsible={projectCollapse}
-                      toggle={() =>
-                        setCollapsed((old) => {
-                          const next = new Set(old);
-                          if (next.has(projectId(p))) next.delete(projectId(p));
-                          else next.add(projectId(p));
-                          return next;
-                        })
+            <ResourcePanel
+              ref={sessionPanel}
+              unreadSelector={
+                resource === "sessions" ? '[data-unread="true"]' : undefined
+              }
+              className={resource === "sessions" ? "session-panel" : ""}
+              title={resource === "sessions" ? t("Sessions") : t("Settings")}
+              actions={
+                resource === "sessions" && (
+                  <ActionMenu
+                    label="Session panel options"
+                    placement="right"
+                    motion={{ from: "top-left", effect: "reveal" }}
+                    position={positionSessionMenu}
+                    triggerClassName="session-panel-menu-trigger"
+                    items={[
+                      {
+                        label: "Add session",
+                        icon: (
+                          <Icon
+                            name="add"
+                            width="16"
+                            height="16"
+                            aria-hidden="true"
+                          />
+                        ),
+                        run: () => setAddingSession(true),
+                      },
+                      {
+                        label: projectCollapse
+                          ? t("Disable project collapse")
+                          : t("Enable project collapse"),
+                        icon: (
+                          <Icon
+                            name={
+                              projectCollapse
+                                ? "collapse-projects"
+                                : "expand-projects"
+                            }
+                            width="16"
+                            height="16"
+                            aria-hidden="true"
+                          />
+                        ),
+                        run: () => {
+                          try {
+                            settings.set(
+                              "session.panel.projectCollapse",
+                              !projectCollapse,
+                            );
+                            setPanelError("");
+                          } catch (error) {
+                            setPanelError(String(error));
+                          }
+                        },
+                      },
+                      {
+                        label: hideStopped
+                          ? "Show stopped sessions"
+                          : "Hide stopped sessions",
+                        icon: (
+                          <Icon
+                            name={hideStopped ? "show" : "hide"}
+                            width="16"
+                            height="16"
+                            aria-hidden="true"
+                          />
+                        ),
+                        run: () => {
+                          try {
+                            settings.set(
+                              "session.panel.hideStopped",
+                              !hideStopped,
+                            );
+                            setPanelError("");
+                          } catch (error) {
+                            setPanelError(String(error));
+                          }
+                        },
+                      },
+                    ]}
+                  />
+                )
+              }
+              aria-label={
+                resource === "sessions"
+                  ? t("Session list")
+                  : t("Settings navigation")
+              }
+            >
+              {resource === "settings" ? (
+                <nav
+                  className="settings-topics"
+                  aria-label={t("Settings topics")}
+                >
+                  {(
+                    [
+                      ["general", "/setting/general", t("General")],
+                      ["editor", "/setting/editor", t("Editor")],
+                      ["connections", "/setting/connection", t("Connections")],
+                      ["logs", "/setting/logs", t("Logs")],
+                    ] as const
+                  ).map(([topic, to, label]) => (
+                    <PanelLink
+                      key={topic}
+                      to={to}
+                      aria-current={
+                        settingsTopic === topic ? "page" : undefined
                       }
-                    />
+                      aria-controls="settings-editor"
+                      onClick={() => {
+                        setSettingsFileOpen(false);
+                      }}
+                    >
+                      {label}
+                    </PanelLink>
                   ))}
-                {inventory.loading.sessions && !sessionsByProject.size && (
-                  <small className="tree-message">{t("Loading…")}</small>
-                )}
-              </div>
-            )}
-            {!!(inventory.errors.projects || inventory.errors.sessions) && (
-              <ErrorNotice
-                error={String(
-                  inventory.errors.projects || inventory.errors.sessions,
-                )}
-              />
-            )}
-            {resource === "sessions" && panelError && (
-              <ErrorNotice error={panelError} />
-            )}
-            {inventory.loading.projects && !projects.length && (
-              <p className="muted">{t("Loading projects…")}</p>
-            )}
-          </ResourcePanel>
+                </nav>
+              ) : (
+                <div
+                  className="session-tree"
+                  aria-label={t("Projects and sessions")}
+                >
+                  {projects
+                    .filter(
+                      (p) =>
+                        p.status?.containerState !== ContainerState.ABSENT &&
+                        p.status?.containerState !== ContainerState.STOPPED &&
+                        sessionsByProject.has(key(p.id)),
+                    )
+                    .map((p) => (
+                      <SessionTreeGroup
+                        key={projectId(p)}
+                        project={p}
+                        items={sessionsByProject.get(key(p.id)) ?? []}
+                        loading={inventory.loading.sessions}
+                        selected={session}
+                        unread={unread}
+                        errors={errors}
+                        background={background}
+                        open={!collapsed.has(projectId(p))}
+                        collapsible={projectCollapse}
+                        toggle={() =>
+                          setCollapsed((old) => {
+                            const next = new Set(old);
+                            if (next.has(projectId(p)))
+                              next.delete(projectId(p));
+                            else next.add(projectId(p));
+                            return next;
+                          })
+                        }
+                      />
+                    ))}
+                  {inventory.loading.sessions && !sessionsByProject.size && (
+                    <small className="tree-message">{t("Loading…")}</small>
+                  )}
+                </div>
+              )}
+              {!!(inventory.errors.projects || inventory.errors.sessions) && (
+                <ErrorNotice
+                  error={String(
+                    inventory.errors.projects || inventory.errors.sessions,
+                  )}
+                />
+              )}
+              {resource === "sessions" && panelError && (
+                <ErrorNotice error={panelError} />
+              )}
+              {inventory.loading.projects && !projects.length && (
+                <p className="muted">{t("Loading projects…")}</p>
+              )}
+            </ResourcePanel>
+          </ResourcePanelSlot>
         )}
         {children}
         {addingSession && (
@@ -459,5 +467,23 @@ function WorkspaceContent({
         )}
       </div>
     </WorkspaceContext.Provider>
+  );
+}
+
+function ResourcePanelSlot({
+  slide,
+  open,
+  children,
+}: PropsWithChildren<{ slide: boolean; open: boolean }>) {
+  if (!slide) return <>{children}</>;
+  return (
+    <div
+      className="session-panel-slot"
+      data-open={open || undefined}
+      aria-hidden={!open}
+      inert={!open}
+    >
+      {children}
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { key } from "@lesomnus/payday/store";
 import { Button, TableRow, useRangeSelection } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
@@ -46,6 +46,7 @@ export function SessionTable({
   title = t("Sessions"),
   horizontalScrollbar = false,
   fillHeight = false,
+  height,
   variant = "default",
 }: {
   c: SessionControlConnection;
@@ -60,6 +61,8 @@ export function SessionTable({
   title?: string;
   horizontalScrollbar?: boolean;
   fillHeight?: boolean;
+  /** Override the bounded dashboard height, for example auto in a page list. */
+  height?: CSSProperties["height"];
   variant?: "default" | "compact" | "overview";
 }) {
   const compact = variant !== "default";
@@ -127,6 +130,7 @@ export function SessionTable({
         </div>
       )}
       <PanelScroll
+        style={height === undefined ? undefined : { height }}
         wheelBehavior="instant"
         scrollbarOffset={0}
         horizontalScrollbar={horizontalScrollbar}

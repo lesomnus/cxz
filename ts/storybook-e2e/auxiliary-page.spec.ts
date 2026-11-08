@@ -495,8 +495,11 @@ for (const width of [390, 1280])
         .getByRole("link", { name: "Sessions view", exact: true })
         .click();
       await expect(
-        page.getByRole("complementary", { name: "Session list", exact: true }),
+        page.getByRole("table", { name: "Sessions", exact: true }),
       ).toBeVisible();
+      await expect(
+        page.getByRole("complementary", { name: "Session list", exact: true }),
+      ).toHaveCount(0);
       await sidebar
         .getByRole("link", { name: "Auxiliary AI", exact: true })
         .click();
