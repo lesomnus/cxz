@@ -1,7 +1,8 @@
-.dialog {
+.menu {
   display: flex;
-  width: min(calc(84 * var(--ui-space)), calc(100vw - 4 * var(--ui-space)));
-  height: min(calc(64 * var(--ui-space)), 50dvh);
+  width: var(--ui-action-menu-width);
+  max-width: calc(100vw - 4 * var(--ui-space));
+  max-height: 50dvh;
   visibility: hidden;
 }
 .content {
@@ -10,20 +11,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-}
-.scroll {
-  flex: 1;
-  min-height: 0;
-}
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ui-space);
-  padding: var(--ui-space);
-}
-.task.task {
-  max-width: none;
-  flex: none;
+  max-height: inherit;
 }
 .state,
 .note {

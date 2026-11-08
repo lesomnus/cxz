@@ -32,7 +32,7 @@ import { VirtualMessages } from "./virtual-messages";
 import { ActivityWorkContext } from "./activity-card";
 import styles from "./work-dialog.module.css";
 import type { WorkHistory } from "./transcript";
-import { CreatedTasksDialog } from "./created-tasks-dialog";
+import { CreatedTasksMenu } from "./created-tasks-menu";
 
 function ServiceCount({
   service,
@@ -144,7 +144,7 @@ export function WorkSummary({
           partial={partial}
           aria-busy={taskState.loading || undefined}
           title={taskState.error || undefined}
-          aria-haspopup="dialog"
+          aria-haspopup="menu"
           aria-expanded={!!taskTrigger}
           aria-controls={taskTrigger ? tasksId : undefined}
           onClick={(event) => {
@@ -161,7 +161,7 @@ export function WorkSummary({
         />
       )}
       {taskTrigger && tasks.length > 0 && taskSource && (
-        <CreatedTasksDialog
+        <CreatedTasksMenu
           id={tasksId}
           anchor={taskTrigger}
           project={taskSource.project}

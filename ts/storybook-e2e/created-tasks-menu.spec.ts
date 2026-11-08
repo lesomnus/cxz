@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 
 const story = (name = "created-tasks") =>
   `/iframe.html?id=conversation-worksummary--${name}&viewMode=story`;
-const dialogName = { name: "Created tasks", exact: true };
+const menuName = { name: "Created tasks", exact: true };
 
-test("compact popup headings preserve equal close-button insets and concentric corners", async ({
+test("Task links use shared menu geometry without a card header", async ({
   page,
 }) => {
   for (const [width, radius] of [
@@ -19,39 +19,46 @@ test("compact popup headings preserve equal close-button insets and concentric c
       node.style.borderRadius = `${radius}px`;
     }, radius);
     await trigger.click();
-    const dialog = page.getByRole("dialog", dialogName);
-    await expect(dialog).toBeVisible();
+    const menu = page.getByRole("menu", menuName);
+    await expect(menu).toBeVisible();
+    await expect(menu.locator("header")).toHaveCount(0);
+    await expect(
+      menu.getByRole("button", { name: "Close", exact: true }),
+    ).toHaveCount(0);
+    await expect(menu.locator('a[role="menuitem"]')).toHaveCount(15);
     await expect
       .poll(async () =>
-        dialog.evaluate((surface) => {
-          const button = surface.querySelector<HTMLElement>("header button")!;
-          const body = surface.querySelector<HTMLElement>(
-            ".panel-scroll-region",
-          )!;
+        menu.evaluate((surface) => {
+          const item =
+            surface.querySelector<HTMLElement>('a[role="menuitem"]')!;
           const frame = surface.getBoundingClientRect();
-          const control = button.getBoundingClientRect();
+          const row = item.getBoundingClientRect();
           const outer = getComputedStyle(surface);
-          const inner = getComputedStyle(button);
-          const top =
-            control.top - frame.top - parseFloat(outer.borderTopWidth);
+          const inner = getComputedStyle(item);
+          const top = row.top - frame.top - parseFloat(outer.borderTopWidth);
+          const left =
+            row.left - frame.left - parseFloat(outer.borderLeftWidth);
           const right =
-            frame.right - control.right - parseFloat(outer.borderRightWidth);
-          const bottom = body.getBoundingClientRect().top - control.bottom;
-          const outerRadius = parseFloat(outer.borderTopRightRadius);
-          const innerRadius = parseFloat(inner.borderTopRightRadius);
+            frame.right - row.right - parseFloat(outer.borderRightWidth);
+          const outerRadius = parseFloat(outer.borderTopLeftRadius);
+          const innerRadius = parseFloat(inner.borderTopLeftRadius);
           return Math.max(
+            Math.abs(top - left),
             Math.abs(top - right),
-            Math.abs(top - bottom),
-            Math.abs(frame.right - outerRadius - (control.right - innerRadius)),
-            Math.abs(frame.top + outerRadius - (control.top + innerRadius)),
+            Math.abs(frame.left + outerRadius - (row.left + innerRadius)),
+            Math.abs(frame.top + outerRadius - (row.top + innerRadius)),
           );
         }),
       )
       .toBeLessThan(0.05);
-    await expect(
-      dialog.getByRole("button", { name: "Close", exact: true }),
-    ).toHaveCSS("border-top-right-radius", `${radius}px`);
+    await page.keyboard.press("ArrowDown");
+    await expect(menu.locator('a[role="menuitem"]').nth(1)).toBeFocused();
+    await page.keyboard.press("End");
+    await expect(menu.locator('a[role="menuitem"]').last()).toBeFocused();
+    await page.keyboard.press("Home");
+    await expect(menu.locator('a[role="menuitem"]').first()).toBeFocused();
     await page.keyboard.press("Escape");
+    await expect(trigger).toBeFocused();
   }
 });
 
@@ -88,43 +95,44 @@ test("WorkSummary opens created Tasks above the trigger without shifting the con
   );
   await trigger.click();
   await page.mouse.move(1, 1);
-  const dialog = page.getByRole("dialog", dialogName);
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("link")).toHaveCount(15);
+  const menu = page.getByRole("menu", menuName);
+  await expect(menu).toBeVisible();
+  await expect(menu.locator('a[role="menuitem"]')).toHaveCount(15);
   await expect(
-    dialog.getByRole("link", { name: /Implement Task MCP tools/ }),
+    menu.getByRole("menuitem", { name: /Implement Task MCP tools/ }),
   ).toHaveCount(1);
-  await expect(
-    dialog.getByRole("link", { name: /^Implement Task MCP tools task-1 / }),
-  ).toHaveCount(0);
-  const box = (await dialog.boundingBox())!;
+  await expect(menu.locator('a[href$="/task/task-1"]')).toHaveCount(0);
+  const box = (await menu.boundingBox())!;
   expect(box.y + box.height).toBeLessThanOrEqual(before.y);
   expect(Math.abs((await trigger.boundingBox())!.y - before.y)).toBeLessThan(1);
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await expect(trigger).not.toBeFocused();
   await expect(trigger).toHaveCSS("outline-style", "none");
   await expect(trigger).toHaveCSS("background-color", hoverBackground);
-  const viewport = dialog.locator(".panel-scroll-content");
+  const viewport = menu.locator(".created-tasks-menu-viewport");
   await viewport.evaluate((node) => {
     node.scrollTop = node.scrollHeight;
   });
-  await expect(dialog).toBeVisible();
+  await expect(menu).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(dialog).toHaveCount(0);
+  await expect(menu).toHaveCount(0);
   await expect(trigger).toBeFocused();
 
   await trigger.click();
   await page.locator("textarea").click();
-  await expect(page.getByRole("dialog", dialogName)).toHaveCount(0);
+  await expect(page.getByRole("menu", menuName)).toHaveCount(0);
 
   await trigger.click();
-  const link = page.getByRole("dialog", dialogName).getByRole("link").first();
+  const link = page
+    .getByRole("menu", menuName)
+    .locator('a[role="menuitem"]')
+    .first();
   await expect(link).toHaveAttribute(
     "href",
     "/c/_/project/workspace/task/task-4",
   );
   await link.click();
-  await expect(page.getByRole("dialog", dialogName)).toHaveCount(0);
+  await expect(page.getByRole("menu", menuName)).toHaveCount(0);
   await expect(
     page.getByRole("textbox", { name: "Title", exact: true }),
   ).toHaveText("Wait for CI");
@@ -138,14 +146,14 @@ test("narrow viewport keeps the created Tasks popup inside the screen", async ({
   await page.goto(story());
   const trigger = page.locator('[data-work-service="cxz_tasks"]').last();
   await trigger.click();
-  const dialog = page.getByRole("dialog", dialogName);
-  await expect(dialog.getByRole("link")).toHaveCount(15);
-  const box = (await dialog.boundingBox())!;
+  const menu = page.getByRole("menu", menuName);
+  await expect(menu.locator('a[role="menuitem"]')).toHaveCount(15);
+  const box = (await menu.boundingBox())!;
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(360);
   expect(box.y).toBeGreaterThanOrEqual(0);
   expect(box.y + box.height).toBeLessThanOrEqual(740);
-  await dialog.getByRole("button", { name: "Close", exact: true }).click();
+  await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
 });
 
@@ -170,7 +178,7 @@ test("zero Task counts stay disabled while loading and after read-only calls", a
     await expect(button).toHaveText("000");
     await expect(button).toBeDisabled();
   }
-  await expect(page.getByRole("dialog", dialogName)).toHaveCount(0);
+  await expect(page.getByRole("menu", menuName)).toHaveCount(0);
 });
 
 test("cached Task counts and open lists update together and preserve trigger styling", async ({
@@ -180,18 +188,21 @@ test("cached Task counts and open lists update together and preserve trigger sty
   const trigger = page.locator('[data-work-service="cxz_tasks"]').last();
   await expect(trigger).toHaveText("001");
   await trigger.click();
-  const dialog = page.getByRole("dialog", dialogName);
-  await expect(dialog.getByRole("status")).toHaveText("Loading…");
-  await expect(dialog.getByRole("link")).toHaveCount(1);
-  const loading = (await dialog.boundingBox())!;
-  await expect(dialog.getByRole("link")).toHaveCount(15);
+  const menu = page.getByRole("menu", menuName);
+  await expect(menu.getByRole("status")).toHaveText("Loading…");
+  await expect(menu.locator('a[role="menuitem"]')).toHaveCount(1);
+  const loading = (await menu.boundingBox())!;
+  await expect(menu.locator('a[role="menuitem"]')).toHaveCount(15);
   await expect(trigger).toHaveText("015");
-  expect((await dialog.boundingBox())!.height).toBe(loading.height);
+  expect((await menu.boundingBox())!.height).toBeGreaterThan(loading.height);
+  expect((await menu.boundingBox())!.height).toBeLessThanOrEqual(
+    page.viewportSize()!.height / 2,
+  );
   await expect(trigger).toHaveCSS("outline-style", "none");
   await page.keyboard.press("Escape");
   await page.locator('[data-work-service="cxz_tasks"]').last().click();
-  await expect(dialog.getByRole("link")).toHaveCount(15);
-  await expect(dialog.getByRole("status")).toHaveCount(0);
+  await expect(menu.locator('a[role="menuitem"]')).toHaveCount(15);
+  await expect(menu.getByRole("status")).toHaveCount(0);
 });
 
 test("cached Tasks remain accessible after a refresh fails", async ({
@@ -202,18 +213,18 @@ test("cached Tasks remain accessible after a refresh fails", async ({
   await expect(trigger).toHaveText("001");
   await trigger.click();
   await expect(
-    page.getByRole("dialog", dialogName).getByRole("link"),
+    page.getByRole("menu", menuName).locator('a[role="menuitem"]'),
   ).toHaveCount(1);
   await expect(
-    page.getByRole("dialog", dialogName).getByRole("alert"),
+    page.getByRole("menu", menuName).getByRole("alert"),
   ).toContainText("Update the Manager and project runtime");
   await expect(
-    page.getByRole("dialog", dialogName).getByRole("button", { name: "Retry" }),
+    page.getByRole("menu", menuName).getByRole("menuitem", { name: "Retry" }),
   ).toBeVisible();
   await expect(trigger).toHaveCSS("outline-style", "none");
 });
 
-test("the dialog follows conversation scrolling until its trigger leaves the visible viewport", async ({
+test("the menu follows conversation scrolling until its trigger leaves the visible viewport", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1000, height: 600 });
@@ -223,10 +234,10 @@ test("the dialog follows conversation scrolling until its trigger leaves the vis
   await expect(trigger).toBeEnabled();
   await trigger.click();
   await page.mouse.move(1, 1);
-  const dialog = page.getByRole("dialog", dialogName);
-  await expect(dialog.getByRole("link")).toHaveCount(15);
+  const menu = page.getByRole("menu", menuName);
+  await expect(menu.locator('a[role="menuitem"]')).toHaveCount(15);
   const triggerBefore = (await trigger.boundingBox())!;
-  const popupBefore = (await dialog.boundingBox())!;
+  const popupBefore = (await menu.boundingBox())!;
   const above = popupBefore.y + popupBefore.height <= triggerBefore.y;
   const gapBefore = above
     ? triggerBefore.y - popupBefore.y - popupBefore.height
@@ -237,11 +248,11 @@ test("the dialog follows conversation scrolling until its trigger leaves the vis
   await expect
     .poll(async () => (await trigger.boundingBox())!.y)
     .toBeGreaterThan(triggerBefore.y + 10);
-  await expect(dialog).toBeVisible();
+  await expect(menu).toBeVisible();
   await expect
     .poll(async () => {
       const anchor = (await trigger.boundingBox())!;
-      const popup = (await dialog.boundingBox())!;
+      const popup = (await menu.boundingBox())!;
       const gap = above
         ? anchor.y - popup.y - popup.height
         : popup.y - anchor.y - anchor.height;
@@ -251,5 +262,5 @@ test("the dialog follows conversation scrolling until its trigger leaves the vis
   await transcript.evaluate((node) => {
     node.scrollTop = 0;
   });
-  await expect(dialog).toHaveCount(0);
+  await expect(menu).toHaveCount(0);
 });
