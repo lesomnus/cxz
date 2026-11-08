@@ -3,7 +3,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useContext } from "react";
 import { ConnectionsPage } from "#src/pages/settings/connections-page.tsx";
 import { SettingsPage } from "#src/pages/settings/settings-page.tsx";
-import { LogsPage } from "#src/pages/settings/logs-page.tsx";
+import { LogsPage } from "#src/pages/logs/logs-page.tsx";
 import { useWorkspaceRoute } from "./router";
 import { WorkspaceContext } from "./workspace-context";
 import { ProjectsPage } from "#src/pages/projects/projects-page.tsx";
@@ -64,7 +64,7 @@ export function WorkspaceView() {
     return <AuxiliaryPage c={c} sessions={sessions} />;
   if (resource === "settings" && settingsTopic === "connections")
     return <ConnectionsPage />;
-  if (resource === "settings" && settingsTopic === "logs") return <LogsPage />;
+  if (resource === "logs") return <LogsPage />;
   if (resource === "settings")
     return (
       <SettingsPage

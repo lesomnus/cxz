@@ -1,0 +1,74 @@
+.layout.layout,
+.toolbar :global([data-resource-toolbar-content]) {
+  --section-layout-max-width: calc(
+    var(--resource-page-content-width) + var(--settings-navigation-width) +
+      var(--resource-page-column-gap)
+  );
+}
+.layout.layout {
+  display: grid;
+  grid-template-columns: var(--settings-navigation-width) minmax(0, 1fr);
+  gap: var(--resource-page-column-gap);
+  align-items: start;
+}
+.navigation {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ui-space);
+  padding-block: var(--ui-section-padding);
+}
+.link {
+  display: block;
+  align-self: stretch;
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 20px;
+  text-decoration: none;
+  transition: color var(--ui-button-background-duration) ease-out;
+}
+.link:hover,
+.link[aria-current="page"] {
+  color: var(--ui-text-value);
+}
+.link[aria-current="page"] {
+  font-weight: 500;
+}
+.link:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: var(--ui-control-inset);
+}
+.content {
+  container: settings-form / inline-size;
+  min-width: 0;
+}
+@container resource-page (width < 1040px) {
+  .layout.layout,
+  .toolbar :global([data-resource-toolbar-content]) {
+    --section-layout-max-width: calc(
+      var(--resource-page-column-width) + var(--settings-navigation-width) +
+        var(--resource-page-column-gap)
+    );
+  }
+}
+@container resource-page (width < 600px) {
+  .layout.layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ui-space);
+  }
+  .navigation {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 0;
+    column-gap: calc(2 * var(--ui-space));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .link {
+    transition: none;
+  }
+}

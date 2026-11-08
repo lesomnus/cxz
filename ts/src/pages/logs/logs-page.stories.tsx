@@ -102,7 +102,7 @@ function Preview({
   );
 }
 const meta = {
-  title: "Settings/Logs",
+  title: "Pages/Logs",
   component: Preview,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof Preview>;

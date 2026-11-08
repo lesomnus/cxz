@@ -360,9 +360,7 @@ header strong {
   }
 }
 .settings-page {
-  --settings-column-width: 320px;
-  --settings-section-gap: calc(3 * var(--space));
-  --settings-section-radius: 10px;
+  --settings-navigation-width: 128px;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -370,26 +368,32 @@ header strong {
 .settings-split {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  height: 100%;
+  flex: 1;
   min-height: 0;
 }
 .settings-page[data-wide="true"] .settings-split {
-  grid-template-columns: 800px minmax(0, 1fr);
+  grid-template-columns:
+    calc(
+      var(--resource-page-content-width) + var(--settings-navigation-width) +
+        var(--resource-page-column-gap) + 2 * var(--resource-page-gutter)
+    )
+    minmax(0, 1fr);
 }
 .settings-form-pane,
 .settings-file-pane {
   min-width: 0;
   min-height: 0;
-  overflow: auto;
-  padding: 12px 16px 24px;
+}
+.settings-form-pane {
+  padding: 0;
+  overflow: hidden;
 }
 .settings-form-pane[hidden],
 .settings-file-pane[hidden] {
   display: none;
 }
-.settings-form-pane {
-  container: settings-form / inline-size;
-  padding: var(--settings-section-radius);
+.settings-file-pane {
+  padding: calc(3 * var(--ui-space)) var(--resource-page-gutter);
 }
 .settings-page[data-wide="true"] .settings-file-pane {
   border-left: 1px solid var(--shade-54);
@@ -401,55 +405,37 @@ header strong {
 }
 .settings-editor-body {
   width: 100%;
-  max-width: var(--settings-column-width);
-  margin: 0 auto;
+  min-width: 0;
 }
 .settings-editor-body > header {
-  padding-inline: var(--settings-section-radius);
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-bottom: 12px;
+  gap: var(--ui-space);
+  padding: var(--ui-space) var(--ui-section-padding);
+  margin-bottom: calc(2 * var(--ui-space));
 }
 .settings-editor-body > p {
-  padding-inline: var(--settings-section-radius);
-}
-.settings-editor-body > header > button,
-.settings-file > header > button {
-  font-size: 12px;
+  padding-inline: var(--ui-section-padding);
 }
 .settings-page h1,
 .settings-file h2 {
   margin: 0;
-  font-size: 18px;
-}
-.settings-file h2 {
   font-size: 14px;
 }
 .settings-editor-groups {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--settings-section-gap);
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--resource-page-column-width)), 1fr)
+  );
+  gap: var(--resource-page-column-gap);
   align-items: start;
-}
-@container settings-form (min-width: 680px) {
-  .settings-editor-body {
-    max-width: calc(
-      2 * var(--settings-column-width) + var(--settings-section-gap)
-    );
-  }
-  .settings-editor-groups {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 .settings-group {
   min-width: 0;
-  padding: var(--settings-section-radius);
-  border-radius: var(--settings-section-radius);
-  background: var(--shade-25);
 }
 .settings-group h2 {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
 }
 /* A connection is read, not configured, so this is a table rather than a form.
    The row that served the page is the one that cannot be changed, and it says
@@ -479,18 +465,15 @@ header strong {
 
 .settings-group fieldset {
   border: 0;
-  margin: 12px 0;
+  margin: 0;
   padding: 0;
   min-width: 0;
 }
 .settings-group > .muted {
-  margin-block: 0;
+  margin: 0;
   font-size: 11px;
   line-height: 1.5;
   color: var(--muted);
-}
-.settings-group > .muted {
-  margin-top: var(--space);
 }
 .language-setting-control {
   display: flex;
@@ -2330,28 +2313,6 @@ summary:hover {
   .workspace.resource-open > .resource-sidebar {
     grid-column: 1;
     grid-row: 1;
-  }
-  .settings-open {
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .settings-open > .resource-sidebar {
-    grid-column: 1;
-    grid-row: 1 / -1;
-  }
-  .settings-open > .resource-panel {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .settings-open .panel-scroll-region {
-    flex: 0 0 auto;
-  }
-  .settings-open .panel-scroll-content {
-    height: auto;
-    overflow: visible;
-  }
-  .settings-open > .settings-page {
-    grid-column: 2;
-    grid-row: 2;
   }
   .workspace {
     grid-template-columns: 64px minmax(0, 1fr);

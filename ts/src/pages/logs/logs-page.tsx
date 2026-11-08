@@ -22,6 +22,7 @@ import {
   type LogQuery,
 } from "#src/shared/logs/log-entry.ts";
 import styles from "./logs-page.module.css";
+import { ResourcePage } from "#src/shared/components/resource-layout.tsx";
 
 export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
   useLocale();
@@ -102,7 +103,7 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
     }
   }
   return (
-    <main className={styles.page} aria-label={t("Logs")}>
+    <ResourcePage className={styles.page} aria-label={t("Logs")}>
       <header className={styles.header}>
         <div>
           <h1>{t("Logs")}</h1>
@@ -263,6 +264,6 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
           {t("Next")}
         </Button>
       </footer>
-    </main>
+    </ResourcePage>
   );
 }

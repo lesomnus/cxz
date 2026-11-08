@@ -2,6 +2,14 @@ import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { Connection } from "#gen/cxz/connection_pb";
+import { Section, TableScrollArea } from "@lesomnus/nox";
+import { ResourcePage } from "#src/shared/components/resource-layout.tsx";
+import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import {
+  SettingsContent,
+  SettingsToolbar,
+} from "#src/features/settings/components/settings-content.tsx";
+import pageStyles from "#src/shared/components/resource-page.module.css";
 import { client } from "#src/shared/api/connections.ts";
 
 // What this browser is attached to. One connection reaches an installation
@@ -40,9 +48,15 @@ export function ConnectionsPage({
     };
   }, [api]);
   return (
-    <main className="settings-page">
-      <div className="settings-split">
-        <section className="settings-form-pane" aria-label={t("Connections")}>
+    <ResourcePage className="settings-page">
+      <SettingsToolbar aria-label={t("Settings")} />
+
+      <PanelScroll
+        className="settings-form-pane"
+        contentClassName={pageStyles.contentPadding}
+        aria-label={t("Connections")}
+      >
+        <SettingsContent>
           <div className="settings-editor-body">
             <header>
               <div>
@@ -56,36 +70,41 @@ export function ConnectionsPage({
             </header>
             {error ? <ErrorNotice error={error} /> : null}
             <div className="settings-editor-groups">
-              <section className="settings-group">
-                <table className="connection-list">
-                  <thead>
-                    <tr>
-                      <th scope="col">{t("Name")}</th>
-                      <th scope="col">{t("Target")}</th>
-                      <th scope="col">{t("Transport")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((c) => (
-                      <tr key={c.target} data-read-only={c.readOnly}>
-                        <th scope="row">
-                          {c.name}
-                          {c.isDefault ? ` · ${t("default")}` : ""}
-                        </th>
-                        <td>{c.target}</td>
-                        <td>
-                          {c.transport}
-                          {c.readOnly ? ` · ${t("served this page")}` : ""}
-                        </td>
+              <Section className="settings-group">
+                <TableScrollArea
+                  scrollbarLabel={t("Connections")}
+                  style={{ height: "auto" }}
+                >
+                  <table className="connection-list">
+                    <thead>
+                      <tr>
+                        <th scope="col">{t("Name")}</th>
+                        <th scope="col">{t("Target")}</th>
+                        <th scope="col">{t("Transport")}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </section>
+                    </thead>
+                    <tbody>
+                      {items.map((c) => (
+                        <tr key={c.target} data-read-only={c.readOnly}>
+                          <th scope="row">
+                            {c.name}
+                            {c.isDefault ? ` · ${t("default")}` : ""}
+                          </th>
+                          <td>{c.target}</td>
+                          <td>
+                            {c.transport}
+                            {c.readOnly ? ` · ${t("served this page")}` : ""}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </TableScrollArea>
+              </Section>
             </div>
           </div>
-        </section>
-      </div>
-    </main>
+        </SettingsContent>
+      </PanelScroll>
+    </ResourcePage>
   );
 }

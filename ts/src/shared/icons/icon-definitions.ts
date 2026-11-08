@@ -272,6 +272,11 @@ export const iconDefinitions = {
     circle(12, 12, 3),
     path("M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z"),
   ]),
+  logs: line([rect(4, 3, 16, 18, 2), path("M8 7h8M8 11h8M8 15h5")]),
+  "settings-file": line([
+    path("M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9ZM14 3v6h6"),
+    path("m9 12-2 3 2 3m6-6 2 3-2 3"),
+  ]),
   // Outer contours of the Material Symbols Rounded category glyph; see ../assets/icons/README.md.
   work: solid(
     [
