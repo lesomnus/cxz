@@ -1,15 +1,29 @@
 import type { Connection } from "#src/shared/api/connection.ts";
 import { AuxiliarySettings } from "#src/features/auxiliary/auxiliary-settings.tsx";
-import styles from "#src/shared/components/resource-surface.module.css";
-export function AuxiliaryPage({ c }: { c: Connection }) {
+import type { Session } from "#gen/cxz/session_pb";
+import {
+  ResourceLayout,
+  ResourcePage,
+} from "#src/shared/components/resource-layout.tsx";
+import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
+import styles from "#src/shared/components/resource-page.module.css";
+export function AuxiliaryPage({
+  c,
+  sessions = [],
+}: {
+  c: Connection;
+  sessions?: Session[];
+}) {
   return (
-    <main className={styles.page}>
-      <header className={styles.heading}>
-        <h1>Auxiliary AI</h1>
-      </header>
-      <div className={styles.body}>
-        <AuxiliarySettings c={c} />
-      </div>
-    </main>
+    <ResourcePage aria-label="Auxiliary AI">
+      <PanelScroll
+        contentClassName={styles.contentPadding}
+        scrollbarLabel="Auxiliary settings scroll"
+      >
+        <ResourceLayout>
+          <AuxiliarySettings c={c} sessions={sessions} />
+        </ResourceLayout>
+      </PanelScroll>
+    </ResourcePage>
   );
 }

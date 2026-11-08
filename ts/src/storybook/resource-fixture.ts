@@ -23,6 +23,10 @@ export function resourceFixture({
   quotaRemaining = 64,
   onRead,
   usageMultiplier,
+  auxiliarySaveFailures = 0,
+  auxiliaryDelayMs = 0,
+  auxiliarySaveDelayMs = 0,
+  noAccounts = false,
 }: {
   eraseFailures?: number;
   usageDelayMs?: number;
@@ -32,6 +36,10 @@ export function resourceFixture({
   quotaRemaining?: number | null | (() => number | null);
   onRead?: (kind: "accounts" | "auth" | "usage" | "quota") => void;
   usageMultiplier?: () => number;
+  auxiliarySaveFailures?: number;
+  auxiliaryDelayMs?: number;
+  auxiliarySaveDelayMs?: number;
+  noAccounts?: boolean;
 } = {}) {
   const accounts: Pick<
     Account,
@@ -112,7 +120,7 @@ export function resourceFixture({
     router.service(AccountService, {
       list: () => {
         onRead?.("accounts");
-        return { items: accounts };
+        return { items: noAccounts ? [] : accounts };
       },
       get: (request) => {
         const account = accounts.find((a) =>
@@ -224,14 +232,41 @@ export function resourceFixture({
       }),
     });
     router.service(InstallationService, {
-      agents: () => ({ profiles: config }),
-      saveAgents: (request) => {
+      agents: async () => {
+        if (auxiliaryDelayMs)
+          await new Promise((resolve) => setTimeout(resolve, auxiliaryDelayMs));
+        return {
+          profiles: config,
+          account: config.find((p) => p.account)?.account || "",
+        };
+      },
+      saveAgents: async (request) => {
+        if (auxiliarySaveDelayMs)
+          await new Promise((resolve) =>
+            setTimeout(resolve, auxiliarySaveDelayMs),
+          );
+        if (auxiliaryDelayMs)
+          await new Promise((resolve) => setTimeout(resolve, auxiliaryDelayMs));
+        if (auxiliarySaveFailures-- > 0)
+          throw new ConnectError(
+            "Configuration save failed. Try again.",
+            Code.Unavailable,
+          );
+        const account =
+          request.account ||
+          request.profiles.find((p) => p.account)?.account ||
+          "";
+        if (request.profiles.some((p) => p.account && p.account !== account))
+          throw new ConnectError(
+            "Auxiliary tasks must use one shared account",
+            Code.InvalidArgument,
+          );
         config.splice(
           0,
           config.length,
-          ...request.profiles.map((p) => ({ ...p, effort: p.effort })),
+          ...request.profiles.map((p) => ({ ...p, account, effort: p.effort })),
         );
-        return { profiles: config };
+        return { profiles: config, account };
       },
     });
     router.service(SessionService, {

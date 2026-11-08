@@ -4,8 +4,24 @@ Three optional background tasks that read a conversation and produce something s
 a **summary** of what has happened, and a **suggestion** for what you might send
 next, and a **session title** for the project sidebar.
 
-They run on their own account and model, separate from the agent doing the work.
+They use one shared account, separate from the agent doing the work. Each task
+keeps its own model, effort and enabled setting.
 All are **off by default**.
+
+The web Auxiliary AI page starts with a Section-style account selector. The
+selected account and every option show the agent logo, display name, alias,
+retained remaining usage and reset timestamp. Usage uses the Account page's
+one-minute metadata cache; no provider probe is started to fill the selector.
+Task controls below it have no surrounding panels. One helper login and one
+catalog lookup serve all three tasks; Save configuration stores them together.
+
+Changing the shared account clears task models/efforts and disables the affected
+tasks until configured again. The server enforces the same rule for CLI/TUI and
+refuses mixed-account requests. Older per-task configuration migrates on Manager
+startup: prefer the first enabled account, then the first configured account,
+in Summary/Suggestion/Title order. Tasks from a different identity are disabled
+and cleared; matching tasks retain their settings. Account erasure clears every
+helper assignment when it is the shared account.
 
 ## Turning them on
 
@@ -101,11 +117,11 @@ A suggestion becomes inapplicable when you send new input, when the run changes,
 when the configuration changes. When there is no sensible next step, it is simply
 empty.
 
-Summary and suggestion are generated in one call when they share an account, model
-and effort — one provider process and **one copy of the conversation** instead of
+Summary and suggestion are generated in one call when their models and efforts
+match — one provider process and **one copy of the conversation** instead of
 two, which is where the saving is. Equality is the whole profile, and the agent
 and backend always come from the account, so the one that surprises people is
-effort: the same account and model at a different reasoning level is two calls.
+effort: the same model at a different reasoning level is two calls.
 Picking `use … from …` when configuring the second task is the way to be sure,
 and the AI tasks screen says which of the two you have:
 

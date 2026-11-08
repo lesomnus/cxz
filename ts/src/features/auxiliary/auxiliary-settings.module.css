@@ -1,0 +1,46 @@
+.content {
+  display: grid;
+  gap: var(--ui-section-layout-gap);
+  min-width: 0;
+  width: 100%;
+}
+.accountActions,
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(2 * var(--ui-space));
+  min-width: 0;
+}
+.accountActions {
+  flex-wrap: wrap;
+  margin-top: calc(-2 * var(--ui-space));
+}
+.muted {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+.profile {
+  display: grid;
+  gap: calc(3 * var(--ui-space));
+  min-width: 0;
+}
+.heading h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.fields {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: calc(2 * var(--ui-space));
+}
+.save {
+  justify-self: end;
+}
+@media (max-width: 440px) {
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
