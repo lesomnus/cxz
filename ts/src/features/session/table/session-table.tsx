@@ -1,6 +1,6 @@
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { key } from "@lesomnus/payday/store";
 import {
   Button,
@@ -90,6 +90,10 @@ export function SessionTable({
         horizontalScrollbar,
         scrollbarLabel: t("Session list"),
       };
+  const completed = useSyncExternalStore(
+    c.attention.subscribe,
+    c.attention.completedSnapshot,
+  );
   const [selected, select] = useState<Set<string>>(() => new Set());
   const controls = useSessionControls(c, (ids) =>
     select((previous) => {
@@ -288,7 +292,11 @@ export function SessionTable({
                   )}
                   {compact ? (
                     <TableCell className={`${styles.name} ${styles.cardCell}`}>
-                      <SessionNavigationButton session={s} />
+                      <SessionNavigationButton
+                        session={s}
+                        navigationIcon="open-project"
+                        unread={completed.has(s.runtimeId)}
+                      />
                     </TableCell>
                   ) : (
                     (["name", "alias"] as const).map((field) => (

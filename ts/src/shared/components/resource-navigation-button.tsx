@@ -1,7 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
 import { createLink } from "@tanstack/react-router";
 import { ButtonAnchor, type ButtonAnchorProps } from "@lesomnus/nox";
-import { Icon } from "#src/shared/icons/icon.tsx";
+import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import styles from "./resource-navigation-button.module.css";
 import tableStyles from "./resource-table.module.css";
 
@@ -12,6 +12,7 @@ const ResourceNavigationAnchor = forwardRef<
     alias?: string;
     annotation?: string;
     leading?: ReactNode;
+    navigationIcon?: IconName;
   }
 >(function ResourceNavigationAnchor(
   {
@@ -19,6 +20,7 @@ const ResourceNavigationAnchor = forwardRef<
     alias,
     annotation,
     leading,
+    navigationIcon = "open-external",
     className = "",
     rowAware = true,
     ...props
@@ -44,7 +46,7 @@ const ResourceNavigationAnchor = forwardRef<
           </span>
         )}
       </span>
-      <Icon name="open-external" className={styles.arrow} />
+      <Icon name={navigationIcon} className={styles.arrow} />
     </ButtonAnchor>
   );
 });

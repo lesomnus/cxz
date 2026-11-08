@@ -23,6 +23,15 @@ for (const width of [390, 1280]) {
     ).toHaveCount(1);
     await expect(cells.nth(4).locator('a[href*="/account/"]')).toHaveCount(1);
     await expect(cells.nth(4).locator(".agent-brand")).toHaveCount(0);
+    await expect(
+      cells.nth(3).locator('[data-icon="open-project"]'),
+    ).toHaveCount(1);
+    await expect(
+      cells.nth(2).locator('[data-icon="open-external"]'),
+    ).toHaveCount(1);
+    await expect(
+      cells.nth(4).locator('[data-icon="open-external"]'),
+    ).toHaveCount(1);
     const geometry = await firstRow.evaluate((row) => {
       const identities = [...row.querySelectorAll("td")].slice(2, 5);
       return identities.map((cell) => {
@@ -293,4 +302,87 @@ test("reduced motion opens the panel without transitioning the workspace", async
     "transition-duration",
     "0s",
   );
+});
+
+test("Sessions sort by conversation recency and preserve selection through live reordering", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(
+    "/iframe.html?id=pages-sessions--recent-activity&viewMode=story",
+  );
+  const aliases = () =>
+    table(page)
+      .locator("tbody [data-session-navigation]")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute("href")!.split("/").at(-1)),
+      );
+  const expected = [
+    "api-session-5",
+    "api-session-4",
+    "api-session-3",
+    "api-elm",
+    "api-oak",
+    "web-session-5",
+    "web-session-4",
+    "web-session-3",
+    "web-elm",
+    "web-oak",
+  ];
+  await expect.poll(aliases).toEqual(expected);
+  const oldest = table(page)
+    .locator("tbody tr")
+    .filter({
+      has: page.locator('[data-session-navigation][href$="/web-oak"]'),
+    });
+  await oldest.getByRole("checkbox").check();
+  await page
+    .getByRole("button", { name: "Rename oldest session", exact: true })
+    .click();
+  await expect(oldest).toContainText("Renamed oldest conversation");
+  expect(await aliases()).toEqual(expected);
+  await page
+    .getByRole("button", { name: "Record latest conversation", exact: true })
+    .click();
+  await expect.poll(aliases).toEqual(["web-oak", ...expected.slice(0, -1)]);
+  await expect(oldest).toHaveAttribute("data-selected", "true");
+  await expect(oldest.getByRole("checkbox")).toBeChecked();
+});
+
+test("unread completion dots share the Name button corner center and clear with read state", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-sessions--unread-completions&viewMode=story",
+  );
+  const names = table(page).locator("[data-session-navigation]");
+  await expect(
+    table(page).locator("[data-session-navigation][data-unread]"),
+  ).toHaveCount(2);
+  const first = names.filter({
+    has: page.getByText("web-oak", { exact: true }),
+  });
+  await expect(first).toHaveAttribute("aria-description", "Unread response");
+  const geometry = await first.evaluate((node) => {
+    const button = getComputedStyle(node),
+      dot = getComputedStyle(node, "::after");
+    return {
+      radius: parseFloat(button.borderTopRightRadius),
+      top: parseFloat(dot.top) + parseFloat(dot.height) / 2,
+      right: parseFloat(dot.right) + parseFloat(dot.width) / 2,
+      content: dot.content,
+      pointerEvents: dot.pointerEvents,
+    };
+  });
+  expect(geometry.top).toBe(geometry.radius);
+  expect(geometry.right).toBe(geometry.radius);
+  expect(geometry.content).toBe('""');
+  expect(geometry.pointerEvents).toBe("none");
+  await page
+    .getByRole("button", { name: "Mark first completion read", exact: true })
+    .click();
+  await expect(first).not.toHaveAttribute("data-unread");
+  await expect(
+    table(page).locator("[data-session-navigation][data-unread]"),
+  ).toHaveCount(1);
 });

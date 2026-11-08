@@ -7,9 +7,9 @@ import {
   activityTime,
   activityVersion,
   loadSessionActivity,
-  projectActivitySessions,
   type ActivityCache,
-} from "./project-session-activity";
+} from "#src/features/session/model/session-activity-time.ts";
+import { projectActivitySessions } from "./project-session-activity";
 
 const session = (id: number, state = "idle", project = 1) =>
   create(SessionSchema, {

@@ -25,7 +25,7 @@ import { containerState } from "./project-state";
 import { ProjectStateIcon } from "./project-state-icon";
 import { ProjectActions } from "./project-actions";
 import { projectActivitySessions } from "./project-session-activity";
-import { useSessionActivity } from "./use-session-activity";
+import { useSessionActivity } from "#src/features/session/model/use-session-activity.ts";
 import styles from "./project-table.module.css";
 import resourceTableStyles from "#src/shared/components/resource-table.module.css";
 import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";

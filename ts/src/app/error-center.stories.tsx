@@ -3,7 +3,7 @@ import { create } from "@bufbuild/protobuf";
 import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
 import { ConversationLoading } from "#src/features/session/conversation/conversation-loading.tsx";
 import { AccountQuotaSquare } from "#src/features/accounts/account-quota-square.tsx";
-import { useSessionActivity } from "#src/pages/projects/use-session-activity.ts";
+import { useSessionActivity } from "#src/features/session/model/use-session-activity.ts";
 import { SessionsPage } from "#src/pages/sessions/sessions-page.tsx";
 import { errorNotificationOptions } from "#src/shared/errors/error-notification.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";

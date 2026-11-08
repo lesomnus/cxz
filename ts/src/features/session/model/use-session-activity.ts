@@ -6,7 +6,7 @@ import {
   activityVersion,
   loadSessionActivity,
   type ActivityCache,
-} from "./project-session-activity";
+} from "./session-activity-time";
 
 const connections = new WeakMap<Connection, ActivityCache>();
 export function useSessionActivity(c: Connection, sessions: Session[]) {

@@ -1,7 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { create } from "@bufbuild/protobuf";
-import { SessionEventSchema, type Session } from "#gen/cxz/session_pb";
+import { clone, create } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
+import { ref } from "#src/shared/api/connection.ts";
+import {
+  SessionSchema,
+  SessionEventSchema,
+  type Session,
+} from "#gen/cxz/session_pb";
 import { Provider } from "@lesomnus/payday/react";
 import {
   RouterProvider,
@@ -14,6 +20,7 @@ import {
   ProjectWatchResponseSchema,
 } from "#gen/cxz/project_svc_pb";
 import {
+  SessionReadStateSchema,
   SessionListResponseSchema,
   SessionWatchResponseSchema,
   SessionRowSchema,
@@ -28,7 +35,7 @@ import { WorkspaceView } from "#src/app/workspace-view.tsx";
 import { sessionFixtureId } from "#src/storybook/fixtures.ts";
 import { projectFixture } from "#src/storybook/project-fixture.ts";
 
-function History() {
+function History({ children }: { children?: ReactNode }) {
   const router = useRouter();
   return (
     <nav
@@ -37,6 +44,7 @@ function History() {
     >
       <Button onClick={() => router.history.back()}>Back</Button>
       <Button onClick={() => router.history.forward()}>Forward</Button>
+      {children}
     </nav>
   );
 }
@@ -44,6 +52,8 @@ function Preview({
   empty = false,
   sessionCount = 5,
   conversation = false,
+  recentActivity = false,
+  unread = false,
 } = {}) {
   const [fixture] = useState(() => {
     const fixture = projectFixture(false, false, empty ? 0 : sessionCount);
@@ -61,6 +71,31 @@ function Preview({
         "failed",
       ][i % 5]!;
     }
+    if (recentActivity) {
+      const now = Date.now();
+      sessions.forEach((session, i) => {
+        fixture.activityTimes.set(
+          session.runtimeId,
+          now - (sessions.length - i) * 60000,
+        );
+      });
+      const empty = sessions.at(-1)!;
+      fixture.activityTimes.delete(empty.runtimeId);
+      empty.dateCreated = timestampFromDate(new Date(now - 30000));
+    }
+    if (unread) {
+      fixture.notifications.push(
+        { runtimeId: sessions[0]!.runtimeId, kind: "session.completed" },
+        { runtimeId: sessions[2]!.runtimeId, kind: "session.completed" },
+      );
+    }
+    c.sessions.readState = async () =>
+      create(SessionReadStateSchema, { generation: "current-run" });
+    c.sessions.markRead = async (request) =>
+      create(SessionReadStateSchema, {
+        generation: "current-run",
+        throughSeq: request.throughSeq,
+      });
     const idle = (signal?: AbortSignal) =>
       new Promise<void>((resolve) => {
         if (signal?.aborted) resolve();
@@ -135,7 +170,54 @@ function Preview({
         shell: ({ children }) => (
           <Workspace connection={fixture.c} logout={async () => {}}>
             {children}
-            <History />
+            <History>
+              {unread && (
+                <Button
+                  onClick={() =>
+                    fixture.c.attention.setReading(
+                      fixture.sessions[0]!.runtimeId,
+                      9n,
+                    )
+                  }
+                >
+                  Mark first completion read
+                </Button>
+              )}
+              {recentActivity && (
+                <>
+                  <Button
+                    onClick={() => {
+                      const session = fixture.sessions[0]!;
+                      void fixture.c.sessions.patch({
+                        ref: ref(session.runtimeId),
+                        name: "Renamed oldest conversation",
+                        dateUpdated: session.dateUpdated,
+                      });
+                    }}
+                  >
+                    Rename oldest session
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const session = clone(
+                        SessionSchema,
+                        fixture.sessions[0]!,
+                      );
+                      fixture.sessions[0] = session;
+                      fixture.activityTimes.set(session.runtimeId, Date.now());
+                      session.status!.lastSeq += 1n;
+                      void fixture.c.sessions.patch({
+                        ref: ref(session.runtimeId),
+                        name: session.name,
+                        dateUpdated: session.dateUpdated,
+                      });
+                    }}
+                  >
+                    Record latest conversation
+                  </Button>
+                </>
+              )}
+            </History>
           </Workspace>
         ),
         view: WorkspaceView,
@@ -172,3 +254,7 @@ export const Default: Story = {};
 export const Empty: Story = { args: { empty: true } };
 export const ManySessions: Story = { args: { sessionCount: 25 } };
 export const Conversation: Story = { args: { conversation: true } };
+
+export const RecentActivity: Story = { args: { recentActivity: true } };
+
+export const UnreadCompletions: Story = { args: { unread: true } };

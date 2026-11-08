@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@lesomnus/nox";
 import { Connection } from "#src/shared/api/connection.ts";
 import { useResourceInventory } from "#src/shared/api/resource-inventory.ts";
@@ -6,6 +6,8 @@ import { useRemote } from "#src/shared/api/use-remote.ts";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
 import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import { SessionCreate } from "./session-create";
+import { useSessionActivity } from "#src/features/session/model/use-session-activity.ts";
+import { sortSessionsByActivity } from "#src/features/session/model/session-activity-time.ts";
 import type { Project } from "#gen/cxz/project_pb";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
@@ -27,6 +29,11 @@ export function SessionLibrary({
 }) {
   const [creating, setCreating] = useState(false);
   const inventory = useResourceInventory(c);
+  const activity = useSessionActivity(c, inventory.sessions);
+  const sessions = useMemo(
+    () => sortSessionsByActivity(inventory.sessions, activity),
+    [inventory.sessions, activity],
+  );
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
   return (
     <ResourcePage aria-label={t("Sessions")}>
@@ -67,7 +74,7 @@ export function SessionLibrary({
           )}
           <SessionTable
             c={c}
-            sessions={inventory.sessions}
+            sessions={sessions}
             accounts={accounts.data ?? []}
             projects={projects}
             loading={inventory.loading.sessions}
