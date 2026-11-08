@@ -54,16 +54,6 @@
   --ui-liquid-tint: var(--quota-tint);
   --ui-liquid-background: var(--ui-section-background);
 }
-.quotaGauge.quotaGauge {
-  --ui-liquid-radius: 8px;
-}
-.quotaGauge:not([data-unknown]) {
-  background: color-mix(
-    in srgb,
-    var(--ui-liquid-background),
-    var(--ui-liquid-tint) 52%
-  );
-}
 .quotaUnit {
   color: var(--muted);
 }

@@ -18,3 +18,13 @@
 .quota {
   flex: none;
 }
+.gauge.gauge {
+  --ui-liquid-radius: 8px;
+}
+.gauge:not([data-unknown]) {
+  background: color-mix(
+    in srgb,
+    var(--ui-liquid-background),
+    var(--ui-liquid-tint) 52%
+  );
+}

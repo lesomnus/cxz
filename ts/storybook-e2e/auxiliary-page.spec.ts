@@ -27,6 +27,10 @@ for (const width of [390, 1280])
       "aria-valuenow",
       "64",
     );
+    await expect(picker(page).getByRole("meter").locator("..")).toHaveCSS(
+      "border-radius",
+      "8px",
+    );
     await expect(
       picker(page).getByRole("img", {
         name: "8700000 milliseconds",
@@ -74,6 +78,9 @@ for (const width of [390, 1280])
       await expect(option).toHaveAttribute("data-section-layout", "section");
       await expect(option.locator(".agent-brand")).toBeVisible();
       await expect(option.locator("[data-liquid-vessel]")).toBeVisible();
+      await expect(
+        option.locator("[data-liquid-vessel]").locator(".."),
+      ).toHaveCSS("border-radius", "8px");
       await expect(option.getByText("Remaining", { exact: true })).toHaveCount(
         0,
       );

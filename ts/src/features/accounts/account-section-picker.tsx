@@ -56,6 +56,7 @@ export function AccountSectionPicker({
                 sessions={sessionsForAccount(account, sessions)}
                 inline
                 className={styles.quota}
+                gaugeClassName={styles.gauge}
               />
             ),
           })),

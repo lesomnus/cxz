@@ -20,6 +20,7 @@ export function AccountQuotaSquare({
   onLoadingChange,
   inline = false,
   className = "",
+  gaugeClassName = "",
 }: {
   c: Connection;
   account: string;
@@ -31,6 +32,7 @@ export function AccountQuotaSquare({
   /** Phrasing content for account selectors, retaining the same gauge/countdown. */
   inline?: boolean;
   className?: string;
+  gaugeClassName?: string;
 }) {
   const quota = useAccountQuota({
     c,
@@ -70,7 +72,7 @@ export function AccountQuotaSquare({
       data-quota-level={level}
     >
       <LiquidGauge
-        className={styles.quotaGauge}
+        className={`${styles.quotaGauge} ${gaugeClassName}`}
         value={remaining}
         aria-label={
           percent === undefined
