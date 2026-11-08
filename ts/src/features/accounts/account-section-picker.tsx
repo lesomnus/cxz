@@ -29,7 +29,6 @@ export function AccountSectionPicker({
       <ValueMenu
         label="Auxiliary account"
         variant="section"
-        alignItemWithTrigger
         value={value}
         disabled={disabled || !accounts.length}
         options={[

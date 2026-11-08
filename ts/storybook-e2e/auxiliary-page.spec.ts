@@ -63,6 +63,20 @@ for (const width of [390, 1280])
       }
     }
     await picker(page).click();
+    const current = page.locator(".setting-menu .setting-current");
+    await expect(current).toBeVisible();
+    await expect(current).toContainText("Work");
+    await expect
+      .poll(async () => {
+        const trigger = await picker(page)
+          .locator(".button-content")
+          .boundingBox();
+        const overlay = await current.locator(".button-content").boundingBox();
+        return Math.abs(
+          trigger!.y + trigger!.height / 2 - overlay!.y - overlay!.height / 2,
+        );
+      })
+      .toBeLessThan(1);
     const work = choices(page).getByRole("option", { name: /Work/ });
     const personal = choices(page).getByRole("option", { name: /Personal/ });
     for (const option of [work, personal]) {
