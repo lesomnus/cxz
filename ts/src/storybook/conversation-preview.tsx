@@ -134,7 +134,7 @@ export function PreviewTranscript({
   reading?: (reading: boolean) => void;
   loadDetails?: LoadEventDetails;
   workHistory?: WorkHistory;
-  taskSource?: import("#src/features/session/conversation/created-tasks-dialog.tsx").WorkTaskSource;
+  taskSource?: import("#src/features/session/model/work-tasks.ts").WorkTaskSource;
 }) {
   const projected = transcriptRows(events);
   const summaries = attachSummaries(projected.events, aux);
@@ -216,7 +216,7 @@ export function ComponentPreview({
   loadDetails?: LoadEventDetails;
   children?: ReactNode;
   workHistory?: WorkHistory;
-  taskSource?: import("#src/features/session/conversation/created-tasks-dialog.tsx").WorkTaskSource;
+  taskSource?: import("#src/features/session/model/work-tasks.ts").WorkTaskSource;
   autoFocus?: boolean;
   initialSelection?: EditorSelection;
   onSelectionChange?: (selection: EditorSelection) => void;

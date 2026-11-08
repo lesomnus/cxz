@@ -8,27 +8,36 @@ import { createWorkspaceRouter, useWorkspaceRoute } from "#src/app/router.tsx";
 import { TasksPage } from "#src/pages/tasks/tasks-page.tsx";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
 import { taskFixture } from "#src/storybook/task-fixture.ts";
+import { projectId } from "#src/shared/api/project-id.ts";
 
 function CreatedTasksPreview({
   empty = false,
   unavailable = false,
   delay = 0,
+  cached = false,
 }: {
   empty?: boolean;
   unavailable?: boolean;
   delay?: number;
+  cached?: boolean;
 }) {
   const [fixture] = useState(() => {
     const fixture = taskFixture(18, unavailable, { pageDelay: delay });
     const start = Date.now() - 60_000;
     fixture.tasks.forEach((task, index) => {
-      task.dateCreated = timestampFromDate(new Date(start + 4500 + index));
+      task.dateCreated = timestampFromDate(
+        new Date(start + (index + 1) * 1000 + 500),
+      );
       // The first batch did only reads. Other runs/sessions are never included.
       if (empty || index === 0) task.sourceRun = "another-run";
       if (index === 1) task.sourceSession = "elm";
       if (index === 2)
         task.dateCreated = timestampFromDate(new Date(start - 1000));
     });
+    if (cached)
+      fixture.c.taskCatalog
+        .forProject(projectId(fixture.projects[0]))
+        .apply(fixture.tasks[3]);
     const event = (seq: number, kind: string, text: string) =>
       create(SessionEventSchema, {
         seq: BigInt(seq),
@@ -52,10 +61,12 @@ function CreatedTasksPreview({
         event(1, "input", "Create Tasks for the next implementation steps."),
         call(2, "task_list"),
         event(3, "assistant", "I checked the existing work first."),
-        call(4, "task_add"),
-        call(5, "task_claim"),
+        ...Array.from({ length: 15 }, (_, index) =>
+          call(index + 4, "task_add"),
+        ),
+        call(19, "task_claim"),
         event(
-          6,
+          20,
           "assistant",
           "The Tasks are ready. Open the Task counter to view them.",
         ),
@@ -104,7 +115,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The Tasks counter counts MCP calls. Click it to open a small dialog above the button listing Tasks created by this session and run between the surrounding replies. Reads, claims and edits do not create list entries. The first counter is intentionally empty; the second opens a scrollable list with alias-first links to real Task details. Task data reuses the shared project catalog/cache and subscribes only while the dialog is open. Escape or Close restores focus; clicking outside dismisses without changing the transcript layout.",
+          "The Tasks counter and its dialog share the same created-Task list. Reads, claims and edits do not increase the count. Zero-count buttons are disabled; the read-only first batch demonstrates this. The second opens a scrollable list with alias-first links to Task details. A single shared project catalog/cache subscription updates both count and list, including while the dialog is open. Loading starts disabled until data is available; Refreshing keeps cached Tasks available during the refresh. An open trigger retains its focus outline. Escape or Close restores focus; clicking outside dismisses without changing transcript layout.",
       },
     },
   },
@@ -114,4 +125,7 @@ type Story = StoryObj<typeof meta>;
 export const CreatedTasks: Story = {};
 export const NoCreatedTasks: Story = { args: { empty: true } };
 export const LoadingTasks: Story = { args: { delay: 1800 } };
-export const UnavailableTasks: Story = { args: { unavailable: true } };
+export const RefreshingTasks: Story = { args: { delay: 1800, cached: true } };
+export const UnavailableTasks: Story = {
+  args: { unavailable: true, cached: true },
+};

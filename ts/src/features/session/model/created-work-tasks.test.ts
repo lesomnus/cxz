@@ -3,7 +3,10 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { describe, expect, it } from "vitest";
 import { TaskSchema } from "#gen/cxz/task_pb";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
-import { createdWorkTasks } from "./created-work-tasks";
+import {
+  createdWorkTasks,
+  createdTasksByWorkGroup,
+} from "./created-work-tasks";
 import { workGroups } from "./work-groups";
 
 const event = (seq: number, kind: string, ms: number, runId = "run") =>
@@ -33,6 +36,41 @@ const batch = () =>
   ][0];
 
 describe("Tasks created in a reply-delimited work range", () => {
+  it("indexes multiple reply ranges once and keeps tasks out of other sessions and runs", () => {
+    const groups = workGroups([
+      event(1, "input", 1000),
+      event(2, "tool_call", 1500),
+      event(3, "assistant", 2000),
+      event(4, "tool_call", 2500),
+      event(5, "assistant", 3000),
+      event(6, "input", 1000, "other"),
+      event(7, "tool_call", 2000, "other"),
+      event(8, "assistant", 3000, "other"),
+    ]).groups;
+    const tasks = [
+      task("second", 2500),
+      task("first", 1500),
+      task("boundary", 2000),
+      task("other", 2000, "oak", "other"),
+      task("wrong-session", 2000, "elm"),
+      task("before", 999),
+      task("after", 3000),
+    ];
+    const indexed = createdTasksByWorkGroup(
+      tasks,
+      "oak",
+      [...groups.values()].reverse(),
+    );
+    expect([...indexed.get("run/work/2")!].map((t) => t.alias)).toEqual([
+      "first",
+    ]);
+    expect(indexed.get("run/work/4")!.map((t) => t.alias)).toEqual([
+      "boundary",
+      "second",
+    ]);
+    expect(indexed.get("other/work/7")!.map((t) => t.alias)).toEqual(["other"]);
+    expect([...indexed.values()].flat()).toHaveLength(4);
+  });
   it("filters creation provenance and uses half-open nanosecond-accurate bounds", () => {
     const group = batch();
     expect(group.fromMs).toBe(1000n);

@@ -2,13 +2,8 @@ import { useLayoutEffect, useRef } from "react";
 import { Button, DialogReveal, MenuSurface } from "@lesomnus/nox";
 import { key } from "@lesomnus/payday/store";
 import type { Project } from "#gen/cxz/project_pb";
-import {
-  useProjectTasks,
-  type TaskCatalog,
-} from "#src/features/tasks/task-catalog.ts";
-import { createdWorkTasks } from "#src/features/session/model/created-work-tasks.ts";
-import type { WorkGroup } from "#src/features/session/model/work-groups.ts";
-import { projectId } from "#src/shared/api/project-id.ts";
+import type { Task } from "#gen/cxz/task_pb";
+import type { WorkTaskState } from "#src/features/session/model/work-tasks.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
 import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
@@ -17,50 +12,47 @@ import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./created-tasks-dialog.module.css";
 
-export type WorkTaskSource = {
-  project: Project;
-  session: string;
-  taskCatalog: TaskCatalog;
-};
-
 function TaskList({
-  source,
-  group,
+  project,
+  tasks,
+  state,
   close,
 }: {
-  source: WorkTaskSource;
-  group: WorkGroup;
+  project: Project;
+  tasks: Task[];
+  state: WorkTaskState;
   close: () => void;
 }) {
-  const snapshot = useProjectTasks(source, projectId(source.project));
-  const tasks = createdWorkTasks(snapshot.tasks, source.session, group);
   return (
     <PanelScroll className={styles.scroll} contentClassName={styles.list}>
       {tasks.map((task) => (
         <ResourceNavigationButton
           key={key(task.id)}
-          {...taskLocation({ task, project: source.project })}
+          {...taskLocation({ task, project })}
           name={task.name || task.alias}
           alias={task.alias}
           className={styles.task}
           onClick={close}
         />
       ))}
-      {snapshot.error && (
+      {state.error && (
         <div className={styles.state} role="alert">
-          <span>{snapshot.error}</span>
-          <Button type="button" onClick={snapshot.refresh}>
+          <span>{state.error}</span>
+          <Button type="button" onClick={state.refresh}>
             {t("Retry")}
           </Button>
         </div>
       )}
-      {!tasks.length && !snapshot.error && (
+      {!tasks.length && !state.error && (
         <p className={styles.state} role="status">
           {t(
-            snapshot.loading
-              ? "Loading…"
-              : "No Tasks were created in this range.",
+            state.loading ? "Loading…" : "No Tasks were created in this range.",
           )}
+        </p>
+      )}
+      {tasks.length > 0 && state.loading && (
+        <p className={styles.note} role="status">
+          {t("Loading…")}
         </p>
       )}
     </PanelScroll>
@@ -71,15 +63,17 @@ function TaskList({
 export function CreatedTasksDialog({
   id,
   anchor,
-  source,
-  group,
+  project,
+  tasks,
+  state,
   partial,
   close,
 }: {
   id: string;
   anchor: HTMLButtonElement;
-  source?: WorkTaskSource;
-  group: WorkGroup;
+  project: Project;
+  tasks: Task[];
+  state: WorkTaskState;
   partial: boolean;
   close: (restoreFocus?: boolean) => void;
 }) {
@@ -159,13 +153,12 @@ export function CreatedTasksDialog({
             onClick={() => close(true)}
           />
         </header>
-        {source ? (
-          <TaskList source={source} group={group} close={() => close()} />
-        ) : (
-          <p className={styles.state} role="status">
-            {t("Task information is unavailable.")}
-          </p>
-        )}
+        <TaskList
+          project={project}
+          tasks={tasks}
+          state={state}
+          close={() => close()}
+        />
         {partial && (
           <p className={styles.note}>
             {t("Only the loaded conversation range is shown.")}

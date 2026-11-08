@@ -13,6 +13,14 @@ test("WorkSummary opens created Tasks above the trigger without shifting the con
   const summaries = page.locator("[data-work-summary]");
   await expect(summaries).toHaveCount(2);
   const trigger = summaries.last().locator('[data-work-service="cxz_tasks"]');
+  await expect(trigger).toHaveText("015");
+  await expect(trigger).toHaveAccessibleName("Created tasks: 15");
+  await expect(
+    summaries.first().locator('[data-work-service="cxz_tasks"]'),
+  ).toBeDisabled();
+  await expect(
+    summaries.last().locator('[data-work-service="cxz_memory"]'),
+  ).toBeDisabled();
   const before = (await trigger.boundingBox())!;
   await trigger.click();
   const dialog = page.getByRole("dialog", dialogName);
@@ -28,6 +36,9 @@ test("WorkSummary opens created Tasks above the trigger without shifting the con
   expect(box.y + box.height).toBeLessThanOrEqual(before.y);
   expect(Math.abs((await trigger.boundingBox())!.y - before.y)).toBeLessThan(1);
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(trigger).not.toBeFocused();
+  await expect(trigger).toHaveCSS("outline-style", "solid");
+  await expect(trigger).toHaveCSS("outline-width", "2px");
   const viewport = dialog.locator(".panel-scroll-content");
   await viewport.evaluate((node) => {
     node.scrollTop = node.scrollHeight;
@@ -37,10 +48,7 @@ test("WorkSummary opens created Tasks above the trigger without shifting the con
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
 
-  await summaries.first().locator('[data-work-service="cxz_tasks"]').click();
-  await expect(page.getByRole("dialog", dialogName)).toContainText(
-    "No Tasks were created in this range.",
-  );
+  await trigger.click();
   await page.locator("textarea").click();
   await expect(page.getByRole("dialog", dialogName)).toHaveCount(0);
 
@@ -76,33 +84,66 @@ test("narrow viewport keeps the created Tasks popup inside the screen", async ({
   await expect(trigger).toBeFocused();
 });
 
-test("created Tasks has loading, empty and failure states", async ({
+test("zero Task counts stay disabled while loading and after read-only calls", async ({
   page,
 }) => {
   await page.goto(story("loading-tasks"));
-  await page.locator('[data-work-service="cxz_tasks"]').last().click();
+  const trigger = page.locator('[data-work-service="cxz_tasks"]').last();
+  await expect(trigger).toHaveAttribute("aria-busy", "true");
+  await expect(trigger).toHaveText("000");
+  await expect(trigger).toBeDisabled();
+  const before = (await trigger.boundingBox())!;
+  await expect(trigger).toHaveText("015");
+  await expect(trigger).toBeEnabled();
+  const after = (await trigger.boundingBox())!;
+  expect(after.width).toBe(before.width);
+  expect(after.height).toBe(before.height);
+  await page.goto(story("no-created-tasks"));
+  for (const button of await page
+    .locator('[data-work-service="cxz_tasks"]')
+    .all()) {
+    await expect(button).toHaveText("000");
+    await expect(button).toBeDisabled();
+  }
+  await expect(page.getByRole("dialog", dialogName)).toHaveCount(0);
+});
+
+test("cached Task counts and open lists update together and preserve trigger styling", async ({
+  page,
+}) => {
+  await page.goto(story("refreshing-tasks"));
+  const trigger = page.locator('[data-work-service="cxz_tasks"]').last();
+  await expect(trigger).toHaveText("001");
+  await trigger.click();
   const dialog = page.getByRole("dialog", dialogName);
   await expect(dialog.getByRole("status")).toHaveText("Loading…");
+  await expect(dialog.getByRole("link")).toHaveCount(1);
   const loading = (await dialog.boundingBox())!;
   await expect(dialog.getByRole("link")).toHaveCount(15);
+  await expect(trigger).toHaveText("015");
   expect((await dialog.boundingBox())!.height).toBe(loading.height);
+  await expect(trigger).toHaveCSS("outline-style", "solid");
   await page.keyboard.press("Escape");
   await page.locator('[data-work-service="cxz_tasks"]').last().click();
   await expect(dialog.getByRole("link")).toHaveCount(15);
   await expect(dialog.getByRole("status")).toHaveCount(0);
+});
 
-  await page.goto(story("no-created-tasks"));
-  await page.locator('[data-work-service="cxz_tasks"]').last().click();
-  await expect(page.getByRole("dialog", dialogName)).toContainText(
-    "No Tasks were created in this range.",
-  );
-
+test("cached Tasks remain accessible after a refresh fails", async ({
+  page,
+}) => {
   await page.goto(story("unavailable-tasks"));
-  await page.locator('[data-work-service="cxz_tasks"]').last().click();
+  const trigger = page.locator('[data-work-service="cxz_tasks"]').last();
+  await expect(trigger).toHaveText("001");
+  await trigger.click();
+  await expect(
+    page.getByRole("dialog", dialogName).getByRole("link"),
+  ).toHaveCount(1);
   await expect(
     page.getByRole("dialog", dialogName).getByRole("alert"),
   ).toContainText("Update the Manager and project runtime");
   await expect(
     page.getByRole("dialog", dialogName).getByRole("button", { name: "Retry" }),
   ).toBeVisible();
+  await expect(trigger).toHaveCSS("outline-style", "solid");
 });

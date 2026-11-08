@@ -1,6 +1,13 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { eventListSource } from "#src/features/session/model/event-source.ts";
-import { useCallback, useId, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Button,
   CompactNumber,
@@ -11,6 +18,11 @@ import {
 } from "@lesomnus/nox";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { WorkGroup } from "#src/features/session/model/work-groups.ts";
+import type { Task } from "#gen/cxz/task_pb";
+import type {
+  WorkTaskSource,
+  WorkTaskState,
+} from "#src/features/session/model/work-tasks.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { CategoryIcon } from "#src/shared/components/category-icon.tsx";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
@@ -20,10 +32,7 @@ import { VirtualMessages } from "./virtual-messages";
 import { ActivityWorkContext } from "./activity-card";
 import styles from "./work-dialog.module.css";
 import type { WorkHistory } from "./transcript";
-import {
-  CreatedTasksDialog,
-  type WorkTaskSource,
-} from "./created-tasks-dialog";
+import { CreatedTasksDialog } from "./created-tasks-dialog";
 
 function ServiceCount({
   service,
@@ -36,9 +45,14 @@ function ServiceCount({
   partial: boolean;
 } & Pick<
   ButtonProps,
-  "onClick" | "aria-expanded" | "aria-controls" | "aria-haspopup"
+  | "onClick"
+  | "aria-expanded"
+  | "aria-controls"
+  | "aria-haspopup"
+  | "aria-busy"
+  | "title"
 >) {
-  const label = t(service === "cxz_memory" ? "Memory calls" : "Task calls");
+  const label = t(service === "cxz_memory" ? "Memory calls" : "Created tasks");
   return (
     <Button
       {...props}
@@ -47,6 +61,7 @@ function ServiceCount({
       aria-label={`${label}: ${count}${partial ? "+" : ""}`}
       data-work-service={service}
       data-empty={count === 0 || undefined}
+      disabled={count === 0}
     >
       <span aria-hidden="true">
         <ResourceIcon kind={service === "cxz_memory" ? "memory" : "tasks"} />
@@ -62,12 +77,16 @@ function ServiceCount({
 export function WorkSummary({
   group,
   taskSource,
+  tasks,
+  taskState,
   expanded,
   open,
   partial = false,
 }: {
   group: WorkGroup;
   taskSource?: WorkTaskSource;
+  tasks: Task[];
+  taskState: WorkTaskState;
   expanded: boolean;
   open: (trigger: HTMLButtonElement) => void;
   partial?: boolean;
@@ -84,6 +103,9 @@ export function WorkSummary({
     setTaskTrigger(null);
     if (restoreFocus) taskTriggerRef.current?.focus({ preventScroll: true });
   }, []);
+  useEffect(() => {
+    if (!tasks.length) closeTasks();
+  }, [tasks.length, closeTasks]);
   const countLabel = t(
     partial
       ? "{count}+ tasks performed"
@@ -102,6 +124,7 @@ export function WorkSummary({
           aria-expanded={expanded}
           aria-controls={expanded ? "work-dialog" : undefined}
           data-empty={count === 0 || undefined}
+          disabled={count === 0}
           onClick={(event) => open(event.currentTarget)}
         >
           <CategoryIcon />
@@ -117,8 +140,10 @@ export function WorkSummary({
         />
         <ServiceCount
           service="cxz_tasks"
-          count={services.cxz_tasks}
+          count={tasks.length}
           partial={partial}
+          aria-busy={taskState.loading || undefined}
+          title={taskState.error || undefined}
           aria-haspopup="dialog"
           aria-expanded={!!taskTrigger}
           aria-controls={taskTrigger ? tasksId : undefined}
@@ -135,12 +160,13 @@ export function WorkSummary({
           label={t("Response elapsed time")}
         />
       )}
-      {taskTrigger && (
+      {taskTrigger && tasks.length > 0 && taskSource && (
         <CreatedTasksDialog
           id={tasksId}
           anchor={taskTrigger}
-          source={taskSource}
-          group={group}
+          project={taskSource.project}
+          tasks={tasks}
+          state={taskState}
           partial={partial}
           close={closeTasks}
         />

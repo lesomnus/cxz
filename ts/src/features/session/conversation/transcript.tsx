@@ -30,7 +30,12 @@ import {
   selectedWorkGroup,
 } from "#src/features/session/model/work-groups.ts";
 import { WorkDialog, WorkSummary } from "./work-dialog";
-import type { WorkTaskSource } from "./created-tasks-dialog";
+import {
+  useWorkTasks,
+  type WorkTaskSource,
+} from "#src/features/session/model/work-tasks.ts";
+import { createdTasksByWorkGroup } from "#src/features/session/model/created-work-tasks.ts";
+import type { Task } from "#gen/cxz/task_pb";
 import { ScrollMarkers, type ScrollTick } from "./scroll-markers";
 import { useScrollThumb } from "./use-scroll-thumb";
 import {
@@ -59,6 +64,7 @@ const empty: Geometry = {
   range: { start: 0, span: 0 },
   markers: [],
 };
+const noTasks: Task[] = [];
 function thumbPosition(view: Geometry) {
   return view.range.span
     ? clamp((view.mappedTop - view.range.start) / view.range.span, 0, 1) *
@@ -133,6 +139,23 @@ export function Transcript({
   const events = source();
   useLocale();
   const work = React.useMemo(() => workGroups(events), [events]);
+  const catalogSource = React.useMemo(
+    () =>
+      [...work.groups.values()].some((group) => group.services.cxz_tasks > 0)
+        ? taskSource
+        : undefined,
+    [work, taskSource],
+  );
+  const taskState = useWorkTasks(catalogSource);
+  const createdTasks = React.useMemo(
+    () =>
+      createdTasksByWorkGroup(
+        taskState.tasks,
+        taskSource?.session ?? "",
+        work.groups.values(),
+      ),
+    [taskState.tasks, taskSource?.session, work],
+  );
   const [selectedWork, selectWork] = useState<SessionEvent>();
   const [workClosing, setWorkClosing] = useState(false);
   const restoreWorkFocus = useRef(true);
@@ -149,6 +172,8 @@ export function Transcript({
         <WorkSummary
           group={group}
           taskSource={taskSource}
+          tasks={createdTasks.get(group.id) ?? noTasks}
+          taskState={taskState}
           expanded={activeWork === group && !workClosing}
           partial={!group.hasBoundary && !!workHistory?.hasOlder}
           open={(trigger) => {
@@ -170,6 +195,8 @@ export function Transcript({
       workClosing,
       workHistory?.hasOlder,
       taskSource,
+      taskState,
+      createdTasks,
       closeWork,
       render,
     ],
