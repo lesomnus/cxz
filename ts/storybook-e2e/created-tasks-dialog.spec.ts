@@ -4,6 +4,57 @@ const story = (name = "created-tasks") =>
   `/iframe.html?id=conversation-worksummary--${name}&viewMode=story`;
 const dialogName = { name: "Created tasks", exact: true };
 
+test("compact popup headings preserve equal close-button insets and concentric corners", async ({
+  page,
+}) => {
+  for (const [width, radius] of [
+    [1440, 6],
+    [360, 12],
+  ]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(story());
+    const trigger = page.locator('[data-work-service="cxz_tasks"]').last();
+    await expect(trigger).toBeEnabled();
+    await trigger.evaluate((node, radius) => {
+      node.style.borderRadius = `${radius}px`;
+    }, radius);
+    await trigger.click();
+    const dialog = page.getByRole("dialog", dialogName);
+    await expect(dialog).toBeVisible();
+    await expect
+      .poll(async () =>
+        dialog.evaluate((surface) => {
+          const button = surface.querySelector<HTMLElement>("header button")!;
+          const body = surface.querySelector<HTMLElement>(
+            ".panel-scroll-region",
+          )!;
+          const frame = surface.getBoundingClientRect();
+          const control = button.getBoundingClientRect();
+          const outer = getComputedStyle(surface);
+          const inner = getComputedStyle(button);
+          const top =
+            control.top - frame.top - parseFloat(outer.borderTopWidth);
+          const right =
+            frame.right - control.right - parseFloat(outer.borderRightWidth);
+          const bottom = body.getBoundingClientRect().top - control.bottom;
+          const outerRadius = parseFloat(outer.borderTopRightRadius);
+          const innerRadius = parseFloat(inner.borderTopRightRadius);
+          return Math.max(
+            Math.abs(top - right),
+            Math.abs(top - bottom),
+            Math.abs(frame.right - outerRadius - (control.right - innerRadius)),
+            Math.abs(frame.top + outerRadius - (control.top + innerRadius)),
+          );
+        }),
+      )
+      .toBeLessThan(0.05);
+    await expect(
+      dialog.getByRole("button", { name: "Close", exact: true }),
+    ).toHaveCSS("border-top-right-radius", `${radius}px`);
+    await page.keyboard.press("Escape");
+  }
+});
+
 test("WorkSummary opens created Tasks above the trigger without shifting the conversation", async ({
   page,
 }) => {

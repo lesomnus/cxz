@@ -11,14 +11,6 @@
   min-width: 0;
   min-height: 0;
 }
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--ui-space);
-  padding: var(--ui-space) calc(2 * var(--ui-space));
-  font-size: 0.75rem;
-}
 .scroll {
   flex: 1;
   min-height: 0;

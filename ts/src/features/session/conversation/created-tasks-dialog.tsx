@@ -7,6 +7,7 @@ import type { WorkTaskState } from "#src/features/session/model/work-tasks.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
 import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
+import { MenuHeader } from "#src/shared/components/menu-header.tsx";
 import { taskLocation } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -145,14 +146,17 @@ export function CreatedTasksDialog({
         className={styles.content}
         contentClassName={styles.content}
       >
-        <header className={styles.header}>
-          <strong>{t("Created tasks")}</strong>
-          <ToolbarIconButton
-            icon="close"
-            label={t("Close")}
-            onClick={() => close(true)}
-          />
-        </header>
+        <MenuHeader
+          actions={
+            <ToolbarIconButton
+              icon="close"
+              label={t("Close")}
+              onClick={() => close(true)}
+            />
+          }
+        >
+          {t("Created tasks")}
+        </MenuHeader>
         <TaskList
           project={project}
           tasks={tasks}

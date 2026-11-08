@@ -89,6 +89,15 @@ Tests stay beside the behavior they verify. Application stories stay beside thei
 
 Global application layout CSS lives under `src/app/styles`; component CSS lives in its UI component folder. Shared native scrollbar styling remains under `src/shared/scroll`. CSS tokens and behavior implementations are the source of truth for design values. Generated protocol files remain under `ts/gen`, and generated UI distribution and Storybook outputs remain excluded from Git.
 
+Custom `MenuSurface` overlays with headings use `MenuHeader` from
+`shared/components/menu-header.tsx`. The surface already owns the outer control
+inset; the header must not add another inset around its action slot. The shared
+header keeps the close action's top, right and adjoining body gaps equal and
+uses MenuSurface's computed inner-corner tokens. Keep extra title spacing on
+the title itself. Validate these geometric relationships in browser checks,
+including with a different outer radius, rather than checking only open/close
+behavior. See [Nox's design guidelines](../ts/packages/nox/docs/design-guidelines.md).
+
 Accounts, Projects, Tasks and Memory share `resource-page.module.css` for their centered
 toolbar/body frames and responsive alignment. Their column width, gap, gutter,
 picker width and toolbar row height come from the resource layout tokens in
