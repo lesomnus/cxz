@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/lesomnus/cxz/internal/accounts"
-	"github.com/lesomnus/cxz/internal/auxiliary"
 	"github.com/lesomnus/cxz/internal/dockerx"
 )
 
@@ -25,18 +24,8 @@ func (m *Manager) EraseAccount(ctx context.Context, alias, agent, backend string
 	if err != nil {
 		return err
 	}
-	config := controller.Config()
-	for _, item := range []struct {
-		kind    string
-		profile auxiliary.Profile
-	}{
-		{"summary", config.Summary}, {"suggestion", config.Suggestion}, {"title", config.Title},
-	} {
-		if item.profile.Account == alias {
-			if _, err := controller.Save(item.kind, auxiliary.Profile{}); err != nil {
-				return err
-			}
-		}
+	if err := controller.ForgetAccount(alias); err != nil {
+		return err
 	}
 	// Save cancels old jobs before waiting for their private execution volume.
 	lock := m.projectLock("auxiliary:" + alias)
