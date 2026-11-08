@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 const story = "/iframe.html?id=pages-sessions--default&viewMode=story";
 const table = (page: import("@playwright/test").Page) =>
@@ -70,6 +70,83 @@ for (const width of [390, 1280]) {
     ).toBe(width);
   });
 }
+
+test("inactive session cards share project tones and preserve hover, selection and resume feedback", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const palettes = (row: Locator) =>
+    row.locator("a[data-row-aware]").evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const style = getComputedStyle(node);
+        return { background: style.backgroundColor, color: style.color };
+      }),
+    );
+  const settle = (row: Locator) =>
+    row.evaluate(async (node) => {
+      await Promise.all(
+        node
+          .getAnimations({ subtree: true })
+          .filter((animation) => animation instanceof CSSTransition)
+          .map((animation) => animation.finished.catch(() => {})),
+      );
+    });
+  await page.goto("/iframe.html?id=pages-projects--list-states&viewMode=story");
+  const project = page
+    .getByRole("table", { name: "Projects", exact: true })
+    .locator("tbody tr[data-inactive]")
+    .first();
+  await expect(project).toBeVisible();
+  const reference = (await palettes(project))[0]!;
+
+  await page.goto(story);
+  const rows = table(page).locator("tbody tr");
+  await expect(rows).toHaveCount(10);
+  await expect(rows.locator("[data-session-navigation]")).toHaveCount(10);
+  await expect(table(page).locator("tbody tr[data-inactive]")).toHaveCount(4);
+  const normal = await palettes(rows.first());
+  expect(normal[0]).not.toEqual(reference);
+  for (const index of [2, 4, 7, 9]) {
+    const row = rows.nth(index);
+    await expect(row).toHaveAttribute("data-inactive", "true");
+    expect(await palettes(row)).toEqual([reference, reference, reference]);
+  }
+
+  const stopped = rows.nth(2);
+  await stopped.locator("td").last().hover();
+  await settle(stopped);
+  const hovered = await palettes(stopped);
+  expect(
+    hovered.every((tone) => tone.background !== reference.background),
+  ).toBe(true);
+  const checkbox = stopped.getByRole("checkbox");
+  await checkbox.focus();
+  await checkbox.press("Space");
+  await expect(stopped).toHaveAttribute("data-selected", "true");
+  await expect
+    .poll(async () =>
+      (await palettes(stopped)).every(
+        (tone, index) => tone.background !== hovered[index]!.background,
+      ),
+    )
+    .toBe(true);
+  await checkbox.press("Space");
+  await expect.poll(() => palettes(stopped)).toEqual(hovered);
+  await stopped.locator("[data-session-navigation]").hover();
+  await expect
+    .poll(async () => (await palettes(stopped))[1]!.background)
+    .not.toBe(hovered[1]!.background);
+
+  await stopped.getByRole("button", { name: /Controls for/ }).click();
+  await page.getByRole("menuitem", { name: "Resume", exact: true }).click();
+  await expect(stopped).not.toHaveAttribute("data-inactive", "true");
+  await expect(
+    stopped.getByRole("img", { name: "Idle", exact: true }),
+  ).toBeVisible();
+  await page.mouse.move(0, 0);
+  await settle(stopped);
+  expect(await palettes(stopped)).toEqual(normal);
+});
 
 test("session navigation panel slides in with its reserved space and reverses on Back", async ({
   page,

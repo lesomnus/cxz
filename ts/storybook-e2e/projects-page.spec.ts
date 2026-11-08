@@ -828,6 +828,11 @@ test("session states use the same status icons as account sessions", async ({
     "Unknown",
     "Working",
   ]);
+  expect(
+    await rows.evaluateAll((nodes) =>
+      nodes.map((node) => node.hasAttribute("data-inactive")),
+    ),
+  ).toEqual([false, false, false, true, true, true, false, false, false]);
 });
 
 test("dashboard scopes project usage and places sessions below Info", async ({

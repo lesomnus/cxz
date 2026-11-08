@@ -91,14 +91,6 @@
   color: var(--ui-muted);
   text-align: center;
 }
-.table tbody tr[data-inactive] :is(.projectLink, [data-session-navigation]) {
-  --button-background: var(--ui-shade-17);
-  --ui-table-button-row-hover-lift: 12;
-  --ui-table-button-selected-lift: 12;
-  --ui-table-button-hover-lift: 33;
-  --ui-muted: var(--ui-shade-140);
-  color: var(--ui-shade-181);
-}
 .table .empty {
   color: var(--ui-muted);
   padding: var(--ui-dialog-padding);

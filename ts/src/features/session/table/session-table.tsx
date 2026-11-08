@@ -33,6 +33,7 @@ import {
   validateSessionField,
 } from "#src/features/session/model/session-edit.ts";
 import { useSessionControls } from "./use-session-controls";
+import { resumableStates } from "#src/features/session/model/session-actions.ts";
 import {
   SessionTableMenu,
   SessionTableConfirmation,
@@ -263,7 +264,14 @@ export function SessionTable({
                 </TableCell>
               );
               return (
-                <TableRow key={s.runtimeId} selected={checked}>
+                <TableRow
+                  key={s.runtimeId}
+                  className={resourceTableStyles.row}
+                  selected={checked}
+                  data-inactive={
+                    resumableStates.has(s.status?.state ?? "") || undefined
+                  }
+                >
                   <TableCell className={styles.selectionCell}>
                     <Checkbox
                       className={styles.cellCheckbox}

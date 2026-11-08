@@ -122,6 +122,7 @@ export function ProjectTable({
           return (
             <TableRow
               key={key(project.id)}
+              className={resourceTableStyles.row}
               selected={selected.has(key(project.id))}
               data-inactive={inactive || undefined}
             >
