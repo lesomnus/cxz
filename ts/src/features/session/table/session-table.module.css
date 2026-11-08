@@ -78,9 +78,8 @@
 }
 .overview {
   --session-row-height: var(--resource-table-control-size);
-  --session-account-column-width: calc(
-    var(--resource-table-button-width) + 2 * var(--ui-control-inset)
-  );
+  --session-account-column-width: var(--resource-table-link-column-width);
+  --session-project-column-width: var(--resource-table-link-column-width);
   --session-table-min-width: calc(
     var(--resource-table-selection-width) + var(--resource-table-state-width) +
       2 * var(--session-account-column-width) + var(--session-row-height) +

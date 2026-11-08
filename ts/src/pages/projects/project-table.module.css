@@ -11,7 +11,7 @@
   width: var(--resource-table-state-width);
 }
 .nameColumn {
-  width: calc(var(--resource-table-button-width) + 2 * var(--ui-control-inset));
+  width: var(--resource-table-link-column-width);
 }
 .actionSlot {
   width: calc(var(--ui-table-row-height) - 2 * var(--ui-control-inset));

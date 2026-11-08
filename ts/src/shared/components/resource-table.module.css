@@ -2,6 +2,9 @@
   --resource-table-selection-width: 44px;
   --resource-table-state-width: 32px;
   --resource-table-button-width: 90px;
+  --resource-table-link-column-width: calc(
+    var(--resource-table-button-width) + 2 * var(--ui-control-inset)
+  );
   --resource-table-control-size: 44px;
 }
 

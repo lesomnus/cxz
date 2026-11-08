@@ -23,6 +23,22 @@ for (const width of [390, 1280]) {
     ).toHaveCount(1);
     await expect(cells.nth(4).locator('a[href*="/account/"]')).toHaveCount(1);
     await expect(cells.nth(4).locator(".agent-brand")).toHaveCount(0);
+    const geometry = await firstRow.evaluate((row) => {
+      const identities = [...row.querySelectorAll("td")].slice(2, 5);
+      return identities.map((cell) => {
+        const column = cell.getBoundingClientRect();
+        const button = cell.querySelector("a")!.getBoundingClientRect();
+        return {
+          columnWidth: column.width,
+          buttonWidth: button.width,
+          leftInset: button.left - column.left,
+          rightInset: column.right - button.right,
+        };
+      });
+    });
+    expect(geometry[0]).toEqual(geometry[1]);
+    expect(geometry[1]).toEqual(geometry[2]);
+    expect(geometry[0]!.leftInset).toBe(geometry[0]!.rightInset);
     await expect(
       page.getByRole("complementary", { name: "Session list", exact: true }),
     ).toHaveCount(0);
