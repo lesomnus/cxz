@@ -24,7 +24,8 @@ for (const width of [390, 1280])
     await expect(picker(page)).toContainText("Work");
     await expect(picker(page)).toContainText("work");
     await expect(picker(page)).toContainText("64");
-    await expect(picker(page).locator("time")).toHaveAttribute(
+    await expect(picker(page).locator("small time")).toHaveText("in 2 hours");
+    await expect(picker(page).locator("small time")).toHaveAttribute(
       "datetime",
       "2026-11-08T12:25:00.000Z",
     );

@@ -25,7 +25,17 @@
 .remaining > span {
   display: flex;
   align-items: baseline;
+  justify-content: flex-end;
   gap: var(--ui-control-inset);
+}
+.resetLabel {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space);
+}
+.resetLabel time {
+  color: inherit;
+  white-space: nowrap;
 }
 .remaining [data-level="critical"] {
   color: var(--ui-action-error-color);

@@ -4,7 +4,7 @@ import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
-import { DateTime } from "#src/shared/components/date-time.tsx";
+import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { sessionsForAccount } from "./account-data";
 import { useAccountQuota } from "./use-account-quota";
 import styles from "./account-section-picker.module.css";
@@ -119,7 +119,10 @@ function AccountUsage({
         </span>
       </span>
       <span className={styles.reset}>
-        <small>Resets</small>
+        <small className={styles.resetLabel}>
+          Resets
+          <RelativeTime value={quota.data?.reset} />
+        </small>
         <span
           className={quota.data?.reset === undefined ? styles.empty : undefined}
         >
