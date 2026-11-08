@@ -163,6 +163,14 @@ for (const width of [390, 1200])
     await expect(
       page.getByRole("link", { name: /Keep the search bar consistent/ }),
     ).toBeVisible();
+    for (const name of [/^From \(UTC\):/, /^Until \(UTC, exclusive\):/]) {
+      const date = page.getByRole("button", { name });
+      const text = date.locator(".button-content > span").first();
+      await expect(date).toBeVisible();
+      expect(
+        await text.evaluate((node) => node.scrollWidth <= node.clientWidth),
+      ).toBe(true);
+    }
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBe(width);
