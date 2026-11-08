@@ -226,7 +226,11 @@ export function ConversationSearch({
             )}
           </FindBarControls>
         </FindBar>
-        <div className={styles.filterBar} role="group" aria-label="Search filters">
+        <div
+          className={styles.filterBar}
+          role="group"
+          aria-label="Search filters"
+        >
           <PrefixValueMenu
             prefix={<ResourceIcon kind="projects" />}
             label="Search project"
@@ -251,6 +255,21 @@ export function ConversationSearch({
               setProject(value);
             }}
           />
+          {(project || since || until) && (
+            <Button
+              className={styles.resetFilters}
+              variant="toolbar"
+              type="button"
+              onClick={() => {
+                invalidate();
+                setProject("");
+                setSince("");
+                setUntil("");
+              }}
+            >
+              Reset filters
+            </Button>
+          )}
           <div
             className={styles.dateRange}
             role="group"
@@ -282,20 +301,6 @@ export function ConversationSearch({
               }}
             />
           </div>
-          {(project || since || until) && (
-            <Button
-              variant="toolbar"
-              type="button"
-              onClick={() => {
-                invalidate();
-                setProject("");
-                setSince("");
-                setUntil("");
-              }}
-            >
-              Reset filters
-            </Button>
-          )}
         </div>
       </form>
       {error && <ErrorNotice className={styles.error} error={error} />}
