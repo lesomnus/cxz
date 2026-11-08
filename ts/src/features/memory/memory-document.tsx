@@ -1,6 +1,7 @@
 import { useId } from "react";
 import {
   Button,
+  CompactNumber,
   Form,
   FormField,
   Popover,
@@ -46,7 +47,6 @@ export function MemoryDocument({
   error,
   busy,
   creating,
-  tags,
   actions,
   rename,
   retry,
@@ -67,7 +67,6 @@ export function MemoryDocument({
   error: string;
   busy: boolean;
   creating: boolean;
-  tags: [string, string][];
   actions: MemoryDocumentAction[];
   rename: (value: string) => Promise<void>;
   retry: () => void;
@@ -115,55 +114,10 @@ export function MemoryDocument({
     >
       <Section className={styles.information} aria-label="Memory information">
         <ResourceFields
-          columns={6}
+          columns={4}
           className={styles.fields}
           rows={[
-            { label: "Title", value: title, columnSpan: 3 },
-            {
-              label: "Owner session",
-              value: pending ? (
-                unavailable
-              ) : ownerSession ? (
-                <SessionNavigationButton session={ownerSession} />
-              ) : memory?.ownerSession ? (
-                memory.ownerSession
-              ) : (
-                unavailable
-              ),
-              identifier: !ownerSession,
-            },
-            ["Revision", pending ? unavailable : memory?.revision.toString()],
-            {
-              label: "Memory ID",
-              value: pending
-                ? unavailable
-                : memory && resourceHandle({ id: memory.id }),
-              identifier: true,
-            },
-            {
-              label: "Created",
-              value: pending ? (
-                unavailable
-              ) : (
-                <DateTime value={memory?.dateCreated} showOffset={false} />
-              ),
-              labelDetail: !pending && memory?.dateCreated && (
-                <RelativeTime value={memory.dateCreated} />
-              ),
-              columnSpan: 2,
-            },
-            {
-              label: "Updated",
-              value: pending ? (
-                unavailable
-              ) : (
-                <DateTime value={memory?.dateUpdated} showOffset={false} />
-              ),
-              labelDetail: !pending && memory?.dateUpdated && (
-                <RelativeTime value={memory.dateUpdated} />
-              ),
-              columnSpan: 2,
-            },
+            { label: "Title", value: title, fullWidth: true },
             {
               label: "Project",
               value: project ? (
@@ -177,46 +131,84 @@ export function MemoryDocument({
               ) : (
                 unavailable
               ),
-              columnSpan: 2,
             },
             {
-              label: "Labels",
-              value:
-                !pending && tags.length ? (
-                  <div className={styles.tags}>
-                    {tags.map(([key, value]) => (
-                      <span key={key}>
-                        {key}={value}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  unavailable
-                ),
-              columnSpan: 4,
+              label: "Session",
+              value: pending ? (
+                unavailable
+              ) : ownerSession ? (
+                <SessionNavigationButton session={ownerSession} />
+              ) : (
+                memory?.ownerSession || unavailable
+              ),
+              identifier: !ownerSession,
+            },
+            {
+              label: "Created",
+              value: pending ? (
+                unavailable
+              ) : (
+                <DateTime value={memory?.dateCreated} showOffset={false} />
+              ),
+              labelDetail: !pending && memory?.dateCreated && (
+                <RelativeTime value={memory.dateCreated} />
+              ),
+            },
+            {
+              label: "Updated",
+              value: pending ? (
+                unavailable
+              ) : (
+                <DateTime value={memory?.dateUpdated} showOffset={false} />
+              ),
+              labelDetail: !pending && memory?.dateUpdated && (
+                <RelativeTime value={memory.dateUpdated} />
+              ),
             },
           ]}
         />
       </Section>
-      <SectionGroup
-        className={styles.actions}
-        role="group"
-        aria-label="Memory document actions"
-      >
-        {actions.map((action) => (
-          <Popover key={action.label} content={action.label} placement="top">
-            <Section
-              as="button"
-              type="button"
-              className={`${actionStyles.button} ${action.danger ? actionStyles.danger : ""}`}
-              aria-label={action.label}
-              disabled={action.disabled}
-              onClick={action.run}
-            >
-              <Icon name={action.icon} />
-            </Section>
-          </Popover>
-        ))}
+      <SectionGroup className={styles.side}>
+        <SectionGroup
+          className={styles.actions}
+          role="group"
+          aria-label="Memory document actions"
+        >
+          {actions.map((action) => (
+            <Popover key={action.label} content={action.label} placement="top">
+              <Section
+                as="button"
+                type="button"
+                className={`${actionStyles.button} ${action.danger ? actionStyles.danger : ""}`}
+                aria-label={action.label}
+                disabled={action.disabled}
+                onClick={action.run}
+              >
+                <Icon name={action.icon} />
+              </Section>
+            </Popover>
+          ))}
+        </SectionGroup>
+        <Section className={styles.revision} aria-label="Memory revision">
+          <ResourceFields
+            columns={1}
+            rows={[
+              [
+                "Revision",
+                pending || !memory ? (
+                  unavailable
+                ) : (
+                  <CompactNumber
+                    value={Number(memory.revision)}
+                    mode="integer"
+                    digits={3}
+                    label={`Revision ${memory.revision}`}
+                  />
+                ),
+              ],
+            ]}
+          />
+        </Section>
       </SectionGroup>
       <Section className={styles.bodySection} aria-label="Memory content">
         {loading ? (

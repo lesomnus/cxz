@@ -392,7 +392,6 @@ export function MemoryLibrary({
           run: remove,
         },
       ];
-  const tags = picked ? Object.entries(visibleLabels(picked.labels)) : [];
   return (
     <div className={styles.content}>
       {(error || list.error || text.error) && (
@@ -686,7 +685,6 @@ export function MemoryLibrary({
               error={text.error}
               busy={busy}
               creating={creating}
-              tags={tags}
               actions={documentActions}
               rename={renameMemory}
               retry={text.reload}

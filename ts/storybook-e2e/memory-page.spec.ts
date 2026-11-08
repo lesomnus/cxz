@@ -210,10 +210,11 @@ test("the inline title refreshes the card without changing its body or revision"
     doc(page)
       .locator("dl > div")
       .filter({ has: page.locator("dt", { hasText: /^Revision$/ }) })
-      .locator("dd"),
-  ).toHaveText("1");
+      .locator("dd")
+      .getByRole("img", { name: "Revision 1", exact: true }),
+  ).toBeVisible();
   await expect(doc(page)).toContainText("Keep UI decisions together.");
-  await expect(doc(page)).toContainText("topic=design");
+  await expect(doc(page)).not.toContainText("topic=design");
   await back(page);
   await expect(
     card(page, "Renamed notes").getByRole("img", {
@@ -267,24 +268,26 @@ for (const width of [390, 1280])
     });
     await expect(title.locator("h2")).toHaveCSS("font-size", "16px");
     await expect(title.locator("h2 svg")).toHaveCount(0);
-    for (const label of [
-      "Title",
-      "Owner session",
-      "Revision",
-      "Memory ID",
-      "Created",
-      "Updated",
-      "Project",
-      "Labels",
-    ])
+    for (const label of ["Title", "Project", "Session", "Created", "Updated"])
       await expect(
         title.locator("dt").filter({ hasText: new RegExp(`^${label}`) }),
       ).toBeVisible();
+    for (const label of ["Owner session", "Memory ID", "Labels", "Revision"])
+      await expect(
+        title.locator("dt").filter({ hasText: new RegExp(`^${label}$`) }),
+      ).toHaveCount(0);
     await expect(
       title.getByRole("link", { name: /Design decisions/ }),
     ).toBeVisible();
     await expect(
       title.getByRole("link", { name: /Web workspace/ }),
+    ).toBeVisible();
+    const revision = doc(page).getByRole("region", {
+      name: "Memory revision",
+      exact: true,
+    });
+    await expect(
+      revision.getByRole("img", { name: "Revision 1", exact: true }),
     ).toBeVisible();
     if (width === 1280) {
       expect(
@@ -294,25 +297,42 @@ for (const width of [390, 1280])
             (node) =>
               getComputedStyle(node).gridTemplateColumns.split(" ").length,
           ),
-      ).toBe(6);
+      ).toBe(4);
       await expect(title.locator("dl > div").first()).toHaveCSS(
         "grid-column",
-        "span 3",
+        "1 / -1",
       );
-      const firstRow = await title.locator("dl > div").evaluateAll((nodes) => {
-        const top = nodes[0].getBoundingClientRect().top;
-        return nodes
-          .filter(
-            (node) => Math.abs(node.getBoundingClientRect().top - top) < 1,
-          )
-          .map((node) => node.querySelector("dt")?.textContent?.trim());
-      });
-      expect(firstRow).toEqual([
-        "Title",
-        "Owner session",
-        "Revision",
-        "Memory ID",
-      ]);
+      const fields = await title.locator("dl > div").evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          label: node.querySelector("dt")?.textContent?.trim(),
+          y: node.getBoundingClientRect().top,
+          width: node.getBoundingClientRect().width,
+        })),
+      );
+      expect(
+        fields
+          .filter((field) => Math.abs(field.y - fields[0].y) < 1)
+          .map((field) => field.label),
+      ).toEqual(["Title"]);
+      expect(
+        fields.slice(1).every((field) => Math.abs(field.y - fields[1].y) < 1),
+      ).toBe(true);
+      expect(
+        fields
+          .slice(1)
+          .map((field) =>
+            field.label?.replace(/(?:now|ago|Just).*$/, "").trim(),
+          ),
+      ).toEqual(["Project", "Session", "Created", "Updated"]);
+      expect(fields[1].width).toBeCloseTo(fields[2].width, 0);
+      expect(fields[3].width).toBeCloseTo(fields[4].width, 0);
+      expect(fields[3].width).toBeCloseTo(fields[1].width * 2, 0);
+      const infoBox = (await title.boundingBox())!,
+        revisionBox = (await revision.boundingBox())!;
+      expect(revisionBox.y + revisionBox.height).toBeCloseTo(
+        infoBox.y + infoBox.height,
+        0,
+      );
     }
     const actions = doc(page).getByRole("group", {
       name: "Memory document actions",
@@ -438,8 +458,9 @@ test("copy creation stays in the editor until saved, then appears in the grid", 
     doc(page)
       .locator("dl > div")
       .filter({ has: page.locator("dt", { hasText: /^Revision$/ }) })
-      .locator("dd"),
-  ).toHaveText("1");
+      .locator("dd")
+      .getByRole("img", { name: "Revision 1", exact: true }),
+  ).toBeVisible();
   await expect(doc(page)).toContainText("New document content.");
   await back(page);
   await expect(card(page, "Copied architecture")).toBeVisible();

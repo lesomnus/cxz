@@ -46,9 +46,10 @@ from a document preserves the selected filter. Changing it while editing guards
 unsaved copied-document changes. Selecting an editing session is unnecessary.
 The detail page groups an Account-style information section, project-style
 Copy/Reload/Delete action panels and a Markdown preview section. Information uses
-the shared ResourceFields label/value layout: six columns with three for the title,
-plus owner session, revision, ID, created/updated timestamps, project and labels.
-Narrow layouts reduce the column count. Clicking the larger title opens the shared
+the shared ResourceFields label/value layout: a title-only first row, then Project,
+Session, Created and Updated in a weighted metadata row. Other metadata is omitted.
+A current-revision section fills the space beneath the action buttons, aligned
+with the information panel’s bottom. Narrow layouts stack these regions. Clicking the larger title opens the shared
 inline value editor; confirming patches only the name under its observed version,
 preserving the body, revision and labels. Existing document bodies remain preview
 only. Copy opens a new draft with source, labels and owner controls and Save/Cancel
