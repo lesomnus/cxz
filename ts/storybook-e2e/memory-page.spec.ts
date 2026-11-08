@@ -425,6 +425,7 @@ for (const width of [390, 1280])
     const content = trigger.locator(":scope > .button-content");
     const resting = (await content.boundingBox())!;
     const button = (await trigger.boundingBox())!;
+    const value = (await trigger.locator(".meta-value").boundingBox())!;
     const pressScale = await content.evaluate(
       (node) =>
         Number(getComputedStyle(node).getPropertyValue("--press-scale")) ||
@@ -446,6 +447,21 @@ for (const width of [390, 1280])
     );
     await page.mouse.up();
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    const currentValue = page.locator(
+      ".setting-menu .setting-current .meta-value",
+    );
+    await expect
+      .poll(async () => {
+        const current = await currentValue.boundingBox();
+        return current
+          ? Math.max(
+              ...(["x", "y", "width", "height"] as const).map((coordinate) =>
+                Math.abs(current[coordinate] - value[coordinate]),
+              ),
+            )
+          : Infinity;
+      })
+      .toBeLessThan(0.5);
     await page.keyboard.press("Escape");
   });
 
