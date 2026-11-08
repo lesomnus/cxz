@@ -1,6 +1,6 @@
 .menu {
   display: flex;
-  width: var(--ui-action-menu-width);
+  width: calc(80 * var(--ui-space));
   max-width: calc(100vw - 4 * var(--ui-space));
   max-height: 50dvh;
   visibility: hidden;

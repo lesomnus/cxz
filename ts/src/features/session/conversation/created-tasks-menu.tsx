@@ -11,6 +11,7 @@ import { key } from "@lesomnus/payday/store";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Task } from "#gen/cxz/task_pb";
 import type { WorkTaskState } from "#src/features/session/model/work-tasks.ts";
+import { TaskPrioritySymbol } from "#src/features/tasks/task-indicators.tsx";
 import { MenuLink } from "#src/shared/navigation/route-link.tsx";
 import { taskLocation } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -38,6 +39,7 @@ function TaskList({
           key={key(task.id)}
           {...taskLocation({ task, project })}
           role="menuitem"
+          icon={<TaskPrioritySymbol priority={task.priority} />}
           title={task.name || task.alias}
           aria-description={task.alias || undefined}
           onClick={close}
