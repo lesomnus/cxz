@@ -148,7 +148,7 @@ export const Document: Story = {
     docs: {
       description: {
         story:
-          "Opens the full Memory detail page directly. The shared information panel places the inline-editable title alone above Project, Session, Created and Updated fields, weighted 1:1:2:2. Narrow layouts stack the fields. Copy, Reload and Delete remain grouped beside the information panel; a current-revision panel fills the space beneath them to the information panel’s lower edge. The Markdown preview follows below. Copy opens a new draft.",
+          "Opens the full Memory detail page directly. The shared information panel places the inline-editable title alone above four equal-width Project, Session, Created and Updated fields. Project and Session omit visible labels. Narrow layouts stack the fields. Copy, Reload and Delete remain grouped beside the information panel; a current-revision panel fills the space beneath them to the information panel’s lower edge. The Markdown preview follows below. Copy opens a new draft.",
       },
     },
   },

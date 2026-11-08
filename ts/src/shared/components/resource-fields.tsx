@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { IdentifierValue } from "./identifier-value";
+import styles from "./resource-fields.module.css";
 import {
   FieldLabel,
   PathValue,
@@ -14,6 +15,7 @@ import {
 
 type ResourceField = {
   label: string;
+  hideLabel?: boolean;
   value: ReactNode;
   description?: string;
   labelDetail?: ReactNode;
@@ -90,6 +92,7 @@ export function ResourceFields({
 
 function Field({
   label,
+  hideLabel,
   value,
   description,
   labelDetail,
@@ -135,7 +138,9 @@ function Field({
           : undefined
       }
     >
-      <DescriptionListTerm>
+      <DescriptionListTerm
+        className={hideLabel ? styles.hiddenLabel : undefined}
+      >
         <FieldLabel label={label} description={description} />
         {labelDetail != null && (
           <DescriptionListAnnotation>{labelDetail}</DescriptionListAnnotation>

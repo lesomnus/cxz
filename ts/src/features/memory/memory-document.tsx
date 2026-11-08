@@ -120,6 +120,7 @@ export function MemoryDocument({
             { label: "Title", value: title, fullWidth: true },
             {
               label: "Project",
+              hideLabel: true,
               value: project ? (
                 <ResourceNavigationButton
                   {...projectLocation(resourceHandle(project))}
@@ -134,6 +135,7 @@ export function MemoryDocument({
             },
             {
               label: "Session",
+              hideLabel: true,
               value: pending ? (
                 unavailable
               ) : ownerSession ? (

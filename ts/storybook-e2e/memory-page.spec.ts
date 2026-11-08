@@ -268,10 +268,14 @@ for (const width of [390, 1280])
     });
     await expect(title.locator("h2")).toHaveCSS("font-size", "16px");
     await expect(title.locator("h2 svg")).toHaveCount(0);
-    for (const label of ["Title", "Project", "Session", "Created", "Updated"])
+    for (const label of ["Title", "Created", "Updated"])
       await expect(
         title.locator("dt").filter({ hasText: new RegExp(`^${label}`) }),
       ).toBeVisible();
+    for (const label of ["Project", "Session"])
+      await expect(
+        title.locator("dt").filter({ hasText: new RegExp(`^${label}$`) }),
+      ).toHaveCSS("clip-path", "inset(50%)");
     for (const label of ["Owner session", "Memory ID", "Labels", "Revision"])
       await expect(
         title.locator("dt").filter({ hasText: new RegExp(`^${label}$`) }),
@@ -326,7 +330,7 @@ for (const width of [390, 1280])
       ).toEqual(["Project", "Session", "Created", "Updated"]);
       expect(fields[1].width).toBeCloseTo(fields[2].width, 0);
       expect(fields[3].width).toBeCloseTo(fields[4].width, 0);
-      expect(fields[3].width).toBeCloseTo(fields[1].width * 2, 0);
+      expect(fields[3].width).toBeCloseTo(fields[1].width, 0);
       const infoBox = (await title.boundingBox())!,
         revisionBox = (await revision.boundingBox())!;
       expect(revisionBox.y + revisionBox.height).toBeCloseTo(
