@@ -28,6 +28,7 @@ import type {
 import type { EditorState } from "#src/features/workspace/editor/workspace-editor.tsx";
 import { ResourceInventory } from "./resource-inventory";
 import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
+import { QuestionDrafts } from "#src/features/session/model/question-drafts.ts";
 import { ConversationCache } from "#src/features/session/model/conversation-cache.ts";
 import { SessionAttention } from "#src/features/session/model/session-attention.ts";
 import { rpcFetch } from "./stream-fetch";
@@ -70,6 +71,7 @@ export class Connection {
   // Original paste bodies stay in this authenticated connection's memory, like drafts.
   readonly pastes = new Map<string, ComposerPaste>();
   readonly drafts;
+  readonly questionDrafts;
   readonly editors = new Map<string, EditorState>();
   readonly inProcess: boolean;
   readonly errors: ClientErrors;
@@ -98,6 +100,7 @@ export class Connection {
       /* Legacy tab-local read state is no longer authoritative. */
     }
     this.drafts = new SessionDrafts(baseUrl, this.pastes);
+    this.questionDrafts = new QuestionDrafts(this.drafts);
     this.transport = this.observe(transport ?? this.httpTransport(rpcFetch));
     this.store = Store.open(entities, {
       name: "cxz",

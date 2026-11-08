@@ -1037,6 +1037,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         allow,
         answersJson,
       });
+      c.questionDrafts.delete(id, e);
       setPending((old) =>
         old.filter((p) => p.requestId !== e.requestId || p.runId !== e.runId),
       );
@@ -1144,6 +1145,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             key={`${e.runId}:${e.requestId}`}
             e={e}
             agent={s?.agent ?? ""}
+            drafts={c.questionDrafts}
+            session={id}
             pastes={c.pastes}
             {...inputFiles}
             busy={busy}

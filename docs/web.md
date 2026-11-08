@@ -118,6 +118,15 @@ immediately. Fixed-width UI text shares the `--ui-font-mono` token, including th
 elapsed timer and background count. Terminal and editor defaults resolve that
 same token, with explicit editor font preferences taking precedence.
 
+Pending Question answers use `Connection.questionDrafts`, backed by the same
+tab-local `SessionDrafts` storage as the composer. Selected options, free-text
+answers, paste/file chips and the active question step survive navigation and
+reload. Records are scoped to the connection, session, agent run and request ID;
+a changed question definition starts a fresh draft. Ready attachment paths are
+restored without another upload. Password-field values are excluded. A successful
+Reply clears that request's draft, including confirmed cancellation; failed
+replies keep it available. Sign-out clears these drafts with the composer drafts.
+
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
 still drive composer indicators, and turn-completion events still supply response
@@ -359,7 +368,7 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 | Search | Indexed server search, project/date/match filters, result paging and event navigation |
 | Shared memory | Project library, revision-checked documents, snapshots, forks, merge, import, rename and trash controls |
 | Conversation | Virtualized paged history, live events, Markdown, highlighted code, model/effort snapshots, response metrics and copy |
-| Drafts | Per-session drafts and paste chips survive navigation and reload in tab-local sessionStorage |
+| Drafts | Composer drafts, pending Question answers/step and paste chips survive navigation and reload in tab-local sessionStorage |
 | Sending | Explicit Send or Ctrl+Enter; mutation IDs; no automatic replay after ambiguous failure |
 | Session control | Interrupt, stop/resume, restart, fork with inherited account/settings/history, permanent erasure with confirmation; queued-message cancel/recall |
 | Approval | Allow/deny and full tool input/output/approval inspection |

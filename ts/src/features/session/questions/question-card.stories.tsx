@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
+import { QuestionDrafts } from "#src/features/session/model/question-drafts.ts";
+import { SessionDrafts } from "#src/features/session/model/session-drafts.ts";
 import { useVisibleApprovals } from "#src/features/session/model/use-visible-approvals.ts";
 import {
   isQuestionEvent,
@@ -28,16 +30,36 @@ function QuestionPreview({
   uploadMode,
   secretFailure = false,
   uploadDelay = 1000,
+  persist = false,
+  sessionId = "storybook-session",
+  requestId = "question-1",
+  failReply = false,
 }: {
   busy?: boolean;
   example?: QuestionExample;
   uploadMode?: "ready" | "retry";
   secretFailure?: boolean;
   uploadDelay?: number;
+  persist?: boolean;
+  sessionId?: string;
+  requestId?: string;
+  failReply?: boolean;
 }) {
   const [answer, setAnswer] = useState<string>();
   const [draft, setDraft] = useState("");
   const pastes = useRef(previewPastes());
+  const [questionDrafts] = useState(
+    () =>
+      new QuestionDrafts(
+        new SessionDrafts(
+          `storybook-question-answers:${example}`,
+          pastes.current,
+        ),
+      ),
+  );
+  const [replyError, setReplyError] = useState("");
+  const question = questionEvent(example);
+  question.requestId = requestId;
   const [uploads, setUploads] = useState(0);
   const [writes, setWrites] = useState(0);
   const [deletes, setDeletes] = useState(0);
@@ -72,6 +94,7 @@ function QuestionPreview({
           : toolEvents()
       }
     >
+      {replyError && <p role="alert">{replyError}</p>}
       {uploadMode && (
         <div aria-label="Upload activity">
           <output aria-label="File uploads">{uploads}</output>
@@ -81,7 +104,9 @@ function QuestionPreview({
       )}
       {answer === undefined ? (
         <QuestionCard
-          e={questionEvent(example)}
+          e={question}
+          drafts={persist ? questionDrafts : undefined}
+          session={sessionId}
           agent={example === "previews" ? "claude" : "codex"}
           pastes={pastes.current}
           upload={
@@ -131,9 +156,14 @@ function QuestionPreview({
               : undefined
           }
           busy={busy}
-          reply={async (_, allow, answers) =>
-            setAnswer(allow ? answers || "Allowed" : "Denied")
-          }
+          reply={async (event, allow, answers) => {
+            if (failReply) {
+              setReplyError("Reply failed. Your answers are still available.");
+              return;
+            }
+            if (persist) questionDrafts.delete(sessionId, event);
+            setAnswer(allow ? answers || "Allowed" : "Denied");
+          }}
         />
       ) : (
         <div className="floating-card">
@@ -150,7 +180,16 @@ const meta = {
   title: "Conversation/QuestionCard",
   component: QuestionPreview,
   tags: ["autodocs"],
-  args: { busy: false, example: "choice", uploadDelay: 1000 },
+  args: {
+    busy: false,
+    example: "choice",
+    uploadDelay: 1000,
+    persist: false,
+    sessionId: "storybook-session",
+    requestId: "question-1",
+    failReply: false,
+  },
+  argTypes: { sessionId: { control: "text" }, requestId: { control: "text" } },
   parameters: {
     layout: "fullscreen",
     docs: {
@@ -171,6 +210,23 @@ export const MarkdownBody: Story = { args: { example: "markdown" } };
 export const Steps: Story = { args: { example: "steps" } };
 export const AsyncSteps: Story = { args: { example: "async-steps" } };
 export const OptionPreviews: Story = { args: { example: "previews" } };
+export const PersistentAnswers: Story = {
+  args: { example: "steps", persist: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Select answers or type notes, then reload or open a different story and return. Answers and the selected tab are restored from tab-local sessionStorage, scoped to this session and request. Change sessionId/requestId to inspect isolation. Explicit successful Submit or confirmed Cancel clears the saved draft; merely leaving keeps it.",
+      },
+    },
+  },
+};
+export const PersistentAttachments: Story = {
+  args: { example: "free-text", persist: true, uploadMode: "ready" },
+};
+export const FailedSubmission: Story = {
+  args: { example: "free-text", persist: true, failReply: true },
+};
 
 export const Attachments: Story = {
   args: { example: "free-text", uploadMode: "ready" },
