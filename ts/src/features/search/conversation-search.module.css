@@ -17,6 +17,7 @@
   z-index: 1;
 }
 .filterBar {
+  --search-filter-control-background: var(--ui-shade-27);
   position: relative;
   display: flex;
   align-items: center;
@@ -34,10 +35,18 @@
   box-sizing: border-box;
   flex: 0 0 180px;
   width: 180px;
-  min-height: 32px;
+  min-height: 24px;
+  height: 24px;
   min-width: 0;
   max-width: 100%;
   font-size: 12px;
+  border-radius: 6px;
+  background: var(--search-filter-control-background);
+}
+.projectPicker::before {
+  inset: 0;
+  border-radius: inherit;
+  background: var(--ui-button-hover-background);
 }
 .projectPicker > :global(.value-menu) {
   flex: 1;
@@ -58,7 +67,8 @@
   max-width: 100%;
 }
 .datePicker.datePicker {
-  --ui-date-picker-trigger-width: 132px;
+  --ui-date-picker-trigger-width: max-content;
+  background: var(--search-filter-control-background);
   border: 0;
   box-shadow: none;
 }

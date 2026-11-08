@@ -270,6 +270,7 @@ export function ConversationSearch({
             aria-label="Date range (UTC, end exclusive)"
           >
             <DatePicker
+              variant="toolbar"
               label="From (UTC)"
               name="since"
               placeholder="From"
@@ -285,6 +286,7 @@ export function ConversationSearch({
               –
             </span>
             <DatePicker
+              variant="toolbar"
               label="Until (UTC, exclusive)"
               name="until"
               placeholder="Until"
