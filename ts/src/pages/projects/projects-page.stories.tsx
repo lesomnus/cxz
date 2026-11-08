@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { userEvent, within } from "storybook/test";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { clone } from "@bufbuild/protobuf";
 import { ContainerState, ProjectSchema } from "#gen/cxz/project_pb";
@@ -299,6 +300,53 @@ export const LongPaths: Story = { args: { longPaths: true } };
 export const HomePaths: Story = { args: { homePaths: true } };
 export const SessionStates: Story = {
   args: { sessionCount: 9, mixedStates: true },
+};
+async function selectSessionBatch({
+  canvasElement,
+}: {
+  canvasElement: HTMLElement;
+}) {
+  const canvas = within(canvasElement);
+  const table = within(await canvas.findByRole("table", { name: "Sessions" }));
+  for (const checkbox of table.getAllByRole("checkbox").slice(1, 5))
+    await userEvent.click(checkbox);
+  await userEvent.click(
+    canvas.getByRole("button", {
+      name: "Selected session actions",
+    }),
+  );
+}
+
+export const SessionBatchActions: Story = {
+  args: { sessionCount: 6, mixedStates: true },
+  play: selectSessionBatch,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Four sessions start selected with the shared batch menu open. The selection includes waiting, working, idle and stopped sessions. Stop skips sessions already stopped; Resume applies to resumable sessions. Stop, Restart and Erase show the shared confirmation dialog. Change the selection and try each action: all session updates use the in-memory project fixture.",
+      },
+    },
+  },
+};
+export const SessionBatchConfirmation: Story = {
+  args: SessionBatchActions.args,
+  play: async (context) => {
+    await selectSessionBatch(context);
+    await userEvent.click(
+      within(context.canvasElement.ownerDocument.body).getByRole("menuitem", {
+        name: "Stop",
+      }),
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Starts at the Stop confirmation for the same four-session selection. Only the three eligible sessions appear as targets; the stopped session is skipped. Confirm to update those sessions and clear their selection, or cancel to keep the selection and choose another batch action.",
+      },
+    },
+  },
 };
 export const LongSessions: Story = { args: { sessionCount: 16 } };
 export const EmptySessions: Story = { args: { sessionCount: 0 } };
