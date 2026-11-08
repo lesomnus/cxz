@@ -11,6 +11,8 @@ import { createWorkspaceRouter } from "#src/app/router.tsx";
 import { Workspace } from "#src/app/workspace-shell.tsx";
 import { WorkspaceView } from "#src/app/workspace-view.tsx";
 import type { Connection } from "#src/shared/api/connection.ts";
+import { LoginTransportContext } from "#src/features/accounts/login-transport.ts";
+import { PreviewLoginSocket } from "#src/storybook/accounts/account-workflow-fixture.ts";
 
 function Preview({
   loading = false,
@@ -20,6 +22,8 @@ function Preview({
   pendingSave = false,
   quotaRemaining = 64,
   workspace = false,
+  needsLogin = false,
+  mixedProfiles = false,
 }: {
   loading?: boolean;
   noAccounts?: boolean;
@@ -28,17 +32,29 @@ function Preview({
   pendingSave?: boolean;
   quotaRemaining?: number | null;
   workspace?: boolean;
+  needsLogin?: boolean;
+  mixedProfiles?: boolean;
 }) {
-  const [c] = useState(() =>
-    resourceFixture({
+  const [{ c, connect }] = useState(() => {
+    let loginRequired = needsLogin;
+    const c = resourceFixture({
       noAccounts,
       auxiliaryDelayMs: loading ? 60000 : 0,
       auxiliarySaveFailures: saveFailure ? 1 : 0,
       auxiliarySaveDelayMs: pendingSave ? 1000 : 0,
       longAccountDetails: longNames,
       quotaRemaining,
-    }),
-  );
+      auxiliaryNeedsLogin: () => loginRequired,
+      auxiliaryMixedProfiles: mixedProfiles,
+    });
+    return {
+      c,
+      connect: () =>
+        new PreviewLoginSocket("success", () => {
+          loginRequired = false;
+        }),
+    };
+  });
   const sessions = [
     create(SessionSchema, {
       runtimeId: "demo",
@@ -57,11 +73,16 @@ function Preview({
     }),
   ];
   useEffect(() => () => c.dispose(), [c]);
-  if (workspace) return <WorkspacePreview c={c} />;
   return (
-    <div style={{ display: "flex", height: "100dvh" }}>
-      <AuxiliaryPage c={c} sessions={sessions} />
-    </div>
+    <LoginTransportContext.Provider value={connect}>
+      {workspace ? (
+        <WorkspacePreview c={c} />
+      ) : (
+        <div style={{ display: "flex", height: "100dvh" }}>
+          <AuxiliaryPage c={c} sessions={sessions} />
+        </div>
+      )}
+    </LoginTransportContext.Provider>
   );
 }
 
@@ -93,7 +114,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "One shared helper account for Summary, Suggestion and Title. The account selector and its options use Nox Section surfaces, with account identity, retained quota and reset time. Task settings remain independent without surrounding panels.",
+          "One header groups the shared account, model and effort Section selectors with helper authentication status and login. Feature switches remain independent without surrounding panels. The responsive header wraps on narrow screens. Older different model/effort choices show Mixed until explicitly changed. Login is simulated; enter demo-code to finish.",
       },
     },
   },
@@ -107,6 +128,10 @@ export const SaveFailure: Story = { args: { saveFailure: true } };
 export const PendingSave: Story = { args: { pendingSave: true } };
 export const LongNames: Story = { args: { longNames: true } };
 export const UsageNotReported: Story = { args: { quotaRemaining: null } };
+export const LoginRequired: Story = { args: { needsLogin: true } };
+export const MixedConfiguration: Story = {
+  args: { workspace: true, mixedProfiles: true },
+};
 export const InWorkspace: Story = {
   args: { workspace: true },
   parameters: {

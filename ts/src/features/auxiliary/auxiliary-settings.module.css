@@ -1,20 +1,60 @@
 .content {
+  container: auxiliary-settings / inline-size;
   display: grid;
   gap: var(--ui-section-layout-gap);
   min-width: 0;
   width: 100%;
 }
-.accountActions,
-.heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: calc(2 * var(--ui-space));
+.configuration {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 152px 112px 184px;
+  gap: var(--ui-section-group-gap);
+  align-items: start;
+  min-width: 0;
+  font: 12px/1.5 var(--ui-font-mono);
+}
+.account {
   min-width: 0;
 }
-.accountActions {
-  flex-wrap: wrap;
-  margin-top: calc(-2 * var(--ui-space));
+.configuration > :global(.value-menu) {
+  flex: none;
+  width: 100%;
+}
+.selection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ui-control-inset);
+  min-width: 0;
+  text-align: start;
+}
+.selectionName {
+  color: var(--ui-muted);
+  font: 10px/12px var(--ui-font-mono);
+}
+.selectionValue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 12px/18px var(--ui-font-mono);
+}
+.authentication.authentication {
+  grid-template-columns: minmax(0, 1fr) auto;
+  height: calc(32px + 2 * var(--ui-section-padding));
+  gap: calc(2 * var(--ui-space));
+  align-items: center;
+}
+.authenticationState {
+  min-width: 0;
+}
+.authenticationState[data-needs-login] .selectionValue {
+  color: var(--ui-muted);
+}
+.login.login {
+  height: 32px;
+  min-height: 32px;
+  padding-block: 0;
+  padding-inline: calc(2 * var(--ui-space));
+  font-size: 12px;
 }
 .muted {
   margin: 0;
@@ -22,25 +62,26 @@
   font-size: 11px;
 }
 .profile {
-  display: grid;
-  gap: calc(3 * var(--ui-space));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(2 * var(--ui-space));
   min-width: 0;
 }
-.heading h2 {
+.profile h2 {
   margin: 0;
   font-size: 14px;
   font-weight: 500;
 }
-.fields {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: calc(2 * var(--ui-space));
-}
 .save {
   justify-self: end;
 }
-@media (max-width: 440px) {
-  .fields {
-    grid-template-columns: minmax(0, 1fr);
+@container auxiliary-settings (width < 820px) {
+  .configuration {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .account,
+  .authentication.authentication {
+    grid-column: 1 / -1;
   }
 }
