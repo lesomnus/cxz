@@ -1,5 +1,11 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Created tasks": "Created tasks",
+  "No Tasks were created in this range.":
+    "No Tasks were created in this range.",
+  "Task information is unavailable.": "Task information is unavailable.",
+  "Only the loaded conversation range is shown.":
+    "Only the loaded conversation range is shown.",
   Step: "Step",
   Exception: "Exception",
   Line: "Line",

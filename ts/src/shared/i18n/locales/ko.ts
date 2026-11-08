@@ -1,5 +1,10 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Created tasks": "생성된 Task",
+  "No Tasks were created in this range.": "이 구간에 생성된 Task가 없습니다.",
+  "Task information is unavailable.": "Task 정보를 가져올 수 없습니다.",
+  "Only the loaded conversation range is shown.":
+    "불러온 대화 구간만 표시합니다.",
   Step: "단계",
   Exception: "예외 종류",
   Line: "줄",

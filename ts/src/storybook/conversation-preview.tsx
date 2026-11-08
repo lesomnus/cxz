@@ -123,6 +123,7 @@ export function PreviewTranscript({
   reading = noop,
   loadDetails,
   workHistory,
+  taskSource,
 }: {
   events: SessionEvent[];
   agent?: string;
@@ -133,12 +134,14 @@ export function PreviewTranscript({
   reading?: (reading: boolean) => void;
   loadDetails?: LoadEventDetails;
   workHistory?: WorkHistory;
+  taskSource?: import("#src/features/session/conversation/created-tasks-dialog.tsx").WorkTaskSource;
 }) {
   const projected = transcriptRows(events);
   const summaries = attachSummaries(projected.events, aux);
   const [jump, setJump] = useState<string>();
   return (
     <Transcript
+      taskSource={taskSource}
       workHistory={workHistory}
       pane={pane}
       source={eventListSource(projected.events)}
@@ -189,6 +192,7 @@ export function ComponentPreview({
   loadDetails,
   children,
   workHistory,
+  taskSource,
   autoFocus = false,
   initialSelection,
   onSelectionChange,
@@ -212,6 +216,7 @@ export function ComponentPreview({
   loadDetails?: LoadEventDetails;
   children?: ReactNode;
   workHistory?: WorkHistory;
+  taskSource?: import("#src/features/session/conversation/created-tasks-dialog.tsx").WorkTaskSource;
   autoFocus?: boolean;
   initialSelection?: EditorSelection;
   onSelectionChange?: (selection: EditorSelection) => void;
@@ -274,6 +279,7 @@ export function ComponentPreview({
   return (
     <PreviewFrame>
       <PreviewTranscript
+        taskSource={taskSource}
         workHistory={workHistory}
         events={events}
         agent={agent}

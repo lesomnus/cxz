@@ -526,6 +526,18 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     s?.project?.id &&
     projects.find((project) => key(project.id) === key(s.project!.id));
   const projectId = projectUUID(sessionProject) ?? "";
+  const taskProject = sessionProject || s?.project;
+  const taskSource = useMemo(
+    () =>
+      taskProject
+        ? {
+            project: taskProject,
+            session: s?.runtimeId || id,
+            taskCatalog: c.taskCatalog,
+          }
+        : undefined,
+    [taskProject, s?.runtimeId, id, c.taskCatalog],
+  );
   const inputFiles = useMemo(() => {
     const run = s?.status?.runId;
     return {
@@ -1053,6 +1065,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }
       />
       <Transcript
+        taskSource={taskSource}
         searchMatches={searchMatches}
         loading={initialLoad && <ConversationLoading {...initialLoad} />}
         viewportCache={feed.viewport}

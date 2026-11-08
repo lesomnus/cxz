@@ -1,12 +1,13 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { eventListSource } from "#src/features/session/model/event-source.ts";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useCallback, useId, useRef, useState, type ReactNode } from "react";
 import {
   Button,
   CompactNumber,
   ElapsedTime,
   Drawer,
   Card,
+  type ButtonProps,
 } from "@lesomnus/nox";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { WorkGroup } from "#src/features/session/model/work-groups.ts";
@@ -19,19 +20,28 @@ import { VirtualMessages } from "./virtual-messages";
 import { ActivityWorkContext } from "./activity-card";
 import styles from "./work-dialog.module.css";
 import type { WorkHistory } from "./transcript";
+import {
+  CreatedTasksDialog,
+  type WorkTaskSource,
+} from "./created-tasks-dialog";
 
 function ServiceCount({
   service,
   count,
   partial,
+  ...props
 }: {
   service: "cxz_memory" | "cxz_tasks";
   count: number;
   partial: boolean;
-}) {
+} & Pick<
+  ButtonProps,
+  "onClick" | "aria-expanded" | "aria-controls" | "aria-haspopup"
+>) {
   const label = t(service === "cxz_memory" ? "Memory calls" : "Task calls");
   return (
     <Button
+      {...props}
       type="button"
       className={styles.service}
       aria-label={`${label}: ${count}${partial ? "+" : ""}`}
@@ -50,23 +60,30 @@ function ServiceCount({
 }
 
 export function WorkSummary({
-  id,
-  count,
-  services,
-  durationMs,
+  group,
+  taskSource,
   expanded,
   open,
   partial = false,
 }: {
-  id: string;
-  count: number;
-  services: WorkGroup["services"];
-  durationMs?: number;
+  group: WorkGroup;
+  taskSource?: WorkTaskSource;
   expanded: boolean;
   open: (trigger: HTMLButtonElement) => void;
   partial?: boolean;
 }) {
   useLocale();
+  const { id, services, durationMs } = group;
+  const count = group.events.length;
+  const tasksId = useId();
+  const [taskTrigger, setTaskTrigger] = useState<HTMLButtonElement | null>(
+    null,
+  );
+  const taskTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const closeTasks = useCallback((restoreFocus = false) => {
+    setTaskTrigger(null);
+    if (restoreFocus) taskTriggerRef.current?.focus({ preventScroll: true });
+  }, []);
   const countLabel = t(
     partial
       ? "{count}+ tasks performed"
@@ -102,12 +119,30 @@ export function WorkSummary({
           service="cxz_tasks"
           count={services.cxz_tasks}
           partial={partial}
+          aria-haspopup="dialog"
+          aria-expanded={!!taskTrigger}
+          aria-controls={taskTrigger ? tasksId : undefined}
+          onClick={(event) => {
+            const trigger = event.currentTarget;
+            taskTriggerRef.current = trigger;
+            setTaskTrigger((current) => (current ? null : trigger));
+          }}
         />
       </div>
       {durationMs !== undefined && (
         <ElapsedTime
           durationMs={durationMs}
           label={t("Response elapsed time")}
+        />
+      )}
+      {taskTrigger && (
+        <CreatedTasksDialog
+          id={tasksId}
+          anchor={taskTrigger}
+          source={taskSource}
+          group={group}
+          partial={partial}
+          close={closeTasks}
         />
       )}
     </div>

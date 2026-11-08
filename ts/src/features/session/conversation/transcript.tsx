@@ -30,6 +30,7 @@ import {
   selectedWorkGroup,
 } from "#src/features/session/model/work-groups.ts";
 import { WorkDialog, WorkSummary } from "./work-dialog";
+import type { WorkTaskSource } from "./created-tasks-dialog";
 import { ScrollMarkers, type ScrollTick } from "./scroll-markers";
 import { useScrollThumb } from "./use-scroll-thumb";
 import {
@@ -102,6 +103,7 @@ export function Transcript({
   older,
   newer,
   workHistory,
+  taskSource,
   viewportCache,
   searchMatches,
 }: {
@@ -124,6 +126,7 @@ export function Transcript({
   older: () => void;
   newer: () => void;
   workHistory?: WorkHistory;
+  taskSource?: WorkTaskSource;
   viewportCache?: TranscriptViewport;
   searchMatches?: readonly string[];
 }) {
@@ -144,10 +147,8 @@ export function Transcript({
       const group = work.summaries.get(event.seq);
       return group ? (
         <WorkSummary
-          id={group.id}
-          count={group.events.length}
-          services={group.services}
-          durationMs={group.durationMs}
+          group={group}
+          taskSource={taskSource}
           expanded={activeWork === group && !workClosing}
           partial={!group.hasBoundary && !!workHistory?.hasOlder}
           open={(trigger) => {
@@ -163,7 +164,15 @@ export function Transcript({
         render(event)
       );
     },
-    [work, activeWork, workClosing, workHistory?.hasOlder, closeWork, render],
+    [
+      work,
+      activeWork,
+      workClosing,
+      workHistory?.hasOlder,
+      taskSource,
+      closeWork,
+      render,
+    ],
   );
   useEffect(() => {
     if (!workClosing) return;

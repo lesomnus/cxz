@@ -535,6 +535,7 @@ export function taskFixture(
   );
   return {
     c,
+    tasks: rows,
     projects,
     sessions,
     reviews,
