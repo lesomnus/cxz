@@ -132,6 +132,9 @@ composer, keeping it expanded instead of converting it to a chip or uploading
 it as a file. This explicit text paste also bypasses automatic secret-chip
 conversion. Native selection replacement and undo/redo are retained, with the
 existing 1 MiB paste limit. Ordinary paste keeps its automatic chip behavior.
+Ctrl+Backspace removes a chip as one unit, including when the caret follows
+trailing spaces. Ctrl+Z and Ctrl+Shift+Z undo/redo chip insertion and deletion,
+preserving the original pasted contents and ordinary text-editing history.
 
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
