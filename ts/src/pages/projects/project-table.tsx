@@ -16,7 +16,6 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { RelativeTime } from "#src/shared/components/date-time.tsx";
-import { isSessionWorking } from "#src/features/session/components/session-activity.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
   projectLocation,
@@ -137,12 +136,7 @@ export function ProjectTable({
                 />
               </TableCell>
               <TableCell className={styles.state}>
-                <ProjectStateIcon
-                  state={state}
-                  working={
-                    active && isSessionWorking(active) ? active : undefined
-                  }
-                />
+                <ProjectStateIcon state={state} />
               </TableCell>
               <TableCell className={styles.nameCell}>
                 <RouteLink

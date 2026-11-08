@@ -287,12 +287,9 @@ export const iconDefinitions = {
   failed: line([ring, path("M8 4.5V8m0 3h.01")], "0 0 16 16"),
   unknown,
   "state-stopped": stopped,
-  "state-running": line([ring, circle(8, 8, 2, filled)], "0 0 16 16"),
+  "state-running": solid([circle(8, 8, 4)]),
   "state-created": circlePause,
-  "state-absent": line(
-    [circle(8, 8, 5.5, { strokeDasharray: "2 2" })],
-    "0 0 16 16",
-  ),
+  "state-absent": stopped,
   "task-todo": line([ring], "0 0 16 16"),
   "task-in-progress": line(
     [ring, path("M8 2.5a5.5 5.5 0 0 1 0 11Z", filled)],

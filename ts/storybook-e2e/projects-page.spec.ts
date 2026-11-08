@@ -20,7 +20,7 @@ test("project list stories show resource links, activity, states and empty/loadi
     table
       .locator("tbody tr")
       .first()
-      .getByRole("img", { name: "Working", exact: true }),
+      .getByRole("img", { name: "Running", exact: true }),
   ).toBeVisible();
   await expect(table.locator("time")).toHaveCount(2);
   await expect(table.getByRole("columnheader")).toHaveText([
@@ -289,11 +289,35 @@ test("project list icons cover all container states and menus follow their lifec
     .getByRole("table", { name: "Projects", exact: true })
     .locator("tbody tr");
   const states = [
-    { name: "Running", stop: true, start: false, remove: true },
-    { name: "Not started", stop: false, start: true, remove: true },
-    { name: "Stopped", stop: false, start: true, remove: true },
-    { name: "No container", stop: false, start: true, remove: false },
-    { name: "Unknown", stop: false, start: false, remove: false },
+    {
+      name: "Running",
+      icon: "state-running",
+      stop: true,
+      start: false,
+      remove: true,
+    },
+    {
+      name: "Not started",
+      icon: "state-created",
+      stop: false,
+      start: true,
+      remove: true,
+    },
+    { name: "Stopped", icon: "stop", stop: false, start: true, remove: true },
+    {
+      name: "No container",
+      icon: "state-absent",
+      stop: false,
+      start: true,
+      remove: false,
+    },
+    {
+      name: "Unknown",
+      icon: "unknown",
+      stop: false,
+      start: false,
+      remove: false,
+    },
   ];
   await expect(rows).toHaveCount(states.length);
   for (const [index, state] of states.entries()) {
@@ -301,6 +325,9 @@ test("project list icons cover all container states and menus follow their lifec
     await expect(
       row.getByRole("img", { name: state.name, exact: true }),
     ).toBeVisible();
+    await expect(
+      row.getByRole("img", { name: state.name, exact: true }).locator("svg"),
+    ).toHaveAttribute("data-icon", state.icon);
     await row
       .getByRole("button", {
         name: `Controls for ${state.name} workspace`,
@@ -382,9 +409,11 @@ test("project activity favors unread completed turns over work, and questions do
     "Working conversationelm",
   );
   await expect(
-    rows.last().getByRole("img", { name: "Working", exact: true }),
+    rows.last().getByRole("img", { name: "Running", exact: true }),
   ).toBeVisible();
-  await expect(rows.last().locator(".session-activity-dot")).toHaveCount(8);
+  await expect(
+    rows.last().locator("td").nth(1).locator(".session-activity-dot"),
+  ).toHaveCount(0);
 });
 
 test("inactive project cards are darker, names stay bounded, and state descriptions overlay on hover and focus", async ({
@@ -572,7 +601,7 @@ test("project row action failures keep confirmation open and the project unchang
     "Project stop is unavailable",
   );
   await expect(
-    row.getByRole("img", { name: "Working", exact: true }),
+    row.getByRole("img", { name: "Running", exact: true }),
   ).toBeVisible();
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(dialog).toHaveCount(0);
