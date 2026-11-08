@@ -13,6 +13,7 @@ import {
   MemoryService,
   MemoryScope,
   MemoryReadFormat,
+  type MemoryVersion,
 } from "#gen/cxz/memory_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
@@ -98,6 +99,7 @@ export function MemoryLibrary({
     [showFilters, setShowFilters] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [revision, setRevision] = useState(0n);
   const [confirmation, setConfirmation] = useState<{
     title: string;
     text: string;
@@ -165,9 +167,42 @@ export function MemoryLibrary({
       : undefined,
     { watch: false },
   );
-  const read = text.data;
-  const picked = read?.memory;
-  const reading = !creating && (text.loading || (!read && !text.error));
+  const historical = useConnectionQuery(
+    c.queries,
+    MemoryService.method.read,
+    selected && !creating && revision > 0n
+      ? { ref: memoryRef(), revision, format: MemoryReadFormat.FULL }
+      : undefined,
+    { watch: false },
+  );
+  const read = revision > 0n ? historical.data : text.data;
+  const picked = text.data?.memory;
+  const reading =
+    !creating &&
+    (text.loading ||
+      (revision > 0n && historical.loading) ||
+      (!read && !text.error && !historical.error));
+  const versions = useRemote(
+    async (signal) => {
+      const versions: MemoryVersion[] = [];
+      const seen = new Set<bigint>();
+      let beforeRevision = 0n;
+      do {
+        const page = await c.memories.versions(
+          { ref: memoryRef(), beforeRevision, size: 100 },
+          { signal, timeoutMs: 15000 },
+        );
+        versions.push(...page.versions);
+        beforeRevision = page.nextRevision;
+        if (beforeRevision && seen.has(beforeRevision))
+          throw new Error("Invalid memory revision cursor");
+        seen.add(beforeRevision);
+      } while (beforeRevision);
+      return { id: selectedKey, versions };
+    },
+    [c, project, selectedKey],
+    { enabled: !!selected && !creating },
+  );
   useEffect(() => {
     if (
       !onMemoryChange &&
@@ -190,10 +225,10 @@ export function MemoryLibrary({
   useLayoutEffect(() => {
     if (read && !creating) {
       setDraft(read.content);
-      setName(read.memory?.name ?? "");
-      setLabels(labelsText(visibleLabels(read.memory?.labels ?? {})));
+      setName(picked?.name ?? "");
+      setLabels(labelsText(visibleLabels(picked?.labels ?? {})));
     }
-  }, [read, creating]);
+  }, [read, creating, picked?.name, picked?.labels]);
   const dirty = creating && !!(draft || name || labels);
   // Browser Back can run immediately after an edit commits.
   useLayoutEffect(() => {
@@ -225,6 +260,7 @@ export function MemoryLibrary({
       setTrash(!!picked.dateDeleted);
   }, [picked?.id, picked?.dateDeleted, creating, memoryId, onMemoryChange]);
   function selectMemory(id: Uint8Array | undefined, replace = false) {
+    setRevision(0n);
     setSelected(id);
     const publicID = id ? ownerID(id) : undefined;
     lastRouteID.current = publicID;
@@ -264,6 +300,7 @@ export function MemoryLibrary({
     }
   }
   function reset(updateRoute = false) {
+    setRevision(0n);
     selectionSource.current = list.data;
     setSelected(undefined);
     setCreating(false);
@@ -381,7 +418,11 @@ export function MemoryLibrary({
           run: () =>
             act(async () => {
               c.reads.invalidate(memoryListKey(project));
-              await text.refresh();
+              await Promise.all([
+                text.refresh(),
+                versions.reload(),
+                ...(revision > 0n ? [historical.refresh()] : []),
+              ]);
             }),
         },
         {
@@ -394,10 +435,10 @@ export function MemoryLibrary({
       ];
   return (
     <div className={styles.content}>
-      {(error || list.error || text.error) && (
+      {(error || list.error || text.error || historical.error) && (
         <ErrorNotice
           className={styles.error}
-          error={error || list.error || text.error}
+          error={error || list.error || text.error || historical.error}
         />
       )}
       <div
@@ -682,12 +723,19 @@ export function MemoryLibrary({
               name={creating ? name : (picked?.name ?? "")}
               content={draft}
               loading={reading}
-              error={text.error}
+              error={revision > 0n ? historical.error : text.error}
               busy={busy}
               creating={creating}
+              revision={revision}
+              versions={
+                versions.data?.id === selectedKey ? versions.data.versions : []
+              }
+              versionsLoading={versions.loading}
+              versionsError={versions.error}
+              changeRevision={setRevision}
               actions={documentActions}
               rename={renameMemory}
-              retry={text.reload}
+              retry={revision > 0n ? historical.reload : text.reload}
               labels={labels}
               owner={owner}
               sessions={sessions}

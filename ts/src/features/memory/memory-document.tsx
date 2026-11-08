@@ -1,7 +1,6 @@
 import { useId } from "react";
 import {
   Button,
-  CompactNumber,
   Form,
   FormField,
   Popover,
@@ -13,6 +12,7 @@ import { SourceEditor } from "@lesomnus/nox/editor";
 import type { Memory } from "#gen/cxz/memory_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
+import type { MemoryVersion } from "#gen/cxz/memory_svc_pb";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
@@ -47,6 +47,11 @@ export function MemoryDocument({
   error,
   busy,
   creating,
+  revision,
+  versions,
+  versionsLoading,
+  versionsError,
+  changeRevision,
   actions,
   rename,
   retry,
@@ -67,6 +72,11 @@ export function MemoryDocument({
   error: string;
   busy: boolean;
   creating: boolean;
+  revision: bigint;
+  versions: MemoryVersion[];
+  versionsLoading: boolean;
+  versionsError: string;
+  changeRevision: (revision: bigint) => void;
   actions: MemoryDocumentAction[];
   rename: (value: string) => Promise<void>;
   retry: () => void;
@@ -86,7 +96,7 @@ export function MemoryDocument({
   const ownerSession = sessions.find(
     (session) => resourceHandle({ id: session.id }) === memory?.ownerSession,
   );
-  const pending = loading || creating;
+  const pending = (loading && !memory) || creating;
   const unavailable = <span className={styles.unavailable}>—</span>;
   const title = (
     <h2 className={styles.title}>
@@ -192,30 +202,47 @@ export function MemoryDocument({
           ))}
         </SectionGroup>
         <Section className={styles.revision} aria-label="Memory revision">
-          <ResourceFields
-            columns={1}
-            rows={[
-              [
-                "Revision",
-                pending || !memory ? (
-                  unavailable
-                ) : (
-                  <CompactNumber
-                    value={Number(memory.revision)}
-                    mode="integer"
-                    digits={3}
-                    label={`Revision ${memory.revision}`}
-                  />
-                ),
-              ],
-            ]}
+          <ValueMenu
+            label="Revision"
+            value={revision.toString()}
+            display={
+              memory && !creating
+                ? `Revision r${revision || memory.revision}`
+                : "Revision —"
+            }
+            options={
+              memory
+                ? [
+                    {
+                      value: "0",
+                      label: `Revision r${memory.revision} · Latest`,
+                    },
+                    ...versions
+                      .filter((version) => version.revision !== memory.revision)
+                      .map((version) => ({
+                        value: version.revision.toString(),
+                        label: `Revision r${version.revision}`,
+                      })),
+                  ]
+                : []
+            }
+            disabled={
+              busy ||
+              loading ||
+              pending ||
+              !memory ||
+              versionsLoading ||
+              !!versionsError
+            }
+            disabledReason={versionsError || undefined}
+            choose={(value) => changeRevision(BigInt(value))}
           />
         </Section>
       </SectionGroup>
       <Section className={styles.bodySection} aria-label="Memory content">
         {loading ? (
           <p className={styles.empty}>Loading memory…</p>
-        ) : error && !memory && !creating ? (
+        ) : error && !creating ? (
           <Button onClick={retry}>Retry memory</Button>
         ) : (
           <>

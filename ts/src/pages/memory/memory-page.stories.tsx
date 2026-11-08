@@ -45,6 +45,7 @@ function Preview({
   readDelay = 0,
   readLoading = false,
   cacheControls = false,
+  revisionCount = 1,
 } = {}) {
   const [f] = useState(() =>
     memoryFixture({
@@ -56,6 +57,7 @@ function Preview({
       cards,
       readDelay,
       readLoading,
+      revisionCount,
     }),
   );
   useEffect(() => () => f.dispose(), [f]);
@@ -148,7 +150,18 @@ export const Document: Story = {
     docs: {
       description: {
         story:
-          "Opens the full Memory detail page directly. The shared information panel places the inline-editable title alone above four equal-width Project, Session, Created and Updated fields. Project and Session omit visible labels. Narrow layouts stack the fields. Copy, Reload and Delete remain grouped beside the information panel; a current-revision panel fills the space beneath them to the information panel’s lower edge. The Markdown preview follows below. Copy opens a new draft.",
+          "Opens the full Memory detail page directly. The shared information panel places the inline-editable title alone above four equal-width Project, Session, Created and Updated fields. Project and Session omit visible labels. Copy, Reload and Delete remain grouped beside the information panel. The revision selector itself looks like a panel and fills only the space beneath the actions, without increasing the information row’s height. Narrow layouts put the selector beside the actions. The Markdown preview follows below. Copy opens a new draft.",
+      },
+    },
+  },
+};
+export const RevisionHistory: Story = {
+  args: { document: true, revisionCount: 4 },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Select a retained revision to read its Markdown body. Latest follows the current document; selecting an older body leaves the title and resource dates unchanged. Copy uses the displayed revision’s body. Reload refreshes the document and available revisions.",
       },
     },
   },

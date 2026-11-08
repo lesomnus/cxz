@@ -49,13 +49,17 @@ Copy/Reload/Delete action panels and a Markdown preview section. Information use
 the shared ResourceFields label/value layout: a title-only first row, then Project,
 Session, Created and Updated in an equal-width metadata row. Project and Session
 omit visible labels. Other metadata is omitted.
-A current-revision section fills the space beneath the action buttons, aligned
-with the information panel’s bottom. Narrow layouts stack these regions. Clicking the larger title opens the shared
+A revision selector uses the space beneath the action buttons without increasing
+the information row’s height. Its trigger itself has the section panel appearance.
+Narrow layouts place the selector beside the action buttons. It lists retained
+versions through `Versions`; choosing one loads its body through `Read`, while
+Latest follows the current document. Title and resource dates remain current.
+Clicking the larger title opens the shared
 inline value editor; confirming patches only the name under its observed version,
 preserving the body, revision and labels. Existing document bodies remain preview
 only. Copy opens a new draft with source, labels and owner controls and Save/Cancel
-panel actions. Version history and Document details are not displayed in this view;
-the version and lifecycle APIs remain available. Loading retains the grouped frame
+panel actions; copying an older revision uses its displayed body. Additional
+document metadata is omitted. Loading retains the grouped frame
 with its actions disabled until the document is available.
 The TUI `/memory` view offers direct browsing, copying,
 rename, trash/restore/purge, and starting a session seeded from a selected document.
@@ -81,8 +85,8 @@ rename, trash/restore/purge, and starting a session seeded from a selected docum
   The current row caches the latest body. Versions and the resource commit in one
   transaction. Audit keeps management metadata, without duplicating body payloads.
 - `Read` defaults to full text. An explicit `revision` reads a retained version;
-  `Versions` lists retained revisions and their stored line counts. The web history
-  displays `+added −removed` and labels revision 1 as Created. With `base_revision`,
+  `Versions` lists retained revisions and their stored line counts. The web
+  revision selector uses these retained revisions. With `base_revision`,
   `format=DIFF` requests
   a contextual unified diff. `AUTO` chooses a smaller diff, otherwise full text.
   A missing base returns full text with `fallback_reason`. Smaller byte size is a

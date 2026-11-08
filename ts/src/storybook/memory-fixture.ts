@@ -22,6 +22,7 @@ export function memoryFixture({
   cards = false,
   readDelay = 0,
   readLoading = false,
+  revisionCount = 1,
 } = {}) {
   const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
@@ -90,6 +91,11 @@ export function memoryFixture({
       "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
     );
     add("Handoff notes", "# Handoff\n\nReview open changes.");
+    for (let revision = 2; revision <= revisionCount; revision++) {
+      primary.revision = BigInt(revision);
+      primary.content = `# Architecture\n\nShared memory belongs to the project.\n\nDesign decisions from revision ${revision}.`;
+      versions.get(key(primary.id))!.set(primary.revision, primary.content);
+    }
     primary.dateUpdated = stamp();
   }
   if (migrated && !empty) {
@@ -282,15 +288,20 @@ export function memoryFixture({
       },
       versions: (r) => {
         const m = find(r.ref);
+        const history = [...versions.get(key(m.id))!]
+          .reverse()
+          .filter(
+            ([revision]) => !r.beforeRevision || revision < r.beforeRevision,
+          );
+        const page = history.slice(0, r.size || 100);
         return {
-          versions: [...versions.get(key(m.id))!]
-            .reverse()
-            .map(([revision]) => ({
-              memoryId: m.id,
-              revision,
-              contentHash: `hash-${revision}`,
-              dateCreated: m.dateUpdated,
-            })),
+          nextRevision: history.length > page.length ? page.at(-1)![0] : 0n,
+          versions: page.map(([revision]) => ({
+            memoryId: m.id,
+            revision,
+            contentHash: `hash-${revision}`,
+            dateCreated: m.dateUpdated,
+          })),
         };
       },
       erase: (r) => {

@@ -207,12 +207,8 @@ test("the inline title refreshes the card without changing its body or revision"
   await card(page, "Architecture notes").click();
   await rename(page, "Renamed notes");
   await expect(
-    doc(page)
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Revision$/ }) })
-      .locator("dd")
-      .getByRole("img", { name: "Revision 1", exact: true }),
-  ).toBeVisible();
+    doc(page).getByRole("combobox", { name: "Revision", exact: true }),
+  ).toHaveText("Revision r1");
   await expect(doc(page)).toContainText("Keep UI decisions together.");
   await expect(doc(page)).not.toContainText("topic=design");
   await back(page);
@@ -291,8 +287,8 @@ for (const width of [390, 1280])
       exact: true,
     });
     await expect(
-      revision.getByRole("img", { name: "Revision 1", exact: true }),
-    ).toBeVisible();
+      revision.getByRole("combobox", { name: "Revision", exact: true }),
+    ).toHaveText("Revision r1");
     if (width === 1280) {
       expect(
         await title
@@ -346,6 +342,43 @@ for (const width of [390, 1280])
       await expect(
         actions.getByRole("button", { name, exact: true }),
       ).toHaveAttribute("data-section-action", "button");
+    const trigger = revision.getByRole("combobox", {
+      name: "Revision",
+      exact: true,
+    });
+    const control = await trigger.boundingBox();
+    const panel = await revision.boundingBox();
+    for (const coordinate of ["x", "y", "width", "height"] as const)
+      expect(control![coordinate]).toBeCloseTo(panel![coordinate], 0);
+    await expect(revision).toHaveCSS("padding", "0px");
+    await expect(revision).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    const surface = await title.evaluate(
+      (node) => getComputedStyle(node).backgroundColor,
+    );
+    await expect(trigger).toHaveCSS("background-color", surface);
+    if (width === 390) {
+      const buttons = (await actions.boundingBox())!;
+      expect(panel!.y).toBeCloseTo(buttons.y, 0);
+      expect(panel!.height).toBeCloseTo(buttons.height, 0);
+    }
+    const body = doc(page).getByRole("region", {
+      name: "Memory content",
+      exact: true,
+    });
+    const bodyBefore = (await body.boundingBox())!;
+    await revision.evaluate((node) => {
+      node.style.display = "none";
+    });
+    expect((await body.boundingBox())!.y).toBeCloseTo(bodyBefore.y, 0);
+    await doc(page)
+      .getByRole("region", {
+        name: "Memory revision",
+        exact: true,
+        includeHidden: true,
+      })
+      .evaluate((node) => {
+        node.style.display = "";
+      });
     const layout = await doc(page).evaluate((root) => {
       const title = root
         .querySelector('[aria-label="Memory information"]')!
@@ -393,8 +426,71 @@ test("document loading keeps the grouped frame and disabled action panels", asyn
       doc(page).getByRole("button", { name, exact: true }),
     ).toBeDisabled();
   await expect(
+    doc(page).getByRole("combobox", { name: "Revision", exact: true }),
+  ).toBeDisabled();
+  await expect(
     doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
   ).toHaveCount(0);
+});
+
+test("revision selection changes only the body and Latest restores the current text", async ({
+  page,
+}) => {
+  await open(page, "revision-history");
+  const revision = doc(page).getByRole("combobox", {
+    name: "Revision",
+    exact: true,
+  });
+  const information = doc(page).getByRole("region", {
+    name: "Memory information",
+    exact: true,
+  });
+  await expect(revision).toBeEnabled();
+  await expect(revision).toHaveText("Revision r4");
+  await expect(doc(page)).toContainText("Design decisions from revision 4.");
+  const metadata = await information.innerText();
+  const body = doc(page).getByRole("region", {
+    name: "Memory content",
+    exact: true,
+  });
+  const position = (await body.boundingBox())!.y;
+  await revision.click();
+  await page.getByRole("option", { name: "Revision r1", exact: true }).click();
+  await expect(revision).toHaveText("Revision r1");
+  await expect(body).toContainText("Keep UI decisions together.");
+  await expect(information).toHaveText(metadata, { useInnerText: true });
+  expect((await body.boundingBox())!.y).toBeCloseTo(position, 0);
+  await revision.click();
+  await page
+    .getByRole("option", { name: "Revision r4 · Latest", exact: true })
+    .click();
+  await expect(revision).toHaveText("Revision r4");
+  await expect(body).toContainText("Design decisions from revision 4.");
+});
+
+test("copying a historical revision starts a draft with the selected body", async ({
+  page,
+}) => {
+  await open(page, "revision-history");
+  const revision = doc(page).getByRole("combobox", {
+    name: "Revision",
+    exact: true,
+  });
+  await expect(revision).toBeEnabled();
+  await revision.click();
+  await page.getByRole("option", { name: "Revision r1", exact: true }).click();
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
+  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
+  await expect(revision).toBeDisabled();
+  await expect(
+    doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
+  ).toContainText("Architecture notes copy");
+  await expect(page.locator(".monaco-editor")).toContainText(
+    "Keep UI decisions together.",
+  );
+  await expect(page.locator(".monaco-editor")).not.toContainText(
+    "Design decisions from revision 4.",
+  );
 });
 
 test("the Reload panel refreshes the preview while showing pending feedback", async ({
@@ -459,12 +555,8 @@ test("copy creation stays in the editor until saved, then appears in the grid", 
   await page.keyboard.insertText("# Copied body\n\nNew document content.");
   await doc(page).getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    doc(page)
-      .locator("dl > div")
-      .filter({ has: page.locator("dt", { hasText: /^Revision$/ }) })
-      .locator("dd")
-      .getByRole("img", { name: "Revision 1", exact: true }),
-  ).toBeVisible();
+    doc(page).getByRole("combobox", { name: "Revision", exact: true }),
+  ).toHaveText("Revision r1");
   await expect(doc(page)).toContainText("New document content.");
   await back(page);
   await expect(card(page, "Copied architecture")).toBeVisible();
