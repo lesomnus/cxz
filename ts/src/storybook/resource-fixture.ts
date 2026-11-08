@@ -9,6 +9,7 @@ import {
 } from "#gen/cxz/account_svc_pb";
 import { AuxKind, InstallationService } from "#gen/cxz/installation_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
+import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { projectFixtureId } from "./project-id";
 
@@ -117,6 +118,15 @@ export function resourceFixture({
     },
   ];
   const transport = createRouterTransport((router) => {
+    // A real Workspace shell observes both inventories, even on a page whose
+    // isolated fixture has no projects or sessions of its own.
+    router.service(ProjectService, {
+      list: () => ({ items: [] }),
+      watch: async function* (_request, context) {
+        yield { items: [], snapshotComplete: true };
+        await untilAborted(context.signal);
+      },
+    });
     router.service(AccountService, {
       list: () => {
         onRead?.("accounts");
@@ -270,6 +280,11 @@ export function resourceFixture({
       },
     });
     router.service(SessionService, {
+      list: () => ({ items: [] }),
+      watch: async function* (_request, context) {
+        yield { items: [], snapshotComplete: true };
+        await untilAborted(context.signal);
+      },
       transcript: (request) => {
         onRead?.("quota");
         const id = request.ref?.key.value;
@@ -402,4 +417,11 @@ export function resourceFixture({
     });
   });
   return new Connection(location.origin, transport);
+}
+
+function untilAborted(signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (signal.aborted) resolve();
+    else signal.addEventListener("abort", () => resolve(), { once: true });
+  });
 }

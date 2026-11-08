@@ -123,14 +123,9 @@ function WorkspaceContent({
     selectedSession,
   );
   const session = selectedSession?.runtimeId ?? route.session;
-  const hasResourcePanel = ![
-    "errors",
-    "accounts",
-    "tasks",
-    "projects",
-    "memory",
-    "search",
-  ].includes(resource);
+  // Only session lists and settings own a secondary navigation panel.
+  // Resource pages occupy all remaining columns beside the icon sidebar.
+  const hasResourcePanel = resource === "sessions" || resource === "settings";
   const settingsTopic = route.settingsTopic;
   const lastSession = useRef("");
   if (route.resource === "sessions" && route.session)
@@ -288,15 +283,7 @@ function WorkspaceContent({
               resource === "sessions" ? '[data-unread="true"]' : undefined
             }
             className={resource === "sessions" ? "session-panel" : ""}
-            title={
-              resource === "sessions"
-                ? t("Sessions")
-                : resource === "settings"
-                  ? t("Settings")
-                  : resource === "auxiliary"
-                    ? "Auxiliary AI"
-                    : resource[0].toUpperCase() + resource.slice(1)
-            }
+            title={resource === "sessions" ? t("Sessions") : t("Settings")}
             actions={
               resource === "sessions" && (
                 <ActionMenu
@@ -377,9 +364,7 @@ function WorkspaceContent({
             aria-label={
               resource === "sessions"
                 ? t("Session list")
-                : resource === "settings"
-                  ? t("Settings navigation")
-                  : `${resource} navigation`
+                : t("Settings navigation")
             }
           >
             {resource === "settings" ? (
@@ -408,7 +393,7 @@ function WorkspaceContent({
                   </PanelLink>
                 ))}
               </nav>
-            ) : resource === "sessions" ? (
+            ) : (
               <div
                 className="session-tree"
                 aria-label={t("Projects and sessions")}
@@ -446,23 +431,6 @@ function WorkspaceContent({
                   <small className="tree-message">{t("Loading…")}</small>
                 )}
               </div>
-            ) : (
-              <nav className="settings-topics" aria-label="Resource navigation">
-                <PanelLink
-                  {...(resource === "memory"
-                    ? memoryProject
-                      ? memoryLocation(memoryProject)
-                      : projectLocation()
-                    : resourceLocation(resource))}
-                  aria-current="page"
-                >
-                  {resource === "memory"
-                    ? "Shared memory"
-                    : resource === "auxiliary"
-                      ? "Auxiliary AI"
-                      : resource[0].toUpperCase() + resource.slice(1)}
-                </PanelLink>
-              </nav>
             )}
             {!!(inventory.errors.projects || inventory.errors.sessions) && (
               <ErrorNotice

@@ -198,3 +198,44 @@ test("a pending save retains its label and prevents another click", async ({
   await expect(picker(page)).toBeDisabled();
   await expect(save).toBeEnabled();
 });
+
+for (const width of [390, 1280])
+  test(`workspace keeps Auxiliary beside its sidebar without the old panel at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page, "in-workspace");
+    const sidebar = page.getByRole("navigation", {
+      name: "Resources",
+      exact: true,
+    });
+    const main = page.getByRole("main", { name: "Auxiliary AI", exact: true });
+    await expect(sidebar).toBeVisible();
+    await expect(page.locator(".workspace > .resource-panel")).toHaveCount(0);
+    const bounds = await main.boundingBox();
+    const nav = await sidebar.boundingBox();
+    expect(bounds!.y).toBeCloseTo(nav!.y, 0);
+    expect(bounds!.x).toBeGreaterThanOrEqual(nav!.x + nav!.width);
+    expect(bounds!.height).toBe(900);
+    await expect(
+      page.getByRole("link", { name: "Auxiliary AI", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    if (width === 1280) {
+      await sidebar
+        .getByRole("link", { name: "Sessions view", exact: true })
+        .click();
+      await expect(
+        page.getByRole("complementary", { name: "Session list", exact: true }),
+      ).toBeVisible();
+      await sidebar
+        .getByRole("link", { name: "Auxiliary AI", exact: true })
+        .click();
+      await expect(main).toBeVisible();
+      await expect(page.locator(".workspace > .resource-panel")).toHaveCount(0);
+    }
+  });
