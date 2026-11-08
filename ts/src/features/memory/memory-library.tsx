@@ -30,6 +30,7 @@ import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.t
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { MemoryDocument, type MemoryDocumentAction } from "./memory-document";
+import type { MemoryPreviewMode } from "./memory-preview";
 import styles from "./memory-library.module.css";
 
 const ownerID = (id: Uint8Array) =>
@@ -100,6 +101,7 @@ export function MemoryLibrary({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [revision, setRevision] = useState(0n);
+  const [previewMode, setPreviewMode] = useState<MemoryPreviewMode>("preview");
   const [confirmation, setConfirmation] = useState<{
     title: string;
     text: string;
@@ -177,6 +179,21 @@ export function MemoryLibrary({
   );
   const read = revision > 0n ? historical.data : text.data;
   const picked = text.data?.memory;
+  const selectedRevision =
+    revision || text.data?.revision || picked?.revision || 0n;
+  const comparison = useConnectionQuery(
+    c.queries,
+    MemoryService.method.read,
+    selected && !creating && previewMode === "changes" && selectedRevision > 1n
+      ? {
+          ref: memoryRef(),
+          revision: selectedRevision,
+          baseRevision: selectedRevision - 1n,
+          format: MemoryReadFormat.DIFF,
+        }
+      : undefined,
+    { watch: false },
+  );
   const reading =
     !creating &&
     (text.loading ||
@@ -261,6 +278,7 @@ export function MemoryLibrary({
   }, [picked?.id, picked?.dateDeleted, creating, memoryId, onMemoryChange]);
   function selectMemory(id: Uint8Array | undefined, replace = false) {
     setRevision(0n);
+    setPreviewMode("preview");
     setSelected(id);
     const publicID = id ? ownerID(id) : undefined;
     lastRouteID.current = publicID;
@@ -301,6 +319,7 @@ export function MemoryLibrary({
   }
   function reset(updateRoute = false) {
     setRevision(0n);
+    setPreviewMode("preview");
     selectionSource.current = list.data;
     setSelected(undefined);
     setCreating(false);
@@ -418,6 +437,7 @@ export function MemoryLibrary({
           run: () =>
             act(async () => {
               c.reads.invalidate(memoryListKey(project));
+              comparison.reload();
               await Promise.all([
                 text.refresh(),
                 versions.reload(),
@@ -733,6 +753,15 @@ export function MemoryLibrary({
               versionsLoading={versions.loading}
               versionsError={versions.error}
               changeRevision={setRevision}
+              previewMode={previewMode}
+              changePreviewMode={setPreviewMode}
+              comparison={{
+                revision: selectedRevision,
+                data: comparison.data,
+                loading: comparison.loading,
+                error: comparison.error,
+                retry: comparison.reload,
+              }}
               actions={documentActions}
               rename={renameMemory}
               retry={revision > 0n ? historical.reload : text.reload}

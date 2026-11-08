@@ -28,7 +28,11 @@ import {
   projectLocation,
   resourceHandle,
 } from "#src/shared/navigation/resource-route.ts";
-import { Markdown } from "#src/shared/content/markdown.tsx";
+import {
+  MemoryPreview,
+  type MemoryComparison,
+  type MemoryPreviewMode,
+} from "./memory-preview";
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import { publicUUID } from "#src/shared/logs/rpc-diagnostics.ts";
 import { useEditorSettings } from "#src/shared/settings/settings.ts";
@@ -58,6 +62,9 @@ export function MemoryDocument({
   versionsLoading,
   versionsError,
   changeRevision,
+  previewMode,
+  changePreviewMode,
+  comparison,
   actions,
   rename,
   retry,
@@ -83,6 +90,9 @@ export function MemoryDocument({
   versionsLoading: boolean;
   versionsError: string;
   changeRevision: (revision: bigint) => void;
+  previewMode: MemoryPreviewMode;
+  changePreviewMode: (mode: MemoryPreviewMode) => void;
+  comparison: MemoryComparison;
   actions: MemoryDocumentAction[];
   rename: (value: string) => Promise<void>;
   retry: () => void;
@@ -373,13 +383,12 @@ export function MemoryDocument({
                 </div>
               </>
             ) : (
-              <div className={styles.preview}>
-                {content.trim() ? (
-                  <Markdown text={content} />
-                ) : (
-                  <p className={styles.empty}>This document is empty.</p>
-                )}
-              </div>
+              <MemoryPreview
+                content={content}
+                mode={previewMode}
+                changeMode={changePreviewMode}
+                comparison={comparison}
+              />
             )}
           </>
         )}

@@ -46,6 +46,8 @@ function Preview({
   readLoading = false,
   cacheControls = false,
   revisionCount = 1,
+  missingPreviousRevision = false,
+  diffFailOnce = false,
 } = {}) {
   const [f] = useState(() =>
     memoryFixture({
@@ -58,6 +60,8 @@ function Preview({
       readDelay,
       readLoading,
       revisionCount,
+      missingPreviousRevision,
+      diffFailOnce,
     }),
   );
   useEffect(() => () => f.dispose(), [f]);
@@ -161,7 +165,7 @@ export const RevisionHistory: Story = {
     docs: {
       description: {
         story:
-          "Select a retained revision to read its Markdown body. The button and options show a left-aligned revision number and creation date. CompactNumber additions/removals share the first line on the right, above a right-aligned relative creation time. The selector shares the action buttons’ corner radius and uses only the remaining height. First revisions show Created; missing counts stay unknown. Latest follows the current document; selecting an older body leaves the title and resource dates unchanged. Copy uses the displayed revision’s body. Reload refreshes the document and available revisions.",
+          "Select a retained revision to read its Markdown body, or choose Changes to compare it with its immediate predecessor. Comparisons load on demand; revision changes keep the chosen preview mode. Copy always uses the full displayed body. The revision selector shows its number and date on the left, with compact line counts and relative age on the right. It shares the action buttons’ corner radius and uses only the remaining height. First revisions show Created; missing counts stay unknown. Latest follows the current document while title and resource dates stay current.",
       },
     },
   },
@@ -173,6 +177,28 @@ export const DocumentLoading: Story = {
       description: {
         story:
           "Opens the same detail route with no cached Read answer. The document Read stays pending so the unloaded metadata and content can be inspected without a timer completing. Leaving the story cancels the fixture request. Document shows the loaded state; Loading shows the collection loading state.",
+      },
+    },
+  },
+};
+export const MissingPreviousRevision: Story = {
+  args: { document: true, revisionCount: 4, missingPreviousRevision: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Choose Changes. The server returns full text because the predecessor was not retained; the UI explains the missing comparison instead of treating the full body as a diff.",
+      },
+    },
+  },
+};
+export const ComparisonRetry: Story = {
+  args: { document: true, revisionCount: 4, diffFailOnce: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Choose Changes to see an attended read failure. Retry changes succeeds while preserving the selected body, metadata and revision.",
       },
     },
   },

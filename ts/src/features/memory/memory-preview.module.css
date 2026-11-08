@@ -1,0 +1,71 @@
+.preview {
+  display: grid;
+  gap: calc(3 * var(--ui-space));
+  min-width: 0;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(2 * var(--ui-space));
+  min-width: 0;
+}
+.toolbar > :global(.segmented-control) {
+  flex: 0 0 auto;
+  width: 160px;
+}
+.caption {
+  color: var(--ui-muted);
+  font: 10px/1.5 var(--ui-font-mono);
+}
+.preview > :global(.markdown) {
+  padding-inline: 0;
+  font-size: 12px;
+  line-height: 1.85;
+}
+.preview :global(.markdown) > :first-child {
+  margin-top: 0;
+}
+.preview :global(.markdown) > :last-child {
+  margin-bottom: 0;
+}
+.notice {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.85;
+}
+.failure {
+  display: grid;
+  gap: calc(2 * var(--ui-space));
+  justify-items: start;
+}
+.diff {
+  margin: 0;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 12px/1.85 var(--ui-font-mono);
+}
+.diff > code {
+  font: inherit;
+}
+.line {
+  display: block;
+  min-width: 0;
+  padding-inline: var(--ui-space);
+}
+.line[data-diff-line="meta"] {
+  color: var(--ui-muted);
+}
+.line:is([data-diff-line="added"], [data-diff-line="removed"]) {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+@container memory-library (width < 400px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .toolbar > :global(.segmented-control) {
+    margin-inline-start: auto;
+  }
+}

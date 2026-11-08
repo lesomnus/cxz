@@ -25,6 +25,8 @@ export function memoryFixture({
   readDelay = 0,
   readLoading = false,
   revisionCount = 1,
+  missingPreviousRevision = false,
+  diffFailOnce = false,
 } = {}) {
   const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
@@ -134,6 +136,8 @@ export function memoryFixture({
       );
     }
     primary.dateUpdated = stamp();
+    if (missingPreviousRevision && primary.revision > 1n)
+      versions.get(key(primary.id))!.delete(primary.revision - 1n);
   }
   if (migrated && !empty) {
     for (let i = 0; i < 24; i++) {
@@ -200,6 +204,7 @@ export function memoryFixture({
     return m;
   }
   const readRequests: string[] = [];
+  let diffReads = 0;
   const readLifetime = new AbortController();
   const transport = createRouterTransport(({ service }) =>
     service(MemoryService, {
@@ -247,6 +252,15 @@ export function memoryFixture({
         }
         if (readDelay)
           await new Promise((resolve) => setTimeout(resolve, readDelay));
+        if (
+          r.format === MemoryReadFormat.DIFF &&
+          ++diffReads === 1 &&
+          diffFailOnce
+        )
+          throw new ConnectError(
+            "Revision changes temporarily unavailable",
+            Code.Unavailable,
+          );
         const m = find(r.ref),
           history = versions.get(key(m.id))!,
           rev = r.revision || m.revision,
@@ -259,6 +273,22 @@ export function memoryFixture({
           history.has(r.baseRevision)
         ) {
           const before = history.get(r.baseRevision)!;
+          const oldLines = before.split("\n"),
+            newLines = content.split("\n");
+          let prefix = 0,
+            suffix = 0;
+          while (
+            prefix < oldLines.length &&
+            prefix < newLines.length &&
+            oldLines[prefix] === newLines[prefix]
+          )
+            prefix++;
+          while (
+            suffix < oldLines.length - prefix &&
+            suffix < newLines.length - prefix &&
+            oldLines.at(-1 - suffix) === newLines.at(-1 - suffix)
+          )
+            suffix++;
           return {
             memory: { ...m, content: "" },
             revision: rev,
@@ -267,7 +297,21 @@ export function memoryFixture({
             diff:
               before === content
                 ? ""
-                : `--- r${r.baseRevision}\n+++ r${rev}\n-${before}\n+${content}`,
+                : [
+                    `--- r${r.baseRevision}`,
+                    `+++ r${rev}`,
+                    `@@ -1,${oldLines.length} +1,${newLines.length} @@`,
+                    ...oldLines.slice(0, prefix).map((line) => ` ${line}`),
+                    ...oldLines
+                      .slice(prefix, oldLines.length - suffix)
+                      .map((line) => `-${line}`),
+                    ...newLines
+                      .slice(prefix, newLines.length - suffix)
+                      .map((line) => `+${line}`),
+                    ...oldLines
+                      .slice(oldLines.length - suffix)
+                      .map((line) => ` ${line}`),
+                  ].join("\n"),
           };
         }
         return {
@@ -275,6 +319,10 @@ export function memoryFixture({
           revision: rev,
           format: MemoryReadFormat.FULL,
           content,
+          fallbackReason:
+            r.format === MemoryReadFormat.DIFF && r.baseRevision
+              ? "base revision is not retained"
+              : "",
         };
       },
       add: (r) => {

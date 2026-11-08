@@ -59,6 +59,13 @@ left and compact added/removed line counts together on the right, above the
 humanized age of the revision. The selector uses the
 action buttons’ corner shape. First revisions show Created; unavailable counts
 remain unknown.
+The preview has roomier content padding and a Preview/Changes switch. Changes
+requests the selected revision against its immediate predecessor with `Read` in
+DIFF format, on demand through the same Payday query cache. Added and removed
+lines use the same subdued colors as revision counts. The full selected body is
+kept separately, so Copy never copies the patch. First revisions, missing
+predecessors, empty diffs and failed comparison reads have explicit states;
+failed reads can be retried. Changing revisions keeps the chosen preview mode.
 Clicking the larger title opens the shared
 inline value editor; confirming patches only the name under its observed version,
 preserving the body, revision and labels. Existing document bodies remain preview

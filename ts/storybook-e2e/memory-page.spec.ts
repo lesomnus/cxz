@@ -408,6 +408,7 @@ for (const width of [390, 1280])
       name: "Memory content",
       exact: true,
     });
+    await expect(body).toHaveCSS("padding", "24px");
     const bodyBefore = (await body.boundingBox())!;
     await revision.evaluate((node) => {
       node.style.display = "none";
@@ -647,6 +648,111 @@ test("copying a historical revision starts a draft with the selected body", asyn
   await expect(page.locator(".monaco-editor")).not.toContainText(
     "Design decisions from revision 4.",
   );
+});
+
+test("Changes compares the selected revision and Copy keeps the full body", async ({
+  page,
+}) => {
+  await open(page, "revision-history");
+  const body = doc(page).getByRole("region", {
+    name: "Memory content",
+    exact: true,
+  });
+  const changes = body.getByRole("radio", { name: "Changes", exact: true });
+  const preview = body.getByRole("radio", { name: "Preview", exact: true });
+  await expect(preview).toBeChecked();
+  await changes.check();
+  const diff = body.getByRole("region", {
+    name: "Memory changes",
+    exact: true,
+  });
+  await expect(diff).toContainText("--- r3");
+  await expect(diff).toContainText("+++ r4");
+  await expect(diff.locator('[data-diff-line="added"]')).toHaveText(
+    "+Design decisions from revision 4.",
+  );
+  await expect(diff.locator('[data-diff-line="removed"]')).toHaveText(
+    "-Design decisions from revision 3.",
+  );
+  const line = diff.locator('[data-diff-line="added"]');
+  const lineHeight = await line.evaluate((node) =>
+    parseFloat(getComputedStyle(node).lineHeight),
+  );
+  expect((await line.boundingBox())!.height).toBeCloseTo(lineHeight, 0);
+  await doc(page)
+    .getByRole("combobox", { name: "Revision", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Revision r2", exact: true }).click();
+  await expect(changes).toBeChecked();
+  await expect(diff).toContainText("--- r1");
+  await expect(diff).toContainText("+++ r2");
+  await expect(diff.locator('[data-diff-line="removed"]')).toHaveText(
+    "-Keep UI decisions together.",
+  );
+  await preview.check();
+  await expect(
+    body.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+  await changes.check();
+  await expect(diff).toBeVisible();
+  await expect(body.getByText("Loading changes…", { exact: true })).toHaveCount(
+    0,
+  );
+  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
+  await expect(page.locator(".monaco-editor")).toContainText(
+    "Design decisions from revision 2.",
+  );
+  await expect(page.locator(".monaco-editor")).not.toContainText("--- r1");
+});
+
+test("Changes explains first revisions and missing retained predecessors", async ({
+  page,
+}) => {
+  await open(page, "document");
+  const body = doc(page).getByRole("region", {
+    name: "Memory content",
+    exact: true,
+  });
+  await body.getByRole("radio", { name: "Changes", exact: true }).check();
+  await expect(body).toContainText("This is the first revision.");
+  await expect(
+    body.getByRole("region", { name: "Memory changes", exact: true }),
+  ).toHaveCount(0);
+  await open(page, "missing-previous-revision");
+  await body.getByRole("radio", { name: "Changes", exact: true }).check();
+  await expect(body).toContainText(
+    "The previous revision is no longer retained.",
+  );
+  await expect(
+    body.getByRole("region", { name: "Memory changes", exact: true }),
+  ).toHaveCount(0);
+  await body.getByRole("radio", { name: "Preview", exact: true }).check();
+  await expect(body).toContainText("Design decisions from revision 4.");
+});
+
+test("failed comparison reads can be retried without changing revisions", async ({
+  page,
+}) => {
+  await open(page, "comparison-retry");
+  const body = doc(page).getByRole("region", {
+    name: "Memory content",
+    exact: true,
+  });
+  await body.getByRole("radio", { name: "Changes", exact: true }).check();
+  await expect(body.getByRole("alert")).toContainText(
+    "Revision changes temporarily unavailable",
+  );
+  await body
+    .getByRole("button", { name: "Retry changes", exact: true })
+    .click();
+  await expect(
+    body.getByRole("region", { name: "Memory changes", exact: true }),
+  ).toContainText("+++ r4");
+  await expect(
+    doc(page)
+      .getByRole("combobox", { name: "Revision", exact: true })
+      .getByRole("img", { name: "Revision 4", exact: true }),
+  ).toBeVisible();
 });
 
 test("the Reload panel refreshes the preview while showing pending feedback", async ({

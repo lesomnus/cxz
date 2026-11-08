@@ -119,23 +119,10 @@
   font-size: 10px;
   line-height: 11px;
 }
-.bodySection {
+.bodySection.bodySection {
   grid-column: 1 / -1;
   min-width: 0;
-}
-.preview {
-  min-width: 0;
-}
-.preview > :global(.markdown) {
-  padding-inline: 0;
-  font-size: 12px;
-  line-height: 1.85;
-}
-.preview :global(.markdown) > :first-child {
-  margin-top: 0;
-}
-.preview :global(.markdown) > :last-child {
-  margin-bottom: 0;
+  padding: calc(6 * var(--ui-space));
 }
 .editor {
   height: min(58vh, 560px);
