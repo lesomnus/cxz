@@ -14,7 +14,7 @@ Save configuration and Revert changes icon buttons. The actions share the
 Account page's resource-button styling. Revert restores the last saved account,
 model, effort and feature settings without a server write. Narrow layouts wrap
 this row. Model/effort choices apply to all three tasks. Their titles,
-descriptions and upper-right switches appear in wide rectangular panels, three
+descriptions and upper-right compact switches appear in wide rectangular panels, three
 across on wider screens and stacked on narrow screens. Clicking a panel toggles
 its feature; the switches also support keyboard interaction. Older different choices
 are shown as Mixed and preserved until a common choice is explicitly selected.

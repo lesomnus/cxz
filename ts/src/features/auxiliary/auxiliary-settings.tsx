@@ -360,6 +360,7 @@ export function AuxiliarySettings({
               <div className={styles.profileHeader}>
                 <h2>{label}</h2>
                 <Switch
+                  variant="compact"
                   label={`${label} enabled`}
                   checked={profile.enabled}
                   disabled={unavailable}
