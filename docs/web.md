@@ -374,7 +374,7 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 | --- | --- |
 | Projects and sessions | Shared inventories and watches, creating/opening sessions, client-side visibility filters, editable titles and aliases |
 | Accounts | Profile registration, central Codex login, isolated Claude session login and helper login |
-| Search | Indexed server search, project/date/match filters, result paging and event navigation |
+| Search | Indexed server search, project/date filters in an attached panel below the search bar, match filters, result paging and event navigation |
 | Shared memory | Project library, revision-checked documents, snapshots, forks, merge, import, rename and trash controls |
 | Conversation | Virtualized paged history, live events, Markdown, highlighted code, model/effort snapshots, response metrics and copy |
 | Drafts | Composer drafts, pending Question answers/step and paste chips survive navigation and reload in tab-local sessionStorage |

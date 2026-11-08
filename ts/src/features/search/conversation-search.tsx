@@ -144,6 +144,7 @@ export function ConversationSearch({
   return (
     <div className={styles.content}>
       <form
+        className={styles.searchForm}
         role="search"
         aria-label="Search conversations"
         onSubmit={(event) => {
@@ -151,7 +152,7 @@ export function ConversationSearch({
           if (!loading) void search();
         }}
       >
-        <FindBar aria-label="Search conversations">
+        <FindBar className={styles.searchBar} aria-label="Search conversations">
           <FindBarControls>
             <FindBarIcon />
             <FindBarInput
@@ -225,7 +226,7 @@ export function ConversationSearch({
             )}
           </FindBarControls>
         </FindBar>
-        <div className={styles.filterBar}>
+        <div className={styles.filterBar} role="group" aria-label="Search filters">
           <PrefixValueMenu
             prefix={<ResourceIcon kind="projects" />}
             label="Search project"
