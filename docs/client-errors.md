@@ -35,7 +35,9 @@ diagnostic summaries ellipsize to retain two lines, with the full text in native
 History status is retained for assistive text and the row title. Details remain
 available from the independent page via the header link.
 Dismiss is a row action. The page toolbar places Clear history first and
-Dismiss all at the far right, both with 12px icons. Dismiss all changes only
+Dismiss all at the far right, both with 12px icons. The shared ResourceToolbar
+action group owns their 48×28px shape and icon sizing, also used by Tasks and
+Accounts; no Errors-specific toolbar CSS is needed. Dismiss all changes only
 currently Active entries to Dismissed in one store update; existing history is
 preserved and an already expired episode remains Stale. It is disabled when
 there are no Active entries. Clear history removes closed episodes and is

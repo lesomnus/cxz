@@ -34,11 +34,21 @@
   gap: calc(2 * var(--ui-space));
 }
 .toolbarActions {
+  --resource-toolbar-icon-size: 12px;
   display: flex;
   flex: none;
   align-items: center;
   margin-left: auto;
   min-height: var(--resource-toolbar-row-height);
+}
+/* Match the visible project/session picker surface inside the toolbar row. */
+.toolbarActions :global(button[data-variant="toolbar"]) {
+  height: calc(
+    var(--resource-toolbar-row-height) - 2 * var(--ui-control-inset)
+  );
+  min-height: calc(
+    var(--resource-toolbar-row-height) - 2 * var(--ui-control-inset)
+  );
 }
 @container resource-page (width < 892px) {
   .toolbarContent,
