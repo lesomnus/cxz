@@ -159,6 +159,7 @@ test("feature panels, switches and keyboard toggle once, and revert uses the lat
   await open(page);
   const summary = page.getByRole("region", { name: "Summary configuration" });
   const toggle = summary.getByRole("switch", { name: "Summary enabled" });
+  await expect(toggle).toHaveCSS("height", "16px");
   const revert = page.getByRole("button", {
     name: "Revert changes",
     exact: true,
