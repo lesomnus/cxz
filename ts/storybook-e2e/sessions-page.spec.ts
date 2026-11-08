@@ -218,6 +218,11 @@ test("narrow conversations hide navigation and browser Back restores the overvie
   await expect(
     page.getByRole("complementary", { name: "Session list", exact: true }),
   ).toHaveCount(0);
+  await expect
+    .poll(
+      async () => (await page.locator(".session-workspace").boundingBox())!.x,
+    )
+    .toBe(0);
   const bounds = await page.locator(".session-workspace").boundingBox();
   expect(bounds!.x).toBe(0);
   expect(bounds!.width).toBe(390);
@@ -302,6 +307,9 @@ test("reduced motion opens the panel without transitioning the workspace", async
     "transition-duration",
     "0s",
   );
+  await expect(
+    page.locator("[data-session-pages] > [data-sliding-page][data-active]"),
+  ).toHaveCSS("transition-duration", "0s");
 });
 
 test("Sessions sort by conversation recency and preserve selection through live reordering", async ({
@@ -418,4 +426,124 @@ test("Sessions hide projects without containers and follow container lifecycle u
     .click();
   await expect(api).toHaveCount(0);
   await expect(rows).toHaveCount(5);
+});
+
+test("Sessions use the shared list-detail slide in both directions and retain list state", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 700 });
+  await page.goto(
+    "/iframe.html?id=pages-sessions--many-sessions&viewMode=story",
+  );
+  const deck = page.locator("[data-session-pages]");
+  const list = deck.locator(':scope > [data-sliding-page="list"]');
+  const detail = deck.locator(':scope > [data-sliding-page="detail"]');
+  await expect(table(page).locator("tbody tr")).toHaveCount(50);
+  const viewport = list.locator(
+    "[data-resource-page] > .panel-scroll-region > .panel-scroll-content",
+  );
+  await viewport.evaluate((node) => {
+    node.scrollTop = 240;
+  });
+  const href = await table(page)
+    .locator("tbody [data-session-navigation]")
+    .nth(6)
+    .getAttribute("href");
+  const row = table(page)
+    .locator("tbody tr")
+    .filter({ has: page.locator(`[data-session-navigation][href="${href}"]`) });
+  await row.getByRole("checkbox").check();
+  const scrollTop = await viewport.evaluate((node) => node.scrollTop);
+  const slide = (enter: boolean) =>
+    deck.evaluate(
+      async (root, { enter, href }) => {
+        const source = root.querySelector(
+          `[data-sliding-page="${enter ? "list" : "detail"}"]`,
+        )!;
+        const incoming = root.querySelector(
+          `[data-sliding-page="${enter ? "detail" : "list"}"]`,
+        )!;
+        if (enter)
+          (
+            root.querySelector(
+              `[data-session-navigation][href="${href}"]`,
+            ) as HTMLElement
+          ).click();
+        else
+          document
+            .querySelector<HTMLButtonElement>(
+              'nav[aria-label="Preview history"] button',
+            )!
+            .click();
+        for (let frame = 0; frame < 120; frame++) {
+          await new Promise(requestAnimationFrame);
+          const animation = incoming
+            .getAnimations()
+            .find(
+              (animation) =>
+                animation instanceof CSSTransition &&
+                animation.transitionProperty === "transform",
+            );
+          if (!incoming.hasAttribute("data-active") || !animation) continue;
+          const motions = root
+            .closest(".workspace")!
+            .getAnimations({ subtree: true })
+            .filter((animation) => animation instanceof CSSTransition);
+          for (const motion of motions) {
+            motion.pause();
+            motion.currentTime =
+              Number(motion.effect!.getTiming().duration) / 4;
+          }
+          const result = {
+            incoming: new DOMMatrixReadOnly(
+              getComputedStyle(incoming).transform,
+            ).m41,
+            outgoing: new DOMMatrixReadOnly(getComputedStyle(source).transform)
+              .m41,
+            width: root.getBoundingClientRect().width,
+            inert: source.hasAttribute("inert"),
+            retained: !!source.querySelector(
+              enter ? "table" : ".session-workspace",
+            ),
+          };
+          for (const motion of motions) motion.finish();
+          return result;
+        }
+        throw new Error("The list/detail transform transition did not start");
+      },
+      { enter, href },
+    );
+  const entering = await slide(true);
+  expect(entering.incoming).toBeGreaterThan(0);
+  expect(entering.incoming).toBeLessThan(entering.width);
+  expect(entering.outgoing).toBeLessThan(0);
+  expect(entering.inert).toBe(true);
+  expect(entering.retained).toBe(true);
+  await expect(detail).toHaveAttribute("data-active", "true");
+  const returning = await slide(false);
+  expect(returning.incoming).toBeLessThan(0);
+  expect(returning.outgoing).toBeGreaterThan(0);
+  expect(returning.inert).toBe(true);
+  expect(returning.retained).toBe(true);
+  await expect(list).toHaveAttribute("data-active", "true");
+  await expect(detail.locator(".session-workspace")).toHaveCount(0);
+  expect(await viewport.evaluate((node) => node.scrollTop)).toBe(scrollTop);
+  await expect(row.getByRole("checkbox")).toBeChecked();
+});
+
+test("opening a conversation directly starts on the detail without a list transition", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-sessions--conversation&viewMode=story",
+  );
+  const deck = page.locator("[data-session-pages]");
+  const detail = deck.locator(':scope > [data-sliding-page="detail"]');
+  await expect(detail.locator(".session-workspace")).toBeVisible();
+  expect(
+    await detail.evaluate(
+      (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m41,
+    ),
+  ).toBe(0);
+  await expect(deck.locator("table")).toHaveCount(0);
 });

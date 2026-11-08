@@ -1,4 +1,4 @@
-import { Icon } from "#src/shared/icons/icon.tsx";
+import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { key } from "@lesomnus/payday/store";
@@ -53,6 +53,7 @@ export function SessionTable({
   showAccount = true,
   showProject = false,
   projectFirst = false,
+  navigationIcon,
   showToolbar = true,
   title = t("Sessions"),
   horizontalScrollbar = false,
@@ -70,6 +71,7 @@ export function SessionTable({
   showProject?: boolean;
   /** Put project identity before the session name in the all-sessions list. */
   projectFirst?: boolean;
+  navigationIcon?: IconName;
   showToolbar?: boolean;
   title?: string;
   horizontalScrollbar?: boolean;
@@ -294,7 +296,7 @@ export function SessionTable({
                     <TableCell className={`${styles.name} ${styles.cardCell}`}>
                       <SessionNavigationButton
                         session={s}
-                        navigationIcon="open-project"
+                        navigationIcon={navigationIcon}
                         unread={completed.has(s.runtimeId)}
                       />
                     </TableCell>

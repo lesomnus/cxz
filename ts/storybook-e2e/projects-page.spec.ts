@@ -634,6 +634,8 @@ test("project sessions use the index column layout with bounded resource links a
     .first()
     .getByRole("link", { name: "Work account work", exact: true });
   await expect(session).toHaveAttribute("href", "/c/_/session/oak");
+  await expect(session.locator('[data-icon="open-external"]')).toHaveCount(1);
+  await expect(session.locator('[data-icon="open-project"]')).toHaveCount(0);
   await expect(account).toHaveAttribute("href", "/c/_/account/work");
   await expect(
     rows.first().locator("td").nth(1).locator(".session-indicator"),

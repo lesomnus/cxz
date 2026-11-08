@@ -24,9 +24,11 @@ import styles from "#src/shared/components/resource-page.module.css";
 export function SessionLibrary({
   c,
   projects,
+  active = true,
 }: {
   c: Connection;
   projects: Project[];
+  active?: boolean;
 }) {
   const [creating, setCreating] = useState(false);
   const inventory = useResourceInventory(c);
@@ -41,7 +43,7 @@ export function SessionLibrary({
       return project?.status?.containerState !== ContainerState.ABSENT;
     });
   }, [inventory.sessions, projects]);
-  const activity = useSessionActivity(c, listedSessions);
+  const activity = useSessionActivity(c, listedSessions, active);
   const sessions = useMemo(
     () => sortSessionsByActivity(listedSessions, activity),
     [listedSessions, activity],
@@ -93,6 +95,7 @@ export function SessionLibrary({
             variant="overview"
             showProject
             projectFirst
+            navigationIcon="open-project"
             showToolbar={false}
             scroll="page"
             addSession={() => setCreating(true)}
