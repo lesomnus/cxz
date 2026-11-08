@@ -13,17 +13,20 @@
   margin-inline-end: var(--ui-space);
 }
 
-/* The dot and the button's top-right corner share the same center. */
+/* Inset both axes equally from the button's rounded corner center. */
 .button[data-unread]::after {
   --session-badge-size: 6px;
+  --session-badge-corner-inset: 3px;
   content: "";
   position: absolute;
   z-index: 2;
   inset-block-start: calc(
-    var(--resource-link-radius) - var(--session-badge-size) / 2
+    var(--resource-link-radius) - var(--session-badge-size) / 2 +
+      var(--session-badge-corner-inset)
   );
   inset-inline-end: calc(
-    var(--resource-link-radius) - var(--session-badge-size) / 2
+    var(--resource-link-radius) - var(--session-badge-size) / 2 +
+      var(--session-badge-corner-inset)
   );
   width: var(--session-badge-size);
   height: var(--session-badge-size);

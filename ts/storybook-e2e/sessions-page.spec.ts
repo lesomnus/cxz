@@ -349,7 +349,7 @@ test("Sessions sort by conversation recency and preserve selection through live 
   await expect(oldest.getByRole("checkbox")).toBeChecked();
 });
 
-test("unread completion dots share the Name button corner center and clear with read state", async ({
+test("unread completion dots keep symmetric corner insets and clear with read state", async ({
   page,
 }) => {
   await page.goto(
@@ -374,8 +374,8 @@ test("unread completion dots share the Name button corner center and clear with 
       pointerEvents: dot.pointerEvents,
     };
   });
-  expect(geometry.top).toBe(geometry.radius);
-  expect(geometry.right).toBe(geometry.radius);
+  expect(geometry.top).toBe(geometry.radius + 3);
+  expect(geometry.right).toBe(geometry.radius + 3);
   expect(geometry.content).toBe('""');
   expect(geometry.pointerEvents).toBe("none");
   await page
