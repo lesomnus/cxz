@@ -66,7 +66,7 @@ esac
 			if !unowned && err != nil {
 				t.Fatal(err)
 			}
-			if c.Config().Summary.Account != "" || c.Config().Suggestion.Account != "other" {
+			if c.Config().Account != "other" || c.Config().Summary.Enabled || c.Config().Summary.Model != "" || c.Config().Suggestion.Account != "other" {
 				t.Fatal("profile cleanup affected other accounts", c.Config())
 			}
 			calls, _ := os.ReadFile(log)

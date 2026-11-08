@@ -164,10 +164,26 @@ func (s InstallationServer) SaveAgents(ctx context.Context, r *resource.SaveAgen
 		return nil, err
 	}
 	in := &api.AuxSetConfigInput{}
+	account := r.GetAccount()
+	for _, p := range r.GetProfiles() {
+		if p == nil {
+			return nil, status.Error(codes.InvalidArgument, "profile is required")
+		}
+		if p.GetAccount() != "" {
+			if account != "" && account != p.GetAccount() {
+				return nil, status.Error(codes.InvalidArgument, "auxiliary tasks must use one shared account")
+			}
+			account = p.GetAccount()
+		}
+	}
 	for _, p := range r.GetProfiles() {
 		// A profile that is being turned on has to name a registered account;
 		// one being turned off does not, because there is nothing to reach.
-		profile, err := s.auxProfile(ctx, p, p.GetEnabled())
+		copy := resource.AgentProfile_builder{
+			Kind: ptr(p.GetKind()), Enabled: ptr(p.GetEnabled()), Account: &account,
+			Model: ptr(p.GetModel()), Effort: ptr(p.GetEffort()),
+		}.Build()
+		profile, err := s.auxProfile(ctx, copy, p.GetEnabled())
 		if err != nil {
 			return nil, err
 		}
@@ -236,6 +252,12 @@ func (s InstallationServer) accountConfigReply(ctx context.Context, out *api.Aux
 			return nil, err
 		}
 		profile.SetAccount(alias)
+	}
+	for _, profile := range reply.GetProfiles() {
+		if profile.GetAccount() != "" {
+			reply.SetAccount(profile.GetAccount())
+			break
+		}
 	}
 	return reply, nil
 }

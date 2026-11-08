@@ -1126,8 +1126,8 @@ func (b0 RenderDevcontainerReply_builder) Build() *RenderDevcontainerReply {
 	return m0
 }
 
-// Which account and model run a kind. Per kind, because whether two kinds share
-// a profile is what decides whether one call can answer both. agent and backend
+// Each kind's model and effort. account is a compatibility projection of the
+// installation-wide shared account; mixed-account saves are refused. agent and backend
 // are read only: they come from the registered account, not from a caller.
 type AgentProfile struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
@@ -1472,10 +1472,13 @@ func (b0 AgentsRequest_builder) Build() *AgentsRequest {
 }
 
 type SaveAgentsRequest struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Profiles *[]*AgentProfile       `protobuf:"bytes,1,rep,name=profiles"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Profiles    *[]*AgentProfile       `protobuf:"bytes,1,rep,name=profiles"`
+	xxx_hidden_Account     *string                `protobuf:"bytes,2,opt,name=account"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *SaveAgentsRequest) Reset() {
@@ -1512,14 +1515,44 @@ func (x *SaveAgentsRequest) GetProfiles() []*AgentProfile {
 	return nil
 }
 
+func (x *SaveAgentsRequest) GetAccount() string {
+	if x != nil {
+		if x.xxx_hidden_Account != nil {
+			return *x.xxx_hidden_Account
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *SaveAgentsRequest) SetProfiles(v []*AgentProfile) {
 	x.xxx_hidden_Profiles = &v
+}
+
+func (x *SaveAgentsRequest) SetAccount(v string) {
+	x.xxx_hidden_Account = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *SaveAgentsRequest) HasAccount() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SaveAgentsRequest) ClearAccount() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Account = nil
 }
 
 type SaveAgentsRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Profiles []*AgentProfile
+	// One registered account for every kind; omitted by older clients, whose
+	// profile account fields must agree. An explicit value applies to all profiles.
+	Account *string
 }
 
 func (b0 SaveAgentsRequest_builder) Build() *SaveAgentsRequest {
@@ -1527,6 +1560,10 @@ func (b0 SaveAgentsRequest_builder) Build() *SaveAgentsRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Profiles = &b.Profiles
+	if b.Account != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_Account = b.Account
+	}
 	return m0
 }
 
@@ -1536,6 +1573,7 @@ type AgentProfiles struct {
 	xxx_hidden_Profiles    *[]*AgentProfile       `protobuf:"bytes,2,rep,name=profiles"`
 	xxx_hidden_Message     *string                `protobuf:"bytes,3,opt,name=message"`
 	xxx_hidden_Owner       *string                `protobuf:"bytes,4,opt,name=owner"`
+	xxx_hidden_Account     *string                `protobuf:"bytes,5,opt,name=account"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -1606,9 +1644,19 @@ func (x *AgentProfiles) GetOwner() string {
 	return ""
 }
 
+func (x *AgentProfiles) GetAccount() string {
+	if x != nil {
+		if x.xxx_hidden_Account != nil {
+			return *x.xxx_hidden_Account
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *AgentProfiles) SetRevision(v string) {
 	x.xxx_hidden_Revision = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 5)
 }
 
 func (x *AgentProfiles) SetProfiles(v []*AgentProfile) {
@@ -1617,12 +1665,17 @@ func (x *AgentProfiles) SetProfiles(v []*AgentProfile) {
 
 func (x *AgentProfiles) SetMessage(v string) {
 	x.xxx_hidden_Message = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
 }
 
 func (x *AgentProfiles) SetOwner(v string) {
 	x.xxx_hidden_Owner = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+}
+
+func (x *AgentProfiles) SetAccount(v string) {
+	x.xxx_hidden_Account = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *AgentProfiles) HasRevision() bool {
@@ -1646,6 +1699,13 @@ func (x *AgentProfiles) HasOwner() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *AgentProfiles) HasAccount() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
 func (x *AgentProfiles) ClearRevision() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Revision = nil
@@ -1661,6 +1721,11 @@ func (x *AgentProfiles) ClearOwner() {
 	x.xxx_hidden_Owner = nil
 }
 
+func (x *AgentProfiles) ClearAccount() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Account = nil
+}
+
 type AgentProfiles_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1668,6 +1733,7 @@ type AgentProfiles_builder struct {
 	Profiles []*AgentProfile
 	Message  *string
 	Owner    *string
+	Account  *string
 }
 
 func (b0 AgentProfiles_builder) Build() *AgentProfiles {
@@ -1675,17 +1741,21 @@ func (b0 AgentProfiles_builder) Build() *AgentProfiles {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 5)
 		x.xxx_hidden_Revision = b.Revision
 	}
 	x.xxx_hidden_Profiles = &b.Profiles
 	if b.Message != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
 		x.xxx_hidden_Message = b.Message
 	}
 	if b.Owner != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
 		x.xxx_hidden_Owner = b.Owner
+	}
+	if b.Account != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		x.xxx_hidden_Account = b.Account
 	}
 	return m0
 }
@@ -3836,14 +3906,16 @@ const file_cxz_installation_proto_rawDesc = "" +
 	"\x05model\x18\x06 \x01(\tR\x05model\x12\x16\n" +
 	"\x06effort\x18\a \x01(\tR\x06effort\x120\n" +
 	"\x05since\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x05since\"\x0f\n" +
-	"\rAgentsRequest\"B\n" +
+	"\rAgentsRequest\"\\\n" +
 	"\x11SaveAgentsRequest\x12-\n" +
-	"\bprofiles\x18\x01 \x03(\v2\x11.cxz.AgentProfileR\bprofiles\"\x8a\x01\n" +
+	"\bprofiles\x18\x01 \x03(\v2\x11.cxz.AgentProfileR\bprofiles\x12\x18\n" +
+	"\aaccount\x18\x02 \x01(\tR\aaccount\"\xa4\x01\n" +
 	"\rAgentProfiles\x12\x1a\n" +
 	"\brevision\x18\x01 \x01(\tR\brevision\x12-\n" +
 	"\bprofiles\x18\x02 \x03(\v2\x11.cxz.AgentProfileR\bprofiles\x12\x18\n" +
 	"\amessage\x18\x03 \x01(\tR\amessage\x12\x14\n" +
-	"\x05owner\x18\x04 \x01(\tR\x05owner\"\x12\n" +
+	"\x05owner\x18\x04 \x01(\tR\x05owner\x12\x18\n" +
+	"\aaccount\x18\x05 \x01(\tR\aaccount\"\x12\n" +
 	"\x10RetentionRequest\"\x9f\x01\n" +
 	"\rHistoryPolicy\x12\x1a\n" +
 	"\bdisabled\x18\x01 \x01(\bR\bdisabled\x12\x17\n" +

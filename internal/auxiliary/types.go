@@ -18,6 +18,11 @@ type Profile struct {
 	Effort  string `json:"effort,omitempty"`
 }
 type Config struct {
+	// One installation-wide identity; profile identity fields are resolved copies
+	// retained for execution and older clients, never independent assignments.
+	Account    string  `json:"account,omitempty"`
+	Agent      string  `json:"agent,omitempty"`
+	Backend    string  `json:"backend,omitempty"`
 	Title      Profile `json:"title"`
 	TitleSince int64   `json:"title_since"`
 	Since      int64   `json:"since"`
@@ -40,7 +45,7 @@ func (p Profile) Validate() error {
 	if _, err := accounts.Resolve(p.Agent, p.Backend); err != nil {
 		return err
 	}
-	if p.Model == "" || len(p.Model) > 150 || len(p.Effort) > 30 {
+	if (p.Enabled && p.Model == "") || len(p.Model) > 150 || len(p.Effort) > 30 {
 		return fmt.Errorf("select a model and supported effort")
 	}
 	return nil

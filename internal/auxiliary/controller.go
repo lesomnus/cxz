@@ -47,31 +47,52 @@ func New(root string, run Runner) (*Controller, error) {
 		e = json.Unmarshal(b, &c.config)
 	}
 	if e != nil && !os.IsNotExist(e) {
+		c.store.Close()
 		return nil, e
+	}
+	if c.config.normalize() {
+		c.config.Revision = core.ID()
+		if err := core.WriteJSON(filepath.Join(c.root, "config.json"), c.config); err != nil {
+			c.store.Close()
+			return nil, err
+		}
 	}
 	return c, nil
 }
 func (c *Controller) Config() Config { c.mu.Lock(); defer c.mu.Unlock(); return c.config }
 func (c *Controller) Save(task string, p Profile) (Config, error) {
+	return c.SaveProfiles(map[string]Profile{task: p})
+}
+
+func (c *Controller) SaveProfiles(updates map[string]Profile) (Config, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if e := p.Validate(); e != nil {
-		return c.config, e
+	n, err := c.config.withProfiles(updates)
+	if err != nil {
+		return c.config, err
+	}
+	if n.Title.Enabled && (!c.config.Title.Enabled || n.TitleSince == 0) {
+		n.TitleSince = time.Now().UnixMilli()
+	}
+	return c.saveConfig(n)
+}
+
+// ForgetAccount clears all helper assignments when their shared account is
+// erased. Deleting an unrelated account must leave the configuration intact.
+func (c *Controller) ForgetAccount(account string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.config.Account != account {
+		return nil
 	}
 	n := c.config
-	switch task {
-	case "summary":
-		n.Summary = p
-	case "suggestion":
-		n.Suggestion = p
-	case "title":
-		n.Title = p
-		if p.Enabled && (!c.config.Title.Enabled || n.TitleSince == 0) {
-			n.TitleSince = time.Now().UnixMilli()
-		}
-	default:
-		return n, fmt.Errorf("unknown auxiliary task")
-	}
+	n.useAccount(Profile{})
+	_, err := c.saveConfig(n)
+	return err
+}
+
+// saveConfig is called with the controller lock held.
+func (c *Controller) saveConfig(n Config) (Config, error) {
 	n.Revision = core.ID()
 	n.Since = time.Now().UnixMilli()
 	if e := core.WriteJSON(filepath.Join(c.root, "config.json"), n); e != nil {

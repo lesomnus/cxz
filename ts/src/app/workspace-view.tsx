@@ -60,7 +60,8 @@ export function WorkspaceView() {
         error={inventoryError}
       />
     );
-  if (resource === "auxiliary") return <AuxiliaryPage c={c} />;
+  if (resource === "auxiliary")
+    return <AuxiliaryPage c={c} sessions={sessions} />;
   if (resource === "settings" && settingsTopic === "connections")
     return <ConnectionsPage />;
   if (resource === "settings" && settingsTopic === "logs") return <LogsPage />;
