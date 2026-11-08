@@ -81,6 +81,12 @@ export function MemoryLibrary({
     [error, setError] = useState("");
   const [revision, setRevision] = useState(0n);
   const [previewMode, setPreviewMode] = useState<MemoryPreviewMode>("preview");
+  const [copied, setCopied] = useState<{ key: string }>();
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(undefined), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
   const [confirmation, setConfirmation] = useState<{
     title: string;
     text: string;
@@ -263,8 +269,10 @@ export function MemoryLibrary({
   async function copyMemory() {
     if (!read || reading) return;
     setError("");
+    setCopied(undefined);
     try {
       await navigator.clipboard.writeText(read.content);
+      setCopied({ key: `${selectedKey}:${selectedRevision}` });
     } catch (error) {
       setError(`Could not copy memory: ${String(error)}`);
     }
@@ -323,6 +331,10 @@ export function MemoryLibrary({
     },
     {
       label: "Copy",
+      feedback:
+        copied?.key === `${selectedKey}:${selectedRevision}`
+          ? "copied!"
+          : undefined,
       icon: "copy",
       disabled: busy || reading || !read || trash,
       run: copyMemory,

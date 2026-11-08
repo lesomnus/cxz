@@ -295,13 +295,18 @@ test("Copy writes the raw body without opening an editor or changing the documen
   await open(page);
   await card(page, "Architecture notes").click();
   const url = page.url();
-  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
+  const copy = doc(page).getByRole("button", { name: /^(Copy|copied!)$/ });
+  await copy.hover();
+  await copy.click();
+  await expect(copy).toHaveAttribute("aria-label", "copied!");
+  await expect(page.getByText("copied!", { exact: true })).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe(
       "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
     );
   expect(page.url()).toBe(url);
+  await expect(copy).toHaveAttribute("aria-label", "Copy");
   await expect(
     doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
   ).toContainText("Architecture notes");

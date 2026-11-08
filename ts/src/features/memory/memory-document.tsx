@@ -35,6 +35,7 @@ import styles from "./memory-document.module.css";
 
 export type MemoryDocumentAction = {
   label: string;
+  feedback?: string;
   icon: IconName;
   disabled: boolean;
   danger?: boolean;
@@ -207,12 +208,16 @@ export function MemoryDocument({
           aria-label="Memory document actions"
         >
           {actions.map((action) => (
-            <Popover key={action.label} content={action.label} placement="top">
+            <Popover
+              key={action.label}
+              content={action.feedback ?? action.label}
+              placement="top"
+            >
               <Section
                 as="button"
                 type="button"
                 className={`${actionStyles.button} ${action.danger ? actionStyles.danger : ""}`}
-                aria-label={action.label}
+                aria-label={action.feedback ?? action.label}
                 disabled={action.disabled}
                 onClick={action.run}
               >
