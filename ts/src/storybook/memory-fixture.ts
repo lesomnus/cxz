@@ -15,6 +15,10 @@ import {
 } from "#gen/cxz/memory_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { projectFixtureId } from "./project-id";
+import {
+  memoryParagraphBefore,
+  memoryParagraphAfter,
+} from "./memory-long-paragraph";
 export function memoryFixture({
   empty = false,
   fail = false,
@@ -27,6 +31,7 @@ export function memoryFixture({
   revisionCount = 1,
   missingPreviousRevision = false,
   diffFailOnce = false,
+  longParagraphChange = false,
 } = {}) {
   const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
@@ -107,7 +112,9 @@ export function memoryFixture({
   if (!empty) {
     const primary = add(
       "Architecture notes",
-      "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
+      longParagraphChange
+        ? memoryParagraphBefore
+        : "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
     );
     add("Handoff notes", "# Handoff\n\nReview open changes.");
     if (revisionCount > 1) {
@@ -119,7 +126,9 @@ export function memoryFixture({
     }
     for (let revision = 2; revision <= revisionCount; revision++) {
       primary.revision = BigInt(revision);
-      primary.content = `# Architecture\n\nShared memory belongs to the project.\n\nDesign decisions from revision ${revision}.`;
+      primary.content = longParagraphChange
+        ? memoryParagraphAfter
+        : `# Architecture\n\nShared memory belongs to the project.\n\nDesign decisions from revision ${revision}.`;
       versions.get(key(primary.id))!.set(primary.revision, primary.content);
       versionInfo.get(key(primary.id))!.set(
         primary.revision,
@@ -273,8 +282,14 @@ export function memoryFixture({
           history.has(r.baseRevision)
         ) {
           const before = history.get(r.baseRevision)!;
-          const oldLines = before.split("\n"),
-            newLines = content.split("\n");
+          const oldLines = before.match(/[^\n]*\n|[^\n]+$/g) ?? [],
+            newLines = content.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+          const encode = (lines: string[], prefix: string) =>
+            lines.flatMap((line) =>
+              line.endsWith("\n")
+                ? [prefix + line.slice(0, -1)]
+                : [prefix + line, "\\ No newline at end of file"],
+            );
           let prefix = 0,
             suffix = 0;
           while (
@@ -300,18 +315,18 @@ export function memoryFixture({
                 : [
                     `--- r${r.baseRevision}`,
                     `+++ r${rev}`,
-                    `@@ -1,${oldLines.length} +1,${newLines.length} @@`,
-                    ...oldLines.slice(0, prefix).map((line) => ` ${line}`),
-                    ...oldLines
-                      .slice(prefix, oldLines.length - suffix)
-                      .map((line) => `-${line}`),
-                    ...newLines
-                      .slice(prefix, newLines.length - suffix)
-                      .map((line) => `+${line}`),
-                    ...oldLines
-                      .slice(oldLines.length - suffix)
-                      .map((line) => ` ${line}`),
-                  ].join("\n"),
+                    `@@ -${oldLines.length ? 1 : 0},${oldLines.length} +${newLines.length ? 1 : 0},${newLines.length} @@`,
+                    ...encode(oldLines.slice(0, prefix), " "),
+                    ...encode(
+                      oldLines.slice(prefix, oldLines.length - suffix),
+                      "-",
+                    ),
+                    ...encode(
+                      newLines.slice(prefix, newLines.length - suffix),
+                      "+",
+                    ),
+                    ...encode(oldLines.slice(oldLines.length - suffix), " "),
+                  ].join("\n") + "\n",
           };
         }
         return {

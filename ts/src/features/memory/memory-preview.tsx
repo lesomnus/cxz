@@ -1,8 +1,12 @@
 import { Button, SegmentedControl } from "@lesomnus/nox";
+import { SourceDiff } from "@lesomnus/nox/editor";
+import { useMemo } from "react";
 import { MemoryReadFormat, type MemoryReadReply } from "#gen/cxz/memory_svc_pb";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import colors from "./memory-library.module.css";
+import { useEditorSettings } from "#src/shared/settings/settings.ts";
+import { useTheme } from "#src/shared/theme/theme.tsx";
+import { reverseMemoryDiff } from "./reverse-memory-diff";
 import styles from "./memory-preview.module.css";
 
 export type MemoryPreviewMode = "preview" | "changes";
@@ -54,16 +58,22 @@ export function MemoryPreview({
           <p className={styles.notice}>This document is empty.</p>
         )
       ) : (
-        <MemoryChanges revision={revision} comparison={comparison} />
+        <MemoryChanges
+          content={content}
+          revision={revision}
+          comparison={comparison}
+        />
       )}
     </div>
   );
 }
 
 function MemoryChanges({
+  content,
   revision,
   comparison,
 }: {
+  content: string;
   revision: bigint;
   comparison: MemoryComparison;
 }) {
@@ -98,32 +108,50 @@ function MemoryChanges({
   if (!changes.diff)
     return <p className={styles.notice}>No changes in this revision.</p>;
   return (
-    <pre className={styles.diff} role="region" aria-label="Memory changes">
-      <code>
-        {changes.diff.split("\n").map((line, index, lines) => {
-          const kind =
-            (index === 0 && line.startsWith("--- ")) ||
-            (index === 1 && line.startsWith("+++ ")) ||
-            line.startsWith("@@") ||
-            line.startsWith("\\")
-              ? "meta"
-              : line.startsWith("+")
-                ? "added"
-                : line.startsWith("-")
-                  ? "removed"
-                  : "context";
-          return (
-            <span
-              key={index}
-              data-diff-line={kind}
-              className={`${styles.line} ${kind === "added" ? colors.versionAdded : kind === "removed" ? colors.versionRemoved : ""}`}
-            >
-              {line}
-              {index < lines.length - 1 ? "\n" : ""}
-            </span>
-          );
-        })}
-      </code>
-    </pre>
+    <MemoryDiff
+      content={content}
+      patch={changes.diff}
+      retry={comparison.retry}
+    />
+  );
+}
+
+function MemoryDiff({
+  content,
+  patch,
+  retry,
+}: {
+  content: string;
+  patch: string;
+  retry: () => void;
+}) {
+  const theme = useTheme();
+  const settings = useEditorSettings();
+  const previous = useMemo(() => {
+    try {
+      return { value: reverseMemoryDiff(content, patch) };
+    } catch (error) {
+      return { error: String(error) };
+    }
+  }, [content, patch]);
+  if (previous.error)
+    return (
+      <div className={styles.failure}>
+        <ErrorNotice local error={previous.error} />
+        <Button onClick={retry}>Retry changes</Button>
+      </div>
+    );
+  return (
+    <div className={styles.diffViewport}>
+      <SourceDiff
+        path="memory.md"
+        languageId="markdown"
+        ariaLabel="Memory changes"
+        original={previous.value!}
+        modified={content}
+        theme={theme}
+        settings={{ ...settings, wordWrap: true }}
+      />
+    </div>
   );
 }

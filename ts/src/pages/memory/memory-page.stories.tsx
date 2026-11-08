@@ -48,6 +48,7 @@ function Preview({
   revisionCount = 1,
   missingPreviousRevision = false,
   diffFailOnce = false,
+  longParagraphChange = false,
 } = {}) {
   const [f] = useState(() =>
     memoryFixture({
@@ -62,6 +63,7 @@ function Preview({
       revisionCount,
       missingPreviousRevision,
       diffFailOnce,
+      longParagraphChange,
     }),
   );
   useEffect(() => () => f.dispose(), [f]);
@@ -188,6 +190,17 @@ export const MissingPreviousRevision: Story = {
       description: {
         story:
           "Choose Changes. The server returns full text because the predecessor was not retained; the UI explains the missing comparison instead of treating the full body as a diff.",
+      },
+    },
+  },
+};
+export const LongParagraphChanges: Story = {
+  args: { document: true, revisionCount: 2, longParagraphChange: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Choose Changes. A real long-paragraph edit emphasizes the changed phrases while unchanged text stays neutral. The comparison wraps within its viewport and scrolls to the first edited phrase.",
       },
     },
   },

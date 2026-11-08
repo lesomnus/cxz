@@ -55,6 +55,43 @@ async function pressCentered(page: Page, button: Locator) {
   }
 }
 
+async function highlightedText(diff: Locator, kind: "added" | "removed") {
+  return diff.evaluate((root, kind) => {
+    const selector =
+      kind === "added" ? ".char-insert" : ".char-delete, .inline-deleted-text";
+    const highlights = [...root.querySelectorAll(selector)]
+      .map((node) => node.getBoundingClientRect())
+      .filter((rect) => rect.width && rect.height);
+    let result = "";
+    for (const lines of root.querySelectorAll(".view-lines")) {
+      const walker = document.createTreeWalker(lines, NodeFilter.SHOW_TEXT);
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        for (let offset = 0; offset < node.textContent!.length; offset++) {
+          const range = document.createRange();
+          range.setStart(node, offset);
+          range.setEnd(node, offset + 1);
+          const rect = range.getBoundingClientRect();
+          const x = rect.x + rect.width / 2,
+            y = rect.y + rect.height / 2;
+          if (
+            rect.width &&
+            highlights.some(
+              (box) =>
+                x >= box.left &&
+                x < box.right &&
+                y >= box.top &&
+                y < box.bottom,
+            )
+          )
+            result += node.textContent![offset];
+        }
+      }
+    }
+    return result.replace(/\u00a0/g, " ");
+  }, kind);
+}
+
 test("the collection replaces old panels and controls with rectangular memory cards", async ({
   page,
 }) => {
@@ -666,29 +703,27 @@ test("Changes compares the selected revision and Copy keeps the full body", asyn
     name: "Memory changes",
     exact: true,
   });
-  await expect(diff).toContainText("--- r3");
-  await expect(diff).toContainText("+++ r4");
-  await expect(diff.locator('[data-diff-line="added"]')).toHaveText(
-    "+Design decisions from revision 4.",
-  );
-  await expect(diff.locator('[data-diff-line="removed"]')).toHaveText(
-    "-Design decisions from revision 3.",
-  );
-  const line = diff.locator('[data-diff-line="added"]');
-  const lineHeight = await line.evaluate((node) =>
-    parseFloat(getComputedStyle(node).lineHeight),
-  );
-  expect((await line.boundingBox())!.height).toBeCloseTo(lineHeight, 0);
+  await expect(diff).toHaveAttribute("aria-busy", "false");
+  await expect(body).toContainText("r3 → r4");
+  await expect
+    .poll(async () => await highlightedText(diff, "added"))
+    .toContain("4");
+  await expect
+    .poll(async () => await highlightedText(diff, "removed"))
+    .toContain("3");
   await doc(page)
     .getByRole("combobox", { name: "Revision", exact: true })
     .click();
   await page.getByRole("option", { name: "Revision r2", exact: true }).click();
   await expect(changes).toBeChecked();
-  await expect(diff).toContainText("--- r1");
-  await expect(diff).toContainText("+++ r2");
-  await expect(diff.locator('[data-diff-line="removed"]')).toHaveText(
-    "-Keep UI decisions together.",
-  );
+  await expect(diff).toHaveAttribute("aria-busy", "false");
+  await expect(body).toContainText("r1 → r2");
+  await expect
+    .poll(async () => await highlightedText(diff, "added"))
+    .toContain("Design");
+  await expect
+    .poll(async () => await highlightedText(diff, "removed"))
+    .toContain("Keep");
   await preview.check();
   await expect(
     body.getByRole("heading", { name: "Architecture", exact: true }),
@@ -745,15 +780,53 @@ test("failed comparison reads can be retried without changing revisions", async 
   await body
     .getByRole("button", { name: "Retry changes", exact: true })
     .click();
-  await expect(
-    body.getByRole("region", { name: "Memory changes", exact: true }),
-  ).toContainText("+++ r4");
+  const diff = body.getByRole("region", {
+    name: "Memory changes",
+    exact: true,
+  });
+  await expect(diff).toHaveAttribute("aria-busy", "false");
+  await expect
+    .poll(async () => await highlightedText(diff, "added"))
+    .toContain("4");
   await expect(
     doc(page)
       .getByRole("combobox", { name: "Revision", exact: true })
       .getByRole("img", { name: "Revision 4", exact: true }),
   ).toBeVisible();
 });
+
+for (const width of [390, 1440])
+  test(`long paragraph changes emphasize only edited phrases at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await open(page, "long-paragraph-changes");
+    await doc(page)
+      .getByRole("radio", { name: "Changes", exact: true })
+      .check();
+    const diff = doc(page).getByRole("region", {
+      name: "Memory changes",
+      exact: true,
+    });
+    await expect(diff).toHaveAttribute("aria-busy", "false");
+    await expect
+      .poll(async () => await highlightedText(diff, "added"))
+      .toContain("semantics");
+    const inserted = await highlightedText(diff, "added");
+    const removed = await highlightedText(diff, "removed");
+    expect(inserted).toContain("ErrorPanel");
+    expect(removed).toContain("producing");
+    expect(inserted + removed).not.toContain("ResourceToolbar");
+    expect(inserted.length + removed.length).toBeLessThan(500);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await expect(
+      diff.locator(".monaco-editor textarea").last(),
+    ).toHaveJSProperty("readOnly", true);
+  });
 
 test("the Reload panel refreshes the preview while showing pending feedback", async ({
   page,

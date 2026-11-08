@@ -8,6 +8,10 @@ import {
 import { MemoryPreview, type MemoryComparison } from "./memory-preview";
 
 vi.mock("#src/shared/content/markdown.tsx", () => ({ Markdown: () => null }));
+vi.mock("#src/shared/theme/theme.tsx", () => ({ useTheme: () => "dark" }));
+vi.mock("#src/shared/settings/settings.ts", () => ({
+  useEditorSettings: () => ({}),
+}));
 
 const render = (data?: MemoryComparison["data"], revision = 2n) =>
   renderToStaticMarkup(
@@ -25,17 +29,17 @@ const render = (data?: MemoryComparison["data"], revision = 2n) =>
     />,
   );
 
-test("diff headers stay neutral and raw content is escaped", () => {
+test("an inconsistent patch is reported instead of displaying misleading changes", () => {
   const html = render(
     create(MemoryReadReplySchema, {
       format: MemoryReadFormat.DIFF,
       diff: "--- r1\n+++ r2\n@@ -1,2 +1,2 @@\n-<img src=x onerror=alert(1)>\n--- body text\n+updated\n+++ body text",
     }),
   );
-  expect(html.match(/data-diff-line="meta"/g)).toHaveLength(3);
-  expect(html.match(/data-diff-line="added"/g)).toHaveLength(2);
-  expect(html.match(/data-diff-line="removed"/g)).toHaveLength(2);
-  expect(html).toContain("&lt;img");
+  expect(html).toContain(
+    "The comparison does not match the selected document.",
+  );
+  expect(html).not.toContain("data-diff-line");
   expect(html).not.toContain("<img");
 });
 

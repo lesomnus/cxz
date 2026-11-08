@@ -62,7 +62,12 @@ remain unknown.
 The preview has roomier content padding and a Preview/Changes switch. Changes
 requests the selected revision against its immediate predecessor with `Read` in
 DIFF format, on demand through the same Payday query cache. Added and removed
-lines use the same subdued colors as revision counts. The full selected body is
+text uses subdued green/red backgrounds. A read-only Monaco
+comparison emphasizes changed word ranges inside long paragraphs while keeping
+unchanged text neutral. It wraps to the viewport and reveals the first edited
+phrase. The previous body is reconstructed from the verified unified patch and
+the selected full body, without an additional request. A mismatched patch is
+rejected instead of displaying an incorrect comparison. The full selected body is
 kept separately, so Copy never copies the patch. First revisions, missing
 predecessors, empty diffs and failed comparison reads have explicit states;
 failed reads can be retried. Changing revisions keeps the chosen preview mode.
