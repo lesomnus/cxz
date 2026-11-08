@@ -558,10 +558,10 @@ test("revision selection changes only the body and Latest restores the current t
   ).toBeVisible();
   await expect(doc(page)).toContainText("Design decisions from revision 4.");
   await expect(
-    revision.getByRole("img", { name: "1 lines added", exact: true }),
+    revision.getByRole("img", { name: "1 bytes added", exact: true }),
   ).toBeVisible();
   await expect(
-    revision.getByRole("img", { name: "1 lines removed", exact: true }),
+    revision.getByRole("img", { name: "1 bytes removed", exact: true }),
   ).toBeVisible();
   await expect(revision.locator("time").first()).toHaveAttribute(
     "datetime",
@@ -574,10 +574,10 @@ test("revision selection changes only the body and Latest restores the current t
   const dateBox = (await revision.locator("time").first().boundingBox())!;
   const ageBox = (await revision.locator("time").nth(1).boundingBox())!;
   const addedBox = (await revision
-    .getByRole("img", { name: "1 lines added", exact: true })
+    .getByRole("img", { name: "1 bytes added", exact: true })
     .boundingBox())!;
   const removedBox = (await revision
-    .getByRole("img", { name: "1 lines removed", exact: true })
+    .getByRole("img", { name: "1 bytes removed", exact: true })
     .boundingBox())!;
   expect(dateBox.x).toBeCloseTo(numberBox.x, 0);
   expect(dateBox.y).toBeGreaterThan(numberBox.y);
@@ -587,10 +587,10 @@ test("revision selection changes only the body and Latest restores the current t
   await expect(revision.getByText("/", { exact: true })).toBeVisible();
   const colors = await revision.evaluate((node) => {
     const added = node.querySelector<HTMLElement>(
-      '[aria-label="1 lines added"]',
+      '[aria-label="1 bytes added"]',
     )!;
     const removed = node.querySelector<HTMLElement>(
-      '[aria-label="1 lines removed"]',
+      '[aria-label="1 bytes removed"]',
     )!;
     return {
       added: getComputedStyle(added).color,
@@ -801,6 +801,17 @@ for (const width of [390, 1440])
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     await open(page, "long-paragraph-changes");
+    const revision = doc(page).getByRole("combobox", {
+      name: "Revision",
+      exact: true,
+    });
+    await expect(
+      revision.getByRole("img", { name: "66 bytes added", exact: true }),
+    ).toBeVisible();
+    await expect(
+      revision.getByRole("img", { name: "41 bytes removed", exact: true }),
+    ).toBeVisible();
+    await expect(revision.getByText("B", { exact: true })).toHaveCount(2);
     await doc(page)
       .getByRole("radio", { name: "Changes", exact: true })
       .check();

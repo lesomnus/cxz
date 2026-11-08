@@ -5,6 +5,7 @@ go 1.27.0
 require (
 	connectrpc.com/connect v1.19.1
 	github.com/alecthomas/chroma/v2 v2.20.0
+	github.com/aymanbagabas/go-udiff v0.3.1
 	github.com/bufbuild/protocompile v0.14.2-0.20260605203730-cd7c3c124e10
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10

@@ -55,7 +55,7 @@ Narrow layouts place the selector beside the action buttons. It lists retained
 versions through `Versions`; choosing one loads its body through `Read`, while
 Latest follows the current document. Title and resource dates remain current.
 The selector and choices place the revision number above its creation date on the
-left and compact added/removed line counts together on the right, above the
+left and compact added/removed UTF-8 byte counts together on the right, above the
 humanized age of the revision. The selector uses the
 action buttons’ corner shape. First revisions show Created; unavailable counts
 remain unknown.
@@ -91,10 +91,14 @@ rename, trash/restore/purge, and starting a session seeded from a selected docum
   `date_updated`; body edits also require `base_revision`. Labels can be cleared
   explicitly with `clear_labels`. Apply is intentionally unavailable.
 - Each changed body gets an increasing `revision` and an immutable full-body
-  MemoryVersion with a SHA-256 hash. Its optional `lines_added` and
-  `lines_removed` fields count changes against revision − 1, excluding diff headers,
-  context and EOF marker lines. Zero is a known count; absence means the first
-  revision or a missing predecessor. New counts commit with the body, and schema
+  MemoryVersion with a SHA-256 hash. Its optional `bytes_added` and
+  `bytes_removed` fields count UTF-8 bytes in changed text ranges against revision
+  − 1, preserving character boundaries and excluding unchanged text and diff markup.
+  The revision selector displays these byte counts with CompactNumber byte units.
+  Legacy `lines_added` and `lines_removed` retain their line-count semantics.
+  An older server without byte fields displays unknown byte counts in the web UI.
+  Zero is a known count; absence means the first revision or a missing predecessor.
+  New counts commit with the body, and schema
   migration backfills retained adjacent bodies without rewriting their contents,
   hashes or timestamps. Changing metadata does not advance the body revision or
   recompute its counts. Reverting A → B → A creates three versions; the two A
@@ -102,7 +106,7 @@ rename, trash/restore/purge, and starting a session seeded from a selected docum
   The current row caches the latest body. Versions and the resource commit in one
   transaction. Audit keeps management metadata, without duplicating body payloads.
 - `Read` defaults to full text. An explicit `revision` reads a retained version;
-  `Versions` lists retained revisions and their stored line counts. The web
+  `Versions` lists retained revisions and their stored change counts. The web
   revision selector uses these retained revisions. With `base_revision`,
   `format=DIFF` requests
   a contextual unified diff. `AUTO` chooses a smaller diff, otherwise full text.

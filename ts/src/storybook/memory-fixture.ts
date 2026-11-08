@@ -139,8 +139,28 @@ export function memoryFixture({
           dateCreated: timestampFromDate(
             new Date(Date.now() - (revisionCount - revision) * 86400000),
           ),
-          linesAdded: 1,
-          linesRemoved: 1,
+          linesAdded: longParagraphChange && revision > 2 ? 0 : 1,
+          linesRemoved: longParagraphChange && revision > 2 ? 0 : 1,
+          // Rune-boundary edits: the long paragraph changes only one passage;
+          // ordinary versions replace the closing sentence, then its digit.
+          bytesAdded: BigInt(
+            longParagraphChange
+              ? revision === 2
+                ? 66
+                : 0
+              : revision === 2
+                ? 18
+                : 1,
+          ),
+          bytesRemoved: BigInt(
+            longParagraphChange
+              ? revision === 2
+                ? 41
+                : 0
+              : revision === 2
+                ? 12
+                : 1,
+          ),
         }),
       );
     }

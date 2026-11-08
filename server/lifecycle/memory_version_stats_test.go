@@ -16,6 +16,40 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func TestMemoryByteChanges(t *testing.T) {
+	for _, tt := range []struct {
+		name, before, after string
+		added, removed      uint64
+	}{
+		{"unchanged", "same\n", "same\n", 0, 0},
+		{"empty", "", "", 0, 0},
+		{"insert", "keep\n", "keep\n새🙂\n", 8, 0},
+		{"delete", "keep\n새🙂\n", "keep\n", 0, 8},
+		{"character within paragraph", "unchanged old tail", "unchanged odd tail", 1, 1},
+		{"Korean shared UTF8 prefix", "앞 가 뒤", "앞 각 뒤", 3, 3},
+		{"emoji shared UTF8 prefix", "before 🙂 after", "before 🙃 after", 4, 4},
+		{"separate edits", "old keep 가 tail", "odd keep 각 tail", 4, 4},
+		{"blank line", "", "\n", 1, 0},
+		{"remove blank", "one\n\n", "one\n", 0, 1},
+		{"delete body", "한글\n🙂", "", 0, 11},
+		{"EOF newline added", "one", "one\n", 1, 0},
+		{"EOF newline removed", "one\n", "one", 0, 1},
+		{"CRLF", "one\r\ntwo\r\n", "one\ntwo\n", 0, 2},
+		{"literal diff markup", "keep\n", "keep\n+++ literal\n", 12, 0},
+		{"large paragraph", strings.Repeat("unchanged ", 10000) + "가" + strings.Repeat(" tail", 10000), strings.Repeat("unchanged ", 10000) + "각" + strings.Repeat(" tail", 10000), 3, 3},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			added, removed := memoryByteChanges(tt.before, tt.after)
+			if added != tt.added || removed != tt.removed {
+				t.Fatalf("got +%dB -%dB, want +%dB -%dB", added, removed, tt.added, tt.removed)
+			}
+			if int64(added)-int64(removed) != int64(len(tt.after))-int64(len(tt.before)) {
+				t.Fatal("byte changes do not account for body size change")
+			}
+		})
+	}
+}
+
 func TestMemoryLineChanges(t *testing.T) {
 	for _, tt := range []struct {
 		name, before, after string
@@ -45,7 +79,7 @@ func TestMemoryLineChanges(t *testing.T) {
 	}
 }
 
-func TestMemoryVersionLineStatsPersistAcrossMetadataAndPagination(t *testing.T) {
+func TestMemoryVersionStatsPersistAcrossMetadataAndPagination(t *testing.T) {
 	f, stack, db := taskStack(t)
 	ctx := t.Context()
 	s := stack.Memory()
@@ -86,9 +120,12 @@ func TestMemoryVersionLineStatsPersistAcrossMetadataAndPagination(t *testing.T) 
 	if err != nil || len(page.GetVersions()) != 2 || page.GetNextRevision() != 3 {
 		t.Fatal(page, err)
 	}
-	check := func(v *resource.MemoryVersion, revision uint64, added, removed uint32) {
+	check := func(v *resource.MemoryVersion, revision uint64, added, removed uint32, bytesAdded, bytesRemoved uint64) {
 		t.Helper()
 		if v.GetRevision() != revision || !v.HasLinesAdded() || !v.HasLinesRemoved() || v.GetLinesAdded() != added || v.GetLinesRemoved() != removed {
+			t.Fatal(v)
+		}
+		if !v.HasBytesAdded() || !v.HasBytesRemoved() || v.GetBytesAdded() != bytesAdded || v.GetBytesRemoved() != bytesRemoved {
 			t.Fatal(v)
 		}
 		data, e := proto.Marshal(v)
@@ -100,23 +137,23 @@ func TestMemoryVersionLineStatsPersistAcrossMetadataAndPagination(t *testing.T) 
 			t.Fatal(&decoded, e)
 		}
 	}
-	check(page.GetVersions()[0], 4, 2, 0)
-	check(page.GetVersions()[1], 3, 0, 3)
+	check(page.GetVersions()[0], 4, 2, 0, 9, 0)
+	check(page.GetVersions()[1], 3, 0, 3, 0, 15)
 	encoded, err := protojson.Marshal(page.GetVersions()[1])
-	if err != nil || !strings.Contains(string(encoded), `"linesAdded":0`) {
+	if err != nil || !strings.Contains(string(encoded), `"linesAdded":0`) || !strings.Contains(string(encoded), `"bytesAdded":"0"`) {
 		t.Fatal(string(encoded), err)
 	}
 	page, err = s.Versions(ctx, resource.MemoryVersionsRequest_builder{Ref: m.Ref(), Size: 2, BeforeRevision: page.GetNextRevision()}.Build())
 	if err != nil || len(page.GetVersions()) != 2 || page.GetNextRevision() != 0 {
 		t.Fatal(page, err)
 	}
-	check(page.GetVersions()[0], 2, 2, 1)
+	check(page.GetVersions()[0], 2, 2, 1, 8, 2)
 	first := page.GetVersions()[1]
-	if first.GetRevision() != 1 || first.HasLinesAdded() || first.HasLinesRemoved() {
+	if first.GetRevision() != 1 || first.HasLinesAdded() || first.HasLinesRemoved() || first.HasBytesAdded() || first.HasBytesRemoved() {
 		t.Fatal(first)
 	}
 	encoded, err = protojson.Marshal(first)
-	if err != nil || strings.Contains(string(encoded), "linesAdded") || strings.Contains(string(encoded), "linesRemoved") {
+	if err != nil || strings.Contains(string(encoded), "linesAdded") || strings.Contains(string(encoded), "linesRemoved") || strings.Contains(string(encoded), "bytesAdded") || strings.Contains(string(encoded), "bytesRemoved") {
 		t.Fatal(string(encoded), err)
 	}
 	var hash string
@@ -129,7 +166,7 @@ func TestMemoryVersionLineStatsPersistAcrossMetadataAndPagination(t *testing.T) 
 	}
 }
 
-func TestMemoryLineStatsFailureRollsBackBodyAuditAndChanges(t *testing.T) {
+func TestMemoryByteStatsFailureRollsBackBodyAuditAndChanges(t *testing.T) {
 	f, stack, db := taskStack(t)
 	ctx := t.Context()
 	m, err := stack.Memory().Add(ctx, resource.MemoryAddRequest_builder{Project: projectRef(f.p.Id), Name: "rollback.md", Content: "old\n"}.Build())
@@ -143,7 +180,7 @@ func TestMemoryLineStatsFailureRollsBackBodyAuditAndChanges(t *testing.T) {
 	if err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM memory_change`).Scan(&changes); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = db.ExecContext(ctx, `CREATE TRIGGER reject_memory_stats BEFORE INSERT ON memory_version WHEN NEW.revision=2 AND NEW.lines_added>0 BEGIN SELECT RAISE(ABORT,'stats rejected'); END`); err != nil {
+	if _, err = db.ExecContext(ctx, `CREATE TRIGGER reject_memory_stats BEFORE INSERT ON memory_version WHEN NEW.revision=2 AND NEW.bytes_added>0 BEGIN SELECT RAISE(ABORT,'stats rejected'); END`); err != nil {
 		t.Fatal(err)
 	}
 	_, err = stack.Memory().Patch(ctx, resource.MemoryPatchRequest_builder{Ref: m.Ref(), Content: ptr("new\n"), BaseRevision: ptr(uint64(1)), DateUpdated: m.GetDateUpdated()}.Build())
@@ -199,7 +236,7 @@ func TestMemoryLineStatsMigrationBackfillsAndPreservesVersions(t *testing.T) {
 		if err := migrateMemoryVersionStats(ctx, db); err != nil {
 			t.Fatal(err)
 		}
-		rows, err := db.QueryContext(ctx, `SELECT memory_id,revision,content,content_hash,date_created,lines_added,lines_removed FROM memory_version ORDER BY memory_id,revision`)
+		rows, err := db.QueryContext(ctx, `SELECT memory_id,revision,content,content_hash,date_created,lines_added,lines_removed,bytes_added,bytes_removed FROM memory_version ORDER BY memory_id,revision`)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -208,8 +245,8 @@ func TestMemoryLineStatsMigrationBackfillsAndPreservesVersions(t *testing.T) {
 			var id, content, hash string
 			var revision int
 			var date time.Time
-			var added, removed sql.NullInt64
-			if err = rows.Scan(&id, &revision, &content, &hash, &date, &added, &removed); err != nil {
+			var added, removed, bytesAdded, bytesRemoved sql.NullInt64
+			if err = rows.Scan(&id, &revision, &content, &hash, &date, &added, &removed, &bytesAdded, &bytesRemoved); err != nil {
 				t.Fatal(err)
 			}
 			count++
@@ -217,7 +254,7 @@ func TestMemoryLineStatsMigrationBackfillsAndPreservesVersions(t *testing.T) {
 				t.Fatal(id, revision, hash, date)
 			}
 			if revision == 1 || id == "gap" {
-				if added.Valid || removed.Valid {
+				if added.Valid || removed.Valid || bytesAdded.Valid || bytesRemoved.Valid {
 					t.Fatal(id, revision, added, removed)
 				}
 				continue
@@ -233,6 +270,13 @@ func TestMemoryLineStatsMigrationBackfillsAndPreservesVersions(t *testing.T) {
 			}
 			if !added.Valid || !removed.Valid || added.Int64 != wantAdded || removed.Int64 != wantRemoved {
 				t.Fatal(id, revision, added, removed)
+			}
+			wantBytesAdded, wantBytesRemoved := uint64(1), uint64(0)
+			if id != "empty" {
+				wantBytesAdded, wantBytesRemoved = memoryByteChanges(fmt.Sprintf("keep\n%d\n", revision-1), content)
+			}
+			if !bytesAdded.Valid || !bytesRemoved.Valid || uint64(bytesAdded.Int64) != wantBytesAdded || uint64(bytesRemoved.Int64) != wantBytesRemoved {
+				t.Fatal(id, revision, bytesAdded, bytesRemoved)
 			}
 		}
 		if err = rows.Err(); err != nil {
@@ -265,8 +309,10 @@ func TestMemoryLineStatsMigrationRepairsPartialSchemaAndRollsBackOnFailure(t *te
 		t.Fatal("migration failure was ignored")
 	}
 	// Adding the second column and any partial backfill must roll back together.
-	if _, err := db.ExecContext(ctx, `SELECT lines_removed FROM memory_version`); err == nil {
-		t.Fatal("partial schema migration committed")
+	for _, column := range []string{"lines_removed", "bytes_added", "bytes_removed"} {
+		if _, err := db.ExecContext(ctx, `SELECT `+column+` FROM memory_version`); err == nil {
+			t.Fatalf("partial schema migration committed: %s", column)
+		}
 	}
 	var added int
 	if err := db.QueryRowContext(ctx, `SELECT lines_added FROM memory_version WHERE revision=2`).Scan(&added); err != nil || added != 99 {
@@ -281,5 +327,26 @@ func TestMemoryLineStatsMigrationRepairsPartialSchemaAndRollsBackOnFailure(t *te
 	var removed int
 	if err := db.QueryRowContext(ctx, `SELECT lines_added,lines_removed FROM memory_version WHERE revision=2`).Scan(&added, &removed); err != nil || added != 1 || removed != 1 {
 		t.Fatal(added, removed, err)
+	}
+}
+
+func TestMemoryByteStatsMigrationPreservesExistingLineStatistics(t *testing.T) {
+	db := memoryStatsDB(t)
+	ctx := t.Context()
+	for _, q := range []string{
+		`ALTER TABLE memory_version ADD COLUMN lines_added INTEGER`,
+		`ALTER TABLE memory_version ADD COLUMN lines_removed INTEGER`,
+		`INSERT INTO memory_version(memory_id,revision,content,content_hash,date_created,lines_added,lines_removed) VALUES('one',1,'앞 가 뒤','first',CURRENT_TIMESTAMP,NULL,NULL),('one',2,'앞 각 뒤','second',CURRENT_TIMESTAMP,7,8)`,
+	} {
+		if _, err := db.ExecContext(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := migrateMemoryVersionStats(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	var la, lr, ba, br int
+	if err := db.QueryRowContext(ctx, `SELECT lines_added,lines_removed,bytes_added,bytes_removed FROM memory_version WHERE revision=2`).Scan(&la, &lr, &ba, &br); err != nil || la != 7 || lr != 8 || ba != 3 || br != 3 {
+		t.Fatal(la, lr, ba, br, err)
 	}
 }

@@ -2917,6 +2917,8 @@ type MemoryVersion struct {
 	xxx_hidden_DateCreated  *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_LinesAdded   uint32                 `protobuf:"varint,5,opt,name=lines_added,json=linesAdded"`
 	xxx_hidden_LinesRemoved uint32                 `protobuf:"varint,6,opt,name=lines_removed,json=linesRemoved"`
+	xxx_hidden_BytesAdded   uint64                 `protobuf:"varint,7,opt,name=bytes_added,json=bytesAdded"`
+	xxx_hidden_BytesRemoved uint64                 `protobuf:"varint,8,opt,name=bytes_removed,json=bytesRemoved"`
 	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
 	XXX_presence            [1]uint32
 	unknownFields           protoimpl.UnknownFields
@@ -2990,12 +2992,26 @@ func (x *MemoryVersion) GetLinesRemoved() uint32 {
 	return 0
 }
 
+func (x *MemoryVersion) GetBytesAdded() uint64 {
+	if x != nil {
+		return x.xxx_hidden_BytesAdded
+	}
+	return 0
+}
+
+func (x *MemoryVersion) GetBytesRemoved() uint64 {
+	if x != nil {
+		return x.xxx_hidden_BytesRemoved
+	}
+	return 0
+}
+
 func (x *MemoryVersion) SetMemoryId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_MemoryId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
 }
 
 func (x *MemoryVersion) SetRevision(v uint64) {
@@ -3012,12 +3028,22 @@ func (x *MemoryVersion) SetDateCreated(v *timestamppb.Timestamp) {
 
 func (x *MemoryVersion) SetLinesAdded(v uint32) {
 	x.xxx_hidden_LinesAdded = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
 }
 
 func (x *MemoryVersion) SetLinesRemoved(v uint32) {
 	x.xxx_hidden_LinesRemoved = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
+}
+
+func (x *MemoryVersion) SetBytesAdded(v uint64) {
+	x.xxx_hidden_BytesAdded = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
+}
+
+func (x *MemoryVersion) SetBytesRemoved(v uint64) {
+	x.xxx_hidden_BytesRemoved = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
 }
 
 func (x *MemoryVersion) HasMemoryId() bool {
@@ -3048,6 +3074,20 @@ func (x *MemoryVersion) HasLinesRemoved() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
+func (x *MemoryVersion) HasBytesAdded() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *MemoryVersion) HasBytesRemoved() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
 func (x *MemoryVersion) ClearMemoryId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_MemoryId = nil
@@ -3067,6 +3107,16 @@ func (x *MemoryVersion) ClearLinesRemoved() {
 	x.xxx_hidden_LinesRemoved = 0
 }
 
+func (x *MemoryVersion) ClearBytesAdded() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_BytesAdded = 0
+}
+
+func (x *MemoryVersion) ClearBytesRemoved() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_BytesRemoved = 0
+}
+
 type MemoryVersion_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -3078,6 +3128,10 @@ type MemoryVersion_builder struct {
 	// Both are absent for the first revision or an unavailable predecessor.
 	LinesAdded   *uint32
 	LinesRemoved *uint32
+	// UTF-8 bytes in changed text ranges, excluding unchanged text and diff markup.
+	// Both are absent for the first revision or an unavailable predecessor.
+	BytesAdded   *uint64
+	BytesRemoved *uint64
 }
 
 func (b0 MemoryVersion_builder) Build() *MemoryVersion {
@@ -3085,19 +3139,27 @@ func (b0 MemoryVersion_builder) Build() *MemoryVersion {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.MemoryId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
 		x.xxx_hidden_MemoryId = b.MemoryId
 	}
 	x.xxx_hidden_Revision = b.Revision
 	x.xxx_hidden_ContentHash = b.ContentHash
 	x.xxx_hidden_DateCreated = b.DateCreated
 	if b.LinesAdded != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
 		x.xxx_hidden_LinesAdded = *b.LinesAdded
 	}
 	if b.LinesRemoved != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
 		x.xxx_hidden_LinesRemoved = *b.LinesRemoved
+	}
+	if b.BytesAdded != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
+		x.xxx_hidden_BytesAdded = *b.BytesAdded
+	}
+	if b.BytesRemoved != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		x.xxx_hidden_BytesRemoved = *b.BytesRemoved
 	}
 	return m0
 }
@@ -3772,7 +3834,7 @@ const file_cxz_memory_svc_g_proto_rawDesc = "" +
 	"\x04size\x18\x03 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\"q\n" +
 	"\x13MemoryVersionsReply\x12.\n" +
 	"\bversions\x18\x01 \x03(\v2\x12.cxz.MemoryVersionR\bversions\x12*\n" +
-	"\rnext_revision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\fnextRevision\"\x8c\x02\n" +
+	"\rnext_revision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\fnextRevision\"\xe0\x02\n" +
 	"\rMemoryVersion\x12\x1b\n" +
 	"\tmemory_id\x18\x01 \x01(\fR\bmemoryId\x12!\n" +
 	"\brevision\x18\x02 \x01(\x04B\x05\xaa\x01\x02\b\x02R\brevision\x12(\n" +
@@ -3780,7 +3842,10 @@ const file_cxz_memory_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12&\n" +
 	"\vlines_added\x18\x05 \x01(\rB\x05\xaa\x01\x02\b\x01R\n" +
 	"linesAdded\x12*\n" +
-	"\rlines_removed\x18\x06 \x01(\rB\x05\xaa\x01\x02\b\x01R\flinesRemoved\"{\n" +
+	"\rlines_removed\x18\x06 \x01(\rB\x05\xaa\x01\x02\b\x01R\flinesRemoved\x12&\n" +
+	"\vbytes_added\x18\a \x01(\x04B\x05\xaa\x01\x02\b\x01R\n" +
+	"bytesAdded\x12*\n" +
+	"\rbytes_removed\x18\b \x01(\x04B\x05\xaa\x01\x02\b\x01R\fbytesRemoved\"{\n" +
 	"\x14MemoryChangesRequest\x12)\n" +
 	"\aproject\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\aproject\x12\x1d\n" +
 	"\x06cursor\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06cursor\x12\x19\n" +

@@ -167,7 +167,7 @@ export const RevisionHistory: Story = {
     docs: {
       description: {
         story:
-          "Select a retained revision to read its Markdown body, or choose Changes to compare it with its immediate predecessor. Comparisons load on demand; revision changes keep the chosen preview mode. Copy always uses the full displayed body. The revision selector shows its number and date on the left, with compact line counts and relative age on the right. It shares the action buttons’ corner radius and uses only the remaining height. First revisions show Created; missing counts stay unknown. Latest follows the current document while title and resource dates stay current.",
+          "Select a retained revision to read its Markdown body, or choose Changes to compare it with its immediate predecessor. Comparisons load on demand; revision changes keep the chosen preview mode. Copy always uses the full displayed body. The revision selector shows its number and date on the left, with compact UTF-8 byte additions/removals and relative age on the right. Counts cover changed text ranges within paragraphs. It shares the action buttons’ corner radius and uses only the remaining height. First revisions show Created; missing counts stay unknown. Latest follows the current document while title and resource dates stay current.",
       },
     },
   },

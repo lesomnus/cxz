@@ -39,6 +39,10 @@ message MemoryVersion {
   // Both are absent for the first revision or an unavailable predecessor.
   uint32 lines_added = 5 [features.field_presence = EXPLICIT];
   uint32 lines_removed = 6 [features.field_presence = EXPLICIT];
+  // UTF-8 bytes in changed text ranges, excluding unchanged text and diff markup.
+  // Both are absent for the first revision or an unavailable predecessor.
+  uint64 bytes_added = 7 [features.field_presence = EXPLICIT];
+  uint64 bytes_removed = 8 [features.field_presence = EXPLICIT];
 }
 message MemoryVersionsRequest { MemoryRef ref = 1; uint64 before_revision = 2 [features.field_presence = IMPLICIT]; int32 size = 3 [features.field_presence = IMPLICIT]; }
 message MemoryVersionsReply { repeated MemoryVersion versions = 1; uint64 next_revision = 2 [features.field_presence = IMPLICIT]; }
