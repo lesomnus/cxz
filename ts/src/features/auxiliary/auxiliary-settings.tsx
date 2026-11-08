@@ -274,7 +274,7 @@ export function AuxiliarySettings({
             >
               <SelectionLabel label="Authentication" value={authentication} />
             </span>
-            <span className={styles.login}>Log in</span>
+            <Icon name="login" className={styles.login} />
           </Section>
           <Section
             as="button"

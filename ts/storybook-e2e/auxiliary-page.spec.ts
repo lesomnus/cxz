@@ -393,6 +393,8 @@ test("helper authentication refreshes after completing the shared login", async 
   const login = page.getByRole("button", { name: "Log in", exact: true });
   await expect(login).toHaveAttribute("data-section-action", "button");
   await expect(login.locator("button")).toHaveCount(0);
+  await expect(login.locator('[data-icon="login"]')).toBeVisible();
+  await expect(login.getByText("Log in", { exact: true })).toHaveCount(0);
   await login.click();
   const dialog = page.getByRole("dialog", {
     name: "Log in · work",

@@ -104,6 +104,10 @@ export const iconDefinitions = {
     path("M7 3v6h10V3M7 21v-8h10v8"),
   ]),
   undo: line([path("M9 4 4 9l5 5M4 9h10a6 6 0 0 1 0 12h-2")]),
+  login: line([
+    path("M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"),
+    path("m10 17 5-5-5-5M15 12H3"),
+  ]),
   allow: check,
   copy: line([
     rect(8, 8, 12, 12, 2),
