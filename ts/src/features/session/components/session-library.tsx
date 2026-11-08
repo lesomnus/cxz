@@ -74,7 +74,7 @@ export function SessionLibrary({
             variant="overview"
             showProject
             showToolbar={false}
-            height="auto"
+            scroll="page"
             addSession={() => setCreating(true)}
           />
         </ResourceLayout>

@@ -1,8 +1,17 @@
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { key } from "@lesomnus/payday/store";
-import { Button, TableRow, useRangeSelection } from "@lesomnus/nox";
+import {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  useRangeSelection,
+} from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -46,7 +55,7 @@ export function SessionTable({
   title = t("Sessions"),
   horizontalScrollbar = false,
   fillHeight = false,
-  height,
+  scroll = "bounded",
   variant = "default",
 }: {
   c: SessionControlConnection;
@@ -61,12 +70,22 @@ export function SessionTable({
   title?: string;
   horizontalScrollbar?: boolean;
   fillHeight?: boolean;
-  /** Override the bounded dashboard height, for example auto in a page list. */
-  height?: CSSProperties["height"];
+  /** Page lists use their existing scroll area; dashboards own bounded scrolling. */
+  scroll?: "bounded" | "page";
   variant?: "default" | "compact" | "overview";
 }) {
   const compact = variant !== "default";
   const overview = variant === "overview";
+  const pageScroll = scroll === "page";
+  const Frame = pageScroll ? "div" : PanelScroll;
+  const scrollProps = pageScroll
+    ? {}
+    : {
+        wheelBehavior: "instant" as const,
+        scrollbarOffset: 0,
+        horizontalScrollbar,
+        scrollbarLabel: t("Session list"),
+      };
   const [selected, select] = useState<Set<string>>(() => new Set());
   const controls = useSessionControls(c, (ids) =>
     select((previous) => {
@@ -92,9 +111,9 @@ export function SessionTable({
     disabled: !!(controls.busy || loading),
   });
   const stateHeading = (
-    <th scope="col" aria-label={compact ? t("State") : undefined}>
+    <TableHead scope="col" aria-label={compact ? t("State") : undefined}>
       {!compact && t("State")}
-    </th>
+    </TableHead>
   );
   const addControl = addSession && (
     <Button
@@ -129,19 +148,15 @@ export function SessionTable({
           <SessionTableFeedback controls={controls} />
         </div>
       )}
-      <PanelScroll
-        style={height === undefined ? undefined : { height }}
-        wheelBehavior="instant"
-        scrollbarOffset={0}
-        horizontalScrollbar={horizontalScrollbar}
-        className={`${styles.scroll} ${compact ? styles.compact : ""} ${overview ? `${styles.overview} ${resourceTableStyles.layout}` : ""} ${fillHeight ? styles.fillHeight : ""}`}
+      <Frame
+        {...scrollProps}
+        className={`${styles.frame} ${pageScroll ? "" : styles.scroll} ${compact ? styles.compact : ""} ${overview ? `${styles.overview} ${resourceTableStyles.layout}` : ""} ${fillHeight ? styles.fillHeight : ""}`}
         role="region"
         aria-label={t("Session list")}
-        scrollbarLabel={t("Session list")}
       >
-        <table
+        <Table
           {...selection.getContainerProps()}
-          className={styles.table}
+          className={`${styles.table} ${pageScroll ? resourceTableStyles.table : ""}`}
           aria-label={t("Sessions")}
           aria-busy={loading}
           data-account-column={showAccount}
@@ -158,23 +173,23 @@ export function SessionTable({
             {!overview && <col className={styles.stateColumn} />}
             <col className={styles.actionsColumn} />
           </colgroup>
-          <thead>
-            <tr>
-              <th scope="col" className={styles.selectionCell}>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col" className={styles.selectionCell}>
                 <Checkbox
                   className={styles.cellCheckbox}
                   aria-label={t("Select all sessions")}
                   {...selection.getSelectAllProps()}
                 />
-              </th>
+              </TableHead>
               {overview && stateHeading}
-              {!compact && <th scope="col" aria-label={t("Agent")} />}
-              <th scope="col">{t("Name")}</th>
-              {!compact && <th scope="col">{t("Alias")}</th>}
-              {showAccount && <th scope="col">{t("Account")}</th>}
-              {showProject && <th scope="col">{t("Project")}</th>}
+              {!compact && <TableHead scope="col" aria-label={t("Agent")} />}
+              <TableHead scope="col">{t("Name")}</TableHead>
+              {!compact && <TableHead scope="col">{t("Alias")}</TableHead>}
+              {showAccount && <TableHead scope="col">{t("Account")}</TableHead>}
+              {showProject && <TableHead scope="col">{t("Project")}</TableHead>}
               {!overview && stateHeading}
-              <th
+              <TableHead
                 scope="col"
                 className={styles.actions}
                 aria-label={t("Controls")}
@@ -189,10 +204,10 @@ export function SessionTable({
                     addSession={addSession}
                   />
                 )}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {sessions.map((s) => {
               const name = s.name || s.alias || s.runtimeId;
               const account = s.account && accountsById.get(key(s.account.id));
@@ -211,7 +226,7 @@ export function SessionTable({
               const projectName =
                 projectResource?.name || projectResource?.alias || project;
               const state = (
-                <td className={styles.state}>
+                <TableCell className={styles.state}>
                   {compact ? (
                     <span className={styles.stateIndicator}>
                       <SessionIndicator session={s} variant="status" />
@@ -219,30 +234,30 @@ export function SessionTable({
                   ) : (
                     stateLabel(s)
                   )}
-                </td>
+                </TableCell>
               );
               return (
                 <TableRow key={s.runtimeId} selected={checked}>
-                  <td className={styles.selectionCell}>
+                  <TableCell className={styles.selectionCell}>
                     <Checkbox
                       className={styles.cellCheckbox}
                       aria-label={t("Select {name}", { name })}
                       {...selection.getCheckboxProps(s.runtimeId)}
                     />
-                  </td>
+                  </TableCell>
                   {overview && state}
                   {!compact && (
-                    <td className={styles.agent}>
+                    <TableCell className={styles.agent}>
                       <AgentBrand agent={s.agent} />
-                    </td>
+                    </TableCell>
                   )}
                   {compact ? (
-                    <td className={`${styles.name} ${styles.cardCell}`}>
+                    <TableCell className={`${styles.name} ${styles.cardCell}`}>
                       <SessionNavigationButton session={s} />
-                    </td>
+                    </TableCell>
                   ) : (
                     (["name", "alias"] as const).map((field) => (
-                      <td className={styles[field]} key={field}>
+                      <TableCell className={styles[field]} key={field}>
                         <fieldset
                           className={styles.editable}
                           disabled={controls.busy || loading}
@@ -267,11 +282,11 @@ export function SessionTable({
                             }}
                           />
                         </fieldset>
-                      </td>
+                      </TableCell>
                     ))
                   )}
                   {showAccount && (
-                    <td className={styles.cardCell}>
+                    <TableCell className={styles.cardCell}>
                       {accountAlias ? (
                         <ResourceNavigationButton
                           {...accountLocation(accountAlias)}
@@ -293,10 +308,10 @@ export function SessionTable({
                       ) : (
                         accountName
                       )}
-                    </td>
+                    </TableCell>
                   )}
                   {showProject && (
-                    <td className={styles.cardCell}>
+                    <TableCell className={styles.cardCell}>
                       {project ? (
                         <ResourceNavigationButton
                           {...projectLocation(project)}
@@ -306,27 +321,27 @@ export function SessionTable({
                       ) : (
                         "—"
                       )}
-                    </td>
+                    </TableCell>
                   )}
                   {!overview && state}
-                  <td className={`${styles.cardCell} ${styles.actions}`}>
+                  <TableCell className={`${styles.cardCell} ${styles.actions}`}>
                     <SessionTableMenu
                       sessions={[s]}
                       controls={controls}
                       disabled={loading}
                     />
-                  </td>
+                  </TableCell>
                 </TableRow>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {!sessions.length && (
           <p className={styles.empty}>
             {loading ? t("Loading sessions…") : t("No sessions")}
           </p>
         )}
-      </PanelScroll>
+      </Frame>
       {!showToolbar && (
         <>
           {controls.busy && (

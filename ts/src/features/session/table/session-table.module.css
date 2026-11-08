@@ -1,4 +1,4 @@
-.scroll {
+.frame {
   --session-row-height: 44px;
   --session-cell-radius: var(--ui-space);
   --session-row-gap: var(--ui-control-inset);
@@ -7,6 +7,8 @@
   --session-table-min-width: 528px;
   --session-account-column-width: 96px;
   --session-project-column-width: 96px;
+}
+.scroll {
   --ui-scroll-area-background: var(--ui-shade-24);
   flex: none;
   height: calc(
@@ -121,10 +123,7 @@
   width: 100%;
   justify-content: center;
 }
-.table th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+.scroll .table th {
   height: var(--session-header-height);
   padding: 0 var(--ui-space);
   background: var(--ui-shade-24);
@@ -136,19 +135,19 @@
   padding: 0 var(--ui-control-inset);
   padding-right: calc(2 * var(--ui-control-inset));
 }
-.table td {
+.scroll .table td {
   height: calc(var(--session-row-height) + var(--session-row-gap));
   padding: 0 var(--ui-space);
   border-bottom: 0;
   vertical-align: middle;
 }
-.table tbody tr:not(:last-child) td {
+.scroll .table tbody tr:not(:last-child) td {
   box-shadow: inset 0 -1px 0 var(--ui-shade-36);
 }
-.table tbody tr:hover {
+.scroll .table tbody tr:hover {
   background: var(--ui-shade-32);
 }
-.table tbody tr[data-selected] {
+.scroll .table tbody tr[data-selected] {
   background: var(--ui-shade-51);
 }
 .table th:first-child,
@@ -156,10 +155,8 @@
   text-align: center;
 }
 .table .selectionCell {
-  padding: 0;
-}
-.table td.selectionCell {
   position: relative;
+  padding: 0;
 }
 .table .cellCheckbox {
   position: absolute;

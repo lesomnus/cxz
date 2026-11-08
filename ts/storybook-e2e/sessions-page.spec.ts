@@ -121,20 +121,61 @@ test("narrow conversations hide navigation and browser Back restores the overvie
   );
 });
 
-test("many sessions use the page scroll instead of clipping after dashboard rows", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1280, height: 600 });
-  await page.goto(
-    "/iframe.html?id=pages-sessions--many-sessions&viewMode=story",
-  );
-  await expect(table(page).locator("tbody tr")).toHaveCount(50);
-  await table(page).locator("tbody tr").last().scrollIntoViewIfNeeded();
-  await expect(table(page).locator("tbody tr").last()).toBeInViewport();
-  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(
-    600,
-  );
-});
+for (const width of [390, 1280]) {
+  test(`Sessions overview shares transparent table surfaces and sticks its header to page scrolling at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 600 });
+    await page.goto("/iframe.html?id=pages-projects--list&viewMode=story");
+    const projectTable = page.getByRole("table", {
+      name: "Projects",
+      exact: true,
+    });
+    await expect(projectTable).toBeVisible();
+    const surface = await projectTable.evaluate((node) => ({
+      table: getComputedStyle(node).backgroundColor,
+      header: getComputedStyle(node.querySelector("thead")!).backgroundColor,
+      blur: getComputedStyle(node.querySelector("thead")!).backdropFilter,
+    }));
+
+    await page.goto(
+      "/iframe.html?id=pages-sessions--many-sessions&viewMode=story",
+    );
+    await expect(table(page).locator("tbody tr")).toHaveCount(50);
+    await expect(table(page)).toHaveCSS("background-color", surface.table);
+    const header = table(page).locator("thead");
+    await expect(header).toHaveCSS("background-color", surface.header);
+    await expect(header).toHaveCSS("backdrop-filter", surface.blur);
+    await expect(header).toHaveCSS("position", "sticky");
+    await expect(
+      page
+        .getByRole("region", { name: "Session list", exact: true })
+        .locator(".panel-scroll-content"),
+    ).toHaveCount(0);
+    const viewport = page.locator(
+      "[data-resource-page] > .panel-scroll-region > .panel-scroll-content",
+    );
+    await viewport.evaluate((node) => {
+      node.scrollTop = 350;
+    });
+    await expect
+      .poll(() => viewport.evaluate((node) => node.scrollTop))
+      .toBe(350);
+    expect(
+      Math.abs(
+        (await header.boundingBox())!.y - (await viewport.boundingBox())!.y,
+      ),
+    ).toBeLessThan(1);
+    await table(page).locator("tbody tr").last().scrollIntoViewIfNeeded();
+    await expect(table(page).locator("tbody tr").last()).toBeInViewport();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollHeight),
+    ).toBe(600);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBe(width);
+  });
+}
 
 test("reduced motion opens the panel without transitioning the workspace", async ({
   page,
