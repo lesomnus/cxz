@@ -11,12 +11,19 @@ const card = (page: Page, name: string) =>
   grid(page).getByRole("link", { name, exact: true });
 const back = (page: Page) =>
   page.getByRole("link", { name: "Memory", exact: true }).click();
-async function editSource(page: Page, text: string) {
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  const editor = page.locator(".monaco-editor textarea");
-  await editor.focus();
-  await page.keyboard.press("ControlOrMeta+A");
-  await page.keyboard.insertText(text);
+async function rename(page: Page, name: string) {
+  await doc(page)
+    .getByRole("button", { name: "Edit Memory name", exact: true })
+    .click();
+  const editor = page.getByRole("dialog", {
+    name: "Edit Memory name",
+    exact: true,
+  });
+  await editor
+    .getByRole("textbox", { name: "Memory name", exact: true })
+    .fill(name);
+  await editor.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(editor).toHaveCount(0);
 }
 
 test("the collection replaces old panels and controls with rectangular memory cards", async ({
@@ -193,19 +200,17 @@ test("documents can still be read without a current owner session", async ({
     page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
 });
-test("saving metadata refreshes the card without changing its body revision", async ({
+test("the inline title refreshes the card without changing its body or revision", async ({
   page,
 }) => {
   await open(page);
   await card(page, "Architecture notes").click();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await page
-    .getByRole("textbox", { name: "Memory name", exact: true })
-    .fill("Renamed notes");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await rename(page, "Renamed notes");
   await expect(
     doc(page).getByText("Revision 1", { exact: true }),
   ).toBeVisible();
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
+  await expect(doc(page)).toContainText("topic=design");
   await back(page);
   await expect(
     card(page, "Renamed notes").getByRole("img", {
@@ -214,90 +219,177 @@ test("saving metadata refreshes the card without changing its body revision", as
     }),
   ).toBeVisible();
 });
-test("returning to the grid guards unsaved edits", async ({ page }) => {
+
+test("returning to the grid guards an unsaved copied document", async ({
+  page,
+}) => {
   await open(page);
   await card(page, "Architecture notes").click();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
-  await name.fill("Unsaved name");
+  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
+  await expect(page.locator(".monaco-editor textarea")).toBeVisible();
   await back(page);
   const dialog = page.getByRole("dialog", {
     name: "Discard unsaved changes",
     exact: true,
   });
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(name).toHaveValue("Unsaved name");
+  await expect(
+    doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
+  ).toContainText("Architecture notes copy");
   await back(page);
   await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(card(page, "Architecture notes")).toBeVisible();
-  await expect(card(page, "Unsaved name")).toHaveCount(0);
+  await expect(card(page, "Architecture notes copy")).toHaveCount(0);
 });
-test("body versions and conflict-preserved drafts remain functional", async ({
+
+for (const width of [390, 1280])
+  test(`document uses grouped title/body sections and panel actions at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page, "document");
+    await expect(
+      doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
+    ).toContainText("Architecture notes");
+    for (const name of ["Edit", "Source", "Memory actions"])
+      await expect(
+        doc(page).getByRole("button", { name, exact: true }),
+      ).toHaveCount(0);
+    for (const text of ["Version history", "Document details"])
+      await expect(doc(page).getByText(text, { exact: true })).toHaveCount(0);
+    await expect(doc(page)).toHaveAttribute("data-section-layout", "group");
+    const title = doc(page).getByRole("region", {
+      name: "Memory title",
+      exact: true,
+    });
+    await expect(title.locator("h2")).toHaveCSS("font-size", "16px");
+    await expect(title.locator("svg")).toHaveCount(0);
+    const actions = doc(page).getByRole("group", {
+      name: "Memory document actions",
+      exact: true,
+    });
+    for (const name of ["Copy", "Reload", "Delete"])
+      await expect(
+        actions.getByRole("button", { name, exact: true }),
+      ).toHaveAttribute("data-section-action", "button");
+    const layout = await doc(page).evaluate((root) => {
+      const title = root
+        .querySelector('[aria-label="Memory title"]')!
+        .getBoundingClientRect();
+      const actions = root
+        .querySelector('[aria-label="Memory document actions"]')!
+        .getBoundingClientRect();
+      const body = root
+        .querySelector('[aria-label="Memory content"]')!
+        .getBoundingClientRect();
+      return {
+        titleRight: title.right,
+        actionsLeft: actions.left,
+        headerBottom: Math.max(title.bottom, actions.bottom),
+        bodyTop: body.top,
+      };
+    });
+    expect(layout.actionsLeft).toBeGreaterThan(layout.titleRight);
+    expect(layout.bodyTop).toBeGreaterThan(layout.headerBottom);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  });
+
+test("document loading keeps the grouped frame and disabled action panels", async ({
   page,
 }) => {
-  await open(page, "document");
-  await expect(doc(page)).toBeVisible();
-  await editSource(page, "# Updated decision");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await open(page, "document-loading");
+  await expect(doc(page)).toHaveAttribute("aria-busy", "true");
+  await expect(doc(page)).toHaveAttribute("data-section-layout", "group");
   await expect(
-    page.getByRole("heading", { name: "Updated decision", exact: true }),
-  ).toBeVisible();
-  await page.getByText("Version history", { exact: true }).click();
-  await page.getByRole("button", { name: "r1", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Use this version", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+    doc(page).getByRole("region", { name: "Memory title", exact: true }),
+  ).toContainText("Memory");
   await expect(
-    doc(page).getByText("Revision 3", { exact: true }),
+    doc(page).getByText("Loading memory…", { exact: true }),
   ).toBeVisible();
+  for (const name of ["Copy", "Reload", "Delete"])
+    await expect(
+      doc(page).getByRole("button", { name, exact: true }),
+    ).toBeDisabled();
   await expect(
-    page.getByRole("heading", { name: "Architecture", exact: true }),
-  ).toBeVisible();
+    doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
+  ).toHaveCount(0);
 });
-test("revision conflicts keep a draft on the document route", async ({
+
+test("the Reload panel refreshes the preview while showing pending feedback", async ({
+  page,
+}) => {
+  await open(page, "cached-document");
+  await card(page, "Architecture notes").click();
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
+  await page
+    .getByRole("button", { name: "Update document on server", exact: true })
+    .click();
+  const reload = doc(page).getByRole("button", { name: "Reload", exact: true });
+  await reload.click();
+  await expect(reload).toHaveAttribute("aria-busy", "true");
+  await expect(reload).toBeDisabled();
+  await expect(doc(page)).toContainText(
+    "Another session changed this document.",
+  );
+  await expect(reload).toBeEnabled();
+});
+
+test("inline rename conflicts keep the attempted title in its editor", async ({
   page,
 }) => {
   await open(page, "revision-conflict");
   await card(page, "Architecture notes").click();
-  await editSource(page, "# Unsaved draft");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+  await doc(page)
+    .getByRole("button", { name: "Edit Memory name", exact: true })
+    .click();
+  const editor = page.getByRole("dialog", {
+    name: "Edit Memory name",
+    exact: true,
+  });
+  const input = editor.getByRole("textbox", {
+    name: "Memory name",
+    exact: true,
+  });
+  await input.fill("Unsaved name");
+  await editor.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(editor.getByRole("alert")).toContainText(
     "Memory revision changed",
   );
-  await page.getByRole("button", { name: "Preview", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Unsaved draft", exact: true }),
-  ).toBeVisible();
+  await expect(input).toHaveValue("Unsaved name");
+  await editor.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(doc(page)).toContainText("Architecture notes");
 });
+
 test("copy creation stays in the editor until saved, then appears in the grid", async ({
   page,
 }) => {
   await open(page);
   await card(page, "Architecture notes").click();
-  await page
-    .getByRole("button", { name: "Memory actions", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "Copy", exact: true }).click();
-  await expect(
-    page.getByRole("textbox", { name: "Memory name", exact: true }),
-  ).toHaveValue("Architecture notes copy");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
+  await rename(page, "Copied architecture");
+  const input = page.locator(".monaco-editor textarea");
+  await input.focus();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.insertText("# Copied body\n\nNew document content.");
+  await doc(page).getByRole("button", { name: "Save", exact: true }).click();
   await expect(
     doc(page).getByText("Revision 1", { exact: true }),
   ).toBeVisible();
+  await expect(doc(page)).toContainText("New document content.");
   await back(page);
-  await expect(card(page, "Architecture notes copy")).toBeVisible();
+  await expect(card(page, "Copied architecture")).toBeVisible();
 });
-test("deleting a document returns to the refreshed collection", async ({
+
+test("deleting from its panel action returns to the refreshed collection", async ({
   page,
 }) => {
   await open(page);
   await card(page, "Architecture notes").click();
-  await page
-    .getByRole("button", { name: "Memory actions", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+  await doc(page).getByRole("button", { name: "Delete", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Confirm", exact: true })
@@ -380,16 +472,17 @@ test("changing session from a document guards drafts and returns to the filtered
   page,
 }) => {
   await open(page, "document");
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
-  await name.fill("Draft name");
+  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
+  await expect(page.locator(".monaco-editor textarea")).toBeVisible();
   await chooseSession(page, "New editing session");
   const dialog = page.getByRole("dialog", {
     name: "Discard unsaved changes",
     exact: true,
   });
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(name).toHaveValue("Draft name");
+  await expect(
+    doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
+  ).toContainText("Architecture notes copy");
   await expect(
     page.getByRole("combobox", { name: "Select session", exact: true }),
   ).toContainText("All sessions");

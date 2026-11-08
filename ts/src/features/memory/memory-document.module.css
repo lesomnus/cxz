@@ -1,0 +1,119 @@
+.document {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+}
+.titleSection {
+  min-height: var(--resource-action-size);
+  align-content: center;
+}
+.title {
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.actions.actions {
+  display: flex;
+  width: max-content;
+  align-self: start;
+}
+.actions > span {
+  display: flex;
+  min-width: 0;
+}
+.bodySection {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.metadata {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space) calc(3 * var(--ui-space));
+  color: var(--ui-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+.metadata > span:not(.owner),
+.metadata > time {
+  white-space: nowrap;
+}
+.owner {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--ui-space);
+}
+.owner > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.owner :global(.agent-brand) {
+  --agent-logo-size: 12px;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space);
+}
+.tags > span {
+  max-width: 100%;
+  padding: var(--ui-control-inset) var(--ui-space);
+  border-radius: var(--ui-space);
+  color: var(--ui-muted);
+  background: var(--ui-shade-24);
+  font: 10px/1.5 var(--ui-font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview {
+  min-width: 0;
+}
+.preview > :global(.markdown) {
+  padding-inline: 0;
+  font-size: 12px;
+  line-height: 1.85;
+}
+.preview :global(.markdown) > :first-child {
+  margin-top: 0;
+}
+.preview :global(.markdown) > :last-child {
+  margin-bottom: 0;
+}
+.editor {
+  height: min(58vh, 560px);
+  min-height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--ui-shade-36);
+  border-radius: var(--ui-control-radius, 6px);
+}
+.trashNotice {
+  padding: calc(2 * var(--ui-space));
+  border: 1px solid var(--ui-shade-40);
+  border-radius: var(--ui-control-radius, 6px);
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+.trashNotice p {
+  margin: 0 0 calc(2 * var(--ui-space));
+}
+.trashActions {
+  display: flex;
+  gap: var(--ui-space);
+}
+.empty {
+  margin: calc(2 * var(--ui-space)) 0;
+  color: var(--ui-muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+@container memory-library (width < 600px) {
+  .document {
+    --resource-action-size: calc(12 * var(--ui-space));
+  }
+}
