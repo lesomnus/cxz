@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { key } from "@lesomnus/payday/store";
 import { Button } from "@lesomnus/nox";
 import { Connection } from "#src/shared/api/connection.ts";
 import { useResourceInventory } from "#src/shared/api/resource-inventory.ts";
@@ -8,7 +9,7 @@ import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import { SessionCreate } from "./session-create";
 import { useSessionActivity } from "#src/features/session/model/use-session-activity.ts";
 import { sortSessionsByActivity } from "#src/features/session/model/session-activity-time.ts";
-import type { Project } from "#gen/cxz/project_pb";
+import { ContainerState, type Project } from "#gen/cxz/project_pb";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
@@ -29,10 +30,21 @@ export function SessionLibrary({
 }) {
   const [creating, setCreating] = useState(false);
   const inventory = useResourceInventory(c);
-  const activity = useSessionActivity(c, inventory.sessions);
+  const listedSessions = useMemo(() => {
+    const currentProjects = new Map(
+      projects.map((project) => [key(project.id), project]),
+    );
+    return inventory.sessions.filter((session) => {
+      const project =
+        session.project &&
+        (currentProjects.get(key(session.project.id)) ?? session.project);
+      return project?.status?.containerState !== ContainerState.ABSENT;
+    });
+  }, [inventory.sessions, projects]);
+  const activity = useSessionActivity(c, listedSessions);
   const sessions = useMemo(
-    () => sortSessionsByActivity(inventory.sessions, activity),
-    [inventory.sessions, activity],
+    () => sortSessionsByActivity(listedSessions, activity),
+    [listedSessions, activity],
   );
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
   return (

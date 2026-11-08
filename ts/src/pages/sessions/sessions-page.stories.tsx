@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { clone, create } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
+import { ContainerState } from "#gen/cxz/project_pb";
 import { ref } from "#src/shared/api/connection.ts";
 import {
   SessionSchema,
@@ -54,6 +55,7 @@ function Preview({
   conversation = false,
   recentActivity = false,
   unread = false,
+  containerLifecycle = false,
 } = {}) {
   const [fixture] = useState(() => {
     const fixture = projectFixture(false, false, empty ? 0 : sessionCount);
@@ -70,6 +72,10 @@ function Preview({
         "waiting_input",
         "failed",
       ][i % 5]!;
+    }
+    if (containerLifecycle) {
+      projects[1]!.status!.containerState = ContainerState.ABSENT;
+      projects[1]!.status!.containerId = "";
     }
     if (recentActivity) {
       const now = Date.now();
@@ -119,7 +125,13 @@ function Preview({
         items: projects.map((value) => ({ id: value.id, value })),
         snapshotComplete: true,
       });
-      await idle(options?.signal);
+      while (!options?.signal?.aborted) {
+        await changes(options?.signal);
+        if (options?.signal?.aborted) return;
+        yield create(ProjectWatchResponseSchema, {
+          items: projects.map((value) => ({ id: value.id, value })),
+        });
+      }
     };
     c.sessions.list = async () =>
       create(SessionListResponseSchema, { items: sessions });
@@ -171,6 +183,43 @@ function Preview({
           <Workspace connection={fixture.c} logout={async () => {}}>
             {children}
             <History>
+              {containerLifecycle && (
+                <>
+                  <Button
+                    onClick={() => {
+                      void fixture.c.projects.start({
+                        ref: {
+                          key: { case: "id", value: fixture.projects[1]!.id },
+                        },
+                      });
+                    }}
+                  >
+                    Start project container
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      void fixture.c.projects.stop({
+                        ref: {
+                          key: { case: "id", value: fixture.projects[1]!.id },
+                        },
+                      });
+                    }}
+                  >
+                    Stop project container
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      void fixture.c.projects.remove({
+                        ref: {
+                          key: { case: "id", value: fixture.projects[1]!.id },
+                        },
+                      });
+                    }}
+                  >
+                    Remove project container
+                  </Button>
+                </>
+              )}
               {unread && (
                 <Button
                   onClick={() =>
@@ -258,3 +307,5 @@ export const Conversation: Story = { args: { conversation: true } };
 export const RecentActivity: Story = { args: { recentActivity: true } };
 
 export const UnreadCompletions: Story = { args: { unread: true } };
+
+export const ContainerLifecycle: Story = { args: { containerLifecycle: true } };

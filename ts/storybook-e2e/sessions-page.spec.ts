@@ -386,3 +386,36 @@ test("unread completion dots share the Name button corner center and clear with 
     table(page).locator("[data-session-navigation][data-unread]"),
   ).toHaveCount(1);
 });
+
+test("Sessions hide projects without containers and follow container lifecycle updates", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=pages-sessions--container-lifecycle&viewMode=story",
+  );
+  const rows = table(page).locator("tbody tr");
+  const api = table(page).locator('tbody a[href="/c/_/project/api"]');
+  await expect(rows).toHaveCount(5);
+  await expect(api).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Start project container", exact: true })
+    .click();
+  await expect(rows).toHaveCount(10);
+  await expect(api).toHaveCount(5);
+  await page
+    .getByRole("button", { name: "Stop project container", exact: true })
+    .click();
+  await expect(api).toHaveCount(5);
+  await expect(
+    api
+      .first()
+      .locator("xpath=ancestor::tr")
+      .getByRole("img", { name: "Stopped", exact: true }),
+  ).toBeVisible();
+  await expect(rows).toHaveCount(10);
+  await page
+    .getByRole("button", { name: "Remove project container", exact: true })
+    .click();
+  await expect(api).toHaveCount(0);
+  await expect(rows).toHaveCount(5);
+});
