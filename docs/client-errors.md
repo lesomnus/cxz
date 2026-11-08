@@ -85,7 +85,12 @@ An initial conversation read owned by a waiting view is silent, including its
 retries after leaving that view. Session resolution also uses the explicit call
 attribute. Session Get/Transcript/History and supporting read calls use the
 connection's loading policy, covering duplicate metadata queries too. Once the
-conversation has loaded, unrelated/live background failures notify normally.
+conversation has loaded, visible history pagination, message jumps and preceding
+input lookups explicitly remain silent; they report failures inline instead.
+Optional account-quota and project-activity transcript reads also pass
+`notify: false`, so scheduled refreshes or inventory updates cannot repeatedly
+raise alerts for an unavailable session. Their diagnostics are still retained.
+Unrelated operations and live/background stream failures notify normally.
 This is contextual, not a blanket exclusion of a service or method.
 
 Attended read messages use `ErrorNotice local` so capture by the center cannot

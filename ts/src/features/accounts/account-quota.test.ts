@@ -3,6 +3,60 @@ import { expect, it, vi } from "vitest";
 import { SessionEventSchema, SessionSchema } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { accountQuota, readAccountQuota } from "./account-quota";
+import {
+  Code,
+  ConnectError,
+  createClient,
+  createRouterTransport,
+} from "@connectrpc/connect";
+import { SessionService } from "#gen/cxz/session_svc_pb";
+import { diagnosticTransport } from "#src/shared/logs/rpc-diagnostics.ts";
+import { ClientErrors } from "#src/shared/errors/client-errors.ts";
+
+it("keeps repeated optional quota reads out of alerts while retaining missing-session diagnostics", async () => {
+  const errors = new ClientErrors();
+  const sessions = createClient(
+    SessionService,
+    diagnosticTransport(
+      createRouterTransport((router) =>
+        router.service(SessionService, {
+          transcript: () => {
+            throw new ConnectError(
+              "session not found: missing-runtime",
+              Code.Unknown,
+            );
+          },
+        }),
+      ),
+      "https://quota.invalid",
+      { errors, write: () => {}, notify: () => true },
+    ),
+  );
+  await expect(
+    sessions.transcript({
+      ref: { key: { case: "runtimeId", value: "missing-runtime" } },
+      limit: 1,
+    }),
+  ).rejects.toThrow("session not found");
+  expect(errors.snapshot()[0].notify).toBe(true);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await expect(
+      readAccountQuota(
+        { sessions },
+        "codex",
+        [create(SessionSchema, { runtimeId: "missing-runtime" })],
+        new AbortController().signal,
+      ),
+    ).rejects.toThrow("session not found");
+  }
+  expect(errors.snapshot()).toHaveLength(1);
+  expect(errors.snapshot()[0]).toMatchObject({
+    status: "active",
+    notify: false,
+    count: 3,
+    code: "Unknown",
+  });
+});
 
 const event = (timeMs: number, seq: bigint, text: string, payload: unknown) =>
   create(SessionEventSchema, {

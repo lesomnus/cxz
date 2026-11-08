@@ -284,47 +284,16 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     // Resolve just the prompt preceding the cached window, retaining one event.
     // This read-only lookup does not prepend rows or change scrollbar geometry.
     void (async () => {
-      {
-        const page = await c.sessions.transcript(
-          {
-            ref: ref(id),
-            beforeSeq: firstSeq,
-            limit: 1,
-            snapshotSeq: latestSeq.current,
-          },
-          { signal: controller.signal },
+      const page = await history.page(
+        { beforeSeq: firstSeq, limit: 1, snapshotSeq: latestSeq.current },
+        controller.signal,
+      );
+      if (!controller.signal.aborted)
+        remember(
+          page.events[0]?.kind === "input"
+            ? page.events[0]
+            : page.precedingInput,
         );
-        if (!controller.signal.aborted)
-          remember(
-            page.events[0]?.kind === "input"
-              ? page.events[0]
-              : page.precedingInput,
-          );
-        return;
-      }
-      let before = firstSeq;
-      while (before > 0n && !controller.signal.aborted) {
-        const page = await history.page(
-          { beforeSeq: before, snapshotSeq: latestSeq.current },
-          controller.signal,
-        );
-        if (controller.signal.aborted) return;
-        const prompt = [...page.events]
-          .reverse()
-          .find((event) => event.seq < before && event.kind === "input");
-        if (prompt) {
-          remember(prompt);
-          return;
-        }
-        if (
-          !page.hasOlder ||
-          !page.events.length ||
-          page.events[0].seq >= before
-        )
-          break;
-        before = page.events[0].seq;
-      }
-      if (!controller.signal.aborted) remember();
     })().catch((e) => {
       if (!controller.signal.aborted)
         setError(
@@ -1156,6 +1125,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       </FloatingCardHost>
       {!!(error || current.error) && (
         <ErrorNotice
+          local
           className={`error ${errorStyles.error} ${errorStyles.notice}`}
           error={error || String(current.error)}
         />

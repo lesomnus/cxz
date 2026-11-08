@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import { ref, type Connection } from "#src/shared/api/connection.ts";
+import { errorNotificationOptions } from "#src/shared/errors/error-notification.ts";
 import {
   activityVersion,
   loadSessionActivity,
@@ -29,7 +30,9 @@ export function useSessionActivity(c: Connection, sessions: Session[]) {
       (session, signal) =>
         c.sessions.transcript(
           { ref: ref(session.runtimeId), limit: 1 },
-          { signal, timeoutMs: 10_000 },
+          // This timestamp is best effort; retain diagnostics without alerting
+          // whenever the project inventory changes or the list is revisited.
+          { signal, timeoutMs: 10_000, ...errorNotificationOptions(false) },
         ),
       publish,
     );
