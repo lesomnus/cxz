@@ -25,6 +25,16 @@ import { Connection } from "#src/shared/api/connection.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import styles from "./conversation-search.module.css";
 
+function recentWeek() {
+  const end = new Date();
+  end.setUTCHours(24, 0, 0, 0);
+  const start = new Date(end.getTime() - 7 * 86400000);
+  return {
+    since: start.toISOString().slice(0, 10),
+    until: end.toISOString().slice(0, 10),
+  };
+}
+
 export function ConversationSearch({
   c,
   projects,
@@ -36,8 +46,7 @@ export function ConversationSearch({
   const [match, setMatch] = useState("substring");
   const [project, setProject] = useState("");
   const [ignoreCase, setIgnoreCase] = useState(true);
-  const [since, setSince] = useState("");
-  const [until, setUntil] = useState("");
+  const [{ since, until }, setDates] = useState(recentWeek);
   const [visits, setVisits] = useState<SessionSearchVisit[]>([]);
   const [summary, setSummary] = useState<SessionSearchSummary>();
   const [progress, setProgress] = useState("");
@@ -255,21 +264,6 @@ export function ConversationSearch({
               setProject(value);
             }}
           />
-          {(project || since || until) && (
-            <Button
-              className={styles.resetFilters}
-              variant="toolbar"
-              type="button"
-              onClick={() => {
-                invalidate();
-                setProject("");
-                setSince("");
-                setUntil("");
-              }}
-            >
-              Reset filters
-            </Button>
-          )}
           <div
             className={styles.dateRange}
             role="group"
@@ -281,9 +275,10 @@ export function ConversationSearch({
               placeholder="From"
               className={styles.datePicker}
               value={since || null}
+              formatDate={(value) => value}
               onChange={(value) => {
                 invalidate();
-                setSince(value ?? "");
+                setDates((old) => ({ ...old, since: value ?? "" }));
               }}
             />
             <span className={styles.dateSeparator} aria-hidden="true">
@@ -295,9 +290,10 @@ export function ConversationSearch({
               placeholder="Until"
               className={styles.datePicker}
               value={until || null}
+              formatDate={(value) => value}
               onChange={(value) => {
                 invalidate();
-                setUntil(value ?? "");
+                setDates((old) => ({ ...old, until: value ?? "" }));
               }}
             />
           </div>

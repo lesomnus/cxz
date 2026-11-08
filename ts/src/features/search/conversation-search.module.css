@@ -31,15 +31,18 @@
   background: var(--composer-toolbar-background, var(--ui-shade-32));
 }
 .projectPicker {
+  box-sizing: border-box;
+  flex: 0 0 180px;
+  width: 180px;
   min-height: 32px;
   min-width: 0;
   max-width: 100%;
   font-size: 12px;
 }
 .projectPicker > :global(.value-menu) {
-  flex: 0 1 auto;
-  width: max-content;
-  max-width: min(240px, 60vw);
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 .projectPicker :global(.meta-value) {
@@ -61,11 +64,6 @@
 }
 .dateSeparator {
   color: var(--ui-text-separator);
-}
-.filterBar .resetFilters {
-  width: auto;
-  flex-shrink: 0;
-  white-space: nowrap;
 }
 .summary,
 .muted,

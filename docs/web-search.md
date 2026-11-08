@@ -11,6 +11,10 @@ case-sensitive matching, regular expressions and fuzzy matching; regular
 expressions and fuzzy matching are mutually exclusive. Filters support one project
 or all projects and a UTC date range with an exclusive end date. The web page
 searches user/assistant messages and exposes no Include tools option.
+The date controls display `YYYY-MM-DD` and initially cover the seven UTC calendar
+days through today: the end boundary is tomorrow at 00:00 UTC. The project
+selector has a fixed width, and there is no Reset filters button; project scope
+can be changed to All projects and either date can be cleared independently.
 
 Submitting Enter or the search button calls `SessionService.Search` once. Changing
 the query/options aborts the active request and clears stale results; it does not
