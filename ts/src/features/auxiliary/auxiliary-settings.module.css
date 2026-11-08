@@ -1,4 +1,7 @@
 .content {
+  --auxiliary-account-width: 300px;
+  --auxiliary-model-width: 140px;
+  --auxiliary-effort-width: 100px;
   container: auxiliary-settings / inline-size;
   display: grid;
   gap: var(--ui-section-layout-gap);
@@ -7,7 +10,9 @@
 }
 .configuration {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px 80px auto;
+  grid-template-columns:
+    var(--auxiliary-account-width) var(--auxiliary-model-width)
+    var(--auxiliary-effort-width) minmax(0, 1fr);
   gap: var(--ui-section-group-gap);
   align-items: start;
   min-width: 0;
@@ -15,6 +20,7 @@
 }
 .account {
   min-width: 0;
+  width: min(100%, var(--auxiliary-account-width));
 }
 .configuration > :global(.value-menu) {
   flex: none;
