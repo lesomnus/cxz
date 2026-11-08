@@ -25,13 +25,13 @@
   min-width: 0;
   margin-top: calc(-1 * var(--search-filter-overlap));
   margin-inline: var(--ui-space);
-  padding: calc(var(--search-filter-overlap) + var(--ui-control-inset))
-    var(--ui-control-inset) var(--ui-control-inset);
-  border: 1px solid var(--ui-shade-44);
+  padding: calc(var(--search-filter-overlap) + var(--ui-space)) var(--ui-space)
+    var(--ui-space);
   border-radius: var(--ui-dialog-radius);
   background: var(--composer-toolbar-background, var(--ui-shade-32));
 }
 .projectPicker {
+  min-height: 32px;
   min-width: 0;
   max-width: 100%;
   font-size: 12px;
@@ -47,17 +47,25 @@
   text-overflow: ellipsis;
 }
 .dateRange {
+  margin-inline-start: auto;
   display: flex;
   align-items: center;
   gap: 4px;
   min-width: 0;
   max-width: 100%;
 }
-.datePicker {
+.datePicker.datePicker {
   --ui-date-picker-trigger-width: 132px;
+  border: 0;
+  box-shadow: none;
 }
 .dateSeparator {
   color: var(--ui-text-separator);
+}
+.filterBar .resetFilters {
+  width: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .summary,
 .muted,
