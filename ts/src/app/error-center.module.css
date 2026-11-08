@@ -8,6 +8,9 @@
   --button-background: transparent;
   color: var(--ui-muted);
 }
+.trigger[aria-expanded="true"] {
+  --button-background: var(--button-hover-background);
+}
 .symbol {
   display: flex;
   align-items: center;
