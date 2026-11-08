@@ -421,6 +421,32 @@ for (const width of [390, 1280])
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
+    await expect(trigger).toBeEnabled();
+    const content = trigger.locator(":scope > .button-content");
+    const resting = (await content.boundingBox())!;
+    const button = (await trigger.boundingBox())!;
+    const pressScale = await content.evaluate(
+      (node) =>
+        Number(getComputedStyle(node).getPropertyValue("--press-scale")) ||
+        0.95,
+    );
+    await trigger.hover();
+    await page.mouse.down();
+    await expect
+      .poll(async () => (await content.boundingBox())!.width)
+      .toBeCloseTo(resting.width * pressScale, 1);
+    const pressed = (await content.boundingBox())!;
+    expect(pressed.x + pressed.width / 2).toBeCloseTo(
+      button.x + button.width / 2,
+      0,
+    );
+    expect(pressed.y + pressed.height / 2).toBeCloseTo(
+      button.y + button.height / 2,
+      0,
+    );
+    await page.mouse.up();
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Escape");
   });
 
 test("document loading keeps the grouped frame and disabled action panels", async ({

@@ -74,10 +74,11 @@
   border-radius: inherit;
   text-align: left;
 }
-.revision :global(.setting-trigger > .button-content) {
+.revision :global(.value-menu .setting-trigger > .button-content) {
   width: 100%;
   height: auto;
   justify-content: space-between;
+  transform-origin: center;
 }
 .revisionValue {
   display: grid;
