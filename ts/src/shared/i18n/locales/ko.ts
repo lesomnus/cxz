@@ -749,6 +749,9 @@ export const messages = {
   "Unread error": "확인하지 않은 오류",
   "Unread response": "읽지 않은 응답",
   "{count} unread sessions": "읽지 않은 세션 {count}개",
+  "Included in alerts": "알림 집계에 포함됨",
+  "Excluded from alerts": "알림 집계에서 제외됨",
+  "{count} error alerts": "오류 알림 {count}개",
   Notifications: "알림",
   "Notification sounds": "알림 소리",
   "Play a sound when a response finishes or a new question arrives.":

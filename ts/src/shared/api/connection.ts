@@ -151,6 +151,22 @@ export class Connection {
     return diagnosticTransport(transport, this.baseUrl, {
       errors: this.errors,
       ...(this.inProcess ? { write: () => {} } : {}),
+      notify: ({ origin, subject }) =>
+        !(
+          origin?.kind === "rpc" &&
+          origin.service === "cxz.SessionService" &&
+          [
+            "Get",
+            "Transcript",
+            "History",
+            "Rows",
+            "Events",
+            "AuxStatus",
+            "AuxEvents",
+          ].includes(origin.method) &&
+          !!subject?.runtimeId &&
+          this.conversations?.attendsLoading(subject.runtimeId)
+        ),
       describe: (target) => {
         const rows =
           target.kind === "session"

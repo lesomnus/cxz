@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { create } from "@bufbuild/protobuf";
+import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
+import { ConversationLoading } from "#src/features/session/conversation/conversation-loading.tsx";
+import { SessionsPage } from "#src/pages/sessions/sessions-page.tsx";
+import { errorNotificationOptions } from "#src/shared/errors/error-notification.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
@@ -17,13 +22,17 @@ import { EditableValue } from "#src/shared/components/editable-value.tsx";
 
 // Real clients/diagnostic transport and the real workspace sidebar. The fixture
 // controls replies, rather than adding error records directly from buttons.
-function makeFixture() {
+type ReadFailure = "lookup" | "session" | "history";
+function makeFixture(readFailure?: ReadFailure) {
+  let failRead = true;
   const errors = new ClientErrors({
     storage: localStorage,
-    storageKey: "cxz.error-center-preview.v1",
+    storageKey: readFailure
+      ? `cxz.attended-error-preview.v1:${readFailure}`
+      : "cxz.error-center-preview.v1",
   });
   let mode: "fail" | "success" | "wait" = "fail";
-  let streamFails = true;
+  let streamFails = !readFailure;
   let release: (() => void) | undefined;
   const idle = (signal: AbortSignal) =>
     new Promise<void>((resolve) => {
@@ -57,6 +66,39 @@ function makeFixture() {
       },
     });
     router.service(SessionService, {
+      get: () => {
+        if (readFailure && readFailure !== "history" && failRead)
+          throw new ConnectError("session not found", Code.NotFound);
+        return create(SessionSchema, {
+          id: new Uint8Array(16).fill(2),
+          runtimeId: "read-preview",
+          alias: "read-preview",
+          status: { state: "stopped", runId: "run", lastSeq: 1n },
+        });
+      },
+      transcript: () => {
+        if (readFailure === "history" && failRead)
+          throw new ConnectError(
+            "Conversation history is unavailable",
+            Code.Unavailable,
+          );
+        return {
+          events: [
+            create(SessionEventSchema, {
+              seq: 1n,
+              kind: "assistant",
+              text: "Recovered conversation",
+              runId: "run",
+            }),
+          ],
+          snapshotSeq: 1n,
+        };
+      },
+      history: () => ({}),
+      rows: async function* (_, context) {
+        yield {};
+        await idle(context.signal);
+      },
       list: () => ({}),
       watch: async function* (_, context) {
         yield { snapshotComplete: true };
@@ -82,6 +124,14 @@ function makeFixture() {
   return {
     c,
     errors,
+    recoverRead: () => {
+      failRead = false;
+    },
+    quietRequest: () =>
+      c.accounts.get(
+        { ref: { key: { case: "alias", value: "quiet" } } },
+        errorNotificationOptions(false),
+      ),
     request: (value: typeof mode, alias = "work", signal?: AbortSignal) => {
       mode = value;
       return c.accounts.get(
@@ -169,14 +219,86 @@ function Controls({ fixture: f }: { fixture: ReturnType<typeof makeFixture> }) {
     </main>
   );
 }
+function ReadPane({ fixture }: { fixture: ReturnType<typeof makeFixture> }) {
+  const feed = useMemo(
+    () => fixture.c.conversations.get("read-preview"),
+    [fixture],
+  );
+  const state = useSyncExternalStore(feed.subscribe, feed.snapshot);
+  return (
+    <section
+      aria-label="Conversation read"
+      style={{ position: "relative", minHeight: 320 }}
+    >
+      {state.loading ? (
+        <ConversationLoading {...state.loading} />
+      ) : (
+        state.events.map((event) => <p key={String(event.seq)}>{event.text}</p>)
+      )}
+    </section>
+  );
+}
+function ReadControls({
+  fixture,
+  mode,
+}: {
+  fixture: ReturnType<typeof makeFixture>;
+  mode: ReadFailure;
+}) {
+  const [shown, setShown] = useState(true);
+  return (
+    <main
+      style={{
+        padding: 24,
+        gridColumn: "2 / -1",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Button onClick={() => setShown(!shown)}>
+          {shown ? "Hide conversation" : "Show conversation"}
+        </Button>
+        {mode !== "lookup" && (
+          <Button
+            onClick={() => {
+              fixture.recoverRead();
+              const feed = fixture.c.conversations.get("read-preview");
+              feed.pause();
+              feed.resume();
+            }}
+          >
+            Recover conversation
+          </Button>
+        )}
+        <Button
+          onClick={() => fixture.request("fail", "background").catch(() => {})}
+        >
+          Fail background request
+        </Button>
+        <Button onClick={() => fixture.quietRequest().catch(() => {})}>
+          Fail silent request
+        </Button>
+      </div>
+      {shown &&
+        (mode === "lookup" ? (
+          <SessionsPage c={fixture.c} id="missing" projects={[]} />
+        ) : (
+          <ReadPane fixture={fixture} />
+        ))}
+    </main>
+  );
+}
 function Preview({
   page = false,
   overview = false,
+  readFailure,
 }: {
   page?: boolean;
   overview?: boolean;
+  readFailure?: ReadFailure;
 }) {
-  const [fixture] = useState(makeFixture);
+  const [fixture] = useState(() => makeFixture(readFailure));
   const [router] = useState(() =>
     createWorkspaceRouter(
       {
@@ -193,6 +315,8 @@ function Preview({
         view: () =>
           useWorkspaceRoute().resource === "errors" ? (
             <ErrorsPage store={fixture.errors} />
+          ) : readFailure ? (
+            <ReadControls fixture={fixture} mode={readFailure} />
           ) : (
             <Controls fixture={fixture} />
           ),
@@ -371,4 +495,14 @@ export const Page: StoryObj<typeof meta> = { args: { page: true } };
 
 export const Overview: StoryObj<typeof meta> = {
   args: { page: true, overview: true },
+};
+
+export const AttendedSession: StoryObj<typeof meta> = {
+  args: { readFailure: "session" },
+};
+export const AttendedHistory: StoryObj<typeof meta> = {
+  args: { readFailure: "history" },
+};
+export const AttendedLookup: StoryObj<typeof meta> = {
+  args: { readFailure: "lookup" },
 };

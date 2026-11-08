@@ -59,11 +59,39 @@ A failure after recovery or staleness starts a new episode.
 All Connection RPC transports, including uploads and in-process connections,
 report failures here. Terminal/login WebSocket failures, sign-out failures,
 project runtime status errors and uncaught browser errors are included too.
-RPC error text is suppressed in workspace pages, forms, chips and action menus.
+Captured RPC error text is normally suppressed in workspace pages, forms, chips
+and action menus. Attended session/conversation-loading errors remain inline.
 Local validation, browser capability feedback, retry controls, warnings about
 uncertain operation results and errors within the agent transcript remain in
 their relevant views. Standalone components keep inline feedback when they are
 used without the workspace error center.
+
+## Notification policy
+
+Error context accepts `notify: false`: retain the episode and its full lifecycle,
+but exclude it from the sidebar error button's alert color/count. Missing values
+notify by default; persisted values must be actual booleans. The page and opened
+sidebar panel still list all records, including silent Active entries. Details
+shows whether an episode is included in alerts.
+
+```ts
+errors.report(key, error, { notify: false });
+// For a captured Connect RPC, an explicit call attribute overrides policy:
+c.sessions.get(request, errorNotificationOptions(false));
+```
+
+`errorNotificationOptions` comes from `shared/errors/error-notification.ts`.
+An initial conversation read owned by a waiting view is silent, including its
+retries after leaving that view. Session resolution also uses the explicit call
+attribute. Session Get/Transcript/History and supporting read calls use the
+connection's loading policy, covering duplicate metadata queries too. Once the
+conversation has loaded, unrelated/live background failures notify normally.
+This is contextual, not a blanket exclusion of a service or method.
+
+Attended read messages use `ErrorNotice local` so capture by the center cannot
+hide the failure behind a loading screen. Other captured API feedback keeps the
+existing deduplication behavior. Notification policy never marks a failure
+resolved, drops its count, removes history, or changes its recovery identity.
 
 ## Recovery
 

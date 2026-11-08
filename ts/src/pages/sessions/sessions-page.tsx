@@ -65,7 +65,7 @@ export function SessionsPage({
       <div className="session-workspace">
         {resolved.error ? (
           <div>
-            <ErrorNotice error={resolved.error} />
+            <ErrorNotice local error={resolved.error} />
             <Button onClick={resolved.reload}>Retry</Button>
           </div>
         ) : (

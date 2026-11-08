@@ -64,6 +64,14 @@ export function ErrorDetailsDialog({
             <dd>{status}</dd>
           </div>
           <div>
+            <dt>{t("Notifications")}</dt>
+            <dd>
+              {entry.notify === false
+                ? t("Excluded from alerts")
+                : t("Included in alerts")}
+            </dd>
+          </div>
+          <div>
             <dt>{t("Count")}</dt>
             <dd>
               <CompactNumber value={entry.count} mode="integer" digits={3} />

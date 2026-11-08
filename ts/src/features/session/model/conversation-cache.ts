@@ -139,6 +139,9 @@ export class CachedConversation {
   private paused = false;
   private started = false;
   private ready = false;
+  // The loading attempt belongs to its original waiting view, including retries
+  // after navigation. Once data is ready, later stream failures alert normally.
+  private attendedLoad = false;
   private cursor = 0n;
   private identity = "";
   private notificationFrame?: number;
@@ -176,6 +179,9 @@ export class CachedConversation {
     this.aux = new CachedSessionAux(client.sessions, id, changed);
   }
   snapshot = () => this.state;
+  get attendedLoading() {
+    return this.attendedLoad && !this.ready;
+  }
   get viewed() {
     return this.listeners.size > 0 || this.aux.viewed;
   }
@@ -201,6 +207,7 @@ export class CachedConversation {
   }
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
+    if (!this.ready) this.attendedLoad = true;
     if (this.paused && !this.stopped) this.resume();
     else if (!this.started && !this.stopped) {
       this.started = true;
@@ -404,6 +411,7 @@ export class CachedConversation {
         this.aux.reset();
         this.cursor = 0n;
         this.ready = false;
+        this.attendedLoad = this.listeners.size > 0;
         this.tail = [];
         this.rowCursor = 0n;
         this.latestSeq.current = 0n;
@@ -653,6 +661,9 @@ export class ConversationCache {
       this.entries.set(id, entry);
     }
     return entry;
+  }
+  attendsLoading(id: string) {
+    return this.entries.get(id)?.attendedLoading ?? false;
   }
   private sweep() {
     let idle = [...this.entries.values()].filter((e) => !e.viewed && !e.active);
