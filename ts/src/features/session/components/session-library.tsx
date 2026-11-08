@@ -73,6 +73,7 @@ export function SessionLibrary({
             loading={inventory.loading.sessions}
             variant="overview"
             showProject
+            projectFirst
             showToolbar={false}
             scroll="page"
             addSession={() => setCreating(true)}

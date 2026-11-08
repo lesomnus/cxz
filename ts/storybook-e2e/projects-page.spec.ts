@@ -668,18 +668,13 @@ test("project sessions use the index column layout with bounded resource links a
     rightInset,
   );
   await page.screenshot({ path: "/tmp/cxz-project-session-layout.png" });
-  await expect(account.locator(".agent-brand-codex")).toBeVisible();
+  await expect(account.locator(".agent-brand")).toHaveCount(0);
   await expect(
     rows
       .last()
       .getByRole("link", { name: "Work account work", exact: true })
-      .locator(".agent-brand-codex"),
-  ).toBeVisible();
-  const logo = (await account.locator(".agent-brand").boundingBox())!;
-  const accountText = (await account
-    .getByText("Work account", { exact: true })
-    .boundingBox())!;
-  expect(logo.x + logo.width).toBeLessThanOrEqual(accountText.x);
+      .locator(".agent-brand"),
+  ).toHaveCount(0);
   for (const [link, name, alias] of [
     [session, "Plan the next release", "oak"],
     [account, "Work account", "work"],

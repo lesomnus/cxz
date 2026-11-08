@@ -51,6 +51,7 @@ export function SessionTable({
   addSession,
   showAccount = true,
   showProject = false,
+  projectFirst = false,
   showToolbar = true,
   title = t("Sessions"),
   horizontalScrollbar = false,
@@ -66,6 +67,8 @@ export function SessionTable({
   addSession?: () => void;
   showAccount?: boolean;
   showProject?: boolean;
+  /** Put project identity before the session name in the all-sessions list. */
+  projectFirst?: boolean;
   showToolbar?: boolean;
   title?: string;
   horizontalScrollbar?: boolean;
@@ -165,11 +168,16 @@ export function SessionTable({
           <colgroup>
             <col className={styles.selectionColumn} />
             {overview && <col className={styles.stateColumn} />}
+            {showProject && projectFirst && (
+              <col className={styles.projectColumn} />
+            )}
             {!compact && <col className={styles.agentColumn} />}
             <col className={styles.nameColumn} />
             {!compact && <col className={styles.aliasColumn} />}
             {showAccount && <col className={styles.accountColumn} />}
-            {showProject && <col className={styles.projectColumn} />}
+            {showProject && !projectFirst && (
+              <col className={styles.projectColumn} />
+            )}
             {!overview && <col className={styles.stateColumn} />}
             <col className={styles.actionsColumn} />
           </colgroup>
@@ -183,11 +191,16 @@ export function SessionTable({
                 />
               </TableHead>
               {overview && stateHeading}
+              {showProject && projectFirst && (
+                <TableHead scope="col">{t("Project")}</TableHead>
+              )}
               {!compact && <TableHead scope="col" aria-label={t("Agent")} />}
               <TableHead scope="col">{t("Name")}</TableHead>
               {!compact && <TableHead scope="col">{t("Alias")}</TableHead>}
               {showAccount && <TableHead scope="col">{t("Account")}</TableHead>}
-              {showProject && <TableHead scope="col">{t("Project")}</TableHead>}
+              {showProject && !projectFirst && (
+                <TableHead scope="col">{t("Project")}</TableHead>
+              )}
               {!overview && stateHeading}
               <TableHead
                 scope="col"
@@ -225,6 +238,19 @@ export function SessionTable({
                 projectResource && resourceHandle(projectResource);
               const projectName =
                 projectResource?.name || projectResource?.alias || project;
+              const projectCell = (
+                <TableCell className={styles.cardCell}>
+                  {project ? (
+                    <ResourceNavigationButton
+                      {...projectLocation(project)}
+                      name={projectName || project}
+                      alias={projectResource?.alias}
+                    />
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
+              );
               const state = (
                 <TableCell className={styles.state}>
                   {compact ? (
@@ -246,6 +272,7 @@ export function SessionTable({
                     />
                   </TableCell>
                   {overview && state}
+                  {showProject && projectFirst && projectCell}
                   {!compact && (
                     <TableCell className={styles.agent}>
                       <AgentBrand agent={s.agent} />
@@ -292,37 +319,13 @@ export function SessionTable({
                           {...accountLocation(accountAlias)}
                           name={accountName}
                           alias={accountAlias}
-                          leading={
-                            <span
-                              className={styles.accountAgent}
-                              aria-hidden="true"
-                            >
-                              <AgentBrand
-                                agent={
-                                  account?.agent || s.account?.agent || s.agent
-                                }
-                              />
-                            </span>
-                          }
                         />
                       ) : (
                         accountName
                       )}
                     </TableCell>
                   )}
-                  {showProject && (
-                    <TableCell className={styles.cardCell}>
-                      {project ? (
-                        <ResourceNavigationButton
-                          {...projectLocation(project)}
-                          name={projectName || project}
-                          alias={projectResource?.alias}
-                        />
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                  )}
+                  {showProject && !projectFirst && projectCell}
                   {!overview && state}
                   <TableCell className={`${styles.cardCell} ${styles.actions}`}>
                     <SessionTableMenu

@@ -207,14 +207,3 @@
   color: var(--ui-muted);
   font-size: 11px;
 }
-
-.accountAgent {
-  --agent-logo-size: calc(var(--ui-icon-size-small) - var(--ui-control-inset));
-  display: grid;
-  place-items: center;
-  flex: none;
-  box-sizing: border-box;
-  width: calc(var(--agent-logo-size) + 2 * var(--ui-control-inset));
-  height: var(--agent-logo-size);
-  padding-inline: var(--ui-control-inset);
-}

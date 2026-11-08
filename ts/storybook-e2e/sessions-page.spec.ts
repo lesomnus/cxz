@@ -14,7 +14,15 @@ for (const width of [390, 1280]) {
     await expect(table(page).locator("tbody tr")).toHaveCount(10);
     expect(
       await table(page).getByRole("columnheader").allTextContents(),
-    ).toEqual(["", "", "Name", "Account", "Project", ""]);
+    ).toEqual(["", "", "Project", "Name", "Account", ""]);
+    const firstRow = table(page).locator("tbody tr").first();
+    const cells = firstRow.getByRole("cell");
+    await expect(cells.nth(2).locator('a[href*="/project/"]')).toHaveCount(1);
+    await expect(
+      cells.nth(3).locator("[data-session-navigation] .agent-brand"),
+    ).toHaveCount(1);
+    await expect(cells.nth(4).locator('a[href*="/account/"]')).toHaveCount(1);
+    await expect(cells.nth(4).locator(".agent-brand")).toHaveCount(0);
     await expect(
       page.getByRole("complementary", { name: "Session list", exact: true }),
     ).toHaveCount(0);
