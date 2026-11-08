@@ -127,12 +127,6 @@ export function MemoryDocument({
           return {
             ...option,
             description: date ? formatLocalDateTime(date) : "—",
-            trailing: (
-              <MemoryVersionChanges
-                version={version}
-                className={styles.revisionChanges}
-              />
-            ),
           };
         })
       : [];
@@ -259,22 +253,33 @@ export function MemoryDocument({
                 version?.dateCreated ??
                 (number === 1n ? memory?.dateCreated : undefined);
               return (
-                <span className={styles.revisionLabel}>
-                  <span className={styles.revisionNumber}>
-                    r
-                    {number !== undefined && !creating ? (
-                      <CompactNumber
-                        value={Number(number)}
-                        mode="integer"
-                        digits={3}
-                        label={`Revision ${number}`}
-                      />
-                    ) : (
-                      "—"
-                    )}
+                <span className={styles.revisionValue}>
+                  <span className={styles.revisionLabel}>
+                    <span className={styles.revisionNumber}>
+                      r
+                      {number !== undefined && !creating ? (
+                        <CompactNumber
+                          value={Number(number)}
+                          mode="integer"
+                          digits={3}
+                          label={`Revision ${number}`}
+                        />
+                      ) : (
+                        "—"
+                      )}
+                    </span>
+                    <span className={styles.revisionDate}>
+                      <DateTime value={created} showOffset={false} />
+                    </span>
                   </span>
-                  <span className={styles.revisionDate}>
-                    <DateTime value={created} showOffset={false} />
+                  <span className={styles.revisionDetails}>
+                    <MemoryVersionChanges
+                      version={version}
+                      className={styles.revisionChanges}
+                    />
+                    <span className={styles.revisionAge}>
+                      {created ? <RelativeTime value={created} /> : "—"}
+                    </span>
                   </span>
                 </span>
               );

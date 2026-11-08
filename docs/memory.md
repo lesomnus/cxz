@@ -55,7 +55,8 @@ Narrow layouts place the selector beside the action buttons. It lists retained
 versions through `Versions`; choosing one loads its body through `Read`, while
 Latest follows the current document. Title and resource dates remain current.
 The selector and choices place the revision number above its creation date on the
-left and compact added/removed line counts on the right. The selector uses the
+left and compact added/removed line counts together on the right, above the
+humanized age of the revision. The selector uses the
 action buttons’ corner shape. First revisions show Created; unavailable counts
 remain unknown.
 Clicking the larger title opens the shared

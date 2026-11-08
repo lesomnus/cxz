@@ -470,7 +470,7 @@ test("revision selection changes only the body and Latest restores the current t
   await expect(
     revision.getByRole("img", { name: "1 lines removed", exact: true }),
   ).toBeVisible();
-  await expect(revision.locator("time")).toHaveAttribute(
+  await expect(revision.locator("time").first()).toHaveAttribute(
     "datetime",
     "2026-11-05T12:00:00.000Z",
   );
@@ -478,7 +478,8 @@ test("revision selection changes only the body and Latest restores the current t
     .getByRole("img", { name: "Revision 4", exact: true })
     .locator("..")
     .boundingBox())!;
-  const dateBox = (await revision.locator("time").boundingBox())!;
+  const dateBox = (await revision.locator("time").first().boundingBox())!;
+  const ageBox = (await revision.locator("time").nth(1).boundingBox())!;
   const addedBox = (await revision
     .getByRole("img", { name: "1 lines added", exact: true })
     .boundingBox())!;
@@ -488,10 +489,13 @@ test("revision selection changes only the body and Latest restores the current t
   expect(dateBox.x).toBeCloseTo(numberBox.x, 0);
   expect(dateBox.y).toBeGreaterThan(numberBox.y);
   expect(addedBox.x).toBeGreaterThan(numberBox.x + numberBox.width);
-  expect(addedBox.x + addedBox.width).toBeCloseTo(
+  expect(addedBox.y).toBeCloseTo(removedBox.y, 0);
+  expect(removedBox.x).toBeGreaterThan(addedBox.x + addedBox.width);
+  expect(ageBox.x + ageBox.width).toBeCloseTo(
     removedBox.x + removedBox.width,
     0,
   );
+  expect(ageBox.y).toBeGreaterThan(addedBox.y);
   const metadata = await information.innerText();
   const body = doc(page).getByRole("region", {
     name: "Memory content",
@@ -505,10 +509,11 @@ test("revision selection changes only the body and Latest restores the current t
   ).toBeVisible();
   await expect(body).toContainText("Keep UI decisions together.");
   await expect(revision).toContainText("Created");
-  await expect(revision.locator("time")).toHaveAttribute(
+  await expect(revision.locator("time").first()).toHaveAttribute(
     "datetime",
     "2026-11-02T12:00:00.000Z",
   );
+  await expect(revision.locator("time").nth(1)).toHaveText("3 days ago");
   await expect(information).toHaveText(metadata, { useInnerText: true });
   expect((await body.boundingBox())!.y).toBeCloseTo(position, 0);
   await revision.click();
@@ -519,7 +524,7 @@ test("revision selection changes only the body and Latest restores the current t
   await expect(
     latestOption.getByRole("img", { name: "Revision 4", exact: true }),
   ).toBeVisible();
-  await expect(latestOption.locator("time")).toHaveAttribute(
+  await expect(latestOption.locator("time").first()).toHaveAttribute(
     "datetime",
     "2026-11-05T12:00:00.000Z",
   );

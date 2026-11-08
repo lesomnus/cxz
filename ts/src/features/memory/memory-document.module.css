@@ -79,12 +79,23 @@
   height: auto;
   justify-content: space-between;
 }
-.revisionLabel {
+.revisionValue {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--ui-space);
+  min-width: 0;
+}
+.revisionLabel,
+.revisionDetails {
   display: grid;
   min-width: 0;
   gap: var(--ui-space);
   text-align: left;
   font-family: var(--ui-font-mono);
+}
+.revisionDetails {
+  justify-items: end;
+  text-align: right;
 }
 .revisionNumber {
   display: flex;
@@ -92,7 +103,8 @@
   font-size: 11px;
   line-height: 1;
 }
-.revisionDate {
+.revisionDate,
+.revisionAge {
   min-width: 0;
   overflow: hidden;
   color: var(--ui-muted);
@@ -100,11 +112,11 @@
   line-height: 1;
 }
 .revisionChanges.revisionChanges {
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: baseline;
   gap: var(--ui-space);
-  font-size: 11px;
-  line-height: 1;
+  font-size: 10px;
+  line-height: 11px;
 }
 .bodySection {
   grid-column: 1 / -1;
