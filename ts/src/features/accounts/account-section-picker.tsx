@@ -38,7 +38,7 @@ export function AccountSectionPicker({
                 {
                   value: "",
                   label: accounts.length ? "Choose an account" : "No accounts",
-                  description: "Shared by Summary, Suggestion and Title",
+                  description: "Account",
                   disabled: true,
                 },
               ]

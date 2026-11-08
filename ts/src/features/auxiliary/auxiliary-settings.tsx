@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { create } from "@bufbuild/protobuf";
-import { Button, FormField, Switch, ValueMenu } from "@lesomnus/nox";
+import { Button, FieldLabel, Section, Switch, ValueMenu } from "@lesomnus/nox";
 import {
   AgentProfileSchema,
   type AgentProfile,
@@ -23,6 +23,7 @@ import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { auxKinds } from "./auxiliary-controls";
 import styles from "./auxiliary-settings.module.css";
 
+const mixedValue = "__mixed__";
 export function AuxiliarySettings({
   c,
   sessions = [],
@@ -69,9 +70,34 @@ export function AuxiliarySettings({
   const accountAvailable = !!accounts.data?.some(
     (candidate) => candidate.alias === account,
   );
+  // Preserve older per-task choices until the user explicitly picks a common
+  // value. An unconfigured task inherits the common model when enabled/saved.
+  const configured = profiles.filter((profile) => profile.model);
+  const modelValues = [...new Set(configured.map((profile) => profile.model))];
+  const effortValues = [
+    ...new Set(configured.map((profile) => profile.effort)),
+  ];
+  const mixedModel = modelValues.length > 1;
+  const mixedEffort = effortValues.length > 1;
+  const model = modelValues.length === 1 ? modelValues[0] : "";
+  const effort = effortValues.length === 1 ? effortValues[0] : "";
+  const selectedModel = models.data?.models.find((entry) => entry.id === model);
+  const authentication = !accountAvailable
+    ? "No account"
+    : models.loading
+      ? "Checking…"
+      : models.data?.needsLogin
+        ? "Login required"
+        : models.error
+          ? "Unavailable"
+          : models.data
+            ? "Ready"
+            : "—";
   function update(kind: AuxKind, patch: Partial<AgentProfile>) {
     setProfiles((old) =>
-      old.map((p) => (p.kind === kind ? { ...p, ...patch } : p)),
+      old.map((profile) =>
+        profile.kind === kind ? { ...profile, ...patch } : profile,
+      ),
     );
   }
   function chooseAccount(next: string) {
@@ -79,8 +105,8 @@ export function AuxiliarySettings({
     setAccount(next);
     setError("");
     setProfiles((old) =>
-      old.map((p) => ({
-        ...p,
+      old.map((profile) => ({
+        ...profile,
         account: next,
         enabled: false,
         model: "",
@@ -90,14 +116,109 @@ export function AuxiliarySettings({
   }
   return (
     <div className={styles.content} aria-label="Auxiliary AI settings">
-      <AccountSectionPicker
-        c={c}
-        accounts={accounts.data ?? []}
-        sessions={sessions}
-        value={account}
-        choose={chooseAccount}
-        disabled={disabled}
-      />
+      <div
+        className={styles.configuration}
+        role="group"
+        aria-label="Auxiliary configuration"
+      >
+        <div className={styles.account}>
+          <AccountSectionPicker
+            c={c}
+            accounts={accounts.data ?? []}
+            sessions={sessions}
+            value={account}
+            choose={chooseAccount}
+            disabled={disabled}
+          />
+        </div>
+        <ValueMenu
+          label="Auxiliary model"
+          variant="section"
+          alignItemWithTrigger
+          value={mixedModel ? mixedValue : model}
+          disabled={
+            disabled ||
+            !accountAvailable ||
+            models.loading ||
+            models.data?.needsLogin
+          }
+          renderLabel={(option) => (
+            <SelectionLabel label="Model" value={option.label} />
+          )}
+          options={[
+            {
+              value: "",
+              label: models.loading ? "Loading models…" : "Choose a model",
+              disabled: true,
+            },
+            ...(mixedModel
+              ? [{ value: mixedValue, label: "Mixed models", disabled: true }]
+              : []),
+            ...(models.data?.models ?? []).map((entry) => ({
+              value: entry.id,
+              label: entry.name || entry.id,
+            })),
+            ...(!selectedModel && model
+              ? [{ value: model, label: model }]
+              : []),
+          ]}
+          choose={(model) =>
+            setProfiles((old) =>
+              old.map((profile) => ({ ...profile, model, effort: "" })),
+            )
+          }
+        />
+        <ValueMenu
+          label="Auxiliary effort"
+          variant="section"
+          alignItemWithTrigger
+          value={mixedEffort ? mixedValue : effort}
+          disabled={
+            disabled || !model || models.loading || models.data?.needsLogin
+          }
+          renderLabel={(option) => (
+            <SelectionLabel label="Effort" value={option.label} />
+          )}
+          options={[
+            { value: "", label: "Provider default" },
+            ...(mixedEffort
+              ? [{ value: mixedValue, label: "Mixed efforts", disabled: true }]
+              : []),
+            ...(selectedModel?.efforts ?? []).map((value) => ({
+              value,
+              label: value,
+            })),
+            ...(!mixedEffort &&
+            effort &&
+            !selectedModel?.efforts.includes(effort)
+              ? [{ value: effort, label: effort }]
+              : []),
+          ]}
+          choose={(effort) =>
+            setProfiles((old) => old.map((profile) => ({ ...profile, effort })))
+          }
+        />
+        <Section
+          className={styles.authentication}
+          aria-label="Helper authentication"
+          aria-busy={models.loading}
+        >
+          <span
+            className={styles.authenticationState}
+            role="status"
+            data-needs-login={models.data?.needsLogin || undefined}
+          >
+            <SelectionLabel label="Authentication" value={authentication} />
+          </span>
+          <Button
+            className={styles.login}
+            disabled={disabled || !accountAvailable || models.loading}
+            onClick={() => setLogin(true)}
+          >
+            Log in
+          </Button>
+        </Section>
+      </div>
       {(error || configuration.error || accounts.error || models.error) && (
         <ErrorNotice
           error={error || configuration.error || accounts.error || models.error}
@@ -105,22 +226,6 @@ export function AuxiliarySettings({
       )}
       {configuration.loading && !profiles.length && (
         <p className={styles.muted}>Loading auxiliary settings…</p>
-      )}
-      <div className={styles.accountActions}>
-        <span className={styles.muted}>
-          Shared by Summary, Suggestion and Title
-        </span>
-        {accountAvailable && (
-          <Button
-            disabled={disabled || models.loading}
-            onClick={() => setLogin(true)}
-          >
-            Log in to helper account
-          </Button>
-        )}
-      </div>
-      {models.data?.needsLogin && (
-        <p className={styles.muted}>This helper account needs a login.</p>
       )}
       {login && (
         <LoginPanel
@@ -135,66 +240,30 @@ export function AuxiliarySettings({
         />
       )}
       {profiles.map((profile) => {
-        const label = auxKinds.find((k) => k.kind === profile.kind)!.label;
-        const model = models.data?.models.find((m) => m.id === profile.model);
+        const label = auxKinds.find(
+          (kind) => kind.kind === profile.kind,
+        )!.label;
         return (
           <section
             className={styles.profile}
             aria-label={`${label} configuration`}
             key={profile.kind}
           >
-            <div className={styles.heading}>
-              <h2>{label}</h2>
-              <Switch
-                label={`${label} enabled`}
-                checked={profile.enabled}
-                disabled={disabled || !accountAvailable || !profile.model}
-                onChange={(enabled) => update(profile.kind, { enabled })}
-              />
-            </div>
-            <div className={styles.fields}>
-              <FormField label="Model">
-                <ValueMenu
-                  label={`${label} model`}
-                  disabled={disabled || !accountAvailable || models.loading}
-                  value={profile.model}
-                  options={[
-                    {
-                      value: "",
-                      label: models.loading
-                        ? "Loading models…"
-                        : "Choose a model",
-                      disabled: true,
-                    },
-                    ...(models.data?.models ?? []).map((m) => ({
-                      value: m.id,
-                      label: m.name || m.id,
-                    })),
-                    ...(!model && profile.model
-                      ? [{ value: profile.model, label: profile.model }]
-                      : []),
-                  ]}
-                  choose={(model) =>
-                    update(profile.kind, { model, effort: "" })
-                  }
-                />
-              </FormField>
-              <FormField label="Effort">
-                <ValueMenu
-                  label={`${label} effort`}
-                  disabled={disabled || !profile.model || models.loading}
-                  value={profile.effort}
-                  options={[
-                    { value: "", label: "Provider default" },
-                    ...(model?.efforts ?? []).map((value) => ({
-                      value,
-                      label: value,
-                    })),
-                  ]}
-                  choose={(effort) => update(profile.kind, { effort })}
-                />
-              </FormField>
-            </div>
+            <h2>{label}</h2>
+            <Switch
+              label={`${label} enabled`}
+              checked={profile.enabled}
+              disabled={
+                disabled || !accountAvailable || !(profile.model || model)
+              }
+              onChange={(enabled) =>
+                update(profile.kind, {
+                  enabled,
+                  model: profile.model || model,
+                  effort: mixedEffort ? profile.effort : effort,
+                })
+              }
+            />
           </section>
         );
       })}
@@ -203,20 +272,32 @@ export function AuxiliarySettings({
         disabled={
           disabled ||
           !profiles.length ||
-          profiles.some((p) => p.enabled && (!accountAvailable || !p.model))
+          profiles.some(
+            (profile) =>
+              profile.enabled &&
+              (!accountAvailable || !(profile.model || model)),
+          )
         }
         onClick={async () => {
           setBusy(true);
           setError("");
           try {
             const saved = await c.installation.saveAgents(
-              { account, profiles: profiles.map((p) => ({ ...p, account })) },
+              {
+                account,
+                profiles: profiles.map((profile) => ({
+                  ...profile,
+                  account,
+                  model: mixedModel ? profile.model : model,
+                  effort: mixedEffort || mixedModel ? profile.effort : effort,
+                })),
+              },
               { timeoutMs: 20000 },
             );
             setProfiles(saved.profiles);
             setAccount(
               saved.account ||
-                saved.profiles.find((p) => p.account)?.account ||
+                saved.profiles.find((profile) => profile.account)?.account ||
                 "",
             );
           } catch (error) {
@@ -229,5 +310,16 @@ export function AuxiliarySettings({
         Save configuration
       </Button>
     </div>
+  );
+}
+
+function SelectionLabel({ label, value }: { label: string; value: string }) {
+  return (
+    <span className={styles.selection}>
+      <span className={styles.selectionName} aria-hidden="true">
+        <FieldLabel label={label} />
+      </span>
+      <span className={styles.selectionValue}>{value}</span>
+    </span>
   );
 }

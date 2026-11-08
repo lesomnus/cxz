@@ -28,6 +28,39 @@ for (const width of [390, 1280])
       "datetime",
       "2026-11-08T12:25:00.000Z",
     );
+    await expect(
+      page.getByText("Shared by Summary, Suggestion and Title", {
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    for (const kind of ["Summary", "Suggestion", "Title"]) {
+      await expect(
+        page.getByRole("combobox", { name: `${kind} model`, exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("combobox", { name: `${kind} effort`, exact: true }),
+      ).toHaveCount(0);
+    }
+    const authentication = page.getByRole("region", {
+      name: "Helper authentication",
+      exact: true,
+    });
+    await expect(authentication.getByRole("status")).toContainText("Ready");
+    if (width === 1280) {
+      const boxes = await page
+        .getByRole("group", { name: "Auxiliary configuration", exact: true })
+        .evaluate((node) =>
+          [...node.children].map((child) =>
+            child.getBoundingClientRect().toJSON(),
+          ),
+        );
+      expect(boxes).toHaveLength(4);
+      for (let i = 0; i < boxes.length; i++) {
+        expect(boxes[i].y).toBeCloseTo(boxes[0].y, 0);
+        expect(boxes[i].height).toBeCloseTo(boxes[0].height, 0);
+        if (i) expect(boxes[i].x).toBeGreaterThan(boxes[i - 1].right);
+      }
+    }
     await picker(page).click();
     const work = choices(page).getByRole("option", { name: /Work/ });
     const personal = choices(page).getByRole("option", { name: /Personal/ });
@@ -48,7 +81,7 @@ for (const width of [390, 1280])
       ).not.toHaveAttribute("data-section-layout");
     await expect(
       page.getByRole("button", {
-        name: "Log in to helper account",
+        name: "Log in",
         exact: true,
       }),
     ).toHaveCount(1);
@@ -80,21 +113,21 @@ test("changing the shared account clears every task model before configuring and
   await expect(picker(page)).toContainText("Personal");
   for (const name of ["Summary", "Suggestion", "Title"]) {
     await expect(
-      page.getByRole("combobox", { name: `${name} model`, exact: true }),
-    ).toContainText("Choose a model");
-    await expect(
       page.getByRole("switch", { name: `${name} enabled`, exact: true }),
     ).not.toBeChecked();
   }
+  await expect(
+    page.getByRole("combobox", { name: "Auxiliary model", exact: true }),
+  ).toContainText("Choose a model");
   await page
-    .getByRole("combobox", { name: "Summary model", exact: true })
+    .getByRole("combobox", { name: "Auxiliary model", exact: true })
     .click();
   await page.getByRole("option", { name: "Demo model", exact: true }).click();
   await page
     .getByRole("switch", { name: "Summary enabled", exact: true })
     .click();
   await page
-    .getByRole("combobox", { name: "Summary effort", exact: true })
+    .getByRole("combobox", { name: "Auxiliary effort", exact: true })
     .click();
   await page.getByRole("option", { name: "high", exact: true }).click();
   await page
@@ -108,7 +141,7 @@ test("changing the shared account clears every task model before configuring and
     page.getByRole("switch", { name: "Summary enabled", exact: true }),
   ).toBeChecked();
   await expect(
-    page.getByRole("combobox", { name: "Summary effort", exact: true }),
+    page.getByRole("combobox", { name: "Auxiliary effort", exact: true }),
   ).toContainText("high");
 });
 
@@ -197,6 +230,86 @@ test("a pending save retains its label and prevents another click", async ({
   await expect(save).toContainText("Save configuration");
   await expect(picker(page)).toBeDisabled();
   await expect(save).toBeEnabled();
+});
+
+test("helper authentication refreshes after completing the shared login", async ({
+  page,
+}) => {
+  await open(page, "login-required");
+  const status = page
+    .getByRole("region", { name: "Helper authentication", exact: true })
+    .getByRole("status");
+  await expect(status).toContainText("Login required");
+  await expect(
+    page.getByRole("combobox", { name: "Auxiliary model", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Log in · work",
+    exact: true,
+  });
+  await dialog
+    .getByLabel("Authentication code", { exact: true })
+    .fill("demo-code");
+  await dialog
+    .getByRole("button", { name: "Submit code", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await expect(status).toContainText("Ready");
+  await expect(
+    page.getByRole("combobox", { name: "Auxiliary model", exact: true }),
+  ).toBeEnabled();
+});
+
+test("mixed saved models are preserved until a shared model and effort are chosen", async ({
+  page,
+}) => {
+  await open(page, "mixed-configuration");
+  const model = page.getByRole("combobox", {
+    name: "Auxiliary model",
+    exact: true,
+  });
+  const effort = page.getByRole("combobox", {
+    name: "Auxiliary effort",
+    exact: true,
+  });
+  const sidebar = page.getByRole("navigation", {
+    name: "Resources",
+    exact: true,
+  });
+  async function revisit() {
+    await sidebar.getByRole("link", { name: "Accounts", exact: true }).click();
+    await sidebar
+      .getByRole("link", { name: "Auxiliary AI", exact: true })
+      .click();
+  }
+  await expect(model).toContainText("Mixed models");
+  await expect(effort).toContainText("Mixed efforts");
+  await page
+    .getByRole("button", { name: "Save configuration", exact: true })
+    .click();
+  await revisit();
+  await expect(model).toContainText("Mixed models");
+  await expect(effort).toContainText("Mixed efforts");
+  await model.click();
+  await page
+    .getByRole("option", { name: "Alternative model", exact: true })
+    .click();
+  await expect(effort).toContainText("Provider default");
+  await effort.click();
+  await page.getByRole("option", { name: "medium", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Save configuration", exact: true })
+    .click();
+  await revisit();
+  await expect(model).toContainText("Alternative model");
+  await expect(effort).toContainText("medium");
+  await expect(
+    page.getByRole("switch", { name: "Summary enabled", exact: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("switch", { name: "Suggestion enabled", exact: true }),
+  ).toBeChecked();
 });
 
 for (const width of [390, 1280])

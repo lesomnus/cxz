@@ -28,6 +28,8 @@ export function resourceFixture({
   auxiliaryDelayMs = 0,
   auxiliarySaveDelayMs = 0,
   noAccounts = false,
+  auxiliaryNeedsLogin = false,
+  auxiliaryMixedProfiles = false,
 }: {
   eraseFailures?: number;
   usageDelayMs?: number;
@@ -41,6 +43,8 @@ export function resourceFixture({
   auxiliaryDelayMs?: number;
   auxiliarySaveDelayMs?: number;
   noAccounts?: boolean;
+  auxiliaryNeedsLogin?: boolean | (() => boolean);
+  auxiliaryMixedProfiles?: boolean;
 } = {}) {
   const accounts: Pick<
     Account,
@@ -117,6 +121,14 @@ export function resourceFixture({
       effort: "low",
     },
   ];
+  if (auxiliaryMixedProfiles)
+    config.push({
+      kind: AuxKind.SUGGESTION,
+      enabled: true,
+      account: "work",
+      model: "alternative-model",
+      effort: "medium",
+    });
   const transport = createRouterTransport((router) => {
     // A real Workspace shell observes both inventories, even on a page whose
     // isolated fixture has no projects or sessions of its own.
@@ -236,8 +248,21 @@ export function resourceFixture({
         return { erased: true };
       },
       models: () => ({
+        needsLogin:
+          typeof auxiliaryNeedsLogin === "function"
+            ? auxiliaryNeedsLogin()
+            : auxiliaryNeedsLogin,
         models: [
           { id: "demo-model", name: "Demo model", efforts: ["low", "high"] },
+          ...(auxiliaryMixedProfiles
+            ? [
+                {
+                  id: "alternative-model",
+                  name: "Alternative model",
+                  efforts: ["medium"],
+                },
+              ]
+            : []),
         ],
       }),
     });
