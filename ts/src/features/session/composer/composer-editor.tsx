@@ -153,6 +153,9 @@ export function ComposerEditor({
   const gutter = useRef<HTMLDivElement>(null);
   const openCard = useFloatingCard();
   const composing = useRef(false);
+  // ClipboardEvent has no modifiers. Consume this keyboard intent when the
+  // browser delivers paste, including when clipboard access is asynchronous.
+  const expandedPaste = useRef(false);
   const [composition, setComposition] = useState(false);
   const frozenPresentations = useRef<
     Map<string, PastePresentation> | undefined
@@ -773,10 +776,12 @@ export function ComposerEditor({
             autoCorrect="off"
             wrap={wordWrap ? "soft" : "off"}
             onPointerDown={() => {
+              expandedPaste.current = false;
               caretMotion.current = undefined;
             }}
             onFocus={updateSuggestions}
             onBlur={() => {
+              expandedPaste.current = false;
               rememberSelection();
               updateSuggestions();
             }}
@@ -833,6 +838,8 @@ export function ComposerEditor({
               updateSuggestions();
             }}
             onPaste={(event) => {
+              const expanded = expandedPaste.current;
+              expandedPaste.current = false;
               if (readOnly) {
                 event.preventDefault();
                 return;
@@ -847,6 +854,15 @@ export function ComposerEditor({
               }
               if (!text) return;
               const selection = normalizedSelection();
+              if (expanded) {
+                if (new TextEncoder().encode(text).length > MAX_PASTE_BYTES) {
+                  event.preventDefault();
+                  setNotice("Pastes are limited to 1 MiB.");
+                } else setNotice("");
+                // Let native textarea insertion preserve newlines, the caret
+                // and undo without creating a paste chip or uploading a file.
+                return;
+              }
               const secretKind = detectSecrets && detectSecretPaste(text);
               if (secretKind) {
                 event.preventDefault();
@@ -945,6 +961,11 @@ export function ComposerEditor({
               replace(selection.start, selection.end, "");
             }}
             onKeyDown={(event) => {
+              expandedPaste.current =
+                !event.altKey &&
+                (event.ctrlKey || event.metaKey) &&
+                event.shiftKey &&
+                event.key.toLowerCase() === "v";
               if (readOnly) return;
               if (event.nativeEvent.isComposing || composing.current) return;
               // Native word movement can stop inside a chip's invisible text.
