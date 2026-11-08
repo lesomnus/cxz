@@ -45,10 +45,12 @@
   min-width: 0;
 }
 .authentication.authentication {
-  grid-template-columns: minmax(0, 1fr) auto;
   height: calc(32px + 2 * var(--ui-section-padding));
-  gap: calc(2 * var(--ui-space));
   align-items: center;
+}
+.authentication.authentication > :global(.button-content) {
+  justify-content: space-between;
+  gap: calc(2 * var(--ui-space));
 }
 .authenticationState {
   min-width: 0;
@@ -56,12 +58,8 @@
 .authenticationState[data-needs-login] .selectionValue {
   color: var(--ui-muted);
 }
-.login.login {
-  height: 32px;
-  min-height: 32px;
-  padding-block: 0;
-  padding-inline: calc(2 * var(--ui-space));
-  font-size: 12px;
+.login {
+  flex: none;
 }
 .muted {
   margin: 0;

@@ -9,9 +9,9 @@ keeps its own model, effort and enabled setting.
 All are **off by default**.
 
 The web Auxiliary AI page starts with one row of Section-style account, model
-and effort selectors, helper authentication status and Log in, followed by square
-Save configuration and Revert changes icon buttons. The actions share the
-Account page's resource-button styling. Revert restores the last saved account,
+and effort selectors, a helper authentication panel that opens login, followed
+by square Save configuration and Revert changes icon buttons. The actions
+share the Account page's resource-button styling. Revert restores the last saved account,
 model, effort and feature settings without a server write. Narrow layouts wrap
 this row. Model/effort choices apply to all three tasks. Their titles,
 descriptions and upper-right compact switches appear in wide rectangular panels, three

@@ -42,8 +42,8 @@ for (const width of [390, 1280])
         page.getByRole("combobox", { name: `${kind} effort`, exact: true }),
       ).toHaveCount(0);
     }
-    const authentication = page.getByRole("region", {
-      name: "Helper authentication",
+    const authentication = page.getByRole("button", {
+      name: "Log in",
       exact: true,
     });
     await expect(authentication.getByRole("status")).toContainText("Ready");
@@ -384,13 +384,16 @@ test("helper authentication refreshes after completing the shared login", async 
 }) => {
   await open(page, "login-required");
   const status = page
-    .getByRole("region", { name: "Helper authentication", exact: true })
+    .getByRole("button", { name: "Log in", exact: true })
     .getByRole("status");
   await expect(status).toContainText("Login required");
   await expect(
     page.getByRole("combobox", { name: "Auxiliary model", exact: true }),
   ).toBeDisabled();
-  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  const login = page.getByRole("button", { name: "Log in", exact: true });
+  await expect(login).toHaveAttribute("data-section-action", "button");
+  await expect(login.locator("button")).toHaveCount(0);
+  await login.click();
   const dialog = page.getByRole("dialog", {
     name: "Log in · work",
     exact: true,

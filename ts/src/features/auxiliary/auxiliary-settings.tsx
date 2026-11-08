@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { create } from "@bufbuild/protobuf";
-import { Button, FieldLabel, Section, Switch, ValueMenu } from "@lesomnus/nox";
+import { FieldLabel, Section, Switch, ValueMenu } from "@lesomnus/nox";
 import {
   AgentProfileSchema,
   type AgentProfile,
@@ -259,9 +259,13 @@ export function AuxiliarySettings({
         />
         <div className={styles.actions}>
           <Section
+            as="button"
             className={styles.authentication}
-            aria-label="Helper authentication"
+            aria-label="Log in"
+            aria-description={authentication}
             aria-busy={models.loading}
+            disabled={disabled || !accountAvailable || models.loading}
+            onClick={() => setLogin(true)}
           >
             <span
               className={styles.authenticationState}
@@ -270,13 +274,7 @@ export function AuxiliarySettings({
             >
               <SelectionLabel label="Authentication" value={authentication} />
             </span>
-            <Button
-              className={styles.login}
-              disabled={disabled || !accountAvailable || models.loading}
-              onClick={() => setLogin(true)}
-            >
-              Log in
-            </Button>
+            <span className={styles.login}>Log in</span>
           </Section>
           <Section
             as="button"
