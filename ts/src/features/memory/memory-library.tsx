@@ -1,22 +1,18 @@
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { useEffect, useLayoutEffect, useState, useRef, useId } from "react";
+import { useEffect, useLayoutEffect, useState, useRef } from "react";
 import {
   ActionMenu,
   Button,
   Section,
   SegmentedControl,
-  Form,
   FormField,
-  ValueMenu,
 } from "@lesomnus/nox";
-import { SourceEditor } from "@lesomnus/nox/editor";
 import type { Memory } from "#gen/cxz/memory_pb";
 import {
   MemoryService,
   MemoryScope,
   MemoryReadFormat,
-  type MemoryReadReply,
 } from "#gen/cxz/memory_svc_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
@@ -27,14 +23,11 @@ import { publicUUID } from "#src/shared/logs/rpc-diagnostics.ts";
 import { memoryListKey } from "#src/shared/api/read-cache.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { useConnectionQuery } from "#src/shared/api/use-query.ts";
-import { useEditorSettings } from "#src/shared/settings/settings.ts";
-import { useTheme } from "#src/shared/theme/theme.tsx";
 import { RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
-import { Markdown } from "#src/shared/content/markdown.tsx";
-import { MemoryVersionChanges } from "./memory-version-changes";
+import { MemoryDocument, type MemoryDocumentAction } from "./memory-document";
 import styles from "./memory-library.module.css";
 
 const ownerID = (id: Uint8Array) =>
@@ -48,10 +41,6 @@ const labelsText = (labels: Record<string, string>) =>
 const visibleLabels = (labels: Record<string, string>) =>
   Object.fromEntries(
     Object.entries(labels).filter(([k]) => !k.startsWith("legacy.")),
-  );
-const migrationLabels = (labels: Record<string, string>) =>
-  Object.fromEntries(
-    Object.entries(labels).filter(([k]) => k.startsWith("legacy.")),
   );
 function DocumentIcon() {
   return <Icon name="document" width="14" height="14" aria-hidden="true" />;
@@ -100,17 +89,12 @@ export function MemoryLibrary({
     ),
     [creating, setCreating] = useState(false),
     [draft, setDraft] = useState(""),
-    [original, setOriginal] = useState(""),
     [name, setName] = useState(""),
     [labels, setLabels] = useState(""),
     [owner, setOwner] = useState(""),
-    [preview, setPreview] = useState(true),
-    [editing, setEditing] = useState(false),
     [showFilters, setShowFilters] = useState(false),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [history, setHistory] = useState(false),
-    [compare, setCompare] = useState<bigint>();
+    [error, setError] = useState("");
   const [confirmation, setConfirmation] = useState<{
     title: string;
     text: string;
@@ -118,11 +102,8 @@ export function MemoryLibrary({
   }>();
   const lastRouteID = useRef(memoryId);
   const invalidMemoryID = !!(onMemoryChange && memoryId && !uuid(memoryId));
-  const formId = useId();
   const mutationPending = useRef(false);
-  const createKey = useRef(crypto.randomUUID()),
-    theme = useTheme(),
-    settings = useEditorSettings();
+  const createKey = useRef(crypto.randomUUID());
   const scope = trash ? MemoryScope.TRASH : MemoryScope.ACTIVE;
   const listKey = JSON.stringify([project, scope, filter, labelFilter]);
   const list = useRemote(
@@ -181,19 +162,7 @@ export function MemoryLibrary({
       : undefined,
     { watch: false },
   );
-  const editingRead = useRef<
-    { key: string; data: MemoryReadReply } | undefined
-  >(undefined);
-  if (!editing)
-    editingRead.current = text.data
-      ? { key: selectedKey, data: text.data }
-      : undefined;
-  // An in-progress edit retains the revision it started from. Background reads
-  // must neither overwrite the draft nor silently advance its conflict base.
-  const read =
-    editing && !creating && editingRead.current?.key === selectedKey
-      ? editingRead.current.data
-      : text.data;
+  const read = text.data;
   const picked = read?.memory;
   const reading = !creating && (text.loading || (!read && !text.error));
   useEffect(() => {
@@ -216,20 +185,13 @@ export function MemoryLibrary({
     invalidMemoryID,
   ]);
   useLayoutEffect(() => {
-    if (read && !editing) {
+    if (read && !creating) {
       setDraft(read.content);
-      setOriginal(read.content);
       setName(read.memory?.name ?? "");
       setLabels(labelsText(visibleLabels(read.memory?.labels ?? {})));
-      setCompare(undefined);
     }
-  }, [read, editing]);
-  const dirty = creating
-    ? !!(draft || name || labels)
-    : !!read &&
-      (draft !== original ||
-        name !== picked?.name ||
-        labels !== labelsText(visibleLabels(picked?.labels ?? {})));
+  }, [read, creating]);
+  const dirty = creating && !!(draft || name || labels);
   // Browser Back can run immediately after an edit commits.
   useLayoutEffect(() => {
     onDirtyChange?.(dirty);
@@ -302,14 +264,9 @@ export function MemoryLibrary({
     selectionSource.current = list.data;
     setSelected(undefined);
     setCreating(false);
-    setEditing(false);
-    setPreview(true);
     setDraft("");
-    setOriginal("");
     setName("");
     setLabels("");
-    setHistory(false);
-    setCompare(undefined);
     setError("");
     if (updateRoute) selectMemory(undefined, true);
   }
@@ -318,77 +275,28 @@ export function MemoryLibrary({
       reset();
       createKey.current = crypto.randomUUID();
       onCreatingChange?.(true);
-      selectMemory(undefined);
+      // Keep the source route until saving so leaving can guard the new draft.
       setCreating(true);
-      setEditing(true);
       setDraft(content);
       setName(title);
       setLabels(tags);
-      setPreview(false);
       setOwner(sessions[0] ? ownerID(sessions[0].id) : "");
     });
   }
-  const versions = useRemote(
-    async (signal) =>
-      history && selected
-        ? c.memories.versions(
-            { ref: memoryRef(), size: 100 },
-            { signal, timeoutMs: 30000 },
-          )
-        : undefined,
-    [c, project, selectedKey, history, read?.revision],
-  );
-  const difference = useRemote(
-    async (signal) =>
-      compare !== undefined && selected
-        ? c.memories.read(
-            {
-              ref: memoryRef(),
-              baseRevision: compare,
-              format: MemoryReadFormat.DIFF,
-            },
-            { signal, timeoutMs: 30000 },
-          )
-        : undefined,
-    [c, project, selectedKey, compare, read?.revision],
-  );
   async function save() {
+    if (!creating) return;
     await act(async () => {
-      const tagMap = {
-        ...(!creating ? migrationLabels(picked?.labels ?? {}) : {}),
-        ...parseLabels(labels),
-      };
-      let saved: Memory;
-      if (creating) {
-        saved = await c.memories.add({
-          project: projectRef(project),
-          name,
-          content: draft,
-          labels: tagMap,
-          ownerSession: owner,
-          clientId: createKey.current,
-        });
-      } else {
-        if (!picked) throw new Error("Read this memory before saving.");
-        saved = await c.memories.patch({
-          ref: memoryRef(),
-          name: name !== picked.name ? name : undefined,
-          content: draft !== original ? draft : undefined,
-          labels: Object.keys(tagMap).length ? tagMap : undefined,
-          clearLabels: !Object.keys(tagMap).length,
-          dateUpdated: picked.dateUpdated,
-          baseRevision: read!.revision,
-        });
-      }
+      const saved = await c.memories.add({
+        project: projectRef(project),
+        name,
+        content: draft,
+        labels: parseLabels(labels),
+        ownerSession: owner,
+        clientId: createKey.current,
+      });
       c.reads.invalidate(memoryListKey(project));
-      if (!creating)
-        await text.refresh((reply) => reply.revision >= saved.revision);
-      setOriginal(draft);
       selectMemory(saved.id, true);
       setCreating(false);
-      setEditing(false);
-      setPreview(true);
-      versions.reload();
     });
   }
   function remove() {
@@ -402,26 +310,6 @@ export function MemoryLibrary({
         reset(true);
       },
     });
-  }
-  function restoreVersion() {
-    const restore = async () => {
-      const past = await c.memories.read({
-        ref: memoryRef(),
-        revision: compare,
-        format: MemoryReadFormat.FULL,
-      });
-      setDraft(past.content);
-      setEditing(true);
-      setPreview(false);
-      setCompare(undefined);
-    };
-    if (dirty)
-      setConfirmation({
-        title: "Discard unsaved changes",
-        text: "Replace your unsaved changes with this version?",
-        run: restore,
-      });
-    else void act(restore);
   }
   function ownerFor(memory: Memory) {
     const session = sessions.find((s) => ownerID(s.id) === memory.ownerSession);
@@ -437,21 +325,70 @@ export function MemoryLibrary({
   }
   function cancelEdit() {
     choose(() => {
-      if (creating) {
-        reset(true);
-        onCreatingChange?.(false);
-        list.reload();
-        return;
-      }
-      setDraft(read?.content ?? "");
-      setOriginal(read?.content ?? "");
-      setName(picked?.name ?? "");
-      setLabels(labelsText(visibleLabels(picked?.labels ?? {})));
-      setEditing(false);
-      setPreview(true);
-      setError("");
+      reset(true);
+      onCreatingChange?.(false);
+      list.reload();
     });
   }
+  async function renameMemory(value: string) {
+    if (creating) {
+      setName(value);
+      return;
+    }
+    if (!picked || trash || mutationPending.current)
+      throw new Error("This memory cannot be renamed right now.");
+    mutationPending.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      const saved = await c.memories.patch({
+        ref: memoryRef(),
+        name: value,
+        dateUpdated: picked.dateUpdated,
+      });
+      c.reads.invalidate(memoryListKey(project));
+      await text.refresh((reply) => reply.memory?.name === saved.name);
+      list.reload();
+    } finally {
+      mutationPending.current = false;
+      setBusy(false);
+    }
+  }
+  const documentActions: MemoryDocumentAction[] = creating
+    ? [
+        {
+          label: "Save",
+          icon: "save",
+          disabled: busy || !name.trim(),
+          run: save,
+        },
+        { label: "Cancel", icon: "close", disabled: busy, run: cancelEdit },
+      ]
+    : [
+        {
+          label: "Copy",
+          icon: "copy",
+          disabled: busy || reading || !picked || trash,
+          run: () => newMemory(draft, name + " copy", labels),
+        },
+        {
+          label: "Reload",
+          icon: "refresh",
+          disabled: busy || reading || !picked,
+          run: () =>
+            act(async () => {
+              c.reads.invalidate(memoryListKey(project));
+              await text.refresh();
+            }),
+        },
+        {
+          label: "Delete",
+          icon: "erase",
+          danger: true,
+          disabled: busy || reading || !picked || trash,
+          run: remove,
+        },
+      ];
   const ownerInfo = picked ? ownerFor(picked) : undefined;
   const tags = picked ? Object.entries(visibleLabels(picked.labels)) : [];
   return (
@@ -487,7 +424,6 @@ export function MemoryLibrary({
                     choose(() => {
                       c.reads.invalidate(memoryListKey(project));
                       list.reload();
-                      setEditing(false);
                       text.reload();
                     })
                   }
@@ -739,331 +675,52 @@ export function MemoryLibrary({
               <p role="alert">Invalid memory ID.</p>
             </Section>
           ) : creating || selected ? (
-            <Section
-              className={styles.section}
-              aria-label="Memory document"
-              aria-busy={reading}
-            >
-              <header className={styles.documentHeader}>
-                <div className={styles.documentTitle}>
-                  <DocumentIcon />
-                  <strong>
-                    {creating ? "New memory" : picked?.name || "Memory"}
-                    {dirty ? " · Unsaved" : ""}
-                  </strong>
-                </div>
-                {!creating && picked && (
-                  <ActionMenu
-                    label="Memory actions"
-                    items={[
-                      ...(!trash
-                        ? [
-                            {
-                              label: "Copy",
-                              disabled: busy,
-                              run: () =>
-                                newMemory(draft, `${name} copy`, labels),
-                            },
-                          ]
-                        : []),
-                      {
-                        label: "Reload",
-                        disabled: busy,
-                        run: () =>
-                          choose(() => {
-                            c.reads.invalidate(memoryListKey(project));
-                            setEditing(false);
-                            void text.reload();
-                          }),
-                      },
-                      ...(!trash
-                        ? [
-                            {
-                              label: "Delete",
-                              danger: true,
-                              disabled: busy,
-                              run: remove,
-                            },
-                          ]
-                        : []),
-                    ]}
-                  />
-                )}
-              </header>
-              {reading ? (
-                <p className={styles.empty}>Loading memory…</p>
-              ) : text.error && !creating && !read ? (
-                <Button onClick={text.reload}>Retry memory</Button>
-              ) : (
-                <>
-                  {!creating && picked && (
-                    <div className={styles.documentMeta}>
-                      <span className={styles.owner}>
-                        {ownerInfo?.agent && (
-                          <span aria-hidden="true">
-                            <AgentBrand agent={ownerInfo.agent} />
-                          </span>
-                        )}
-                        <span>{ownerInfo?.name}</span>
-                      </span>
-                      <span>Revision {picked.revision.toString()}</span>
-                      {picked.dateUpdated && (
-                        <RelativeTime value={picked.dateUpdated} />
-                      )}
-                    </div>
-                  )}
-                  {!editing && tags.length > 0 && (
-                    <div className={styles.tags}>
-                      {tags.map(([k, v]) => (
-                        <span key={k}>
-                          {k}={v}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {trash ? (
-                    <div className={styles.trashNotice}>
-                      <p>
-                        In trash until{" "}
-                        {picked?.dateDeleted
-                          ? new Date(
-                              Number(picked.dateDeleted.seconds) * 1000,
-                            ).toLocaleString()
-                          : ""}
-                      </p>
-                      <div className={styles.actions}>
-                        <Button
-                          disabled={busy || !picked}
-                          onClick={() =>
-                            void act(async () => {
-                              await c.memories.restore({
-                                ref: memoryRef(),
-                                dateUpdated: picked!.dateUpdated,
-                              });
-                              c.reads.invalidate(memoryListKey(project));
-                              reset(true);
-                            })
-                          }
-                        >
-                          Restore
-                        </Button>
-                        <Button
-                          disabled={busy || !picked}
-                          onClick={() =>
-                            setConfirmation({
-                              title: "Purge memory",
-                              text: "Permanently delete this memory and all its versions?",
-                              run: async () => {
-                                await c.memories.purge({
-                                  ref: memoryRef(),
-                                  dateUpdated: picked!.dateUpdated,
-                                });
-                                c.reads.invalidate(memoryListKey(project));
-                                reset(true);
-                              },
-                            })
-                          }
-                        >
-                          Purge
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {editing && (
-                        <Form
-                          as="fieldset"
-                          columns={1}
-                          disabled={busy}
-                          className={styles.editFields}
-                        >
-                          <FormField label="Name" htmlFor={`${formId}-name`}>
-                            <input
-                              id={`${formId}-name`}
-                              aria-label="Memory name"
-                              value={name}
-                              onChange={(e) => setName(e.target.value)}
-                            />
-                          </FormField>
-                          <FormField
-                            label="Labels"
-                            htmlFor={`${formId}-labels`}
-                          >
-                            <input
-                              id={`${formId}-labels`}
-                              aria-label="Memory labels"
-                              placeholder="topic=design"
-                              value={labels}
-                              onChange={(e) => setLabels(e.target.value)}
-                            />
-                          </FormField>
-                          {creating && sessions.length > 0 && (
-                            <FormField label="Owner session">
-                              <ValueMenu
-                                label="Owner session"
-                                value={owner}
-                                options={[
-                                  { value: "", label: "No owner session" },
-                                  ...sessions.map((s) => ({
-                                    value: ownerID(s.id),
-                                    label: s.alias || s.name || s.runtimeId,
-                                  })),
-                                ]}
-                                choose={setOwner}
-                                disabled={busy}
-                              />
-                            </FormField>
-                          )}
-                        </Form>
-                      )}
-                      <div className={styles.documentTools}>
-                        <div className={styles.actions}>
-                          {editing ? (
-                            <>
-                              <Button
-                                disabled={
-                                  busy || !name.trim() || (!creating && !dirty)
-                                }
-                                loading={busy}
-                                onClick={() => void save()}
-                              >
-                                Save
-                              </Button>
-                              <Button disabled={busy} onClick={cancelEdit}>
-                                Cancel
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              disabled={busy || !picked}
-                              onClick={() => {
-                                setEditing(true);
-                                setPreview(false);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                          )}
-                        </div>
-                        <Button
-                          disabled={busy}
-                          aria-pressed={!preview}
-                          onClick={() => setPreview((v) => !v)}
-                        >
-                          {preview ? "Source" : "Preview"}
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                  {preview || trash ? (
-                    <div className={styles.documentBody}>
-                      {draft.trim() ? (
-                        <Markdown text={draft} />
-                      ) : (
-                        <p className={styles.empty}>This document is empty.</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className={styles.editor}>
-                      <SourceEditor
-                        path={`memory-${selectedKey || "new"}.md`}
-                        ariaLabel="Memory content"
-                        value={draft}
-                        readOnly={!editing || busy}
-                        onChange={setDraft}
-                        theme={theme}
-                        settings={settings}
-                      />
-                    </div>
-                  )}
-                  {!creating && picked && (
-                    <>
-                      <details
-                        className={styles.disclosure}
-                        open={history}
-                        onToggle={(e) => setHistory(e.currentTarget.open)}
-                      >
-                        <summary>Version history</summary>
-                        {versions.loading && (
-                          <p className={styles.empty}>Loading versions…</p>
-                        )}
-                        {versions.error && (
-                          <ErrorNotice error={versions.error} />
-                        )}
-                        <div className={styles.versionList}>
-                          {versions.data?.versions.map((v) => (
-                            <Button
-                              key={v.revision.toString()}
-                              aria-pressed={compare === v.revision}
-                              aria-label={`r${v.revision}`}
-                              aria-describedby={`${formId}-version-${v.revision}`}
-                              onClick={() => setCompare(v.revision)}
-                            >
-                              <span>r{v.revision.toString()}</span>
-                              <MemoryVersionChanges
-                                version={v}
-                                id={`${formId}-version-${v.revision}`}
-                              />
-                            </Button>
-                          ))}
-                        </div>
-                        {difference.loading && compare !== undefined && (
-                          <p className={styles.empty}>Loading comparison…</p>
-                        )}
-                        {difference.error && (
-                          <ErrorNotice error={difference.error} />
-                        )}
-                        {difference.data && compare !== undefined && (
-                          <>
-                            {difference.data.format ===
-                            MemoryReadFormat.DIFF ? (
-                              <pre className={styles.diff}>
-                                {difference.data.diff || "No body changes."}
-                              </pre>
-                            ) : (
-                              <p className={styles.empty}>
-                                This version is no longer available for
-                                comparison. Read the current document above.
-                              </p>
-                            )}
-                            {!trash && (
-                              <Button
-                                disabled={
-                                  busy ||
-                                  compare === picked.revision ||
-                                  difference.data.format !==
-                                    MemoryReadFormat.DIFF
-                                }
-                                onClick={restoreVersion}
-                              >
-                                Use this version
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </details>
-                      <details className={styles.disclosure}>
-                        <summary>Document details</summary>
-                        <dl className={styles.metadata}>
-                          <dt>Memory ID</dt>
-                          <dd>{ownerID(picked.id)}</dd>
-                          <dt>Owner session</dt>
-                          <dd>{picked.ownerSession || "No owner session"}</dd>
-                          {Object.entries(migrationLabels(picked.labels)).map(
-                            ([k, v]) => (
-                              <div key={k}>
-                                <dt>{k}</dt>
-                                <dd>{v}</dd>
-                              </div>
-                            ),
-                          )}
-                        </dl>
-                      </details>
-                    </>
-                  )}
-                </>
-              )}
-            </Section>
+            <MemoryDocument
+              memory={picked}
+              name={creating ? name : (picked?.name ?? "")}
+              content={draft}
+              loading={reading}
+              error={text.error}
+              busy={busy}
+              creating={creating}
+              ownerInfo={ownerInfo}
+              tags={tags}
+              actions={documentActions}
+              rename={renameMemory}
+              retry={text.reload}
+              labels={labels}
+              owner={owner}
+              sessions={sessions}
+              changeContent={setDraft}
+              changeLabels={setLabels}
+              changeOwner={setOwner}
+              restore={() =>
+                act(async () => {
+                  if (!picked) return;
+                  await c.memories.restore({
+                    ref: memoryRef(),
+                    dateUpdated: picked.dateUpdated,
+                  });
+                  c.reads.invalidate(memoryListKey(project));
+                  reset(true);
+                })
+              }
+              purge={() => {
+                if (!picked) return;
+                setConfirmation({
+                  title: "Purge memory",
+                  text: "Permanently delete this memory and all its versions?",
+                  run: async () => {
+                    await c.memories.purge({
+                      ref: memoryRef(),
+                      dateUpdated: picked.dateUpdated,
+                    });
+                    c.reads.invalidate(memoryListKey(project));
+                    reset(true);
+                  },
+                });
+              }}
+            />
           ) : (
             <Section className={styles.placeholder} aria-label="Memory preview">
               <DocumentIcon />

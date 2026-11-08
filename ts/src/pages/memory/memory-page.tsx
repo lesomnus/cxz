@@ -235,6 +235,8 @@ export function MemoryPage({
           confirmLabel="Confirm"
           close={() => blocker.reset?.()}
           execute={() => {
+            onDirtyChange(false);
+            setCreatingProject(undefined);
             blocker.proceed?.();
             return true;
           }}

@@ -43,10 +43,15 @@ The cache is bounded and cleared when the connection is disposed, with no
 browser storage persistence. All sessions includes unowned and
 retained-owner documents. Project changes reset the session filter; returning
 from a document preserves the selected filter. Changing it while editing guards
-unsaved changes. Selecting an editing session is unnecessary. Reading is the default; Edit opens name/label fields and
-Markdown source with Save/Cancel. Source without Edit is read only. The document
-menu offers copying, reload and trash; history and migration metadata are separate
-collapsible sections. Migration labels are retained when editing user labels.
+unsaved copied-document changes. Selecting an editing session is unnecessary.
+The detail page groups a title section, project-style Copy/Reload/Delete action
+panels and a Markdown preview section. Clicking the larger title opens the shared
+inline value editor; confirming patches only the name under its observed version,
+preserving the body, revision and labels. Existing document bodies remain preview
+only. Copy opens a new draft with source, labels and owner controls and Save/Cancel
+panel actions. Version history and Document details are not displayed in this view;
+the version and lifecycle APIs remain available. Loading retains the grouped frame
+with its actions disabled until the document is available.
 The TUI `/memory` view offers direct browsing, copying,
 rename, trash/restore/purge, and starting a session seeded from a selected document.
 

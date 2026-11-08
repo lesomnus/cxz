@@ -148,7 +148,7 @@ export const Document: Story = {
     docs: {
       description: {
         story:
-          "Opens the full Memory detail page directly, with its name, owner, revision, labels and rendered Markdown loaded. Edit switches to the source editor.",
+          "Opens the full Memory detail page directly. Its icon-free title uses the shared inline editor; Copy, Reload and Delete are panel actions beside it. Grouped title/body sections show the owner, revision, labels and Markdown preview without source, edit or history controls. Copy opens a new draft.",
       },
     },
   },
@@ -180,7 +180,7 @@ export const CachedDocument: Story = {
     docs: {
       description: {
         story:
-          "The full Read RPC is deliberately delayed. Open a document, return to the collection, then reopen it: Payday renders its cached answer immediately and revalidates behind it. Update the server document before reopening to test background refresh and draft/revision protection. This query cache is connection memory; this story does not enable an IndexedDB mirror.",
+          "The full Read RPC is deliberately delayed. Open a document, return to the collection, then reopen it: Payday renders its cached answer immediately and revalidates behind it. Update the server document before reopening to verify that an inline title draft survives background refresh and its save preserves the newer Markdown body. This query cache is connection memory; this story does not enable an IndexedDB mirror.",
       },
     },
   },
