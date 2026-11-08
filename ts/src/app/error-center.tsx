@@ -82,6 +82,7 @@ export function ErrorCenter({
       <Button
         ref={trigger}
         type="button"
+        effect="none"
         className={`resource-link ${styles.trigger}`}
         aria-label={t("Errors")}
         aria-haspopup="dialog"
@@ -94,7 +95,7 @@ export function ErrorCenter({
         }}
       >
         <span className={styles.symbol} aria-hidden="true">
-          <Icon name="warning" width="20" height="20" />
+          <Icon name="error-active" width="20" height="20" />
         </span>
         <span className={styles.srOnly} role="status">
           {t("{count} error alerts", { count: String(active.length) })}
