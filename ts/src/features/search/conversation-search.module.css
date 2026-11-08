@@ -17,7 +17,7 @@
   z-index: 1;
 }
 .filterBar {
-  --search-filter-control-background: var(--ui-shade-27);
+  --search-filter-control-background: var(--ui-dialog-background);
   position: relative;
   display: flex;
   align-items: center;
@@ -29,7 +29,7 @@
   padding: calc(var(--search-filter-overlap) + var(--ui-space)) var(--ui-space)
     var(--ui-space);
   border-radius: var(--ui-dialog-radius);
-  background: var(--composer-toolbar-background, var(--ui-shade-32));
+  background: var(--ui-section-background);
 }
 .projectPicker {
   box-sizing: border-box;
