@@ -1,6 +1,7 @@
 import { useId } from "react";
 import {
   Button,
+  CompactNumber,
   Form,
   FormField,
   Popover,
@@ -15,6 +16,11 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { MemoryVersion } from "#gen/cxz/memory_svc_pb";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
+import {
+  dateTimeDate,
+  formatLocalDateTime,
+} from "#src/shared/components/date-time-format.ts";
+import { MemoryVersionChanges } from "./memory-version-changes";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
 import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
@@ -97,6 +103,39 @@ export function MemoryDocument({
     (session) => resourceHandle({ id: session.id }) === memory?.ownerSession,
   );
   const pending = (loading && !memory) || creating;
+  const revisions = new Map(
+    versions.map((version) => [version.revision, version]),
+  );
+  const revisionOptions =
+    memory && !creating
+      ? [
+          { value: "0", label: `Revision r${memory.revision} · Latest` },
+          ...versions
+            .filter((version) => version.revision !== memory.revision)
+            .map((version) => ({
+              value: version.revision.toString(),
+              label: `Revision r${version.revision}`,
+            })),
+        ].map((option) => {
+          const number =
+            option.value === "0" ? memory.revision : BigInt(option.value);
+          const version = revisions.get(number);
+          const created =
+            version?.dateCreated ??
+            (number === 1n ? memory.dateCreated : undefined);
+          const date = dateTimeDate(created);
+          return {
+            ...option,
+            description: date ? formatLocalDateTime(date) : "—",
+            trailing: (
+              <MemoryVersionChanges
+                version={version}
+                className={styles.revisionChanges}
+              />
+            ),
+          };
+        })
+      : [];
   const unavailable = <span className={styles.unavailable}>—</span>;
   const title = (
     <h2 className={styles.title}>
@@ -210,22 +249,36 @@ export function MemoryDocument({
                 ? `Revision r${revision || memory.revision}`
                 : "Revision —"
             }
-            options={
-              memory
-                ? [
-                    {
-                      value: "0",
-                      label: `Revision r${memory.revision} · Latest`,
-                    },
-                    ...versions
-                      .filter((version) => version.revision !== memory.revision)
-                      .map((version) => ({
-                        value: version.revision.toString(),
-                        label: `Revision r${version.revision}`,
-                      })),
-                  ]
-                : []
-            }
+            options={revisionOptions}
+            renderLabel={(option) => {
+              const number =
+                option.value === "0" ? memory?.revision : BigInt(option.value);
+              const version =
+                number === undefined ? undefined : revisions.get(number);
+              const created =
+                version?.dateCreated ??
+                (number === 1n ? memory?.dateCreated : undefined);
+              return (
+                <span className={styles.revisionLabel}>
+                  <span className={styles.revisionNumber}>
+                    r
+                    {number !== undefined && !creating ? (
+                      <CompactNumber
+                        value={Number(number)}
+                        mode="integer"
+                        digits={3}
+                        label={`Revision ${number}`}
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </span>
+                  <span className={styles.revisionDate}>
+                    <DateTime value={created} showOffset={false} />
+                  </span>
+                </span>
+              );
+            }}
             disabled={
               busy ||
               loading ||

@@ -10,6 +10,8 @@ import {
   MemoryPatchRequestSchema,
   MemoryScope,
   MemoryReadFormat,
+  MemoryVersionSchema,
+  type MemoryVersion,
 } from "#gen/cxz/memory_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { projectFixtureId } from "./project-id";
@@ -57,7 +59,8 @@ export function memoryFixture({
     create(SessionSchema, { ...s, id: projectFixtureId(i + 100) }),
   );
   const rows = new Map<string, Memory>(),
-    versions = new Map<string, Map<bigint, string>>();
+    versions = new Map<string, Map<bigint, string>>(),
+    versionInfo = new Map<string, Map<bigint, MemoryVersion>>();
   let serial = 200,
     tick = Date.now();
   const stamp = () => timestampFromDate(new Date(++tick));
@@ -83,6 +86,20 @@ export function memoryFixture({
     });
     rows.set(key(id), m);
     versions.set(key(id), new Map([[1n, content]]));
+    versionInfo.set(
+      key(id),
+      new Map([
+        [
+          1n,
+          create(MemoryVersionSchema, {
+            memoryId: id,
+            revision: 1n,
+            contentHash: "hash-1",
+            dateCreated: m.dateCreated,
+          }),
+        ],
+      ]),
+    );
     return m;
   }
   if (!empty) {
@@ -91,10 +108,30 @@ export function memoryFixture({
       "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
     );
     add("Handoff notes", "# Handoff\n\nReview open changes.");
+    if (revisionCount > 1) {
+      primary.dateCreated = timestampFromDate(
+        new Date(Date.now() - (revisionCount - 1) * 86400000),
+      );
+      versionInfo.get(key(primary.id))!.get(1n)!.dateCreated =
+        primary.dateCreated;
+    }
     for (let revision = 2; revision <= revisionCount; revision++) {
       primary.revision = BigInt(revision);
       primary.content = `# Architecture\n\nShared memory belongs to the project.\n\nDesign decisions from revision ${revision}.`;
       versions.get(key(primary.id))!.set(primary.revision, primary.content);
+      versionInfo.get(key(primary.id))!.set(
+        primary.revision,
+        create(MemoryVersionSchema, {
+          memoryId: primary.id,
+          revision: primary.revision,
+          contentHash: `hash-${revision}`,
+          dateCreated: timestampFromDate(
+            new Date(Date.now() - (revisionCount - revision) * 86400000),
+          ),
+          linesAdded: 1,
+          linesRemoved: 1,
+        }),
+      );
     }
     primary.dateUpdated = stamp();
   }
@@ -279,6 +316,15 @@ export function memoryFixture({
           m.content = r.content;
           m.revision++;
           versions.get(key(m.id))!.set(m.revision, m.content);
+          versionInfo.get(key(m.id))!.set(
+            m.revision,
+            create(MemoryVersionSchema, {
+              memoryId: m.id,
+              revision: m.revision,
+              contentHash: `hash-${m.revision}`,
+              dateCreated: stamp(),
+            }),
+          );
         }
         if (isFieldSet(r, MemoryPatchRequestSchema.field.name)) m.name = r.name;
         if (Object.keys(r.labels).length) m.labels = { ...r.labels };
@@ -296,12 +342,15 @@ export function memoryFixture({
         const page = history.slice(0, r.size || 100);
         return {
           nextRevision: history.length > page.length ? page.at(-1)![0] : 0n,
-          versions: page.map(([revision]) => ({
-            memoryId: m.id,
-            revision,
-            contentHash: `hash-${revision}`,
-            dateCreated: m.dateUpdated,
-          })),
+          versions: page.map(
+            ([revision]) =>
+              versionInfo.get(key(m.id))!.get(revision) ?? {
+                memoryId: m.id,
+                revision,
+                contentHash: `hash-${revision}`,
+                dateCreated: m.dateUpdated,
+              },
+          ),
         };
       },
       erase: (r) => {
@@ -320,6 +369,7 @@ export function memoryFixture({
         const m = find(r.ref);
         rows.delete(key(m.id));
         versions.delete(key(m.id));
+        versionInfo.delete(key(m.id));
         return { erased: true };
       },
     }),

@@ -54,6 +54,10 @@ the information row’s height. Its trigger itself has the section panel appeara
 Narrow layouts place the selector beside the action buttons. It lists retained
 versions through `Versions`; choosing one loads its body through `Read`, while
 Latest follows the current document. Title and resource dates remain current.
+The selector and choices place the revision number above its creation date on the
+left and compact added/removed line counts on the right. The selector uses the
+action buttons’ corner shape. First revisions show Created; unavailable counts
+remain unknown.
 Clicking the larger title opens the shared
 inline value editor; confirming patches only the name under its observed version,
 preserving the body, revision and labels. Existing document bodies remain preview

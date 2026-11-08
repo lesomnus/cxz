@@ -161,7 +161,7 @@ export const RevisionHistory: Story = {
     docs: {
       description: {
         story:
-          "Select a retained revision to read its Markdown body. Latest follows the current document; selecting an older body leaves the title and resource dates unchanged. Copy uses the displayed revision’s body. Reload refreshes the document and available revisions.",
+          "Select a retained revision to read its Markdown body. The button and options show a left-aligned revision number and creation date, with CompactNumber additions/removals aligned on the right. The selector shares the action buttons’ corner radius and uses only the remaining height. First revisions show Created; missing counts stay unknown. Latest follows the current document; selecting an older body leaves the title and resource dates unchanged. Copy uses the displayed revision’s body. Reload refreshes the document and available revisions.",
       },
     },
   },

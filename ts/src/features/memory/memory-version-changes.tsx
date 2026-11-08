@@ -1,4 +1,5 @@
 import { isFieldSet } from "@bufbuild/protobuf";
+import { CompactNumber } from "@lesomnus/nox";
 import {
   MemoryVersionSchema,
   type MemoryVersion,
@@ -8,23 +9,27 @@ import styles from "./memory-library.module.css";
 export function MemoryVersionChanges({
   version,
   id,
+  className = "",
 }: {
-  version: MemoryVersion;
-  id: string;
+  version?: MemoryVersion;
+  id?: string;
+  className?: string;
 }) {
-  if (version.revision === 1n)
+  const classes = `${styles.versionStats} ${className}`.trim();
+  if (version?.revision === 1n)
     return (
-      <span id={id} className={styles.versionStats}>
+      <span id={id} className={classes}>
         Created
       </span>
     );
   const known =
+    version &&
     isFieldSet(version, MemoryVersionSchema.field.linesAdded) &&
     isFieldSet(version, MemoryVersionSchema.field.linesRemoved);
   return (
     <span
       id={id}
-      className={styles.versionStats}
+      className={classes}
       aria-label={
         known
           ? `${version.linesAdded} lines added, ${version.linesRemoved} lines removed`
@@ -36,7 +41,26 @@ export function MemoryVersionChanges({
           : "The previous revision or its line counts are unavailable"
       }
     >
-      {known ? `+${version.linesAdded} −${version.linesRemoved}` : "—"}
+      {known ? (
+        <>
+          <span className={styles.versionChange}>
+            +
+            <CompactNumber
+              value={version.linesAdded}
+              label={`${version.linesAdded} lines added`}
+            />
+          </span>
+          <span className={styles.versionChange}>
+            −
+            <CompactNumber
+              value={version.linesRemoved}
+              label={`${version.linesRemoved} lines removed`}
+            />
+          </span>
+        </>
+      ) : (
+        "—"
+      )}
     </span>
   );
 }

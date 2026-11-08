@@ -219,9 +219,15 @@
 }
 
 .versionStats {
+  display: inline-flex;
+  gap: var(--ui-space);
   color: var(--ui-muted);
   font-size: 9px;
   white-space: nowrap;
+}
+.versionChange {
+  display: inline-flex;
+  align-items: baseline;
 }
 
 .columns[data-catalog="false"] {

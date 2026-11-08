@@ -29,9 +29,26 @@ test("explicit zero survives the API JSON and displays as a known line count", (
   const markup = renderToStaticMarkup(
     <MemoryVersionChanges id="version" version={version} />,
   );
-  expect(markup).toContain("+0 −12");
+  expect(markup).toContain('aria-label="0 lines added"');
+  expect(markup).toContain('aria-label="12 lines removed"');
+  expect(markup).toContain('data-muted="true"');
   expect(markup).toContain("0 lines added, 12 lines removed");
   expect(markup).toContain("Compared with r1");
+});
+test("large line counts use CompactNumber units", () => {
+  const markup = renderToStaticMarkup(
+    <MemoryVersionChanges
+      version={create(MemoryVersionSchema, {
+        revision: 3n,
+        linesAdded: 1250,
+        linesRemoved: 1000000,
+      })}
+    />,
+  );
+  expect(markup).toContain('aria-label="1250 lines added"');
+  expect(markup).toContain('aria-label="1000000 lines removed"');
+  expect(markup).toMatch(/>K<\/span>/);
+  expect(markup).toMatch(/>M<\/span>/);
 });
 test("missing counts from an older server do not look like zero changes", () => {
   const markup = renderToStaticMarkup(
