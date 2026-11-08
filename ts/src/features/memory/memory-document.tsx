@@ -254,7 +254,7 @@ export function MemoryDocument({
                 (number === 1n ? memory?.dateCreated : undefined);
               return (
                 <span className={styles.revisionValue}>
-                  <span className={styles.revisionLabel}>
+                  <span className={styles.revisionRow}>
                     <span className={styles.revisionNumber}>
                       r
                       {number !== undefined && !creating ? (
@@ -268,15 +268,15 @@ export function MemoryDocument({
                         "—"
                       )}
                     </span>
-                    <span className={styles.revisionDate}>
-                      <DateTime value={created} showOffset={false} />
-                    </span>
-                  </span>
-                  <span className={styles.revisionDetails}>
                     <MemoryVersionChanges
                       version={version}
                       className={styles.revisionChanges}
                     />
+                  </span>
+                  <span className={styles.revisionRow}>
+                    <span className={styles.revisionDate}>
+                      <DateTime value={created} showOffset={false} />
+                    </span>
                     <span className={styles.revisionAge}>
                       {created ? <RelativeTime value={created} /> : "—"}
                     </span>

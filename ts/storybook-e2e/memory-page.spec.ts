@@ -491,6 +491,38 @@ test("revision selection changes only the body and Latest restores the current t
   expect(addedBox.x).toBeGreaterThan(numberBox.x + numberBox.width);
   expect(addedBox.y).toBeCloseTo(removedBox.y, 0);
   expect(removedBox.x).toBeGreaterThan(addedBox.x + addedBox.width);
+  await expect(revision.getByText("/", { exact: true })).toBeVisible();
+  const colors = await revision.evaluate((node) => {
+    const added = node.querySelector<HTMLElement>(
+      '[aria-label="1 lines added"]',
+    )!;
+    const removed = node.querySelector<HTMLElement>(
+      '[aria-label="1 lines removed"]',
+    )!;
+    return {
+      added: getComputedStyle(added).color,
+      addedSign: getComputedStyle(added.parentElement!).color,
+      removed: getComputedStyle(removed).color,
+      removedSign: getComputedStyle(removed.parentElement!).color,
+      leading: getComputedStyle(added.firstElementChild!).color,
+      unit: getComputedStyle(added.lastElementChild!).color,
+    };
+  });
+  expect(colors.added).toBe(colors.addedSign);
+  expect(colors.removed).toBe(colors.removedSign);
+  expect(colors.added).not.toBe(colors.removed);
+  expect(colors.leading).not.toBe(colors.added);
+  expect(colors.unit).not.toBe(colors.added);
+  expect(
+    await revision
+      .locator("time")
+      .first()
+      .evaluate(
+        (node) =>
+          node.getBoundingClientRect().width <=
+          node.parentElement!.getBoundingClientRect().width + 0.5,
+      ),
+  ).toBe(true);
   expect(ageBox.x + ageBox.width).toBeCloseTo(
     removedBox.x + removedBox.width,
     0,

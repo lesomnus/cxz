@@ -43,14 +43,17 @@ export function MemoryVersionChanges({
     >
       {known ? (
         <>
-          <span className={styles.versionChange}>
+          <span className={`${styles.versionChange} ${styles.versionAdded}`}>
             +
             <CompactNumber
               value={version.linesAdded}
               label={`${version.linesAdded} lines added`}
             />
           </span>
-          <span className={styles.versionChange}>
+          <span className={styles.versionSeparator} aria-hidden="true">
+            /
+          </span>
+          <span className={`${styles.versionChange} ${styles.versionRemoved}`}>
             −
             <CompactNumber
               value={version.linesRemoved}

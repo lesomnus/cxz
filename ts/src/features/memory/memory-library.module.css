@@ -229,6 +229,25 @@
   display: inline-flex;
   align-items: baseline;
 }
+.versionAdded {
+  --ui-text-value: color-mix(
+    in srgb,
+    var(--ui-pin-input-success-color) 75%,
+    var(--ui-muted)
+  );
+  color: var(--ui-text-value);
+}
+.versionRemoved {
+  --ui-text-value: color-mix(
+    in srgb,
+    var(--ui-action-error-color) 75%,
+    var(--ui-muted)
+  );
+  color: var(--ui-text-value);
+}
+.versionSeparator {
+  color: var(--ui-text-separator);
+}
 
 .columns[data-catalog="false"] {
   grid-template-columns: minmax(0, 1fr);
