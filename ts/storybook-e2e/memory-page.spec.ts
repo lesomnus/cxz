@@ -299,6 +299,20 @@ for (const width of [390, 1280])
         "grid-column",
         "span 3",
       );
+      const firstRow = await title.locator("dl > div").evaluateAll((nodes) => {
+        const top = nodes[0].getBoundingClientRect().top;
+        return nodes
+          .filter(
+            (node) => Math.abs(node.getBoundingClientRect().top - top) < 1,
+          )
+          .map((node) => node.querySelector("dt")?.textContent?.trim());
+      });
+      expect(firstRow).toEqual([
+        "Title",
+        "Owner session",
+        "Revision",
+        "Memory ID",
+      ]);
     }
     const actions = doc(page).getByRole("group", {
       name: "Memory document actions",

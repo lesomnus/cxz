@@ -131,7 +131,6 @@ export function MemoryDocument({
                 unavailable
               ),
               identifier: !ownerSession,
-              columnSpan: 2,
             },
             ["Revision", pending ? unavailable : memory?.revision.toString()],
             {
@@ -140,7 +139,6 @@ export function MemoryDocument({
                 ? unavailable
                 : memory && resourceHandle({ id: memory.id }),
               identifier: true,
-              columnSpan: 2,
             },
             {
               label: "Created",
