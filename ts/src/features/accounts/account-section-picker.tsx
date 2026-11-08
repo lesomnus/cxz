@@ -1,11 +1,12 @@
 import { key } from "@lesomnus/payday/store";
-import { ValueMenu } from "@lesomnus/nox";
+import { CompactNumber, ValueMenu } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import { sessionsForAccount } from "./account-data";
-import { AccountQuotaSquare } from "./account-quota-square";
+import { useAccountQuota } from "./use-account-quota";
 import styles from "./account-section-picker.module.css";
 
 export function AccountSectionPicker({
@@ -48,15 +49,10 @@ export function AccountSectionPicker({
             description: account.alias,
             icon: <AgentBrand agent={account.agent} />,
             trailing: (
-              <AccountQuotaSquare
+              <AccountUsage
                 c={c}
-                account={account.alias}
-                agent={account.agent}
-                identity={account.id.length ? key(account.id) : account.alias}
+                account={account}
                 sessions={sessionsForAccount(account, sessions)}
-                inline
-                className={styles.quota}
-                gaugeClassName={styles.gauge}
               />
             ),
           })),
@@ -74,5 +70,62 @@ export function AccountSectionPicker({
         choose={choose}
       />
     </div>
+  );
+}
+
+function AccountUsage({
+  c,
+  account,
+  sessions,
+}: {
+  c: Connection;
+  account: Account;
+  sessions: Session[];
+}) {
+  const quota = useAccountQuota({
+    c,
+    agent: account.agent,
+    sessions,
+    identity: account.id.length ? key(account.id) : account.alias,
+  });
+  const remaining = quota.data?.remaining;
+  return (
+    <span className={styles.usage} aria-busy={quota.loading}>
+      <span className={styles.remaining}>
+        <small>Remaining</small>
+        <span
+          data-level={
+            remaining === undefined
+              ? "unknown"
+              : remaining < 10
+                ? "critical"
+                : remaining <= 30
+                  ? "warning"
+                  : "normal"
+          }
+        >
+          {remaining === undefined ? (
+            <span className={styles.empty}>{quota.loading ? "--" : "—"}</span>
+          ) : (
+            <>
+              <CompactNumber
+                mode="integer"
+                digits={remaining === 100 ? 3 : 2}
+                value={Math.round(remaining)}
+              />
+              <span className={styles.unit}>%</span>
+            </>
+          )}
+        </span>
+      </span>
+      <span className={styles.reset}>
+        <small>Resets</small>
+        <span
+          className={quota.data?.reset === undefined ? styles.empty : undefined}
+        >
+          <DateTime value={quota.data?.reset} showOffset={false} />
+        </span>
+      </span>
+    </span>
   );
 }
