@@ -91,8 +91,7 @@ function AccountUsage({
   const remaining = quota.data?.remaining;
   return (
     <span className={styles.usage} aria-busy={quota.loading}>
-      <span className={styles.remaining}>
-        <small>Remaining</small>
+      <span className={styles.remaining} aria-label="Remaining usage">
         <span
           data-level={
             remaining === undefined

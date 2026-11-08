@@ -22,6 +22,11 @@
   color: var(--ui-muted);
   font-size: 10px;
 }
+.remaining {
+  align-self: stretch;
+  align-content: center;
+  font-size: 14px;
+}
 .remaining > span {
   display: flex;
   align-items: baseline;

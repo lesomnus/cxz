@@ -68,7 +68,9 @@ for (const width of [390, 1280])
     for (const option of [work, personal]) {
       await expect(option).toHaveAttribute("data-section-layout", "section");
       await expect(option.locator(".agent-brand")).toBeVisible();
-      await expect(option).toContainText("Remaining");
+      await expect(option.getByText("Remaining", { exact: true })).toHaveCount(
+        0,
+      );
       await expect(option).toContainText("Resets");
     }
     await expect(work).toContainText("64");
@@ -167,7 +169,9 @@ test("keyboard selection and Escape retain focus on the account selector", async
 
 test("usage without a report stays unknown", async ({ page }) => {
   await open(page, "usage-not-reported");
-  await expect(picker(page)).toContainText("Remaining");
+  await expect(picker(page).locator('[data-level="unknown"]')).toContainText(
+    "—",
+  );
   await expect(picker(page)).not.toContainText("0%");
   await expect(picker(page).locator("time")).toHaveCount(0);
 });
