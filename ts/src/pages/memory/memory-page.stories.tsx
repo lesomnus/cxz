@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
@@ -43,10 +43,11 @@ function Preview({
   cards = false,
   document = false,
   readDelay = 0,
+  readLoading = false,
   cacheControls = false,
 } = {}) {
-  const [router] = useState(() => {
-    const f = memoryFixture({
+  const [f] = useState(() =>
+    memoryFixture({
       empty,
       fail,
       delay: loading ? 60000 : 0,
@@ -54,7 +55,11 @@ function Preview({
       migrated,
       cards,
       readDelay,
-    });
+      readLoading,
+    }),
+  );
+  useEffect(() => () => f.dispose(), [f]);
+  const [router] = useState(() => {
     const router = createWorkspaceRouter(
       {
         shell: ({ children }) => (
@@ -137,7 +142,28 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
-export const Document: Story = { args: { document: true } };
+export const Document: Story = {
+  args: { document: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Opens the full Memory detail page directly, with its name, owner, revision, labels and rendered Markdown loaded. Edit switches to the source editor.",
+      },
+    },
+  },
+};
+export const DocumentLoading: Story = {
+  args: { document: true, readLoading: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Opens the same detail route with no cached Read answer. The document Read stays pending so the unloaded metadata and content can be inspected without a timer completing. Leaving the story cancels the fixture request. Document shows the loaded state; Loading shows the collection loading state.",
+      },
+    },
+  },
+};
 export const Empty: Story = { args: { empty: true } };
 export const Unavailable: Story = { args: { fail: true } };
 export const Loading: Story = { args: { loading: true } };

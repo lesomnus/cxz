@@ -21,6 +21,7 @@ export function memoryFixture({
   migrated = false,
   cards = false,
   readDelay = 0,
+  readLoading = false,
 } = {}) {
   const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
@@ -156,6 +157,7 @@ export function memoryFixture({
     return m;
   }
   const readRequests: string[] = [];
+  const readLifetime = new AbortController();
   const transport = createRouterTransport(({ service }) =>
     service(MemoryService, {
       list: async (r) => {
@@ -189,8 +191,17 @@ export function memoryFixture({
         };
       },
       get: (r) => ({ ...find(r.ref) }),
-      read: async (r) => {
+      read: async (r, context) => {
         readRequests.push(key(r.ref!.key.value as Uint8Array));
+        if (readLoading) {
+          const signal = AbortSignal.any([context.signal, readLifetime.signal]);
+          await new Promise<never>((_, reject) => {
+            const abort = () =>
+              reject(new ConnectError("Memory read canceled", Code.Canceled));
+            if (signal.aborted) abort();
+            else signal.addEventListener("abort", abort, { once: true });
+          });
+        }
         if (readDelay)
           await new Promise((resolve) => setTimeout(resolve, readDelay));
         const m = find(r.ref),
@@ -302,8 +313,13 @@ export function memoryFixture({
       },
     }),
   );
+  const c = new Connection("http://storybook", transport);
   return {
-    c: new Connection("http://storybook", transport),
+    c,
+    dispose() {
+      readLifetime.abort();
+      c.dispose();
+    },
     readRequests,
     memories: [...rows.values()],
     projects,
