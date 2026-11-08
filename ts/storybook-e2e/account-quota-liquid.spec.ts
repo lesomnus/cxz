@@ -19,7 +19,7 @@ for (const theme of ["dark", "light"]) {
       const meter = figure.getByRole("meter");
       await expect(meter).toHaveAttribute("aria-valuenow", String(value));
       const gauge = meter.locator("..");
-      await expect(gauge).toHaveCSS("border-radius", "14px");
+      await expect(gauge).toHaveCSS("border-radius", "8px");
       const contour = gauge.locator("[data-liquid-contour]");
       await expect
         .poll(() => depth(contour))
