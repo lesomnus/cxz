@@ -263,7 +263,7 @@ for (const width of [390, 1280])
       exact: true,
     });
     await expect(title.locator("h2")).toHaveCSS("font-size", "16px");
-    await expect(title.locator("svg")).toHaveCount(0);
+    await expect(title.locator("h2 svg")).toHaveCount(0);
     const actions = doc(page).getByRole("group", {
       name: "Memory document actions",
       exact: true,

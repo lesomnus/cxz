@@ -100,6 +100,20 @@ export function MemoryDocument({
             <span>{name || (creating ? "New memory" : "Memory")}</span>
           )}
         </h2>
+        {!creating && memory && (
+          <div className={styles.metadata}>
+            <span className={styles.owner}>
+              {ownerInfo?.agent && (
+                <span aria-hidden="true">
+                  <AgentBrand agent={ownerInfo.agent} />
+                </span>
+              )}
+              <span>{ownerInfo?.name}</span>
+            </span>
+            <span>Revision {memory.revision.toString()}</span>
+            {memory.dateUpdated && <RelativeTime value={memory.dateUpdated} />}
+          </div>
+        )}
       </Section>
       <SectionGroup
         className={styles.actions}
@@ -128,22 +142,6 @@ export function MemoryDocument({
           <Button onClick={retry}>Retry memory</Button>
         ) : (
           <>
-            {!creating && memory && (
-              <div className={styles.metadata}>
-                <span className={styles.owner}>
-                  {ownerInfo?.agent && (
-                    <span aria-hidden="true">
-                      <AgentBrand agent={ownerInfo.agent} />
-                    </span>
-                  )}
-                  <span>{ownerInfo?.name}</span>
-                </span>
-                <span>Revision {memory.revision.toString()}</span>
-                {memory.dateUpdated && (
-                  <RelativeTime value={memory.dateUpdated} />
-                )}
-              </div>
-            )}
             {!creating && tags.length > 0 && (
               <div className={styles.tags}>
                 {tags.map(([key, value]) => (
