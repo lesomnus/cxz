@@ -1,13 +1,7 @@
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { useEffect, useLayoutEffect, useState, useRef } from "react";
-import {
-  ActionMenu,
-  Button,
-  Section,
-  SegmentedControl,
-  FormField,
-} from "@lesomnus/nox";
+import { useEffect, useState, useRef } from "react";
+import { Button, Section, SegmentedControl, FormField } from "@lesomnus/nox";
 import type { Memory } from "#gen/cxz/memory_pb";
 import {
   MemoryService,
@@ -37,10 +31,6 @@ const ownerID = (id: Uint8Array) =>
   publicUUID({ key: { case: "id", value: id } }) ?? "";
 const key = (id: Uint8Array) =>
   Array.from(id, (b) => b.toString(16).padStart(2, "0")).join("");
-const labelsText = (labels: Record<string, string>) =>
-  Object.entries(labels)
-    .map(([k, v]) => `${k}=${v}`)
-    .join(", ");
 const visibleLabels = (labels: Record<string, string>) =>
   Object.fromEntries(
     Object.entries(labels).filter(([k]) => !k.startsWith("legacy.")),
@@ -66,11 +56,8 @@ export function MemoryLibrary({
   projectInfo,
   catalog = true,
   sessions = [],
-  registerGuard,
   memoryId,
   onMemoryChange,
-  onDirtyChange,
-  onCreatingChange,
 }: {
   c: Connection;
   project: string;
@@ -78,11 +65,8 @@ export function MemoryLibrary({
   projectInfo?: Project;
   catalog?: boolean;
   sessions?: Session[];
-  registerGuard?: (guard: ((run: () => void) => void) | undefined) => void;
   memoryId?: string;
   onMemoryChange?: (id?: string, replace?: boolean) => void;
-  onDirtyChange?: (dirty: boolean) => void;
-  onCreatingChange?: (creating: boolean) => void;
 }) {
   const [trash, setTrash] = useState(false),
     [query, setQuery] = useState(""),
@@ -92,11 +76,6 @@ export function MemoryLibrary({
   const [selected, setSelected] = useState<Uint8Array | undefined>(() =>
       memoryId ? uuid(memoryId) : undefined,
     ),
-    [creating, setCreating] = useState(false),
-    [draft, setDraft] = useState(""),
-    [name, setName] = useState(""),
-    [labels, setLabels] = useState(""),
-    [owner, setOwner] = useState(""),
     [showFilters, setShowFilters] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -110,7 +89,6 @@ export function MemoryLibrary({
   const lastRouteID = useRef(memoryId);
   const invalidMemoryID = !!(onMemoryChange && memoryId && !uuid(memoryId));
   const mutationPending = useRef(false);
-  const createKey = useRef(crypto.randomUUID());
   const scope = trash ? MemoryScope.TRASH : MemoryScope.ACTIVE;
   const listKey = JSON.stringify([project, scope, filter, labelFilter]);
   const list = useRemote(
@@ -164,15 +142,13 @@ export function MemoryLibrary({
   const text = useConnectionQuery(
     c.queries,
     MemoryService.method.read,
-    selected && !creating
-      ? { ref: memoryRef(), format: MemoryReadFormat.FULL }
-      : undefined,
+    selected ? { ref: memoryRef(), format: MemoryReadFormat.FULL } : undefined,
     { watch: false },
   );
   const historical = useConnectionQuery(
     c.queries,
     MemoryService.method.read,
-    selected && !creating && revision > 0n
+    selected && revision > 0n
       ? { ref: memoryRef(), revision, format: MemoryReadFormat.FULL }
       : undefined,
     { watch: false },
@@ -184,7 +160,7 @@ export function MemoryLibrary({
   const comparison = useConnectionQuery(
     c.queries,
     MemoryService.method.read,
-    selected && !creating && previewMode === "changes" && selectedRevision > 1n
+    selected && previewMode === "changes" && selectedRevision > 1n
       ? {
           ref: memoryRef(),
           revision: selectedRevision,
@@ -195,10 +171,9 @@ export function MemoryLibrary({
     { watch: false },
   );
   const reading =
-    !creating &&
-    (text.loading ||
-      (revision > 0n && historical.loading) ||
-      (!read && !text.error && !historical.error));
+    text.loading ||
+    (revision > 0n && historical.loading) ||
+    (!read && !text.error && !historical.error);
   const versions = useRemote(
     async (signal) => {
       const versions: MemoryVersion[] = [];
@@ -218,12 +193,11 @@ export function MemoryLibrary({
       return { id: selectedKey, versions };
     },
     [c, project, selectedKey],
-    { enabled: !!selected && !creating },
+    { enabled: !!selected },
   );
   useEffect(() => {
     if (
       !onMemoryChange &&
-      !creating &&
       !selected &&
       !invalidMemoryID &&
       !list.loading &&
@@ -231,27 +205,7 @@ export function MemoryLibrary({
       list.data !== selectionSource.current
     )
       selectMemory(memories[0]?.id, true);
-  }, [
-    creating,
-    selectedKey,
-    list.loading,
-    list.data,
-    listKey,
-    invalidMemoryID,
-  ]);
-  useLayoutEffect(() => {
-    if (read && !creating) {
-      setDraft(read.content);
-      setName(picked?.name ?? "");
-      setLabels(labelsText(visibleLabels(picked?.labels ?? {})));
-    }
-  }, [read, creating, picked?.name, picked?.labels]);
-  const dirty = creating && !!(draft || name || labels);
-  // Browser Back can run immediately after an edit commits.
-  useLayoutEffect(() => {
-    onDirtyChange?.(dirty);
-    return () => onDirtyChange?.(false);
-  }, [dirty, onDirtyChange]);
+  }, [selectedKey, list.loading, list.data, listKey, invalidMemoryID]);
   useEffect(() => {
     if (!onMemoryChange || memoryId === lastRouteID.current) return;
     lastRouteID.current = memoryId;
@@ -267,15 +221,9 @@ export function MemoryLibrary({
     setLabelFilter({});
   }, [memoryId, onMemoryChange]);
   useEffect(() => {
-    if (
-      onMemoryChange &&
-      memoryId &&
-      picked &&
-      ownerID(picked.id) === memoryId &&
-      !creating
-    )
+    if (onMemoryChange && memoryId && picked && ownerID(picked.id) === memoryId)
       setTrash(!!picked.dateDeleted);
-  }, [picked?.id, picked?.dateDeleted, creating, memoryId, onMemoryChange]);
+  }, [picked?.id, picked?.dateDeleted, memoryId, onMemoryChange]);
   function selectMemory(id: Uint8Array | undefined, replace = false) {
     setRevision(0n);
     setPreviewMode("preview");
@@ -285,21 +233,8 @@ export function MemoryLibrary({
     onMemoryChange?.(publicID, replace);
   }
   function choose(run: () => void) {
-    if (busy) return;
-    if (dirty)
-      setConfirmation({
-        title: "Discard unsaved changes",
-        text: "This memory has unsaved changes. Discard them?",
-        run: async () => {
-          run();
-        },
-      });
-    else run();
+    if (!busy) run();
   }
-  useEffect(() => {
-    registerGuard?.(choose);
-    return () => registerGuard?.(undefined);
-  }, [dirty, busy, registerGuard]);
   async function act(run: () => Promise<unknown>) {
     if (mutationPending.current) return false;
     mutationPending.current = true;
@@ -322,46 +257,22 @@ export function MemoryLibrary({
     setPreviewMode("preview");
     selectionSource.current = list.data;
     setSelected(undefined);
-    setCreating(false);
-    setDraft("");
-    setName("");
-    setLabels("");
     setError("");
     if (updateRoute) selectMemory(undefined, true);
   }
-  function newMemory(content = "", title = "", tags = "") {
-    choose(() => {
-      reset();
-      createKey.current = crypto.randomUUID();
-      onCreatingChange?.(true);
-      // Keep the source route until saving so leaving can guard the new draft.
-      setCreating(true);
-      setDraft(content);
-      setName(title);
-      setLabels(tags);
-      setOwner(sessions[0] ? ownerID(sessions[0].id) : "");
-    });
-  }
-  async function save() {
-    if (!creating) return;
-    await act(async () => {
-      const saved = await c.memories.add({
-        project: projectRef(project),
-        name,
-        content: draft,
-        labels: parseLabels(labels),
-        ownerSession: owner,
-        clientId: createKey.current,
-      });
-      c.reads.invalidate(memoryListKey(project));
-      selectMemory(saved.id, true);
-      setCreating(false);
-    });
+  async function copyMemory() {
+    if (!read || reading) return;
+    setError("");
+    try {
+      await navigator.clipboard.writeText(read.content);
+    } catch (error) {
+      setError(`Could not copy memory: ${String(error)}`);
+    }
   }
   function remove() {
     if (!picked) return;
     setConfirmation({
-      title: "Delete memory",
+      title: "Erase memory",
       text: "Move this memory to trash? It can be restored until its deletion deadline.",
       run: async () => {
         await c.memories.erase(memoryRef());
@@ -382,18 +293,7 @@ export function MemoryLibrary({
       agent: session?.agent || memory.labels["legacy.agent"] || "",
     };
   }
-  function cancelEdit() {
-    choose(() => {
-      reset(true);
-      onCreatingChange?.(false);
-      list.reload();
-    });
-  }
   async function renameMemory(value: string) {
-    if (creating) {
-      setName(value);
-      return;
-    }
     if (!picked || trash || mutationPending.current)
       throw new Error("This memory cannot be renamed right now.");
     mutationPending.current = true;
@@ -413,46 +313,36 @@ export function MemoryLibrary({
       setBusy(false);
     }
   }
-  const documentActions: MemoryDocumentAction[] = creating
-    ? [
-        {
-          label: "Save",
-          icon: "save",
-          disabled: busy || !name.trim(),
-          run: save,
-        },
-        { label: "Cancel", icon: "close", disabled: busy, run: cancelEdit },
-      ]
-    : [
-        {
-          label: "Copy",
-          icon: "copy",
-          disabled: busy || reading || !picked || trash,
-          run: () => newMemory(draft, name + " copy", labels),
-        },
-        {
-          label: "Reload",
-          icon: "refresh",
-          disabled: busy || reading || !picked,
-          run: () =>
-            act(async () => {
-              c.reads.invalidate(memoryListKey(project));
-              comparison.reload();
-              await Promise.all([
-                text.refresh(),
-                versions.reload(),
-                ...(revision > 0n ? [historical.refresh()] : []),
-              ]);
-            }),
-        },
-        {
-          label: "Delete",
-          icon: "erase",
-          danger: true,
-          disabled: busy || reading || !picked || trash,
-          run: remove,
-        },
-      ];
+  const documentActions: MemoryDocumentAction[] = [
+    {
+      label: "Erase",
+      icon: "erase",
+      danger: true,
+      disabled: busy || reading || !picked || trash,
+      run: remove,
+    },
+    {
+      label: "Copy",
+      icon: "copy",
+      disabled: busy || reading || !read || trash,
+      run: copyMemory,
+    },
+    {
+      label: "Reload",
+      icon: "refresh",
+      disabled: busy || reading || !picked,
+      run: () =>
+        act(async () => {
+          c.reads.invalidate(memoryListKey(project));
+          comparison.reload();
+          await Promise.all([
+            text.refresh(),
+            versions.reload(),
+            ...(revision > 0n ? [historical.refresh()] : []),
+          ]);
+        }),
+    },
+  ];
   return (
     <div className={styles.content}>
       {(error || list.error || text.error || historical.error) && (
@@ -465,9 +355,7 @@ export function MemoryLibrary({
         className={styles.columns}
         data-catalog={catalog}
         data-collection={
-          catalog && onMemoryChange && !memoryId && !creating
-            ? "true"
-            : undefined
+          catalog && onMemoryChange && !memoryId ? "true" : undefined
         }
       >
         {catalog && (
@@ -492,22 +380,6 @@ export function MemoryLibrary({
                 >
                   <Icon name="sync" width="14" height="14" aria-hidden="true" />
                 </Button>
-                {!trash && (
-                  <Button
-                    variant="toolbar"
-                    disabled={busy}
-                    aria-label="New memory"
-                    title="New memory"
-                    onClick={() => newMemory()}
-                  >
-                    <Icon
-                      name="add"
-                      width="14"
-                      height="14"
-                      aria-hidden="true"
-                    />
-                  </Button>
-                )}
               </div>
             </header>
             <SegmentedControl
@@ -631,7 +503,7 @@ export function MemoryLibrary({
                       ? "No memories match your filters."
                       : trash
                         ? "Trash is empty."
-                        : "No memories yet. Create a document to start."}
+                        : "No memories yet."}
                   </p>
                 )}
                 {list.error && (
@@ -642,7 +514,7 @@ export function MemoryLibrary({
                 {memories.map((m) => {
                   const owning = ownerFor(m),
                     tags = Object.entries(visibleLabels(m.labels));
-                  const selectedItem = !creating && selectedKey === key(m.id);
+                  const selectedItem = selectedKey === key(m.id);
                   const contents = (
                     <>
                       <span className={styles.memoryTitle}>
@@ -736,16 +608,15 @@ export function MemoryLibrary({
               <strong>Memory unavailable</strong>
               <p role="alert">Invalid memory ID.</p>
             </Section>
-          ) : creating || selected ? (
+          ) : selected ? (
             <MemoryDocument
               memory={picked}
               project={projectInfo}
-              name={creating ? name : (picked?.name ?? "")}
-              content={draft}
+              name={picked?.name ?? ""}
+              content={read?.content ?? ""}
               loading={reading}
               error={revision > 0n ? historical.error : text.error}
               busy={busy}
-              creating={creating}
               revision={revision}
               versions={
                 versions.data?.id === selectedKey ? versions.data.versions : []
@@ -765,12 +636,7 @@ export function MemoryLibrary({
               actions={documentActions}
               rename={renameMemory}
               retry={revision > 0n ? historical.reload : text.reload}
-              labels={labels}
-              owner={owner}
               sessions={sessions}
-              changeContent={setDraft}
-              changeLabels={setLabels}
-              changeOwner={setOwner}
               restore={() =>
                 act(async () => {
                   if (!picked) return;
@@ -807,7 +673,7 @@ export function MemoryLibrary({
                   : "Your project's shared knowledge"}
               </strong>
               <p>
-                Select a memory to read or edit it. Each memory is one Markdown
+                Select a memory to read it. Each memory is one Markdown
                 document; labels organize related notes.
               </p>
             </Section>

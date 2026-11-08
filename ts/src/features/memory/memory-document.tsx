@@ -1,15 +1,11 @@
-import { useId } from "react";
 import {
   Button,
   CompactNumber,
-  Form,
-  FormField,
   Popover,
   Section,
   SectionGroup,
   ValueMenu,
 } from "@lesomnus/nox";
-import { SourceEditor } from "@lesomnus/nox/editor";
 import type { Memory } from "#gen/cxz/memory_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
@@ -34,9 +30,6 @@ import {
   type MemoryPreviewMode,
 } from "./memory-preview";
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
-import { publicUUID } from "#src/shared/logs/rpc-diagnostics.ts";
-import { useEditorSettings } from "#src/shared/settings/settings.ts";
-import { useTheme } from "#src/shared/theme/theme.tsx";
 import actionStyles from "#src/shared/components/resource-action.module.css";
 import styles from "./memory-document.module.css";
 
@@ -56,7 +49,6 @@ export function MemoryDocument({
   loading,
   error,
   busy,
-  creating,
   revision,
   versions,
   versionsLoading,
@@ -70,12 +62,7 @@ export function MemoryDocument({
   retry,
   restore,
   purge,
-  labels,
-  owner,
   sessions,
-  changeContent,
-  changeLabels,
-  changeOwner,
 }: {
   memory?: Memory;
   project?: Project;
@@ -84,7 +71,6 @@ export function MemoryDocument({
   loading: boolean;
   error: string;
   busy: boolean;
-  creating: boolean;
   revision: bigint;
   versions: MemoryVersion[];
   versionsLoading: boolean;
@@ -98,63 +84,54 @@ export function MemoryDocument({
   retry: () => void;
   restore: () => unknown;
   purge: () => unknown;
-  labels: string;
-  owner: string;
   sessions: Session[];
-  changeContent: (value: string) => void;
-  changeLabels: (value: string) => void;
-  changeOwner: (value: string) => void;
 }) {
-  const id = useId();
-  const theme = useTheme();
-  const settings = useEditorSettings();
   const trash = !!memory?.dateDeleted;
   const ownerSession = sessions.find(
     (session) => resourceHandle({ id: session.id }) === memory?.ownerSession,
   );
-  const pending = (loading && !memory) || creating;
+  const pending = loading && !memory;
   const revisions = new Map(
     versions.map((version) => [version.revision, version]),
   );
-  const revisionOptions =
-    memory && !creating
-      ? [
-          { value: "0", label: `Revision r${memory.revision} · Latest` },
-          ...versions
-            .filter((version) => version.revision !== memory.revision)
-            .map((version) => ({
-              value: version.revision.toString(),
-              label: `Revision r${version.revision}`,
-            })),
-        ].map((option) => {
-          const number =
-            option.value === "0" ? memory.revision : BigInt(option.value);
-          const version = revisions.get(number);
-          const created =
-            version?.dateCreated ??
-            (number === 1n ? memory.dateCreated : undefined);
-          const date = dateTimeDate(created);
-          return {
-            ...option,
-            description: date ? formatLocalDateTime(date) : "—",
-          };
-        })
-      : [];
+  const revisionOptions = memory
+    ? [
+        { value: "0", label: `Revision r${memory.revision} · Latest` },
+        ...versions
+          .filter((version) => version.revision !== memory.revision)
+          .map((version) => ({
+            value: version.revision.toString(),
+            label: `Revision r${version.revision}`,
+          })),
+      ].map((option) => {
+        const number =
+          option.value === "0" ? memory.revision : BigInt(option.value);
+        const version = revisions.get(number);
+        const created =
+          version?.dateCreated ??
+          (number === 1n ? memory.dateCreated : undefined);
+        const date = dateTimeDate(created);
+        return {
+          ...option,
+          description: date ? formatLocalDateTime(date) : "—",
+        };
+      })
+    : [];
   const unavailable = <span className={styles.unavailable}>—</span>;
   const title = (
     <h2 className={styles.title}>
-      {(creating && !busy) || (memory && !trash) ? (
+      {memory && !trash ? (
         <EditableValue
           label="Memory name"
           value={name}
-          display={(value) => value || "New memory"}
+          display={(value) => value || "Memory"}
           save={rename}
           validate={(value) =>
             !value.trim() ? "A memory name is required." : undefined
           }
         />
       ) : (
-        <span>{name || (creating ? "New memory" : "Memory")}</span>
+        <span>{name || "Memory"}</span>
       )}
     </h2>
   );
@@ -249,9 +226,7 @@ export function MemoryDocument({
             label="Revision"
             value={revision.toString()}
             display={
-              memory && !creating
-                ? `Revision r${revision || memory.revision}`
-                : "Revision —"
+              memory ? `Revision r${revision || memory.revision}` : "Revision —"
             }
             options={revisionOptions}
             renderLabel={(option) => {
@@ -267,7 +242,7 @@ export function MemoryDocument({
                   <span className={styles.revisionRow}>
                     <span className={styles.revisionNumber}>
                       r
-                      {number !== undefined && !creating ? (
+                      {number !== undefined ? (
                         <CompactNumber
                           value={Number(number)}
                           mode="integer"
@@ -310,7 +285,7 @@ export function MemoryDocument({
       <Section className={styles.bodySection} aria-label="Memory content">
         {loading ? (
           <p className={styles.empty}>Loading memory…</p>
-        ) : error && !creating ? (
+        ) : error ? (
           <Button onClick={retry}>Retry memory</Button>
         ) : (
           <>
@@ -334,62 +309,12 @@ export function MemoryDocument({
                 </div>
               </div>
             )}
-            {creating ? (
-              <>
-                <Form as="fieldset" columns={1} disabled={busy}>
-                  <FormField label="Labels" htmlFor={id + "-labels"}>
-                    <input
-                      id={id + "-labels"}
-                      aria-label="Memory labels"
-                      placeholder="topic=design"
-                      value={labels}
-                      onChange={(event) => changeLabels(event.target.value)}
-                    />
-                  </FormField>
-                  {sessions.length > 0 && (
-                    <FormField label="Owner session">
-                      <ValueMenu
-                        label="Owner session"
-                        value={owner}
-                        options={[
-                          { value: "", label: "No owner session" },
-                          ...sessions.map((session) => ({
-                            value:
-                              publicUUID({
-                                key: { case: "id", value: session.id },
-                              }) ?? "",
-                            label:
-                              session.alias ||
-                              session.name ||
-                              session.runtimeId,
-                          })),
-                        ]}
-                        choose={changeOwner}
-                        disabled={busy}
-                      />
-                    </FormField>
-                  )}
-                </Form>
-                <div className={styles.editor}>
-                  <SourceEditor
-                    path="memory-new.md"
-                    ariaLabel="Memory content"
-                    value={content}
-                    readOnly={busy}
-                    onChange={changeContent}
-                    theme={theme}
-                    settings={settings}
-                  />
-                </div>
-              </>
-            ) : (
-              <MemoryPreview
-                content={content}
-                mode={previewMode}
-                changeMode={changePreviewMode}
-                comparison={comparison}
-              />
-            )}
+            <MemoryPreview
+              content={content}
+              mode={previewMode}
+              changeMode={changePreviewMode}
+              comparison={comparison}
+            />
           </>
         )}
       </Section>

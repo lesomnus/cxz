@@ -124,13 +124,6 @@
   min-width: 0;
   padding: calc(6 * var(--ui-space));
 }
-.editor {
-  height: min(58vh, 560px);
-  min-height: 240px;
-  overflow: hidden;
-  border: 1px solid var(--ui-shade-36);
-  border-radius: var(--ui-control-radius, 6px);
-}
 .trashNotice {
   padding: calc(2 * var(--ui-space));
   border: 1px solid var(--ui-shade-40);

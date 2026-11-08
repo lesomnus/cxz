@@ -37,15 +37,15 @@ using the complete project metadata cached on the authenticated connection.
 Session changes filter that metadata locally, including the first selection,
 without a list request. The cache expires after one minute; returning to a
 project or changing session then refreshes in the background while retaining
-existing cards. Save, copy, delete, restore, purge and explicit reload invalidate
+existing cards. Rename, erase, restore, purge and explicit reload invalidate
 the affected project list. Refresh failures retain cached cards and offer retry.
 The cache is bounded and cleared when the connection is disposed, with no
 browser storage persistence. All sessions includes unowned and
 retained-owner documents. Project changes reset the session filter; returning
-from a document preserves the selected filter. Changing it while editing guards
-unsaved copied-document changes. Selecting an editing session is unnecessary.
+from a document preserves the selected filter. Selecting an editing session is
+unnecessary.
 The detail page groups an Account-style information section, project-style
-Copy/Reload/Delete action panels and a Markdown preview section. Information uses
+Erase/Copy/Reload action panels and a Markdown preview section. Information uses
 the shared ResourceFields label/value layout: a title-only first row, then Project,
 Session, Created and Updated in an equal-width metadata row. Project and Session
 omit visible labels. Other metadata is omitted.
@@ -74,10 +74,11 @@ failed reads can be retried. Changing revisions keeps the chosen preview mode.
 Clicking the larger title opens the shared
 inline value editor; confirming patches only the name under its observed version,
 preserving the body, revision and labels. Existing document bodies remain preview
-only. Copy opens a new draft with source, labels and owner controls and Save/Cancel
-panel actions; copying an older revision uses its displayed body. Additional
-document metadata is omitted. Loading retains the grouped frame
-with its actions disabled until the document is available.
+only. Copy writes the full displayed raw Markdown string to the clipboard,
+including an older revision when selected; it leaves the document and preview mode
+unchanged. Clipboard failures show an error. There is no copied-document editor or
+creation form in the web view. Additional document metadata is omitted. Loading
+retains the grouped frame with its actions disabled until the document is available.
 The TUI `/memory` view offers direct browsing, copying,
 rename, trash/restore/purge, and starting a session seeded from a selected document.
 
@@ -117,8 +118,9 @@ rename, trash/restore/purge, and starting a session seeded from a selected docum
   garbage collection. `Restore` requires the last metadata version. `Purge`
   requires trash and permanently removes all body versions.
 
-There are no Snapshot/Fork/Merge resource types. A copy is a new Memory. Restoring
-an old body means reading that version and patching it as a new revision. Existing
+There are no Snapshot/Fork/Merge resource types. Duplicating a document through the
+API creates a new Memory. Restoring an old body means reading that version and
+patching it as a new revision. Existing
 saved snapshots migrate to ordinary, independently editable documents.
 
 The manager routes requests to the project's `resources.db`, including a disposable

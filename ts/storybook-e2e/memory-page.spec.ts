@@ -288,25 +288,31 @@ test("the inline title refreshes the card without changing its body or revision"
   ).toBeVisible();
 });
 
-test("returning to the grid guards an unsaved copied document", async ({
+test("Copy writes the raw body without opening an editor or changing the document", async ({
   page,
 }) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await open(page);
   await card(page, "Architecture notes").click();
+  const url = page.url();
   await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
-  await expect(page.locator(".monaco-editor textarea")).toBeVisible();
-  await back(page);
-  const dialog = page.getByRole("dialog", {
-    name: "Discard unsaved changes",
-    exact: true,
-  });
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(
+      "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
+    );
+  expect(page.url()).toBe(url);
   await expect(
     doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
-  ).toContainText("Architecture notes copy");
+  ).toContainText("Architecture notes");
+  await expect(page.locator(".monaco-editor")).toHaveCount(0);
+  for (const name of ["Save", "Cancel"])
+    await expect(
+      doc(page).getByRole("button", { name, exact: true }),
+    ).toHaveCount(0);
   await back(page);
-  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(card(page, "Architecture notes")).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(card(page, "Architecture notes copy")).toHaveCount(0);
 });
 
@@ -408,10 +414,17 @@ for (const width of [390, 1280])
       name: "Memory document actions",
       exact: true,
     });
-    for (const name of ["Copy", "Reload", "Delete"])
+    for (const name of ["Erase", "Copy", "Reload"])
       await expect(
         actions.getByRole("button", { name, exact: true }),
       ).toHaveAttribute("data-section-action", "button");
+    expect(
+      await actions
+        .getByRole("button")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("aria-label")),
+        ),
+    ).toEqual(["Erase", "Copy", "Reload"]);
     const trigger = revision.getByRole("combobox", {
       name: "Revision",
       exact: true,
@@ -528,7 +541,7 @@ test("document loading keeps the grouped frame and disabled action panels", asyn
   await expect(
     doc(page).getByText("Loading memory…", { exact: true }),
   ).toBeVisible();
-  for (const name of ["Copy", "Reload", "Delete"])
+  for (const name of ["Erase", "Copy", "Reload"])
     await expect(
       doc(page).getByRole("button", { name, exact: true }),
     ).toBeDisabled();
@@ -662,9 +675,10 @@ test("revision selection changes only the body and Latest restores the current t
   await expect(body).toContainText("Design decisions from revision 4.");
 });
 
-test("copying a historical revision starts a draft with the selected body", async ({
+test("Copy uses the raw body of the selected historical revision", async ({
   page,
 }) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await open(page, "revision-history");
   const revision = doc(page).getByRole("combobox", {
     name: "Revision",
@@ -675,21 +689,22 @@ test("copying a historical revision starts a draft with the selected body", asyn
   await page.getByRole("option", { name: "Revision r1", exact: true }).click();
   await expect(doc(page)).toContainText("Keep UI decisions together.");
   await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
-  await expect(revision).toBeDisabled();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(
+      "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
+    );
+  await expect(revision).toBeEnabled();
   await expect(
-    doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
-  ).toContainText("Architecture notes copy");
-  await expect(page.locator(".monaco-editor")).toContainText(
-    "Keep UI decisions together.",
-  );
-  await expect(page.locator(".monaco-editor")).not.toContainText(
-    "Design decisions from revision 4.",
-  );
+    revision.getByRole("img", { name: "Revision 1", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".monaco-editor")).toHaveCount(0);
 });
 
 test("Changes compares the selected revision and Copy keeps the full body", async ({
   page,
 }) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await open(page, "revision-history");
   const body = doc(page).getByRole("region", {
     name: "Memory content",
@@ -734,10 +749,13 @@ test("Changes compares the selected revision and Copy keeps the full body", asyn
     0,
   );
   await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
-  await expect(page.locator(".monaco-editor")).toContainText(
-    "Design decisions from revision 2.",
-  );
-  await expect(page.locator(".monaco-editor")).not.toContainText("--- r1");
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(
+      "# Architecture\n\nShared memory belongs to the project.\n\nDesign decisions from revision 2.",
+    );
+  await expect(changes).toBeChecked();
+  await expect(diff).toBeVisible();
 });
 
 test("Changes explains first revisions and missing retained predecessors", async ({
@@ -888,34 +906,37 @@ test("inline rename conflicts keep the attempted title in its editor", async ({
   await expect(doc(page)).toContainText("Architecture notes");
 });
 
-test("copy creation stays in the editor until saved, then appears in the grid", async ({
+test("clipboard failure reports an error while keeping the raw document available", async ({
   page,
 }) => {
-  await open(page);
-  await card(page, "Architecture notes").click();
+  await open(page, "document");
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          throw new DOMException("Clipboard blocked", "NotAllowedError");
+        },
+      },
+    });
+  });
   await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
-  await rename(page, "Copied architecture");
-  const input = page.locator(".monaco-editor textarea");
-  await input.focus();
-  await page.keyboard.press("ControlOrMeta+A");
-  await page.keyboard.insertText("# Copied body\n\nNew document content.");
-  await doc(page).getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    doc(page)
-      .getByRole("combobox", { name: "Revision", exact: true })
-      .getByRole("img", { name: "Revision 1", exact: true }),
+    page.getByText(
+      "Could not copy memory: NotAllowedError: Clipboard blocked",
+      { exact: true },
+    ),
   ).toBeVisible();
-  await expect(doc(page)).toContainText("New document content.");
-  await back(page);
-  await expect(card(page, "Copied architecture")).toBeVisible();
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
+  await expect(page.locator(".monaco-editor")).toHaveCount(0);
 });
 
-test("deleting from its panel action returns to the refreshed collection", async ({
+test("erasing from its panel action returns to the refreshed collection", async ({
   page,
 }) => {
   await open(page);
   await card(page, "Architecture notes").click();
-  await doc(page).getByRole("button", { name: "Delete", exact: true }).click();
+  await doc(page).getByRole("button", { name: "Erase", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Confirm", exact: true })
@@ -994,27 +1015,14 @@ test("project changes reset the session filter and offer only the current projec
     .click();
   await expect(card(page, "API notes")).toBeVisible();
 });
-test("changing session from a document guards drafts and returns to the filtered collection", async ({
+test("changing session from a document returns directly to the filtered collection", async ({
   page,
 }) => {
   await open(page, "document");
-  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
-  await expect(page.locator(".monaco-editor textarea")).toBeVisible();
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
   await chooseSession(page, "New editing session");
-  const dialog = page.getByRole("dialog", {
-    name: "Discard unsaved changes",
-    exact: true,
-  });
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(
-    doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
-  ).toContainText("Architecture notes copy");
-  await expect(
-    page.getByRole("combobox", { name: "Select session", exact: true }),
-  ).toContainText("All sessions");
-  await chooseSession(page, "New editing session");
-  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(doc(page)).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(grid(page)).toContainText("No memories for this session.");
   await chooseSession(page, "All sessions");
   await expect(card(page, "Architecture notes")).toBeVisible();

@@ -156,7 +156,7 @@ export const Document: Story = {
     docs: {
       description: {
         story:
-          "Opens the full Memory detail page directly. The shared information panel places the inline-editable title alone above four equal-width Project, Session, Created and Updated fields. Project and Session omit visible labels. Copy, Reload and Delete remain grouped beside the information panel. The revision selector itself looks like a panel and fills only the space beneath the actions, without increasing the information row’s height. Narrow layouts put the selector beside the actions. The Markdown preview follows below. Copy opens a new draft.",
+          "Opens the full Memory detail page directly. The shared information panel places the inline-editable title alone above four equal-width Project, Session, Created and Updated fields. Project and Session omit visible labels. Erase, Copy and Reload remain grouped beside the information panel. The revision selector itself looks like a panel and fills only the space beneath the actions, without increasing the information row’s height. Narrow layouts put the selector beside the actions. The Markdown preview follows below. Copy writes the raw displayed body to the clipboard; it does not open an editor or create a document.",
       },
     },
   },
