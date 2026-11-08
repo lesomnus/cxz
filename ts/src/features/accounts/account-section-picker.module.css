@@ -7,44 +7,14 @@
   flex: none;
   width: 100%;
 }
-.usage {
-  display: grid;
-  grid-template-columns: 9ch 19ch;
-  gap: calc(3 * var(--ui-space));
-  align-items: center;
-  font: 11px/1.5 var(--ui-font-mono);
+/* Keep the 48px quota display inside both the trigger and portaled options,
+   without changing the header's 56px outer height or horizontal insets. */
+.picker :global(.value-menu[data-variant="section"]),
+:global(.setting-menu[data-variant="section"]):has(.quota) {
+  --value-padding-block: var(--ui-space);
+  --value-content-height: 48px;
+  --value-row-height: calc(48px + 2 * var(--ui-space));
 }
-.usage > span {
-  display: grid;
-  gap: var(--ui-control-inset);
-}
-.usage small {
-  color: var(--ui-muted);
-  font-size: 10px;
-}
-.remaining > span {
-  display: flex;
-  align-items: baseline;
-  gap: var(--ui-control-inset);
-}
-.remaining [data-level="critical"] {
-  color: var(--ui-action-error-color);
-}
-.remaining [data-level="warning"] {
-  color: var(--ui-warning-color, var(--ui-muted));
-}
-.unit,
-.empty {
-  color: var(--ui-muted);
-}
-@media (max-width: 600px) {
-  .usage {
-    grid-template-columns: 9ch 19ch;
-    gap: var(--ui-space);
-    font-size: 10px;
-  }
-  .reset > span {
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
+.quota {
+  flex: none;
 }

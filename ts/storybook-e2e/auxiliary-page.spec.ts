@@ -23,11 +23,17 @@ for (const width of [390, 1280])
     );
     await expect(picker(page)).toContainText("Work");
     await expect(picker(page)).toContainText("work");
-    await expect(picker(page)).toContainText("64");
-    await expect(picker(page).locator("time")).toHaveAttribute(
-      "datetime",
-      "2026-11-08T12:25:00.000Z",
+    await expect(picker(page).getByRole("meter")).toHaveAttribute(
+      "aria-valuenow",
+      "64",
     );
+    await expect(
+      picker(page).getByRole("img", {
+        name: "8700000 milliseconds",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(picker(page).locator("time")).toHaveCount(0);
     await expect(
       page.getByText("Shared by Summary, Suggestion and Title", {
         exact: true,
@@ -67,10 +73,19 @@ for (const width of [390, 1280])
     for (const option of [work, personal]) {
       await expect(option).toHaveAttribute("data-section-layout", "section");
       await expect(option.locator(".agent-brand")).toBeVisible();
-      await expect(option).toContainText("Remaining");
-      await expect(option).toContainText("Resets");
+      await expect(option.locator("[data-liquid-vessel]")).toBeVisible();
+      await expect(option.getByText("Remaining", { exact: true })).toHaveCount(
+        0,
+      );
+      await expect(option.getByText("Resets", { exact: true })).toHaveCount(0);
     }
-    await expect(work).toContainText("64");
+    await expect(work.getByRole("meter")).toHaveAttribute(
+      "aria-valuenow",
+      "64",
+    );
+    await expect(
+      work.getByRole("img", { name: "8700000 milliseconds", exact: true }),
+    ).toBeVisible();
     await expect(personal).toContainText("personal");
     await expect(
       page.getByRole("combobox", { name: "Account", exact: true }),
@@ -92,8 +107,14 @@ for (const width of [390, 1280])
     ).toBe(true);
     const layout = await work.evaluate((node) => {
       const bounds = node.getBoundingClientRect();
-      return [...node.querySelectorAll("time")].every(
-        (time) => time.getBoundingClientRect().right <= bounds.right + 1,
+      const quota = node
+        .querySelector("[data-quota-level]")!
+        .getBoundingClientRect();
+      return (
+        quota.top >= bounds.top &&
+        quota.bottom <= bounds.bottom &&
+        quota.left >= bounds.left &&
+        quota.right <= bounds.right
       );
     });
     expect(layout).toBe(true);
@@ -166,10 +187,40 @@ test("keyboard selection and Escape retain focus on the account selector", async
 
 test("usage without a report stays unknown", async ({ page }) => {
   await open(page, "usage-not-reported");
-  await expect(picker(page)).toContainText("Remaining");
-  await expect(picker(page)).not.toContainText("0%");
+  await expect(picker(page).getByRole("meter")).toHaveCount(0);
+  await expect(
+    picker(page).getByRole("img", { name: "Not reported", exact: true }),
+  ).toBeVisible();
+  await expect(
+    picker(page).getByRole("img", {
+      name: "Duration unavailable",
+      exact: true,
+    }),
+  ).toBeVisible();
   await expect(picker(page).locator("time")).toHaveCount(0);
 });
+
+for (const [story, value, level] of [
+  ["usage-depleted", 0, "critical"],
+  ["usage-full", 100, "normal"],
+] as const)
+  test(`account quota retains its numeric width and tint at ${value}%`, async ({
+    page,
+  }) => {
+    await open(page, story);
+    const meter = picker(page).getByRole("meter");
+    await expect(meter).toHaveAttribute("aria-valuenow", String(value));
+    await expect(picker(page).locator("[data-quota-level]")).toHaveAttribute(
+      "data-quota-level",
+      level,
+    );
+    const fits = await meter.evaluate(
+      (node) =>
+        node.getBoundingClientRect().width <=
+        node.parentElement!.getBoundingClientRect().width,
+    );
+    expect(fits).toBe(true);
+  });
 
 test("unavailable accounts cannot be saved or enabled", async ({ page }) => {
   await open(page, "no-accounts");

@@ -18,6 +18,8 @@ export function AccountQuotaSquare({
   identity = account,
   refreshVersion = 0,
   onLoadingChange,
+  inline = false,
+  className = "",
 }: {
   c: Connection;
   account: string;
@@ -26,6 +28,9 @@ export function AccountQuotaSquare({
   identity?: string;
   refreshVersion?: number;
   onLoadingChange?: (loading: boolean) => void;
+  /** Phrasing content for account selectors, retaining the same gauge/countdown. */
+  inline?: boolean;
+  className?: string;
 }) {
   const quota = useAccountQuota({
     c,
@@ -57,9 +62,10 @@ export function AccountQuotaSquare({
         : remaining <= 30
           ? "warning"
           : "normal";
+  const Surface = inline ? "span" : Section;
   return (
-    <Section
-      className={styles.quotaSquare}
+    <Surface
+      className={`${styles.quotaSquare} ${inline ? styles.quotaInline : ""} ${className}`}
       aria-label="Remaining agent usage"
       data-quota-level={level}
     >
@@ -97,6 +103,6 @@ export function AccountQuotaSquare({
           rounding="ceil"
         />
       </span>
-    </Section>
+    </Surface>
   );
 }

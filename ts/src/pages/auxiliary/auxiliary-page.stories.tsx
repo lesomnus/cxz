@@ -128,6 +128,8 @@ export const SaveFailure: Story = { args: { saveFailure: true } };
 export const PendingSave: Story = { args: { pendingSave: true } };
 export const LongNames: Story = { args: { longNames: true } };
 export const UsageNotReported: Story = { args: { quotaRemaining: null } };
+export const UsageDepleted: Story = { args: { quotaRemaining: 0 } };
+export const UsageFull: Story = { args: { quotaRemaining: 100 } };
 export const LoginRequired: Story = { args: { needsLogin: true } };
 export const MixedConfiguration: Story = {
   args: { workspace: true, mixedProfiles: true },

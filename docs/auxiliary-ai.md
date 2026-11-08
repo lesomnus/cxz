@@ -14,8 +14,10 @@ login button. Narrow layouts wrap this row. Model/effort choices apply to all
 three tasks; only their enabled switches remain below. Older different choices
 are shown as Mixed and preserved until a common choice is explicitly selected.
 The API and TUI retain per-kind model/effort profiles. The
-selected account and every option show the agent logo, display name, alias,
-retained remaining usage and reset timestamp. Usage uses the Account page's
+selected account and every option show the agent logo, display name and alias,
+followed by the Account page's shared usage gauge and stacked day/hour/minute
+reset countdown (in a compact inline layout). Numeric animations, unknown values
+and remaining-usage colors come from that same component. Usage uses the Account page's
 one-minute metadata cache; no provider probe is started to fill the selector.
 Task controls below it have no surrounding panels. One helper login and one
 catalog lookup serve all three tasks; Save configuration stores them together.
