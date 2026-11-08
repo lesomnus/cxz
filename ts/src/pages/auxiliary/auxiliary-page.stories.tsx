@@ -114,7 +114,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "One header groups the shared account, model and effort Section selectors with helper authentication status and login. Feature switches remain independent without surrounding panels. The responsive header wraps on narrow screens. Older different model/effort choices show Mixed until explicitly changed. Login is simulated; enter demo-code to finish.",
+          "One header groups the shared account, model and effort Section selectors with helper authentication, login, save and revert actions. Summary, Suggestion and Title use wide clickable panels with descriptions and top-right switches, arranged in three columns on wider screens. Narrow layouts wrap the header and stack the panels. Revert restores the last saved configuration. Older different model/effort choices show Mixed until explicitly changed. Login is simulated; enter demo-code to finish.",
       },
     },
   },

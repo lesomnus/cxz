@@ -8,16 +8,20 @@ They use one shared account, separate from the agent doing the work. Each task
 keeps its own model, effort and enabled setting.
 All are **off by default**.
 
-The web Auxiliary AI page starts with one row containing Section-style account,
-model and effort selectors, followed by helper authentication status and its
-login button. Narrow layouts wrap this row. Model/effort choices apply to all
-three tasks; only their enabled switches remain below. Older different choices
+The web Auxiliary AI page starts with Section-style account, model and effort
+selectors, followed by a row with helper authentication status, Log in,
+Save configuration and Revert changes. Revert restores the last saved account,
+model, effort and feature settings without a server write. Narrow layouts wrap
+this row. Model/effort choices apply to all three tasks. Their titles,
+descriptions and upper-right switches appear in wide rectangular panels, three
+across on wider screens and stacked on narrow screens. Clicking a panel toggles
+its feature; the switches also support keyboard interaction. Older different choices
 are shown as Mixed and preserved until a common choice is explicitly selected.
 The API and TUI retain per-kind model/effort profiles. The
 selected account and every option show the agent logo, display name, alias,
 retained remaining usage and reset timestamp as labeled fields. Usage uses the Account page's
 one-minute metadata cache; no provider probe is started to fill the selector.
-Task controls below it have no surrounding panels. One helper login and one
+One helper login and one
 catalog lookup serve all three tasks; Save configuration stores them together.
 
 Changing the shared account clears task models/efforts and disables the affected

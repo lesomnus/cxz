@@ -20,10 +20,20 @@ import {
 import { AccountSectionPicker } from "#src/features/accounts/account-section-picker.tsx";
 import { LoginPanel } from "#src/features/accounts/login-panel.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { auxKinds } from "./auxiliary-controls";
 import styles from "./auxiliary-settings.module.css";
 
 const mixedValue = "__mixed__";
+type SavedConfiguration = { account: string; profiles: AgentProfile[] };
+const descriptions = {
+  [AuxKind.SUMMARY]:
+    "Summarize completed replies to keep the conversation easy to follow.",
+  [AuxKind.SUGGESTION]:
+    "Draft a suggested next message in the conversation input.",
+  [AuxKind.TITLE]:
+    "Name new sessions automatically from their early conversation.",
+};
 export function AuxiliarySettings({
   c,
   sessions = [],
@@ -40,26 +50,30 @@ export function AuxiliarySettings({
   });
   const [profiles, setProfiles] = useState<AgentProfile[]>([]);
   const [account, setAccount] = useState("");
+  const [savedConfiguration, setSavedConfiguration] =
+    useState<SavedConfiguration>();
   const [busy, setBusy] = useState(false);
   const [login, setLogin] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
     if (!configuration.data) return;
-    const saved = configuration.data;
+    acceptSaved(configuration.data);
+  }, [configuration.data]);
+  function acceptSaved(saved: SavedConfiguration) {
     const shared =
       saved.account ||
       saved.profiles.find((p) => p.enabled && p.account)?.account ||
       saved.profiles.find((p) => p.account)?.account ||
       "";
-    setAccount(shared);
-    setProfiles(
-      auxKinds.map(
-        ({ kind }) =>
-          saved.profiles.find((p) => p.kind === kind) ??
-          create(AgentProfileSchema, { kind, account: shared }),
-      ),
+    const restored = auxKinds.map(
+      ({ kind }) =>
+        saved.profiles.find((p) => p.kind === kind) ??
+        create(AgentProfileSchema, { kind, account: shared }),
     );
-  }, [configuration.data]);
+    setSavedConfiguration({ account: shared, profiles: restored });
+    setAccount(shared);
+    setProfiles(restored);
+  }
   const models = useRemote(
     (signal) =>
       c.accounts.models(accountRef(account), { signal, timeoutMs: 20000 }),
@@ -67,6 +81,21 @@ export function AuxiliarySettings({
     { enabled: !!account },
   );
   const disabled = busy || login || configuration.loading || accounts.loading;
+  const dirty =
+    !!savedConfiguration &&
+    (account !== savedConfiguration.account ||
+      profiles.some((profile) => {
+        const saved = savedConfiguration.profiles.find(
+          (p) => p.kind === profile.kind,
+        );
+        return (
+          !saved ||
+          profile.account !== saved.account ||
+          profile.model !== saved.model ||
+          profile.effort !== saved.effort ||
+          profile.enabled !== saved.enabled
+        );
+      }));
   const accountAvailable = !!accounts.data?.some(
     (candidate) => candidate.alias === account,
   );
@@ -113,6 +142,35 @@ export function AuxiliarySettings({
         effort: "",
       })),
     );
+  }
+  async function save() {
+    setBusy(true);
+    setError("");
+    try {
+      const saved = await c.installation.saveAgents(
+        {
+          account,
+          profiles: profiles.map((profile) => ({
+            ...profile,
+            account,
+            model: mixedModel ? profile.model : model,
+            effort: mixedEffort || mixedModel ? profile.effort : effort,
+          })),
+        },
+        { timeoutMs: 20000 },
+      );
+      acceptSaved(saved);
+    } catch (error) {
+      setError(String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  function revert() {
+    if (!savedConfiguration || disabled) return;
+    setAccount(savedConfiguration.account);
+    setProfiles(savedConfiguration.profiles);
+    setError("");
   }
   return (
     <div className={styles.content} aria-label="Auxiliary AI settings">
@@ -217,6 +275,30 @@ export function AuxiliarySettings({
           >
             Log in
           </Button>
+          <Button
+            className={styles.save}
+            disabled={
+              disabled ||
+              !profiles.length ||
+              profiles.some(
+                (profile) =>
+                  profile.enabled &&
+                  (!accountAvailable || !(profile.model || model)),
+              )
+            }
+            onClick={save}
+          >
+            Save configuration
+          </Button>
+          <Button
+            className={styles.revert}
+            aria-label="Revert changes"
+            title="Revert changes"
+            disabled={disabled || !dirty}
+            onClick={revert}
+          >
+            <Icon name="undo" />
+          </Button>
         </Section>
       </div>
       {(error || configuration.error || accounts.error || models.error) && (
@@ -239,76 +321,49 @@ export function AuxiliarySettings({
           cancel={() => setLogin(false)}
         />
       )}
-      {profiles.map((profile) => {
-        const label = auxKinds.find(
-          (kind) => kind.kind === profile.kind,
-        )!.label;
-        return (
-          <section
-            className={styles.profile}
-            aria-label={`${label} configuration`}
-            key={profile.kind}
-          >
-            <h2>{label}</h2>
-            <Switch
-              label={`${label} enabled`}
-              checked={profile.enabled}
-              disabled={
-                disabled || !accountAvailable || !(profile.model || model)
-              }
-              onChange={(enabled) =>
-                update(profile.kind, {
-                  enabled,
-                  model: profile.model || model,
-                  effort: mixedEffort ? profile.effort : effort,
-                })
-              }
-            />
-          </section>
-        );
-      })}
-      <Button
-        className={styles.save}
-        disabled={
-          disabled ||
-          !profiles.length ||
-          profiles.some(
-            (profile) =>
-              profile.enabled &&
-              (!accountAvailable || !(profile.model || model)),
-          )
-        }
-        onClick={async () => {
-          setBusy(true);
-          setError("");
-          try {
-            const saved = await c.installation.saveAgents(
-              {
-                account,
-                profiles: profiles.map((profile) => ({
-                  ...profile,
-                  account,
-                  model: mixedModel ? profile.model : model,
-                  effort: mixedEffort || mixedModel ? profile.effort : effort,
-                })),
-              },
-              { timeoutMs: 20000 },
-            );
-            setProfiles(saved.profiles);
-            setAccount(
-              saved.account ||
-                saved.profiles.find((profile) => profile.account)?.account ||
-                "",
-            );
-          } catch (error) {
-            setError(String(error));
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        Save configuration
-      </Button>
+      <div className={styles.profiles}>
+        {profiles.map((profile) => {
+          const label = auxKinds.find(
+            (kind) => kind.kind === profile.kind,
+          )!.label;
+          const unavailable =
+            disabled || !accountAvailable || !(profile.model || model);
+          const toggle = (enabled: boolean) =>
+            update(profile.kind, {
+              enabled,
+              model: profile.model || model,
+              effort: mixedEffort ? profile.effort : effort,
+            });
+          return (
+            <Section
+              className={styles.profile}
+              aria-label={`${label} configuration`}
+              data-disabled={unavailable || undefined}
+              key={profile.kind}
+              onClick={(event) => {
+                if (
+                  unavailable ||
+                  (event.target instanceof Element &&
+                    event.target.closest("button"))
+                )
+                  return;
+                toggle(!profile.enabled);
+              }}
+            >
+              <div className={styles.profileHeader}>
+                <h2>{label}</h2>
+                <Switch
+                  label={`${label} enabled`}
+                  checked={profile.enabled}
+                  disabled={unavailable}
+                  onChange={toggle}
+                />
+              </div>
+              <p>{descriptions[profile.kind as keyof typeof descriptions]}</p>
+            </Section>
+          );
+        })}
+      </div>
     </div>
   );
 }

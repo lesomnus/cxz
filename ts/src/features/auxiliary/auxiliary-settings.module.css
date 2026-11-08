@@ -7,7 +7,7 @@
 }
 .configuration {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 152px 112px 184px;
+  grid-template-columns: minmax(0, 1fr) 152px 112px;
   gap: var(--ui-section-group-gap);
   align-items: start;
   min-width: 0;
@@ -38,7 +38,8 @@
   font: 12px/18px var(--ui-font-mono);
 }
 .authentication.authentication {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) repeat(3, auto);
   height: calc(32px + 2 * var(--ui-section-padding));
   gap: calc(2 * var(--ui-space));
   align-items: center;
@@ -49,19 +50,43 @@
 .authenticationState[data-needs-login] .selectionValue {
   color: var(--ui-muted);
 }
-.login.login {
+.login.login,
+.save.save,
+.revert.revert {
   height: 32px;
   min-height: 32px;
   padding-block: 0;
   padding-inline: calc(2 * var(--ui-space));
   font-size: 12px;
 }
+.revert.revert {
+  width: 32px;
+  padding: 0;
+}
 .muted {
   margin: 0;
   color: var(--ui-muted);
   font-size: 11px;
 }
-.profile {
+.profiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.profile.profile {
+  min-width: 0;
+  height: 112px;
+  padding: 12px;
+  gap: 8px;
+  align-content: start;
+}
+.profile:not([data-disabled]) {
+  cursor: pointer;
+}
+.profile:not([data-disabled]):hover {
+  background: var(--ui-shade-27);
+}
+.profileHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -73,15 +98,30 @@
   font-size: 14px;
   font-weight: 500;
 }
-.save {
-  justify-self: end;
+.profile p {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
-@container auxiliary-settings (width < 820px) {
+@container auxiliary-settings (width < 760px) {
   .configuration {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .account,
+  .account {
+    grid-column: 1 / -1;
+  }
+  .profiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container auxiliary-settings (width < 520px) {
   .authentication.authentication {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    height: auto;
+  }
+  .authenticationState {
     grid-column: 1 / -1;
   }
 }

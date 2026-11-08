@@ -47,6 +47,23 @@ for (const width of [390, 1280])
       exact: true,
     });
     await expect(authentication.getByRole("status")).toContainText("Ready");
+    const actions = ["Log in", "Save configuration", "Revert changes"];
+    const actionBounds = await Promise.all(
+      actions.map(async (name) => {
+        const button = authentication.getByRole("button", {
+          name,
+          exact: true,
+        });
+        await expect(button).toBeVisible();
+        return (await button.boundingBox())!;
+      }),
+    );
+    for (let i = 1; i < actionBounds.length; i++) {
+      expect(actionBounds[i].y).toBeCloseTo(actionBounds[0].y, 0);
+      expect(actionBounds[i].x).toBeGreaterThan(
+        actionBounds[i - 1].x + actionBounds[i - 1].width,
+      );
+    }
     if (width === 1280) {
       const boxes = await page
         .getByRole("group", { name: "Auxiliary configuration", exact: true })
@@ -56,10 +73,28 @@ for (const width of [390, 1280])
           ),
         );
       expect(boxes).toHaveLength(4);
-      for (let i = 0; i < boxes.length; i++) {
+      for (let i = 0; i < 3; i++) {
         expect(boxes[i].y).toBeCloseTo(boxes[0].y, 0);
         expect(boxes[i].height).toBeCloseTo(boxes[0].height, 0);
         if (i) expect(boxes[i].x).toBeGreaterThan(boxes[i - 1].right);
+      }
+      expect(boxes[3].y).toBeGreaterThanOrEqual(boxes[0].bottom);
+      expect(boxes[3].x).toBeCloseTo(boxes[0].x, 0);
+      const panels = await Promise.all(
+        ["Summary", "Suggestion", "Title"].map(
+          async (name) =>
+            (await page
+              .getByRole("region", { name: `${name} configuration` })
+              .boundingBox())!,
+        ),
+      );
+      for (let i = 0; i < panels.length; i++) {
+        expect(panels[i].y).toBeCloseTo(panels[0].y, 0);
+        expect(panels[i].width).toBeGreaterThan(2 * panels[i].height);
+        if (i)
+          expect(panels[i].x).toBeGreaterThan(
+            panels[i - 1].x + panels[i - 1].width,
+          );
       }
     }
     await picker(page).click();
@@ -95,7 +130,7 @@ for (const width of [390, 1280])
     for (const name of ["Summary", "Suggestion", "Title"])
       await expect(
         page.getByRole("region", { name: `${name} configuration` }),
-      ).not.toHaveAttribute("data-section-layout");
+      ).toHaveAttribute("data-section-layout", "section");
     await expect(
       page.getByRole("button", {
         name: "Log in",
@@ -115,6 +150,75 @@ for (const width of [390, 1280])
     });
     expect(layout).toBe(true);
   });
+
+test("feature panels, switches and keyboard toggle once, and revert uses the latest save", async ({
+  page,
+}) => {
+  await open(page);
+  const summary = page.getByRole("region", { name: "Summary configuration" });
+  const toggle = summary.getByRole("switch", { name: "Summary enabled" });
+  const revert = page.getByRole("button", {
+    name: "Revert changes",
+    exact: true,
+  });
+  await expect(toggle).toBeChecked();
+  await expect(revert).toBeDisabled();
+  await summary.click();
+  await expect(toggle).not.toBeChecked();
+  await toggle.click();
+  await expect(toggle).toBeChecked();
+  await toggle.press("Space");
+  await expect(toggle).not.toBeChecked();
+  const save = page.getByRole("button", {
+    name: "Save configuration",
+    exact: true,
+  });
+  await save.click();
+  await expect(save).toBeEnabled();
+  await expect(revert).toBeDisabled();
+  await summary.click();
+  await expect(toggle).toBeChecked();
+  await revert.click();
+  await expect(toggle).not.toBeChecked();
+  await expect(revert).toBeDisabled();
+});
+
+test("revert restores the saved shared account, model, effort and feature switches", async ({
+  page,
+}) => {
+  await open(page);
+  const effort = page.getByRole("combobox", {
+    name: "Auxiliary effort",
+    exact: true,
+  });
+  await effort.click();
+  await page.getByRole("option", { name: "high", exact: true }).click();
+  await page.getByRole("region", { name: "Suggestion configuration" }).click();
+  await picker(page).click();
+  await choices(page)
+    .getByRole("option", { name: /Personal/ })
+    .click();
+  await expect(picker(page)).toContainText("Personal");
+  await page
+    .getByRole("button", { name: "Revert changes", exact: true })
+    .click();
+  await expect(picker(page)).toContainText("Work");
+  await expect(
+    page.getByRole("combobox", { name: "Auxiliary model", exact: true }),
+  ).toContainText("Demo model");
+  await expect(effort).toContainText("low");
+  await expect(
+    page.getByRole("switch", { name: "Summary enabled" }),
+  ).toBeChecked();
+  for (const name of ["Suggestion", "Title"]) {
+    await expect(
+      page.getByRole("switch", { name: `${name} enabled` }),
+    ).not.toBeChecked();
+  }
+  await expect(
+    page.getByRole("button", { name: "Revert changes", exact: true }),
+  ).toBeDisabled();
+});
 
 test("changing the shared account clears every task model before configuring and saving", async ({
   page,
