@@ -95,6 +95,43 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
             output_file: "/tmp/cxz/jobs/lint.log",
           },
         ];
+    if (!empty) {
+      tasks[0].updated_seq = "90";
+      tasks[1].updated_seq = "80";
+      tasks[2].updated_seq = "70";
+      tasks[3].updated_seq = "60";
+      tasks.push(
+        {
+          task_id: "docs",
+          description: "Generate project documentation",
+          status: "completed",
+          active: false,
+          summary: "Documentation is up to date.",
+          output_file: "",
+          updated_seq: "50",
+        },
+        {
+          task_id: "old-test",
+          description: "Old test run",
+          status: "completed",
+          active: false,
+          summary: "A previous test run.",
+          output_file: "",
+          updated_seq: "10",
+        },
+        {
+          task_id: "old-build",
+          description: "Old build",
+          status: "completed",
+          active: false,
+          summary: "A previous build.",
+          output_file: "",
+          updated_seq: "20",
+        },
+      );
+      // Deliberately interleave the source data: the report owns its ordering.
+      tasks.unshift(tasks.splice(5, 1)[0]);
+    }
     const transport = createRouterTransport((router) => {
       router.service(SessionService, {
         background: (request) => {
@@ -142,7 +179,7 @@ export const JobList: Story = {
     docs: {
       description: {
         story:
-          "Click the background-job count in the composer toolbar to open the same headerless anchored menu used by conversation Task and Memory counters. The in-memory RPC fixture includes running, completed and failed jobs, descriptions, summaries and output paths. Refresh reloads the fixture without closing the menu; Escape restores focus and clicking outside dismisses. No server is required.",
+          "Click the background-job count in the composer toolbar to open the same headerless anchored menu used by conversation Task and Memory counters. The in-memory RPC fixture includes deliberately interleaved running, completed and failed jobs. The menu places active jobs first and keeps only the three most recently updated inactive jobs, including descriptions, summaries and output paths. Refresh reloads the fixture without closing the menu; Escape restores focus and clicking outside dismisses. No server is required.",
       },
     },
   },

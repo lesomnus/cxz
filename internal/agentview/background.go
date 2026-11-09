@@ -1,6 +1,9 @@
 package agentview
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"maps"
+)
 
 // BackgroundTask describes provider-reported work, not a foreground tool call.
 type BackgroundTask struct {
@@ -11,6 +14,8 @@ type BackgroundTask struct {
 	Summary     string `json:"summary"`
 	OutputFile  string `json:"output_file"`
 	Active      bool   `json:"active"`
+	UpdatedSeq  uint64 `json:"updated_seq,omitempty,string"`
+	UpdatedAtMS int64  `json:"updated_at_ms,omitempty"`
 }
 
 type backgroundEvent struct {
@@ -47,6 +52,20 @@ type BackgroundState struct {
 	Tasks       map[string]BackgroundTask
 	Snapshot    bool
 	Unavailable bool `json:"Unavailable,omitempty"`
+}
+
+// ApplyAt records when a task actually changes, rather than every provider poll.
+func (s *BackgroundState) ApplyAt(raw []byte, seq uint64, timeMS int64) {
+	previous := maps.Clone(s.Tasks)
+	s.Apply(raw)
+	for id, task := range s.Tasks {
+		if old, exists := previous[id]; exists && old == task {
+			continue
+		}
+		task.UpdatedSeq = seq
+		task.UpdatedAtMS = timeMS
+		s.Tasks[id] = task
+	}
 }
 
 func (s *BackgroundState) Apply(raw []byte) {

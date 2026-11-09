@@ -92,7 +92,15 @@ test("background details use the shared anchored menu and a public UUID for refr
   await expect(
     page.getByRole("dialog", { name: "Background tasks", exact: true }),
   ).toHaveCount(0);
-  await expect(report.getByRole("listitem")).toHaveCount(4);
+  await expect(report.getByRole("listitem")).toHaveCount(5);
+  const jobs = report.getByRole("listitem");
+  await expect(jobs.nth(0)).toContainText("Build the web application");
+  await expect(jobs.nth(1)).toContainText("Watch workspace files");
+  await expect(jobs.nth(2)).toContainText("Run conversation tests");
+  await expect(jobs.nth(3)).toContainText("Check formatting");
+  await expect(jobs.nth(4)).toContainText("Generate project documentation");
+  await expect(report).not.toContainText("Old test run");
+  await expect(report).not.toContainText("Old build");
   await expect(
     report.getByText("Build the web application and verify generated assets", {
       exact: true,

@@ -24,3 +24,33 @@ func TestBackgroundLifecycle(t *testing.T) {
 		t.Fatal(v)
 	}
 }
+
+func TestBackgroundOrderingChangesOnlyWithTaskState(t *testing.T) {
+	var state BackgroundState
+	active := []byte(`{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[{"task_id":"bg","description":"Build"}]}`)
+	empty := []byte(`{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[]}`)
+	state.ApplyAt(active, 10, 1000)
+	state.ApplyAt(active, 20, 2000)
+	if task := state.Tasks["bg"]; task.UpdatedSeq != 10 || task.UpdatedAtMS != 1000 || !task.Active {
+		t.Fatal(task)
+	}
+	state.ApplyAt(empty, 30, 3000)
+	state.ApplyAt(empty, 40, 4000)
+	if task := state.Tasks["bg"]; task.UpdatedSeq != 30 || task.UpdatedAtMS != 3000 || task.Active || task.Status != "inactive" {
+		t.Fatal(task)
+	}
+	state.ApplyAt(active, 50, 5000)
+	if task := state.Tasks["bg"]; task.UpdatedSeq != 50 || !task.Active {
+		t.Fatal(task)
+	}
+}
+
+func TestBackgroundCompletionMetadataUsesEventSequence(t *testing.T) {
+	var state BackgroundState
+	state.ApplyAt([]byte(`{"type":"system","subtype":"task_started","task_id":"bg","is_backgrounded":true}`), 1, 1000)
+	state.ApplyAt([]byte(`{"type":"system","subtype":"task_notification","task_id":"bg","status":"completed","summary":"Done"}`), 2, 2000)
+	state.ApplyAt([]byte(`{"type":"system","subtype":"task_notification","task_id":"bg","status":"completed","summary":"Done"}`), 3, 3000)
+	if task := state.Tasks["bg"]; task.UpdatedSeq != 2 || task.UpdatedAtMS != 2000 || task.Active {
+		t.Fatal(task)
+	}
+}
