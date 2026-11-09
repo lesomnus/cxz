@@ -101,3 +101,39 @@ it("isolates connections, bounds entries and evicts the least recently viewed re
   expect(cache.peek("two")).toBeUndefined();
   expect(new ReadCache().peek("one")).toBeUndefined();
 });
+
+it("soft expiry retains the last successful value while a refresh is pending or fails", async () => {
+  const cache = new ReadCache();
+  await cache.read(
+    "background/session/run",
+    10_000,
+    async () => ["previous"],
+    signal(),
+  );
+  cache.expire("background/session/run");
+  expect(cache.peek("background/session/run")).toEqual({
+    data: ["previous"],
+    fresh: false,
+  });
+  await expect(
+    cache.read(
+      "background/session/run",
+      10_000,
+      async () => {
+        throw new Error("offline");
+      },
+      signal(),
+    ),
+  ).rejects.toThrow("offline");
+  expect(cache.peek("background/session/run")?.data).toEqual(["previous"]);
+  await cache.read(
+    "background/session/run",
+    10_000,
+    async () => ["current"],
+    signal(),
+  );
+  expect(cache.peek("background/session/run")).toEqual({
+    data: ["current"],
+    fresh: true,
+  });
+});

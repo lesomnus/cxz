@@ -47,7 +47,7 @@ test("an open background report stops polling when its project disappears and re
   await expect(report).toContainText("The session runtime is not running.");
   await expect(
     report.getByRole("menuitem", { name: "Refresh", exact: true }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
   await page.clock.fastForward(30_000);
   await expect(requests).toHaveAttribute("data-background-requests", "2");
   await page
@@ -56,7 +56,7 @@ test("an open background report stops polling when its project disappears and re
   await expect(requests).toHaveAttribute("data-background-requests", "4");
   await expect(
     report.getByRole("menuitem", { name: "Refresh", exact: true }),
-  ).toBeEnabled();
+  ).toHaveCount(0);
   await page.clock.fastForward(10_000);
   await expect(requests).toHaveAttribute("data-background-requests", "5");
 });
@@ -92,7 +92,7 @@ test("stopping a project gates bootstrap, visibility and manual refresh until it
   await expect(indicator).toHaveText("1");
 });
 
-test("background details use the shared anchored menu and a public UUID for refresh", async ({
+test("background details use the shared anchored menu and a public session UUID", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -143,8 +143,10 @@ test("background details use the shared anchored menu and a public UUID for refr
   ).toBe(true);
   await expect(jobs.nth(2).locator("code")).toHaveCSS(
     "text-decoration-line",
-    "line-through",
+    "none",
   );
+  await expect(jobs.nth(2)).toHaveCSS("opacity", "0.5");
+  await expect(jobs.first()).toHaveCSS("opacity", "1");
   await expect(jobs.first().locator("code")).toHaveCSS(
     "text-decoration-line",
     "none",
@@ -184,7 +186,9 @@ test("background details use the shared anchored menu and a public UUID for refr
   expect(
     await report.evaluate((node) => getComputedStyle(node).backdropFilter),
   ).not.toBe("none");
-  await report.getByRole("menuitem", { name: "Refresh", exact: true }).click();
+  await expect(
+    report.getByRole("menuitem", { name: "Refresh", exact: true }),
+  ).toHaveCount(0);
   await expect(report.locator("code").first()).toContainText("npm run build");
   await expect(report).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
@@ -195,6 +199,76 @@ test("background details use the shared anchored menu and a public UUID for refr
   await page.getByRole("textbox", { name: "Message", exact: true }).click();
   await expect(report).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test("background menu height stays fixed during loading and cached reopen does not request again", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto(
+    "/iframe.html?id=conversation-backgroundjobs--loading-job-list&viewMode=story",
+  );
+  const requests = page.locator("[data-background-list-requests]");
+  const trigger = page.locator("[data-background-jobs]");
+  const report = page.getByRole("menu", {
+    name: "Background tasks",
+    exact: true,
+  });
+  await trigger.click();
+  await expect(report.getByRole("status")).toHaveText("Loading…");
+  const viewport = report.locator(".background-jobs-menu-viewport");
+  const loadingHeight = await viewport.evaluate((node) => node.clientHeight);
+  await expect(report.getByRole("listitem")).toHaveCount(5);
+  expect(await viewport.evaluate((node) => node.clientHeight)).toBe(
+    loadingHeight,
+  );
+  const rowHeight = await report
+    .getByRole("listitem")
+    .first()
+    .evaluate((node) => node.getBoundingClientRect().height);
+  expect(loadingHeight / rowHeight).toBeCloseTo(5.5, 1);
+  await expect(requests).toHaveAttribute("data-background-list-requests", "1");
+  await page.keyboard.press("Escape");
+  await trigger.click();
+  expect(await report.getByRole("listitem").count()).toBe(5);
+  await expect(report.getByRole("status")).toHaveCount(0);
+  await expect(requests).toHaveAttribute("data-background-list-requests", "1");
+  await page.keyboard.press("Escape");
+  await page.clock.fastForward(11_000);
+  await expect(requests).toHaveAttribute("data-background-list-requests", "1");
+  await trigger.click();
+  expect(await report.getByRole("listitem").count()).toBe(5);
+  await expect(report.getByRole("status")).toHaveCount(0);
+  await expect(requests).toHaveAttribute("data-background-list-requests", "2");
+  expect(await viewport.evaluate((node) => node.clientHeight)).toBe(
+    loadingHeight,
+  );
+});
+
+test("background menu shows five and a half rows and scrolls additional active jobs", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-backgroundjobs--scrolling-job-list&viewMode=story",
+  );
+  await page.locator("[data-background-jobs]").click();
+  const report = page.getByRole("menu", {
+    name: "Background tasks",
+    exact: true,
+  });
+  const rows = report.getByRole("listitem");
+  await expect(rows).toHaveCount(9);
+  const viewport = report.locator(".background-jobs-menu-viewport");
+  const rowHeight = await rows
+    .first()
+    .evaluate((node) => node.getBoundingClientRect().height);
+  const height = await viewport.evaluate((node) => node.clientHeight);
+  expect(height / rowHeight).toBeCloseTo(5.5, 1);
+  expect(
+    await viewport.evaluate((node) => node.scrollHeight > node.clientHeight),
+  ).toBe(true);
+  await expect(report.getByRole("separator")).toHaveCount(0);
+  await expect(report.getByRole("menuitem")).toHaveCount(0);
 });
 
 test("zero background jobs still opens the menu's empty state on a narrow screen", async ({

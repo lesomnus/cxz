@@ -1,3 +1,4 @@
+import { ReadCache } from "#src/shared/api/read-cache.ts";
 import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@lesomnus/nox";
@@ -59,10 +60,15 @@ export const InToolbar: Story = {
 function JobListPreview({
   empty = false,
   providerFields = false,
+  delay = 0,
+  extraActive = 0,
 }: {
   empty?: boolean;
   providerFields?: boolean;
+  delay?: number;
+  extraActive?: number;
 }) {
+  const [requests, setRequests] = useState(0);
   const [fixture] = useState(() => {
     const tasks: BackgroundTask[] = empty
       ? []
@@ -144,6 +150,17 @@ function JobListPreview({
           updated_seq: "20",
         },
       );
+      for (let index = 0; index < extraActive; index++)
+        tasks.push({
+          task_id: `extra-${index}`,
+          command: `timeout 60s bash -lc 'npm run check --workspace package-${index}'`,
+          description: "",
+          status: "working",
+          active: true,
+          summary: "",
+          output_file: "",
+          updated_seq: String(100 + index),
+        });
       const now = Date.now();
       tasks.forEach((task, index) => {
         task.started_at_ms = now - (index + 1) * 65_000;
@@ -155,9 +172,24 @@ function JobListPreview({
     }
     const transport = createRouterTransport((router) => {
       router.service(SessionService, {
-        background: (request) => {
+        background: async (request, context) => {
           if (request.ref?.key.case !== "id")
             throw new Error("Background requires a public session UUID");
+          setRequests((value) => value + 1);
+          if (delay)
+            await new Promise<void>((resolve, reject) => {
+              const abort = () => {
+                clearTimeout(timer);
+                reject(context.signal.reason);
+              };
+              const timer = setTimeout(() => {
+                context.signal.removeEventListener("abort", abort);
+                resolve();
+              }, delay);
+              if (context.signal.aborted) abort();
+              else
+                context.signal.addEventListener("abort", abort, { once: true });
+            });
           return {
             data: new TextEncoder().encode(
               JSON.stringify({
@@ -177,18 +209,23 @@ function JobListPreview({
   });
   useEffect(() => () => fixture.c.dispose(), [fixture]);
   return (
-    <ComponentPreview
-      backgroundJobs={fixture.tasks.filter((task) => task.active).length}
-      backgroundReport={
-        <BackgroundReport
-          c={fixture.c}
-          presentation="menu"
-          session={sessionFixtureId()}
-          run="preview"
-          available
-        />
-      }
-    />
+    <>
+      <output hidden data-background-list-requests={requests}>
+        {requests}
+      </output>
+      <ComponentPreview
+        backgroundJobs={fixture.tasks.filter((task) => task.active).length}
+        backgroundReport={
+          <BackgroundReport
+            c={fixture.c}
+            presentation="menu"
+            session={sessionFixtureId()}
+            run="preview"
+            available
+          />
+        }
+      />
+    </>
   );
 }
 
@@ -200,10 +237,30 @@ export const JobList: Story = {
     docs: {
       description: {
         story:
-          "Click the background-job count to open the shared anchored menu. Each job is one highlighted command line with an elapsed clock on the right; known timeout and shell wrappers are removed for display, and hover retains the original command. The in-memory RPC fixture includes deliberately interleaved running, completed and failed jobs. The menu places active jobs first and keeps only the three most recently updated inactive jobs, with inactive commands struck through. Running clocks advance; completed clocks remain fixed. Refresh reloads the fixture without closing the menu; Escape restores focus and clicking outside dismisses. No server is required.",
+          "Click the background-job count to open the shared anchored menu. Each job is one highlighted command line with an elapsed clock on the right; known timeout and shell wrappers are removed for display, and hover retains the original command. The in-memory RPC fixture includes deliberately interleaved running, completed and failed jobs. The menu places active jobs first and keeps only the three most recently updated inactive jobs, with inactive jobs dimmed. Running clocks advance; completed clocks remain fixed. The menu keeps a fixed height and retains cached items when reopened; Escape restores focus and clicking outside dismisses. No server is required.",
       },
     },
   },
+};
+
+export const LoadingJobList: Story = {
+  ...JobList,
+  render: () => <JobListPreview delay={1500} />,
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "The first load is delayed. The menu keeps its full height during loading; close and reopen after loading to see the cached list immediately without another request.",
+      },
+    },
+  },
+};
+
+export const ScrollingJobList: Story = {
+  ...JobList,
+  render: () => <JobListPreview extraActive={4} />,
+  parameters: { layout: "fullscreen" },
 };
 
 export const DescriptionsAndCommands: Story = {
@@ -246,6 +303,7 @@ function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
   const connection = useMemo(
     () =>
       ({
+        reads: new ReadCache(),
         sessions: {
           background: async (request: {
             ref?: { key?: { case?: string } };

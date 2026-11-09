@@ -1,15 +1,13 @@
 import { BackgroundJobRow } from "./background-job-row";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useContext, useEffect, useRef } from "react";
-import {
-  Button,
-  MenuDivider,
-  MenuItem,
-  MenuItemLabel,
-  MenuScrollArea,
-} from "@lesomnus/nox";
-import { Icon } from "#src/shared/icons/icon.tsx";
+import { Button, MenuScrollArea } from "@lesomnus/nox";
 import menuStyles from "#src/shared/components/anchored-menu.module.css";
+import jobStyles from "./background-report.module.css";
+import {
+  BACKGROUND_TASKS_TTL,
+  backgroundTasksKey,
+} from "#src/shared/api/read-cache.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { Connection } from "#src/shared/api/connection.ts";
@@ -35,12 +33,16 @@ export function BackgroundReport({
 }) {
   useLocale();
   const uuid = sessionUUID(session);
+  const cacheKey = backgroundTasksKey(uuid, run);
   const workspace = useContext(WorkspaceContext);
   if (workspace?.c === c)
     available = backgroundAvailable(
       workspace.sessions.find((row) => sessionUUID(row.id) === uuid),
       workspace.projects,
     );
+  useEffect(() => {
+    if (!available) c.reads.expire(cacheKey);
+  }, [available, c.reads, cacheKey]);
   const snapshot = useRemote(
     async (signal) => {
       if (!available || !uuid || !session || !run) return [];
@@ -56,9 +58,17 @@ export function BackgroundReport({
       return backgroundTasks(reply.data, run);
     },
     [c, uuid, run, available],
+    {
+      enabled: available && !!uuid && !!run,
+      cache: { store: c.reads, key: cacheKey, ttl: BACKGROUND_TASKS_TTL },
+    },
   );
-  const refresh = useRef(snapshot.reload);
-  refresh.current = snapshot.reload;
+  const refreshSnapshot = () => {
+    c.reads.expire(cacheKey);
+    snapshot.revalidate();
+  };
+  const refresh = useRef(refreshSnapshot);
+  refresh.current = refreshSnapshot;
   useEffect(() => {
     if (!available || !uuid || !run) return;
     const timer = setInterval(() => {
@@ -69,7 +79,8 @@ export function BackgroundReport({
   if (presentation === "menu")
     return (
       <MenuScrollArea
-        viewportClassName="background-jobs-menu-viewport"
+        className={jobStyles.menuArea}
+        viewportClassName={`background-jobs-menu-viewport ${jobStyles.menuViewport}`}
         scrollbarLabel={t("Background tasks")}
       >
         {available && snapshot.error && (
@@ -89,7 +100,7 @@ export function BackgroundReport({
             The session runtime is not running.
           </p>
         )}
-        {available && snapshot.loading && (
+        {available && snapshot.loading && !snapshot.data && (
           <p role="status" className={menuStyles.state}>
             {t("Loading…")}
           </p>
@@ -102,24 +113,13 @@ export function BackgroundReport({
               No provider-reported background tasks for this run.
             </p>
           )}
-        <MenuDivider />
-        <MenuItem
-          type="button"
-          role="menuitem"
-          icon={<Icon name="refresh" />}
-          disabled={!available}
-          aria-busy={snapshot.loading || undefined}
-          onClick={snapshot.reload}
-        >
-          <MenuItemLabel>{t("Refresh")}</MenuItemLabel>
-        </MenuItem>
       </MenuScrollArea>
     );
   return (
     <section className={styles.section}>
       <div className={styles.row}>
         <strong>Background tasks</strong>
-        <Button disabled={!available} onClick={snapshot.reload}>
+        <Button disabled={!available} onClick={refreshSnapshot}>
           Refresh
         </Button>
       </div>

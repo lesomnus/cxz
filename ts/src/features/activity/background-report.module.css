@@ -1,3 +1,12 @@
+.menuArea .menuViewport.menuViewport {
+  height: calc(
+    5.5 *
+      (
+        var(--ui-menu-item-line-height) + 2 *
+          var(--menu-item-padding-block, var(--ui-menu-item-padding-block))
+      )
+  );
+}
 .job {
   display: flex;
   align-items: center;
@@ -21,9 +30,8 @@
 .command {
   font-family: var(--ui-font-mono);
 }
-.job[data-finished] :is(.command, .description) {
-  text-decoration: line-through;
-  text-decoration-color: var(--ui-muted);
+.job[data-finished] {
+  opacity: 0.5;
 }
 .duration {
   flex: none;
