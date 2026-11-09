@@ -31,6 +31,7 @@ import {
   taskRef,
   taskLookup,
   taskStatusName,
+  taskReadOnly,
   ownerIssue,
 } from "./task-model";
 import {
@@ -169,8 +170,7 @@ function TaskEditor({
         (task.dateUpdated?.seconds ?? 0n) &&
         (latest.dateUpdated?.nanos ?? 0) > (task.dateUpdated?.nanos ?? 0)));
   const owned = !!task?.assignee;
-  const immutable =
-    task?.status === TaskStatus.DONE || latest?.status === TaskStatus.DONE;
+  const immutable = taskReadOnly(task?.status) || taskReadOnly(latest?.status);
   const assignmentLocked =
     immutable ||
     task?.status === TaskStatus.IN_PROGRESS ||
@@ -502,7 +502,7 @@ function TaskEditor({
           label="Release"
           description={
             immutable
-              ? "Completed tasks are read-only"
+              ? "This task is read-only"
               : assignmentLocked
                 ? "Assignment is locked while Working"
                 : "Release assignment and return to Todo"
@@ -521,13 +521,7 @@ function TaskEditor({
           icon="task-canceled"
           type="button"
           loading={busy && activeAction === "cancel"}
-          disabled={
-            busy ||
-            immutable ||
-            conflict ||
-            task.status === TaskStatus.DONE ||
-            task.status === TaskStatus.CANCELED
-          }
+          disabled={busy || immutable || conflict}
           onClick={() => setConfirmation("cancel")}
         />
       )}

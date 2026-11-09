@@ -26,6 +26,7 @@ import {
   taskHistoryPageSize,
   taskKey,
   taskStatusName,
+  taskReadOnly,
 } from "./task-model";
 import styles from "./task-table.module.css";
 import resourceStyles from "#src/shared/components/resource-table.module.css";
@@ -97,6 +98,7 @@ export function TaskTable({
               data-task-alias={task.alias}
               data-task-status={taskStatusName(task.status)}
               data-done={task.status === TaskStatus.DONE || undefined}
+              data-inactive={taskReadOnly(task.status) || undefined}
             >
               <TableCell className={styles.status}>
                 <TaskStatusIcon status={task.status} />

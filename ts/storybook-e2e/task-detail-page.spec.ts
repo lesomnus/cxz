@@ -347,6 +347,51 @@ test("Done is read-only while Working keeps its assignment locked", async ({
   ).toBeEnabled();
 });
 
+test("Canceled tasks use Done's muted table style and read-only details", async ({
+  page,
+}) => {
+  await page.goto(story("project-table"));
+  const canceled = page.locator('[data-task-alias="task-8"]');
+  const done = page.locator('[data-task-alias="task-5"]');
+  const todo = page.locator('[data-task-alias="task-1"]');
+  await expect(canceled).toHaveAttribute("data-inactive", "true");
+  await expect(done).toHaveAttribute("data-inactive", "true");
+  await expect(todo).not.toHaveAttribute("data-inactive");
+  const color = (row: typeof canceled) =>
+    row.evaluate((node) => getComputedStyle(node).color);
+  expect(await color(canceled)).toBe(await color(done));
+  expect(await color(canceled)).not.toBe(await color(todo));
+  await canceled
+    .getByRole("link", {
+      name: "Open task: Clean up the old experiment",
+      exact: true,
+    })
+    .click();
+  await expect(
+    detail(page).getByLabel("Status", { exact: true }),
+  ).toContainText("Canceled");
+  await expect(title(page)).toHaveAttribute("aria-readonly", "true");
+  for (const label of ["Alias", "Description"]) {
+    await expect(
+      detail(page).getByRole("textbox", { name: label, exact: true }),
+    ).toHaveJSProperty("readOnly", true);
+  }
+  await expect(
+    detail(page).getByRole("combobox", { name: "Priority", exact: true }),
+  ).toBeDisabled();
+  for (const label of ["Cancel", "Save", "Discard changes"]) {
+    await expect(
+      detail(page).getByRole("button", { name: label, exact: true }),
+    ).toBeDisabled();
+  }
+  await title(page).focus();
+  await page.keyboard.type("Cannot edit Canceled");
+  await expect(title(page)).toHaveText("Clean up the old experiment");
+  await expect(
+    detail(page).getByRole("button", { name: "Copy: Task ID", exact: true }),
+  ).toBeEnabled();
+});
+
 for (const width of [1280, 390]) {
   test(`readonly long titles keep their line breaks and copy full text at ${width}px`, async ({
     page,

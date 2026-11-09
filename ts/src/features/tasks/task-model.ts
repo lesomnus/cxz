@@ -39,6 +39,8 @@ export const taskOwner = (task: Task) => ({
 });
 export const activeTask = (task: Task) =>
   task.status === TaskStatus.IN_PROGRESS || task.status === TaskStatus.WAITING;
+export const taskReadOnly = (status?: TaskStatus) =>
+  status === TaskStatus.DONE || status === TaskStatus.CANCELED;
 
 export function ownerIssue(task: Task, sessions: Session[], loading = false) {
   if (!task.assignee || !activeTask(task)) return "";
