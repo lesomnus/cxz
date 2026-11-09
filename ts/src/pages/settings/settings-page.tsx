@@ -48,6 +48,13 @@ import {
   type SourceEditorHandle,
 } from "#src/shared/editor/source-editor.tsx";
 
+import type { SettingsTopic } from "#src/app/router.tsx";
+import { useSettingsNavigation } from "#src/features/settings/components/use-settings-navigation.ts";
+import {
+  ConnectionsSettings,
+  type SettingsConnections,
+} from "#src/features/settings/components/connections-settings.tsx";
+
 const fields = {
   fontFamily: {
     label: "Font family",
@@ -83,11 +90,14 @@ export function SettingsPage({
   fileOpen,
   setFileOpen,
   topic,
+  connections,
 }: {
   fileOpen: boolean;
   setFileOpen: (open: boolean) => void;
-  topic: "editor" | "general";
+  topic: SettingsTopic;
+  connections?: SettingsConnections;
 }) {
+  const navigation = useSettingsNavigation(topic, () => setFileOpen(false));
   const locale = useLocale();
   const theme = useTheme();
   const { store, snapshot } = useSettings();
@@ -358,6 +368,7 @@ export function SettingsPage({
   return (
     <ResourcePage className="settings-page" ref={area} data-wide={wide}>
       <SettingsToolbar
+        navigation={navigation}
         aria-label={t("Settings")}
         actions={
           !wide && (
@@ -377,233 +388,242 @@ export function SettingsPage({
       </SettingsToolbar>
       <div className="settings-split">
         <PanelScroll
-          id="settings-editor"
+          id="settings-form"
           role="region"
+          viewportRef={navigation.viewport}
           className="settings-form-pane"
           contentClassName={pageStyles.contentPadding}
-          aria-label={
-            topic === "editor" ? t("Editor settings") : t("General settings")
-          }
+          aria-label={t("Settings")}
           hidden={!wide && fileOpen}
         >
-          <SettingsContent>
-            <div className="settings-editor-body">
+          <SettingsContent navigation={navigation}>
+            {!jsonVisible && feedback}
+            <section
+              id="settings-general"
+              className="settings-editor-body"
+              data-settings-topic="general"
+              aria-labelledby="settings-general-title"
+            >
               <header>
                 <div>
-                  <h1>{topic === "editor" ? t("Editor") : t("General")}</h1>
+                  <h1 id="settings-general-title">{t("General")}</h1>
                   <small>
-                    {topic === "editor"
-                      ? t(
-                          "Editor changes are saved immediately in this browser.",
-                        )
-                      : t(
-                          "Appearance, language, and terminal behavior for this browser.",
-                        )}
+                    {t(
+                      "Appearance, language, and terminal behavior for this browser.",
+                    )}
                   </small>
                 </div>
               </header>
-              {!jsonVisible && feedback}
               <div className="settings-editor-groups">
-                {topic === "editor" ? (
-                  <>
-                    <SectionGroup>{group("global")}</SectionGroup>
-                    <SectionGroup>{group("session")}</SectionGroup>
-                  </>
-                ) : (
-                  <>
-                    <SectionGroup>
-                      <Section className="settings-group">
-                        <h2>{t("Display language")}</h2>
-                        <fieldset disabled={!snapshot.valid || applying}>
-                          <SettingField
-                            title={t("Language")}
-                            settingId="ui.language"
-                            summary={t("Choose the interface language.")}
-                            details={t(
-                              "Language changes apply to this browser. Conversation content and code are preserved.",
-                            )}
-                          >
-                            <div className="language-setting-control">
-                              <ValueMenu
-                                label={t("Display language")}
-                                value={language}
-                                muted={
-                                  !Object.hasOwn(
-                                    snapshot.document,
-                                    "ui.language",
-                                  ) && language === "en"
-                                }
-                                options={languages.map(({ id, name }) => ({
-                                  value: id,
-                                  label: name,
-                                }))}
-                                disabled={!snapshot.valid || applying}
-                                choose={(value) => setLanguage(value as Locale)}
-                              />
-                              <Button
-                                disabled={
-                                  language === savedLanguage &&
-                                  language === locale.locale &&
-                                  !locale.error
-                                }
-                                onClick={() => void applyLanguage()}
-                              >
-                                {applying
-                                  ? t("Applying…")
-                                  : t("Apply settings")}
-                              </Button>
-                            </div>
-                          </SettingField>
-                        </fieldset>
-                      </Section>
-                      <Section
-                        className="settings-group"
-                        aria-label={t("Theme settings")}
-                      >
-                        <h2>{t("Theme")}</h2>
-                        <fieldset disabled={!snapshot.valid}>
-                          <SettingField
-                            title={t("Appearance")}
-                            settingId="ui.theme"
-                            summary={t(
-                              "Choose Light, Dark, or follow your system appearance.",
-                            )}
-                          >
-                            <SegmentedControl
-                              label={t("Appearance")}
-                              value={resolveTheme(
-                                snapshot.document["ui.theme"],
-                              )}
-                              options={[
-                                { value: "light", label: t("Light") },
-                                {
-                                  value: "dark",
-                                  label: t("Dark"),
-                                  muted: !Object.hasOwn(
-                                    snapshot.document,
-                                    "ui.theme",
-                                  ),
-                                },
-                                { value: "system", label: t("System") },
-                              ]}
-                              disabled={!snapshot.valid}
-                              onChange={(value) => update("ui.theme", value)}
-                            />
-                          </SettingField>
-                        </fieldset>
-                      </Section>
-                    </SectionGroup>
-                    <SectionGroup>
-                      <Section
-                        className="settings-group"
-                        aria-label={t("Terminal settings")}
-                      >
-                        <h2>{t("Terminal")}</h2>
-                        <fieldset disabled={!snapshot.valid}>
-                          <SettingField
-                            title={t("Copy on selection")}
-                            settingId="terminal.copyOnSelect"
-                            summary={t(
-                              "Automatically copy selected terminal text.",
-                            )}
-                            details={t(
-                              "Dragging copies the final selection when you release the pointer. A notice confirms when clipboard access succeeds.",
-                            )}
-                          >
-                            <Switch
-                              label={t("Copy on selection")}
-                              checked={
-                                resolveTerminalSettings(snapshot.document)
-                                  .copyOnSelect
-                              }
-                              disabled={!snapshot.valid}
-                              onChange={(checked) =>
-                                update("terminal.copyOnSelect", checked)
-                              }
-                            />
-                          </SettingField>
-                        </fieldset>
-                      </Section>
-                      <Section
-                        className="settings-group"
-                        aria-label={t("Voice input")}
-                      >
-                        <h2>{t("Voice input")}</h2>
+                <>
+                  <SectionGroup>
+                    <Section className="settings-group">
+                      <h2>{t("Display language")}</h2>
+                      <fieldset disabled={!snapshot.valid || applying}>
                         <SettingField
-                          title={t("Voice language")}
-                          settingId="voice.language"
-                          summary={t(
-                            "Use your browser's language by default, or choose a recognition language.",
+                          title={t("Language")}
+                          settingId="ui.language"
+                          summary={t("Choose the interface language.")}
+                          details={t(
+                            "Language changes apply to this browser. Conversation content and code are preserved.",
                           )}
                         >
-                          <ValueMenu
-                            label={t("Voice language")}
-                            value={voiceLanguage || "browser"}
-                            options={voiceOptions}
-                            muted={!voiceLanguage}
+                          <div className="language-setting-control">
+                            <ValueMenu
+                              label={t("Display language")}
+                              value={language}
+                              muted={
+                                !Object.hasOwn(
+                                  snapshot.document,
+                                  "ui.language",
+                                ) && language === "en"
+                              }
+                              options={languages.map(({ id, name }) => ({
+                                value: id,
+                                label: name,
+                              }))}
+                              disabled={!snapshot.valid || applying}
+                              choose={(value) => setLanguage(value as Locale)}
+                            />
+                            <Button
+                              disabled={
+                                language === savedLanguage &&
+                                language === locale.locale &&
+                                !locale.error
+                              }
+                              onClick={() => void applyLanguage()}
+                            >
+                              {applying ? t("Applying…") : t("Apply settings")}
+                            </Button>
+                          </div>
+                        </SettingField>
+                      </fieldset>
+                    </Section>
+                    <Section
+                      className="settings-group"
+                      aria-label={t("Theme settings")}
+                    >
+                      <h2>{t("Theme")}</h2>
+                      <fieldset disabled={!snapshot.valid}>
+                        <SettingField
+                          title={t("Appearance")}
+                          settingId="ui.theme"
+                          summary={t(
+                            "Choose Light, Dark, or follow your system appearance.",
+                          )}
+                        >
+                          <SegmentedControl
+                            label={t("Appearance")}
+                            value={resolveTheme(snapshot.document["ui.theme"])}
+                            options={[
+                              { value: "light", label: t("Light") },
+                              {
+                                value: "dark",
+                                label: t("Dark"),
+                                muted: !Object.hasOwn(
+                                  snapshot.document,
+                                  "ui.theme",
+                                ),
+                              },
+                              { value: "system", label: t("System") },
+                            ]}
                             disabled={!snapshot.valid}
-                            choose={(value) =>
-                              update(
-                                "voice.language",
-                                value === "browser" ? undefined : value,
-                              )
-                            }
+                            onChange={(value) => update("ui.theme", value)}
                           />
                         </SettingField>
+                      </fieldset>
+                    </Section>
+                  </SectionGroup>
+                  <SectionGroup>
+                    <Section
+                      className="settings-group"
+                      aria-label={t("Terminal settings")}
+                    >
+                      <h2>{t("Terminal")}</h2>
+                      <fieldset disabled={!snapshot.valid}>
                         <SettingField
-                          title={t("Force local recognition")}
-                          settingId="voice.processLocally"
+                          title={t("Copy on selection")}
+                          settingId="terminal.copyOnSelect"
                           summary={t(
-                            "Require speech recognition on this device.",
+                            "Automatically copy selected terminal text.",
                           )}
                           details={t(
-                            "Requires browser support and an installed language pack. If unavailable, voice input stops instead of using a cloud service.",
+                            "Dragging copies the final selection when you release the pointer. A notice confirms when clipboard access succeeds.",
                           )}
                         >
                           <Switch
-                            label={t("Force local recognition")}
+                            label={t("Copy on selection")}
                             checked={
-                              snapshot.document["voice.processLocally"] === true
+                              resolveTerminalSettings(snapshot.document)
+                                .copyOnSelect
                             }
                             disabled={!snapshot.valid}
                             onChange={(checked) =>
-                              update("voice.processLocally", checked)
+                              update("terminal.copyOnSelect", checked)
                             }
                           />
                         </SettingField>
-                      </Section>
-                      <Section
-                        className="settings-group"
-                        aria-label={t("Notifications")}
+                      </fieldset>
+                    </Section>
+                    <Section
+                      className="settings-group"
+                      aria-label={t("Voice input")}
+                    >
+                      <h2>{t("Voice input")}</h2>
+                      <SettingField
+                        title={t("Voice language")}
+                        settingId="voice.language"
+                        summary={t(
+                          "Use your browser's language by default, or choose a recognition language.",
+                        )}
                       >
-                        <h2>{t("Notifications")}</h2>
-                        <SettingField
-                          title={t("Notification sounds")}
-                          settingId="notifications.sound"
-                          summary={t(
-                            "Play a sound when a response finishes or a new question arrives.",
-                          )}
-                          details={t(
-                            "Sounds become available after interacting with the page. Tab indicators do not request notification permission.",
-                          )}
-                        >
-                          <Switch
-                            label={t("Notification sounds")}
-                            checked={
-                              snapshot.document["notifications.sound"] !== false
-                            }
-                            disabled={!snapshot.valid}
-                            onChange={(checked) =>
-                              update("notifications.sound", checked)
-                            }
-                          />
-                        </SettingField>
-                      </Section>
-                    </SectionGroup>
-                  </>
-                )}
+                        <ValueMenu
+                          label={t("Voice language")}
+                          value={voiceLanguage || "browser"}
+                          options={voiceOptions}
+                          muted={!voiceLanguage}
+                          disabled={!snapshot.valid}
+                          choose={(value) =>
+                            update(
+                              "voice.language",
+                              value === "browser" ? undefined : value,
+                            )
+                          }
+                        />
+                      </SettingField>
+                      <SettingField
+                        title={t("Force local recognition")}
+                        settingId="voice.processLocally"
+                        summary={t(
+                          "Require speech recognition on this device.",
+                        )}
+                        details={t(
+                          "Requires browser support and an installed language pack. If unavailable, voice input stops instead of using a cloud service.",
+                        )}
+                      >
+                        <Switch
+                          label={t("Force local recognition")}
+                          checked={
+                            snapshot.document["voice.processLocally"] === true
+                          }
+                          disabled={!snapshot.valid}
+                          onChange={(checked) =>
+                            update("voice.processLocally", checked)
+                          }
+                        />
+                      </SettingField>
+                    </Section>
+                    <Section
+                      className="settings-group"
+                      aria-label={t("Notifications")}
+                    >
+                      <h2>{t("Notifications")}</h2>
+                      <SettingField
+                        title={t("Notification sounds")}
+                        settingId="notifications.sound"
+                        summary={t(
+                          "Play a sound when a response finishes or a new question arrives.",
+                        )}
+                        details={t(
+                          "Sounds become available after interacting with the page. Tab indicators do not request notification permission.",
+                        )}
+                      >
+                        <Switch
+                          label={t("Notification sounds")}
+                          checked={
+                            snapshot.document["notifications.sound"] !== false
+                          }
+                          disabled={!snapshot.valid}
+                          onChange={(checked) =>
+                            update("notifications.sound", checked)
+                          }
+                        />
+                      </SettingField>
+                    </Section>
+                  </SectionGroup>
+                </>
               </div>
-            </div>
+            </section>
+            <section
+              id="settings-editor"
+              className="settings-editor-body"
+              data-settings-topic="editor"
+              aria-labelledby="settings-editor-title"
+            >
+              <header>
+                <div>
+                  <h1 id="settings-editor-title">{t("Editor")}</h1>
+                  <small>
+                    {t("Editor changes are saved immediately in this browser.")}
+                  </small>
+                </div>
+              </header>
+              <div className="settings-editor-groups">
+                <SectionGroup>{group("global")}</SectionGroup>
+                <SectionGroup>{group("session")}</SectionGroup>
+              </div>
+            </section>
+            <ConnectionsSettings connections={connections} />
           </SettingsContent>
         </PanelScroll>
         <aside

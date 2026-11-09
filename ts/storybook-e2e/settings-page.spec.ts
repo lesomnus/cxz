@@ -1,45 +1,74 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [390, 1280]) {
-  test(`settings use text navigation and resource sections at ${width}`, async ({
+const viewport = (page: import("@playwright/test").Page) =>
+  page.locator("#settings-form .panel-scroll-content").first();
+const topics = (page: import("@playwright/test").Page) =>
+  page.getByRole("navigation", { name: "Settings topics" });
+
+test("settings panels are centered independently of the floating menu", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
+  await expect(topics(page)).toBeVisible({ timeout: 20000 });
+  await expect(page.locator("[data-settings-topic]")).toHaveCount(3);
+  const bounds = await page
+    .locator("#settings-form [data-resource-layout]")
+    .boundingBox();
+  const scroll = await viewport(page).boundingBox();
+  const menu = await topics(page).boundingBox();
+  expect(
+    Math.abs(bounds!.x + bounds!.width / 2 - (scroll!.x + scroll!.width / 2)),
+  ).toBeLessThan(1);
+  expect(menu!.x + menu!.width).toBeLessThan(bounds!.x);
+  const general = topics(page).getByRole("button", {
+    name: "General",
+    exact: true,
+  });
+  const editor = topics(page).getByRole("button", {
+    name: "Editor",
+    exact: true,
+  });
+  await expect(general).toHaveAttribute("aria-current", "location");
+  await page.screenshot({ path: info.outputPath("general-centered.png") });
+  await editor.hover();
+  expect(
+    await editor.evaluate((node) => getComputedStyle(node).backgroundColor),
+  ).toBe("rgba(0, 0, 0, 0)");
+  await editor.click();
+  await expect(editor).toHaveAttribute("aria-current", "location");
+  await expect(page.locator("[data-settings-topic=general]")).toHaveCount(1);
+  await viewport(page).evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await expect(
+    topics(page).getByRole("button", { name: "Connections", exact: true }),
+  ).toHaveAttribute("aria-current", "location");
+  await viewport(page).evaluate((node) => {
+    node.scrollTop = 0;
+  });
+  await expect(general).toHaveAttribute("aria-current", "location");
+});
+
+for (const width of [390, 1024]) {
+  test(`an obscured menu becomes a toolbar dropdown at ${width}`, async ({
     page,
   }, info) => {
     await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
-    const topics = page.getByRole("navigation", { name: "Settings topics" });
-    await expect(topics).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Display language", exact: true }),
-    ).toBeVisible();
-    await page.screenshot({ path: info.outputPath("general.png") });
-    await expect(
-      page.getByRole("complementary", { name: "Settings navigation" }),
-    ).toHaveCount(0);
-    await expect(
-      topics.getByRole("link", { name: "General", exact: true }),
-    ).toHaveAttribute("aria-current", "page");
-    await expect(
-      topics.getByRole("link", { name: "Logs", exact: true }),
-    ).toHaveCount(0);
-    const editor = topics.getByRole("link", { name: "Editor", exact: true });
-    await editor.hover();
-    expect(
-      await editor.evaluate((node) => getComputedStyle(node).backgroundColor),
-    ).toBe("rgba(0, 0, 0, 0)");
-    await editor.click();
-    await expect(
-      page.getByRole("region", { name: "Editor settings" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Global editor", exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Session editor", exact: true }),
-    ).toHaveCount(1);
-    await expect(page.locator(".settings-group").first()).toHaveAttribute(
-      "data-section-layout",
-      "section",
-    );
+    const picker = page.getByRole("combobox", { name: "Settings topics" });
+    await expect(picker).toBeVisible({ timeout: 20000 });
+    await expect(topics(page)).toHaveCount(0);
+    await picker.click();
+    await page.getByRole("option", { name: "Editor", exact: true }).click();
+    await expect(picker).toHaveText("Editor");
+    await viewport(page).evaluate((node) => {
+      node.scrollTop = 0;
+    });
+    await expect(picker).toHaveText("General");
+    await page.screenshot({ path: info.outputPath("compact-menu.png") });
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth,
@@ -52,10 +81,29 @@ for (const width of [390, 1280]) {
     ).toBe(false);
   });
 }
-test("settings.json can replace the form on narrow screens and docks on wide screens", async ({
+
+test("the floating menu and dropdown switch when their available space changes", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
+  await expect(topics(page)).toBeVisible({ timeout: 20000 });
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await expect(
+    page.getByRole("combobox", { name: "Settings topics" }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(topics(page)).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Settings topics" }),
+  ).toHaveCount(0);
+});
+
+test("settings.json can replace the form and categories reveal it again", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/iframe.html?id=pages-settings--editor&viewMode=story");
   const toggle = page.getByRole("button", {
     name: "Edit settings.json",
@@ -63,34 +111,35 @@ test("settings.json can replace the form on narrow screens and docks on wide scr
   });
   await toggle.click();
   await expect(
-    page.getByRole("complementary", { name: "Settings file editor" }),
-  ).toBeVisible();
-  await expect(
     page.locator("#settings-file-editor .monaco-editor"),
   ).toBeVisible();
-  await expect(page.locator("#settings-editor")).toBeHidden();
-  await toggle.click();
-  await expect(page.locator("#settings-editor")).toBeVisible();
+  await expect(page.locator("#settings-form")).toBeHidden();
+  const picker = page.getByRole("combobox", { name: "Settings topics" });
+  await picker.click();
+  await page.getByRole("option", { name: "General", exact: true }).click();
+  await expect(page.locator("#settings-form")).toBeVisible();
   await page.setViewportSize({ width: 2100, height: 1000 });
-  await expect(page.locator("#settings-editor")).toBeVisible();
-  await expect(
-    page.getByRole("complementary", { name: "Settings file editor" }),
-  ).toBeVisible();
   await expect(
     page.locator("#settings-file-editor .monaco-editor"),
   ).toBeVisible();
+  await expect(page.locator("#settings-form")).toBeVisible();
 });
 
-test("settings controls still save and Connections shares the text navigation", async ({
+test("all categories coexist, save without moving panels, and retain deep links", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
   const sound = page.getByRole("switch", {
     name: "Notification sounds",
     exact: true,
   });
   await expect(sound).toBeChecked({ timeout: 20000 });
-  const before = await page.locator(".settings-editor-groups").boundingBox();
+  const before = await page
+    .locator(".settings-editor-groups")
+    .first()
+    .boundingBox();
   await sound.click();
   await expect
     .poll(() =>
@@ -100,28 +149,22 @@ test("settings controls still save and Connections shares the text navigation", 
       ),
     )
     .toBe(false);
+  expect(
+    (await page.locator(".settings-editor-groups").first().boundingBox())?.y,
+  ).toBe(before?.y);
   await expect(
-    page.locator("main.settings-page").getByRole("status"),
-  ).toContainText("Saved.");
-  expect((await page.locator(".settings-editor-groups").boundingBox())?.y).toBe(
-    before?.y,
-  );
-  const topics = page.getByRole("navigation", { name: "Settings topics" });
-  await topics.getByRole("link", { name: "Connections", exact: true }).click();
-  await expect(
-    topics.getByRole("link", { name: "Connections", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
+    page.getByRole("heading", { name: "Global editor", exact: true }),
+  ).toHaveCount(1);
   await expect(
     page.getByRole("cell", { name: "https://cxz.example", exact: true }),
-  ).toBeVisible();
-  await page.setViewportSize({ width: 390, height: 900 });
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth > innerWidth,
-    ),
-  ).toBe(false);
+  ).toHaveCount(1);
+  await page.goto("/iframe.html?id=pages-settings--connections&viewMode=story");
+  await expect(
+    topics(page).getByRole("button", { name: "Connections", exact: true }),
+  ).toHaveAttribute("aria-current", "location");
 });
-test("Logs are reached from the sidebar without settings navigation", async ({
+
+test("Logs remain a separate page accessible from the sidebar", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
@@ -132,10 +175,5 @@ test("Logs are reached from the sidebar without settings navigation", async ({
   await expect(
     page.getByRole("main", { name: "Logs", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Settings topics" }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("link", { name: "Logs", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
+  await expect(topics(page)).toHaveCount(0);
 });

@@ -1,71 +1,59 @@
-.layout.layout,
-.toolbar :global([data-resource-toolbar-content]) {
-  --section-layout-max-width: calc(
-    var(--resource-page-content-width) + var(--settings-navigation-width) +
-      var(--resource-page-column-gap)
-  );
-}
 .layout.layout {
+  position: relative;
   display: grid;
-  grid-template-columns: var(--settings-navigation-width) minmax(0, 1fr);
-  gap: var(--resource-page-column-gap);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 .navigation {
   position: sticky;
   top: 0;
+  grid-area: 1 / 1;
+  align-self: start;
+  width: var(--settings-navigation-width);
+  margin-left: calc(
+    -1 * (var(--settings-navigation-width) + var(--settings-navigation-gap))
+  );
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: var(--ui-space);
-  padding-block: var(--ui-section-padding);
+  padding-block: var(--ui-control-inset);
+}
+.layout[data-compact] .navigation {
+  visibility: hidden;
+  pointer-events: none;
 }
 .link {
   display: block;
-  align-self: stretch;
+  width: 100%;
+  border: 0;
+  background: transparent;
   padding: var(--ui-space) var(--ui-control-inline-inset);
   color: var(--ui-muted);
+  font: inherit;
   font-size: 12px;
   line-height: 20px;
-  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
   transition: color var(--ui-button-background-duration) ease-out;
 }
 .link:hover,
-.link[aria-current="page"] {
+.link[aria-current="location"] {
   color: var(--ui-text-value);
-}
-.link[aria-current="page"] {
-  font-weight: 500;
 }
 .link:focus-visible {
   outline: 1px solid currentColor;
   outline-offset: var(--ui-control-inset);
 }
 .content {
+  grid-area: 1 / 1;
   container: settings-form / inline-size;
   min-width: 0;
+  display: grid;
+  gap: var(--ui-section-layout-gap);
 }
-@container resource-page (width < 1040px) {
-  .layout.layout,
-  .toolbar :global([data-resource-toolbar-content]) {
-    --section-layout-max-width: calc(
-      var(--resource-page-column-width) + var(--settings-navigation-width) +
-        var(--resource-page-column-gap)
-    );
-  }
-}
-@container resource-page (width < 600px) {
-  .layout.layout {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--ui-space);
-  }
-  .navigation {
-    position: static;
-    flex-direction: row;
-    flex-wrap: wrap;
-    padding: 0;
-    column-gap: calc(2 * var(--ui-space));
-  }
+.topicMenu {
+  flex: 0 0 var(--settings-navigation-width);
+  min-width: 0;
 }
 @media (prefers-reduced-motion: reduce) {
   .link {

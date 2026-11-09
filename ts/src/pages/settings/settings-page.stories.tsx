@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Provider } from "@lesomnus/payday/react";
 import { create } from "@bufbuild/protobuf";
@@ -16,7 +16,8 @@ import {
   SessionWatchResponseSchema,
 } from "#gen/cxz/session_svc_pb";
 import { ConnectionSchema } from "#gen/cxz/connection_pb";
-import { ConnectionsPage } from "./connections-page";
+import { SettingsPage } from "./settings-page";
+import { WorkspaceContext } from "#src/app/workspace-context.tsx";
 
 const connections = {
   list: async () => ({
@@ -33,9 +34,14 @@ const connections = {
 };
 function PreviewView() {
   const route = useWorkspaceRoute();
-  return route.resource === "settings" &&
-    route.settingsTopic === "connections" ? (
-    <ConnectionsPage connections={connections} />
+  const workspace = useContext(WorkspaceContext)!;
+  return route.resource === "settings" ? (
+    <SettingsPage
+      connections={connections}
+      topic={route.settingsTopic}
+      fileOpen={workspace.settingsFileOpen}
+      setFileOpen={workspace.setSettingsFileOpen}
+    />
   ) : (
     <WorkspaceView />
   );
@@ -98,7 +104,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The full workspace with text-only settings navigation, shared resource sections, live browser settings, and the settings.json editor. Wider viewports dock the JSON editor beside the form; smaller viewports use its toolbar toggle. Logs have their own sidebar entry and page.",
+          "The full workspace with all settings on one scrollable page. Panels stay centered while text navigation floats to their left, falling back to a toolbar dropdown when it cannot fit. Scrolling highlights the current category. Wider viewports dock the JSON editor beside the form; smaller viewports use its toolbar toggle. Logs have their own sidebar entry and page.",
       },
     },
   },

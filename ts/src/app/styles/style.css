@@ -361,6 +361,7 @@ header strong {
 }
 .settings-page {
   --settings-navigation-width: 128px;
+  --settings-navigation-gap: calc(3 * var(--ui-space));
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -374,8 +375,11 @@ header strong {
 .settings-page[data-wide="true"] .settings-split {
   grid-template-columns:
     calc(
-      var(--resource-page-content-width) + var(--settings-navigation-width) +
-        var(--resource-page-column-gap) + 2 * var(--resource-page-gutter)
+      var(--resource-page-content-width) + 2 *
+        (
+          var(--settings-navigation-width) + var(--settings-navigation-gap) +
+            var(--resource-page-gutter)
+        )
     )
     minmax(0, 1fr);
 }

@@ -1,7 +1,6 @@
 import { ErrorsPage } from "#src/pages/errors/errors-page.tsx";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useContext } from "react";
-import { ConnectionsPage } from "#src/pages/settings/connections-page.tsx";
 import { SettingsPage } from "#src/pages/settings/settings-page.tsx";
 import { LogsPage } from "#src/pages/logs/logs-page.tsx";
 import { useWorkspaceRoute } from "./router";
@@ -62,13 +61,11 @@ export function WorkspaceView() {
     );
   if (resource === "auxiliary")
     return <AuxiliaryPage c={c} sessions={sessions} />;
-  if (resource === "settings" && settingsTopic === "connections")
-    return <ConnectionsPage />;
   if (resource === "logs") return <LogsPage />;
   if (resource === "settings")
     return (
       <SettingsPage
-        topic={settingsTopic === "editor" ? "editor" : "general"}
+        topic={settingsTopic}
         fileOpen={settingsFileOpen}
         setFileOpen={setSettingsFileOpen}
       />
