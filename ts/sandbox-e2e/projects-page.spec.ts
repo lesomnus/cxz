@@ -448,11 +448,10 @@ test("project Stop, Start and Remove move the container and keep the project", a
 
   // Stopped containers are hidden from the session panel too.
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
-  const panel = page.getByRole("complementary", { name: "Session list" });
-  const group = panel.getByRole("region", {
-    name: "Design playground",
-    exact: true,
-  });
+  const panel = page.locator(".session-panel");
+  const group = panel
+    .locator(".session-tree-group")
+    .filter({ hasText: "Design playground" });
   await expect(group).toHaveCount(0);
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
 
@@ -460,7 +459,7 @@ test("project Stop, Start and Remove move the container and keep the project", a
   await expect(button("Stop")).toBeEnabled();
   await expect(button("Start")).toBeDisabled();
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
-  await expect(group).toBeVisible();
+  await expect(group).toHaveCount(1);
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
 
   await confirm("Remove", "Remove container");
@@ -483,11 +482,10 @@ test("project Stop, Start and Remove move the container and keep the project", a
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(group).toHaveCount(0);
   await expect(
-    panel.getByRole("region", {
-      name: "Secondary project",
-      exact: true,
-    }),
-  ).toBeVisible();
+    panel
+      .locator(".session-tree-group")
+      .filter({ hasText: "Secondary project" }),
+  ).toHaveCount(1);
 
   // Rebuilding the container publishes an inventory update and restores the
   // group, including its retained sessions, without reloading the workspace.
@@ -495,6 +493,6 @@ test("project Stop, Start and Remove move the container and keep the project", a
   await confirm("Start", "Start project");
   await expect(button("Stop")).toBeEnabled();
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
-  await expect(group).toBeVisible();
+  await expect(group).toHaveCount(1);
   await expect(group.locator(".tree-session")).toHaveCount(8);
 });

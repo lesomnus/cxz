@@ -309,7 +309,7 @@ async function fixture(
       });
     }
     if (path === "/cxz.MemoryService/Patch") {
-      if (q.content?.includes("conflict")) {
+      if (q.content?.includes("conflict") || q.name?.includes("conflict")) {
         memory.revision = "2";
         memory.dateUpdated = "2026-11-02T00:00:01Z";
         content = "# Shared notes\nExternal version";
@@ -317,6 +317,10 @@ async function fixture(
       }
       if (q.content !== undefined) {
         content = q.content;
+        memory.revision = "3";
+      }
+      if (q.name !== undefined) {
+        memory.name = q.name;
         memory.revision = "3";
       }
       return send(memory);
@@ -382,7 +386,7 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
     ],
     [
       "Auxiliary AI",
-      page.getByRole("heading", { name: "Auxiliary AI", exact: true }),
+      page.getByRole("main", { name: "Auxiliary AI", exact: true }),
     ],
   ]) {
     await page.getByRole("link", { name, exact: true }).click();
@@ -472,6 +476,7 @@ test("account registration, session creation and confirmed erasure use resource 
     )
     .toBe(true);
   await page.getByRole("link", { name: "Sessions view" }).click();
+  await page.locator("[data-session-navigation]").first().click();
   const panel = page.getByRole("complementary", {
     name: "Session list",
     exact: true,
@@ -699,9 +704,13 @@ test("Search has no resource panel and submits its filters only on search", asyn
   });
   expect(request.ignoreCase ?? false).toBe(false);
   expect(request.includeTools ?? false).toBe(false);
+  await expect(
+    page.getByRole("button", { name: "Reset filters", exact: true }),
+  ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Reset filters", exact: true })
+    .getByRole("combobox", { name: "Search project", exact: true })
     .click();
+  await page.getByRole("option", { name: "All projects", exact: true }).click();
   await expect(
     page.getByRole("link", { name: /Earlier response/ }),
   ).toHaveCount(0);
@@ -745,7 +754,9 @@ test("conversation search uses loaded messages immediately without a Search requ
   page,
 }) => {
   const requests = await fixture(page);
-  await page.locator('.tree-session[href="/c/_/session/oak"]').click();
+  await page
+    .locator('[data-session-navigation][href="/c/_/session/oak"]')
+    .click();
   await expect(page.locator(".transcript")).toContainText("Current response");
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
   await page.keyboard.press("Control+Shift+F");
@@ -779,63 +790,53 @@ test("conversation search uses loaded messages immediately without a Search requ
   await expect(search).toHaveCount(0);
 });
 
-test("memory edits carry the revision and keep drafts on a conflict", async ({
+test("memory renames guard update timestamps and keep drafts on a conflict", async ({
   page,
 }) => {
   const requests = await fixture(page);
   await page.getByRole("link", { name: "Memory", exact: true }).click();
   await page.getByRole("link", { name: /Research notes/ }).click();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  const editor = page.locator(".monaco-editor textarea");
-  await expect(editor).toBeVisible();
-  await editor.focus();
-  await editor.press("Control+a");
-  await editor.fill("conflict");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expectAPIError(page, "Document changed");
+  const edit = page.getByRole("button", {
+    name: "Edit Memory name",
+    exact: true,
+  });
+  await edit.click();
+  const dialog = page.getByRole("dialog", {
+    name: "Edit Memory name",
+    exact: true,
+  });
+  const input = dialog.getByRole("textbox", {
+    name: "Memory name",
+    exact: true,
+  });
+  await input.fill("conflict");
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(
+    dialog.getByRole("button", { name: "Confirm", exact: true }),
+  ).toBeEnabled();
   expect(
-    requests.find((r) => r.path === "/cxz.MemoryService/Patch")?.q.baseRevision,
-  ).toBe("1");
+    requests.find((r) => r.path === "/cxz.MemoryService/Patch")?.q.dateUpdated,
+  ).toBe("2026-11-02T00:00:00Z");
+  await expect(input).toHaveValue("conflict");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expectAPIError(page, "Document changed");
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
   await expect(
-    page.getByText("Research notes · Unsaved", { exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Memory actions", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "Reload", exact: true }).click();
-  await expect(
-    page.getByRole("dialog", { name: "Discard unsaved changes" }),
-  ).toBeVisible();
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Confirm", exact: true })
-    .click();
-  await expect(
-    page.getByRole("dialog", { name: "Discard unsaved changes" }),
-  ).toHaveCount(0);
-  await expect(page.locator(".monaco-editor")).toContainText(
-    "External version",
-  );
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Save", exact: true }),
-  ).toBeDisabled();
-  await page.locator(".monaco-editor .view-lines").click();
-  await expect(editor).toBeFocused();
-  await editor.press("Control+a");
-  await editor.pressSequentially("Merged notes");
-  await expect(
-    page.getByText("Research notes · Unsaved", { exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+    page.getByRole("region", { name: "Memory content", exact: true }),
+  ).toContainText("External version");
+  await edit.click();
+  await input.fill("Merged notes");
+  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect
     .poll(
       () =>
         requests.filter((r) => r.path === "/cxz.MemoryService/Patch").at(-1)?.q
-          .baseRevision,
+          .dateUpdated,
     )
-    .toBe("2");
+    .toBe("2026-11-02T00:00:01Z");
+  await expect(dialog).toHaveCount(0);
 });
+
 test("usage, background tasks and auxiliary controls are connected", async ({
   page,
 }) => {
@@ -876,7 +877,9 @@ test("local session search Enter visits loaded responses before wrapping without
   page,
 }) => {
   const requests = await fixture(page);
-  await page.locator('.tree-session[href="/c/_/session/oak"]').click();
+  await page
+    .locator('[data-session-navigation][href="/c/_/session/oak"]')
+    .click();
   await expect(page.locator(".transcript")).toContainText("Current response");
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
   await page.keyboard.press("Control+Shift+F");
@@ -919,7 +922,7 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
 }) => {
   await fixture(page, false, true);
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
-  await page.getByRole("button", { name: "New session", exact: true }).click();
+  await page.getByRole("button", { name: "Add session", exact: true }).click();
   const create = page
     .getByRole("dialog", { name: "Add session", exact: true })
     .or(page.getByRole("region", { name: "New session", exact: true }));
@@ -959,12 +962,13 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
     exact: true,
   });
   await expect(search).toBeFocused();
-  await expect(search).toHaveValue("Demo project");
+  await expect(search).toHaveValue("");
+  await expect(search).toHaveAttribute("placeholder", "Demo project");
   await search.press("Enter");
   await expect(search).toHaveCount(0);
   await expect(projectPicker).toHaveText("Demo project");
   await projectPicker.click();
-  await expect(search).toHaveValue("Demo project");
+  await expect(search).toHaveValue("");
 
   await expect
     .poll(async () => {
@@ -1010,7 +1014,8 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await expect(create).toBeVisible();
   await expect(projectPicker).toBeFocused();
   await projectPicker.click();
-  await expect(search).toHaveValue("Docs playground");
+  await expect(search).toHaveValue("");
+  await expect(search).toHaveAttribute("placeholder", "Docs playground");
   await search.fill("");
   await expect(
     page.getByRole("option", { name: "Docs playground", exact: true }),
@@ -1089,18 +1094,18 @@ test("Memory session filtering reuses cached project metadata from the first sel
   await expect(
     page.getByRole("heading", { name: "Shared notes", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
-  await name.fill("Unsaved memory name");
-  await page.getByRole("link", { name: "Memory", exact: true }).click();
-  const dialog = page.getByRole("dialog", {
-    name: "Discard unsaved changes",
+  await page
+    .getByRole("button", { name: "Edit Memory name", exact: true })
+    .click();
+  const editor = page.getByRole("dialog", {
+    name: "Edit Memory name",
     exact: true,
   });
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(name).toHaveValue("Unsaved memory name");
+  await editor
+    .getByRole("textbox", { name: "Memory name", exact: true })
+    .fill("Unsaved memory name");
+  await editor.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByRole("link", { name: "Memory", exact: true }).click();
-  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(
     page.getByRole("link", { name: "Research notes", exact: true }),
   ).toBeVisible();
@@ -1254,7 +1259,7 @@ test("Memory collection, document links, reload and browser history agree", asyn
   await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
   await expect(memoryDocument(page)).toHaveCount(0);
 });
-test("Memory browser navigation confirms dirty drafts before changing the selected document", async ({
+test("Memory browser navigation cancels unconfirmed inline renames without changing documents", async ({
   page,
 }) => {
   await fixture(page, false, false, researchPath);
@@ -1263,29 +1268,34 @@ test("Memory browser navigation confirms dirty drafts before changing the select
   ).toBeVisible();
   await page.getByRole("link", { name: "Memory", exact: true }).click();
   await page.getByRole("link", { name: /Handoff notes/ }).click();
-  await expect(
-    page.getByRole("heading", { name: "Handoff", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
-  await name.fill("Uncommitted name");
-  await page.goBack();
-  const dialog = page.getByRole("dialog", {
-    name: "Discard unsaved changes",
+  await page
+    .getByRole("button", { name: "Edit Memory name", exact: true })
+    .click();
+  const editor = page.getByRole("dialog", {
+    name: "Edit Memory name",
     exact: true,
   });
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`${handoffPath}$`));
-  await expect(name).toHaveValue("Uncommitted name");
+  const input = editor.getByRole("textbox", {
+    name: "Memory name",
+    exact: true,
+  });
+  await input.fill("Uncommitted name");
   await page.goBack();
-  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${memoryProjectPath}$`));
+  await expect(editor).toHaveCount(0);
+  await page.getByRole("link", { name: /Handoff notes/ }).click();
+  await page
+    .getByRole("button", { name: "Edit Memory name", exact: true })
+    .click();
+  await expect(input).toHaveValue("Handoff notes");
+  await editor.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("link", { name: "Memory", exact: true }).click();
   await page.getByRole("link", { name: /Research notes/ }).click();
   await expect(
     page.getByRole("heading", { name: "Shared notes", exact: true }),
   ).toBeVisible();
 });
+
 for (const [name, path, message] of [
   ["invalid ID", `${memoryProjectPath}/bad-id`, "Invalid memory ID."],
   [

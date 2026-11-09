@@ -1,3 +1,4 @@
+import { chooseSettingsTopic } from "../test-support/settings-navigation";
 import { Buffer } from "node:buffer";
 import { expect, test, devices } from "@playwright/test";
 import { expectAPIError } from "../test-support/client-errors";
@@ -31,12 +32,9 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await expect(page).toHaveURL(/\/setting\/general$/);
-  await page.getByRole("link", { name: "Editor", exact: true }).click();
-  await expect(page).toHaveURL(/\/setting\/editor$/);
-  await page.goBack();
-  await expect(
-    page.getByRole("heading", { name: "General", exact: true }),
-  ).toBeVisible();
+  await chooseSettingsTopic(page, "Editor");
+  // Topic navigation scrolls the shared page without inserting history entries.
+  await expect(page).toHaveURL(/\/setting\/general$/);
   await page.goBack();
   await expect(input).toHaveValue("Draft across routes");
   await page.goForward();
@@ -253,7 +251,7 @@ test("client logs are reachable from settings and without an authenticated or re
   await signIn(page);
   await page.goto("/setting/general");
   await page.getByRole("link", { name: "Logs", exact: true }).click();
-  await expect(page).toHaveURL(/\/setting\/logs$/);
+  await expect(page).toHaveURL(/\/log$/);
   await expect(
     page.getByRole("heading", { name: "Logs", exact: true }),
   ).toBeVisible();
@@ -279,8 +277,8 @@ test("client logs are reachable from settings and without an authenticated or re
     page.getByRole("heading", { name: "Logs", exact: true }),
   ).toBeVisible();
   await expect(
-    page.locator("summary").filter({ hasText: "Cannot reach cxz" }),
-  ).toHaveCount(1);
+    page.getByRole("table", { name: "Client logs", exact: true }),
+  ).toContainText("Cannot reach cxz");
   await page.goto("/settings/logs");
-  await expect(page).toHaveURL(/\/setting\/logs$/);
+  await expect(page).toHaveURL(/\/log$/);
 });

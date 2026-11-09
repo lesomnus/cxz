@@ -1,3 +1,4 @@
+import { chooseSettingsTopic } from "../test-support/settings-navigation";
 import {
   test,
   expect,
@@ -38,10 +39,7 @@ async function drag(page: Page, panel: Locator) {
 async function general(page: Page) {
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
-  await page
-    .getByRole("navigation", { name: "Settings topics" })
-    .getByRole("link", { name: "General", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "General");
   return page.getByRole("switch", { name: "Copy on selection", exact: true });
 }
 

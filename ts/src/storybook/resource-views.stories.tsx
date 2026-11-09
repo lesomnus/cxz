@@ -141,11 +141,7 @@ function ResourcePreview({
       {view === "accounts" ? (
         <AccountPreview c={c} extraSessions={extraSessions} />
       ) : view === "memory" ? (
-        <MemoryLibrary
-          c={memory.c}
-          project={new Id(memory.projects[0]!.id).toString()}
-          sessions={memory.sessions}
-        />
+        <MemoryPreview fixture={memory} />
       ) : view === "usage" ? (
         <UsageReport c={c} />
       ) : view === "background" ? (
@@ -160,6 +156,29 @@ function ResourcePreview({
       )}
     </div>
   );
+}
+
+function MemoryPreview({
+  fixture,
+}: {
+  fixture: ReturnType<typeof memoryFixture>;
+}) {
+  const [router] = useState(() =>
+    createWorkspaceRouter(
+      {
+        shell: ({ children }) => <>{children}</>,
+        view: () => (
+          <MemoryLibrary
+            c={fixture.c}
+            project={new Id(fixture.projects[0]!.id).toString()}
+            sessions={fixture.sessions}
+          />
+        ),
+      },
+      createMemoryHistory({ initialEntries: ["/c/_/project/web/memory"] }),
+    ),
+  );
+  return <RouterProvider router={router} />;
 }
 const meta = {
   title: "Resources/Views",

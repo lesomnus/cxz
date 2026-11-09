@@ -1,3 +1,4 @@
+import { chooseSettingsTopic } from "../test-support/settings-navigation";
 import { test, expect, devices, type Page } from "@playwright/test";
 import { chooseSetting, expectInherited } from "./settings-controls";
 import { disableTerminalWebGL } from "../test-support/terminal";
@@ -19,10 +20,7 @@ async function general(page: Page) {
   ).toBeVisible();
 }
 async function editor(page: Page) {
-  await page
-    .getByRole("navigation", { name: "Settings topics" })
-    .getByRole("link", { name: "Editor", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "Editor");
 }
 test("General is first, language menus preserve text position and segmented system appearance follows the OS without resetting JSON Undo", async ({
   page,
@@ -31,11 +29,10 @@ test("General is first, language menus preserve text position and segmented syst
   await ready(page);
   await general(page);
   const topics = page.getByRole("navigation", { name: "Settings topics" });
-  await expect(topics.getByRole("link")).toHaveText([
+  await expect(topics.getByRole("button")).toHaveText([
     "General",
     "Editor",
     "Connections",
-    "Logs",
   ]);
   await expect(
     page.getByRole("button", { name: "Language", exact: true }),

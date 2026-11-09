@@ -1,3 +1,4 @@
+import { chooseSettingsTopic } from "../test-support/settings-navigation";
 import { chooseSetting } from "./settings-controls";
 import { expect, test, devices, type Page } from "@playwright/test";
 test.use({
@@ -22,10 +23,7 @@ async function language(page: Page) {
     });
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
-  await page
-    .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("link", { name: "General", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "General");
 }
 test("English defaults and only Apply settings downloads the language pack, preserving JSON drafts and other preferences", async ({
   page,
@@ -94,10 +92,7 @@ test("English defaults and only Apply settings downloads the language pack, pres
   await expect(page.locator(".settings-file .view-lines")).toContainText(
     "editor.tabSize",
   );
-  await page
-    .getByRole("navigation", { name: "설정 주제", exact: true })
-    .getByRole("link", { name: "에디터", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "에디터", "설정 주제");
   await expect(
     page.getByRole("slider", {
       name: "전역 에디터 Tab 문자 표시 폭",

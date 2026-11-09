@@ -158,7 +158,7 @@ test("reselecting Sessions opens its existing list without forgetting the last c
   await visit(page, "Sessions view");
   await expect(page).toHaveURL(/#\/c\/_\/session$/);
   await expect(
-    page.getByRole("heading", { name: "Sessions", exact: true }),
+    page.getByRole("main", { name: "Sessions", exact: true }),
   ).toBeVisible();
   const list = page.getByRole("main");
   await expect(list.getByRole("link", { name: /session-8/ })).toHaveAttribute(

@@ -499,7 +499,8 @@ test("cancel requires confirmation, discards unsaved edits and preserves assignm
     .click();
   await expect(confirmation).toHaveCount(0);
   await expect(status).toContainText("Canceled");
-  await expect(title(page)).toHaveValue("Connect the task table");
+  await expect(title(page)).toHaveText("Connect the task table");
+  await expect(title(page)).toHaveAttribute("aria-readonly", "true");
   await expect(cancel).toBeDisabled();
   await expect(
     detail(page).getByRole("link", { name: /UI refinement/ }),
