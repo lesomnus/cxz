@@ -161,6 +161,19 @@ test("authenticated terminal runs a PTY shell under production CSP and preserves
   const panel = page.getByRole("region", { name: "Workspace terminal" });
   await expect(panel).toContainText("fixture$");
   await expect(panel.locator(".xterm-helper-textarea")).toBeFocused();
+  // The session workspace can still be sliding in when the PTY prompt arrives.
+  // Finish that motion before using absolute coordinates for mouse selection.
+  await page.locator(".workspace").evaluate(async (workspace) => {
+    await Promise.all(
+      workspace
+        .getAnimations()
+        .filter(
+          (animation) =>
+            animation.effect?.getComputedTiming().endTime !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
   const screen = (await panel.locator(".xterm-screen").boundingBox())!;
   await page.mouse.move(screen.x + 1, screen.y + 6);
   await page.mouse.down();
