@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 )
 
@@ -65,6 +66,12 @@ func (r *Report) Conversation(name string, events []core.Event, truncated bool) 
 		for _, e := range events {
 			switch e.Kind {
 			case "diagnostic", "error", "update", "permission", "state", "setting_status", "usage_status":
+				// A quota that was polled and found unchanged is not a
+				// diagnostic. This report keeps 200 lines, and one of these per
+				// minute would be most of them.
+				if e.Kind == "usage_status" && e.Text == agentview.QuotaObserved {
+					continue
+				}
 				lines = append(lines, fmt.Sprintf("%s [%s] %s", time.UnixMilli(e.TimeMS).Format("01-02 15:04:05"), e.Kind, e.Text))
 			}
 		}

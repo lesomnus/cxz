@@ -11,7 +11,17 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 )
 
-func (s *Supervisor) publishModels() {
+func (s *Supervisor) publishModels() { s.publishModelsNow(false) }
+
+// publishModelsNow records the catalog. forced is for the ops that exist to
+// answer a person -- opening a picker, pressing refresh -- the way
+// readModelsNow's forced skips the poll throttle.
+//
+// A routine republish of a catalog nobody changed is recorded no longer, so an
+// explicit ask has to be able to put one in front of a client whose window has
+// scrolled past the last one. Without this, a picker opened in a session that
+// has run for a day reads a catalog that is outside the events it holds.
+func (s *Supervisor) publishModelsNow(forced bool) {
 	source := s.modelSource
 	if source == "" {
 		source = map[bool]string{true: "model/list", false: "initialize"}[s.codex != nil]
@@ -28,6 +38,17 @@ func (s *Supervisor) publishModels() {
 			state["applied_reported"] = true
 		}
 	}
+	// The catalog a provider answers with is the same catalog, minute after
+	// minute: five sessions held 33,416 of these events carrying 13 distinct
+	// values. A picker reads the latest one, so recording the same one again
+	// tells it nothing and costs a conversation its prefix. See latest.go.
+	// Asked for either way, so that a forced answer still leaves the latest
+	// value recorded as the one a routine republish compares against.
+	unchanged := s.latestUnchanged(latestKey("models", "catalog"), state)
+	if !forced && !s.modelAsked && unchanged {
+		return
+	}
+	s.modelAsked = false
 	s.event("models", "catalog", "", state, nil)
 }
 
@@ -45,6 +66,11 @@ func (s *Supervisor) readModelsNow(forced bool) {
 	if s.modelDisabled || (!forced && !s.modelRequested.IsZero() && time.Since(s.modelRequested) < time.Minute) {
 		return
 	}
+	// A deliberate ask is answered when the provider replies, whether or not
+	// the answer is the one already recorded. This op publishes nothing itself
+	// -- a receipt that pretended the answer had arrived is what the refresh
+	// contract forbids -- so it is the publish that follows that has to know.
+	s.modelAsked = s.modelAsked || forced
 	s.modelRequested = time.Now()
 	s.modelPages = nil
 	if s.codex == nil {
@@ -97,7 +123,7 @@ func (s *Supervisor) configure(c core.Command) (core.Receipt, error) {
 	}
 	if len(f) == 1 {
 		s.readModels()
-		s.publishModels()
+		s.publishModelsNow(true)
 		rec := record{Op: "send", Command: c, Status: "accepted"}
 		s.receipts[c.ClientID] = rec
 		s.event("receipt", "configure", c.ClientID, rec, nil)

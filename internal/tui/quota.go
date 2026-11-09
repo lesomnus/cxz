@@ -194,6 +194,18 @@ func quotaSnapshot(provider, run string, events []*api.Event, parse func(string,
 				if state == "waiting" {
 					state = "polling"
 				}
+			case agentview.QuotaObserved:
+				// The poll found the value already recorded. Nothing about the
+				// account changed, so the windows stand -- but they were seen
+				// just now, and a window whose observation stopped moving is
+				// rendered as approximate below.
+				if e.TimeMs > 0 && len(windows) > 0 {
+					for key, w := range windows {
+						w.Observed = time.UnixMilli(e.TimeMs)
+						windows[key] = w
+					}
+					state = "available"
+				}
 			}
 			continue
 		}

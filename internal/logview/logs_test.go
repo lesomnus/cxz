@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lesomnus/cxz/internal/agentview"
 	"github.com/lesomnus/cxz/internal/core"
 )
 
@@ -26,6 +27,26 @@ func TestTheDiagnosticReportOmitsTheConversation(t *testing.T) {
 		t.Fatal("the report carries what was said:", text)
 	}
 }
+
+// The report keeps 200 diagnostic lines. A quota polled once a minute and
+// found unchanged would be all of them and would say nothing. See cxz#344.
+func TestTheDiagnosticReportOmitsQuotaObservations(t *testing.T) {
+	var r Report
+	events := []core.Event{{Kind: "diagnostic", Text: "failure details"}}
+	for range 300 {
+		events = append(events, core.Event{Kind: "usage_status", Text: agentview.QuotaObserved})
+	}
+	events = append(events, core.Event{Kind: "usage_status", Text: "error"})
+	r.Conversation("conversation", events, false)
+	text := r.String()
+	if !strings.Contains(text, "failure details") || !strings.Contains(text, "error") {
+		t.Fatal("the diagnostics were crowded out:", text)
+	}
+	if strings.Contains(text, agentview.QuotaObserved) {
+		t.Fatal("the report carries quota observations:", text)
+	}
+}
+
 func TestBoundedLogsAndMissingSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "log")
 	os.WriteFile(path, []byte(strings.Repeat("old row\n", 30000)+"final row\n"), 0600)

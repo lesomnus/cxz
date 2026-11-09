@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+// QuotaObserved is the `usage_status` a session records when a poll found the
+// quota it had already recorded: the value is unchanged, and it is current as
+// of this event. A reader advances Observed by it and keeps the value it has,
+// which is how a limit that has not moved for an hour stays one event instead
+// of sixty. See cxz#344.
+const QuotaObserved = "observed"
+
 // Window is a provider-reported account limit, never inferred from token usage.
 // Remaining is nil if the provider reported only a status, not utilization.
 type Window struct {
