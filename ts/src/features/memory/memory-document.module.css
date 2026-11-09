@@ -42,6 +42,8 @@
 .actions > span {
   display: flex;
   min-width: 0;
+  flex: 0 0 var(--resource-action-size);
+  width: var(--resource-action-size);
 }
 .side {
   grid-template-rows: auto minmax(0, 1fr);
@@ -111,6 +113,13 @@
 .revisionAge {
   flex-shrink: 0;
   text-align: right;
+}
+.revisionDate > time {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .revisionChanges.revisionChanges {
   flex-direction: row;
