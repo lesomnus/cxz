@@ -26,7 +26,8 @@
   min-width: 0;
 }
 .contentPadding.contentPadding {
-  padding: calc(3 * var(--ui-space)) var(--resource-page-gutter);
+  --resource-content-padding-block: calc(3 * var(--ui-space));
+  padding: var(--resource-content-padding-block) var(--resource-page-gutter);
 }
 .toolbarContent {
   display: flex;

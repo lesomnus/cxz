@@ -6,7 +6,7 @@
 }
 .navigation {
   position: sticky;
-  top: 0;
+  top: var(--resource-content-padding-block);
   grid-area: 1 / 1;
   align-self: start;
   width: var(--settings-navigation-width);
