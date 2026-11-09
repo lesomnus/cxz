@@ -75,18 +75,18 @@
   height: var(--ui-icon-size-small);
   color: var(--ui-muted);
 }
-.table tbody tr[data-done] {
+.table tbody tr[data-inactive] {
   --ui-muted: var(--ui-shade-140);
   color: var(--ui-shade-181);
 }
-.table tr[data-done] :is(.taskButton, [data-session-navigation]) {
+.table tr[data-inactive] :is(.taskButton, [data-session-navigation]) {
   --button-background: var(--ui-shade-17);
   --ui-table-button-row-hover-lift: 12;
   --ui-table-button-selected-lift: 12;
   --ui-table-button-hover-lift: 33;
   color: inherit;
 }
-.table tr[data-done] .priorityGlyph {
+.table tr[data-inactive] .priorityGlyph {
   color: color-mix(
     in srgb,
     var(--task-priority-color, var(--ui-muted)),

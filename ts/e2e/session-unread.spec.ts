@@ -153,15 +153,17 @@ test("unread response uses the left indicator and Sessions icon count clears whe
   });
   try {
     await page.goto("/c/_/session");
+    const entry = page.locator("[data-session-navigation]").first();
     const row = page.locator(".tree-session").first();
     const unread = row
       .locator(".session-indicator")
       .getByRole("img", { name: "Unread response", exact: true });
-    await expect(unread).toBeVisible();
-    await expect(unread.locator("circle")).toHaveCSS(
-      "fill",
-      "rgb(217, 255, 48)",
-    );
+    await expect(entry).toHaveAttribute("data-unread", "true");
+    expect(
+      await entry.evaluate(
+        (node) => getComputedStyle(node, "::after").backgroundColor,
+      ),
+    ).toBe("rgb(217, 255, 48)");
     await expect(row.locator(".session-unread")).toHaveCount(0);
     const tab = page.getByRole("link", { name: "Sessions view", exact: true });
     const count = tab.getByRole("img", {
@@ -175,7 +177,7 @@ test("unread response uses the left indicator and Sessions icon count clears whe
       .locator("link[data-session-attention]")
       .getAttribute("href");
     expect(decodeURIComponent(favicon!)).toContain('fill="#d9ff30"');
-    await row.click();
+    await entry.click();
     await expect(page.locator(".transcript")).toHaveAttribute(
       "aria-busy",
       "false",

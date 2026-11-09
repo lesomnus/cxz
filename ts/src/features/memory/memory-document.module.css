@@ -1,0 +1,184 @@
+.document {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+}
+.information {
+  container: memory-information / inline-size;
+  min-height: var(--resource-action-size);
+  align-content: start;
+}
+.fields.fields {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+}
+.fields dt {
+  flex-wrap: wrap;
+}
+.fields dd > :is(a, span) {
+  min-width: 0;
+  max-width: 100%;
+}
+.fields.fields dd > a {
+  flex: 1;
+  max-width: none;
+}
+.unavailable {
+  color: var(--ui-muted);
+}
+.title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.actions.actions {
+  display: flex;
+  width: max-content;
+  align-self: start;
+}
+.actions > span {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 var(--resource-action-size);
+  width: var(--resource-action-size);
+}
+.side {
+  grid-template-rows: auto minmax(0, 1fr);
+  align-self: stretch;
+}
+.revision {
+  --ui-section-radius: var(--resource-action-radius);
+  --ui-section-inner-radius: var(--ui-section-radius);
+  contain: size;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--ui-font-mono);
+  border-radius: var(--resource-action-radius);
+}
+.revision :global(.value-menu) {
+  --value-background: var(--ui-section-background);
+  height: 100%;
+  min-height: 0;
+  border-radius: inherit;
+}
+.revision :global(.value-menu .setting-trigger) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  min-height: 0;
+  padding: calc(2 * var(--ui-space));
+  border-radius: inherit;
+  text-align: left;
+}
+.revision :global(.value-menu .setting-trigger > .button-content) {
+  width: 100%;
+  height: auto;
+  justify-content: space-between;
+}
+.revisionValue {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ui-space);
+  min-width: 0;
+}
+.revisionRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 0;
+  gap: var(--ui-space);
+  text-align: left;
+  font-family: var(--ui-font-mono);
+}
+.revisionNumber {
+  display: flex;
+  align-items: baseline;
+  font-size: 11px;
+  line-height: 1;
+}
+.revisionDate,
+.revisionAge {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ui-muted);
+  font-size: 9px;
+  line-height: 1;
+}
+.revisionAge {
+  flex-shrink: 0;
+  text-align: right;
+}
+.revisionDate > time {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.revisionChanges.revisionChanges {
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--ui-space);
+  font-size: 10px;
+  line-height: 11px;
+}
+.bodySection.bodySection {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: calc(6 * var(--ui-space));
+}
+.trashNotice {
+  padding: calc(2 * var(--ui-space));
+  border: 1px solid var(--ui-shade-40);
+  border-radius: var(--ui-control-radius, 6px);
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+.trashNotice p {
+  margin: 0 0 calc(2 * var(--ui-space));
+}
+.trashActions {
+  display: flex;
+  gap: var(--ui-space);
+}
+.empty {
+  margin: calc(2 * var(--ui-space)) 0;
+  color: var(--ui-muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+@container memory-library (width < 600px) {
+  .document {
+    --resource-action-size: calc(12 * var(--ui-space));
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .side {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: var(--resource-action-size);
+  }
+  .actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .revision {
+    grid-column: 1;
+    grid-row: 1;
+  }
+}
+@container memory-information (width < 600px) {
+  .fields.fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container memory-information (width < 420px) {
+  .fields.fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

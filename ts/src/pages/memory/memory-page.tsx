@@ -1,12 +1,6 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-import { useNavigate, useBlocker } from "@tanstack/react-router";
+import { useCallback, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -32,7 +26,6 @@ import {
   resourceHandle,
   uuid,
 } from "#src/shared/navigation/resource-route.ts";
-import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import styles from "./memory-page.module.css";
 import { ListDetailPages } from "@lesomnus/nox";
 
@@ -53,49 +46,23 @@ export function MemoryPage({
 }) {
   const navigate = useNavigate();
   const { memoryProject, memory } = useWorkspaceRoute();
-  const [dirty, setDirty] = useState(false);
-  const [creatingProject, setCreatingProject] = useState<string>();
   const selection = useResourceSelection(c);
-  const dirtyRef = useRef(false);
-  const detailActive = useRef(false);
-  const onDirtyChange = useCallback((value: boolean) => {
-    dirtyRef.current = value && detailActive.current;
-    setDirty(dirtyRef.current);
-  }, []);
-  const blocker = useBlocker({
-    shouldBlockFn: ({ current, next }) =>
-      dirtyRef.current && current.pathname !== next.pathname,
-    enableBeforeUnload: dirty,
-    withResolver: true,
-  });
   const project = memoryProject
     ? projects.find((p) => matchesResource(p, memoryProject))
     : (projects.find((p) => projectId(p) === selection.project) ?? projects[0]);
   const id = projectId(project) ?? "";
   const handle = project ? resourceHandle(project) : "";
-  const detailOpen = !!project && (!!memory || creatingProject === id);
-  detailActive.current = detailOpen;
-  useLayoutEffect(() => {
-    if (!detailOpen) onDirtyChange(false);
-  }, [detailOpen, onDirtyChange]);
+  const detailOpen = !!project && !!memory;
   useEffect(() => {
-    setCreatingProject(undefined);
     if (id) c.selection.chooseProject(id);
   }, [c, id]);
-  const onCreatingChange = useCallback(
-    (creating: boolean) => setCreatingProject(creating ? id : undefined),
-    [id],
-  );
   const selectMemory = useCallback(
     (selected?: string, replace = false) => {
-      if (!detailActive.current) return;
       if (handle && (memoryProject !== handle || memory !== selected)) {
-        const navigation = navigate({
+        void navigate({
           ...memoryLocation(handle, selected),
           replace,
-          ignoreBlocker: true,
         });
-        if (selected) void navigation.then(() => setCreatingProject(undefined));
       }
     },
     [navigate, handle, memoryProject, memory],
@@ -105,16 +72,6 @@ export function MemoryPage({
   );
   const sessionFilter =
     selection.project === id ? uuid(selection.session) : undefined;
-  const guard = useRef<(run: () => void) => void>((run) => run());
-  const registerGuard = useCallback(
-    (next: ((run: () => void) => void) | undefined) => {
-      guard.current = (run) => {
-        if (next && detailActive.current) next(run);
-        else run();
-      };
-    },
-    [],
-  );
   return (
     <ResourcePage aria-label="Shared memory workspace">
       <ResourceToolbar>
@@ -122,39 +79,26 @@ export function MemoryPage({
           projects={projects}
           value={id}
           loading={projectsLoading}
-          choose={(value) =>
-            guard.current(() => {
-              const chosen = projects.find((p) => projectId(p) === value)!;
-              c.selection.chooseProject(value);
-              void navigate({
-                ...memoryLocation(chosen),
-                ignoreBlocker: true,
-              });
-            })
-          }
+          choose={(value) => {
+            const chosen = projects.find((p) => projectId(p) === value)!;
+            c.selection.chooseProject(value);
+            void navigate(memoryLocation(chosen));
+          }}
         />
         <SessionPicker
           sessions={scoped}
           project={id}
           value={sessionUUID(sessionFilter)}
           loading={sessionsLoading}
-          choose={(value) =>
-            guard.current(() => {
-              const session = scoped.find((s) => sessionUUID(s.id) === value);
-              c.selection.chooseSession(
-                id,
-                sessionUUID(session?.id),
-                session?.runtimeId ?? "",
-              );
-              if (memory || creatingProject === id) {
-                setCreatingProject(undefined);
-                void navigate({
-                  ...memoryLocation(handle),
-                  ignoreBlocker: true,
-                });
-              }
-            })
-          }
+          choose={(value) => {
+            const session = scoped.find((s) => sessionUUID(s.id) === value);
+            c.selection.chooseSession(
+              id,
+              sessionUUID(session?.id),
+              session?.runtimeId ?? "",
+            );
+            if (memory) void navigate(memoryLocation(handle));
+          }}
         />
       </ResourceToolbar>
       <ListDetailPages
@@ -216,32 +160,17 @@ export function MemoryPage({
                   c={c}
                   project={id}
                   projectHandle={handle}
+                  projectInfo={project}
                   catalog={false}
                   sessions={scoped}
-                  registerGuard={registerGuard}
                   memoryId={memory}
                   onMemoryChange={selectMemory}
-                  onDirtyChange={onDirtyChange}
-                  onCreatingChange={onCreatingChange}
                 />
               </ResourceLayout>
             </PanelScroll>
           ) : null
         }
       />
-      {blocker.status === "blocked" && (
-        <ConfirmationDialog
-          title="Discard unsaved changes"
-          confirmLabel="Confirm"
-          close={() => blocker.reset?.()}
-          execute={() => {
-            blocker.proceed?.();
-            return true;
-          }}
-        >
-          <p>This memory has unsaved changes. Discard them?</p>
-        </ConfirmationDialog>
-      )}
     </ResourcePage>
   );
 }

@@ -25,6 +25,8 @@
 .quotaSquare.quotaSquare {
   --quota-tint: #7c8b4f;
   --account-quota-inset: 2px;
+  display: grid;
+  box-sizing: border-box;
   width: var(--resource-action-size);
   height: var(--resource-action-size);
   padding: var(--account-quota-inset);
@@ -32,6 +34,13 @@
   gap: 2px;
   align-items: center;
   overflow: hidden;
+}
+.quotaInline.quotaInline {
+  height: 48px;
+}
+.quotaInline .quotaGauge {
+  --ui-liquid-height: 48px;
+  width: calc(var(--resource-action-size) / 2);
 }
 .quotaSquare[data-quota-level="warning"] {
   --quota-tint: #9d8245;

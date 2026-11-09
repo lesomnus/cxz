@@ -53,11 +53,34 @@ func (m *Manager) AuxSetConfig(ctx context.Context, in *api.AuxSetConfigInput) (
 	before := c.Config()
 	cfg := before
 	message := ""
+	updates := map[string]auxiliary.Profile{}
+	account := ""
+	for _, p := range in.Profiles {
+		if p == nil {
+			return nil, fmt.Errorf("profile is required")
+		}
+		if err = auxKind(p.Kind); err != nil {
+			return nil, err
+		}
+		if _, exists := updates[p.Kind]; exists {
+			return nil, fmt.Errorf("duplicate auxiliary task %q", p.Kind)
+		}
+		if p.Account != "" {
+			if account != "" && account != p.Account {
+				return nil, fmt.Errorf("auxiliary tasks must use one shared account")
+			}
+			account = p.Account
+		}
+		updates[p.Kind] = auxProfile(p)
+	}
 	for _, p := range in.Profiles {
 		if err = auxKind(p.Kind); err != nil {
 			return nil, err
 		}
 		profile := auxProfile(p)
+		if profile.Account == "" {
+			profile.Account, profile.Agent, profile.Backend = before.Account, before.Agent, before.Backend
+		}
 		// An enabled profile is proven before it is saved: the catalog call is
 		// what says the account can reach the model it names.
 		if profile.Enabled {
@@ -72,9 +95,9 @@ func (m *Manager) AuxSetConfig(ctx context.Context, in *api.AuxSetConfigInput) (
 				return nil, err
 			}
 		}
-		if cfg, err = c.Save(p.Kind, profile); err != nil {
-			return nil, err
-		}
+	}
+	if cfg, err = c.SaveProfiles(updates); err != nil {
+		return nil, err
 	}
 	// A brokered grant outlives the profile that needed it unless something
 	// takes it back, and nothing else will.

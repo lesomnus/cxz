@@ -8,6 +8,8 @@ export type WorkGroup = {
   events: SessionEvent[];
   hasBoundary: boolean;
   durationMs?: number;
+  fromMs?: bigint;
+  toMs?: bigint;
   services: Record<"cxz_memory" | "cxz_tasks", number>;
 };
 
@@ -80,6 +82,7 @@ export function workGroups(events: SessionEvent[]) {
           anchor: event,
           events: [],
           hasBoundary: boundaries.has(event.runId),
+          fromMs: starts.get(event.runId) || event.timeMs || undefined,
           services: { cxz_memory: 0, cxz_tasks: 0 },
         };
         active.set(event.runId, group);
@@ -94,6 +97,7 @@ export function workGroups(events: SessionEvent[]) {
     if (["input", "assistant", "turn_end"].includes(event.kind)) {
       const group = active.get(event.runId);
       const start = starts.get(event.runId);
+      if (group && event.timeMs > 0n) group.toMs = event.timeMs;
       if (group && start !== undefined && start > 0n && event.timeMs >= start)
         group.durationMs = Number(event.timeMs - start);
       active.delete(event.runId);

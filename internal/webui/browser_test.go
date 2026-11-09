@@ -42,6 +42,7 @@ func TestBrowserFixture(t *testing.T) {
 	f := &browserFixture{assetRoot: t.TempDir()}
 	setupTranscriptReplay(t, f)
 	resource.RegisterProjectServiceServer(g, &fixtureProjects{probe: os.Getenv("CXZ_EDITOR_PROBE_CONTAINER")})
+	resource.RegisterAccountServiceServer(g, fixtureAccounts{})
 	resource.RegisterSessionServiceServer(g, f)
 	resource.RegisterNotificationServiceServer(g, fixtureNotifications{})
 	go g.Serve(ln)
@@ -84,6 +85,14 @@ func TestBrowserFixture(t *testing.T) {
 }
 
 var fixtureProject = resource.Project_builder{Id: projectid.Bytes("project"), Alias: "demo", Name: "Demo project", Status: resource.ProjectStatus_builder{ContainerState: resource.ContainerState_CONTAINER_STATE_RUNNING, RemoteWorkspace: "/workspace"}.Build()}.Build()
+
+type fixtureAccounts struct {
+	resource.UnimplementedAccountServiceServer
+}
+
+func (fixtureAccounts) List(context.Context, *resource.AccountListRequest) (*resource.AccountListResponse, error) {
+	return &resource.AccountListResponse{}, nil
+}
 
 type fixtureProjects struct {
 	resource.UnimplementedProjectServiceServer

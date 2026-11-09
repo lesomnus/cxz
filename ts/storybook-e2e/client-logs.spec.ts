@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const story = "/iframe.html?id=settings-logs--persistent&viewMode=story";
+const story = "/iframe.html?id=pages-logs--persistent&viewMode=story";
 test("OPFS logs survive reload and support filters, details, export and clear", async ({
   page,
 }) => {

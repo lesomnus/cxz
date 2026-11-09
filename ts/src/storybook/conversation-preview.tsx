@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { AuxState } from "#gen/cxz/session_svc_pb";
 import {
@@ -9,7 +9,6 @@ import {
 import {
   FloatingCardHost,
   FloatingCardProvider,
-  useFloatingCard,
 } from "#src/features/session/cards/floating-card.tsx";
 import {
   Transcript,
@@ -123,6 +122,8 @@ export function PreviewTranscript({
   reading = noop,
   loadDetails,
   workHistory,
+  taskSource,
+  memorySource,
 }: {
   events: SessionEvent[];
   agent?: string;
@@ -133,12 +134,16 @@ export function PreviewTranscript({
   reading?: (reading: boolean) => void;
   loadDetails?: LoadEventDetails;
   workHistory?: WorkHistory;
+  taskSource?: import("#src/features/session/model/work-tasks.ts").WorkTaskSource;
+  memorySource?: import("#src/features/session/model/work-memories.ts").WorkMemorySource;
 }) {
   const projected = transcriptRows(events);
   const summaries = attachSummaries(projected.events, aux);
   const [jump, setJump] = useState<string>();
   return (
     <Transcript
+      taskSource={taskSource}
+      memorySource={memorySource}
       workHistory={workHistory}
       pane={pane}
       source={eventListSource(projected.events)}
@@ -189,6 +194,8 @@ export function ComponentPreview({
   loadDetails,
   children,
   workHistory,
+  taskSource,
+  memorySource,
   autoFocus = false,
   initialSelection,
   onSelectionChange,
@@ -212,6 +219,8 @@ export function ComponentPreview({
   loadDetails?: LoadEventDetails;
   children?: ReactNode;
   workHistory?: WorkHistory;
+  taskSource?: import("#src/features/session/model/work-tasks.ts").WorkTaskSource;
+  memorySource?: import("#src/features/session/model/work-memories.ts").WorkMemorySource;
   autoFocus?: boolean;
   initialSelection?: EditorSelection;
   onSelectionChange?: (selection: EditorSelection) => void;
@@ -274,6 +283,8 @@ export function ComponentPreview({
   return (
     <PreviewFrame>
       <PreviewTranscript
+        taskSource={taskSource}
+        memorySource={memorySource}
         workHistory={workHistory}
         events={events}
         agent={agent}
@@ -286,7 +297,7 @@ export function ComponentPreview({
         }}
       />
       <FloatingCardHost>{children}</FloatingCardHost>
-      <PreviewComposer
+      <ConversationComposer
         approvals={approvals}
         backgroundReport={backgroundReport}
         autoFocus={autoFocus}
@@ -343,30 +354,7 @@ export function ComponentPreview({
         )}
       >
         <PreviewMetadata agent={agent} busy={sending || active} />
-      </PreviewComposer>
+      </ConversationComposer>
     </PreviewFrame>
-  );
-}
-
-function PreviewComposer({
-  backgroundReport,
-  ...props
-}: ComponentProps<typeof ConversationComposer> & {
-  backgroundReport?: ReactNode;
-}) {
-  const openCard = useFloatingCard();
-  return (
-    <ConversationComposer
-      {...props}
-      onBackgroundJobs={
-        backgroundReport
-          ? () =>
-              openCard({
-                title: "Background tasks",
-                content: () => backgroundReport,
-              })
-          : undefined
-      }
-    />
   );
 }

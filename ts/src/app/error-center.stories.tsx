@@ -1,4 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { create } from "@bufbuild/protobuf";
+import { SessionSchema, SessionEventSchema } from "#gen/cxz/session_pb";
+import { ConversationLoading } from "#src/features/session/conversation/conversation-loading.tsx";
+import { AccountQuotaSquare } from "#src/features/accounts/account-quota-square.tsx";
+import { useSessionActivity } from "#src/features/session/model/use-session-activity.ts";
+import { SessionsPage } from "#src/pages/sessions/sessions-page.tsx";
+import { errorNotificationOptions } from "#src/shared/errors/error-notification.ts";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
@@ -17,13 +24,23 @@ import { EditableValue } from "#src/shared/components/editable-value.tsx";
 
 // Real clients/diagnostic transport and the real workspace sidebar. The fixture
 // controls replies, rather than adding error records directly from buttons.
-function makeFixture() {
+type ReadFailure =
+  | "lookup"
+  | "session"
+  | "history"
+  | "missing-transcript"
+  | "pagination"
+  | "metadata";
+function makeFixture(readFailure?: ReadFailure) {
+  let failRead = readFailure !== "pagination";
   const errors = new ClientErrors({
     storage: localStorage,
-    storageKey: "cxz.error-center-preview.v1",
+    storageKey: readFailure
+      ? `cxz.attended-error-preview.v1:${readFailure}`
+      : "cxz.error-center-preview.v1",
   });
   let mode: "fail" | "success" | "wait" = "fail";
-  let streamFails = true;
+  let streamFails = !readFailure;
   let release: (() => void) | undefined;
   const idle = (signal: AbortSignal) =>
     new Promise<void>((resolve) => {
@@ -57,6 +74,49 @@ function makeFixture() {
       },
     });
     router.service(SessionService, {
+      get: () => {
+        if ((readFailure === "lookup" || readFailure === "session") && failRead)
+          throw new ConnectError("session not found", Code.NotFound);
+        return create(SessionSchema, {
+          id: new Uint8Array(16).fill(2),
+          runtimeId: "read-preview",
+          alias: "read-preview",
+          status: { state: "stopped", runId: "run", lastSeq: 1n },
+        });
+      },
+      transcript: () => {
+        if (
+          ["missing-transcript", "pagination", "metadata"].includes(
+            readFailure ?? "",
+          ) &&
+          failRead
+        )
+          throw new ConnectError(
+            "session not found: missing-runtime",
+            Code.Unknown,
+          );
+        if (readFailure === "history" && failRead)
+          throw new ConnectError(
+            "Conversation history is unavailable",
+            Code.Unavailable,
+          );
+        return {
+          events: [
+            create(SessionEventSchema, {
+              seq: 1n,
+              kind: "assistant",
+              text: "Recovered conversation",
+              runId: "run",
+            }),
+          ],
+          snapshotSeq: 1n,
+        };
+      },
+      history: () => ({}),
+      rows: async function* (_, context) {
+        yield {};
+        await idle(context.signal);
+      },
       list: () => ({}),
       watch: async function* (_, context) {
         yield { snapshotComplete: true };
@@ -82,6 +142,17 @@ function makeFixture() {
   return {
     c,
     errors,
+    recoverRead: () => {
+      failRead = false;
+    },
+    failRead: () => {
+      failRead = true;
+    },
+    quietRequest: () =>
+      c.accounts.get(
+        { ref: { key: { case: "alias", value: "quiet" } } },
+        errorNotificationOptions(false),
+      ),
     request: (value: typeof mode, alias = "work", signal?: AbortSignal) => {
       mode = value;
       return c.accounts.get(
@@ -169,14 +240,142 @@ function Controls({ fixture: f }: { fixture: ReturnType<typeof makeFixture> }) {
     </main>
   );
 }
+function ReadPane({ fixture }: { fixture: ReturnType<typeof makeFixture> }) {
+  const [error, setError] = useState("");
+  const feed = useMemo(
+    () => fixture.c.conversations.get("read-preview"),
+    [fixture],
+  );
+  const state = useSyncExternalStore(feed.subscribe, feed.snapshot);
+  return (
+    <section
+      aria-label="Conversation read"
+      style={{ position: "relative", minHeight: 320 }}
+    >
+      {state.loading ? (
+        <ConversationLoading {...state.loading} />
+      ) : (
+        <>
+          {state.events.map((event) => (
+            <p key={String(event.seq)}>{event.text}</p>
+          ))}
+          <Button
+            onClick={async () => {
+              fixture.failRead();
+              try {
+                await feed.history.page(
+                  { beforeSeq: state.events[0]?.seq, limit: 1 },
+                  new AbortController().signal,
+                );
+              } catch (error) {
+                setError(String(error));
+              }
+            }}
+          >
+            Read older messages
+          </Button>
+          <ErrorNotice local error={error} />
+        </>
+      )}
+    </section>
+  );
+}
+function MetadataReads({
+  fixture,
+}: {
+  fixture: ReturnType<typeof makeFixture>;
+}) {
+  const [version, setVersion] = useState(0);
+  const sessions = useMemo(
+    () => [
+      create(SessionSchema, {
+        runtimeId: "missing-runtime",
+        agent: "codex",
+        status: { lastSeq: BigInt(version) },
+      }),
+    ],
+    [version],
+  );
+  const activity = useSessionActivity(fixture.c, sessions);
+  return (
+    <section aria-label="Optional session metadata">
+      <Button onClick={() => setVersion((value) => value + 1)}>
+        Refresh metadata
+      </Button>
+      <p>{activity.get("missing-runtime")?.time ?? "Activity unavailable"}</p>
+      <AccountQuotaSquare
+        c={fixture.c}
+        account="work"
+        agent="codex"
+        sessions={sessions}
+        refreshVersion={version}
+      />
+    </section>
+  );
+}
+function ReadControls({
+  fixture,
+  mode,
+}: {
+  fixture: ReturnType<typeof makeFixture>;
+  mode: ReadFailure;
+}) {
+  const [shown, setShown] = useState(true);
+  return (
+    <main
+      style={{
+        padding: 24,
+        gridColumn: "2 / -1",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Button onClick={() => setShown(!shown)}>
+          {shown ? "Hide conversation" : "Show conversation"}
+        </Button>
+        {mode !== "lookup" && (
+          <Button
+            onClick={() => {
+              fixture.recoverRead();
+              const feed = fixture.c.conversations.get("read-preview");
+              feed.pause();
+              feed.resume();
+            }}
+          >
+            Recover conversation
+          </Button>
+        )}
+        <Button
+          onClick={() => fixture.request("fail", "background").catch(() => {})}
+        >
+          Fail background request
+        </Button>
+        <Button onClick={() => fixture.quietRequest().catch(() => {})}>
+          Fail silent request
+        </Button>
+      </div>
+      {shown &&
+        (mode === "metadata" ? (
+          <MetadataReads fixture={fixture} />
+        ) : mode === "lookup" ? (
+          <SessionsPage c={fixture.c} id="missing" projects={[]} />
+        ) : (
+          <ReadPane fixture={fixture} />
+        ))}
+    </main>
+  );
+}
 function Preview({
   page = false,
   overview = false,
+  readFailure,
 }: {
   page?: boolean;
   overview?: boolean;
+  readFailure?: ReadFailure;
 }) {
-  const [fixture] = useState(makeFixture);
+  const [fixture] = useState(() => makeFixture(readFailure));
   const [router] = useState(() =>
     createWorkspaceRouter(
       {
@@ -193,6 +392,8 @@ function Preview({
         view: () =>
           useWorkspaceRoute().resource === "errors" ? (
             <ErrorsPage store={fixture.errors} />
+          ) : readFailure ? (
+            <ReadControls fixture={fixture} mode={readFailure} />
           ) : (
             <Controls fixture={fixture} />
           ),
@@ -371,4 +572,23 @@ export const Page: StoryObj<typeof meta> = { args: { page: true } };
 
 export const Overview: StoryObj<typeof meta> = {
   args: { page: true, overview: true },
+};
+
+export const AttendedSession: StoryObj<typeof meta> = {
+  args: { readFailure: "session" },
+};
+export const AttendedHistory: StoryObj<typeof meta> = {
+  args: { readFailure: "history" },
+};
+export const AttendedLookup: StoryObj<typeof meta> = {
+  args: { readFailure: "lookup" },
+};
+export const AttendedMissingTranscript: StoryObj<typeof meta> = {
+  args: { readFailure: "missing-transcript" },
+};
+export const AttendedPagination: StoryObj<typeof meta> = {
+  args: { readFailure: "pagination" },
+};
+export const OptionalSessionMetadata: StoryObj<typeof meta> = {
+  args: { readFailure: "metadata" },
 };

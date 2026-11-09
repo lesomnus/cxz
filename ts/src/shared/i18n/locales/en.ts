@@ -1,5 +1,17 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Background task elapsed time": "Background task elapsed time",
+  "Background task duration unavailable":
+    "Background task duration unavailable",
+  "Created memories": "Created memories",
+  "No memories were created in this range.":
+    "No memories were created in this range.",
+  "Created tasks": "Created tasks",
+  "No Tasks were created in this range.":
+    "No Tasks were created in this range.",
+  "Task information is unavailable.": "Task information is unavailable.",
+  "Only the loaded conversation range is shown.":
+    "Only the loaded conversation range is shown.",
   Step: "Step",
   Exception: "Exception",
   Line: "Line",
@@ -742,6 +754,9 @@ export const messages = {
   "Unread error": "Unread error",
   "Unread response": "Unread response",
   "{count} unread sessions": "{count} unread sessions",
+  "Included in alerts": "Included in alerts",
+  "Excluded from alerts": "Excluded from alerts",
+  "{count} error alerts": "{count} error alerts",
   Notifications: "Notifications",
   "Notification sounds": "Notification sounds",
   "Play a sound when a response finishes or a new question arrives.":

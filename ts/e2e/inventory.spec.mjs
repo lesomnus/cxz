@@ -38,6 +38,7 @@ test("resource navigation shares catalog subscriptions instead of opening a list
     data: { token: "a".repeat(32) },
   });
   await page.goto("/");
+  await page.locator("[data-session-navigation]").first().click();
   await expect(page.locator(".tree-session").first()).toBeVisible();
   await expect
     .poll(() => calls)

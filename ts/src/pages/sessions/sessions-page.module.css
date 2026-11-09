@@ -1,0 +1,17 @@
+.pages {
+  grid-column: 3;
+  grid-row: 1;
+  height: 100%;
+  background: var(--resource-page-background);
+}
+.pages > :global([data-sliding-page]) > :global(.session-workspace) {
+  flex: 1;
+}
+@media (max-width: 700px) {
+  .pages {
+    grid-column: 2;
+  }
+  :global(.workspace.conversation-open) > .pages {
+    grid-column: 1;
+  }
+}

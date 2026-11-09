@@ -4,6 +4,9 @@ type Entry = { result?: Result };
 export const ACCOUNT_INFO_TTL = 5 * 60_000;
 export const USAGE_TTL = 60_000;
 export const MEMORY_LIST_TTL = 60_000;
+export const BACKGROUND_TASKS_TTL = 10_000;
+export const backgroundTasksKey = (session: string, run: string) =>
+  `background/${encodeURIComponent(session)}/${encodeURIComponent(run)}`;
 export const memoryListKey = (project: string) =>
   `memory/${encodeURIComponent(project)}/active`;
 export const ACCOUNT_LIST_KEY = "account-list";
@@ -61,6 +64,11 @@ export class ReadCache {
 
   invalidate(key: string) {
     this.entries.delete(key);
+  }
+
+  expire(key: string) {
+    const result = this.entries.get(key)?.result;
+    if (result) result.expiresAt = 0;
   }
   invalidatePrefix(prefix: string) {
     for (const key of this.entries.keys())

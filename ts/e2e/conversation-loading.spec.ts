@@ -83,15 +83,17 @@ for (const empty of [false, true]) {
   });
 }
 
-test("initial load failure is visible until an automatic retry succeeds", async ({
+test("initial load failures stay local and automatic retries recover", async ({
   page,
 }) => {
   const retry = gate();
   try {
     await signIn(page);
     let requests = 0;
+    let recovering = false;
     await page.route("**/cxz.SessionService/Transcript", async (route) => {
-      if (++requests === 1)
+      requests++;
+      if (!recovering)
         return route.fulfill({
           status: 503,
           json: { code: "unavailable", message: "Temporarily offline" },
@@ -104,8 +106,16 @@ test("initial load failure is visible until an automatic retry succeeds", async 
       .getByRole("status")
       .filter({ hasText: "Retrying conversation…" });
     await expect(status).toBeVisible();
-    await expectAPIError(page, "Temporarily offline");
+    await expect(status).toContainText("Temporarily offline");
+    await expect(
+      page.getByRole("button", {
+        name: "Errors",
+        exact: true,
+        includeHidden: true,
+      }),
+    ).not.toHaveAttribute("data-active", "true");
     await expect.poll(() => requests).toBeGreaterThan(1);
+    recovering = true;
     await expect(
       page.getByRole("status").filter({ hasText: "Loading conversation…" }),
     ).toBeVisible();

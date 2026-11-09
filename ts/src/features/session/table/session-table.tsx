@@ -1,8 +1,17 @@
-import { Icon } from "#src/shared/icons/icon.tsx";
+import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { key } from "@lesomnus/payday/store";
-import { Button, TableRow, useRangeSelection } from "@lesomnus/nox";
+import {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  useRangeSelection,
+} from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -24,6 +33,7 @@ import {
   validateSessionField,
 } from "#src/features/session/model/session-edit.ts";
 import { useSessionControls } from "./use-session-controls";
+import { resumableStates } from "#src/features/session/model/session-actions.ts";
 import {
   SessionTableMenu,
   SessionTableConfirmation,
@@ -42,10 +52,13 @@ export function SessionTable({
   addSession,
   showAccount = true,
   showProject = false,
+  projectFirst = false,
+  navigationIcon,
   showToolbar = true,
   title = t("Sessions"),
   horizontalScrollbar = false,
   fillHeight = false,
+  scroll = "bounded",
   variant = "default",
 }: {
   c: SessionControlConnection;
@@ -56,14 +69,33 @@ export function SessionTable({
   addSession?: () => void;
   showAccount?: boolean;
   showProject?: boolean;
+  /** Put project identity before the session name in the all-sessions list. */
+  projectFirst?: boolean;
+  navigationIcon?: IconName;
   showToolbar?: boolean;
   title?: string;
   horizontalScrollbar?: boolean;
   fillHeight?: boolean;
+  /** Page lists use their existing scroll area; dashboards own bounded scrolling. */
+  scroll?: "bounded" | "page";
   variant?: "default" | "compact" | "overview";
 }) {
   const compact = variant !== "default";
   const overview = variant === "overview";
+  const pageScroll = scroll === "page";
+  const Frame = pageScroll ? "div" : PanelScroll;
+  const scrollProps = pageScroll
+    ? {}
+    : {
+        wheelBehavior: "instant" as const,
+        scrollbarOffset: 0,
+        horizontalScrollbar,
+        scrollbarLabel: t("Session list"),
+      };
+  const completed = useSyncExternalStore(
+    c.attention.subscribe,
+    c.attention.completedSnapshot,
+  );
   const [selected, select] = useState<Set<string>>(() => new Set());
   const controls = useSessionControls(c, (ids) =>
     select((previous) => {
@@ -89,9 +121,9 @@ export function SessionTable({
     disabled: !!(controls.busy || loading),
   });
   const stateHeading = (
-    <th scope="col" aria-label={compact ? t("State") : undefined}>
+    <TableHead scope="col" aria-label={compact ? t("State") : undefined}>
       {!compact && t("State")}
-    </th>
+    </TableHead>
   );
   const addControl = addSession && (
     <Button
@@ -126,18 +158,15 @@ export function SessionTable({
           <SessionTableFeedback controls={controls} />
         </div>
       )}
-      <PanelScroll
-        wheelBehavior="instant"
-        scrollbarOffset={0}
-        horizontalScrollbar={horizontalScrollbar}
-        className={`${styles.scroll} ${compact ? styles.compact : ""} ${overview ? `${styles.overview} ${resourceTableStyles.layout}` : ""} ${fillHeight ? styles.fillHeight : ""}`}
+      <Frame
+        {...scrollProps}
+        className={`${styles.frame} ${pageScroll ? "" : styles.scroll} ${compact ? styles.compact : ""} ${overview ? `${styles.overview} ${resourceTableStyles.layout}` : ""} ${fillHeight ? styles.fillHeight : ""}`}
         role="region"
         aria-label={t("Session list")}
-        scrollbarLabel={t("Session list")}
       >
-        <table
+        <Table
           {...selection.getContainerProps()}
-          className={styles.table}
+          className={`${styles.table} ${pageScroll ? resourceTableStyles.table : ""}`}
           aria-label={t("Sessions")}
           aria-busy={loading}
           data-account-column={showAccount}
@@ -146,31 +175,41 @@ export function SessionTable({
           <colgroup>
             <col className={styles.selectionColumn} />
             {overview && <col className={styles.stateColumn} />}
+            {showProject && projectFirst && (
+              <col className={styles.projectColumn} />
+            )}
             {!compact && <col className={styles.agentColumn} />}
             <col className={styles.nameColumn} />
             {!compact && <col className={styles.aliasColumn} />}
             {showAccount && <col className={styles.accountColumn} />}
-            {showProject && <col className={styles.projectColumn} />}
+            {showProject && !projectFirst && (
+              <col className={styles.projectColumn} />
+            )}
             {!overview && <col className={styles.stateColumn} />}
             <col className={styles.actionsColumn} />
           </colgroup>
-          <thead>
-            <tr>
-              <th scope="col" className={styles.selectionCell}>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col" className={styles.selectionCell}>
                 <Checkbox
                   className={styles.cellCheckbox}
                   aria-label={t("Select all sessions")}
                   {...selection.getSelectAllProps()}
                 />
-              </th>
+              </TableHead>
               {overview && stateHeading}
-              {!compact && <th scope="col" aria-label={t("Agent")} />}
-              <th scope="col">{t("Name")}</th>
-              {!compact && <th scope="col">{t("Alias")}</th>}
-              {showAccount && <th scope="col">{t("Account")}</th>}
-              {showProject && <th scope="col">{t("Project")}</th>}
+              {showProject && projectFirst && (
+                <TableHead scope="col">{t("Project")}</TableHead>
+              )}
+              {!compact && <TableHead scope="col" aria-label={t("Agent")} />}
+              <TableHead scope="col">{t("Name")}</TableHead>
+              {!compact && <TableHead scope="col">{t("Alias")}</TableHead>}
+              {showAccount && <TableHead scope="col">{t("Account")}</TableHead>}
+              {showProject && !projectFirst && (
+                <TableHead scope="col">{t("Project")}</TableHead>
+              )}
               {!overview && stateHeading}
-              <th
+              <TableHead
                 scope="col"
                 className={styles.actions}
                 aria-label={t("Controls")}
@@ -185,10 +224,10 @@ export function SessionTable({
                     addSession={addSession}
                   />
                 )}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {sessions.map((s) => {
               const name = s.name || s.alias || s.runtimeId;
               const account = s.account && accountsById.get(key(s.account.id));
@@ -206,8 +245,21 @@ export function SessionTable({
                 projectResource && resourceHandle(projectResource);
               const projectName =
                 projectResource?.name || projectResource?.alias || project;
+              const projectCell = (
+                <TableCell className={styles.cardCell}>
+                  {project ? (
+                    <ResourceNavigationButton
+                      {...projectLocation(project)}
+                      name={projectName || project}
+                      alias={projectResource?.alias}
+                    />
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
+              );
               const state = (
-                <td className={styles.state}>
+                <TableCell className={styles.state}>
                   {compact ? (
                     <span className={styles.stateIndicator}>
                       <SessionIndicator session={s} variant="status" />
@@ -215,30 +267,42 @@ export function SessionTable({
                   ) : (
                     stateLabel(s)
                   )}
-                </td>
+                </TableCell>
               );
               return (
-                <TableRow key={s.runtimeId} selected={checked}>
-                  <td className={styles.selectionCell}>
+                <TableRow
+                  key={s.runtimeId}
+                  className={resourceTableStyles.row}
+                  selected={checked}
+                  data-inactive={
+                    resumableStates.has(s.status?.state ?? "") || undefined
+                  }
+                >
+                  <TableCell className={styles.selectionCell}>
                     <Checkbox
                       className={styles.cellCheckbox}
                       aria-label={t("Select {name}", { name })}
                       {...selection.getCheckboxProps(s.runtimeId)}
                     />
-                  </td>
+                  </TableCell>
                   {overview && state}
+                  {showProject && projectFirst && projectCell}
                   {!compact && (
-                    <td className={styles.agent}>
+                    <TableCell className={styles.agent}>
                       <AgentBrand agent={s.agent} />
-                    </td>
+                    </TableCell>
                   )}
                   {compact ? (
-                    <td className={`${styles.name} ${styles.cardCell}`}>
-                      <SessionNavigationButton session={s} />
-                    </td>
+                    <TableCell className={`${styles.name} ${styles.cardCell}`}>
+                      <SessionNavigationButton
+                        session={s}
+                        navigationIcon={navigationIcon}
+                        unread={completed.has(s.runtimeId)}
+                      />
+                    </TableCell>
                   ) : (
                     (["name", "alias"] as const).map((field) => (
-                      <td className={styles[field]} key={field}>
+                      <TableCell className={styles[field]} key={field}>
                         <fieldset
                           className={styles.editable}
                           disabled={controls.busy || loading}
@@ -263,66 +327,42 @@ export function SessionTable({
                             }}
                           />
                         </fieldset>
-                      </td>
+                      </TableCell>
                     ))
                   )}
                   {showAccount && (
-                    <td className={styles.cardCell}>
+                    <TableCell className={styles.cardCell}>
                       {accountAlias ? (
                         <ResourceNavigationButton
                           {...accountLocation(accountAlias)}
                           name={accountName}
                           alias={accountAlias}
-                          leading={
-                            <span
-                              className={styles.accountAgent}
-                              aria-hidden="true"
-                            >
-                              <AgentBrand
-                                agent={
-                                  account?.agent || s.account?.agent || s.agent
-                                }
-                              />
-                            </span>
-                          }
                         />
                       ) : (
                         accountName
                       )}
-                    </td>
+                    </TableCell>
                   )}
-                  {showProject && (
-                    <td className={styles.cardCell}>
-                      {project ? (
-                        <ResourceNavigationButton
-                          {...projectLocation(project)}
-                          name={projectName || project}
-                          alias={projectResource?.alias}
-                        />
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  )}
+                  {showProject && !projectFirst && projectCell}
                   {!overview && state}
-                  <td className={`${styles.cardCell} ${styles.actions}`}>
+                  <TableCell className={`${styles.cardCell} ${styles.actions}`}>
                     <SessionTableMenu
                       sessions={[s]}
                       controls={controls}
                       disabled={loading}
                     />
-                  </td>
+                  </TableCell>
                 </TableRow>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {!sessions.length && (
           <p className={styles.empty}>
             {loading ? t("Loading sessions…") : t("No sessions")}
           </p>
         )}
-      </PanelScroll>
+      </Frame>
       {!showToolbar && (
         <>
           {controls.busy && (

@@ -12,6 +12,8 @@ import {
 export type ClientError = LogContext & {
   origin: ErrorOrigin;
   subject?: ErrorTarget;
+  /** false keeps the record but excludes it from sidebar alerts. */
+  notify?: boolean;
   id: string;
   key: string;
   message: string;
@@ -28,6 +30,8 @@ export type ClientError = LogContext & {
 export type ErrorContext = LogContext & {
   origin?: ErrorOrigin;
   subject?: ErrorTarget;
+  /** false keeps the record but excludes it from sidebar alerts. */
+  notify?: boolean;
   source?: ClientError["source"];
   code?: string;
   target?: string;
@@ -204,6 +208,9 @@ export class ClientErrors {
           lastSeen: input.lastSeen,
           updated: input.updated,
           count: Math.max(1, Math.min(1e9, Number(input.count) || 1)),
+          ...(typeof input.notify === "boolean"
+            ? { notify: input.notify }
+            : {}),
           closedAt: Number.isFinite(input.closedAt)
             ? input.closedAt
             : undefined,
@@ -277,6 +284,9 @@ export class ClientErrors {
       lastSeen: now,
       updated: this.stamp(),
       count: (active?.count ?? 0) + 1,
+      ...(typeof context.notify === "boolean"
+        ? { notify: context.notify }
+        : {}),
     };
     for (const field of [
       "connection",

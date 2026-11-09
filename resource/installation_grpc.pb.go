@@ -73,7 +73,7 @@ type InstallationServiceClient interface {
 	// not affected. See docs/history.md.
 	Retention(ctx context.Context, in *RetentionRequest, opts ...grpc.CallOption) (*HistoryPolicy, error)
 	SaveRetention(ctx context.Context, in *SaveRetentionRequest, opts ...grpc.CallOption) (*HistoryPolicy, error)
-	// Which account and model each kind of auxiliary task runs on. The kinds are
+	// The shared account and each kind's model/effort. The kinds are
 	// in AuxKind; a session asks for a run through SessionService.
 	Agents(ctx context.Context, in *AgentsRequest, opts ...grpc.CallOption) (*AgentProfiles, error)
 	SaveAgents(ctx context.Context, in *SaveAgentsRequest, opts ...grpc.CallOption) (*AgentProfiles, error)
@@ -306,7 +306,7 @@ type InstallationServiceServer interface {
 	// not affected. See docs/history.md.
 	Retention(context.Context, *RetentionRequest) (*HistoryPolicy, error)
 	SaveRetention(context.Context, *SaveRetentionRequest) (*HistoryPolicy, error)
-	// Which account and model each kind of auxiliary task runs on. The kinds are
+	// The shared account and each kind's model/effort. The kinds are
 	// in AuxKind; a session asks for a run through SessionService.
 	Agents(context.Context, *AgentsRequest) (*AgentProfiles, error)
 	SaveAgents(context.Context, *SaveAgentsRequest) (*AgentProfiles, error)

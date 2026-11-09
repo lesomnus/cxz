@@ -21,12 +21,19 @@
   --section-layout-max-width: var(--resource-page-content-width);
   --resource-dashboard-joining-radius: var(--ui-section-inner-radius);
   width: 100%;
-  max-width: var(--section-layout-max-width);
   margin-inline: auto;
   min-width: 0;
 }
+/* Explicit page bounds win over SlidingPages' default max-width in either
+   source mode or the bundled Nox stylesheet. Keep responsive variables below
+   at their original specificity. */
+.toolbarContent.toolbarContent,
+.content.content {
+  max-width: var(--section-layout-max-width);
+}
 .contentPadding.contentPadding {
-  padding: calc(3 * var(--ui-space)) var(--resource-page-gutter);
+  --resource-content-padding-block: calc(3 * var(--ui-space));
+  padding: var(--resource-content-padding-block) var(--resource-page-gutter);
 }
 .toolbarContent {
   display: flex;
@@ -34,11 +41,21 @@
   gap: calc(2 * var(--ui-space));
 }
 .toolbarActions {
+  --resource-toolbar-icon-size: 12px;
   display: flex;
   flex: none;
   align-items: center;
   margin-left: auto;
   min-height: var(--resource-toolbar-row-height);
+}
+/* Match the visible project/session picker surface inside the toolbar row. */
+.toolbarActions :global(button[data-variant="toolbar"]) {
+  height: calc(
+    var(--resource-toolbar-row-height) - 2 * var(--ui-control-inset)
+  );
+  min-height: calc(
+    var(--resource-toolbar-row-height) - 2 * var(--ui-control-inset)
+  );
 }
 @container resource-page (width < 892px) {
   .toolbarContent,

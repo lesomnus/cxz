@@ -1,3 +1,4 @@
+import { chooseSettingsTopic } from "../test-support/settings-navigation";
 import { test, expect, devices } from "@playwright/test";
 
 // Playwright runs in Node; the shared browser tsconfig has no Node globals.
@@ -15,7 +16,8 @@ test("production file viewer loads under the gateway CSP", async ({ page }) => {
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
+    if (message.type() === "error")
+      errors.push(`${message.text()} @ ${message.location().url}`);
   });
   await page
     .getByRole("link", { name: /demo-chat/ })
@@ -55,7 +57,8 @@ test("editable settings JSON and its worker load under production CSP and save t
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
+    if (message.type() === "error")
+      errors.push(`${message.text()} @ ${message.location().url}`);
   });
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
@@ -73,10 +76,7 @@ test("editable settings JSON and its worker load under production CSP and save t
     "background-color",
     "rgb(20, 20, 20)",
   );
-  await page
-    .getByRole("navigation", { name: "Settings topics" })
-    .getByRole("link", { name: "Editor", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "Editor");
   const raw = '{\n  "editor.tabSize": 6,\n  "editor.colorPalette": "cool"\n}\n';
   await page.evaluate((raw) => navigator.clipboard.writeText(raw), raw);
   await input.press("Control+a");
@@ -174,14 +174,12 @@ test("language packs load only on Apply under the production CSP and the saved l
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
+    if (message.type() === "error")
+      errors.push(`${message.text()} @ ${message.location().url}`);
   });
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
-  await page
-    .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("link", { name: "General", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "General");
   await page.getByLabel("Display language", { exact: true }).click();
   await page.getByRole("option", { name: "한국어", exact: true }).click();
   expect(requests).toEqual([]);

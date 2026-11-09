@@ -34,7 +34,9 @@ export function ErrorCenter({
   const trigger = useRef<HTMLButtonElement>(null);
   const popup = useRef<HTMLDivElement>(null);
   const id = useId();
-  const active = entries.filter((entry) => entry.status === "active");
+  const active = entries.filter(
+    (entry) => entry.status === "active" && entry.notify !== false,
+  );
   const close = (restore = false) => {
     setOpen(false);
     if (restore) trigger.current?.focus({ preventScroll: true });
@@ -80,6 +82,7 @@ export function ErrorCenter({
       <Button
         ref={trigger}
         type="button"
+        effect="none"
         className={`resource-link ${styles.trigger}`}
         aria-label={t("Errors")}
         aria-haspopup="dialog"
@@ -92,10 +95,10 @@ export function ErrorCenter({
         }}
       >
         <span className={styles.symbol} aria-hidden="true">
-          <Icon name="warning" width="20" height="20" />
+          <Icon name="error-active" width="20" height="20" />
         </span>
         <span className={styles.srOnly} role="status">
-          {t("{count} active errors", { count: String(active.length) })}
+          {t("{count} error alerts", { count: String(active.length) })}
         </span>
       </Button>
       {open &&

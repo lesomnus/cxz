@@ -1,5 +1,10 @@
 import { create } from "@bufbuild/protobuf";
-import { Code, ConnectError } from "@connectrpc/connect";
+import {
+  Code,
+  ConnectError,
+  createClient,
+  createRouterTransport,
+} from "@connectrpc/connect";
 import { describe, expect, it, vi } from "vitest";
 import { STREAM_STALL_MS } from "#src/shared/api/stream-deadline.ts";
 import { SessionEventSchema } from "#gen/cxz/session_pb";
@@ -9,6 +14,9 @@ import {
   NATIVE_HISTORY_PAGE_SIZE,
 } from "./session-history";
 import type { Connection } from "#src/shared/api/connection.ts";
+import { SessionService } from "#gen/cxz/session_svc_pb";
+import { diagnosticTransport } from "#src/shared/logs/rpc-diagnostics.ts";
+import { ClientErrors } from "#src/shared/errors/client-errors.ts";
 const event = (seq: bigint, kind = "input") =>
   create(SessionEventSchema, { seq, kind });
 const signal = () => new AbortController().signal;
@@ -16,6 +24,59 @@ function source(methods: Record<string, unknown>) {
   return new SessionHistory(methods as Connection["sessions"], "s", "c1");
 }
 describe("historical transcript transport", () => {
+  it("records foreground pagination failures without alerting even after the initial load has finished", async () => {
+    const errors = new ClientErrors();
+    let fail = false;
+    const client = createClient(
+      SessionService,
+      diagnosticTransport(
+        createRouterTransport((router) =>
+          router.service(SessionService, {
+            transcript: () => {
+              if (fail)
+                throw new ConnectError(
+                  "session not found: missing-runtime",
+                  Code.Unknown,
+                );
+              return { snapshotSeq: 20n };
+            },
+          }),
+        ),
+        "https://history.invalid",
+        { errors, write: () => {}, notify: () => true },
+      ),
+    );
+    const history = new SessionHistory(client, "missing-runtime", "reader");
+    await history.page({}, signal());
+    fail = true;
+    // Reclassify an already captured alert when its next foreground read fails.
+    await expect(history.snapshot(signal())).rejects.toThrow(
+      "session not found",
+    );
+    expect(errors.snapshot()[0].notify).toBe(true);
+    for (const query of [{ beforeSeq: 20n }, { afterSeq: 2n }, {}]) {
+      await expect(history.page(query, signal())).rejects.toThrow(
+        "session not found",
+      );
+    }
+    expect(errors.snapshot()).toHaveLength(1);
+    expect(errors.snapshot()[0]).toMatchObject({
+      status: "active",
+      notify: false,
+      count: 4,
+      code: "Unknown",
+      origin: {
+        kind: "rpc",
+        service: "cxz.SessionService",
+        method: "Transcript",
+      },
+    });
+    // A background fence read still follows the normal notification policy.
+    await expect(history.snapshot(signal())).rejects.toThrow(
+      "session not found",
+    );
+    expect(errors.snapshot()[0]).toMatchObject({ notify: true, count: 5 });
+  });
   it("uses display rows and a native stream fence, with details fetched separately", async () => {
     const page = {
       events: [event(20n)],
@@ -42,6 +103,11 @@ describe("historical transcript transport", () => {
     expect((await s.details(20n, signal())).at(-1)?.seq).toBe(900n);
     await s.page({ beforeSeq: 20n, snapshotSeq: 1000n }, signal());
     expect(transcript.mock.calls[1][0]).toMatchObject({ beforeSeq: 20n });
+    await s.page({ beforeSeq: 20n, snapshotSeq: 1000n, limit: 1 }, signal());
+    expect(transcript.mock.calls[2][0]).toMatchObject({
+      beforeSeq: 20n,
+      limit: 1,
+    });
   });
   // A runtime that cannot serve the projection is reported rather than paged
   // natively and reduced here. That fallback is why this client used to carry a

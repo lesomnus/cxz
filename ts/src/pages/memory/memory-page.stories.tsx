@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
@@ -43,10 +43,15 @@ function Preview({
   cards = false,
   document = false,
   readDelay = 0,
+  readLoading = false,
   cacheControls = false,
+  revisionCount = 1,
+  missingPreviousRevision = false,
+  diffFailOnce = false,
+  longParagraphChange = false,
 } = {}) {
-  const [router] = useState(() => {
-    const f = memoryFixture({
+  const [f] = useState(() =>
+    memoryFixture({
       empty,
       fail,
       delay: loading ? 60000 : 0,
@@ -54,7 +59,15 @@ function Preview({
       migrated,
       cards,
       readDelay,
-    });
+      readLoading,
+      revisionCount,
+      missingPreviousRevision,
+      diffFailOnce,
+      longParagraphChange,
+    }),
+  );
+  useEffect(() => () => f.dispose(), [f]);
+  const [router] = useState(() => {
     const router = createWorkspaceRouter(
       {
         shell: ({ children }) => (
@@ -137,7 +150,72 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
-export const Document: Story = { args: { document: true } };
+export const Document: Story = {
+  args: { document: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Opens the full Memory detail page directly. The shared information panel places the inline-editable title alone above four equal-width Project, Session, Created and Updated fields. Project and Session omit visible labels. Erase, Copy and Reload remain grouped beside the information panel. The revision selector itself looks like a panel and fills only the space beneath the actions, without increasing the information row’s height. Narrow layouts put the selector beside the actions. The Markdown preview follows below. Copy writes the raw displayed body to the clipboard; it does not open an editor or create a document.",
+      },
+    },
+  },
+};
+export const RevisionHistory: Story = {
+  args: { document: true, revisionCount: 4 },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Select a retained revision to read its Markdown body, or choose Changes to compare it with its immediate predecessor. Comparisons load on demand; revision changes keep the chosen preview mode. Copy always uses the full displayed body. The revision selector shows its number and date on the left, with compact UTF-8 byte additions/removals and relative age on the right. Counts cover changed text ranges within paragraphs. It shares the action buttons’ corner radius and uses only the remaining height. First revisions show Created; missing counts stay unknown. Latest follows the current document while title and resource dates stay current.",
+      },
+    },
+  },
+};
+export const DocumentLoading: Story = {
+  args: { document: true, readLoading: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Opens the same detail route with no cached Read answer. The document Read stays pending so the unloaded metadata and content can be inspected without a timer completing. Leaving the story cancels the fixture request. Document shows the loaded state; Loading shows the collection loading state.",
+      },
+    },
+  },
+};
+export const MissingPreviousRevision: Story = {
+  args: { document: true, revisionCount: 4, missingPreviousRevision: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Choose Changes. The server returns full text because the predecessor was not retained; the UI explains the missing comparison instead of treating the full body as a diff.",
+      },
+    },
+  },
+};
+export const LongParagraphChanges: Story = {
+  args: { document: true, revisionCount: 2, longParagraphChange: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Choose Changes. A real long-paragraph edit emphasizes the changed phrases while unchanged text stays neutral. The comparison wraps within its viewport and scrolls to the first edited phrase.",
+      },
+    },
+  },
+};
+export const ComparisonRetry: Story = {
+  args: { document: true, revisionCount: 4, diffFailOnce: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Choose Changes to see an attended read failure. Retry changes succeeds while preserving the selected body, metadata and revision.",
+      },
+    },
+  },
+};
 export const Empty: Story = { args: { empty: true } };
 export const Unavailable: Story = { args: { fail: true } };
 export const Loading: Story = { args: { loading: true } };
@@ -154,7 +232,7 @@ export const CachedDocument: Story = {
     docs: {
       description: {
         story:
-          "The full Read RPC is deliberately delayed. Open a document, return to the collection, then reopen it: Payday renders its cached answer immediately and revalidates behind it. Update the server document before reopening to test background refresh and draft/revision protection. This query cache is connection memory; this story does not enable an IndexedDB mirror.",
+          "The full Read RPC is deliberately delayed. Open a document, return to the collection, then reopen it: Payday renders its cached answer immediately and revalidates behind it. Update the server document before reopening to verify that an inline title draft survives background refresh and its save preserves the newer Markdown body. This query cache is connection memory; this story does not enable an IndexedDB mirror.",
       },
     },
   },

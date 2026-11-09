@@ -143,7 +143,7 @@ test("compact panels keep their heading fixed and share the conversation handle'
   await expect(panel.locator(".tree-session").first()).toBeVisible({
     timeout: 45000,
   });
-  expect((await panel.boundingBox())!.width).toBe(180);
+  await expect.poll(async () => (await panel.boundingBox())!.width).toBe(180);
   const thumb = panel.getByRole("scrollbar", { name: "Panel scroll" });
   await expect(thumb).toBeVisible();
   const handle = thumb.locator("[data-scroll-area=handle]");

@@ -9,6 +9,7 @@ import {
 } from "#gen/cxz/account_svc_pb";
 import { AuxKind, InstallationService } from "#gen/cxz/installation_pb";
 import { SessionService } from "#gen/cxz/session_svc_pb";
+import { ProjectService } from "#gen/cxz/project_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { projectFixtureId } from "./project-id";
 
@@ -23,6 +24,12 @@ export function resourceFixture({
   quotaRemaining = 64,
   onRead,
   usageMultiplier,
+  auxiliarySaveFailures = 0,
+  auxiliaryDelayMs = 0,
+  auxiliarySaveDelayMs = 0,
+  noAccounts = false,
+  auxiliaryNeedsLogin = false,
+  auxiliaryMixedProfiles = false,
 }: {
   eraseFailures?: number;
   usageDelayMs?: number;
@@ -32,6 +39,12 @@ export function resourceFixture({
   quotaRemaining?: number | null | (() => number | null);
   onRead?: (kind: "accounts" | "auth" | "usage" | "quota") => void;
   usageMultiplier?: () => number;
+  auxiliarySaveFailures?: number;
+  auxiliaryDelayMs?: number;
+  auxiliarySaveDelayMs?: number;
+  noAccounts?: boolean;
+  auxiliaryNeedsLogin?: boolean | (() => boolean);
+  auxiliaryMixedProfiles?: boolean;
 } = {}) {
   const accounts: Pick<
     Account,
@@ -108,11 +121,28 @@ export function resourceFixture({
       effort: "low",
     },
   ];
+  if (auxiliaryMixedProfiles)
+    config.push({
+      kind: AuxKind.SUGGESTION,
+      enabled: true,
+      account: "work",
+      model: "alternative-model",
+      effort: "medium",
+    });
   const transport = createRouterTransport((router) => {
+    // A real Workspace shell observes both inventories, even on a page whose
+    // isolated fixture has no projects or sessions of its own.
+    router.service(ProjectService, {
+      list: () => ({ items: [] }),
+      watch: async function* (_request, context) {
+        yield { items: [], snapshotComplete: true };
+        await untilAborted(context.signal);
+      },
+    });
     router.service(AccountService, {
       list: () => {
         onRead?.("accounts");
-        return { items: accounts };
+        return { items: noAccounts ? [] : accounts };
       },
       get: (request) => {
         const account = accounts.find((a) =>
@@ -218,23 +248,68 @@ export function resourceFixture({
         return { erased: true };
       },
       models: () => ({
+        needsLogin:
+          typeof auxiliaryNeedsLogin === "function"
+            ? auxiliaryNeedsLogin()
+            : auxiliaryNeedsLogin,
         models: [
           { id: "demo-model", name: "Demo model", efforts: ["low", "high"] },
+          ...(auxiliaryMixedProfiles
+            ? [
+                {
+                  id: "alternative-model",
+                  name: "Alternative model",
+                  efforts: ["medium"],
+                },
+              ]
+            : []),
         ],
       }),
     });
     router.service(InstallationService, {
-      agents: () => ({ profiles: config }),
-      saveAgents: (request) => {
+      agents: async () => {
+        if (auxiliaryDelayMs)
+          await new Promise((resolve) => setTimeout(resolve, auxiliaryDelayMs));
+        return {
+          profiles: config,
+          account: config.find((p) => p.account)?.account || "",
+        };
+      },
+      saveAgents: async (request) => {
+        if (auxiliarySaveDelayMs)
+          await new Promise((resolve) =>
+            setTimeout(resolve, auxiliarySaveDelayMs),
+          );
+        if (auxiliaryDelayMs)
+          await new Promise((resolve) => setTimeout(resolve, auxiliaryDelayMs));
+        if (auxiliarySaveFailures-- > 0)
+          throw new ConnectError(
+            "Configuration save failed. Try again.",
+            Code.Unavailable,
+          );
+        const account =
+          request.account ||
+          request.profiles.find((p) => p.account)?.account ||
+          "";
+        if (request.profiles.some((p) => p.account && p.account !== account))
+          throw new ConnectError(
+            "Auxiliary tasks must use one shared account",
+            Code.InvalidArgument,
+          );
         config.splice(
           0,
           config.length,
-          ...request.profiles.map((p) => ({ ...p, effort: p.effort })),
+          ...request.profiles.map((p) => ({ ...p, account, effort: p.effort })),
         );
-        return { profiles: config };
+        return { profiles: config, account };
       },
     });
     router.service(SessionService, {
+      list: () => ({ items: [] }),
+      watch: async function* (_request, context) {
+        yield { items: [], snapshotComplete: true };
+        await untilAborted(context.signal);
+      },
       transcript: (request) => {
         onRead?.("quota");
         const id = request.ref?.key.value;
@@ -367,4 +442,11 @@ export function resourceFixture({
     });
   });
   return new Connection(location.origin, transport);
+}
+
+function untilAborted(signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (signal.aborted) resolve();
+    else signal.addEventListener("abort", () => resolve(), { once: true });
+  });
 }

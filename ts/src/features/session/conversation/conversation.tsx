@@ -284,47 +284,16 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     // Resolve just the prompt preceding the cached window, retaining one event.
     // This read-only lookup does not prepend rows or change scrollbar geometry.
     void (async () => {
-      {
-        const page = await c.sessions.transcript(
-          {
-            ref: ref(id),
-            beforeSeq: firstSeq,
-            limit: 1,
-            snapshotSeq: latestSeq.current,
-          },
-          { signal: controller.signal },
+      const page = await history.page(
+        { beforeSeq: firstSeq, limit: 1, snapshotSeq: latestSeq.current },
+        controller.signal,
+      );
+      if (!controller.signal.aborted)
+        remember(
+          page.events[0]?.kind === "input"
+            ? page.events[0]
+            : page.precedingInput,
         );
-        if (!controller.signal.aborted)
-          remember(
-            page.events[0]?.kind === "input"
-              ? page.events[0]
-              : page.precedingInput,
-          );
-        return;
-      }
-      let before = firstSeq;
-      while (before > 0n && !controller.signal.aborted) {
-        const page = await history.page(
-          { beforeSeq: before, snapshotSeq: latestSeq.current },
-          controller.signal,
-        );
-        if (controller.signal.aborted) return;
-        const prompt = [...page.events]
-          .reverse()
-          .find((event) => event.seq < before && event.kind === "input");
-        if (prompt) {
-          remember(prompt);
-          return;
-        }
-        if (
-          !page.hasOlder ||
-          !page.events.length ||
-          page.events[0].seq >= before
-        )
-          break;
-        before = page.events[0].seq;
-      }
-      if (!controller.signal.aborted) remember();
     })().catch((e) => {
       if (!controller.signal.aborted)
         setError(
@@ -526,6 +495,34 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     s?.project?.id &&
     projects.find((project) => key(project.id) === key(s.project!.id));
   const projectId = projectUUID(sessionProject) ?? "";
+  const taskProject = sessionProject || s?.project;
+  const taskSource = useMemo(
+    () =>
+      taskProject
+        ? {
+            project: taskProject,
+            session: s?.runtimeId || id,
+            taskCatalog: c.taskCatalog,
+          }
+        : undefined,
+    [taskProject, s?.runtimeId, id, c.taskCatalog],
+  );
+  const memorySessionId = s?.id.length ? key(s.id) : "";
+  const memorySource = useMemo(
+    () =>
+      taskProject
+        ? {
+            project: taskProject,
+            session: create(
+              SessionRefSchema,
+              s?.id.length ? { key: { case: "id", value: s.id } } : ref(id),
+            ),
+            memories: c.memories,
+            cache: c.reads,
+          }
+        : undefined,
+    [taskProject, memorySessionId, id, c.memories, c.reads],
+  );
   const inputFiles = useMemo(() => {
     const run = s?.status?.runId;
     return {
@@ -806,6 +803,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       clientId: crypto.randomUUID(),
     };
   }
+  const backgroundButton = useRef<HTMLButtonElement>(null);
   function localOpen(kind: "memory" | "usage" | "background" | "aux") {
     if (kind === "memory")
       openCard({
@@ -819,18 +817,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         title: "Conversation usage",
         content: () => <UsageReport c={c} session={id} />,
       });
-    if (kind === "background")
-      openCard({
-        title: "Background tasks",
-        content: () => (
-          <BackgroundReport
-            c={c}
-            session={s?.id}
-            run={turn.runId || s?.status?.runId || ""}
-            available={backgroundEnabled}
-          />
-        ),
-      });
+    if (kind === "background") backgroundButton.current?.click();
     if (kind === "aux")
       openCard({
         title: "Auxiliary AI",
@@ -1025,6 +1012,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         allow,
         answersJson,
       });
+      c.questionDrafts.delete(id, e);
       setPending((old) =>
         old.filter((p) => p.requestId !== e.requestId || p.runId !== e.runId),
       );
@@ -1053,6 +1041,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         }
       />
       <Transcript
+        taskSource={taskSource}
+        memorySource={memorySource}
         searchMatches={searchMatches}
         loading={initialLoad && <ConversationLoading {...initialLoad} />}
         viewportCache={feed.viewport}
@@ -1131,6 +1121,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
             key={`${e.runId}:${e.requestId}`}
             e={e}
             agent={s?.agent ?? ""}
+            drafts={c.questionDrafts}
+            session={id}
             pastes={c.pastes}
             {...inputFiles}
             busy={busy}
@@ -1140,6 +1132,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       </FloatingCardHost>
       {!!(error || current.error) && (
         <ErrorNotice
+          local
           className={`error ${errorStyles.error} ${errorStyles.notice}`}
           error={error || String(current.error)}
         />
@@ -1221,7 +1214,16 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         busy={busy}
         turn={turn}
         backgroundJobs={background.count}
-        onBackgroundJobs={() => localOpen("background")}
+        backgroundButtonRef={backgroundButton}
+        backgroundReport={
+          <BackgroundReport
+            c={c}
+            session={s?.id}
+            run={turn.runId || s?.status?.runId || ""}
+            available={backgroundEnabled}
+            presentation="menu"
+          />
+        }
         working={turn.active && ["working", "running"].includes(executionState)}
         interrupt={() =>
           void action(async (session) => {

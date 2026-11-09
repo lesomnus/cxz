@@ -25,6 +25,16 @@ import { Connection } from "#src/shared/api/connection.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import styles from "./conversation-search.module.css";
 
+function recentWeek() {
+  const end = new Date();
+  end.setUTCHours(24, 0, 0, 0);
+  const start = new Date(end.getTime() - 7 * 86400000);
+  return {
+    since: start.toISOString().slice(0, 10),
+    until: end.toISOString().slice(0, 10),
+  };
+}
+
 export function ConversationSearch({
   c,
   projects,
@@ -36,8 +46,7 @@ export function ConversationSearch({
   const [match, setMatch] = useState("substring");
   const [project, setProject] = useState("");
   const [ignoreCase, setIgnoreCase] = useState(true);
-  const [since, setSince] = useState("");
-  const [until, setUntil] = useState("");
+  const [{ since, until }, setDates] = useState(recentWeek);
   const [visits, setVisits] = useState<SessionSearchVisit[]>([]);
   const [summary, setSummary] = useState<SessionSearchSummary>();
   const [progress, setProgress] = useState("");
@@ -144,6 +153,7 @@ export function ConversationSearch({
   return (
     <div className={styles.content}>
       <form
+        className={styles.searchForm}
         role="search"
         aria-label="Search conversations"
         onSubmit={(event) => {
@@ -151,7 +161,7 @@ export function ConversationSearch({
           if (!loading) void search();
         }}
       >
-        <FindBar aria-label="Search conversations">
+        <FindBar className={styles.searchBar} aria-label="Search conversations">
           <FindBarControls>
             <FindBarIcon />
             <FindBarInput
@@ -225,7 +235,11 @@ export function ConversationSearch({
             )}
           </FindBarControls>
         </FindBar>
-        <div className={styles.filterBar}>
+        <div
+          className={styles.filterBar}
+          role="group"
+          aria-label="Search filters"
+        >
           <PrefixValueMenu
             prefix={<ResourceIcon kind="projects" />}
             label="Search project"
@@ -256,45 +270,35 @@ export function ConversationSearch({
             aria-label="Date range (UTC, end exclusive)"
           >
             <DatePicker
+              variant="toolbar"
               label="From (UTC)"
               name="since"
               placeholder="From"
               className={styles.datePicker}
               value={since || null}
+              formatDate={(value) => value}
               onChange={(value) => {
                 invalidate();
-                setSince(value ?? "");
+                setDates((old) => ({ ...old, since: value ?? "" }));
               }}
             />
             <span className={styles.dateSeparator} aria-hidden="true">
               –
             </span>
             <DatePicker
+              variant="toolbar"
               label="Until (UTC, exclusive)"
               name="until"
               placeholder="Until"
               className={styles.datePicker}
               value={until || null}
+              formatDate={(value) => value}
               onChange={(value) => {
                 invalidate();
-                setUntil(value ?? "");
+                setDates((old) => ({ ...old, until: value ?? "" }));
               }}
             />
           </div>
-          {(project || since || until) && (
-            <Button
-              variant="toolbar"
-              type="button"
-              onClick={() => {
-                invalidate();
-                setProject("");
-                setSince("");
-                setUntil("");
-              }}
-            >
-              Reset filters
-            </Button>
-          )}
         </div>
       </form>
       {error && <ErrorNotice className={styles.error} error={error} />}

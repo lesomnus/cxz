@@ -35,7 +35,9 @@ diagnostic summaries ellipsize to retain two lines, with the full text in native
 History status is retained for assistive text and the row title. Details remain
 available from the independent page via the header link.
 Dismiss is a row action. The page toolbar places Clear history first and
-Dismiss all at the far right, both with 12px icons. Dismiss all changes only
+Dismiss all at the far right, both with 12px icons. The shared ResourceToolbar
+action group owns their 48×28px shape and icon sizing, also used by Tasks and
+Accounts; no Errors-specific toolbar CSS is needed. Dismiss all changes only
 currently Active entries to Dismissed in one store update; existing history is
 preserved and an already expired episode remains Stale. It is disabled when
 there are no Active entries. Clear history removes closed episodes and is
@@ -49,7 +51,10 @@ not embed or stretch the dialog card. Narrow screens keep the status icon and mo
 message cell. Details remains a viewport-limited modal.
 Only the sidebar uses Active/History tabs. Its page link always opens `/c/_/errors`;
 legacy `?tab=history` links also show the unified list.
-Its symbol and border are red while there are active errors. Each record shows
+Its plain triangle turns red while there are active alerting errors. The button
+uses the shared sidebar hover background and keeps it while its dialog is open.
+Its idle background and icon wrapper stay transparent, with no exclamation mark
+or ink effect. Each record shows
 the failure, operation, target when available, timestamps and repeat count.
 Repeated failures of the same operation and reference share an active entry.
 A failure after recovery or staleness starts a new episode.
@@ -57,11 +62,44 @@ A failure after recovery or staleness starts a new episode.
 All Connection RPC transports, including uploads and in-process connections,
 report failures here. Terminal/login WebSocket failures, sign-out failures,
 project runtime status errors and uncaught browser errors are included too.
-RPC error text is suppressed in workspace pages, forms, chips and action menus.
+Captured RPC error text is normally suppressed in workspace pages, forms, chips
+and action menus. Attended session/conversation-loading errors remain inline.
 Local validation, browser capability feedback, retry controls, warnings about
 uncertain operation results and errors within the agent transcript remain in
 their relevant views. Standalone components keep inline feedback when they are
 used without the workspace error center.
+
+## Notification policy
+
+Error context accepts `notify: false`: retain the episode and its full lifecycle,
+but exclude it from the sidebar error button's alert color/count. Missing values
+notify by default; persisted values must be actual booleans. The page and opened
+sidebar panel still list all records, including silent Active entries. Details
+shows whether an episode is included in alerts.
+
+```ts
+errors.report(key, error, { notify: false });
+// For a captured Connect RPC, an explicit call attribute overrides policy:
+c.sessions.get(request, errorNotificationOptions(false));
+```
+
+`errorNotificationOptions` comes from `shared/errors/error-notification.ts`.
+An initial conversation read owned by a waiting view is silent, including its
+retries after leaving that view. Session resolution also uses the explicit call
+attribute. Session Get/Transcript/History and supporting read calls use the
+connection's loading policy, covering duplicate metadata queries too. Once the
+conversation has loaded, visible history pagination, message jumps and preceding
+input lookups explicitly remain silent; they report failures inline instead.
+Optional account-quota and project-activity transcript reads also pass
+`notify: false`, so scheduled refreshes or inventory updates cannot repeatedly
+raise alerts for an unavailable session. Their diagnostics are still retained.
+Unrelated operations and live/background stream failures notify normally.
+This is contextual, not a blanket exclusion of a service or method.
+
+Attended read messages use `ErrorNotice local` so capture by the center cannot
+hide the failure behind a loading screen. Other captured API feedback keeps the
+existing deduplication behavior. Notification policy never marks a failure
+resolved, drops its count, removes history, or changes its recovery identity.
 
 ## Recovery
 

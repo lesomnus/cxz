@@ -41,6 +41,9 @@ an idempotency key, and advances the checkpoint only after publication succeeds.
 One unavailable conversation does not block collection from other sessions.
 Fork boundaries exclude copied historical turns. Existing history establishes
 the initial deployment baseline; later offline completions are collected.
+The Manager reads the fork's persisted `session.json` and starts collection after
+its inherited `ThroughSeq` plus the fork-boundary event. Copied completions,
+failures and Questions must not become new occurrences; new child events still do.
 
 Clients subscribe to `NotificationService.Listen` before reconciling `Read`.
 Listen carries readiness and invalidation hints, so reconnects always query the

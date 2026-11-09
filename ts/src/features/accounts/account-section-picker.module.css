@@ -1,0 +1,65 @@
+.picker {
+  min-width: 0;
+  width: 100%;
+  font: 12px/1.5 var(--ui-font-mono);
+}
+.picker :global(.value-menu) {
+  flex: none;
+  width: 100%;
+}
+.usage {
+  display: grid;
+  grid-template-columns: 9ch 19ch;
+  gap: calc(3 * var(--ui-space));
+  align-items: center;
+  font: 11px/1.5 var(--ui-font-mono);
+}
+.usage > span {
+  display: grid;
+  gap: var(--ui-control-inset);
+}
+.usage small {
+  color: var(--ui-muted);
+  font-size: 10px;
+}
+.remaining {
+  align-self: stretch;
+  align-content: center;
+  font-size: 14px;
+}
+.remaining > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--ui-control-inset);
+}
+.resetLabel {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space);
+}
+.resetLabel time {
+  color: inherit;
+  white-space: nowrap;
+}
+.remaining [data-level="critical"] {
+  color: var(--ui-action-error-color);
+}
+.remaining [data-level="warning"] {
+  color: var(--ui-warning-color, var(--ui-muted));
+}
+.unit,
+.empty {
+  color: var(--ui-muted);
+}
+@media (max-width: 600px) {
+  .usage {
+    grid-template-columns: 9ch 19ch;
+    gap: var(--ui-space);
+    font-size: 10px;
+  }
+  .reset > span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

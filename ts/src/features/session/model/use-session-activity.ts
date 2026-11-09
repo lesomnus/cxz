@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import { ref, type Connection } from "#src/shared/api/connection.ts";
+import { errorNotificationOptions } from "#src/shared/errors/error-notification.ts";
 import {
   activityVersion,
   loadSessionActivity,
   type ActivityCache,
-} from "./project-session-activity";
+} from "./session-activity-time";
 
 const connections = new WeakMap<Connection, ActivityCache>();
-export function useSessionActivity(c: Connection, sessions: Session[]) {
+export function useSessionActivity(
+  c: Connection,
+  sessions: Session[],
+  active = true,
+) {
   const cache = useMemo(() => {
     let cache = connections.get(c);
     if (!cache) connections.set(c, (cache = new Map()));
@@ -19,6 +24,7 @@ export function useSessionActivity(c: Connection, sessions: Session[]) {
     .map((s) => `${s.runtimeId}/${activityVersion(s)}`)
     .join(";");
   useEffect(() => {
+    if (!active) return;
     const controller = new AbortController();
     const publish = () => setState({ c, times: new Map(cache) });
     publish();
@@ -29,11 +35,13 @@ export function useSessionActivity(c: Connection, sessions: Session[]) {
       (session, signal) =>
         c.sessions.transcript(
           { ref: ref(session.runtimeId), limit: 1 },
-          { signal, timeoutMs: 10_000 },
+          // This timestamp is best effort; retain diagnostics without alerting
+          // whenever the project inventory changes or the list is revisited.
+          { signal, timeoutMs: 10_000, ...errorNotificationOptions(false) },
         ),
       publish,
     );
     return () => controller.abort();
-  }, [c, cache, version]);
+  }, [c, cache, version, active]);
   return state.c === c ? state.times : cache;
 }

@@ -9,7 +9,7 @@ test("mobile sign-in, conversation, questions, drafts and sign-out", async ({
   await page.getByLabel("Web access token").fill("a".repeat(32));
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Sessions", exact: true }),
+    page.getByRole("main", { name: "Sessions", exact: true }),
   ).toBeVisible();
   await page
     .getByRole("link", { name: /demo-chat/ })

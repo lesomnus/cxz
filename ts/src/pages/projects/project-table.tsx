@@ -16,7 +16,6 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { RelativeTime } from "#src/shared/components/date-time.tsx";
-import { isSessionWorking } from "#src/features/session/components/session-activity.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
   projectLocation,
@@ -26,7 +25,7 @@ import { containerState } from "./project-state";
 import { ProjectStateIcon } from "./project-state-icon";
 import { ProjectActions } from "./project-actions";
 import { projectActivitySessions } from "./project-session-activity";
-import { useSessionActivity } from "./use-session-activity";
+import { useSessionActivity } from "#src/features/session/model/use-session-activity.ts";
 import styles from "./project-table.module.css";
 import resourceTableStyles from "#src/shared/components/resource-table.module.css";
 import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
@@ -123,6 +122,7 @@ export function ProjectTable({
           return (
             <TableRow
               key={key(project.id)}
+              className={resourceTableStyles.row}
               selected={selected.has(key(project.id))}
               data-inactive={inactive || undefined}
             >
@@ -137,12 +137,7 @@ export function ProjectTable({
                 />
               </TableCell>
               <TableCell className={styles.state}>
-                <ProjectStateIcon
-                  state={state}
-                  working={
-                    active && isSessionWorking(active) ? active : undefined
-                  }
-                />
+                <ProjectStateIcon state={state} />
               </TableCell>
               <TableCell className={styles.nameCell}>
                 <RouteLink

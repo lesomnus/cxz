@@ -37,16 +37,48 @@ using the complete project metadata cached on the authenticated connection.
 Session changes filter that metadata locally, including the first selection,
 without a list request. The cache expires after one minute; returning to a
 project or changing session then refreshes in the background while retaining
-existing cards. Save, copy, delete, restore, purge and explicit reload invalidate
+existing cards. Rename, erase, restore, purge and explicit reload invalidate
 the affected project list. Refresh failures retain cached cards and offer retry.
 The cache is bounded and cleared when the connection is disposed, with no
 browser storage persistence. All sessions includes unowned and
 retained-owner documents. Project changes reset the session filter; returning
-from a document preserves the selected filter. Changing it while editing guards
-unsaved changes. Selecting an editing session is unnecessary. Reading is the default; Edit opens name/label fields and
-Markdown source with Save/Cancel. Source without Edit is read only. The document
-menu offers copying, reload and trash; history and migration metadata are separate
-collapsible sections. Migration labels are retained when editing user labels.
+from a document preserves the selected filter. Selecting an editing session is
+unnecessary.
+The detail page groups an Account-style information section, project-style
+Erase/Copy/Reload action panels and a Markdown preview section. Information uses
+the shared ResourceFields label/value layout: a title-only first row, then Project,
+Session, Created and Updated in an equal-width metadata row. Project and Session
+omit visible labels. Other metadata is omitted.
+A revision selector uses the space beneath the action buttons without increasing
+the information row’s height. Its trigger itself has the section panel appearance.
+Narrow layouts place the selector beside the action buttons. It lists retained
+versions through `Versions`; choosing one loads its body through `Read`, while
+Latest follows the current document. Title and resource dates remain current.
+The selector and choices place the revision number above its creation date on the
+left and compact added/removed UTF-8 byte counts together on the right, above the
+humanized age of the revision. The selector uses the
+action buttons’ corner shape. First revisions show Created; unavailable counts
+remain unknown.
+The preview has roomier content padding and a Preview/Changes switch. Changes
+requests the selected revision against its immediate predecessor with `Read` in
+DIFF format, on demand through the same Payday query cache. Added and removed
+text uses subdued green/red backgrounds. A read-only Monaco
+comparison emphasizes changed word ranges inside long paragraphs while keeping
+unchanged text neutral. It wraps to the viewport and reveals the first edited
+phrase. The previous body is reconstructed from the verified unified patch and
+the selected full body, without an additional request. A mismatched patch is
+rejected instead of displaying an incorrect comparison. The full selected body is
+kept separately, so Copy never copies the patch. First revisions, missing
+predecessors, empty diffs and failed comparison reads have explicit states;
+failed reads can be retried. Changing revisions keeps the chosen preview mode.
+Clicking the larger title opens the shared
+inline value editor; confirming patches only the name under its observed version,
+preserving the body, revision and labels. Existing document bodies remain preview
+only. Copy writes the full displayed raw Markdown string to the clipboard,
+including an older revision when selected; it leaves the document and preview mode
+unchanged. Clipboard failures show an error. There is no copied-document editor or
+creation form in the web view. Additional document metadata is omitted. Loading
+retains the grouped frame with its actions disabled until the document is available.
 The TUI `/memory` view offers direct browsing, copying,
 rename, trash/restore/purge, and starting a session seeded from a selected document.
 
@@ -60,10 +92,14 @@ rename, trash/restore/purge, and starting a session seeded from a selected docum
   `date_updated`; body edits also require `base_revision`. Labels can be cleared
   explicitly with `clear_labels`. Apply is intentionally unavailable.
 - Each changed body gets an increasing `revision` and an immutable full-body
-  MemoryVersion with a SHA-256 hash. Its optional `lines_added` and
-  `lines_removed` fields count changes against revision − 1, excluding diff headers,
-  context and EOF marker lines. Zero is a known count; absence means the first
-  revision or a missing predecessor. New counts commit with the body, and schema
+  MemoryVersion with a SHA-256 hash. Its optional `bytes_added` and
+  `bytes_removed` fields count UTF-8 bytes in changed text ranges against revision
+  − 1, preserving character boundaries and excluding unchanged text and diff markup.
+  The revision selector displays these byte counts with CompactNumber byte units.
+  Legacy `lines_added` and `lines_removed` retain their line-count semantics.
+  An older server without byte fields displays unknown byte counts in the web UI.
+  Zero is a known count; absence means the first revision or a missing predecessor.
+  New counts commit with the body, and schema
   migration backfills retained adjacent bodies without rewriting their contents,
   hashes or timestamps. Changing metadata does not advance the body revision or
   recompute its counts. Reverting A → B → A creates three versions; the two A
@@ -71,8 +107,8 @@ rename, trash/restore/purge, and starting a session seeded from a selected docum
   The current row caches the latest body. Versions and the resource commit in one
   transaction. Audit keeps management metadata, without duplicating body payloads.
 - `Read` defaults to full text. An explicit `revision` reads a retained version;
-  `Versions` lists retained revisions and their stored line counts. The web history
-  displays `+added −removed` and labels revision 1 as Created. With `base_revision`,
+  `Versions` lists retained revisions and their stored change counts. The web
+  revision selector uses these retained revisions. With `base_revision`,
   `format=DIFF` requests
   a contextual unified diff. `AUTO` chooses a smaller diff, otherwise full text.
   A missing base returns full text with `fallback_reason`. Smaller byte size is a
@@ -82,8 +118,9 @@ rename, trash/restore/purge, and starting a session seeded from a selected docum
   garbage collection. `Restore` requires the last metadata version. `Purge`
   requires trash and permanently removes all body versions.
 
-There are no Snapshot/Fork/Merge resource types. A copy is a new Memory. Restoring
-an old body means reading that version and patching it as a new revision. Existing
+There are no Snapshot/Fork/Merge resource types. Duplicating a document through the
+API creates a new Memory. Restoring an old body means reading that version and
+patching it as a new revision. Existing
 saved snapshots migrate to ordinary, independently editable documents.
 
 The manager routes requests to the project's `resources.db`, including a disposable

@@ -57,8 +57,15 @@ func (c *Client) AuxConfig(ctx context.Context, r *api.Empty, opts ...grpc.CallO
 }
 
 func (c *Client) AuxSetConfig(ctx context.Context, r *api.AuxSetConfigInput, opts ...grpc.CallOption) (*api.AuxConfigReply, error) {
+	account := ""
+	for _, profile := range r.Profiles {
+		if profile != nil && profile.Account != "" {
+			account = profile.Account
+			break
+		}
+	}
 	v, err := c.installation.SaveAgents(ctx, resource.SaveAgentsRequest_builder{
-		Profiles: auxProfilesOf(r.Profiles),
+		Profiles: auxProfilesOf(r.Profiles), Account: &account,
 	}.Build(), opts...)
 	return auxConfig(v, err)
 }

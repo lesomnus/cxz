@@ -51,6 +51,10 @@ func OpenLog(ctx context.Context, dir, session string) (*Log, error) {
 		store.Close()
 		return nil, err
 	}
+	if err = store.backfillBackgroundOrder(ctx, events); err != nil {
+		store.Close()
+		return nil, err
+	}
 	l := &Log{store: store, events: events}
 	for _, e := range events {
 		l.raw += int64(len(e.Raw))

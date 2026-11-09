@@ -6,6 +6,7 @@ import {
   matchesResource,
   resourceRef,
 } from "#src/shared/navigation/resource-route.ts";
+import { errorNotificationOptions } from "#src/shared/errors/error-notification.ts";
 import { useRemote } from "./use-remote";
 
 // The URL is a locator; conversation state remains keyed by the resolved runtime ID.
@@ -31,7 +32,7 @@ export function useSession(
       try {
         session = await c.sessions.get(
           { ref, select: { all: true, project: { all: true } } },
-          { signal, timeoutMs: 10000 },
+          { signal, timeoutMs: 10000, ...errorNotificationOptions(false) },
         );
       } catch (error) {
         // Older bookmarks used the runtime handle instead of a resource alias.
@@ -47,7 +48,7 @@ export function useSession(
             ref: { key: { case: "runtimeId", value: handle } },
             select: { all: true, project: { all: true } },
           },
-          { signal, timeoutMs: 10000 },
+          { signal, timeoutMs: 10000, ...errorNotificationOptions(false) },
         );
       }
       c.store.apply("cxz.Session", [{ id: session.id, value: session }]);

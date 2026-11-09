@@ -1,0 +1,30 @@
+.menu {
+  display: flex;
+  width: calc(80 * var(--ui-space));
+  max-width: calc(100vw - 4 * var(--ui-space));
+  max-height: 50dvh;
+  visibility: hidden;
+}
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  max-height: inherit;
+}
+.state,
+.note {
+  margin: 0;
+  padding: calc(2 * var(--ui-space));
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.state {
+  display: grid;
+  gap: var(--ui-space);
+}
+.note {
+  font-size: 0.6875rem;
+}

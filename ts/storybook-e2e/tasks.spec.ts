@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const taskPage =
   "/iframe.html?id=resources-tasks--project-table&viewMode=story";
-test("task table edits work and recovers stopped Working ownership through Cancel then Release", async ({
+test("task table edits work and canceled Working tasks become read-only", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -113,20 +113,14 @@ test("task table edits work and recovers stopped Working ownership through Cance
   await expect(detail.getByLabel("Status", { exact: true })).toContainText(
     "Canceled",
   );
-  await detail.getByRole("button", { name: "Release", exact: true }).click();
-  const confirm = page.getByRole("dialog", {
-    name: "Release task?",
-    exact: true,
-  });
-  await expect(confirm).toBeVisible();
-  await confirm.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(confirm).toHaveCount(0);
-  await expect(detail).toBeVisible();
-  await detail.getByRole("button", { name: "Release", exact: true }).click();
-  await confirm.getByRole("button", { name: "Release", exact: true }).click();
+  for (const label of ["Release", "Cancel", "Save", "Discard changes"]) {
+    await expect(
+      detail.getByRole("button", { name: label, exact: true }),
+    ).toBeDisabled();
+  }
   await expect(
-    detail.getByRole("button", { name: "Release", exact: true }),
-  ).toHaveCount(0);
+    detail.getByRole("textbox", { name: "Title", exact: true }),
+  ).toHaveAttribute("aria-readonly", "true");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(
     tasks.getByRole("link", {

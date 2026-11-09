@@ -27,9 +27,10 @@ export type ResourceView =
   | "search"
   | "memory"
   | "errors"
+  | "logs"
   | "auxiliary"
   | "not-found";
-export type SettingsTopic = "general" | "editor" | "connections" | "logs";
+export type SettingsTopic = "general" | "editor" | "connections";
 type WorkspaceRouterContext = {
   shell: ComponentType<PropsWithChildren>;
   view: ComponentType;
@@ -218,9 +219,17 @@ const connectionsRoute = createRoute({
   staticData: { resource: "settings", settingsTopic: "connections" },
 });
 const logsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "log",
+  component: RouteView,
+  staticData: { resource: "logs" },
+});
+const legacyLogsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: "logs",
-  staticData: { resource: "settings", settingsTopic: "logs" },
+  beforeLoad: () => {
+    throw redirect({ to: "/log", replace: true });
+  },
 });
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -305,12 +314,13 @@ const routeTree = rootRoute.addChildren([
     memoryDocumentRoute,
     auxiliaryRoute,
   ]),
+  logsRoute,
   settingsRoute.addChildren([
     settingsIndexRoute,
     generalRoute,
     editorRoute,
     connectionsRoute,
-    logsRoute,
+    legacyLogsRoute,
   ]),
   notFoundRoute,
 ]);

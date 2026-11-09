@@ -252,7 +252,7 @@ func (s *Store) foldBackground(ctx context.Context, events []core.Event) error {
 		if s.background[e.RunID] == nil {
 			s.background[e.RunID] = &agentview.BackgroundState{}
 		}
-		s.background[e.RunID].Apply(v.Payload)
+		s.background[e.RunID].ApplyAt(v.Payload, e.Seq, e.TimeMS)
 		changed = true
 	}
 	if !changed {

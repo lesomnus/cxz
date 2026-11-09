@@ -1,5 +1,15 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Background task elapsed time": "백그라운드 작업 경과시간",
+  "Background task duration unavailable": "백그라운드 작업시간을 알 수 없음",
+  "Created memories": "생성된 메모리",
+  "No memories were created in this range.":
+    "이 구간에 생성된 메모리가 없습니다.",
+  "Created tasks": "생성된 Task",
+  "No Tasks were created in this range.": "이 구간에 생성된 Task가 없습니다.",
+  "Task information is unavailable.": "Task 정보를 가져올 수 없습니다.",
+  "Only the loaded conversation range is shown.":
+    "불러온 대화 구간만 표시합니다.",
   Step: "단계",
   Exception: "예외 종류",
   Line: "줄",
@@ -744,6 +754,9 @@ export const messages = {
   "Unread error": "확인하지 않은 오류",
   "Unread response": "읽지 않은 응답",
   "{count} unread sessions": "읽지 않은 세션 {count}개",
+  "Included in alerts": "알림 집계에 포함됨",
+  "Excluded from alerts": "알림 집계에서 제외됨",
+  "{count} error alerts": "오류 알림 {count}개",
   Notifications: "알림",
   "Notification sounds": "알림 소리",
   "Play a sound when a response finishes or a new question arrives.":

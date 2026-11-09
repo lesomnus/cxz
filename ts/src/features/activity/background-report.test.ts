@@ -11,6 +11,7 @@ it("reads only the current run's reduced task snapshot", () => {
             task_id: "task",
             active: true,
             description: "Build",
+            command: "npm run build",
             status: "working",
           },
           malformed: 2,
@@ -19,7 +20,13 @@ it("reads only the current run's reduced task snapshot", () => {
     }),
   );
   expect(backgroundTasks(bytes, "current")).toEqual([
-    { task_id: "task", active: true, description: "Build", status: "working" },
+    {
+      task_id: "task",
+      active: true,
+      description: "Build",
+      command: "npm run build",
+      status: "working",
+    },
   ]);
   expect(backgroundTasks(bytes, "missing")).toEqual([]);
 });

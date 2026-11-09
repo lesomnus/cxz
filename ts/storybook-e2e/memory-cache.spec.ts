@@ -33,7 +33,7 @@ test("reopening a Memory document draws the retained body before its delayed bac
   ).toHaveCount(0);
 });
 
-test("background revalidation preserves an unsaved draft and its original conflict revision", async ({
+test("background revalidation preserves an inline title draft and metadata saves keep the newer body", async ({
   page,
 }) => {
   await page.goto(
@@ -47,53 +47,58 @@ test("background revalidation preserves an unsaved draft and its original confli
     .click();
   await enter(page);
   await document(page)
-    .getByRole("button", { name: "Edit", exact: true })
+    .getByRole("button", { name: "Edit Memory name", exact: true })
     .click();
-  const name = document(page).getByRole("textbox", {
+  const editor = page.getByRole("dialog", {
+    name: "Edit Memory name",
+    exact: true,
+  });
+  const name = editor.getByRole("textbox", {
     name: "Memory name",
     exact: true,
   });
-  await name.fill("Keep my unsaved draft");
-  // The revalidation is deliberately slower than entering the editor.
-  await page.waitForTimeout(1200);
-  await expect(name).toHaveValue("Keep my unsaved draft");
-  await document(page)
-    .getByRole("button", { name: "Save", exact: true })
-    .click();
+  await name.fill("Keep my unsaved title");
+  await expect(document(page)).toContainText(
+    "Another session changed this document.",
+  );
+  await expect(name).toHaveValue("Keep my unsaved title");
+  await editor.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(editor).toHaveCount(0);
+  await expect(document(page)).toContainText("Keep my unsaved title");
+  await expect(document(page)).toContainText(
+    "Another session changed this document.",
+  );
   await expect(
-    page.getByText(/Memory (version|revision) changed/).first(),
+    document(page)
+      .getByRole("combobox", { name: "Revision", exact: true })
+      .getByRole("img", { name: "Revision 2", exact: true }),
   ).toBeVisible();
-  await expect(name).toHaveValue("Keep my unsaved draft");
 });
 
-test("a confirmed save is retained for the next visit", async ({ page }) => {
+test("a confirmed title save is retained for the next visit", async ({
+  page,
+}) => {
   await page.goto(
     "/iframe.html?id=pages-memory--cached-document&viewMode=story",
   );
   await enter(page);
   await expect(document(page)).toContainText("Keep UI decisions together.");
   await document(page)
-    .getByRole("button", { name: "Edit", exact: true })
+    .getByRole("button", { name: "Edit Memory name", exact: true })
     .click();
-  await document(page)
+  const editor = page.getByRole("dialog", {
+    name: "Edit Memory name",
+    exact: true,
+  });
+  await editor
     .getByRole("textbox", { name: "Memory name", exact: true })
-    .fill("Cached saved document");
-  const editor = page.locator(".monaco-editor textarea");
-  await editor.focus();
-  await page.keyboard.press("ControlOrMeta+A");
-  await page.keyboard.insertText(
-    "# Cached save\n\nNew body remains available.",
-  );
-  await document(page)
-    .getByRole("button", { name: "Save", exact: true })
-    .click();
-  await expect(
-    document(page).getByRole("button", { name: "Edit", exact: true }),
-  ).toBeVisible();
-  await expect(document(page)).toContainText("New body remains available.");
+    .fill("Cached saved title");
+  await editor.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(editor).toHaveCount(0);
+  await expect(document(page)).toContainText("Cached saved title");
   await leave(page);
-  await enter(page, "Cached saved document");
-  await expect(document(page)).toContainText("New body remains available.", {
+  await enter(page, "Cached saved title");
+  await expect(document(page)).toContainText("Keep UI decisions together.", {
     timeout: 200,
   });
   await expect(

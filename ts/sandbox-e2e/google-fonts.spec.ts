@@ -1,3 +1,4 @@
+import { chooseSettingsTopic } from "../test-support/settings-navigation";
 import { test, expect, devices, type Page, type Route } from "@playwright/test";
 import { chooseSetting, expectInherited } from "./settings-controls";
 
@@ -31,10 +32,7 @@ async function ready(page: Page) {
 async function settings(page: Page) {
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
-  await page
-    .getByRole("navigation", { name: "Settings topics" })
-    .getByRole("link", { name: "Editor", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "Editor");
 }
 function control(page: Page, scope = "Global") {
   return page.locator(".font-family-control").filter({

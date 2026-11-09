@@ -156,6 +156,19 @@ export const TaskDetails: Story = {
     },
   },
 };
+export const CanceledTaskDetails: Story = {
+  ...TaskDetails,
+  args: { initialPath: "/c/_/project/workspace/task/task-8" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Canceled tasks share the muted table appearance and read-only fields/actions of Done tasks. Details and history remain available.",
+      },
+    },
+  },
+};
+
 export const LongTaskDetails: Story = {
   ...TaskDetails,
   args: {

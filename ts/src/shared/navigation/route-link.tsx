@@ -4,6 +4,7 @@ import {
   ButtonAnchor,
   type ButtonAnchorProps,
   PanelItemAnchor,
+  MenuItemAnchor,
 } from "@lesomnus/nox";
 
 const NavigationAnchor = forwardRef<HTMLAnchorElement, ButtonAnchorProps>(
@@ -27,3 +28,4 @@ const NavigationAnchor = forwardRef<HTMLAnchorElement, ButtonAnchorProps>(
 // Real links retain native new-tab behavior and the shared button press motion.
 export const RouteLink = createLink(NavigationAnchor);
 export const PanelLink = createLink(PanelItemAnchor);
+export const MenuLink = createLink(MenuItemAnchor);

@@ -43,11 +43,12 @@ func (memoryVersionRecorder) Record(ctx context.Context, s bare.Server, c bare.C
 	driver := s.Db.Driver()
 	if kind != "deleted" {
 		hash := sha256.Sum256([]byte(m.GetContent()))
-		var added, removed any
+		var added, removed, bytesAdded, bytesRemoved any
 		if before, ok := c.Previous.(*resource.Memory); ok && m.GetRevision() > 1 && before.GetRevision() == m.GetRevision()-1 {
 			added, removed = memoryLineChanges(before.GetContent(), m.GetContent())
+			bytesAdded, bytesRemoved = memoryByteChanges(before.GetContent(), m.GetContent())
 		}
-		if err := driver.Exec(ctx, `INSERT INTO memory_version(memory_id,revision,content,content_hash,date_created,lines_added,lines_removed) VALUES(?,?,?,?,?,?,?) ON CONFLICT(memory_id,revision) DO NOTHING`, []any{id, m.GetRevision(), m.GetContent(), hex.EncodeToString(hash[:]), time.Now().UTC(), added, removed}, nil); err != nil {
+		if err := driver.Exec(ctx, `INSERT INTO memory_version(memory_id,revision,content,content_hash,date_created,lines_added,lines_removed,bytes_added,bytes_removed) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(memory_id,revision) DO NOTHING`, []any{id, m.GetRevision(), m.GetContent(), hex.EncodeToString(hash[:]), time.Now().UTC(), added, removed, bytesAdded, bytesRemoved}, nil); err != nil {
 			return err
 		}
 		rows := &entsql.Rows{}
@@ -85,7 +86,7 @@ func memoryVersionSchema(ctx context.Context, db *sql.DB) error {
 	for _, q := range []string{
 		`CREATE TABLE IF NOT EXISTS memory_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL)`,
 		`INSERT OR IGNORE INTO memory_meta VALUES('changes_floor','0')`,
-		`CREATE TABLE IF NOT EXISTS memory_version(memory_id TEXT NOT NULL,revision INTEGER NOT NULL,content TEXT NOT NULL,content_hash TEXT NOT NULL,date_created DATETIME NOT NULL,lines_added INTEGER CHECK(lines_added>=0),lines_removed INTEGER CHECK(lines_removed>=0),PRIMARY KEY(memory_id,revision))`,
+		`CREATE TABLE IF NOT EXISTS memory_version(memory_id TEXT NOT NULL,revision INTEGER NOT NULL,content TEXT NOT NULL,content_hash TEXT NOT NULL,date_created DATETIME NOT NULL,lines_added INTEGER CHECK(lines_added>=0),lines_removed INTEGER CHECK(lines_removed>=0),bytes_added INTEGER CHECK(bytes_added>=0),bytes_removed INTEGER CHECK(bytes_removed>=0),PRIMARY KEY(memory_id,revision))`,
 		`CREATE TABLE IF NOT EXISTS memory_change(sequence INTEGER PRIMARY KEY AUTOINCREMENT,memory_id TEXT NOT NULL,project_id TEXT NOT NULL,revision INTEGER NOT NULL,kind TEXT NOT NULL,date_created DATETIME NOT NULL)`,
 		`CREATE INDEX IF NOT EXISTS memory_change_project ON memory_change(project_id,sequence)`,
 		`CREATE TABLE IF NOT EXISTS memory_migration(source TEXT PRIMARY KEY,memory_id TEXT NOT NULL,content_hash TEXT NOT NULL,date_created DATETIME NOT NULL)`,

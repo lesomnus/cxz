@@ -2,6 +2,32 @@ import { createMemoryHistory } from "@tanstack/react-router";
 import { expect, test } from "vitest";
 import { createWorkspaceRouter } from "./router";
 
+test.each(["/log", "/setting/logs"])(
+  "Logs are a standalone page: %s",
+  async (path) => {
+    const history = createMemoryHistory({ initialEntries: [path] });
+    const router = createWorkspaceRouter(
+      { shell: () => null, view: () => null },
+      history,
+    );
+    try {
+      await router.load();
+      if (path === "/setting/logs") {
+        // Server loads return a redirect response instead of navigating history.
+        const result = router._serverResult;
+        expect(result?.type).toBe("redirect");
+        if (result?.type === "redirect")
+          expect(result.redirect.headers.get("Location")).toBe("/log");
+      } else {
+        expect(router.state.location.pathname).toBe("/log");
+        expect(router.state.matches.at(-1)?.staticData.resource).toBe("logs");
+      }
+    } finally {
+      history.destroy();
+    }
+  },
+);
+
 test.each(["/c/_/activity", "/activity"])(
   "a removed Activity bookmark shows the not-found page: %s",
   async (path) => {

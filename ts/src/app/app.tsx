@@ -7,7 +7,7 @@ import { Button } from "@lesomnus/nox";
 import { Workspace } from "./workspace-shell";
 import "#src/app/styles/style.css";
 import { useWorkspaceRoute } from "./router";
-import { LogsPage } from "#src/pages/settings/logs-page.tsx";
+import { LogsPage } from "#src/pages/logs/logs-page.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { recordClientError } from "#src/shared/logs/client-logs.ts";
 import { resourceLocation } from "#src/shared/navigation/resource-route.ts";
@@ -62,11 +62,7 @@ export function App({ children }: PropsWithChildren) {
     connection?.dispose();
     setConnection(undefined);
   }
-  if (
-    !connection &&
-    route.resource === "settings" &&
-    route.settingsTopic === "logs"
-  )
+  if (!connection && route.resource === "logs")
     return (
       <div
         style={{ height: "100dvh", display: "flex", flexDirection: "column" }}
@@ -97,7 +93,7 @@ export function App({ children }: PropsWithChildren) {
         </form>
         <p role="alert">{error}</p>
         <small>{location.origin}</small>
-        <RouteLink to="/setting/logs">{t("Logs")}</RouteLink>
+        <RouteLink to="/log">{t("Logs")}</RouteLink>
       </main>
     );
   return (

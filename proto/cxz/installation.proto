@@ -41,7 +41,7 @@ service InstallationService {
   rpc Retention(RetentionRequest) returns (HistoryPolicy);
   rpc SaveRetention(SaveRetentionRequest) returns (HistoryPolicy);
 
-  // Which account and model each kind of auxiliary task runs on. The kinds are
+  // The shared account and each kind's model/effort. The kinds are
   // in AuxKind; a session asks for a run through SessionService.
   rpc Agents(AgentsRequest) returns (AgentProfiles);
   rpc SaveAgents(SaveAgentsRequest) returns (AgentProfiles);
@@ -113,8 +113,8 @@ enum AuxKind {
   AUX_KIND_TITLE = 3;
 }
 
-// Which account and model run a kind. Per kind, because whether two kinds share
-// a profile is what decides whether one call can answer both. agent and backend
+// Each kind's model and effort. account is a compatibility projection of the
+// installation-wide shared account; mixed-account saves are refused. agent and backend
 // are read only: they come from the registered account, not from a caller.
 message AgentProfile {
   AuxKind kind = 1; bool enabled = 2; string account = 3; string agent = 4;
@@ -126,11 +126,17 @@ message AgentProfile {
 
 message AgentsRequest {}
 
-message SaveAgentsRequest { repeated AgentProfile profiles = 1; }
+message SaveAgentsRequest {
+  repeated AgentProfile profiles = 1;
+  // One registered account for every kind; omitted by older clients, whose
+  // profile account fields must agree. An explicit value applies to all profiles.
+  string account = 2;
+}
 
 message AgentProfiles {
   string revision = 1; repeated AgentProfile profiles = 2;
   string message = 3; string owner = 4;
+  string account = 5;
 }
 
 message RetentionRequest {}

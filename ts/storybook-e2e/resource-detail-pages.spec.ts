@@ -127,27 +127,32 @@ for (const resource of resources) {
   });
 }
 
-test("returning to a Memory document during its exit does not restore discarded edits", async ({
+test("returning to a Memory document during its exit does not restore a canceled inline rename", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-memory--default&viewMode=story");
   await page
     .getByRole("link", { name: "Architecture notes", exact: true })
     .click();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await page
+    .getByRole("button", { name: "Edit Memory name", exact: true })
+    .click();
+  const editor = page.getByRole("dialog", {
+    name: "Edit Memory name",
+    exact: true,
+  });
+  await editor
     .getByRole("textbox", { name: "Memory name", exact: true })
     .fill("Discard this draft");
+  await editor.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByRole("link", { name: "Memory", exact: true }).click();
-  await page
-    .getByRole("dialog", { name: "Discard unsaved changes", exact: true })
-    .getByRole("button", { name: "Confirm", exact: true })
-    .click();
   await expect(frame(page)).toHaveAttribute("data-value", "list");
   await page
     .getByRole("link", { name: "Architecture notes", exact: true })
     .evaluate((node) => (node as HTMLAnchorElement).click());
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Edit Memory name", exact: true })
+    .click();
   await expect(
     page.getByRole("textbox", { name: "Memory name", exact: true }),
   ).toHaveValue("Architecture notes");

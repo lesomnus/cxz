@@ -104,7 +104,15 @@ results and publishes changed snapshots through the same Background API and
 Watch stream, shared by all browser windows. A successful empty list means zero;
 unsupported APIs or failed reads remain unavailable without failing the turn.
 Codex counts its reported background terminals, not arbitrary operating-system
-processes or subagents. Existing Codex sessions need an updated supervisor and
+processes or subagents. Background task `command` contains executable text;
+`description` contains the provider's human-readable explanation, when supplied.
+Codex terminal snapshots supply a command without a description. The web menu
+shows descriptions as plain text and otherwise highlights the command, keeping
+its full text on hover. When both fields exist, the description is shown and the
+command remains available on hover. Old Codex events are normalized on replay;
+supervisor startup also repairs cached task fields when retained events prove
+their meaning, preserving task timing. No database deletion is needed.
+Existing Codex sessions need an updated supervisor and
 a session restart to use this integration. See the
 [official App Server documentation](https://learn.chatgpt.com/docs/app-server#clean-background-terminals).
 
@@ -117,6 +125,24 @@ Unresolved requests still become actionable cards; human questions appear
 immediately. Fixed-width UI text shares the `--ui-font-mono` token, including the
 elapsed timer and background count. Terminal and editor defaults resolve that
 same token, with explicit editor font preferences taking precedence.
+
+Pending Question answers use `Connection.questionDrafts`, backed by the same
+tab-local `SessionDrafts` storage as the composer. Selected options, free-text
+answers, paste/file chips and the active question step survive navigation and
+reload. Records are scoped to the connection, session, agent run and request ID;
+a changed question definition starts a fresh draft. Ready attachment paths are
+restored without another upload. Password-field values are excluded. A successful
+Reply clears that request's draft, including confirmed cancellation; failed
+replies keep it available. Sign-out clears these drafts with the composer drafts.
+
+Ctrl+Shift+V (Cmd+Shift+V on macOS) pastes clipboard text directly into the
+composer, keeping it expanded instead of converting it to a chip or uploading
+it as a file. This explicit text paste also bypasses automatic secret-chip
+conversion. Native selection replacement and undo/redo are retained, with the
+existing 1 MiB paste limit. Ordinary paste keeps its automatic chip behavior.
+Ctrl+Backspace removes a chip as one unit, including when the caret follows
+trailing spaces. Ctrl+Z and Ctrl+Shift+Z undo/redo chip insertion and deletion,
+preserving the original pasted contents and ordinary text-editing history.
 
 Protocol `raw` records, quota/model polling and internal control acknowledgements
 remain in the journal but do not appear as conversation rows. Usage snapshots
@@ -356,10 +382,10 @@ this terminal for developing cxz itself, and Ctrl+C stops only that gateway.
 | --- | --- |
 | Projects and sessions | Shared inventories and watches, creating/opening sessions, client-side visibility filters, editable titles and aliases |
 | Accounts | Profile registration, central Codex login, isolated Claude session login and helper login |
-| Search | Indexed server search, project/date/match filters, result paging and event navigation |
+| Search | Indexed server search, project/date filters in an attached panel below the search bar, match filters, result paging and event navigation |
 | Shared memory | Project library, revision-checked documents, snapshots, forks, merge, import, rename and trash controls |
 | Conversation | Virtualized paged history, live events, Markdown, highlighted code, model/effort snapshots, response metrics and copy |
-| Drafts | Per-session drafts and paste chips survive navigation and reload in tab-local sessionStorage |
+| Drafts | Composer drafts, pending Question answers/step and paste chips survive navigation and reload in tab-local sessionStorage |
 | Sending | Explicit Send or Ctrl+Enter; mutation IDs; no automatic replay after ambiguous failure |
 | Session control | Interrupt, stop/resume, restart, fork with inherited account/settings/history, permanent erasure with confirmation; queued-message cancel/recall |
 | Approval | Allow/deny and full tool input/output/approval inspection |

@@ -15,7 +15,7 @@ async function animations(root: Locator) {
   });
 }
 for (const reduced of [false, true]) {
-  test(`Profile and Memory action menus ${reduced ? "respect reduced motion" : "reveal by default"}`, async ({
+  test(`Profile menus ${reduced ? "respect reduced motion" : "reveal by default"}`, async ({
     page,
   }) => {
     if (reduced) await page.emulateMedia({ reducedMotion: "reduce" });
@@ -34,23 +34,6 @@ for (const reduced of [false, true]) {
     ).toBe(!reduced);
     await page.keyboard.press("Escape");
     await expect(profile).toBeFocused();
-    await page.goto("/iframe.html?id=pages-memory--document&viewMode=story");
-    await page.addStyleTag({
-      content: ":root { --ui-menu-reveal-duration: 2s; }",
-    });
-    await page
-      .getByRole("button", { name: "Memory actions", exact: true })
-      .click();
-    const memory = page.getByRole("menu", {
-      name: "Memory actions",
-      exact: true,
-    });
-    await expect(memory).toHaveAttribute("data-enter-from", "from-top-right");
-    expect(
-      (await animations(memory)).some((name) => name.includes("reveal")),
-    ).toBe(!reduced);
-    await page.keyboard.press("Escape");
-    await expect(memory).toHaveCount(0);
   });
 }
 

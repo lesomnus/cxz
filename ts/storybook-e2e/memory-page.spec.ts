@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Locator } from "@playwright/test";
 const open = async (page: Page, story = "default") => {
   await page.clock.setFixedTime(new Date("2026-11-05T12:00:00Z"));
   await page.goto(`/iframe.html?id=pages-memory--${story}&viewMode=story`);
@@ -11,12 +11,85 @@ const card = (page: Page, name: string) =>
   grid(page).getByRole("link", { name, exact: true });
 const back = (page: Page) =>
   page.getByRole("link", { name: "Memory", exact: true }).click();
-async function editSource(page: Page, text: string) {
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  const editor = page.locator(".monaco-editor textarea");
-  await editor.focus();
-  await page.keyboard.press("ControlOrMeta+A");
-  await page.keyboard.insertText(text);
+async function rename(page: Page, name: string) {
+  await doc(page)
+    .getByRole("button", { name: "Edit Memory name", exact: true })
+    .click();
+  const editor = page.getByRole("dialog", {
+    name: "Edit Memory name",
+    exact: true,
+  });
+  await editor
+    .getByRole("textbox", { name: "Memory name", exact: true })
+    .fill(name);
+  await editor.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(editor).toHaveCount(0);
+}
+
+async function pressCentered(page: Page, button: Locator) {
+  await expect(button).toBeEnabled();
+  await button.hover();
+  const content = button.locator(":scope > .button-content");
+  const resting = (await content.boundingBox())!;
+  const bounds = (await button.boundingBox())!;
+  const scale = await content.evaluate(
+    (node) =>
+      Number(getComputedStyle(node).getPropertyValue("--press-scale")) || 0.95,
+  );
+  await page.mouse.down();
+  try {
+    await expect
+      .poll(async () => (await content.boundingBox())!.width)
+      .toBeCloseTo(resting.width * scale, 1);
+    const pressed = (await content.boundingBox())!;
+    expect(pressed.x + pressed.width / 2).toBeCloseTo(
+      bounds.x + bounds.width / 2,
+      0,
+    );
+    expect(pressed.y + pressed.height / 2).toBeCloseTo(
+      bounds.y + bounds.height / 2,
+      0,
+    );
+  } finally {
+    await page.mouse.up();
+  }
+}
+
+async function highlightedText(diff: Locator, kind: "added" | "removed") {
+  return diff.evaluate((root, kind) => {
+    const selector =
+      kind === "added" ? ".char-insert" : ".char-delete, .inline-deleted-text";
+    const highlights = [...root.querySelectorAll(selector)]
+      .map((node) => node.getBoundingClientRect())
+      .filter((rect) => rect.width && rect.height);
+    let result = "";
+    for (const lines of root.querySelectorAll(".view-lines")) {
+      const walker = document.createTreeWalker(lines, NodeFilter.SHOW_TEXT);
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        for (let offset = 0; offset < node.textContent!.length; offset++) {
+          const range = document.createRange();
+          range.setStart(node, offset);
+          range.setEnd(node, offset + 1);
+          const rect = range.getBoundingClientRect();
+          const x = rect.x + rect.width / 2,
+            y = rect.y + rect.height / 2;
+          if (
+            rect.width &&
+            highlights.some(
+              (box) =>
+                x >= box.left &&
+                x < box.right &&
+                y >= box.top &&
+                y < box.bottom,
+            )
+          )
+            result += node.textContent![offset];
+        }
+      }
+    }
+    return result.replace(/\u00a0/g, " ");
+  }, kind);
 }
 
 test("the collection replaces old panels and controls with rectangular memory cards", async ({
@@ -193,19 +266,19 @@ test("documents can still be read without a current owner session", async ({
     page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
 });
-test("saving metadata refreshes the card without changing its body revision", async ({
+test("the inline title refreshes the card without changing its body or revision", async ({
   page,
 }) => {
   await open(page);
   await card(page, "Architecture notes").click();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await page
-    .getByRole("textbox", { name: "Memory name", exact: true })
-    .fill("Renamed notes");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await rename(page, "Renamed notes");
   await expect(
-    doc(page).getByText("Revision 1", { exact: true }),
+    doc(page)
+      .getByRole("combobox", { name: "Revision", exact: true })
+      .getByRole("img", { name: "Revision 1", exact: true }),
   ).toBeVisible();
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
+  await expect(doc(page)).not.toContainText("topic=design");
   await back(page);
   await expect(
     card(page, "Renamed notes").getByRole("img", {
@@ -214,90 +287,661 @@ test("saving metadata refreshes the card without changing its body revision", as
     }),
   ).toBeVisible();
 });
-test("returning to the grid guards unsaved edits", async ({ page }) => {
+
+test("Copy writes the raw body without opening an editor or changing the document", async ({
+  page,
+}) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await open(page);
   await card(page, "Architecture notes").click();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
-  await name.fill("Unsaved name");
+  const url = page.url();
+  const copy = doc(page).getByRole("button", { name: /^(Copy|copied!)$/ });
+  await copy.hover();
+  await copy.click();
+  await expect(copy).toHaveAttribute("aria-label", "copied!");
+  await expect(page.getByText("copied!", { exact: true })).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(
+      "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
+    );
+  expect(page.url()).toBe(url);
+  await expect(copy).toHaveAttribute("aria-label", "Copy");
+  await expect(
+    doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
+  ).toContainText("Architecture notes");
+  await expect(page.locator(".monaco-editor")).toHaveCount(0);
+  for (const name of ["Save", "Cancel"])
+    await expect(
+      doc(page).getByRole("button", { name, exact: true }),
+    ).toHaveCount(0);
   await back(page);
-  const dialog = page.getByRole("dialog", {
-    name: "Discard unsaved changes",
+  await expect(card(page, "Architecture notes")).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(card(page, "Architecture notes copy")).toHaveCount(0);
+});
+
+for (const width of [390, 1280])
+  test(`document uses grouped title/body sections and panel actions at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page, "document");
+    await expect(
+      doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
+    ).toContainText("Architecture notes");
+    for (const name of ["Edit", "Source", "Memory actions"])
+      await expect(
+        doc(page).getByRole("button", { name, exact: true }),
+      ).toHaveCount(0);
+    for (const text of ["Version history", "Document details"])
+      await expect(doc(page).getByText(text, { exact: true })).toHaveCount(0);
+    await expect(doc(page)).toHaveAttribute("data-section-layout", "group");
+    const title = doc(page).getByRole("region", {
+      name: "Memory information",
+      exact: true,
+    });
+    await expect(title.locator("h2")).toHaveCSS("font-size", "16px");
+    await expect(title.locator("h2 svg")).toHaveCount(0);
+    for (const label of ["Title", "Created", "Updated"])
+      await expect(
+        title.locator("dt").filter({ hasText: new RegExp(`^${label}`) }),
+      ).toBeVisible();
+    for (const label of ["Project", "Session"])
+      await expect(
+        title.locator("dt").filter({ hasText: new RegExp(`^${label}$`) }),
+      ).toHaveCSS("clip-path", "inset(50%)");
+    for (const label of ["Owner session", "Memory ID", "Labels", "Revision"])
+      await expect(
+        title.locator("dt").filter({ hasText: new RegExp(`^${label}$`) }),
+      ).toHaveCount(0);
+    await expect(
+      title.getByRole("link", { name: /Design decisions/ }),
+    ).toBeVisible();
+    await expect(
+      title.getByRole("link", { name: /Web workspace/ }),
+    ).toBeVisible();
+    const revision = doc(page).getByRole("region", {
+      name: "Memory revision",
+      exact: true,
+    });
+    await expect(
+      revision
+        .getByRole("combobox", { name: "Revision", exact: true })
+        .getByRole("img", { name: "Revision 1", exact: true }),
+    ).toBeVisible();
+    if (width === 1280) {
+      expect(
+        await title
+          .locator("dl")
+          .evaluate(
+            (node) =>
+              getComputedStyle(node).gridTemplateColumns.split(" ").length,
+          ),
+      ).toBe(4);
+      await expect(title.locator("dl > div").first()).toHaveCSS(
+        "grid-column",
+        "1 / -1",
+      );
+      const fields = await title.locator("dl > div").evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          label: node.querySelector("dt")?.textContent?.trim(),
+          y: node.getBoundingClientRect().top,
+          width: node.getBoundingClientRect().width,
+        })),
+      );
+      expect(
+        fields
+          .filter((field) => Math.abs(field.y - fields[0].y) < 1)
+          .map((field) => field.label),
+      ).toEqual(["Title"]);
+      expect(
+        fields.slice(1).every((field) => Math.abs(field.y - fields[1].y) < 1),
+      ).toBe(true);
+      expect(
+        fields
+          .slice(1)
+          .map((field) =>
+            field.label?.replace(/(?:now|ago|Just).*$/, "").trim(),
+          ),
+      ).toEqual(["Project", "Session", "Created", "Updated"]);
+      expect(fields[1].width).toBeCloseTo(fields[2].width, 0);
+      expect(fields[3].width).toBeCloseTo(fields[4].width, 0);
+      expect(fields[3].width).toBeCloseTo(fields[1].width, 0);
+      const infoBox = (await title.boundingBox())!,
+        revisionBox = (await revision.boundingBox())!;
+      expect(revisionBox.y + revisionBox.height).toBeCloseTo(
+        infoBox.y + infoBox.height,
+        0,
+      );
+    }
+    const actions = doc(page).getByRole("group", {
+      name: "Memory document actions",
+      exact: true,
+    });
+    for (const name of ["Erase", "Copy", "Reload"])
+      await expect(
+        actions.getByRole("button", { name, exact: true }),
+      ).toHaveAttribute("data-section-action", "button");
+    expect(
+      await actions
+        .getByRole("button")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("aria-label")),
+        ),
+    ).toEqual(["Erase", "Copy", "Reload"]);
+    const trigger = revision.getByRole("combobox", {
+      name: "Revision",
+      exact: true,
+    });
+    const control = await trigger.boundingBox();
+    const panel = await revision.boundingBox();
+    for (const coordinate of ["x", "y", "width", "height"] as const)
+      expect(control![coordinate]).toBeCloseTo(panel![coordinate], 0);
+    await expect(revision).toHaveCSS("padding", "0px");
+    await expect(revision).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    const surface = await title.evaluate(
+      (node) => getComputedStyle(node).backgroundColor,
+    );
+    await expect(trigger).toHaveCSS("background-color", surface);
+    const actionRadius = await actions
+      .getByRole("button", { name: "Copy", exact: true })
+      .evaluate((node) => getComputedStyle(node).borderTopLeftRadius);
+    for (const corner of [
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+    ])
+      await expect(trigger).toHaveCSS(`border-${corner}-radius`, actionRadius);
+    if (width === 390) {
+      const buttons = (await actions.boundingBox())!;
+      expect(panel!.y).toBeCloseTo(buttons.y, 0);
+      expect(panel!.height).toBeCloseTo(buttons.height, 0);
+    }
+    const body = doc(page).getByRole("region", {
+      name: "Memory content",
+      exact: true,
+    });
+    await expect(body).toHaveCSS("padding", "24px");
+    const bodyBefore = (await body.boundingBox())!;
+    await revision.evaluate((node) => {
+      node.style.display = "none";
+    });
+    expect((await body.boundingBox())!.y).toBeCloseTo(bodyBefore.y, 0);
+    await doc(page)
+      .getByRole("region", {
+        name: "Memory revision",
+        exact: true,
+        includeHidden: true,
+      })
+      .evaluate((node) => {
+        node.style.display = "";
+      });
+    const layout = await doc(page).evaluate((root) => {
+      const title = root
+        .querySelector('[aria-label="Memory information"]')!
+        .getBoundingClientRect();
+      const actions = root
+        .querySelector('[aria-label="Memory document actions"]')!
+        .getBoundingClientRect();
+      const body = root
+        .querySelector('[aria-label="Memory content"]')!
+        .getBoundingClientRect();
+      return {
+        titleRight: title.right,
+        titleBottom: title.bottom,
+        actionsLeft: actions.left,
+        actionsTop: actions.top,
+        headerBottom: Math.max(title.bottom, actions.bottom),
+        bodyTop: body.top,
+      };
+    });
+    if (width === 1280)
+      expect(layout.actionsLeft).toBeGreaterThan(layout.titleRight);
+    else expect(layout.actionsTop).toBeGreaterThan(layout.titleBottom);
+    expect(layout.bodyTop).toBeGreaterThan(layout.headerBottom);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    const value = (await trigger.locator(".meta-value").boundingBox())!;
+    await pressCentered(page, trigger);
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    const currentValue = page.locator(
+      ".setting-menu .setting-current .meta-value",
+    );
+    await expect
+      .poll(async () => {
+        const current = await currentValue.boundingBox();
+        return current
+          ? Math.max(
+              ...(["x", "y", "width", "height"] as const).map((coordinate) =>
+                Math.abs(current[coordinate] - value[coordinate]),
+              ),
+            )
+          : Infinity;
+      })
+      .toBeLessThan(0.5);
+    await pressCentered(page, page.locator(".setting-menu .setting-current"));
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await trigger.click();
+    await pressCentered(
+      page,
+      page.getByRole("option", { name: "Revision r1 · Latest", exact: true }),
+    );
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+test("document loading keeps the grouped frame and disabled action panels", async ({
+  page,
+}) => {
+  await open(page, "document-loading");
+  await expect(doc(page)).toHaveAttribute("aria-busy", "true");
+  await expect(doc(page)).toHaveAttribute("data-section-layout", "group");
+  await expect(
+    doc(page).getByRole("region", { name: "Memory information", exact: true }),
+  ).toContainText("Memory");
+  await expect(
+    doc(page).getByText("Loading memory…", { exact: true }),
+  ).toBeVisible();
+  for (const name of ["Erase", "Copy", "Reload"])
+    await expect(
+      doc(page).getByRole("button", { name, exact: true }),
+    ).toBeDisabled();
+  await expect(
+    doc(page).getByRole("combobox", { name: "Revision", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    doc(page).getByRole("button", { name: "Edit Memory name", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("revision selection changes only the body and Latest restores the current text", async ({
+  page,
+}) => {
+  await open(page, "revision-history");
+  const revision = doc(page).getByRole("combobox", {
+    name: "Revision",
     exact: true,
   });
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(name).toHaveValue("Unsaved name");
-  await back(page);
-  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
-  await expect(card(page, "Architecture notes")).toBeVisible();
-  await expect(card(page, "Unsaved name")).toHaveCount(0);
+  const information = doc(page).getByRole("region", {
+    name: "Memory information",
+    exact: true,
+  });
+  await expect(revision).toBeEnabled();
+  await expect(
+    revision.getByRole("img", { name: "Revision 4", exact: true }),
+  ).toBeVisible();
+  await expect(doc(page)).toContainText("Design decisions from revision 4.");
+  await expect(
+    revision.getByRole("img", { name: "1 bytes added", exact: true }),
+  ).toBeVisible();
+  await expect(
+    revision.getByRole("img", { name: "1 bytes removed", exact: true }),
+  ).toBeVisible();
+  await expect(revision.locator("time").first()).toHaveAttribute(
+    "datetime",
+    "2026-11-05T12:00:00.000Z",
+  );
+  const numberBox = (await revision
+    .getByRole("img", { name: "Revision 4", exact: true })
+    .locator("..")
+    .boundingBox())!;
+  const dateBox = (await revision.locator("time").first().boundingBox())!;
+  const ageBox = (await revision.locator("time").nth(1).boundingBox())!;
+  const addedBox = (await revision
+    .getByRole("img", { name: "1 bytes added", exact: true })
+    .boundingBox())!;
+  const removedBox = (await revision
+    .getByRole("img", { name: "1 bytes removed", exact: true })
+    .boundingBox())!;
+  expect(dateBox.x).toBeCloseTo(numberBox.x, 0);
+  expect(dateBox.y).toBeGreaterThan(numberBox.y);
+  expect(addedBox.x).toBeGreaterThan(numberBox.x + numberBox.width);
+  expect(addedBox.y).toBeCloseTo(removedBox.y, 0);
+  expect(removedBox.x).toBeGreaterThan(addedBox.x + addedBox.width);
+  await expect(revision.getByText("/", { exact: true })).toBeVisible();
+  const colors = await revision.evaluate((node) => {
+    const added = node.querySelector<HTMLElement>(
+      '[aria-label="1 bytes added"]',
+    )!;
+    const removed = node.querySelector<HTMLElement>(
+      '[aria-label="1 bytes removed"]',
+    )!;
+    return {
+      added: getComputedStyle(added).color,
+      addedSign: getComputedStyle(added.parentElement!).color,
+      removed: getComputedStyle(removed).color,
+      removedSign: getComputedStyle(removed.parentElement!).color,
+      leading: getComputedStyle(added.firstElementChild!).color,
+      unit: getComputedStyle(added.lastElementChild!).color,
+    };
+  });
+  expect(colors.added).toBe(colors.addedSign);
+  expect(colors.removed).toBe(colors.removedSign);
+  expect(colors.added).not.toBe(colors.removed);
+  expect(colors.leading).not.toBe(colors.added);
+  expect(colors.unit).not.toBe(colors.added);
+  expect(
+    await revision
+      .locator("time")
+      .first()
+      .evaluate(
+        (node) =>
+          node.getBoundingClientRect().width <=
+          node.parentElement!.getBoundingClientRect().width + 0.5,
+      ),
+  ).toBe(true);
+  expect(ageBox.x + ageBox.width).toBeCloseTo(
+    removedBox.x + removedBox.width,
+    0,
+  );
+  expect(ageBox.y).toBeGreaterThan(addedBox.y);
+  const metadata = await information.innerText();
+  const body = doc(page).getByRole("region", {
+    name: "Memory content",
+    exact: true,
+  });
+  const position = (await body.boundingBox())!.y;
+  await revision.click();
+  await page.getByRole("option", { name: "Revision r1", exact: true }).click();
+  await expect(
+    revision.getByRole("img", { name: "Revision 1", exact: true }),
+  ).toBeVisible();
+  await expect(body).toContainText("Keep UI decisions together.");
+  await expect(revision).toContainText("Created");
+  await expect(revision.locator("time").first()).toHaveAttribute(
+    "datetime",
+    "2026-11-02T12:00:00.000Z",
+  );
+  await expect(revision.locator("time").nth(1)).toHaveText("3 days ago");
+  await expect(information).toHaveText(metadata, { useInnerText: true });
+  expect((await body.boundingBox())!.y).toBeCloseTo(position, 0);
+  await revision.click();
+  const latestOption = page.getByRole("option", {
+    name: "Revision r4 · Latest",
+    exact: true,
+  });
+  await expect(
+    latestOption.getByRole("img", { name: "Revision 4", exact: true }),
+  ).toBeVisible();
+  await expect(latestOption.locator("time").first()).toHaveAttribute(
+    "datetime",
+    "2026-11-05T12:00:00.000Z",
+  );
+  await page
+    .getByRole("option", { name: "Revision r4 · Latest", exact: true })
+    .click();
+  await expect(
+    revision.getByRole("img", { name: "Revision 4", exact: true }),
+  ).toBeVisible();
+  await expect(body).toContainText("Design decisions from revision 4.");
 });
-test("body versions and conflict-preserved drafts remain functional", async ({
+
+test("Copy uses the raw body of the selected historical revision", async ({
+  page,
+}) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await open(page, "revision-history");
+  const revision = doc(page).getByRole("combobox", {
+    name: "Revision",
+    exact: true,
+  });
+  await expect(revision).toBeEnabled();
+  await revision.click();
+  await page.getByRole("option", { name: "Revision r1", exact: true }).click();
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
+  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(
+      "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
+    );
+  await expect(revision).toBeEnabled();
+  await expect(
+    revision.getByRole("img", { name: "Revision 1", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".monaco-editor")).toHaveCount(0);
+});
+
+test("Changes compares the selected revision and Copy keeps the full body", async ({
+  page,
+}) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await open(page, "revision-history");
+  const body = doc(page).getByRole("region", {
+    name: "Memory content",
+    exact: true,
+  });
+  const changes = body.getByRole("radio", { name: "Changes", exact: true });
+  const preview = body.getByRole("radio", { name: "Preview", exact: true });
+  await expect(preview).toBeChecked();
+  await changes.check();
+  const diff = body.getByRole("region", {
+    name: "Memory changes",
+    exact: true,
+  });
+  await expect(diff).toHaveAttribute("aria-busy", "false");
+  await expect(body).toContainText("r3 → r4");
+  await expect
+    .poll(async () => await highlightedText(diff, "added"))
+    .toContain("4");
+  await expect
+    .poll(async () => await highlightedText(diff, "removed"))
+    .toContain("3");
+  await doc(page)
+    .getByRole("combobox", { name: "Revision", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Revision r2", exact: true }).click();
+  await expect(changes).toBeChecked();
+  await expect(diff).toHaveAttribute("aria-busy", "false");
+  await expect(body).toContainText("r1 → r2");
+  await expect
+    .poll(async () => await highlightedText(diff, "added"))
+    .toContain("Design");
+  await expect
+    .poll(async () => await highlightedText(diff, "removed"))
+    .toContain("Keep");
+  await preview.check();
+  await expect(
+    body.getByRole("heading", { name: "Architecture", exact: true }),
+  ).toBeVisible();
+  await changes.check();
+  await expect(diff).toBeVisible();
+  await expect(body.getByText("Loading changes…", { exact: true })).toHaveCount(
+    0,
+  );
+  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(
+      "# Architecture\n\nShared memory belongs to the project.\n\nDesign decisions from revision 2.",
+    );
+  await expect(changes).toBeChecked();
+  await expect(diff).toBeVisible();
+});
+
+test("Changes explains first revisions and missing retained predecessors", async ({
   page,
 }) => {
   await open(page, "document");
-  await expect(doc(page)).toBeVisible();
-  await editSource(page, "# Updated decision");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const body = doc(page).getByRole("region", {
+    name: "Memory content",
+    exact: true,
+  });
+  await body.getByRole("radio", { name: "Changes", exact: true }).check();
+  await expect(body).toContainText("This is the first revision.");
   await expect(
-    page.getByRole("heading", { name: "Updated decision", exact: true }),
-  ).toBeVisible();
-  await page.getByText("Version history", { exact: true }).click();
-  await page.getByRole("button", { name: "r1", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Use this version", exact: true })
+    body.getByRole("region", { name: "Memory changes", exact: true }),
+  ).toHaveCount(0);
+  await open(page, "missing-previous-revision");
+  await body.getByRole("radio", { name: "Changes", exact: true }).check();
+  await expect(body).toContainText(
+    "The previous revision is no longer retained.",
+  );
+  await expect(
+    body.getByRole("region", { name: "Memory changes", exact: true }),
+  ).toHaveCount(0);
+  await body.getByRole("radio", { name: "Preview", exact: true }).check();
+  await expect(body).toContainText("Design decisions from revision 4.");
+});
+
+test("failed comparison reads can be retried without changing revisions", async ({
+  page,
+}) => {
+  await open(page, "comparison-retry");
+  const body = doc(page).getByRole("region", {
+    name: "Memory content",
+    exact: true,
+  });
+  await body.getByRole("radio", { name: "Changes", exact: true }).check();
+  await expect(body.getByRole("alert")).toContainText(
+    "Revision changes temporarily unavailable",
+  );
+  await body
+    .getByRole("button", { name: "Retry changes", exact: true })
     .click();
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const diff = body.getByRole("region", {
+    name: "Memory changes",
+    exact: true,
+  });
+  await expect(diff).toHaveAttribute("aria-busy", "false");
+  await expect
+    .poll(async () => await highlightedText(diff, "added"))
+    .toContain("4");
   await expect(
-    doc(page).getByText("Revision 3", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Architecture", exact: true }),
+    doc(page)
+      .getByRole("combobox", { name: "Revision", exact: true })
+      .getByRole("img", { name: "Revision 4", exact: true }),
   ).toBeVisible();
 });
-test("revision conflicts keep a draft on the document route", async ({
+
+for (const width of [390, 1440])
+  test(`long paragraph changes emphasize only edited phrases at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await open(page, "long-paragraph-changes");
+    const revision = doc(page).getByRole("combobox", {
+      name: "Revision",
+      exact: true,
+    });
+    await expect(
+      revision.getByRole("img", { name: "66 bytes added", exact: true }),
+    ).toBeVisible();
+    await expect(
+      revision.getByRole("img", { name: "41 bytes removed", exact: true }),
+    ).toBeVisible();
+    await expect(revision.getByText("B", { exact: true })).toHaveCount(2);
+    await doc(page)
+      .getByRole("radio", { name: "Changes", exact: true })
+      .check();
+    const diff = doc(page).getByRole("region", {
+      name: "Memory changes",
+      exact: true,
+    });
+    await expect(diff).toHaveAttribute("aria-busy", "false");
+    await expect
+      .poll(async () => await highlightedText(diff, "added"))
+      .toContain("semantics");
+    const inserted = await highlightedText(diff, "added");
+    const removed = await highlightedText(diff, "removed");
+    expect(inserted).toContain("ErrorPanel");
+    expect(removed).toContain("producing");
+    expect(inserted + removed).not.toContain("ResourceToolbar");
+    expect(inserted.length + removed.length).toBeLessThan(500);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await expect(
+      diff.locator(".monaco-editor textarea").last(),
+    ).toHaveJSProperty("readOnly", true);
+  });
+
+test("the Reload panel refreshes the preview while showing pending feedback", async ({
+  page,
+}) => {
+  await open(page, "cached-document");
+  await card(page, "Architecture notes").click();
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
+  await page
+    .getByRole("button", { name: "Update document on server", exact: true })
+    .click();
+  const reload = doc(page).getByRole("button", { name: "Reload", exact: true });
+  await reload.click();
+  await expect(reload).toHaveAttribute("aria-busy", "true");
+  await expect(reload).toBeDisabled();
+  await expect(doc(page)).toContainText(
+    "Another session changed this document.",
+  );
+  await expect(reload).toBeEnabled();
+});
+
+test("inline rename conflicts keep the attempted title in its editor", async ({
   page,
 }) => {
   await open(page, "revision-conflict");
   await card(page, "Architecture notes").click();
-  await editSource(page, "# Unsaved draft");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+  await doc(page)
+    .getByRole("button", { name: "Edit Memory name", exact: true })
+    .click();
+  const editor = page.getByRole("dialog", {
+    name: "Edit Memory name",
+    exact: true,
+  });
+  const input = editor.getByRole("textbox", {
+    name: "Memory name",
+    exact: true,
+  });
+  await input.fill("Unsaved name");
+  await editor.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(editor.getByRole("alert")).toContainText(
     "Memory revision changed",
   );
-  await page.getByRole("button", { name: "Preview", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Unsaved draft", exact: true }),
-  ).toBeVisible();
+  await expect(input).toHaveValue("Unsaved name");
+  await editor
+    .getByRole("button", { name: "Dismiss error", exact: true })
+    .click();
+  await expect(input).toHaveValue("Unsaved name");
+  await editor.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(doc(page)).toContainText("Architecture notes");
 });
-test("copy creation stays in the editor until saved, then appears in the grid", async ({
+
+test("clipboard failure reports an error while keeping the raw document available", async ({
+  page,
+}) => {
+  await open(page, "document");
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          throw new DOMException("Clipboard blocked", "NotAllowedError");
+        },
+      },
+    });
+  });
+  await doc(page).getByRole("button", { name: "Copy", exact: true }).click();
+  await expect(
+    page.getByText(
+      "Could not copy memory: NotAllowedError: Clipboard blocked",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
+  await expect(page.locator(".monaco-editor")).toHaveCount(0);
+});
+
+test("erasing from its panel action returns to the refreshed collection", async ({
   page,
 }) => {
   await open(page);
   await card(page, "Architecture notes").click();
-  await page
-    .getByRole("button", { name: "Memory actions", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "Copy", exact: true }).click();
-  await expect(
-    page.getByRole("textbox", { name: "Memory name", exact: true }),
-  ).toHaveValue("Architecture notes copy");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(
-    doc(page).getByText("Revision 1", { exact: true }),
-  ).toBeVisible();
-  await back(page);
-  await expect(card(page, "Architecture notes copy")).toBeVisible();
-});
-test("deleting a document returns to the refreshed collection", async ({
-  page,
-}) => {
-  await open(page);
-  await card(page, "Architecture notes").click();
-  await page
-    .getByRole("button", { name: "Memory actions", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+  await doc(page).getByRole("button", { name: "Erase", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Confirm", exact: true })
@@ -376,26 +1020,14 @@ test("project changes reset the session filter and offer only the current projec
     .click();
   await expect(card(page, "API notes")).toBeVisible();
 });
-test("changing session from a document guards drafts and returns to the filtered collection", async ({
+test("changing session from a document returns directly to the filtered collection", async ({
   page,
 }) => {
   await open(page, "document");
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  const name = page.getByRole("textbox", { name: "Memory name", exact: true });
-  await name.fill("Draft name");
+  await expect(doc(page)).toContainText("Keep UI decisions together.");
   await chooseSession(page, "New editing session");
-  const dialog = page.getByRole("dialog", {
-    name: "Discard unsaved changes",
-    exact: true,
-  });
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(name).toHaveValue("Draft name");
-  await expect(
-    page.getByRole("combobox", { name: "Select session", exact: true }),
-  ).toContainText("All sessions");
-  await chooseSession(page, "New editing session");
-  await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(doc(page)).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(grid(page)).toContainText("No memories for this session.");
   await chooseSession(page, "All sessions");
   await expect(card(page, "Architecture notes")).toBeVisible();

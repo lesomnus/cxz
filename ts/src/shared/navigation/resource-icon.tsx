@@ -16,6 +16,7 @@ export function ResourceIcon({
     | "projects"
     | "tasks"
     | "settings"
+    | "logs"
     | "accounts"
     | "search"
     | "memory"

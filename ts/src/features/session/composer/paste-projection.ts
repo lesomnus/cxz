@@ -186,4 +186,10 @@ export class PasteEditHistory {
     }
     return undefined;
   }
+  step(direction: "historyUndo" | "historyRedo") {
+    const index = this.index + (direction === "historyUndo" ? -1 : 1);
+    if (index < 0 || index >= this.states.length) return undefined;
+    this.index = index;
+    return this.states[index].source;
+  }
 }

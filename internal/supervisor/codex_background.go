@@ -119,7 +119,7 @@ func (c *codexProtocol) consumeBackground(id string, result, failure []byte, now
 		}
 		b.tasks[terminal.ProcessID] = agentview.BackgroundTask{
 			ID: terminal.ProcessID, ToolID: terminal.ItemID,
-			Description: terminal.Command, Status: "working", Active: true,
+			Command: terminal.Command, Status: "working", Active: true,
 		}
 	}
 	if page.NextCursor != "" {

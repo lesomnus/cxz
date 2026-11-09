@@ -244,3 +244,42 @@ it("does not restore persisted Active copies when dismissed history is immediate
   expect(errors.snapshot()).toHaveLength(0);
   expect(new ClientErrors({ storage: disk }).snapshot()).toHaveLength(0);
 });
+
+it("retains notify:false records through storage while defaults and later unattended reports notify normally", () => {
+  vi.useFakeTimers();
+  const disk = storage();
+  const errors = new ClientErrors({ storage: disk });
+  const id = errors.report(
+    "read",
+    new ConnectError("history missing", Code.NotFound),
+    { notify: false },
+  )!;
+  errors.report("background", "background failure");
+  errors.flush();
+  const restored = new ClientErrors({ storage: disk });
+  expect(restored.snapshot().find((entry) => entry.id === id)).toMatchObject({
+    status: "active",
+    notify: false,
+  });
+  expect(
+    restored.snapshot().find((entry) => entry.key === "background")?.notify,
+  ).not.toBe(false);
+  restored.report("read", "history missing");
+  expect(restored.snapshot().find((entry) => entry.id === id)).toMatchObject({
+    count: 2,
+    status: "active",
+  });
+  expect(restored.snapshot().find((entry) => entry.id === id)?.notify).not.toBe(
+    false,
+  );
+  const data = JSON.parse(disk.getItem(errors.storageKey)!);
+  data.entries.forEach(
+    (entry: { notify: unknown }) => (entry.notify = "false"),
+  );
+  disk.setItem(errors.storageKey, JSON.stringify(data));
+  expect(
+    new ClientErrors({ storage: disk })
+      .snapshot()
+      .every((entry) => entry.notify !== false),
+  ).toBe(true);
+});

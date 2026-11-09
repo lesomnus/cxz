@@ -115,7 +115,9 @@ async function openConversation(page, largePayload = false) {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await page.locator('.tree-session[href="/c/_/session/fixture"]').click();
+  await page
+    .locator('[data-session-navigation][href="/c/_/session/fixture"]')
+    .click();
   await expect(page.locator(".virtual-messages")).toBeVisible();
   await page.waitForFunction(
     () => document.querySelector(".transcript").scrollTop > 0,

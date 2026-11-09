@@ -9,7 +9,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { ResizeHandle } from "@lesomnus/nox";
+import { ListDetailPages, ResizeHandle } from "@lesomnus/nox";
 import { usePaneWidth } from "#src/shared/layout/use-pane-width.ts";
 import { useQuery } from "@lesomnus/payday/react";
 import { SessionService } from "#gen/cxz/session_svc_pb";
@@ -32,6 +32,7 @@ import {
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { createFileSizeReader } from "#src/shared/content/file-size.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
+import styles from "./sessions-page.module.css";
 export function SessionsPage({
   c,
   id,
@@ -54,29 +55,39 @@ export function SessionsPage({
         replace: true,
       });
   }, [navigate, resolved.session?.alias, id, seq]);
-  return id ? (
-    resolved.session ? (
-      <SessionWorkspace
-        c={c}
-        id={resolved.session.runtimeId}
-        projects={projects}
-      />
-    ) : (
-      <div className="session-workspace">
-        {resolved.error ? (
-          <div>
-            <ErrorNotice error={resolved.error} />
-            <Button onClick={resolved.reload}>Retry</Button>
-          </div>
-        ) : (
-          <ConversationLoading stage="session" />
-        )}
-      </div>
-    )
-  ) : (
-    <SessionLibrary c={c} projects={projects} />
+  return (
+    <ListDetailPages
+      scope={c}
+      open={!!id}
+      className={styles.pages}
+      data-session-pages
+      list={<SessionLibrary c={c} projects={projects} active={!id} />}
+      detail={
+        id ? (
+          resolved.session ? (
+            <SessionWorkspace
+              c={c}
+              id={resolved.session.runtimeId}
+              projects={projects}
+            />
+          ) : (
+            <div className="session-workspace">
+              {resolved.error ? (
+                <div>
+                  <ErrorNotice local error={resolved.error} />
+                  <Button onClick={resolved.reload}>Retry</Button>
+                </div>
+              ) : (
+                <ConversationLoading stage="session" />
+              )}
+            </div>
+          )
+        ) : null
+      }
+    />
   );
 }
+
 function SessionWorkspace({
   c,
   id,

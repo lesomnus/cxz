@@ -11,6 +11,19 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
   await expect(
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });
+  await page
+    .getByRole("complementary", { name: "Session list", exact: true })
+    .evaluate(async (panel) => {
+      const workspace = panel.closest(".workspace")!;
+      await Promise.all(
+        [...workspace.getAnimations(), ...panel.getAnimations()]
+          .filter(
+            (animation) =>
+              animation.effect?.getComputedTiming().endTime !== Infinity,
+          )
+          .map((animation) => animation.finished.catch(() => {})),
+      );
+    });
   await expect(
     page.locator(".tree-chevron, .tree-branch, .tree-project svg"),
   ).toHaveCount(0);

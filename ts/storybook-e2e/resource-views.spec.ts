@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-test("shared-memory story uses flat resources and the live editor", async ({
+test("shared-memory story uses flat resources and revision previews", async ({
   page,
 }) => {
   await page.goto(
@@ -8,8 +8,10 @@ test("shared-memory story uses flat resources and the live editor", async ({
   await expect(
     page.getByRole("heading", { name: "Architecture", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Source", exact: true }).click();
-  await expect(page.locator(".monaco-editor")).toBeVisible();
+  await page.getByRole("radio", { name: "Changes", exact: true }).check();
+  await expect(
+    page.getByRole("radiogroup", { name: "Memory view", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: /Handoff notes/ }).click();
   await expect(
     page.getByRole("heading", { name: "Handoff", exact: true }),

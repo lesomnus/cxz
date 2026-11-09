@@ -153,6 +153,9 @@ export function ComposerEditor({
   const gutter = useRef<HTMLDivElement>(null);
   const openCard = useFloatingCard();
   const composing = useRef(false);
+  // ClipboardEvent has no modifiers. Consume this keyboard intent when the
+  // browser delivers paste, including when clipboard access is asynchronous.
+  const expandedPaste = useRef(false);
   const [composition, setComposition] = useState(false);
   const frozenPresentations = useRef<
     Map<string, PastePresentation> | undefined
@@ -201,11 +204,14 @@ export function ComposerEditor({
         }
       : undefined;
   const history = useRef<PasteEditHistory | null>(null);
+  const handledHistory = useRef<Event | undefined>(undefined);
+  const logicalHistory = useRef(false);
   history.current ??= new PasteEditHistory(projection);
   history.current.observe(projection);
   const latest = useRef({ value, source, projection, replace, readOnly });
   latest.current = { value, source, projection, replace, readOnly };
   function commit(nextSource: string, text: string) {
+    logicalHistory.current = false;
     history.current!.record(nextSource, text);
     onSourceChange(nextSource);
   }
@@ -773,10 +779,12 @@ export function ComposerEditor({
             autoCorrect="off"
             wrap={wordWrap ? "soft" : "off"}
             onPointerDown={() => {
+              expandedPaste.current = false;
               caretMotion.current = undefined;
             }}
             onFocus={updateSuggestions}
             onBlur={() => {
+              expandedPaste.current = false;
               rememberSelection();
               updateSuggestions();
             }}
@@ -808,7 +816,37 @@ export function ComposerEditor({
             onBeforeInput={() => {
               if (!composing.current) normalizedSelection();
             }}
+            onInput={(event) => {
+              if (readOnly) return;
+              const native = event.nativeEvent as InputEvent;
+              const direction = native.inputType;
+              if (direction !== "historyUndo" && direction !== "historyRedo")
+                return;
+              const el = event.currentTarget;
+              let restored = history.current!.restore(el.value, direction);
+              if (restored === undefined && el.value === value) {
+                restored = history.current!.step(direction);
+                logicalHistory.current = restored !== undefined;
+              }
+              if (restored === undefined) return;
+              // Measured chip reservations can leave the native value unchanged
+              // on undo. React onChange then never fires; onInput still does.
+              handledHistory.current = native;
+              const next = new PasteProjection(
+                restored,
+                pastes,
+                frozenPresentations.current,
+                chipLayouts,
+              );
+              cursor.current = {
+                start: next.toSource(el.selectionStart),
+                end: next.toSource(el.selectionEnd),
+                direction: el.selectionDirection,
+              };
+              onSourceChange(restored);
+            }}
             onChange={(event) => {
+              if (handledHistory.current === event.nativeEvent) return;
               if (readOnly) return;
               const next = event.target.value;
               const inputType = (event.nativeEvent as InputEvent).inputType;
@@ -833,6 +871,8 @@ export function ComposerEditor({
               updateSuggestions();
             }}
             onPaste={(event) => {
+              const expanded = expandedPaste.current;
+              expandedPaste.current = false;
               if (readOnly) {
                 event.preventDefault();
                 return;
@@ -847,6 +887,15 @@ export function ComposerEditor({
               }
               if (!text) return;
               const selection = normalizedSelection();
+              if (expanded) {
+                if (new TextEncoder().encode(text).length > MAX_PASTE_BYTES) {
+                  event.preventDefault();
+                  setNotice("Pastes are limited to 1 MiB.");
+                } else setNotice("");
+                // Let native textarea insertion preserve newlines, the caret
+                // and undo without creating a paste chip or uploading a file.
+                return;
+              }
               const secretKind = detectSecrets && detectSecretPaste(text);
               if (secretKind) {
                 event.preventDefault();
@@ -945,8 +994,36 @@ export function ComposerEditor({
               replace(selection.start, selection.end, "");
             }}
             onKeyDown={(event) => {
+              expandedPaste.current =
+                !event.altKey &&
+                (event.ctrlKey || event.metaKey) &&
+                event.shiftKey &&
+                event.key.toLowerCase() === "v";
               if (readOnly) return;
               if (event.nativeEvent.isComposing || composing.current) return;
+              // A presentation-only native undo needs a source-level restore.
+              // Its controlled value write can clear native redo, so retain
+              // that structural undo/redo chain until the next ordinary edit.
+              if (
+                logicalHistory.current &&
+                (event.ctrlKey || event.metaKey) &&
+                !event.altKey &&
+                event.key.toLowerCase() === "z"
+              ) {
+                const restored = history.current!.step(
+                  event.shiftKey ? "historyRedo" : "historyUndo",
+                );
+                if (restored !== undefined) {
+                  event.preventDefault();
+                  cursor.current = {
+                    start: restored.length,
+                    end: restored.length,
+                    direction: "none",
+                  };
+                  onSourceChange(restored);
+                  return;
+                }
+              }
               // Native word movement can stop inside a chip's invisible text.
               // Snap to the edge in that direction instead of undoing the move.
               caretMotion.current =
@@ -1176,6 +1253,34 @@ export function ComposerEditor({
                 if (edit) {
                   event.preventDefault();
                   replace(edit.from, edit.to, edit.text, edit.caret);
+                  return;
+                }
+              }
+              if (
+                event.ctrlKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                !event.shiftKey &&
+                event.key === "Backspace"
+              ) {
+                const target = [...ranges]
+                  .reverse()
+                  .find((range) =>
+                    selection.start === selection.end
+                      ? range.end <= selection.start &&
+                        /^[ \t]*$/.test(value.slice(range.end, selection.start))
+                      : range.start < selection.end &&
+                        range.end > selection.start,
+                  );
+                if (target) {
+                  event.preventDefault();
+                  replace(
+                    selection.start === selection.end
+                      ? target.start
+                      : selection.start,
+                    selection.end,
+                    "",
+                  );
                   return;
                 }
               }

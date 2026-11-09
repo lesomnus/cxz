@@ -21,14 +21,19 @@ test("Search opens with the shared bar and only filter controls below it", async
     page.getByRole("button", { name: "Filters", exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "From (UTC): From", exact: true }),
+    page.getByRole("button", { name: "From (UTC): 2026-10-30", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", {
-      name: "Until (UTC, exclusive): Until",
+      name: "Until (UTC, exclusive): 2026-11-06",
       exact: true,
     }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Reset filters", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator('input[name="since"]')).toHaveValue("2026-10-30");
+  await expect(page.locator('input[name="until"]')).toHaveValue("2026-11-06");
   await expect(
     page.getByRole("switch", { name: "Include tools", exact: true }),
   ).toHaveCount(0);
@@ -55,6 +60,11 @@ test("search modes are toggles and project filters include an all-projects scope
   await fuzzy.click();
   await expect(fuzzy).toHaveAttribute("aria-pressed", "true");
   await expect(regex).toHaveAttribute("aria-pressed", "false");
+  const projectField = page
+    .getByRole("combobox", { name: "Search project", exact: true })
+    .locator("..")
+    .locator("..");
+  await expect(projectField).toHaveCSS("width", "180px");
   await page
     .getByRole("combobox", { name: "Search project", exact: true })
     .click();
@@ -64,6 +74,7 @@ test("search modes are toggles and project filters include an all-projects scope
   await expect(
     page.getByRole("combobox", { name: "Search project", exact: true }),
   ).toHaveText("API workspace");
+  await expect(projectField).toHaveCSS("width", "180px");
   await pickSearchDate(page, "From (UTC)", "2026-11-10");
   await pickSearchDate(page, "Until (UTC, exclusive)", "2026-11-01");
   await query(page).fill("search");
@@ -72,13 +83,16 @@ test("search modes are toggles and project filters include an all-projects scope
     "Choose an end date after the start date.",
   );
   await page
-    .getByRole("button", { name: "Reset filters", exact: true })
+    .getByRole("combobox", { name: "Search project", exact: true })
     .click();
+  await page.getByRole("option", { name: "All projects", exact: true }).click();
   await expect(
     page.getByRole("combobox", { name: "Search project", exact: true }),
   ).toHaveText("All projects");
-  await expect(page.locator('input[name="since"]')).toHaveValue("");
-  await expect(page.locator('input[name="until"]')).toHaveValue("");
+  await expect(projectField).toHaveCSS("width", "180px");
+  await expect(
+    page.getByRole("button", { name: "Reset filters", exact: true }),
+  ).toHaveCount(0);
 });
 test("changing the query clears old results rather than presenting stale matches", async ({
   page,
@@ -149,6 +163,14 @@ for (const width of [390, 1200])
     await expect(
       page.getByRole("link", { name: /Keep the search bar consistent/ }),
     ).toBeVisible();
+    for (const name of [/^From \(UTC\):/, /^Until \(UTC, exclusive\):/]) {
+      const date = page.getByRole("button", { name });
+      const text = date.locator(".button-content > span").first();
+      await expect(date).toBeVisible();
+      expect(
+        await text.evaluate((node) => node.scrollWidth <= node.clientWidth),
+      ).toBe(true);
+    }
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBe(width);

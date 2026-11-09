@@ -52,6 +52,8 @@ export function ConversationComposer({
   interrupt,
   backgroundJobs,
   onBackgroundJobs,
+  backgroundReport,
+  backgroundButtonRef,
   latestVisible = false,
   onLatest,
   approvals,
@@ -84,6 +86,8 @@ export function ConversationComposer({
   interrupt: () => void;
   backgroundJobs?: number;
   onBackgroundJobs?: () => void;
+  backgroundReport?: ReactNode;
+  backgroundButtonRef?: Ref<HTMLButtonElement>;
   latestVisible?: boolean;
   onLatest?: () => void;
   approvals?: ReactNode;
@@ -196,6 +200,8 @@ export function ConversationComposer({
               <BackgroundJobsIndicator
                 count={backgroundJobs}
                 open={onBackgroundJobs}
+                report={backgroundReport}
+                buttonRef={backgroundButtonRef}
               />
             </TurnControls>
             <span

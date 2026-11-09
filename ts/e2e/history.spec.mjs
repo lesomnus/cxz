@@ -425,7 +425,8 @@ test("summary history prefetches before the loaded edge even with delayed respon
   await expect
     .poll(async () => (await geometry(page)).top)
     .toBeGreaterThan(10000);
-  expect(requests[0].limit).toBe(1024);
+  // The overview can probe the latest event with limit=1 before navigation.
+  expect(requests.find((request) => request.limit > 1).limit).toBe(1024);
   const first = BigInt(await messages.getAttribute("data-first"));
   await pane.evaluate((el) => {
     el.scrollTop = el.clientHeight * 5;

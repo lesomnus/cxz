@@ -104,6 +104,10 @@ export const iconDefinitions = {
     path("M7 3v6h10V3M7 21v-8h10v8"),
   ]),
   undo: line([path("M9 4 4 9l5 5M4 9h10a6 6 0 0 1 0 12h-2")]),
+  login: line([
+    path("M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"),
+    path("m10 17 5-5-5-5M15 12H3"),
+  ]),
   allow: check,
   copy: line([
     rect(8, 8, 12, 12, 2),
@@ -268,6 +272,11 @@ export const iconDefinitions = {
     circle(12, 12, 3),
     path("M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z"),
   ]),
+  logs: line([rect(4, 3, 16, 18, 2), path("M8 7h8M8 11h8M8 15h5")]),
+  "settings-file": line([
+    path("M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9ZM14 3v6h6"),
+    path("m9 12-2 3 2 3m6-6 2 3-2 3"),
+  ]),
   // Outer contours of the Material Symbols Rounded category glyph; see ../assets/icons/README.md.
   work: solid(
     [
@@ -283,12 +292,9 @@ export const iconDefinitions = {
   failed: line([ring, path("M8 4.5V8m0 3h.01")], "0 0 16 16"),
   unknown,
   "state-stopped": stopped,
-  "state-running": line([ring, circle(8, 8, 2, filled)], "0 0 16 16"),
+  "state-running": solid([circle(8, 8, 4)]),
   "state-created": circlePause,
-  "state-absent": line(
-    [circle(8, 8, 5.5, { strokeDasharray: "2 2" })],
-    "0 0 16 16",
-  ),
+  "state-absent": stopped,
   "task-todo": line([ring], "0 0 16 16"),
   "task-in-progress": line(
     [ring, path("M8 2.5a5.5 5.5 0 0 1 0 11Z", filled)],

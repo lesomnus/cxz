@@ -92,7 +92,7 @@ for (const view of ["sessions", "projects"] as const) {
       const selector =
         view === "projects"
           ? 'section[aria-label="Information"]'
-          : ".session-tree .tree-session";
+          : "[data-session-navigation]";
       const content = page.locator(selector);
       await expect(content).toHaveCount(view === "projects" ? 1 : 6);
       if (view === "projects") await expect(content).toContainText("Project 2");

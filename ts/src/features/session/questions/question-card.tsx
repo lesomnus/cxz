@@ -1,5 +1,5 @@
 import { Icon } from "#src/shared/icons/icon.tsx";
-import { useId, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -33,17 +33,12 @@ import { composerPrompt } from "#src/features/session/composer/composer-code.ts"
 import { QuestionTabs } from "./question-tabs.tsx";
 import { Markdown } from "#src/shared/content/markdown.tsx";
 import { ScrollFade } from "#src/shared/components/scroll-fade.tsx";
+import {
+  emptyQuestionDraft,
+  type QuestionDrafts,
+} from "#src/features/session/model/question-drafts.ts";
 
-export function QuestionCard({
-  e,
-  agent,
-  pastes,
-  upload,
-  secretFiles,
-  downloadAttachment,
-  busy,
-  reply,
-}: {
+type QuestionCardProps = {
   e: SessionEvent;
   agent: string;
   pastes: Map<string, ComposerPaste>;
@@ -52,13 +47,46 @@ export function QuestionCard({
   downloadAttachment?: DownloadAttachment;
   busy: boolean;
   reply: (e: SessionEvent, allow: boolean, answers?: string) => Promise<void>;
-}) {
+  drafts?: QuestionDrafts;
+  session?: string;
+};
+
+export function QuestionCard(props: QuestionCardProps) {
+  return (
+    <QuestionCardContent
+      key={`${props.session ?? ""}:${props.agent}:${props.e.runId}:${props.e.requestId}`}
+      {...props}
+    />
+  );
+}
+
+function QuestionCardContent({
+  e,
+  agent,
+  pastes,
+  upload,
+  secretFiles,
+  downloadAttachment,
+  busy,
+  reply,
+  drafts,
+  session,
+}: QuestionCardProps) {
   useLocale();
   const openCard = useFloatingCard();
   const qs = questions(agent, e);
-  const [selected, setSelected] = useState<Record<string, string[]>>({});
-  const [other, setOther] = useState<Record<string, string>>({});
-  const [step, setStep] = useState(0);
+  const [initial] = useState(() =>
+    drafts && session && qs.length
+      ? drafts.get(session, e, qs)
+      : emptyQuestionDraft(),
+  );
+  const [selected, setSelected] = useState(initial.selected);
+  const [other, setOther] = useState(initial.other);
+  const [step, setStep] = useState(initial.step);
+  useLayoutEffect(() => {
+    if (drafts && session && qs.length)
+      drafts.set(session, e, qs, { selected, other, step });
+  }, [drafts, session, e.runId, e.requestId, qs, selected, other, step]);
   const [, refreshUploads] = useState(0);
   const submit = useRef<HTMLButtonElement>(null);
   const next = useRef<HTMLButtonElement>(null);
@@ -264,9 +292,11 @@ export function QuestionCard({
                         secretFiles={secretFiles}
                         downloadAttachment={downloadAttachment}
                         detectSecrets
-                        onUploadChange={() =>
-                          refreshUploads((value) => value + 1)
-                        }
+                        onUploadChange={() => {
+                          if (drafts && session)
+                            drafts.persistAttachments(session, e, q.key);
+                          refreshUploads((value) => value + 1);
+                        }}
                         onSubmitShortcut={answerShortcut}
                         onChange={(value) => {
                           if (!q.multi)

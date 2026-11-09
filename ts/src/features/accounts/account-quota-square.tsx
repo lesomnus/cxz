@@ -7,9 +7,7 @@ import {
 import { useEffect, useState } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
-import { useRemote } from "#src/shared/api/use-remote.ts";
-import { readAccountQuota } from "./account-quota";
-import { accountReadPrefix, USAGE_TTL } from "#src/shared/api/read-cache.ts";
+import { useAccountQuota } from "./use-account-quota";
 import styles from "./accounts.module.css";
 
 export function AccountQuotaSquare({
@@ -20,6 +18,9 @@ export function AccountQuotaSquare({
   identity = account,
   refreshVersion = 0,
   onLoadingChange,
+  inline = false,
+  className = "",
+  gaugeClassName = "",
 }: {
   c: Connection;
   account: string;
@@ -28,22 +29,18 @@ export function AccountQuotaSquare({
   identity?: string;
   refreshVersion?: number;
   onLoadingChange?: (loading: boolean) => void;
+  /** Phrasing content for account selectors, retaining the same gauge/countdown. */
+  inline?: boolean;
+  className?: string;
+  gaugeClassName?: string;
 }) {
-  const identities = JSON.stringify(
-    sessions.map((session) => session.runtimeId).sort(),
-  );
-  const quota = useRemote(
-    (signal) => readAccountQuota(c, agent, sessions, signal),
-    [c, identity, agent, identities],
-    {
-      cache: {
-        store: c.reads,
-        key: `${accountReadPrefix(identity)}quota/${agent}/${identities}`,
-        ttl: USAGE_TTL,
-      },
-      refresh: refreshVersion,
-    },
-  );
+  const quota = useAccountQuota({
+    c,
+    agent,
+    sessions,
+    identity,
+    refreshVersion,
+  });
   useEffect(
     () => onLoadingChange?.(quota.loading),
     [onLoadingChange, quota.loading],
@@ -57,19 +54,6 @@ export function AccountQuotaSquare({
     }, 1000);
     return () => clearInterval(timer);
   }, [quota.data?.reset]);
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === "visible") quota.revalidate();
-    };
-    const timer = setInterval(refresh, 60000);
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [c, identity, agent, identities]);
   const remaining = quota.data?.remaining;
   const percent = remaining === undefined ? undefined : Math.round(remaining);
   const level =
@@ -80,14 +64,15 @@ export function AccountQuotaSquare({
         : remaining <= 30
           ? "warning"
           : "normal";
+  const Surface = inline ? "span" : Section;
   return (
-    <Section
-      className={styles.quotaSquare}
+    <Surface
+      className={`${styles.quotaSquare} ${inline ? styles.quotaInline : ""} ${className}`}
       aria-label="Remaining agent usage"
       data-quota-level={level}
     >
       <LiquidGauge
-        className={styles.quotaGauge}
+        className={`${styles.quotaGauge} ${gaugeClassName}`}
         value={remaining}
         aria-label={
           percent === undefined
@@ -120,6 +105,6 @@ export function AccountQuotaSquare({
           rounding="ceil"
         />
       </span>
-    </Section>
+    </Surface>
   );
 }

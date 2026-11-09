@@ -5,7 +5,11 @@
   width: 100%;
 }
 .trigger.trigger {
+  --button-background: transparent;
   color: var(--ui-muted);
+}
+.trigger[aria-expanded="true"] {
+  --button-background: var(--button-hover-background);
 }
 .symbol {
   display: flex;
@@ -13,17 +17,9 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  box-sizing: border-box;
-  border: 0;
-  border-radius: 8px;
-  background: color-mix(in srgb, currentColor 12%, transparent);
-  transition: background-color var(--ui-button-background-duration) ease-out;
 }
 .trigger[data-active] {
   color: #ff526d;
-}
-.trigger:is(:hover, [aria-expanded="true"]) .symbol {
-  background: color-mix(in srgb, currentColor 18%, transparent);
 }
 .popup {
   position: fixed;

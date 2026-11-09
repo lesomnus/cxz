@@ -32,7 +32,7 @@ export type AccountScenario =
   | "expired";
 export type LoginOutcome = "success" | "fail-once" | "disconnect-once";
 
-class PreviewLoginSocket implements LoginSocket {
+export class PreviewLoginSocket implements LoginSocket {
   onopen: LoginSocket["onopen"] = null;
   onmessage: LoginSocket["onmessage"] = null;
   onerror: LoginSocket["onerror"] = null;

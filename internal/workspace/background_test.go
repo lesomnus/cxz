@@ -55,7 +55,7 @@ func TestBackgroundReadsStoredJobsWithoutAContainerConnection(t *testing.T) {
 	}
 	defer store.Close()
 	if err = store.Append(ctx, []core.Event{
-		{SessionID: id, RunID: "run", Seq: 1, Kind: "background", Payload: []byte(`{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[{"task_id":"42"}]}`)},
+		{SessionID: id, RunID: "run", Seq: 1, Kind: "background", Payload: []byte(`{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[{"task_id":"42","command":"sleep 60"}]}`)},
 		{SessionID: id, RunID: "run", Seq: 2, Kind: "assistant", Text: "Working"},
 	}); err != nil {
 		t.Fatal(err)
@@ -83,6 +83,9 @@ func TestBackgroundReadsStoredJobsWithoutAContainerConnection(t *testing.T) {
 		}
 		if reply.LastSeq != 2 || !states["run"].Tasks["42"].Active {
 			t.Fatal(reply.LastSeq, string(reply.Data))
+		}
+		if task := states["run"].Tasks["42"]; task.Command != "sleep 60" || task.Description != "" {
+			t.Fatal("stored command lost through Manager Background", task)
 		}
 	}
 	if err = store.Append(ctx, []core.Event{{SessionID: id, RunID: "run", Seq: 4, Kind: "background", Payload: []byte(`{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[]}`)}}); err != nil {

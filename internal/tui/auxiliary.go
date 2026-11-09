@@ -115,6 +115,9 @@ func auxCall(ctx context.Context, client api.SessionsClient, r auxiliary.Request
 func auxConfigOf(out *api.AuxConfigReply) auxiliary.Config {
 	cfg := auxiliary.Config{Revision: out.Revision}
 	for _, p := range out.Profiles {
+		if cfg.Account == "" && p.Account != "" {
+			cfg.Account, cfg.Agent, cfg.Backend = p.Account, p.Agent, p.Backend
+		}
 		profile := auxiliary.Profile{
 			Enabled: p.Enabled, Account: p.Account, Agent: p.Agent,
 			Backend: p.Backend, Model: p.Model, Effort: p.Effort,
@@ -549,6 +552,7 @@ func (m *model) loadAuxiliaryAccounts(p *auxiliaryPage) tea.Cmd {
 func (m *model) auxiliaryScreen() string {
 	p := m.settingsPage.auxiliary
 	lines := []string{"", accent.Bold(true).Render("AI tasks" + m.connectionLabel(m.settingsPage.connection)), ""}
+	lines = append(lines, "One shared account for all tasks; changing it resets the other tasks' models.", "")
 	if p.editing {
 		lines = append(lines, "Select "+p.step+" · "+p.draft.Account)
 		choices := p.choices()
@@ -588,7 +592,7 @@ func (m *model) auxiliaryScreen() string {
 	} else if p.config.Summary.Enabled && p.config.Suggestion.Enabled {
 		lines = append(lines, "", muted.Render("Summary and suggestion differ: a call each. Edit one and choose \"use … from …\" to share a call."))
 	}
-	lines = append(lines, "", "Checkpoint uses the summary account, or suggestion account when summary is off.", "/summary and /suggest: on/off per session, or once while off.")
+	lines = append(lines, "", "Checkpoint uses the shared account and the summary model, or suggestion model when summary is off.", "/summary and /suggest: on/off per session, or once while off.")
 	if p.busy {
 		lines = append(lines, "Checking account/model…")
 	}

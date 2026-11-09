@@ -21,7 +21,7 @@ func (m *Manager) NotificationBoundary(ctx context.Context, id string) (uint64, 
 		return 0, err
 	}
 	dir, _ := m.projectState(p.storageID())
-	b, err := os.ReadFile(filepath.Join(core.Dir(filepath.Join(dir, "data"), id), "manifest.json"))
+	b, err := os.ReadFile(filepath.Join(core.Dir(filepath.Join(dir, "data"), id), "session.json"))
 	if os.IsNotExist(err) {
 		return 0, nil
 	}

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { ReadCache } from "#src/shared/api/read-cache.ts";
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@lesomnus/nox";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
@@ -56,15 +57,26 @@ export const InToolbar: Story = {
   parameters: { layout: "fullscreen" },
 };
 
-function JobListPreview({ empty = false }: { empty?: boolean }) {
+function JobListPreview({
+  empty = false,
+  providerFields = false,
+  delay = 0,
+  extraActive = 0,
+}: {
+  empty?: boolean;
+  providerFields?: boolean;
+  delay?: number;
+  extraActive?: number;
+}) {
+  const [requests, setRequests] = useState(0);
   const [fixture] = useState(() => {
     const tasks: BackgroundTask[] = empty
       ? []
       : [
           {
             task_id: "build",
-            description:
-              "Build the web application and verify generated assets",
+            description: "",
+            command: `timeout --kill-after=3s 120s /usr/bin/zsh -lc 'npm run build --workspace "web application" -- --mode production --sourcemap --assetsDir generated'`,
             status: "working",
             active: true,
             summary: "Compiling the production bundle and checking types.",
@@ -72,7 +84,8 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
           },
           {
             task_id: "watch",
-            description: "Watch workspace files",
+            description: "",
+            command: `timeout 60s bash -c 'npm run dev -- --host 0.0.0.0'`,
             status: "working",
             active: true,
             summary: "Waiting for changes in /workspace/ts/src.",
@@ -80,7 +93,8 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
           },
           {
             task_id: "tests",
-            description: "Run conversation tests",
+            description: "",
+            command: `timeout 45s zsh -lc 'npm test -- --run conversation'`,
             status: "completed",
             active: false,
             summary: "All conversation tests passed.",
@@ -88,18 +102,94 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
           },
           {
             task_id: "lint",
-            description: "Check formatting",
+            description: "",
+            command: `timeout 30s bash -lc 'npm run lint'`,
             status: "failed",
             active: false,
             summary: "Formatting changes are needed in src/example.ts.",
             output_file: "/tmp/cxz/jobs/lint.log",
           },
         ];
+    if (!empty && providerFields) {
+      tasks[0].description = 'Check timeout handling in "bash"';
+      delete tasks[0].command;
+      tasks[1].description = "Watch source changes";
+    }
+    if (!empty) {
+      tasks[0].updated_seq = "90";
+      tasks[1].updated_seq = "80";
+      tasks[2].updated_seq = "70";
+      tasks[3].updated_seq = "60";
+      tasks.push(
+        {
+          task_id: "docs",
+          description: "",
+          command: `timeout 30s bash -lc 'npm run docs'`,
+          status: "completed",
+          active: false,
+          summary: "Documentation is up to date.",
+          output_file: "",
+          updated_seq: "50",
+        },
+        {
+          task_id: "old-test",
+          description: "Old test run",
+          status: "completed",
+          active: false,
+          summary: "A previous test run.",
+          output_file: "",
+          updated_seq: "10",
+        },
+        {
+          task_id: "old-build",
+          description: "Old build",
+          status: "completed",
+          active: false,
+          summary: "A previous build.",
+          output_file: "",
+          updated_seq: "20",
+        },
+      );
+      for (let index = 0; index < extraActive; index++)
+        tasks.push({
+          task_id: `extra-${index}`,
+          command: `timeout 60s bash -lc 'npm run check --workspace package-${index}'`,
+          description: "",
+          status: "working",
+          active: true,
+          summary: "",
+          output_file: "",
+          updated_seq: String(100 + index),
+        });
+      const now = Date.now();
+      tasks.forEach((task, index) => {
+        task.started_at_ms = now - (index + 1) * 65_000;
+        if (!task.active)
+          task.finished_at_ms = task.started_at_ms + 42_000 + index * 1000;
+      });
+      // Deliberately interleave the source data: the report owns its ordering.
+      tasks.unshift(tasks.splice(5, 1)[0]);
+    }
     const transport = createRouterTransport((router) => {
       router.service(SessionService, {
-        background: (request) => {
+        background: async (request, context) => {
           if (request.ref?.key.case !== "id")
             throw new Error("Background requires a public session UUID");
+          setRequests((value) => value + 1);
+          if (delay)
+            await new Promise<void>((resolve, reject) => {
+              const abort = () => {
+                clearTimeout(timer);
+                reject(context.signal.reason);
+              };
+              const timer = setTimeout(() => {
+                context.signal.removeEventListener("abort", abort);
+                resolve();
+              }, delay);
+              if (context.signal.aborted) abort();
+              else
+                context.signal.addEventListener("abort", abort, { once: true });
+            });
           return {
             data: new TextEncoder().encode(
               JSON.stringify({
@@ -117,18 +207,25 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
     });
     return { c: new Connection(location.origin, transport), tasks };
   });
+  useEffect(() => () => fixture.c.dispose(), [fixture]);
   return (
-    <ComponentPreview
-      backgroundJobs={fixture.tasks.filter((task) => task.active).length}
-      backgroundReport={
-        <BackgroundReport
-          c={fixture.c}
-          session={sessionFixtureId()}
-          run="preview"
-          available
-        />
-      }
-    />
+    <>
+      <output hidden data-background-list-requests={requests}>
+        {requests}
+      </output>
+      <ComponentPreview
+        backgroundJobs={fixture.tasks.filter((task) => task.active).length}
+        backgroundReport={
+          <BackgroundReport
+            c={fixture.c}
+            presentation="menu"
+            session={sessionFixtureId()}
+            run="preview"
+            available
+          />
+        }
+      />
+    </>
   );
 }
 
@@ -140,7 +237,41 @@ export const JobList: Story = {
     docs: {
       description: {
         story:
-          "Click the background-job count in the composer toolbar to open the same floating card and BackgroundReport used in the session view. The in-memory RPC fixture includes running, completed and failed jobs, descriptions, summaries and output paths. Refresh reloads the fixture; Escape, Close or a conversation margin dismisses the card. No server is required.",
+          "Click the background-job count to open the shared anchored menu. Each job is one highlighted command line with an elapsed clock on the right; known timeout and shell wrappers are removed for display, and hover retains the original command. The in-memory RPC fixture includes deliberately interleaved running, completed and failed jobs. The menu places active jobs first and keeps only the three most recently updated inactive jobs, with inactive jobs dimmed. Running clocks advance; completed clocks remain fixed. The menu keeps a fixed height and retains cached items when reopened; Escape restores focus and clicking outside dismisses. No server is required.",
+      },
+    },
+  },
+};
+
+export const LoadingJobList: Story = {
+  ...JobList,
+  render: () => <JobListPreview delay={1500} />,
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "The first load is delayed. The menu keeps its full height during loading; close and reopen after loading to see the cached list immediately without another request.",
+      },
+    },
+  },
+};
+
+export const ScrollingJobList: Story = {
+  ...JobList,
+  render: () => <JobListPreview extraActive={4} />,
+  parameters: { layout: "fullscreen" },
+};
+
+export const DescriptionsAndCommands: Story = {
+  ...JobList,
+  render: () => <JobListPreview providerFields />,
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Provider descriptions remain plain text. Commands are highlighted only when no description is supplied; a task with both fields shows its description and keeps the full command on hover.",
       },
     },
   },
@@ -154,7 +285,7 @@ export const EmptyJobList: Story = {
     docs: {
       description: {
         story:
-          "Click the zero background-job count to inspect the real list card's empty state.",
+          "Click the zero background-job count to inspect the menu's empty state.",
       },
     },
   },
@@ -172,6 +303,7 @@ function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
   const connection = useMemo(
     () =>
       ({
+        reads: new ReadCache(),
         sessions: {
           background: async (request: {
             ref?: { key?: { case?: string } };
@@ -291,6 +423,7 @@ function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
         backgroundReport={
           <BackgroundReport
             c={connection}
+            presentation="menu"
             session={session.id}
             run="preview"
             available

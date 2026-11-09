@@ -10,9 +10,15 @@ import {
   MemoryPatchRequestSchema,
   MemoryScope,
   MemoryReadFormat,
+  MemoryVersionSchema,
+  type MemoryVersion,
 } from "#gen/cxz/memory_svc_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { projectFixtureId } from "./project-id";
+import {
+  memoryParagraphBefore,
+  memoryParagraphAfter,
+} from "./memory-long-paragraph";
 export function memoryFixture({
   empty = false,
   fail = false,
@@ -21,6 +27,11 @@ export function memoryFixture({
   migrated = false,
   cards = false,
   readDelay = 0,
+  readLoading = false,
+  revisionCount = 1,
+  missingPreviousRevision = false,
+  diffFailOnce = false,
+  longParagraphChange = false,
 } = {}) {
   const projects = ["web", "api"].map((alias, i) =>
     create(ProjectSchema, {
@@ -55,7 +66,8 @@ export function memoryFixture({
     create(SessionSchema, { ...s, id: projectFixtureId(i + 100) }),
   );
   const rows = new Map<string, Memory>(),
-    versions = new Map<string, Map<bigint, string>>();
+    versions = new Map<string, Map<bigint, string>>(),
+    versionInfo = new Map<string, Map<bigint, MemoryVersion>>();
   let serial = 200,
     tick = Date.now();
   const stamp = () => timestampFromDate(new Date(++tick));
@@ -81,15 +93,80 @@ export function memoryFixture({
     });
     rows.set(key(id), m);
     versions.set(key(id), new Map([[1n, content]]));
+    versionInfo.set(
+      key(id),
+      new Map([
+        [
+          1n,
+          create(MemoryVersionSchema, {
+            memoryId: id,
+            revision: 1n,
+            contentHash: "hash-1",
+            dateCreated: m.dateCreated,
+          }),
+        ],
+      ]),
+    );
     return m;
   }
   if (!empty) {
     const primary = add(
       "Architecture notes",
-      "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
+      longParagraphChange
+        ? memoryParagraphBefore
+        : "# Architecture\n\nShared memory belongs to the project.\n\nKeep UI decisions together.",
     );
     add("Handoff notes", "# Handoff\n\nReview open changes.");
+    if (revisionCount > 1) {
+      primary.dateCreated = timestampFromDate(
+        new Date(Date.now() - (revisionCount - 1) * 86400000),
+      );
+      versionInfo.get(key(primary.id))!.get(1n)!.dateCreated =
+        primary.dateCreated;
+    }
+    for (let revision = 2; revision <= revisionCount; revision++) {
+      primary.revision = BigInt(revision);
+      primary.content = longParagraphChange
+        ? memoryParagraphAfter
+        : `# Architecture\n\nShared memory belongs to the project.\n\nDesign decisions from revision ${revision}.`;
+      versions.get(key(primary.id))!.set(primary.revision, primary.content);
+      versionInfo.get(key(primary.id))!.set(
+        primary.revision,
+        create(MemoryVersionSchema, {
+          memoryId: primary.id,
+          revision: primary.revision,
+          contentHash: `hash-${revision}`,
+          dateCreated: timestampFromDate(
+            new Date(Date.now() - (revisionCount - revision) * 86400000),
+          ),
+          linesAdded: longParagraphChange && revision > 2 ? 0 : 1,
+          linesRemoved: longParagraphChange && revision > 2 ? 0 : 1,
+          // Rune-boundary edits: the long paragraph changes only one passage;
+          // ordinary versions replace the closing sentence, then its digit.
+          bytesAdded: BigInt(
+            longParagraphChange
+              ? revision === 2
+                ? 66
+                : 0
+              : revision === 2
+                ? 18
+                : 1,
+          ),
+          bytesRemoved: BigInt(
+            longParagraphChange
+              ? revision === 2
+                ? 41
+                : 0
+              : revision === 2
+                ? 12
+                : 1,
+          ),
+        }),
+      );
+    }
     primary.dateUpdated = stamp();
+    if (missingPreviousRevision && primary.revision > 1n)
+      versions.get(key(primary.id))!.delete(primary.revision - 1n);
   }
   if (migrated && !empty) {
     for (let i = 0; i < 24; i++) {
@@ -156,6 +233,8 @@ export function memoryFixture({
     return m;
   }
   const readRequests: string[] = [];
+  let diffReads = 0;
+  const readLifetime = new AbortController();
   const transport = createRouterTransport(({ service }) =>
     service(MemoryService, {
       list: async (r) => {
@@ -188,11 +267,62 @@ export function memoryFixture({
             .map((m) => ({ ...m, content: "" })),
         };
       },
+      watch: (request, context) => {
+        return (async function* () {
+          if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+          if (fail)
+            throw new ConnectError(
+              "Memory library temporarily unavailable",
+              Code.Unavailable,
+            );
+          const project = request.project?.key.value;
+          const session = request.session?.key.value;
+          yield {
+            items: request.skipSnapshot
+              ? []
+              : [...rows.values()]
+                  .filter(
+                    (m) =>
+                      (!(project instanceof Uint8Array) ||
+                        key(m.project!.id) === key(project)) &&
+                      (!(session instanceof Uint8Array) ||
+                        m.ownerSession === key(session)) &&
+                      !!m.dateDeleted === (request.scope === MemoryScope.TRASH),
+                  )
+                  .map((m) => ({ id: m.id, value: { ...m, content: "" } })),
+          };
+          await new Promise<void>((resolve) => {
+            if (context.signal.aborted) resolve();
+            else
+              context.signal.addEventListener("abort", () => resolve(), {
+                once: true,
+              });
+          });
+        })();
+      },
       get: (r) => ({ ...find(r.ref) }),
-      read: async (r) => {
+      read: async (r, context) => {
         readRequests.push(key(r.ref!.key.value as Uint8Array));
+        if (readLoading) {
+          const signal = AbortSignal.any([context.signal, readLifetime.signal]);
+          await new Promise<never>((_, reject) => {
+            const abort = () =>
+              reject(new ConnectError("Memory read canceled", Code.Canceled));
+            if (signal.aborted) abort();
+            else signal.addEventListener("abort", abort, { once: true });
+          });
+        }
         if (readDelay)
           await new Promise((resolve) => setTimeout(resolve, readDelay));
+        if (
+          r.format === MemoryReadFormat.DIFF &&
+          ++diffReads === 1 &&
+          diffFailOnce
+        )
+          throw new ConnectError(
+            "Revision changes temporarily unavailable",
+            Code.Unavailable,
+          );
         const m = find(r.ref),
           history = versions.get(key(m.id))!,
           rev = r.revision || m.revision,
@@ -205,6 +335,28 @@ export function memoryFixture({
           history.has(r.baseRevision)
         ) {
           const before = history.get(r.baseRevision)!;
+          const oldLines = before.match(/[^\n]*\n|[^\n]+$/g) ?? [],
+            newLines = content.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+          const encode = (lines: string[], prefix: string) =>
+            lines.flatMap((line) =>
+              line.endsWith("\n")
+                ? [prefix + line.slice(0, -1)]
+                : [prefix + line, "\\ No newline at end of file"],
+            );
+          let prefix = 0,
+            suffix = 0;
+          while (
+            prefix < oldLines.length &&
+            prefix < newLines.length &&
+            oldLines[prefix] === newLines[prefix]
+          )
+            prefix++;
+          while (
+            suffix < oldLines.length - prefix &&
+            suffix < newLines.length - prefix &&
+            oldLines.at(-1 - suffix) === newLines.at(-1 - suffix)
+          )
+            suffix++;
           return {
             memory: { ...m, content: "" },
             revision: rev,
@@ -213,7 +365,21 @@ export function memoryFixture({
             diff:
               before === content
                 ? ""
-                : `--- r${r.baseRevision}\n+++ r${rev}\n-${before}\n+${content}`,
+                : [
+                    `--- r${r.baseRevision}`,
+                    `+++ r${rev}`,
+                    `@@ -${oldLines.length ? 1 : 0},${oldLines.length} +${newLines.length ? 1 : 0},${newLines.length} @@`,
+                    ...encode(oldLines.slice(0, prefix), " "),
+                    ...encode(
+                      oldLines.slice(prefix, oldLines.length - suffix),
+                      "-",
+                    ),
+                    ...encode(
+                      newLines.slice(prefix, newLines.length - suffix),
+                      "+",
+                    ),
+                    ...encode(oldLines.slice(oldLines.length - suffix), " "),
+                  ].join("\n") + "\n",
           };
         }
         return {
@@ -221,6 +387,10 @@ export function memoryFixture({
           revision: rev,
           format: MemoryReadFormat.FULL,
           content,
+          fallbackReason:
+            r.format === MemoryReadFormat.DIFF && r.baseRevision
+              ? "base revision is not retained"
+              : "",
         };
       },
       add: (r) => {
@@ -262,6 +432,15 @@ export function memoryFixture({
           m.content = r.content;
           m.revision++;
           versions.get(key(m.id))!.set(m.revision, m.content);
+          versionInfo.get(key(m.id))!.set(
+            m.revision,
+            create(MemoryVersionSchema, {
+              memoryId: m.id,
+              revision: m.revision,
+              contentHash: `hash-${m.revision}`,
+              dateCreated: stamp(),
+            }),
+          );
         }
         if (isFieldSet(r, MemoryPatchRequestSchema.field.name)) m.name = r.name;
         if (Object.keys(r.labels).length) m.labels = { ...r.labels };
@@ -271,15 +450,23 @@ export function memoryFixture({
       },
       versions: (r) => {
         const m = find(r.ref);
+        const history = [...versions.get(key(m.id))!]
+          .reverse()
+          .filter(
+            ([revision]) => !r.beforeRevision || revision < r.beforeRevision,
+          );
+        const page = history.slice(0, r.size || 100);
         return {
-          versions: [...versions.get(key(m.id))!]
-            .reverse()
-            .map(([revision]) => ({
-              memoryId: m.id,
-              revision,
-              contentHash: `hash-${revision}`,
-              dateCreated: m.dateUpdated,
-            })),
+          nextRevision: history.length > page.length ? page.at(-1)![0] : 0n,
+          versions: page.map(
+            ([revision]) =>
+              versionInfo.get(key(m.id))!.get(revision) ?? {
+                memoryId: m.id,
+                revision,
+                contentHash: `hash-${revision}`,
+                dateCreated: m.dateUpdated,
+              },
+          ),
         };
       },
       erase: (r) => {
@@ -298,12 +485,18 @@ export function memoryFixture({
         const m = find(r.ref);
         rows.delete(key(m.id));
         versions.delete(key(m.id));
+        versionInfo.delete(key(m.id));
         return { erased: true };
       },
     }),
   );
+  const c = new Connection("http://storybook", transport);
   return {
-    c: new Connection("http://storybook", transport),
+    c,
+    dispose() {
+      readLifetime.abort();
+      c.dispose();
+    },
     readRequests,
     memories: [...rows.values()],
     projects,

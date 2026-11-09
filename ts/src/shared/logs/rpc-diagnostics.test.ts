@@ -301,3 +301,44 @@ it("keeps raw RPC reference identity separate from a resolved resource name", as
   expect(entry.key).not.toContain("Release review");
   expect(entry.key).not.toContain("public-session-id");
 });
+
+it("honors explicit notification attributes before contextual policy without hiding captured errors", async () => {
+  const errors = new ClientErrors();
+  let notify = true;
+  const raw = createRouterTransport((router) =>
+    router.service(AccountService, {
+      get: () => {
+        throw new ConnectError("offline", Code.Unavailable);
+      },
+    }),
+  );
+  const client = createClient(
+    AccountService,
+    diagnosticTransport(raw, "https://notification.invalid", {
+      errors,
+      write: () => {},
+      notify: () => notify,
+    }),
+  );
+  const { errorNotificationOptions } = await import(
+    "#src/shared/errors/error-notification.ts"
+  );
+  const request = { ref: { key: { case: "alias" as const, value: "work" } } };
+  await expect(
+    client.get(request, errorNotificationOptions(false)),
+  ).rejects.toThrow("offline");
+  expect(errors.snapshot()[0]).toMatchObject({
+    notify: false,
+    status: "active",
+    count: 1,
+  });
+  await expect(client.get(request)).rejects.toThrow();
+  expect(errors.snapshot()[0]).toMatchObject({ notify: true, count: 2 });
+  notify = false;
+  await expect(
+    client.get(request, errorNotificationOptions(true)),
+  ).rejects.toThrow();
+  expect(errors.snapshot()[0]).toMatchObject({ notify: true, count: 3 });
+  await expect(client.get(request)).rejects.toThrow();
+  expect(errors.snapshot()[0]).toMatchObject({ notify: false, count: 4 });
+});

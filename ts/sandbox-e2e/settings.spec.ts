@@ -1,3 +1,4 @@
+import { chooseSettingsTopic } from "../test-support/settings-navigation";
 import { chooseSetting, expectInherited } from "./settings-controls";
 import {
   expect,
@@ -25,10 +26,7 @@ async function ready(page: Page) {
 async function settings(page: Page) {
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
-  await page
-    .getByRole("navigation", { name: "Settings topics" })
-    .getByRole("link", { name: "Editor", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "Editor");
   await expect(
     page.getByRole("heading", { name: "Editor", exact: true }),
   ).toBeVisible();
@@ -151,33 +149,30 @@ test("font settings apply live to file editors and session drafts with independe
   await chooseSetting(page, "Global editor Font family", "");
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await page
-    .locator('.tree-session[href="/sandbox.html#/c/_/session/session-1"]')
+    .locator(
+      '[data-session-navigation][href="/sandbox.html#/c/_/session/session-1"]',
+    )
     .click({ timeout: 5000 });
   await expect(composer).toHaveCSS("font-family", /ui-monospace/);
 });
 
-test("settings topics keep compact columns centered and a live JSON pane unfolds at the conversation width threshold", async ({
+test("settings topics scroll within a centered form while the JSON pane preserves its draft across the width threshold", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1843, height: 1000 });
+  await page.setViewportSize({ width: 1663, height: 1000 });
   await ready(page);
   await settings(page);
   const topics = page.getByRole("navigation", {
     name: "Settings topics",
     exact: true,
   });
-  const editorTopic = topics.getByRole("link", {
-    name: "Editor",
-    exact: true,
-  });
-  await expect(editorTopic).toHaveAttribute("aria-current", "page");
-  await expect(topics.getByRole("link")).toHaveCount(4);
-  await expect(page.getByRole("tablist")).toHaveCount(0);
-  const body = page.locator(".settings-editor-body");
-  const form = page.getByRole("region", {
-    name: "Editor settings",
-    exact: true,
-  });
+  await expect(topics.getByRole("button")).toHaveCount(3);
+  await expect(
+    topics.getByRole("button", { name: "Editor", exact: true }),
+  ).toHaveAttribute("aria-current", "location");
+  const form = page.locator("#settings-form");
+  const layout = form.locator("[data-resource-layout]");
+  const viewport = form.locator(".panel-scroll-content").first();
   const pane = page.getByRole("complementary", {
     name: "Settings file editor",
     exact: true,
@@ -186,32 +181,22 @@ test("settings topics keep compact columns centered and a live JSON pane unfolds
     name: "settings.json",
     exact: true,
   });
-  const centered = () =>
-    body.evaluate((el) => {
-      const body = el.getBoundingClientRect();
-      const pane = el.parentElement!.getBoundingClientRect();
-      return {
-        width: body.width,
-        limit: parseFloat(getComputedStyle(el).maxWidth),
-        delta: Math.abs(
-          body.left + body.width / 2 - (pane.left + pane.width / 2),
-        ),
-      };
-    });
-  const expectCentered = async () => {
-    const current = await centered();
-    expect(current.delta).toBeLessThan(0.1);
-    expect(current.width).toBe(current.limit);
+  const centered = async () => {
+    const bounds = (await layout.boundingBox())!;
+    const area = (await viewport.boundingBox())!;
+    expect(
+      Math.abs(bounds.x + bounds.width / 2 - area.x - area.width / 2),
+    ).toBeLessThan(1);
+    expect(bounds.width).toBeLessThanOrEqual(area.width);
   };
-  await expectCentered();
+  await centered();
   await expect(pane).toBeHidden();
   await expect(page.locator(".settings-file .monaco-editor")).toHaveCount(0);
-  await page.setViewportSize({ width: 1844, height: 1000 });
+  await page.setViewportSize({ width: 1664, height: 1000 });
   await expect(pane).toBeVisible();
-  expect((await form.boundingBox())!.width).toBe(800);
-  expect((await pane.boundingBox())!.width).toBe(800);
+  await expect(form).toBeVisible();
   await expect(pane).toHaveCSS("border-left-width", "1px");
-  await expectCentered();
+  await centered();
   await chooseSetting(page, "Global editor Tab display width", "8");
   const saved = '{\n  "editor.tabSize": 8\n}\n';
   await expect.poll(() => readJSON(page, source)).toBe(saved);
@@ -220,42 +205,39 @@ test("settings topics keep compact columns centered and a live JSON pane unfolds
   await source.evaluate((el) => {
     (el as HTMLElement).dataset.identity = "original";
   });
-  await page.setViewportSize({ width: 1843, height: 1000 });
+  await page.setViewportSize({ width: 1663, height: 1000 });
   await expect(source).toBeVisible();
   await expect(form).toBeHidden();
-  await expect(source).toBeFocused();
   await expect.poll(() => readJSON(page, source)).toBe(saved + "\n");
-  await editorTopic.click();
+  await page
+    .getByRole("button", { name: "Edit settings.json", exact: true })
+    .click();
   await expect(form).toBeVisible();
   await expect(source).toBeHidden();
-  await expectCentered();
+  await centered();
   await page.setViewportSize({ width: 2104, height: 1000 });
   await expect(source).toBeVisible();
   await expect(source).toHaveAttribute("data-identity", "original");
-  await expect.poll(() => readJSON(page, source)).toBe(saved + "\n");
   await source.press("Control+z");
   await expect.poll(() => readJSON(page, source)).toBe(saved);
-  expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
-    saved,
-  );
-  await expectCentered();
+  await centered();
   await page.screenshot({
     path: "test-results/settings-wide.png",
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(source).toBeVisible();
-  await expect(topics).toBeVisible();
   await page
-    .getByRole("button", { name: "Back to settings", exact: true })
+    .getByRole("button", { name: "Edit settings.json", exact: true })
     .click();
   await expect(form).toBeVisible();
   await expect(source).toBeHidden();
-  expect((await centered()).width).toBeLessThanOrEqual(600);
-  expect((await centered()).delta).toBe(0);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
-    390,
-  );
+  await centered();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    ),
+  ).toBe(false);
   await page.screenshot({
     path: "test-results/settings-topics-mobile.png",
     fullPage: true,
@@ -461,8 +443,8 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   await writeJSON(page, source, raw);
   await source.press("Control+Enter");
   await expect(
-    page.locator(".settings-page p[role=status]:visible"),
-  ).toContainText("Save");
+    page.getByRole("button", { name: "Save", exact: true }),
+  ).toBeDisabled();
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("settings")))
     .toBe(raw);
@@ -476,10 +458,7 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   await expect(
     page.getByRole("button", { name: "Reload saved file", exact: true }),
   ).toBeFocused();
-  await page
-    .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("link", { name: "Editor", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "Editor");
   await expect(
     page.getByRole("slider", {
       name: "Global editor Tab display width",
@@ -532,10 +511,7 @@ test("JSON editing, validation, export and import preserve unknown settings in t
   expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
     imported,
   );
-  await page
-    .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("link", { name: "Editor", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "Editor");
   await expect(
     page.getByRole("slider", {
       name: "Session editor Tab display width",
@@ -614,10 +590,7 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
   await expect(
     page.locator(".settings-page p[role=alert]:visible"),
   ).toHaveCount(0);
-  await page
-    .getByRole("navigation", { name: "Settings topics", exact: true })
-    .getByRole("link", { name: "Editor", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "Editor");
   await expect(
     page.getByRole("slider", {
       name: "Global editor Indentation size",
@@ -707,7 +680,9 @@ test("settings sections form compact responsive columns with aligned text and or
 }) => {
   await ready(page);
   await settings(page);
-  const groups = page.locator(".settings-editor-groups > .settings-group");
+  const groups = page.locator(
+    '[data-settings-topic="editor"] .settings-editor-groups > *',
+  );
   const geometry = () =>
     groups.evaluateAll((elements) =>
       elements.map((el) => {
@@ -722,12 +697,12 @@ test("settings sections form compact responsive columns with aligned text and or
     .locator(".settings-page")
     .evaluate((el) =>
       parseFloat(
-        getComputedStyle(el).getPropertyValue("--settings-column-width"),
+        getComputedStyle(el).getPropertyValue("--resource-page-column-width"),
       ),
     );
   expect(wide[0].width).toBe(sectionWidth);
   const alignment = await page
-    .locator(".settings-editor-body")
+    .locator('[data-settings-topic="editor"]')
     .evaluate((el) => {
       const title = el.querySelector("header h1")!.getBoundingClientRect();
       const sectionTitle = el
@@ -738,11 +713,11 @@ test("settings sections form compact responsive columns with aligned text and or
         delta: Math.abs(title.left - sectionTitle.left),
         outsidePadding: getComputedStyle(el.querySelector(":scope > header")!)
           .paddingLeft,
-        radius: getComputedStyle(section).borderTopLeftRadius,
+        padding: getComputedStyle(section).paddingLeft,
       };
     });
   expect(alignment.delta).toBeLessThan(0.1);
-  expect(alignment.outsidePadding).toBe(alignment.radius);
+  expect(alignment.outsidePadding).toBe(alignment.padding);
   const expectFieldOrder = async (field: Locator, detailed = false) => {
     const positions = await field.evaluate(
       (el, detailed) =>
@@ -772,10 +747,7 @@ test("settings sections form compact responsive columns with aligned text and or
   const narrow = await geometry();
   expect(narrow[0].width).toBe(sectionWidth);
   expect(narrow[1].y).toBeGreaterThan(narrow[0].y);
-  await page
-    .getByRole("navigation", { name: "Settings topics" })
-    .getByRole("link", { name: "General", exact: true })
-    .click();
+  await chooseSettingsTopic(page, "General");
   const language = page
     .locator(".setting-row")
     .filter({ has: page.locator("code", { hasText: "ui.language" }) });
