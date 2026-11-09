@@ -54,3 +54,30 @@ func TestBackgroundCompletionMetadataUsesEventSequence(t *testing.T) {
 		t.Fatal(task)
 	}
 }
+
+func TestBackgroundDurationUsesFirstObservationAndStopsWhenInactive(t *testing.T) {
+	var state BackgroundState
+	started := []byte(`{"type":"system","subtype":"task_started","task_id":"bg","is_backgrounded":true}`)
+	state.ApplyAt(started, 1, 1000)
+	state.ApplyAt([]byte(`{"type":"system","subtype":"task_updated","task_id":"bg","patch":{"description":"still building"}}`), 2, 2000)
+	if task := state.Tasks["bg"]; task.StartedAtMS != 1000 || task.FinishedAtMS != 0 {
+		t.Fatal(task)
+	}
+	state.ApplyAt([]byte(`{"type":"system","subtype":"task_notification","task_id":"bg","status":"completed"}`), 3, 5000)
+	state.ApplyAt([]byte(`{"type":"system","subtype":"task_notification","task_id":"bg","status":"completed","summary":"later summary"}`), 4, 6000)
+	if task := state.Tasks["bg"]; task.StartedAtMS != 1000 || task.FinishedAtMS != 5000 {
+		t.Fatal(task)
+	}
+	state.ApplyAt(started, 5, 7000)
+	if task := state.Tasks["bg"]; task.StartedAtMS != 1000 || task.FinishedAtMS != 0 {
+		t.Fatal(task)
+	}
+}
+
+func TestLegacyActiveTaskUpdateDoesNotInventAStartTime(t *testing.T) {
+	state := BackgroundState{Tasks: map[string]BackgroundTask{"bg": {ID: "bg", Active: true, Status: "working"}}}
+	state.ApplyAt([]byte(`{"type":"system","subtype":"task_updated","task_id":"bg","patch":{"description":"new detail"}}`), 2, 5000)
+	if task := state.Tasks["bg"]; task.StartedAtMS != 0 || task.FinishedAtMS != 0 {
+		t.Fatal(task)
+	}
+}

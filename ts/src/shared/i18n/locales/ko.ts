@@ -1,5 +1,7 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Background task elapsed time": "백그라운드 작업 경과시간",
+  "Background task duration unavailable": "백그라운드 작업시간을 알 수 없음",
   "Created memories": "생성된 메모리",
   "No memories were created in this range.":
     "이 구간에 생성된 메모리가 없습니다.",

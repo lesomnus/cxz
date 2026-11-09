@@ -41,11 +41,15 @@ func TestBackgroundOrderSurvivesStoreAndBackfillsLegacyRecords(t *testing.T) {
 	// Simulate the metadata written before sequence/time fields existed.
 	for id, task := range data["run"].Tasks {
 		task.UpdatedSeq, task.UpdatedAtMS = 0, 0
+		task.StartedAtMS, task.FinishedAtMS = 0, 0
 		data["run"].Tasks[id] = task
 	}
 	data["run"].Tasks["gone"] = agentview.BackgroundTask{ID: "gone", Status: "completed"}
 	encoded, _ = json.Marshal(data)
 	if _, err = store.DB().ExecContext(ctx, `UPDATE meta SET value=? WHERE key='background'`, string(encoded)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = store.DB().ExecContext(ctx, `INSERT OR REPLACE INTO meta VALUES('background_order','1')`); err != nil {
 		t.Fatal(err)
 	}
 	store.Close()
@@ -58,10 +62,10 @@ func TestBackgroundOrderSurvivesStoreAndBackfillsLegacyRecords(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if task := recovered["run"].Tasks["a"]; task.UpdatedSeq != 2 || task.UpdatedAtMS != 2000 {
+	if task := recovered["run"].Tasks["a"]; task.UpdatedSeq != 2 || task.UpdatedAtMS != 2000 || task.StartedAtMS != 1000 || task.FinishedAtMS != 2000 {
 		t.Fatal(task)
 	}
-	if task := recovered["run"].Tasks["b"]; task.UpdatedSeq != 3 || task.UpdatedAtMS != 3000 {
+	if task := recovered["run"].Tasks["b"]; task.UpdatedSeq != 3 || task.UpdatedAtMS != 3000 || task.StartedAtMS != 2000 || task.FinishedAtMS != 3000 {
 		t.Fatal(task)
 	}
 	if task := recovered["run"].Tasks["gone"]; task.ID != "gone" || task.UpdatedSeq != 0 {

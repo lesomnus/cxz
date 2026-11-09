@@ -1,5 +1,8 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Background task elapsed time": "Background task elapsed time",
+  "Background task duration unavailable":
+    "Background task duration unavailable",
   "Created memories": "Created memories",
   "No memories were created in this range.":
     "No memories were created in this range.",

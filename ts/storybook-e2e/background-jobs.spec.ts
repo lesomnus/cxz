@@ -94,22 +94,49 @@ test("background details use the shared anchored menu and a public UUID for refr
   ).toHaveCount(0);
   await expect(report.getByRole("listitem")).toHaveCount(5);
   const jobs = report.getByRole("listitem");
-  await expect(jobs.nth(0)).toContainText("Build the web application");
-  await expect(jobs.nth(1)).toContainText("Watch workspace files");
-  await expect(jobs.nth(2)).toContainText("Run conversation tests");
-  await expect(jobs.nth(3)).toContainText("Check formatting");
-  await expect(jobs.nth(4)).toContainText("Generate project documentation");
+  await expect(jobs.nth(0)).toContainText("npm run build");
+  await expect(jobs.nth(1)).toContainText("npm run dev");
+  await expect(jobs.nth(2)).toContainText("npm test");
+  await expect(jobs.nth(3)).toContainText("npm run lint");
+  await expect(jobs.nth(4)).toContainText("npm run docs");
   await expect(report).not.toContainText("Old test run");
   await expect(report).not.toContainText("Old build");
-  await expect(
-    report.getByText("Build the web application and verify generated assets", {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(report).toContainText(
-    "Compiling the production bundle and checking types.",
+  const command = jobs.first().locator("code");
+  await expect(command).not.toContainText("timeout");
+  await expect(command).toHaveAttribute("title", /timeout.*zsh -lc/);
+  await expect(command.locator(".hljs-string")).not.toHaveCount(0);
+  expect(
+    await command
+      .locator(".hljs-string")
+      .first()
+      .evaluate((node) => getComputedStyle(node).color),
+  ).not.toBe(await command.evaluate((node) => getComputedStyle(node).color));
+  await expect(command).toHaveCSS("white-space", "nowrap");
+  await expect(command).toHaveCSS("text-overflow", "ellipsis");
+  expect(
+    await command.evaluate((node) => node.scrollWidth > node.clientWidth),
+  ).toBe(true);
+  await expect(jobs.nth(2).locator("code")).toHaveCSS(
+    "text-decoration-line",
+    "line-through",
   );
-  await expect(report).toContainText("/tmp/cxz/jobs/build.log");
+  await expect(jobs.first().locator("code")).toHaveCSS(
+    "text-decoration-line",
+    "none",
+  );
+  await expect(
+    report.getByText(/^(?:working|inactive|completed|failed)$/),
+  ).toHaveCount(0);
+  await expect(jobs.first().getByRole("timer")).toHaveText(/\d{2}:\d{2}:\d{2}/);
+  const frozen = jobs
+    .nth(2)
+    .getByRole("img", { name: "Background task elapsed time", exact: true });
+  await expect(frozen).toHaveText("00:00:44");
+  await expect(jobs.first().locator(".elapsed-time-leading")).toHaveCount(0);
+  const rowBox = (await jobs.first().boundingBox())!;
+  const clockBox = (await jobs.first().getByRole("timer").boundingBox())!;
+  expect(clockBox.x).toBeGreaterThan((await command.boundingBox())!.x);
+  expect(rowBox.height).toBeLessThan(40);
   expect(await page.locator(".composer").boundingBox()).toEqual(before);
   const anchor = (await trigger.boundingBox())!;
   const menu = (await report.boundingBox())!;
@@ -119,11 +146,7 @@ test("background details use the shared anchored menu and a public UUID for refr
     await report.evaluate((node) => getComputedStyle(node).backdropFilter),
   ).not.toBe("none");
   await report.getByRole("menuitem", { name: "Refresh", exact: true }).click();
-  await expect(
-    report.getByText("Build the web application and verify generated assets", {
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(report.locator("code").first()).toContainText("npm run build");
   await expect(report).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
   await page.keyboard.press("Escape");

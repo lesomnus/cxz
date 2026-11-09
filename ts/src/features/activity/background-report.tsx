@@ -1,3 +1,4 @@
+import { BackgroundJobRow } from "./background-job-row";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useContext, useEffect, useRef } from "react";
 import {
@@ -9,7 +10,6 @@ import {
 } from "@lesomnus/nox";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import menuStyles from "#src/shared/components/anchored-menu.module.css";
-import jobStyles from "./background-report.module.css";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { Connection } from "#src/shared/api/connection.ts";
@@ -80,24 +80,7 @@ export function BackgroundReport({
         {available && !!snapshot.data?.length && (
           <div role="list" aria-label={t("Background tasks")}>
             {snapshot.data.map((task) => (
-              <div key={task.task_id} role="listitem" className={jobStyles.job}>
-                <div className={jobStyles.title}>
-                  {task.description || task.task_id}
-                </div>
-                <div className={jobStyles.status}>
-                  {task.active
-                    ? "working"
-                    : task.status === "working"
-                      ? "Awaiting final status"
-                      : task.status}
-                </div>
-                {task.summary && (
-                  <p className={jobStyles.summary}>{task.summary}</p>
-                )}
-                {task.output_file && (
-                  <div className={jobStyles.path}>{task.output_file}</div>
-                )}
-              </div>
+              <BackgroundJobRow key={task.task_id} task={task} />
             ))}
           </div>
         )}
@@ -143,20 +126,7 @@ export function BackgroundReport({
       {available && snapshot.error && <ErrorNotice error={snapshot.error} />}
       {available &&
         snapshot.data?.map((task) => (
-          <div key={task.task_id}>
-            <strong>{task.description || task.task_id}</strong>
-            <p className={styles.status}>
-              {task.active
-                ? "working"
-                : task.status === "working"
-                  ? "Awaiting final status"
-                  : task.status}
-            </p>
-            {task.summary && <p>{task.summary}</p>}
-            {task.output_file && (
-              <small className={styles.status}>{task.output_file}</small>
-            )}
-          </div>
+          <BackgroundJobRow key={task.task_id} task={task} />
         ))}
       {!available && (
         <p className={styles.muted}>The session runtime is not running.</p>

@@ -16,6 +16,9 @@ type BackgroundTask struct {
 	Active      bool   `json:"active"`
 	UpdatedSeq  uint64 `json:"updated_seq,omitempty,string"`
 	UpdatedAtMS int64  `json:"updated_at_ms,omitempty"`
+	// Timing follows observed transitions, not provider-reported process clocks.
+	StartedAtMS  int64 `json:"started_at_ms,omitempty"`
+	FinishedAtMS int64 `json:"finished_at_ms,omitempty"`
 }
 
 type backgroundEvent struct {
@@ -59,8 +62,17 @@ func (s *BackgroundState) ApplyAt(raw []byte, seq uint64, timeMS int64) {
 	previous := maps.Clone(s.Tasks)
 	s.Apply(raw)
 	for id, task := range s.Tasks {
-		if old, exists := previous[id]; exists && old == task {
+		old, exists := previous[id]
+		if exists && old == task {
 			continue
+		}
+		if task.Active {
+			if task.StartedAtMS == 0 && (!exists || !old.Active) {
+				task.StartedAtMS = timeMS
+			}
+			task.FinishedAtMS = 0
+		} else if old.Active {
+			task.FinishedAtMS = timeMS
 		}
 		task.UpdatedSeq = seq
 		task.UpdatedAtMS = timeMS

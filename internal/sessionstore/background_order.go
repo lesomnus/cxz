@@ -9,11 +9,11 @@ import (
 	"github.com/lesomnus/cxz/internal/eventview"
 )
 
-// Startup already reads these events. Recover old ordering once, without
+// Startup already reads these events. Recover timing and ordering once, without
 // replaying conversation history on every Background RPC.
 func (s *Store) backfillBackgroundOrder(ctx context.Context, events []core.Event) error {
 	version, err := s.number(ctx, "background_order")
-	if err != nil || version >= 1 {
+	if err != nil || version >= 2 {
 		return err
 	}
 	if err = s.loadBackground(ctx); err != nil {
@@ -49,19 +49,29 @@ func (s *Store) backfillBackgroundOrder(ctx context.Context, events []core.Event
 			continue
 		}
 		for id, task := range state.Tasks {
-			if task.UpdatedSeq != 0 {
+			if task.UpdatedSeq != 0 && task.StartedAtMS != 0 && (task.Active || task.FinishedAtMS != 0) {
 				continue
 			}
 			recovered, ok := replay[run].Tasks[id]
 			// A compacted or shed record cannot tell us when an unseen task changed.
 			before := recovered
 			before.UpdatedSeq, before.UpdatedAtMS = 0, 0
+			before.StartedAtMS, before.FinishedAtMS = 0, 0
 			current := task
 			current.UpdatedSeq, current.UpdatedAtMS = 0, 0
+			current.StartedAtMS, current.FinishedAtMS = 0, 0
 			if !ok || before != current {
 				continue
 			}
-			task.UpdatedSeq, task.UpdatedAtMS = recovered.UpdatedSeq, recovered.UpdatedAtMS
+			if task.UpdatedSeq == 0 {
+				task.UpdatedSeq, task.UpdatedAtMS = recovered.UpdatedSeq, recovered.UpdatedAtMS
+			}
+			if task.StartedAtMS == 0 {
+				task.StartedAtMS = recovered.StartedAtMS
+			}
+			if !task.Active && task.FinishedAtMS == 0 {
+				task.FinishedAtMS = recovered.FinishedAtMS
+			}
 			state.Tasks[id] = task
 		}
 	}
@@ -77,7 +87,7 @@ func (s *Store) backfillBackgroundOrder(ctx context.Context, events []core.Event
 	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO meta VALUES('background',?)`, string(raw)); err != nil {
 		return err
 	}
-	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO meta VALUES('background_order','1')`); err != nil {
+	if _, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO meta VALUES('background_order','2')`); err != nil {
 		return err
 	}
 	return tx.Commit()
