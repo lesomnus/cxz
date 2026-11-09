@@ -211,6 +211,8 @@ function UsageReportView({
         />
       </section>
       <UsageActivity
+        animate={!!identity && !history.fromCache}
+        today={today}
         stats={history.data}
         weeks={weeks ?? 1}
         toMs={stats.data?.toMs ?? BigInt(now)}
