@@ -1,0 +1,6 @@
+.changes.changes {
+  flex: none;
+  justify-content: flex-end;
+  inline-size: calc(15ch + 2 * var(--ui-space));
+  font-family: var(--ui-font-mono);
+}

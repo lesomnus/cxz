@@ -21,7 +21,7 @@ function CreatedMemoriesPreview({
   scrollable?: boolean;
 }) {
   const [fixture] = useState(() => {
-    const fixture = memoryFixture({ delay, migrated: true });
+    const fixture = memoryFixture({ delay, migrated: true, revisionCount: 3 });
     const start = Date.now() - 60_000;
     const owner = fixture.sessions[0];
     const ownerId = new Id(owner.id).toString();
@@ -85,6 +85,7 @@ function CreatedMemoriesPreview({
           key: { case: "id", value: owner.id },
         }),
         memories: fixture.c.memories,
+        cache: fixture.c.reads,
       },
     };
   });
@@ -125,7 +126,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Memory counters open the same anchored menu surface as Tasks. The count and list include active memories created by this session in the response range; reads and edits do not add items. Clicking a note opens its Memory detail page. The menu follows its visible trigger on scroll; Escape restores focus. One session-scoped metadata Watch supplies all ranges without fetching note bodies for the menu.",
+          "Memory counters open the same anchored menu surface as Tasks. The count and list include active memories created by this session in the response range; reads and edits do not add items. Rows omit the leading icon and show the current revision’s byte changes on the right, reusing Memory revision styling. Initial revisions show Created; unavailable changes stay unknown. Metadata is cached and document bodies are not downloaded for these counts. Clicking a note opens its Memory detail page. The menu follows its visible trigger on scroll; Escape restores focus. One session-scoped metadata Watch supplies all ranges without fetching note bodies for the menu.",
       },
     },
   },

@@ -518,9 +518,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               s?.id.length ? { key: { case: "id", value: s.id } } : ref(id),
             ),
             memories: c.memories,
+            cache: c.reads,
           }
         : undefined,
-    [taskProject, memorySessionId, id, c.memories],
+    [taskProject, memorySessionId, id, c.memories, c.reads],
   );
   const inputFiles = useMemo(() => {
     const run = s?.status?.runId;

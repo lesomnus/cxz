@@ -7,11 +7,16 @@ import type { Memory } from "#gen/cxz/memory_pb";
 import { MemoryScope, type MemoryService } from "#gen/cxz/memory_svc_pb";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { readBy, release } from "#src/shared/api/stream-deadline.ts";
+import type { ReadCache } from "#src/shared/api/read-cache.ts";
 
-export type WorkMemorySource = {
+type WorkMemoryFeed = {
   project: Project;
   session: SessionRef;
   memories: Pick<Client<typeof MemoryService>, "watch">;
+};
+export type WorkMemorySource = WorkMemoryFeed & {
+  memories: Pick<Client<typeof MemoryService>, "watch" | "versions">;
+  cache: ReadCache;
 };
 export type WorkMemoryState = {
   memories: Memory[];
@@ -28,7 +33,7 @@ export const emptyWorkMemories: WorkMemoryState = {
 
 /** Server snapshots and changes contain metadata only, never document bodies. */
 export async function watchWorkMemories(
-  source: WorkMemorySource,
+  source: WorkMemoryFeed,
   signal: AbortSignal,
   receive: (memories: Memory[]) => void,
 ) {

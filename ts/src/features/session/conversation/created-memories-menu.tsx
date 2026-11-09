@@ -1,11 +1,18 @@
 import { WorkResourcesMenu } from "./work-resources-menu";
 import { MenuScrollArea, MenuItem, MenuItemLabel } from "@lesomnus/nox";
 import { key } from "@lesomnus/payday/store";
-import type { Project } from "#gen/cxz/project_pb";
 import type { Memory } from "#gen/cxz/memory_pb";
 import { Id } from "@lesomnus/payday/pdid";
-import type { WorkMemoryState } from "#src/features/session/model/work-memories.ts";
-import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
+import type {
+  WorkMemoryState,
+  WorkMemorySource,
+} from "#src/features/session/model/work-memories.ts";
+import { MemoryVersionChanges } from "#src/features/memory/memory-version-changes.tsx";
+import {
+  initialMemoryVersion,
+  useWorkMemoryVersions,
+} from "#src/features/session/model/work-memory-versions.ts";
+import menuStyles from "./created-memories-menu.module.css";
 import { MenuLink } from "#src/shared/navigation/route-link.tsx";
 import { memoryLocation } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -13,16 +20,17 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "#src/shared/components/anchored-menu.module.css";
 
 function MemoryList({
-  project,
+  source,
   memories,
   state,
   close,
 }: {
-  project: Project;
+  source: WorkMemorySource;
   memories: Memory[];
   state: WorkMemoryState;
   close: () => void;
 }) {
+  const versions = useWorkMemoryVersions(source, memories);
   return (
     <MenuScrollArea
       viewportClassName="created-memories-menu-viewport"
@@ -31,12 +39,23 @@ function MemoryList({
       {memories.map((memory) => (
         <MenuLink
           key={key(memory.id)}
-          {...memoryLocation(project, new Id(memory.id).toString())}
+          {...memoryLocation(source.project, new Id(memory.id).toString())}
           role="menuitem"
-          icon={<ResourceIcon kind="memory" />}
           title={memory.name || memory.alias}
           aria-description={memory.alias || undefined}
           onClick={close}
+          trailing={
+            <MemoryVersionChanges
+              version={
+                initialMemoryVersion(memory) ??
+                (versions.data?.get(key(memory.id))?.revision ===
+                memory.revision
+                  ? versions.data?.get(key(memory.id))
+                  : undefined)
+              }
+              className={menuStyles.changes}
+            />
+          }
         >
           <MenuItemLabel>{memory.name || memory.alias}</MenuItemLabel>
         </MenuLink>
@@ -68,14 +87,14 @@ function MemoryList({
 }
 
 export function CreatedMemoriesMenu({
-  project,
+  source,
   memories,
   state,
   ...props
 }: {
   id: string;
   anchor: HTMLButtonElement;
-  project: Project;
+  source: WorkMemorySource;
   memories: Memory[];
   state: WorkMemoryState;
   partial: boolean;
@@ -85,7 +104,7 @@ export function CreatedMemoriesMenu({
   return (
     <WorkResourcesMenu {...props} label={t("Created memories")}>
       <MemoryList
-        project={project}
+        source={source}
         memories={memories}
         state={state}
         close={() => props.close()}

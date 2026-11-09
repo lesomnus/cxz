@@ -29,7 +29,17 @@ test("Memory counters list the same created notes and link to their detail pages
     "href",
     /\/c\/_\/project\/web\/memory\//,
   );
-  await expect(items.first().locator("svg")).toBeVisible();
+  await expect(items.first().locator("svg")).toHaveCount(0);
+  const delta = items
+    .first()
+    .locator('[aria-label="1 bytes added, 1 bytes removed"]');
+  await expect(delta).toBeVisible();
+  await expect(delta).toContainText("+");
+  await expect(delta).toContainText("−");
+  await expect(items.nth(1)).toContainText("Created");
+  const rowBox = (await items.first().boundingBox())!;
+  const deltaBox = (await delta.boundingBox())!;
+  expect(deltaBox.x).toBeGreaterThan(rowBox.x + rowBox.width / 2);
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("ArrowDown");
   await expect(items.nth(1)).toBeFocused();

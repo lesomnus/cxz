@@ -187,7 +187,7 @@ export function WorkSummary({
         <CreatedMemoriesMenu
           id={menuId}
           anchor={menu.anchor}
-          project={memorySource.project}
+          source={memorySource}
           memories={memories}
           state={memoryState}
           partial={partial}

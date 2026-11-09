@@ -6,7 +6,9 @@ import { ProjectSchema } from "#gen/cxz/project_pb";
 import { SessionRefSchema } from "#gen/cxz/session_svc_pb";
 import { MemorySchema, type Memory } from "#gen/cxz/memory_pb";
 import { MemoryScope, MemoryWatchResponseSchema } from "#gen/cxz/memory_svc_pb";
-import { watchWorkMemories, type WorkMemorySource } from "./work-memories";
+import { watchWorkMemories } from "./work-memories";
+
+type WatchSource = Parameters<typeof watchWorkMemories>[0];
 
 const id = (value: number) =>
   Uint8Array.from({ length: 16 }, (_, i) => (i === 15 ? value : 0));
@@ -24,19 +26,17 @@ describe("conversation Memory metadata subscription", () => {
     const stop = new AbortController();
     const snapshots: string[][] = [];
     const second = note(4, "second");
-    const watch = vi.fn<WorkMemorySource["memories"]["watch"]>(
-      async function* () {
-        yield frame(note(3, "first"));
-        yield frame(note(3, "renamed"), second);
-        yield create(MemoryWatchResponseSchema, { items: [{ id: id(3) }] });
-        yield frame(
-          create(MemorySchema, {
-            ...second,
-            dateDeleted: create(TimestampSchema, { seconds: 1n }),
-          }),
-        );
-      },
-    );
+    const watch = vi.fn<WatchSource["memories"]["watch"]>(async function* () {
+      yield frame(note(3, "first"));
+      yield frame(note(3, "renamed"), second);
+      yield create(MemoryWatchResponseSchema, { items: [{ id: id(3) }] });
+      yield frame(
+        create(MemorySchema, {
+          ...second,
+          dateDeleted: create(TimestampSchema, { seconds: 1n }),
+        }),
+      );
+    });
     await watchWorkMemories(
       { project, session, memories: { watch } },
       stop.signal,
@@ -71,7 +71,7 @@ describe("conversation Memory metadata subscription", () => {
     const ready = new Promise<void>((done) => {
       resolve = done;
     });
-    const source: WorkMemorySource = {
+    const source: WatchSource = {
       project,
       session,
       memories: {
@@ -94,7 +94,7 @@ describe("conversation Memory metadata subscription", () => {
   });
 
   it("reports a disconnected subscription after delivering its last metadata", async () => {
-    const source: WorkMemorySource = {
+    const source: WatchSource = {
       project,
       session,
       memories: {
