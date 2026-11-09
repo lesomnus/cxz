@@ -217,6 +217,12 @@ func (s *Supervisor) retainHistory(root string) error {
 	if err = s.log.Compact(checkpoint); err != nil {
 		return err
 	}
+	// The trim just took the last catalog and the last quota with it: the
+	// checkpoint carries settings, receipts and background work, not polled
+	// state. Republishing every minute is what used to put them back, so a
+	// session that now records a poll only when it changes has to be told that
+	// what it recorded is gone.
+	s.forgetLatest()
 	if s.store != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		s.recordState(ctx)

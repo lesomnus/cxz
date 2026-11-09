@@ -69,6 +69,7 @@ type Supervisor struct {
 	quotaRequested   time.Time
 	modelOptions     []agentview.ModelOption
 	modelRequested   time.Time
+	modelAsked       bool
 	modelDisabled    bool
 	modelSource      string
 	modelPages       []agentview.ModelOption
@@ -81,6 +82,10 @@ type Supervisor struct {
 	settingPending   string
 	responseContext  core.ResponseMetadata
 	responseTracking responseTracking
+	// latest is the meaning of each polled state as it was last recorded, so a
+	// poll that answers what the conversation already says records nothing.
+	// See latest.go.
+	latest map[string]string
 }
 type record struct {
 	Digest  string       `json:"digest,omitempty"`
