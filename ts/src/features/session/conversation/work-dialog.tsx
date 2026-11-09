@@ -1,3 +1,10 @@
+import type { Memory } from "#gen/cxz/memory_pb";
+import {
+  emptyWorkMemories,
+  type WorkMemoryState,
+  type WorkMemorySource,
+} from "#src/features/session/model/work-memories.ts";
+import { CreatedMemoriesMenu } from "./created-memories-menu";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { eventListSource } from "#src/features/session/model/event-source.ts";
 import {
@@ -52,7 +59,9 @@ function ServiceCount({
   | "aria-busy"
   | "title"
 >) {
-  const label = t(service === "cxz_memory" ? "Memory calls" : "Created tasks");
+  const label = t(
+    service === "cxz_memory" ? "Created memories" : "Created tasks",
+  );
   return (
     <Button
       {...props}
@@ -79,6 +88,9 @@ export function WorkSummary({
   taskSource,
   tasks,
   taskState,
+  memorySource,
+  memories = [],
+  memoryState = emptyWorkMemories,
   expanded,
   open,
   partial = false,
@@ -87,25 +99,34 @@ export function WorkSummary({
   taskSource?: WorkTaskSource;
   tasks: Task[];
   taskState: WorkTaskState;
+  memorySource?: WorkMemorySource;
+  memories?: Memory[];
+  memoryState?: WorkMemoryState;
   expanded: boolean;
   open: (trigger: HTMLButtonElement) => void;
   partial?: boolean;
 }) {
   useLocale();
-  const { id, services, durationMs } = group;
+  const { id, durationMs } = group;
   const count = group.events.length;
-  const tasksId = useId();
-  const [taskTrigger, setTaskTrigger] = useState<HTMLButtonElement | null>(
-    null,
-  );
-  const taskTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const closeTasks = useCallback((restoreFocus = false) => {
-    setTaskTrigger(null);
-    if (restoreFocus) taskTriggerRef.current?.focus({ preventScroll: true });
+  const menuId = useId();
+  const [menu, setMenu] = useState<{
+    kind: "tasks" | "memory";
+    anchor: HTMLButtonElement;
+  } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const closeMenu = useCallback((restoreFocus = false) => {
+    setMenu(null);
+    if (restoreFocus) triggerRef.current?.focus({ preventScroll: true });
   }, []);
   useEffect(() => {
-    if (!tasks.length) closeTasks();
-  }, [tasks.length, closeTasks]);
+    if (menu && !(menu.kind === "tasks" ? tasks.length : memories.length))
+      closeMenu();
+  }, [menu, tasks.length, memories.length, closeMenu]);
+  const toggle = (kind: "tasks" | "memory", anchor: HTMLButtonElement) => {
+    triggerRef.current = anchor;
+    setMenu((current) => (current?.kind === kind ? null : { kind, anchor }));
+  };
   const countLabel = t(
     partial
       ? "{count}+ tasks performed"
@@ -135,8 +156,14 @@ export function WorkSummary({
         </Button>
         <ServiceCount
           service="cxz_memory"
-          count={services.cxz_memory}
+          count={memories.length}
           partial={partial}
+          aria-busy={memoryState.loading || undefined}
+          title={memoryState.error || undefined}
+          aria-haspopup="menu"
+          aria-expanded={menu?.kind === "memory"}
+          aria-controls={menu?.kind === "memory" ? menuId : undefined}
+          onClick={(event) => toggle("memory", event.currentTarget)}
         />
         <ServiceCount
           service="cxz_tasks"
@@ -145,13 +172,9 @@ export function WorkSummary({
           aria-busy={taskState.loading || undefined}
           title={taskState.error || undefined}
           aria-haspopup="menu"
-          aria-expanded={!!taskTrigger}
-          aria-controls={taskTrigger ? tasksId : undefined}
-          onClick={(event) => {
-            const trigger = event.currentTarget;
-            taskTriggerRef.current = trigger;
-            setTaskTrigger((current) => (current ? null : trigger));
-          }}
+          aria-expanded={menu?.kind === "tasks"}
+          aria-controls={menu?.kind === "tasks" ? menuId : undefined}
+          onClick={(event) => toggle("tasks", event.currentTarget)}
         />
       </div>
       {durationMs !== undefined && (
@@ -160,15 +183,26 @@ export function WorkSummary({
           label={t("Response elapsed time")}
         />
       )}
-      {taskTrigger && tasks.length > 0 && taskSource && (
+      {menu?.kind === "memory" && memories.length > 0 && memorySource && (
+        <CreatedMemoriesMenu
+          id={menuId}
+          anchor={menu.anchor}
+          project={memorySource.project}
+          memories={memories}
+          state={memoryState}
+          partial={partial}
+          close={closeMenu}
+        />
+      )}
+      {menu?.kind === "tasks" && tasks.length > 0 && taskSource && (
         <CreatedTasksMenu
-          id={tasksId}
-          anchor={taskTrigger}
+          id={menuId}
+          anchor={menu.anchor}
           project={taskSource.project}
           tasks={tasks}
           state={taskState}
           partial={partial}
-          close={closeTasks}
+          close={closeMenu}
         />
       )}
     </div>

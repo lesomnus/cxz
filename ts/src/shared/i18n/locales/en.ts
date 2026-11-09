@@ -1,5 +1,8 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Created memories": "Created memories",
+  "No memories were created in this range.":
+    "No memories were created in this range.",
   "Created tasks": "Created tasks",
   "No Tasks were created in this range.":
     "No Tasks were created in this range.",

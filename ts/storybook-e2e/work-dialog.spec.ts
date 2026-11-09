@@ -14,7 +14,7 @@ test("resolved builtin MCP permissions enter Turn Tasks without standalone cards
     summary.getByRole("button", { name: "View details", exact: true }),
   ).toHaveText("002");
   await expect(
-    summary.getByRole("button", { name: "Memory calls: 1", exact: true }),
+    summary.getByRole("button", { name: "Created memories: 0", exact: true }),
   ).toBeVisible();
   await expect(
     summary.getByRole("button", { name: "Created tasks: 0", exact: true }),
@@ -386,14 +386,14 @@ test("all work counts share reply boundaries and align left of elapsed time", as
   );
   const summaries = page.locator("[data-work-summary]");
   await expect(summaries).toHaveCount(2);
-  for (const [index, memory, total] of [
-    [0, 2, 4],
-    [1, 1, 3],
+  for (const [index, total] of [
+    [0, 4],
+    [1, 3],
   ]) {
     const summary = summaries.nth(index);
     await expect(
       summary.getByRole("button", {
-        name: `Memory calls: ${memory}`,
+        name: "Created memories: 0",
         exact: true,
       }),
     ).toBeVisible();
@@ -443,7 +443,7 @@ test("all work counts share reply boundaries and align left of elapsed time", as
     .first()
     .getByRole("button", { name: "View details", exact: true });
   const reference = (await detailButton.boundingBox())!;
-  for (const name of ["Memory calls: 2", "Created tasks: 0"]) {
+  for (const name of ["Created memories: 0", "Created tasks: 0"]) {
     const button = summaries.first().getByRole("button", { name, exact: true });
     const box = (await button.boundingBox())!;
     expect(box.width).toBeCloseTo(reference.width, 1);

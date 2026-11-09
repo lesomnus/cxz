@@ -267,6 +267,39 @@ export function memoryFixture({
             .map((m) => ({ ...m, content: "" })),
         };
       },
+      watch: (request, context) => {
+        return (async function* () {
+          if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+          if (fail)
+            throw new ConnectError(
+              "Memory library temporarily unavailable",
+              Code.Unavailable,
+            );
+          const project = request.project?.key.value;
+          const session = request.session?.key.value;
+          yield {
+            items: request.skipSnapshot
+              ? []
+              : [...rows.values()]
+                  .filter(
+                    (m) =>
+                      (!(project instanceof Uint8Array) ||
+                        key(m.project!.id) === key(project)) &&
+                      (!(session instanceof Uint8Array) ||
+                        m.ownerSession === key(session)) &&
+                      !!m.dateDeleted === (request.scope === MemoryScope.TRASH),
+                  )
+                  .map((m) => ({ id: m.id, value: { ...m, content: "" } })),
+          };
+          await new Promise<void>((resolve) => {
+            if (context.signal.aborted) resolve();
+            else
+              context.signal.addEventListener("abort", () => resolve(), {
+                once: true,
+              });
+          });
+        })();
+      },
       get: (r) => ({ ...find(r.ref) }),
       read: async (r, context) => {
         readRequests.push(key(r.ref!.key.value as Uint8Array));

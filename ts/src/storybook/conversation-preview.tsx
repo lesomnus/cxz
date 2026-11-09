@@ -124,6 +124,7 @@ export function PreviewTranscript({
   loadDetails,
   workHistory,
   taskSource,
+  memorySource,
 }: {
   events: SessionEvent[];
   agent?: string;
@@ -135,6 +136,7 @@ export function PreviewTranscript({
   loadDetails?: LoadEventDetails;
   workHistory?: WorkHistory;
   taskSource?: import("#src/features/session/model/work-tasks.ts").WorkTaskSource;
+  memorySource?: import("#src/features/session/model/work-memories.ts").WorkMemorySource;
 }) {
   const projected = transcriptRows(events);
   const summaries = attachSummaries(projected.events, aux);
@@ -142,6 +144,7 @@ export function PreviewTranscript({
   return (
     <Transcript
       taskSource={taskSource}
+      memorySource={memorySource}
       workHistory={workHistory}
       pane={pane}
       source={eventListSource(projected.events)}
@@ -193,6 +196,7 @@ export function ComponentPreview({
   children,
   workHistory,
   taskSource,
+  memorySource,
   autoFocus = false,
   initialSelection,
   onSelectionChange,
@@ -217,6 +221,7 @@ export function ComponentPreview({
   children?: ReactNode;
   workHistory?: WorkHistory;
   taskSource?: import("#src/features/session/model/work-tasks.ts").WorkTaskSource;
+  memorySource?: import("#src/features/session/model/work-memories.ts").WorkMemorySource;
   autoFocus?: boolean;
   initialSelection?: EditorSelection;
   onSelectionChange?: (selection: EditorSelection) => void;
@@ -280,6 +285,7 @@ export function ComponentPreview({
     <PreviewFrame>
       <PreviewTranscript
         taskSource={taskSource}
+        memorySource={memorySource}
         workHistory={workHistory}
         events={events}
         agent={agent}

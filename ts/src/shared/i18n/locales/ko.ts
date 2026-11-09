@@ -1,5 +1,8 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Created memories": "생성된 메모리",
+  "No memories were created in this range.":
+    "이 구간에 생성된 메모리가 없습니다.",
   "Created tasks": "생성된 Task",
   "No Tasks were created in this range.": "이 구간에 생성된 Task가 없습니다.",
   "Task information is unavailable.": "Task 정보를 가져올 수 없습니다.",

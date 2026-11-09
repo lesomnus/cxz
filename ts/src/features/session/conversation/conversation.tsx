@@ -507,6 +507,21 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         : undefined,
     [taskProject, s?.runtimeId, id, c.taskCatalog],
   );
+  const memorySessionId = s?.id.length ? key(s.id) : "";
+  const memorySource = useMemo(
+    () =>
+      taskProject
+        ? {
+            project: taskProject,
+            session: create(
+              SessionRefSchema,
+              s?.id.length ? { key: { case: "id", value: s.id } } : ref(id),
+            ),
+            memories: c.memories,
+          }
+        : undefined,
+    [taskProject, memorySessionId, id, c.memories],
+  );
   const inputFiles = useMemo(() => {
     const run = s?.status?.runId;
     return {
@@ -1036,6 +1051,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       />
       <Transcript
         taskSource={taskSource}
+        memorySource={memorySource}
         searchMatches={searchMatches}
         loading={initialLoad && <ConversationLoading {...initialLoad} />}
         viewportCache={feed.viewport}

@@ -1,4 +1,10 @@
 import {
+  useWorkMemories,
+  type WorkMemorySource,
+} from "#src/features/session/model/work-memories.ts";
+import { createdMemoriesByWorkGroup } from "#src/features/session/model/created-work-memories.ts";
+import type { Memory } from "#gen/cxz/memory_pb";
+import {
   eventListSource,
   snapshotSource,
   type EventListSource,
@@ -65,6 +71,7 @@ const empty: Geometry = {
   markers: [],
 };
 const noTasks: Task[] = [];
+const noMemories: Memory[] = [];
 function thumbPosition(view: Geometry) {
   return view.range.span
     ? clamp((view.mappedTop - view.range.start) / view.range.span, 0, 1) *
@@ -110,6 +117,7 @@ export function Transcript({
   newer,
   workHistory,
   taskSource,
+  memorySource,
   viewportCache,
   searchMatches,
 }: {
@@ -133,6 +141,7 @@ export function Transcript({
   newer: () => void;
   workHistory?: WorkHistory;
   taskSource?: WorkTaskSource;
+  memorySource?: WorkMemorySource;
   viewportCache?: TranscriptViewport;
   searchMatches?: readonly string[];
 }) {
@@ -156,6 +165,19 @@ export function Transcript({
       ),
     [taskState.tasks, taskSource?.session, work],
   );
+  const memoryCatalogSource = React.useMemo(
+    () =>
+      [...work.groups.values()].some((group) => group.services.cxz_memory > 0)
+        ? memorySource
+        : undefined,
+    [work, memorySource],
+  );
+  const memoryState = useWorkMemories(memoryCatalogSource);
+  const createdMemories = React.useMemo(
+    () =>
+      createdMemoriesByWorkGroup(memoryState.memories, work.groups.values()),
+    [memoryState.memories, work],
+  );
   const [selectedWork, selectWork] = useState<SessionEvent>();
   const [workClosing, setWorkClosing] = useState(false);
   const restoreWorkFocus = useRef(true);
@@ -174,6 +196,9 @@ export function Transcript({
           taskSource={taskSource}
           tasks={createdTasks.get(group.id) ?? noTasks}
           taskState={taskState}
+          memorySource={memorySource}
+          memories={createdMemories.get(group.id) ?? noMemories}
+          memoryState={memoryState}
           expanded={activeWork === group && !workClosing}
           partial={!group.hasBoundary && !!workHistory?.hasOlder}
           open={(trigger) => {
@@ -197,6 +222,9 @@ export function Transcript({
       taskSource,
       taskState,
       createdTasks,
+      memorySource,
+      memoryState,
+      createdMemories,
       closeWork,
       render,
     ],
