@@ -155,7 +155,10 @@ test("compact monochrome workspace, aligned composer and release-triggered butto
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(page.locator(".session-tree-group")).toHaveCount(2);
   await expect(page.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS);
-  await page.locator(".tree-session").filter({ hasText: "session-8" }).click();
+  await page
+    .locator("[data-session-navigation]")
+    .filter({ hasText: "session-8" })
+    .click();
   await expect(message).toBeVisible();
   await page.screenshot({
     path: "test-results/sandbox-desktop.png",
