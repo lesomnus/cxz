@@ -7,18 +7,21 @@
     var(--menu-item-padding-inline, var(--ui-menu-item-padding-inline));
   border-radius: var(--menu-inner-radius);
 }
-.command {
+.command,
+.description {
   display: block;
   flex: 1;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-family: var(--ui-font-mono);
   font-size: inherit;
   line-height: var(--ui-menu-item-line-height);
 }
-.job[data-finished] .command {
+.command {
+  font-family: var(--ui-font-mono);
+}
+.job[data-finished] :is(.command, .description) {
   text-decoration: line-through;
   text-decoration-color: var(--ui-muted);
 }

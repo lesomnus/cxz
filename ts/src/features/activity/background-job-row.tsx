@@ -24,14 +24,17 @@ export function BackgroundJobRow({ task }: { task: BackgroundTask }) {
     () => paletteVariables(palette, theme),
     [palette, theme],
   );
-  const original = task.description || task.task_id;
+  const original = task.command || task.description || task.task_id;
+  const displayCommand = !!task.command && !task.description;
   const tokens = useMemo(
     () =>
-      highlightCodeLines(backgroundCommand(original), "bash").flatMap(
-        (line, index) =>
-          index ? [{ text: " ", className: "" }, ...line] : line,
-      ),
-    [original],
+      displayCommand
+        ? highlightCodeLines(backgroundCommand(original), "bash").flatMap(
+            (line, index) =>
+              index ? [{ text: " ", className: "" }, ...line] : line,
+          )
+        : [],
+    [original, displayCommand],
   );
   const start =
     task.started_at_ms && task.started_at_ms > 0
@@ -48,17 +51,23 @@ export function BackgroundJobRow({ task }: { task: BackgroundTask }) {
       className={styles.job}
       data-finished={!task.active || undefined}
     >
-      <code
-        className={`${styles.command} ${syntax.syntax}`}
-        title={original}
-        style={colors}
-      >
-        {tokens.map((token, index) => (
-          <span key={index} className={token.className || undefined}>
-            {token.text}
-          </span>
-        ))}
-      </code>
+      {displayCommand ? (
+        <code
+          className={`${styles.command} ${syntax.syntax}`}
+          title={original}
+          style={colors}
+        >
+          {tokens.map((token, index) => (
+            <span key={index} className={token.className || undefined}>
+              {token.text}
+            </span>
+          ))}
+        </code>
+      ) : (
+        <span className={styles.description} title={original}>
+          {task.description || task.task_id}
+        </span>
+      )}
       <span className={styles.duration}>
         {known ? (
           <ElapsedTime

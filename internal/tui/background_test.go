@@ -22,6 +22,20 @@ func bgEvent(seq uint64, raw string) *api.Event {
 	return &api.Event{Seq: seq, RunId: "run", Kind: "background", Payload: []byte(raw)}
 }
 
+func TestBackgroundReportSeparatesCommandFromDescription(t *testing.T) {
+	m := conversationModel()
+	m.events["s"] = []*api.Event{
+		bgEvent(1, `{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[{"task_id":"codex","command":"sleep 60"}]}`),
+		bgEvent(2, `{"type":"system","subtype":"task_started","task_id":"claude","is_backgrounded":true,"description":"Wait for server startup","command":"sleep 30"}`),
+	}
+	report := m.backgroundReport()
+	for _, want := range []string{"codex · working · sleep 60", "claude · working · Wait for server startup", "  $ sleep 30"} {
+		if !strings.Contains(report, want) {
+			t.Fatalf("missing %q in %s", want, report)
+		}
+	}
+}
+
 func TestBackgroundLaunchIsNotCompletion(t *testing.T) {
 	m := conversationModel()
 	m.events["s"] = []*api.Event{

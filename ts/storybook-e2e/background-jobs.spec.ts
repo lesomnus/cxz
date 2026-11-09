@@ -1,5 +1,30 @@
 import { expect, test } from "@playwright/test";
 
+test("background descriptions remain plain text while commands keep their own highlighting and tooltip", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-backgroundjobs--descriptions-and-commands&viewMode=story",
+  );
+  await page.locator("[data-background-jobs]").click();
+  const report = page.getByRole("menu", {
+    name: "Background tasks",
+    exact: true,
+  });
+  const jobs = report.getByRole("listitem");
+  await expect(jobs).toHaveCount(5);
+  await expect(jobs.nth(0)).toContainText('Check timeout handling in "bash"');
+  await expect(jobs.nth(0).locator("code, .hljs-string")).toHaveCount(0);
+  await expect(jobs.nth(1)).toContainText("Watch source changes");
+  await expect(jobs.nth(1).locator("code")).toHaveCount(0);
+  await expect(jobs.nth(1).locator("[title]")).toHaveAttribute(
+    "title",
+    /timeout 60s bash -c/,
+  );
+  await expect(jobs.nth(2).locator("code")).toContainText("npm test");
+  await expect(jobs.nth(2).locator("code")).not.toContainText("timeout");
+});
+
 test("an open background report stops polling when its project disappears and resumes after startup", async ({
   page,
 }) => {

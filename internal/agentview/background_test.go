@@ -2,6 +2,50 @@ package agentview
 
 import "testing"
 
+func TestBackgroundCommandAndDescription(t *testing.T) {
+	for _, tc := range []struct {
+		name, event, command, description string
+	}{
+		{"Claude description", `{"type":"system","subtype":"task_started","task_id":"bg","is_backgrounded":true,"description":"Check timeout handling in bash"}`, "", "Check timeout handling in bash"},
+		{"Codex command", `{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[{"task_id":"bg","command":"sleep 60"}]}`, "sleep 60", ""},
+		{"legacy Codex command", `{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[{"task_id":"bg","description":"sleep 60"}]}`, "sleep 60", ""},
+		{"both fields", `{"type":"system","subtype":"task_started","task_id":"bg","is_backgrounded":true,"command":"sleep 60","description":"Wait for server startup"}`, "sleep 60", "Wait for server startup"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var state BackgroundState
+			state.ApplyAt([]byte(tc.event), 1, 1000)
+			state.ApplyAt([]byte(tc.event), 2, 2000)
+			task := state.Tasks["bg"]
+			if task.Command != tc.command || task.Description != tc.description || task.UpdatedSeq != 1 || task.StartedAtMS != 1000 {
+				t.Fatal(task)
+			}
+		})
+	}
+}
+
+func TestBackgroundCommandUpgradeClearsLegacyDescription(t *testing.T) {
+	state := BackgroundState{Tasks: map[string]BackgroundTask{
+		"bg":       {ID: "bg", Description: "old command", Active: true, StartedAtMS: 1000},
+		"finished": {ID: "finished", Description: "finished command", Status: "inactive"},
+	}}
+	state.ApplyAt([]byte(`{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[{"task_id":"bg","command":"new command"}]}`), 2, 2000)
+	if task := state.Tasks["bg"]; task.Command != "new command" || task.Description != "" || task.StartedAtMS != 1000 {
+		t.Fatal(task)
+	}
+	if task := state.Tasks["finished"]; task.Command != "finished command" || task.Description != "" || task.Active {
+		t.Fatal(task)
+	}
+}
+
+func TestBackgroundCommandPatchPreservesDescription(t *testing.T) {
+	var state BackgroundState
+	state.Apply([]byte(`{"type":"system","subtype":"task_started","task_id":"bg","is_backgrounded":true,"command":"sleep 60","description":"Wait for server startup"}`))
+	state.Apply([]byte(`{"type":"system","subtype":"task_updated","task_id":"bg","patch":{"command":"sleep 30"}}`))
+	if task := state.Tasks["bg"]; task.Command != "sleep 30" || task.Description != "Wait for server startup" {
+		t.Fatal(task)
+	}
+}
+
 func TestBackgroundLifecycle(t *testing.T) {
 	var s BackgroundState
 	s.Apply([]byte(`{"type":"system","subtype":"task_started","task_id":"foreground","is_backgrounded":false}`))

@@ -108,6 +108,9 @@ func TestCodexBackgroundSnapshotProjection(t *testing.T) {
 		if reply.LastSeq == 1 && !state.Tasks["42"].Active {
 			t.Fatal("missing active terminal", state)
 		}
+		if task := state.Tasks["42"]; task.Command != "server" || task.Description != "" {
+			t.Fatal("legacy command lost through Background", task)
+		}
 		if reply.LastSeq == 3 && (state.Tasks["42"].Active || !state.Snapshot) {
 			t.Fatal("empty list did not clear active flag", state)
 		}

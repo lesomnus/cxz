@@ -58,6 +58,9 @@ func TestCodexBackgroundPaginatedLifecycle(t *testing.T) {
 	if len(state.Tasks) != 2 || !state.Snapshot || state.Unavailable || !state.Tasks["42"].Active || state.Tasks["42"].ToolID != "tool-a" {
 		t.Fatalf("%+v", state)
 	}
+	if task := state.Tasks["42"]; task.Command != "sleep 60" || task.Description != "" {
+		t.Fatal("terminal command must not become a description", task)
+	}
 	// Same identities/commands with different CPU/RSS samples do not update UI.
 	c.readBackground(time.Now(), true)
 	backgroundReply(t, s, map[string]any{"data": []any{map[string]any{"processId": "43", "itemId": "tool-b", "command": "server", "cpuPercent": 4}, map[string]any{"processId": "42", "itemId": "tool-a", "command": "sleep 60", "rssKb": 900}}})

@@ -104,7 +104,15 @@ results and publishes changed snapshots through the same Background API and
 Watch stream, shared by all browser windows. A successful empty list means zero;
 unsupported APIs or failed reads remain unavailable without failing the turn.
 Codex counts its reported background terminals, not arbitrary operating-system
-processes or subagents. Existing Codex sessions need an updated supervisor and
+processes or subagents. Background task `command` contains executable text;
+`description` contains the provider's human-readable explanation, when supplied.
+Codex terminal snapshots supply a command without a description. The web menu
+shows descriptions as plain text and otherwise highlights the command, keeping
+its full text on hover. When both fields exist, the description is shown and the
+command remains available on hover. Old Codex events are normalized on replay;
+supervisor startup also repairs cached task fields when retained events prove
+their meaning, preserving task timing. No database deletion is needed.
+Existing Codex sessions need an updated supervisor and
 a session restart to use this integration. See the
 [official App Server documentation](https://learn.chatgpt.com/docs/app-server#clean-background-terminals).
 

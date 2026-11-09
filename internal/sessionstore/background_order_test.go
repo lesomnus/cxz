@@ -80,3 +80,60 @@ func TestBackgroundOrderSurvivesStoreAndBackfillsLegacyRecords(t *testing.T) {
 		t.Fatal(again)
 	}
 }
+
+func TestBackgroundCommandBackfillsVersionTwoWithoutChangingTiming(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	store, err := Open(ctx, Path(dir), "s", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = store.Append(ctx, []core.Event{
+		{SessionID: "s", RunID: "codex", Seq: 1, TimeMS: 1000, Kind: "background", Payload: []byte(`{"type":"background","provider":"codex","subtype":"background_tasks_changed","tasks":[{"task_id":"bg","description":"sleep 60"}]}`)},
+		{SessionID: "s", RunID: "claude", Seq: 2, TimeMS: 2000, Kind: "background", Payload: []byte(`{"type":"system","subtype":"task_started","task_id":"bg","is_backgrounded":true,"description":"Check timeout handling in bash"}`)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	states, err := store.Background(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := states["codex"].Tasks["bg"]
+	legacy := before
+	legacy.Description, legacy.Command = legacy.Command, ""
+	states["codex"].Tasks["bg"] = legacy
+	states["codex"].Tasks["unknown"] = agentview.BackgroundTask{ID: "unknown", Description: "source no longer retained"}
+	raw, _ := json.Marshal(states)
+	if _, err = store.DB().ExecContext(ctx, `UPDATE meta SET value=? WHERE key='background'`, string(raw)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = store.DB().ExecContext(ctx, `INSERT OR REPLACE INTO meta VALUES('background_order','2')`); err != nil {
+		t.Fatal(err)
+	}
+	store.Close()
+	log, err := OpenLog(ctx, dir, "s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer log.Close()
+	recovered, err := log.Store().Background(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if task := recovered["codex"].Tasks["bg"]; task != before || task.Command != "sleep 60" || task.Description != "" {
+		t.Fatal("command migration changed task timing", task)
+	}
+	if task := recovered["claude"].Tasks["bg"]; task != states["claude"].Tasks["bg"] || task.Command != "" {
+		t.Fatal("Claude description changed", task)
+	}
+	if recovered["codex"].Tasks["unknown"] != states["codex"].Tasks["unknown"] {
+		t.Fatal("guessed a command without a retained source")
+	}
+	if err = log.Store().backfillBackgroundOrder(ctx, nil); err != nil {
+		t.Fatal(err)
+	}
+	again, _ := log.Store().Background(ctx)
+	if again["codex"].Tasks["bg"] != before {
+		t.Fatal("migration was not idempotent")
+	}
+}

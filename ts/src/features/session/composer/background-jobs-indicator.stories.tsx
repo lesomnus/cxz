@@ -56,14 +56,21 @@ export const InToolbar: Story = {
   parameters: { layout: "fullscreen" },
 };
 
-function JobListPreview({ empty = false }: { empty?: boolean }) {
+function JobListPreview({
+  empty = false,
+  providerFields = false,
+}: {
+  empty?: boolean;
+  providerFields?: boolean;
+}) {
   const [fixture] = useState(() => {
     const tasks: BackgroundTask[] = empty
       ? []
       : [
           {
             task_id: "build",
-            description: `timeout --kill-after=3s 120s /usr/bin/zsh -lc 'npm run build --workspace "web application" -- --mode production --sourcemap --assetsDir generated'`,
+            description: "",
+            command: `timeout --kill-after=3s 120s /usr/bin/zsh -lc 'npm run build --workspace "web application" -- --mode production --sourcemap --assetsDir generated'`,
             status: "working",
             active: true,
             summary: "Compiling the production bundle and checking types.",
@@ -71,7 +78,8 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
           },
           {
             task_id: "watch",
-            description: `timeout 60s bash -c 'npm run dev -- --host 0.0.0.0'`,
+            description: "",
+            command: `timeout 60s bash -c 'npm run dev -- --host 0.0.0.0'`,
             status: "working",
             active: true,
             summary: "Waiting for changes in /workspace/ts/src.",
@@ -79,7 +87,8 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
           },
           {
             task_id: "tests",
-            description: `timeout 45s zsh -lc 'npm test -- --run conversation'`,
+            description: "",
+            command: `timeout 45s zsh -lc 'npm test -- --run conversation'`,
             status: "completed",
             active: false,
             summary: "All conversation tests passed.",
@@ -87,13 +96,19 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
           },
           {
             task_id: "lint",
-            description: `timeout 30s bash -lc 'npm run lint'`,
+            description: "",
+            command: `timeout 30s bash -lc 'npm run lint'`,
             status: "failed",
             active: false,
             summary: "Formatting changes are needed in src/example.ts.",
             output_file: "/tmp/cxz/jobs/lint.log",
           },
         ];
+    if (!empty && providerFields) {
+      tasks[0].description = 'Check timeout handling in "bash"';
+      delete tasks[0].command;
+      tasks[1].description = "Watch source changes";
+    }
     if (!empty) {
       tasks[0].updated_seq = "90";
       tasks[1].updated_seq = "80";
@@ -102,7 +117,8 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
       tasks.push(
         {
           task_id: "docs",
-          description: `timeout 30s bash -lc 'npm run docs'`,
+          description: "",
+          command: `timeout 30s bash -lc 'npm run docs'`,
           status: "completed",
           active: false,
           summary: "Documentation is up to date.",
@@ -185,6 +201,20 @@ export const JobList: Story = {
       description: {
         story:
           "Click the background-job count to open the shared anchored menu. Each job is one highlighted command line with an elapsed clock on the right; known timeout and shell wrappers are removed for display, and hover retains the original command. The in-memory RPC fixture includes deliberately interleaved running, completed and failed jobs. The menu places active jobs first and keeps only the three most recently updated inactive jobs, with inactive commands struck through. Running clocks advance; completed clocks remain fixed. Refresh reloads the fixture without closing the menu; Escape restores focus and clicking outside dismisses. No server is required.",
+      },
+    },
+  },
+};
+
+export const DescriptionsAndCommands: Story = {
+  ...JobList,
+  render: () => <JobListPreview providerFields />,
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Provider descriptions remain plain text. Commands are highlighted only when no description is supplied; a task with both fields shows its description and keeps the full command on hover.",
       },
     },
   },

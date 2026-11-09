@@ -5,6 +5,7 @@ export type BackgroundTask = {
   updated_at_ms?: number;
   started_at_ms?: number;
   finished_at_ms?: number;
+  command?: string;
   description: string;
   status: string;
   summary: string;

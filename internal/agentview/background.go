@@ -9,6 +9,7 @@ import (
 type BackgroundTask struct {
 	ID          string `json:"task_id"`
 	ToolID      string `json:"tool_use_id"`
+	Command     string `json:"command,omitempty"` // Executable text, separate from the provider's description.
 	Description string `json:"description"`
 	Status      string `json:"status"`
 	Summary     string `json:"summary"`
@@ -97,6 +98,9 @@ func (s *BackgroundState) Apply(raw []byte) {
 	if e.Subtype == "background_tasks_changed" {
 		s.Snapshot = true
 		for id, t := range s.Tasks {
+			if e.Provider == "codex" {
+				t = codexBackgroundTask(t)
+			}
 			t.Active = false
 			if e.Provider == "codex" {
 				t.Status = "inactive"
@@ -106,6 +110,9 @@ func (s *BackgroundState) Apply(raw []byte) {
 		for _, t := range e.Tasks {
 			if t.ID == "" {
 				continue
+			}
+			if e.Provider == "codex" {
+				t = codexBackgroundTask(t)
 			}
 			old := s.Tasks[t.ID]
 			mergeTask(&old, t)
@@ -137,12 +144,25 @@ func (s *BackgroundState) Apply(raw []byte) {
 	s.Tasks[e.ID] = t
 }
 
+// Older cxz Codex snapshots stored the terminal command as its description.
+// Only that provider's snapshots carry this legacy meaning; Claude descriptions
+// must remain natural language, even when they happen to resemble shell code.
+func codexBackgroundTask(t BackgroundTask) BackgroundTask {
+	if t.Command == "" {
+		t.Command, t.Description = t.Description, ""
+	}
+	return t
+}
+
 func mergeTask(dst *BackgroundTask, src BackgroundTask) {
 	if src.ID != "" {
 		dst.ID = src.ID
 	}
 	if src.ToolID != "" {
 		dst.ToolID = src.ToolID
+	}
+	if src.Command != "" {
+		dst.Command = src.Command
 	}
 	if src.Description != "" {
 		dst.Description = src.Description

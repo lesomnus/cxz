@@ -212,7 +212,14 @@ func (m *model) backgroundReport() string {
 			if !t.Active && (status == "working" || status == "running") {
 				status = "awaiting final status"
 			}
-			lines = append(lines, fmt.Sprintf("%s · %s · %s", id, status, t.Description))
+			label := t.Description
+			if label == "" {
+				label = t.Command
+			}
+			lines = append(lines, fmt.Sprintf("%s · %s · %s", id, status, label))
+			if t.Description != "" && t.Command != "" {
+				lines = append(lines, "  $ "+t.Command)
+			}
 			if t.Summary != "" {
 				lines = append(lines, "  "+t.Summary)
 			}
