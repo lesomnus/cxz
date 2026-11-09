@@ -73,7 +73,6 @@ export function BackgroundJobRow({ task }: { task: BackgroundTask }) {
           <ElapsedTime
             startedAt={task.active ? start : undefined}
             durationMs={duration}
-            dimLeadingZeros={false}
             label={t("Background task elapsed time")}
           />
         ) : (

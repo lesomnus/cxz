@@ -157,7 +157,21 @@ test("background details use the shared anchored menu and a public UUID for refr
     .nth(2)
     .getByRole("img", { name: "Background task elapsed time", exact: true });
   await expect(frozen).toHaveText("00:00:44");
-  await expect(jobs.first().locator(".elapsed-time-leading")).toHaveCount(0);
+  await expect(jobs.first().locator(".elapsed-time-leading")).not.toHaveCount(
+    0,
+  );
+  expect(
+    await jobs
+      .first()
+      .locator(".elapsed-time-leading")
+      .first()
+      .evaluate((node) => getComputedStyle(node).color),
+  ).not.toBe(
+    await jobs
+      .first()
+      .locator(".elapsed-time")
+      .evaluate((node) => getComputedStyle(node).color),
+  );
   const rowBox = (await jobs.first().boundingBox())!;
   const clockBox = (await jobs.first().getByRole("timer").boundingBox())!;
   expect(clockBox.x).toBeGreaterThan((await command.boundingBox())!.x);
