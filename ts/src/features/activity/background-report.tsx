@@ -1,6 +1,17 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useContext, useEffect, useRef } from "react";
-import { Button } from "@lesomnus/nox";
+import {
+  Button,
+  MenuDivider,
+  MenuItem,
+  MenuItemLabel,
+  MenuScrollArea,
+} from "@lesomnus/nox";
+import { Icon } from "#src/shared/icons/icon.tsx";
+import menuStyles from "#src/shared/components/anchored-menu.module.css";
+import jobStyles from "./background-report.module.css";
+import { t } from "#src/shared/i18n/i18n.ts";
+import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { Connection } from "#src/shared/api/connection.ts";
 import { sessionRef, sessionUUID } from "#src/shared/api/session-id.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
@@ -14,12 +25,15 @@ export function BackgroundReport({
   session,
   run,
   available,
+  presentation = "section",
 }: {
   c: Connection;
   session: Uint8Array | undefined;
   run: string;
   available: boolean;
+  presentation?: "section" | "menu";
 }) {
+  useLocale();
   const uuid = sessionUUID(session);
   const workspace = useContext(WorkspaceContext);
   if (workspace?.c === c)
@@ -52,6 +66,72 @@ export function BackgroundReport({
     }, 10000);
     return () => clearInterval(timer);
   }, [uuid, run, available]);
+  if (presentation === "menu")
+    return (
+      <MenuScrollArea
+        viewportClassName="background-jobs-menu-viewport"
+        scrollbarLabel={t("Background tasks")}
+      >
+        {available && snapshot.error && (
+          <p role="alert" className={menuStyles.state}>
+            {snapshot.error}
+          </p>
+        )}
+        {available && !!snapshot.data?.length && (
+          <div role="list" aria-label={t("Background tasks")}>
+            {snapshot.data.map((task) => (
+              <div key={task.task_id} role="listitem" className={jobStyles.job}>
+                <div className={jobStyles.title}>
+                  {task.description || task.task_id}
+                </div>
+                <div className={jobStyles.status}>
+                  {task.active
+                    ? "working"
+                    : task.status === "working"
+                      ? "Awaiting final status"
+                      : task.status}
+                </div>
+                {task.summary && (
+                  <p className={jobStyles.summary}>{task.summary}</p>
+                )}
+                {task.output_file && (
+                  <div className={jobStyles.path}>{task.output_file}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {!available && (
+          <p className={menuStyles.state}>
+            The session runtime is not running.
+          </p>
+        )}
+        {available && snapshot.loading && (
+          <p role="status" className={menuStyles.state}>
+            {t("Loading…")}
+          </p>
+        )}
+        {available &&
+          !snapshot.loading &&
+          !snapshot.error &&
+          !snapshot.data?.length && (
+            <p role="status" className={menuStyles.state}>
+              No provider-reported background tasks for this run.
+            </p>
+          )}
+        <MenuDivider />
+        <MenuItem
+          type="button"
+          role="menuitem"
+          icon={<Icon name="refresh" />}
+          disabled={!available}
+          aria-busy={snapshot.loading || undefined}
+          onClick={snapshot.reload}
+        >
+          <MenuItemLabel>{t("Refresh")}</MenuItemLabel>
+        </MenuItem>
+      </MenuScrollArea>
+    );
   return (
     <section className={styles.section}>
       <div className={styles.row}>

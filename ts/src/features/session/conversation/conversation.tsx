@@ -802,6 +802,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       clientId: crypto.randomUUID(),
     };
   }
+  const backgroundButton = useRef<HTMLButtonElement>(null);
   function localOpen(kind: "memory" | "usage" | "background" | "aux") {
     if (kind === "memory")
       openCard({
@@ -815,18 +816,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         title: "Conversation usage",
         content: () => <UsageReport c={c} session={id} />,
       });
-    if (kind === "background")
-      openCard({
-        title: "Background tasks",
-        content: () => (
-          <BackgroundReport
-            c={c}
-            session={s?.id}
-            run={turn.runId || s?.status?.runId || ""}
-            available={backgroundEnabled}
-          />
-        ),
-      });
+    if (kind === "background") backgroundButton.current?.click();
     if (kind === "aux")
       openCard({
         title: "Auxiliary AI",
@@ -1223,7 +1213,16 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         busy={busy}
         turn={turn}
         backgroundJobs={background.count}
-        onBackgroundJobs={() => localOpen("background")}
+        backgroundButtonRef={backgroundButton}
+        backgroundReport={
+          <BackgroundReport
+            c={c}
+            session={s?.id}
+            run={turn.runId || s?.status?.runId || ""}
+            available={backgroundEnabled}
+            presentation="menu"
+          />
+        }
         working={turn.active && ["working", "running"].includes(executionState)}
         interrupt={() =>
           void action(async (session) => {

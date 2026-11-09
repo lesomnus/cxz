@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { AuxState } from "#gen/cxz/session_svc_pb";
 import {
@@ -9,7 +9,6 @@ import {
 import {
   FloatingCardHost,
   FloatingCardProvider,
-  useFloatingCard,
 } from "#src/features/session/cards/floating-card.tsx";
 import {
   Transcript,
@@ -298,7 +297,7 @@ export function ComponentPreview({
         }}
       />
       <FloatingCardHost>{children}</FloatingCardHost>
-      <PreviewComposer
+      <ConversationComposer
         approvals={approvals}
         backgroundReport={backgroundReport}
         autoFocus={autoFocus}
@@ -355,30 +354,7 @@ export function ComponentPreview({
         )}
       >
         <PreviewMetadata agent={agent} busy={sending || active} />
-      </PreviewComposer>
+      </ConversationComposer>
     </PreviewFrame>
-  );
-}
-
-function PreviewComposer({
-  backgroundReport,
-  ...props
-}: ComponentProps<typeof ConversationComposer> & {
-  backgroundReport?: ReactNode;
-}) {
-  const openCard = useFloatingCard();
-  return (
-    <ConversationComposer
-      {...props}
-      onBackgroundJobs={
-        backgroundReport
-          ? () =>
-              openCard({
-                title: "Background tasks",
-                content: () => backgroundReport,
-              })
-          : undefined
-      }
-    />
   );
 }

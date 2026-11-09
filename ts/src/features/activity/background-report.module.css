@@ -1,0 +1,28 @@
+.job {
+  padding: var(--menu-item-padding-block, var(--ui-menu-item-padding-block))
+    var(--menu-item-padding-inline, var(--ui-menu-item-padding-inline));
+  border-radius: var(--menu-inner-radius);
+  overflow-wrap: anywhere;
+}
+.job + .job {
+  margin-top: var(--ui-space);
+}
+.title {
+  color: inherit;
+  line-height: var(--ui-menu-item-line-height);
+}
+.status,
+.summary,
+.path {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+}
+.summary,
+.path {
+  margin-top: var(--ui-space);
+}
+.status,
+.path {
+  font-family: var(--ui-font-mono);
+}

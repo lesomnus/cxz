@@ -9,26 +9,28 @@ test("an open background report stops polling when its project disappears and re
   const requests = page.locator("[data-background-requests]");
   await expect(requests).toHaveAttribute("data-background-requests", "1");
   await page.locator("[data-background-jobs]").click();
-  const report = page.getByRole("dialog", {
+  const report = page.getByRole("menu", {
     name: "Background tasks",
     exact: true,
   });
   await expect(report).toBeVisible();
   await expect(requests).toHaveAttribute("data-background-requests", "2");
   await page.clock.install();
-  await page.getByRole("button", { name: "Stop project", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Stop project", exact: true })
+    .dispatchEvent("click");
   await expect(report).toContainText("The session runtime is not running.");
   await expect(
-    report.getByRole("button", { name: "Refresh", exact: true }),
+    report.getByRole("menuitem", { name: "Refresh", exact: true }),
   ).toBeDisabled();
   await page.clock.fastForward(30_000);
   await expect(requests).toHaveAttribute("data-background-requests", "2");
   await page
     .getByRole("button", { name: "Start project", exact: true })
-    .click();
+    .dispatchEvent("click");
   await expect(requests).toHaveAttribute("data-background-requests", "4");
   await expect(
-    report.getByRole("button", { name: "Refresh", exact: true }),
+    report.getByRole("menuitem", { name: "Refresh", exact: true }),
   ).toBeEnabled();
   await page.clock.fastForward(10_000);
   await expect(requests).toHaveAttribute("data-background-requests", "5");
@@ -65,25 +67,86 @@ test("stopping a project gates bootstrap, visibility and manual refresh until it
   await expect(indicator).toHaveText("1");
 });
 
-test("background details use a public UUID for initial load and refresh", async ({
+test("background details use the shared anchored menu and a public UUID for refresh", async ({
   page,
 }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(
     "/iframe.html?id=conversation-backgroundjobs--job-list&viewMode=story",
   );
-  await page.locator("[data-background-jobs]").click();
+  const trigger = page.locator("[data-background-jobs]");
+  await expect(trigger).toBeVisible();
+  const before = await page.locator(".composer").boundingBox();
+  await trigger.click();
+  const report = page.getByRole("menu", {
+    name: "Background tasks",
+    exact: true,
+  });
+  await expect(report).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(report.locator("header")).toHaveCount(0);
   await expect(
-    page.getByText("Build the web application and verify generated assets", {
+    report.getByRole("button", { name: "Close", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("dialog", { name: "Background tasks", exact: true }),
+  ).toHaveCount(0);
+  await expect(report.getByRole("listitem")).toHaveCount(4);
+  await expect(
+    report.getByText("Build the web application and verify generated assets", {
       exact: true,
     }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(report).toContainText(
+    "Compiling the production bundle and checking types.",
+  );
+  await expect(report).toContainText("/tmp/cxz/jobs/build.log");
+  expect(await page.locator(".composer").boundingBox()).toEqual(before);
+  const anchor = (await trigger.boundingBox())!;
+  const menu = (await report.boundingBox())!;
+  expect(menu.y + menu.height).toBeLessThan(anchor.y);
+  expect(menu.x).toBeCloseTo(anchor.x, 1);
+  expect(
+    await report.evaluate((node) => getComputedStyle(node).backdropFilter),
+  ).not.toBe("none");
+  await report.getByRole("menuitem", { name: "Refresh", exact: true }).click();
   await expect(
-    page.getByText("Build the web application and verify generated assets", {
+    report.getByText("Build the web application and verify generated assets", {
       exact: true,
     }),
   ).toBeVisible();
+  await expect(report).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(report).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await page.getByRole("textbox", { name: "Message", exact: true }).click();
+  await expect(report).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("zero background jobs still opens the menu's empty state on a narrow screen", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto(
+    "/iframe.html?id=conversation-backgroundjobs--empty-job-list&viewMode=story",
+  );
+  const trigger = page.locator("[data-background-jobs]");
+  await expect(trigger).toHaveText("0");
+  await trigger.click();
+  const report = page.getByRole("menu", {
+    name: "Background tasks",
+    exact: true,
+  });
+  await expect(report).toContainText(
+    "No provider-reported background tasks for this run.",
+  );
+  const box = (await report.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(390);
 });
 
 test("background count follows native job lifecycle independently of the foreground turn", async ({

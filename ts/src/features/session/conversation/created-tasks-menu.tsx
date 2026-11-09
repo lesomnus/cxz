@@ -9,7 +9,7 @@ import { MenuLink } from "#src/shared/navigation/route-link.tsx";
 import { taskLocation } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import styles from "./work-resources-menu.module.css";
+import styles from "#src/shared/components/anchored-menu.module.css";
 
 function TaskList({
   project,

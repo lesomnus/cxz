@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@lesomnus/nox";
 import { ComponentPreview } from "#src/storybook/conversation-preview.tsx";
@@ -117,12 +117,14 @@ function JobListPreview({ empty = false }: { empty?: boolean }) {
     });
     return { c: new Connection(location.origin, transport), tasks };
   });
+  useEffect(() => () => fixture.c.dispose(), [fixture]);
   return (
     <ComponentPreview
       backgroundJobs={fixture.tasks.filter((task) => task.active).length}
       backgroundReport={
         <BackgroundReport
           c={fixture.c}
+          presentation="menu"
           session={sessionFixtureId()}
           run="preview"
           available
@@ -140,7 +142,7 @@ export const JobList: Story = {
     docs: {
       description: {
         story:
-          "Click the background-job count in the composer toolbar to open the same floating card and BackgroundReport used in the session view. The in-memory RPC fixture includes running, completed and failed jobs, descriptions, summaries and output paths. Refresh reloads the fixture; Escape, Close or a conversation margin dismisses the card. No server is required.",
+          "Click the background-job count in the composer toolbar to open the same headerless anchored menu used by conversation Task and Memory counters. The in-memory RPC fixture includes running, completed and failed jobs, descriptions, summaries and output paths. Refresh reloads the fixture without closing the menu; Escape restores focus and clicking outside dismisses. No server is required.",
       },
     },
   },
@@ -154,7 +156,7 @@ export const EmptyJobList: Story = {
     docs: {
       description: {
         story:
-          "Click the zero background-job count to inspect the real list card's empty state.",
+          "Click the zero background-job count to inspect the menu's empty state.",
       },
     },
   },
@@ -291,6 +293,7 @@ function Telemetry({ provider = "claude" }: { provider?: "claude" | "codex" }) {
         backgroundReport={
           <BackgroundReport
             c={connection}
+            presentation="menu"
             session={session.id}
             run="preview"
             available
