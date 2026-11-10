@@ -16,6 +16,8 @@ export function AnchoredMenu({
   footer,
   placement = "vertical",
   autoFocus = true,
+  className = "",
+  role = "menu",
   close,
 }: {
   id: string;
@@ -25,6 +27,8 @@ export function AnchoredMenu({
   footer?: ReactNode;
   placement?: "vertical" | "right";
   autoFocus?: boolean;
+  className?: string;
+  role?: "menu" | "dialog";
   close: (restoreFocus?: boolean) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -129,8 +133,8 @@ export function AnchoredMenu({
       id={id}
       anchor={anchor}
       ref={root}
-      className={styles.menu}
-      role="menu"
+      className={`${styles.menu} ${className}`}
+      role={role}
       aria-label={label}
       onKeyDown={(event) => {
         if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key))

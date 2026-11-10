@@ -10,7 +10,7 @@ test("hover account usage opens to the right without stealing editor focus and r
   const editor = page.getByRole("textbox", { name: "Conversation input" });
   await editor.fill("Draft stays focused");
   await trigger.hover();
-  const menu = page.getByRole("menu", { name: "Account usage" });
+  const menu = page.getByRole("dialog", { name: "Account usage" });
   await expect(menu).toBeVisible();
   await expect(editor).toBeFocused();
   await expect(menu.locator(".agent-brand-codex")).toBeVisible();
@@ -20,8 +20,12 @@ test("hover account usage opens to the right without stealing editor focus and r
   const buttonBox = (await trigger.boundingBox())!;
   const box = (await menu.boundingBox())!;
   expect(box.x).toBeGreaterThan(buttonBox.x + buttonBox.width);
-  const work = menu.getByRole("menuitem").filter({ hasText: "Work" });
-  await expect(work).toHaveAttribute("href", /\/account\/work$/);
+  await expect(menu.getByRole("link")).toHaveCount(0);
+  await expect(menu.getByRole("button")).toHaveCount(0);
+  expect(box.width).toBeLessThan(300);
+  await expect(menu).toHaveCSS("border-top-width", "0px");
+  await menu.getByRole("listitem").filter({ hasText: "Work" }).click();
+  await expect(menu).toBeVisible();
   await page.mouse.move(box.x + 20, box.y + 15, { steps: 12 });
   await expect(menu).toBeVisible();
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
@@ -39,7 +43,7 @@ test("hover account usage opens to the right without stealing editor focus and r
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
 });
 
-test("keyboard users can enter and dismiss the account menu, and unknown quota is not zero", async ({
+test("keyboard users can open and dismiss the account preview, and unknown quota is not zero", async ({
   page,
 }) => {
   await page.goto(
@@ -48,12 +52,9 @@ test("keyboard users can enter and dismiss the account menu, and unknown quota i
   const trigger = page.getByRole("link", { name: "Accounts", exact: true });
   await expect(trigger).toBeVisible({ timeout: 20000 });
   await trigger.focus();
-  const menu = page.getByRole("menu", { name: "Account usage" });
+  const menu = page.getByRole("dialog", { name: "Account usage" });
   await expect(menu.getByLabel("Remaining usage unavailable")).toHaveCount(2);
-  await page.keyboard.press("ArrowRight");
-  await expect(menu.getByRole("menuitem").first()).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await expect(menu.getByRole("menuitem").nth(1)).toBeFocused();
+  await expect(trigger).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(menu).toHaveCount(0);
   await expect(trigger).toBeFocused();
@@ -64,7 +65,7 @@ test("an account-free connection shows an empty state", async ({ page }) => {
   const trigger = page.getByRole("link", { name: "Accounts", exact: true });
   await expect(trigger).toBeVisible({ timeout: 20000 });
   await trigger.hover();
-  await expect(page.getByRole("menu", { name: "Account usage" })).toContainText(
-    "No accounts",
-  );
+  await expect(
+    page.getByRole("dialog", { name: "Account usage" }),
+  ).toContainText("No accounts");
 });

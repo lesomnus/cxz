@@ -7,7 +7,12 @@ import {
   useState,
   type ReactElement,
 } from "react";
-import { CompactNumber, MenuItemLabel, MenuScrollArea } from "@lesomnus/nox";
+import {
+  CompactNumber,
+  MenuIcon,
+  MenuItemLabel,
+  MenuScrollArea,
+} from "@lesomnus/nox";
 import { key } from "@lesomnus/payday/store";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -19,11 +24,6 @@ import {
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { AnchoredMenu } from "#src/shared/components/anchored-menu.tsx";
-import {
-  accountLocation,
-  resourceHandle,
-} from "#src/shared/navigation/resource-route.ts";
-import { MenuLink } from "#src/shared/navigation/route-link.tsx";
 import { listAccounts, sessionsForAccount } from "./account-data";
 import { useAccountQuota } from "./use-account-quota";
 import styles from "./sidebar-accounts.module.css";
@@ -36,7 +36,7 @@ export function SidebarAccounts({
   c: Connection;
   sessions: Session[];
   children: ReactElement<{
-    "aria-haspopup"?: "menu";
+    "aria-haspopup"?: "dialog";
     "aria-expanded"?: boolean;
     "aria-controls"?: string;
     "data-menu-open"?: boolean;
@@ -77,21 +77,12 @@ export function SidebarAccounts({
         )
           close();
       }}
-      onKeyDown={(event) => {
-        if (event.key === "ArrowRight" && anchor) {
-          event.preventDefault();
-          document
-            .getElementById(id)
-            ?.querySelector<HTMLElement>('[role="menuitem"]')
-            ?.focus();
-        }
-      }}
       onClick={(event) => {
         if ((event.target as Element).closest("a")) close();
       }}
     >
       {cloneElement(children, {
-        "aria-haspopup": "menu",
+        "aria-haspopup": "dialog",
         "aria-expanded": !!anchor,
         "aria-controls": anchor ? id : undefined,
         "data-menu-open": !!anchor,
@@ -103,6 +94,8 @@ export function SidebarAccounts({
           label="Account usage"
           placement="right"
           autoFocus={false}
+          className={styles.preview}
+          role="dialog"
           close={close}
         >
           <AccountItems c={c} sessions={sessions} />
@@ -118,23 +111,23 @@ function AccountItems({ c, sessions }: { c: Connection; sessions: Session[] }) {
   });
   return (
     <MenuScrollArea aria-busy={accounts.loading}>
-      {accounts.data?.map((account) => (
-        <MenuLink
-          key={key(account.id) || account.alias}
-          {...accountLocation(resourceHandle(account))}
-          role="menuitem"
-          icon={<AgentBrand agent={account.agent} />}
-          trailing={
+      <div role="list" aria-label="Accounts">
+        {accounts.data?.map((account) => (
+          <div
+            key={key(account.id) || account.alias}
+            role="listitem"
+            className={styles.item}
+          >
+            <MenuIcon icon={<AgentBrand agent={account.agent} />} />
+            <MenuItemLabel>{account.name || account.alias}</MenuItemLabel>
             <Remaining
               c={c}
               account={account}
               sessions={sessionsForAccount(account, sessions)}
             />
-          }
-        >
-          <MenuItemLabel>{account.name || account.alias}</MenuItemLabel>
-        </MenuLink>
-      ))}
+          </div>
+        ))}
+      </div>
       {!accounts.data?.length && (
         <p className={styles.state} role="status">
           {accounts.loading

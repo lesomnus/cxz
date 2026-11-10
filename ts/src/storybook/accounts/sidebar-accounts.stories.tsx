@@ -63,8 +63,8 @@ function SidebarPreview({
                 usage.
               </p>
               <p>
-                The menu uses the composer toolbar's shared menu surface. Move
-                into the menu to open an account. Escape dismisses it; hovering
+                The preview uses the composer toolbar's shared menu surface.
+                Account rows are informational. Escape dismisses it; hovering
                 keeps the editor focused.
               </p>
               <textarea
@@ -96,7 +96,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The actual sidebar hover menu. Account metadata and quota snapshots share the Accounts page's connection cache. No account reads occur until the preview opens; unavailable usage stays unknown rather than showing zero. Keyboard focus opens the preview, Arrow Right enters it, and Escape dismisses it.",
+          "The actual sidebar hover menu. Account metadata and quota snapshots share the Accounts page's connection cache. No account reads occur until the preview opens; unavailable usage stays unknown rather than showing zero. Account rows are informational and have no links. Keyboard focus opens the preview, and Escape dismisses it.",
       },
     },
   },

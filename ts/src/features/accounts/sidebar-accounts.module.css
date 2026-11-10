@@ -4,11 +4,25 @@
 .trigger > a[data-menu-open="true"] {
   background: var(--button-hover-background);
 }
+.preview.preview {
+  width: calc(64 * var(--ui-space));
+  border: 0;
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+  padding: var(--menu-item-padding-block, var(--ui-menu-item-padding-block))
+    var(--menu-item-padding-inline, var(--ui-menu-item-padding-inline));
+}
 .remaining {
   display: inline-flex;
   justify-content: flex-end;
   align-items: baseline;
   width: 4ch;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: calc(2 * var(--ui-space));
   font: var(--ui-menu-font-size, 12px) / 1.5 var(--ui-font-mono);
   font-variant-numeric: tabular-nums;
 }
