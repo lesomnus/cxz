@@ -1,106 +1,16 @@
 .picker {
-  display: inline-flex;
-  position: relative;
+  display: flex;
+  min-width: 0;
+  width: 100%;
+}
+.picker.picker > :global(.value-menu) {
+  --value-padding-block: calc(var(--ui-space) - (20px - 1.5em) / 2);
+  --value-padding-inline: var(--ui-control-inline-inset);
   min-width: 0;
 }
-
-/* A field control among field controls: the height and inset are the ones the
-   editable values beside it use, so a column of fields does not step up and
-   down where the icon sits. */
-.trigger {
-  min-height: var(--ui-icon-size);
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-  gap: var(--ui-space);
-}
-
-/* The glyph is taller than the control that holds it and reaches into the
-   row's own padding to be so. The negative block margin is what keeps that
-   from becoming height: it takes back the trigger's vertical padding, so the
-   icon measures smaller than the text line beside it and the field stays
-   exactly as tall as the fields next to it. */
-.glyph {
-  flex: none;
-  margin-block: calc(-1 * var(--ui-space));
-}
-
-.value {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.menu {
-  width: max-content;
-  max-width: min(320px, 90vw);
-}
-
-/* The find bar's field, in a menu: transparent, no border, the surface around
-   it is the control. */
-.search {
-  width: 100%;
+.picker :global(.setting-trigger .meta-value) {
   min-width: 0;
-  box-sizing: border-box;
-  border: 0;
-  background: transparent;
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-  color: inherit;
-  font: inherit;
-  outline: none;
-}
-
-.search::placeholder {
-  color: var(--ui-muted);
-}
-
-.search::-webkit-search-cancel-button {
-  display: none;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--ui-control-inset);
-}
-
-/* The glyph above its own name, the way the shared row-layout menus stack
-   theirs: the name is there to be read once while choosing, not to be scanned. */
-.cell {
-  min-width: 56px;
-  min-height: 52px;
-  padding: var(--ui-space) var(--ui-control-inset);
-  text-align: center;
-}
-
-.cell :global(.button-content) {
-  width: 100%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ui-control-inset);
-}
-
-.name {
-  top: 0;
-  flex: none;
-  width: 100%;
+  max-width: 100%;
   overflow: hidden;
-  color: var(--ui-muted);
-  font-size: 10px;
-  line-height: 12px;
   text-overflow: ellipsis;
-}
-
-.empty,
-.error {
-  margin: 0;
-  padding: var(--ui-space) var(--ui-control-inline-inset);
-  font-size: 11px;
-}
-
-.empty {
-  color: var(--ui-muted);
-}
-
-.error {
-  color: var(--ui-action-error-color);
 }

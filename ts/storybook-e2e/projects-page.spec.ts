@@ -1315,100 +1315,96 @@ for (const scale of [1, 1.25, 1.5, 2]) {
   });
 }
 
-// The icon is chosen by looking, not by reading a list: the glyphs sit in a
-// grid and each says its own name underneath. The glyph on the trigger is
-// larger than the text beside it and reaches into the row's padding to be so,
-// which must not make the field taller than the ones next to it.
-test("the project icon is chosen from a grid of named glyphs", async ({
+test("the project icon uses the shared searchable value menu with a named icon grid", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
-  const main = page.getByRole("main", { name: "Project workspace" });
-  const info = main.getByRole("region", { name: "Information", exact: true });
-  const trigger = info.getByRole("button", { name: "Icon", exact: true });
-  await expect(trigger).toBeVisible();
-  // The name of the current icon sits to the right of the glyph.
-  await expect(trigger).toHaveText("None");
-
-  const alias = info
-    .locator("dl > div")
-    .filter({
-      has: page.locator("dt > span:first-child", { hasText: /^Alias$/ }),
-    })
-    .locator("dd button")
-    .first();
-  const [iconBox, aliasBox] = [
-    (await trigger.boundingBox())!,
-    (await alias.boundingBox())!,
-  ];
-  expect(Math.abs(iconBox.height - aliasBox.height)).toBeLessThanOrEqual(1);
-  // Drawn larger than the control's own content box, which is what reaching
-  // into the row's padding means. The height assertion above is what says it
-  // did not cost the row anything.
-  const glyph = (await trigger.locator("svg").boundingBox())!;
-  expect(glyph.height).toBeGreaterThan(20);
-
-  await trigger.click();
-  const menu = page.getByRole("menu", { name: "Icon", exact: true });
-  await expect(menu).toBeVisible();
-  // It covers the trigger rather than sitting beside it.
-  const menuBox = (await menu.boundingBox())!;
-  expect(menuBox.y).toBeLessThanOrEqual(iconBox.y + 1);
-  expect(menuBox.y + menuBox.height).toBeGreaterThan(
-    iconBox.y + iconBox.height,
+  const info = page.getByRole("region", { name: "Information", exact: true });
+  const fields = info.locator("dl > div");
+  await expect(fields).toHaveCount(10);
+  const labels = await fields.locator("dt").allTextContents();
+  expect(labels.slice(0, 6).map((label) => label.trim())).toEqual([
+    "Name",
+    "Alias",
+    "Project ID",
+    "Icon",
+    "Description",
+    "Workspace",
+  ]);
+  const boxes = await fields.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const box = node.getBoundingClientRect();
+      return { x: box.x, y: box.y, width: box.width };
+    }),
   );
-  const cells = menu.getByRole("menuitemradio");
+  for (const box of boxes.slice(0, 4)) expect(box.y).toBeCloseTo(boxes[0].y, 1);
+  expect(boxes[4].y).toBeCloseTo(boxes[5].y, 1);
+  expect(boxes[4].y).toBeGreaterThan(boxes[0].y);
+  expect(boxes[4].width).toBeCloseTo(boxes[5].width, 1);
+  const iconField = fields.nth(3);
+  const trigger = iconField.getByRole("combobox", {
+    name: "Icon",
+    exact: true,
+  });
+  await expect(trigger).toHaveText("None");
+  await expect(trigger.locator("svg")).toHaveCount(0);
+  const preview = iconField.getByRole("img", { name: "Project icon preview" });
+  await expect(preview).toBeVisible();
+  const left = (await iconField.locator("dd").boundingBox())!;
+  const right = (await preview.locator("..").boundingBox())!;
+  expect(left.width).toBeCloseTo(right.width, 1);
+  expect(right.x).toBeGreaterThan(left.x + left.width);
+  await trigger.click();
+  const menu = page.getByRole("group", { name: "Icon choices", exact: true });
+  const list = menu.getByRole("listbox");
+  const cells = list.getByRole("option");
   await expect(cells).toHaveCount(19);
-  await expect(cells.first()).toHaveAttribute("aria-checked", "true");
-
-  // Search narrows the grid, and the field it narrows with has the focus.
-  const query = menu.getByRole("searchbox", {
-    name: "Search icons",
+  await expect(cells.first()).toHaveAttribute("aria-selected", "true");
+  const query = menu.getByRole("combobox", {
+    name: "Search Icon",
     exact: true,
   });
   await expect(query).toBeFocused();
-  await query.fill("ro");
+  await expect(query).toHaveValue("");
+  await expect(query).toHaveAttribute("placeholder", "None");
+  await query.fill("rocket");
   await expect(cells).toHaveCount(1);
-  await expect(cells.first()).toHaveAttribute("aria-label", "rocket");
   await query.fill("zzz");
   await expect(cells).toHaveCount(0);
-  await expect(menu.getByRole("status")).toHaveText("No icons match.");
+  await expect(menu.getByRole("status")).toHaveText("No matches");
   await query.fill("");
   await expect(cells).toHaveCount(19);
-
-  // A grid rather than a column: several per row, and more than one row.
-  const rows = await cells.evaluateAll((nodes) => {
-    const tops = nodes.map((node) =>
-      Math.round(node.getBoundingClientRect().top),
-    );
-    const counts = new Map<number, number>();
-    for (const top of tops) counts.set(top, (counts.get(top) ?? 0) + 1);
-    return [...counts.values()];
-  });
-  expect(rows.length).toBeGreaterThan(1);
-  expect(Math.max(...rows)).toBeGreaterThan(1);
-
-  // The name is below the glyph, not beside it.
-  const leaf = menu.getByRole("menuitemradio", { name: "leaf", exact: true });
-  const stacked = await leaf.evaluate((node) => {
+  await query.press("ArrowDown");
+  await expect(cells.nth(0)).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(cells.nth(1)).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(cells.nth(6)).toBeFocused();
+  const leaf = cells.filter({ hasText: /^leaf$/ });
+  const geometry = await leaf.evaluate((node) => {
     const glyph = node.querySelector("svg")!.getBoundingClientRect();
     const caption = node
-      .querySelector("[data-menu-item-label]")!
+      .querySelector<HTMLElement>(".setting-match-label")!
       .getBoundingClientRect();
     return {
-      below: caption.top >= glyph.bottom - 1,
-      smaller: caption.height < glyph.height,
+      gap: caption.top - glyph.bottom,
+      center: caption.left + caption.width / 2 - (glyph.left + glyph.width / 2),
     };
   });
-  expect(stacked.below).toBe(true);
-  expect(stacked.smaller).toBe(true);
-
+  expect(geometry.gap).toBeGreaterThanOrEqual(0);
+  expect(Math.abs(geometry.center)).toBeLessThan(0.1);
+  await menu.screenshot({ path: testInfo.outputPath("project-icon-menu.png") });
   await leaf.click();
   await expect(menu).toHaveCount(0);
-  await expect(trigger).toHaveAttribute("aria-label", "Icon: leaf");
-  await expect(trigger.locator("svg")).toHaveAttribute("data-icon", "leaf");
   await expect(trigger).toHaveText("leaf");
-  // Still the height of the field beside it, now that it carries a name.
-  const chosen = (await trigger.boundingBox())!;
-  expect(Math.abs(chosen.height - aliasBox.height)).toBeLessThanOrEqual(1);
+  await expect(preview).toHaveAttribute("data-icon", "leaf");
+  const fieldBounds = await info.boundingBox();
+  await trigger.click();
+  await page.getByRole("option", { name: "None", exact: true }).click();
+  await expect(trigger).toHaveText("None");
+  await expect(preview).toHaveAttribute("data-icon", "projects");
+  expect(await info.boundingBox()).toEqual(fieldBounds);
+  await info.screenshot({
+    path: testInfo.outputPath("project-information.png"),
+  });
 });

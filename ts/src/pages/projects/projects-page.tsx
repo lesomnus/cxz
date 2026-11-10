@@ -15,7 +15,7 @@ import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
 import { ProjectIconPicker } from "#src/shared/components/project-icon-picker.tsx";
-import { type ProjectIconName } from "#src/shared/icons/icon.tsx";
+import { Icon, type ProjectIconName } from "#src/shared/icons/icon.tsx";
 import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
@@ -259,42 +259,19 @@ function ProjectDashboard({
     <ResourceDashboard actionsFirstOnNarrow>
       <ResourceDashboardColumn kind="information">
         <Section aria-label={t("Information")}>
-          {/* Six columns to divide by both three and two: what the project is
-              called, called in a command and looks like on one line, then what
-              it is and what it is identified by on the next. The rows below
-              keep the two-up they had. */}
           <Fields
-            columns={6}
+            columns={4}
             rows={[
               {
                 label: t("Name"),
-                columnSpan: 2,
                 value: editable("name", t("Name")),
               },
               {
                 label: t("Alias"),
-                columnSpan: 2,
                 value: editable("alias", t("Alias")),
               },
               {
-                label: t("Icon"),
-                columnSpan: 2,
-                value: (
-                  <ProjectIconPicker
-                    label={t("Icon")}
-                    value={projectIconName(p)}
-                    choose={saveIcon}
-                  />
-                ),
-              },
-              {
-                label: t("Description"),
-                columnSpan: 3,
-                value: editable("desc", t("Description")),
-              },
-              {
                 label: t("Project ID"),
-                columnSpan: 3,
                 value: p.id.length === 16 ? new Id(p.id).toString() : undefined,
                 description: t(
                   "Canonical UUID used to identify this project across APIs and links.",
@@ -302,14 +279,37 @@ function ProjectDashboard({
                 identifier: true,
               },
               {
+                label: t("Icon"),
+                value: (
+                  <ProjectIconPicker
+                    label={t("Icon")}
+                    value={projectIconName(p)}
+                    choose={saveIcon}
+                  />
+                ),
+                aside: (
+                  <Icon
+                    name={projectIconName(p) ?? "projects"}
+                    size="calc(1.5 * var(--ui-icon-size))"
+                    role="img"
+                    aria-label={t("Project icon preview")}
+                  />
+                ),
+              },
+              {
+                label: t("Description"),
+                columnSpan: 2,
+                value: editable("desc", t("Description")),
+              },
+              {
                 label: t("Workspace"),
                 value: p.workspace,
-                fullWidth: true,
+                columnSpan: 2,
                 path: true,
               },
               {
                 label: t("Container name"),
-                columnSpan: 3,
+                columnSpan: 2,
                 value: p.status?.containerName,
                 identifier: true,
                 identifierLength: containerNamePrefixLength(
@@ -318,19 +318,19 @@ function ProjectDashboard({
               },
               {
                 label: t("Container ID"),
-                columnSpan: 3,
+                columnSpan: 2,
                 value: p.status?.containerId,
                 identifier: true,
               },
               {
                 label: t("Created"),
-                columnSpan: 3,
+                columnSpan: 2,
                 value: <DateTime value={p.dateCreated} />,
                 labelDetail: <RelativeTime value={p.dateCreated} />,
               },
               {
                 label: t("Updated"),
-                columnSpan: 3,
+                columnSpan: 2,
                 value: <DateTime value={p.dateUpdated} />,
                 labelDetail: <RelativeTime value={p.dateUpdated} />,
               },
