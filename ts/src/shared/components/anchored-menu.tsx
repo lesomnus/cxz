@@ -1,5 +1,10 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { DialogReveal, MenuSurface, MenuFrame } from "@lesomnus/nox";
+import {
+  DialogReveal,
+  MenuSurface,
+  MenuFrame,
+  snapMenuPosition,
+} from "@lesomnus/nox";
 import styles from "./anchored-menu.module.css";
 
 /** Headerless anchored menus share placement, motion and dismissal behavior. */
@@ -9,13 +14,17 @@ export function AnchoredMenu({
   label,
   children,
   footer,
+  placement = "vertical",
+  autoFocus = true,
   close,
 }: {
   id: string;
-  anchor: HTMLButtonElement;
+  anchor: HTMLElement;
   label: string;
   children: ReactNode;
   footer?: ReactNode;
+  placement?: "vertical" | "right";
+  autoFocus?: boolean;
   close: (restoreFocus?: boolean) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -34,7 +43,11 @@ export function AnchoredMenu({
         0,
         Math.min(
           innerHeight / 2,
-          above ? available : innerHeight - rect.bottom - 2 * gap,
+          placement === "right"
+            ? innerHeight - 2 * gap
+            : above
+              ? available
+              : innerHeight - rect.bottom - 2 * gap,
         ),
       );
       const frame = getComputedStyle(node);
@@ -48,13 +61,18 @@ export function AnchoredMenu({
           0,
         );
       node.style.maxHeight = `${budget}px`;
+      node.style.maxWidth =
+        placement === "right"
+          ? `${Math.max(0, innerWidth - rect.right - 2 * gap)}px`
+          : "";
       node.style.setProperty(
         "--menu-scroll-max-height",
         `${Math.max(0, budget - chrome)}px`,
       );
       const box = node.getBoundingClientRect();
-      node.style.left = `${Math.max(gap, Math.min(rect.left, innerWidth - box.width - gap))}px`;
-      node.style.top = `${above ? rect.top - box.height - gap : rect.bottom + gap}px`;
+      node.style.left = `${placement === "right" ? rect.right + gap : Math.max(gap, Math.min(rect.left, innerWidth - box.width - gap))}px`;
+      node.style.top = `${placement === "right" ? Math.max(gap, Math.min(rect.top, innerHeight - box.height - gap)) : above ? rect.top - box.height - gap : rect.bottom + gap}px`;
+      snapMenuPosition(node);
       node.style.visibility = "visible";
     };
     const schedulePosition = () => {
@@ -65,9 +83,10 @@ export function AnchoredMenu({
       });
     };
     position();
-    node
-      .querySelector<HTMLElement>('[role="menuitem"]')
-      ?.focus({ preventScroll: true });
+    if (autoFocus)
+      node
+        .querySelector<HTMLElement>('[role="menuitem"]')
+        ?.focus({ preventScroll: true });
     const outside = (event: PointerEvent) => {
       if (
         !node.contains(event.target as Node) &&
@@ -104,7 +123,7 @@ export function AnchoredMenu({
       document.removeEventListener("keydown", escape, true);
       document.removeEventListener("scroll", scroll, true);
     };
-  }, [anchor, close]);
+  }, [anchor, close, placement, autoFocus]);
   return (
     <MenuSurface
       id={id}
@@ -140,7 +159,7 @@ export function AnchoredMenu({
       }}
     >
       <DialogReveal
-        from="bottom-left"
+        from={placement === "right" ? "left" : "bottom-left"}
         className={styles.content}
         contentClassName={styles.content}
       >

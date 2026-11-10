@@ -2,6 +2,7 @@ import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { SidebarHint } from "#src/shared/navigation/sidebar-hint.tsx";
+import { SidebarAccounts } from "#src/features/accounts/sidebar-accounts.tsx";
 import { useBackgroundSessions } from "#src/features/session/model/use-background-sessions.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -236,15 +237,8 @@ function WorkspaceContent({
           ))}
           {(
             ["tasks", "accounts", "search", "memory", "auxiliary"] as const
-          ).map((view) => (
-            <SidebarHint
-              key={view}
-              label={
-                view === "auxiliary"
-                  ? "Auxiliary AI"
-                  : view[0].toUpperCase() + view.slice(1)
-              }
-            >
+          ).map((view) => {
+            const link = (
               <RouteLink
                 {...(view === "tasks"
                   ? taskLocation({ project: currentProject })
@@ -264,8 +258,24 @@ function WorkspaceContent({
               >
                 <ResourceIcon kind={view} />
               </RouteLink>
-            </SidebarHint>
-          ))}
+            );
+            return view === "accounts" ? (
+              <SidebarAccounts key={view} c={c} sessions={inventory.sessions}>
+                {link}
+              </SidebarAccounts>
+            ) : (
+              <SidebarHint
+                key={view}
+                label={
+                  view === "auxiliary"
+                    ? "Auxiliary AI"
+                    : view[0].toUpperCase() + view.slice(1)
+                }
+              >
+                {link}
+              </SidebarHint>
+            );
+          })}
           <div className="sidebar-footer">
             <SidebarHint label={t("Logs")}>
               <RouteLink
