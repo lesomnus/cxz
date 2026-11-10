@@ -291,9 +291,6 @@ export const messages = {
   Project: "Project",
   Icon: "Icon",
   None: "None",
-  "Show the generic project glyph.": "Show the generic project glyph.",
-  "Shown wherever this project is listed. A display choice only; cxz does not read a meaning from it.":
-    "Shown wherever this project is listed. A display choice only; cxz does not read a meaning from it.",
   Workspace: "Workspace",
   "Runtime ID": "Runtime ID",
   "Run ID": "Run ID",

@@ -14,12 +14,8 @@ import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
-import { ResourceValue } from "#src/shared/components/resource-value.tsx";
-import {
-  Icon,
-  projectIconNames,
-  type ProjectIconName,
-} from "#src/shared/icons/icon.tsx";
+import { ProjectIconPicker } from "#src/shared/components/project-icon-picker.tsx";
+import { type ProjectIconName } from "#src/shared/icons/icon.tsx";
 import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
@@ -265,6 +261,7 @@ function ProjectDashboard({
         <Section aria-label={t("Information")}>
           <Fields
             rows={[
+              [t("Name"), editable("name", t("Name"))],
               {
                 label: t("Project ID"),
                 value: p.id.length === 16 ? new Id(p.id).toString() : undefined,
@@ -273,37 +270,22 @@ function ProjectDashboard({
                 ),
                 identifier: true,
               },
-              [t("Name"), editable("name", t("Name"))],
               [t("Alias"), editable("alias", t("Alias"))],
-              [t("Description"), editable("desc", t("Description"))],
-              [
-                t("Icon"),
-                <ResourceValue
-                  label={t("Icon")}
-                  value={projectIconName(p) ?? ""}
-                  searchable
-                  awaitAction
-                  options={[
-                    {
-                      value: "",
-                      label: t("None"),
-                      icon: <Icon name="projects" />,
-                      description: t("Show the generic project glyph."),
-                    },
-                    ...projectIconNames.map((name) => ({
-                      value: name,
-                      label: name,
-                      icon: <Icon name={name} />,
-                    })),
-                  ]}
-                  choose={(value) =>
-                    saveIcon((value as ProjectIconName) || undefined)
-                  }
-                />,
-                t(
-                  "Shown wherever this project is listed. A display choice only; cxz does not read a meaning from it.",
+              {
+                // The glyph says what the label would have: a row that reads
+                // "Icon: <an icon>" spends a field name on a word the picture
+                // already carries.
+                label: t("Icon"),
+                hideLabel: true,
+                value: (
+                  <ProjectIconPicker
+                    label={t("Icon")}
+                    value={projectIconName(p)}
+                    choose={saveIcon}
+                  />
                 ),
-              ],
+              },
+              [t("Description"), editable("desc", t("Description"))],
               {
                 label: t("Workspace"),
                 value: p.workspace,

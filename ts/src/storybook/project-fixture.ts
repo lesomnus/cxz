@@ -402,6 +402,9 @@ export function projectFixture(
             );
           updated[field] = request[field];
         }
+        // A map patch replaces what is stored, which is how the icon is both
+        // set and cleared: the client sends the labels it wants to be there.
+        if (Object.keys(request.labels).length) updated.labels = request.labels;
         updated.dateUpdated = timestampFromDate(new Date());
         projects[index] = updated;
         calls.push({

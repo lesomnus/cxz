@@ -1149,10 +1149,14 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
   await expect(projectId.getByRole("status")).toHaveText("copied!");
   await expect(projectId.getByRole("status")).toBeEmpty();
   await page.keyboard.press("Escape");
+  // Name leads; the ID follows it. The icon's label is in the document for a
+  // screen reader and hidden from the page, because the glyph beside it says
+  // the same thing.
   await expect(info.locator("dt > span:first-child")).toHaveText([
-    "Project ID",
     "Name",
+    "Project ID",
     "Alias",
+    "Icon",
     "Description",
     "Workspace",
     "Container name",
@@ -1311,3 +1315,68 @@ for (const scale of [1, 1.25, 1.5, 2]) {
     });
   });
 }
+
+// The icon is chosen by looking, not by reading a list: the glyphs sit in a
+// grid and each says its own name underneath. The trigger carries no label of
+// its own, so it has to be the same height as the controls beside it.
+test("the project icon is chosen from a grid of named glyphs", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const main = page.getByRole("main", { name: "Project workspace" });
+  const info = main.getByRole("region", { name: "Information", exact: true });
+  const trigger = info.getByRole("button", { name: "Icon", exact: true });
+  await expect(trigger).toBeVisible();
+
+  const alias = info
+    .locator("dl > div")
+    .filter({
+      has: page.locator("dt > span:first-child", { hasText: /^Alias$/ }),
+    })
+    .locator("dd button")
+    .first();
+  const [iconBox, aliasBox] = [
+    (await trigger.boundingBox())!,
+    (await alias.boundingBox())!,
+  ];
+  expect(Math.abs(iconBox.height - aliasBox.height)).toBeLessThanOrEqual(1);
+
+  await trigger.click();
+  const menu = page.getByRole("menu", { name: "Icon", exact: true });
+  await expect(menu).toBeVisible();
+  const cells = menu.getByRole("menuitemradio");
+  await expect(cells).toHaveCount(19);
+  await expect(cells.first()).toHaveAttribute("aria-checked", "true");
+
+  // A grid rather than a column: several per row, and more than one row.
+  const rows = await cells.evaluateAll((nodes) => {
+    const tops = nodes.map((node) =>
+      Math.round(node.getBoundingClientRect().top),
+    );
+    const counts = new Map<number, number>();
+    for (const top of tops) counts.set(top, (counts.get(top) ?? 0) + 1);
+    return [...counts.values()];
+  });
+  expect(rows.length).toBeGreaterThan(1);
+  expect(Math.max(...rows)).toBeGreaterThan(1);
+
+  // The name is below the glyph, not beside it.
+  const leaf = menu.getByRole("menuitemradio", { name: "leaf", exact: true });
+  const stacked = await leaf.evaluate((node) => {
+    const glyph = node.querySelector("svg")!.getBoundingClientRect();
+    const caption = node
+      .querySelector("[data-menu-item-label]")!
+      .getBoundingClientRect();
+    return {
+      below: caption.top >= glyph.bottom - 1,
+      smaller: caption.height < glyph.height,
+    };
+  });
+  expect(stacked.below).toBe(true);
+  expect(stacked.smaller).toBe(true);
+
+  await leaf.click();
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toHaveAttribute("aria-label", "Icon: leaf");
+  await expect(trigger.locator("svg")).toHaveAttribute("data-icon", "leaf");
+});
