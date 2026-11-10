@@ -15,7 +15,7 @@ import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
 import { ProjectIconPicker } from "#src/shared/components/project-icon-picker.tsx";
-import { Icon, type ProjectIconName } from "#src/shared/icons/icon.tsx";
+import { type ProjectIconName } from "#src/shared/icons/icon.tsx";
 import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
@@ -259,90 +259,80 @@ function ProjectDashboard({
     <ResourceDashboard actionsFirstOnNarrow>
       <ResourceDashboardColumn kind="information">
         <Section aria-label={t("Information")}>
-          <Fields
-            columns={6}
-            rows={[
-              {
-                label: t("Name"),
-                value: editable("name", t("Name")),
-              },
-              {
-                label: t("Alias"),
-                value: editable("alias", t("Alias")),
-              },
-              {
-                label: t("Icon"),
-                value: (
-                  <ProjectIconPicker
-                    label={t("Icon")}
-                    value={projectIconName(p)}
-                    choose={saveIcon}
-                  />
-                ),
-              },
-              {
-                label: t("Project icon preview"),
-                hideLabel: true,
-                className: styles.iconPreview,
-                value: (
-                  <Icon
-                    name={projectIconName(p) ?? "projects"}
-                    size="var(--ui-icon-size)"
-                    role="img"
-                    aria-label={t("Project icon preview")}
-                  />
-                ),
-              },
-              {
-                label: t("Project ID"),
-                columnSpan: 2,
-                className: styles.identifierField,
-                value: p.id.length === 16 ? new Id(p.id).toString() : undefined,
-                description: t(
-                  "Canonical UUID used to identify this project across APIs and links.",
-                ),
-                identifier: true,
-              },
-              {
-                label: t("Description"),
-                columnSpan: 3,
-                value: editable("desc", t("Description")),
-              },
-              {
-                label: t("Workspace"),
-                value: p.workspace,
-                columnSpan: 3,
-                path: true,
-              },
-              {
-                label: t("Container name"),
-                columnSpan: 3,
-                value: p.status?.containerName,
-                identifier: true,
-                identifierLength: containerNamePrefixLength(
-                  p.status?.containerName,
-                ),
-              },
-              {
-                label: t("Container ID"),
-                columnSpan: 3,
-                value: p.status?.containerId,
-                identifier: true,
-              },
-              {
-                label: t("Created"),
-                columnSpan: 3,
-                value: <DateTime value={p.dateCreated} />,
-                labelDetail: <RelativeTime value={p.dateCreated} />,
-              },
-              {
-                label: t("Updated"),
-                columnSpan: 3,
-                value: <DateTime value={p.dateUpdated} />,
-                labelDetail: <RelativeTime value={p.dateUpdated} />,
-              },
-            ]}
-          />
+          <div className={styles.informationFields}>
+            <Fields
+              columns={4}
+              className={styles.identityFields}
+              rows={[
+                {
+                  label: t("Project icon preview"),
+                  hideLabel: true,
+                  className: styles.iconPreview,
+                  value: (
+                    <ProjectIconPicker
+                      label={t("Icon")}
+                      value={projectIconName(p)}
+                      choose={saveIcon}
+                    />
+                  ),
+                },
+                {
+                  label: t("Name"),
+                  value: editable("name", t("Name")),
+                },
+                {
+                  label: t("Alias"),
+                  value: editable("alias", t("Alias")),
+                },
+                {
+                  label: t("Project ID"),
+                  className: styles.identifierField,
+                  value:
+                    p.id.length === 16 ? new Id(p.id).toString() : undefined,
+                  description: t(
+                    "Canonical UUID used to identify this project across APIs and links.",
+                  ),
+                  identifier: true,
+                },
+              ]}
+            />
+            <Fields
+              rows={[
+                {
+                  label: t("Description"),
+                  value: editable("desc", t("Description")),
+                },
+                {
+                  label: t("Workspace"),
+                  value: p.workspace,
+                  path: true,
+                },
+                {
+                  label: t("Container name"),
+                  value: p.status?.containerName,
+                  identifier: true,
+                  identifierLength: containerNamePrefixLength(
+                    p.status?.containerName,
+                  ),
+                },
+                {
+                  label: t("Container ID"),
+                  value: p.status?.containerId,
+                  identifier: true,
+                },
+                {
+                  label: t("Created"),
+                  value: <DateTime value={p.dateCreated} />,
+                  labelDetail: <RelativeTime value={p.dateCreated} />,
+                },
+                {
+                  label: t("Updated"),
+                  value: <DateTime value={p.dateUpdated} />,
+                  labelDetail: <RelativeTime value={p.dateUpdated} />,
+                },
+              ]}
+            />
+          </div>
           {p.status?.error && (
             <ErrorNotice api className={styles.errors} error={p.status.error} />
           )}

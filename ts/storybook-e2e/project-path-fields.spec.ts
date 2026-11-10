@@ -23,7 +23,7 @@ for (const width of [1440, 390]) {
       exact: true,
     });
     const display = copy.locator(":scope > span > span").first();
-    const leafFits = await copy.evaluate((button) => {
+    const { leafFits, firstCharacterFits } = await copy.evaluate((button) => {
       const measure = button.querySelector(
         ':scope > span > span[aria-hidden="true"]',
       )!;
@@ -36,13 +36,15 @@ for (const width of [1440, 390]) {
         range.setEnd(text, start + part.length);
         return range.getBoundingClientRect().width;
       };
-      return (
-        width("/host/long-parent-directory/") +
-          measure.querySelector("svg")!.getBoundingClientRect().width +
-          width("/") +
-          width("workspace-leaf") <=
-        button.clientWidth
-      );
+      const prefix = width("/host/long-parent-directory/");
+      const mark = measure.querySelector("svg")!.getBoundingClientRect().width;
+      return {
+        leafFits:
+          prefix + mark + width("/") + width("workspace-leaf") <=
+          button.clientWidth,
+        firstCharacterFits:
+          prefix + 2 * mark + width("/") + width("w") <= button.clientWidth,
+      };
     });
     await expect(display.locator("svg")).toHaveCount(leafFits ? 1 : 2);
     await expect(display).toContainText("/host/long-parent-directory/");
@@ -50,7 +52,7 @@ for (const width of [1440, 390]) {
     if (leafFits) await expect(leaf).toHaveText("workspace-leaf");
     else {
       const text = await leaf.textContent();
-      expect(text).toBeTruthy();
+      if (firstCharacterFits) expect(text).toBeTruthy();
       expect("workspace-leaf".startsWith(text!)).toBe(true);
       expect(text!.length).toBeLessThan("workspace-leaf".length);
     }
@@ -58,7 +60,10 @@ for (const width of [1440, 390]) {
       await leaf.evaluate((node) => node.scrollWidth <= node.clientWidth),
     ).toBe(true);
     const bounds = (await workspace.boundingBox())!;
-    expect(bounds.width).toBe((await info.locator("dl").boundingBox())!.width);
+    expect(bounds.width).toBeCloseTo(
+      (await field("Description").boundingBox())!.width,
+      1,
+    );
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -140,6 +145,11 @@ test("middle elision preserves leading entries across resizing and uses centered
     exact: true,
   });
   const display = copy.locator(":scope > span > span").first();
+  // Exercise explicit resize widths independently of the page's metadata columns.
+  await copy.evaluate((node) => {
+    node.style.width = "360px";
+    node.style.flexShrink = "0";
+  });
   await expect(display).toContainText("/home/somnus/workspaces/");
   await expect(display).toContainText("devcontainer.json");
   await expect(display.locator("svg")).toHaveCount(1);

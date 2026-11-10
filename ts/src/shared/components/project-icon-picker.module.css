@@ -1,17 +1,35 @@
 .picker {
   display: flex;
+  width: 100%;
+  height: 100%;
   min-width: 0;
-  width: calc(100% + 2 * var(--ui-control-inline-inset));
-  margin: calc(-1 * var(--ui-space)) calc(-1 * var(--ui-control-inline-inset));
 }
 .picker.picker > :global(.value-menu) {
-  --value-padding-block: calc(var(--ui-space) - (20px - 1.5em) / 2);
-  --value-padding-inline: var(--ui-control-inline-inset);
-  min-width: 0;
+  --ui-icon-size-small: var(--ui-icon-size);
+  --value-padding-block: var(--ui-space);
+  --value-padding-inline: var(--ui-space);
+  flex: none;
+  width: 100%;
+  height: 100%;
+}
+.picker.picker :global(.setting-trigger) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  height: 100%;
+}
+.picker.picker :global(.setting-trigger > .button-content) {
+  width: 100%;
+  height: 100%;
+  justify-content: center;
 }
 .picker :global(.setting-trigger .meta-value) {
-  min-width: 0;
-  max-width: 100%;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

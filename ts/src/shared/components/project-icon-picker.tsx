@@ -23,7 +23,7 @@ export function ProjectIconPicker({
       <ValueMenu
         label={label}
         value={value ?? ""}
-        valueIcon={null}
+        valueIcon={<Icon name={value ?? "projects"} />}
         variant="compact"
         columns={5}
         minMenuWidth={320}

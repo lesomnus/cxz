@@ -16,8 +16,24 @@
   font: inherit;
 }
 .iconPreview.iconPreview {
-  align-self: stretch;
-  align-content: center;
+  align-self: center;
+  align-content: stretch;
+  height: var(--project-preview-size);
+  padding: 0;
+}
+.informationFields {
+  --project-preview-size: calc(2 * var(--ui-icon-size));
+  display: grid;
+  gap: var(--ui-space);
+  margin: var(--ui-space) 0;
+}
+.informationFields > dl {
+  margin: 0;
+}
+.identityFields.identityFields {
+  grid-template-columns:
+    var(--project-preview-size) repeat(2, minmax(0, 1fr))
+    minmax(0, 50%);
 }
 .identifierField > dt {
   white-space: nowrap;
@@ -25,4 +41,7 @@
 .iconPreview > dd {
   align-items: center;
   justify-content: center;
+}
+.iconPreview svg {
+  flex-shrink: 0;
 }
