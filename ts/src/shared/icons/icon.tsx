@@ -1,19 +1,36 @@
 import { createElement, type SVGProps } from "react";
 import {
   iconDefinitions,
+  projectIconDefinitions,
   ICON_STROKE_WIDTH,
   type IconName,
+  type ProjectIconName,
 } from "./icon-definitions";
 
-export { iconDefinitions, iconMask, type IconName } from "./icon-definitions";
+export {
+  iconDefinitions,
+  iconMask,
+  projectIconDefinitions,
+  projectIconNames,
+  type IconName,
+  type ProjectIconName,
+} from "./icon-definitions";
+
+// One renderer for both maps. The names stay in separate types so that a
+// component reaching for an action icon is not offered a leaf, and a palette
+// never grows because something needed a new meaning.
+const definitions: Record<string, (typeof iconDefinitions)[IconName]> = {
+  ...iconDefinitions,
+  ...projectIconDefinitions,
+};
 
 export type IconProps = Omit<SVGProps<SVGSVGElement>, "children" | "name"> & {
-  name: IconName;
+  name: IconName | ProjectIconName;
   size?: number | string;
 };
 
 export function Icon({ name, size = 16, ...props }: IconProps) {
-  const definition = iconDefinitions[name];
+  const definition = definitions[name];
   return (
     <svg
       width={size}

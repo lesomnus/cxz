@@ -1,3 +1,4 @@
+import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { PrefixValueMenu } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
@@ -23,7 +24,9 @@ export function ProjectPicker({
     <div className={styles.picker}>
       <PrefixValueMenu
         className={styles.field}
-        prefix={<ResourceIcon kind="projects" />}
+        prefix={
+          <ResourceIcon kind="projects" icon={projectIconName(selected)} />
+        }
         label={t("Select project")}
         value={value}
         display={
@@ -36,6 +39,9 @@ export function ProjectPicker({
         options={projects.map((project) => ({
           value: projectId(project),
           label: project.name || project.alias,
+          icon: (
+            <ResourceIcon kind="projects" icon={projectIconName(project)} />
+          ),
           searchText: `${project.alias} ${project.workspace}`,
         }))}
         searchable

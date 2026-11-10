@@ -1,3 +1,5 @@
+import { Icon } from "#src/shared/icons/icon.tsx";
+import { projectIconName } from "#src/shared/components/project-icon.ts";
 import {
   sessionLocation,
   matchesResource,
@@ -56,6 +58,11 @@ export function SessionTreeGroup({
           undefined
         }
       >
+        <Icon
+          className={styles.projectIcon}
+          name={projectIconName(project) ?? "projects"}
+          size={11}
+        />
         <span>{project.name || project.alias}</span>
       </PanelItem>
       {expanded && (

@@ -16,6 +16,11 @@ message Project {
   string alias = 4 [(orm.field) = {unique: true}];
   string name = 5;
   string desc = 6;
+  // Presentation only. cxz never reads a meaning out of these: they are how a
+  // client remembers how it wants to show this project -- which icon stands
+  // for it, for one -- and the server stores them without interpreting them.
+  // Memory and Task carry the same map at the same number.
+  map<string, string> labels = 7;
   string workspace = 8 [(orm.field) = {unique: true, immutable: true}];
   string config = 9;
   reserved 10;

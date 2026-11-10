@@ -14,12 +14,20 @@ import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
+import { ResourceValue } from "#src/shared/components/resource-value.tsx";
+import {
+  Icon,
+  projectIconNames,
+  type ProjectIconName,
+} from "#src/shared/icons/icon.tsx";
+import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { type DashboardConnection } from "./project-dashboard";
 import {
   editProject,
+  setProjectIcon,
   validateProjectField,
   type ProjectField,
 } from "./project-edit";
@@ -208,6 +216,11 @@ function ProjectDashboard({
     c.store.apply("cxz.Project", [{ id: updated.id, value: updated }]);
     saved(updated);
   }
+  async function saveIcon(name: ProjectIconName | undefined) {
+    const updated = await setProjectIcon(c.projects, p, name);
+    c.store.apply("cxz.Project", [{ id: updated.id, value: updated }]);
+    saved(updated);
+  }
   const editable = (field: ProjectField, label: string) => (
     <div className={styles.editable}>
       <EditableValue
@@ -263,6 +276,34 @@ function ProjectDashboard({
               [t("Name"), editable("name", t("Name"))],
               [t("Alias"), editable("alias", t("Alias"))],
               [t("Description"), editable("desc", t("Description"))],
+              [
+                t("Icon"),
+                <ResourceValue
+                  label={t("Icon")}
+                  value={projectIconName(p) ?? ""}
+                  searchable
+                  awaitAction
+                  options={[
+                    {
+                      value: "",
+                      label: t("None"),
+                      icon: <Icon name="projects" />,
+                      description: t("Show the generic project glyph."),
+                    },
+                    ...projectIconNames.map((name) => ({
+                      value: name,
+                      label: name,
+                      icon: <Icon name={name} />,
+                    })),
+                  ]}
+                  choose={(value) =>
+                    saveIcon((value as ProjectIconName) || undefined)
+                  }
+                />,
+                t(
+                  "Shown wherever this project is listed. A display choice only; cxz does not read a meaning from it.",
+                ),
+              ],
               {
                 label: t("Workspace"),
                 value: p.workspace,

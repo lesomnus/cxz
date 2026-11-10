@@ -42,6 +42,12 @@ func (_c *ProjectCreate) SetDesc(v string) *ProjectCreate {
 	return _c
 }
 
+// SetLabels sets the "labels" field.
+func (_c *ProjectCreate) SetLabels(v map[string]string) *ProjectCreate {
+	_c.mutation.SetLabels(v)
+	return _c
+}
+
 // SetWorkspace sets the "workspace" field.
 func (_c *ProjectCreate) SetWorkspace(v string) *ProjectCreate {
 	_c.mutation.SetWorkspace(v)
@@ -220,6 +226,10 @@ func (_c *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec, error) {
 	if value, ok := _c.mutation.Desc(); ok {
 		_spec.SetField(project.FieldDesc, field.TypeString, value)
 		_node.Desc = value
+	}
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(project.FieldLabels, field.TypeJson, value)
+		_node.Labels = value
 	}
 	if value, ok := _c.mutation.Workspace(); ok {
 		_spec.SetField(project.FieldWorkspace, field.TypeString, value)

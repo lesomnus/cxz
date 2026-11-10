@@ -341,6 +341,85 @@ export const iconDefinitions = {
 
 export type IconName = keyof typeof iconDefinitions;
 
+// A project's icon stands for the project and means nothing else. That is a
+// different job from the names above, which are meanings a component maps a
+// state onto -- so the palette is its own map and its own type, and growing one
+// never pulls the other along. A person picks from these because the shape is
+// recognizable at a glance in a list, not because a leaf says anything.
+//
+// Chosen for distinct silhouettes at 16px rather than for variety: two icons a
+// person cannot tell apart in a sidebar are one icon.
+export const projectIconDefinitions = {
+  leaf: line([
+    path("M19 5A14 14 0 0 1 5 19A14 14 0 0 1 19 5Z"),
+    path("M5 19 19 5"),
+  ]),
+  sprout: line([
+    path("M12 21v-7"),
+    path("M12 14c0-4-3-6-7-6 0 4 3 6 7 6Z"),
+    path("M12 14c0-4 3-6 7-6 0 4-3 6-7 6Z"),
+  ]),
+  rocket: line([
+    path("M12 2.5c2.8 2.8 4 6.5 4 10.5l-4 4-4-4c0-4 1.2-7.7 4-10.5Z"),
+    circle(12, 9, 1.6),
+    path("M8 14.5 5.5 17l2.4 1M16 14.5 18.5 17l-2.4 1"),
+  ]),
+  cube: line([
+    path("M12 3 20 7.5v9L12 21 4 16.5v-9Z"),
+    path("M4 7.5 12 12l8-4.5M12 12v9"),
+  ]),
+  star: line([
+    path(
+      "M12 3.5 14.6 9.2 21 10l-4.6 4.4 1.1 6.3L12 17.8l-5.5 2.9 1.1-6.3L3 10l6.4-.8Z",
+    ),
+  ]),
+  bolt: line([path("M13.5 2.5 5.5 13.5H11l-1 8 8.5-11.5H13l.5-7.5Z")]),
+  flask: line([
+    path("M9 3h6M10 3v5l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 17l-5-9V3"),
+    path("M7.5 15h9"),
+  ]),
+  anchor: line([
+    circle(12, 5, 2.5),
+    path("M12 7.5V21M5 13a7 7 0 0 0 14 0M4 13h3M17 13h3"),
+  ]),
+  compass: line([circle(12, 12, 9), path("m15 9-2 5-5 2 2-5Z")]),
+  cloud: line([
+    path("M7 18.5a4.5 4.5 0 0 1 .4-9 6 6 0 0 1 11.2 2 3.5 3.5 0 0 1-.6 7Z"),
+  ]),
+  moon: line([path("M20.5 14.5A9 9 0 0 1 9.5 3.5 9 9 0 1 0 20.5 14.5Z")]),
+  sun: line([
+    circle(12, 12, 4),
+    path("M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22"),
+    path("m5 5 1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19"),
+  ]),
+  gem: line([
+    path("M6.5 4h11l3.5 5.5L12 20.5 1.5 9.5Z"),
+    path("M1.5 9.5h21M9 4 6.5 9.5 12 20.5l5.5-11L15 4"),
+  ]),
+  globe: line([
+    circle(12, 12, 9),
+    path(
+      "M3 12h18M12 3c3 3 4.5 6 4.5 9s-1.5 6-4.5 9c-3-3-4.5-6-4.5-9S9 6 12 3Z",
+    ),
+  ]),
+  key: line([
+    circle(8, 8, 4.5),
+    path("m11.2 11.2 9.8 9.8M18 15l3 3M15 18l3 3"),
+  ]),
+  flag: line([path("M6 21V4M6 4c4-2 8 2 12 0v8c-4 2-8-2-12 0")]),
+  mountain: line([path("M2.5 19 9.5 7.5l4 6.5 2-3L21.5 19Z")]),
+  book: line([
+    path("M4 5a2 2 0 0 1 2-2h5v17H6a2 2 0 0 0-2 2V5Z"),
+    path("M20 5a2 2 0 0 0-2-2h-7v17h7a2 2 0 0 1 2 2V5Z"),
+  ]),
+} satisfies Record<string, IconDefinition>;
+
+export type ProjectIconName = keyof typeof projectIconDefinitions;
+
+export const projectIconNames = Object.keys(
+  projectIconDefinitions,
+) as ProjectIconName[];
+
 export function iconMask(name: IconName) {
   const definition = iconDefinitions[name];
   const shapes = definition.shapes

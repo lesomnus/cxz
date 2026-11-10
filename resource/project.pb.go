@@ -85,6 +85,7 @@ type Project struct {
 	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Workspace   string                 `protobuf:"bytes,8,opt,name=workspace"`
 	xxx_hidden_Config      string                 `protobuf:"bytes,9,opt,name=config"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
@@ -148,6 +149,13 @@ func (x *Project) GetDesc() string {
 	return ""
 }
 
+func (x *Project) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *Project) GetWorkspace() string {
 	if x != nil {
 		return x.xxx_hidden_Workspace
@@ -207,6 +215,10 @@ func (x *Project) SetName(v string) {
 
 func (x *Project) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *Project) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *Project) SetWorkspace(v string) {
@@ -280,10 +292,15 @@ func (x *Project) ClearStatus() {
 type Project_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id          []byte
-	Alias       string
-	Name        string
-	Desc        string
+	Id    []byte
+	Alias string
+	Name  string
+	Desc  string
+	// Presentation only. cxz never reads a meaning out of these: they are how a
+	// client remembers how it wants to show this project -- which icon stands
+	// for it, for one -- and the server stores them without interpreting them.
+	// Memory and Task carry the same map at the same number.
+	Labels      map[string]string
 	Workspace   string
 	Config      string
 	DateUpdated *timestamppb.Timestamp
@@ -300,6 +317,7 @@ func (b0 Project_builder) Build() *Project {
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Workspace = b.Workspace
 	x.xxx_hidden_Config = b.Config
 	x.xxx_hidden_DateUpdated = b.DateUpdated
@@ -487,19 +505,23 @@ var File_cxz_project_proto protoreflect.FileDescriptor
 
 const file_cxz_project_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa6\x04\n" +
+	"\x11cxz/project.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x93\x05\n" +
 	"\aProject\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x12&\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x120\n" +
+	"\x06labels\x18\a \x03(\v2\x18.cxz.Project.LabelsEntryR\x06labels\x12&\n" +
 	"\tworkspace\x18\b \x01(\tB\b\xea\x82\x16\x040\x01@\x01R\tworkspace\x12\x16\n" +
 	"\x06config\x18\t \x01(\tR\x06config\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12*\n" +
-	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status:\\\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\\\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x8a\xbb\x16.\b\a2&\n" +
 	"\x10\n" +
@@ -531,24 +553,26 @@ const file_cxz_project_proto_rawDesc = "" +
 	"\x17CONTAINER_STATE_STOPPED\x10\x04B3\xca\xc7\x16\b\x1a\x06\b\x0e\x10\x0f*\x00Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_cxz_project_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_cxz_project_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_cxz_project_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_cxz_project_proto_goTypes = []any{
 	(ContainerState)(0),           // 0: cxz.ContainerState
 	(*Project)(nil),               // 1: cxz.Project
 	(*ProjectStatus)(nil),         // 2: cxz.ProjectStatus
-	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+	nil,                           // 3: cxz.Project.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
 var file_cxz_project_proto_depIdxs = []int32{
-	3, // 0: cxz.Project.date_updated:type_name -> google.protobuf.Timestamp
-	3, // 1: cxz.Project.date_erased:type_name -> google.protobuf.Timestamp
-	3, // 2: cxz.Project.date_created:type_name -> google.protobuf.Timestamp
-	2, // 3: cxz.Project.status:type_name -> cxz.ProjectStatus
-	0, // 4: cxz.ProjectStatus.container_state:type_name -> cxz.ContainerState
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3, // 0: cxz.Project.labels:type_name -> cxz.Project.LabelsEntry
+	4, // 1: cxz.Project.date_updated:type_name -> google.protobuf.Timestamp
+	4, // 2: cxz.Project.date_erased:type_name -> google.protobuf.Timestamp
+	4, // 3: cxz.Project.date_created:type_name -> google.protobuf.Timestamp
+	2, // 4: cxz.Project.status:type_name -> cxz.ProjectStatus
+	0, // 5: cxz.ProjectStatus.container_state:type_name -> cxz.ContainerState
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_cxz_project_proto_init() }
@@ -562,7 +586,7 @@ func file_cxz_project_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_project_proto_rawDesc), len(file_cxz_project_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
