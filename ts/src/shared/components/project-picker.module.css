@@ -22,3 +22,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.menu.menu :global([role="option"]) {
+  --menu-item-padding-block: var(--ui-space);
+}

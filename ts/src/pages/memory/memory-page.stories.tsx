@@ -49,9 +49,10 @@ function Preview({
   missingPreviousRevision = false,
   diffFailOnce = false,
   longParagraphChange = false,
+  projectIcons = false,
 } = {}) {
-  const [f] = useState(() =>
-    memoryFixture({
+  const [f] = useState(() => {
+    const f = memoryFixture({
       empty,
       fail,
       delay: loading ? 60000 : 0,
@@ -64,8 +65,13 @@ function Preview({
       missingPreviousRevision,
       diffFailOnce,
       longParagraphChange,
-    }),
-  );
+    });
+    if (projectIcons)
+      f.projects.forEach((project, index) => {
+        project.labels.icon = index % 2 ? "rocket" : "leaf";
+      });
+    return f;
+  });
   useEffect(() => () => f.dispose(), [f]);
   const [router] = useState(() => {
     const router = createWorkspaceRouter(
@@ -150,6 +156,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const ProjectIcons: Story = { args: { projectIcons: true } };
 export const Document: Story = {
   args: { document: true },
   parameters: {

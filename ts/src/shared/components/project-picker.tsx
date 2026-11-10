@@ -2,7 +2,7 @@ import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { PrefixValueMenu } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
-import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./project-picker.module.css";
@@ -24,11 +24,11 @@ export function ProjectPicker({
     <div className={styles.picker}>
       <PrefixValueMenu
         className={styles.field}
-        prefix={
-          <ResourceIcon kind="projects" icon={projectIconName(selected)} />
-        }
+        prefix={<Icon name={projectIconName(selected) ?? "projects"} />}
         label={t("Select project")}
         value={value}
+        valueIcon={null}
+        menuClassName={styles.menu}
         display={
           selected
             ? selected.name || selected.alias
@@ -40,7 +40,10 @@ export function ProjectPicker({
           value: projectId(project),
           label: project.name || project.alias,
           icon: (
-            <ResourceIcon kind="projects" icon={projectIconName(project)} />
+            <Icon
+              name={projectIconName(project) ?? "projects"}
+              size="var(--ui-icon-size-small)"
+            />
           ),
           searchText: `${project.alias} ${project.workspace}`,
         }))}

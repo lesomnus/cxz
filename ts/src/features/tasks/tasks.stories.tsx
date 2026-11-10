@@ -29,6 +29,7 @@ function TaskPreview({
   historyCount = 1,
   historyUnavailable = false,
   historyDelay = 0,
+  projectIcons = false,
 }: {
   count: number;
   unavailable?: boolean;
@@ -41,11 +42,12 @@ function TaskPreview({
   historyCount?: number;
   historyUnavailable?: boolean;
   historyDelay?: number;
+  projectIcons?: boolean;
 }) {
   const [reviewCount, setReviewCount] = useState(0);
   const [historyRequests, setHistoryRequests] = useState<string[]>([]);
-  const [fixture] = useState(() =>
-    taskFixture(count, unavailable, {
+  const [fixture] = useState(() => {
+    const fixture = taskFixture(count, unavailable, {
       pageSize,
       pageDelay,
       olderDone,
@@ -58,8 +60,13 @@ function TaskPreview({
         setHistoryRequests((previous) => [...previous, alias]),
       actionDelay: 200,
       onReview: () => setReviewCount((count) => count + 1),
-    }),
-  );
+    });
+    if (projectIcons)
+      fixture.projects.forEach((project, index) => {
+        project.labels.icon = index % 2 ? "rocket" : "leaf";
+      });
+    return fixture;
+  });
   useEffect(() => () => fixture.c.dispose(), [fixture]);
   const [router] = useState(() =>
     createWorkspaceRouter(
@@ -137,6 +144,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const ProjectTable: Story = {};
+export const ProjectIcons: Story = { args: { projectIcons: true } };
 export const ManyTasks: Story = { args: { count: 90 } };
 export const CompletedHistory: Story = { args: { olderDone: 125 } };
 export const EmptyProject: Story = { args: { count: 0 } };

@@ -31,6 +31,7 @@ function Preview({
   failRefresh = false,
   refreshDelayMs = 0,
   usageDelayMs = 0,
+  projectIcons = false,
 }) {
   const [router] = useState(() => {
     const fixture = projectFixture(
@@ -50,6 +51,10 @@ function Preview({
                 : "",
       refreshDelayMs,
     );
+    if (projectIcons)
+      fixture.projects.forEach((project, index) => {
+        project.labels.icon = index % 2 ? "rocket" : "leaf";
+      });
     let usageRevision = 1;
     if (usageDelayMs) {
       const readUsage = fixture.c.sessions.conversationStats;
@@ -257,6 +262,7 @@ const meta = {
 } satisfies Meta<typeof Preview>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+export const ProjectIcons: Story = { args: { projectIcons: true } };
 export const Default: Story = {
   parameters: {
     docs: {
