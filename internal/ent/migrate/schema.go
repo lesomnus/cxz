@@ -457,6 +457,7 @@ var (
 		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "workspace", Type: field.TypeString},
 		{Name: "config", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
@@ -473,7 +474,7 @@ var (
 			{
 				Name:    "project_page",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectColumns[8], ProjectColumns[0]},
+				Columns: []*schema.Column{ProjectColumns[9], ProjectColumns[0]},
 			},
 			{
 				Name:    "project_alias",
@@ -486,7 +487,7 @@ var (
 			{
 				Name:    "project_workspace",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectColumns[4]},
+				Columns: []*schema.Column{ProjectColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

@@ -122,6 +122,9 @@ func (st ProjectServiceServer) create(ctx context.Context, req *resource.Project
 	q.SetAlias(req.GetAlias())
 	q.SetName(req.GetName())
 	q.SetDesc(req.GetDesc())
+	if u := req.GetLabels(); len(u) > 0 {
+		q.SetLabels(u)
+	}
 	q.SetWorkspace(req.GetWorkspace())
 	q.SetConfig(req.GetConfig())
 	q.SetDateUpdated(st.now())
@@ -269,6 +272,9 @@ func ProjectSelectedFields(m *resource.ProjectSelect) []string {
 	if m.GetDesc() {
 		vs = append(vs, project.FieldDesc)
 	}
+	if m.GetLabels() {
+		vs = append(vs, project.FieldLabels)
+	}
 	if m.GetWorkspace() {
 		vs = append(vs, project.FieldWorkspace)
 	}
@@ -351,7 +357,7 @@ func ProjectGetKey(ctx context.Context, db *ent.Client, ref *resource.ProjectRef
 var projectOrmEntity = ormpatch.MustEntityOf(resource.File_cxz_project_proto, "Project")
 
 var projectPatchColumns = entpatch.Columns{
-	1: project.FieldId, 4: project.FieldAlias, 5: project.FieldName, 6: project.FieldDesc, 8: project.FieldWorkspace, 9: project.FieldConfig, 13: project.FieldDateUpdated, 14: project.FieldDateErased, 15: project.FieldDateCreated, 16: project.FieldStatus}
+	1: project.FieldId, 4: project.FieldAlias, 5: project.FieldName, 6: project.FieldDesc, 7: project.FieldLabels, 8: project.FieldWorkspace, 9: project.FieldConfig, 13: project.FieldDateUpdated, 14: project.FieldDateErased, 15: project.FieldDateCreated, 16: project.FieldStatus}
 
 func (s ProjectServiceServer) Apply(ctx context.Context, req *resource.ProjectApplyRequest) (*resource.Project, error) {
 	if !req.HasPatch() {

@@ -14,6 +14,7 @@ func (e *Project) Proto() *resource.Project {
 	x.SetAlias(e.Alias)
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
+	x.SetLabels(e.Labels)
 	x.SetWorkspace(e.Workspace)
 	x.SetConfig(e.Config)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))

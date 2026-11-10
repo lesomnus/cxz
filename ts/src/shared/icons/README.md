@@ -33,6 +33,13 @@ animations stay with the components that calculate or animate their geometry.
 `iconMask(name)` creates a CSS mask from the same definition used by `Icon`, so
 Task priority menus, image attachment chips and their visible glyphs stay in sync.
 
-Storybook → **Foundations / Icons / Catalogue** displays all registered names.
+`projectIconDefinitions` is a second map in the same file, for the glyphs a
+person picks to stand for a project. Those are not meanings — a leaf says
+nothing, it only tells one project apart from another — so they keep their own
+map and their own `ProjectIconName` type, and growing one never pulls the other
+along. `Icon` renders from either; a name may not appear in both.
+
+Storybook → **Foundations / Icons / Catalogue** displays all registered names,
+and **ProjectPalette** the project glyphs.
 Company logos remain in `shared/assets/brands` with their usage rules. The
 Material category source and license remain in `shared/assets/icons`.

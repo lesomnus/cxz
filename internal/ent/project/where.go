@@ -290,6 +290,16 @@ func DescContainsFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldContainsFold(FieldDesc, v))
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldLabels))
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldLabels))
+}
+
 // WorkspaceEQ applies the EQ predicate on the "workspace" field.
 func WorkspaceEQ(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldWorkspace, v))

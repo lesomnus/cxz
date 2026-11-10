@@ -28,6 +28,7 @@ type ProjectAddRequest struct {
 	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Workspace   string                 `protobuf:"bytes,8,opt,name=workspace"`
 	xxx_hidden_Config      string                 `protobuf:"bytes,9,opt,name=config"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -91,6 +92,13 @@ func (x *ProjectAddRequest) GetDesc() string {
 	return ""
 }
 
+func (x *ProjectAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *ProjectAddRequest) GetWorkspace() string {
 	if x != nil {
 		return x.xxx_hidden_Workspace
@@ -124,7 +132,7 @@ func (x *ProjectAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
 }
 
 func (x *ProjectAddRequest) SetAlias(v string) {
@@ -137,6 +145,10 @@ func (x *ProjectAddRequest) SetName(v string) {
 
 func (x *ProjectAddRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *ProjectAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *ProjectAddRequest) SetWorkspace(v string) {
@@ -196,6 +208,7 @@ type ProjectAddRequest_builder struct {
 	Alias       string
 	Name        string
 	Desc        string
+	Labels      map[string]string
 	Workspace   string
 	Config      string
 	DateCreated *timestamppb.Timestamp
@@ -207,12 +220,13 @@ func (b0 ProjectAddRequest_builder) Build() *ProjectAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Workspace = b.Workspace
 	x.xxx_hidden_Config = b.Config
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -575,6 +589,7 @@ type ProjectSelect struct {
 	xxx_hidden_Alias       bool                   `protobuf:"varint,4,opt,name=alias"`
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_Workspace   bool                   `protobuf:"varint,8,opt,name=workspace"`
 	xxx_hidden_Config      bool                   `protobuf:"varint,9,opt,name=config"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
@@ -640,6 +655,13 @@ func (x *ProjectSelect) GetDesc() bool {
 	return false
 }
 
+func (x *ProjectSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
 func (x *ProjectSelect) GetWorkspace() bool {
 	if x != nil {
 		return x.xxx_hidden_Workspace
@@ -684,52 +706,57 @@ func (x *ProjectSelect) GetStatus() bool {
 
 func (x *ProjectSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
 }
 
 func (x *ProjectSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 11)
 }
 
 func (x *ProjectSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
 }
 
 func (x *ProjectSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
+}
+
+func (x *ProjectSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
 }
 
 func (x *ProjectSelect) SetWorkspace(v bool) {
 	x.xxx_hidden_Workspace = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
 }
 
 func (x *ProjectSelect) SetConfig(v bool) {
 	x.xxx_hidden_Config = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
 }
 
 func (x *ProjectSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
 }
 
 func (x *ProjectSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
 }
 
 func (x *ProjectSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
 }
 
 func (x *ProjectSelect) SetStatus(v bool) {
 	x.xxx_hidden_Status = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
 }
 
 func (x *ProjectSelect) HasAll() bool {
@@ -760,46 +787,53 @@ func (x *ProjectSelect) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *ProjectSelect) HasWorkspace() bool {
+func (x *ProjectSelect) HasLabels() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *ProjectSelect) HasConfig() bool {
+func (x *ProjectSelect) HasWorkspace() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *ProjectSelect) HasDateUpdated() bool {
+func (x *ProjectSelect) HasConfig() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *ProjectSelect) HasDateErased() bool {
+func (x *ProjectSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *ProjectSelect) HasDateCreated() bool {
+func (x *ProjectSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *ProjectSelect) HasStatus() bool {
+func (x *ProjectSelect) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *ProjectSelect) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
 func (x *ProjectSelect) ClearAll() {
@@ -822,33 +856,38 @@ func (x *ProjectSelect) ClearDesc() {
 	x.xxx_hidden_Desc = false
 }
 
-func (x *ProjectSelect) ClearWorkspace() {
+func (x *ProjectSelect) ClearLabels() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *ProjectSelect) ClearWorkspace() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_Workspace = false
 }
 
 func (x *ProjectSelect) ClearConfig() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_Config = false
 }
 
 func (x *ProjectSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *ProjectSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *ProjectSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateCreated = false
 }
 
 func (x *ProjectSelect) ClearStatus() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_Status = false
 }
 
@@ -859,6 +898,7 @@ type ProjectSelect_builder struct {
 	Alias       *bool
 	Name        *bool
 	Desc        *bool
+	Labels      *bool
 	Workspace   *bool
 	Config      *bool
 	DateUpdated *bool
@@ -872,43 +912,47 @@ func (b0 ProjectSelect_builder) Build() *ProjectSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
 		x.xxx_hidden_All = *b.All
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 11)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
 		x.xxx_hidden_Desc = *b.Desc
 	}
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
+		x.xxx_hidden_Labels = *b.Labels
+	}
 	if b.Workspace != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
 		x.xxx_hidden_Workspace = *b.Workspace
 	}
 	if b.Config != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
 		x.xxx_hidden_Config = *b.Config
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.Status != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
 		x.xxx_hidden_Status = *b.Status
 	}
 	return m0
@@ -920,6 +964,7 @@ type ProjectPatchRequest struct {
 	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Config           *string                `protobuf:"bytes,18,opt,name=config"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
@@ -993,6 +1038,13 @@ func (x *ProjectPatchRequest) GetDesc() string {
 	return ""
 }
 
+func (x *ProjectPatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *ProjectPatchRequest) GetConfig() string {
 	if x != nil {
 		if x.xxx_hidden_Config != nil {
@@ -1037,22 +1089,26 @@ func (x *ProjectPatchRequest) SetRef(v *ProjectRef) {
 
 func (x *ProjectPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
 }
 
 func (x *ProjectPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
 }
 
 func (x *ProjectPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
+}
+
+func (x *ProjectPatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *ProjectPatchRequest) SetConfig(v string) {
 	x.xxx_hidden_Config = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
 }
 
 func (x *ProjectPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1061,7 +1117,7 @@ func (x *ProjectPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *ProjectPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
 }
 
 func (x *ProjectPatchRequest) SetStatus(v *ProjectStatus) {
@@ -1070,7 +1126,7 @@ func (x *ProjectPatchRequest) SetStatus(v *ProjectStatus) {
 
 func (x *ProjectPatchRequest) SetStatusNull(v bool) {
 	x.xxx_hidden_StatusNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
 }
 
 func (x *ProjectPatchRequest) HasRef() bool {
@@ -1105,7 +1161,7 @@ func (x *ProjectPatchRequest) HasConfig() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
 func (x *ProjectPatchRequest) HasDateUpdated() bool {
@@ -1119,7 +1175,7 @@ func (x *ProjectPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *ProjectPatchRequest) HasStatus() bool {
@@ -1133,7 +1189,7 @@ func (x *ProjectPatchRequest) HasStatusNull() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *ProjectPatchRequest) ClearRef() {
@@ -1156,7 +1212,7 @@ func (x *ProjectPatchRequest) ClearDesc() {
 }
 
 func (x *ProjectPatchRequest) ClearConfig() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_Config = nil
 }
 
@@ -1165,7 +1221,7 @@ func (x *ProjectPatchRequest) ClearDateUpdated() {
 }
 
 func (x *ProjectPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -1174,7 +1230,7 @@ func (x *ProjectPatchRequest) ClearStatus() {
 }
 
 func (x *ProjectPatchRequest) ClearStatusNull() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_StatusNull = false
 }
 
@@ -1185,6 +1241,7 @@ type ProjectPatchRequest_builder struct {
 	Alias  *string
 	Name   *string
 	Desc   *string
+	Labels map[string]string
 	Config *string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
@@ -1214,29 +1271,30 @@ func (b0 ProjectPatchRequest_builder) Build() *ProjectPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
 		x.xxx_hidden_Desc = b.Desc
 	}
+	x.xxx_hidden_Labels = b.Labels
 	if b.Config != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
 		x.xxx_hidden_Config = b.Config
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_Status = b.Status
 	if b.StatusNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
 		x.xxx_hidden_StatusNull = *b.StatusNull
 	}
 	return m0
@@ -4254,16 +4312,20 @@ var File_cxz_project_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17cxz/project_svc.g.proto\x12\x03cxz\x1a\x17cxz/account_svc.g.proto\x1a\x11cxz/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xa5\x02\n" +
+	"\x17cxz/project_svc.g.proto\x12\x03cxz\x1a\x17cxz/account_svc.g.proto\x1a\x11cxz/project.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\x9c\x03\n" +
 	"\x11ProjectAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12#\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12:\n" +
+	"\x06labels\x18\a \x03(\v2\".cxz.ProjectAddRequest.LabelsEntryR\x06labels\x12#\n" +
 	"\tworkspace\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\tworkspace\x12\x1d\n" +
 	"\x06config\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x06config\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12*\n" +
-	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status\"b\n" +
+	"\x06status\x18\x10 \x01(\v2\x12.cxz.ProjectStatusR\x06status\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"b\n" +
 	"\x11ProjectGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12*\n" +
 	"\x06select\x18\x02 \x01(\v2\x12.cxz.ProjectSelectR\x06select\"\x82\x01\n" +
@@ -4275,31 +4337,36 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"runtime_id\x18\n" +
 	" \x01(\tB\x02\x18\x01H\x00R\truntimeIdB\x05\n" +
-	"\x03key\"\x94\x02\n" +
+	"\x03key\"\xac\x02\n" +
 	"\rProjectSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x1c\n" +
+	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12\x1c\n" +
 	"\tworkspace\x18\b \x01(\bR\tworkspace\x12\x16\n" +
 	"\x06config\x18\t \x01(\bR\x06config\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12\x16\n" +
-	"\x06status\x18\x10 \x01(\bR\x06status\"\xc8\x02\n" +
+	"\x06status\x18\x10 \x01(\bR\x06status\"\xc1\x03\n" +
 	"\x13ProjectPatchRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12\x16\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x12<\n" +
+	"\x06labels\x18\x0e \x03(\v2$.cxz.ProjectPatchRequest.LabelsEntryR\x06labels\x12\x16\n" +
 	"\x06config\x18\x12 \x01(\tR\x06config\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12*\n" +
 	"\x06status\x18  \x01(\v2\x12.cxz.ProjectStatusR\x06status\x12\x1f\n" +
 	"\vstatus_null\x18! \x01(\bR\n" +
-	"statusNull\"\\\n" +
+	"statusNull\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +
 	"\x13ProjectApplyRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
@@ -4417,7 +4484,7 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x04Stop\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x12+\n" +
 	"\x06Remove\x12\x13.cxz.ProjectControl\x1a\f.cxz.ProjectB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_project_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_cxz_project_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_cxz_project_svc_g_proto_goTypes = []any{
 	(*ProjectAddRequest)(nil),          // 0: cxz.ProjectAddRequest
 	(*ProjectGetRequest)(nil),          // 1: cxz.ProjectGetRequest
@@ -4450,83 +4517,87 @@ var file_cxz_project_svc_g_proto_goTypes = []any{
 	(*DeleteSecretFileRequest)(nil),    // 28: cxz.DeleteSecretFileRequest
 	(*ProjectStartRequest)(nil),        // 29: cxz.ProjectStartRequest
 	(*ProjectControl)(nil),             // 30: cxz.ProjectControl
-	(*timestamppb.Timestamp)(nil),      // 31: google.protobuf.Timestamp
-	(*ProjectStatus)(nil),              // 32: cxz.ProjectStatus
-	(*patchpb.Patch)(nil),              // 33: patch.Patch
-	(*Project)(nil),                    // 34: cxz.Project
-	(*AccountRef)(nil),                 // 35: cxz.AccountRef
+	nil,                                // 31: cxz.ProjectAddRequest.LabelsEntry
+	nil,                                // 32: cxz.ProjectPatchRequest.LabelsEntry
+	(*timestamppb.Timestamp)(nil),      // 33: google.protobuf.Timestamp
+	(*ProjectStatus)(nil),              // 34: cxz.ProjectStatus
+	(*patchpb.Patch)(nil),              // 35: patch.Patch
+	(*Project)(nil),                    // 36: cxz.Project
+	(*AccountRef)(nil),                 // 37: cxz.AccountRef
 }
 var file_cxz_project_svc_g_proto_depIdxs = []int32{
-	31, // 0: cxz.ProjectAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	32, // 1: cxz.ProjectAddRequest.status:type_name -> cxz.ProjectStatus
-	2,  // 2: cxz.ProjectGetRequest.ref:type_name -> cxz.ProjectRef
-	3,  // 3: cxz.ProjectGetRequest.select:type_name -> cxz.ProjectSelect
-	2,  // 4: cxz.ProjectPatchRequest.ref:type_name -> cxz.ProjectRef
-	31, // 5: cxz.ProjectPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	32, // 6: cxz.ProjectPatchRequest.status:type_name -> cxz.ProjectStatus
-	2,  // 7: cxz.ProjectApplyRequest.ref:type_name -> cxz.ProjectRef
-	33, // 8: cxz.ProjectApplyRequest.patch:type_name -> patch.Patch
-	9,  // 9: cxz.ProjectListRequest.filters:type_name -> cxz.ProjectFilter
-	34, // 10: cxz.ProjectListResponse.items:type_name -> cxz.Project
-	2,  // 11: cxz.ProjectFilter.ref:type_name -> cxz.ProjectRef
-	9,  // 12: cxz.ProjectWatchRequest.filters:type_name -> cxz.ProjectFilter
-	12, // 13: cxz.ProjectWatchResponse.items:type_name -> cxz.ProjectWatchItem
-	34, // 14: cxz.ProjectWatchItem.value:type_name -> cxz.Project
-	2,  // 15: cxz.ProjectTerminalRequest.ref:type_name -> cxz.ProjectRef
-	2,  // 16: cxz.ProjectLoginRequest.ref:type_name -> cxz.ProjectRef
-	35, // 17: cxz.ProjectLoginRequest.account:type_name -> cxz.AccountRef
-	2,  // 18: cxz.ProjectPathsRequest.ref:type_name -> cxz.ProjectRef
-	19, // 19: cxz.ProjectPathsReply.entries:type_name -> cxz.ProjectPathEntry
-	2,  // 20: cxz.ProjectDownloadRequest.ref:type_name -> cxz.ProjectRef
-	2,  // 21: cxz.ProjectEditorRequest.ref:type_name -> cxz.ProjectRef
-	2,  // 22: cxz.ProjectEditorTunnelRequest.ref:type_name -> cxz.ProjectRef
-	2,  // 23: cxz.PutSecretFileRequest.ref:type_name -> cxz.ProjectRef
-	2,  // 24: cxz.DeleteSecretFileRequest.ref:type_name -> cxz.ProjectRef
-	2,  // 25: cxz.ProjectStartRequest.ref:type_name -> cxz.ProjectRef
-	2,  // 26: cxz.ProjectControl.ref:type_name -> cxz.ProjectRef
-	0,  // 27: cxz.ProjectService.Add:input_type -> cxz.ProjectAddRequest
-	1,  // 28: cxz.ProjectService.Get:input_type -> cxz.ProjectGetRequest
-	4,  // 29: cxz.ProjectService.Patch:input_type -> cxz.ProjectPatchRequest
-	5,  // 30: cxz.ProjectService.Apply:input_type -> cxz.ProjectApplyRequest
-	2,  // 31: cxz.ProjectService.Erase:input_type -> cxz.ProjectRef
-	7,  // 32: cxz.ProjectService.List:input_type -> cxz.ProjectListRequest
-	10, // 33: cxz.ProjectService.Watch:input_type -> cxz.ProjectWatchRequest
-	13, // 34: cxz.ProjectService.Terminal:input_type -> cxz.ProjectTerminalRequest
-	15, // 35: cxz.ProjectService.AuxiliaryLogin:input_type -> cxz.ProjectLoginRequest
-	15, // 36: cxz.ProjectService.SessionLogin:input_type -> cxz.ProjectLoginRequest
-	17, // 37: cxz.ProjectService.Paths:input_type -> cxz.ProjectPathsRequest
-	20, // 38: cxz.ProjectService.Download:input_type -> cxz.ProjectDownloadRequest
-	22, // 39: cxz.ProjectService.Editor:input_type -> cxz.ProjectEditorRequest
-	24, // 40: cxz.ProjectService.EditorTunnel:input_type -> cxz.ProjectEditorTunnelRequest
-	26, // 41: cxz.ProjectService.PutSecretFile:input_type -> cxz.PutSecretFileRequest
-	28, // 42: cxz.ProjectService.DeleteSecretFile:input_type -> cxz.DeleteSecretFileRequest
-	29, // 43: cxz.ProjectService.Start:input_type -> cxz.ProjectStartRequest
-	30, // 44: cxz.ProjectService.Stop:input_type -> cxz.ProjectControl
-	30, // 45: cxz.ProjectService.Remove:input_type -> cxz.ProjectControl
-	34, // 46: cxz.ProjectService.Add:output_type -> cxz.Project
-	34, // 47: cxz.ProjectService.Get:output_type -> cxz.Project
-	34, // 48: cxz.ProjectService.Patch:output_type -> cxz.Project
-	34, // 49: cxz.ProjectService.Apply:output_type -> cxz.Project
-	6,  // 50: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
-	8,  // 51: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
-	11, // 52: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
-	14, // 53: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
-	16, // 54: cxz.ProjectService.AuxiliaryLogin:output_type -> cxz.ProjectLoginOutput
-	16, // 55: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
-	18, // 56: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
-	21, // 57: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
-	23, // 58: cxz.ProjectService.Editor:output_type -> cxz.ProjectEditorReply
-	25, // 59: cxz.ProjectService.EditorTunnel:output_type -> cxz.ProjectEditorTunnelReply
-	27, // 60: cxz.ProjectService.PutSecretFile:output_type -> cxz.SecretFileReply
-	27, // 61: cxz.ProjectService.DeleteSecretFile:output_type -> cxz.SecretFileReply
-	34, // 62: cxz.ProjectService.Start:output_type -> cxz.Project
-	34, // 63: cxz.ProjectService.Stop:output_type -> cxz.Project
-	34, // 64: cxz.ProjectService.Remove:output_type -> cxz.Project
-	46, // [46:65] is the sub-list for method output_type
-	27, // [27:46] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	31, // 0: cxz.ProjectAddRequest.labels:type_name -> cxz.ProjectAddRequest.LabelsEntry
+	33, // 1: cxz.ProjectAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	34, // 2: cxz.ProjectAddRequest.status:type_name -> cxz.ProjectStatus
+	2,  // 3: cxz.ProjectGetRequest.ref:type_name -> cxz.ProjectRef
+	3,  // 4: cxz.ProjectGetRequest.select:type_name -> cxz.ProjectSelect
+	2,  // 5: cxz.ProjectPatchRequest.ref:type_name -> cxz.ProjectRef
+	32, // 6: cxz.ProjectPatchRequest.labels:type_name -> cxz.ProjectPatchRequest.LabelsEntry
+	33, // 7: cxz.ProjectPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	34, // 8: cxz.ProjectPatchRequest.status:type_name -> cxz.ProjectStatus
+	2,  // 9: cxz.ProjectApplyRequest.ref:type_name -> cxz.ProjectRef
+	35, // 10: cxz.ProjectApplyRequest.patch:type_name -> patch.Patch
+	9,  // 11: cxz.ProjectListRequest.filters:type_name -> cxz.ProjectFilter
+	36, // 12: cxz.ProjectListResponse.items:type_name -> cxz.Project
+	2,  // 13: cxz.ProjectFilter.ref:type_name -> cxz.ProjectRef
+	9,  // 14: cxz.ProjectWatchRequest.filters:type_name -> cxz.ProjectFilter
+	12, // 15: cxz.ProjectWatchResponse.items:type_name -> cxz.ProjectWatchItem
+	36, // 16: cxz.ProjectWatchItem.value:type_name -> cxz.Project
+	2,  // 17: cxz.ProjectTerminalRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 18: cxz.ProjectLoginRequest.ref:type_name -> cxz.ProjectRef
+	37, // 19: cxz.ProjectLoginRequest.account:type_name -> cxz.AccountRef
+	2,  // 20: cxz.ProjectPathsRequest.ref:type_name -> cxz.ProjectRef
+	19, // 21: cxz.ProjectPathsReply.entries:type_name -> cxz.ProjectPathEntry
+	2,  // 22: cxz.ProjectDownloadRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 23: cxz.ProjectEditorRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 24: cxz.ProjectEditorTunnelRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 25: cxz.PutSecretFileRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 26: cxz.DeleteSecretFileRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 27: cxz.ProjectStartRequest.ref:type_name -> cxz.ProjectRef
+	2,  // 28: cxz.ProjectControl.ref:type_name -> cxz.ProjectRef
+	0,  // 29: cxz.ProjectService.Add:input_type -> cxz.ProjectAddRequest
+	1,  // 30: cxz.ProjectService.Get:input_type -> cxz.ProjectGetRequest
+	4,  // 31: cxz.ProjectService.Patch:input_type -> cxz.ProjectPatchRequest
+	5,  // 32: cxz.ProjectService.Apply:input_type -> cxz.ProjectApplyRequest
+	2,  // 33: cxz.ProjectService.Erase:input_type -> cxz.ProjectRef
+	7,  // 34: cxz.ProjectService.List:input_type -> cxz.ProjectListRequest
+	10, // 35: cxz.ProjectService.Watch:input_type -> cxz.ProjectWatchRequest
+	13, // 36: cxz.ProjectService.Terminal:input_type -> cxz.ProjectTerminalRequest
+	15, // 37: cxz.ProjectService.AuxiliaryLogin:input_type -> cxz.ProjectLoginRequest
+	15, // 38: cxz.ProjectService.SessionLogin:input_type -> cxz.ProjectLoginRequest
+	17, // 39: cxz.ProjectService.Paths:input_type -> cxz.ProjectPathsRequest
+	20, // 40: cxz.ProjectService.Download:input_type -> cxz.ProjectDownloadRequest
+	22, // 41: cxz.ProjectService.Editor:input_type -> cxz.ProjectEditorRequest
+	24, // 42: cxz.ProjectService.EditorTunnel:input_type -> cxz.ProjectEditorTunnelRequest
+	26, // 43: cxz.ProjectService.PutSecretFile:input_type -> cxz.PutSecretFileRequest
+	28, // 44: cxz.ProjectService.DeleteSecretFile:input_type -> cxz.DeleteSecretFileRequest
+	29, // 45: cxz.ProjectService.Start:input_type -> cxz.ProjectStartRequest
+	30, // 46: cxz.ProjectService.Stop:input_type -> cxz.ProjectControl
+	30, // 47: cxz.ProjectService.Remove:input_type -> cxz.ProjectControl
+	36, // 48: cxz.ProjectService.Add:output_type -> cxz.Project
+	36, // 49: cxz.ProjectService.Get:output_type -> cxz.Project
+	36, // 50: cxz.ProjectService.Patch:output_type -> cxz.Project
+	36, // 51: cxz.ProjectService.Apply:output_type -> cxz.Project
+	6,  // 52: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
+	8,  // 53: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
+	11, // 54: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
+	14, // 55: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
+	16, // 56: cxz.ProjectService.AuxiliaryLogin:output_type -> cxz.ProjectLoginOutput
+	16, // 57: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
+	18, // 58: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
+	21, // 59: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
+	23, // 60: cxz.ProjectService.Editor:output_type -> cxz.ProjectEditorReply
+	25, // 61: cxz.ProjectService.EditorTunnel:output_type -> cxz.ProjectEditorTunnelReply
+	27, // 62: cxz.ProjectService.PutSecretFile:output_type -> cxz.SecretFileReply
+	27, // 63: cxz.ProjectService.DeleteSecretFile:output_type -> cxz.SecretFileReply
+	36, // 64: cxz.ProjectService.Start:output_type -> cxz.Project
+	36, // 65: cxz.ProjectService.Stop:output_type -> cxz.Project
+	36, // 66: cxz.ProjectService.Remove:output_type -> cxz.Project
+	48, // [48:67] is the sub-list for method output_type
+	29, // [29:48] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_cxz_project_svc_g_proto_init() }
@@ -4548,7 +4619,7 @@ func file_cxz_project_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_project_svc_g_proto_rawDesc), len(file_cxz_project_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

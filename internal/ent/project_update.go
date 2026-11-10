@@ -72,6 +72,18 @@ func (_u *ProjectUpdate) SetNillableDesc(v *string) *ProjectUpdate {
 	return _u
 }
 
+// SetLabels sets the "labels" field.
+func (_u *ProjectUpdate) SetLabels(v map[string]string) *ProjectUpdate {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *ProjectUpdate) ClearLabels() *ProjectUpdate {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
 // SetConfig sets the "config" field.
 func (_u *ProjectUpdate) SetConfig(v string) *ProjectUpdate {
 	_u.mutation.SetConfig(v)
@@ -197,6 +209,15 @@ func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if e, ok := _u.mutation.FieldExpr(project.FieldDesc); ok {
 		_spec.SetField(project.FieldDesc, field.TypeString, e)
 	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(project.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldLabels); ok {
+		_spec.SetField(project.FieldLabels, field.TypeJson, e)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(project.FieldLabels, field.TypeJson)
+	}
 	if value, ok := _u.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
 	}
@@ -298,6 +319,18 @@ func (_u *ProjectUpdateOne) SetNillableDesc(v *string) *ProjectUpdateOne {
 	if v != nil {
 		_u.SetDesc(*v)
 	}
+	return _u
+}
+
+// SetLabels sets the "labels" field.
+func (_u *ProjectUpdateOne) SetLabels(v map[string]string) *ProjectUpdateOne {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *ProjectUpdateOne) ClearLabels() *ProjectUpdateOne {
+	_u.mutation.ClearLabels()
 	return _u
 }
 
@@ -455,6 +488,15 @@ func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err er
 	}
 	if e, ok := _u.mutation.FieldExpr(project.FieldDesc); ok {
 		_spec.SetField(project.FieldDesc, field.TypeString, e)
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(project.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(project.FieldLabels); ok {
+		_spec.SetField(project.FieldLabels, field.TypeJson, e)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(project.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)

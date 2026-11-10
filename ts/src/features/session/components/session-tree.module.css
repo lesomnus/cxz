@@ -6,6 +6,15 @@
   background: var(--ui-shade-32);
 }
 
+/* The glyph a person chose for the project, at the size of the label beside it:
+   the group header is how sessions are told apart in a long sidebar, and a name
+   in 11px monospace is not much to go on. */
+.projectIcon {
+  flex: none;
+  margin-inline-end: calc(var(--space) * 0.75);
+  vertical-align: -1px;
+}
+
 .project.project {
   color: var(--ui-muted);
   font-family: var(--ui-font-mono);

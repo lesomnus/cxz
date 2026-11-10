@@ -25,6 +25,8 @@ func (Project) Fields() []ent.Field {
 		field.String("alias"),
 		field.String("name"),
 		field.String("desc"),
+		field.Json("labels", map[string]string{}).
+			Optional(),
 		field.String("workspace").
 			Immutable(),
 		field.String("config"),

@@ -288,6 +288,11 @@ export const messages = {
   State: "상태",
   Alias: "별칭",
   Project: "프로젝트",
+  Icon: "아이콘",
+  None: "없음",
+  "Show the generic project glyph.": "기본 프로젝트 글리프를 표시합니다.",
+  "Shown wherever this project is listed. A display choice only; cxz does not read a meaning from it.":
+    "이 프로젝트가 표시되는 모든 곳에 나타납니다. 표시용 선택일 뿐이며 cxz는 여기서 의미를 읽지 않습니다.",
   Workspace: "워크스페이스",
   "Runtime ID": "런타임 ID",
   "Run ID": "실행 ID",

@@ -16,6 +16,7 @@ import {
   DatePicker,
 } from "@lesomnus/nox";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
+import { projectIconName } from "#src/shared/components/project-icon.ts";
 import type {
   SessionSearchVisit,
   SessionSearchSummary,
@@ -241,7 +242,14 @@ export function ConversationSearch({
           aria-label="Search filters"
         >
           <PrefixValueMenu
-            prefix={<ResourceIcon kind="projects" />}
+            prefix={
+              <ResourceIcon
+                kind="projects"
+                icon={projectIconName(
+                  projects.find((p) => projectId(p) === project),
+                )}
+              />
+            }
             label="Search project"
             value={project}
             className={styles.projectPicker}
@@ -255,6 +263,9 @@ export function ConversationSearch({
               ...projects.map((p) => ({
                 value: projectId(p),
                 label: p.name || p.alias,
+                icon: (
+                  <ResourceIcon kind="projects" icon={projectIconName(p)} />
+                ),
                 searchText: `${p.alias} ${p.workspace}`,
               })),
             ]}
