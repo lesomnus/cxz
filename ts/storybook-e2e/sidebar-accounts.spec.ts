@@ -69,3 +69,77 @@ test("an account-free connection shows an empty state", async ({ page }) => {
     page.getByRole("dialog", { name: "Account usage" }),
   ).toContainText("No accounts");
 });
+
+test("usage lights start in row order, accelerate and take longer for longer fills", async ({
+  page,
+}, testInfo) => {
+  await page.goto(
+    "/iframe.html?id=accounts-sidebar--usage-reveal&viewMode=story",
+  );
+  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  const dialog = page.getByRole("dialog", { name: "Account usage" });
+  const rows = dialog.getByRole("listitem");
+  await expect(rows.nth(1).getByLabel("28% remaining")).toBeVisible();
+  // A faster lower response must not overtake the still-loading first row.
+  await expect(
+    rows.nth(0).getByLabel("Remaining usage unavailable"),
+  ).toHaveAttribute("aria-busy", "true");
+  await expect(rows.nth(1)).toHaveAttribute("data-usage-visible", "false");
+  await expect(rows.nth(0).getByLabel("88% remaining")).toBeVisible();
+  await expect(rows.nth(1)).toHaveAttribute("data-usage-visible", "true");
+  const motion = await rows.evaluateAll((elements) =>
+    elements.map((element) => {
+      const animation = element
+        .getAnimations({ subtree: true })
+        .find(
+          (animation) =>
+            animation instanceof CSSAnimation &&
+            animation.animationName.includes("usageEnter"),
+        )!;
+      const duration = Number(animation.effect!.getTiming().duration);
+      const start = Number(animation.startTime);
+      animation.pause();
+      const scales = [0.2, 0.4, 0.6, 0.8].map((progress) => {
+        animation.currentTime = duration * progress;
+        return new DOMMatrixReadOnly(
+          getComputedStyle(element, "::before").transform,
+        ).a;
+      });
+      return { duration, start, scales };
+    }),
+  );
+  expect(motion[1].start).toBeGreaterThan(motion[0].start);
+  expect(motion[0].duration).toBeGreaterThan(motion[1].duration);
+  for (const { scales } of motion) {
+    expect(scales[3] - scales[2]).toBeGreaterThan(scales[1] - scales[0]);
+    expect(scales[0]).toBeGreaterThan(0);
+    expect(scales[3]).toBeLessThan(1);
+  }
+  await dialog.screenshot({ path: testInfo.outputPath("usage-reveal.png") });
+});
+
+test("reduced motion shows the final usage fill without animating", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/iframe.html?id=accounts-sidebar--default&viewMode=story");
+  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  const row = page
+    .getByRole("dialog", { name: "Account usage" })
+    .getByRole("listitem")
+    .first();
+  await expect(row).toHaveAttribute("data-usage-visible", "true");
+  const result = await row.evaluate((element) => ({
+    scale: new DOMMatrixReadOnly(
+      getComputedStyle(element, "::before").transform,
+    ).a,
+    animated: element
+      .getAnimations({ subtree: true })
+      .some(
+        (animation) =>
+          animation instanceof CSSAnimation &&
+          animation.animationName.includes("usageEnter"),
+      ),
+  }));
+  expect(result).toEqual({ scale: 1, animated: false });
+});

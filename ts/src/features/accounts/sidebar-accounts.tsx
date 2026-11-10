@@ -110,6 +110,33 @@ function AccountItems({ c, sessions }: { c: Connection; sessions: Session[] }) {
   const accounts = useRemote((signal) => listAccounts(c, signal), [c], {
     cache: { store: c.reads, key: ACCOUNT_LIST_KEY, ttl: ACCOUNT_INFO_TTL },
   });
+  const [ready, setReady] = useState<ReadonlySet<string>>(() => new Set());
+  const [revealed, setRevealed] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const lastStart = useRef(-Infinity);
+  const markReady = useCallback((identity: string) => {
+    setReady((current) =>
+      current.has(identity) ? current : new Set(current).add(identity),
+    );
+  }, []);
+  useEffect(() => {
+    const next = accounts.data?.find(
+      (account) => !revealed.has(key(account.id) || account.alias),
+    );
+    if (!next) return;
+    const identity = key(next.id) || next.alias;
+    if (!ready.has(identity)) return;
+    // Metadata may arrive out of order; stagger starts in the displayed order.
+    const timer = setTimeout(
+      () => {
+        lastStart.current = performance.now();
+        setRevealed((current) => new Set(current).add(identity));
+      },
+      Math.max(0, lastStart.current + 120 - performance.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [accounts.data, ready, revealed]);
   return (
     <MenuScrollArea aria-busy={accounts.loading}>
       <div role="list" aria-label="Accounts">
@@ -119,6 +146,8 @@ function AccountItems({ c, sessions }: { c: Connection; sessions: Session[] }) {
             c={c}
             account={account}
             sessions={sessionsForAccount(account, sessions)}
+            revealed={revealed.has(key(account.id) || account.alias)}
+            onReady={markReady}
           />
         ))}
       </div>
@@ -139,25 +168,37 @@ function AccountItem({
   c,
   account,
   sessions,
+  revealed,
+  onReady,
 }: {
   c: Connection;
   account: Account;
   sessions: Session[];
+  revealed: boolean;
+  onReady: (identity: string) => void;
 }) {
+  const identity = account.id.length ? key(account.id) : account.alias;
   const quota = useAccountQuota({
     c,
     agent: account.agent,
     sessions,
-    identity: account.id.length ? key(account.id) : account.alias,
+    identity,
   });
   const remaining = quota.data?.remaining;
+  const fraction = Math.max(0, Math.min(100, remaining ?? 0)) / 100;
+  useEffect(() => {
+    if (remaining !== undefined || !quota.loading) onReady(identity);
+  }, [identity, remaining, quota.loading, onReady]);
   return (
     <div
       role="listitem"
       className={styles.item}
+      data-usage-visible={revealed && remaining !== undefined}
       style={
         {
-          "--usage-fill": `${Math.max(0, Math.min(100, remaining ?? 0))}%`,
+          "--usage-fill": `${fraction * 100}%`,
+          // Constant acceleration makes duration proportional to sqrt(distance).
+          "--usage-duration": `${1200 * Math.sqrt(fraction)}ms`,
         } as CSSProperties
       }
     >

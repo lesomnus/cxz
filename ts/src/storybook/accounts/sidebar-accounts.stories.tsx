@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { create } from "@bufbuild/protobuf";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { SessionSchema } from "#gen/cxz/session_pb";
+import { SessionTranscriptReplySchema } from "#gen/cxz/session_svc_pb";
 import { createWorkspaceRouter } from "#src/app/router.tsx";
 import { SidebarAccounts } from "#src/features/accounts/sidebar-accounts.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
@@ -13,24 +14,71 @@ import { projectFixtureId } from "../project-id";
 function SidebarPreview({
   noAccounts = false,
   quotaRemaining = 64,
+  quotaDelayMs = 0,
+  personalRemaining,
 }: {
   noAccounts?: boolean;
   quotaRemaining?: number | null;
+  quotaDelayMs?: number;
+  personalRemaining?: number;
 }) {
   const [reads, setReads] = useState(0);
-  const [c] = useState(() =>
-    resourceFixture({
+  const [c] = useState(() => {
+    const c = resourceFixture({
       noAccounts,
       quotaRemaining,
       onRead: () => setReads((value) => value + 1),
-    }),
-  );
+    });
+    const transcript = c.sessions.transcript;
+    c.sessions.transcript = async (request, options) => {
+      if (
+        request.ref?.key?.value === "personal-review" &&
+        personalRemaining !== undefined
+      ) {
+        setReads((value) => value + 1);
+        return create(SessionTranscriptReplySchema, {
+          metadata: [
+            {
+              seq: 1n,
+              timeMs: BigInt(Date.now()),
+              kind: "usage",
+              text: "get_usage",
+              payload: new TextEncoder().encode(
+                JSON.stringify({
+                  rate_limits: {
+                    five_hour: {
+                      utilization: 100 - personalRemaining,
+                      resets_at: Math.floor(Date.now() / 1000) + 7200,
+                    },
+                  },
+                }),
+              ),
+            },
+          ],
+        });
+      }
+      if (quotaDelayMs)
+        await new Promise((resolve) => setTimeout(resolve, quotaDelayMs));
+      options?.signal?.throwIfAborted();
+      return transcript(request, options);
+    };
+    return c;
+  });
   const [sessions] = useState(() => [
     create(SessionSchema, {
       runtimeId: "demo-review",
       agent: "codex",
       account: { id: projectFixtureId(10) },
     }),
+    ...(personalRemaining === undefined
+      ? []
+      : [
+          create(SessionSchema, {
+            runtimeId: "personal-review",
+            agent: "claude",
+            account: { id: projectFixtureId(11) },
+          }),
+        ]),
   ]);
   const [router] = useState(() =>
     createWorkspaceRouter(
@@ -96,7 +144,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The actual sidebar hover menu. Account metadata and quota snapshots share the Accounts page's connection cache. No account reads occur until the preview opens; unavailable usage stays unknown rather than showing zero. Account rows are informational and have no links. Keyboard focus opens the preview, and Escape dismisses it.",
+          "The actual sidebar hover menu. Account metadata and quota snapshots share the Accounts page's connection cache. No account reads occur until the preview opens; unavailable usage stays unknown rather than showing zero. Gradients enter from left to right with constant acceleration: longer fills take longer. Starts are staggered from top to bottom even when responses arrive out of order; cached previews replay on reopening. Reduced motion shows the final fill without movement. Account rows are informational and have no links. Keyboard focus opens the preview, and Escape dismisses it.",
       },
     },
   },
@@ -106,3 +154,14 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const UsageUnavailable: Story = { args: { quotaRemaining: null } };
 export const Empty: Story = { args: { noAccounts: true } };
+export const UsageReveal: Story = {
+  args: { quotaRemaining: 88, quotaDelayMs: 800, personalRemaining: 28 },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The lower account's usage arrives first. Its light waits for the top account, then follows it; the longer upper fill takes more time to finish. Close and reopen to replay from cached metadata.",
+      },
+    },
+  },
+};
