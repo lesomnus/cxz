@@ -13,7 +13,11 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
-import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
+import {
+  ResourceFields as Fields,
+  ResourceFieldsGroup,
+  ResourceIdentityFields,
+} from "#src/shared/components/resource-fields.tsx";
 import { ProjectIconPicker } from "#src/shared/components/project-icon-picker.tsx";
 import { type ProjectIconName } from "#src/shared/icons/icon.tsx";
 import { projectIconName } from "#src/shared/components/project-icon.ts";
@@ -259,10 +263,8 @@ function ProjectDashboard({
     <ResourceDashboard actionsFirstOnNarrow>
       <ResourceDashboardColumn kind="information">
         <Section aria-label={t("Information")}>
-          <div className={styles.informationFields}>
-            <Fields
-              columns={4}
-              className={styles.identityFields}
+          <ResourceFieldsGroup className={styles.informationFields}>
+            <ResourceIdentityFields
               rows={[
                 {
                   label: t("Name"),
@@ -282,7 +284,10 @@ function ProjectDashboard({
                   ),
                   identifier: true,
                 },
-                {
+              ]}
+              trailing={{
+                width: "var(--project-preview-size)",
+                field: {
                   label: t("Project icon preview"),
                   hideLabel: true,
                   className: styles.iconPreview,
@@ -294,7 +299,7 @@ function ProjectDashboard({
                     />
                   ),
                 },
-              ]}
+              }}
             />
             <Fields
               rows={[
@@ -332,7 +337,7 @@ function ProjectDashboard({
                 },
               ]}
             />
-          </div>
+          </ResourceFieldsGroup>
           {p.status?.error && (
             <ErrorNotice api className={styles.errors} error={p.status.error} />
           )}

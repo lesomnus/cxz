@@ -18,17 +18,17 @@ for (const width of [1280, 390]) {
     await row.getByRole("checkbox").check();
     const original = await details.boundingBox();
     await details
-      .getByRole("button", { name: "Edit Display name", exact: true })
+      .getByRole("button", { name: "Edit Name", exact: true })
       .click();
     const name = page.getByRole("dialog", {
-      name: "Edit Display name",
+      name: "Edit Name",
       exact: true,
     });
     await name.getByRole("textbox").fill("Renamed account");
     await name.getByRole("textbox").press("Enter");
     await expect(name).toHaveCount(0);
     await expect(
-      details.getByRole("button", { name: "Edit Display name", exact: true }),
+      details.getByRole("button", { name: "Edit Name", exact: true }),
     ).toHaveText("Renamed account");
     await expect(row.getByRole("checkbox")).toBeChecked();
     expect(await details.boundingBox()).toEqual(original);
@@ -44,7 +44,7 @@ for (const width of [1280, 390]) {
       renamed.getByRole("button", { name: "Edit Alias", exact: true }),
     ).toHaveText("renamed");
     await expect(
-      renamed.getByRole("button", { name: "Edit Display name", exact: true }),
+      renamed.getByRole("button", { name: "Edit Name", exact: true }),
     ).toHaveText("Renamed account");
     await expect(renamed.locator("tbody tr")).toHaveCount(2);
     await expect(
@@ -79,11 +79,9 @@ test("account edits retain drafts after validation and save failures", async ({
     "/iframe.html?id=resources-views--account-edit-failure&viewMode=story",
   );
   const work = page.locator('[data-account="work"]');
-  await work
-    .getByRole("button", { name: "Edit Display name", exact: true })
-    .click();
+  await work.getByRole("button", { name: "Edit Name", exact: true }).click();
   const name = page.getByRole("dialog", {
-    name: "Edit Display name",
+    name: "Edit Name",
     exact: true,
   });
   await name.getByRole("textbox").fill(" ");
@@ -96,7 +94,7 @@ test("account edits retain drafts after validation and save failures", async ({
   await name.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(name).toHaveCount(0);
   await expect(
-    work.getByRole("button", { name: "Edit Display name", exact: true }),
+    work.getByRole("button", { name: "Edit Name", exact: true }),
   ).toHaveText("Retry name");
   await work.getByRole("button", { name: "Edit Alias", exact: true }).click();
   const alias = page.getByRole("dialog", { name: "Edit Alias", exact: true });

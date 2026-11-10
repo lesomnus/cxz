@@ -37,6 +37,40 @@ export type ResourceFieldRow =
       labelDetail?: ReactNode,
     ];
 
+export function ResourceFieldsGroup({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`${styles.group} ${className}`}>{children}</div>;
+}
+
+/** Names occupy the left half including gutters; the identifier starts at the midpoint. */
+export function ResourceIdentityFields({
+  rows,
+  trailing,
+}: {
+  rows: readonly [ResourceFieldRow, ResourceFieldRow, ResourceFieldRow];
+  trailing?: { field: ResourceFieldRow; width: string };
+}) {
+  return (
+    <ResourceFields
+      rows={trailing ? [...rows, trailing.field] : rows}
+      columns={trailing ? 4 : 3}
+      className={`${styles.identity} ${trailing ? styles.withTrailing : ""}`}
+      style={
+        trailing
+          ? ({
+              "--resource-identity-trailing-width": trailing.width,
+            } as CSSProperties)
+          : undefined
+      }
+    />
+  );
+}
+
 // Keep labels, values, help and field spacing consistent across resource pages.
 export function ResourceFields({
   rows,
@@ -44,6 +78,7 @@ export function ResourceFields({
   variant = "default",
   density = "default",
   className,
+  style,
 }: {
   rows: readonly ResourceFieldRow[];
   /** Equal-width count, or relative column weights such as [1, 2]. */
@@ -53,14 +88,18 @@ export function ResourceFields({
   /** Compact controls retain the tighter Account editable-value alignment. */
   density?: "default" | "compact";
   className?: string;
+  style?: CSSProperties;
 }) {
   return (
     <DescriptionListRoot
       columns={typeof columns === "number" ? undefined : columns}
       style={
-        typeof columns === "number"
-          ? ({ "--field-columns": columns } as CSSProperties)
-          : undefined
+        {
+          ...(typeof columns === "number"
+            ? { "--field-columns": columns }
+            : {}),
+          ...style,
+        } as CSSProperties
       }
       variant={variant}
       density={density}

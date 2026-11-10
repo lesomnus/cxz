@@ -97,7 +97,7 @@ for (const width of [1280, 390]) {
     ).toHaveAttribute("aria-busy", "false");
     expect(await panels(work)).toEqual(normal);
     const name = work
-      .getByRole("button", { name: "Edit Display name", exact: true })
+      .getByRole("button", { name: "Edit Name", exact: true })
       .locator(".button-content");
     expect(await name.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
       true,

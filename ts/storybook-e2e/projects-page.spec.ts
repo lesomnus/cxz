@@ -1389,13 +1389,9 @@ test("the project icon uses the shared searchable value menu with a named icon g
   const grid = (await info.locator("dl").first().boundingBox())!;
   expect(boxes[0].x).toBeCloseTo(grid.x, 1);
   expect(boxes[3].x + boxes[3].width).toBeCloseTo(grid.x + grid.width, 1);
-  expect(boxes[0].width).toBeCloseTo(grid.width / 4, 1);
-  expect(boxes[1].width).toBeCloseTo(grid.width / 4, 1);
+  expect(boxes[2].x - grid.x).toBeCloseTo(grid.width / 2, 1);
   const gap = boxes[1].x - boxes[0].x - boxes[0].width;
-  expect(boxes[2].width).toBeCloseTo(
-    grid.width / 2 - boxes[3].width - 3 * gap,
-    1,
-  );
+  expect(boxes[2].width).toBeCloseTo(grid.width / 2 - boxes[3].width - gap, 1);
   await trigger.click();
   const menu = page.getByRole("group", { name: "Icon choices", exact: true });
   const list = menu.getByRole("listbox");
