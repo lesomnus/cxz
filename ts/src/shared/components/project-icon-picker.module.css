@@ -1,7 +1,8 @@
 .picker {
   display: flex;
   min-width: 0;
-  width: 100%;
+  width: calc(100% + 2 * var(--ui-control-inline-inset));
+  margin: calc(-1 * var(--ui-space)) calc(-1 * var(--ui-control-inline-inset));
 }
 .picker.picker > :global(.value-menu) {
   --value-padding-block: calc(var(--ui-space) - (20px - 1.5em) / 2);

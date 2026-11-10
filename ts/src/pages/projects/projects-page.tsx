@@ -264,7 +264,6 @@ function ProjectDashboard({
             rows={[
               {
                 label: t("Name"),
-                columnSpan: 2,
                 value: editable("name", t("Name")),
               },
               {

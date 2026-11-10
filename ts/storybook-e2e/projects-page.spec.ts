@@ -1340,6 +1340,8 @@ test("the project icon uses the shared searchable value menu with a named icon g
     }),
   );
   for (const box of boxes.slice(0, 5)) expect(box.y).toBeCloseTo(boxes[0].y, 1);
+  for (const box of boxes.slice(0, 5))
+    expect(box.width).toBeCloseTo(boxes[0].width, 1);
   expect(boxes[5].y).toBeCloseTo(boxes[6].y, 1);
   expect(boxes[5].y).toBeGreaterThan(boxes[0].y);
   expect(boxes[5].width).toBeCloseTo(boxes[6].width, 1);
@@ -1350,6 +1352,30 @@ test("the project icon uses the shared searchable value menu with a named icon g
   });
   await expect(trigger).toHaveText("None");
   await expect(trigger.locator("svg")).toHaveCount(0);
+  const spacing = await info.evaluate((section) => {
+    const fields = [...section.querySelectorAll<HTMLElement>("dl > div")];
+    return [fields[0], fields[1], fields[3]].map((field) => {
+      const term = field.querySelector("dt")!.getBoundingClientRect();
+      const button = field.querySelector("button")!;
+      const content = button.querySelector(".button-content")!;
+      const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+      let text: Node | null;
+      while ((text = walker.nextNode())) if (text.textContent?.trim()) break;
+      const range = document.createRange();
+      range.selectNodeContents(text!);
+      const value = range.getBoundingClientRect();
+      return {
+        inset: value.left - term.left,
+        gap: value.top - term.bottom,
+        height: button.getBoundingClientRect().height,
+      };
+    });
+  });
+  for (const control of spacing) {
+    expect(control.inset).toBeCloseTo(0, 1);
+    expect(control.gap).toBeCloseTo(spacing[0].gap, 1);
+    expect(control.height).toBeCloseTo(spacing[0].height, 1);
+  }
   const preview = info.getByRole("img", { name: "Project icon preview" });
   await expect(preview).toBeVisible();
   const cell = (await fields.nth(4).boundingBox())!;
