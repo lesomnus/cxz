@@ -5,6 +5,7 @@ import {
   useId,
   useRef,
   useState,
+  type CSSProperties,
   type ReactElement,
 } from "react";
 import {
@@ -113,19 +114,12 @@ function AccountItems({ c, sessions }: { c: Connection; sessions: Session[] }) {
     <MenuScrollArea aria-busy={accounts.loading}>
       <div role="list" aria-label="Accounts">
         {accounts.data?.map((account) => (
-          <div
+          <AccountItem
             key={key(account.id) || account.alias}
-            role="listitem"
-            className={styles.item}
-          >
-            <MenuIcon icon={<AgentBrand agent={account.agent} />} />
-            <MenuItemLabel>{account.name || account.alias}</MenuItemLabel>
-            <Remaining
-              c={c}
-              account={account}
-              sessions={sessionsForAccount(account, sessions)}
-            />
-          </div>
+            c={c}
+            account={account}
+            sessions={sessionsForAccount(account, sessions)}
+          />
         ))}
       </div>
       {!accounts.data?.length && (
@@ -141,7 +135,7 @@ function AccountItems({ c, sessions }: { c: Connection; sessions: Session[] }) {
   );
 }
 
-function Remaining({
+function AccountItem({
   c,
   account,
   sessions,
@@ -158,27 +152,39 @@ function Remaining({
   });
   const remaining = quota.data?.remaining;
   return (
-    <span
-      className={styles.remaining}
-      aria-label={
-        remaining === undefined
-          ? "Remaining usage unavailable"
-          : `${Math.round(remaining)}% remaining`
+    <div
+      role="listitem"
+      className={styles.item}
+      style={
+        {
+          "--usage-fill": `${Math.max(0, Math.min(100, remaining ?? 0))}%`,
+        } as CSSProperties
       }
-      aria-busy={quota.loading}
     >
-      {remaining === undefined ? (
-        <span className={styles.unit}>{quota.loading ? "--" : "—"}</span>
-      ) : (
-        <>
-          <CompactNumber
-            mode="integer"
-            digits={3}
-            value={Math.round(remaining)}
-          />
-          <span className={styles.unit}>%</span>
-        </>
-      )}
-    </span>
+      <MenuIcon icon={<AgentBrand agent={account.agent} />} />
+      <MenuItemLabel>{account.name || account.alias}</MenuItemLabel>
+      <span
+        className={styles.remaining}
+        aria-label={
+          remaining === undefined
+            ? "Remaining usage unavailable"
+            : `${Math.round(remaining)}% remaining`
+        }
+        aria-busy={quota.loading}
+      >
+        {remaining === undefined ? (
+          <span className={styles.unit}>{quota.loading ? "--" : "—"}</span>
+        ) : (
+          <>
+            <CompactNumber
+              mode="integer"
+              digits={3}
+              value={Math.round(remaining)}
+            />
+            <span className={styles.unit}>%</span>
+          </>
+        )}
+      </span>
+    </div>
   );
 }

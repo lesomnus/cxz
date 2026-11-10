@@ -14,6 +14,14 @@
   gap: var(--ui-space);
   padding: var(--menu-item-padding-block, var(--ui-menu-item-padding-block))
     var(--menu-item-padding-inline, var(--ui-menu-item-padding-inline));
+  border-radius: var(--menu-inner-radius, 6px);
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--ui-shade-72) 35%, transparent),
+    color-mix(in srgb, var(--ui-shade-72) 6%, transparent)
+  );
+  background-size: var(--usage-fill, 0%) 100%;
+  background-repeat: no-repeat;
 }
 .remaining {
   display: inline-flex;
