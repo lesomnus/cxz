@@ -22,7 +22,7 @@
   content: "";
   position: absolute;
   inset: 0 auto 0 0;
-  width: var(--usage-fill, 0%);
+  width: 100%;
   border-radius: inherit;
   z-index: -1;
   background-image: linear-gradient(
@@ -30,26 +30,20 @@
     color-mix(in srgb, var(--ui-shade-115) 35%, transparent),
     color-mix(in srgb, var(--ui-shade-115) 6%, transparent)
   );
-  transform: scaleX(0);
+  transform: scaleX(var(--usage-progress, 0));
   transform-origin: left center;
 }
-.item[data-usage-visible="true"]::before {
-  transform: scaleX(1);
-  animation: usageEnter var(--usage-duration)
-    cubic-bezier(0.333333, 0, 0.666667, 0.333333) both;
-}
-@keyframes usageEnter {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
+.item[data-usage-animate="true"]::before {
+  transition: transform var(--usage-duration)
+    cubic-bezier(0.333333, 0, 0.666667, 0.333333);
 }
 @media (prefers-reduced-motion: reduce) {
-  .item[data-usage-visible="true"]::before {
-    animation: none;
+  .item[data-usage-animate="true"]::before {
+    transition: none;
   }
+}
+.hiddenNumber {
+  display: none;
 }
 .remaining {
   display: inline-flex;

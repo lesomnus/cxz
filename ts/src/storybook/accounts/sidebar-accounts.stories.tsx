@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@lesomnus/nox";
+import { key } from "@lesomnus/payday/store";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { create } from "@bufbuild/protobuf";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
@@ -8,6 +10,7 @@ import { createWorkspaceRouter } from "#src/app/router.tsx";
 import { SidebarAccounts } from "#src/features/accounts/sidebar-accounts.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
+import { accountQuotaKey } from "#src/shared/api/read-cache.ts";
 import { resourceFixture } from "../resource-fixture";
 import { projectFixtureId } from "../project-id";
 
@@ -16,17 +19,20 @@ function SidebarPreview({
   quotaRemaining = 64,
   quotaDelayMs = 0,
   personalRemaining,
+  usageControls = false,
 }: {
   noAccounts?: boolean;
   quotaRemaining?: number | null;
   quotaDelayMs?: number;
   personalRemaining?: number;
+  usageControls?: boolean;
 }) {
+  const quotaValue = useRef(quotaRemaining);
   const [reads, setReads] = useState(0);
   const [c] = useState(() => {
     const c = resourceFixture({
       noAccounts,
-      quotaRemaining,
+      quotaRemaining: () => quotaValue.current,
       onRead: () => setReads((value) => value + 1),
     });
     const transcript = c.sessions.transcript;
@@ -120,6 +126,44 @@ function SidebarPreview({
                 placeholder="Keep typing while hovering Accounts"
                 style={{ width: "100%" }}
               />
+              {usageControls && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "var(--ui-space)",
+                    marginTop: "var(--ui-space)",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {[40, 80].map((value) => (
+                    <Button
+                      key={value}
+                      onClick={() => {
+                        quotaValue.current = value;
+                        c.reads.expire(
+                          accountQuotaKey(key(projectFixtureId(10)), "codex", [
+                            "demo-review",
+                          ]),
+                        );
+                        window.dispatchEvent(new Event("focus"));
+                      }}
+                    >
+                      Update to {value}%
+                    </Button>
+                  ))}
+                  <Button
+                    onClick={() =>
+                      c.reads.invalidate(
+                        accountQuotaKey(key(projectFixtureId(10)), "codex", [
+                          "demo-review",
+                        ]),
+                      )
+                    }
+                  >
+                    Clear usage cache
+                  </Button>
+                </div>
+              )}
             </main>
           </div>
         ),
@@ -144,7 +188,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The actual sidebar hover menu. Account metadata and quota snapshots share the Accounts page's connection cache. No account reads occur until the preview opens; unavailable usage stays unknown rather than showing zero. Gradients enter from left to right with constant acceleration: longer fills take longer. Starts are staggered from top to bottom even when responses arrive out of order; cached previews replay on reopening. Reduced motion shows the final fill without movement. Account rows are informational and have no links. Keyboard focus opens the preview, and Escape dismisses it.",
+          "The actual sidebar hover menu. Account metadata and quota snapshots share the Accounts page's connection cache. No account reads occur until the preview opens; unavailable usage stays unknown rather than showing zero. Initial gradients enter from left to right with constant acceleration: longer fills take longer, with top-to-bottom starts even for out-of-order responses. Cached values appear immediately, and recent entrances have an account-scoped cooldown. Fresh updates transition the fill from its current position while CompactNumber slides changed digits. Reduced motion shows final values without movement. Account rows are informational and have no links. Keyboard focus opens the preview, and Escape dismisses it.",
       },
     },
   },
@@ -160,7 +204,18 @@ export const UsageReveal: Story = {
     docs: {
       description: {
         story:
-          "The lower account's usage arrives first. Its light waits for the top account, then follows it; the longer upper fill takes more time to finish. Close and reopen to replay from cached metadata.",
+          "The lower account's usage arrives first. Its light waits for the top account, then follows it; the longer upper fill takes more time to finish. Close and reopen to see cached values immediately.",
+      },
+    },
+  },
+};
+export const CachedUpdates: Story = {
+  args: { quotaRemaining: 64, quotaDelayMs: 200, usageControls: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Open once, then reopen to check the immediate cached display. Update to a different quota and reopen: the old cached value appears first, then both the gradient and digits move to the new value. Clearing the usage cache leaves the recent entrance cooldown intact.",
       },
     },
   },

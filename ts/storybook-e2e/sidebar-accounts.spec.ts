@@ -93,8 +93,9 @@ test("usage lights start in row order, accelerate and take longer for longer fil
         .getAnimations({ subtree: true })
         .find(
           (animation) =>
-            animation instanceof CSSAnimation &&
-            animation.animationName.includes("usageEnter"),
+            animation instanceof CSSTransition &&
+            animation.transitionProperty === "transform" &&
+            (animation.effect as KeyframeEffect).target === element,
         )!;
       const duration = Number(animation.effect!.getTiming().duration);
       const start = Number(animation.startTime);
@@ -137,9 +138,118 @@ test("reduced motion shows the final usage fill without animating", async ({
       .getAnimations({ subtree: true })
       .some(
         (animation) =>
-          animation instanceof CSSAnimation &&
-          animation.animationName.includes("usageEnter"),
+          animation instanceof CSSTransition &&
+          animation.transitionProperty === "transform" &&
+          (animation.effect as KeyframeEffect).target === element,
       ),
   }));
-  expect(result).toEqual({ scale: 1, animated: false });
+  expect(result.scale).toBeCloseTo(0.64);
+  expect(result.animated).toBe(false);
+});
+
+async function fillFrames(row: import("@playwright/test").Locator) {
+  return row.evaluate((element) => {
+    const animation = element
+      .getAnimations({ subtree: true })
+      .find(
+        (animation) =>
+          animation instanceof CSSTransition &&
+          animation.transitionProperty === "transform" &&
+          (animation.effect as KeyframeEffect).target === element,
+      );
+    return animation?.effect
+      ?.getKeyframes()
+      .map((frame) => new DOMMatrixReadOnly(frame.transform as string).a);
+  });
+}
+
+test("reopening cached usage shows the complete fill and number immediately", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=accounts-sidebar--default&viewMode=story");
+  const trigger = page.getByRole("link", { name: "Accounts", exact: true });
+  await trigger.hover();
+  const row = page
+    .getByRole("dialog", { name: "Account usage" })
+    .getByRole("listitem")
+    .first();
+  await expect(row).toHaveAttribute("data-usage-animate", "true");
+  await page.keyboard.press("Escape");
+  await page.mouse.move(500, 350);
+  await trigger.hover();
+  await expect(row.getByLabel("64% remaining")).toBeVisible();
+  await expect(row).toHaveAttribute("data-usage-animate", "false");
+  expect(await fillFrames(row)).toBeUndefined();
+  expect(
+    await row.evaluate(
+      (element) =>
+        new DOMMatrixReadOnly(getComputedStyle(element, "::before").transform)
+          .a,
+    ),
+  ).toBeCloseTo(0.64);
+  await expect(row.locator("[data-changing]")).toHaveCount(0);
+});
+
+test("fresh quota transitions the cached fill and digits, and retargets from an in-flight value", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=accounts-sidebar--cached-updates&viewMode=story",
+  );
+  const trigger = page.getByRole("link", { name: "Accounts", exact: true });
+  await trigger.hover();
+  const row = page
+    .getByRole("dialog", { name: "Account usage" })
+    .getByRole("listitem")
+    .first();
+  await expect(row.getByLabel("64% remaining")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Update to 40%" }).click();
+  await trigger.hover();
+  await expect(row.getByLabel("64% remaining")).toBeVisible();
+  await expect(row).toHaveAttribute("data-usage-animate", "false");
+  await expect(row.getByLabel("40% remaining")).toBeVisible();
+  const first = (await fillFrames(row))!;
+  expect(first[0]).toBeCloseTo(0.64);
+  expect(first[1]).toBeCloseTo(0.4);
+  await expect(row.locator("[data-changing]").first()).toBeVisible();
+  await page
+    .getByRole("button", { name: "Update to 80%" })
+    .dispatchEvent("click");
+  await expect(row.getByLabel("80% remaining")).toBeVisible();
+  const next = (await fillFrames(row))!;
+  expect(next[0]).toBeGreaterThan(0.4);
+  expect(next[0]).toBeLessThanOrEqual(0.64);
+  expect(next[1]).toBeCloseTo(0.8);
+});
+
+test("a recent reveal is suppressed even without quota cache, and resumes after the cooldown", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=accounts-sidebar--cached-updates&viewMode=story",
+  );
+  const trigger = page.getByRole("link", { name: "Accounts", exact: true });
+  const row = page
+    .getByRole("dialog", { name: "Account usage" })
+    .getByRole("listitem")
+    .first();
+  await trigger.hover();
+  await expect(row).toHaveAttribute("data-usage-animate", "true");
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Clear usage cache" }).click();
+  await trigger.hover();
+  await expect(row.getByLabel("64% remaining")).toBeVisible();
+  await expect(row).toHaveAttribute("data-usage-animate", "false");
+  expect(await fillFrames(row)).toBeUndefined();
+  await page.keyboard.press("Escape");
+  await page.clock.setFixedTime(
+    new Date((await page.evaluate(() => Date.now())) + 61_000),
+  );
+  await page.getByRole("button", { name: "Clear usage cache" }).click();
+  await trigger.hover();
+  await expect(row).toHaveAttribute("data-usage-animate", "true");
+  const frames = (await fillFrames(row))!;
+  expect(frames[0]).toBe(0);
+  expect(frames[1]).toBeCloseTo(0.64);
 });

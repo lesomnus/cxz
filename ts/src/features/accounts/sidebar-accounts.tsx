@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -13,6 +14,7 @@ import {
   MenuIcon,
   MenuItemLabel,
   MenuScrollArea,
+  useValueMotion,
 } from "@lesomnus/nox";
 import { key } from "@lesomnus/payday/store";
 import type { Account } from "#gen/cxz/account_pb";
@@ -28,6 +30,22 @@ import { AnchoredMenu } from "#src/shared/components/anchored-menu.tsx";
 import { listAccounts, sessionsForAccount } from "./account-data";
 import { useAccountQuota } from "./use-account-quota";
 import styles from "./sidebar-accounts.module.css";
+
+const entranceCooldown = 60_000;
+const entranceTimes = new WeakMap<Connection, Map<string, number>>();
+function recentEntrance(c: Connection, identity: string) {
+  return (
+    Date.now() - (entranceTimes.get(c)?.get(identity) ?? -Infinity) <
+    entranceCooldown
+  );
+}
+function rememberEntrance(c: Connection, identity: string) {
+  let times = entranceTimes.get(c);
+  if (!times) entranceTimes.set(c, (times = new Map()));
+  times.delete(identity);
+  times.set(identity, Date.now());
+  if (times.size > 256) times.delete(times.keys().next().value!);
+}
 
 export function SidebarAccounts({
   c,
@@ -110,14 +128,18 @@ function AccountItems({ c, sessions }: { c: Connection; sessions: Session[] }) {
   const accounts = useRemote((signal) => listAccounts(c, signal), [c], {
     cache: { store: c.reads, key: ACCOUNT_LIST_KEY, ttl: ACCOUNT_INFO_TTL },
   });
-  const [ready, setReady] = useState<ReadonlySet<string>>(() => new Set());
+  const [ready, setReady] = useState<ReadonlyMap<string, boolean>>(
+    () => new Map(),
+  );
   const [revealed, setRevealed] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
   const lastStart = useRef(-Infinity);
-  const markReady = useCallback((identity: string) => {
+  const markReady = useCallback((identity: string, skipEntrance: boolean) => {
     setReady((current) =>
-      current.has(identity) ? current : new Set(current).add(identity),
+      current.has(identity)
+        ? current
+        : new Map(current).set(identity, skipEntrance),
     );
   }, []);
   useEffect(() => {
@@ -127,6 +149,10 @@ function AccountItems({ c, sessions }: { c: Connection; sessions: Session[] }) {
     if (!next) return;
     const identity = key(next.id) || next.alias;
     if (!ready.has(identity)) return;
+    if (ready.get(identity)) {
+      setRevealed((current) => new Set(current).add(identity));
+      return;
+    }
     // Metadata may arrive out of order; stagger starts in the displayed order.
     const timer = setTimeout(
       () => {
@@ -175,7 +201,7 @@ function AccountItem({
   account: Account;
   sessions: Session[];
   revealed: boolean;
-  onReady: (identity: string) => void;
+  onReady: (identity: string, skipEntrance: boolean) => void;
 }) {
   const identity = account.id.length ? key(account.id) : account.alias;
   const quota = useAccountQuota({
@@ -185,20 +211,51 @@ function AccountItem({
     identity,
   });
   const remaining = quota.data?.remaining;
-  const fraction = Math.max(0, Math.min(100, remaining ?? 0)) / 100;
+  const [skipEntrance] = useState(
+    () => quota.fromCache || recentEntrance(c, identity),
+  );
+  const value = skipEntrance || revealed ? remaining : undefined;
+  const [motion, setMotion] = useState(() => ({
+    value,
+    animate: false,
+    duration: 0,
+  }));
+  if (motion.value !== value) {
+    // Native transitions retarget from the currently rendered position, including mid-flight updates.
+    setMotion({
+      value,
+      animate:
+        value !== undefined && (motion.value !== undefined || !skipEntrance),
+      duration:
+        1200 * Math.sqrt(Math.abs((value ?? 0) - (motion.value ?? 0)) / 100),
+    });
+  }
+  const numberMotion = useValueMotion({
+    animateInitial: false,
+    spatialDelay: false,
+    characterJitter: 0,
+    duration: motion.duration,
+    shouldAnimate: () => motion.animate,
+  });
+  useLayoutEffect(() => {
+    if (motion.animate) rememberEntrance(c, identity);
+  }, [c, identity, motion]);
   useEffect(() => {
-    if (remaining !== undefined || !quota.loading) onReady(identity);
-  }, [identity, remaining, quota.loading, onReady]);
+    if (remaining !== undefined || !quota.loading)
+      onReady(identity, skipEntrance);
+  }, [identity, remaining, quota.loading, onReady, skipEntrance]);
+  const fraction = Math.max(0, Math.min(100, motion.value ?? 0)) / 100;
   return (
     <div
       role="listitem"
       className={styles.item}
-      data-usage-visible={revealed && remaining !== undefined}
+      data-usage-visible={motion.value !== undefined}
+      data-usage-animate={motion.animate}
       style={
         {
-          "--usage-fill": `${fraction * 100}%`,
+          "--usage-progress": fraction,
           // Constant acceleration makes duration proportional to sqrt(distance).
-          "--usage-duration": `${1200 * Math.sqrt(fraction)}ms`,
+          "--usage-duration": `${motion.duration}ms`,
         } as CSSProperties
       }
     >
@@ -213,17 +270,19 @@ function AccountItem({
         }
         aria-busy={quota.loading}
       >
-        {remaining === undefined ? (
+        <CompactNumber
+          {...numberMotion}
+          mode="integer"
+          digits={3}
+          value={motion.value ?? NaN}
+          className={
+            motion.value === undefined ? styles.hiddenNumber : undefined
+          }
+        />
+        {motion.value === undefined ? (
           <span className={styles.unit}>{quota.loading ? "--" : "—"}</span>
         ) : (
-          <>
-            <CompactNumber
-              mode="integer"
-              digits={3}
-              value={Math.round(remaining)}
-            />
-            <span className={styles.unit}>%</span>
-          </>
+          <span className={styles.unit}>%</span>
         )}
       </span>
     </div>
