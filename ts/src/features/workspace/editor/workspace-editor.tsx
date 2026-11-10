@@ -30,6 +30,11 @@ import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
 import { EditorOptions } from "#src/shared/editor/editor-options.tsx";
 import { connectWorkspaceEditor } from "./editor-connect";
+import {
+  cacheDirectory,
+  toggleExpanded,
+  visibleDirectories,
+} from "./directory-cache";
 import styles from "./workspace-editor.module.css";
 
 type File = {
@@ -46,6 +51,11 @@ type Snapshot = {
   simulated: boolean;
   error: string;
   workspace: string;
+  // The explorer's listings and which directories are open, held per project
+  // beside the open files for the same reason: they describe the project, not
+  // the pane that is showing it. See directory-cache.ts.
+  directories: Map<string, ProjectPathEntry[]>;
+  expanded: Set<string>;
 };
 
 export class EditorState {
@@ -56,6 +66,8 @@ export class EditorState {
     simulated: false,
     error: "",
     workspace: "",
+    directories: new Map(),
+    expanded: new Set(),
   };
   listeners = new Set<() => void>();
   snapshot = () => this.value;
@@ -115,10 +127,7 @@ export function WorkspaceEditor({
     value.phase !== "connected" || value.simulated,
   );
   const root = project.status?.remoteWorkspace || "";
-  const [expanded, setExpanded] = useState(new Set<string>([root]));
-  const [directories, setDirectories] = useState(
-    new Map<string, ProjectPathEntry[]>(),
-  );
+  const { directories, expanded } = value;
   const [loading, setLoading] = useState(new Set<string>());
   const [browseError, setBrowseError] = useState("");
   const pending = useRef(new Map<string, AbortController>());
@@ -166,7 +175,12 @@ export function WorkspaceEditor({
           a.name.localeCompare(b.name),
       );
       if (!controller.signal.aborted)
-        setDirectories((old) => new Map(old).set(path, entries));
+        state.update({
+          directories: cacheDirectory(state.value.directories, path, entries, {
+            expanded: state.value.expanded,
+            root,
+          }),
+        });
     } catch (e) {
       if (!controller.signal.aborted) setBrowseError(String(e));
     } finally {
@@ -179,8 +193,20 @@ export function WorkspaceEditor({
     }
   }
   useEffect(() => {
-    if (root) void list(root);
-  }, [root]);
+    if (!root) return;
+    // The root is open whether or not anyone has clicked it.
+    if (!state.value.expanded.has(root))
+      state.update({ expanded: new Set(state.value.expanded).add(root) });
+    // What this pane is about to show, asked for again. The cached entries are
+    // what it renders in the meantime, so reopening the editor no longer starts
+    // from an empty tree -- but a listing is still only a claim about the past.
+    for (const path of visibleDirectories(
+      state.value.directories,
+      state.value.expanded,
+      root,
+    ))
+      void list(path);
+  }, [root, state]);
   async function open(path: string) {
     desiredFile.current = path;
     setBrowseError("");
@@ -422,13 +448,12 @@ export function WorkspaceEditor({
             aria-expanded={entry.directory ? isOpen : undefined}
             onClick={() => {
               if (entry.directory) {
-                setExpanded((old) => {
-                  const n = new Set(old);
-                  if (n.has(target)) n.delete(target);
-                  else n.add(target);
-                  return n;
-                });
-                if (!directories.has(target)) void list(target);
+                const next = toggleExpanded(expanded, target);
+                state.update({ expanded: next });
+                // Asked for every time it comes into view, cached or not: what
+                // is held renders at once and is replaced by the answer.
+                // Collapsing keeps the listing, so reopening it is instant.
+                if (next.has(target)) void list(target);
               } else void open(target);
             }}
           >
@@ -438,7 +463,7 @@ export function WorkspaceEditor({
             <span>{entry.name}</span>
           </Button>
           {entry.directory && isOpen && tree(target, depth + 1)}
-          {loading.has(target) && (
+          {loading.has(target) && !directories.has(target) && (
             <small className="file-loading">{t("Loading…")}</small>
           )}
         </div>
@@ -474,7 +499,9 @@ export function WorkspaceEditor({
         >
           <nav className="file-explorer" aria-label={t("Workspace files")}>
             {tree(root, 0)}
-            {loading.has(root) && <small>{t("Loading files…")}</small>}
+            {loading.has(root) && !directories.has(root) && (
+              <small>{t("Loading files…")}</small>
+            )}
             {!root && <small>{t("Workspace unavailable.")}</small>}
           </nav>
           <ResizeHandle
