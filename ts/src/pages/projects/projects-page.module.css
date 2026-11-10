@@ -15,3 +15,14 @@
   padding: var(--ui-space) var(--ui-control-inline-inset);
   font: inherit;
 }
+.iconPreview.iconPreview {
+  align-self: stretch;
+  align-content: center;
+}
+.identifierField > dt {
+  white-space: nowrap;
+}
+.iconPreview > dd {
+  align-items: center;
+  justify-content: center;
+}

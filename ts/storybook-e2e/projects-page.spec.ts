@@ -1155,6 +1155,7 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
     "Name",
     "Alias",
     "Icon",
+    "Project icon preview",
     "Description",
     "Project ID",
     "Workspace",
@@ -1321,13 +1322,14 @@ test("the project icon uses the shared searchable value menu with a named icon g
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const info = page.getByRole("region", { name: "Information", exact: true });
   const fields = info.locator("dl > div");
-  await expect(fields).toHaveCount(10);
+  await expect(fields).toHaveCount(11);
   const labels = await fields.locator("dt").allTextContents();
-  expect(labels.slice(0, 6).map((label) => label.trim())).toEqual([
+  expect(labels.slice(0, 7).map((label) => label.trim())).toEqual([
     "Name",
     "Alias",
     "Project ID",
     "Icon",
+    "Project icon preview",
     "Description",
     "Workspace",
   ]);
@@ -1337,10 +1339,10 @@ test("the project icon uses the shared searchable value menu with a named icon g
       return { x: box.x, y: box.y, width: box.width };
     }),
   );
-  for (const box of boxes.slice(0, 4)) expect(box.y).toBeCloseTo(boxes[0].y, 1);
-  expect(boxes[4].y).toBeCloseTo(boxes[5].y, 1);
-  expect(boxes[4].y).toBeGreaterThan(boxes[0].y);
-  expect(boxes[4].width).toBeCloseTo(boxes[5].width, 1);
+  for (const box of boxes.slice(0, 5)) expect(box.y).toBeCloseTo(boxes[0].y, 1);
+  expect(boxes[5].y).toBeCloseTo(boxes[6].y, 1);
+  expect(boxes[5].y).toBeGreaterThan(boxes[0].y);
+  expect(boxes[5].width).toBeCloseTo(boxes[6].width, 1);
   const iconField = fields.nth(3);
   const trigger = iconField.getByRole("combobox", {
     name: "Icon",
@@ -1348,12 +1350,20 @@ test("the project icon uses the shared searchable value menu with a named icon g
   });
   await expect(trigger).toHaveText("None");
   await expect(trigger.locator("svg")).toHaveCount(0);
-  const preview = iconField.getByRole("img", { name: "Project icon preview" });
+  const preview = info.getByRole("img", { name: "Project icon preview" });
   await expect(preview).toBeVisible();
-  const left = (await iconField.locator("dd").boundingBox())!;
-  const right = (await preview.locator("..").boundingBox())!;
-  expect(left.width).toBeCloseTo(right.width, 1);
-  expect(right.x).toBeGreaterThan(left.x + left.width);
+  const cell = (await fields.nth(4).boundingBox())!;
+  const glyph = (await preview.boundingBox())!;
+  expect(glyph.x + glyph.width / 2).toBeCloseTo(cell.x + cell.width / 2, 1);
+  expect(glyph.y + glyph.height / 2).toBeCloseTo(cell.y + cell.height / 2, 1);
+  expect(glyph.width).toBeLessThan(30);
+  expect(
+    await info
+      .locator("dl")
+      .evaluate(
+        (node) => getComputedStyle(node).gridTemplateColumns.split(" ").length,
+      ),
+  ).toBe(6);
   await trigger.click();
   const menu = page.getByRole("group", { name: "Icon choices", exact: true });
   const list = menu.getByRole("listbox");

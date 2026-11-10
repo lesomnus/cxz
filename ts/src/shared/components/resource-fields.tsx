@@ -25,7 +25,7 @@ type ResourceField = {
   path?: boolean;
   identifier?: boolean;
   identifierLength?: number;
-  aside?: ReactNode;
+  className?: string;
 };
 
 export type ResourceFieldRow =
@@ -102,7 +102,7 @@ function Field({
   path,
   identifier,
   identifierLength,
-  aside,
+  className,
 }: ResourceField) {
   useLocale();
   const [feedback, setFeedback] = useState<{
@@ -134,7 +134,7 @@ function Field({
   return (
     <DescriptionListRow
       fullWidth={fullWidth}
-      className={aside ? styles.withAside : undefined}
+      className={className}
       style={
         columnSpan && !fullWidth
           ? { gridColumn: `span var(--resource-field-span, ${columnSpan})` }
@@ -176,7 +176,6 @@ function Field({
           value
         )}
       </DescriptionListDetails>
-      {aside && <div className={styles.aside}>{aside}</div>}
     </DescriptionListRow>
   );
 }
