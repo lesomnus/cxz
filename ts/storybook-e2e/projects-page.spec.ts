@@ -1149,15 +1149,14 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
   await expect(projectId.getByRole("status")).toHaveText("copied!");
   await expect(projectId.getByRole("status")).toBeEmpty();
   await page.keyboard.press("Escape");
-  // Name leads; the ID follows it. The icon's label is in the document for a
-  // screen reader and hidden from the page, because the glyph beside it says
-  // the same thing.
+  // What the project is called, called in a command and looks like on one
+  // line; what it is and what identifies it on the next.
   await expect(info.locator("dt > span:first-child")).toHaveText([
     "Name",
-    "Project ID",
     "Alias",
     "Icon",
     "Description",
+    "Project ID",
     "Workspace",
     "Container name",
     "Container ID",
@@ -1317,8 +1316,9 @@ for (const scale of [1, 1.25, 1.5, 2]) {
 }
 
 // The icon is chosen by looking, not by reading a list: the glyphs sit in a
-// grid and each says its own name underneath. The trigger carries no label of
-// its own, so it has to be the same height as the controls beside it.
+// grid and each says its own name underneath. The glyph on the trigger is
+// larger than the text beside it and reaches into the row's padding to be so,
+// which must not make the field taller than the ones next to it.
 test("the project icon is chosen from a grid of named glyphs", async ({
   page,
 }) => {
@@ -1327,6 +1327,8 @@ test("the project icon is chosen from a grid of named glyphs", async ({
   const info = main.getByRole("region", { name: "Information", exact: true });
   const trigger = info.getByRole("button", { name: "Icon", exact: true });
   await expect(trigger).toBeVisible();
+  // The name of the current icon sits to the right of the glyph.
+  await expect(trigger).toHaveText("None");
 
   const alias = info
     .locator("dl > div")
@@ -1340,13 +1342,39 @@ test("the project icon is chosen from a grid of named glyphs", async ({
     (await alias.boundingBox())!,
   ];
   expect(Math.abs(iconBox.height - aliasBox.height)).toBeLessThanOrEqual(1);
+  // Drawn larger than the control's own content box, which is what reaching
+  // into the row's padding means. The height assertion above is what says it
+  // did not cost the row anything.
+  const glyph = (await trigger.locator("svg").boundingBox())!;
+  expect(glyph.height).toBeGreaterThan(20);
 
   await trigger.click();
   const menu = page.getByRole("menu", { name: "Icon", exact: true });
   await expect(menu).toBeVisible();
+  // It covers the trigger rather than sitting beside it.
+  const menuBox = (await menu.boundingBox())!;
+  expect(menuBox.y).toBeLessThanOrEqual(iconBox.y + 1);
+  expect(menuBox.y + menuBox.height).toBeGreaterThan(
+    iconBox.y + iconBox.height,
+  );
   const cells = menu.getByRole("menuitemradio");
   await expect(cells).toHaveCount(19);
   await expect(cells.first()).toHaveAttribute("aria-checked", "true");
+
+  // Search narrows the grid, and the field it narrows with has the focus.
+  const query = menu.getByRole("searchbox", {
+    name: "Search icons",
+    exact: true,
+  });
+  await expect(query).toBeFocused();
+  await query.fill("ro");
+  await expect(cells).toHaveCount(1);
+  await expect(cells.first()).toHaveAttribute("aria-label", "rocket");
+  await query.fill("zzz");
+  await expect(cells).toHaveCount(0);
+  await expect(menu.getByRole("status")).toHaveText("No icons match.");
+  await query.fill("");
+  await expect(cells).toHaveCount(19);
 
   // A grid rather than a column: several per row, and more than one row.
   const rows = await cells.evaluateAll((nodes) => {
@@ -1379,4 +1407,8 @@ test("the project icon is chosen from a grid of named glyphs", async ({
   await expect(menu).toHaveCount(0);
   await expect(trigger).toHaveAttribute("aria-label", "Icon: leaf");
   await expect(trigger.locator("svg")).toHaveAttribute("data-icon", "leaf");
+  await expect(trigger).toHaveText("leaf");
+  // Still the height of the field beside it, now that it carries a name.
+  const chosen = (await trigger.boundingBox())!;
+  expect(Math.abs(chosen.height - aliasBox.height)).toBeLessThanOrEqual(1);
 });

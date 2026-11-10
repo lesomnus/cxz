@@ -13,6 +13,7 @@ export function AnchoredMenu({
   anchor,
   label,
   children,
+  header,
   footer,
   placement = "vertical",
   autoFocus = true,
@@ -24,8 +25,10 @@ export function AnchoredMenu({
   anchor: HTMLElement;
   label: string;
   children: ReactNode;
+  header?: ReactNode;
   footer?: ReactNode;
-  placement?: "vertical" | "right";
+  /** `overlay` covers the anchor rather than sitting beside it. */
+  placement?: "vertical" | "right" | "overlay";
   autoFocus?: boolean;
   className?: string;
   role?: "menu" | "dialog";
@@ -49,9 +52,11 @@ export function AnchoredMenu({
           innerHeight / 2,
           placement === "right"
             ? innerHeight - 2 * gap
-            : above
-              ? available
-              : innerHeight - rect.bottom - 2 * gap,
+            : placement === "overlay"
+              ? innerHeight - 2 * gap
+              : above
+                ? available
+                : innerHeight - rect.bottom - 2 * gap,
         ),
       );
       const frame = getComputedStyle(node);
@@ -75,7 +80,17 @@ export function AnchoredMenu({
       );
       const box = node.getBoundingClientRect();
       node.style.left = `${placement === "right" ? rect.right + gap : Math.max(gap, Math.min(rect.left, innerWidth - box.width - gap))}px`;
-      node.style.top = `${placement === "right" ? Math.max(gap, Math.min(rect.top, innerHeight - box.height - gap)) : above ? rect.top - box.height - gap : rect.bottom + gap}px`;
+      node.style.top = `${
+        placement === "right"
+          ? Math.max(gap, Math.min(rect.top, innerHeight - box.height - gap))
+          : // A menu that covers its trigger starts where the trigger does, so
+            // the value it replaces is the value it is about.
+            placement === "overlay"
+            ? Math.max(gap, Math.min(rect.top, innerHeight - box.height - gap))
+            : above
+              ? rect.top - box.height - gap
+              : rect.bottom + gap
+      }px`;
       snapMenuPosition(node);
       node.style.visibility = "visible";
     };
@@ -165,11 +180,19 @@ export function AnchoredMenu({
       }}
     >
       <DialogReveal
-        from={placement === "right" ? "left" : "bottom-left"}
+        from={
+          placement === "right"
+            ? "left"
+            : placement === "overlay"
+              ? "top-left"
+              : "bottom-left"
+        }
         className={styles.content}
         contentClassName={styles.content}
       >
-        <MenuFrame footer={footer}>{children}</MenuFrame>
+        <MenuFrame header={header} footer={footer}>
+          {children}
+        </MenuFrame>
       </DialogReveal>
     </MenuSurface>
   );

@@ -291,6 +291,8 @@ export const messages = {
   Project: "Project",
   Icon: "Icon",
   None: "None",
+  "Search icons": "Search icons",
+  "No icons match.": "No icons match.",
   Workspace: "Workspace",
   "Runtime ID": "Runtime ID",
   "Run ID": "Run ID",
