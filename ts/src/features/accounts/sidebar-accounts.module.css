@@ -42,18 +42,20 @@
     transition: none;
   }
 }
-.hiddenNumber {
+.remaining > .hiddenNumber {
   display: none;
 }
 .remaining {
   display: inline-flex;
   justify-content: flex-end;
-  align-items: baseline;
+  align-items: center;
+  height: var(--ui-menu-item-line-height);
   width: 4ch;
   flex-shrink: 0;
   margin-left: auto;
   padding-left: calc(2 * var(--ui-space));
-  font: var(--ui-menu-font-size, 12px) / 1.5 var(--ui-font-mono);
+  font: var(--ui-menu-font-size, 12px) / var(--ui-menu-item-line-height)
+    var(--ui-font-mono);
   font-variant-numeric: tabular-nums;
 }
 .unit,
@@ -61,7 +63,11 @@
   color: var(--ui-muted);
 }
 .state {
+  display: flex;
+  align-items: center;
   margin: 0;
-  padding: calc(2 * var(--ui-space));
+  padding: var(--menu-item-padding-block, var(--ui-menu-item-padding-block))
+    var(--menu-item-padding-inline, var(--ui-menu-item-padding-inline));
   font-size: 0.75rem;
+  line-height: var(--ui-menu-item-line-height);
 }

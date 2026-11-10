@@ -157,7 +157,7 @@ async function fillFrames(row: import("@playwright/test").Locator) {
           animation.transitionProperty === "transform" &&
           (animation.effect as KeyframeEffect).target === element,
       );
-    return animation?.effect
+    return (animation?.effect as KeyframeEffect | undefined)
       ?.getKeyframes()
       .map((frame) => new DOMMatrixReadOnly(frame.transform as string).a);
   });
@@ -252,4 +252,93 @@ test("a recent reveal is suppressed even without quota cache, and resumes after 
   const frames = (await fillFrames(row))!;
   expect(frames[0]).toBe(0);
   expect(frames[1]).toBeCloseTo(0.64);
+});
+
+for (const deviceScaleFactor of [1, 1.5]) {
+  test(`loading, digit slides and settled usage keep the same dialog height at ${deviceScaleFactor}x`, async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      baseURL,
+      deviceScaleFactor,
+      viewport: { width: 1100, height: 800 },
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(
+        "/iframe.html?id=accounts-sidebar--usage-reveal&viewMode=story",
+      );
+      await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+      const dialog = page.getByRole("dialog", { name: "Account usage" });
+      await expect(dialog.getByRole("listitem")).toHaveCount(2);
+      // A dependency's CSS may be injected later by a route load or HMR.
+      const numberClass = await dialog
+        .locator('[data-mode="integer"]')
+        .first()
+        .evaluate((node) => node.classList[0]);
+      await page.addStyleTag({
+        content: `.${numberClass} { display: inline-block; }`,
+      });
+      const samples = await dialog.evaluate(
+        (element) =>
+          new Promise<{ height: number; rows: number[]; phase: string }[]>(
+            (resolve) => {
+              const samples: {
+                height: number;
+                rows: number[];
+                phase: string;
+              }[] = [];
+              const started = performance.now();
+              const sample = () => {
+                const rows = [
+                  ...element.querySelectorAll<HTMLElement>('[role="listitem"]'),
+                ];
+                samples.push({
+                  height: element.getBoundingClientRect().height,
+                  rows: rows.map((row) => row.getBoundingClientRect().height),
+                  phase: rows.map((row) => row.dataset.usageVisible).join(),
+                });
+                if (performance.now() - started < 2600)
+                  requestAnimationFrame(sample);
+                else resolve(samples);
+              };
+              sample();
+            },
+          ),
+      );
+      expect(samples.some((sample) => sample.phase.includes("false"))).toBe(
+        true,
+      );
+      expect(samples.at(-1)!.phase).toBe("true,true");
+      expect(
+        Math.max(...samples.map((sample) => sample.height)) -
+          Math.min(...samples.map((sample) => sample.height)),
+      ).toBeLessThan(0.05);
+      for (let index = 0; index < 2; index++) {
+        expect(
+          Math.max(...samples.map((sample) => sample.rows[index])) -
+            Math.min(...samples.map((sample) => sample.rows[index])),
+        ).toBeLessThan(0.05);
+      }
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+test("the initial account-loading placeholder occupies the same height as one account", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=accounts-sidebar--loading-account&viewMode=story",
+  );
+  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  const dialog = page.getByRole("dialog", { name: "Account usage" });
+  await expect(dialog.getByRole("status")).toHaveText("Loading accounts…");
+  const initial = (await dialog.boundingBox())!.height;
+  await expect(dialog.getByRole("listitem")).toHaveCount(1);
+  expect((await dialog.boundingBox())!.height).toBeCloseTo(initial, 2);
+  await expect(dialog.getByLabel("64% remaining")).toBeVisible();
+  expect((await dialog.boundingBox())!.height).toBeCloseTo(initial, 2);
 });

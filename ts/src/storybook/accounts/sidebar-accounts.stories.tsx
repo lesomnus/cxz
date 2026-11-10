@@ -20,12 +20,16 @@ function SidebarPreview({
   quotaDelayMs = 0,
   personalRemaining,
   usageControls = false,
+  accountDelayMs = 0,
+  singleAccount = false,
 }: {
   noAccounts?: boolean;
   quotaRemaining?: number | null;
   quotaDelayMs?: number;
   personalRemaining?: number;
   usageControls?: boolean;
+  accountDelayMs?: number;
+  singleAccount?: boolean;
 }) {
   const quotaValue = useRef(quotaRemaining);
   const [reads, setReads] = useState(0);
@@ -36,6 +40,14 @@ function SidebarPreview({
       onRead: () => setReads((value) => value + 1),
     });
     const transcript = c.sessions.transcript;
+    const list = c.accounts.list;
+    c.accounts.list = async (request, options) => {
+      if (accountDelayMs)
+        await new Promise((resolve) => setTimeout(resolve, accountDelayMs));
+      options?.signal?.throwIfAborted();
+      const page = await list(request, options);
+      return singleAccount ? { ...page, items: page.items.slice(0, 1) } : page;
+    };
     c.sessions.transcript = async (request, options) => {
       if (
         request.ref?.key?.value === "personal-review" &&
@@ -216,6 +228,17 @@ export const CachedUpdates: Story = {
       description: {
         story:
           "Open once, then reopen to check the immediate cached display. Update to a different quota and reopen: the old cached value appears first, then both the gradient and digits move to the new value. Clearing the usage cache leaves the recent entrance cooldown intact.",
+      },
+    },
+  },
+};
+export const LoadingAccount: Story = {
+  args: { singleAccount: true, accountDelayMs: 350, quotaDelayMs: 500 },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A delayed single-account list and quota show the loading placeholder, usage entrance and final value in the same row height.",
       },
     },
   },
