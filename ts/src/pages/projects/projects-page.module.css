@@ -32,8 +32,8 @@
 }
 .identityFields.identityFields {
   grid-template-columns:
-    var(--project-preview-size) repeat(2, minmax(0, 1fr))
-    minmax(0, 50%);
+    repeat(2, minmax(0, 25%)) minmax(0, 1fr)
+    var(--project-preview-size);
 }
 .identifierField > dt {
   white-space: nowrap;

@@ -1325,10 +1325,10 @@ test("the project icon uses the shared searchable value menu with a named icon g
   await expect(fields).toHaveCount(10);
   const labels = await fields.locator("dt").allTextContents();
   expect(labels.slice(0, 6).map((label) => label.trim())).toEqual([
-    "Project icon preview",
     "Name",
     "Alias",
     "Project ID",
+    "Project icon preview",
     "Description",
     "Workspace",
   ]);
@@ -1338,17 +1338,17 @@ test("the project icon uses the shared searchable value menu with a named icon g
       return { x: box.x, y: box.y, width: box.width };
     }),
   );
-  for (const box of boxes.slice(1, 3)) expect(box.y).toBeCloseTo(boxes[1].y, 1);
-  for (const box of boxes.slice(1, 3))
-    expect(box.width).toBeCloseTo(boxes[1].width, 1);
+  for (const box of boxes.slice(0, 2)) expect(box.y).toBeCloseTo(boxes[0].y, 1);
+  for (const box of boxes.slice(0, 2))
+    expect(box.width).toBeCloseTo(boxes[0].width, 1);
   expect(boxes[4].y).toBeCloseTo(boxes[5].y, 1);
   expect(boxes[4].y).toBeGreaterThan(boxes[0].y);
   expect(boxes[4].width).toBeCloseTo(boxes[5].width, 1);
-  expect(boxes[0].width).toBeCloseTo(
-    (await fields.first().boundingBox())!.height,
+  expect(boxes[3].width).toBeCloseTo(
+    (await fields.nth(3).boundingBox())!.height,
     1,
   );
-  const iconField = fields.nth(0);
+  const iconField = fields.nth(3);
   const trigger = iconField.getByRole("combobox", {
     name: "Icon",
     exact: true,
@@ -1357,7 +1357,7 @@ test("the project icon uses the shared searchable value menu with a named icon g
   await expect(trigger.locator("svg")).toHaveCount(1);
   const spacing = await info.evaluate((section) => {
     const fields = [...section.querySelectorAll<HTMLElement>("dl > div")];
-    return [fields[1], fields[2]].map((field) => {
+    return [fields[0], fields[1]].map((field) => {
       const term = field.querySelector("dt")!.getBoundingClientRect();
       const button = field.querySelector("button")!;
       const content = button.querySelector(".button-content")!;
@@ -1381,7 +1381,7 @@ test("the project icon uses the shared searchable value menu with a named icon g
   }
   const preview = trigger.locator("svg");
   await expect(preview).toBeVisible();
-  const cell = (await fields.nth(0).boundingBox())!;
+  const cell = (await fields.nth(3).boundingBox())!;
   const glyph = (await preview.boundingBox())!;
   expect(glyph.x + glyph.width / 2).toBeCloseTo(cell.x + cell.width / 2, 1);
   expect(glyph.y + glyph.height / 2).toBeCloseTo(cell.y + cell.height / 2, 1);
@@ -1389,7 +1389,13 @@ test("the project icon uses the shared searchable value menu with a named icon g
   const grid = (await info.locator("dl").first().boundingBox())!;
   expect(boxes[0].x).toBeCloseTo(grid.x, 1);
   expect(boxes[3].x + boxes[3].width).toBeCloseTo(grid.x + grid.width, 1);
-  expect(boxes[3].width).toBeCloseTo(grid.width / 2, 1);
+  expect(boxes[0].width).toBeCloseTo(grid.width / 4, 1);
+  expect(boxes[1].width).toBeCloseTo(grid.width / 4, 1);
+  const gap = boxes[1].x - boxes[0].x - boxes[0].width;
+  expect(boxes[2].width).toBeCloseTo(
+    grid.width / 2 - boxes[3].width - 3 * gap,
+    1,
+  );
   await trigger.click();
   const menu = page.getByRole("group", { name: "Icon choices", exact: true });
   const list = menu.getByRole("listbox");

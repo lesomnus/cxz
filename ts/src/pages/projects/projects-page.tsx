@@ -265,18 +265,6 @@ function ProjectDashboard({
               className={styles.identityFields}
               rows={[
                 {
-                  label: t("Project icon preview"),
-                  hideLabel: true,
-                  className: styles.iconPreview,
-                  value: (
-                    <ProjectIconPicker
-                      label={t("Icon")}
-                      value={projectIconName(p)}
-                      choose={saveIcon}
-                    />
-                  ),
-                },
-                {
                   label: t("Name"),
                   value: editable("name", t("Name")),
                 },
@@ -293,6 +281,18 @@ function ProjectDashboard({
                     "Canonical UUID used to identify this project across APIs and links.",
                   ),
                   identifier: true,
+                },
+                {
+                  label: t("Project icon preview"),
+                  hideLabel: true,
+                  className: styles.iconPreview,
+                  value: (
+                    <ProjectIconPicker
+                      label={t("Icon")}
+                      value={projectIconName(p)}
+                      choose={saveIcon}
+                    />
+                  ),
                 },
               ]}
             />
