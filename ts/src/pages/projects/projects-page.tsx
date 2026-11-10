@@ -259,24 +259,26 @@ function ProjectDashboard({
     <ResourceDashboard actionsFirstOnNarrow>
       <ResourceDashboardColumn kind="information">
         <Section aria-label={t("Information")}>
+          {/* Six columns to divide by both three and two: what the project is
+              called, called in a command and looks like on one line, then what
+              it is and what it is identified by on the next. The rows below
+              keep the two-up they had. */}
           <Fields
+            columns={6}
             rows={[
-              [t("Name"), editable("name", t("Name"))],
               {
-                label: t("Project ID"),
-                value: p.id.length === 16 ? new Id(p.id).toString() : undefined,
-                description: t(
-                  "Canonical UUID used to identify this project across APIs and links.",
-                ),
-                identifier: true,
+                label: t("Name"),
+                columnSpan: 2,
+                value: editable("name", t("Name")),
               },
-              [t("Alias"), editable("alias", t("Alias"))],
               {
-                // The glyph says what the label would have: a row that reads
-                // "Icon: <an icon>" spends a field name on a word the picture
-                // already carries.
+                label: t("Alias"),
+                columnSpan: 2,
+                value: editable("alias", t("Alias")),
+              },
+              {
                 label: t("Icon"),
-                hideLabel: true,
+                columnSpan: 2,
                 value: (
                   <ProjectIconPicker
                     label={t("Icon")}
@@ -285,7 +287,20 @@ function ProjectDashboard({
                   />
                 ),
               },
-              [t("Description"), editable("desc", t("Description"))],
+              {
+                label: t("Description"),
+                columnSpan: 3,
+                value: editable("desc", t("Description")),
+              },
+              {
+                label: t("Project ID"),
+                columnSpan: 3,
+                value: p.id.length === 16 ? new Id(p.id).toString() : undefined,
+                description: t(
+                  "Canonical UUID used to identify this project across APIs and links.",
+                ),
+                identifier: true,
+              },
               {
                 label: t("Workspace"),
                 value: p.workspace,
@@ -294,6 +309,7 @@ function ProjectDashboard({
               },
               {
                 label: t("Container name"),
+                columnSpan: 3,
                 value: p.status?.containerName,
                 identifier: true,
                 identifierLength: containerNamePrefixLength(
@@ -302,21 +318,22 @@ function ProjectDashboard({
               },
               {
                 label: t("Container ID"),
+                columnSpan: 3,
                 value: p.status?.containerId,
                 identifier: true,
               },
-              [
-                t("Created"),
-                <DateTime value={p.dateCreated} />,
-                undefined,
-                <RelativeTime value={p.dateCreated} />,
-              ],
-              [
-                t("Updated"),
-                <DateTime value={p.dateUpdated} />,
-                undefined,
-                <RelativeTime value={p.dateUpdated} />,
-              ],
+              {
+                label: t("Created"),
+                columnSpan: 3,
+                value: <DateTime value={p.dateCreated} />,
+                labelDetail: <RelativeTime value={p.dateCreated} />,
+              },
+              {
+                label: t("Updated"),
+                columnSpan: 3,
+                value: <DateTime value={p.dateUpdated} />,
+                labelDetail: <RelativeTime value={p.dateUpdated} />,
+              },
             ]}
           />
           {p.status?.error && (

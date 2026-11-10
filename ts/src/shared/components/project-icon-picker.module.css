@@ -4,16 +4,56 @@
   min-width: 0;
 }
 
-/* A field control among field controls. The height and inset are the ones the
+/* A field control among field controls: the height and inset are the ones the
    editable values beside it use, so a column of fields does not step up and
    down where the icon sits. */
 .trigger {
   min-height: var(--ui-icon-size);
   padding: var(--ui-space) var(--ui-control-inline-inset);
+  gap: var(--ui-space);
+}
+
+/* The glyph is taller than the control that holds it and reaches into the
+   row's own padding to be so. The negative block margin is what keeps that
+   from becoming height: it takes back the trigger's vertical padding, so the
+   icon measures smaller than the text line beside it and the field stays
+   exactly as tall as the fields next to it. */
+.glyph {
+  flex: none;
+  margin-block: calc(-1 * var(--ui-space));
+}
+
+.value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .menu {
   width: max-content;
+  max-width: min(320px, 90vw);
+}
+
+/* The find bar's field, in a menu: transparent, no border, the surface around
+   it is the control. */
+.search {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 0;
+  background: transparent;
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.search::placeholder {
+  color: var(--ui-muted);
+}
+
+.search::-webkit-search-cancel-button {
+  display: none;
 }
 
 .grid {
@@ -50,9 +90,17 @@
   text-overflow: ellipsis;
 }
 
+.empty,
 .error {
   margin: 0;
   padding: var(--ui-space) var(--ui-control-inline-inset);
-  color: var(--ui-action-error-color);
   font-size: 11px;
+}
+
+.empty {
+  color: var(--ui-muted);
+}
+
+.error {
+  color: var(--ui-action-error-color);
 }
