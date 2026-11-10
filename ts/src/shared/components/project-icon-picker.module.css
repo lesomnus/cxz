@@ -1,0 +1,58 @@
+.picker {
+  display: inline-flex;
+  position: relative;
+  min-width: 0;
+}
+
+/* A field control among field controls. The height and inset are the ones the
+   editable values beside it use, so a column of fields does not step up and
+   down where the icon sits. */
+.trigger {
+  min-height: var(--ui-icon-size);
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+}
+
+.menu {
+  width: max-content;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--ui-control-inset);
+}
+
+/* The glyph above its own name, the way the shared row-layout menus stack
+   theirs: the name is there to be read once while choosing, not to be scanned. */
+.cell {
+  min-width: 56px;
+  min-height: 52px;
+  padding: var(--ui-space) var(--ui-control-inset);
+  text-align: center;
+}
+
+.cell :global(.button-content) {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-control-inset);
+}
+
+.name {
+  top: 0;
+  flex: none;
+  width: 100%;
+  overflow: hidden;
+  color: var(--ui-muted);
+  font-size: 10px;
+  line-height: 12px;
+  text-overflow: ellipsis;
+}
+
+.error {
+  margin: 0;
+  padding: var(--ui-space) var(--ui-control-inline-inset);
+  color: var(--ui-action-error-color);
+  font-size: 11px;
+}

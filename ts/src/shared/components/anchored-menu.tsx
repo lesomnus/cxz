@@ -89,7 +89,9 @@ export function AnchoredMenu({
     position();
     if (autoFocus)
       node
-        .querySelector<HTMLElement>('[role="menuitem"]')
+        // Checkable items are items: a menu of radios would otherwise open
+        // with nothing focused and ignore the arrow keys below.
+        .querySelector<HTMLElement>('[role^="menuitem"]')
         ?.focus({ preventScroll: true });
     const outside = (event: PointerEvent) => {
       if (
@@ -142,7 +144,7 @@ export function AnchoredMenu({
         event.preventDefault();
         const items = [
           ...event.currentTarget.querySelectorAll<HTMLElement>(
-            '[role="menuitem"]:not(:disabled):not([aria-disabled="true"])',
+            '[role^="menuitem"]:not(:disabled):not([aria-disabled="true"])',
           ),
         ];
         const current = items.indexOf(document.activeElement as HTMLElement);
