@@ -1327,9 +1327,9 @@ test("the project icon uses the shared searchable value menu with a named icon g
   expect(labels.slice(0, 7).map((label) => label.trim())).toEqual([
     "Name",
     "Alias",
-    "Project ID",
     "Icon",
     "Project icon preview",
+    "Project ID",
     "Description",
     "Workspace",
   ]);
@@ -1340,12 +1340,14 @@ test("the project icon uses the shared searchable value menu with a named icon g
     }),
   );
   for (const box of boxes.slice(0, 5)) expect(box.y).toBeCloseTo(boxes[0].y, 1);
-  for (const box of boxes.slice(0, 5))
+  for (const box of boxes.slice(0, 4))
     expect(box.width).toBeCloseTo(boxes[0].width, 1);
   expect(boxes[5].y).toBeCloseTo(boxes[6].y, 1);
   expect(boxes[5].y).toBeGreaterThan(boxes[0].y);
   expect(boxes[5].width).toBeCloseTo(boxes[6].width, 1);
-  const iconField = fields.nth(3);
+  const gap = boxes[1].x - boxes[0].x - boxes[0].width;
+  expect(boxes[4].width).toBeCloseTo(2 * boxes[0].width + gap, 1);
+  const iconField = fields.nth(2);
   const trigger = iconField.getByRole("combobox", {
     name: "Icon",
     exact: true,
@@ -1354,7 +1356,7 @@ test("the project icon uses the shared searchable value menu with a named icon g
   await expect(trigger.locator("svg")).toHaveCount(0);
   const spacing = await info.evaluate((section) => {
     const fields = [...section.querySelectorAll<HTMLElement>("dl > div")];
-    return [fields[0], fields[1], fields[3]].map((field) => {
+    return [fields[0], fields[1], fields[2]].map((field) => {
       const term = field.querySelector("dt")!.getBoundingClientRect();
       const button = field.querySelector("button")!;
       const content = button.querySelector(".button-content")!;
@@ -1378,7 +1380,7 @@ test("the project icon uses the shared searchable value menu with a named icon g
   }
   const preview = info.getByRole("img", { name: "Project icon preview" });
   await expect(preview).toBeVisible();
-  const cell = (await fields.nth(4).boundingBox())!;
+  const cell = (await fields.nth(3).boundingBox())!;
   const glyph = (await preview.boundingBox())!;
   expect(glyph.x + glyph.width / 2).toBeCloseTo(cell.x + cell.width / 2, 1);
   expect(glyph.y + glyph.height / 2).toBeCloseTo(cell.y + cell.height / 2, 1);
