@@ -260,18 +260,21 @@ function ProjectDashboard({
       <ResourceDashboardColumn kind="information">
         <Section aria-label={t("Information")}>
           <Fields
-            columns={6}
+            columns={10}
             rows={[
               {
                 label: t("Name"),
+                columnSpan: 2,
                 value: editable("name", t("Name")),
               },
               {
                 label: t("Alias"),
+                columnSpan: 2,
                 value: editable("alias", t("Alias")),
               },
               {
                 label: t("Project ID"),
+                columnSpan: 2,
                 className: styles.identifierField,
                 value: p.id.length === 16 ? new Id(p.id).toString() : undefined,
                 description: t(
@@ -281,6 +284,7 @@ function ProjectDashboard({
               },
               {
                 label: t("Icon"),
+                columnSpan: 2,
                 value: (
                   <ProjectIconPicker
                     label={t("Icon")}
@@ -291,6 +295,7 @@ function ProjectDashboard({
               },
               {
                 label: t("Project icon preview"),
+                columnSpan: 2,
                 hideLabel: true,
                 className: styles.iconPreview,
                 value: (
@@ -304,18 +309,18 @@ function ProjectDashboard({
               },
               {
                 label: t("Description"),
-                columnSpan: 3,
+                columnSpan: 5,
                 value: editable("desc", t("Description")),
               },
               {
                 label: t("Workspace"),
                 value: p.workspace,
-                columnSpan: 3,
+                columnSpan: 5,
                 path: true,
               },
               {
                 label: t("Container name"),
-                columnSpan: 3,
+                columnSpan: 5,
                 value: p.status?.containerName,
                 identifier: true,
                 identifierLength: containerNamePrefixLength(
@@ -324,19 +329,19 @@ function ProjectDashboard({
               },
               {
                 label: t("Container ID"),
-                columnSpan: 3,
+                columnSpan: 5,
                 value: p.status?.containerId,
                 identifier: true,
               },
               {
                 label: t("Created"),
-                columnSpan: 3,
+                columnSpan: 5,
                 value: <DateTime value={p.dateCreated} />,
                 labelDetail: <RelativeTime value={p.dateCreated} />,
               },
               {
                 label: t("Updated"),
-                columnSpan: 3,
+                columnSpan: 5,
                 value: <DateTime value={p.dateUpdated} />,
                 labelDetail: <RelativeTime value={p.dateUpdated} />,
               },
