@@ -22,7 +22,7 @@ test("hover account usage opens to the right without stealing editor focus and r
   expect(box.x).toBeGreaterThan(buttonBox.x + buttonBox.width);
   await expect(menu.getByRole("link")).toHaveCount(0);
   await expect(menu.getByRole("button")).toHaveCount(0);
-  expect(box.width).toBeLessThan(300);
+  expect(box.width).toBe(240);
   await expect(menu).toHaveCSS("border-top-width", "0px");
   await menu.getByRole("listitem").filter({ hasText: "Work" }).click();
   await expect(menu).toBeVisible();
@@ -41,6 +41,55 @@ test("hover account usage opens to the right without stealing editor focus and r
   await expect(menu).toHaveCount(0);
   await trigger.click();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
+});
+
+test("reset countdown follows remaining usage, updates without reads and preserves row geometry", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-11-13T12:00:00Z") });
+  await page.goto("/iframe.html?id=accounts-sidebar--default&viewMode=story");
+  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  const dialog = page.getByRole("dialog", { name: "Account usage" });
+  const row = dialog.getByRole("listitem").first();
+  const usage = row.getByLabel("64% remaining");
+  const reset = row.getByRole("timer", { name: "Time until usage reset" });
+  await expect(usage).toBeVisible();
+  await expect(reset).toHaveText("00d02h25m");
+  const usageBox = (await usage.boundingBox())!;
+  const resetBox = (await reset.boundingBox())!;
+  expect(resetBox.x).toBeGreaterThanOrEqual(usageBox.x + usageBox.width);
+  const before = (await dialog.boundingBox())!;
+  const reads = await page.getByLabel("Account preview reads").textContent();
+  await page.clock.setSystemTime(new Date("2026-11-13T12:01:00Z"));
+  await page.clock.runFor(1000);
+  await expect(reset).toHaveText("00d02h24m");
+  expect((await dialog.boundingBox())!.height).toBe(before.height);
+  expect((await reset.boundingBox())!.width).toBe(resetBox.width);
+  await expect(page.getByLabel("Account preview reads")).toHaveText(reads!);
+  const unknown = dialog.getByRole("listitem").nth(1);
+  await expect(unknown.getByLabel("Usage reset unavailable")).toHaveText(
+    "--d--h--m",
+  );
+  expect((await unknown.getByRole("timer").boundingBox())!.width).toBe(
+    resetBox.width,
+  );
+});
+
+test("each provider shows the reset of its own displayed usage window", async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date("2026-11-13T12:00:00Z"));
+  await page.goto(
+    "/iframe.html?id=accounts-sidebar--usage-reveal&viewMode=story",
+  );
+  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  const rows = page
+    .getByRole("dialog", { name: "Account usage" })
+    .getByRole("listitem");
+  await expect(rows.nth(0).getByLabel("88% remaining")).toBeVisible();
+  await expect(rows.nth(0).getByRole("timer")).toHaveText("00d02h25m");
+  await expect(rows.nth(1).getByLabel("28% remaining")).toBeVisible();
+  await expect(rows.nth(1).getByRole("timer")).toHaveText("00d02h00m");
 });
 
 test("keyboard users can open and dismiss the account preview, and unknown quota is not zero", async ({

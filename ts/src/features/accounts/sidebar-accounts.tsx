@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   CompactNumber,
+  DurationDisplay,
   MenuIcon,
   MenuItemLabel,
   MenuScrollArea,
@@ -285,6 +286,33 @@ function AccountItem({
           <span className={styles.unit}>%</span>
         )}
       </span>
+      <ResetTime reset={quota.data?.reset} />
     </div>
+  );
+}
+
+function ResetTime({ reset }: { reset?: number }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    setNow(Date.now());
+    if (reset === undefined) return;
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [reset]);
+  return (
+    <span
+      className={styles.reset}
+      role="timer"
+      aria-label="Time until usage reset"
+      aria-live="off"
+    >
+      <DurationDisplay
+        durationMs={reset === undefined ? undefined : Math.max(0, reset - now)}
+        rounding="ceil"
+        label={reset === undefined ? "Usage reset unavailable" : undefined}
+      />
+    </span>
   );
 }

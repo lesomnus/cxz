@@ -126,7 +126,7 @@ function SidebarPreview({
             <main style={{ padding: "calc(4 * var(--ui-space))", minWidth: 0 }}>
               <p>
                 Hover Accounts to see agent logos, account names and remaining
-                usage.
+                usage, followed by the time until that usage window resets.
               </p>
               <p>
                 The preview uses the composer toolbar's shared menu surface.
@@ -200,7 +200,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The actual sidebar hover menu. Account metadata and quota snapshots share the Accounts page's connection cache. No account reads occur until the preview opens; unavailable usage stays unknown rather than showing zero. Initial gradients enter from left to right with constant acceleration: longer fills take longer, with top-to-bottom starts even for out-of-order responses. Cached values appear immediately, and recent entrances have an account-scoped cooldown. Fresh updates transition the fill from its current position while CompactNumber slides changed digits. Reduced motion shows final values without movement. Account rows are informational and have no links. Keyboard focus opens the preview, and Escape dismisses it.",
+          "The actual sidebar hover menu. Account metadata and quota snapshots share the Accounts page's connection cache. No account reads occur until the preview opens; unavailable usage stays unknown rather than showing zero. Each row reserves fixed space for the remaining percentage and its matching usage window's reset countdown, using the Accounts page's day/hour/minute display. Initial gradients enter from left to right with constant acceleration: longer fills take longer, with top-to-bottom starts even for out-of-order responses. Cached values appear immediately, and recent entrances have an account-scoped cooldown. Fresh updates transition the fill from its current position while CompactNumber slides changed digits. Reduced motion shows final values without movement. Account rows are informational and have no links. Keyboard focus opens the preview, and Escape dismisses it.",
       },
     },
   },
