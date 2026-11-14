@@ -54,7 +54,7 @@
 .remaining {
   display: inline-flex;
   justify-content: flex-end;
-  align-items: center;
+  align-items: baseline;
   height: var(--ui-menu-item-line-height);
   width: 4ch;
   flex-shrink: 0;
