@@ -8,6 +8,11 @@
   width: calc(60 * var(--ui-space));
   border: 0;
 }
+.list {
+  display: grid;
+  gap: var(--ui-control-inset);
+  gap: round(nearest, var(--ui-control-inset), var(--menu-pixel-size, 1px));
+}
 .item {
   position: relative;
   isolation: isolate;
@@ -66,6 +71,10 @@
   height: var(--ui-menu-item-line-height);
   width: 9ch;
   flex-shrink: 0;
+  margin-left: var(--ui-space);
+}
+.percent {
+  font-size: 0.8em;
 }
 .unit,
 .state {

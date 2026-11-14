@@ -166,7 +166,7 @@ function AccountItems({ c, sessions }: { c: Connection; sessions: Session[] }) {
   }, [accounts.data, ready, revealed]);
   return (
     <MenuScrollArea aria-busy={accounts.loading}>
-      <div role="list" aria-label="Accounts">
+      <div className={styles.list} role="list" aria-label="Accounts">
         {accounts.data?.map((account) => (
           <AccountItem
             key={key(account.id) || account.alias}
@@ -283,7 +283,7 @@ function AccountItem({
         {motion.value === undefined ? (
           <span className={styles.unit}>{quota.loading ? "--" : "—"}</span>
         ) : (
-          <span className={styles.unit}>%</span>
+          <span className={`${styles.unit} ${styles.percent}`}>%</span>
         )}
       </span>
       <ResetTime reset={quota.data?.reset} />
