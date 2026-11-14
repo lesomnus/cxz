@@ -171,7 +171,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Browser diagnostics in the centered resource layout. Project/session selectors share the resource selection state. The shared FindBar contains checkbox menus for multiple log levels and categories. Dense, single-line rows use level icons and omit timezone offsets; complete records open in a modal. History loads automatically through stable ID cursors, and only viewport rows plus overscan are mounted. Live updates follow the head while it is visible; history remains stable while reading older records. Use Generate rotation burst to exercise continuous scrolling. OPFS persistence and filtered downloads use the actual log store.",
+          "Browser diagnostics in the centered resource layout. Project/session selectors share the resource selection state. FindBar checkbox menus apply their draft selection only when closed. Dense, single-line rows use semantic level and category icons, fit the time column to its text, and omit timezone offsets; complete records open in a modal. History loads automatically through stable ID cursors, and only viewport rows plus overscan are mounted. Live updates follow the head while it is visible; history remains stable while reading older records. Use Generate rotation burst to exercise continuous scrolling. OPFS persistence and filtered downloads use the actual log store.",
       },
     },
   },

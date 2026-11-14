@@ -4,9 +4,9 @@ import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import styles from "./logs-page.module.css";
 
 const icons: Record<LogLevel, IconName> = {
-  info: "info",
-  warn: "warning",
-  error: "error-active",
+  info: "log-level-info",
+  warn: "log-level-warn",
+  error: "log-level-error",
 };
 export function LogLevelIcon({ level }: { level: LogLevel }) {
   return (

@@ -51,6 +51,7 @@ import pageStyles from "#src/shared/components/resource-page.module.css";
 import tableStyles from "#src/shared/components/resource-table.module.css";
 import { LogDetailsDialog } from "./log-details-dialog";
 import { LogLevelIcon } from "./log-level-icon";
+import { LogCategoryIcon } from "./log-category-icon";
 import { useLogFeed } from "./use-log-feed";
 import { useLogViewport } from "./use-log-viewport";
 import styles from "./logs-page.module.css";
@@ -264,6 +265,7 @@ export function LogsPage({
                 options={logCategories.map((category) => ({
                   value: category,
                   label: category === "rpc" ? "RPC" : "Client",
+                  icon: <LogCategoryIcon category={category} />,
                 }))}
                 value={categories}
                 choose={(values) =>
@@ -322,12 +324,14 @@ export function LogsPage({
               <colgroup>
                 <col className={styles.timeColumn} />
                 <col className={styles.levelColumn} />
+                <col className={styles.categoryColumn} />
                 <col />
               </colgroup>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("Time")}</TableHead>
                   <TableHead aria-label={t("Level")} />
+                  <TableHead aria-label={t("Category")} />
                   <TableHead>{t("Message")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -350,7 +354,10 @@ export function LogsPage({
                       <TableCell align="center">
                         <LogLevelIcon level={entry.level} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell align="center">
+                        <LogCategoryIcon category={entry.category} />
+                      </TableCell>
+                      <TableCell className={styles.messageCell}>
                         <Button
                           className={styles.message}
                           aria-label={entry.message}
@@ -397,7 +404,7 @@ export function LogsPage({
 function Spacer({ height }: { height: number }) {
   return (
     <TableRow className={styles.spacer} aria-hidden="true">
-      <TableCell colSpan={3} style={{ height }} />
+      <TableCell colSpan={4} style={{ height }} />
     </TableRow>
   );
 }

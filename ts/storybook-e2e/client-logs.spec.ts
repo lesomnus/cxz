@@ -185,6 +185,29 @@ for (const width of [1440, 390]) {
     const main = page.getByRole("main", { name: "Logs", exact: true });
     const table = main.getByRole("table", { name: "Client logs", exact: true });
     await expect(table.locator("tbody tr")).toHaveCount(25);
+    await expect(table).toHaveCSS("border-top-left-radius", "0px");
+    const timeWidth = await table
+      .locator("[data-log-row]")
+      .first()
+      .locator("td")
+      .first()
+      .evaluate((cell) => {
+        const css = getComputedStyle(cell);
+        return {
+          actual: cell.getBoundingClientRect().width,
+          content:
+            cell.querySelector("time")!.getBoundingClientRect().width +
+            parseFloat(css.paddingLeft) +
+            parseFloat(css.paddingRight),
+        };
+      });
+    expect(Math.abs(timeWidth.actual - timeWidth.content)).toBeLessThan(1);
+    await expect(
+      table.getByRole("columnheader", { name: "Category", exact: true }),
+    ).toBeVisible();
+    await expect(
+      table.getByRole("img", { name: "Client", exact: true }).first(),
+    ).toBeVisible();
     const layout = main.locator("[data-resource-layout]");
     const box = (await layout.boundingBox())!;
     const mainBox = (await main.boundingBox())!;
@@ -281,29 +304,37 @@ test("checkbox filters stay open for multiple selections and project/session sel
   });
   await expect(all).toHaveAttribute("aria-checked", "true");
   await all.click();
-  await expect(status).toContainText("0 matching records");
+  await expect(status).toContainText("25 matching records");
   await expect(menu).toBeVisible();
   await menu
     .getByRole("menuitemcheckbox", { name: "warn", exact: true })
     .click();
-  await expect(status).toContainText("6 matching records");
+  await expect(status).toContainText("25 matching records");
   await expect(all).toHaveAttribute("aria-checked", "mixed");
   await menu.screenshot({
     path: testInfo.outputPath("checkbox-filters.png"),
     animations: "disabled",
   });
+  await level.click();
+  await expect(menu).toHaveCount(0);
+  await expect(status).toContainText("6 matching records");
+  await level.click();
   await menu
     .getByRole("menuitemcheckbox", { name: "error", exact: true })
     .click();
+  await expect(status).toContainText("6 matching records");
+  await page.keyboard.press("Escape");
   await expect(status).toContainText("10 matching records");
+  await level.click();
   await all.focus();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Space");
-  await expect(status).toContainText("25 matching records");
+  await expect(status).toContainText("10 matching records");
   await expect(all).toHaveAttribute("aria-checked", "true");
   await page.keyboard.press("Escape");
   await expect(menu).toHaveCount(0);
   await expect(level).toBeFocused();
+  await expect(status).toContainText("25 matching records");
   await page.getByRole("button", { name: "Log category", exact: true }).click();
   const categories = page.getByRole("menu", {
     name: "Log category",
@@ -315,12 +346,17 @@ test("checkbox filters stay open for multiple selections and project/session sel
   await categories
     .getByRole("menuitemcheckbox", { name: "RPC", exact: true })
     .click();
+  await expect(status).toContainText("25 matching records");
+  await page.keyboard.press("Escape");
   await expect(status).toContainText("13 matching records");
+  await page.getByRole("button", { name: "Log category", exact: true }).click();
   await categories
     .getByRole("menuitemcheckbox", { name: "Client", exact: true })
     .click();
+  await expect(status).toContainText("13 matching records");
+  await page.getByRole("columnheader", { name: "Time", exact: true }).click();
+  await expect(categories).toHaveCount(0);
   await expect(status).toContainText("25 matching records");
-  await page.keyboard.press("Escape");
   await page
     .getByRole("combobox", { name: "Select project", exact: true })
     .click();
@@ -357,7 +393,8 @@ test("reusable checkbox menu preserves disabled choices when toggling all", asyn
   await expect(all).toHaveAttribute("aria-checked", "mixed");
   await all.click();
   await all.click();
-  await expect(page.getByLabel("Selected values")).toHaveText("error");
+  await expect(page.getByLabel("Selected values")).toHaveText("info, error");
+  await expect(page.getByLabel("Apply count")).toHaveText("0");
   await expect(
     page.getByRole("menuitemcheckbox", { name: "Errors", exact: true }),
   ).toBeDisabled();
@@ -365,4 +402,10 @@ test("reusable checkbox menu preserves disabled choices when toggling all", asyn
   await expect(
     page.getByRole("menuitemcheckbox", { name: "Warnings", exact: true }),
   ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByLabel("Selected values")).toHaveText("error");
+  await expect(page.getByLabel("Apply count")).toHaveText("1");
+  await page.getByRole("button", { name: "Log level", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByLabel("Apply count")).toHaveText("1");
 });

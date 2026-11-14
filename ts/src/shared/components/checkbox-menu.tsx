@@ -17,7 +17,7 @@ export type CheckboxMenuOption = {
   disabled?: boolean;
 };
 
-/** A multiple-choice filter composed from the shared menu surface and rows. */
+/** Multiple-choice drafts commit once when the shared menu closes. */
 export function CheckboxMenu({
   label,
   allLabel,
@@ -35,14 +35,32 @@ export function CheckboxMenu({
 }) {
   const id = useId();
   const button = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<readonly string[] | null>(null);
+  const pending = useRef<readonly string[] | null>(null);
+  const latest = useRef({ value, choose });
+  latest.current = { value, choose };
+  const open = draft !== null;
+  const chosen = draft ?? value;
+  const edit = (next: readonly string[]) => {
+    pending.current = next;
+    setDraft(next);
+  };
   const close = useCallback((restoreFocus = false) => {
-    setOpen(false);
+    const next = pending.current;
+    if (next === null) return;
+    pending.current = null;
+    setDraft(null);
+    const { value, choose } = latest.current;
+    if (
+      next.length !== value.length ||
+      next.some((item) => !value.includes(item))
+    )
+      choose([...next]);
     if (restoreFocus) button.current?.focus({ preventScroll: true });
   }, []);
   const enabled = options.filter((option) => !option.disabled);
-  const all = enabled.every((option) => value.includes(option.value));
-  const some = enabled.some((option) => value.includes(option.value));
+  const all = enabled.every((option) => chosen.includes(option.value));
+  const some = enabled.some((option) => chosen.includes(option.value));
   return (
     <>
       <Button
@@ -56,7 +74,7 @@ export function CheckboxMenu({
         aria-controls={open ? id : undefined}
         data-menu-open={open || undefined}
         data-filtered={!all || undefined}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => (open ? close() : edit([...value]))}
       >
         {triggerContent ?? label}
       </Button>
@@ -74,15 +92,15 @@ export function CheckboxMenu({
               aria-checked={all ? true : some ? "mixed" : false}
               disabled={!enabled.length}
               onClick={() =>
-                choose(
+                edit(
                   all
-                    ? value.filter(
+                    ? chosen.filter(
                         (item) =>
                           !enabled.some((option) => option.value === item),
                       )
                     : [
                         ...new Set([
-                          ...value,
+                          ...chosen,
                           ...enabled.map((option) => option.value),
                         ]),
                       ],
@@ -94,7 +112,7 @@ export function CheckboxMenu({
             </MenuItem>
             <MenuDivider />
             {options.map((option) => {
-              const checked = value.includes(option.value);
+              const checked = chosen.includes(option.value);
               return (
                 <MenuItem
                   key={option.value}
@@ -103,10 +121,10 @@ export function CheckboxMenu({
                   aria-checked={checked}
                   disabled={option.disabled}
                   onClick={() =>
-                    choose(
+                    edit(
                       checked
-                        ? value.filter((value) => value !== option.value)
-                        : [...value, option.value],
+                        ? chosen.filter((value) => value !== option.value)
+                        : [...chosen, option.value],
                     )
                   }
                 >
