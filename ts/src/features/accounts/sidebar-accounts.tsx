@@ -48,6 +48,19 @@ function rememberEntrance(c: Connection, identity: string) {
   if (times.size > 256) times.delete(times.keys().next().value!);
 }
 
+function sidebarMenuGap(anchor: HTMLElement) {
+  const sidebar = anchor.closest(".resource-sidebar");
+  if (!sidebar) return 4;
+  const border = parseFloat(getComputedStyle(sidebar).borderRightWidth) || 0;
+  const inset = Math.max(
+    0,
+    sidebar.getBoundingClientRect().right -
+      border -
+      anchor.getBoundingClientRect().right,
+  );
+  return 2 * inset + border;
+}
+
 export function SidebarAccounts({
   c,
   sessions,
@@ -113,6 +126,7 @@ export function SidebarAccounts({
           anchor={anchor}
           label="Account usage"
           placement="right"
+          gap={sidebarMenuGap}
           autoFocus={false}
           className={styles.preview}
           role="dialog"

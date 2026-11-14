@@ -20,6 +20,15 @@ test("hover account usage opens to the right without stealing editor focus and r
   const buttonBox = (await trigger.boundingBox())!;
   const box = (await menu.boundingBox())!;
   expect(box.x).toBeGreaterThan(buttonBox.x + buttonBox.width);
+  const sidebar = page.getByRole("navigation", { name: "Resources" });
+  const sidebarBox = (await sidebar.boundingBox())!;
+  const border = await sidebar.evaluate((node) =>
+    parseFloat(getComputedStyle(node).borderRightWidth),
+  );
+  expect(box.x - sidebarBox.x - sidebarBox.width).toBeCloseTo(
+    sidebarBox.x + sidebarBox.width - border - buttonBox.x - buttonBox.width,
+    0,
+  );
   await expect(menu.getByRole("link")).toHaveCount(0);
   await expect(menu.getByRole("button")).toHaveCount(0);
   expect(box.width).toBe(240);

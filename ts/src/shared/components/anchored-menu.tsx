@@ -16,6 +16,7 @@ export function AnchoredMenu({
   header,
   footer,
   placement = "vertical",
+  gap,
   autoFocus = true,
   className = "",
   role = "menu",
@@ -29,6 +30,7 @@ export function AnchoredMenu({
   footer?: ReactNode;
   /** `overlay` covers the anchor rather than sitting beside it. */
   placement?: "vertical" | "right" | "overlay";
+  gap?: number | ((anchor: HTMLElement) => number);
   autoFocus?: boolean;
   className?: string;
   role?: "menu" | "dialog";
@@ -42,21 +44,22 @@ export function AnchoredMenu({
     const position = () => {
       if (!anchor.isConnected) return close();
       const rect = anchor.getBoundingClientRect();
-      const gap =
+      const space =
         parseFloat(getComputedStyle(node).getPropertyValue("--ui-space")) || 4;
-      const available = Math.max(0, rect.top - 2 * gap);
+      const distance = typeof gap === "function" ? gap(anchor) : (gap ?? space);
+      const available = Math.max(0, rect.top - distance - space);
       const above = available >= Math.min(120, innerHeight / 3);
       const budget = Math.max(
         0,
         Math.min(
           innerHeight / 2,
           placement === "right"
-            ? innerHeight - 2 * gap
+            ? innerHeight - 2 * space
             : placement === "overlay"
-              ? innerHeight - 2 * gap
+              ? innerHeight - 2 * space
               : above
                 ? available
-                : innerHeight - rect.bottom - 2 * gap,
+                : innerHeight - rect.bottom - distance - space,
         ),
       );
       const frame = getComputedStyle(node);
@@ -72,24 +75,30 @@ export function AnchoredMenu({
       node.style.maxHeight = `${budget}px`;
       node.style.maxWidth =
         placement === "right"
-          ? `${Math.max(0, innerWidth - rect.right - 2 * gap)}px`
+          ? `${Math.max(0, innerWidth - rect.right - distance - space)}px`
           : "";
       node.style.setProperty(
         "--menu-scroll-max-height",
         `${Math.max(0, budget - chrome)}px`,
       );
       const box = node.getBoundingClientRect();
-      node.style.left = `${placement === "right" ? rect.right + gap : Math.max(gap, Math.min(rect.left, innerWidth - box.width - gap))}px`;
+      node.style.left = `${placement === "right" ? rect.right + distance : Math.max(space, Math.min(rect.left, innerWidth - box.width - space))}px`;
       node.style.top = `${
         placement === "right"
-          ? Math.max(gap, Math.min(rect.top, innerHeight - box.height - gap))
+          ? Math.max(
+              space,
+              Math.min(rect.top, innerHeight - box.height - space),
+            )
           : // A menu that covers its trigger starts where the trigger does, so
             // the value it replaces is the value it is about.
             placement === "overlay"
-            ? Math.max(gap, Math.min(rect.top, innerHeight - box.height - gap))
+            ? Math.max(
+                space,
+                Math.min(rect.top, innerHeight - box.height - space),
+              )
             : above
-              ? rect.top - box.height - gap
-              : rect.bottom + gap
+              ? rect.top - box.height - distance
+              : rect.bottom + distance
       }px`;
       snapMenuPosition(node);
       node.style.visibility = "visible";
@@ -144,7 +153,7 @@ export function AnchoredMenu({
       document.removeEventListener("keydown", escape, true);
       document.removeEventListener("scroll", scroll, true);
     };
-  }, [anchor, close, placement, autoFocus]);
+  }, [anchor, close, placement, autoFocus, gap]);
   return (
     <MenuSurface
       id={id}
