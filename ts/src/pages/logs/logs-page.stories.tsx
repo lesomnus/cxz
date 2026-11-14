@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { userEvent, within } from "storybook/test";
 import { Button } from "@lesomnus/nox";
+import { create } from "@bufbuild/protobuf";
+import { parse as parseId } from "@lesomnus/payday/pdid";
+import { ProjectSchema } from "#gen/cxz/project_pb";
+import { SessionSchema } from "#gen/cxz/session_pb";
+import { resourceFixture } from "#src/storybook/resource-fixture.ts";
 import { LogsPage } from "./logs-page";
 import {
   ClientLogs,
@@ -19,6 +24,36 @@ function Preview({
   empty?: boolean;
   populated?: boolean;
 }) {
+  const [c] = useState(() => resourceFixture());
+  const [projects] = useState(() => [
+    create(ProjectSchema, {
+      id: parseId("01949770-0000-8000-8008-000000000002").bytes,
+      name: "Workspace",
+      alias: "workspace",
+    }),
+    create(ProjectSchema, {
+      id: parseId("01949770-0000-8000-8008-000000000004").bytes,
+      name: "Archive",
+      alias: "archive",
+    }),
+  ]);
+  const [sessions] = useState(() => [
+    create(SessionSchema, {
+      id: parseId("01949770-0000-8000-8008-000000000001").bytes,
+      name: "Review",
+      alias: "review",
+      runtimeId: "review",
+      project: { id: projects[0].id },
+    }),
+    create(SessionSchema, {
+      id: parseId("01949770-0000-8000-8008-000000000003").bytes,
+      name: "Build",
+      alias: "build",
+      runtimeId: "build",
+      project: { id: projects[0].id },
+    }),
+  ]);
+  useEffect(() => () => c.dispose(), [c]);
   const [logs] = useState(() =>
     persistent
       ? clientLogs()
@@ -64,7 +99,10 @@ function Preview({
               : `Diagnostic record ${i + 1}: session state synchronized`,
           connection: "https://cxz.example",
           project: "01949770-0000-8000-8008-000000000002",
-          session: "01949770-0000-8000-8008-000000000001",
+          session:
+            i % 2 === 0
+              ? "01949770-0000-8000-8008-000000000001"
+              : "01949770-0000-8000-8008-000000000003",
           method: i % 2 === 0 ? "cxz.SessionService/Transcript" : undefined,
           details: {
             attempt: i + 1,
@@ -121,7 +159,7 @@ function Preview({
           Generate rotation burst
         </Button>
       </div>
-      <LogsPage logs={logs} />
+      <LogsPage logs={logs} c={c} projects={projects} sessions={sessions} />
     </div>
   );
 }
@@ -133,7 +171,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Browser diagnostics in the same centered, bounded layout as resource pages. The shared FindBar searches retained logs; level, category and identity filters remain available. Dense, single-line table rows open a shared modal with the complete record, including the method and category, without expanding the table. Live updates, OPFS persistence, filtered JSONL downloads and pagination use the actual log store.",
+          "Browser diagnostics in the centered resource layout. Project/session selectors share the resource selection state. The shared FindBar contains checkbox menus for multiple log levels and categories. Dense, single-line rows use level icons and omit timezone offsets; complete records open in a modal. History loads automatically through stable ID cursors, and only viewport rows plus overscan are mounted. Live updates follow the head while it is visible; history remains stable while reading older records. Use Generate rotation burst to exercise continuous scrolling. OPFS persistence and filtered downloads use the actual log store.",
       },
     },
   },

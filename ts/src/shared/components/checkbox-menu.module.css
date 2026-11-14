@@ -1,0 +1,17 @@
+.trigger.trigger[data-variant="toolbar"] {
+  align-self: stretch;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  padding-inline: calc(2 * var(--ui-space));
+  white-space: nowrap;
+  color: var(--ui-muted);
+}
+.trigger[data-menu-open],
+.trigger[data-filtered] {
+  --button-background: var(--ui-button-hover-background);
+  color: var(--ui-text-value);
+}
+.menu.menu {
+  width: calc(48 * var(--ui-space));
+}

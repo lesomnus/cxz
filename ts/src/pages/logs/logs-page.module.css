@@ -12,20 +12,15 @@
   min-height: 0;
   gap: calc(2 * var(--ui-space));
 }
-.description,
 .live,
 .status,
 .notice,
-.footer {
-  font-size: 12px;
+.sentinel {
+  font-size: 11px;
   color: var(--ui-muted);
 }
-.description {
-  min-width: 0;
-}
 .live,
-.status,
-.footer {
+.status {
   display: flex;
   align-items: center;
   gap: calc(2 * var(--ui-space));
@@ -33,14 +28,6 @@
 .live {
   flex: none;
   white-space: nowrap;
-}
-.filters.filters {
-  --ui-form-control-padding-block: calc(2 * var(--ui-space));
-  --ui-form-control-padding-inline: calc(2 * var(--ui-space));
-  margin: 0;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr))
-    repeat(3, minmax(0, 1.5fr));
 }
 .status {
   flex-wrap: wrap;
@@ -53,13 +40,13 @@
   border-radius: var(--ui-section-radius);
 }
 .timeColumn {
-  width: 190px;
+  width: 150px;
 }
 .table.table {
   --resource-table-control-size: calc(6 * var(--ui-space));
 }
 .levelColumn {
-  width: 60px;
+  width: 32px;
 }
 .time {
   font-size: 11px;
@@ -92,7 +79,10 @@
   text-overflow: ellipsis;
 }
 .level {
-  font: 11px var(--ui-font-mono);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
   color: var(--ui-muted);
 }
 .level[data-level="warn"] {
@@ -100,11 +90,6 @@
 }
 .level[data-level="error"] {
   color: var(--ui-error, #db7979);
-}
-.footer {
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  font-variant-numeric: tabular-nums;
 }
 .empty {
   margin: 0;
@@ -115,21 +100,20 @@
 .notice {
   margin: 0;
 }
+.sentinel {
+  height: calc(6 * var(--ui-space));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spacer.spacer td {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
 @container resource-page (width < 600px) {
-  .description {
-    display: none;
-  }
-  .filters.filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .filters > :last-child {
-    grid-column: 1 / -1;
-  }
   .timeColumn {
-    width: 156px;
-  }
-  .levelColumn {
-    width: 52px;
+    width: 132px;
   }
   .time {
     font-size: 10px;

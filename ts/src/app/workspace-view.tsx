@@ -61,7 +61,16 @@ export function WorkspaceView() {
     );
   if (resource === "auxiliary")
     return <AuxiliaryPage c={c} sessions={sessions} />;
-  if (resource === "logs") return <LogsPage />;
+  if (resource === "logs")
+    return (
+      <LogsPage
+        c={c}
+        projects={projects}
+        sessions={sessions}
+        projectsLoading={projectsLoading}
+        sessionsLoading={sessionsLoading}
+      />
+    );
   if (resource === "settings")
     return (
       <SettingsPage

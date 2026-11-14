@@ -1,15 +1,19 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { useDeferredValue, useEffect, useId, useMemo, useState } from "react";
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   Button,
   Switch,
-  ValueMenu,
   FindBar,
   FindBarControls,
   FindBarIcon,
   FindBarInput,
-  Form,
-  FormField,
   Table,
   TableHeader,
   TableBody,
@@ -18,76 +22,119 @@ import {
   TableCell,
   TableScrollArea,
 } from "@lesomnus/nox";
+import type { Project } from "#gen/cxz/project_pb";
+import type { Session } from "#gen/cxz/session_pb";
+import type { Connection } from "#src/shared/api/connection.ts";
+import { ResourceSelection } from "#src/shared/api/resource-selection.ts";
+import { sessionUUID } from "#src/shared/api/session-id.ts";
+import { projectId } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { clientLogs, type ClientLogs } from "#src/shared/logs/client-logs.ts";
-import {
-  pageSize,
-  type LogEntry,
-  type LogPage,
-  type LogQuery,
+import type {
+  LogCategory,
+  LogEntry,
+  LogLevel,
+  LogQuery,
 } from "#src/shared/logs/log-entry.ts";
-import styles from "./logs-page.module.css";
 import {
   ResourceLayout,
   ResourcePage,
   ResourceToolbar,
 } from "#src/shared/components/resource-layout.tsx";
 import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
+import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
+import { SessionPicker } from "#src/shared/components/session-picker.tsx";
+import { CheckboxMenu } from "#src/shared/components/checkbox-menu.tsx";
 import pageStyles from "#src/shared/components/resource-page.module.css";
 import tableStyles from "#src/shared/components/resource-table.module.css";
 import { LogDetailsDialog } from "./log-details-dialog";
+import { LogLevelIcon } from "./log-level-icon";
+import { useLogFeed } from "./use-log-feed";
+import { useLogViewport } from "./use-log-viewport";
+import styles from "./logs-page.module.css";
 
-export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
+const logLevels = ["info", "warn", "error"] as const;
+const logCategories = ["client", "rpc"] as const;
+const emptyProjects: readonly Project[] = [];
+const emptySessions: readonly Session[] = [];
+
+export function LogsPage({
+  logs: supplied,
+  c,
+  projects = emptyProjects,
+  sessions = emptySessions,
+  projectsLoading = false,
+  sessionsLoading = false,
+}: {
+  logs?: ClientLogs;
+  c?: Connection;
+  projects?: readonly Project[];
+  sessions?: readonly Session[];
+  projectsLoading?: boolean;
+  sessionsLoading?: boolean;
+}) {
   useLocale();
-  const id = useId();
   const logs = useMemo(() => supplied ?? clientLogs(), [supplied]);
-  const [filters, setFilters] = useState<LogQuery>({});
+  const [localSelection] = useState(() => new ResourceSelection());
+  const selection = c?.selection ?? localSelection;
+  const scope = useSyncExternalStore(selection.subscribe, selection.snapshot);
+  const [search, setSearch] = useState("");
+  const [levels, setLevels] = useState<LogLevel[]>([...logLevels]);
+  const [categories, setCategories] = useState<LogCategory[]>([
+    ...logCategories,
+  ]);
+  const filters: LogQuery = useMemo(
+    () => ({
+      search,
+      level: levels,
+      category: categories,
+      project: scope.project || undefined,
+      projectSessions: scope.project
+        ? sessions
+            .filter(
+              (session) =>
+                session.project && projectId(session.project) === scope.project,
+            )
+            .map((session) => sessionUUID(session.id))
+        : undefined,
+      session: scope.session || undefined,
+    }),
+    [search, levels, categories, scope.project, scope.session, sessions],
+  );
   const deferred = useDeferredValue(filters);
-  const [offset, setOffset] = useState(0);
-  const [revision, setRevision] = useState(0);
   const [live, setLive] = useState(true);
+  const feed = useLogFeed(logs, deferred, live);
+  const result = feed.page;
+  const queryKey = JSON.stringify(deferred);
+  const window = useLogViewport(result?.entries.length ?? 0, queryKey);
+  const sentinel = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<LogPage>();
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [selected, setSelected] = useState<LogEntry>();
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const query = useMemo(() => ({ ...deferred, offset }), [deferred, offset]);
   useEffect(() => {
-    if (!live) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const unsubscribe = logs.subscribe(() => {
-      timer ??= setTimeout(() => {
-        timer = undefined;
-        setRevision((r) => r + 1);
-      }, 200);
-    });
-    return () => {
-      clearTimeout(timer);
-      unsubscribe();
-    };
-  }, [logs, live]);
-  useEffect(() => {
-    let disposed = false;
-    logs
-      .query(query)
-      .then((page) => {
-        if (!disposed) {
-          setResult(page);
-          setError("");
-        }
-      })
-      .catch((failure) => {
-        if (!disposed) setError(String(failure));
-      });
-    return () => {
-      disposed = true;
-    };
-  }, [logs, query, revision]);
-  function filter(key: keyof LogQuery, value: string) {
-    setOffset(0);
-    setFilters((old) => ({ ...old, [key]: value }));
+    if (
+      !result?.next ||
+      feed.loading ||
+      !sentinel.current ||
+      !window.viewport.current
+    )
+      return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) feed.more();
+      },
+      { root: window.viewport.current, rootMargin: "0px 0px 320px 0px" },
+    );
+    observer.observe(sentinel.current);
+    return () => observer.disconnect();
+  }, [result?.next, feed.loading, feed.more, window.viewport]);
+  function refresh() {
+    if (window.viewport.current) window.viewport.current.scrollTop = 0;
+    feed.atTop(true);
+    feed.refresh();
   }
   function openDetails(entry: LogEntry) {
     setSelected(entry);
@@ -105,8 +152,9 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
       link.download = `cxz-client-logs-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setActionError("");
     } catch (failure) {
-      setError(String(failure));
+      setActionError(String(failure));
     } finally {
       setBusy(false);
     }
@@ -115,11 +163,10 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
     setBusy(true);
     try {
       await logs.clear();
-      setOffset(0);
-      setRevision((r) => r + 1);
-      setError("");
+      refresh();
+      setActionError("");
     } catch (failure) {
-      setError(String(failure));
+      setActionError(String(failure));
     } finally {
       setBusy(false);
     }
@@ -133,7 +180,7 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
             <ToolbarIconButton
               icon="refresh"
               label={t("Refresh")}
-              onClick={() => setRevision((r) => r + 1)}
+              onClick={refresh}
             />
             <ToolbarIconButton
               icon="download"
@@ -150,9 +197,29 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
           </>
         }
       >
-        <span className={styles.description}>
-          {t("Diagnostics observed by this browser")}
-        </span>
+        <ProjectPicker
+          projects={projects}
+          value={scope.project}
+          allowAll
+          loading={projectsLoading}
+          choose={(project) => selection.chooseProject(project)}
+        />
+        <SessionPicker
+          sessions={sessions}
+          project={scope.project || undefined}
+          value={scope.session}
+          loading={sessionsLoading}
+          choose={(id) => {
+            const session = sessions.find(
+              (session) => sessionUUID(session.id) === id,
+            );
+            selection.chooseSession(
+              session?.project ? projectId(session.project) : scope.project,
+              id,
+              session?.runtimeId ?? "",
+            );
+          }}
+        />
         <span className={styles.live}>
           <span>{t("Live updates")}</span>
           <Switch
@@ -160,8 +227,7 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
             checked={live}
             onChange={(value) => {
               setLive(value);
-              setOffset(0);
-              setRevision((r) => r + 1);
+              if (value) refresh();
             }}
           />
         </span>
@@ -174,59 +240,42 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
               <FindBarInput
                 aria-label={t("Search logs")}
                 placeholder={t("Search logs")}
-                value={filters.search ?? ""}
-                onChange={(e) => filter("search", e.target.value)}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <CheckboxMenu
+                label={t("Log level")}
+                allLabel={t("All levels")}
+                triggerContent={t("Level")}
+                options={logLevels.map((level) => ({
+                  value: level,
+                  label: level,
+                  icon: <LogLevelIcon level={level} />,
+                }))}
+                value={levels}
+                choose={(values) =>
+                  setLevels(logLevels.filter((level) => values.includes(level)))
+                }
+              />
+              <CheckboxMenu
+                label={t("Log category")}
+                allLabel={t("All categories")}
+                triggerContent={t("Category")}
+                options={logCategories.map((category) => ({
+                  value: category,
+                  label: category === "rpc" ? "RPC" : "Client",
+                }))}
+                value={categories}
+                choose={(values) =>
+                  setCategories(
+                    logCategories.filter((category) =>
+                      values.includes(category),
+                    ),
+                  )
+                }
               />
             </FindBarControls>
           </FindBar>
-          <Form
-            as="fieldset"
-            className={styles.filters}
-            aria-label={t("Search logs")}
-          >
-            <FormField label={t("Log level")}>
-              <ValueMenu
-                label={t("Log level")}
-                value={filters.level ?? ""}
-                choose={(value) => filter("level", value)}
-                options={[
-                  { value: "", label: t("All levels") },
-                  { value: "info", label: "Info" },
-                  { value: "warn", label: "Warn" },
-                  { value: "error", label: "Error" },
-                ]}
-              />
-            </FormField>
-            <FormField label={t("Log category")}>
-              <ValueMenu
-                label={t("Log category")}
-                value={filters.category ?? ""}
-                choose={(value) => filter("category", value)}
-                options={[
-                  { value: "", label: t("All categories") },
-                  { value: "rpc", label: "RPC" },
-                  { value: "client", label: "Client" },
-                ]}
-              />
-            </FormField>
-            {(
-              [
-                ["connection", t("Connection URL")],
-                ["project", t("Project UUID")],
-                ["session", t("Session UUID")],
-              ] as const
-            ).map(([key, label]) => (
-              <FormField key={key} label={label} htmlFor={`${id}-${key}`}>
-                <input
-                  id={`${id}-${key}`}
-                  aria-label={label}
-                  placeholder={label}
-                  value={filters[key] ?? ""}
-                  onChange={(e) => filter(key, e.target.value.trim())}
-                />
-              </FormField>
-            ))}
-          </Form>
           <div className={styles.status} role="status">
             {result ? (
               <>
@@ -252,11 +301,23 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
               )}
             </p>
           )}
-          {error && <ErrorNotice error={error} />}
-          <TableScrollArea className={styles.scroll} scrollbarLabel={t("Logs")}>
+          {(actionError || feed.error) && (
+            <ErrorNotice error={actionError || feed.error} />
+          )}
+          <TableScrollArea
+            className={styles.scroll}
+            viewportRef={window.viewport}
+            data-loaded-count={result?.entries.length ?? 0}
+            scrollbarLabel={t("Logs")}
+            onScroll={(event) => {
+              feed.atTop(event.currentTarget.scrollTop < 2);
+              window.scrolled();
+            }}
+          >
             <Table
               className={`${tableStyles.layout} ${tableStyles.table} ${styles.table}`}
               aria-label={t("Client logs")}
+              aria-rowcount={result ? result.total + 1 : undefined}
             >
               <colgroup>
                 <col className={styles.timeColumn} />
@@ -266,72 +327,60 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("Time")}</TableHead>
-                  <TableHead>{t("Level")}</TableHead>
+                  <TableHead aria-label={t("Level")} />
                   <TableHead>{t("Message")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {result?.entries.map((entry) => (
-                  <TableRow
-                    key={entry.id}
-                    className={styles.row}
-                    selected={detailsOpen && selected?.id === entry.id}
-                    onClick={() => openDetails(entry)}
-                  >
-                    <TableCell className={styles.time}>
-                      <DateTime value={entry.time} />
-                    </TableCell>
-                    <TableCell>
-                      <span className={styles.level} data-level={entry.level}>
-                        {entry.level}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        className={styles.message}
-                        aria-label={entry.message}
-                        aria-haspopup="dialog"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openDetails(entry);
-                        }}
-                      >
-                        <span>{entry.message}</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {window.before > 0 && <Spacer height={window.before} />}
+                {result?.entries
+                  .slice(window.start, window.end)
+                  .map((entry, index) => (
+                    <TableRow
+                      key={entry.id}
+                      data-log-row
+                      aria-rowindex={window.start + index + 2}
+                      className={styles.row}
+                      selected={detailsOpen && selected?.id === entry.id}
+                      onClick={() => openDetails(entry)}
+                    >
+                      <TableCell className={styles.time}>
+                        <DateTime value={entry.time} showOffset={false} />
+                      </TableCell>
+                      <TableCell align="center">
+                        <LogLevelIcon level={entry.level} />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          className={styles.message}
+                          aria-label={entry.message}
+                          aria-haspopup="dialog"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openDetails(entry);
+                          }}
+                        >
+                          <span>{entry.message}</span>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                {window.after > 0 && <Spacer height={window.after} />}
               </TableBody>
             </Table>
             {result && !result.entries.length && (
               <p className={styles.empty}>{t("No matching logs")}</p>
             )}
+            <div
+              ref={sentinel}
+              className={styles.sentinel}
+              aria-busy={feed.loading}
+            >
+              {feed.loading && result?.entries.length
+                ? t("Loading more logs…")
+                : null}
+            </div>
           </TableScrollArea>
-          <footer className={styles.footer}>
-            <Button
-              disabled={!offset}
-              onClick={() => {
-                setLive(false);
-                setOffset(Math.max(0, offset - pageSize));
-              }}
-            >
-              {t("Previous")}
-            </Button>
-            <span>
-              {result?.total
-                ? `${offset + 1}–${Math.min(offset + pageSize, result.total)} / ${result.total}`
-                : "0"}
-            </span>
-            <Button
-              disabled={!result || offset + pageSize >= result.total}
-              onClick={() => {
-                setLive(false);
-                setOffset(offset + pageSize);
-              }}
-            >
-              {t("Next")}
-            </Button>
-          </footer>
         </ResourceLayout>
       </div>
       {selected && (
@@ -343,5 +392,12 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
         />
       )}
     </ResourcePage>
+  );
+}
+function Spacer({ height }: { height: number }) {
+  return (
+    <TableRow className={styles.spacer} aria-hidden="true">
+      <TableCell colSpan={3} style={{ height }} />
+    </TableRow>
   );
 }

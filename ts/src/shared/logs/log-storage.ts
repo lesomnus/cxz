@@ -2,7 +2,7 @@ import {
   decodeLines,
   encodeLine,
   matchesLog,
-  pageSize,
+  LogPageCollector,
   retainedBytes,
   segmentBytes,
   type LogEntry,
@@ -31,14 +31,13 @@ export class MemoryLogStorage implements LogStorage {
     }
   }
   async query(query: LogQuery): Promise<LogPage> {
-    const entries = this.entries
-      .map((e) => e.entry)
-      .reverse()
-      .filter((e) => matchesLog(e, query));
-    const offset = Math.max(0, query.offset ?? 0);
+    const page = new LogPageCollector(query);
+    for (let i = this.entries.length - 1; i >= 0; i--)
+      page.add(this.entries[i].entry);
     return {
-      entries: entries.slice(offset, offset + pageSize),
-      total: entries.length,
+      entries: page.entries,
+      total: page.total,
+      next: page.next,
       bytes: this.bytes,
       capacity: this.limit,
       storage: "memory",
@@ -163,19 +162,16 @@ export class OPFSLogStorage implements LogStorage {
   async query(query: LogQuery): Promise<LogPage> {
     return this.locked(async (directory) => {
       const files = await this.files(directory);
-      const result: LogEntry[] = [];
-      const offset = Math.max(0, query.offset ?? 0);
-      let total = 0;
+      const page = new LogPageCollector(query);
       for (const { file } of files.reverse()) {
         for (const entry of decodeLines(await file.text()).reverse()) {
-          if (!matchesLog(entry, query)) continue;
-          if (total >= offset && result.length < pageSize) result.push(entry);
-          total++;
+          page.add(entry);
         }
       }
       return {
-        entries: result,
-        total,
+        entries: page.entries,
+        total: page.total,
+        next: page.next,
         bytes: files.reduce((sum, f) => sum + f.file.size, 0),
         capacity: this.totalLimit,
         storage: "opfs",

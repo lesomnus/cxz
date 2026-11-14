@@ -11,11 +11,13 @@ export function ProjectPicker({
   projects,
   value,
   loading = false,
+  allowAll = false,
   choose,
 }: {
   projects: readonly Project[];
   value: string;
   loading?: boolean;
+  allowAll?: boolean;
   choose: (value: string) => void;
 }) {
   useLocale();
@@ -34,21 +36,26 @@ export function ProjectPicker({
             ? selected.name || selected.alias
             : loading
               ? t("Loading projects…")
-              : t("Select project")
+              : allowAll && !value
+                ? t("All projects")
+                : t("Select project")
         }
-        options={projects.map((project) => ({
-          value: projectId(project),
-          label: project.name || project.alias,
-          icon: (
-            <Icon
-              name={projectIconName(project) ?? "projects"}
-              size="var(--ui-icon-size-small)"
-            />
-          ),
-          searchText: `${project.alias} ${project.workspace}`,
-        }))}
+        options={[
+          ...(allowAll ? [{ value: "", label: t("All projects") }] : []),
+          ...projects.map((project) => ({
+            value: projectId(project),
+            label: project.name || project.alias,
+            icon: (
+              <Icon
+                name={projectIconName(project) ?? "projects"}
+                size="var(--ui-icon-size-small)"
+              />
+            ),
+            searchText: `${project.alias} ${project.workspace}`,
+          })),
+        ]}
         searchable
-        disabled={!projects.length}
+        disabled={!allowAll && !projects.length}
         choose={choose}
       />
     </div>

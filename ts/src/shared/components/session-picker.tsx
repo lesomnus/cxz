@@ -17,7 +17,7 @@ export function SessionPicker({
   choose,
 }: {
   sessions: readonly Session[];
-  project: string;
+  project?: string;
   value?: string;
   loading?: boolean;
   suffix?: string;
@@ -25,7 +25,9 @@ export function SessionPicker({
   choose: (value: string) => void;
 }) {
   const scoped = sessions.filter(
-    (session) => session.project && projectId(session.project) === project,
+    (session) =>
+      project === undefined ||
+      (session.project && projectId(session.project) === project),
   );
   const selected = value
     ? scoped.find((session) => getValue(session) === value)
@@ -51,7 +53,7 @@ export function SessionPicker({
           })),
         ]}
         searchable
-        disabled={!project || loading}
+        disabled={project === "" || loading}
         choose={choose}
       />
     </div>

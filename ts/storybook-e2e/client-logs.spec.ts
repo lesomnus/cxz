@@ -32,8 +32,9 @@ test("OPFS logs survive reload and support filters, details, export and clear", 
     .getByRole("searchbox", { name: "Search logs", exact: true })
     .fill("RPC stream disconnected");
   await page
-    .getByRole("textbox", { name: "Session UUID", exact: true })
-    .fill("01949770-0000-8000-8008-000000000001");
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Review", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("1 matching records");
   const downloadPromise = page.waitForEvent("download");
   await page
@@ -124,11 +125,9 @@ test("real OPFS segments rotate at 2 MiB and remain readable through a worker", 
     .getByRole("searchbox", { name: "Search logs", exact: true })
     .fill("Rotation record");
   await expect(page.getByRole("status")).toContainText("1200 matching records");
-  await expect(
-    page
-      .getByRole("table", { name: "Client logs", exact: true })
-      .locator("tbody tr"),
-  ).toHaveCount(100);
+  const loaded = page.locator("[data-loaded-count]");
+  await expect(loaded).toHaveAttribute("data-loaded-count", "100");
+  expect(await loaded.locator("[data-log-row]").count()).toBeLessThan(100);
   const sizes = await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();
     const dir = await root.getDirectoryHandle("cxz-client-logs-v1");
@@ -142,8 +141,39 @@ test("real OPFS segments rotate at 2 MiB and remain readable through a worker", 
   });
   expect(sizes.length).toBeGreaterThanOrEqual(2);
   expect(sizes.every((size) => size <= 2 * 1024 * 1024)).toBe(true);
-  await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(page.getByText("101–200 / 1200", { exact: true })).toBeVisible();
+  const viewport = loaded.locator('[data-scroll-area="viewport"]').first();
+  await viewport.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await expect(loaded).toHaveAttribute("data-loaded-count", "200");
+  await viewport.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await expect(loaded).toHaveAttribute("data-loaded-count", "300");
+  expect(await loaded.locator("[data-log-row]").count()).toBeLessThan(100);
+  await expect(
+    page.getByRole("button", { name: "Next", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("searchbox", { name: "Search logs", exact: true })
+    .fill("");
+  await expect(loaded).toHaveAttribute("data-loaded-count", "100");
+  await viewport.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await expect(loaded).toHaveAttribute("data-loaded-count", "200");
+  const historyTop = await viewport.evaluate((node) => node.scrollTop);
+  const historyRow = await loaded.locator("[data-log-row]").first().innerText();
+  await burst.click();
+  await expect(burst).toBeEnabled({ timeout: 30000 });
+  expect(await viewport.evaluate((node) => node.scrollTop)).toBe(historyTop);
+  expect(await loaded.locator("[data-log-row]").first().innerText()).toBe(
+    historyRow,
+  );
+  await viewport.evaluate((node) => {
+    node.scrollTop = 0;
+  });
+  await expect(page.getByRole("status")).toContainText("2400 matching records");
 });
 
 for (const width of [1440, 390]) {
@@ -163,19 +193,25 @@ for (const width of [1440, 390]) {
       Math.abs(box.x + box.width / 2 - mainBox.x - mainBox.width / 2),
     ).toBeLessThan(1);
     expect(box.x + box.width).toBeLessThanOrEqual(width);
-    const fields = main
-      .getByRole("group", { name: "Search logs", exact: true })
-      .locator(":scope > div");
-    const firstField = (await fields.nth(0).boundingBox())!;
-    const thirdField = (await fields.nth(2).boundingBox())!;
-    if (width < 600) {
-      expect(thirdField.y).toBeGreaterThan(firstField.y + firstField.height);
-    } else {
-      expect(thirdField.y).toBe(firstField.y);
-    }
+    const toolbar = main.locator("[data-resource-toolbar-content]");
+    await expect(
+      toolbar.getByRole("combobox", { name: "Select project", exact: true }),
+    ).toBeVisible();
+    await expect(
+      toolbar.getByRole("combobox", { name: "Select session", exact: true }),
+    ).toBeVisible();
     const search = main.getByRole("search", { name: "Search logs" });
     await expect(search.locator("svg")).toBeVisible();
     const input = search.getByRole("searchbox", { name: "Search logs" });
+    await expect(
+      search.getByRole("button", { name: "Log level", exact: true }),
+    ).toBeVisible();
+    await expect(
+      search.getByRole("button", { name: "Log category", exact: true }),
+    ).toBeVisible();
+    expect(await table.locator("tbody time").first().innerText()).not.toMatch(
+      /[+-]\d\d:\d\d/,
+    );
     await input.fill("Request 8 failed");
     await expect(table.locator("tbody tr")).toHaveCount(1);
     const row = table.locator("tbody tr").first();
@@ -229,3 +265,104 @@ for (const width of [1440, 390]) {
     }
   });
 }
+
+test("checkbox filters stay open for multiple selections and project/session selectors scope logs", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/iframe.html?id=pages-logs--populated&viewMode=story");
+  const status = page.getByRole("status");
+  await expect(status).toContainText("25 matching records");
+  const level = page.getByRole("button", { name: "Log level", exact: true });
+  await level.click();
+  const menu = page.getByRole("menu", { name: "Log level", exact: true });
+  const all = menu.getByRole("menuitemcheckbox", {
+    name: "All levels",
+    exact: true,
+  });
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await all.click();
+  await expect(status).toContainText("0 matching records");
+  await expect(menu).toBeVisible();
+  await menu
+    .getByRole("menuitemcheckbox", { name: "warn", exact: true })
+    .click();
+  await expect(status).toContainText("6 matching records");
+  await expect(all).toHaveAttribute("aria-checked", "mixed");
+  await menu.screenshot({
+    path: testInfo.outputPath("checkbox-filters.png"),
+    animations: "disabled",
+  });
+  await menu
+    .getByRole("menuitemcheckbox", { name: "error", exact: true })
+    .click();
+  await expect(status).toContainText("10 matching records");
+  await all.focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Space");
+  await expect(status).toContainText("25 matching records");
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(level).toBeFocused();
+  await page.getByRole("button", { name: "Log category", exact: true }).click();
+  const categories = page.getByRole("menu", {
+    name: "Log category",
+    exact: true,
+  });
+  await categories
+    .getByRole("menuitemcheckbox", { name: "All categories", exact: true })
+    .click();
+  await categories
+    .getByRole("menuitemcheckbox", { name: "RPC", exact: true })
+    .click();
+  await expect(status).toContainText("13 matching records");
+  await categories
+    .getByRole("menuitemcheckbox", { name: "Client", exact: true })
+    .click();
+  await expect(status).toContainText("25 matching records");
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Archive", exact: true }).click();
+  await expect(status).toContainText("0 matching records");
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Workspace", exact: true }).click();
+  await expect(status).toContainText("25 matching records");
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Build", exact: true }).click();
+  await expect(status).toContainText("12 matching records");
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Review", exact: true }).click();
+  await expect(status).toContainText("13 matching records");
+});
+
+test("reusable checkbox menu preserves disabled choices when toggling all", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=components-checkboxmenu--disabled-option&viewMode=story",
+  );
+  await page.getByRole("button", { name: "Log level", exact: true }).click();
+  const all = page.getByRole("menuitemcheckbox", {
+    name: "All levels",
+    exact: true,
+  });
+  await expect(all).toHaveAttribute("aria-checked", "mixed");
+  await all.click();
+  await all.click();
+  await expect(page.getByLabel("Selected values")).toHaveText("error");
+  await expect(
+    page.getByRole("menuitemcheckbox", { name: "Errors", exact: true }),
+  ).toBeDisabled();
+  await page.keyboard.press("End");
+  await expect(
+    page.getByRole("menuitemcheckbox", { name: "Warnings", exact: true }),
+  ).toBeFocused();
+});

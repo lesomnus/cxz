@@ -38,12 +38,15 @@
 .box :global([data-icon-part]) {
   visibility: hidden;
 }
-.input:is(:checked, :indeterminate) + .box {
+.input:is(:checked, :indeterminate) + .box,
+.box:is([data-checked], [data-indeterminate]) {
   background: var(--ui-shade-237);
   border-color: var(--ui-shade-237);
 }
 .input:checked:not(:indeterminate) + .box :global([data-icon-part="check"]),
-.input:indeterminate + .box :global([data-icon-part="mixed"]) {
+.input:indeterminate + .box :global([data-icon-part="mixed"]),
+.box[data-checked]:not([data-indeterminate]) :global([data-icon-part="check"]),
+.box[data-indeterminate] :global([data-icon-part="mixed"]) {
   visibility: visible;
 }
 .control:hover .input:not(:disabled) + .box {
