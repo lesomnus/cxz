@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   Button,
+  CheckboxMenu,
   Switch,
   FindBar,
   FindBarControls,
@@ -46,7 +47,6 @@ import {
 import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { SessionPicker } from "#src/shared/components/session-picker.tsx";
-import { CheckboxMenu } from "#src/shared/components/checkbox-menu.tsx";
 import pageStyles from "#src/shared/components/resource-page.module.css";
 import tableStyles from "#src/shared/components/resource-table.module.css";
 import { LogDetailsDialog } from "./log-details-dialog";

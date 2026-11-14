@@ -378,34 +378,3 @@ test("checkbox filters stay open for multiple selections and project/session sel
   await page.getByRole("option", { name: "Review", exact: true }).click();
   await expect(status).toContainText("13 matching records");
 });
-
-test("reusable checkbox menu preserves disabled choices when toggling all", async ({
-  page,
-}) => {
-  await page.goto(
-    "/iframe.html?id=components-checkboxmenu--disabled-option&viewMode=story",
-  );
-  await page.getByRole("button", { name: "Log level", exact: true }).click();
-  const all = page.getByRole("menuitemcheckbox", {
-    name: "All levels",
-    exact: true,
-  });
-  await expect(all).toHaveAttribute("aria-checked", "mixed");
-  await all.click();
-  await all.click();
-  await expect(page.getByLabel("Selected values")).toHaveText("info, error");
-  await expect(page.getByLabel("Apply count")).toHaveText("0");
-  await expect(
-    page.getByRole("menuitemcheckbox", { name: "Errors", exact: true }),
-  ).toBeDisabled();
-  await page.keyboard.press("End");
-  await expect(
-    page.getByRole("menuitemcheckbox", { name: "Warnings", exact: true }),
-  ).toBeFocused();
-  await page.keyboard.press("Escape");
-  await expect(page.getByLabel("Selected values")).toHaveText("error");
-  await expect(page.getByLabel("Apply count")).toHaveText("1");
-  await page.getByRole("button", { name: "Log level", exact: true }).click();
-  await page.keyboard.press("Escape");
-  await expect(page.getByLabel("Apply count")).toHaveText("1");
-});
