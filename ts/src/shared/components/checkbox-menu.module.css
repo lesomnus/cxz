@@ -25,6 +25,7 @@
   );
 }
 .menu.menu :global([role="menuitemcheckbox"]) > :global(.button-content) {
+  gap: calc(2 * var(--ui-space));
   transform: none;
 }
 .itemContent {
