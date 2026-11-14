@@ -104,6 +104,7 @@ export const messages = {
   "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).":
     "로그를 브라우저 저장소에 저장할 수 없습니다. 최대 2 MiB를 현재 탭의 메모리에 보관하며 새로고침하면 사라집니다.",
   "Client logs": "클라이언트 로그",
+  "Log details": "로그 상세 정보",
   Time: "시각",
   Level: "레벨",
   "No matching logs": "검색된 로그가 없습니다",

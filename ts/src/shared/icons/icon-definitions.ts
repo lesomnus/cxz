@@ -149,6 +149,9 @@ export const iconDefinitions = {
   upload: line([
     path("M12 15V3m-4 4 4-4 4 4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"),
   ]),
+  download: line([
+    path("M12 3v12m-4-4 4 4 4-4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"),
+  ]),
   folder: line([path("M2 4h5l1.5 2H14v7H2ZM8 11V7m-2 2 2-2 2 2")], "0 0 16 16"),
   "open-external": line([path("M7 17 17 7M7 7h10v10")]),
   "open-project": line([path("M5 12h14m-6-6 6 6-6 6")]),

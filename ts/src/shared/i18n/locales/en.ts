@@ -107,6 +107,7 @@ export const messages = {
   "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).":
     "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).",
   "Client logs": "Client logs",
+  "Log details": "Log details",
   Time: "Time",
   Level: "Level",
   "No matching logs": "No matching logs",

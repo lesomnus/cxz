@@ -1,0 +1,22 @@
+.dialog {
+  --card-body-padding: 0;
+  width: min(720px, calc(100vw - 4 * var(--ui-space)));
+}
+.close {
+  margin-left: auto;
+}
+.body.body:global(.card-body) {
+  height: min(60dvh, 520px);
+  overflow: hidden;
+}
+.scroll {
+  --ui-scroll-area-background: var(--ui-dialog-body-background);
+  height: 100%;
+}
+.record {
+  margin: 0;
+  padding: var(--ui-dialog-padding);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 12px/1.6 var(--ui-font-mono);
+}

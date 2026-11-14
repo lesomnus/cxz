@@ -10,17 +10,17 @@ test("OPFS logs survive reload and support filters, details, export and clear", 
   await page
     .getByRole("button", { name: "Record disconnect", exact: true })
     .click();
-  const summary = page
-    .locator("summary")
-    .filter({ hasText: "RPC stream disconnected" });
-  await expect(summary).toHaveCount(1);
-  await summary.click();
-  await expect(page.locator("details[open] pre")).toContainText(
-    '"closeCode": 1006',
-  );
+  const record = page.getByRole("button", {
+    name: "RPC stream disconnected",
+    exact: true,
+  });
+  await expect(record).toHaveCount(1);
+  await record.click();
+  const dialog = page.getByRole("dialog", { name: "Log details" });
+  await expect(dialog.locator("pre")).toContainText('"closeCode": 1006');
   await page.reload();
   await expect(
-    page.locator("summary").filter({ hasText: "RPC stream disconnected" }),
+    page.getByRole("button", { name: "RPC stream disconnected", exact: true }),
   ).toHaveCount(1);
   await page
     .getByRole("searchbox", { name: "Search logs", exact: true })
@@ -75,7 +75,7 @@ test("independent tabs share persistent logs and deletion without polling", asyn
       .click(),
   ]);
   const matching = (p: typeof page) =>
-    p.locator("summary").filter({ hasText: "RPC stream disconnected" });
+    p.getByRole("button", { name: "RPC stream disconnected", exact: true });
   await expect(matching(page)).toHaveCount(2);
   await expect(matching(other)).toHaveCount(2);
   await other.getByRole("button", { name: "Clear logs", exact: true }).click();
@@ -92,7 +92,7 @@ test("unhandled client errors are recorded and memory fallback is explicit", asy
     .getByRole("button", { name: "Record client error", exact: true })
     .click();
   await expect(
-    page.locator("summary").filter({ hasText: "Client rendering failed" }),
+    page.getByRole("button", { name: "Client rendering failed", exact: true }),
   ).toHaveCount(1);
   await page.addInitScript(() => {
     Object.defineProperty(window, "Worker", {
@@ -145,3 +145,86 @@ test("real OPFS segments rotate at 2 MiB and remain readable through a worker", 
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.getByText("101–200 / 1200", { exact: true })).toBeVisible();
 });
+
+for (const width of [1440, 390]) {
+  test(`logs reuse the bounded resource layout and shared search at ${width}px`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/iframe.html?id=pages-logs--populated&viewMode=story");
+    const main = page.getByRole("main", { name: "Logs", exact: true });
+    const table = main.getByRole("table", { name: "Client logs", exact: true });
+    await expect(table.locator("tbody tr")).toHaveCount(25);
+    const layout = main.locator("[data-resource-layout]");
+    const box = (await layout.boundingBox())!;
+    const mainBox = (await main.boundingBox())!;
+    expect(box.width).toBeLessThanOrEqual(850);
+    expect(
+      Math.abs(box.x + box.width / 2 - mainBox.x - mainBox.width / 2),
+    ).toBeLessThan(1);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+    const fields = main
+      .getByRole("group", { name: "Search logs", exact: true })
+      .locator(":scope > div");
+    const firstField = (await fields.nth(0).boundingBox())!;
+    const thirdField = (await fields.nth(2).boundingBox())!;
+    if (width < 600) {
+      expect(thirdField.y).toBeGreaterThan(firstField.y + firstField.height);
+    } else {
+      expect(thirdField.y).toBe(firstField.y);
+    }
+    const search = main.getByRole("search", { name: "Search logs" });
+    await expect(search.locator("svg")).toBeVisible();
+    const input = search.getByRole("searchbox", { name: "Search logs" });
+    await input.fill("Request 8 failed");
+    await expect(table.locator("tbody tr")).toHaveCount(1);
+    const row = table.locator("tbody tr").first();
+    const before = (await row.boundingBox())!;
+    const record = row.getByRole("button");
+    await record.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Log details" });
+    await expect(dialog.locator("pre")).toContainText('"attempt": 8');
+    await expect
+      .poll(() =>
+        dialog.evaluate(
+          (node) =>
+            node
+              .getAnimations({ subtree: true })
+              .filter(
+                (animation) =>
+                  animation.playState === "running" || animation.pending,
+              ).length,
+        ),
+      )
+      .toBe(0);
+    await expect(main.locator("details")).toHaveCount(0);
+    expect((await row.boundingBox())!.height).toBe(before.height);
+    await expect(dialog.locator("[data-scroll-area=viewport]")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("log-details.png") });
+    await page.keyboard.press("Escape");
+    await expect(page.locator("dialog")).toHaveCount(0);
+    await expect(record).toBeFocused();
+    expect((await row.boundingBox())!.height).toBe(before.height);
+    await input.fill("");
+    await expect(table.locator("tbody tr")).toHaveCount(25);
+    await table.locator("tbody tr").first().getByRole("cell").first().click();
+    await expect(
+      page.getByRole("dialog", { name: "Log details" }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Close details", exact: true })
+      .click();
+    await expect(page.locator("dialog")).toHaveCount(0);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(width);
+    await page.screenshot({ path: testInfo.outputPath("logs-page.png") });
+    if (width === 1440) {
+      await page.goto("/iframe.html?id=pages-logs--details&viewMode=story");
+      await expect(
+        page.getByRole("dialog", { name: "Log details" }).locator("pre"),
+      ).toContainText('"disconnectedMs": 1200');
+    }
+  });
+}
