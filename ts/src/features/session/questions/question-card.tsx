@@ -116,6 +116,15 @@ function QuestionCardContent({
       "AskUserQuestion",
     ].includes(e.text) &&
       qs.length === 0);
+  const canSubmit =
+    !busy && ready && !requiresForm && qs.every((q) => answered(q.key));
+  const canNext = !busy && activeStep < qs.length - 1;
+  const recommended =
+    qs.length && canSubmit
+      ? "submit"
+      : canNext && ready && answered(qs[activeStep].key)
+        ? "next"
+        : undefined;
   return (
     <FloatingCard
       className={`${dialogEntranceClassName} approval ${qs.length ? "question-card" : ""}`}
@@ -335,9 +344,8 @@ function QuestionCardContent({
         )}
         <Button
           ref={submit}
-          disabled={
-            busy || !ready || !!requiresForm || qs.some((q) => !answered(q.key))
-          }
+          disabled={!canSubmit}
+          data-recommended={recommended === "submit" || undefined}
           onClick={() =>
             reply(
               e,
@@ -363,7 +371,8 @@ function QuestionCardContent({
         {!!qs.length && (
           <Button
             ref={next}
-            disabled={busy || activeStep >= qs.length - 1}
+            disabled={!canNext}
+            data-recommended={recommended === "next" || undefined}
             onClick={() => setStep((old) => Math.min(old + 1, qs.length - 1))}
           >
             {t("Next")}
