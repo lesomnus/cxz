@@ -10,6 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  SkeletonGroup,
   useRangeSelection,
 } from "@lesomnus/nox";
 import type { Account } from "#gen/cxz/account_pb";
@@ -20,7 +21,10 @@ import { SessionIndicator } from "#src/features/session/components/session-indic
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
-import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
+import {
+  ResourceNavigationButton,
+  ResourceNavigationPlaceholder,
+} from "#src/shared/components/resource-navigation-button.tsx";
 import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 import {
   projectLocation,
@@ -47,6 +51,7 @@ export function SessionTable({
   c,
   sessions,
   accounts,
+  accountsLoading = false,
   projects = [],
   loading,
   addSession,
@@ -64,6 +69,7 @@ export function SessionTable({
   c: SessionControlConnection;
   sessions: Session[];
   accounts: Account[];
+  accountsLoading?: boolean;
   projects?: Project[];
   loading?: boolean;
   addSession?: () => void;
@@ -110,6 +116,13 @@ export function SessionTable({
     () => new Map(accounts.map((a) => [key(a.id), a])),
     [accounts],
   );
+  const accountPending = (s: Session) =>
+    !!(
+      accountsLoading &&
+      s.account &&
+      !accountsById.has(key(s.account.id)) &&
+      !s.account.name
+    );
   const projectsById = useMemo(
     () => new Map(projects.map((project) => [key(project.id), project])),
     [projects],
@@ -158,211 +171,230 @@ export function SessionTable({
           <SessionTableFeedback controls={controls} />
         </div>
       )}
-      <Frame
-        {...scrollProps}
-        className={`${styles.frame} ${pageScroll ? "" : styles.scroll} ${compact ? styles.compact : ""} ${overview ? `${styles.overview} ${resourceTableStyles.layout}` : ""} ${fillHeight ? styles.fillHeight : ""}`}
-        role="region"
-        aria-label={t("Session list")}
+      <SkeletonGroup
+        className={`${styles.skeletonFrame} ${fillHeight ? styles.fillHeight : ""}`}
+        animated={showAccount && sessions.some(accountPending)}
       >
-        <Table
-          {...selection.getContainerProps()}
-          className={`${styles.table} ${pageScroll ? resourceTableStyles.table : ""}`}
-          aria-label={t("Sessions")}
-          aria-busy={loading}
-          data-account-column={showAccount}
-          data-project-column={showProject}
+        <Frame
+          {...scrollProps}
+          className={`${styles.frame} ${pageScroll ? "" : styles.scroll} ${compact ? styles.compact : ""} ${overview ? `${styles.overview} ${resourceTableStyles.layout}` : ""} ${fillHeight ? styles.fillHeight : ""}`}
+          role="region"
+          aria-label={t("Session list")}
         >
-          <colgroup>
-            <col className={styles.selectionColumn} />
-            {overview && <col className={styles.stateColumn} />}
-            {showProject && projectFirst && (
-              <col className={styles.projectColumn} />
-            )}
-            {!compact && <col className={styles.agentColumn} />}
-            <col className={styles.nameColumn} />
-            {!compact && <col className={styles.aliasColumn} />}
-            {showAccount && <col className={styles.accountColumn} />}
-            {showProject && !projectFirst && (
-              <col className={styles.projectColumn} />
-            )}
-            {!overview && <col className={styles.stateColumn} />}
-            <col className={styles.actionsColumn} />
-          </colgroup>
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col" className={styles.selectionCell}>
-                <Checkbox
-                  className={styles.cellCheckbox}
-                  aria-label={t("Select all sessions")}
-                  {...selection.getSelectAllProps()}
-                />
-              </TableHead>
-              {overview && stateHeading}
+          <Table
+            {...selection.getContainerProps()}
+            className={`${styles.table} ${pageScroll ? resourceTableStyles.table : ""}`}
+            aria-label={t("Sessions")}
+            aria-busy={loading}
+            data-account-column={showAccount}
+            data-project-column={showProject}
+          >
+            <colgroup>
+              <col className={styles.selectionColumn} />
+              {overview && <col className={styles.stateColumn} />}
               {showProject && projectFirst && (
-                <TableHead scope="col">{t("Project")}</TableHead>
+                <col className={styles.projectColumn} />
               )}
-              {!compact && <TableHead scope="col" aria-label={t("Agent")} />}
-              <TableHead scope="col">{t("Name")}</TableHead>
-              {!compact && <TableHead scope="col">{t("Alias")}</TableHead>}
-              {showAccount && <TableHead scope="col">{t("Account")}</TableHead>}
+              {!compact && <col className={styles.agentColumn} />}
+              <col className={styles.nameColumn} />
+              {!compact && <col className={styles.aliasColumn} />}
+              {showAccount && <col className={styles.accountColumn} />}
               {showProject && !projectFirst && (
-                <TableHead scope="col">{t("Project")}</TableHead>
+                <col className={styles.projectColumn} />
               )}
-              {!overview && stateHeading}
-              <TableHead
-                scope="col"
-                className={styles.actions}
-                aria-label={t("Controls")}
-              >
-                {!showToolbar && (
-                  <SessionTableMenu
-                    sessions={chosen}
-                    controls={controls}
-                    bulk
-                    iconTrigger
-                    disabled={loading}
-                    addSession={addSession}
+              {!overview && <col className={styles.stateColumn} />}
+              <col className={styles.actionsColumn} />
+            </colgroup>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col" className={styles.selectionCell}>
+                  <Checkbox
+                    className={styles.cellCheckbox}
+                    aria-label={t("Select all sessions")}
+                    {...selection.getSelectAllProps()}
                   />
+                </TableHead>
+                {overview && stateHeading}
+                {showProject && projectFirst && (
+                  <TableHead scope="col">{t("Project")}</TableHead>
                 )}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sessions.map((s) => {
-              const name = s.name || s.alias || s.runtimeId;
-              const account = s.account && accountsById.get(key(s.account.id));
-              const accountAlias = account?.alias || s.account?.alias;
-              const accountName =
-                account?.name ||
-                s.account?.name ||
-                account?.alias ||
-                s.account?.alias ||
-                "—";
-              const checked = selected.has(s.runtimeId);
-              const projectResource =
-                s.project && (projectsById.get(key(s.project.id)) || s.project);
-              const project =
-                projectResource && resourceHandle(projectResource);
-              const projectName =
-                projectResource?.name || projectResource?.alias || project;
-              const projectCell = (
-                <TableCell className={styles.cardCell}>
-                  {project ? (
-                    <ResourceNavigationButton
-                      {...projectLocation(project)}
-                      name={projectName || project}
-                      alias={projectResource?.alias}
-                    />
-                  ) : (
-                    "—"
-                  )}
-                </TableCell>
-              );
-              const state = (
-                <TableCell className={styles.state}>
-                  {compact ? (
-                    <span className={styles.stateIndicator}>
-                      <SessionIndicator session={s} variant="status" />
-                    </span>
-                  ) : (
-                    stateLabel(s)
-                  )}
-                </TableCell>
-              );
-              return (
-                <TableRow
-                  key={s.runtimeId}
-                  className={resourceTableStyles.row}
-                  selected={checked}
-                  data-inactive={
-                    resumableStates.has(s.status?.state ?? "") || undefined
-                  }
+                {!compact && <TableHead scope="col" aria-label={t("Agent")} />}
+                <TableHead scope="col">{t("Name")}</TableHead>
+                {!compact && <TableHead scope="col">{t("Alias")}</TableHead>}
+                {showAccount && (
+                  <TableHead scope="col">{t("Account")}</TableHead>
+                )}
+                {showProject && !projectFirst && (
+                  <TableHead scope="col">{t("Project")}</TableHead>
+                )}
+                {!overview && stateHeading}
+                <TableHead
+                  scope="col"
+                  className={styles.actions}
+                  aria-label={t("Controls")}
                 >
-                  <TableCell className={styles.selectionCell}>
-                    <Checkbox
-                      className={styles.cellCheckbox}
-                      aria-label={t("Select {name}", { name })}
-                      {...selection.getCheckboxProps(s.runtimeId)}
+                  {!showToolbar && (
+                    <SessionTableMenu
+                      sessions={chosen}
+                      controls={controls}
+                      bulk
+                      iconTrigger
+                      disabled={loading}
+                      addSession={addSession}
                     />
-                  </TableCell>
-                  {overview && state}
-                  {showProject && projectFirst && projectCell}
-                  {!compact && (
-                    <TableCell className={styles.agent}>
-                      <AgentBrand agent={s.agent} />
-                    </TableCell>
                   )}
-                  {compact ? (
-                    <TableCell className={`${styles.name} ${styles.cardCell}`}>
-                      <SessionNavigationButton
-                        session={s}
-                        navigationIcon={navigationIcon}
-                        unread={completed.has(s.runtimeId)}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sessions.map((s) => {
+                const name = s.name || s.alias || s.runtimeId;
+                const account =
+                  s.account && accountsById.get(key(s.account.id));
+                const pendingAccount = accountPending(s);
+                const accountAlias = account?.alias || s.account?.alias;
+                const accountName =
+                  account?.name ||
+                  s.account?.name ||
+                  account?.alias ||
+                  s.account?.alias ||
+                  "—";
+                const checked = selected.has(s.runtimeId);
+                const projectResource =
+                  s.project &&
+                  (projectsById.get(key(s.project.id)) || s.project);
+                const project =
+                  projectResource && resourceHandle(projectResource);
+                const projectName =
+                  projectResource?.name || projectResource?.alias || project;
+                const projectCell = (
+                  <TableCell className={styles.cardCell}>
+                    {project ? (
+                      <ResourceNavigationButton
+                        {...projectLocation(project)}
+                        name={projectName || project}
+                        alias={projectResource?.alias}
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                );
+                const state = (
+                  <TableCell className={styles.state}>
+                    {compact ? (
+                      <span className={styles.stateIndicator}>
+                        <SessionIndicator session={s} variant="status" />
+                      </span>
+                    ) : (
+                      stateLabel(s)
+                    )}
+                  </TableCell>
+                );
+                return (
+                  <TableRow
+                    key={s.runtimeId}
+                    className={resourceTableStyles.row}
+                    selected={checked}
+                    data-inactive={
+                      resumableStates.has(s.status?.state ?? "") || undefined
+                    }
+                  >
+                    <TableCell className={styles.selectionCell}>
+                      <Checkbox
+                        className={styles.cellCheckbox}
+                        aria-label={t("Select {name}", { name })}
+                        {...selection.getCheckboxProps(s.runtimeId)}
                       />
                     </TableCell>
-                  ) : (
-                    (["name", "alias"] as const).map((field) => (
-                      <TableCell className={styles[field]} key={field}>
-                        <fieldset
-                          className={styles.editable}
-                          disabled={controls.busy || loading}
-                        >
-                          <EditableValue
-                            label={field === "name" ? t("Name") : t("Alias")}
-                            value={s[field]}
-                            monospace={field === "alias"}
-                            validate={(value) =>
-                              validateSessionField(field, value)
-                            }
-                            save={async (value) => {
-                              const updated = await editSession(
-                                c.sessions,
-                                s.runtimeId,
-                                field,
-                                value,
-                              );
-                              c.store.apply("cxz.Session", [
-                                { id: updated.id, value: updated },
-                              ]);
-                            }}
-                          />
-                        </fieldset>
+                    {overview && state}
+                    {showProject && projectFirst && projectCell}
+                    {!compact && (
+                      <TableCell className={styles.agent}>
+                        <AgentBrand agent={s.agent} />
                       </TableCell>
-                    ))
-                  )}
-                  {showAccount && (
-                    <TableCell className={styles.cardCell}>
-                      {accountAlias ? (
-                        <ResourceNavigationButton
-                          {...accountLocation(accountAlias)}
-                          name={accountName}
-                          alias={accountAlias}
+                    )}
+                    {compact ? (
+                      <TableCell
+                        className={`${styles.name} ${styles.cardCell}`}
+                      >
+                        <SessionNavigationButton
+                          session={s}
+                          navigationIcon={navigationIcon}
+                          unread={completed.has(s.runtimeId)}
                         />
-                      ) : (
-                        accountName
-                      )}
+                      </TableCell>
+                    ) : (
+                      (["name", "alias"] as const).map((field) => (
+                        <TableCell className={styles[field]} key={field}>
+                          <fieldset
+                            className={styles.editable}
+                            disabled={controls.busy || loading}
+                          >
+                            <EditableValue
+                              label={field === "name" ? t("Name") : t("Alias")}
+                              value={s[field]}
+                              monospace={field === "alias"}
+                              validate={(value) =>
+                                validateSessionField(field, value)
+                              }
+                              save={async (value) => {
+                                const updated = await editSession(
+                                  c.sessions,
+                                  s.runtimeId,
+                                  field,
+                                  value,
+                                );
+                                c.store.apply("cxz.Session", [
+                                  { id: updated.id, value: updated },
+                                ]);
+                              }}
+                            />
+                          </fieldset>
+                        </TableCell>
+                      ))
+                    )}
+                    {showAccount && (
+                      <TableCell
+                        className={styles.cardCell}
+                        aria-busy={pendingAccount || undefined}
+                      >
+                        {pendingAccount ? (
+                          <ResourceNavigationPlaceholder />
+                        ) : accountAlias ? (
+                          <ResourceNavigationButton
+                            {...accountLocation(accountAlias)}
+                            name={accountName}
+                            alias={accountAlias}
+                          />
+                        ) : (
+                          accountName
+                        )}
+                      </TableCell>
+                    )}
+                    {showProject && !projectFirst && projectCell}
+                    {!overview && state}
+                    <TableCell
+                      className={`${styles.cardCell} ${styles.actions}`}
+                    >
+                      <SessionTableMenu
+                        sessions={[s]}
+                        controls={controls}
+                        disabled={loading}
+                      />
                     </TableCell>
-                  )}
-                  {showProject && !projectFirst && projectCell}
-                  {!overview && state}
-                  <TableCell className={`${styles.cardCell} ${styles.actions}`}>
-                    <SessionTableMenu
-                      sessions={[s]}
-                      controls={controls}
-                      disabled={loading}
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-        {!sessions.length && (
-          <p className={styles.empty}>
-            {loading ? t("Loading sessions…") : t("No sessions")}
-          </p>
-        )}
-      </Frame>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          {!sessions.length && (
+            <p className={styles.empty}>
+              {loading ? t("Loading sessions…") : t("No sessions")}
+            </p>
+          )}
+        </Frame>
+      </SkeletonGroup>
       {!showToolbar && (
         <>
           {controls.busy && (

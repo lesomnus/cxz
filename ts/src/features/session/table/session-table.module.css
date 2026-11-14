@@ -8,6 +8,15 @@
   --session-account-column-width: 96px;
   --session-project-column-width: 96px;
 }
+.skeletonFrame {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.skeletonFrame.fillHeight {
+  flex: 1;
+}
 .scroll {
   --ui-scroll-area-background: var(--ui-shade-24);
   flex: none;

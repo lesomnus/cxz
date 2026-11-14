@@ -1,6 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import { createLink } from "@tanstack/react-router";
-import { ButtonAnchor, type ButtonAnchorProps } from "@lesomnus/nox";
+import { ButtonAnchor, Skeleton, type ButtonAnchorProps } from "@lesomnus/nox";
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import styles from "./resource-navigation-button.module.css";
 import tableStyles from "./resource-table.module.css";
@@ -52,3 +52,13 @@ const ResourceNavigationAnchor = forwardRef<
 });
 
 export const ResourceNavigationButton = createLink(ResourceNavigationAnchor);
+
+export function ResourceNavigationPlaceholder() {
+  return (
+    <Skeleton
+      variant="rect"
+      height="var(--resource-link-height)"
+      className={`${tableStyles.layout} ${styles.link}`}
+    />
+  );
+}

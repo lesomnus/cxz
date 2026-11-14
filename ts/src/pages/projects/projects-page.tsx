@@ -24,6 +24,10 @@ import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { useRemote } from "#src/shared/api/use-remote.ts";
+import {
+  ACCOUNT_INFO_TTL,
+  ACCOUNT_LIST_KEY,
+} from "#src/shared/api/read-cache.ts";
 import { type DashboardConnection } from "./project-dashboard";
 import {
   editProject,
@@ -86,7 +90,9 @@ export function ProjectsPage({
       ? saved
       : p;
   });
-  const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
+  const accounts = useRemote((signal) => listAccounts(c, signal), [c], {
+    cache: { store: c.reads, key: ACCOUNT_LIST_KEY, ttl: ACCOUNT_INFO_TTL },
+  });
   const { project: selected } = useWorkspaceRoute();
   const resolved = useProject(c, visibleProjects, selected);
   const project = selected ? resolved : undefined;
@@ -168,6 +174,7 @@ export function ProjectsPage({
                       (s) => s.project && key(s.project.id) === key(project.id),
                     )}
                     accounts={accounts.data ?? []}
+                    accountsLoading={accounts.loading}
                     accountsError={accounts.error}
                     reloadAccounts={accounts.reload}
                     sessionsLoading={sessionsLoading}
@@ -198,6 +205,7 @@ function ProjectDashboard({
   sessions,
   sessionsLoading,
   accounts,
+  accountsLoading,
   accountsError,
   reloadAccounts,
 }: {
@@ -206,6 +214,7 @@ function ProjectDashboard({
   saved: (project: Project) => void;
   erased: () => void;
   accounts: Account[];
+  accountsLoading: boolean;
   accountsError: string;
   reloadAccounts: () => Promise<void>;
   sessions: Session[];
@@ -347,6 +356,7 @@ function ProjectDashboard({
             c={c}
             sessions={sessions}
             accounts={accounts}
+            accountsLoading={accountsLoading}
             loading={sessionsLoading}
             variant="overview"
             showToolbar={false}

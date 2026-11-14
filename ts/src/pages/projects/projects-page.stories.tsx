@@ -9,6 +9,11 @@ import { projectFixture } from "#src/storybook/project-fixture.ts";
 import { projectFixtureId } from "#src/storybook/project-id.ts";
 import { ProjectsPage } from "./projects-page";
 import { Button } from "@lesomnus/nox";
+import { listAccounts } from "#src/features/accounts/account-data.ts";
+import {
+  ACCOUNT_INFO_TTL,
+  ACCOUNT_LIST_KEY,
+} from "#src/shared/api/read-cache.ts";
 
 function Preview({
   list = false,
@@ -32,6 +37,9 @@ function Preview({
   refreshDelayMs = 0,
   usageDelayMs = 0,
   projectIcons = false,
+  accountDelayMs = 0,
+  cachedAccounts = false,
+  expiredAccounts = false,
 }) {
   const [router] = useState(() => {
     const fixture = projectFixture(
@@ -51,6 +59,33 @@ function Preview({
                 : "",
       refreshDelayMs,
     );
+    const preload = cachedAccounts
+      ? fixture.c.reads
+          .read(
+            ACCOUNT_LIST_KEY,
+            ACCOUNT_INFO_TTL,
+            (signal) => listAccounts(fixture.c, signal),
+            AbortSignal.timeout(10000),
+          )
+          .then(() => {
+            if (expiredAccounts) fixture.c.reads.expire(ACCOUNT_LIST_KEY);
+          })
+      : undefined;
+    let accountRead = () => {};
+    if (accountDelayMs) {
+      const list = fixture.c.accounts.list;
+      fixture.c.accounts.list = async (...args: Parameters<typeof list>) => {
+        accountRead();
+        await new Promise((resolve) => setTimeout(resolve, accountDelayMs));
+        const page = await list(...args);
+        if (expiredAccounts)
+          page.items = page.items.map((account) => ({
+            ...account,
+            name: "Updated account",
+          }));
+        return page;
+      };
+    }
     if (projectIcons)
       fixture.projects.forEach((project, index) => {
         project.labels.icon = index % 2 ? "rocket" : "leaf";
@@ -172,7 +207,9 @@ function Preview({
               height: "100vh",
               gridTemplateColumns: "0 minmax(0, 1fr)",
               gridTemplateRows:
-                navigation || usageDelayMs ? "auto minmax(0, 1fr)" : undefined,
+                navigation || usageDelayMs || accountDelayMs
+                  ? "auto minmax(0, 1fr)"
+                  : undefined,
             }}
           >
             {navigation && (
@@ -208,6 +245,13 @@ function Preview({
           </div>
         ),
         view: function DashboardPreview() {
+          const [accountsReady, setAccountsReady] = useState(!preload);
+          const [accountRequests, setAccountRequests] = useState(0);
+          const [pageVersion, setPageVersion] = useState(0);
+          accountRead = () => setAccountRequests((count) => count + 1);
+          useEffect(() => {
+            void preload?.then(() => setAccountsReady(true));
+          }, []);
           const [liveProjects, setProjects] = useState(projects);
           const [liveSessions, setSessions] = useState(sessions);
           useEffect(() => {
@@ -217,6 +261,7 @@ function Preview({
               setSessions([...fixture.sessions]);
             });
             return () => {
+              accountRead = () => {};
               stop();
               fixture.c.dispose();
             };
@@ -240,12 +285,38 @@ function Preview({
             return () => clearInterval(timer);
           }, []);
           return (
-            <ProjectsPage
-              c={fixture.c}
-              projects={liveProjects}
-              sessions={liveSessions}
-              projectsLoading={loading}
-            />
+            <>
+              {!!accountDelayMs && (
+                <nav
+                  aria-label="Account cache preview"
+                  style={{
+                    gridColumn: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--ui-space)",
+                    padding: "var(--ui-space)",
+                  }}
+                >
+                  <Button onClick={() => setPageVersion((value) => value + 1)}>
+                    Reopen project page
+                  </Button>
+                  <output aria-label="Page account requests">
+                    {accountRequests}
+                  </output>
+                </nav>
+              )}
+              {accountsReady ? (
+                <ProjectsPage
+                  key={pageVersion}
+                  c={fixture.c}
+                  projects={liveProjects}
+                  sessions={liveSessions}
+                  projectsLoading={loading}
+                />
+              ) : (
+                <p style={{ gridColumn: 2 }}>Preparing cached accounts…</p>
+              )}
+            </>
           );
         },
       },
@@ -263,6 +334,39 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const ProjectIcons: Story = { args: { projectIcons: true } };
+export const AccountsLoading: Story = {
+  args: { accountDelayMs: 3000 },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A cold account read shows button-sized Nox Skeletons while session rows remain available. They share one effect surface and the resource link's geometry. Reopen the page after loading: the shared connection cache renders names immediately without another request.",
+      },
+    },
+  },
+};
+export const CachedAccounts: Story = {
+  args: { accountDelayMs: 3000, cachedAccounts: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The account list is already in the shared connection cache. Session account links render immediately, without a new account request or skeleton flash.",
+      },
+    },
+  },
+};
+export const RefreshingAccounts: Story = {
+  args: { accountDelayMs: 3000, cachedAccounts: true, expiredAccounts: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "An expired cached list renders existing names while revalidating. The updated name replaces the old one when the delayed request finishes; cached values never turn back into placeholders.",
+      },
+    },
+  },
+};
 export const Default: Story = {
   parameters: {
     docs: {
