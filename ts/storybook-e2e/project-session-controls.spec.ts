@@ -375,7 +375,7 @@ test("Add session inside the header menu opens the create form for the current p
   const dialog = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(
     dialog.getByRole("combobox", { name: "Project", exact: true }),
-  ).toHaveText("API workspace");
+  ).toHaveCount(0);
   await expect
     .poll(() =>
       dialog.evaluate((node) => node.contains(document.activeElement)),
@@ -390,6 +390,9 @@ test("Add session inside the header menu opens the create form for the current p
     .click();
   await bulk.click();
   await add.click();
+  await expect(
+    dialog.getByRole("combobox", { name: "Project", exact: true }),
+  ).toHaveCount(0);
   await dialog
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("Created from projects");

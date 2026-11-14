@@ -613,6 +613,9 @@ test("session creation performs its scoped login and reuses the creation key", a
   await page.getByRole("button", { name: "Add session", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(
+    form.getByRole("combobox", { name: "Project", exact: true }),
+  ).toBeVisible();
+  await expect(
     form.getByRole("textbox", { name: "Model", exact: true }),
   ).toHaveCount(0);
   await form.getByRole("combobox", { name: "Account", exact: true }).click();

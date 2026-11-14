@@ -358,6 +358,7 @@ function ProjectDashboard({
             <SessionCreate
               c={c}
               projects={[p]}
+              fixedProject={projectId(p)}
               centered
               close={() => setAddingSession(false)}
             />

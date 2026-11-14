@@ -29,6 +29,7 @@ export function SessionCreate({
   c,
   projects,
   initialProject,
+  fixedProject,
   anchor,
   trigger,
   centered = true,
@@ -37,6 +38,7 @@ export function SessionCreate({
   c: Connection;
   projects: Project[];
   initialProject?: string;
+  fixedProject?: string;
   anchor?: HTMLElement | null;
   trigger?: HTMLElement | null;
   centered?: boolean;
@@ -51,7 +53,8 @@ export function SessionCreate({
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
   const defaultProject =
     projects.find((p) => projectId(p) === initialProject) ?? projects[0];
-  const [project, setProject] = useState(() => projectId(defaultProject));
+  const [chosenProject, setProject] = useState(() => projectId(defaultProject));
+  const project = fixedProject ?? chosenProject;
   const [alias, setAlias] = useState("");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
@@ -160,20 +163,22 @@ export function SessionCreate({
               disabled={busy || !!login}
               aria-label="Session details"
             >
-              <FormField label="Project">
-                <ValueMenu
-                  label="Project"
-                  searchable
-                  value={project}
-                  options={projects.map((p) => ({
-                    value: projectId(p),
-                    label: p.name || p.alias,
-                    searchText: p.alias,
-                  }))}
-                  choose={setProject}
-                  disabled={busy || !!login}
-                />
-              </FormField>
+              {fixedProject === undefined && (
+                <FormField label="Project">
+                  <ValueMenu
+                    label="Project"
+                    searchable
+                    value={project}
+                    options={projects.map((p) => ({
+                      value: projectId(p),
+                      label: p.name || p.alias,
+                      searchText: p.alias,
+                    }))}
+                    choose={setProject}
+                    disabled={busy || !!login}
+                  />
+                </FormField>
+              )}
               <FormField label="Account">
                 <ValueMenu
                   label="Account"
