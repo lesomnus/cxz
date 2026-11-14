@@ -12,6 +12,34 @@
   min-height: 0;
   gap: calc(2 * var(--ui-space));
 }
+.searchControls {
+  flex-wrap: wrap;
+}
+.searchInput {
+  min-width: calc(24 * var(--ui-space));
+}
+.filters,
+.period {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ui-space);
+  min-width: 0;
+}
+.filters {
+  flex-wrap: wrap;
+  margin-inline-start: auto;
+  max-width: 100%;
+}
+.datePicker.datePicker {
+  --ui-date-picker-trigger-width: calc(30 * var(--ui-space));
+  height: auto;
+  box-shadow: none;
+  font-size: inherit;
+}
+.dateSeparator {
+  align-self: center;
+  color: var(--ui-text-separator);
+}
 .live,
 .status,
 .notice,

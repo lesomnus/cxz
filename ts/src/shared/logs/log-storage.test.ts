@@ -186,6 +186,42 @@ for (const [name, createStore] of [
   ["memory", () => new MemoryLogStorage()],
   ["OPFS", () => fixture(64 * 1024, 2 * 1024 * 1024).open()],
 ] as const) {
+  it(`${name} applies period boundaries to counts, cursor pages and full exports`, async () => {
+    const store = createStore();
+    const entries = Array.from({ length: 130 }, (_, i) => ({
+      ...record(`period ${i}`),
+      time: i + 1000,
+    }));
+    await store.append([
+      { ...record("before period"), time: 999 },
+      ...entries,
+      { ...record("after period"), time: 1130 },
+    ]);
+    const query = { since: 1000, until: 1130, category: "rpc" as const };
+    const head = await store.query(query);
+    expect(head.total).toBe(130);
+    expect(head.entries).toHaveLength(100);
+    const tail = await store.query({ ...query, before: head.next });
+    expect(tail.total).toBe(130);
+    expect(tail.entries).toHaveLength(30);
+    expect([...head.entries, ...tail.entries].map((entry) => entry.id)).toEqual(
+      entries.map((entry) => entry.id).reverse(),
+    );
+    expect(
+      decodeLines(await store.export(query)).map((entry) => entry.id),
+    ).toEqual(entries.map((entry) => entry.id));
+    expect(
+      (await store.query({ since: 1130 })).entries.map(
+        (entry) => entry.message,
+      ),
+    ).toEqual(["after period"]);
+    expect(
+      (await store.query({ until: 1000 })).entries.map(
+        (entry) => entry.message,
+      ),
+    ).toEqual(["before period"]);
+    expect((await store.query({ since: 1130, until: 1000 })).total).toBe(0);
+  });
   it(`${name} continues after a stable ID when newer records share timestamps`, async () => {
     const store = createStore();
     const entries = Array.from({ length: 200 }, (_, i) => ({

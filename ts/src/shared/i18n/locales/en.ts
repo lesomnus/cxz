@@ -1,5 +1,10 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Log period (local time)": "Log period (local time)",
+  "Log start date": "Log start date",
+  "Log end date": "Log end date",
+  From: "From",
+  Through: "Through",
   "Background task elapsed time": "Background task elapsed time",
   "Background task duration unavailable":
     "Background task duration unavailable",

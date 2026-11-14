@@ -30,6 +30,9 @@ export type LogQuery = {
   projectSessions?: readonly string[];
   session?: string;
   search?: string;
+  /** Epoch milliseconds: inclusive start and exclusive end. */
+  since?: number;
+  until?: number;
   before?: string;
 };
 export type LogPage = {
@@ -114,6 +117,8 @@ export function logEntry(
 }
 
 export function matchesLog(entry: LogEntry, query: LogQuery) {
+  if (query.since !== undefined && entry.time < query.since) return false;
+  if (query.until !== undefined && entry.time >= query.until) return false;
   for (const field of ["level", "category"] as const) {
     const values = query[field];
     if (Array.isArray(values)) {

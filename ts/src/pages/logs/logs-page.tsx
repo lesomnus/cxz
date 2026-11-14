@@ -10,6 +10,7 @@ import {
 import {
   Button,
   CheckboxMenu,
+  DatePicker,
   Switch,
   FindBar,
   FindBarControls,
@@ -54,6 +55,7 @@ import { LogLevelIcon } from "./log-level-icon";
 import { LogCategoryIcon } from "./log-category-icon";
 import { useLogFeed } from "./use-log-feed";
 import { useLogViewport } from "./use-log-viewport";
+import { logPeriodBounds } from "#src/shared/logs/log-period.ts";
 import styles from "./logs-page.module.css";
 
 const logLevels = ["info", "warn", "error"] as const;
@@ -76,12 +78,13 @@ export function LogsPage({
   projectsLoading?: boolean;
   sessionsLoading?: boolean;
 }) {
-  useLocale();
+  const { locale } = useLocale();
   const logs = useMemo(() => supplied ?? clientLogs(), [supplied]);
   const [localSelection] = useState(() => new ResourceSelection());
   const selection = c?.selection ?? localSelection;
   const scope = useSyncExternalStore(selection.subscribe, selection.snapshot);
   const [search, setSearch] = useState("");
+  const [period, setPeriod] = useState({ start: "", end: "" });
   const [levels, setLevels] = useState<LogLevel[]>([...logLevels]);
   const [categories, setCategories] = useState<LogCategory[]>([
     ...logCategories,
@@ -89,6 +92,7 @@ export function LogsPage({
   const filters: LogQuery = useMemo(
     () => ({
       search,
+      ...logPeriodBounds(period.start, period.end),
       level: levels,
       category: categories,
       project: scope.project || undefined,
@@ -102,7 +106,15 @@ export function LogsPage({
         : undefined,
       session: scope.session || undefined,
     }),
-    [search, levels, categories, scope.project, scope.session, sessions],
+    [
+      search,
+      period,
+      levels,
+      categories,
+      scope.project,
+      scope.session,
+      sessions,
+    ],
   );
   const deferred = useDeferredValue(filters);
   const [live, setLive] = useState(true);
@@ -236,46 +248,89 @@ export function LogsPage({
       <div className={`${pageStyles.contentPadding} ${styles.body}`}>
         <ResourceLayout className={styles.content}>
           <FindBar aria-label={t("Search logs")}>
-            <FindBarControls>
+            <FindBarControls className={styles.searchControls}>
               <FindBarIcon />
               <FindBarInput
+                className={styles.searchInput}
                 aria-label={t("Search logs")}
                 placeholder={t("Search logs")}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
-              <CheckboxMenu
-                label={t("Log level")}
-                allLabel={t("All levels")}
-                triggerContent={t("Level")}
-                options={logLevels.map((level) => ({
-                  value: level,
-                  label: level,
-                  icon: <LogLevelIcon level={level} />,
-                }))}
-                value={levels}
-                choose={(values) =>
-                  setLevels(logLevels.filter((level) => values.includes(level)))
-                }
-              />
-              <CheckboxMenu
-                label={t("Log category")}
-                allLabel={t("All categories")}
-                triggerContent={t("Category")}
-                options={logCategories.map((category) => ({
-                  value: category,
-                  label: category === "rpc" ? "RPC" : "Client",
-                  icon: <LogCategoryIcon category={category} />,
-                }))}
-                value={categories}
-                choose={(values) =>
-                  setCategories(
-                    logCategories.filter((category) =>
-                      values.includes(category),
-                    ),
-                  )
-                }
-              />
+              <div className={styles.filters}>
+                <div
+                  className={styles.period}
+                  role="group"
+                  aria-label={t("Log period (local time)")}
+                >
+                  <DatePicker
+                    variant="toolbar"
+                    className={styles.datePicker}
+                    label={t("Log start date")}
+                    placeholder={t("From")}
+                    value={period.start || null}
+                    max={period.end || undefined}
+                    locale={locale}
+                    formatDate={(value) => value}
+                    onChange={(value) =>
+                      setPeriod((current) => ({
+                        ...current,
+                        start: value ?? "",
+                      }))
+                    }
+                  />
+                  <span className={styles.dateSeparator} aria-hidden="true">
+                    –
+                  </span>
+                  <DatePicker
+                    variant="toolbar"
+                    className={styles.datePicker}
+                    label={t("Log end date")}
+                    placeholder={t("Through")}
+                    value={period.end || null}
+                    min={period.start || undefined}
+                    locale={locale}
+                    formatDate={(value) => value}
+                    onChange={(value) =>
+                      setPeriod((current) => ({ ...current, end: value ?? "" }))
+                    }
+                  />
+                </div>
+                <CheckboxMenu
+                  label={t("Log level")}
+                  allLabel={t("All levels")}
+                  triggerContent={t("Level")}
+                  options={logLevels.map((level) => ({
+                    value: level,
+                    label: level,
+                    icon: <LogLevelIcon level={level} />,
+                  }))}
+                  value={levels}
+                  choose={(values) =>
+                    setLevels(
+                      logLevels.filter((level) => values.includes(level)),
+                    )
+                  }
+                />
+                <CheckboxMenu
+                  label={t("Log category")}
+                  allLabel={t("All categories")}
+                  triggerContent={t("Category")}
+                  options={logCategories.map((category) => ({
+                    value: category,
+                    label: category === "rpc" ? "RPC" : "Client",
+                    icon: <LogCategoryIcon category={category} />,
+                  }))}
+                  value={categories}
+                  choose={(values) =>
+                    setCategories(
+                      logCategories.filter((category) =>
+                        values.includes(category),
+                      ),
+                    )
+                  }
+                />
+              </div>
             </FindBarControls>
           </FindBar>
           <div className={styles.status} role="status">

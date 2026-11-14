@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 const story = "/iframe.html?id=pages-logs--persistent&viewMode=story";
 test("OPFS logs survive reload and support filters, details, export and clear", async ({
@@ -224,7 +225,7 @@ for (const width of [1440, 390]) {
       toolbar.getByRole("combobox", { name: "Select session", exact: true }),
     ).toBeVisible();
     const search = main.getByRole("search", { name: "Search logs" });
-    await expect(search.locator("svg")).toBeVisible();
+    await expect(search.locator("svg").first()).toBeVisible();
     const input = search.getByRole("searchbox", { name: "Search logs" });
     await expect(
       search.getByRole("button", { name: "Log level", exact: true }),
@@ -377,4 +378,78 @@ test("checkbox filters stay open for multiple selections and project/session sel
     .click();
   await page.getByRole("option", { name: "Review", exact: true }).click();
   await expect(status).toContainText("13 matching records");
+});
+
+test.describe("log periods", () => {
+  test.use({ timezoneId: "Asia/Seoul" });
+  for (const width of [1440, 390]) {
+    test(`local dates filter complete days, exports and open-ended ranges at ${width}px`, async ({
+      page,
+    }) => {
+      await page.clock.setFixedTime(new Date("2026-11-14T12:00:00Z"));
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/iframe.html?id=pages-logs--period&viewMode=story");
+      const status = page.getByRole("status");
+      await expect(status).toContainText("4 matching records");
+      const table = page.getByRole("table", {
+        name: "Client logs",
+        exact: true,
+      });
+      const start = page.getByRole("button", { name: /^Log start date:/ });
+      const end = page.getByRole("button", { name: /^Log end date:/ });
+      await start.click();
+      await page
+        .getByRole("dialog", { name: "Calendar for Log start date" })
+        .locator('[data-sliding-page][data-active] [data-date="2026-11-13"]')
+        .click();
+      await expect(status).toContainText("3 matching records");
+      await end.click();
+      await page
+        .getByRole("dialog", { name: "Calendar for Log end date" })
+        .locator('[data-sliding-page][data-active] [data-date="2026-11-13"]')
+        .click();
+      await expect(status).toContainText("2 matching records");
+      await expect(table).toContainText("Start of November 13");
+      await expect(table).toContainText("End of November 13");
+      await expect(table).not.toContainText("Before selected period");
+      await expect(table).not.toContainText("After selected period");
+      const download = page.waitForEvent("download");
+      await page
+        .getByRole("button", { name: "Download filtered logs", exact: true })
+        .click();
+      const path = await (await download).path();
+      const records = (await readFile(path!, "utf8"))
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as { message: string });
+      expect(records.map((record) => record.message)).toEqual([
+        "Start of November 13",
+        "End of November 13",
+      ]);
+      await start.click();
+      await page
+        .getByRole("dialog", { name: "Calendar for Log start date" })
+        .getByRole("button", { name: "Clear date", exact: true })
+        .click();
+      await expect(status).toContainText("3 matching records");
+      await end.click();
+      await page
+        .getByRole("dialog", { name: "Calendar for Log end date" })
+        .getByRole("button", { name: "Clear date", exact: true })
+        .click();
+      await expect(status).toContainText("4 matching records");
+      await expect(start).toHaveText("From");
+      await expect(end).toHaveText("Through");
+      const bounds = await page
+        .getByRole("search", { name: "Search logs" })
+        .boundingBox();
+      for (const control of [start, end]) {
+        const box = (await control.boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(bounds!.x);
+        expect(box.x + box.width).toBeLessThanOrEqual(
+          bounds!.x + bounds!.width,
+        );
+      }
+    });
+  }
 });

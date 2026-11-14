@@ -1,5 +1,10 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Log period (local time)": "로그 기간 (현지 시간)",
+  "Log start date": "로그 시작일",
+  "Log end date": "로그 종료일",
+  From: "시작일",
+  Through: "종료일",
   "Background task elapsed time": "백그라운드 작업 경과시간",
   "Background task duration unavailable": "백그라운드 작업시간을 알 수 없음",
   "Created memories": "생성된 메모리",

@@ -14,15 +14,18 @@ import {
   installClientLogs,
 } from "#src/shared/logs/client-logs.ts";
 import { MemoryLogStorage } from "#src/shared/logs/log-storage.ts";
+import { logEntry } from "#src/shared/logs/log-entry.ts";
 
 function Preview({
   persistent = false,
   empty = false,
   populated = false,
+  dated = false,
 }: {
   persistent?: boolean;
   empty?: boolean;
   populated?: boolean;
+  dated?: boolean;
 }) {
   const [c] = useState(() => resourceFixture());
   const [projects] = useState(() => [
@@ -54,11 +57,27 @@ function Preview({
     }),
   ]);
   useEffect(() => () => c.dispose(), [c]);
-  const [logs] = useState(() =>
-    persistent
-      ? clientLogs()
-      : new ClientLogs(new MemoryLogStorage(), "storybook"),
-  );
+  const [logs] = useState(() => {
+    if (persistent) return clientLogs();
+    const storage = new MemoryLogStorage();
+    if (dated)
+      void storage.append(
+        [
+          ["2026-11-12T23:59:59.999", "Before selected period"],
+          ["2026-11-13T00:00:00", "Start of November 13"],
+          ["2026-11-13T23:59:59.999", "End of November 13"],
+          ["2026-11-14T00:00:00", "After selected period"],
+        ].map(([date, message]) => ({
+          ...logEntry(
+            { level: "info", category: "client", message },
+            "storybook",
+            "fixture",
+          ),
+          time: new Date(date).getTime(),
+        })),
+      );
+    return new ClientLogs(storage, "storybook");
+  });
   const [writing, setWriting] = useState(false);
   async function burst() {
     setWriting(true);
@@ -78,7 +97,7 @@ function Preview({
   }
   useEffect(() => {
     const dispose = persistent ? installClientLogs() : () => {};
-    if (!empty)
+    if (!empty && !dated)
       logs.write({
         level: "info",
         category: "rpc",
@@ -113,7 +132,7 @@ function Preview({
       }
     }
     return dispose;
-  }, [logs, empty, persistent, populated]);
+  }, [logs, empty, persistent, populated, dated]);
   return (
     <div
       style={{
@@ -171,7 +190,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Browser diagnostics in the centered resource layout. Project/session selectors share the resource selection state. FindBar checkbox menus apply their draft selection only when closed. Dense, single-line rows use semantic level and category icons, fit the time column to its text, and omit timezone offsets; complete records open in a modal. History loads automatically through stable ID cursors, and only viewport rows plus overscan are mounted. Live updates follow the head while it is visible; history remains stable while reading older records. Use Generate rotation burst to exercise continuous scrolling. OPFS persistence and filtered downloads use the actual log store.",
+          "Browser diagnostics in the centered resource layout. Project/session selectors share the resource selection state. FindBar date filters use local calendar days, including the full end day, and support either boundary independently. Clearing both restores all dates. The same period applies to counts, older pages and downloads. Checkbox menus apply their draft selection only when closed. Dense, single-line rows use semantic level and category icons, fit the time column to its text, and omit timezone offsets; complete records open in a modal. History loads automatically through stable ID cursors, and only viewport rows plus overscan are mounted. Live updates follow the head while it is visible; history remains stable while reading older records. Use Generate rotation burst to exercise continuous scrolling. OPFS persistence and filtered downloads use the actual log store.",
       },
     },
   },
@@ -182,6 +201,17 @@ export const Memory: Story = {};
 export const Persistent: Story = { args: { persistent: true } };
 export const Empty: Story = { args: { empty: true } };
 export const Populated: Story = { args: { populated: true } };
+export const Period: Story = {
+  args: { dated: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Select November 13, 2026 as both boundaries: only the two records on that local day remain. Clear either date for an open-ended period, or both for all records.",
+      },
+    },
+  },
+};
 export const Details: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
