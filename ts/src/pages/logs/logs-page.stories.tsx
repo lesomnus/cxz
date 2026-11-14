@@ -133,7 +133,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Browser diagnostics in the same centered, bounded layout as resource pages. The shared FindBar searches retained logs; level, category and identity filters remain available. Compact table rows open a shared modal with the complete record, without expanding the table. Live updates, OPFS persistence, filtered JSONL downloads and pagination use the actual log store.",
+          "Browser diagnostics in the same centered, bounded layout as resource pages. The shared FindBar searches retained logs; level, category and identity filters remain available. Dense, single-line table rows open a shared modal with the complete record, including the method and category, without expanding the table. Live updates, OPFS persistence, filtered JSONL downloads and pagination use the actual log store.",
       },
     },
   },

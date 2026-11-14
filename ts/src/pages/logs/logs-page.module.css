@@ -55,6 +55,9 @@
 .timeColumn {
   width: 190px;
 }
+.table.table {
+  --resource-table-control-size: calc(6 * var(--ui-space));
+}
 .levelColumn {
   width: 60px;
 }
@@ -71,25 +74,22 @@
   display: block;
   width: 100%;
   height: var(--ui-table-row-height);
+  min-height: 0;
   padding: 0;
   text-align: left;
 }
 .message > :global(.button-content) {
   width: 100%;
   min-width: 0;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
+  align-items: center;
+  justify-content: flex-start;
   gap: 0;
 }
-.message :is(span, small):not(:global(.button-content)) {
+.message > :global(.button-content) > span {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-.message small {
-  color: var(--ui-muted);
-  font: 10px/1.4 var(--ui-font-mono);
 }
 .level {
   font: 11px var(--ui-font-mono);

@@ -180,6 +180,7 @@ for (const width of [1440, 390]) {
     await expect(table.locator("tbody tr")).toHaveCount(1);
     const row = table.locator("tbody tr").first();
     const before = (await row.boundingBox())!;
+    expect(before.height).toBeLessThanOrEqual(28);
     const record = row.getByRole("button");
     await record.focus();
     await page.keyboard.press("Enter");

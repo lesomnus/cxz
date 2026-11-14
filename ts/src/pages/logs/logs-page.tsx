@@ -255,7 +255,7 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
           {error && <ErrorNotice error={error} />}
           <TableScrollArea className={styles.scroll} scrollbarLabel={t("Logs")}>
             <Table
-              className={`${tableStyles.layout} ${tableStyles.table}`}
+              className={`${tableStyles.layout} ${tableStyles.table} ${styles.table}`}
               aria-label={t("Client logs")}
             >
               <colgroup>
@@ -297,7 +297,6 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
                         }}
                       >
                         <span>{entry.message}</span>
-                        <small>{entry.method ?? entry.category}</small>
                       </Button>
                     </TableCell>
                   </TableRow>
