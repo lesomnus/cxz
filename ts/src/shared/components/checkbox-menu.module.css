@@ -12,6 +12,30 @@
   --button-background: var(--ui-button-hover-background);
   color: var(--ui-text-value);
 }
+.menu {
+  composes: metrics from "./checkbox.module.css";
+}
 .menu.menu {
   width: calc(48 * var(--ui-space));
+}
+.menu.menu :global([role="menuitemcheckbox"]) {
+  padding-left: calc(
+    var(--menu-item-padding-block, var(--ui-menu-item-padding-block)) +
+      max(0px, (var(--ui-menu-item-line-height) - var(--checkbox-size)) / 2)
+  );
+}
+.optionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+  line-height: 0;
+}
+.optionIcon > * {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
 }

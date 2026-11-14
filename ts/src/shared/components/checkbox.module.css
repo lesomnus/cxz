@@ -1,10 +1,14 @@
+.metrics {
+  --checkbox-size: 18px;
+}
 .control {
+  composes: metrics;
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
   vertical-align: middle;
   cursor: pointer;
 }
@@ -20,9 +24,10 @@
   cursor: inherit;
 }
 .box {
+  composes: metrics;
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
   box-sizing: border-box;
   border: 1px solid var(--ui-shade-72);
   border-radius: var(--ui-space);

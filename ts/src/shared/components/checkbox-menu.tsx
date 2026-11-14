@@ -129,7 +129,9 @@ export function CheckboxMenu({
                   }
                 >
                   <CheckboxMark checked={checked} />
-                  {option.icon}
+                  {option.icon && (
+                    <span className={styles.optionIcon}>{option.icon}</span>
+                  )}
                   <MenuItemLabel>{option.label}</MenuItemLabel>
                 </MenuItem>
               );
