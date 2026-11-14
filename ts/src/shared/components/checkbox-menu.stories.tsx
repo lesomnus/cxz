@@ -32,7 +32,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A reusable cxz multi-select dropdown built from Nox MenuSurface, MenuItem and MenuScrollArea through AnchoredMenu. Changes stay in a local draft while the menu is open. Closing via its trigger, Escape, outside click or focus departure calls choose once, only if the selection changed. Arrow keys/Home/End move through entries and Space/Enter toggle. The All row supports mixed state and preserves disabled selections. Trigger text stays fixed. Placement, glass, corners and entrance animation use the shared menu implementation.",
+          "A reusable cxz multi-select dropdown built from Nox MenuSurface, MenuItem and MenuScrollArea through AnchoredMenu. Changes stay in a local draft while the menu is open. Closing via its trigger, Escape, outside click or focus departure calls choose once, only if the selection changed. Arrow keys/Home/End move through entries and Space/Enter toggle. The All row supports mixed state and preserves disabled selections. Press feedback scales only the icon and label using Nox's measured press target; the checkbox stays fixed. Trigger text stays fixed. Placement, glass, corners and entrance animation use the shared menu implementation.",
       },
     },
   },

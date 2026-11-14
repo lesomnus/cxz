@@ -24,6 +24,24 @@
       max(0px, (var(--ui-menu-item-line-height) - var(--checkbox-size)) / 2)
   );
 }
+.menu.menu :global([role="menuitemcheckbox"]) > :global(.button-content) {
+  transform: none;
+}
+.itemContent {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: var(--ui-space);
+  transform: scale(1);
+  transition: transform 120ms ease-out;
+}
+.menu.menu
+  :global([role="menuitemcheckbox"]:not(:disabled):active)
+  .itemContent {
+  transform: scale(var(--press-scale, 0.95));
+  transition-duration: 60ms;
+}
 .optionIcon {
   display: inline-flex;
   align-items: center;

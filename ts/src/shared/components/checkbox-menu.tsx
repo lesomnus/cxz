@@ -88,6 +88,7 @@ export function CheckboxMenu({
         >
           <MenuScrollArea>
             <MenuItem
+              pressTarget="[data-checkbox-menu-content]"
               role="menuitemcheckbox"
               aria-checked={all ? true : some ? "mixed" : false}
               disabled={!enabled.length}
@@ -108,7 +109,9 @@ export function CheckboxMenu({
               }
             >
               <CheckboxMark checked={all} indeterminate={!all && some} />
-              <MenuItemLabel>{allLabel}</MenuItemLabel>
+              <span className={styles.itemContent} data-checkbox-menu-content>
+                <MenuItemLabel>{allLabel}</MenuItemLabel>
+              </span>
             </MenuItem>
             <MenuDivider />
             {options.map((option) => {
@@ -116,6 +119,7 @@ export function CheckboxMenu({
               return (
                 <MenuItem
                   key={option.value}
+                  pressTarget="[data-checkbox-menu-content]"
                   role="menuitemcheckbox"
                   aria-label={option.label}
                   aria-checked={checked}
@@ -129,10 +133,15 @@ export function CheckboxMenu({
                   }
                 >
                   <CheckboxMark checked={checked} />
-                  {option.icon && (
-                    <span className={styles.optionIcon}>{option.icon}</span>
-                  )}
-                  <MenuItemLabel>{option.label}</MenuItemLabel>
+                  <span
+                    className={styles.itemContent}
+                    data-checkbox-menu-content
+                  >
+                    {option.icon && (
+                      <span className={styles.optionIcon}>{option.icon}</span>
+                    )}
+                    <MenuItemLabel>{option.label}</MenuItemLabel>
+                  </span>
                 </MenuItem>
               );
             })}
