@@ -318,6 +318,8 @@ header strong {
   margin-top: auto;
   display: flex;
   flex-direction: column;
+  align-items: inherit;
+  gap: inherit;
   width: 100%;
 }
 .profile-menu {
