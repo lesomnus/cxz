@@ -165,6 +165,8 @@ export const messages = {
   Status: "Status",
   "Background tasks": "Background tasks",
   "Search current conversation": "Search current conversation",
+  "Search tasks": "Search tasks",
+  "Search memories": "Search memories",
   "This message is no longer available in retained history.":
     "This message is no longer available in retained history.",
   "Cannot open message: {error}": "Cannot open message: {error}",

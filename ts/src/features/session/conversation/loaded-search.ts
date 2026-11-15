@@ -1,7 +1,8 @@
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import { conversationMarkdown } from "#src/shared/content/markdown-parser.ts";
 import DOMPurify from "dompurify";
-import { searchMatches } from "./search-pattern";
+import { searchText } from "#src/shared/search/search-text.ts";
+export { searchText } from "#src/shared/search/search-text.ts";
 
 export type LoadedSearchHit = Pick<SessionEvent, "seq" | "timeMs" | "kind"> & {
   snippet: string;
@@ -34,35 +35,6 @@ function bodyText(event: SessionEvent) {
   const text = doc.body.textContent ?? "";
   textCache.set(event, { source: event.text, text });
   return text;
-}
-
-export function searchText(text: string, pattern?: RegExp) {
-  let start = 0,
-    end = 0,
-    occurrences = 0;
-  const snippetMatches: LoadedSearchHit["snippetMatches"] = [];
-  for (const match of searchMatches(text, pattern)) {
-    if (!occurrences) {
-      start = Math.max(0, match.index - 80);
-      end = Math.min(text.length, start + 240);
-    }
-    occurrences++;
-    const from = Math.max(start, match.index);
-    const to = Math.min(end, match.index + match[0].length);
-    if (from < to) {
-      const offset = start ? 1 : 0;
-      snippetMatches.push({
-        start: from - start + offset,
-        end: to - start + offset,
-      });
-    }
-  }
-  if (!occurrences) return;
-  return {
-    snippet: `${start ? "…" : ""}${text.slice(start, end)}${end < text.length ? "…" : ""}`,
-    snippetMatches,
-    occurrences,
-  };
 }
 
 export function searchLoadedMessages(

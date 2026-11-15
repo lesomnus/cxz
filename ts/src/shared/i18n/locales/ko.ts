@@ -162,6 +162,8 @@ export const messages = {
   Status: "상태",
   "Background tasks": "백그라운드 작업",
   "Search current conversation": "현재 대화 검색",
+  "Search tasks": "작업 검색",
+  "Search memories": "메모리 검색",
   "This message is no longer available in retained history.":
     "보존된 기록에서 이 메시지를 더 이상 찾을 수 없습니다.",
   "Cannot open message: {error}": "메시지를 열 수 없습니다: {error}",

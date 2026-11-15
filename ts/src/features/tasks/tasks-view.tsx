@@ -2,7 +2,7 @@ import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.ts
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
 import { projectId as projectUUID } from "#src/shared/api/project-id.ts";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useBlocker } from "@tanstack/react-router";
 import { Id } from "@lesomnus/payday/pdid";
 import { Button } from "@lesomnus/nox";
@@ -18,7 +18,12 @@ import { TaskDialog } from "./task-dialog";
 import { TaskDetailPage } from "./task-detail-page";
 import { ListDetailPages } from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
-import { taskKey } from "./task-model";
+import { tableTasks, taskKey } from "./task-model";
+import { TaskPrioritySymbol } from "./task-indicators";
+import { ResourceSearch } from "#src/shared/components/resource-search.tsx";
+import { useResourceSearch } from "#src/shared/components/use-resource-search.ts";
+import searchStyles from "#src/shared/components/resource-search.module.css";
+import { t } from "#src/shared/i18n/i18n.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import {
   ResourceLayout,
@@ -61,6 +66,29 @@ export function TasksView({
   const project = needsProject ? undefined : resolved;
   const projectId = projectUUID(project) ?? "";
   const state = useProjectTasks(c, projectId);
+  const search = useResourceSearch();
+  const searchItems = useMemo(
+    () =>
+      tableTasks(state.tasks, selection.assignee, selection.run).map(
+        (task) => ({
+          id: taskKey(task),
+          title: task.name || task.alias,
+          text: [
+            task.name,
+            task.alias,
+            task.desc,
+            ...Object.entries(task.labels).map(
+              ([key, value]) => `${key}=${value}`,
+            ),
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          date: task.dateUpdated ?? task.dateCreated,
+          icon: <TaskPrioritySymbol priority={task.priority} />,
+        }),
+      ),
+    [state.tasks, selection.assignee, selection.run],
+  );
   const remembered = useRef<
     { handle?: string; project: string; id: string } | undefined
   >(undefined);
@@ -130,16 +158,31 @@ export function TasksView({
   };
   return (
     <>
-      <ResourcePage aria-label="Project tasks">
+      <ResourcePage
+        ref={search.area}
+        className={searchStyles.page}
+        aria-label="Project tasks"
+      >
         <ResourceToolbar
           aria-label="Task toolbar"
           actions={
-            <ToolbarIconButton
-              icon="add"
-              label="Add task"
-              disabled={!project}
-              onClick={() => setAdding(true)}
-            />
+            <>
+              <ToolbarIconButton
+                ref={search.trigger}
+                icon="search"
+                label={t("Search tasks")}
+                disabled={!project}
+                aria-pressed={search.open}
+                aria-keyshortcuts="Shift+F Control+Shift+F Meta+Shift+F"
+                onClick={search.show}
+              />
+              <ToolbarIconButton
+                icon="add"
+                label="Add task"
+                disabled={!project}
+                onClick={() => setAdding(true)}
+              />
+            </>
           }
         >
           <ProjectPicker
@@ -257,6 +300,25 @@ export function TasksView({
               />
             ) : null
           }
+        />
+        <ResourceSearch
+          search={search}
+          items={searchItems}
+          label={t("Search tasks")}
+          loading={state.loading}
+          error={state.error}
+          select={(id) => {
+            const task = state.tasks.find((task) => taskKey(task) === id);
+            if (project && task)
+              select(
+                {
+                  ...selection,
+                  project: resourceHandle(project),
+                  task: resourceHandle(task),
+                },
+                { replace: detailOpen },
+              );
+          }}
         />
       </ResourcePage>
       {project && adding && (

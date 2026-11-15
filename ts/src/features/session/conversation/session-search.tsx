@@ -33,7 +33,7 @@ import {
   compileSearchPattern,
   defaultSearchOptions,
   type SearchOptions,
-} from "./search-pattern";
+} from "#src/shared/search/search-pattern.ts";
 
 const noHits: LoadedSearchHit[] = [];
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { userEvent, within } from "storybook/test";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
@@ -156,6 +157,30 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const Search: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Use the toolbar search button or Shift+F to search cached memory titles, aliases, descriptions and labels within the selected project/session. The FindBar shares conversation search's options, highlighted matches and keyboard navigation. Results open documents without dismissing the overlay; click outside without losing the query, or close explicitly with Escape/Close search. Markdown bodies are not fetched for this local catalog search.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole("button", {
+        name: "Search memories",
+      }),
+    );
+    await userEvent.type(
+      await canvas.findByRole("searchbox", {
+        name: "Search memories",
+      }),
+      "notes",
+    );
+  },
+};
 export const ProjectIcons: Story = { args: { projectIcons: true } };
 export const Document: Story = {
   args: { document: true },
