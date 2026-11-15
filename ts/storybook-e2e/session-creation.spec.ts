@@ -63,6 +63,38 @@ for (const width of [1280, 390]) {
     );
     expect(heights.length).toBeGreaterThan(0);
     expect([...new Set(heights)]).toEqual([heights[0]]);
+    const headerAction = await modal.evaluate((node) => {
+      const card = node.querySelector<HTMLElement>(".floating-card")!;
+      const header = card
+        .querySelector<HTMLElement>(".card-heading")!
+        .getBoundingClientRect();
+      const close = card.querySelector<HTMLElement>(".card-close")!;
+      const button = close.getBoundingClientRect();
+      const footer = card.querySelector<HTMLElement>(".card-footer")!;
+      const style = getComputedStyle(card);
+      const border = parseFloat(style.borderRightWidth);
+      return {
+        top: button.top - header.top,
+        bottom: header.bottom - button.bottom,
+        right: card.getBoundingClientRect().right - border - button.right,
+        footerInset: parseFloat(getComputedStyle(footer).paddingRight),
+        radius: parseFloat(getComputedStyle(close).borderTopRightRadius),
+        outerRadius: parseFloat(style.borderTopRightRadius),
+        border,
+      };
+    });
+    expect(headerAction.top).toBeCloseTo(headerAction.footerInset, 3);
+    expect(headerAction.bottom).toBeCloseTo(headerAction.footerInset, 3);
+    expect(headerAction.right).toBeCloseTo(headerAction.footerInset, 3);
+    expect(headerAction.radius).toBeCloseTo(
+      Math.max(
+        0,
+        headerAction.outerRadius -
+          headerAction.border -
+          headerAction.footerInset,
+      ),
+      3,
+    );
     await modal.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(modal).toHaveCount(0);
     await expect(add).toBeFocused();
