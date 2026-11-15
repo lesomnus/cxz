@@ -429,8 +429,11 @@ export function SettingsPage({
               <div className="settings-editor-groups">
                 <>
                   <SectionGroup>
-                    <Section className="settings-group">
-                      <h2>{t("Display language")}</h2>
+                    <Section
+                      className="settings-group"
+                      aria-label={t("Appearance")}
+                    >
+                      <h2>{t("Appearance")}</h2>
                       <fieldset disabled={!snapshot.valid || applying}>
                         <SettingField
                           title={t("Language")}
@@ -470,22 +473,16 @@ export function SettingsPage({
                           </div>
                         </SettingField>
                       </fieldset>
-                    </Section>
-                    <Section
-                      className="settings-group"
-                      aria-label={t("Theme settings")}
-                    >
-                      <h2>{t("Theme")}</h2>
                       <fieldset disabled={!snapshot.valid}>
                         <SettingField
-                          title={t("Appearance")}
+                          title={t("Theme")}
                           settingId="ui.theme"
                           summary={t(
                             "Choose Light, Dark, or follow your system appearance.",
                           )}
                         >
                           <SegmentedControl
-                            label={t("Appearance")}
+                            label={t("Theme")}
                             value={resolveTheme(snapshot.document["ui.theme"])}
                             options={[
                               { value: "light", label: t("Light") },

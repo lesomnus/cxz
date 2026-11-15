@@ -754,7 +754,7 @@ test("settings sections form compact responsive columns with aligned text and or
   await expectFieldOrder(language, true);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
-    page.getByRole("radiogroup", { name: "Appearance", exact: true }),
+    page.getByRole("radiogroup", { name: "Theme", exact: true }),
   ).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     390,

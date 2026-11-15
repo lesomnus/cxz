@@ -114,7 +114,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The full workspace with all settings on one scrollable page. Panels stay centered while text navigation floats to their left, falling back to a toolbar dropdown when it cannot fit. Scrolling highlights the current category. Wider viewports dock the JSON editor beside the form; smaller viewports use its toolbar toggle. Logs have their own sidebar entry and page.",
+          "The full workspace with all settings on one scrollable page. Appearance groups Language and Theme; section headings use a thin weight while setting labels retain their stronger emphasis. Panels stay centered while text navigation floats to their left, falling back to a toolbar dropdown when it cannot fit. Scrolling highlights the current category. Wider viewports dock the JSON editor beside the form; smaller viewports use its toolbar toggle. Logs opens from the Profile menu.",
       },
     },
   },

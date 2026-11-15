@@ -11,6 +11,21 @@ test("settings panels are centered independently of the floating menu", async ({
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
+  const appearance = page.locator(".settings-group").filter({
+    has: page.getByRole("heading", { name: "Appearance", exact: true }),
+  });
+  await expect(appearance).toHaveCount(1);
+  await expect(appearance.locator(".setting-title")).toHaveText([
+    "Language",
+    "Theme",
+  ]);
+  await expect(appearance.locator(".setting-id")).toHaveText([
+    "ui.language",
+    "ui.theme",
+  ]);
+  await expect(
+    appearance.getByRole("radiogroup", { name: "Theme", exact: true }),
+  ).toBeVisible();
   const profile = page.getByRole("button", { name: "Profile", exact: true });
   await profile.click();
   const profileMenu = page.getByRole("menu", { name: "Profile", exact: true });
