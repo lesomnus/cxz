@@ -300,7 +300,14 @@ export const iconDefinitions = {
     path("m14 18 2.7 2.7L22 15.3"),
   ]),
   accounts: line([circle(12, 8, 4), path("M4 21v-3a8 8 0 0 1 16 0v3")]),
-  memory: line([path("M4 3h16v18H4Z M8 7h8M8 11h8M8 15h5")]),
+  memory: solid(
+    [
+      rect(3, 3, 4, 18, 0.75),
+      rect(9, 3, 4, 18, 0.75),
+      rect(18, 3, 4, 18, 0.75, { transform: "rotate(-10 20 21)" }),
+    ],
+    "0 0 24 24",
+  ),
   auxiliary: sparkle,
   settings,
   logs: line([rect(4, 3, 16, 18, 2), path("M8 7h8M8 11h8M8 15h5")]),
