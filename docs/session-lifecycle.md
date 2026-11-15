@@ -22,7 +22,8 @@ sessions keep their original identities.
 An unstarted session can be listed, renamed or erased without a runtime. A failed
 Start leaves the resource available for retry. A login challenge is returned by
 Start; after login, retry Start on the existing session. Canceling login leaves
-the resource in place.
+the resource in place. Before the first run, history is empty and live streams
+wait with heartbeats until the runtime is available.
 
 The web creation form calls AuthBinding.Add, Session.Add, then Session.Start. It
 retains the added session if Start fails and retries only Start. The form stays

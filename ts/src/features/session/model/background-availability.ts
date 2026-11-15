@@ -6,7 +6,11 @@ export function backgroundAvailable(
   session: Session | undefined,
   projects: readonly Project[],
 ) {
-  if (!session?.project?.id.length || session.status?.state === "stopped")
+  if (
+    !session?.project?.id.length ||
+    session.status?.state === "stopped" ||
+    session.status?.state === "created"
+  )
     return false;
   const id = key(session.project.id);
   return projects.some(

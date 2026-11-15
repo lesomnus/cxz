@@ -7,7 +7,12 @@ type LifecycleClient = Pick<
   Client<typeof SessionService>,
   "get" | "stop" | "resume"
 >;
-export const resumableStates = new Set(["stopped", "failed", "interrupted"]);
+export const resumableStates = new Set([
+  "created",
+  "stopped",
+  "failed",
+  "interrupted",
+]);
 
 // Restart follows the TUI lifecycle and never adopts a run started by another
 // client between Stop and Resume. A failed Stop must not trigger Resume.

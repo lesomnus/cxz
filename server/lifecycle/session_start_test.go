@@ -88,6 +88,19 @@ func TestSessionAddPersistsWithoutRuntimeAndStartRetriesTheSameRecord(t *testing
 	if err != nil || len(listed.GetItems()) != 1 || f.creates != 0 {
 		t.Fatal("List unstarted", listed, err)
 	}
+	if page, err := stack.Session().History(ctx, resource.SessionEventsRequest_builder{Ref: ref}.Build()); err != nil || len(page.GetEvents()) != 0 {
+		t.Fatal("unstarted history called runtime", page, err)
+	}
+	if page, err := stack.Session().Transcript(ctx, resource.SessionTranscriptRequest_builder{Ref: ref}.Build()); err != nil || len(page.GetEvents()) != 0 {
+		t.Fatal("unstarted transcript called runtime", page, err)
+	}
+	layer, _ := resource.Find[Layer](stack)
+	reader := SessionServer{Layer: layer, SessionServiceServer: layer.Next().Session()}
+	canceled, cancel := context.WithCancel(ctx)
+	cancel()
+	if _, err := reader.awaitFirstRun(canceled, added, func() error { return nil }); !errors.Is(err, context.Canceled) {
+		t.Fatal("unstarted stream ignored cancellation", err)
+	}
 	control := resource.SessionControl_builder{Ref: ref, ClientId: ptr("start")}.Build()
 	f.createErr = errors.New("project is stopped")
 	if _, err = stack.Session().Start(ctx, control); err == nil {

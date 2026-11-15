@@ -75,10 +75,11 @@ function Preview({
   unread = false,
   containerLifecycle = false,
   creationDelayMs = 0,
+  startDelayMs = 0,
   transcriptDelayMs = 0,
 } = {}) {
-  const delays = useRef({ creationDelayMs, transcriptDelayMs });
-  delays.current = { creationDelayMs, transcriptDelayMs };
+  const delays = useRef({ creationDelayMs, startDelayMs, transcriptDelayMs });
+  delays.current = { creationDelayMs, startDelayMs, transcriptDelayMs };
   const [fixture] = useState(() => {
     const fixture = projectFixture(false, false, empty ? 0 : sessionCount);
     const { c, projects, sessions } = fixture;
@@ -86,6 +87,11 @@ function Preview({
     c.sessions.add = async (request, options) => {
       await previewDelay(delays.current.creationDelayMs, options?.signal);
       return add(request, options);
+    };
+    const start = c.sessions.start;
+    c.sessions.start = async (request, options) => {
+      await previewDelay(delays.current.startDelayMs, options?.signal);
+      return start(request, options);
     };
     const transcript = c.sessions.transcript;
     c.sessions.transcript = async (request, options) => {
@@ -334,9 +340,17 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const Empty: Story = { args: { empty: true } };
 export const SessionCreation: Story = {
-  args: { empty: true, creationDelayMs: 1200, transcriptDelayMs: 800 },
+  args: {
+    empty: true,
+    creationDelayMs: 400,
+    startDelayMs: 800,
+    transcriptDelayMs: 800,
+  },
   argTypes: {
     creationDelayMs: {
+      control: { type: "range", min: 0, max: 5000, step: 100 },
+    },
+    startDelayMs: {
       control: { type: "range", min: 0, max: 5000, step: 100 },
     },
     transcriptDelayMs: {
@@ -347,7 +361,7 @@ export const SessionCreation: Story = {
     docs: {
       description: {
         story:
-          "Start on the empty Sessions page. Click Add session in the toolbar, choose a project and Work account, enter a title and Confirm. The real centered SessionCreate modal shows its pending state while the local Add request waits, then closes with its exit animation and navigates to the new alias-based conversation. The session panel slides in with the new session selected; the initial transcript loads before the empty conversation is ready for input. Back in Preview history returns to the table with the created session. Create another session to repeat without resetting. The delay controls make creation and initial history loading easier to inspect. This story uses the real Workspace, router, session form, inventory updates and conversation, backed by isolated in-memory RPC fixtures; it never creates a real session or requires login. For the session-scoped login branch, see Accounts/Workflows/SessionCreationRequiresLogin.",
+          "Start on the empty Sessions page. Click Add session in the toolbar, choose a project and Work account, enter a title and Confirm. The real SessionCreate modal first calls Add to store a session, then calls Start to launch it. It keeps its dimensions while both requests are pending, then closes and navigates to the new alias-based conversation. The session panel slides in with the new session selected; the initial transcript loads before input is ready. Back in Preview history returns to the table with the created session. Separate controls adjust Add, Start and initial history delays. This story uses the real Workspace, router, form, inventory and conversation with isolated in-memory RPC fixtures. For login during Start, see Accounts/Workflows/SessionCreationRequiresLogin.",
       },
     },
   },

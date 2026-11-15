@@ -273,7 +273,7 @@ func (s SessionServer) History(ctx context.Context, r *resource.SessionEventsReq
 	if err != nil {
 		return nil, err
 	}
-	if v.GetStatus().GetState() == "created" {
+	if awaitingFirstRun(v) {
 		return &resource.SessionEventBatch{}, nil
 	}
 	batch, err := s.shared.runtime.History(ctx, &api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), Limit: r.GetLimit()})
@@ -293,6 +293,9 @@ func (s SessionServer) Models(ctx context.Context, r *resource.SessionModelsRequ
 	v, err := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return nil, err
+	}
+	if awaitingFirstRun(v) {
+		return &resource.SessionModelsReply{}, nil
 	}
 	out, err := s.shared.runtime.Models(ctx, &api.ModelsRequest{SessionId: v.GetRuntimeId(), Refresh: r.GetRefresh(), RunId: r.GetRunId(), ClientId: r.GetClientId()})
 	if err != nil {
@@ -333,6 +336,10 @@ func (s SessionServer) Events(r *resource.SessionEventsRequest, stream grpc.Serv
 		return err
 	}
 	v, err := s.Get(stream.Context(), resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return err
+	}
+	v, err = s.awaitFirstRun(stream.Context(), v, func() error { return stream.Send(resource.SessionEvent_builder{Heartbeat: true}.Build()) })
 	if err != nil {
 		return err
 	}
@@ -438,6 +445,9 @@ func (s SessionServer) Background(ctx context.Context, r *resource.SessionBackgr
 	v, err := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return nil, err
+	}
+	if awaitingFirstRun(v) {
+		return &resource.SessionBackgroundReply{}, nil
 	}
 	reply, err := s.shared.runtime.Background(ctx, &api.SessionRef{Id: v.GetRuntimeId()})
 	if err != nil {

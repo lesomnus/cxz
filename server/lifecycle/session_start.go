@@ -12,6 +12,37 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func awaitingFirstRun(v *resource.Session) bool {
+	state := v.GetStatus()
+	return state.GetRunId() == "" && (state.GetState() == "created" || state.GetState() == "starting" || state.GetState() == "failed")
+}
+
+// A stored session has no journal until Start. Keep its readers connected,
+// without asking a project runtime to read a manifest that does not exist yet.
+func (s SessionServer) awaitFirstRun(ctx context.Context, v *resource.Session, heartbeat func() error) (*resource.Session, error) {
+	tick := time.NewTicker(time.Second)
+	defer tick.Stop()
+	pulse := time.NewTicker(10 * time.Second)
+	defer pulse.Stop()
+	for awaitingFirstRun(v) {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-pulse.C:
+			if err := heartbeat(); err != nil {
+				return nil, err
+			}
+		case <-tick.C:
+			var err error
+			v, err = s.Next().Session().Get(ctx, resource.SessionGetRequest_builder{Ref: resource.SessionRef_builder{Id: v.GetId()}.Build(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return v, nil
+}
+
 func (s SessionServer) Start(ctx context.Context, r *resource.SessionControl) (_ *resource.Session, result error) {
 	s.shared.transition.RLock()
 	defer s.shared.transition.RUnlock()
@@ -51,7 +82,7 @@ func (s SessionServer) Start(ctx context.Context, r *resource.SessionControl) (_
 		}
 		return nil, status.Error(codes.FailedPrecondition, "stale run_id")
 	}
-	first := v.GetStatus().GetState() == "created" || (v.GetStatus().GetState() == "failed" && v.GetStatus().GetRunId() == "") || (v.GetStatus().GetState() == "starting" && v.GetStatus().GetRunId() == "")
+	first := awaitingFirstRun(v)
 	var out *api.Session
 	if first {
 		state := proto.CloneOf(v.GetStatus())

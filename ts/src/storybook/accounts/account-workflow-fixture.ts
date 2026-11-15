@@ -144,6 +144,7 @@ export function accountWorkflowFixture(
     status: { state: "idle", runId: "preview-run", lastSeq: 0n },
   });
   let revision = 0,
+    registered = scenario !== "create-session",
     loginAttempts = 0,
     run = 0,
     needsLogin = isSession,
@@ -326,17 +327,13 @@ export function accountWorkflowFixture(
         },
         add: (request) => {
           calls.push(`create:${request.clientId}`);
+          registered = true;
           const alias =
             request.account?.key.case === "alias"
               ? request.account.key.value
               : account.alias;
           const selected =
             accounts.find((item) => item.alias === alias) ?? account;
-          if (
-            selected.agent === "claude" &&
-            !authenticatedSessions.has(request.clientId)
-          )
-            throw loginRequired(request.clientId);
           session = create(SessionSchema, {
             ...session,
             account: selected,
@@ -347,7 +344,20 @@ export function accountWorkflowFixture(
               request.model ||
               (selected.agent === "claude" ? "claude-sonnet" : "gpt-6.1"),
           });
+          session.status!.state = "created";
+          session.status!.runId = "";
+          notify();
+          return clone(SessionSchema, session);
+        },
+        start: () => {
+          calls.push(`start:${session.clientId}`);
+          if (
+            session.agent === "claude" &&
+            !authenticatedSessions.has(session.clientId)
+          )
+            throw loginRequired(session.clientId);
           session.status!.state = "idle";
+          session.status!.runId = `started-${++run}`;
           needsLogin = false;
           notify();
           return clone(SessionSchema, session);
@@ -479,9 +489,7 @@ export function accountWorkflowFixture(
     calls,
     get sessions() {
       if (sessionErased) return [];
-      return scenario === "create-session" && !authenticatedSessions.size
-        ? []
-        : [session];
+      return registered ? [session] : [];
     },
     dispose() {
       for (const timer of timers) clearTimeout(timer);
