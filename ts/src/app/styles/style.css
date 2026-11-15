@@ -451,6 +451,7 @@ header strong {
 }
 .settings-group > h2 {
   margin: 0;
+  margin-block-end: calc(2 * var(--ui-space));
   font-size: 13px;
   font-weight: 100;
 }
@@ -505,6 +506,9 @@ header strong {
   display: grid;
   gap: var(--space);
 }
+.font-family-control > :not(.value-menu):not(.font-family-custom) {
+  margin-inline: var(--setting-control-inset, 0px);
+}
 .font-family-custom {
   display: flex;
   gap: var(--space);
@@ -514,7 +518,8 @@ header strong {
   min-width: 0;
   width: 100%;
   border: 0;
-  padding: var(--control-inset) var(--control-inline-inset);
+  padding: var(--control-inset)
+    var(--setting-control-inset, var(--control-inline-inset));
 }
 .font-family-custom button {
   flex-shrink: 0;

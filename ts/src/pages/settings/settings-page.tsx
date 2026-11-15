@@ -267,6 +267,11 @@ export function SettingsPage({
                 title={translateKnown(fields[key].label)}
                 settingId={name}
                 summary={translateKnown(fields[key].description)}
+                controlInset={
+                  key === "fontFamily" || key === "colorPalette"
+                    ? "var(--ui-menu-item-padding-inline)"
+                    : undefined
+                }
                 details={
                   key === "fontFamily"
                     ? t(
@@ -438,6 +443,7 @@ export function SettingsPage({
                         <SettingField
                           title={t("Language")}
                           settingId="ui.language"
+                          controlInset="var(--ui-menu-item-padding-inline)"
                           summary={t("Choose the interface language.")}
                           details={t(
                             "Language changes apply to this browser. Conversation content and code are preserved.",
@@ -542,6 +548,7 @@ export function SettingsPage({
                       <SettingField
                         title={t("Voice language")}
                         settingId="voice.language"
+                        controlInset="var(--ui-menu-item-padding-inline)"
                         summary={t(
                           "Use your browser's language by default, or choose a recognition language.",
                         )}
