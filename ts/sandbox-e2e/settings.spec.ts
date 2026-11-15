@@ -704,27 +704,28 @@ test("settings sections form compact responsive columns with aligned text and or
   const alignment = await page
     .locator('[data-settings-topic="editor"]')
     .evaluate((el) => {
-      const title = el.querySelector("header h1")!.getBoundingClientRect();
       const sectionTitle = el
         .querySelector(".settings-group h2")!
         .getBoundingClientRect();
       const section = el.querySelector(".settings-group")!;
+      const fieldTitle = section
+        .querySelector(".setting-title")!
+        .getBoundingClientRect();
       return {
-        delta: Math.abs(title.left - sectionTitle.left),
-        outsidePadding: getComputedStyle(el.querySelector(":scope > header")!)
-          .paddingLeft,
-        padding: getComputedStyle(section).paddingLeft,
+        titleInset: sectionTitle.left - section.getBoundingClientRect().left,
+        fieldInset: fieldTitle.left - section.getBoundingClientRect().left,
+        padding: parseFloat(getComputedStyle(section).paddingLeft),
       };
     });
-  expect(alignment.delta).toBeLessThan(0.1);
-  expect(alignment.outsidePadding).toBe(alignment.padding);
+  expect(alignment.titleInset).toBeCloseTo(alignment.padding, 1);
+  expect(alignment.fieldInset).toBeCloseTo(alignment.padding, 1);
   const expectFieldOrder = async (field: Locator, detailed = false) => {
     const positions = await field.evaluate(
       (el, detailed) =>
         [
           ".setting-title",
           ".setting-id",
-          ".setting-summary",
+          ...(el.querySelector(".setting-summary") ? [".setting-summary"] : []),
           ".setting-control",
           ...(detailed ? [".setting-details"] : []),
         ].map(

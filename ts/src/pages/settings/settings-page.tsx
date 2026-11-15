@@ -513,6 +513,7 @@ export function SettingsPage({
                         <SettingField
                           title={t("Copy on selection")}
                           settingId="terminal.copyOnSelect"
+                          controlPlacement="inline"
                           summary={t(
                             "Automatically copy selected terminal text.",
                           )}
@@ -564,6 +565,7 @@ export function SettingsPage({
                       <SettingField
                         title={t("Force local recognition")}
                         settingId="voice.processLocally"
+                        controlPlacement="inline"
                         summary={t(
                           "Require speech recognition on this device.",
                         )}
@@ -591,6 +593,7 @@ export function SettingsPage({
                       <SettingField
                         title={t("Notification sounds")}
                         settingId="notifications.sound"
+                        controlPlacement="inline"
                         summary={t(
                           "Play a sound when a response finishes or a new question arrives.",
                         )}
