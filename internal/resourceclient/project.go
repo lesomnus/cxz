@@ -99,12 +99,12 @@ func (c *Client) Open(ctx context.Context, r *api.ProjectRequest, opts ...grpc.C
 			}
 			return nil, err
 		}
-		return c.view(ctx, s, opts...)
+		return c.startAdded(ctx, s, r.ClientId, opts...)
 	}
 	if r.Model != "" && r.Model != chosen.Model {
 		return nil, fmt.Errorf("existing session model is immutable; stop it and create a new session")
 	}
-	if chosen.State == "interrupted" || chosen.State == "stopped" || chosen.State == "failed" {
+	if chosen.State == "created" || chosen.State == "interrupted" || chosen.State == "stopped" || chosen.State == "failed" {
 		resumed, err := c.Resume(ctx, &api.Control{SessionId: chosen.Id, RunId: chosen.RunId, ClientId: r.ClientId}, opts...)
 		if err != nil && !r.NewSession {
 			if attached := c.concurrentOpen(ctx, projectid.String(p.GetId()), kind, r.Model, chosen.Account, opts...); attached != nil && attached.Id == chosen.Id {

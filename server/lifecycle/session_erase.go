@@ -23,6 +23,10 @@ func (s SessionServer) Erase(ctx context.Context, ref *resource.SessionRef) (*re
 	}
 	s.shared.transition.Lock()
 	defer s.shared.transition.Unlock()
+	v, err := s.Next().Session().Get(ctx, resource.SessionGetRequest_builder{Ref: ref, Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err == nil && v.GetStatus().GetState() == "created" {
+		return s.eraseSession(ctx, ref)
+	}
 	if err := s.sync(ctx); err != nil {
 		return nil, err
 	}
@@ -63,9 +67,11 @@ func (s SessionServer) eraseSession(ctx context.Context, ref *resource.SessionRe
 			}
 		}
 	}
-	forgetAuxiliary(ctx, s.shared.runtime, v.GetRuntimeId())
-	if _, err = s.shared.runtime.EraseSession(ctx, &api.SessionEraseInput{SessionId: v.GetRuntimeId(), ProjectId: projectid.String(v.GetProject().GetId()), CreateId: v.GetClientId()}); err != nil {
-		return nil, err
+	if v.GetStatus().GetState() != "created" {
+		forgetAuxiliary(ctx, s.shared.runtime, v.GetRuntimeId())
+		if _, err = s.shared.runtime.EraseSession(ctx, &api.SessionEraseInput{SessionId: v.GetRuntimeId(), ProjectId: projectid.String(v.GetProject().GetId()), CreateId: v.GetClientId()}); err != nil {
+			return nil, err
+		}
 	}
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
@@ -90,5 +96,6 @@ func (s SessionServer) eraseSession(ctx context.Context, ref *resource.SessionRe
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
+	s.shared.sessionStarts.Delete(string(v.GetId()))
 	return resource.SessionEraseResponse_builder{Erased: ptr(true)}.Build(), nil
 }

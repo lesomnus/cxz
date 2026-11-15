@@ -8424,6 +8424,11 @@ func (s interceptSession) ConversationStats(ctx context.Context, req *resource.C
 		resource.SessionService_ConversationStats_FullMethodName, req, s.SessionServiceServer.ConversationStats)
 }
 
+func (s interceptSession) Start(ctx context.Context, req *resource.SessionControl) (*resource.Session, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Start_FullMethodName, req, s.SessionServiceServer.Start)
+}
+
 func (s interceptSession) Resume(ctx context.Context, req *resource.SessionControl) (*resource.Session, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Resume_FullMethodName, req, s.SessionServiceServer.Resume)
@@ -11229,6 +11234,8 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.SessionReadStateRequest{}
 	case resource.SessionService_ConversationStats_FullMethodName:
 		v = &resource.ConversationStatsRequest{}
+	case resource.SessionService_Start_FullMethodName:
+		v = &resource.SessionControl{}
 	case resource.SessionService_Resume_FullMethodName:
 		v = &resource.SessionControl{}
 	case resource.SessionService_Fork_FullMethodName:
@@ -11481,6 +11488,8 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.Session().ReadState(ctx, v.(*resource.SessionReadStateRequest))
 	case resource.SessionService_ConversationStats_FullMethodName:
 		res, err = s.Session().ConversationStats(ctx, v.(*resource.ConversationStatsRequest))
+	case resource.SessionService_Start_FullMethodName:
+		res, err = s.Session().Start(ctx, v.(*resource.SessionControl))
 	case resource.SessionService_Resume_FullMethodName:
 		res, err = s.Session().Resume(ctx, v.(*resource.SessionControl))
 	case resource.SessionService_Fork_FullMethodName:

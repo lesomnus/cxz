@@ -17,6 +17,8 @@ service SessionService {
   rpc ReadState(SessionReadStateRequest) returns (SessionReadState);
   // Read retained conversation statistics, never account billing or lifetime totals.
   rpc ConversationStats(ConversationStatsRequest) returns (ConversationStatsReply);
+  // Start a stored session, preparing its runtime on the first start.
+  rpc Start(SessionControl) returns (Session);
   rpc Resume(SessionControl) returns (Session);
   // Branch a settled conversation, retaining its project, account and settings.
   // client_id makes retries return the same child rather than creating another.

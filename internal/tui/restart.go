@@ -64,7 +64,7 @@ func (m *model) confirmRestart() tea.Cmd {
 		if current.RunId != p.run {
 			return restartFinished{fmt.Errorf("session run changed; restart canceled")}
 		}
-		if current.State != "stopped" && current.State != "failed" && current.State != "interrupted" {
+		if current.State != "created" && current.State != "stopped" && current.State != "failed" && current.State != "interrupted" {
 			if _, err = client.Stop(ctx, &api.Control{SessionId: p.id, RunId: p.run, ClientId: core.ID()}); err != nil {
 				return restartFinished{fmt.Errorf("restart stop failed; resume was not attempted: %w", err)}
 			}

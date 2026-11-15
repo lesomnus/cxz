@@ -122,10 +122,13 @@ type rpcStub struct {
 
 func (s *rpcStub) Add(_ context.Context, r *resource.SessionAddRequest) (*resource.Session, error) {
 	s.requests <- &api.ProjectRequest{Workspace: "project-name", Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), NewSession: true, Account: r.GetAccount().GetAlias()}
-	return resource.Session_builder{RuntimeId: "session", Agent: r.GetAgent()}.Build(), nil
+	return resource.Session_builder{RuntimeId: "session", Agent: r.GetAgent(), Status: resource.SessionStatus_builder{State: "created"}.Build()}.Build(), nil
 }
 func (s *rpcStub) List(context.Context, *resource.SessionListRequest) (*resource.SessionListResponse, error) {
 	return &resource.SessionListResponse{}, nil
+}
+func (s *rpcStub) Start(context.Context, *resource.SessionControl) (*resource.Session, error) {
+	return resource.Session_builder{RuntimeId: "session", Status: resource.SessionStatus_builder{State: "idle", RunId: "new-run"}.Build()}.Build(), nil
 }
 func (s *rpcStub) Get(_ context.Context, r *resource.SessionGetRequest) (*resource.Session, error) {
 	return resource.Session_builder{RuntimeId: r.GetRef().GetRuntimeId(), Status: resource.SessionStatus_builder{RunId: "current-run"}.Build()}.Build(), nil

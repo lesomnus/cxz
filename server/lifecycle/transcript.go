@@ -14,6 +14,9 @@ func (s SessionServer) Transcript(ctx context.Context, r *resource.SessionTransc
 	if err != nil {
 		return nil, err
 	}
+	if v.GetStatus().GetState() == "created" {
+		return &resource.SessionTranscriptReply{}, nil
+	}
 	out, err := s.shared.runtime.Transcript(ctx, &api.TranscriptRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), BeforeSeq: r.GetBeforeSeq(), Limit: r.GetLimit(), SnapshotSeq: r.GetSnapshotSeq()})
 	if err != nil {
 		return nil, err

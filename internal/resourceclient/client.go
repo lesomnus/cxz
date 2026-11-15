@@ -140,6 +140,20 @@ func (c *Client) Create(ctx context.Context, r *api.CreateRequest, opts ...grpc.
 	if err != nil {
 		return nil, err
 	}
+	return c.startAdded(ctx, s, r.ClientId, opts...)
+}
+
+func (c *Client) startAdded(ctx context.Context, s *resource.Session, clientID string, opts ...grpc.CallOption) (*api.Session, error) {
+	state := s.GetStatus()
+	// A creation retry returns a previously started session as-is. Restarting a
+	// stopped run belongs to an explicit Start/Resume, never an Add retry.
+	if state.GetState() == "created" || (state.GetRunId() == "" && (state.GetState() == "failed" || state.GetState() == "starting")) {
+		var err error
+		s, err = c.sessions.Start(ctx, resource.SessionControl_builder{Ref: resource.SessionRef_builder{Id: s.GetId()}.Build(), RunId: ptr(state.GetRunId()), ClientId: &clientID}.Build(), opts...)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return c.view(ctx, s, opts...)
 }
 func (c *Client) Get(ctx context.Context, r *api.SessionRef, opts ...grpc.CallOption) (*api.Session, error) {

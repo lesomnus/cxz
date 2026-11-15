@@ -2,6 +2,7 @@ package core
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"os"
@@ -108,6 +109,14 @@ func ID() string {
 	}
 	return hex.EncodeToString(b)
 }
+
+// SessionID reserves the same identity in the manager and project database
+// before either side has started a process or written a runtime manifest.
+func SessionID(clientID string) string {
+	h := sha256.Sum256([]byte("cxz.session:" + clientID))
+	return hex.EncodeToString(h[:12])
+}
+
 func Dir(root, id string) string    { return filepath.Join(root, "sessions", id) }
 func Socket(root, id string) string { return filepath.Join(root, "run", id+".sock") }
 func Prepare(root string) error {

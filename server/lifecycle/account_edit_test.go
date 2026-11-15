@@ -8,6 +8,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
@@ -23,7 +24,7 @@ type accountEditFixture struct {
 
 func (f *accountEditFixture) Create(_ context.Context, in *api.CreateRequest) (*api.Session, error) {
 	f.created = in
-	return &api.Session{Id: "created-" + in.ClientId, CreateId: in.ClientId, Agent: in.Agent, Account: in.Account, AuthBackend: in.AuthBackend, AuthBinding: in.AuthBinding, State: "idle", CreatedAt: 1}, nil
+	return &api.Session{Id: core.SessionID(in.ClientId), CreateId: in.ClientId, Title: in.Title, Agent: in.Agent, Account: in.Account, AuthBackend: in.AuthBackend, AuthBinding: in.AuthBinding, State: "idle", RunId: "created-run", CreatedAt: 1}, nil
 }
 
 func (f *accountEditFixture) AuxConfig(context.Context, *api.Empty) (*api.AuxConfigReply, error) {
@@ -74,6 +75,10 @@ func TestAccountMetadataPreservesRuntimeIdentity(t *testing.T) {
 		t.Fatal("binding changed", binding, err)
 	}
 	created, err := stack.Session().Add(ctx, resource.SessionAddRequest_builder{Project: projectRef("project"), Account: accountRef("renamed"), AuthBinding: bindingRef(binding.GetBindingId()), ClientId: "after-rename"}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	created, err = stack.Session().Start(ctx, resource.SessionControl_builder{Ref: resource.SessionRef_builder{Id: created.GetId()}.Build(), ClientId: ptr("start-after-rename")}.Build())
 	if err != nil || f.created.Account != "work" || !bytes.Equal(created.GetAccount().GetId(), original.GetId()) {
 		t.Fatal("new session changed login profile", created, err)
 	}
