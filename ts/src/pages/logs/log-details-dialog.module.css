@@ -1,6 +1,5 @@
 .dialog {
   --card-body-padding: 0;
-  width: min(720px, calc(100vw - 4 * var(--ui-space)));
 }
 .close {
   margin-left: auto;
