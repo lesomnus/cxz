@@ -46,7 +46,8 @@ const solid = (shapes: IconShape[], viewBox = "0 0 16 16"): IconDefinition => ({
   shapes,
 });
 const filled = { fill: "currentColor", stroke: "none" } as const;
-const paperclip = "M9 7v10a3 3 0 0 0 6 0V5a2 2 0 0 0-4 0v11a1 1 0 0 0 2 0V7";
+const paperclip =
+  "M8.25 6.375v12.5a3.75 3.75 0 0 0 7.5 0V3.875a2.5 2.5 0 0 0-5 0v13.75a1.25 1.25 0 0 0 2.5 0V6.375";
 
 const errorTriangle = solid([path("M8 3 14 13H2Z")]);
 const play = solid([path("m5 3 7 5-7 5Z")]);
@@ -296,12 +297,7 @@ export const iconDefinitions = {
   ),
   tasks: line([
     path(paperclip, {
-      transform:
-        "translate(8.2 10.4) rotate(32) scale(.85) translate(-12 -11.5)",
-    }),
-    path(paperclip, {
-      transform:
-        "translate(15.6 14) rotate(48) scale(.85) translate(-12 -11.5)",
+      transform: "rotate(45 12 12)",
     }),
   ]),
   accounts: line([circle(12, 8, 4), path("M4 21v-3a8 8 0 0 1 16 0v3")]),
