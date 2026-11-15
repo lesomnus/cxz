@@ -494,6 +494,12 @@ header strong {
   line-height: 1.5;
   color: var(--muted);
 }
+.settings-group > h2:has(+ .muted) {
+  margin-block-end: 0;
+}
+.settings-group > h2 + .muted {
+  margin-block-end: calc(2 * var(--ui-space));
+}
 .font-family-control {
   display: grid;
   gap: var(--space);
