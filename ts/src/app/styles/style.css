@@ -56,6 +56,8 @@
     transparent
   );
   --toolbar-surface-blur: 10px;
+  --toolbar-surface-border-width: 1px;
+  --toolbar-surface-border-color: var(--shade-44);
   --composer-toolbar-background: var(--toolbar-surface-background);
   --composer-extension: 10px;
   --composer-overhang: 4px;
@@ -1188,7 +1190,7 @@ pre {
   padding: 0 0 max(12px, env(safe-area-inset-bottom));
 }
 .composer-wrapper {
-  --composer-border-width: 1px;
+  --composer-border-width: var(--toolbar-surface-border-width);
   --composer-toolbar-overlap: var(--composer-radius);
   position: relative;
   width: calc(
@@ -1196,7 +1198,7 @@ pre {
   );
   margin-inline: calc(var(--composer-overhang) - var(--composer-extension));
   padding: 0;
-  border: var(--composer-border-width) solid var(--shade-44);
+  border: var(--composer-border-width) solid var(--toolbar-surface-border-color);
   background: transparent;
   border-radius: var(--wrapper-radius);
 }

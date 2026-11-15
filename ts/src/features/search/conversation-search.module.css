@@ -32,6 +32,8 @@
   margin-inline: var(--ui-space);
   padding: calc(var(--search-filter-overlap) + var(--ui-space)) var(--ui-space)
     var(--ui-space);
+  border: var(--toolbar-surface-border-width) solid
+    var(--toolbar-surface-border-color);
   border-radius: var(--wrapper-radius);
   background: var(--toolbar-surface-background);
   -webkit-backdrop-filter: blur(var(--toolbar-surface-blur));
@@ -50,13 +52,11 @@
   background: var(--search-filter-control-background);
 }
 .filterBar .projectPicker::before {
-  inset: 0;
-  border-radius: inherit;
-  background: var(--ui-button-hover-background);
-  transition: opacity var(--ui-button-background-duration) ease-out;
+  content: none;
 }
-.projectPicker:is(:hover, :focus-within)::before {
-  opacity: 1;
+.projectPicker
+  :global(.setting-trigger:not(:disabled):is(:hover, [aria-expanded="true"])) {
+  background: var(--ui-button-hover-background);
 }
 .projectPicker > :global(.value-menu) {
   flex: 1;
