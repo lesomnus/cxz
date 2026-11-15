@@ -47,7 +47,7 @@ const solid = (shapes: IconShape[], viewBox = "0 0 16 16"): IconDefinition => ({
 });
 const filled = { fill: "currentColor", stroke: "none" } as const;
 const paperclip =
-  "M8.25 6.375v12.5a3.75 3.75 0 0 0 7.5 0V3.875a2.5 2.5 0 0 0-5 0v13.75a1.25 1.25 0 0 0 2.5 0V6.375";
+  "M7.125 6.375V17.75a4.875 4.875 0 0 0 9.75 0V4.625a3.25 3.25 0 0 0-6.5 0V17.25a1.625 1.625 0 0 0 3.25 0V6.375";
 
 const errorTriangle = solid([path("M8 3 14 13H2Z")]);
 const play = solid([path("m5 3 7 5-7 5Z")]);
