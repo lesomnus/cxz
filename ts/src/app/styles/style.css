@@ -271,7 +271,7 @@ header strong {
   flex-direction: column;
   align-items: center;
   gap: var(--space);
-  padding: 12px 4px 0;
+  padding: 12px var(--space) var(--space);
   background: var(--shade-17);
   border-right: 1px solid var(--shade-36);
 }
