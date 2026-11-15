@@ -14,11 +14,12 @@
   --aurora-green: #23b04a;
   --aurora-cyan: #2596e9;
   --aurora-violet: #b14ccd;
-  --composer-radius: 15px;
+  --input-surface-radius: 15px;
+  --composer-radius: var(--input-surface-radius);
   --composer-editor-height: 110px;
-  --composer-input-background: var(--shade-22);
-  --composer-input-focus-background: var(--shade-25);
-  --composer-input-sending-background: var(--shade-16);
+  --input-surface-background: var(--shade-22);
+  --input-surface-focus-background: var(--shade-25);
+  --input-surface-sending-background: var(--shade-16);
   --composer-resize-duration: 300ms;
   --fine-grain-texture: var(--ui-fine-grain-texture);
   --send-exit-duration: 180ms;
@@ -914,8 +915,7 @@ header strong {
   border-radius: 8px;
   padding: 10px 12px;
 }
-.input-box,
-.composer-input {
+.input-box {
   background-image: var(--fine-grain-texture);
   background-blend-mode: soft-light;
 }
@@ -1243,23 +1243,15 @@ pre {
 :root[data-theme="light"] .composer-toolbar-surface::before {
   background: color-mix(in srgb, var(--shade-32) 78%, transparent);
 }
-.composer-input,
 .question-other-editor {
   position: relative;
   background-color: var(--shade-34);
 }
 .composer-input {
   z-index: 2;
-  background-color: var(--composer-input-background);
-  border: 1px solid var(--shade-58);
   width: calc(100% + 2px + 2 * var(--composer-overhang));
   margin: calc(-1 * var(--composer-toolbar-overlap))
     calc(-1px - var(--composer-overhang)) -1px;
-  border-radius: var(--composer-radius);
-  transition: background-color 150ms ease-out;
-}
-.composer-input[data-sending="true"] {
-  background-color: var(--composer-input-sending-background);
 }
 .composer-pending-ink {
   position: absolute;
@@ -1267,12 +1259,6 @@ pre {
   z-index: 0;
   border-radius: inherit;
   pointer-events: none;
-}
-.composer-input:focus-within {
-  border-color: var(--shade-115);
-}
-.composer-input:not([data-sending="true"]):focus-within {
-  background-color: var(--composer-input-focus-background);
 }
 .composer-editor.composer-send-ghost {
   position: absolute;

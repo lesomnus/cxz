@@ -57,6 +57,7 @@ import { useLogFeed } from "./use-log-feed";
 import { useLogViewport } from "./use-log-viewport";
 import { logPeriodBounds } from "#src/shared/logs/log-period.ts";
 import styles from "./logs-page.module.css";
+import inputSurface from "#src/shared/components/input-surface.module.css";
 
 const logLevels = ["info", "warn", "error"] as const;
 const logCategories = ["client", "rpc"] as const;
@@ -247,7 +248,10 @@ export function LogsPage({
       </ResourceToolbar>
       <div className={`${pageStyles.contentPadding} ${styles.body}`}>
         <ResourceLayout className={styles.content}>
-          <FindBar aria-label={t("Search logs")}>
+          <FindBar
+            className={inputSurface.surface}
+            aria-label={t("Search logs")}
+          >
             <FindBarControls className={styles.searchControls}>
               <FindBarIcon />
               <FindBarInput

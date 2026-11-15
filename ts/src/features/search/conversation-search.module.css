@@ -7,7 +7,7 @@
   font-size: 12px;
 }
 .searchForm {
-  --search-filter-overlap: var(--ui-dialog-radius);
+  --search-filter-overlap: var(--input-surface-radius);
   display: grid;
   min-width: 0;
   isolation: isolate;

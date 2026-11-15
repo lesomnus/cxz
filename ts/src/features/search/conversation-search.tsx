@@ -25,6 +25,7 @@ import type { Project } from "#gen/cxz/project_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import styles from "./conversation-search.module.css";
+import inputSurface from "#src/shared/components/input-surface.module.css";
 
 function recentWeek() {
   const end = new Date();
@@ -162,7 +163,10 @@ export function ConversationSearch({
           if (!loading) void search();
         }}
       >
-        <FindBar className={styles.searchBar} aria-label="Search conversations">
+        <FindBar
+          className={`${styles.searchBar} ${inputSurface.surface}`}
+          aria-label="Search conversations"
+        >
           <FindBarControls>
             <FindBarIcon />
             <FindBarInput

@@ -1,0 +1,29 @@
+.surface.surface {
+  --search-border-width: 1px;
+  --ui-dialog-radius: var(--input-surface-radius);
+  position: relative;
+  background-color: var(--input-surface-background);
+  background-image: var(--ui-fine-grain-texture);
+  background-blend-mode: soft-light;
+  border: var(--search-border-width) solid var(--ui-shade-58);
+  border-radius: var(--input-surface-radius);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition:
+    background-color 150ms ease-out,
+    border-color 150ms ease-out;
+}
+.surface.surface:focus-within {
+  border-color: var(--ui-shade-115);
+}
+.surface.surface:not([data-sending="true"]):focus-within {
+  background-color: var(--input-surface-focus-background);
+}
+.surface.surface[data-sending="true"] {
+  background-color: var(--input-surface-sending-background);
+}
+@media (prefers-reduced-motion: reduce) {
+  .surface.surface {
+    transition: none;
+  }
+}
