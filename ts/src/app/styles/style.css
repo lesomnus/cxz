@@ -50,11 +50,13 @@
     calc(var(--wrapper-radius) - 1px - var(--control-inset))
   );
   --composer-toolbar-height: 28px;
-  --composer-toolbar-background: color-mix(
+  --toolbar-surface-background: color-mix(
     in srgb,
     var(--shade-16) 72%,
     transparent
   );
+  --toolbar-surface-blur: 10px;
+  --composer-toolbar-background: var(--toolbar-surface-background);
   --composer-extension: 10px;
   --composer-overhang: 4px;
   --muted: var(--ui-muted);
@@ -1211,8 +1213,8 @@ pre {
   z-index: 1;
   pointer-events: none;
   background: var(--composer-toolbar-background);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(var(--toolbar-surface-blur));
+  backdrop-filter: blur(var(--toolbar-surface-blur));
   border-radius: calc(var(--wrapper-radius) - var(--composer-border-width))
     calc(var(--wrapper-radius) - var(--composer-border-width)) 0 0;
 }
@@ -1240,8 +1242,12 @@ pre {
   contain: paint;
   pointer-events: none;
 }
-:root[data-theme="light"] .composer-toolbar-surface::before {
-  background: color-mix(in srgb, var(--shade-32) 78%, transparent);
+:root[data-theme="light"] {
+  --toolbar-surface-background: color-mix(
+    in srgb,
+    var(--shade-32) 78%,
+    transparent
+  );
 }
 .question-other-editor {
   position: relative;

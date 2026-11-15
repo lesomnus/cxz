@@ -17,19 +17,25 @@
   z-index: 1;
 }
 .filterBar {
-  --search-filter-control-background: var(--ui-dialog-background);
+  --search-filter-control-background: var(--input-surface-background);
+  --search-filter-control-radius: max(
+    0px,
+    calc(var(--wrapper-radius) - var(--ui-space))
+  );
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--ui-space);
   flex-wrap: wrap;
   min-width: 0;
   margin-top: calc(-1 * var(--search-filter-overlap));
   margin-inline: var(--ui-space);
   padding: calc(var(--search-filter-overlap) + var(--ui-space)) var(--ui-space)
     var(--ui-space);
-  border-radius: var(--ui-dialog-radius);
-  background: var(--ui-section-background);
+  border-radius: var(--wrapper-radius);
+  background: var(--toolbar-surface-background);
+  -webkit-backdrop-filter: blur(var(--toolbar-surface-blur));
+  backdrop-filter: blur(var(--toolbar-surface-blur));
 }
 .projectPicker {
   box-sizing: border-box;
@@ -40,13 +46,17 @@
   min-width: 0;
   max-width: 100%;
   font-size: 12px;
-  border-radius: 6px;
+  border-radius: var(--search-filter-control-radius);
   background: var(--search-filter-control-background);
 }
-.projectPicker::before {
+.filterBar .projectPicker::before {
   inset: 0;
   border-radius: inherit;
   background: var(--ui-button-hover-background);
+  transition: opacity var(--ui-button-background-duration) ease-out;
+}
+.projectPicker:is(:hover, :focus-within)::before {
+  opacity: 1;
 }
 .projectPicker > :global(.value-menu) {
   flex: 1;
@@ -66,11 +76,16 @@
   min-width: 0;
   max-width: 100%;
 }
-.datePicker.datePicker {
+.filterBar .datePicker.datePicker {
   --ui-date-picker-trigger-width: max-content;
   background: var(--search-filter-control-background);
+  border-radius: var(--search-filter-control-radius);
   border: 0;
   box-shadow: none;
+}
+.filterBar
+  .datePicker.datePicker:not(:disabled):is(:hover, [aria-expanded="true"]) {
+  background: var(--ui-button-hover-background);
 }
 .dateSeparator {
   color: var(--ui-text-separator);
