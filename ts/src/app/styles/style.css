@@ -334,11 +334,14 @@ header strong {
   flex-shrink: 0;
   width: 100%;
 }
-.profile-menu > .action-menu {
+.profile-menu .action-menu {
   display: flex;
   justify-content: center;
   min-width: 0;
   max-width: 100%;
+}
+.resource-link.account-preview-open {
+  background: var(--button-hover-background);
 }
 /* Photo-sized placeholder: replace the background with an image when available. */
 .profile-avatar {

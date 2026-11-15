@@ -28,9 +28,8 @@ export type ResourceView =
   | "memory"
   | "errors"
   | "logs"
-  | "auxiliary"
   | "not-found";
-export type SettingsTopic = "general" | "editor" | "connections";
+export type SettingsTopic = "general" | "editor" | "auxiliary" | "connections";
 type WorkspaceRouterContext = {
   shell: ComponentType<PropsWithChildren>;
   view: ComponentType;
@@ -189,7 +188,9 @@ const memoryDocumentRoute = createRoute({
 const auxiliaryRoute = createRoute({
   getParentRoute: () => connectionRoute,
   path: "auxiliary",
-  staticData: { resource: "auxiliary" },
+  beforeLoad: () => {
+    throw redirect({ to: "/setting/auxiliary", replace: true });
+  },
 });
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -217,6 +218,11 @@ const connectionsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: "connection",
   staticData: { resource: "settings", settingsTopic: "connections" },
+});
+const auxiliarySettingsRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: "auxiliary",
+  staticData: { resource: "settings", settingsTopic: "auxiliary" },
 });
 const logsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -274,23 +280,30 @@ const notFoundRoute = createRoute({
         }),
         replace: true,
       });
-    if (["search", "auxiliary"].includes(parts[0]) && !handle)
+    if (parts[0] === "auxiliary" && !handle)
+      throw redirect({ to: "/setting/auxiliary", replace: true });
+    if (parts[0] === "search" && !handle)
       throw redirect({
-        ...resourceLocation(parts[0] as "search" | "auxiliary"),
+        ...resourceLocation("search"),
         replace: true,
       });
     if (
       parts[0] === "settings" &&
-      (!handle || ["general", "editor", "connections", "logs"].includes(handle))
+      (!handle ||
+        ["general", "editor", "auxiliary", "connections", "logs"].includes(
+          handle,
+        ))
     ) {
       const to =
         handle === "logs"
           ? "/setting/logs"
           : handle === "editor"
             ? "/setting/editor"
-            : handle === "connections"
-              ? "/setting/connection"
-              : "/setting/general";
+            : handle === "auxiliary"
+              ? "/setting/auxiliary"
+              : handle === "connections"
+                ? "/setting/connection"
+                : "/setting/general";
       throw redirect({ to, replace: true });
     }
   },
@@ -319,6 +332,7 @@ const routeTree = rootRoute.addChildren([
     settingsIndexRoute,
     generalRoute,
     editorRoute,
+    auxiliarySettingsRoute,
     connectionsRoute,
     legacyLogsRoute,
   ]),

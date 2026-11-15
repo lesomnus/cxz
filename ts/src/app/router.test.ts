@@ -49,6 +49,45 @@ test.each(["/c/_/activity", "/activity"])(
 );
 
 const project = "00000000-0000-8000-8007-000000000001";
+test.each(["/auxiliary", "/c/_/auxiliary", "/settings/auxiliary"])(
+  "old Auxiliary AI addresses redirect into Settings: %s",
+  async (path) => {
+    const history = createMemoryHistory({ initialEntries: [path] });
+    const router = createWorkspaceRouter(
+      { shell: () => null, view: () => null },
+      history,
+    );
+    try {
+      await router.load();
+      const result = router._serverResult;
+      expect(result?.type).toBe("redirect");
+      if (result?.type === "redirect")
+        expect(result.redirect.headers.get("Location")).toBe(
+          "/setting/auxiliary",
+        );
+    } finally {
+      history.destroy();
+    }
+  },
+);
+test("Auxiliary AI is a settings topic", async () => {
+  const history = createMemoryHistory({
+    initialEntries: ["/setting/auxiliary"],
+  });
+  const router = createWorkspaceRouter(
+    { shell: () => null, view: () => null },
+    history,
+  );
+  try {
+    await router.load();
+    expect(router.state.matches.at(-1)?.staticData).toMatchObject({
+      resource: "settings",
+      settingsTopic: "auxiliary",
+    });
+  } finally {
+    history.destroy();
+  }
+});
 const memory = "00000000-0000-8000-8007-000000000200";
 test.each([
   ["/c/_/errors", "errors", {}],

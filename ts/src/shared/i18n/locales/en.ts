@@ -940,6 +940,10 @@ export const messages = {
   "Clear history": "Clear history",
   "Invalid terminal response": "Invalid terminal response",
   Active: "Active",
+  "Auxiliary AI": "Auxiliary AI",
+  Accounts: "Accounts",
+  "Configure server-side helpers. Changes are saved to this server, separately from settings.json.":
+    "Configure server-side helpers. Changes are saved to this server, separately from settings.json.",
   "The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "The result may be unknown after a disconnect; inspect the conversation before retrying.",
 } as const;

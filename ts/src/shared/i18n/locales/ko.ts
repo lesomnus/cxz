@@ -939,6 +939,10 @@ export const messages = {
   "Clear history": "기록 지우기",
   "Invalid terminal response": "잘못된 터미널 응답",
   Active: "활성",
+  "Auxiliary AI": "보조 AI",
+  Accounts: "계정",
+  "Configure server-side helpers. Changes are saved to this server, separately from settings.json.":
+    "서버의 보조 AI를 설정합니다. 변경사항은 settings.json과 별도로 이 서버에 저장됩니다.",
   "The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "연결이 끊긴 경우 작업 결과가 불확실할 수 있습니다. 다시 시도하기 전에 대화 내용을 확인하세요.",
 } satisfies LanguagePack;

@@ -4,7 +4,7 @@ test("hover account usage opens to the right without stealing editor focus and r
   page,
 }) => {
   await page.goto("/iframe.html?id=accounts-sidebar--default&viewMode=story");
-  const trigger = page.getByRole("link", { name: "Accounts", exact: true });
+  const trigger = page.getByRole("button", { name: "Profile", exact: true });
   await expect(trigger).toBeVisible({ timeout: 20000 });
   await expect(page.getByLabel("Account preview reads")).toHaveText("0");
   const editor = page.getByRole("textbox", { name: "Conversation input" });
@@ -37,7 +37,7 @@ test("hover account usage opens to the right without stealing editor focus and r
   await expect(menu).toBeVisible();
   await page.mouse.move(box.x + 20, box.y + 15, { steps: 12 });
   await expect(menu).toBeVisible();
-  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
   const count = await page.getByLabel("Account preview reads").textContent();
   await page.keyboard.press("Escape");
   await expect(menu).toHaveCount(0);
@@ -49,7 +49,14 @@ test("hover account usage opens to the right without stealing editor focus and r
   await page.mouse.move(500, 350);
   await expect(menu).toHaveCount(0);
   await trigger.click();
-  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(menu).toHaveCount(0);
+  await expect(
+    page.getByRole("menuitem", { name: "Accounts", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Accounts", exact: true }),
+  ).toHaveCount(0);
 });
 
 test("reset countdown follows remaining usage, updates without reads and preserves row geometry", async ({
@@ -57,7 +64,7 @@ test("reset countdown follows remaining usage, updates without reads and preserv
 }) => {
   await page.clock.install({ time: new Date("2026-11-13T12:00:00Z") });
   await page.goto("/iframe.html?id=accounts-sidebar--default&viewMode=story");
-  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  await page.getByRole("button", { name: "Profile", exact: true }).hover();
   const dialog = page.getByRole("dialog", { name: "Account usage" });
   const row = dialog.getByRole("listitem").first();
   const usage = row.getByLabel("64% remaining");
@@ -91,7 +98,7 @@ test("each provider shows the reset of its own displayed usage window", async ({
   await page.goto(
     "/iframe.html?id=accounts-sidebar--usage-reveal&viewMode=story",
   );
-  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  await page.getByRole("button", { name: "Profile", exact: true }).hover();
   const rows = page
     .getByRole("dialog", { name: "Account usage" })
     .getByRole("listitem");
@@ -107,7 +114,7 @@ test("keyboard users can open and dismiss the account preview, and unknown quota
   await page.goto(
     "/iframe.html?id=accounts-sidebar--usage-unavailable&viewMode=story",
   );
-  const trigger = page.getByRole("link", { name: "Accounts", exact: true });
+  const trigger = page.getByRole("button", { name: "Profile", exact: true });
   await expect(trigger).toBeVisible({ timeout: 20000 });
   await trigger.focus();
   const menu = page.getByRole("dialog", { name: "Account usage" });
@@ -120,7 +127,7 @@ test("keyboard users can open and dismiss the account preview, and unknown quota
 
 test("an account-free connection shows an empty state", async ({ page }) => {
   await page.goto("/iframe.html?id=accounts-sidebar--empty&viewMode=story");
-  const trigger = page.getByRole("link", { name: "Accounts", exact: true });
+  const trigger = page.getByRole("button", { name: "Profile", exact: true });
   await expect(trigger).toBeVisible({ timeout: 20000 });
   await trigger.hover();
   await expect(
@@ -134,7 +141,7 @@ test("usage lights start in row order, accelerate and take longer for longer fil
   await page.goto(
     "/iframe.html?id=accounts-sidebar--usage-reveal&viewMode=story",
   );
-  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  await page.getByRole("button", { name: "Profile", exact: true }).hover();
   const dialog = page.getByRole("dialog", { name: "Account usage" });
   const rows = dialog.getByRole("listitem");
   await expect(rows.nth(1).getByLabel("28% remaining")).toBeVisible();
@@ -182,7 +189,7 @@ test("reduced motion shows the final usage fill without animating", async ({
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/iframe.html?id=accounts-sidebar--default&viewMode=story");
-  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  await page.getByRole("button", { name: "Profile", exact: true }).hover();
   const row = page
     .getByRole("dialog", { name: "Account usage" })
     .getByRole("listitem")
@@ -225,7 +232,7 @@ test("reopening cached usage shows the complete fill and number immediately", as
   page,
 }) => {
   await page.goto("/iframe.html?id=accounts-sidebar--default&viewMode=story");
-  const trigger = page.getByRole("link", { name: "Accounts", exact: true });
+  const trigger = page.getByRole("button", { name: "Profile", exact: true });
   await trigger.hover();
   const row = page
     .getByRole("dialog", { name: "Account usage" })
@@ -254,7 +261,7 @@ test("fresh quota transitions the cached fill and digits, and retargets from an 
   await page.goto(
     "/iframe.html?id=accounts-sidebar--cached-updates&viewMode=story",
   );
-  const trigger = page.getByRole("link", { name: "Accounts", exact: true });
+  const trigger = page.getByRole("button", { name: "Profile", exact: true });
   await trigger.hover();
   const row = page
     .getByRole("dialog", { name: "Account usage" })
@@ -287,7 +294,7 @@ test("a recent reveal is suppressed even without quota cache, and resumes after 
   await page.goto(
     "/iframe.html?id=accounts-sidebar--cached-updates&viewMode=story",
   );
-  const trigger = page.getByRole("link", { name: "Accounts", exact: true });
+  const trigger = page.getByRole("button", { name: "Profile", exact: true });
   const row = page
     .getByRole("dialog", { name: "Account usage" })
     .getByRole("listitem")
@@ -327,7 +334,7 @@ for (const deviceScaleFactor of [1, 1.5]) {
       await page.goto(
         "/iframe.html?id=accounts-sidebar--usage-reveal&viewMode=story",
       );
-      await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+      await page.getByRole("button", { name: "Profile", exact: true }).hover();
       const dialog = page.getByRole("dialog", { name: "Account usage" });
       await expect(dialog.getByRole("listitem")).toHaveCount(2);
       // A dependency's CSS may be injected later by a route load or HMR.
@@ -391,7 +398,7 @@ test("the initial account-loading placeholder occupies the same height as one ac
   await page.goto(
     "/iframe.html?id=accounts-sidebar--loading-account&viewMode=story",
   );
-  await page.getByRole("link", { name: "Accounts", exact: true }).hover();
+  await page.getByRole("button", { name: "Profile", exact: true }).hover();
   const dialog = page.getByRole("dialog", { name: "Account usage" });
   await expect(dialog.getByRole("status")).toHaveText("Loading accounts…");
   const initial = (await dialog.boundingBox())!.height;

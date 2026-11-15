@@ -2,7 +2,6 @@ import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { SidebarHint } from "#src/shared/navigation/sidebar-hint.tsx";
-import { SidebarAccounts } from "#src/features/accounts/sidebar-accounts.tsx";
 import { useBackgroundSessions } from "#src/features/session/model/use-background-sessions.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -235,9 +234,7 @@ function WorkspaceContent({
               </RouteLink>
             </SidebarHint>
           ))}
-          {(
-            ["tasks", "accounts", "search", "memory", "auxiliary"] as const
-          ).map((view) => {
+          {(["tasks", "search", "memory"] as const).map((view) => {
             const link = (
               <RouteLink
                 {...(view === "tasks"
@@ -249,28 +246,16 @@ function WorkspaceContent({
                     : resourceLocation(view))}
                 activeOptions={{ exact: true }}
                 className={`resource-link ${resource === view ? "active" : ""}`}
-                aria-label={
-                  view === "auxiliary"
-                    ? "Auxiliary AI"
-                    : view[0].toUpperCase() + view.slice(1)
-                }
+                aria-label={view[0].toUpperCase() + view.slice(1)}
                 aria-current={resource === view ? "page" : undefined}
               >
                 <ResourceIcon kind={view} />
               </RouteLink>
             );
-            return view === "accounts" ? (
-              <SidebarAccounts key={view} c={c} sessions={inventory.sessions}>
-                {link}
-              </SidebarAccounts>
-            ) : (
+            return (
               <SidebarHint
                 key={view}
-                label={
-                  view === "auxiliary"
-                    ? "Auxiliary AI"
-                    : view[0].toUpperCase() + view.slice(1)
-                }
+                label={view[0].toUpperCase() + view.slice(1)}
               >
                 {link}
               </SidebarHint>
@@ -290,6 +275,8 @@ function WorkspaceContent({
             </SidebarHint>
             <ErrorCenter store={c.errors} />
             <ProfileMenu
+              c={c}
+              sessions={inventory.sessions}
               errors={c.errors}
               logout={logout}
               exitLabel={exitLabel}

@@ -11,6 +11,7 @@ import styles from "./settings-content.module.css";
 const topics = () => [
   { value: "general", label: t("General") },
   { value: "editor", label: t("Editor") },
+  { value: "auxiliary", label: t("Auxiliary AI") },
   { value: "connections", label: t("Connections") },
 ];
 export function SettingsToolbar({

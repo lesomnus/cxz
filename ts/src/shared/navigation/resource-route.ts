@@ -70,7 +70,6 @@ export const resourcePaths = {
   accounts: "/c/$connection/account",
   search: "/c/$connection/search",
   errors: "/c/$connection/errors",
-  auxiliary: "/c/$connection/auxiliary",
 } as const;
 
 export function resourceLocation(resource: keyof typeof resourcePaths) {

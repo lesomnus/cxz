@@ -12,7 +12,10 @@ test("settings panels are centered independently of the floating menu", async ({
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
   await expect(topics(page)).toBeVisible({ timeout: 20000 });
-  await expect(page.locator("[data-settings-topic]")).toHaveCount(3);
+  await expect(page.locator("[data-settings-topic]")).toHaveCount(4);
+  await expect(
+    topics(page).getByRole("button", { name: "Auxiliary AI", exact: true }),
+  ).toBeVisible();
   const bounds = await page
     .locator("#settings-form [data-resource-layout]")
     .boundingBox();

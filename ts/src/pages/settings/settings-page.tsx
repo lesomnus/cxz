@@ -49,6 +49,9 @@ import {
 } from "#src/shared/editor/source-editor.tsx";
 
 import type { SettingsTopic } from "#src/app/router.tsx";
+import type { Connection } from "#src/shared/api/connection.ts";
+import type { Session } from "#gen/cxz/session_pb";
+import { AuxiliarySettings } from "#src/features/auxiliary/auxiliary-settings.tsx";
 import { useSettingsNavigation } from "#src/features/settings/components/use-settings-navigation.ts";
 import {
   ConnectionsSettings,
@@ -87,11 +90,15 @@ const fields = {
 };
 
 export function SettingsPage({
+  c,
+  sessions = [],
   fileOpen,
   setFileOpen,
   topic,
   connections,
 }: {
+  c: Connection;
+  sessions?: Session[];
   fileOpen: boolean;
   setFileOpen: (open: boolean) => void;
   topic: SettingsTopic;
@@ -366,7 +373,12 @@ export function SettingsPage({
     );
   }
   return (
-    <ResourcePage className="settings-page" ref={area} data-wide={wide}>
+    <ResourcePage
+      className="settings-page"
+      ref={area}
+      data-wide={wide}
+      aria-label={t("Settings")}
+    >
       <SettingsToolbar
         navigation={navigation}
         aria-label={t("Settings")}
@@ -622,6 +634,24 @@ export function SettingsPage({
                 <SectionGroup>{group("global")}</SectionGroup>
                 <SectionGroup>{group("session")}</SectionGroup>
               </div>
+            </section>
+            <section
+              id="settings-auxiliary"
+              className="settings-editor-body"
+              data-settings-topic="auxiliary"
+              aria-labelledby="settings-auxiliary-title"
+            >
+              <header>
+                <div>
+                  <h1 id="settings-auxiliary-title">{t("Auxiliary AI")}</h1>
+                  <small>
+                    {t(
+                      "Configure server-side helpers. Changes are saved to this server, separately from settings.json.",
+                    )}
+                  </small>
+                </div>
+              </header>
+              <AuxiliarySettings c={c} sessions={sessions} />
             </section>
             <ConnectionsSettings connections={connections} />
           </SettingsContent>

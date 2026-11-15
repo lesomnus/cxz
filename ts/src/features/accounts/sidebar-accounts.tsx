@@ -8,6 +8,7 @@ import {
   useState,
   type CSSProperties,
   type ReactElement,
+  type ReactNode,
 } from "react";
 import {
   CompactNumber,
@@ -65,31 +66,41 @@ export function SidebarAccounts({
   c,
   sessions,
   children,
+  enabled = true,
 }: {
   c: Connection;
   sessions: Session[];
-  children: ReactElement<{
-    "aria-haspopup"?: "dialog";
-    "aria-expanded"?: boolean;
-    "aria-controls"?: string;
-    "data-menu-open"?: boolean;
-  }>;
+  enabled?: boolean;
+  children:
+    | ReactElement<{
+        "aria-haspopup"?: "dialog";
+        "aria-expanded"?: boolean;
+        "aria-controls"?: string;
+        "data-menu-open"?: boolean;
+      }>
+    | ((open: boolean) => ReactNode);
 }) {
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [anchor, setAnchor] = useState<HTMLAnchorElement | null>(null);
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const cancelClose = useCallback(() => clearTimeout(timer.current), []);
   const close = useCallback((restoreFocus = false) => {
     clearTimeout(timer.current);
     if (restoreFocus)
-      root.current?.querySelector("a")?.focus({ preventScroll: true });
+      root.current
+        ?.querySelector<HTMLElement>("a, button")
+        ?.focus({ preventScroll: true });
     setAnchor(null);
   }, []);
   useEffect(() => cancelClose, [cancelClose]);
+  useEffect(() => {
+    if (!enabled) close();
+  }, [enabled, close]);
   const show = () => {
+    if (!enabled) return;
     cancelClose();
-    setAnchor(root.current?.querySelector("a") ?? null);
+    setAnchor(root.current?.querySelector<HTMLElement>("a, button") ?? null);
   };
   return (
     <div
@@ -111,16 +122,18 @@ export function SidebarAccounts({
           close();
       }}
       onClick={(event) => {
-        if ((event.target as Element).closest("a")) close();
+        if ((event.target as Element).closest("a, button")) close();
       }}
     >
-      {cloneElement(children, {
-        "aria-haspopup": "dialog",
-        "aria-expanded": !!anchor,
-        "aria-controls": anchor ? id : undefined,
-        "data-menu-open": !!anchor,
-      })}
-      {anchor && (
+      {typeof children === "function"
+        ? children(enabled && !!anchor)
+        : cloneElement(children, {
+            "aria-haspopup": "dialog",
+            "aria-expanded": !!anchor,
+            "aria-controls": anchor ? id : undefined,
+            "data-menu-open": !!anchor,
+          })}
+      {enabled && anchor && (
         <AnchoredMenu
           id={id}
           anchor={anchor}

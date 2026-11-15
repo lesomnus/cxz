@@ -7,9 +7,7 @@ import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { SessionSchema } from "#gen/cxz/session_pb";
 import { SessionTranscriptReplySchema } from "#gen/cxz/session_svc_pb";
 import { createWorkspaceRouter } from "#src/app/router.tsx";
-import { SidebarAccounts } from "#src/features/accounts/sidebar-accounts.tsx";
-import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
+import { ProfileMenu } from "#src/app/profile-menu.tsx";
 import { accountQuotaKey } from "#src/shared/api/read-cache.ts";
 import { resourceFixture } from "../resource-fixture";
 import { projectFixtureId } from "../project-id";
@@ -112,20 +110,17 @@ function SidebarPreview({
           >
             <nav className="resource-sidebar" aria-label="Resources">
               <span className="brand">cxz</span>
-              <SidebarAccounts c={c} sessions={sessions}>
-                <RouteLink
-                  to="/c/$connection/account"
-                  params={{ connection: "_" }}
-                  className="resource-link"
-                  aria-label="Accounts"
-                >
-                  <ResourceIcon kind="accounts" />
-                </RouteLink>
-              </SidebarAccounts>
+              <ProfileMenu
+                c={c}
+                sessions={sessions}
+                logout={async () => {}}
+                exitLabel="Sign out"
+                openSettings={() => {}}
+              />
             </nav>
             <main style={{ padding: "calc(4 * var(--ui-space))", minWidth: 0 }}>
               <p>
-                Hover Accounts to see agent logos, account names and remaining
+                Hover Profile to see agent logos, account names and remaining
                 usage, followed by the time until that usage window resets.
               </p>
               <p>
@@ -135,7 +130,7 @@ function SidebarPreview({
               </p>
               <textarea
                 aria-label="Conversation input"
-                placeholder="Keep typing while hovering Accounts"
+                placeholder="Keep typing while hovering Profile"
                 style={{ width: "100%" }}
               />
               {usageControls && (

@@ -16,6 +16,7 @@ import {
   SessionWatchResponseSchema,
 } from "#gen/cxz/session_svc_pb";
 import { ConnectionSchema } from "#gen/cxz/connection_pb";
+import { AgentProfilesSchema } from "#gen/cxz/installation_pb";
 import { SettingsPage } from "./settings-page";
 import { WorkspaceContext } from "#src/app/workspace-context.tsx";
 
@@ -37,6 +38,8 @@ function PreviewView() {
   const workspace = useContext(WorkspaceContext)!;
   return route.resource === "settings" ? (
     <SettingsPage
+      c={workspace.c}
+      sessions={workspace.sessions}
       connections={connections}
       topic={route.settingsTopic}
       fileOpen={workspace.settingsFileOpen}
@@ -49,11 +52,18 @@ function PreviewView() {
 function Preview({
   topic = "general",
 }: {
-  topic?: "general" | "editor" | "connection";
+  topic?: "general" | "editor" | "auxiliary" | "connection";
 }) {
   const [fixture] = useState(() => {
     const fixture = projectFixture(false, false, 0);
     const { c, projects } = fixture;
+    let auxiliary = create(AgentProfilesSchema);
+    c.installation.agents = async () => auxiliary;
+    c.installation.saveAgents = async (request) =>
+      (auxiliary = create(AgentProfilesSchema, {
+        account: request.account,
+        profiles: request.profiles,
+      }));
     const idle = (signal?: AbortSignal) =>
       new Promise<void>((resolve) => {
         if (signal?.aborted) resolve();
