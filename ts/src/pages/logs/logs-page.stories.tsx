@@ -21,11 +21,13 @@ function Preview({
   empty = false,
   populated = false,
   dated = false,
+  detailed = false,
 }: {
   persistent?: boolean;
   empty?: boolean;
   populated?: boolean;
   dated?: boolean;
+  detailed?: boolean;
 }) {
   const [c] = useState(() => resourceFixture());
   const [projects] = useState(() => [
@@ -60,6 +62,40 @@ function Preview({
   const [logs] = useState(() => {
     if (persistent) return clientLogs();
     const storage = new MemoryLogStorage();
+    if (detailed)
+      void storage.append([
+        {
+          ...logEntry(
+            {
+              level: "error",
+              category: "rpc",
+              message:
+                "RPC request failed\nThe conversation connection was interrupted.",
+              connection: "https://cxz.example",
+              project: "01949770-0000-8000-8008-000000000002",
+              session: "01949770-0000-8000-8008-000000000001",
+              request: "7d80a4f0-60c3-47e5-a1c0-96300582606c",
+              method: "cxz.SessionService/Transcript",
+              details: {
+                code: "Unknown",
+                attempt: 0,
+                retryable: false,
+                empty: "",
+                stack:
+                  "Error: Connection interrupted\n" +
+                  Array.from(
+                    { length: 24 },
+                    (_, i) =>
+                      `    at readConversation${i} (/workspace/ts/src/client.ts:${i + 1}:10)`,
+                  ).join("\n"),
+              },
+            },
+            "54c018dc-3929-4e7b-940d-ab5893fd6aae",
+            "storybook-diagnostic-build",
+          ),
+          id: "efbc2c24-7b34-4e7d-95c8-09dd28165b7a",
+        },
+      ]);
     if (dated)
       void storage.append(
         [
@@ -97,7 +133,7 @@ function Preview({
   }
   useEffect(() => {
     const dispose = persistent ? installClientLogs() : () => {};
-    if (!empty && !dated)
+    if (!empty && !dated && !detailed)
       logs.write({
         level: "info",
         category: "rpc",
@@ -132,7 +168,7 @@ function Preview({
       }
     }
     return dispose;
-  }, [logs, empty, persistent, populated, dated]);
+  }, [logs, empty, persistent, populated, dated, detailed]);
   return (
     <div
       style={{
@@ -218,6 +254,26 @@ export const Details: Story = {
     const record = await canvas.findByRole(
       "button",
       { name: "RPC connection recovered" },
+      { timeout: 10000 },
+    );
+    await userEvent.click(record);
+  },
+};
+export const RichDetails: Story = {
+  args: { detailed: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Log details use the shared resource fields instead of raw JSON. Context and copyable identifiers remain readable alongside multiline diagnostics; zero, false and empty string values are preserved. The modal keeps a fixed, scrollable body.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const record = await canvas.findByRole(
+      "button",
+      { name: /^RPC request failed/ },
       { timeout: 10000 },
     );
     await userEvent.click(record);

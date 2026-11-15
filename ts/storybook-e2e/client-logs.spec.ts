@@ -1,7 +1,13 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
 const story = "/iframe.html?id=pages-logs--persistent&viewMode=story";
+const fieldValue = (dialog: Locator, name: string) =>
+  dialog
+    .getByRole("term")
+    .filter({ has: dialog.page().getByText(name, { exact: true }) })
+    .locator("..")
+    .locator("dd");
 test("OPFS logs survive reload and support filters, details, export and clear", async ({
   page,
 }) => {
@@ -18,7 +24,7 @@ test("OPFS logs survive reload and support filters, details, export and clear", 
   await expect(record).toHaveCount(1);
   await record.click();
   const dialog = page.getByRole("dialog", { name: "Log details" });
-  await expect(dialog.locator("pre")).toContainText('"closeCode": 1006');
+  await expect(fieldValue(dialog, "closeCode")).toHaveText("1006");
   await page.reload();
   await expect(
     page.getByRole("button", { name: "RPC stream disconnected", exact: true }),
@@ -245,7 +251,7 @@ for (const width of [1440, 390]) {
     await record.focus();
     await page.keyboard.press("Enter");
     const dialog = page.getByRole("dialog", { name: "Log details" });
-    await expect(dialog.locator("pre")).toContainText('"attempt": 8');
+    await expect(fieldValue(dialog, "attempt")).toHaveText("8");
     await expect
       .poll(() =>
         dialog.evaluate(
@@ -284,8 +290,11 @@ for (const width of [1440, 390]) {
     if (width === 1440) {
       await page.goto("/iframe.html?id=pages-logs--details&viewMode=story");
       await expect(
-        page.getByRole("dialog", { name: "Log details" }).locator("pre"),
-      ).toContainText('"disconnectedMs": 1200');
+        fieldValue(
+          page.getByRole("dialog", { name: "Log details" }),
+          "disconnectedMs",
+        ),
+      ).toHaveText("1200");
     }
   });
 }
@@ -453,3 +462,91 @@ test.describe("log periods", () => {
     });
   }
 });
+
+for (const width of [1440, 390]) {
+  test(`log detail fields preserve diagnostics and fit a scrolling modal at ${width}px`, async ({
+    page,
+    context,
+  }, testInfo) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/iframe.html?id=pages-logs--rich-details&viewMode=story", {
+      waitUntil: "domcontentloaded",
+    });
+    const dialog = page.getByRole("dialog", {
+      name: "Log details",
+      exact: true,
+    });
+    await expect(fieldValue(dialog, "Message")).toHaveText(
+      "RPC request failed\nThe conversation connection was interrupted.",
+    );
+    await expect(fieldValue(dialog, "Message")).toHaveCSS(
+      "white-space",
+      "pre-wrap",
+    );
+    await expect(fieldValue(dialog, "Time").locator("time")).toHaveAttribute(
+      "datetime",
+      /\d{4}-\d{2}-\d{2}T/,
+    );
+    await expect(fieldValue(dialog, "Level")).toHaveText("error");
+    await expect(
+      fieldValue(dialog, "Level").getByRole("img", {
+        name: "error",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(fieldValue(dialog, "Category")).toHaveText("RPC");
+    await expect(fieldValue(dialog, "Connection URL")).toHaveText(
+      "https://cxz.example/",
+    );
+    await expect(fieldValue(dialog, "Method")).toHaveText(
+      "cxz.SessionService/Transcript",
+    );
+    await expect(fieldValue(dialog, "Client version")).toHaveText(
+      "storybook-diagnostic-build",
+    );
+    await expect(fieldValue(dialog, "attempt")).toHaveText("0");
+    await expect(fieldValue(dialog, "retryable")).toHaveText("false");
+    await expect(fieldValue(dialog, "empty")).toHaveText('\"\"');
+    await expect(fieldValue(dialog, "stack")).toContainText(
+      "at readConversation23",
+    );
+    await expect(fieldValue(dialog, "stack")).toHaveCSS(
+      "white-space",
+      "pre-wrap",
+    );
+    await expect(dialog.locator("pre")).toHaveCount(0);
+    const viewport = dialog.locator('[data-scroll-area="viewport"]');
+    await expect
+      .poll(() =>
+        viewport.evaluate((node) => node.scrollHeight > node.clientHeight),
+      )
+      .toBe(true);
+    expect(
+      await viewport.evaluate((node) => node.scrollWidth - node.clientWidth),
+    ).toBeLessThanOrEqual(1);
+    const copy = dialog.getByRole("button", {
+      name: "Copy: Log ID",
+      exact: true,
+    });
+    await copy.click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe("efbc2c24-7b34-4e7d-95c8-09dd28165b7a");
+    const rect = (await dialog.boundingBox())!;
+    expect(rect.x).toBeGreaterThanOrEqual(0);
+    expect(rect.x + rect.width).toBeLessThanOrEqual(width);
+    expect(rect.y + rect.height).toBeLessThanOrEqual(900);
+    await dialog.screenshot({
+      path: testInfo.outputPath("log-fields.png"),
+      animations: "disabled",
+    });
+    await expect(page.getByRole("tooltip")).toHaveText(
+      "efbc2c24-7b34-4e7d-95c8-09dd28165b7a",
+    );
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+  });
+}
