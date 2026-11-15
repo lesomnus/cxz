@@ -1,5 +1,30 @@
 import { expect, test } from "@playwright/test";
 
+test("agent logos stay centered in the two-line session rows", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=sessions-panel--default&viewMode=story");
+  const rows = page.locator(".tree-session");
+  await expect(rows).toHaveCount(3);
+  for (const row of await rows.all()) {
+    const centers = await row.evaluate((node) => {
+      const center = (element: Element) => {
+        const box = element.getBoundingClientRect();
+        return box.top + box.height / 2;
+      };
+      return {
+        row: center(node),
+        logo: center(node.querySelector(".agent-brand")!),
+        label: center(node.querySelector(".session-label")!),
+        indicator: center(node.querySelector(".session-indicator")!),
+      };
+    });
+    expect(centers.logo).toBeCloseTo(centers.row, 3);
+    expect(centers.logo).toBeCloseTo(centers.label, 3);
+    expect(centers.logo).toBeCloseTo(centers.indicator, 3);
+  }
+});
+
 test("project heading is muted and hover highlights the whole project", async ({
   page,
 }) => {

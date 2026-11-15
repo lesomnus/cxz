@@ -2416,8 +2416,6 @@ summary:hover {
   transition: transform 120ms ease-out;
 }
 .session-heading .agent-brand {
-  position: relative;
-  top: 1px;
   transform-origin: center;
 }
 .session-heading .session-title,
