@@ -262,17 +262,6 @@ function WorkspaceContent({
             );
           })}
           <div className="sidebar-footer">
-            <SidebarHint label={t("Logs")}>
-              <RouteLink
-                to="/log"
-                activeOptions={{ exact: true }}
-                className={`resource-link ${resource === "logs" ? "active" : ""}`}
-                aria-label={t("Logs")}
-                aria-current={resource === "logs" ? "page" : undefined}
-              >
-                <ResourceIcon kind="logs" />
-              </RouteLink>
-            </SidebarHint>
             <ErrorCenter store={c.errors} />
             <ProfileMenu
               c={c}

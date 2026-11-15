@@ -4,6 +4,7 @@ type ShapeStyle = {
   strokeWidth?: number;
   strokeDasharray?: string;
   fillRule?: "evenodd";
+  transform?: string;
   part?: string;
 };
 
@@ -86,6 +87,24 @@ const duration = line([
     "M9 2h6M12 2v3M17 5l2-2M12 9v4l3 2 M20 13a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
   ),
 ]);
+const settings = solid(
+  [
+    ...Array.from({ length: 18 }, (_, tooth) =>
+      rect(11, 0.85, 2, 3.35, 0.45, {
+        transform: `rotate(${tooth * 20 + 10} 12 12)`,
+      }),
+    ),
+    path(
+      "M21.2 12a9.2 9.2 0 1 1-18.4 0a9.2 9.2 0 1 1 18.4 0ZM19.75 12a7.75 7.75 0 1 0-15.5 0a7.75 7.75 0 1 0 15.5 0Z",
+      { fillRule: "evenodd" },
+    ),
+    path("M19.75 12H12L8.125 5.288M12 12l-3.875 6.712", {
+      fill: "none",
+      stroke: "currentColor",
+    }),
+  ],
+  "0 0 24 24",
+);
 
 export const iconDefinitions = {
   start: play,
@@ -270,19 +289,20 @@ export const iconDefinitions = {
   sessions: line([
     path("M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 3V6a2 2 0 0 1 2-2Z"),
   ]),
-  projects: line([
-    path(
-      "M3 7V5a2 2 0 0 1 2-2h5l3 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z",
-    ),
+  projects: solid(
+    [circle(12, 5.5, 3.8), circle(5.5, 17, 3.8), circle(18.5, 17, 3.8)],
+    "0 0 24 24",
+  ),
+  tasks: line([
+    rect(2.5, 2.5, 7, 7, 0.5, filled),
+    path("M18 2.5 22.25 9.5h-8.5Z", filled),
+    circle(6, 18, 3.8, filled),
+    path("m14 18 2.7 2.7L22 15.3"),
   ]),
-  tasks: line([path("m3 6 1.5 1.5L7 4M10 6h11M3 12h3m4 0h11M3 18h3m4 0h11")]),
   accounts: line([circle(12, 8, 4), path("M4 21v-3a8 8 0 0 1 16 0v3")]),
   memory: line([path("M4 3h16v18H4Z M8 7h8M8 11h8M8 15h5")]),
   auxiliary: sparkle,
-  settings: line([
-    circle(12, 12, 3),
-    path("M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z"),
-  ]),
+  settings,
   logs: line([rect(4, 3, 16, 18, 2), path("M8 7h8M8 11h8M8 15h5")]),
   "settings-file": line([
     path("M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9ZM14 3v6h6"),

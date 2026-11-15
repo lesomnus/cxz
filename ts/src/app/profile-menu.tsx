@@ -79,6 +79,11 @@ export function ProfileMenu({
                 },
               },
               {
+                label: t("Logs"),
+                icon: <ResourceIcon kind="logs" />,
+                run: () => void navigate({ to: "/log" }),
+              },
+              {
                 label: exitLabel,
                 disabled: busy,
                 icon: (
