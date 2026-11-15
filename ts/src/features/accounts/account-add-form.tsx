@@ -74,7 +74,8 @@ export function AccountAddForm({
       >
         <Card
           title="Add account"
-          close={busy ? undefined : dialogClose.dismiss}
+          close={dialogClose.dismiss}
+          closeDisabled={busy}
           closeLabel="Close"
           data-entered="true"
           footer={

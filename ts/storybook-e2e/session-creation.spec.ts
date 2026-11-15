@@ -44,8 +44,32 @@ for (const width of [1280, 390]) {
         name: "Confirm",
         exact: true,
       });
+      await modal.evaluate(async (node) => {
+        const animations: Animation[] = [];
+        for (
+          let parent: Element | null = node;
+          parent;
+          parent = parent.parentElement
+        )
+          animations.push(...parent.getAnimations());
+        await Promise.all(
+          animations
+            .filter(
+              (animation) =>
+                animation.effect?.getTiming().iterations !== Infinity,
+            )
+            .map((animation) => animation.finished.catch(() => {})),
+        );
+      });
+      const readyBounds = (await modal.boundingBox())!;
       await confirm.click();
       await expect(confirm).toHaveAttribute("aria-busy", "true");
+      const pendingBounds = (await modal.boundingBox())!;
+      expect(pendingBounds.height).toBe(readyBounds.height);
+      expect(pendingBounds.y).toBe(readyBounds.y);
+      await expect(
+        modal.getByRole("button", { name: "Close", exact: true }),
+      ).toBeDisabled();
       await expect(title).toBeDisabled();
       await expect(
         modal.getByRole("button", { name: "Cancel", exact: true }),

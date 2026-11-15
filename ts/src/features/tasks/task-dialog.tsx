@@ -633,7 +633,8 @@ function TaskEditor({
             }
             data-previous-run={issue === "Previous run" || undefined}
             title={task ? alias || task.alias : "Add task"}
-            close={busy ? undefined : close}
+            close={close}
+            closeDisabled={busy}
             closeLabel="Close"
             footer={<CardActions>{actions}</CardActions>}
           >

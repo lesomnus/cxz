@@ -134,7 +134,8 @@ export function SessionCreate({
       >
         <Card
           title="Add session"
-          close={busy ? undefined : dialogClose.dismiss}
+          close={dialogClose.dismiss}
+          closeDisabled={busy}
           closeLabel="Close"
           footer={
             <CardActions>
