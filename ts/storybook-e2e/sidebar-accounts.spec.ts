@@ -53,6 +53,33 @@ test("hover account usage opens to the right without stealing editor focus and r
   await expect(menu).toHaveCount(0);
   const profileMenu = page.getByRole("menu", { name: "Profile", exact: true });
   await expect(profileMenu).toBeVisible();
+  await profileMenu.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) => animation.effect?.getTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
+  for (const action of await profileMenu.getByRole("menuitem").all()) {
+    const icon = (await action.locator("[data-menu-item-icon]").boundingBox())!;
+    const glyph = (await action
+      .locator("[data-menu-item-icon] svg")
+      .boundingBox())!;
+    const label = (await action
+      .locator("[data-menu-item-label]")
+      .boundingBox())!;
+    const gap = await action.evaluate((node) =>
+      parseFloat(
+        getComputedStyle(node.querySelector(".button-content")!).columnGap,
+      ),
+    );
+    expect(glyph.width).toBeCloseTo(icon.width, 1);
+    expect(glyph.height).toBeCloseTo(icon.height, 1);
+    expect(label.x - glyph.x - glyph.width).toBeCloseTo(gap, 1);
+  }
   expect(
     (await profileMenu.boundingBox())!.x - sidebarBox.x - sidebarBox.width,
   ).toBeCloseTo(
