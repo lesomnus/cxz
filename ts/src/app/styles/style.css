@@ -447,6 +447,7 @@ header strong {
   align-items: start;
 }
 .settings-group {
+  --ui-section-padding: calc(5 * var(--ui-space));
   min-width: 0;
 }
 .settings-group > h2 {

@@ -268,7 +268,9 @@ export function SettingsPage({
                 settingId={name}
                 summary={translateKnown(fields[key].description)}
                 controlInset={
-                  key === "fontFamily" || key === "colorPalette"
+                  key === "fontFamily" ||
+                  key === "colorPalette" ||
+                  key === "insertSpaces"
                     ? "var(--ui-menu-item-padding-inline)"
                     : undefined
                 }
@@ -483,6 +485,7 @@ export function SettingsPage({
                         <SettingField
                           title={t("Theme")}
                           settingId="ui.theme"
+                          controlInset="var(--ui-menu-item-padding-inline)"
                           summary={t(
                             "Choose Light, Dark, or follow your system appearance.",
                           )}
