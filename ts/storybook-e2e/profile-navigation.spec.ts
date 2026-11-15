@@ -17,6 +17,18 @@ test("Logs and Settings are reachable from Profile without a separate Logs sideb
   await expect(
     sidebar.getByRole("link", { name: "Tasks", exact: true }),
   ).toBeVisible();
+  expect(
+    await sidebar
+      .getByRole("link")
+      .evaluateAll((links) =>
+        links.map((link) => link.getAttribute("aria-label")),
+      ),
+  ).toEqual(["Sessions view", "Search", "Tasks", "Memory", "Projects view"]);
+  await expect(
+    sidebar
+      .locator(".sidebar-footer")
+      .getByRole("link", { name: "Projects view", exact: true }),
+  ).toBeVisible();
   const profile = sidebar.getByRole("button", { name: "Profile", exact: true });
   const menu = page.getByRole("menu", { name: "Profile", exact: true });
   await profile.click();

@@ -183,6 +183,56 @@ function WorkspaceContent({
     }
     return grouped;
   }, [inventory.sessions, hideStopped]);
+  function sidebarLink(
+    view: "sessions" | "search" | "tasks" | "memory" | "projects",
+  ) {
+    const label = {
+      sessions: t("Sessions"),
+      search: t("Search"),
+      tasks: t("Tasks"),
+      memory: t("Memory"),
+      projects: t("Projects"),
+    }[view];
+    const location =
+      view === "sessions" || view === "projects"
+        ? route.resource === view
+          ? resourceLocation(view)
+          : view === "projects"
+            ? projectLocation(currentProject)
+            : lastSession.current
+              ? sessionLocation(lastSession.current)
+              : resourceLocation("sessions")
+        : view === "tasks"
+          ? taskLocation({ project: currentProject })
+          : view === "memory"
+            ? memoryProject
+              ? memoryLocation(memoryProject)
+              : projectLocation()
+            : resourceLocation(view);
+    return (
+      <SidebarHint key={view} label={label}>
+        <RouteLink
+          {...location}
+          activeOptions={{ exact: true }}
+          className={`resource-link ${resource === view ? "active" : ""}`}
+          aria-label={
+            view === "sessions"
+              ? t("Sessions view")
+              : view === "projects"
+                ? t("Projects view")
+                : label
+          }
+          aria-current={resource === view ? "page" : undefined}
+        >
+          <ResourceIcon
+            kind={view}
+            unreadCount={view === "sessions" ? unread.size : 0}
+            error={view === "sessions" && errors.size > 0}
+          />
+        </RouteLink>
+      </SidebarHint>
+    );
+  }
   return (
     <WorkspaceContext.Provider
       value={{
@@ -206,62 +256,11 @@ function WorkspaceContent({
           <span className="brand" aria-label="cxz">
             cxz
           </span>
-          {(["sessions", "projects"] as const).map((view) => (
-            <SidebarHint
-              key={view}
-              label={view === "sessions" ? t("Sessions") : t("Projects")}
-            >
-              <RouteLink
-                {...(route.resource === view
-                  ? resourceLocation(view)
-                  : view === "projects"
-                    ? projectLocation(currentProject)
-                    : lastSession.current
-                      ? sessionLocation(lastSession.current)
-                      : resourceLocation("sessions"))}
-                activeOptions={{ exact: true }}
-                className={`resource-link ${resource === view ? "active" : ""}`}
-                aria-label={
-                  view === "sessions" ? t("Sessions view") : t("Projects view")
-                }
-                aria-current={resource === view ? "page" : undefined}
-              >
-                <ResourceIcon
-                  kind={view}
-                  unreadCount={view === "sessions" ? unread.size : 0}
-                  error={view === "sessions" && errors.size > 0}
-                />
-              </RouteLink>
-            </SidebarHint>
-          ))}
-          {(["tasks", "search", "memory"] as const).map((view) => {
-            const link = (
-              <RouteLink
-                {...(view === "tasks"
-                  ? taskLocation({ project: currentProject })
-                  : view === "memory"
-                    ? memoryProject
-                      ? memoryLocation(memoryProject)
-                      : projectLocation()
-                    : resourceLocation(view))}
-                activeOptions={{ exact: true }}
-                className={`resource-link ${resource === view ? "active" : ""}`}
-                aria-label={view[0].toUpperCase() + view.slice(1)}
-                aria-current={resource === view ? "page" : undefined}
-              >
-                <ResourceIcon kind={view} />
-              </RouteLink>
-            );
-            return (
-              <SidebarHint
-                key={view}
-                label={view[0].toUpperCase() + view.slice(1)}
-              >
-                {link}
-              </SidebarHint>
-            );
-          })}
+          {(["sessions", "search", "tasks", "memory"] as const).map(
+            sidebarLink,
+          )}
           <div className="sidebar-footer">
+            {sidebarLink("projects")}
             <ErrorCenter store={c.errors} />
             <ProfileMenu
               c={c}

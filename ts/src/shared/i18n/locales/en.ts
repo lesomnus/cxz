@@ -613,6 +613,7 @@ export const messages = {
   "Session information": "Session information",
   "Session list": "Session list",
   Sessions: "Sessions",
+  Search: "Search",
   "Sessions view": "Sessions view",
   Settings: "Settings",
   "Settings file editor": "Settings file editor",

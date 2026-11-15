@@ -613,6 +613,7 @@ export const messages = {
   "Session information": "세션 정보",
   "Session list": "세션 목록",
   Sessions: "세션",
+  Search: "검색",
   "Sessions view": "세션 보기",
   Settings: "설정",
   "Settings file editor": "설정 파일 에디터",
