@@ -202,6 +202,7 @@ export function SessionCreate({
               <FormField label="Account">
                 <ValueMenu
                   label="Account"
+                  reserveDescriptionSpace
                   alignItemWithTrigger
                   value={alias}
                   options={[

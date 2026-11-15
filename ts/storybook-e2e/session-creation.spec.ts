@@ -6,6 +6,31 @@ for (const width of [1280, 390]) {
   }) => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    await page.addInitScript(() => {
+      const heights: number[] = [];
+      (
+        window as Window & { creationModalHeights?: number[] }
+      ).creationModalHeights = heights;
+      let observed: HTMLDialogElement | null = null;
+      const observer = new MutationObserver(() => {
+        const dialog =
+          document.querySelector<HTMLDialogElement>("dialog[open]");
+        if (
+          !dialog ||
+          dialog === observed ||
+          !dialog.textContent?.includes("Add session")
+        )
+          return;
+        observed = dialog;
+        const record = () => {
+          if (dialog.open && dialog.isConnected)
+            heights.push(dialog.offsetHeight);
+        };
+        record();
+        new ResizeObserver(record).observe(dialog);
+      });
+      observer.observe(document, { childList: true, subtree: true });
+    });
     await page.setViewportSize({ width, height: 900 });
     await page.goto(
       "/iframe.html?id=pages-sessions--session-creation&viewMode=story",
@@ -26,6 +51,18 @@ for (const width of [1280, 390]) {
       .toBe(true);
     const bounds = (await modal.boundingBox())!;
     expect(bounds.x + bounds.width / 2).toBeCloseTo(width / 2, 0);
+    await modal.getByRole("combobox", { name: "Account", exact: true }).click();
+    await expect(
+      page.getByRole("option", { name: /Work account/ }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    const heights = await page.evaluate(
+      () =>
+        (window as Window & { creationModalHeights?: number[] })
+          .creationModalHeights ?? [],
+    );
+    expect(heights.length).toBeGreaterThan(0);
+    expect([...new Set(heights)]).toEqual([heights[0]]);
     await modal.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(modal).toHaveCount(0);
     await expect(add).toBeFocused();

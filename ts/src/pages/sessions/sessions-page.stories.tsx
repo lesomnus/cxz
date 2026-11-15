@@ -74,15 +74,31 @@ function Preview({
   recentActivity = false,
   unread = false,
   containerLifecycle = false,
+  accountDelayMs = 0,
   creationDelayMs = 0,
   startDelayMs = 0,
   transcriptDelayMs = 0,
 } = {}) {
-  const delays = useRef({ creationDelayMs, startDelayMs, transcriptDelayMs });
-  delays.current = { creationDelayMs, startDelayMs, transcriptDelayMs };
+  const delays = useRef({
+    accountDelayMs,
+    creationDelayMs,
+    startDelayMs,
+    transcriptDelayMs,
+  });
+  delays.current = {
+    accountDelayMs,
+    creationDelayMs,
+    startDelayMs,
+    transcriptDelayMs,
+  };
   const [fixture] = useState(() => {
     const fixture = projectFixture(false, false, empty ? 0 : sessionCount);
     const { c, projects, sessions } = fixture;
+    const listAccounts = c.accounts.list;
+    c.accounts.list = async (request, options) => {
+      await previewDelay(delays.current.accountDelayMs, options?.signal);
+      return listAccounts(request, options);
+    };
     const add = c.sessions.add;
     c.sessions.add = async (request, options) => {
       await previewDelay(delays.current.creationDelayMs, options?.signal);
@@ -342,11 +358,15 @@ export const Empty: Story = { args: { empty: true } };
 export const SessionCreation: Story = {
   args: {
     empty: true,
+    accountDelayMs: 600,
     creationDelayMs: 400,
     startDelayMs: 800,
     transcriptDelayMs: 800,
   },
   argTypes: {
+    accountDelayMs: {
+      control: { type: "range", min: 0, max: 5000, step: 100 },
+    },
     creationDelayMs: {
       control: { type: "range", min: 0, max: 5000, step: 100 },
     },
