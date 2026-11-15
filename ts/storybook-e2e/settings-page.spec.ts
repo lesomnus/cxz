@@ -5,6 +5,95 @@ const viewport = (page: import("@playwright/test").Page) =>
 const topics = (page: import("@playwright/test").Page) =>
   page.getByRole("navigation", { name: "Settings topics" });
 
+const koreanPack =
+  /\/(?:src\/shared\/i18n\/locales\/ko\.ts|assets\/ko-[^/]+\.js)(?:\?|$)/;
+
+test("language selection applies immediately after its lazy pack is ready", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "settings",
+      JSON.stringify({ "editor.tabSize": 8, future: { keep: true } }),
+    ),
+  );
+  let releasePack!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    releasePack = resolve;
+  });
+  let requests = 0;
+  await page.route(koreanPack, async (route) => {
+    requests++;
+    await ready;
+    await route.continue();
+  });
+  await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  const appearance = page.locator('.settings-group[aria-label="Appearance"]');
+  await expect(appearance.locator(".setting-summary")).toHaveCount(0);
+  await expect(appearance.locator(".setting-details")).toHaveCount(1);
+  await expect(
+    page.getByRole("button", { name: "Apply settings", exact: true }),
+  ).toHaveCount(0);
+  const language = page.getByRole("combobox", {
+    name: "Display language",
+    exact: true,
+  });
+  await language.click();
+  await page.getByRole("option", { name: "한국어", exact: true }).click();
+  await expect.poll(() => requests).toBe(1);
+  await expect(language).toBeDisabled();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("settings")!)["ui.language"],
+    ),
+  ).toBeUndefined();
+  releasePack();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ko");
+  await expect(
+    page.getByRole("heading", { name: "일반", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem("settings")!)),
+  ).toEqual({
+    "editor.tabSize": 8,
+    future: { keep: true },
+    "ui.language": "ko",
+  });
+  await page.getByRole("combobox", { name: "표시 언어", exact: true }).click();
+  await page.getByRole("option", { name: "English", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await language.click();
+  await page.getByRole("option", { name: "한국어", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ko");
+  expect(requests).toBe(1);
+});
+
+test("a failed language selection retains the active language and saved preferences", async ({
+  page,
+}) => {
+  await page.route(koreanPack, (route) => route.abort("failed"));
+  await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
+  const language = page.getByRole("combobox", {
+    name: "Display language",
+    exact: true,
+  });
+  await expect(language).toBeVisible();
+  const before = await page.evaluate(() => localStorage.getItem("settings"));
+  await language.click();
+  await page.getByRole("option", { name: "한국어", exact: true }).click();
+  await expect(page.locator(".settings-page [role=alert]")).toContainText(
+    "Unable to apply the language",
+  );
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(language).toBeEnabled();
+  await expect(language).toHaveText("English");
+  expect(await page.evaluate(() => localStorage.getItem("settings"))).toBe(
+    before,
+  );
+});
+
 test("settings panels are centered independently of the floating menu", async ({
   page,
 }, info) => {
@@ -23,9 +112,17 @@ test("settings panels are centered independently of the floating menu", async ({
     "ui.language",
     "ui.theme",
   ]);
-  await expect(
-    appearance.getByRole("radiogroup", { name: "Theme", exact: true }),
-  ).toBeVisible();
+  const theme = appearance.getByRole("radiogroup", {
+    name: "Theme",
+    exact: true,
+  });
+  await expect(theme).toBeVisible();
+  await expect(theme).toHaveText("");
+  for (const name of ["Light", "Dark", "System"]) {
+    await expect(theme.getByRole("radio", { name, exact: true })).toHaveCount(
+      1,
+    );
+  }
   const profile = page.getByRole("button", { name: "Profile", exact: true });
   await profile.click();
   const profileMenu = page.getByRole("menu", { name: "Profile", exact: true });

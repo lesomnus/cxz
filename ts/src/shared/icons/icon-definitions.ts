@@ -84,6 +84,12 @@ const info = line([
   path("M12 11v6"),
   circle(12, 7.5, 0.75, filled),
 ]);
+const moon = line([path("M20.5 14.5A9 9 0 0 1 9.5 3.5 9 9 0 1 0 20.5 14.5Z")]);
+const sun = line([
+  circle(12, 12, 4),
+  path("M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22"),
+  path("m5 5 1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19"),
+]);
 const duration = line([
   path(
     "M9 2h6M12 2v3M17 5l2-2M12 9v4l3 2 M20 13a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
@@ -109,6 +115,9 @@ const settings = solid(
 );
 
 export const iconDefinitions = {
+  "theme-light": sun,
+  "theme-dark": moon,
+  "theme-system": line([rect(3, 4, 18, 12, 2), path("M12 16v5M8 21h8")]),
   start: play,
   resume: play,
   stop,
@@ -425,12 +434,8 @@ export const projectIconDefinitions = {
   cloud: line([
     path("M7 18.5a4.5 4.5 0 0 1 .4-9 6 6 0 0 1 11.2 2 3.5 3.5 0 0 1-.6 7Z"),
   ]),
-  moon: line([path("M20.5 14.5A9 9 0 0 1 9.5 3.5 9 9 0 1 0 20.5 14.5Z")]),
-  sun: line([
-    circle(12, 12, 4),
-    path("M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22"),
-    path("m5 5 1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19"),
-  ]),
+  moon,
+  sun,
   gem: line([
     path("M6.5 4h11l3.5 5.5L12 20.5 1.5 9.5Z"),
     path("M1.5 9.5h21M9 4 6.5 9.5 12 20.5l5.5-11L15 4"),

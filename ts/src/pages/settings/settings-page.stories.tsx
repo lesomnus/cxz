@@ -19,6 +19,7 @@ import { ConnectionSchema } from "#gen/cxz/connection_pb";
 import { AgentProfilesSchema } from "#gen/cxz/installation_pb";
 import { SettingsPage } from "./settings-page";
 import { WorkspaceContext } from "#src/app/workspace-context.tsx";
+import { LocaleProvider } from "#src/shared/i18n/i18n-react.tsx";
 
 const connections = {
   list: async () => ({
@@ -100,9 +101,11 @@ function Preview({
     ),
   );
   return (
-    <Provider app={fixture.c}>
-      <RouterProvider router={router} />
-    </Provider>
+    <LocaleProvider>
+      <Provider app={fixture.c}>
+        <RouterProvider router={router} />
+      </Provider>
+    </LocaleProvider>
   );
 }
 const meta = {
@@ -114,7 +117,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The full workspace with all settings on one scrollable page. Appearance groups Language and Theme; section headings use a thin weight while setting labels retain their stronger emphasis. Panels stay centered while text navigation floats to their left, falling back to a toolbar dropdown when it cannot fit. Scrolling highlights the current category. Wider viewports dock the JSON editor beside the form; smaller viewports use its toolbar toggle. Logs opens from the Profile menu.",
+          "The full workspace with all settings on one scrollable page. Appearance groups Language and Theme; choosing a language loads its pack and applies it immediately. Section headings use a thin weight while setting labels retain their stronger emphasis. Panels stay centered while text navigation floats to their left, falling back to a toolbar dropdown when it cannot fit. Scrolling highlights the current category. Wider viewports dock the JSON editor beside the form; smaller viewports use its toolbar toggle. Logs opens from the Profile menu.",
       },
     },
   },

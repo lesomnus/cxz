@@ -84,9 +84,9 @@ to the current workspace view.
 ## Display language and lazy language packs
 
 English is the default even when the browser prefers another language. The
-**General → Language** section offers English and 한국어 by their native names. Choosing a
-language does not save, load or activate it. **Apply settings** first downloads
-its pack, then persists `ui.language` in the same settings.json document.
+**General → Appearance → Language** setting offers English and 한국어 by their native
+names. Selecting a language immediately downloads its pack, then persists
+`ui.language` in the same settings.json document and activates it.
 `en` and `ko` are currently supported; missing values resolve to `en`, while
 unsupported values fail whole-file validation. Other preferences and unknown
 keys are retained. Editor controls continue to save immediately.

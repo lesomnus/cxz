@@ -1,4 +1,5 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import {
   t,
   translateKnown,
@@ -134,11 +135,7 @@ export function SettingsPage({
     });
   }
   const savedLanguage = resolveLocale(snapshot.document["ui.language"]);
-  const [language, setLanguage] = useState<Locale>(savedLanguage);
   const [applying, setApplying] = useState(false);
-  useEffect(() => {
-    setLanguage(savedLanguage);
-  }, [savedLanguage]);
   const area = useRef<HTMLElement>(null);
   const filePane = useRef<HTMLElement>(null);
   const fileInput = useRef<SourceEditorHandle>(null);
@@ -213,7 +210,7 @@ export function SettingsPage({
       setError(String(error));
     }
   }
-  async function applyLanguage() {
+  async function applyLanguage(language: Locale) {
     setApplying(true);
     setError("");
     setMessage("");
@@ -446,39 +443,26 @@ export function SettingsPage({
                           title={t("Language")}
                           settingId="ui.language"
                           controlInset="var(--ui-menu-item-padding-inline)"
-                          summary={t("Choose the interface language.")}
                           details={t(
                             "Language changes apply to this browser. Conversation content and code are preserved.",
                           )}
                         >
-                          <div className="language-setting-control">
-                            <ValueMenu
-                              label={t("Display language")}
-                              value={language}
-                              muted={
-                                !Object.hasOwn(
-                                  snapshot.document,
-                                  "ui.language",
-                                ) && language === "en"
-                              }
-                              options={languages.map(({ id, name }) => ({
-                                value: id,
-                                label: name,
-                              }))}
-                              disabled={!snapshot.valid || applying}
-                              choose={(value) => setLanguage(value as Locale)}
-                            />
-                            <Button
-                              disabled={
-                                language === savedLanguage &&
-                                language === locale.locale &&
-                                !locale.error
-                              }
-                              onClick={() => void applyLanguage()}
-                            >
-                              {applying ? t("Applying…") : t("Apply settings")}
-                            </Button>
-                          </div>
+                          <ValueMenu
+                            label={t("Display language")}
+                            value={savedLanguage}
+                            muted={
+                              !Object.hasOwn(
+                                snapshot.document,
+                                "ui.language",
+                              ) && savedLanguage === "en"
+                            }
+                            options={languages.map(({ id, name }) => ({
+                              value: id,
+                              label: name,
+                            }))}
+                            disabled={!snapshot.valid || applying}
+                            choose={(value) => applyLanguage(value as Locale)}
+                          />
                         </SettingField>
                       </fieldset>
                       <fieldset disabled={!snapshot.valid}>
@@ -486,24 +470,31 @@ export function SettingsPage({
                           title={t("Theme")}
                           settingId="ui.theme"
                           controlInset="var(--ui-menu-item-padding-inline)"
-                          summary={t(
-                            "Choose Light, Dark, or follow your system appearance.",
-                          )}
                         >
                           <SegmentedControl
                             label={t("Theme")}
+                            iconOnly
                             value={resolveTheme(snapshot.document["ui.theme"])}
                             options={[
-                              { value: "light", label: t("Light") },
+                              {
+                                value: "light",
+                                label: t("Light"),
+                                icon: <Icon name="theme-light" />,
+                              },
                               {
                                 value: "dark",
                                 label: t("Dark"),
+                                icon: <Icon name="theme-dark" />,
                                 muted: !Object.hasOwn(
                                   snapshot.document,
                                   "ui.theme",
                                 ),
                               },
-                              { value: "system", label: t("System") },
+                              {
+                                value: "system",
+                                label: t("System"),
+                                icon: <Icon name="theme-system" />,
+                              },
                             ]}
                             disabled={!snapshot.valid}
                             onChange={(value) => update("ui.theme", value)}

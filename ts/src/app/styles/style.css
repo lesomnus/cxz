@@ -494,15 +494,6 @@ header strong {
   line-height: 1.5;
   color: var(--muted);
 }
-.language-setting-control {
-  display: flex;
-  align-items: center;
-  gap: var(--space);
-}
-.language-setting-control > button {
-  flex-shrink: 0;
-  font-size: 12px;
-}
 .font-family-control {
   display: grid;
   gap: var(--space);
