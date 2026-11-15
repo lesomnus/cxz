@@ -32,6 +32,7 @@ import { AnchoredMenu } from "#src/shared/components/anchored-menu.tsx";
 import { listAccounts, sessionsForAccount } from "./account-data";
 import { useAccountQuota } from "./use-account-quota";
 import styles from "./sidebar-accounts.module.css";
+import { sidebarPopupGap } from "#src/shared/navigation/sidebar-popup.ts";
 
 const entranceCooldown = 60_000;
 const entranceTimes = new WeakMap<Connection, Map<string, number>>();
@@ -47,19 +48,6 @@ function rememberEntrance(c: Connection, identity: string) {
   times.delete(identity);
   times.set(identity, Date.now());
   if (times.size > 256) times.delete(times.keys().next().value!);
-}
-
-function sidebarMenuGap(anchor: HTMLElement) {
-  const sidebar = anchor.closest(".resource-sidebar");
-  if (!sidebar) return 4;
-  const border = parseFloat(getComputedStyle(sidebar).borderRightWidth) || 0;
-  const inset = Math.max(
-    0,
-    sidebar.getBoundingClientRect().right -
-      border -
-      anchor.getBoundingClientRect().right,
-  );
-  return 2 * inset + border;
 }
 
 export function SidebarAccounts({
@@ -139,7 +127,7 @@ export function SidebarAccounts({
           anchor={anchor}
           label="Account usage"
           placement="right"
-          gap={sidebarMenuGap}
+          gap={sidebarPopupGap}
           autoFocus={false}
           className={styles.preview}
           role="dialog"

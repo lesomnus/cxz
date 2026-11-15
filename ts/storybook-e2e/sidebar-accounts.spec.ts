@@ -51,6 +51,14 @@ test("hover account usage opens to the right without stealing editor focus and r
   await trigger.click();
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await expect(menu).toHaveCount(0);
+  const profileMenu = page.getByRole("menu", { name: "Profile", exact: true });
+  await expect(profileMenu).toBeVisible();
+  expect(
+    (await profileMenu.boundingBox())!.x - sidebarBox.x - sidebarBox.width,
+  ).toBeCloseTo(
+    sidebarBox.x + sidebarBox.width - border - buttonBox.x - buttonBox.width,
+    0,
+  );
   await expect(
     page.getByRole("menuitem", { name: "Accounts", exact: true }),
   ).toBeVisible();

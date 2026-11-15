@@ -30,8 +30,19 @@ test("centralizes failures, preserves recovery history and keeps canceled retrie
   await expect(
     dialog.getByRole("button", { name: "Close errors" }),
   ).toBeFocused();
-  expect((await dialog.boundingBox())!.x).toBeGreaterThan(
-    (await trigger.boundingBox())!.x,
+  const sidebar = page.getByRole("navigation", {
+    name: "Resources",
+    exact: true,
+  });
+  const sidebarBox = (await sidebar.boundingBox())!;
+  const border = await sidebar.evaluate((node) =>
+    parseFloat(getComputedStyle(node).borderRightWidth),
+  );
+  expect(
+    (await dialog.boundingBox())!.x - sidebarBox.x - sidebarBox.width,
+  ).toBeCloseTo(
+    sidebarBox.x + sidebarBox.width - border - triggerBox.x - triggerBox.width,
+    0,
   );
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();

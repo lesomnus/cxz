@@ -17,6 +17,7 @@ import {
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./error-center.module.css";
+import { sidebarPopupGap } from "#src/shared/navigation/sidebar-popup.ts";
 
 export function ErrorCenter({
   store = clientErrors(),
@@ -46,7 +47,7 @@ export function ErrorCenter({
     const panel = popup.current;
     const position = () => {
       const anchor = trigger.current!.getBoundingClientRect();
-      panel.style.left = `${Math.max(8, Math.min(anchor.right + 4, innerWidth - panel.offsetWidth - 8))}px`;
+      panel.style.left = `${Math.max(8, Math.min(anchor.right + sidebarPopupGap(trigger.current!), innerWidth - panel.offsetWidth - 8))}px`;
       panel.style.top = `${Math.max(8, Math.min(anchor.bottom - panel.offsetHeight, innerHeight - panel.offsetHeight - 8))}px`;
     };
     position();
@@ -56,6 +57,8 @@ export function ErrorCenter({
     const resize = new ResizeObserver(position);
     resize.observe(panel);
     resize.observe(trigger.current);
+    const sidebar = trigger.current.closest(".resource-sidebar");
+    if (sidebar) resize.observe(sidebar);
     window.addEventListener("resize", position);
     document.addEventListener("scroll", position, true);
     return () => {

@@ -7,6 +7,7 @@ import { SidebarAccounts } from "#src/features/accounts/sidebar-accounts.tsx";
 import type { Connection } from "#src/shared/api/connection.ts";
 import type { Session } from "#gen/cxz/session_pb";
 import { accountLocation } from "#src/shared/navigation/resource-route.ts";
+import { sidebarPopupGap } from "#src/shared/navigation/sidebar-popup.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import {
   clientErrors,
@@ -56,6 +57,7 @@ export function ProfileMenu({
             onOpenChange={setOpen}
             label={t("Profile")}
             placement="right"
+            gap={sidebarPopupGap}
             triggerClassName={`resource-link profile-trigger ${usageOpen ? "account-preview-open" : ""}`}
             triggerContent={
               <span className="profile-avatar" aria-hidden="true">
