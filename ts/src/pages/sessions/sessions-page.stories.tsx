@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { clone, create } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
@@ -36,6 +36,24 @@ import { WorkspaceView } from "#src/app/workspace-view.tsx";
 import { sessionFixtureId } from "#src/storybook/fixtures.ts";
 import { projectFixture } from "#src/storybook/project-fixture.ts";
 
+function previewDelay(ms: number, signal?: AbortSignal) {
+  if (!ms) return Promise.resolve();
+  return new Promise<void>((resolve, reject) => {
+    const finish = () => {
+      signal?.removeEventListener("abort", abort);
+      resolve();
+    };
+    const timer = setTimeout(finish, ms);
+    const abort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", abort);
+      reject(new DOMException("Preview request canceled", "AbortError"));
+    };
+    signal?.addEventListener("abort", abort, { once: true });
+    if (signal?.aborted) abort();
+  });
+}
+
 function History({ children }: { children?: ReactNode }) {
   const router = useRouter();
   return (
@@ -56,10 +74,24 @@ function Preview({
   recentActivity = false,
   unread = false,
   containerLifecycle = false,
+  creationDelayMs = 0,
+  transcriptDelayMs = 0,
 } = {}) {
+  const delays = useRef({ creationDelayMs, transcriptDelayMs });
+  delays.current = { creationDelayMs, transcriptDelayMs };
   const [fixture] = useState(() => {
     const fixture = projectFixture(false, false, empty ? 0 : sessionCount);
     const { c, projects, sessions } = fixture;
+    const add = c.sessions.add;
+    c.sessions.add = async (request, options) => {
+      await previewDelay(delays.current.creationDelayMs, options?.signal);
+      return add(request, options);
+    };
+    const transcript = c.sessions.transcript;
+    c.sessions.transcript = async (request, options) => {
+      await previewDelay(delays.current.transcriptDelayMs, options?.signal);
+      return transcript(request, options);
+    };
     for (const project of projects) project.dateErased = undefined;
     for (const [i, session] of sessions.entries()) {
       session.id = sessionFixtureId(i + 1);
@@ -301,6 +333,25 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const Empty: Story = { args: { empty: true } };
+export const SessionCreation: Story = {
+  args: { empty: true, creationDelayMs: 1200, transcriptDelayMs: 800 },
+  argTypes: {
+    creationDelayMs: {
+      control: { type: "range", min: 0, max: 5000, step: 100 },
+    },
+    transcriptDelayMs: {
+      control: { type: "range", min: 0, max: 5000, step: 100 },
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Start on the empty Sessions page. Click Add session in the toolbar, choose a project and Work account, enter a title and Confirm. The real centered SessionCreate modal shows its pending state while the local Add request waits, then closes with its exit animation and navigates to the new alias-based conversation. The session panel slides in with the new session selected; the initial transcript loads before the empty conversation is ready for input. Back in Preview history returns to the table with the created session. Create another session to repeat without resetting. The delay controls make creation and initial history loading easier to inspect. This story uses the real Workspace, router, session form, inventory updates and conversation, backed by isolated in-memory RPC fixtures; it never creates a real session or requires login. For the session-scoped login branch, see Accounts/Workflows/SessionCreationRequiresLogin.",
+      },
+    },
+  },
+};
 export const ManySessions: Story = { args: { sessionCount: 25 } };
 export const Conversation: Story = { args: { conversation: true } };
 
