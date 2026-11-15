@@ -150,7 +150,7 @@ export const Search: Story = {
     docs: {
       description: {
         story:
-          "The toolbar search button or Shift+F opens the same FindBar surface as conversation search. Search loaded task titles, aliases, descriptions and labels within the selected project/session; older completed tasks are included. Use the case, word and regex options, Up/Down to select and Enter to open a result. The overlay stays open across task navigation and outside clicks; Escape or Close search restores focus. Plain Shift+F does not interrupt text editing; Ctrl/Cmd+Shift+F also works inside the page's inputs.",
+          "The toolbar search button or Shift+F opens the same FindBar surface as conversation search. Search loaded task titles, aliases, descriptions and labels within the selected project/session; older completed tasks are included. Use the case, word and regex options, Up/Down to select and Enter to open a result. The overlay stays open across result navigation. Clicking outside dismisses it without interrupting the clicked control; Escape or Close search restores focus. Reopening preserves the query. Plain Shift+F does not interrupt text editing; Ctrl/Cmd+Shift+F also works inside the page's inputs.",
       },
     },
   },

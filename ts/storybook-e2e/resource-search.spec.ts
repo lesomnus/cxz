@@ -28,8 +28,10 @@ for (const resource of ["tasks", "memories"] as const) {
     if (resource === "memories")
       await expect(hits.filter({ hasText: "API notes" })).toHaveCount(0);
     await page.mouse.click(10, 200);
-    await expect(overlay).toBeVisible();
-    await input.focus();
+    await expect(overlay).toHaveCount(0);
+    await trigger.click();
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue(resource === "tasks" ? "task" : "notes");
     await page.keyboard.press("ArrowDown");
     await expect(hits.nth(1)).toHaveAttribute("aria-pressed", "true");
     await page.keyboard.press("Enter");
@@ -121,7 +123,14 @@ test("search shortcuts do not steal text input or active modal focus", async ({
   await page.goto(
     "/iframe.html?id=resources-tasks--project-table&viewMode=story",
   );
+  await page.getByRole("button", { name: "Search tasks", exact: true }).click();
+  await expect(
+    page.getByRole("search", { name: "Search tasks", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Add task", exact: true }).click();
+  await expect(
+    page.getByRole("search", { name: "Search tasks", exact: true }),
+  ).toHaveCount(0);
   const dialog = page.getByRole("dialog", { name: "Add task", exact: true });
   const title = dialog.getByRole("textbox", { name: "Title", exact: true });
   await title.fill("Keep ");

@@ -4,6 +4,7 @@ export function useResourceSearch() {
   const [open, setOpen] = useState(false);
   const area = useRef<HTMLElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const overlay = useRef<HTMLElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const origin = useRef<HTMLElement | null>(null);
   const opened = useRef(false);
@@ -32,6 +33,21 @@ export function useResourceSearch() {
       input.current?.focus({ preventScroll: true });
       input.current?.select();
     }
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const pointerdown = (event: PointerEvent) => {
+      const path = event.composedPath();
+      if (
+        (overlay.current && path.includes(overlay.current)) ||
+        (trigger.current && path.includes(trigger.current))
+      )
+        return;
+      opened.current = false;
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", pointerdown, true);
+    return () => document.removeEventListener("pointerdown", pointerdown, true);
   }, [open]);
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -67,7 +83,7 @@ export function useResourceSearch() {
     document.addEventListener("keydown", keydown, true);
     return () => document.removeEventListener("keydown", keydown, true);
   }, [show, close]);
-  return { open, area, input, trigger, show, close };
+  return { open, area, input, overlay, trigger, show, close };
 }
 
 export type ResourceSearchController = ReturnType<typeof useResourceSearch>;

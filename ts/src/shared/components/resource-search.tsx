@@ -93,7 +93,13 @@ export function ResourceSearch({
   }
   if (!search.open) return null;
   return (
-    <FindBar motion role="search" aria-label={label} className={styles.overlay}>
+    <FindBar
+      ref={search.overlay}
+      motion
+      role="search"
+      aria-label={label}
+      className={styles.overlay}
+    >
       <FindBarControls>
         <FindBarIcon />
         <FindBarInput

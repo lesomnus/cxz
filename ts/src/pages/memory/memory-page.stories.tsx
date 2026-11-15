@@ -162,7 +162,7 @@ export const Search: Story = {
     docs: {
       description: {
         story:
-          "Use the toolbar search button or Shift+F to search cached memory titles, aliases, descriptions and labels within the selected project/session. The FindBar shares conversation search's options, highlighted matches and keyboard navigation. Results open documents without dismissing the overlay; click outside without losing the query, or close explicitly with Escape/Close search. Markdown bodies are not fetched for this local catalog search.",
+          "Use the toolbar search button or Shift+F to search cached memory titles, aliases, descriptions and labels within the selected project/session. The FindBar shares conversation search's options, highlighted matches and keyboard navigation. Results open documents without dismissing the overlay. Clicking outside dismisses it without interrupting the clicked control; Escape/Close search restores focus. Reopening preserves the query. Markdown bodies are not fetched for this local catalog search.",
       },
     },
   },
