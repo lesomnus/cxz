@@ -11,10 +11,11 @@ Production and the WASM sandbox use the same settings components. Editor
 controls save immediately; the JSON editor saves explicitly with **Save** or
 Ctrl+Enter.
 
-Editor size sliders show the selected preset beneath the rail. The inherited
+Editor size sliders show clickable presets beneath the rail, with circles
+marking their snap positions. The inherited
 position removes the override; its tooltip shows the resolved parent value.
-Use the numeric field beside the presets for other values allowed by the
-settings validator. Pointer movement is continuous, with magnetic snapping near
+Use the numeric field at the final rail position for other values allowed by the
+settings validator. Its value stays available while selecting presets. Pointer movement is continuous, with magnetic snapping near
 presets and an animated settle on release. Keyboard arrows still select steps.
 
 When the available width after the resource sidebar and panel reaches the shared

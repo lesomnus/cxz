@@ -388,7 +388,6 @@ export const messages = {
   "Inherited: {value}": "상속값: {value}",
   "Reset to inherited value": "상속값으로 초기화",
   "{label} custom value": "{label} 직접 입력",
-  Custom: "직접 입력",
   on: "켜짐",
   off: "꺼짐",
   " (Included in input tokens)": " (입력 토큰에 포함)",

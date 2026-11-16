@@ -389,7 +389,6 @@ export const messages = {
   "Inherited: {value}": "Inherited: {value}",
   "Reset to inherited value": "Reset to inherited value",
   "{label} custom value": "{label} custom value",
-  Custom: "Custom",
   on: "on",
   off: "off",
   " (Included in input tokens)": " (Included in input tokens)",
