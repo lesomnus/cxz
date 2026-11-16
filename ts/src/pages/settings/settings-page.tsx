@@ -299,6 +299,8 @@ export function SettingsPage({
                   />
                 ) : key === "indentSize" || key === "tabSize" ? (
                   <SettingSlider
+                    allowCustomValue
+                    customMax={16}
                     label={`${title} ${translateKnown(fields[key].label)}`}
                     value={
                       hasValue ? Number(snapshot.document[name]) : undefined
