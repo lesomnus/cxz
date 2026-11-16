@@ -1,7 +1,6 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@lesomnus/nox";
-import { ValueMenu } from "@lesomnus/nox";
+import { Button, Popover, ValueMenu } from "@lesomnus/nox";
 import {
   defaultEditorSettings,
   fontFamilyCSS,
@@ -51,6 +50,8 @@ export function FontFamilyControl({
   );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [input, setInput] = useState<HTMLInputElement | null>(null);
+  const [hintOpen, setHintOpen] = useState(false);
   const request = useRef(0);
   const font = useFontFamily(
     fontFamilyCSS(resolved),
@@ -64,6 +65,7 @@ export function FontFamilyControl({
     setGoogle(isGoogleFont(resolved) ? resolved.family : "Roboto Mono");
     setMode(modeFor(value));
     setError("");
+    setHintOpen(false);
   }, [savedKey]);
   useEffect(
     () => () => {
@@ -106,7 +108,10 @@ export function FontFamilyControl({
     onChange(next);
   }
   return (
-    <div className="font-family-control">
+    <div
+      className="font-family-control"
+      data-editing={mode === "custom" || mode === "google" || undefined}
+    >
       <ValueMenu
         label={label}
         value={mode}
@@ -120,6 +125,7 @@ export function FontFamilyControl({
         ]}
         choose={(next) => {
           setError("");
+          setHintOpen(false);
           request.current++;
           setLoading(false);
           setMode(next);
@@ -130,6 +136,7 @@ export function FontFamilyControl({
       {(mode === "custom" || mode === "google") && (
         <div className="font-family-custom">
           <input
+            ref={setInput}
             type="text"
             aria-label={
               mode === "google"
@@ -141,6 +148,15 @@ export function FontFamilyControl({
             placeholder={mode === "google" ? "Roboto Mono" : undefined}
             disabled={disabled}
             spellCheck={false}
+            onPointerEnter={(event) => {
+              if (event.pointerType !== "touch") setHintOpen(true);
+            }}
+            onPointerLeave={(event) => {
+              if (document.activeElement !== event.currentTarget)
+                setHintOpen(false);
+            }}
+            onFocus={() => setHintOpen(true)}
+            onBlur={() => setHintOpen(false)}
             onChange={(event) => {
               request.current++;
               setLoading(false);
@@ -160,13 +176,20 @@ export function FontFamilyControl({
           </Button>
         </div>
       )}
-      {mode === "google" && (
-        <small className="muted">
-          {t(
-            "Enter a family from Google Fonts, such as Roboto Mono, JetBrains Mono or Noto Sans KR. Only the selected font is downloaded.",
-          )}
-        </small>
-      )}
+      <Popover
+        anchor={input}
+        open={hintOpen}
+        onOpenChange={setHintOpen}
+        content={
+          mode === "google"
+            ? t(
+                "Enter a family from Google Fonts, such as Roboto Mono, JetBrains Mono or Noto Sans KR. Only the selected font is downloaded.",
+              )
+            : t(
+                "Enter font families available on your device, separated by commas.",
+              )
+        }
+      />
       {font.loading && <small role="status">{t("Loading font…")}</small>}
       {font.error && (
         <p role="alert">

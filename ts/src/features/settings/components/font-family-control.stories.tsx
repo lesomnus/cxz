@@ -11,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Local CSS font lists and Google Fonts share one control. Google Fonts makes no requests until Apply font; the editor switches after the download is ready. Saved selections contain only provider/family metadata. Removing an override restores the complete inherited selection.",
+          "Local CSS font lists and Google Fonts share one control. The selector, family input and Apply action stay on one row. Hover or focus the input for mode-specific guidance in a Popover without changing the field height. Google Fonts makes no requests until Apply font; the editor switches after the download is ready. Saved selections contain only provider/family metadata. Removing an override restores the complete inherited selection.",
       },
     },
   },

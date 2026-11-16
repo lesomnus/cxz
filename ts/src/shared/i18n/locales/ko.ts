@@ -738,6 +738,8 @@ export const messages = {
   "System monospace": "시스템 고정폭 글꼴",
   "Browser monospace": "브라우저 고정폭 글꼴",
   "Custom font": "직접 지정",
+  "Enter font families available on your device, separated by commas.":
+    "기기에 설치된 글꼴 이름을 쉼표로 구분해 입력하세요.",
   "Apply font": "글꼴 적용",
   "Enter a valid CSS font family list.": "올바른 CSS 글꼴 목록을 입력하세요.",
   "{label} custom font family": "{label} 직접 지정 글꼴",

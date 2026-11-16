@@ -505,15 +505,23 @@ header strong {
 }
 .font-family-control {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
   gap: var(--space);
 }
+.font-family-control[data-editing] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
 .font-family-control > :not(.value-menu):not(.font-family-custom) {
+  grid-column: 1 / -1;
   margin-inline: var(--setting-control-inset, 0px);
 }
 .font-family-custom {
   display: flex;
+  min-width: 0;
+  align-self: stretch;
   gap: var(--space);
-  align-items: center;
+  align-items: stretch;
 }
 .font-family-custom input {
   min-width: 0;

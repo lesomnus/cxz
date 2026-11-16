@@ -738,6 +738,8 @@ export const messages = {
   "System monospace": "System monospace",
   "Browser monospace": "Browser monospace",
   "Custom font": "Custom font",
+  "Enter font families available on your device, separated by commas.":
+    "Enter font families available on your device, separated by commas.",
   "Apply font": "Apply font",
   "Enter a valid CSS font family list.": "Enter a valid CSS font family list.",
   "{label} custom font family": "{label} custom font family",
