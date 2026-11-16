@@ -32,6 +32,7 @@ test("General is first, language menus preserve text position and segmented syst
   await expect(topics.getByRole("button")).toHaveText([
     "General",
     "Editor",
+    "Auxiliary AI",
     "Connections",
   ]);
   await expect(
@@ -123,11 +124,11 @@ test("sliders reset to per-field inheritance and equal-width Tab input cells ani
     exact: true,
   });
   await expect(slider).toHaveAttribute("min", "0");
-  await expect(slider).toHaveAttribute("max", "8");
+  await expect(slider).toHaveAttribute("max", "9");
   await expectInherited(page, "Session editor Indentation size");
   await chooseSetting(page, "Global editor Indentation size", "5");
   await expect(slider).toHaveAttribute("aria-valuetext", "Inherited: 5");
-  await expect(slider.locator("..").locator("output")).toHaveText("5");
+  await expect(slider).toHaveValue("0");
   await chooseSetting(page, "Session editor Indentation size", "8");
   await chooseSetting(page, "Session editor Indentation size", "");
   expect(

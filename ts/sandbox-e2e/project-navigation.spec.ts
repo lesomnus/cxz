@@ -7,8 +7,12 @@ test.use({
 
 const picker = (page: Page) =>
   page.getByRole("combobox", { name: "Select project", exact: true });
-const visit = (page: Page, name: string) =>
-  page.getByRole("link", { name, exact: true }).click();
+async function visit(page: Page, name: string) {
+  if (name === "Accounts") {
+    await page.getByRole("button", { name: "Profile", exact: true }).click();
+    await page.getByRole("menuitem", { name, exact: true }).click();
+  } else await page.getByRole("link", { name, exact: true }).click();
+}
 
 async function choose(page: Page, name: string) {
   await picker(page).click();

@@ -14,6 +14,11 @@ test("expanded code ends at the session panel and editor, and tracks split resiz
     block = pre.locator("..");
   await expect(pre).toBeVisible({ timeout: 45000 });
   await expect(editor).toBeVisible();
+  await panel.evaluate(async (node) => {
+    await Promise.all(
+      node.getAnimations().map((animation) => animation.finished),
+    );
+  });
   const pane = page.locator(".transcript");
   await block.hover();
   const expand = block.getByRole("button", {

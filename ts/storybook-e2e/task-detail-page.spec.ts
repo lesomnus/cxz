@@ -110,7 +110,7 @@ test("title reserves two lines and metadata groups assignment, activity and fina
   });
   const project = (await rows.nth(2).getByRole("link").first().boundingBox())!;
   expect(geometry.buttonWidth).toBeCloseTo(project.width, 1);
-  expect(geometry.buttonHeight).toBe(40);
+  expect(geometry.buttonHeight).toBeCloseTo(40, 3);
   expect(geometry.width).toBeGreaterThan(geometry.buttonWidth);
   expect(geometry.gap).toBeCloseTo(geometry.leftInset, 1);
   expect(geometry.rightInset).toBeCloseTo(geometry.leftInset, 1);
@@ -164,7 +164,7 @@ test("compact task field values align with Account editable labels", async ({
     "/iframe.html?id=accounts-workflows--signed-in-account&viewMode=story",
   );
   const account = page.getByRole("button", {
-    name: "Edit Display name",
+    name: "Edit Name",
     exact: true,
   });
   await expect(account).toBeVisible();

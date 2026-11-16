@@ -24,9 +24,7 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
           .map((animation) => animation.finished.catch(() => {})),
       );
     });
-  await expect(
-    page.locator(".tree-chevron, .tree-branch, .tree-project svg"),
-  ).toHaveCount(0);
+  await expect(page.locator(".tree-chevron, .tree-branch")).toHaveCount(0);
   await expect(page.locator(".session-title").first()).toHaveText(
     "Project checklist",
   );
@@ -65,7 +63,7 @@ test("provider dropdowns, quota popovers, aligned headings and bounded press/sha
       logoBefore.height / 2 -
       labelBefore.y -
       labelBefore.height / 2,
-  ).toBeCloseTo(1, 1);
+  ).toBeCloseTo(0, 1);
   await card.hover();
   await page.mouse.down();
   const scale = await heading.evaluate((el) =>

@@ -1,6 +1,27 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { SettingsTopic } from "#src/app/router.tsx";
 
+function scrollToTopic(
+  root: HTMLDivElement,
+  content: HTMLDivElement,
+  value: string,
+  behavior: ScrollBehavior,
+) {
+  const section = content.querySelector<HTMLElement>(
+    `[data-settings-topic="${value}"]`,
+  );
+  if (!section) return;
+  const inset = root.firstElementChild
+    ? parseFloat(getComputedStyle(root.firstElementChild).paddingTop) || 0
+    : 0;
+  const top =
+    root.scrollTop +
+    section.getBoundingClientRect().top -
+    root.getBoundingClientRect().top -
+    inset;
+  root.scrollTo({ top: Math.max(0, top), behavior });
+}
+
 export function useSettingsNavigation(
   topic: SettingsTopic,
   reveal: () => void,
@@ -11,29 +32,23 @@ export function useSettingsNavigation(
   revealRef.current = reveal;
   const [active, setActive] = useState<SettingsTopic>(topic);
   const [compact, setCompact] = useState(true);
+  const target = useRef<string | null>(topic);
   const choose = useCallback(
     (value: string, behavior: ScrollBehavior = "smooth") => {
+      target.current = value;
       revealRef.current();
       requestAnimationFrame(() => {
         const root = viewport.current;
-        const section = layout.current?.querySelector<HTMLElement>(
-          `[data-settings-topic="${value}"]`,
-        );
-        if (!root || !section) return;
-        const inset = root.firstElementChild
-          ? parseFloat(getComputedStyle(root.firstElementChild).paddingTop) || 0
-          : 0;
-        const top =
-          root.scrollTop +
-          section.getBoundingClientRect().top -
-          root.getBoundingClientRect().top -
-          inset;
-        root.scrollTo({
-          top: Math.max(0, top),
-          behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        const content = layout.current;
+        if (!root || !content) return;
+        scrollToTopic(
+          root,
+          content,
+          value,
+          matchMedia("(prefers-reduced-motion: reduce)").matches
             ? "auto"
             : behavior,
-        });
+        );
       });
     },
     [],
@@ -73,6 +88,9 @@ export function useSettingsNavigation(
         setCompact(
           menu.getBoundingClientRect().left < root.getBoundingClientRect().left,
         );
+      // Remote settings can grow earlier sections after a deep-link scroll.
+      // Keep the chosen topic anchored until the user navigates the viewport.
+      if (target.current) scrollToTopic(root, content, target.current, "auto");
       updateActive();
     };
     const scroll = () => {
@@ -83,10 +101,18 @@ export function useSettingsNavigation(
     observer.observe(content);
     for (const section of sections) observer.observe(section);
     root.addEventListener("scroll", scroll, { passive: true });
+    const releaseTarget = () => {
+      target.current = null;
+    };
+    const gestures = ["wheel", "touchstart", "pointerdown", "keydown"];
+    for (const event of gestures)
+      root.addEventListener(event, releaseTarget, { passive: true });
     resize();
     return () => {
       observer.disconnect();
       root.removeEventListener("scroll", scroll);
+      for (const event of gestures)
+        root.removeEventListener(event, releaseTarget);
       cancelAnimationFrame(frame);
     };
   }, []);

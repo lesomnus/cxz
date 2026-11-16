@@ -1085,7 +1085,8 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
   const right = (await entries.nth(1).boundingBox())!;
   expect(right.y).toBe(left.y);
   expect(right.x).toBeGreaterThan(left.x + left.width);
-  expect((await entries.nth(2).boundingBox())!.y).toBeGreaterThan(left.y);
+  expect((await entries.nth(2).boundingBox())!.y).toBe(left.y);
+  expect((await entries.nth(3).boundingBox())!.y).toBeGreaterThan(left.y);
   await expect(main.locator("h1, details, summary")).toHaveCount(0);
   const container = info.locator("dl > div").filter({
     has: page.locator("dt > span:first-child", { hasText: /^Container ID$/ }),
@@ -1149,15 +1150,12 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
   await expect(projectId.getByRole("status")).toHaveText("copied!");
   await expect(projectId.getByRole("status")).toBeEmpty();
   await page.keyboard.press("Escape");
-  // What the project is called, called in a command and looks like on one
-  // line; what it is and what identifies it on the next.
   await expect(info.locator("dt > span:first-child")).toHaveText([
     "Name",
     "Alias",
-    "Icon",
+    "Project ID",
     "Project icon preview",
     "Description",
-    "Project ID",
     "Workspace",
     "Container name",
     "Container ID",

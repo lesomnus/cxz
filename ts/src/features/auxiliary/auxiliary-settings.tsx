@@ -309,6 +309,7 @@ export function AuxiliarySettings({
       {(error || configuration.error || accounts.error || models.error) && (
         <ErrorNotice
           error={error || configuration.error || accounts.error || models.error}
+          local={!!error}
         />
       )}
       {configuration.loading && !profiles.length && (

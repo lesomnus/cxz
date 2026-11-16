@@ -428,6 +428,14 @@ test("summary history prefetches before the loaded edge even with delayed respon
   // The overview can probe the latest event with limit=1 before navigation.
   expect(requests.find((request) => request.limit > 1).limit).toBe(1024);
   const first = BigInt(await messages.getAttribute("data-first"));
+  // Let the initial measured rows and follow-to-bottom frame commit before
+  // simulating a native reading move against this layout.
+  await pane.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
   await pane.evaluate((el) => {
     el.scrollTop = el.clientHeight * 5;
   });
@@ -489,9 +497,24 @@ test("viewport fades cover response bodies while the scrollbar and controls rema
   expect(await page.locator(".scroll-response-marker").count()).toBeGreaterThan(
     0,
   );
+  await pane.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
   await pane.evaluate((el) => {
     el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
   });
+  await expect
+    .poll(() =>
+      page
+        .locator(".scroll-thumb")
+        .evaluate((el) =>
+          Math.abs(parseFloat(el.style.top) - Number(el.dataset.targetTop)),
+        ),
+    )
+    .toBeLessThan(0.1);
   for (const edge of ["top", "bottom"]) {
     const fade = page.locator(`.transcript-fade-${edge}`);
     await expect(fade).toHaveCSS("opacity", "1");
