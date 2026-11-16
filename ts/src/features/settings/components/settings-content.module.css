@@ -6,6 +6,7 @@
 }
 .navigation {
   position: sticky;
+  z-index: 2;
   top: var(--resource-content-padding-block);
   grid-area: 1 / 1;
   align-self: start;
