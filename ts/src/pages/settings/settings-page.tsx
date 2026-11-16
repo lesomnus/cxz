@@ -1,5 +1,6 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { Icon } from "#src/shared/icons/icon.tsx";
+import { controlCharacters } from "#src/shared/content/control-characters.tsx";
 import {
   t,
   translateKnown,
@@ -364,15 +365,20 @@ export function SettingsPage({
           }}
         >
           <code className="editor-code-line">
-            <span className="hljs-comment">// {title}</span>
-            {"\n"}
-            <span className="hljs-keyword">function</span>{" "}
+            <span className="hljs-comment">
+              {controlCharacters(`// ${title}`)}
+            </span>
+            {controlCharacters("\n")}
+            <span className="hljs-keyword">function</span>
+            {controlCharacters(" ")}
             <span className="hljs-title">example</span>
-            {"() {\n"}
-            {resolved.insertSpaces ? " ".repeat(resolved.indentSize) : "\t"}
-            <span className="hljs-keyword">return</span>{" "}
+            {controlCharacters(
+              `() {\n${resolved.insertSpaces ? " ".repeat(resolved.indentSize) : "\t"}`,
+            )}
+            <span className="hljs-keyword">return</span>
+            {controlCharacters(" ")}
             <span className="hljs-string">"hello"</span>
-            {";\n}"}
+            {controlCharacters(";\n}")}
           </code>
         </pre>
       </Section>
