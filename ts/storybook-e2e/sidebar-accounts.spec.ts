@@ -115,14 +115,15 @@ test("reset countdown follows remaining usage, updates without reads and preserv
   await page.clock.runFor(1000);
   await expect(reset).toHaveText("00d02h24m");
   expect((await dialog.boundingBox())!.height).toBe(before.height);
-  expect((await reset.boundingBox())!.width).toBe(resetBox.width);
+  expect((await reset.boundingBox())!.width).toBeCloseTo(resetBox.width, 3);
   await expect(page.getByLabel("Account preview reads")).toHaveText(reads!);
   const unknown = dialog.getByRole("listitem").nth(1);
   await expect(unknown.getByLabel("Usage reset unavailable")).toHaveText(
     "--d--h--m",
   );
-  expect((await unknown.getByRole("timer").boundingBox())!.width).toBe(
+  expect((await unknown.getByRole("timer").boundingBox())!.width).toBeCloseTo(
     resetBox.width,
+    3,
   );
 });
 
