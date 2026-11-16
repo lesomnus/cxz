@@ -500,6 +500,9 @@ header strong {
 .settings-group > h2 + .muted {
   margin-block-end: calc(2 * var(--ui-space));
 }
+[data-settings-topic="editor"] .settings-group > h2 + .muted {
+  min-block-size: 2lh;
+}
 .font-family-control {
   display: grid;
   gap: var(--space);
