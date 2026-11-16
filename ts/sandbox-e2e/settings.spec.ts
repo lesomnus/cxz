@@ -166,7 +166,7 @@ test("settings topics scroll within a centered form while the JSON pane preserve
     name: "Settings topics",
     exact: true,
   });
-  await expect(topics.getByRole("button")).toHaveCount(3);
+  await expect(topics.getByRole("button")).toHaveCount(4);
   await expect(
     topics.getByRole("button", { name: "Editor", exact: true }),
   ).toHaveAttribute("aria-current", "location");

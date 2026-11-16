@@ -290,14 +290,12 @@ test("all categories coexist, save without moving panels, and retain deep links"
   ).toHaveAttribute("aria-current", "location");
 });
 
-test("Logs remain a separate page accessible from the sidebar", async ({
+test("Logs remain a separate page accessible from Profile", async ({
   page,
 }) => {
   await page.goto("/iframe.html?id=pages-settings--general&viewMode=story");
-  await page
-    .getByRole("navigation", { name: "Resources", exact: true })
-    .getByRole("link", { name: "Logs", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Logs", exact: true }).click();
   await expect(
     page.getByRole("main", { name: "Logs", exact: true }),
   ).toBeVisible();
