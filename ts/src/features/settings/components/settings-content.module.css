@@ -50,6 +50,7 @@
   min-width: 0;
   display: grid;
   gap: var(--ui-section-layout-gap);
+  padding-block-end: 25dvh;
 }
 .topicMenu {
   flex: 0 0 var(--settings-navigation-width);
