@@ -181,13 +181,15 @@ export function FontFamilyControl({
         open={hintOpen}
         onOpenChange={setHintOpen}
         content={
-          mode === "google"
-            ? t(
-                "Enter a family from Google Fonts, such as Roboto Mono, JetBrains Mono or Noto Sans KR. Only the selected font is downloaded.",
-              )
-            : t(
-                "Enter font families available on your device, separated by commas.",
-              )
+          <span className="font-family-hint">
+            {mode === "google"
+              ? t(
+                  "Enter a family from Google Fonts, such as Roboto Mono, JetBrains Mono or Noto Sans KR. Only the selected font is downloaded.",
+                )
+              : t(
+                  "Enter font families available on your device, separated by commas.",
+                )}
+          </span>
         }
       />
       {font.loading && <small role="status">{t("Loading font…")}</small>}
