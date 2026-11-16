@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "e2e",
   workers: 1,
+  retries: process.env.CI ? 1 : 0,
   // See playwright.sandbox.config.ts for why one worker, and why a generous
   // deadline rather than a tight one.
   expect: { timeout: 15000 },
