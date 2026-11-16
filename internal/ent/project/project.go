@@ -19,6 +19,8 @@ const (
 	FieldName = "name"
 	// FieldDesc holds the string denoting the desc field in the database.
 	FieldDesc = "desc"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
 	// FieldWorkspace holds the string denoting the workspace field in the database.
 	FieldWorkspace = "workspace"
 	// FieldConfig holds the string denoting the config field in the database.
@@ -41,6 +43,7 @@ var Columns = []string{
 	FieldAlias,
 	FieldName,
 	FieldDesc,
+	FieldLabels,
 	FieldWorkspace,
 	FieldConfig,
 	FieldDateUpdated,

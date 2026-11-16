@@ -176,6 +176,107 @@ it("keeps UI pages bounded while exports include every matching record", async (
   const page = await f.open().query({});
   expect(page.entries).toHaveLength(100);
   expect(page.total).toBe(130);
-  expect((await f.open().query({ offset: 100 })).entries).toHaveLength(30);
+  expect((await f.open().query({ before: page.next })).entries).toHaveLength(
+    30,
+  );
   expect(decodeLines(await f.open().export({}))).toHaveLength(130);
 });
+
+for (const [name, createStore] of [
+  ["memory", () => new MemoryLogStorage()],
+  ["OPFS", () => fixture(64 * 1024, 2 * 1024 * 1024).open()],
+] as const) {
+  it(`${name} applies period boundaries to counts, cursor pages and full exports`, async () => {
+    const store = createStore();
+    const entries = Array.from({ length: 130 }, (_, i) => ({
+      ...record(`period ${i}`),
+      time: i + 1000,
+    }));
+    await store.append([
+      { ...record("before period"), time: 999 },
+      ...entries,
+      { ...record("after period"), time: 1130 },
+    ]);
+    const query = { since: 1000, until: 1130, category: "rpc" as const };
+    const head = await store.query(query);
+    expect(head.total).toBe(130);
+    expect(head.entries).toHaveLength(100);
+    const tail = await store.query({ ...query, before: head.next });
+    expect(tail.total).toBe(130);
+    expect(tail.entries).toHaveLength(30);
+    expect([...head.entries, ...tail.entries].map((entry) => entry.id)).toEqual(
+      entries.map((entry) => entry.id).reverse(),
+    );
+    expect(
+      decodeLines(await store.export(query)).map((entry) => entry.id),
+    ).toEqual(entries.map((entry) => entry.id));
+    expect(
+      (await store.query({ since: 1130 })).entries.map(
+        (entry) => entry.message,
+      ),
+    ).toEqual(["after period"]);
+    expect(
+      (await store.query({ until: 1000 })).entries.map(
+        (entry) => entry.message,
+      ),
+    ).toEqual(["before period"]);
+    expect((await store.query({ since: 1130, until: 1000 })).total).toBe(0);
+  });
+  it(`${name} continues after a stable ID when newer records share timestamps`, async () => {
+    const store = createStore();
+    const entries = Array.from({ length: 200 }, (_, i) => ({
+      ...record(`cursor ${i}`),
+      time: 1000,
+    }));
+    await store.append(entries);
+    const head = await store.query({});
+    expect(head.entries.map((entry) => entry.id)).toEqual(
+      entries
+        .slice(100)
+        .reverse()
+        .map((entry) => entry.id),
+    );
+    await store.append(Array.from({ length: 5 }, (_, i) => record(`new ${i}`)));
+    const tail = await store.query({ before: head.next });
+    expect(tail.entries.map((entry) => entry.id)).toEqual(
+      entries
+        .slice(0, 100)
+        .reverse()
+        .map((entry) => entry.id),
+    );
+    expect(
+      new Set([...head.entries, ...tail.entries].map((entry) => entry.id)).size,
+    ).toBe(200);
+    expect(tail.next).toBeUndefined();
+    expect(tail.total).toBe(205);
+  });
+  it(`${name} applies checkbox OR filters, empty selections and session-scoped projects to reads and exports`, async () => {
+    const store = createStore();
+    await store.append([
+      { ...record("info rpc"), level: "info", project: "p" },
+      { ...record("warn rpc"), level: "warn", project: "p" },
+      {
+        ...record("error client"),
+        level: "error",
+        category: "client",
+        project: "p",
+      },
+      { ...record("session only"), level: "error" },
+      { ...record("other project"), level: "error", project: "other" },
+    ]);
+    const query = {
+      level: ["info", "error"] as const,
+      category: ["rpc"] as const,
+      project: "p",
+      projectSessions: ["session-uuid"],
+    };
+    expect(
+      (await store.query(query)).entries.map((entry) => entry.message),
+    ).toEqual(["session only", "info rpc"]);
+    expect(
+      decodeLines(await store.export(query)).map((entry) => entry.message),
+    ).toEqual(["info rpc", "session only"]);
+    expect((await store.query({ level: [] })).total).toBe(0);
+    expect((await store.query({ category: [] })).total).toBe(0);
+  });
+}

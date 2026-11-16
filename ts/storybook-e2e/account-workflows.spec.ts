@@ -613,6 +613,9 @@ test("session creation performs its scoped login and reuses the creation key", a
   await page.getByRole("button", { name: "Add session", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(
+    form.getByRole("combobox", { name: "Project", exact: true }),
+  ).toBeVisible();
+  await expect(
     form.getByRole("textbox", { name: "Model", exact: true }),
   ).toHaveCount(0);
   await form.getByRole("combobox", { name: "Account", exact: true }).click();
@@ -759,4 +762,53 @@ test("an expired session keeps its recovery notice when login is canceled on mob
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+});
+
+// The notice belongs to one session's conversation, and is laid out against
+// the conversation's own width rather than the pane's. It was a flex child of
+// the whole pane with nothing bounding it, so on a wide window an error about
+// one session addressed the entire screen.
+test("the expired-session notice is laid out against the conversation", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, "expired-session");
+  const notice = page
+    .getByRole("status")
+    .filter({ hasText: "authentication expired" });
+  await expect(notice).toBeVisible();
+  const measured = await notice.evaluate((node) => {
+    const pane = node.closest("main.conversation")!.getBoundingClientRect();
+    const box = node.getBoundingClientRect();
+    return {
+      width: box.width,
+      pane: pane.width,
+      leading: box.left - pane.left,
+      trailing: pane.right - box.right,
+    };
+  });
+  // The conversation's width, not the window's.
+  expect(measured.width).toBeLessThanOrEqual(600);
+  expect(measured.pane - measured.width).toBeGreaterThan(400);
+  // And centred in it, as the error notice beside it is.
+  expect(Math.abs(measured.leading - measured.trailing)).toBeLessThan(1);
+  // The request and the button that answers it sit on one row rather than the
+  // button being pushed under the text by a width it no longer has.
+  const rows = await notice.evaluate((node) => {
+    const text = [...node.childNodes].find(
+      (child) => child instanceof Text && child.textContent!.trim(),
+    )!;
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    const glyph = range.getBoundingClientRect();
+    const button = node.querySelector("button")!.getBoundingClientRect();
+    return {
+      centers: Math.abs(
+        (glyph.top + glyph.bottom) / 2 - (button.top + button.bottom) / 2,
+      ),
+      order: button.left - glyph.right,
+    };
+  });
+  expect(rows.centers).toBeLessThan(2);
+  expect(rows.order).toBeGreaterThan(0);
 });

@@ -11,7 +11,6 @@ import { NotFoundPage } from "#src/pages/not-found/not-found-page.tsx";
 import { AccountsPage } from "#src/pages/accounts/accounts-page.tsx";
 import { SearchPage } from "#src/pages/search/search-page.tsx";
 import { MemoryPage } from "#src/pages/memory/memory-page.tsx";
-import { AuxiliaryPage } from "#src/pages/auxiliary/auxiliary-page.tsx";
 import { TasksPage } from "#src/pages/tasks/tasks-page.tsx";
 export function WorkspaceView() {
   useLocale();
@@ -59,12 +58,21 @@ export function WorkspaceView() {
         error={inventoryError}
       />
     );
-  if (resource === "auxiliary")
-    return <AuxiliaryPage c={c} sessions={sessions} />;
-  if (resource === "logs") return <LogsPage />;
+  if (resource === "logs")
+    return (
+      <LogsPage
+        c={c}
+        projects={projects}
+        sessions={sessions}
+        projectsLoading={projectsLoading}
+        sessionsLoading={sessionsLoading}
+      />
+    );
   if (resource === "settings")
     return (
       <SettingsPage
+        c={c}
+        sessions={sessions}
         topic={settingsTopic}
         fileOpen={settingsFileOpen}
         setFileOpen={setSettingsFileOpen}

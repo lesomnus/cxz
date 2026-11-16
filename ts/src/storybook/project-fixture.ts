@@ -402,6 +402,9 @@ export function projectFixture(
             );
           updated[field] = request[field];
         }
+        // A map patch replaces what is stored, which is how the icon is both
+        // set and cleared: the client sends the labels it wants to be there.
+        if (Object.keys(request.labels).length) updated.labels = request.labels;
         updated.dateUpdated = timestampFromDate(new Date());
         projects[index] = updated;
         calls.push({
@@ -551,7 +554,7 @@ export function projectFixture(
           project,
           account: { id: new Uint8Array([11]) },
           agent: "codex",
-          status: { state: "idle", runId: "created-run" },
+          status: { state: "created" },
         });
         calls.push({
           method: "add",
@@ -572,6 +575,7 @@ export function projectFixture(
         return clone(SessionSchema, session);
       },
       stop: (request, context) => control("stop", request, context.signal),
+      start: (request, context) => control("start", request, context.signal),
       resume: (request, context) => control("resume", request, context.signal),
       patch: (request, context) => {
         const id = String(request.ref?.key.value);
@@ -638,7 +642,7 @@ export function projectFixture(
       },
     });
     function control(
-      kind: "stop" | "resume",
+      kind: "stop" | "resume" | "start",
       request: { ref?: { key: { value?: unknown } }; runId: string },
       signal: AbortSignal,
     ) {
@@ -658,7 +662,7 @@ export function projectFixture(
       if (updated.status!.runId !== request.runId)
         throw new ConnectError("Session run changed", Code.FailedPrecondition);
       updated.status!.state = kind === "stop" ? "stopped" : "idle";
-      if (kind === "resume") updated.status!.runId = `resumed-${++run}`;
+      if (kind !== "stop") updated.status!.runId = `resumed-${++run}`;
       updated.status!.pending = [];
       sessions[index] = updated;
       publish();

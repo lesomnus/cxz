@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { requiredSessionLogin } from "#src/features/accounts/login-required.ts";
 import type { Project } from "#gen/cxz/project_pb";
+import type { Session } from "#gen/cxz/session_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
@@ -29,6 +30,7 @@ export function SessionCreate({
   c,
   projects,
   initialProject,
+  fixedProject,
   anchor,
   trigger,
   centered = true,
@@ -37,6 +39,7 @@ export function SessionCreate({
   c: Connection;
   projects: Project[];
   initialProject?: string;
+  fixedProject?: string;
   anchor?: HTMLElement | null;
   trigger?: HTMLElement | null;
   centered?: boolean;
@@ -51,10 +54,12 @@ export function SessionCreate({
   const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
   const defaultProject =
     projects.find((p) => projectId(p) === initialProject) ?? projects[0];
-  const [project, setProject] = useState(() => projectId(defaultProject));
+  const [chosenProject, setProject] = useState(() => projectId(defaultProject));
+  const project = fixedProject ?? chosenProject;
   const [alias, setAlias] = useState("");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
+  const [created, setCreated] = useState<Session>();
   const [error, setError] = useState("");
   const [login, setLogin] = useState<LoginTarget>();
   const creation = useRef({ signature: "", id: "" });
@@ -76,25 +81,42 @@ export function SessionCreate({
     setError("");
     try {
       const account = { key: { case: "alias" as const, value: alias } };
-      const binding = await c.bindings.add(
-        { project: projectRef(project), account },
-        { signal: controller.signal, timeoutMs: 10000 },
-      );
-      const session = await c.sessions.add(
+      const binding = created
+        ? undefined
+        : await c.bindings.add(
+            { project: projectRef(project), account },
+            { signal: controller.signal, timeoutMs: 10000 },
+          );
+      const session =
+        created ??
+        (await c.sessions.add(
+          {
+            project: projectRef(project),
+            account,
+            authBinding: {
+              key: { case: "bindingId", value: binding!.bindingId },
+            },
+            name: title,
+            clientId,
+          },
+          { signal: controller.signal, timeoutMs: 10000 },
+        ));
+      if (controller.signal.aborted) return;
+      setCreated(session);
+      c.store.apply("cxz.Session", [{ id: session.id, value: session }]);
+      const started = await c.sessions.start(
         {
-          project: projectRef(project),
-          account,
-          authBinding: { key: { case: "bindingId", value: binding.bindingId } },
-          name: title,
-          clientId,
+          ref: ref(session.runtimeId),
+          runId: session.status?.runId ?? "",
+          clientId: crypto.randomUUID(),
         },
         { signal: controller.signal, timeoutMs: 120000 },
       );
       if (controller.signal.aborted) return;
-      c.store.apply("cxz.Session", [{ id: session.id, value: session }]);
+      c.store.apply("cxz.Session", [{ id: started.id, value: started }]);
       dialogClose.complete(() => {
         close();
-        void navigate({ ...sessionLocation(session) });
+        void navigate({ ...sessionLocation(started) });
       });
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -131,7 +153,8 @@ export function SessionCreate({
       >
         <Card
           title="Add session"
-          close={busy ? undefined : dialogClose.dismiss}
+          close={dialogClose.dismiss}
+          closeDisabled={busy}
           closeLabel="Close"
           footer={
             <CardActions>
@@ -157,26 +180,29 @@ export function SessionCreate({
             <Form
               as="fieldset"
               columns={1}
-              disabled={busy || !!login}
+              disabled={busy || !!login || !!created}
               aria-label="Session details"
             >
-              <FormField label="Project">
-                <ValueMenu
-                  label="Project"
-                  searchable
-                  value={project}
-                  options={projects.map((p) => ({
-                    value: projectId(p),
-                    label: p.name || p.alias,
-                    searchText: p.alias,
-                  }))}
-                  choose={setProject}
-                  disabled={busy || !!login}
-                />
-              </FormField>
+              {fixedProject === undefined && (
+                <FormField label="Project">
+                  <ValueMenu
+                    label="Project"
+                    searchable
+                    value={project}
+                    options={projects.map((p) => ({
+                      value: projectId(p),
+                      label: p.name || p.alias,
+                      searchText: p.alias,
+                    }))}
+                    choose={setProject}
+                    disabled={busy || !!login || !!created}
+                  />
+                </FormField>
+              )}
               <FormField label="Account">
                 <ValueMenu
                   label="Account"
+                  reserveDescriptionSpace
                   alignItemWithTrigger
                   value={alias}
                   options={[
@@ -189,7 +215,7 @@ export function SessionCreate({
                     })),
                   ]}
                   choose={setAlias}
-                  disabled={busy || !!login}
+                  disabled={busy || !!login || !!created}
                 />
               </FormField>
               <FormField label="Title" htmlFor={`${formId}-title`}>
@@ -198,7 +224,7 @@ export function SessionCreate({
                   autoFocus
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  disabled={busy || !!login}
+                  disabled={busy || !!login || !!created}
                 />
               </FormField>
             </Form>

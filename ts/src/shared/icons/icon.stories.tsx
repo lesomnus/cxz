@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Icon, iconDefinitions, type IconName } from "./icon";
+import { Icon, iconDefinitions, projectIconNames, type IconName } from "./icon";
 import styles from "./icon.stories.module.css";
 
 const names = Object.keys(iconDefinitions) as IconName[];
@@ -26,6 +26,23 @@ export const Catalogue: Story = {
   render: () => (
     <ul className={styles.catalogue}>
       {names.map((name) => (
+        <li key={name}>
+          <Icon name={name} className={styles.glyph} />
+          <code>{name}</code>
+        </li>
+      ))}
+    </ul>
+  ),
+};
+
+// The palette a person picks a project's icon from. These are not meanings: a
+// leaf says nothing about a project, it only tells it apart from the one with
+// the rocket. They are reviewed here as a set, because that is how they are
+// used -- side by side in a list, at the size of the label beside them.
+export const ProjectPalette: Story = {
+  render: () => (
+    <ul className={styles.catalogue}>
+      {projectIconNames.map((name) => (
         <li key={name}>
           <Icon name={name} className={styles.glyph} />
           <code>{name}</code>

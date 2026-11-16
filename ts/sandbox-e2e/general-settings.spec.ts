@@ -32,6 +32,7 @@ test("General is first, language menus preserve text position and segmented syst
   await expect(topics.getByRole("button")).toHaveText([
     "General",
     "Editor",
+    "Auxiliary AI",
     "Connections",
   ]);
   await expect(
@@ -64,14 +65,14 @@ test("General is first, language menus preserve text position and segmented syst
   await page.keyboard.press("Escape");
   await expect(language).toBeFocused();
   const appearance = page.getByRole("radiogroup", {
-    name: "Appearance",
+    name: "Theme",
     exact: true,
   });
   await expect(appearance).toHaveAttribute("data-value", "dark");
   await expect(
     appearance.locator('.segment:has(input[value="dark"])'),
   ).toHaveAttribute("data-muted", "true");
-  await chooseSetting(page, "Appearance", "light");
+  await chooseSetting(page, "Theme", "light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.locator("html")).toHaveAttribute("data-ui-theme", "light");
   await expect(page.locator("html")).toHaveCSS(
@@ -91,7 +92,7 @@ test("General is first, language menus preserve text position and segmented syst
     "unsaved",
   );
   await page.emulateMedia({ colorScheme: "dark" });
-  await chooseSetting(page, "Appearance", "system");
+  await chooseSetting(page, "Theme", "system");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.emulateMedia({ colorScheme: "light" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
@@ -108,7 +109,7 @@ test("General is first, language menus preserve text position and segmented syst
   expect(
     await page.evaluate(() => localStorage.getItem("nox.theme")),
   ).toBeNull();
-  await chooseSetting(page, "Appearance", "dark");
+  await chooseSetting(page, "Theme", "dark");
   await page.emulateMedia({ colorScheme: "light" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
@@ -123,11 +124,11 @@ test("sliders reset to per-field inheritance and equal-width Tab input cells ani
     exact: true,
   });
   await expect(slider).toHaveAttribute("min", "0");
-  await expect(slider).toHaveAttribute("max", "8");
+  await expect(slider).toHaveAttribute("max", "9");
   await expectInherited(page, "Session editor Indentation size");
   await chooseSetting(page, "Global editor Indentation size", "5");
   await expect(slider).toHaveAttribute("aria-valuetext", "Inherited: 5");
-  await expect(slider.locator("..").locator("output")).toHaveText("5");
+  await expect(slider).toHaveValue("0");
   await chooseSetting(page, "Session editor Indentation size", "8");
   await chooseSetting(page, "Session editor Indentation size", "");
   expect(
@@ -228,7 +229,7 @@ test("cross-tab theme changes retain the composer Undo, selected file and runnin
   const other = await context.newPage();
   await ready(other);
   await general(other);
-  await chooseSetting(other, "Appearance", "light");
+  await chooseSetting(other, "Theme", "light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(
     viewer.locator("[data-workspace-content] > :last-child"),

@@ -11,6 +11,13 @@ Production and the WASM sandbox use the same settings components. Editor
 controls save immediately; the JSON editor saves explicitly with **Save** or
 Ctrl+Enter.
 
+Editor size sliders show clickable presets beneath the rail, with circles
+marking their snap positions. The inherited
+position removes the override; its tooltip shows the resolved parent value.
+Use the numeric field at the final rail position for other values allowed by the
+settings validator. Its value stays available while selecting presets. Pointer movement is continuous, with magnetic snapping near
+presets and an animated settle on release. Keyboard arrows still select steps.
+
 When the available width after the resource sidebar and panel reaches the shared
 CSS split breakpoint, settings use the conversation layout's left column and
 divider, with a **settings.json** editor in the remaining space. Below that breakpoint,
@@ -84,9 +91,9 @@ to the current workspace view.
 ## Display language and lazy language packs
 
 English is the default even when the browser prefers another language. The
-**General → Language** section offers English and 한국어 by their native names. Choosing a
-language does not save, load or activate it. **Apply settings** first downloads
-its pack, then persists `ui.language` in the same settings.json document.
+**General → Appearance → Language** setting offers English and 한국어 by their native
+names. Selecting a language immediately downloads its pack, then persists
+`ui.language` in the same settings.json document and activates it.
 `en` and `ko` are currently supported; missing values resolve to `en`, while
 unsupported values fail whole-file validation. Other preferences and unknown
 keys are retained. Editor controls continue to save immediately.

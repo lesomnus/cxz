@@ -17,8 +17,11 @@ test("Tasks routes and versioned forms work against the real WASM Task service",
   await expect(page).toHaveURL(/#\/c\/_\/project\/[^/]+\/task/);
   await expect(page.getByRole("complementary")).toHaveCount(0);
   await expect(
-    page.locator('header[aria-label="Task toolbar"] svg'),
-  ).toHaveCount(3);
+    page
+      .locator('header[aria-label="Task toolbar"]')
+      .getByRole("button", { name: "Search tasks", exact: true })
+      .locator("svg"),
+  ).toHaveCount(1);
   await page
     .getByRole("combobox", { name: "Select session", exact: true })
     .click();

@@ -31,6 +31,7 @@ import { useSettings } from "#src/shared/settings/settings.ts";
 import microphoneStyles from "./microphone-control.module.css";
 import type { MentionContext } from "./mention-suggestions";
 import type { EditorSelection } from "./editor-selection";
+import inputSurface from "#src/shared/components/input-surface.module.css";
 
 // Presentation shared by the connected conversation and serverless UI previews.
 export function ConversationComposer({
@@ -254,7 +255,7 @@ export function ConversationComposer({
           </div>
         </div>
         <div
-          className="composer-input"
+          className={`composer-input ${inputSurface.surface}`}
           ref={surface}
           data-sending={sending}
           aria-busy={sending}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { userEvent, within } from "storybook/test";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { Button } from "@lesomnus/nox";
 import { createWorkspaceRouter } from "#src/app/router.tsx";
@@ -29,6 +30,7 @@ function TaskPreview({
   historyCount = 1,
   historyUnavailable = false,
   historyDelay = 0,
+  projectIcons = false,
 }: {
   count: number;
   unavailable?: boolean;
@@ -41,11 +43,12 @@ function TaskPreview({
   historyCount?: number;
   historyUnavailable?: boolean;
   historyDelay?: number;
+  projectIcons?: boolean;
 }) {
   const [reviewCount, setReviewCount] = useState(0);
   const [historyRequests, setHistoryRequests] = useState<string[]>([]);
-  const [fixture] = useState(() =>
-    taskFixture(count, unavailable, {
+  const [fixture] = useState(() => {
+    const fixture = taskFixture(count, unavailable, {
       pageSize,
       pageDelay,
       olderDone,
@@ -58,8 +61,13 @@ function TaskPreview({
         setHistoryRequests((previous) => [...previous, alias]),
       actionDelay: 200,
       onReview: () => setReviewCount((count) => count + 1),
-    }),
-  );
+    });
+    if (projectIcons)
+      fixture.projects.forEach((project, index) => {
+        project.labels.icon = index % 2 ? "rocket" : "leaf";
+      });
+    return fixture;
+  });
   useEffect(() => () => fixture.c.dispose(), [fixture]);
   const [router] = useState(() =>
     createWorkspaceRouter(
@@ -137,6 +145,29 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const ProjectTable: Story = {};
+export const Search: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The toolbar search button or Shift+F opens the same FindBar surface as conversation search. Search loaded task titles, aliases, descriptions and labels within the selected project/session; older completed tasks are included. Use the case, word and regex options, Up/Down to select and Enter to open a result. The overlay stays open across result navigation. Clicking outside dismisses it without interrupting the clicked control; Escape or Close search restores focus. Reopening preserves the query. Plain Shift+F does not interrupt text editing; Ctrl/Cmd+Shift+F also works inside the page's inputs.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Search tasks" }),
+    );
+    await userEvent.type(
+      await canvas.findByRole("searchbox", {
+        name: "Search tasks",
+      }),
+      "Task",
+    );
+  },
+};
+export const ProjectIcons: Story = { args: { projectIcons: true } };
 export const ManyTasks: Story = { args: { count: 90 } };
 export const CompletedHistory: Story = { args: { olderDone: 125 } };
 export const EmptyProject: Story = { args: { count: 0 } };

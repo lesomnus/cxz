@@ -245,21 +245,22 @@ test("an unknown connection never opens the local session with the same alias", 
   ).toHaveCount(0);
 });
 
-test("client logs are reachable from settings and without an authenticated or reachable Manager", async ({
+test("client logs are reachable from Profile and without an authenticated or reachable Manager", async ({
   page,
 }) => {
   await signIn(page);
   await page.goto("/setting/general");
-  await page.getByRole("link", { name: "Logs", exact: true }).click();
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Logs", exact: true }).click();
   await expect(page).toHaveURL(/\/log$/);
   await expect(
-    page.getByRole("heading", { name: "Logs", exact: true }),
+    page.getByRole("main", { name: "Logs", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   // Client-local diagnostics remain readable after signing out.
   await expect(
-    page.getByRole("heading", { name: "Logs", exact: true }),
+    page.getByRole("main", { name: "Logs", exact: true }),
   ).toBeVisible();
   await page
     .getByRole("link", { name: "Back to sessions", exact: true })
@@ -269,12 +270,12 @@ test("client logs are reachable from settings and without an authenticated or re
   ).toBeVisible();
   await page.getByRole("link", { name: "Logs", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Logs", exact: true }),
+    page.getByRole("main", { name: "Logs", exact: true }),
   ).toBeVisible();
   await page.route("**/auth/status", (route) => route.abort());
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Logs", exact: true }),
+    page.getByRole("main", { name: "Logs", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("table", { name: "Client logs", exact: true }),

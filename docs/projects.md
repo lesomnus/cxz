@@ -89,6 +89,29 @@ unambiguous display name. Display names may contain spaces and need not be uniqu
 Renaming changes nothing about identity — not the project, not the session, not the
 container.
 
+## Icons
+
+A project may carry an **icon** so it can be told apart at a glance wherever it
+is listed — the sidebar, the project picker, the search filter. Pick one on the
+project page; `None` returns it to the generic project glyph.
+
+The icon is a label, not a field. It is stored in the project's `labels` map
+under `icon`, as the name of a glyph the web knows how to draw (`leaf`,
+`rocket`, `cube`, …), and cxz never reads a meaning out of it: it is how a
+client chooses to show the project and nothing in the server depends on it. A
+name the web does not recognise is treated as no icon rather than as an error,
+which is what makes an older build, a hand-edited row and a newer palette all
+safe. `labels` is the same map Memory and Task carry, at the same field number,
+for presentation values of this kind.
+
+The palette is deliberately small, and chosen for distinct silhouettes at 16px:
+two icons nobody can tell apart in a sidebar are one icon. Storybook →
+**Foundations / Icons / ProjectPalette** shows the set.
+
+Like a description, an icon lives only in the resource record — the project
+registry does not carry it — so it survives renames, restarts and container
+replacement, and is lost only if that record is rebuilt from the registry.
+
 ## Data commands
 
 Table output by default, `--format json` for scripts:

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { clone, create } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
@@ -36,6 +36,24 @@ import { WorkspaceView } from "#src/app/workspace-view.tsx";
 import { sessionFixtureId } from "#src/storybook/fixtures.ts";
 import { projectFixture } from "#src/storybook/project-fixture.ts";
 
+function previewDelay(ms: number, signal?: AbortSignal) {
+  if (!ms) return Promise.resolve();
+  return new Promise<void>((resolve, reject) => {
+    const finish = () => {
+      signal?.removeEventListener("abort", abort);
+      resolve();
+    };
+    const timer = setTimeout(finish, ms);
+    const abort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", abort);
+      reject(new DOMException("Preview request canceled", "AbortError"));
+    };
+    signal?.addEventListener("abort", abort, { once: true });
+    if (signal?.aborted) abort();
+  });
+}
+
 function History({ children }: { children?: ReactNode }) {
   const router = useRouter();
   return (
@@ -56,10 +74,46 @@ function Preview({
   recentActivity = false,
   unread = false,
   containerLifecycle = false,
+  accountDelayMs = 0,
+  creationDelayMs = 0,
+  startDelayMs = 0,
+  transcriptDelayMs = 0,
 } = {}) {
+  const delays = useRef({
+    accountDelayMs,
+    creationDelayMs,
+    startDelayMs,
+    transcriptDelayMs,
+  });
+  delays.current = {
+    accountDelayMs,
+    creationDelayMs,
+    startDelayMs,
+    transcriptDelayMs,
+  };
   const [fixture] = useState(() => {
     const fixture = projectFixture(false, false, empty ? 0 : sessionCount);
     const { c, projects, sessions } = fixture;
+    const listAccounts = c.accounts.list;
+    c.accounts.list = async (request, options) => {
+      await previewDelay(delays.current.accountDelayMs, options?.signal);
+      return listAccounts(request, options);
+    };
+    const add = c.sessions.add;
+    c.sessions.add = async (request, options) => {
+      await previewDelay(delays.current.creationDelayMs, options?.signal);
+      return add(request, options);
+    };
+    const start = c.sessions.start;
+    c.sessions.start = async (request, options) => {
+      await previewDelay(delays.current.startDelayMs, options?.signal);
+      return start(request, options);
+    };
+    const transcript = c.sessions.transcript;
+    c.sessions.transcript = async (request, options) => {
+      await previewDelay(delays.current.transcriptDelayMs, options?.signal);
+      return transcript(request, options);
+    };
     for (const project of projects) project.dateErased = undefined;
     for (const [i, session] of sessions.entries()) {
       session.id = sessionFixtureId(i + 1);
@@ -301,6 +355,37 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const Empty: Story = { args: { empty: true } };
+export const SessionCreation: Story = {
+  args: {
+    empty: true,
+    accountDelayMs: 600,
+    creationDelayMs: 400,
+    startDelayMs: 800,
+    transcriptDelayMs: 800,
+  },
+  argTypes: {
+    accountDelayMs: {
+      control: { type: "range", min: 0, max: 5000, step: 100 },
+    },
+    creationDelayMs: {
+      control: { type: "range", min: 0, max: 5000, step: 100 },
+    },
+    startDelayMs: {
+      control: { type: "range", min: 0, max: 5000, step: 100 },
+    },
+    transcriptDelayMs: {
+      control: { type: "range", min: 0, max: 5000, step: 100 },
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Start on the empty Sessions page. Click Add session in the toolbar, choose a project and Work account, enter a title and Confirm. The real SessionCreate modal first calls Add to store a session, then calls Start to launch it. It keeps its dimensions while both requests are pending, then closes and navigates to the new alias-based conversation. The session panel slides in with the new session selected; the initial transcript loads before input is ready. Back in Preview history returns to the table with the created session. Separate controls adjust Add, Start and initial history delays. This story uses the real Workspace, router, form, inventory and conversation with isolated in-memory RPC fixtures. For login during Start, see Accounts/Workflows/SessionCreationRequiresLogin.",
+      },
+    },
+  },
+};
 export const ManySessions: Story = { args: { sessionCount: 25 } };
 export const Conversation: Story = { args: { conversation: true } };
 

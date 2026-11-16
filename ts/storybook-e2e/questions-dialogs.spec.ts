@@ -329,7 +329,12 @@ test("async free-text questions submit structured native keys and only explicit 
     name: "Answer: Describe the change you want to make.",
     exact: true,
   });
+  await expect(question.locator("[data-recommended]")).toHaveCount(0);
+  const submitSize = await submit.boundingBox();
   await answer.fill("first line\nsecond line");
+  await expect(submit).toHaveAttribute("data-recommended", "true");
+  expect(await submit.boundingBox()).toEqual(submitSize);
+  await expect(submit).toHaveCSS("box-shadow", /rgb\(217, 255, 48\)/);
   await expect(question.locator(".editor-gutter > div > div")).toHaveText([
     "1",
     "2",
@@ -457,6 +462,8 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
     name: "Submit",
     exact: true,
   });
+  const next = question.getByRole("button", { name: "Next", exact: true });
+  await expect(question.locator("[data-recommended]")).toHaveCount(0);
   await expect(tabs.getByRole("tab")).toHaveText(["01", "02", "03"]);
   const tabBefore = await tabs
     .getByRole("tab", { name: "Q1", exact: true })
@@ -478,6 +485,8 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
       .locator(".tab-answered path"),
   ).toHaveCount(0);
   await question.getByRole("radio", { name: "Compact", exact: true }).check();
+  await expect(next).toHaveAttribute("data-recommended", "true");
+  await expect(submit).not.toHaveAttribute("data-recommended");
   expect(
     await tabs.getByRole("tab", { name: "Q1", exact: true }).boundingBox(),
   ).toEqual(tabBefore);
@@ -500,6 +509,7 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
   );
   await tabs.getByRole("tab", { name: "Q2", exact: true }).click();
   await finishQuestionSlide(question);
+  await expect(question.locator("[data-recommended]")).toHaveCount(0);
   const answer = question.getByRole("textbox", {
     name: "Answer: Describe any additional changes.",
     exact: true,
@@ -509,6 +519,7 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
   );
   const editorBefore = await editor.boundingBox();
   await answer.fill("Keep this draft");
+  await expect(next).toHaveAttribute("data-recommended", "true");
   await expect(editor).toHaveCSS("outline-width", "1px");
   expect(await editor.boundingBox()).toEqual(editorBefore);
   await answer.press("End");
@@ -519,7 +530,11 @@ test("question tabs preserve choices, draft and undo and submit all steps togeth
   ).toHaveAttribute("aria-selected", "true");
   await expect(submit).toBeDisabled();
   await question.getByRole("radio", { name: "Now", exact: true }).check();
+  await expect(submit).toHaveAttribute("data-recommended", "true");
+  await expect(next).not.toHaveAttribute("data-recommended");
   await tabs.getByRole("tab", { name: "Q2", exact: true }).click();
+  await expect(submit).toHaveAttribute("data-recommended", "true");
+  await expect(question.locator("[data-recommended]")).toHaveCount(1);
   await expect(answer).toHaveValue("Keep this draft!");
   await answer.press("Control+z");
   await expect(answer).toHaveValue("Keep this draft");

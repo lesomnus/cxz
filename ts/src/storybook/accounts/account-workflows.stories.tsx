@@ -95,7 +95,7 @@ export const SessionCreationRequiresLogin: Story = {
     docs: {
       description: {
         story:
-          "Click Add session, choose the Claude work account and Confirm. The fixture returns the real PROJECT_LOGIN_REQUIRED ErrorInfo contract. Login opens inside the creation form. Submitting demo-code retries creation with the same creation key and opens the new conversation. Cancel does not create a session.",
+          "Click Add session, choose the Claude work account and Confirm. Add stores the session first; Start returns the real PROJECT_LOGIN_REQUIRED ErrorInfo contract. Login opens inside the creation form. Submitting demo-code retries Start for the same session and opens its conversation. Cancel leaves the stored session available for a later start.",
       },
     },
   },

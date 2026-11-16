@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
-import { accountReadPrefix, USAGE_TTL } from "#src/shared/api/read-cache.ts";
+import { accountQuotaKey, USAGE_TTL } from "#src/shared/api/read-cache.ts";
 import { readAccountQuota } from "./account-quota";
 
 /** Account cards and account selectors share the same bounded metadata read. */
@@ -28,7 +28,11 @@ export function useAccountQuota({
     {
       cache: {
         store: c.reads,
-        key: `${accountReadPrefix(identity)}quota/${agent}/${identities}`,
+        key: accountQuotaKey(
+          identity,
+          agent,
+          sessions.map((session) => session.runtimeId),
+        ),
         ttl: USAGE_TTL,
       },
       refresh: refreshVersion,

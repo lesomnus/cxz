@@ -1,5 +1,10 @@
 import type { LanguagePack } from "#src/shared/i18n/i18n.ts";
 export const messages = {
+  "Log period (local time)": "로그 기간 (현지 시간)",
+  "Log start date": "로그 시작일",
+  "Log end date": "로그 종료일",
+  From: "시작일",
+  Through: "종료일",
   "Background task elapsed time": "백그라운드 작업 경과시간",
   "Background task duration unavailable": "백그라운드 작업시간을 알 수 없음",
   "Created memories": "생성된 메모리",
@@ -94,6 +99,9 @@ export const messages = {
   "Search logs": "로그 검색",
   "Log level": "로그 레벨",
   "Log category": "로그 분류",
+  "All projects": "모든 프로젝트",
+  Category: "분류",
+  "Loading more logs…": "로그 추가 로딩 중…",
   "All levels": "모든 레벨",
   "All categories": "모든 분류",
   "Connection URL": "연결 URL",
@@ -104,6 +112,10 @@ export const messages = {
   "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).":
     "로그를 브라우저 저장소에 저장할 수 없습니다. 최대 2 MiB를 현재 탭의 메모리에 보관하며 새로고침하면 사라집니다.",
   "Client logs": "클라이언트 로그",
+  "Log details": "로그 상세 정보",
+  "Log ID": "로그 ID",
+  "Tab ID": "탭 ID",
+  "Client version": "클라이언트 버전",
   Time: "시각",
   Level: "레벨",
   "No matching logs": "검색된 로그가 없습니다",
@@ -150,6 +162,8 @@ export const messages = {
   Status: "상태",
   "Background tasks": "백그라운드 작업",
   "Search current conversation": "현재 대화 검색",
+  "Search tasks": "작업 검색",
+  "Search memories": "메모리 검색",
   "This message is no longer available in retained history.":
     "보존된 기록에서 이 메시지를 더 이상 찾을 수 없습니다.",
   "Cannot open message: {error}": "메시지를 열 수 없습니다: {error}",
@@ -288,6 +302,9 @@ export const messages = {
   State: "상태",
   Alias: "별칭",
   Project: "프로젝트",
+  Icon: "아이콘",
+  None: "없음",
+  "Project icon preview": "프로젝트 아이콘 미리보기",
   Workspace: "워크스페이스",
   "Runtime ID": "런타임 ID",
   "Run ID": "실행 ID",
@@ -370,6 +387,7 @@ export const messages = {
     "지원하지 않는 테마입니다. light, dark 또는 system을 선택하세요.",
   "Inherited: {value}": "상속값: {value}",
   "Reset to inherited value": "상속값으로 초기화",
+  "{label} custom value": "{label} 직접 입력",
   on: "켜짐",
   off: "꺼짐",
   " (Included in input tokens)": " (입력 토큰에 포함)",
@@ -596,6 +614,7 @@ export const messages = {
   "Session information": "세션 정보",
   "Session list": "세션 목록",
   Sessions: "세션",
+  Search: "검색",
   "Sessions view": "세션 보기",
   Settings: "설정",
   "Settings file editor": "설정 파일 에디터",
@@ -719,6 +738,8 @@ export const messages = {
   "System monospace": "시스템 고정폭 글꼴",
   "Browser monospace": "브라우저 고정폭 글꼴",
   "Custom font": "직접 지정",
+  "Enter font families available on your device, separated by commas.":
+    "기기에 설치된 글꼴 이름을 쉼표로 구분해 입력하세요.",
   "Apply font": "글꼴 적용",
   "Enter a valid CSS font family list.": "올바른 CSS 글꼴 목록을 입력하세요.",
   "{label} custom font family": "{label} 직접 지정 글꼴",
@@ -922,6 +943,10 @@ export const messages = {
   "Clear history": "기록 지우기",
   "Invalid terminal response": "잘못된 터미널 응답",
   Active: "활성",
+  "Auxiliary AI": "보조 AI",
+  Accounts: "계정",
+  "Configure server-side helpers. Changes are saved to this server, separately from settings.json.":
+    "서버의 보조 AI를 설정합니다. 변경사항은 settings.json과 별도로 이 서버에 저장됩니다.",
   "The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "연결이 끊긴 경우 작업 결과가 불확실할 수 있습니다. 다시 시도하기 전에 대화 내용을 확인하세요.",
 } satisfies LanguagePack;

@@ -13,13 +13,25 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
-import { ResourceFields as Fields } from "#src/shared/components/resource-fields.tsx";
+import {
+  ResourceFields as Fields,
+  ResourceFieldsGroup,
+  ResourceIdentityFields,
+} from "#src/shared/components/resource-fields.tsx";
+import { ProjectIconPicker } from "#src/shared/components/project-icon-picker.tsx";
+import { type ProjectIconName } from "#src/shared/icons/icon.tsx";
+import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { useRemote } from "#src/shared/api/use-remote.ts";
+import {
+  ACCOUNT_INFO_TTL,
+  ACCOUNT_LIST_KEY,
+} from "#src/shared/api/read-cache.ts";
 import { type DashboardConnection } from "./project-dashboard";
 import {
   editProject,
+  setProjectIcon,
   validateProjectField,
   type ProjectField,
 } from "./project-edit";
@@ -78,7 +90,9 @@ export function ProjectsPage({
       ? saved
       : p;
   });
-  const accounts = useRemote((signal) => listAccounts(c, signal), [c]);
+  const accounts = useRemote((signal) => listAccounts(c, signal), [c], {
+    cache: { store: c.reads, key: ACCOUNT_LIST_KEY, ttl: ACCOUNT_INFO_TTL },
+  });
   const { project: selected } = useWorkspaceRoute();
   const resolved = useProject(c, visibleProjects, selected);
   const project = selected ? resolved : undefined;
@@ -160,6 +174,7 @@ export function ProjectsPage({
                       (s) => s.project && key(s.project.id) === key(project.id),
                     )}
                     accounts={accounts.data ?? []}
+                    accountsLoading={accounts.loading}
                     accountsError={accounts.error}
                     reloadAccounts={accounts.reload}
                     sessionsLoading={sessionsLoading}
@@ -190,6 +205,7 @@ function ProjectDashboard({
   sessions,
   sessionsLoading,
   accounts,
+  accountsLoading,
   accountsError,
   reloadAccounts,
 }: {
@@ -198,6 +214,7 @@ function ProjectDashboard({
   saved: (project: Project) => void;
   erased: () => void;
   accounts: Account[];
+  accountsLoading: boolean;
   accountsError: string;
   reloadAccounts: () => Promise<void>;
   sessions: Session[];
@@ -205,6 +222,11 @@ function ProjectDashboard({
 }) {
   async function save(field: ProjectField, value: string) {
     const updated = await editProject(c.projects, p, field, value);
+    c.store.apply("cxz.Project", [{ id: updated.id, value: updated }]);
+    saved(updated);
+  }
+  async function saveIcon(name: ProjectIconName | undefined) {
+    const updated = await setProjectIcon(c.projects, p, name);
     c.store.apply("cxz.Project", [{ id: updated.id, value: updated }]);
     saved(updated);
   }
@@ -250,52 +272,81 @@ function ProjectDashboard({
     <ResourceDashboard actionsFirstOnNarrow>
       <ResourceDashboardColumn kind="information">
         <Section aria-label={t("Information")}>
-          <Fields
-            rows={[
-              {
-                label: t("Project ID"),
-                value: p.id.length === 16 ? new Id(p.id).toString() : undefined,
-                description: t(
-                  "Canonical UUID used to identify this project across APIs and links.",
-                ),
-                identifier: true,
-              },
-              [t("Name"), editable("name", t("Name"))],
-              [t("Alias"), editable("alias", t("Alias"))],
-              [t("Description"), editable("desc", t("Description"))],
-              {
-                label: t("Workspace"),
-                value: p.workspace,
-                fullWidth: true,
-                path: true,
-              },
-              {
-                label: t("Container name"),
-                value: p.status?.containerName,
-                identifier: true,
-                identifierLength: containerNamePrefixLength(
-                  p.status?.containerName,
-                ),
-              },
-              {
-                label: t("Container ID"),
-                value: p.status?.containerId,
-                identifier: true,
-              },
-              [
-                t("Created"),
-                <DateTime value={p.dateCreated} />,
-                undefined,
-                <RelativeTime value={p.dateCreated} />,
-              ],
-              [
-                t("Updated"),
-                <DateTime value={p.dateUpdated} />,
-                undefined,
-                <RelativeTime value={p.dateUpdated} />,
-              ],
-            ]}
-          />
+          <ResourceFieldsGroup className={styles.informationFields}>
+            <ResourceIdentityFields
+              rows={[
+                {
+                  label: t("Name"),
+                  value: editable("name", t("Name")),
+                },
+                {
+                  label: t("Alias"),
+                  value: editable("alias", t("Alias")),
+                },
+                {
+                  label: t("Project ID"),
+                  className: styles.identifierField,
+                  value:
+                    p.id.length === 16 ? new Id(p.id).toString() : undefined,
+                  description: t(
+                    "Canonical UUID used to identify this project across APIs and links.",
+                  ),
+                  identifier: true,
+                },
+              ]}
+              trailing={{
+                width: "var(--project-preview-size)",
+                field: {
+                  label: t("Project icon preview"),
+                  hideLabel: true,
+                  className: styles.iconPreview,
+                  value: (
+                    <ProjectIconPicker
+                      label={t("Icon")}
+                      value={projectIconName(p)}
+                      choose={saveIcon}
+                    />
+                  ),
+                },
+              }}
+            />
+            <Fields
+              rows={[
+                {
+                  label: t("Description"),
+                  value: editable("desc", t("Description")),
+                },
+                {
+                  label: t("Workspace"),
+                  value: p.workspace,
+                  path: true,
+                },
+                {
+                  label: t("Container name"),
+                  value: p.status?.containerName,
+                  identifier: true,
+                  identifierLength: containerNamePrefixLength(
+                    p.status?.containerName,
+                  ),
+                },
+                {
+                  label: t("Container ID"),
+                  value: p.status?.containerId,
+                  identifier: true,
+                },
+                {
+                  label: t("Created"),
+                  value: <DateTime value={p.dateCreated} />,
+                  labelDetail: <RelativeTime value={p.dateCreated} />,
+                },
+                {
+                  label: t("Updated"),
+                  value: <DateTime value={p.dateUpdated} />,
+                  labelDetail: <RelativeTime value={p.dateUpdated} />,
+                },
+              ]}
+            />
+          </ResourceFieldsGroup>
           {p.status?.error && (
             <ErrorNotice api className={styles.errors} error={p.status.error} />
           )}
@@ -305,6 +356,7 @@ function ProjectDashboard({
             c={c}
             sessions={sessions}
             accounts={accounts}
+            accountsLoading={accountsLoading}
             loading={sessionsLoading}
             variant="overview"
             showToolbar={false}
@@ -316,6 +368,7 @@ function ProjectDashboard({
             <SessionCreate
               c={c}
               projects={[p]}
+              fixedProject={projectId(p)}
               centered
               close={() => setAddingSession(false)}
             />

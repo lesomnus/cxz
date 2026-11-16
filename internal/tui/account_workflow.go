@@ -335,7 +335,7 @@ func (m *model) loginTargetKey(k tea.KeyMsg) tea.Cmd {
 			return m.startAccountWorkflow(m.loginAlias, "claude", "", true)
 		}
 		s := sessions[m.loginIndex]
-		if s.State != "stopped" && s.State != "failed" {
+		if s.State != "created" && s.State != "stopped" && s.State != "failed" {
 			m.notice = "Stop this session in the project view before logging in again."
 			return nil
 		}

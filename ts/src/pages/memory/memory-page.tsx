@@ -1,11 +1,18 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Section } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { MemoryGrid } from "#src/features/memory/memory-grid.tsx";
+import { useProjectMemories } from "#src/features/memory/memory-catalog.ts";
+import { ResourceSearch } from "#src/shared/components/resource-search.tsx";
+import { useResourceSearch } from "#src/shared/components/use-resource-search.ts";
+import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
+import { Icon } from "#src/shared/icons/icon.tsx";
+import { t } from "#src/shared/i18n/i18n.ts";
+import searchStyles from "#src/shared/components/resource-search.module.css";
 import { MemoryLibrary } from "#src/features/memory/memory-library.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { SessionPicker } from "#src/shared/components/session-picker.tsx";
@@ -72,9 +79,55 @@ export function MemoryPage({
   );
   const sessionFilter =
     selection.project === id ? uuid(selection.session) : undefined;
+  const search = useResourceSearch();
+  const sessionId = sessionUUID(sessionFilter);
+  const catalog = useProjectMemories(
+    c,
+    id,
+    !detailOpen || search.open,
+    sessionId,
+  );
+  const searchItems = useMemo(
+    () =>
+      catalog.memories
+        .filter((memory) => !sessionId || memory.ownerSession === sessionId)
+        .map((memory) => ({
+          id: resourceHandle(memory),
+          title: memory.name || memory.alias,
+          text: [
+            memory.name,
+            memory.alias,
+            memory.desc,
+            ...Object.entries(memory.labels)
+              .filter(([key]) => !key.startsWith("legacy."))
+              .map(([key, value]) => `${key}=${value}`),
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          date: memory.dateUpdated ?? memory.dateCreated,
+          icon: <Icon name="document" aria-hidden="true" />,
+        })),
+    [catalog.memories, sessionId],
+  );
   return (
-    <ResourcePage aria-label="Shared memory workspace">
-      <ResourceToolbar>
+    <ResourcePage
+      ref={search.area}
+      className={searchStyles.page}
+      aria-label="Shared memory workspace"
+    >
+      <ResourceToolbar
+        actions={
+          <ToolbarIconButton
+            ref={search.trigger}
+            icon="search"
+            label={t("Search memories")}
+            disabled={!project}
+            aria-pressed={search.open}
+            aria-keyshortcuts="Shift+F Control+Shift+F Meta+Shift+F"
+            onClick={search.show}
+          />
+        }
+      >
         <ProjectPicker
           projects={projects}
           value={id}
@@ -115,12 +168,10 @@ export function MemoryPage({
               {project ? (
                 <MemoryGrid
                   key={id}
-                  c={c}
-                  project={id}
+                  list={catalog}
                   projectHandle={handle}
                   sessions={scoped}
                   session={sessionFilter}
-                  active={!detailOpen}
                 />
               ) : (
                 <Section className={styles.empty}>
@@ -170,6 +221,14 @@ export function MemoryPage({
             </PanelScroll>
           ) : null
         }
+      />
+      <ResourceSearch
+        search={search}
+        items={searchItems}
+        label={t("Search memories")}
+        loading={catalog.loading}
+        error={catalog.error}
+        select={(id) => selectMemory(id, detailOpen)}
       />
     </ResourcePage>
   );

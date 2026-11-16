@@ -682,9 +682,22 @@ func (s *Server) Create(ctx context.Context, r *api.CreateRequest) (*api.Session
 	if _, err := accounts.ResolveBinding(r.Agent, r.AuthBackend, project.Id, r.Account, r.AuthBinding); err != nil {
 		return nil, status.Error(codes.InvalidArgument, "auth binding does not belong to this project")
 	}
-	m := core.Session{CreateID: r.ClientId, ID: core.ID(), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: bin, Kind: r.Agent, ProjectID: project.Id, Model: r.Model, Account: r.Account, AuthBackend: r.AuthBackend, AuthBinding: r.AuthBinding}
-	if e = os.Mkdir(core.Dir(s.root, m.ID), 0700); e != nil {
+	m := core.Session{CreateID: r.ClientId, ID: core.SessionID(r.ClientId), Workspace: path, Title: r.Title, CreatedAt: time.Now().UnixMilli(), Agent: bin, Kind: r.Agent, ProjectID: project.Id, Model: r.Model, Account: r.Account, AuthBackend: r.AuthBackend, AuthBinding: r.AuthBinding}
+	if e = os.Mkdir(core.Dir(s.root, m.ID), 0700); e != nil && !os.IsExist(e) {
 		return nil, e
+	}
+	// Recover a first start interrupted between writing its manifest and the DB.
+	if raw, err := os.ReadFile(filepath.Join(core.Dir(s.root, m.ID), "session.json")); err == nil {
+		var prior core.Session
+		if err = json.Unmarshal(raw, &prior); err != nil {
+			return nil, err
+		}
+		if prior.ID != m.ID || prior.CreateID != m.CreateID || prior.Workspace != m.Workspace || prior.Title != m.Title || prior.Kind != m.Kind || prior.Model != m.Model || prior.Account != m.Account || prior.AuthBackend != m.AuthBackend || prior.AuthBinding != m.AuthBinding {
+			return nil, status.Error(codes.AlreadyExists, "client_id reused")
+		}
+		m = prior
+	} else if !os.IsNotExist(err) {
+		return nil, err
 	}
 	if e = core.WriteJSON(filepath.Join(core.Dir(s.root, m.ID), "session.json"), m); e != nil {
 		return nil, e

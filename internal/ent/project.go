@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -25,6 +26,8 @@ type Project struct {
 	Name string `json:"name,omitempty"`
 	// Desc holds the value of the "desc" field.
 	Desc string `json:"desc,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels map[string]string `json:"labels,omitempty"`
 	// Workspace holds the value of the "workspace" field.
 	Workspace string `json:"workspace,omitempty"`
 	// Config holds the value of the "config" field.
@@ -45,6 +48,8 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case project.FieldLabels:
+			values[i] = new([]byte)
 		case project.FieldAlias, project.FieldName, project.FieldDesc, project.FieldWorkspace, project.FieldConfig:
 			values[i] = new(sql.NullString)
 		case project.FieldDateUpdated, project.FieldDateErased, project.FieldDateCreated:
@@ -91,6 +96,14 @@ func (_m *Project) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field desc", values[i])
 			} else if value.Valid {
 				_m.Desc = value.String
+			}
+		case project.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
+				}
 			}
 		case project.FieldWorkspace:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -173,6 +186,9 @@ func (_m *Project) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("desc=")
 	builder.WriteString(_m.Desc)
+	builder.WriteString(", ")
+	builder.WriteString("labels=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Labels))
 	builder.WriteString(", ")
 	builder.WriteString("workspace=")
 	builder.WriteString(_m.Workspace)

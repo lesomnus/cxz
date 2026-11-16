@@ -117,16 +117,20 @@ for (const width of [1200, 390])
     const count = row.getByTitle("2 occurrences", { exact: true });
     const dismiss = row.getByRole("button", { name: "Dismiss", exact: true });
     await expect(count).toContainText("002");
-    const [m, o, d, c] = await Promise.all(
-      [message, operation, time, count].map((node) => node.boundingBox()),
+    const nodes = await Promise.all(
+      [message, operation, time, count, row].map((node) =>
+        node.elementHandle(),
+      ),
+    );
+    const [m, o, d, c, r] = await page.evaluate(
+      (nodes) => nodes.map((node) => node!.getBoundingClientRect().toJSON()),
+      nodes,
     );
     expect(o!.y).toBeGreaterThanOrEqual(m!.y + m!.height);
     expect(o!.x).toBeCloseTo(m!.x, 0);
     expect(o!.x + o!.width).toBeLessThanOrEqual(d!.x);
     expect(d!.x + d!.width).toBeLessThanOrEqual(c!.x);
-    expect(c!.x + c!.width).toBeLessThanOrEqual(
-      (await row.boundingBox())!.x + (await row.boundingBox())!.width,
-    );
+    expect(c!.x + c!.width).toBeLessThanOrEqual(r.x + r.width);
     await expect(time).toHaveText("1m ago");
     expect(Math.abs(o!.y - d!.y)).toBeLessThan(3);
     expect(Math.abs(d!.y - c!.y)).toBeLessThan(3);

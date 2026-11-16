@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { userEvent, within } from "storybook/test";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
@@ -49,9 +50,10 @@ function Preview({
   missingPreviousRevision = false,
   diffFailOnce = false,
   longParagraphChange = false,
+  projectIcons = false,
 } = {}) {
-  const [f] = useState(() =>
-    memoryFixture({
+  const [f] = useState(() => {
+    const f = memoryFixture({
       empty,
       fail,
       delay: loading ? 60000 : 0,
@@ -64,8 +66,13 @@ function Preview({
       missingPreviousRevision,
       diffFailOnce,
       longParagraphChange,
-    }),
-  );
+    });
+    if (projectIcons)
+      f.projects.forEach((project, index) => {
+        project.labels.icon = index % 2 ? "rocket" : "leaf";
+      });
+    return f;
+  });
   useEffect(() => () => f.dispose(), [f]);
   const [router] = useState(() => {
     const router = createWorkspaceRouter(
@@ -150,6 +157,31 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const Search: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Use the toolbar search button or Shift+F to search cached memory titles, aliases, descriptions and labels within the selected project/session. The FindBar shares conversation search's options, highlighted matches and keyboard navigation. Results open documents without dismissing the overlay. Clicking outside dismisses it without interrupting the clicked control; Escape/Close search restores focus. Reopening preserves the query. Markdown bodies are not fetched for this local catalog search.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole("button", {
+        name: "Search memories",
+      }),
+    );
+    await userEvent.type(
+      await canvas.findByRole("searchbox", {
+        name: "Search memories",
+      }),
+      "notes",
+    );
+  },
+};
+export const ProjectIcons: Story = { args: { projectIcons: true } };
 export const Document: Story = {
   args: { document: true },
   parameters: {

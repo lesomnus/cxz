@@ -6,6 +6,7 @@
 }
 .navigation {
   position: sticky;
+  z-index: 2;
   top: var(--resource-content-padding-block);
   grid-area: 1 / 1;
   align-self: start;
@@ -50,6 +51,7 @@
   min-width: 0;
   display: grid;
   gap: var(--ui-section-layout-gap);
+  padding-block-end: 25dvh;
 }
 .topicMenu {
   flex: 0 0 var(--settings-navigation-width);

@@ -14,6 +14,9 @@ func (s SessionServer) Transcript(ctx context.Context, r *resource.SessionTransc
 	if err != nil {
 		return nil, err
 	}
+	if awaitingFirstRun(v) {
+		return &resource.SessionTranscriptReply{}, nil
+	}
 	out, err := s.shared.runtime.Transcript(ctx, &api.TranscriptRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), BeforeSeq: r.GetBeforeSeq(), Limit: r.GetLimit(), SnapshotSeq: r.GetSnapshotSeq()})
 	if err != nil {
 		return nil, err
@@ -57,6 +60,10 @@ func (s SessionServer) Rows(r *resource.SessionRowsRequest, stream grpc.ServerSt
 		return err
 	}
 	v, err := s.Get(stream.Context(), resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return err
+	}
+	v, err = s.awaitFirstRun(stream.Context(), v, func() error { return stream.Send(&resource.SessionRow{}) })
 	if err != nil {
 		return err
 	}

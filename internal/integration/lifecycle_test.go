@@ -151,8 +151,11 @@ func TestLifecycle(t *testing.T) {
 		}
 	}
 	beforeLogin, err := client.List(ctx, &api.Empty{})
-	if err != nil || len(beforeLogin.Sessions) != 0 {
-		t.Fatal("created session before login", beforeLogin, err)
+	if err != nil || len(beforeLogin.Sessions) != 1 || beforeLogin.Sessions[0].State != "failed" || beforeLogin.Sessions[0].RunId != "" {
+		t.Fatal("failed start did not retain its session", beforeLogin, err)
+	}
+	if _, err := os.Stat(core.Dir(state, beforeLogin.Sessions[0].Id)); !os.IsNotExist(err) {
+		t.Fatal("runtime manifest created before login", err)
 	}
 	if e = accounts.Install(accounts.SessionRoot(state, create.ClientId), "test-claude", "claude", []byte(`{"claudeAiOauth":{"accessToken":"synthetic-test-only"}}`)); e != nil {
 		t.Fatal(e)
@@ -163,6 +166,9 @@ func TestLifecycle(t *testing.T) {
 	}
 	if s.Model != "fixture-model" || s.Account != "test-claude" {
 		t.Fatal("model missing from session")
+	}
+	if s.Id != beforeLogin.Sessions[0].Id || s.Alias != beforeLogin.Sessions[0].Alias {
+		t.Fatal("login retry replaced the registered session", s)
 	}
 	checkInstructions(create.ClientId, initialInstructions)
 	binding := s.AuthBinding

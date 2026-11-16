@@ -45,6 +45,7 @@ func TestBrowserFixture(t *testing.T) {
 	resource.RegisterAccountServiceServer(g, fixtureAccounts{})
 	resource.RegisterSessionServiceServer(g, f)
 	resource.RegisterNotificationServiceServer(g, fixtureNotifications{})
+	resource.RegisterInstallationServiceServer(g, fixtureInstallation{})
 	go g.Serve(ln)
 	defer g.Stop()
 	conn, err := grpc.NewClient("passthrough:///fixture", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return ln.Dial() }))
@@ -88,6 +89,14 @@ var fixtureProject = resource.Project_builder{Id: projectid.Bytes("project"), Al
 
 type fixtureAccounts struct {
 	resource.UnimplementedAccountServiceServer
+}
+
+type fixtureInstallation struct {
+	resource.UnimplementedInstallationServiceServer
+}
+
+func (fixtureInstallation) Agents(context.Context, *resource.AgentsRequest) (*resource.AgentProfiles, error) {
+	return &resource.AgentProfiles{}, nil
 }
 
 func (fixtureAccounts) List(context.Context, *resource.AccountListRequest) (*resource.AccountListResponse, error) {

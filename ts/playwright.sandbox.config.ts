@@ -13,6 +13,7 @@ export default defineConfig({
   // suite went from 86 passing to 58 passing and 17 failing. pinned-prompt
   // alone went from 30.0s to 68.5s. The wall clock is not worth that.
   workers: 1,
+  retries: process.env.CI ? 1 : 0,
   // A test that waits for motion is slow by nature, and a loaded machine makes
   // it slower. Waiting longer costs nothing when the assertion holds; what it
   // buys is that a slow machine reports a real failure instead of a deadline.

@@ -1,0 +1,40 @@
+.dialog {
+  --card-body-padding: 0;
+}
+.close {
+  margin-left: auto;
+}
+.body.body:global(.card-body) {
+  height: min(60dvh, 520px);
+  overflow: hidden;
+}
+.scroll {
+  --ui-scroll-area-background: var(--ui-dialog-body-background);
+  height: 100%;
+}
+.content {
+  padding: var(--ui-dialog-padding);
+  display: grid;
+  gap: calc(2 * var(--ui-space));
+  min-width: 0;
+}
+.content > dl {
+  margin: 0;
+}
+.text :global(dd) {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space);
+}
+.heading {
+  margin: 0 0 var(--ui-space);
+  padding-inline: var(--ui-control-inline-inset);
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 500;
+}

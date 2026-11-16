@@ -1,0 +1,59 @@
+.page {
+  position: relative;
+}
+.overlay.overlay {
+  --search-result-height: 88px;
+  position: absolute;
+  top: calc(var(--resource-toolbar-row-height) + 6 * var(--ui-space));
+  inset-inline: 0;
+  width: min(var(--conversation-width), calc(100% - 4 * var(--ui-space)));
+  margin-inline: auto;
+  z-index: 6;
+  overflow: visible;
+}
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space);
+  min-width: 0;
+  color: var(--ui-muted);
+  font: 11px/14px var(--ui-font-mono);
+  white-space: nowrap;
+}
+.meta > time {
+  --ui-text-value: var(--ui-muted);
+  flex: none;
+}
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+  min-width: 0;
+  font-size: 12px;
+}
+.title > svg {
+  flex: none;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+}
+.title > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.snippet {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: normal;
+}
+.snippet mark {
+  padding: 0;
+  font: inherit;
+  background: color-mix(in srgb, var(--ui-brand-color) 65%, transparent);
+  color: #111111;
+}

@@ -1,5 +1,10 @@
 // English source messages are always bundled; other packs load on demand.
 export const messages = {
+  "Log period (local time)": "Log period (local time)",
+  "Log start date": "Log start date",
+  "Log end date": "Log end date",
+  From: "From",
+  Through: "Through",
   "Background task elapsed time": "Background task elapsed time",
   "Background task duration unavailable":
     "Background task duration unavailable",
@@ -97,6 +102,9 @@ export const messages = {
   "Search logs": "Search logs",
   "Log level": "Log level",
   "Log category": "Log category",
+  "All projects": "All projects",
+  Category: "Category",
+  "Loading more logs…": "Loading more logs…",
   "All levels": "All levels",
   "All categories": "All categories",
   "Connection URL": "Connection URL",
@@ -107,6 +115,10 @@ export const messages = {
   "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).":
     "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).",
   "Client logs": "Client logs",
+  "Log details": "Log details",
+  "Log ID": "Log ID",
+  "Tab ID": "Tab ID",
+  "Client version": "Client version",
   Time: "Time",
   Level: "Level",
   "No matching logs": "No matching logs",
@@ -153,6 +165,8 @@ export const messages = {
   Status: "Status",
   "Background tasks": "Background tasks",
   "Search current conversation": "Search current conversation",
+  "Search tasks": "Search tasks",
+  "Search memories": "Search memories",
   "This message is no longer available in retained history.":
     "This message is no longer available in retained history.",
   "Cannot open message: {error}": "Cannot open message: {error}",
@@ -289,6 +303,9 @@ export const messages = {
   State: "State",
   Alias: "Alias",
   Project: "Project",
+  Icon: "Icon",
+  None: "None",
+  "Project icon preview": "Project icon preview",
   Workspace: "Workspace",
   "Runtime ID": "Runtime ID",
   "Run ID": "Run ID",
@@ -371,6 +388,7 @@ export const messages = {
     "Unsupported theme. Choose light, dark or system.",
   "Inherited: {value}": "Inherited: {value}",
   "Reset to inherited value": "Reset to inherited value",
+  "{label} custom value": "{label} custom value",
   on: "on",
   off: "off",
   " (Included in input tokens)": " (Included in input tokens)",
@@ -596,6 +614,7 @@ export const messages = {
   "Session information": "Session information",
   "Session list": "Session list",
   Sessions: "Sessions",
+  Search: "Search",
   "Sessions view": "Sessions view",
   Settings: "Settings",
   "Settings file editor": "Settings file editor",
@@ -719,6 +738,8 @@ export const messages = {
   "System monospace": "System monospace",
   "Browser monospace": "Browser monospace",
   "Custom font": "Custom font",
+  "Enter font families available on your device, separated by commas.":
+    "Enter font families available on your device, separated by commas.",
   "Apply font": "Apply font",
   "Enter a valid CSS font family list.": "Enter a valid CSS font family list.",
   "{label} custom font family": "{label} custom font family",
@@ -923,6 +944,10 @@ export const messages = {
   "Clear history": "Clear history",
   "Invalid terminal response": "Invalid terminal response",
   Active: "Active",
+  "Auxiliary AI": "Auxiliary AI",
+  Accounts: "Accounts",
+  "Configure server-side helpers. Changes are saved to this server, separately from settings.json.":
+    "Configure server-side helpers. Changes are saved to this server, separately from settings.json.",
   "The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "The result may be unknown after a disconnect; inspect the conversation before retrying.",
 } as const;

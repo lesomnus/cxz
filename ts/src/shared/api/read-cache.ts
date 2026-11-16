@@ -12,6 +12,12 @@ export const memoryListKey = (project: string) =>
 export const ACCOUNT_LIST_KEY = "account-list";
 export const accountReadPrefix = (identity: string) =>
   `account/${encodeURIComponent(identity)}/`;
+export const accountQuotaKey = (
+  identity: string,
+  agent: string,
+  runtimeIds: readonly string[],
+) =>
+  `${accountReadPrefix(identity)}quota/${agent}/${JSON.stringify([...runtimeIds].sort())}`;
 
 // Browser memory belongs to one authenticated Connection, with bounded LRU
 // entries. Neither API credentials nor responses are written to browser storage.

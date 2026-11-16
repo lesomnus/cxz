@@ -1085,7 +1085,8 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
   const right = (await entries.nth(1).boundingBox())!;
   expect(right.y).toBe(left.y);
   expect(right.x).toBeGreaterThan(left.x + left.width);
-  expect((await entries.nth(2).boundingBox())!.y).toBeGreaterThan(left.y);
+  expect((await entries.nth(2).boundingBox())!.y).toBe(left.y);
+  expect((await entries.nth(3).boundingBox())!.y).toBeGreaterThan(left.y);
   await expect(main.locator("h1, details, summary")).toHaveCount(0);
   const container = info.locator("dl > div").filter({
     has: page.locator("dt > span:first-child", { hasText: /^Container ID$/ }),
@@ -1150,9 +1151,10 @@ test("project metadata shows short IDs, copy complete values, and use machine-re
   await expect(projectId.getByRole("status")).toBeEmpty();
   await page.keyboard.press("Escape");
   await expect(info.locator("dt > span:first-child")).toHaveText([
-    "Project ID",
     "Name",
     "Alias",
+    "Project ID",
+    "Project icon preview",
     "Description",
     "Workspace",
     "Container name",
@@ -1311,3 +1313,134 @@ for (const scale of [1, 1.25, 1.5, 2]) {
     });
   });
 }
+
+test("the project icon uses the shared searchable value menu with a named icon grid", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const info = page.getByRole("region", { name: "Information", exact: true });
+  const fields = info.locator("dl > div");
+  await expect(fields).toHaveCount(10);
+  const labels = await fields.locator("dt").allTextContents();
+  expect(labels.slice(0, 6).map((label) => label.trim())).toEqual([
+    "Name",
+    "Alias",
+    "Project ID",
+    "Project icon preview",
+    "Description",
+    "Workspace",
+  ]);
+  const boxes = await fields.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const box = node.getBoundingClientRect();
+      return { x: box.x, y: box.y, width: box.width };
+    }),
+  );
+  for (const box of boxes.slice(0, 2)) expect(box.y).toBeCloseTo(boxes[0].y, 1);
+  for (const box of boxes.slice(0, 2))
+    expect(box.width).toBeCloseTo(boxes[0].width, 1);
+  expect(boxes[4].y).toBeCloseTo(boxes[5].y, 1);
+  expect(boxes[4].y).toBeGreaterThan(boxes[0].y);
+  expect(boxes[4].width).toBeCloseTo(boxes[5].width, 1);
+  expect(boxes[3].width).toBeCloseTo(
+    (await fields.nth(3).boundingBox())!.height,
+    1,
+  );
+  const iconField = fields.nth(3);
+  const trigger = iconField.getByRole("combobox", {
+    name: "Icon",
+    exact: true,
+  });
+  await expect(trigger).toHaveText("None");
+  await expect(trigger.locator("svg")).toHaveCount(1);
+  const spacing = await info.evaluate((section) => {
+    const fields = [...section.querySelectorAll<HTMLElement>("dl > div")];
+    return [fields[0], fields[1]].map((field) => {
+      const term = field.querySelector("dt")!.getBoundingClientRect();
+      const button = field.querySelector("button")!;
+      const content = button.querySelector(".button-content")!;
+      const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+      let text: Node | null;
+      while ((text = walker.nextNode())) if (text.textContent?.trim()) break;
+      const range = document.createRange();
+      range.selectNodeContents(text!);
+      const value = range.getBoundingClientRect();
+      return {
+        inset: value.left - term.left,
+        gap: value.top - term.bottom,
+        height: button.getBoundingClientRect().height,
+      };
+    });
+  });
+  for (const control of spacing) {
+    expect(control.inset).toBeCloseTo(0, 1);
+    expect(control.gap).toBeCloseTo(spacing[0].gap, 1);
+    expect(control.height).toBeCloseTo(spacing[0].height, 1);
+  }
+  const preview = trigger.locator("svg");
+  await expect(preview).toBeVisible();
+  const cell = (await fields.nth(3).boundingBox())!;
+  const glyph = (await preview.boundingBox())!;
+  expect(glyph.x + glyph.width / 2).toBeCloseTo(cell.x + cell.width / 2, 1);
+  expect(glyph.y + glyph.height / 2).toBeCloseTo(cell.y + cell.height / 2, 1);
+  expect(glyph.width).toBeLessThan(30);
+  const grid = (await info.locator("dl").first().boundingBox())!;
+  expect(boxes[0].x).toBeCloseTo(grid.x, 1);
+  expect(boxes[3].x + boxes[3].width).toBeCloseTo(grid.x + grid.width, 1);
+  expect(boxes[2].x - grid.x).toBeCloseTo(grid.width / 2, 1);
+  const gap = boxes[1].x - boxes[0].x - boxes[0].width;
+  expect(boxes[2].width).toBeCloseTo(grid.width / 2 - boxes[3].width - gap, 1);
+  await trigger.click();
+  const menu = page.getByRole("group", { name: "Icon choices", exact: true });
+  const list = menu.getByRole("listbox");
+  const cells = list.getByRole("option");
+  await expect(cells).toHaveCount(19);
+  await expect(cells.first()).toHaveAttribute("aria-selected", "true");
+  const query = menu.getByRole("combobox", {
+    name: "Search Icon",
+    exact: true,
+  });
+  await expect(query).toBeFocused();
+  await expect(query).toHaveValue("");
+  await expect(query).toHaveAttribute("placeholder", "None");
+  await query.fill("rocket");
+  await expect(cells).toHaveCount(1);
+  await query.fill("zzz");
+  await expect(cells).toHaveCount(0);
+  await expect(menu.getByRole("status")).toHaveText("No matches");
+  await query.fill("");
+  await expect(cells).toHaveCount(19);
+  await query.press("ArrowDown");
+  await expect(cells.nth(0)).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(cells.nth(1)).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(cells.nth(6)).toBeFocused();
+  const leaf = cells.filter({ hasText: /^leaf$/ });
+  const geometry = await leaf.evaluate((node) => {
+    const glyph = node.querySelector("svg")!.getBoundingClientRect();
+    const caption = node
+      .querySelector<HTMLElement>(".setting-match-label")!
+      .getBoundingClientRect();
+    return {
+      gap: caption.top - glyph.bottom,
+      center: caption.left + caption.width / 2 - (glyph.left + glyph.width / 2),
+    };
+  });
+  expect(geometry.gap).toBeGreaterThanOrEqual(0);
+  expect(Math.abs(geometry.center)).toBeLessThan(0.1);
+  await menu.screenshot({ path: testInfo.outputPath("project-icon-menu.png") });
+  await leaf.click();
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toHaveText("leaf");
+  await expect(preview).toHaveAttribute("data-icon", "leaf");
+  const fieldBounds = await info.boundingBox();
+  await trigger.click();
+  await page.getByRole("option", { name: "None", exact: true }).click();
+  await expect(trigger).toHaveText("None");
+  await expect(preview).toHaveAttribute("data-icon", "projects");
+  expect(await info.boundingBox()).toEqual(fieldBounds);
+  await info.screenshot({
+    path: testInfo.outputPath("project-information.png"),
+  });
+});

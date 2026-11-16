@@ -21,19 +21,6 @@
     var(--ui-section-background)
   );
 }
-.buttons .action[data-highlighted="true"] {
-  --ui-section-background: color-mix(
-    in srgb,
-    var(--ui-brand-color) 12%,
-    var(--ui-shade-24)
-  );
-  --button-hover-background: color-mix(
-    in srgb,
-    var(--ui-brand-color) 18%,
-    var(--ui-shade-24)
-  );
-  color: var(--ui-brand-color);
-}
 .findings {
   display: grid;
   gap: calc(var(--ui-space) / 2);

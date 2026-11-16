@@ -1,0 +1,92 @@
+.trigger {
+  display: contents;
+}
+.trigger > a[data-menu-open="true"] {
+  background: var(--button-hover-background);
+}
+.preview.preview {
+  width: calc(60 * var(--ui-space));
+  border: 0;
+}
+.list {
+  display: grid;
+  gap: var(--ui-control-inset);
+  gap: round(nearest, var(--ui-control-inset), var(--menu-pixel-size, 1px));
+}
+.item {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space);
+  padding: var(--menu-item-padding-block, var(--ui-menu-item-padding-block))
+    var(--menu-item-padding-inline, var(--ui-menu-item-padding-inline));
+  border-radius: var(--menu-inner-radius, 6px);
+}
+.item::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  border-radius: inherit;
+  z-index: -1;
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--ui-shade-115) 35%, transparent),
+    color-mix(in srgb, var(--ui-shade-115) 6%, transparent)
+  );
+  transform: scaleX(var(--usage-progress, 0));
+  transform-origin: left center;
+}
+.item[data-usage-animate="true"]::before {
+  transition: transform var(--usage-duration)
+    cubic-bezier(0.333333, 0, 0.666667, 0.333333);
+}
+@media (prefers-reduced-motion: reduce) {
+  .item[data-usage-animate="true"]::before {
+    transition: none;
+  }
+}
+.remaining > .hiddenNumber {
+  display: none;
+}
+.remaining {
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  height: var(--ui-menu-item-line-height);
+  width: 4ch;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.remaining,
+.reset {
+  font: var(--ui-menu-font-size, 12px) / var(--ui-menu-item-line-height)
+    var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.reset {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ui-menu-item-line-height);
+  width: 9ch;
+  flex-shrink: 0;
+  margin-left: var(--ui-space);
+}
+.percent {
+  font-size: 0.8em;
+}
+.unit,
+.state {
+  color: var(--ui-muted);
+}
+.state {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: var(--menu-item-padding-block, var(--ui-menu-item-padding-block))
+    var(--menu-item-padding-inline, var(--ui-menu-item-padding-inline));
+  font-size: 0.75rem;
+  line-height: var(--ui-menu-item-line-height);
+}

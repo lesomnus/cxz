@@ -2,6 +2,7 @@ export const segmentBytes = 2 * 1024 * 1024;
 export const retainedBytes = 32 * 1024 * 1024;
 export const pageSize = 100;
 export type LogLevel = "info" | "warn" | "error";
+export type LogCategory = "client" | "rpc";
 export type LogContext = {
   connection?: string;
   project?: string;
@@ -11,7 +12,7 @@ export type LogContext = {
 };
 export type LogInput = LogContext & {
   level: LogLevel;
-  category: "client" | "rpc";
+  category: LogCategory;
   message: string;
   details?: Record<string, string | number | boolean | undefined>;
 };
@@ -22,13 +23,17 @@ export type LogEntry = LogInput & {
   version: string;
 };
 export type LogQuery = {
-  level?: string;
-  category?: string;
+  level?: LogLevel | readonly LogLevel[];
+  category?: LogCategory | readonly LogCategory[];
   connection?: string;
   project?: string;
+  projectSessions?: readonly string[];
   session?: string;
   search?: string;
-  offset?: number;
+  /** Epoch milliseconds: inclusive start and exclusive end. */
+  since?: number;
+  until?: number;
+  before?: string;
 };
 export type LogPage = {
   entries: LogEntry[];
@@ -36,6 +41,7 @@ export type LogPage = {
   bytes: number;
   capacity: number;
   storage: "opfs" | "memory";
+  next?: string;
 };
 
 // Only diagnostic strings reach disk. Requests/responses, headers and arbitrary
@@ -111,17 +117,45 @@ export function logEntry(
 }
 
 export function matchesLog(entry: LogEntry, query: LogQuery) {
-  for (const key of [
-    "level",
-    "category",
-    "connection",
-    "project",
-    "session",
-  ] as const) {
+  if (query.since !== undefined && entry.time < query.since) return false;
+  if (query.until !== undefined && entry.time >= query.until) return false;
+  for (const field of ["level", "category"] as const) {
+    const values = query[field];
+    if (Array.isArray(values)) {
+      if (!values.includes(entry[field])) return false;
+    } else if (values && entry[field] !== values) return false;
+  }
+  if (
+    query.project &&
+    entry.project !== query.project &&
+    (entry.project || !query.projectSessions?.includes(entry.session ?? ""))
+  )
+    return false;
+  for (const key of ["connection", "session"] as const) {
     if (query[key] && entry[key] !== query[key]) return false;
   }
   const search = query.search?.trim().toLowerCase();
   return !search || JSON.stringify(entry).toLowerCase().includes(search);
+}
+
+/** Collect an exclusive page in append order; timestamps can be identical. */
+export class LogPageCollector {
+  readonly entries: LogEntry[] = [];
+  total = 0;
+  next?: string;
+  private reached: boolean;
+  constructor(private query: LogQuery) {
+    this.reached = !query.before;
+  }
+  add(entry: LogEntry) {
+    const cursor = entry.id === this.query.before;
+    if (cursor) this.reached = true;
+    if (!matchesLog(entry, this.query)) return;
+    this.total++;
+    if (!this.reached || cursor) return;
+    if (this.entries.length < pageSize) this.entries.push(entry);
+    else this.next = this.entries.at(-1)!.id;
+  }
 }
 
 export const encodeLine = (entry: LogEntry) => JSON.stringify(entry) + "\n";

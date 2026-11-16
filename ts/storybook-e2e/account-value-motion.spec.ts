@@ -35,7 +35,7 @@ test("cached values and account information appear immediately, while a fresh re
   await click("Open accounts");
   const work = page.locator('[data-account="work"]');
   const name = work.getByRole("button", {
-    name: "Edit Display name",
+    name: "Edit Name",
     exact: true,
   });
   const input = work

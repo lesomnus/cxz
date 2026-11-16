@@ -16,6 +16,7 @@ import {
   DatePicker,
 } from "@lesomnus/nox";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
+import { projectIconName } from "#src/shared/components/project-icon.ts";
 import type {
   SessionSearchVisit,
   SessionSearchSummary,
@@ -24,6 +25,7 @@ import type { Project } from "#gen/cxz/project_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import styles from "./conversation-search.module.css";
+import inputSurface from "#src/shared/components/input-surface.module.css";
 
 function recentWeek() {
   const end = new Date();
@@ -161,7 +163,10 @@ export function ConversationSearch({
           if (!loading) void search();
         }}
       >
-        <FindBar className={styles.searchBar} aria-label="Search conversations">
+        <FindBar
+          className={`${styles.searchBar} ${inputSurface.surface}`}
+          aria-label="Search conversations"
+        >
           <FindBarControls>
             <FindBarIcon />
             <FindBarInput
@@ -241,7 +246,14 @@ export function ConversationSearch({
           aria-label="Search filters"
         >
           <PrefixValueMenu
-            prefix={<ResourceIcon kind="projects" />}
+            prefix={
+              <ResourceIcon
+                kind="projects"
+                icon={projectIconName(
+                  projects.find((p) => projectId(p) === project),
+                )}
+              />
+            }
             label="Search project"
             value={project}
             className={styles.projectPicker}
@@ -255,6 +267,9 @@ export function ConversationSearch({
               ...projects.map((p) => ({
                 value: projectId(p),
                 label: p.name || p.alias,
+                icon: (
+                  <ResourceIcon kind="projects" icon={projectIconName(p)} />
+                ),
                 searchText: `${p.alias} ${p.workspace}`,
               })),
             ]}

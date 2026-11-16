@@ -3,13 +3,14 @@ package lifecycle
 import (
 	"bytes"
 	"context"
-	"github.com/lesomnus/cxz/internal/projectid"
 	"time"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/sessionalias"
 	"github.com/lesomnus/cxz/internal/sessiontitle"
+	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/resource"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -32,10 +33,9 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	if r.HasAlias() || r.HasId() || r.GetRuntimeId() != "" || r.HasStatus() || r.HasDateCreated() {
 		return nil, closed()
 	}
-	if r.GetClientId() == "" {
+	if r.GetClientId() == "" || len(r.GetClientId()) > 1024 {
 		return nil, status.Error(codes.InvalidArgument, "client_id required")
 	}
-	account := ""
 	var accountID []byte
 	backend := ""
 	if r.HasAccount() {
@@ -48,10 +48,6 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 		}
 		r.SetAgent(a.GetAgent())
 		accountID = a.GetId()
-		account, err = s.accountProfile(ctx, a)
-		if err != nil {
-			return nil, err
-		}
 		backend = a.GetAuthBackend()
 	}
 	p, err := s.Next().Project().Get(ctx, resource.ProjectGetRequest_builder{Ref: r.GetProject(), Select: resource.ProjectSelect_builder{All: ptr(true)}.Build()}.Build())
@@ -61,6 +57,12 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	if _, err := accounts.Resolve(r.GetAgent(), backend); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
+	if err := settings.ValidateModel(r.GetModel()); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if len(r.GetName()) > sessiontitle.MaxInputBytes {
+		return nil, status.Error(codes.InvalidArgument, "invalid session title")
+	}
 	binding, err := s.Next().AuthBinding().Get(ctx, resource.AuthBindingGetRequest_builder{Ref: r.GetAuthBinding(), Select: resource.AuthBindingSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build(), Account: resource.AccountSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
 	if err != nil {
 		return nil, err
@@ -68,21 +70,26 @@ func (s SessionServer) Add(ctx context.Context, r *resource.SessionAddRequest) (
 	if !bytes.Equal(binding.GetProject().GetId(), p.GetId()) || !bytes.Equal(binding.GetAccount().GetId(), accountID) || binding.GetAuthBackend() != backend {
 		return nil, status.Error(codes.InvalidArgument, "auth binding does not match project/account/backend")
 	}
-	v, err := s.shared.runtime.Create(ctx, &api.CreateRequest{Workspace: p.GetWorkspace(), Title: r.GetName(), Agent: r.GetAgent(), Model: r.GetModel(), ClientId: r.GetClientId(), Account: account, AuthBackend: backend, AuthBinding: binding.GetBindingId()})
-	if err != nil {
-		return nil, err
-	}
-	v.ProjectId = projectid.String(p.GetId())
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
-	saved, err := s.saveSession(ctx, v, r.GetClientId())
+	srv := s.Next().Session()
+	key := resource.SessionRef_builder{ClientId: ptr(r.GetClientId())}.Build()
+	old, err := srv.Get(ctx, resource.SessionGetRequest_builder{Ref: key, Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err == nil {
+		if !bytes.Equal(old.GetProject().GetId(), p.GetId()) || !bytes.Equal(old.GetAccount().GetId(), accountID) || !bytes.Equal(old.GetAuthBinding().GetId(), binding.GetId()) || old.GetAgent() != r.GetAgent() || old.GetModel() != r.GetModel() || old.GetName() != r.GetName() || old.GetDesc() != r.GetDesc() {
+			return nil, status.Error(codes.AlreadyExists, "client_id reused")
+		}
+		return old, nil
+	}
+	if status.Code(err) != codes.NotFound {
+		return nil, err
+	}
+	alias, err := s.newSessionAlias(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if r.GetDesc() != "" {
-		return s.Next().Session().Patch(ctx, resource.SessionPatchRequest_builder{Ref: sessionRef(v.Id), Desc: ptr(r.GetDesc()), DateUpdatedForce: ptr(true)}.Build())
-	}
-	return saved, nil
+	id := core.SessionID(r.GetClientId())
+	return srv.Add(ctx, resource.SessionAddRequest_builder{Id: resourceID(8, id), Alias: &alias, Name: r.GetName(), Desc: r.GetDesc(), Project: resource.ProjectRef_builder{Id: p.GetId()}.Build(), Agent: r.GetAgent(), Model: r.GetModel(), Account: resource.AccountRef_builder{Id: accountID}.Build(), AuthBinding: resource.AuthBindingRef_builder{Id: binding.GetId()}.Build(), RuntimeId: id, ClientId: r.GetClientId(), DateCreated: timestamppb.Now(), Status: resource.SessionStatus_builder{State: "created"}.Build()}.Build())
 }
 func (s SessionServer) Get(ctx context.Context, r *resource.SessionGetRequest) (*resource.Session, error) {
 	if err := s.ensureSnapshot(ctx); err != nil {
@@ -144,9 +151,6 @@ func (s SessionServer) Patch(ctx context.Context, r *resource.SessionPatchReques
 	if err := s.effect(); err != nil {
 		return nil, err
 	}
-	if err := s.sync(ctx); err != nil {
-		return nil, err
-	}
 	s.shared.mu.Lock()
 	defer s.shared.mu.Unlock()
 	v, err := s.SessionServiceServer.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
@@ -162,7 +166,7 @@ func (s SessionServer) Patch(ctx context.Context, r *resource.SessionPatchReques
 			return nil, status.Error(codes.AlreadyExists, "session alias is already in use")
 		}
 	}
-	if r.HasName() {
+	if r.HasName() && v.GetStatus().GetState() != "created" {
 		title, err := s.shared.runtime.SetSessionTitle(ctx, v.GetRuntimeId(), r.GetName())
 		if err != nil {
 			return nil, err
@@ -186,24 +190,15 @@ func (s SessionServer) resolve(ctx context.Context, ref *resource.SessionRef) (*
 	return v, err
 }
 func (s SessionServer) Resume(ctx context.Context, r *resource.SessionControl) (*resource.Session, error) {
-	s.shared.transition.RLock()
-	defer s.shared.transition.RUnlock()
-	v, err := s.resolve(ctx, r.GetRef())
-	if err != nil {
-		return nil, err
-	}
-	out, err := s.shared.runtime.Resume(ctx, &api.Control{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId()})
-	if err != nil {
-		return nil, err
-	}
-	s.shared.mu.Lock()
-	defer s.shared.mu.Unlock()
-	return s.saveSession(ctx, out, "")
+	return s.Start(ctx, r)
 }
 func (s SessionServer) Stop(ctx context.Context, r *resource.SessionControl) (*resource.Session, error) {
 	v, err := s.resolve(ctx, r.GetRef())
 	if err != nil {
 		return nil, err
+	}
+	if v.GetStatus().GetState() == "created" {
+		return v, nil
 	}
 	if _, err = s.shared.runtime.Stop(ctx, &api.Control{SessionId: v.GetRuntimeId(), RunId: r.GetRunId(), ClientId: r.GetClientId()}); err != nil {
 		return nil, err
@@ -278,6 +273,9 @@ func (s SessionServer) History(ctx context.Context, r *resource.SessionEventsReq
 	if err != nil {
 		return nil, err
 	}
+	if awaitingFirstRun(v) {
+		return &resource.SessionEventBatch{}, nil
+	}
 	batch, err := s.shared.runtime.History(ctx, &api.WatchRequest{SessionId: v.GetRuntimeId(), AfterSeq: r.GetAfterSeq(), Limit: r.GetLimit()})
 	if err != nil {
 		return nil, err
@@ -295,6 +293,9 @@ func (s SessionServer) Models(ctx context.Context, r *resource.SessionModelsRequ
 	v, err := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return nil, err
+	}
+	if awaitingFirstRun(v) {
+		return &resource.SessionModelsReply{}, nil
 	}
 	out, err := s.shared.runtime.Models(ctx, &api.ModelsRequest{SessionId: v.GetRuntimeId(), Refresh: r.GetRefresh(), RunId: r.GetRunId(), ClientId: r.GetClientId()})
 	if err != nil {
@@ -335,6 +336,10 @@ func (s SessionServer) Events(r *resource.SessionEventsRequest, stream grpc.Serv
 		return err
 	}
 	v, err := s.Get(stream.Context(), resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
+	if err != nil {
+		return err
+	}
+	v, err = s.awaitFirstRun(stream.Context(), v, func() error { return stream.Send(resource.SessionEvent_builder{Heartbeat: true}.Build()) })
 	if err != nil {
 		return err
 	}
@@ -440,6 +445,9 @@ func (s SessionServer) Background(ctx context.Context, r *resource.SessionBackgr
 	v, err := s.Get(ctx, resource.SessionGetRequest_builder{Ref: r.GetRef(), Select: resource.SessionSelect_builder{All: ptr(true)}.Build()}.Build())
 	if err != nil {
 		return nil, err
+	}
+	if awaitingFirstRun(v) {
+		return &resource.SessionBackgroundReply{}, nil
 	}
 	reply, err := s.shared.runtime.Background(ctx, &api.SessionRef{Id: v.GetRuntimeId()})
 	if err != nil {

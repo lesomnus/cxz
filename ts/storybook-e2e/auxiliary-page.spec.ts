@@ -7,7 +7,7 @@ const choices = (page: Page) =>
 async function open(page: Page, story = "default") {
   await page.clock.setFixedTime(new Date("2026-11-08T10:00:00Z"));
   await page.goto(
-    `/iframe.html?id=pages-auxiliary-ai--${story}&viewMode=story`,
+    `/iframe.html?id=pages-settings-auxiliary-ai--${story}&viewMode=story`,
   );
   await expect(picker(page)).toBeVisible();
 }
@@ -430,10 +430,11 @@ test("mixed saved models are preserved until a shared model and effort are chose
     exact: true,
   });
   async function revisit() {
-    await sidebar.getByRole("link", { name: "Accounts", exact: true }).click();
-    await sidebar
-      .getByRole("link", { name: "Auxiliary AI", exact: true })
-      .click();
+    await sidebar.getByRole("button", { name: "Profile", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Accounts", exact: true }).click();
+    await sidebar.getByRole("button", { name: "Profile", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
+    await page.locator("#settings-auxiliary").scrollIntoViewIfNeeded();
   }
   await expect(model).toContainText("Mixed models");
   await expect(effort).toContainText("Mixed efforts");
@@ -465,7 +466,7 @@ test("mixed saved models are preserved until a shared model and effort are chose
 });
 
 for (const width of [390, 1280])
-  test(`workspace keeps Auxiliary beside its sidebar without the old panel at ${width}px`, async ({
+  test(`workspace keeps Auxiliary in Settings without dedicated sidebar buttons at ${width}px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -474,7 +475,7 @@ for (const width of [390, 1280])
       name: "Resources",
       exact: true,
     });
-    const main = page.getByRole("main", { name: "Auxiliary AI", exact: true });
+    const main = page.getByRole("main", { name: "Settings", exact: true });
     await expect(sidebar).toBeVisible();
     await expect(page.locator(".workspace > .resource-panel")).toHaveCount(0);
     const bounds = await main.boundingBox();
@@ -484,7 +485,7 @@ for (const width of [390, 1280])
     expect(bounds!.height).toBe(900);
     await expect(
       page.getByRole("link", { name: "Auxiliary AI", exact: true }),
-    ).toHaveAttribute("aria-current", "page");
+    ).toHaveCount(0);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -501,8 +502,12 @@ for (const width of [390, 1280])
         page.getByRole("complementary", { name: "Session list", exact: true }),
       ).toHaveCount(0);
       await sidebar
-        .getByRole("link", { name: "Auxiliary AI", exact: true })
+        .getByRole("button", { name: "Profile", exact: true })
         .click();
+      await page
+        .getByRole("menuitem", { name: "Settings", exact: true })
+        .click();
+      await page.locator("#settings-auxiliary").scrollIntoViewIfNeeded();
       await expect(main).toBeVisible();
       await expect(page.locator(".workspace > .resource-panel")).toHaveCount(0);
     }

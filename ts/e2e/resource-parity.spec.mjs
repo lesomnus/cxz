@@ -5,6 +5,27 @@ import { pickSearchDate } from "../test-support/search-dates.ts";
 import { projectFixture } from "../test-support/projects.ts";
 import { expectChipDisplay } from "../test-support/chip-display.ts";
 import { expectAPIError } from "../test-support/client-errors.ts";
+
+async function openResource(page, name) {
+  if (name === "Accounts" || name === "Auxiliary AI") {
+    await page.getByRole("button", { name: "Profile", exact: true }).click();
+    await page
+      .getByRole("menuitem", {
+        name: name === "Accounts" ? "Accounts" : "Settings",
+        exact: true,
+      })
+      .click();
+    if (name === "Auxiliary AI") {
+      await page
+        .getByRole("navigation", { name: "Settings topics", exact: true })
+        .getByRole("button", { name, exact: true })
+        .click();
+      await expect(
+        page.getByRole("heading", { name, exact: true }),
+      ).toBeInViewport();
+    }
+  } else await page.getByRole("link", { name, exact: true }).click();
+}
 test.use({
   viewport: { width: 1280, height: 900 },
   isMobile: false,
@@ -386,10 +407,10 @@ test("every resource tab has its own body and navigation", async ({ page }) => {
     ],
     [
       "Auxiliary AI",
-      page.getByRole("main", { name: "Auxiliary AI", exact: true }),
+      page.getByRole("heading", { name: "Auxiliary AI", exact: true }),
     ],
   ]) {
-    await page.getByRole("link", { name, exact: true }).click();
+    await openResource(page, name);
     await expect(body).toBeVisible();
     if (name !== "Projects view")
       await expect(page.locator(".resource-panel .project-row")).toHaveCount(0);
@@ -399,7 +420,7 @@ test("resource bodies fit a mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await fixture(page);
   for (const name of ["Accounts", "Memory", "Search"]) {
-    await page.getByRole("link", { name, exact: true }).click();
+    await openResource(page, name);
     await expect(page.locator("main")).toBeVisible();
     const bounds = await page.locator("main").boundingBox();
     expect(bounds.y + bounds.height).toBeLessThanOrEqual(845);
@@ -460,7 +481,7 @@ test("account registration, session creation and confirmed erasure use resource 
   page,
 }) => {
   const requests = await fixture(page);
-  await page.getByRole("link", { name: "Accounts", exact: true }).click();
+  await openResource(page, "Accounts");
   await page.getByRole("button", { name: "Add account", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add account", exact: true });
   await add

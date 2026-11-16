@@ -319,7 +319,9 @@ for (const width of [1280, 390]) {
     expect(typography.label).toBe(10);
     expect(typography.gap).toBeGreaterThan(0);
     const fields = await details
-      .locator("dl > div")
+      .locator("dl")
+      .last()
+      .locator(":scope > div")
       .evaluateAll((nodes) =>
         nodes.map((node) => node.getBoundingClientRect().toJSON()),
       );
@@ -804,7 +806,12 @@ for (const theme of ["dark", "light"]) {
       name: "Log out · Work",
       exact: true,
     });
-    expect(await confirmation.evaluate(appearance)).toEqual(initial);
+    const { headerPadding: addHeaderPadding, ...addSurface } = initial;
+    const { headerPadding: confirmHeaderPadding, ...confirmSurface } =
+      await confirmation.evaluate(appearance);
+    expect(confirmSurface).toEqual(addSurface);
+    expect(parseFloat(addHeaderPadding)).toBe(4);
+    expect(parseFloat(confirmHeaderPadding)).toBe(12);
   });
 }
 

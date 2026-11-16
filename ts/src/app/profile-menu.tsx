@@ -3,6 +3,11 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ActionMenu } from "@lesomnus/nox";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
+import { SidebarAccounts } from "#src/features/accounts/sidebar-accounts.tsx";
+import type { Connection } from "#src/shared/api/connection.ts";
+import type { Session } from "#gen/cxz/session_pb";
+import { accountLocation } from "#src/shared/navigation/resource-route.ts";
+import { sidebarPopupGap } from "#src/shared/navigation/sidebar-popup.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import {
   clientErrors,
@@ -11,17 +16,22 @@ import {
 
 export function ProfileMenu({
   logout,
+  c,
+  sessions,
   exitLabel,
   openSettings,
   errors = clientErrors(),
 }: {
   logout: () => Promise<void>;
+  c: Connection;
+  sessions: Session[];
   exitLabel: string;
   openSettings: () => void;
   errors?: ClientErrors;
 }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
   async function signOut() {
     if (busy) return;
     setBusy(true);
@@ -40,34 +50,56 @@ export function ProfileMenu({
   }
   return (
     <div className="profile-menu">
-      <ActionMenu
-        label={t("Profile")}
-        placement="right"
-        triggerClassName="resource-link profile-trigger"
-        triggerContent={
-          <span className="profile-avatar" aria-hidden="true">
-            <Icon name="profile" color="white" width="36" height="36" />
-          </span>
-        }
-        items={[
-          {
-            label: t("Settings"),
-            icon: <ResourceIcon kind="settings" />,
-            run: () => {
-              openSettings();
-              void navigate({ to: "/setting/general" });
-            },
-          },
-          {
-            label: exitLabel,
-            disabled: busy,
-            icon: (
-              <Icon name="sign-out" width="20" height="20" aria-hidden="true" />
-            ),
-            run: () => void signOut(),
-          },
-        ]}
-      />
+      <SidebarAccounts c={c} sessions={sessions} enabled={!open}>
+        {(usageOpen) => (
+          <ActionMenu
+            open={open}
+            onOpenChange={setOpen}
+            label={t("Profile")}
+            placement="right"
+            gap={sidebarPopupGap}
+            triggerClassName={`resource-link profile-trigger ${usageOpen ? "account-preview-open" : ""}`}
+            triggerContent={
+              <span className="profile-avatar" aria-hidden="true">
+                <Icon name="profile" color="white" width="36" height="36" />
+              </span>
+            }
+            items={[
+              {
+                label: t("Accounts"),
+                icon: <ResourceIcon kind="accounts" />,
+                run: () => void navigate(accountLocation()),
+              },
+              {
+                label: t("Settings"),
+                icon: <ResourceIcon kind="settings" />,
+                run: () => {
+                  openSettings();
+                  void navigate({ to: "/setting/general" });
+                },
+              },
+              {
+                label: t("Logs"),
+                icon: <ResourceIcon kind="logs" />,
+                run: () => void navigate({ to: "/log" }),
+              },
+              {
+                label: exitLabel,
+                disabled: busy,
+                icon: (
+                  <Icon
+                    name="sign-out"
+                    width="20"
+                    height="20"
+                    aria-hidden="true"
+                  />
+                ),
+                run: () => void signOut(),
+              },
+            ]}
+          />
+        )}
+      </SidebarAccounts>
     </div>
   );
 }

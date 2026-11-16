@@ -12,7 +12,11 @@ import { AccountAuthStatus_State as AuthState } from "#gen/cxz/account_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
-import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
+import {
+  ResourceFields,
+  ResourceFieldsGroup,
+  ResourceIdentityFields,
+} from "#src/shared/components/resource-fields.tsx";
 import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import {
   ResourceDashboard,
@@ -31,6 +35,7 @@ import {
 import { LoginPanel } from "./login-panel";
 import { AccountQuotaSquare } from "./account-quota-square";
 import { key } from "@lesomnus/payday/store";
+import { Id } from "@lesomnus/payday/pdid";
 import {
   ACCOUNT_INFO_TTL,
   ACCOUNT_LIST_KEY,
@@ -131,42 +136,56 @@ export function AccountDetails({
           aria-label="Account details"
           className={accountStyles.informationDetails}
         >
-          <ResourceFields
-            columns={2}
-            rows={[
-              ["Display name", editable("name", "Display name"), account.desc],
-              ["Alias", editable("alias", "Alias")],
-              [
-                "Agent",
-                <span className={accountStyles.agent}>
-                  <AgentBrand agent={account.agent} />
-                  {account.agent}
-                </span>,
-              ],
-              [
-                "Authentication backend",
-                <span className={accountStyles.fieldValue}>
-                  {account.authBackend || "—"}
-                </span>,
-              ],
-              [
-                "Created",
-                <span className={accountStyles.fieldValue}>
-                  <DateTime value={account.dateCreated} />
-                </span>,
-                undefined,
-                <RelativeTime value={account.dateCreated} />,
-              ],
-              [
-                "Updated",
-                <span className={accountStyles.fieldValue}>
-                  <DateTime value={account.dateUpdated} />
-                </span>,
-                undefined,
-                <RelativeTime value={account.dateUpdated} />,
-              ],
-            ]}
-          />
+          <ResourceFieldsGroup>
+            <ResourceIdentityFields
+              rows={[
+                ["Name", editable("name", "Name"), account.desc],
+                ["Alias", editable("alias", "Alias")],
+                {
+                  label: "Account ID",
+                  value:
+                    account.id.length === 16
+                      ? new Id(account.id).toString()
+                      : undefined,
+                  identifier: true,
+                },
+              ]}
+            />
+            <ResourceFields
+              columns={2}
+              rows={[
+                [
+                  "Agent",
+                  <span className={accountStyles.agent}>
+                    <AgentBrand agent={account.agent} />
+                    {account.agent}
+                  </span>,
+                ],
+                [
+                  "Authentication backend",
+                  <span className={accountStyles.fieldValue}>
+                    {account.authBackend || "—"}
+                  </span>,
+                ],
+                [
+                  "Created",
+                  <span className={accountStyles.fieldValue}>
+                    <DateTime value={account.dateCreated} />
+                  </span>,
+                  undefined,
+                  <RelativeTime value={account.dateCreated} />,
+                ],
+                [
+                  "Updated",
+                  <span className={accountStyles.fieldValue}>
+                    <DateTime value={account.dateUpdated} />
+                  </span>,
+                  undefined,
+                  <RelativeTime value={account.dateUpdated} />,
+                ],
+              ]}
+            />
+          </ResourceFieldsGroup>
         </Section>
         <ResourceSessionSection aria-label="Sessions using this account">
           <SessionTable

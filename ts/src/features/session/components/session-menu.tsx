@@ -5,6 +5,7 @@ import { EditorOptions } from "#src/shared/editor/editor-options.tsx";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
+import actionStyles from "#src/shared/components/resource-action.module.css";
 import { SessionActionIcon } from "./session-action-icon";
 import {
   resumableStates,
@@ -92,6 +93,7 @@ export function SessionMenu({
             items: [
               {
                 label: resume ? t("Resume") : t("Stop"),
+                className: resume ? actionStyles.start : undefined,
                 icon: <SessionActionIcon action={resume ? "resume" : "stop"} />,
                 disabled: unavailable,
                 run: () =>

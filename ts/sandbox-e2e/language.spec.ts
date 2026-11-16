@@ -25,7 +25,7 @@ async function language(page: Page) {
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await chooseSettingsTopic(page, "General");
 }
-test("English defaults and only Apply settings downloads the language pack, preserving JSON drafts and other preferences", async ({
+test("English defaults and choosing a language immediately applies its lazy pack, preserving JSON drafts and other preferences", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 2000, height: 1000 });
@@ -56,19 +56,19 @@ test("English defaults and only Apply settings downloads the language pack, pres
   );
   await editor.press("Control+a");
   await editor.press("Control+v");
-  await chooseSetting(page, "Display language", "ko");
   await expect(
     page.getByRole("heading", { name: "General", exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Apply settings", exact: true }),
+  ).toHaveCount(0);
   expect(requests).toEqual([]);
   expect(
     await page.evaluate(
       () => JSON.parse(localStorage.getItem("settings")!)["ui.language"],
     ),
   ).toBeUndefined();
-  await page
-    .getByRole("button", { name: "Apply settings", exact: true })
-    .click();
+  await chooseSetting(page, "Display language", "ko");
   await expect(page.locator("html")).toHaveAttribute("lang", "ko");
   expect(requests).toHaveLength(1);
   await expect(
@@ -109,9 +109,6 @@ test("failed language download leaves the active language and saved file unchang
   await language(page);
   const before = await page.evaluate(() => localStorage.getItem("settings"));
   await chooseSetting(page, "Display language", "ko");
-  await page
-    .getByRole("button", { name: "Apply settings", exact: true })
-    .click();
   await expect(
     page.locator(".settings-page p[role=alert]:visible"),
   ).toContainText("Unable to apply the language");
@@ -120,7 +117,7 @@ test("failed language download leaves the active language and saved file unchang
     before,
   );
   await expect(
-    page.getByRole("button", { name: "Apply settings", exact: true }),
+    page.getByRole("combobox", { name: "Display language", exact: true }),
   ).toBeEnabled();
 });
 test("saved language loads on startup and cross-tab language changes preserve the composer and its Undo", async ({

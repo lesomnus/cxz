@@ -1,6 +1,9 @@
 import { expect, it } from "vitest";
 import { searchText as searchCompiledText } from "./loaded-search";
-import { compileSearchPattern, type SearchOptions } from "./search-pattern";
+import {
+  compileSearchPattern,
+  type SearchOptions,
+} from "#src/shared/search/search-pattern.ts";
 
 const searchText = (text: string, query: string, options?: SearchOptions) =>
   searchCompiledText(text, compileSearchPattern(query, options).pattern);

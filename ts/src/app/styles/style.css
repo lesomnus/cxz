@@ -14,8 +14,12 @@
   --aurora-green: #23b04a;
   --aurora-cyan: #2596e9;
   --aurora-violet: #b14ccd;
-  --composer-radius: 15px;
+  --input-surface-radius: 15px;
+  --composer-radius: var(--input-surface-radius);
   --composer-editor-height: 110px;
+  --input-surface-background: var(--shade-22);
+  --input-surface-focus-background: var(--shade-25);
+  --input-surface-sending-background: var(--shade-16);
   --composer-resize-duration: 300ms;
   --fine-grain-texture: var(--ui-fine-grain-texture);
   --send-exit-duration: 180ms;
@@ -46,11 +50,15 @@
     calc(var(--wrapper-radius) - 1px - var(--control-inset))
   );
   --composer-toolbar-height: 28px;
-  --composer-toolbar-background: color-mix(
+  --toolbar-surface-background: color-mix(
     in srgb,
     var(--shade-16) 72%,
     transparent
   );
+  --toolbar-surface-blur: 10px;
+  --toolbar-surface-border-width: 1px;
+  --toolbar-surface-border-color: var(--shade-44);
+  --composer-toolbar-background: var(--toolbar-surface-background);
   --composer-extension: 10px;
   --composer-overhang: 4px;
   --muted: var(--ui-muted);
@@ -271,7 +279,7 @@ header strong {
   flex-direction: column;
   align-items: center;
   gap: var(--space);
-  padding: 12px 4px;
+  padding: 12px var(--space) var(--space);
   background: var(--shade-17);
   border-right: 1px solid var(--shade-36);
 }
@@ -318,17 +326,22 @@ header strong {
   margin-top: auto;
   display: flex;
   flex-direction: column;
+  align-items: inherit;
+  gap: inherit;
   width: 100%;
 }
 .profile-menu {
   flex-shrink: 0;
   width: 100%;
 }
-.profile-menu > .action-menu {
+.profile-menu .action-menu {
   display: flex;
   justify-content: center;
   min-width: 0;
   max-width: 100%;
+}
+.resource-link.account-preview-open {
+  background: var(--button-hover-background);
 }
 /* Photo-sized placeholder: replace the background with an image when available. */
 .profile-avatar {
@@ -434,12 +447,14 @@ header strong {
   align-items: start;
 }
 .settings-group {
+  --ui-section-padding: calc(5 * var(--ui-space));
   min-width: 0;
 }
-.settings-group h2 {
+.settings-group > h2 {
   margin: 0;
+  margin-block-end: calc(2 * var(--ui-space));
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 100;
 }
 /* A connection is read, not configured, so this is a table rather than a form.
    The row that served the page is the one that cannot be changed, and it says
@@ -479,33 +494,50 @@ header strong {
   line-height: 1.5;
   color: var(--muted);
 }
-.language-setting-control {
-  display: flex;
-  align-items: center;
-  gap: var(--space);
+.settings-group > h2:has(+ .muted) {
+  margin-block-end: 0;
 }
-.language-setting-control > button {
-  flex-shrink: 0;
-  font-size: 12px;
+.settings-group > h2 + .muted {
+  margin-block-end: calc(2 * var(--ui-space));
+}
+[data-settings-topic="editor"] .settings-group > h2 + .muted {
+  min-block-size: 2lh;
 }
 .font-family-control {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
   gap: var(--space);
+}
+.font-family-control[data-editing] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
+.font-family-control > :not(.value-menu):not(.font-family-custom) {
+  grid-column: 1 / -1;
+  margin-inline: var(--setting-control-inset, 0px);
 }
 .font-family-custom {
   display: flex;
+  min-width: 0;
+  align-self: stretch;
   gap: var(--space);
-  align-items: center;
+  align-items: stretch;
 }
 .font-family-custom input {
   min-width: 0;
   width: 100%;
   border: 0;
-  padding: var(--control-inset) var(--control-inline-inset);
+  padding: var(--control-inset)
+    var(--setting-control-inset, var(--control-inline-inset));
 }
 .font-family-custom button {
   flex-shrink: 0;
   font-size: 12px;
+}
+.font-family-hint {
+  display: block;
+  max-inline-size: 40ch;
+  font-size: var(--ui-setting-description-font-size);
 }
 .settings-preview {
   padding: 8px;
@@ -909,8 +941,7 @@ header strong {
   border-radius: 8px;
   padding: 10px 12px;
 }
-.input-box,
-.composer-input {
+.input-box {
   background-image: var(--fine-grain-texture);
   background-blend-mode: soft-light;
 }
@@ -1181,7 +1212,7 @@ pre {
   padding: 0 0 max(12px, env(safe-area-inset-bottom));
 }
 .composer-wrapper {
-  --composer-border-width: 1px;
+  --composer-border-width: var(--toolbar-surface-border-width);
   --composer-toolbar-overlap: var(--composer-radius);
   position: relative;
   width: calc(
@@ -1189,7 +1220,7 @@ pre {
   );
   margin-inline: calc(var(--composer-overhang) - var(--composer-extension));
   padding: 0;
-  border: var(--composer-border-width) solid var(--shade-44);
+  border: var(--composer-border-width) solid var(--toolbar-surface-border-color);
   background: transparent;
   border-radius: var(--wrapper-radius);
 }
@@ -1206,8 +1237,8 @@ pre {
   z-index: 1;
   pointer-events: none;
   background: var(--composer-toolbar-background);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(var(--toolbar-surface-blur));
+  backdrop-filter: blur(var(--toolbar-surface-blur));
   border-radius: calc(var(--wrapper-radius) - var(--composer-border-width))
     calc(var(--wrapper-radius) - var(--composer-border-width)) 0 0;
 }
@@ -1235,26 +1266,22 @@ pre {
   contain: paint;
   pointer-events: none;
 }
-:root[data-theme="light"] .composer-toolbar-surface::before {
-  background: color-mix(in srgb, var(--shade-32) 78%, transparent);
+:root[data-theme="light"] {
+  --toolbar-surface-background: color-mix(
+    in srgb,
+    var(--shade-32) 78%,
+    transparent
+  );
 }
-.composer-input,
 .question-other-editor {
   position: relative;
   background-color: var(--shade-34);
 }
 .composer-input {
   z-index: 2;
-  background-color: var(--shade-24);
-  border: 1px solid var(--shade-58);
   width: calc(100% + 2px + 2 * var(--composer-overhang));
   margin: calc(-1 * var(--composer-toolbar-overlap))
     calc(-1px - var(--composer-overhang)) -1px;
-  border-radius: var(--composer-radius);
-  transition: background-color 150ms ease-out;
-}
-.composer-input[data-sending="true"] {
-  background-color: var(--shade-20);
 }
 .composer-pending-ink {
   position: absolute;
@@ -1262,9 +1289,6 @@ pre {
   z-index: 0;
   border-radius: inherit;
   pointer-events: none;
-}
-.composer-input:focus-within {
-  border-color: var(--shade-115);
 }
 .composer-editor.composer-send-ghost {
   position: absolute;
@@ -2411,8 +2435,6 @@ summary:hover {
   transition: transform 120ms ease-out;
 }
 .session-heading .agent-brand {
-  position: relative;
-  top: 1px;
   transform-origin: center;
 }
 .session-heading .session-title,
@@ -3002,6 +3024,9 @@ summary:hover {
 }
 .question-footer button {
   border-radius: max(0px, calc(var(--card-radius) - var(--space)));
+}
+.question-footer > button[data-recommended] {
+  box-shadow: inset 0 0 0 var(--card-border-width) var(--ui-brand-color);
 }
 .question-body {
   --question-body-background: var(--shade-28);

@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { userEvent, within } from "storybook/test";
 import { Button } from "@lesomnus/nox";
+import { create } from "@bufbuild/protobuf";
+import { parse as parseId } from "@lesomnus/payday/pdid";
+import { ProjectSchema } from "#gen/cxz/project_pb";
+import { SessionSchema } from "#gen/cxz/session_pb";
+import { resourceFixture } from "#src/storybook/resource-fixture.ts";
 import { LogsPage } from "./logs-page";
 import {
   ClientLogs,
@@ -8,19 +14,106 @@ import {
   installClientLogs,
 } from "#src/shared/logs/client-logs.ts";
 import { MemoryLogStorage } from "#src/shared/logs/log-storage.ts";
+import { logEntry } from "#src/shared/logs/log-entry.ts";
 
 function Preview({
   persistent = false,
   empty = false,
+  populated = false,
+  dated = false,
+  detailed = false,
 }: {
   persistent?: boolean;
   empty?: boolean;
+  populated?: boolean;
+  dated?: boolean;
+  detailed?: boolean;
 }) {
-  const [logs] = useState(() =>
-    persistent
-      ? clientLogs()
-      : new ClientLogs(new MemoryLogStorage(), "storybook"),
-  );
+  const [c] = useState(() => resourceFixture());
+  const [projects] = useState(() => [
+    create(ProjectSchema, {
+      id: parseId("01949770-0000-8000-8008-000000000002").bytes,
+      name: "Workspace",
+      alias: "workspace",
+    }),
+    create(ProjectSchema, {
+      id: parseId("01949770-0000-8000-8008-000000000004").bytes,
+      name: "Archive",
+      alias: "archive",
+    }),
+  ]);
+  const [sessions] = useState(() => [
+    create(SessionSchema, {
+      id: parseId("01949770-0000-8000-8008-000000000001").bytes,
+      name: "Review",
+      alias: "review",
+      runtimeId: "review",
+      project: { id: projects[0].id },
+    }),
+    create(SessionSchema, {
+      id: parseId("01949770-0000-8000-8008-000000000003").bytes,
+      name: "Build",
+      alias: "build",
+      runtimeId: "build",
+      project: { id: projects[0].id },
+    }),
+  ]);
+  useEffect(() => () => c.dispose(), [c]);
+  const [logs] = useState(() => {
+    if (persistent) return clientLogs();
+    const storage = new MemoryLogStorage();
+    if (detailed)
+      void storage.append([
+        {
+          ...logEntry(
+            {
+              level: "error",
+              category: "rpc",
+              message:
+                "RPC request failed\nThe conversation connection was interrupted.",
+              connection: "https://cxz.example",
+              project: "01949770-0000-8000-8008-000000000002",
+              session: "01949770-0000-8000-8008-000000000001",
+              request: "7d80a4f0-60c3-47e5-a1c0-96300582606c",
+              method: "cxz.SessionService/Transcript",
+              details: {
+                code: "Unknown",
+                attempt: 0,
+                retryable: false,
+                empty: "",
+                stack:
+                  "Error: Connection interrupted\n" +
+                  Array.from(
+                    { length: 24 },
+                    (_, i) =>
+                      `    at readConversation${i} (/workspace/ts/src/client.ts:${i + 1}:10)`,
+                  ).join("\n"),
+              },
+            },
+            "54c018dc-3929-4e7b-940d-ab5893fd6aae",
+            "storybook-diagnostic-build",
+          ),
+          id: "efbc2c24-7b34-4e7d-95c8-09dd28165b7a",
+        },
+      ]);
+    if (dated)
+      void storage.append(
+        [
+          ["2026-11-12T23:59:59.999", "Before selected period"],
+          ["2026-11-13T00:00:00", "Start of November 13"],
+          ["2026-11-13T23:59:59.999", "End of November 13"],
+          ["2026-11-14T00:00:00", "After selected period"],
+        ].map(([date, message]) => ({
+          ...logEntry(
+            { level: "info", category: "client", message },
+            "storybook",
+            "fixture",
+          ),
+          time: new Date(date).getTime(),
+        })),
+      );
+    return new ClientLogs(storage, "storybook");
+  });
   const [writing, setWriting] = useState(false);
   async function burst() {
     setWriting(true);
@@ -40,7 +133,7 @@ function Preview({
   }
   useEffect(() => {
     const dispose = persistent ? installClientLogs() : () => {};
-    if (!empty)
+    if (!empty && !dated && !detailed)
       logs.write({
         level: "info",
         category: "rpc",
@@ -50,8 +143,32 @@ function Preview({
         method: "cxz.SessionService/Events",
         details: { disconnectedMs: 1200 },
       });
+    if (populated) {
+      for (let i = 0; i < 24; i++) {
+        logs.write({
+          level: i % 7 === 0 ? "error" : i % 3 === 0 ? "warn" : "info",
+          category: i % 2 === 0 ? "rpc" : "client",
+          message:
+            i % 7 === 0
+              ? `Request ${i + 1} failed while reading conversation history`
+              : `Diagnostic record ${i + 1}: session state synchronized`,
+          connection: "https://cxz.example",
+          project: "01949770-0000-8000-8008-000000000002",
+          session:
+            i % 2 === 0
+              ? "01949770-0000-8000-8008-000000000001"
+              : "01949770-0000-8000-8008-000000000003",
+          method: i % 2 === 0 ? "cxz.SessionService/Transcript" : undefined,
+          details: {
+            attempt: i + 1,
+            elapsedMs: 120 + i * 17,
+            message: "The complete diagnostic record opens in a modal.",
+          },
+        });
+      }
+    }
     return dispose;
-  }, [logs, empty, persistent]);
+  }, [logs, empty, persistent, populated, dated, detailed]);
   return (
     <div
       style={{
@@ -97,17 +214,68 @@ function Preview({
           Generate rotation burst
         </Button>
       </div>
-      <LogsPage logs={logs} />
+      <LogsPage logs={logs} c={c} projects={projects} sessions={sessions} />
     </div>
   );
 }
 const meta = {
   title: "Pages/Logs",
   component: Preview,
-  parameters: { layout: "fullscreen" },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        component:
+          "Browser diagnostics in the centered resource layout. Project/session selectors share the resource selection state. FindBar date filters use local calendar days, including the full end day, and support either boundary independently. Clearing both restores all dates. The same period applies to counts, older pages and downloads. Checkbox menus apply their draft selection only when closed. Dense, single-line rows use semantic level and category icons, fit the time column to its text, and omit timezone offsets; complete records open in a modal. History loads automatically through stable ID cursors, and only viewport rows plus overscan are mounted. Live updates follow the head while it is visible; history remains stable while reading older records. Use Generate rotation burst to exercise continuous scrolling. OPFS persistence and filtered downloads use the actual log store.",
+      },
+    },
+  },
 } satisfies Meta<typeof Preview>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Memory: Story = {};
 export const Persistent: Story = { args: { persistent: true } };
 export const Empty: Story = { args: { empty: true } };
+export const Populated: Story = { args: { populated: true } };
+export const Period: Story = {
+  args: { dated: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Select November 13, 2026 as both boundaries: only the two records on that local day remain. Clear either date for an open-ended period, or both for all records.",
+      },
+    },
+  },
+};
+export const Details: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const record = await canvas.findByRole(
+      "button",
+      { name: "RPC connection recovered" },
+      { timeout: 10000 },
+    );
+    await userEvent.click(record);
+  },
+};
+export const RichDetails: Story = {
+  args: { detailed: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Log details use the shared resource fields instead of raw JSON. Context and copyable identifiers remain readable alongside multiline diagnostics; zero, false and empty string values are preserved. The modal keeps a fixed, scrollable body.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const record = await canvas.findByRole(
+      "button",
+      { name: /^RPC request failed/ },
+      { timeout: 10000 },
+    );
+    await userEvent.click(record);
+  },
+};

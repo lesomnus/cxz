@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from "react";
-import { searchMatches } from "./search-pattern";
+import { searchMatches } from "#src/shared/search/search-pattern.ts";
 
 export type SearchLocation = {
   seq: string;

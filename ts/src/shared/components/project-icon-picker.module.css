@@ -1,0 +1,35 @@
+.picker {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+.picker.picker > :global(.value-menu) {
+  --ui-icon-size-small: var(--ui-icon-size);
+  --value-padding-block: var(--ui-space);
+  --value-padding-inline: var(--ui-space);
+  flex: none;
+  width: 100%;
+  height: 100%;
+}
+.picker.picker :global(.setting-trigger) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  height: 100%;
+}
+.picker.picker :global(.setting-trigger > .button-content) {
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+}
+.picker :global(.setting-trigger .meta-value) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

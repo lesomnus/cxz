@@ -273,7 +273,7 @@ test("project Session add opens the shared creation dialog scoped to the selecte
   const dialog = page.getByRole("dialog", { name: "Add session", exact: true });
   await expect(
     dialog.getByRole("combobox", { name: "Project", exact: true }),
-  ).toHaveText("Secondary project");
+  ).toHaveCount(0);
   await expect
     .poll(() =>
       dialog.evaluate((node) => node.contains(document.activeElement)),

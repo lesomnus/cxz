@@ -9,3 +9,24 @@
   white-space: nowrap;
   border: 0;
 }
+.group {
+  display: grid;
+  gap: var(--ui-space);
+  margin: var(--ui-space) 0;
+}
+.group > dl {
+  margin: 0;
+}
+.identity.identity {
+  --resource-identity-gap: calc(2 * var(--ui-space));
+  --resource-identity-name-width: calc(25% - var(--resource-identity-gap));
+  column-gap: var(--resource-identity-gap);
+  grid-template-columns:
+    repeat(2, minmax(0, var(--resource-identity-name-width)))
+    minmax(0, 1fr);
+}
+.identity.withTrailing {
+  grid-template-columns:
+    repeat(2, minmax(0, var(--resource-identity-name-width)))
+    minmax(0, 1fr) var(--resource-identity-trailing-width);
+}

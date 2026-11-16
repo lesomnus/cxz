@@ -15,3 +15,22 @@
   padding: var(--ui-space) var(--ui-control-inline-inset);
   font: inherit;
 }
+.iconPreview.iconPreview {
+  align-self: center;
+  align-content: stretch;
+  height: var(--project-preview-size);
+  padding: 0;
+}
+.informationFields {
+  --project-preview-size: calc(2 * var(--ui-icon-size));
+}
+.identifierField > dt {
+  white-space: nowrap;
+}
+.iconPreview > dd {
+  align-items: center;
+  justify-content: center;
+}
+.iconPreview svg {
+  flex-shrink: 0;
+}

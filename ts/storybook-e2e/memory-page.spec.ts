@@ -29,19 +29,24 @@ async function rename(page: Page, name: string) {
 async function pressCentered(page: Page, button: Locator) {
   await expect(button).toBeEnabled();
   await button.hover();
-  const content = button.locator(":scope > .button-content");
-  const resting = (await content.boundingBox())!;
-  const bounds = (await button.boundingBox())!;
-  const scale = await content.evaluate(
-    (node) =>
-      Number(getComputedStyle(node).getPropertyValue("--press-scale")) || 0.95,
+  const content = button.locator(
+    (await button.getAttribute("data-menu-label-press")) !== null
+      ? ":scope > .button-content > :not([data-menu-item-icon]):not([data-menu-item-trailing])"
+      : ":scope > .button-content",
   );
   await page.mouse.down();
   try {
     await expect
-      .poll(async () => (await content.boundingBox())!.width)
-      .toBeCloseTo(resting.width * scale, 1);
+      .poll(() =>
+        content.evaluate((node) => {
+          const css = getComputedStyle(node);
+          const scale = Number(css.getPropertyValue("--press-scale")) || 0.95;
+          return Math.abs(new DOMMatrix(css.transform).a - scale);
+        }),
+      )
+      .toBeLessThan(0.001);
     const pressed = (await content.boundingBox())!;
+    const bounds = (await button.boundingBox())!;
     expect(pressed.x + pressed.width / 2).toBeCloseTo(
       bounds.x + bounds.width / 2,
       0,

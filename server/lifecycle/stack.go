@@ -39,10 +39,11 @@ type Runtime interface {
 	SetSessionTitle(context.Context, string, string) (string, error)
 }
 type shared struct {
-	resources  *ent.Client
-	db         *sql.DB
-	transition sync.RWMutex
-	mu         sync.Mutex
+	resources     *ent.Client
+	db            *sql.DB
+	transition    sync.RWMutex
+	mu            sync.Mutex
+	sessionStarts sync.Map
 	// linkMu serializes the read-check-write a task link needs: two sessions
 	// adding opposite blocking edges at once would otherwise both read a graph
 	// without the other's edge and both pass the cycle check.
@@ -76,8 +77,8 @@ func (b builder) Build(next resource.Server) (resource.Server, error) {
 	return Layer{Overlay: resource.NewOverlay(next), shared: b.shared}, nil
 }
 
-// A separate database keeps the rc.1 registry/journal untouched. Resource
-// projections can be rebuilt from runtime manifests, without changing vendor IDs.
+// A separate database keeps the runtime registry/journal untouched. It also
+// owns sessions registered before their first runtime manifest exists.
 type Options struct {
 	Notifications bool
 	// RetainedMemory seeds missing identities without overwriting live runtime status.

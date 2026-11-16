@@ -428,6 +428,14 @@ test("summary history prefetches before the loaded edge even with delayed respon
   // The overview can probe the latest event with limit=1 before navigation.
   expect(requests.find((request) => request.limit > 1).limit).toBe(1024);
   const first = BigInt(await messages.getAttribute("data-first"));
+  // Let the initial measured rows and follow-to-bottom frame commit before
+  // simulating a native reading move against this layout.
+  await pane.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
   await pane.evaluate((el) => {
     el.scrollTop = el.clientHeight * 5;
   });
@@ -489,9 +497,24 @@ test("viewport fades cover response bodies while the scrollbar and controls rema
   expect(await page.locator(".scroll-response-marker").count()).toBeGreaterThan(
     0,
   );
+  await pane.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
   await pane.evaluate((el) => {
     el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
   });
+  await expect
+    .poll(() =>
+      page
+        .locator(".scroll-thumb")
+        .evaluate((el) =>
+          Math.abs(parseFloat(el.style.top) - Number(el.dataset.targetTop)),
+        ),
+    )
+    .toBeLessThan(0.1);
   for (const edge of ["top", "bottom"]) {
     const fade = page.locator(`.transcript-fade-${edge}`);
     await expect(fade).toHaveCSS("opacity", "1");
@@ -503,44 +526,76 @@ test("viewport fades cover response bodies while the scrollbar and controls rema
     // to a computed offset, which is what used to decide this test: a scroll
     // that landed a pixel short, or a point that fell in the gap between two
     // rows, read as a layering failure.
-    const layers = await pane.evaluate((el, edge) => {
-      const area = el.closest(".transcript-area");
-      const fade = area.querySelector(`.transcript-fade-${edge}`);
-      const box = fade.getBoundingClientRect();
-      const row = [...el.querySelectorAll(".response .markdown")]
-        .map((node) => ({ node, rect: node.getBoundingClientRect() }))
-        .find(
-          ({ rect }) => rect.top < box.bottom - 1 && rect.bottom > box.top + 1,
-        );
-      if (!row) {
-        return { covered: false };
-      }
-      // Horizontally the row's own centre, which is inside the content column
-      // and clear of the scrollbar; vertically the middle of the overlap.
-      const x = row.rect.x + row.rect.width / 2;
-      const y =
-        (Math.max(row.rect.top, box.top) +
-          Math.min(row.rect.bottom, box.bottom)) /
-        2;
-      fade.style.pointerEvents = "auto";
-      const fadeOnTop = document.elementFromPoint(x, y) === fade;
-      const thumb = area.querySelector(".scroll-thumb");
-      const handle = thumb.getBoundingClientRect();
-      const scrollbarAbove = thumb.contains(
-        document.elementFromPoint(handle.x + handle.width / 2, handle.y + 2),
-      );
-      fade.style.pointerEvents = "none";
-      const stillInteractive = row.node.contains(
-        document.elementFromPoint(x, y),
-      );
-      return { covered: true, fadeOnTop, scrollbarAbove, stillInteractive };
-    }, edge);
-    expect(layers).toEqual({
-      covered: true,
-      fadeOnTop: true,
-      scrollbarAbove: true,
-      stillInteractive: true,
-    });
+    await expect
+      .poll(() =>
+        pane.evaluate((el, edge) => {
+          const area = el.closest(".transcript-area");
+          const fade = area.querySelector(`.transcript-fade-${edge}`);
+          const box = fade.getBoundingClientRect();
+          const row = [...el.querySelectorAll(".response .markdown")]
+            .map((node) => ({ node, rect: node.getBoundingClientRect() }))
+            .find(
+              ({ rect }) =>
+                rect.top < box.bottom - 1 && rect.bottom > box.top + 1,
+            );
+          if (!row) {
+            return { covered: false };
+          }
+          // Horizontally the row's own centre, which is inside the content column
+          // and clear of the scrollbar; vertically the middle of the overlap.
+          const x = row.rect.x + row.rect.width / 2;
+          const y =
+            (Math.max(row.rect.top, box.top) +
+              Math.min(row.rect.bottom, box.bottom)) /
+            2;
+          fade.style.pointerEvents = "auto";
+          const fadeOnTop = document.elementFromPoint(x, y) === fade;
+          const thumb = area.querySelector(".scroll-thumb");
+          const handle = thumb.getBoundingClientRect();
+          const scrollbarAbove = thumb.contains(
+            document.elementFromPoint(
+              handle.x + handle.width / 2,
+              handle.y + 2,
+            ),
+          );
+          const diagnostic = scrollbarAbove
+            ? undefined
+            : {
+                edge,
+                handle: handle.toJSON(),
+                track: area
+                  .querySelector(".scroll-track")
+                  .getBoundingClientRect()
+                  .toJSON(),
+                area: area.getBoundingClientRect().toJSON(),
+                pane: el.getBoundingClientRect().toJSON(),
+                hit: document
+                  .elementsFromPoint(handle.x + handle.width / 2, handle.y + 2)
+                  .map((node) => ({
+                    name: node.className,
+                    pointer: getComputedStyle(node).pointerEvents,
+                    z: getComputedStyle(node).zIndex,
+                  })),
+              };
+          fade.style.pointerEvents = "none";
+          const stillInteractive = row.node.contains(
+            document.elementFromPoint(x, y),
+          );
+          return {
+            covered: true,
+            fadeOnTop,
+            scrollbarAbove,
+            stillInteractive,
+            ...(diagnostic ? { diagnostic } : {}),
+          };
+        }, edge),
+      )
+      .toEqual({
+        covered: true,
+        fadeOnTop: true,
+        scrollbarAbove: true,
+        stillInteractive: true,
+      });
   }
 });
 

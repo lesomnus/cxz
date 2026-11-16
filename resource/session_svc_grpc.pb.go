@@ -29,6 +29,7 @@ const (
 	SessionService_MarkRead_FullMethodName          = "/cxz.SessionService/MarkRead"
 	SessionService_ReadState_FullMethodName         = "/cxz.SessionService/ReadState"
 	SessionService_ConversationStats_FullMethodName = "/cxz.SessionService/ConversationStats"
+	SessionService_Start_FullMethodName             = "/cxz.SessionService/Start"
 	SessionService_Resume_FullMethodName            = "/cxz.SessionService/Resume"
 	SessionService_Fork_FullMethodName              = "/cxz.SessionService/Fork"
 	SessionService_Stop_FullMethodName              = "/cxz.SessionService/Stop"
@@ -93,6 +94,8 @@ type SessionServiceClient interface {
 	ReadState(ctx context.Context, in *SessionReadStateRequest, opts ...grpc.CallOption) (*SessionReadState, error)
 	// Read retained conversation statistics, never account billing or lifetime totals.
 	ConversationStats(ctx context.Context, in *ConversationStatsRequest, opts ...grpc.CallOption) (*ConversationStatsReply, error)
+	// Start a stored session, preparing its runtime on the first start.
+	Start(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Resume(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	// Branch a settled conversation, retaining its project, account and settings.
 	// client_id makes retries return the same child rather than creating another.
@@ -257,6 +260,16 @@ func (c *sessionServiceClient) ConversationStats(ctx context.Context, in *Conver
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConversationStatsReply)
 	err := c.cc.Invoke(ctx, SessionService_ConversationStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) Start(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Session)
+	err := c.cc.Invoke(ctx, SessionService_Start_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -622,6 +635,8 @@ type SessionServiceServer interface {
 	ReadState(context.Context, *SessionReadStateRequest) (*SessionReadState, error)
 	// Read retained conversation statistics, never account billing or lifetime totals.
 	ConversationStats(context.Context, *ConversationStatsRequest) (*ConversationStatsReply, error)
+	// Start a stored session, preparing its runtime on the first start.
+	Start(context.Context, *SessionControl) (*Session, error)
 	Resume(context.Context, *SessionControl) (*Session, error)
 	// Branch a settled conversation, retaining its project, account and settings.
 	// client_id makes retries return the same child rather than creating another.
@@ -712,6 +727,9 @@ func (UnimplementedSessionServiceServer) ReadState(context.Context, *SessionRead
 }
 func (UnimplementedSessionServiceServer) ConversationStats(context.Context, *ConversationStatsRequest) (*ConversationStatsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ConversationStats not implemented")
+}
+func (UnimplementedSessionServiceServer) Start(context.Context, *SessionControl) (*Session, error) {
+	return nil, status.Error(codes.Unimplemented, "method Start not implemented")
 }
 func (UnimplementedSessionServiceServer) Resume(context.Context, *SessionControl) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Resume not implemented")
@@ -990,6 +1008,24 @@ func _SessionService_ConversationStats_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionServiceServer).ConversationStats(ctx, req.(*ConversationStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionControl)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Start(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Start_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Start(ctx, req.(*SessionControl))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1530,6 +1566,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ConversationStats",
 			Handler:    _SessionService_ConversationStats_Handler,
+		},
+		{
+			MethodName: "Start",
+			Handler:    _SessionService_Start_Handler,
 		},
 		{
 			MethodName: "Resume",

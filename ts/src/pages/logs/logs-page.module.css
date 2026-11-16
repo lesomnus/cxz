@@ -1,93 +1,128 @@
-.page {
+.body {
+  display: flex;
   flex: 1;
   min-width: 0;
   min-height: 0;
+  overflow: auto;
+}
+.content.content {
   display: flex;
   flex-direction: column;
-  gap: calc(2 * var(--space));
-  padding: calc(3 * var(--space));
+  flex: 1;
+  min-height: 0;
+  gap: calc(2 * var(--ui-space));
 }
-.header,
-.actions,
-.status,
-.footer {
-  display: flex;
-  align-items: center;
-  gap: calc(2 * var(--space));
+.searchControls {
   flex-wrap: wrap;
 }
-.header {
-  justify-content: space-between;
+.searchInput {
+  min-width: calc(24 * var(--ui-space));
 }
-.header h1 {
-  margin: 0;
-  font-size: 1rem;
-}
-.header small,
-.status,
-.notice,
-.footer {
-  font-size: 0.8rem;
-  color: var(--muted);
+.filters,
+.period {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ui-space);
+  min-width: 0;
 }
 .filters {
-  display: flex;
-  gap: var(--space);
   flex-wrap: wrap;
+  margin-inline-start: auto;
+  max-width: 100%;
 }
-.filters input {
-  min-width: 130px;
-  flex: 1;
-  width: 160px;
-  padding: calc(2 * var(--space));
-  border: 0;
-  border-radius: var(--wrapper-radius);
-  background: var(--shade-17);
-  color: var(--shade-237);
-  font: inherit;
+.datePicker.datePicker {
+  --ui-date-picker-trigger-width: calc(30 * var(--ui-space));
+  height: auto;
+  box-shadow: none;
+  font-size: inherit;
 }
-.filters input[type="search"] {
-  flex: 2;
+.dateSeparator {
+  align-self: center;
+  color: var(--ui-text-separator);
 }
-.scroll {
-  flex: 1;
-  min-height: 120px;
+.live,
+.status,
+.notice,
+.sentinel {
+  font-size: 11px;
+  color: var(--ui-muted);
 }
-.table {
-  width: 100%;
+.live,
+.status {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--ui-space));
 }
-.table td {
-  vertical-align: top;
-}
-.table td:first-child {
+.live {
+  flex: none;
   white-space: nowrap;
-  font-size: 0.8rem;
 }
-.table td:last-child {
-  width: 100%;
-  min-width: 180px;
+.status {
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
 }
-.table summary {
+.scroll.scroll {
+  flex: 1;
+  height: auto;
+  min-height: 120px;
+  border-radius: 0;
+}
+.timeColumn {
+  width: 1%;
+}
+.table.table {
+  --resource-table-control-size: calc(6 * var(--ui-space));
+  table-layout: auto;
+  border-radius: 0;
+}
+.levelColumn,
+.categoryColumn {
+  width: calc(6 * var(--ui-space));
+}
+.time {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.row {
   cursor: pointer;
-  overflow-wrap: anywhere;
 }
-.table summary small {
+.messageCell {
+  width: 100%;
+  max-width: 0;
+}
+.message.message {
+  --button-background: transparent;
+  --button-hover-background: transparent;
   display: block;
-  margin-top: var(--space);
-  color: var(--muted);
-  font-family: var(--ui-font-mono);
+  width: 100%;
+  height: var(--ui-table-row-height);
+  min-height: 0;
+  padding: 0;
+  text-align: left;
 }
-.table pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font: 0.8rem var(--ui-font-mono);
-  padding: calc(2 * var(--space));
-  border-radius: var(--wrapper-radius);
-  background: var(--shade-17);
+.message > :global(.button-content) {
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
 }
-.level {
-  font: 0.75rem var(--ui-font-mono);
-  color: var(--muted);
+.message > :global(.button-content) > span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.level,
+.category {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  color: var(--ui-muted);
+}
+.level[data-level="info"] {
+  color: var(--ui-info, #729fea);
 }
 .level[data-level="warn"] {
   color: var(--ui-warning, #caad62);
@@ -95,15 +130,28 @@
 .level[data-level="error"] {
   color: var(--ui-error, #db7979);
 }
-.footer {
-  justify-content: flex-end;
-  font-variant-numeric: tabular-nums;
-}
 .empty {
-  color: var(--muted);
+  margin: 0;
+  color: var(--ui-muted);
   text-align: center;
-  padding: calc(5 * var(--space));
+  padding: calc(5 * var(--ui-space));
 }
 .notice {
   margin: 0;
+}
+.sentinel {
+  height: calc(6 * var(--ui-space));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spacer.spacer td {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+@container resource-page (width < 600px) {
+  .time {
+    font-size: 10px;
+  }
 }

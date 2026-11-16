@@ -11,6 +11,17 @@
   color: color-mix(in srgb, var(--shade-237) 78%, #df5266);
 }
 
+/* A notice that asks for something, rather than only reporting it: the request
+   and the button that answers it share a line, and become two lines when the
+   conversation's width is not enough for one. */
+.notice.action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(2 * var(--space));
+}
+
 :global(.activity-card-preview[data-unfolded="true"])
   .error:global(.activity-card-face) {
   transform: none;

@@ -20,6 +20,7 @@ type Mutation struct {
 	alias         *string
 	name          *string
 	desc          *string
+	labels        *map[string]string
 	workspace     *string
 	_config       *string
 	date_updated  *time.Time
@@ -106,6 +107,42 @@ func (m *Mutation) Desc() (r string, exists bool) {
 func (m *Mutation) ResetDesc() {
 	m.desc = nil
 	delete(m.exprs, FieldDesc)
+}
+
+// SetLabels sets the "labels" field.
+func (m *Mutation) SetLabels(value map[string]string) {
+	m.labels = &value
+	delete(m.clearedFields, FieldLabels)
+	delete(m.exprs, FieldLabels)
+}
+
+// Labels returns the value of the "labels" field in the mutation.
+func (m *Mutation) Labels() (r map[string]string, exists bool) {
+	v := m.labels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (m *Mutation) ClearLabels() {
+	m.labels = nil
+	delete(m.exprs, FieldLabels)
+	m.clearedFields[FieldLabels] = struct{}{}
+}
+
+// LabelsCleared returns if the "labels" field was cleared in this mutation.
+func (m *Mutation) LabelsCleared() bool {
+	_, ok := m.clearedFields[FieldLabels]
+	return ok
+}
+
+// ResetLabels resets all changes to the "labels" field.
+func (m *Mutation) ResetLabels() {
+	m.labels = nil
+	delete(m.clearedFields, FieldLabels)
+	delete(m.exprs, FieldLabels)
 }
 
 // SetWorkspace sets the "workspace" field.
@@ -308,7 +345,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -317,6 +354,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.desc != nil || m.exprs[FieldDesc] != nil {
 		fields = append(fields, FieldDesc)
+	}
+	if m.labels != nil || m.exprs[FieldLabels] != nil {
+		fields = append(fields, FieldLabels)
 	}
 	if m.workspace != nil {
 		fields = append(fields, FieldWorkspace)
@@ -356,6 +396,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case FieldDesc:
 		return m.Desc()
+	case FieldLabels:
+		return m.Labels()
 	case FieldWorkspace:
 		return m.Workspace()
 	case FieldConfig:
@@ -416,6 +458,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDesc(v)
+		return nil
+	case FieldLabels:
+		v, ok := value.(map[string]string)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabels(v)
 		return nil
 	case FieldWorkspace:
 		v, ok := value.(string)
@@ -505,6 +557,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetName()
 	case FieldDesc:
 		m.ResetDesc()
+	case FieldLabels:
+		m.ResetLabels()
 	case FieldWorkspace:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldConfig:
@@ -547,6 +601,9 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldDesc]; ok {
 		fields = append(fields, FieldDesc)
 	}
+	if _, ok := m.exprs[FieldLabels]; ok {
+		fields = append(fields, FieldLabels)
+	}
 	if _, ok := m.exprs[FieldConfig]; ok {
 		fields = append(fields, FieldConfig)
 	}
@@ -588,6 +645,9 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *Mutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(FieldLabels) {
+		fields = append(fields, FieldLabels)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -611,6 +671,9 @@ func (m *Mutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *Mutation) ClearField(name string) error {
 	switch name {
+	case FieldLabels:
+		m.ClearLabels()
+		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
 		return nil
@@ -636,6 +699,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDesc:
 		m.ResetDesc()
+		return nil
+	case FieldLabels:
+		m.ResetLabels()
 		return nil
 	case FieldWorkspace:
 		m.ResetWorkspace()

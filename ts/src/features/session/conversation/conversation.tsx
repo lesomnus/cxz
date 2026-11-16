@@ -1138,8 +1138,12 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         />
       )}
       {needsLogin && (
+        // `error` is what `.conversation > .error` lays out against the
+        // conversation's own width. Without it this notice is a flex child of
+        // the whole pane and runs the full width of the window, which is how it
+        // read: an error about one session addressing the entire screen.
         <div
-          className={`${errorStyles.error} ${errorStyles.notice}`}
+          className={`error ${errorStyles.error} ${errorStyles.notice} ${errorStyles.action}`}
           role="status"
         >
           {t(

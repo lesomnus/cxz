@@ -160,7 +160,7 @@ test("real container editor opens the workspace through the authenticated iframe
   ).toBeVisible();
 });
 
-test("language packs load only on Apply under the production CSP and the saved language survives reload", async ({
+test("language packs load on selection under the production CSP and the saved language survives reload", async ({
   page,
 }) => {
   const requests: string[] = [];
@@ -180,13 +180,10 @@ test("language packs load only on Apply under the production CSP and the saved l
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await chooseSettingsTopic(page, "General");
-  await page.getByLabel("Display language", { exact: true }).click();
-  await page.getByRole("option", { name: "한국어", exact: true }).click();
   expect(requests).toEqual([]);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await page
-    .getByRole("button", { name: "Apply settings", exact: true })
-    .click();
+  await page.getByLabel("Display language", { exact: true }).click();
+  await page.getByRole("option", { name: "한국어", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "ko");
   expect(requests).toHaveLength(1);
   expect(

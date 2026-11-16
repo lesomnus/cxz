@@ -1,9 +1,21 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   Button,
+  CheckboxMenu,
+  DatePicker,
   Switch,
-  ValueMenu,
+  FindBar,
+  FindBarControls,
+  FindBarIcon,
+  FindBarInput,
   Table,
   TableHeader,
   TableBody,
@@ -12,64 +24,135 @@ import {
   TableCell,
   TableScrollArea,
 } from "@lesomnus/nox";
+import type { Project } from "#gen/cxz/project_pb";
+import type { Session } from "#gen/cxz/session_pb";
+import type { Connection } from "#src/shared/api/connection.ts";
+import { ResourceSelection } from "#src/shared/api/resource-selection.ts";
+import { sessionUUID } from "#src/shared/api/session-id.ts";
+import { projectId } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { clientLogs, type ClientLogs } from "#src/shared/logs/client-logs.ts";
-import {
-  pageSize,
-  type LogPage,
-  type LogQuery,
+import type {
+  LogCategory,
+  LogEntry,
+  LogLevel,
+  LogQuery,
 } from "#src/shared/logs/log-entry.ts";
+import {
+  ResourceLayout,
+  ResourcePage,
+  ResourceToolbar,
+} from "#src/shared/components/resource-layout.tsx";
+import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
+import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
+import { SessionPicker } from "#src/shared/components/session-picker.tsx";
+import pageStyles from "#src/shared/components/resource-page.module.css";
+import tableStyles from "#src/shared/components/resource-table.module.css";
+import { LogDetailsDialog } from "./log-details-dialog";
+import { LogLevelIcon } from "./log-level-icon";
+import { LogCategoryIcon } from "./log-category-icon";
+import { useLogFeed } from "./use-log-feed";
+import { useLogViewport } from "./use-log-viewport";
+import { logPeriodBounds } from "#src/shared/logs/log-period.ts";
 import styles from "./logs-page.module.css";
-import { ResourcePage } from "#src/shared/components/resource-layout.tsx";
+import inputSurface from "#src/shared/components/input-surface.module.css";
 
-export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
-  useLocale();
+const logLevels = ["info", "warn", "error"] as const;
+const logCategories = ["client", "rpc"] as const;
+const emptyProjects: readonly Project[] = [];
+const emptySessions: readonly Session[] = [];
+
+export function LogsPage({
+  logs: supplied,
+  c,
+  projects = emptyProjects,
+  sessions = emptySessions,
+  projectsLoading = false,
+  sessionsLoading = false,
+}: {
+  logs?: ClientLogs;
+  c?: Connection;
+  projects?: readonly Project[];
+  sessions?: readonly Session[];
+  projectsLoading?: boolean;
+  sessionsLoading?: boolean;
+}) {
+  const { locale } = useLocale();
   const logs = useMemo(() => supplied ?? clientLogs(), [supplied]);
-  const [filters, setFilters] = useState<LogQuery>({});
+  const [localSelection] = useState(() => new ResourceSelection());
+  const selection = c?.selection ?? localSelection;
+  const scope = useSyncExternalStore(selection.subscribe, selection.snapshot);
+  const [search, setSearch] = useState("");
+  const [period, setPeriod] = useState({ start: "", end: "" });
+  const [levels, setLevels] = useState<LogLevel[]>([...logLevels]);
+  const [categories, setCategories] = useState<LogCategory[]>([
+    ...logCategories,
+  ]);
+  const filters: LogQuery = useMemo(
+    () => ({
+      search,
+      ...logPeriodBounds(period.start, period.end),
+      level: levels,
+      category: categories,
+      project: scope.project || undefined,
+      projectSessions: scope.project
+        ? sessions
+            .filter(
+              (session) =>
+                session.project && projectId(session.project) === scope.project,
+            )
+            .map((session) => sessionUUID(session.id))
+        : undefined,
+      session: scope.session || undefined,
+    }),
+    [
+      search,
+      period,
+      levels,
+      categories,
+      scope.project,
+      scope.session,
+      sessions,
+    ],
+  );
   const deferred = useDeferredValue(filters);
-  const [offset, setOffset] = useState(0);
-  const [revision, setRevision] = useState(0);
   const [live, setLive] = useState(true);
+  const feed = useLogFeed(logs, deferred, live);
+  const result = feed.page;
+  const queryKey = JSON.stringify(deferred);
+  const window = useLogViewport(result?.entries.length ?? 0, queryKey);
+  const sentinel = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<LogPage>();
-  const [error, setError] = useState("");
-  const query = useMemo(() => ({ ...deferred, offset }), [deferred, offset]);
+  const [actionError, setActionError] = useState("");
+  const [selected, setSelected] = useState<LogEntry>();
+  const [detailsOpen, setDetailsOpen] = useState(false);
   useEffect(() => {
-    if (!live) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const unsubscribe = logs.subscribe(() => {
-      timer ??= setTimeout(() => {
-        timer = undefined;
-        setRevision((r) => r + 1);
-      }, 200);
-    });
-    return () => {
-      clearTimeout(timer);
-      unsubscribe();
-    };
-  }, [logs, live]);
-  useEffect(() => {
-    let disposed = false;
-    logs
-      .query(query)
-      .then((page) => {
-        if (!disposed) {
-          setResult(page);
-          setError("");
-        }
-      })
-      .catch((failure) => {
-        if (!disposed) setError(String(failure));
-      });
-    return () => {
-      disposed = true;
-    };
-  }, [logs, query, revision]);
-  function filter(key: keyof LogQuery, value: string) {
-    setOffset(0);
-    setFilters((old) => ({ ...old, [key]: value }));
+    if (
+      !result?.next ||
+      feed.loading ||
+      !sentinel.current ||
+      !window.viewport.current
+    )
+      return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) feed.more();
+      },
+      { root: window.viewport.current, rootMargin: "0px 0px 320px 0px" },
+    );
+    observer.observe(sentinel.current);
+    return () => observer.disconnect();
+  }, [result?.next, feed.loading, feed.more, window.viewport]);
+  function refresh() {
+    if (window.viewport.current) window.viewport.current.scrollTop = 0;
+    feed.atTop(true);
+    feed.refresh();
+  }
+  function openDetails(entry: LogEntry) {
+    setSelected(entry);
+    setDetailsOpen(true);
   }
   async function download() {
     setBusy(true);
@@ -83,8 +166,9 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
       link.download = `cxz-client-logs-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setActionError("");
     } catch (failure) {
-      setError(String(failure));
+      setActionError(String(failure));
     } finally {
       setBusy(false);
     }
@@ -93,177 +177,293 @@ export function LogsPage({ logs: supplied }: { logs?: ClientLogs }) {
     setBusy(true);
     try {
       await logs.clear();
-      setOffset(0);
-      setRevision((r) => r + 1);
-      setError("");
+      refresh();
+      setActionError("");
     } catch (failure) {
-      setError(String(failure));
+      setActionError(String(failure));
     } finally {
       setBusy(false);
     }
   }
   return (
-    <ResourcePage className={styles.page} aria-label={t("Logs")}>
-      <header className={styles.header}>
-        <div>
-          <h1>{t("Logs")}</h1>
-          <small>{t("Diagnostics observed by this browser")}</small>
-        </div>
-        <div className={styles.actions}>
-          <span className={styles.actions}>
-            <small>{t("Live updates")}</small>
-            <Switch
-              label={t("Live updates")}
-              checked={live}
-              onChange={(value) => {
-                setLive(value);
-                setOffset(0);
-                setRevision((r) => r + 1);
-              }}
-            />
-          </span>
-          <Button onClick={() => setRevision((r) => r + 1)}>
-            {t("Refresh")}
-          </Button>
-          <Button disabled={busy} onClick={download}>
-            {t("Download filtered logs")}
-          </Button>
-          <Button disabled={busy} onClick={clear}>
-            {t("Clear logs")}
-          </Button>
-        </div>
-      </header>
-      <div className={styles.filters}>
-        <input
-          type="search"
-          aria-label={t("Search logs")}
-          placeholder={t("Search logs")}
-          value={filters.search ?? ""}
-          onChange={(e) => filter("search", e.target.value)}
-        />
-        <ValueMenu
-          label={t("Log level")}
-          value={filters.level ?? ""}
-          choose={(value) => filter("level", value)}
-          options={[
-            { value: "", label: t("All levels") },
-            { value: "info", label: "Info" },
-            { value: "warn", label: "Warn" },
-            { value: "error", label: "Error" },
-          ]}
-        />
-        <ValueMenu
-          label={t("Log category")}
-          value={filters.category ?? ""}
-          choose={(value) => filter("category", value)}
-          options={[
-            { value: "", label: t("All categories") },
-            { value: "rpc", label: "RPC" },
-            { value: "client", label: "Client" },
-          ]}
-        />
-        {(
-          [
-            ["connection", t("Connection URL")],
-            ["project", t("Project UUID")],
-            ["session", t("Session UUID")],
-          ] as const
-        ).map(([key, label]) => (
-          <input
-            key={key}
-            aria-label={label}
-            placeholder={label}
-            value={filters[key] ?? ""}
-            onChange={(e) => filter(key, e.target.value.trim())}
-          />
-        ))}
-      </div>
-      <div className={styles.status} role="status">
-        {result ? (
+    <ResourcePage aria-label={t("Logs")}>
+      <ResourceToolbar
+        aria-label={t("Logs")}
+        actions={
           <>
-            <span>{result.storage === "opfs" ? "OPFS" : t("Memory only")}</span>
-            <span>
-              {(result.bytes / 1024 / 1024).toFixed(2)} /{" "}
-              {result.capacity / 1024 / 1024} MiB
-            </span>
-            <span>
-              {t("{count} matching records", { count: result.total })}
-            </span>
+            <ToolbarIconButton
+              icon="refresh"
+              label={t("Refresh")}
+              onClick={refresh}
+            />
+            <ToolbarIconButton
+              icon="download"
+              label={t("Download filtered logs")}
+              disabled={busy}
+              onClick={download}
+            />
+            <ToolbarIconButton
+              icon="erase"
+              label={t("Clear logs")}
+              disabled={busy}
+              onClick={clear}
+            />
           </>
-        ) : (
-          t("Loading…")
-        )}
-      </div>
-      {result?.storage === "memory" && (
-        <p className={styles.notice}>
-          {t(
-            "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).",
-          )}
-        </p>
-      )}
-      {error && <ErrorNotice error={error} />}
-      <TableScrollArea className={styles.scroll} scrollbarLabel={t("Logs")}>
-        <Table className={styles.table} aria-label={t("Client logs")}>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("Time")}</TableHead>
-              <TableHead>{t("Level")}</TableHead>
-              <TableHead>{t("Message")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {result?.entries.map((entry) => (
-              <TableRow key={entry.id}>
-                <TableCell>
-                  <DateTime value={entry.time} />
-                </TableCell>
-                <TableCell>
-                  <span className={styles.level} data-level={entry.level}>
-                    {entry.level}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <details>
-                    <summary>
-                      <span>{entry.message}</span>
-                      <small>{entry.method ?? entry.category}</small>
-                    </summary>
-                    <pre>{JSON.stringify(entry, null, 2)}</pre>
-                  </details>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {result && !result.entries.length && (
-          <p className={styles.empty}>{t("No matching logs")}</p>
-        )}
-      </TableScrollArea>
-      <footer className={styles.footer}>
-        <Button
-          disabled={!offset}
-          onClick={() => {
-            setLive(false);
-            setOffset(Math.max(0, offset - pageSize));
+        }
+      >
+        <ProjectPicker
+          projects={projects}
+          value={scope.project}
+          allowAll
+          loading={projectsLoading}
+          choose={(project) => selection.chooseProject(project)}
+        />
+        <SessionPicker
+          sessions={sessions}
+          project={scope.project || undefined}
+          value={scope.session}
+          loading={sessionsLoading}
+          choose={(id) => {
+            const session = sessions.find(
+              (session) => sessionUUID(session.id) === id,
+            );
+            selection.chooseSession(
+              session?.project ? projectId(session.project) : scope.project,
+              id,
+              session?.runtimeId ?? "",
+            );
           }}
-        >
-          {t("Previous")}
-        </Button>
-        <span>
-          {result?.total
-            ? `${offset + 1}–${Math.min(offset + pageSize, result.total)} / ${result.total}`
-            : "0"}
+        />
+        <span className={styles.live}>
+          <span>{t("Live updates")}</span>
+          <Switch
+            label={t("Live updates")}
+            checked={live}
+            onChange={(value) => {
+              setLive(value);
+              if (value) refresh();
+            }}
+          />
         </span>
-        <Button
-          disabled={!result || offset + pageSize >= result.total}
-          onClick={() => {
-            setLive(false);
-            setOffset(offset + pageSize);
-          }}
-        >
-          {t("Next")}
-        </Button>
-      </footer>
+      </ResourceToolbar>
+      <div className={`${pageStyles.contentPadding} ${styles.body}`}>
+        <ResourceLayout className={styles.content}>
+          <FindBar
+            className={inputSurface.surface}
+            aria-label={t("Search logs")}
+          >
+            <FindBarControls className={styles.searchControls}>
+              <FindBarIcon />
+              <FindBarInput
+                className={styles.searchInput}
+                aria-label={t("Search logs")}
+                placeholder={t("Search logs")}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <div className={styles.filters}>
+                <div
+                  className={styles.period}
+                  role="group"
+                  aria-label={t("Log period (local time)")}
+                >
+                  <DatePicker
+                    variant="toolbar"
+                    className={styles.datePicker}
+                    label={t("Log start date")}
+                    placeholder={t("From")}
+                    value={period.start || null}
+                    max={period.end || undefined}
+                    locale={locale}
+                    formatDate={(value) => value}
+                    onChange={(value) =>
+                      setPeriod((current) => ({
+                        ...current,
+                        start: value ?? "",
+                      }))
+                    }
+                  />
+                  <span className={styles.dateSeparator} aria-hidden="true">
+                    –
+                  </span>
+                  <DatePicker
+                    variant="toolbar"
+                    className={styles.datePicker}
+                    label={t("Log end date")}
+                    placeholder={t("Through")}
+                    value={period.end || null}
+                    min={period.start || undefined}
+                    locale={locale}
+                    formatDate={(value) => value}
+                    onChange={(value) =>
+                      setPeriod((current) => ({ ...current, end: value ?? "" }))
+                    }
+                  />
+                </div>
+                <CheckboxMenu
+                  label={t("Log level")}
+                  allLabel={t("All levels")}
+                  triggerContent={t("Level")}
+                  options={logLevels.map((level) => ({
+                    value: level,
+                    label: level,
+                    icon: <LogLevelIcon level={level} />,
+                  }))}
+                  value={levels}
+                  choose={(values) =>
+                    setLevels(
+                      logLevels.filter((level) => values.includes(level)),
+                    )
+                  }
+                />
+                <CheckboxMenu
+                  label={t("Log category")}
+                  allLabel={t("All categories")}
+                  triggerContent={t("Category")}
+                  options={logCategories.map((category) => ({
+                    value: category,
+                    label: category === "rpc" ? "RPC" : "Client",
+                    icon: <LogCategoryIcon category={category} />,
+                  }))}
+                  value={categories}
+                  choose={(values) =>
+                    setCategories(
+                      logCategories.filter((category) =>
+                        values.includes(category),
+                      ),
+                    )
+                  }
+                />
+              </div>
+            </FindBarControls>
+          </FindBar>
+          <div className={styles.status} role="status">
+            {result ? (
+              <>
+                <span>
+                  {result.storage === "opfs" ? "OPFS" : t("Memory only")}
+                </span>
+                <span>
+                  {(result.bytes / 1024 / 1024).toFixed(2)} /{" "}
+                  {result.capacity / 1024 / 1024} MiB
+                </span>
+                <span>
+                  {t("{count} matching records", { count: result.total })}
+                </span>
+              </>
+            ) : (
+              t("Loading…")
+            )}
+          </div>
+          {result?.storage === "memory" && (
+            <p className={styles.notice}>
+              {t(
+                "Persistent log storage is unavailable. These logs are kept in this tab and disappear on reload (up to 2 MiB).",
+              )}
+            </p>
+          )}
+          {(actionError || feed.error) && (
+            <ErrorNotice error={actionError || feed.error} />
+          )}
+          <TableScrollArea
+            className={styles.scroll}
+            viewportRef={window.viewport}
+            data-loaded-count={result?.entries.length ?? 0}
+            scrollbarLabel={t("Logs")}
+            onScroll={(event) => {
+              feed.atTop(event.currentTarget.scrollTop < 2);
+              window.scrolled();
+            }}
+          >
+            <Table
+              className={`${tableStyles.layout} ${tableStyles.table} ${styles.table}`}
+              aria-label={t("Client logs")}
+              aria-rowcount={result ? result.total + 1 : undefined}
+            >
+              <colgroup>
+                <col className={styles.timeColumn} />
+                <col className={styles.levelColumn} />
+                <col className={styles.categoryColumn} />
+                <col />
+              </colgroup>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("Time")}</TableHead>
+                  <TableHead aria-label={t("Level")} />
+                  <TableHead aria-label={t("Category")} />
+                  <TableHead>{t("Message")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {window.before > 0 && <Spacer height={window.before} />}
+                {result?.entries
+                  .slice(window.start, window.end)
+                  .map((entry, index) => (
+                    <TableRow
+                      key={entry.id}
+                      data-log-row
+                      aria-rowindex={window.start + index + 2}
+                      className={styles.row}
+                      selected={detailsOpen && selected?.id === entry.id}
+                      onClick={() => openDetails(entry)}
+                    >
+                      <TableCell className={styles.time}>
+                        <DateTime value={entry.time} showOffset={false} />
+                      </TableCell>
+                      <TableCell align="center">
+                        <LogLevelIcon level={entry.level} />
+                      </TableCell>
+                      <TableCell align="center">
+                        <LogCategoryIcon category={entry.category} />
+                      </TableCell>
+                      <TableCell className={styles.messageCell}>
+                        <Button
+                          className={styles.message}
+                          aria-label={entry.message}
+                          aria-haspopup="dialog"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openDetails(entry);
+                          }}
+                        >
+                          <span>{entry.message}</span>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                {window.after > 0 && <Spacer height={window.after} />}
+              </TableBody>
+            </Table>
+            {result && !result.entries.length && (
+              <p className={styles.empty}>{t("No matching logs")}</p>
+            )}
+            <div
+              ref={sentinel}
+              className={styles.sentinel}
+              aria-busy={feed.loading}
+            >
+              {feed.loading && result?.entries.length
+                ? t("Loading more logs…")
+                : null}
+            </div>
+          </TableScrollArea>
+        </ResourceLayout>
+      </div>
+      {selected && (
+        <LogDetailsDialog
+          entry={selected}
+          open={detailsOpen}
+          close={() => setDetailsOpen(false)}
+          closed={() => setSelected(undefined)}
+        />
+      )}
     </ResourcePage>
+  );
+}
+function Spacer({ height }: { height: number }) {
+  return (
+    <TableRow className={styles.spacer} aria-hidden="true">
+      <TableCell colSpan={4} style={{ height }} />
+    </TableRow>
   );
 }

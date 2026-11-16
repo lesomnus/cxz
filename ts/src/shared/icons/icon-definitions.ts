@@ -4,6 +4,7 @@ type ShapeStyle = {
   strokeWidth?: number;
   strokeDasharray?: string;
   fillRule?: "evenodd";
+  transform?: string;
   part?: string;
 };
 
@@ -45,6 +46,8 @@ const solid = (shapes: IconShape[], viewBox = "0 0 16 16"): IconDefinition => ({
   shapes,
 });
 const filled = { fill: "currentColor", stroke: "none" } as const;
+const paperclip =
+  "M7.125 6.375V17.75a4.875 4.875 0 0 0 9.75 0V4.625a3.25 3.25 0 0 0-6.5 0V17.25a1.625 1.625 0 0 0 3.25 0V6.375";
 
 const errorTriangle = solid([path("M8 3 14 13H2Z")]);
 const play = solid([path("m5 3 7 5-7 5Z")]);
@@ -81,13 +84,40 @@ const info = line([
   path("M12 11v6"),
   circle(12, 7.5, 0.75, filled),
 ]);
+const moon = line([path("M20.5 14.5A9 9 0 0 1 9.5 3.5 9 9 0 1 0 20.5 14.5Z")]);
+const sun = line([
+  circle(12, 12, 4),
+  path("M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22"),
+  path("m5 5 1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19"),
+]);
 const duration = line([
   path(
     "M9 2h6M12 2v3M17 5l2-2M12 9v4l3 2 M20 13a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
   ),
 ]);
+const settings = solid(
+  [
+    ...Array.from({ length: 18 }, (_, tooth) =>
+      rect(11, 0.85, 2, 3.35, 0.45, {
+        transform: `rotate(${tooth * 20 + 10} 12 12)`,
+      }),
+    ),
+    path(
+      "M21.2 12a9.2 9.2 0 1 1-18.4 0a9.2 9.2 0 1 1 18.4 0ZM19.75 12a7.75 7.75 0 1 0-15.5 0a7.75 7.75 0 1 0 15.5 0Z",
+      { fillRule: "evenodd" },
+    ),
+    path("M19.75 12H12L8.125 5.288M12 12l-3.875 6.712", {
+      fill: "none",
+      stroke: "currentColor",
+    }),
+  ],
+  "0 0 24 24",
+);
 
 export const iconDefinitions = {
+  "theme-light": sun,
+  "theme-dark": moon,
+  "theme-system": line([rect(3, 4, 18, 12, 2), path("M12 16v5M8 21h8")]),
   start: play,
   resume: play,
   stop,
@@ -141,6 +171,14 @@ export const iconDefinitions = {
     "0 0 24 24",
   ),
   "error-active": errorTriangle,
+  "log-level-info": solid([circle(8, 8, 2.5)]),
+  "log-level-warn": priorityHigh,
+  "log-level-error": priorityHighest,
+  "log-category-client": line([
+    rect(3, 4, 18, 16, 2),
+    path("M3 9h18M7 6.5h.01M10 6.5h.01"),
+  ]),
+  "log-category-rpc": line([path("M3 7h17m-4-4 4 4-4 4M21 17H4m4-4-4 4 4 4")]),
   "error-stale": errorTriangle,
   "error-dismissed": solid([rect(3, 3, 10, 10)]),
   "error-resolved": solid([circle(8, 8, 3.5)]),
@@ -148,6 +186,9 @@ export const iconDefinitions = {
   terminal: line([path("m3 4 4 4-4 4m6 0h4")], "0 0 16 16"),
   upload: line([
     path("M12 15V3m-4 4 4-4 4 4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"),
+  ]),
+  download: line([
+    path("M12 3v12m-4-4 4 4 4-4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"),
   ]),
   folder: line([path("M2 4h5l1.5 2H14v7H2ZM8 11V7m-2 2 2-2 2 2")], "0 0 16 16"),
   "open-external": line([path("M7 17 17 7M7 7h10v10")]),
@@ -259,19 +300,26 @@ export const iconDefinitions = {
   sessions: line([
     path("M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 3V6a2 2 0 0 1 2-2Z"),
   ]),
-  projects: line([
-    path(
-      "M3 7V5a2 2 0 0 1 2-2h5l3 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z",
-    ),
+  projects: solid(
+    [circle(12, 5.5, 3.8), circle(5.5, 17, 3.8), circle(18.5, 17, 3.8)],
+    "0 0 24 24",
+  ),
+  tasks: line([
+    path(paperclip, {
+      transform: "rotate(45 12 12)",
+    }),
   ]),
-  tasks: line([path("m3 6 1.5 1.5L7 4M10 6h11M3 12h3m4 0h11M3 18h3m4 0h11")]),
   accounts: line([circle(12, 8, 4), path("M4 21v-3a8 8 0 0 1 16 0v3")]),
-  memory: line([path("M4 3h16v18H4Z M8 7h8M8 11h8M8 15h5")]),
+  memory: solid(
+    [
+      rect(3, 3, 4, 18, 0.75),
+      rect(9, 3, 4, 18, 0.75),
+      rect(18, 3, 4, 18, 0.75, { transform: "rotate(-10 20 21)" }),
+    ],
+    "0 0 24 24",
+  ),
   auxiliary: sparkle,
-  settings: line([
-    circle(12, 12, 3),
-    path("M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z"),
-  ]),
+  settings,
   logs: line([rect(4, 3, 16, 18, 2), path("M8 7h8M8 11h8M8 15h5")]),
   "settings-file": line([
     path("M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9ZM14 3v6h6"),
@@ -340,6 +388,81 @@ export const iconDefinitions = {
 } satisfies Record<string, IconDefinition>;
 
 export type IconName = keyof typeof iconDefinitions;
+
+// A project's icon stands for the project and means nothing else. That is a
+// different job from the names above, which are meanings a component maps a
+// state onto -- so the palette is its own map and its own type, and growing one
+// never pulls the other along. A person picks from these because the shape is
+// recognizable at a glance in a list, not because a leaf says anything.
+//
+// Chosen for distinct silhouettes at 16px rather than for variety: two icons a
+// person cannot tell apart in a sidebar are one icon.
+export const projectIconDefinitions = {
+  leaf: line([
+    path("M19 5A14 14 0 0 1 5 19A14 14 0 0 1 19 5Z"),
+    path("M5 19 19 5"),
+  ]),
+  sprout: line([
+    path("M12 21v-7"),
+    path("M12 14c0-4-3-6-7-6 0 4 3 6 7 6Z"),
+    path("M12 14c0-4 3-6 7-6 0 4-3 6-7 6Z"),
+  ]),
+  rocket: line([
+    path("M12 2.5c2.8 2.8 4 6.5 4 10.5l-4 4-4-4c0-4 1.2-7.7 4-10.5Z"),
+    circle(12, 9, 1.6),
+    path("M8 14.5 5.5 17l2.4 1M16 14.5 18.5 17l-2.4 1"),
+  ]),
+  cube: line([
+    path("M12 3 20 7.5v9L12 21 4 16.5v-9Z"),
+    path("M4 7.5 12 12l8-4.5M12 12v9"),
+  ]),
+  star: line([
+    path(
+      "M12 3.5 14.6 9.2 21 10l-4.6 4.4 1.1 6.3L12 17.8l-5.5 2.9 1.1-6.3L3 10l6.4-.8Z",
+    ),
+  ]),
+  bolt: line([path("M13.5 2.5 5.5 13.5H11l-1 8 8.5-11.5H13l.5-7.5Z")]),
+  flask: line([
+    path("M9 3h6M10 3v5l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 17l-5-9V3"),
+    path("M7.5 15h9"),
+  ]),
+  anchor: line([
+    circle(12, 5, 2.5),
+    path("M12 7.5V21M5 13a7 7 0 0 0 14 0M4 13h3M17 13h3"),
+  ]),
+  compass: line([circle(12, 12, 9), path("m15 9-2 5-5 2 2-5Z")]),
+  cloud: line([
+    path("M7 18.5a4.5 4.5 0 0 1 .4-9 6 6 0 0 1 11.2 2 3.5 3.5 0 0 1-.6 7Z"),
+  ]),
+  moon,
+  sun,
+  gem: line([
+    path("M6.5 4h11l3.5 5.5L12 20.5 1.5 9.5Z"),
+    path("M1.5 9.5h21M9 4 6.5 9.5 12 20.5l5.5-11L15 4"),
+  ]),
+  globe: line([
+    circle(12, 12, 9),
+    path(
+      "M3 12h18M12 3c3 3 4.5 6 4.5 9s-1.5 6-4.5 9c-3-3-4.5-6-4.5-9S9 6 12 3Z",
+    ),
+  ]),
+  key: line([
+    circle(8, 8, 4.5),
+    path("m11.2 11.2 9.8 9.8M18 15l3 3M15 18l3 3"),
+  ]),
+  flag: line([path("M6 21V4M6 4c4-2 8 2 12 0v8c-4 2-8-2-12 0")]),
+  mountain: line([path("M2.5 19 9.5 7.5l4 6.5 2-3L21.5 19Z")]),
+  book: line([
+    path("M4 5a2 2 0 0 1 2-2h5v17H6a2 2 0 0 0-2 2V5Z"),
+    path("M20 5a2 2 0 0 0-2-2h-7v17h7a2 2 0 0 1 2 2V5Z"),
+  ]),
+} satisfies Record<string, IconDefinition>;
+
+export type ProjectIconName = keyof typeof projectIconDefinitions;
+
+export const projectIconNames = Object.keys(
+  projectIconDefinitions,
+) as ProjectIconName[];
 
 export function iconMask(name: IconName) {
   const definition = iconDefinitions[name];

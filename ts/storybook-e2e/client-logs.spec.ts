@@ -1,6 +1,13 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 const story = "/iframe.html?id=pages-logs--persistent&viewMode=story";
+const fieldValue = (dialog: Locator, name: string) =>
+  dialog
+    .getByRole("term")
+    .filter({ has: dialog.page().getByText(name, { exact: true }) })
+    .locator("..")
+    .locator("dd");
 test("OPFS logs survive reload and support filters, details, export and clear", async ({
   page,
 }) => {
@@ -10,17 +17,17 @@ test("OPFS logs survive reload and support filters, details, export and clear", 
   await page
     .getByRole("button", { name: "Record disconnect", exact: true })
     .click();
-  const summary = page
-    .locator("summary")
-    .filter({ hasText: "RPC stream disconnected" });
-  await expect(summary).toHaveCount(1);
-  await summary.click();
-  await expect(page.locator("details[open] pre")).toContainText(
-    '"closeCode": 1006',
-  );
+  const record = page.getByRole("button", {
+    name: "RPC stream disconnected",
+    exact: true,
+  });
+  await expect(record).toHaveCount(1);
+  await record.click();
+  const dialog = page.getByRole("dialog", { name: "Log details" });
+  await expect(fieldValue(dialog, "closeCode")).toHaveText("1006");
   await page.reload();
   await expect(
-    page.locator("summary").filter({ hasText: "RPC stream disconnected" }),
+    page.getByRole("button", { name: "RPC stream disconnected", exact: true }),
   ).toHaveCount(1);
   await page
     .getByRole("searchbox", { name: "Search logs", exact: true })
@@ -32,8 +39,9 @@ test("OPFS logs survive reload and support filters, details, export and clear", 
     .getByRole("searchbox", { name: "Search logs", exact: true })
     .fill("RPC stream disconnected");
   await page
-    .getByRole("textbox", { name: "Session UUID", exact: true })
-    .fill("01949770-0000-8000-8008-000000000001");
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Review", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("1 matching records");
   const downloadPromise = page.waitForEvent("download");
   await page
@@ -75,7 +83,7 @@ test("independent tabs share persistent logs and deletion without polling", asyn
       .click(),
   ]);
   const matching = (p: typeof page) =>
-    p.locator("summary").filter({ hasText: "RPC stream disconnected" });
+    p.getByRole("button", { name: "RPC stream disconnected", exact: true });
   await expect(matching(page)).toHaveCount(2);
   await expect(matching(other)).toHaveCount(2);
   await other.getByRole("button", { name: "Clear logs", exact: true }).click();
@@ -92,7 +100,7 @@ test("unhandled client errors are recorded and memory fallback is explicit", asy
     .getByRole("button", { name: "Record client error", exact: true })
     .click();
   await expect(
-    page.locator("summary").filter({ hasText: "Client rendering failed" }),
+    page.getByRole("button", { name: "Client rendering failed", exact: true }),
   ).toHaveCount(1);
   await page.addInitScript(() => {
     Object.defineProperty(window, "Worker", {
@@ -124,11 +132,9 @@ test("real OPFS segments rotate at 2 MiB and remain readable through a worker", 
     .getByRole("searchbox", { name: "Search logs", exact: true })
     .fill("Rotation record");
   await expect(page.getByRole("status")).toContainText("1200 matching records");
-  await expect(
-    page
-      .getByRole("table", { name: "Client logs", exact: true })
-      .locator("tbody tr"),
-  ).toHaveCount(100);
+  const loaded = page.locator("[data-loaded-count]");
+  await expect(loaded).toHaveAttribute("data-loaded-count", "100");
+  expect(await loaded.locator("[data-log-row]").count()).toBeLessThan(100);
   const sizes = await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();
     const dir = await root.getDirectoryHandle("cxz-client-logs-v1");
@@ -142,6 +148,405 @@ test("real OPFS segments rotate at 2 MiB and remain readable through a worker", 
   });
   expect(sizes.length).toBeGreaterThanOrEqual(2);
   expect(sizes.every((size) => size <= 2 * 1024 * 1024)).toBe(true);
-  await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(page.getByText("101–200 / 1200", { exact: true })).toBeVisible();
+  const viewport = loaded.locator('[data-scroll-area="viewport"]').first();
+  await viewport.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await expect(loaded).toHaveAttribute("data-loaded-count", "200");
+  await viewport.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await expect(loaded).toHaveAttribute("data-loaded-count", "300");
+  expect(await loaded.locator("[data-log-row]").count()).toBeLessThan(100);
+  await expect(
+    page.getByRole("button", { name: "Next", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("searchbox", { name: "Search logs", exact: true })
+    .fill("");
+  await expect(loaded).toHaveAttribute("data-loaded-count", "100");
+  await viewport.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await expect(loaded).toHaveAttribute("data-loaded-count", "200");
+  const historyTop = await viewport.evaluate((node) => node.scrollTop);
+  const historyRow = await loaded.locator("[data-log-row]").first().innerText();
+  await burst.click();
+  await expect(burst).toBeEnabled({ timeout: 30000 });
+  expect(await viewport.evaluate((node) => node.scrollTop)).toBe(historyTop);
+  expect(await loaded.locator("[data-log-row]").first().innerText()).toBe(
+    historyRow,
+  );
+  await viewport.evaluate((node) => {
+    node.scrollTop = 0;
+  });
+  await expect(page.getByRole("status")).toContainText("2400 matching records");
 });
+
+for (const width of [1440, 390]) {
+  test(`logs reuse the bounded resource layout and shared search at ${width}px`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/iframe.html?id=pages-logs--populated&viewMode=story");
+    const main = page.getByRole("main", { name: "Logs", exact: true });
+    const table = main.getByRole("table", { name: "Client logs", exact: true });
+    await expect(table.locator("tbody tr")).toHaveCount(25);
+    await expect(table).toHaveCSS("border-top-left-radius", "0px");
+    const timeWidth = await table
+      .locator("[data-log-row]")
+      .first()
+      .locator("td")
+      .first()
+      .evaluate((cell) => {
+        const css = getComputedStyle(cell);
+        return {
+          actual: cell.getBoundingClientRect().width,
+          content:
+            cell.querySelector("time")!.getBoundingClientRect().width +
+            parseFloat(css.paddingLeft) +
+            parseFloat(css.paddingRight),
+        };
+      });
+    expect(Math.abs(timeWidth.actual - timeWidth.content)).toBeLessThan(1);
+    await expect(
+      table.getByRole("columnheader", { name: "Category", exact: true }),
+    ).toBeVisible();
+    await expect(
+      table.getByRole("img", { name: "Client", exact: true }).first(),
+    ).toBeVisible();
+    const layout = main.locator("[data-resource-layout]");
+    const box = (await layout.boundingBox())!;
+    const mainBox = (await main.boundingBox())!;
+    expect(box.width).toBeLessThanOrEqual(850);
+    expect(
+      Math.abs(box.x + box.width / 2 - mainBox.x - mainBox.width / 2),
+    ).toBeLessThan(1);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+    const toolbar = main.locator("[data-resource-toolbar-content]");
+    await expect(
+      toolbar.getByRole("combobox", { name: "Select project", exact: true }),
+    ).toBeVisible();
+    await expect(
+      toolbar.getByRole("combobox", { name: "Select session", exact: true }),
+    ).toBeVisible();
+    const search = main.getByRole("search", { name: "Search logs" });
+    await expect(search.locator("svg").first()).toBeVisible();
+    const input = search.getByRole("searchbox", { name: "Search logs" });
+    await expect(
+      search.getByRole("button", { name: "Log level", exact: true }),
+    ).toBeVisible();
+    await expect(
+      search.getByRole("button", { name: "Log category", exact: true }),
+    ).toBeVisible();
+    expect(await table.locator("tbody time").first().innerText()).not.toMatch(
+      /[+-]\d\d:\d\d/,
+    );
+    await input.fill("Request 8 failed");
+    await expect(table.locator("tbody tr")).toHaveCount(1);
+    const row = table.locator("tbody tr").first();
+    const before = (await row.boundingBox())!;
+    expect(before.height).toBeLessThanOrEqual(28);
+    const record = row.getByRole("button");
+    await record.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Log details" });
+    await expect(fieldValue(dialog, "attempt")).toHaveText("8");
+    await expect
+      .poll(() =>
+        dialog.evaluate(
+          (node) =>
+            node
+              .getAnimations({ subtree: true })
+              .filter(
+                (animation) =>
+                  animation.playState === "running" || animation.pending,
+              ).length,
+        ),
+      )
+      .toBe(0);
+    await expect(main.locator("details")).toHaveCount(0);
+    expect((await row.boundingBox())!.height).toBe(before.height);
+    await expect(dialog.locator("[data-scroll-area=viewport]")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("log-details.png") });
+    await page.keyboard.press("Escape");
+    await expect(page.locator("dialog")).toHaveCount(0);
+    await expect(record).toBeFocused();
+    expect((await row.boundingBox())!.height).toBe(before.height);
+    await input.fill("");
+    await expect(table.locator("tbody tr")).toHaveCount(25);
+    await table.locator("tbody tr").first().getByRole("cell").first().click();
+    await expect(
+      page.getByRole("dialog", { name: "Log details" }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Close details", exact: true })
+      .click();
+    await expect(page.locator("dialog")).toHaveCount(0);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(width);
+    await page.screenshot({ path: testInfo.outputPath("logs-page.png") });
+    if (width === 1440) {
+      await page.goto("/iframe.html?id=pages-logs--details&viewMode=story");
+      await expect(
+        fieldValue(
+          page.getByRole("dialog", { name: "Log details" }),
+          "disconnectedMs",
+        ),
+      ).toHaveText("1200");
+    }
+  });
+}
+
+test("checkbox filters stay open for multiple selections and project/session selectors scope logs", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/iframe.html?id=pages-logs--populated&viewMode=story");
+  const status = page.getByRole("status");
+  await expect(status).toContainText("25 matching records");
+  const level = page.getByRole("button", { name: "Log level", exact: true });
+  await level.click();
+  const menu = page.getByRole("menu", { name: "Log level", exact: true });
+  const all = menu.getByRole("menuitemcheckbox", {
+    name: "All levels",
+    exact: true,
+  });
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await all.click();
+  await expect(status).toContainText("25 matching records");
+  await expect(menu).toBeVisible();
+  await menu
+    .getByRole("menuitemcheckbox", { name: "warn", exact: true })
+    .click();
+  await expect(status).toContainText("25 matching records");
+  await expect(all).toHaveAttribute("aria-checked", "mixed");
+  await menu.screenshot({
+    path: testInfo.outputPath("checkbox-filters.png"),
+    animations: "disabled",
+  });
+  await level.click();
+  await expect(menu).toHaveCount(0);
+  await expect(status).toContainText("6 matching records");
+  await level.click();
+  await menu
+    .getByRole("menuitemcheckbox", { name: "error", exact: true })
+    .click();
+  await expect(status).toContainText("6 matching records");
+  await page.keyboard.press("Escape");
+  await expect(status).toContainText("10 matching records");
+  await level.click();
+  await all.focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Space");
+  await expect(status).toContainText("10 matching records");
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(level).toBeFocused();
+  await expect(status).toContainText("25 matching records");
+  await page.getByRole("button", { name: "Log category", exact: true }).click();
+  const categories = page.getByRole("menu", {
+    name: "Log category",
+    exact: true,
+  });
+  await categories
+    .getByRole("menuitemcheckbox", { name: "All categories", exact: true })
+    .click();
+  await categories
+    .getByRole("menuitemcheckbox", { name: "RPC", exact: true })
+    .click();
+  await expect(status).toContainText("25 matching records");
+  await page.keyboard.press("Escape");
+  await expect(status).toContainText("13 matching records");
+  await page.getByRole("button", { name: "Log category", exact: true }).click();
+  await categories
+    .getByRole("menuitemcheckbox", { name: "Client", exact: true })
+    .click();
+  await expect(status).toContainText("13 matching records");
+  await page.getByRole("columnheader", { name: "Time", exact: true }).click();
+  await expect(categories).toHaveCount(0);
+  await expect(status).toContainText("25 matching records");
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Archive", exact: true }).click();
+  await expect(status).toContainText("0 matching records");
+  await page
+    .getByRole("combobox", { name: "Select project", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Workspace", exact: true }).click();
+  await expect(status).toContainText("25 matching records");
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Build", exact: true }).click();
+  await expect(status).toContainText("12 matching records");
+  await page
+    .getByRole("combobox", { name: "Select session", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Review", exact: true }).click();
+  await expect(status).toContainText("13 matching records");
+});
+
+test.describe("log periods", () => {
+  test.use({ timezoneId: "Asia/Seoul" });
+  for (const width of [1440, 390]) {
+    test(`local dates filter complete days, exports and open-ended ranges at ${width}px`, async ({
+      page,
+    }) => {
+      await page.clock.setFixedTime(new Date("2026-11-14T12:00:00Z"));
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/iframe.html?id=pages-logs--period&viewMode=story");
+      const status = page.getByRole("status");
+      await expect(status).toContainText("4 matching records");
+      const table = page.getByRole("table", {
+        name: "Client logs",
+        exact: true,
+      });
+      const start = page.getByRole("button", { name: /^Log start date:/ });
+      const end = page.getByRole("button", { name: /^Log end date:/ });
+      await start.click();
+      await page
+        .getByRole("dialog", { name: "Calendar for Log start date" })
+        .locator('[data-sliding-page][data-active] [data-date="2026-11-13"]')
+        .click();
+      await expect(status).toContainText("3 matching records");
+      await end.click();
+      await page
+        .getByRole("dialog", { name: "Calendar for Log end date" })
+        .locator('[data-sliding-page][data-active] [data-date="2026-11-13"]')
+        .click();
+      await expect(status).toContainText("2 matching records");
+      await expect(table).toContainText("Start of November 13");
+      await expect(table).toContainText("End of November 13");
+      await expect(table).not.toContainText("Before selected period");
+      await expect(table).not.toContainText("After selected period");
+      const download = page.waitForEvent("download");
+      await page
+        .getByRole("button", { name: "Download filtered logs", exact: true })
+        .click();
+      const path = await (await download).path();
+      const records = (await readFile(path!, "utf8"))
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as { message: string });
+      expect(records.map((record) => record.message)).toEqual([
+        "Start of November 13",
+        "End of November 13",
+      ]);
+      await start.click();
+      await page
+        .getByRole("dialog", { name: "Calendar for Log start date" })
+        .getByRole("button", { name: "Clear date", exact: true })
+        .click();
+      await expect(status).toContainText("3 matching records");
+      await end.click();
+      await page
+        .getByRole("dialog", { name: "Calendar for Log end date" })
+        .getByRole("button", { name: "Clear date", exact: true })
+        .click();
+      await expect(status).toContainText("4 matching records");
+      await expect(start).toHaveText("From");
+      await expect(end).toHaveText("Through");
+      const bounds = await page
+        .getByRole("search", { name: "Search logs" })
+        .boundingBox();
+      for (const control of [start, end]) {
+        const box = (await control.boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(bounds!.x);
+        expect(box.x + box.width).toBeLessThanOrEqual(
+          bounds!.x + bounds!.width,
+        );
+      }
+    });
+  }
+});
+
+for (const width of [1440, 390]) {
+  test(`log detail fields preserve diagnostics and fit a scrolling modal at ${width}px`, async ({
+    page,
+    context,
+  }, testInfo) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/iframe.html?id=pages-logs--rich-details&viewMode=story", {
+      waitUntil: "domcontentloaded",
+    });
+    const dialog = page.getByRole("dialog", {
+      name: "Log details",
+      exact: true,
+    });
+    await expect(fieldValue(dialog, "Message")).toHaveText(
+      "RPC request failed\nThe conversation connection was interrupted.",
+    );
+    await expect(fieldValue(dialog, "Message")).toHaveCSS(
+      "white-space",
+      "pre-wrap",
+    );
+    await expect(fieldValue(dialog, "Time").locator("time")).toHaveAttribute(
+      "datetime",
+      /\d{4}-\d{2}-\d{2}T/,
+    );
+    await expect(fieldValue(dialog, "Level")).toHaveText("error");
+    await expect(
+      fieldValue(dialog, "Level").getByRole("img", {
+        name: "error",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(fieldValue(dialog, "Category")).toHaveText("RPC");
+    await expect(fieldValue(dialog, "Connection URL")).toHaveText(
+      "https://cxz.example/",
+    );
+    await expect(fieldValue(dialog, "Method")).toHaveText(
+      "cxz.SessionService/Transcript",
+    );
+    await expect(fieldValue(dialog, "Client version")).toHaveText(
+      "storybook-diagnostic-build",
+    );
+    await expect(fieldValue(dialog, "attempt")).toHaveText("0");
+    await expect(fieldValue(dialog, "retryable")).toHaveText("false");
+    await expect(fieldValue(dialog, "empty")).toHaveText('\"\"');
+    await expect(fieldValue(dialog, "stack")).toContainText(
+      "at readConversation23",
+    );
+    await expect(fieldValue(dialog, "stack")).toHaveCSS(
+      "white-space",
+      "pre-wrap",
+    );
+    await expect(dialog.locator("pre")).toHaveCount(0);
+    const viewport = dialog.locator('[data-scroll-area="viewport"]');
+    await expect
+      .poll(() =>
+        viewport.evaluate((node) => node.scrollHeight > node.clientHeight),
+      )
+      .toBe(true);
+    expect(
+      await viewport.evaluate((node) => node.scrollWidth - node.clientWidth),
+    ).toBeLessThanOrEqual(1);
+    const copy = dialog.getByRole("button", {
+      name: "Copy: Log ID",
+      exact: true,
+    });
+    await copy.click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe("efbc2c24-7b34-4e7d-95c8-09dd28165b7a");
+    const rect = (await dialog.boundingBox())!;
+    expect(rect.x).toBeGreaterThanOrEqual(0);
+    expect(rect.x + rect.width).toBeLessThanOrEqual(width);
+    expect(rect.y + rect.height).toBeLessThanOrEqual(900);
+    await dialog.screenshot({
+      path: testInfo.outputPath("log-fields.png"),
+      animations: "disabled",
+    });
+    await expect(page.getByRole("tooltip")).toHaveText(
+      "efbc2c24-7b34-4e7d-95c8-09dd28165b7a",
+    );
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+  });
+}

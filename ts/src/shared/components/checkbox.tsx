@@ -19,9 +19,26 @@ export function Checkbox({
           if (node) node.indeterminate = indeterminate;
         }}
       />
-      <span className={styles.box} aria-hidden="true">
-        <Icon name="checkbox" />
-      </span>
+      <CheckboxMark />
     </label>
+  );
+}
+
+export function CheckboxMark({
+  checked = false,
+  indeterminate = false,
+}: {
+  checked?: boolean;
+  indeterminate?: boolean;
+}) {
+  return (
+    <span
+      className={styles.box}
+      data-checked={checked || undefined}
+      data-indeterminate={indeterminate || undefined}
+      aria-hidden="true"
+    >
+      <Icon name="checkbox" />
+    </span>
   );
 }

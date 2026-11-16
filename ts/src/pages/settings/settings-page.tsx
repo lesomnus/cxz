@@ -1,4 +1,6 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
+import { Icon } from "#src/shared/icons/icon.tsx";
+import { controlCharacters } from "#src/shared/content/control-characters.tsx";
 import {
   t,
   translateKnown,
@@ -49,6 +51,9 @@ import {
 } from "#src/shared/editor/source-editor.tsx";
 
 import type { SettingsTopic } from "#src/app/router.tsx";
+import type { Connection } from "#src/shared/api/connection.ts";
+import type { Session } from "#gen/cxz/session_pb";
+import { AuxiliarySettings } from "#src/features/auxiliary/auxiliary-settings.tsx";
 import { useSettingsNavigation } from "#src/features/settings/components/use-settings-navigation.ts";
 import {
   ConnectionsSettings,
@@ -87,11 +92,15 @@ const fields = {
 };
 
 export function SettingsPage({
+  c,
+  sessions = [],
   fileOpen,
   setFileOpen,
   topic,
   connections,
 }: {
+  c: Connection;
+  sessions?: Session[];
   fileOpen: boolean;
   setFileOpen: (open: boolean) => void;
   topic: SettingsTopic;
@@ -127,11 +136,7 @@ export function SettingsPage({
     });
   }
   const savedLanguage = resolveLocale(snapshot.document["ui.language"]);
-  const [language, setLanguage] = useState<Locale>(savedLanguage);
   const [applying, setApplying] = useState(false);
-  useEffect(() => {
-    setLanguage(savedLanguage);
-  }, [savedLanguage]);
   const area = useRef<HTMLElement>(null);
   const filePane = useRef<HTMLElement>(null);
   const fileInput = useRef<SourceEditorHandle>(null);
@@ -206,7 +211,7 @@ export function SettingsPage({
       setError(String(error));
     }
   }
-  async function applyLanguage() {
+  async function applyLanguage(language: Locale) {
     setApplying(true);
     setError("");
     setMessage("");
@@ -260,6 +265,13 @@ export function SettingsPage({
                 title={translateKnown(fields[key].label)}
                 settingId={name}
                 summary={translateKnown(fields[key].description)}
+                controlInset={
+                  key === "fontFamily" ||
+                  key === "colorPalette" ||
+                  key === "insertSpaces"
+                    ? "var(--ui-menu-item-padding-inline)"
+                    : undefined
+                }
                 details={
                   key === "fontFamily"
                     ? t(
@@ -288,6 +300,8 @@ export function SettingsPage({
                   />
                 ) : key === "indentSize" || key === "tabSize" ? (
                   <SettingSlider
+                    allowCustomValue
+                    customMax={16}
                     label={`${title} ${translateKnown(fields[key].label)}`}
                     value={
                       hasValue ? Number(snapshot.document[name]) : undefined
@@ -351,22 +365,32 @@ export function SettingsPage({
           }}
         >
           <code className="editor-code-line">
-            <span className="hljs-comment">// {title}</span>
-            {"\n"}
-            <span className="hljs-keyword">function</span>{" "}
+            <span className="hljs-comment">
+              {controlCharacters(`// ${title}`)}
+            </span>
+            {controlCharacters("\n")}
+            <span className="hljs-keyword">function</span>
+            {controlCharacters(" ")}
             <span className="hljs-title">example</span>
-            {"() {\n"}
-            {resolved.insertSpaces ? " ".repeat(resolved.indentSize) : "\t"}
-            <span className="hljs-keyword">return</span>{" "}
+            {controlCharacters(
+              `() {\n${resolved.insertSpaces ? " ".repeat(resolved.indentSize) : "\t"}`,
+            )}
+            <span className="hljs-keyword">return</span>
+            {controlCharacters(" ")}
             <span className="hljs-string">"hello"</span>
-            {";\n}"}
+            {controlCharacters(";\n}")}
           </code>
         </pre>
       </Section>
     );
   }
   return (
-    <ResourcePage className="settings-page" ref={area} data-wide={wide}>
+    <ResourcePage
+      className="settings-page"
+      ref={area}
+      data-wide={wide}
+      aria-label={t("Settings")}
+    >
       <SettingsToolbar
         navigation={navigation}
         aria-label={t("Settings")}
@@ -417,75 +441,68 @@ export function SettingsPage({
               <div className="settings-editor-groups">
                 <>
                   <SectionGroup>
-                    <Section className="settings-group">
-                      <h2>{t("Display language")}</h2>
+                    <Section
+                      className="settings-group"
+                      aria-label={t("Appearance")}
+                    >
+                      <h2>{t("Appearance")}</h2>
                       <fieldset disabled={!snapshot.valid || applying}>
                         <SettingField
                           title={t("Language")}
                           settingId="ui.language"
-                          summary={t("Choose the interface language.")}
+                          controlInset="var(--ui-menu-item-padding-inline)"
                           details={t(
                             "Language changes apply to this browser. Conversation content and code are preserved.",
                           )}
                         >
-                          <div className="language-setting-control">
-                            <ValueMenu
-                              label={t("Display language")}
-                              value={language}
-                              muted={
-                                !Object.hasOwn(
-                                  snapshot.document,
-                                  "ui.language",
-                                ) && language === "en"
-                              }
-                              options={languages.map(({ id, name }) => ({
-                                value: id,
-                                label: name,
-                              }))}
-                              disabled={!snapshot.valid || applying}
-                              choose={(value) => setLanguage(value as Locale)}
-                            />
-                            <Button
-                              disabled={
-                                language === savedLanguage &&
-                                language === locale.locale &&
-                                !locale.error
-                              }
-                              onClick={() => void applyLanguage()}
-                            >
-                              {applying ? t("Applying…") : t("Apply settings")}
-                            </Button>
-                          </div>
+                          <ValueMenu
+                            label={t("Display language")}
+                            value={savedLanguage}
+                            muted={
+                              !Object.hasOwn(
+                                snapshot.document,
+                                "ui.language",
+                              ) && savedLanguage === "en"
+                            }
+                            options={languages.map(({ id, name }) => ({
+                              value: id,
+                              label: name,
+                            }))}
+                            disabled={!snapshot.valid || applying}
+                            choose={(value) => applyLanguage(value as Locale)}
+                          />
                         </SettingField>
                       </fieldset>
-                    </Section>
-                    <Section
-                      className="settings-group"
-                      aria-label={t("Theme settings")}
-                    >
-                      <h2>{t("Theme")}</h2>
                       <fieldset disabled={!snapshot.valid}>
                         <SettingField
-                          title={t("Appearance")}
+                          title={t("Theme")}
                           settingId="ui.theme"
-                          summary={t(
-                            "Choose Light, Dark, or follow your system appearance.",
-                          )}
+                          controlInset="var(--ui-menu-item-padding-inline)"
                         >
                           <SegmentedControl
-                            label={t("Appearance")}
+                            label={t("Theme")}
+                            iconOnly
                             value={resolveTheme(snapshot.document["ui.theme"])}
                             options={[
-                              { value: "light", label: t("Light") },
+                              {
+                                value: "light",
+                                label: t("Light"),
+                                icon: <Icon name="theme-light" />,
+                              },
                               {
                                 value: "dark",
                                 label: t("Dark"),
+                                icon: <Icon name="theme-dark" />,
                                 muted: !Object.hasOwn(
                                   snapshot.document,
                                   "ui.theme",
                                 ),
                               },
-                              { value: "system", label: t("System") },
+                              {
+                                value: "system",
+                                label: t("System"),
+                                icon: <Icon name="theme-system" />,
+                              },
                             ]}
                             disabled={!snapshot.valid}
                             onChange={(value) => update("ui.theme", value)}
@@ -504,6 +521,7 @@ export function SettingsPage({
                         <SettingField
                           title={t("Copy on selection")}
                           settingId="terminal.copyOnSelect"
+                          controlPlacement="inline"
                           summary={t(
                             "Automatically copy selected terminal text.",
                           )}
@@ -533,6 +551,7 @@ export function SettingsPage({
                       <SettingField
                         title={t("Voice language")}
                         settingId="voice.language"
+                        controlInset="var(--ui-menu-item-padding-inline)"
                         summary={t(
                           "Use your browser's language by default, or choose a recognition language.",
                         )}
@@ -554,6 +573,7 @@ export function SettingsPage({
                       <SettingField
                         title={t("Force local recognition")}
                         settingId="voice.processLocally"
+                        controlPlacement="inline"
                         summary={t(
                           "Require speech recognition on this device.",
                         )}
@@ -581,6 +601,7 @@ export function SettingsPage({
                       <SettingField
                         title={t("Notification sounds")}
                         settingId="notifications.sound"
+                        controlPlacement="inline"
                         summary={t(
                           "Play a sound when a response finishes or a new question arrives.",
                         )}
@@ -622,6 +643,24 @@ export function SettingsPage({
                 <SectionGroup>{group("global")}</SectionGroup>
                 <SectionGroup>{group("session")}</SectionGroup>
               </div>
+            </section>
+            <section
+              id="settings-auxiliary"
+              className="settings-editor-body"
+              data-settings-topic="auxiliary"
+              aria-labelledby="settings-auxiliary-title"
+            >
+              <header>
+                <div>
+                  <h1 id="settings-auxiliary-title">{t("Auxiliary AI")}</h1>
+                  <small>
+                    {t(
+                      "Configure server-side helpers. Changes are saved to this server, separately from settings.json.",
+                    )}
+                  </small>
+                </div>
+              </header>
+              <AuxiliarySettings c={c} sessions={sessions} />
             </section>
             <ConnectionsSettings connections={connections} />
           </SettingsContent>

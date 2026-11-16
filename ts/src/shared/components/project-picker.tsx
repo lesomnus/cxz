@@ -1,7 +1,8 @@
+import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { PrefixValueMenu } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
-import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "./project-picker.module.css";
@@ -10,11 +11,13 @@ export function ProjectPicker({
   projects,
   value,
   loading = false,
+  allowAll = false,
   choose,
 }: {
   projects: readonly Project[];
   value: string;
   loading?: boolean;
+  allowAll?: boolean;
   choose: (value: string) => void;
 }) {
   useLocale();
@@ -23,23 +26,36 @@ export function ProjectPicker({
     <div className={styles.picker}>
       <PrefixValueMenu
         className={styles.field}
-        prefix={<ResourceIcon kind="projects" />}
+        prefix={<Icon name={projectIconName(selected) ?? "projects"} />}
         label={t("Select project")}
         value={value}
+        valueIcon={null}
+        menuClassName={styles.menu}
         display={
           selected
             ? selected.name || selected.alias
             : loading
               ? t("Loading projects…")
-              : t("Select project")
+              : allowAll && !value
+                ? t("All projects")
+                : t("Select project")
         }
-        options={projects.map((project) => ({
-          value: projectId(project),
-          label: project.name || project.alias,
-          searchText: `${project.alias} ${project.workspace}`,
-        }))}
+        options={[
+          ...(allowAll ? [{ value: "", label: t("All projects") }] : []),
+          ...projects.map((project) => ({
+            value: projectId(project),
+            label: project.name || project.alias,
+            icon: (
+              <Icon
+                name={projectIconName(project) ?? "projects"}
+                size="var(--ui-icon-size-small)"
+              />
+            ),
+            searchText: `${project.alias} ${project.workspace}`,
+          })),
+        ]}
         searchable
-        disabled={!projects.length}
+        disabled={!allowAll && !projects.length}
         choose={choose}
       />
     </div>

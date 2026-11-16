@@ -39,17 +39,19 @@ export function SessionIndicator({
       ? state
       : state === "idle"
         ? t("Idle")
-        : state === "stopped"
-          ? t("Stopped")
-          : state === "interrupted"
-            ? t("Interrupted")
-            : state === "failed"
-              ? t("Failed")
-              : state === "waiting" || state === "waiting_input"
-                ? t("Waiting for input")
-                : working
-                  ? t("Working")
-                  : t("Unknown");
+        : state === "created"
+          ? t("Not started")
+          : state === "stopped"
+            ? t("Stopped")
+            : state === "interrupted"
+              ? t("Interrupted")
+              : state === "failed"
+                ? t("Failed")
+                : state === "waiting" || state === "waiting_input"
+                  ? t("Waiting for input")
+                  : working
+                    ? t("Working")
+                    : t("Unknown");
   if (unread)
     return (
       <span className="session-indicator" title={t("Unread response")}>
@@ -94,6 +96,7 @@ export function SessionIndicator({
 }
 
 const stateIcons: Record<string, IconName> = {
+  created: "state-created",
   stopped: "state-stopped",
   interrupted: "interrupted",
   waiting: "waiting",

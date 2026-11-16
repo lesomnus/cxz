@@ -183,6 +183,56 @@ function WorkspaceContent({
     }
     return grouped;
   }, [inventory.sessions, hideStopped]);
+  function sidebarLink(
+    view: "sessions" | "search" | "tasks" | "memory" | "projects",
+  ) {
+    const label = {
+      sessions: t("Sessions"),
+      search: t("Search"),
+      tasks: t("Tasks"),
+      memory: t("Memory"),
+      projects: t("Projects"),
+    }[view];
+    const location =
+      view === "sessions" || view === "projects"
+        ? route.resource === view
+          ? resourceLocation(view)
+          : view === "projects"
+            ? projectLocation(currentProject)
+            : lastSession.current
+              ? sessionLocation(lastSession.current)
+              : resourceLocation("sessions")
+        : view === "tasks"
+          ? taskLocation({ project: currentProject })
+          : view === "memory"
+            ? memoryProject
+              ? memoryLocation(memoryProject)
+              : projectLocation()
+            : resourceLocation(view);
+    return (
+      <SidebarHint key={view} label={label}>
+        <RouteLink
+          {...location}
+          activeOptions={{ exact: true }}
+          className={`resource-link ${resource === view ? "active" : ""}`}
+          aria-label={
+            view === "sessions"
+              ? t("Sessions view")
+              : view === "projects"
+                ? t("Projects view")
+                : label
+          }
+          aria-current={resource === view ? "page" : undefined}
+        >
+          <ResourceIcon
+            kind={view}
+            unreadCount={view === "sessions" ? unread.size : 0}
+            error={view === "sessions" && errors.size > 0}
+          />
+        </RouteLink>
+      </SidebarHint>
+    );
+  }
   return (
     <WorkspaceContext.Provider
       value={{
@@ -206,80 +256,15 @@ function WorkspaceContent({
           <span className="brand" aria-label="cxz">
             cxz
           </span>
-          {(["sessions", "projects"] as const).map((view) => (
-            <SidebarHint
-              key={view}
-              label={view === "sessions" ? t("Sessions") : t("Projects")}
-            >
-              <RouteLink
-                {...(route.resource === view
-                  ? resourceLocation(view)
-                  : view === "projects"
-                    ? projectLocation(currentProject)
-                    : lastSession.current
-                      ? sessionLocation(lastSession.current)
-                      : resourceLocation("sessions"))}
-                activeOptions={{ exact: true }}
-                className={`resource-link ${resource === view ? "active" : ""}`}
-                aria-label={
-                  view === "sessions" ? t("Sessions view") : t("Projects view")
-                }
-                aria-current={resource === view ? "page" : undefined}
-              >
-                <ResourceIcon
-                  kind={view}
-                  unreadCount={view === "sessions" ? unread.size : 0}
-                  error={view === "sessions" && errors.size > 0}
-                />
-              </RouteLink>
-            </SidebarHint>
-          ))}
-          {(
-            ["tasks", "accounts", "search", "memory", "auxiliary"] as const
-          ).map((view) => (
-            <SidebarHint
-              key={view}
-              label={
-                view === "auxiliary"
-                  ? "Auxiliary AI"
-                  : view[0].toUpperCase() + view.slice(1)
-              }
-            >
-              <RouteLink
-                {...(view === "tasks"
-                  ? taskLocation({ project: currentProject })
-                  : view === "memory"
-                    ? memoryProject
-                      ? memoryLocation(memoryProject)
-                      : projectLocation()
-                    : resourceLocation(view))}
-                activeOptions={{ exact: true }}
-                className={`resource-link ${resource === view ? "active" : ""}`}
-                aria-label={
-                  view === "auxiliary"
-                    ? "Auxiliary AI"
-                    : view[0].toUpperCase() + view.slice(1)
-                }
-                aria-current={resource === view ? "page" : undefined}
-              >
-                <ResourceIcon kind={view} />
-              </RouteLink>
-            </SidebarHint>
-          ))}
+          {(["sessions", "search", "tasks", "memory"] as const).map(
+            sidebarLink,
+          )}
           <div className="sidebar-footer">
-            <SidebarHint label={t("Logs")}>
-              <RouteLink
-                to="/log"
-                activeOptions={{ exact: true }}
-                className={`resource-link ${resource === "logs" ? "active" : ""}`}
-                aria-label={t("Logs")}
-                aria-current={resource === "logs" ? "page" : undefined}
-              >
-                <ResourceIcon kind="logs" />
-              </RouteLink>
-            </SidebarHint>
+            {sidebarLink("projects")}
             <ErrorCenter store={c.errors} />
             <ProfileMenu
+              c={c}
+              sessions={inventory.sessions}
               errors={c.errors}
               logout={logout}
               exitLabel={exitLabel}

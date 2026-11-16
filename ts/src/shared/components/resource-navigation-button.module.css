@@ -1,11 +1,12 @@
 .link.link {
   --resource-link-radius: var(--ui-space);
+  --resource-link-height: calc(
+    var(--resource-table-control-size) - 2 * var(--ui-control-inset)
+  );
   display: flex;
   width: 100%;
   max-width: var(--resource-table-button-width);
-  height: calc(
-    var(--resource-table-control-size) - 2 * var(--ui-control-inset)
-  );
+  height: var(--resource-link-height);
   min-height: 0;
   padding: 0 var(--ui-control-inline-inset);
   border-radius: var(--resource-link-radius);

@@ -696,7 +696,10 @@ func (x *Sessions) Resume(_ context.Context, r *resource.SessionControl) (*resou
 	if err = checkRun(st, r.GetRunId()); err != nil {
 		return nil, err
 	}
-	if st.value.GetStatus().GetState() == "stopped" {
+	if st.value.GetStatus().GetState() == "stopped" || st.value.GetStatus().GetState() == "created" {
+		if st.value.GetStatus().GetState() == "created" {
+			s.telemetry(st)
+		}
 		st.generation++
 		st.value.GetStatus().SetRunId(fmt.Sprintf("%s-run-%d", st.value.GetRuntimeId(), st.generation+1))
 		s.state(st, "idle")
