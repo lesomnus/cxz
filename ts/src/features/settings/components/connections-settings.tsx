@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { Connection as ConnectionEntry } from "#gen/cxz/connection_pb";
 import {
+  Section,
   Table,
   TableBody,
   TableCell,
@@ -71,50 +72,52 @@ export function ConnectionsSettings({
           </small>
         </div>
       </header>
-      {error ? <ErrorNotice error={error} /> : null}
-      <Table
-        className={`connection-list ${resourceTableStyles.table} ${resourceTableStyles.layout} ${styles.table}`}
-        aria-label={t("Connections")}
-        stickyHeader={false}
-      >
-        <colgroup>
-          <col className={styles.nameColumn} />
-          <col />
-          <col className={styles.transportColumn} />
-          <col className={styles.actionsColumn} />
-        </colgroup>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("Name")}</TableHead>
-            <TableHead>{t("Target")}</TableHead>
-            <TableHead>{t("Transport")}</TableHead>
-            <TableHead aria-label={t("Actions")} />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((item) => (
-            <TableRow key={item.target} data-read-only={item.readOnly}>
-              <TableHead scope="row">
-                {item.name}
-                {item.isDefault && <small>{t("default")}</small>}
-              </TableHead>
-              <TableCell>{item.target}</TableCell>
-              <TableCell>
-                {item.transport}
-                {item.readOnly && <small>{t("served this page")}</small>}
-              </TableCell>
-              <TableCell className={styles.actionsCell}>
-                <InstallationFileMenu
-                  c={c}
-                  name={item.name || item.target}
-                  active={item.target.replace(/\/$/, "") === origin}
-                  triggerClassName={styles.trigger}
-                />
-              </TableCell>
+      <Section className="settings-group">
+        {error ? <ErrorNotice error={error} /> : null}
+        <Table
+          className={`connection-list ${resourceTableStyles.table} ${resourceTableStyles.layout} ${styles.table}`}
+          aria-label={t("Connections")}
+          stickyHeader={false}
+        >
+          <colgroup>
+            <col className={styles.nameColumn} />
+            <col />
+            <col className={styles.transportColumn} />
+            <col className={styles.actionsColumn} />
+          </colgroup>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("Name")}</TableHead>
+              <TableHead>{t("Target")}</TableHead>
+              <TableHead>{t("Transport")}</TableHead>
+              <TableHead aria-label={t("Actions")} />
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.target} data-read-only={item.readOnly}>
+                <TableHead scope="row">
+                  {item.name}
+                  {item.isDefault && <small>{t("default")}</small>}
+                </TableHead>
+                <TableCell>{item.target}</TableCell>
+                <TableCell>
+                  {item.transport}
+                  {item.readOnly && <small>{t("served this page")}</small>}
+                </TableCell>
+                <TableCell className={styles.actionsCell}>
+                  <InstallationFileMenu
+                    c={c}
+                    name={item.name || item.target}
+                    active={item.target.replace(/\/$/, "") === origin}
+                    triggerClassName={styles.trigger}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Section>
     </section>
   );
 }
