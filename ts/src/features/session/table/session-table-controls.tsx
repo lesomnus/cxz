@@ -11,6 +11,7 @@ import {
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { useSessionControls } from "./use-session-controls";
 import styles from "./session-table-controls.module.css";
+import tableStyles from "#src/shared/components/resource-table.module.css";
 
 type Controls = ReturnType<typeof useSessionControls>;
 export function SessionTableMenu({
@@ -61,7 +62,7 @@ export function SessionTableMenu({
           ? iconTrigger
             ? styles.headerTrigger
             : styles.bulkTrigger
-          : styles.rowTrigger
+          : tableStyles.rowActionTrigger
       }
       motion={{ from: "top-right", effect: "reveal" }}
       disabled={

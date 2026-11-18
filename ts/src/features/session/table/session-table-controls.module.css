@@ -50,13 +50,6 @@
   width: var(--ui-icon-size-small);
   height: var(--ui-icon-size-small);
 }
-.rowTrigger.rowTrigger {
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  aspect-ratio: 1;
-  padding: var(--ui-control-inset);
-}
 .headerTrigger.headerTrigger {
   flex: none;
   width: var(--session-header-height);

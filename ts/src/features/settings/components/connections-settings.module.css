@@ -1,7 +1,3 @@
-.table.table {
-  overflow-wrap: anywhere;
-}
-
 .error {
   margin-inline: var(--ui-section-padding);
 }
@@ -15,7 +11,7 @@
 }
 
 .actionsColumn {
-  width: var(--ui-table-row-height);
+  width: calc(var(--resource-table-control-size) + var(--ui-control-inset));
 }
 
 .table small {
@@ -23,14 +19,29 @@
   color: var(--ui-muted);
 }
 
-.table .actionsCell {
-  padding: var(--ui-control-inset);
+.table .tileCell {
+  padding-inline: var(--ui-control-inset);
 }
 
-.trigger.trigger {
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  aspect-ratio: 1;
-  padding: var(--ui-control-inset);
+.tile {
+  --tile-lift: 0;
+  align-items: center;
+  background: rgb(
+    from var(--ui-table-button-background) calc(r + var(--tile-lift))
+      calc(g + var(--tile-lift)) calc(b + var(--tile-lift))
+  );
+  transition: background-color var(--ui-button-background-duration) ease-out;
+}
+
+.table tr:hover .tile {
+  --tile-lift: calc(
+    var(--ui-table-button-tone-direction) *
+      var(--ui-table-button-row-hover-lift)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile {
+    transition: none;
+  }
 }

@@ -33,13 +33,13 @@ const ResourceNavigationAnchor = forwardRef<
       rowAware={rowAware}
       ref={ref}
       title={props.title ?? name}
-      className={`route-link ${tableStyles.layout} ${styles.link} ${className}`}
+      className={`route-link ${tableStyles.layout} ${tableStyles.tile} ${styles.link} ${className}`}
     >
       {leading}
-      <span className={styles.identity}>
-        <span className={styles.title}>{name}</span>
+      <span className={tableStyles.identity}>
+        <span className={tableStyles.identityTitle}>{name}</span>
         {(alias || annotation) && (
-          <span className={styles.subtitle}>
+          <span className={tableStyles.identityDetail}>
             {alias}
             {alias && annotation && " · "}
             {annotation && <span>{annotation}</span>}
@@ -57,8 +57,8 @@ export function ResourceNavigationPlaceholder() {
   return (
     <Skeleton
       variant="rect"
-      height="var(--resource-link-height)"
-      className={`${tableStyles.layout} ${styles.link}`}
+      height="var(--resource-table-control-height)"
+      className={`${tableStyles.layout} ${tableStyles.tile} ${styles.link}`}
     />
   );
 }

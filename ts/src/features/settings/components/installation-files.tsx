@@ -16,6 +16,7 @@ import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import styles from "./installation-files.module.css";
+import tableStyles from "#src/shared/components/resource-table.module.css";
 
 type Kind = "compose" | "template";
 type WireFile = { data: string | null; executable?: boolean };
@@ -94,19 +95,18 @@ export function InstallationFileMenu({
   c,
   name,
   active,
-  triggerClassName,
 }: {
   c: Connection;
   name: string;
   active: boolean;
-  triggerClassName: string;
 }) {
   const [kind, setKind] = useState<Kind>();
   return (
     <>
       <ActionMenu
         label={t("Controls for {name}", { name })}
-        triggerClassName={triggerClassName}
+        triggerClassName={tableStyles.rowActionTrigger}
+        motion={{ from: "top-right", effect: "reveal" }}
         disabled={!active || c.inProcess}
         disabledReason={t(
           "Installation file editing requires a host connection.",

@@ -1,8 +1,8 @@
 .frame {
-  --session-row-height: 44px;
+  --session-row-height: var(--resource-table-control-size);
   --session-cell-radius: var(--ui-space);
   --session-row-gap: var(--ui-control-inset);
-  --session-header-height: 28px;
+  --session-header-height: var(--resource-table-header-height);
   --session-visible-rows: 7.5;
   --session-table-min-width: 528px;
   --session-account-column-width: 96px;
@@ -86,7 +86,6 @@
   width: 32px;
 }
 .overview {
-  --session-row-height: var(--resource-table-control-size);
   --session-account-column-width: var(--resource-table-link-column-width);
   --session-project-column-width: var(--resource-table-link-column-width);
   --session-table-min-width: calc(
@@ -122,41 +121,14 @@
 .actionsColumn {
   width: calc(var(--session-row-height) + var(--ui-control-inset));
 }
-.table td.cardCell.actions {
-  text-align: center;
-  padding-right: calc(2 * var(--ui-control-inset));
-}
 .actions :global(.action-menu) {
   display: flex;
   width: 100%;
   justify-content: center;
 }
-.scroll .table th {
-  height: var(--session-header-height);
-  padding: 0 var(--ui-space);
-  background: var(--ui-shade-24);
-  color: var(--ui-muted);
-  text-align: left;
-  font-weight: 400;
-}
 .table th.actions {
   padding: 0 var(--ui-control-inset);
   padding-right: calc(2 * var(--ui-control-inset));
-}
-.scroll .table td {
-  height: calc(var(--session-row-height) + var(--session-row-gap));
-  padding: 0 var(--ui-space);
-  border-bottom: 0;
-  vertical-align: middle;
-}
-.scroll .table tbody tr:not(:last-child) td {
-  box-shadow: inset 0 -1px 0 var(--ui-shade-36);
-}
-.scroll .table tbody tr:hover {
-  background: var(--ui-shade-32);
-}
-.scroll .table tbody tr[data-selected] {
-  background: var(--ui-shade-51);
 }
 .table th:first-child,
 .table td:first-child {

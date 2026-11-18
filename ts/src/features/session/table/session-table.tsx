@@ -177,13 +177,13 @@ export function SessionTable({
       >
         <Frame
           {...scrollProps}
-          className={`${styles.frame} ${pageScroll ? "" : styles.scroll} ${compact ? styles.compact : ""} ${overview ? `${styles.overview} ${resourceTableStyles.layout}` : ""} ${fillHeight ? styles.fillHeight : ""}`}
+          className={`${styles.frame} ${resourceTableStyles.layout} ${pageScroll ? "" : styles.scroll} ${compact ? styles.compact : ""} ${overview ? styles.overview : ""} ${fillHeight ? styles.fillHeight : ""}`}
           role="region"
           aria-label={t("Session list")}
         >
           <Table
             {...selection.getContainerProps()}
-            className={`${styles.table} ${pageScroll ? resourceTableStyles.table : ""}`}
+            className={`${styles.table} ${pageScroll ? resourceTableStyles.table : resourceTableStyles.panelTable}`}
             aria-label={t("Sessions")}
             aria-busy={loading}
             data-account-column={showAccount}
@@ -374,9 +374,7 @@ export function SessionTable({
                     )}
                     {showProject && !projectFirst && projectCell}
                     {!overview && state}
-                    <TableCell
-                      className={`${styles.cardCell} ${styles.actions}`}
-                    >
+                    <TableCell className={resourceTableStyles.rowActionCell}>
                       <SessionTableMenu
                         sessions={[s]}
                         controls={controls}
