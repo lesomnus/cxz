@@ -1589,26 +1589,18 @@ pre {
 .attachment-info {
   overflow-wrap: anywhere;
 }
-.composer-editor[data-composing="true"] textarea {
-  color: inherit;
-}
+.composer-editor[data-composing="true"]:where(:not([data-fenced-code]))
+  textarea,
 .composer-editor[data-decorated="false"] textarea {
   color: inherit;
 }
-.composer-editor[data-composing="true"] .editor-surface,
+.composer-editor[data-composing="true"]:where(:not([data-fenced-code]))
+  .editor-surface,
 .composer-editor[data-decorated="false"] .editor-surface {
   visibility: hidden;
 }
-.composer-editor[data-composing="true"] .editor-code-line {
-  visibility: visible;
-}
-.composer-editor[data-composing="true"] .editor-code-line > * {
-  visibility: hidden;
-}
-.composer-editor[data-composing="true"] .editor-code-controls {
-  visibility: visible;
-}
-.composer-editor[data-composing="true"] .editor-inline-code {
+.composer-editor[data-composing="true"]:where(:not([data-fenced-code]))
+  .editor-inline-code {
   visibility: visible;
   color: transparent;
 }

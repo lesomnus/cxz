@@ -415,8 +415,8 @@ export function ComposerEditor({
       }),
     [value, source, pastes, choices],
   );
-  // Plain drafts use the native text painter, including throughout IME edits.
-  // Only decorations need the mirrored text layer over the native caret.
+  // Plain drafts use native text painting. Fenced code keeps its mirror
+  // visible during IME edits so syntax colors stay on the same paint layer.
   const decorated =
     hints.open ||
     blocks.length > 0 ||
@@ -713,6 +713,7 @@ export function ComposerEditor({
         className="composer-editor"
         data-composing={composition}
         data-decorated={decorated}
+        data-fenced-code={blocks.length > 0 || undefined}
         data-word-wrap={wordWrap}
         data-command-open={hints === commandHints && commandHints.open}
         data-path-open={pathHints.open}
