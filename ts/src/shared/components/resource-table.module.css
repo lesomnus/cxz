@@ -72,11 +72,10 @@
   margin-inline-start: auto;
 }
 
-.rowActionTrigger.rowActionTrigger {
+.rowActionCell :global(.action-menu) > .rowActionTrigger {
   width: 100%;
-  height: auto;
+  height: var(--resource-table-control-height);
   min-height: 0;
-  aspect-ratio: 1;
   padding: var(--ui-control-inset);
 }
 

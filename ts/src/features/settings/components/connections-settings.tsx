@@ -75,7 +75,7 @@ export function ConnectionsSettings({
       <ResourceTableSection>
         {error && <ErrorNotice className={styles.error} error={error} />}
         <Table
-          className={`connection-list ${resourceTableStyles.panelTable} ${resourceTableStyles.layout} ${styles.table}`}
+          className={`connection-list ${resourceTableStyles.panelTable} ${resourceTableStyles.layout}`}
           aria-label={t("Connections")}
           stickyHeader={false}
         >
@@ -96,36 +96,41 @@ export function ConnectionsSettings({
           <TableBody>
             {items.map((item) => (
               <TableRow key={item.target} data-read-only={item.readOnly}>
-                <TableHead scope="row" className={styles.tileCell}>
+                <TableHead scope="row">
                   <span
-                    className={`${resourceTableStyles.tile} ${styles.tile}`}
+                    className={resourceTableStyles.identity}
                     title={item.name}
                   >
-                    <span className={resourceTableStyles.identity}>
-                      <span className={resourceTableStyles.identityTitle}>
-                        {item.name}
-                      </span>
-                      {item.isDefault && (
-                        <span className={resourceTableStyles.identityDetail}>
-                          {t("default")}
-                        </span>
-                      )}
+                    <span className={resourceTableStyles.identityTitle}>
+                      {item.name}
                     </span>
+                    {item.isDefault && (
+                      <span className={resourceTableStyles.identityDetail}>
+                        {t("default")}
+                      </span>
+                    )}
                   </span>
                 </TableHead>
-                <TableCell className={styles.tileCell}>
+                <TableCell>
                   <span
-                    className={`${resourceTableStyles.tile} ${styles.tile}`}
+                    className={`${resourceTableStyles.identityTitle} ${styles.target}`}
                     title={item.target}
                   >
-                    <span className={resourceTableStyles.identityTitle}>
-                      {item.target}
-                    </span>
+                    {item.target}
                   </span>
                 </TableCell>
                 <TableCell>
-                  {item.transport}
-                  {item.readOnly && <small>{t("served this page")}</small>}
+                  <span className={resourceTableStyles.identity}>
+                    <span>{item.transport}</span>
+                    {item.readOnly && (
+                      <span
+                        className={resourceTableStyles.identityDetail}
+                        title={t("served this page")}
+                      >
+                        {t("served this page")}
+                      </span>
+                    )}
+                  </span>
                 </TableCell>
                 <TableCell className={resourceTableStyles.rowActionCell}>
                   <InstallationFileMenu

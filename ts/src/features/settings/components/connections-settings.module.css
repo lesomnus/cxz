@@ -14,34 +14,6 @@
   width: calc(var(--resource-table-control-size) + var(--ui-control-inset));
 }
 
-.table small {
+.target {
   display: block;
-  color: var(--ui-muted);
-}
-
-.table .tileCell {
-  padding-inline: var(--ui-control-inset);
-}
-
-.tile {
-  --tile-lift: 0;
-  align-items: center;
-  background: rgb(
-    from var(--ui-table-button-background) calc(r + var(--tile-lift))
-      calc(g + var(--tile-lift)) calc(b + var(--tile-lift))
-  );
-  transition: background-color var(--ui-button-background-duration) ease-out;
-}
-
-.table tr:hover .tile {
-  --tile-lift: calc(
-    var(--ui-table-button-tone-direction) *
-      var(--ui-table-button-row-hover-lift)
-  );
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tile {
-    transition: none;
-  }
 }

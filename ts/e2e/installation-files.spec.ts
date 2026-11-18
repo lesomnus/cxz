@@ -33,6 +33,9 @@ test("installation files edit in Monaco and apply only to the active host", asyn
   await expect(
     table.getByRole("button", { name: "Controls for Other installation" }),
   ).toBeDisabled();
+  await expect(more).toBeEnabled();
+  const button = (await more.boundingBox())!;
+  expect(button.height).toBeCloseTo(button.width, 1);
   async function edit(name: string) {
     await more.click();
     await page.getByRole("menuitem", { name, exact: true }).click();
