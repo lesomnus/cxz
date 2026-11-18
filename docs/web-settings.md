@@ -2,10 +2,10 @@
 
 ## Installation files
 
-**Settings → Connections → Installation files** opens the shared Compose override
-or the default devcontainer template of the active connection in the same Monaco
-editor used for workspace previews. The connection address is displayed in the
-editor. These values live on the installation host.
+In **Settings → Connections**, the active connection's row menu opens its shared
+Compose override or default devcontainer template in the same Monaco editor used
+for workspace previews. The connection address is displayed in the editor.
+These values live on the installation host.
 
 `cxz web serve` edits the host's files directly. For a containerized gateway,
 refresh it with `cxz web up` after updating cxz, then run

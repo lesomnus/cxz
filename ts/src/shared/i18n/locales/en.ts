@@ -789,8 +789,6 @@ export const messages = {
   Name: "Name",
   Connections: "Connections",
   "Installation files": "Installation files",
-  "Edit configuration files on the host for {connection}.":
-    "Edit configuration files on the host for {connection}.",
   "Compose override": "Compose override",
   "Default devcontainer template": "Default devcontainer template",
   "Installation file editing requires a host connection.":

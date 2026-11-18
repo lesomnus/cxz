@@ -1,0 +1,32 @@
+.table.table {
+  overflow-wrap: anywhere;
+}
+
+.nameColumn {
+  width: 25%;
+}
+
+.transportColumn {
+  width: 22%;
+}
+
+.actionsColumn {
+  width: var(--ui-table-row-height);
+}
+
+.table small {
+  display: block;
+  color: var(--ui-muted);
+}
+
+.table .actionsCell {
+  padding: var(--ui-control-inset);
+}
+
+.trigger.trigger {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: var(--ui-control-inset);
+}

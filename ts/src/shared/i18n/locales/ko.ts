@@ -789,8 +789,6 @@ export const messages = {
   Name: "이름",
   Connections: "연결",
   "Installation files": "설치 설정 파일",
-  "Edit configuration files on the host for {connection}.":
-    "{connection}에 연결된 호스트의 설정 파일을 편집합니다.",
   "Compose override": "Compose 오버라이드",
   "Default devcontainer template": "기본 devcontainer 템플릿",
   "Installation file editing requires a host connection.":

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
+  ActionMenu,
   Button,
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Section,
   Switch,
   ValueMenu,
 } from "@lesomnus/nox";
@@ -14,6 +14,7 @@ import type { Connection } from "#src/shared/api/connection.ts";
 import { SourceEditor } from "#src/shared/editor/source-editor.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
+import { Icon } from "#src/shared/icons/icon.tsx";
 import styles from "./installation-files.module.css";
 
 type Kind = "compose" | "template";
@@ -89,29 +90,43 @@ function pack(file: DraftFile): WireFile {
   return { data: btoa(raw), executable: file.executable };
 }
 
-export function InstallationFiles({ c }: { c: Connection }) {
+export function InstallationFileMenu({
+  c,
+  name,
+  active,
+  triggerClassName,
+}: {
+  c: Connection;
+  name: string;
+  active: boolean;
+  triggerClassName: string;
+}) {
   const [kind, setKind] = useState<Kind>();
   return (
-    <Section className="settings-group" aria-label={t("Installation files")}>
-      <h2>{t("Installation files")}</h2>
-      <p>
-        {t("Edit configuration files on the host for {connection}.", {
-          connection: c.baseUrl,
-        })}
-      </p>
-      <div className={styles.actions}>
-        <Button disabled={c.inProcess} onClick={() => setKind("compose")}>
-          {title("compose")}
-        </Button>
-        <Button disabled={c.inProcess} onClick={() => setKind("template")}>
-          {title("template")}
-        </Button>
-      </div>
-      {c.inProcess && (
-        <small>
-          {t("Installation file editing requires a host connection.")}
-        </small>
-      )}
+    <>
+      <ActionMenu
+        label={t("Controls for {name}", { name })}
+        triggerClassName={triggerClassName}
+        disabled={!active || c.inProcess}
+        disabledReason={t(
+          "Installation file editing requires a host connection.",
+        )}
+        groups={[
+          {
+            label: t("Installation files"),
+            items: (["compose", "template"] as const).map((kind) => ({
+              label: title(kind),
+              icon: (
+                <Icon
+                  name={kind === "compose" ? "document" : "folder"}
+                  aria-hidden="true"
+                />
+              ),
+              run: () => setKind(kind),
+            })),
+          },
+        ]}
+      />
       {kind && (
         <InstallationEditor
           c={c}
@@ -119,7 +134,7 @@ export function InstallationFiles({ c }: { c: Connection }) {
           close={() => setKind(undefined)}
         />
       )}
-    </Section>
+    </>
   );
 }
 

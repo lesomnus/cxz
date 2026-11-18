@@ -456,32 +456,6 @@ header strong {
   font-size: 13px;
   font-weight: 100;
 }
-/* A connection is read, not configured, so this is a table rather than a form.
-   The row that served the page is the one that cannot be changed, and it says
-   so in its own cells rather than by being styled differently. */
-.connection-list {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  text-align: left;
-}
-.connection-list th,
-.connection-list td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--shade-36);
-  font-weight: 400;
-  vertical-align: top;
-  overflow-wrap: anywhere;
-}
-.connection-list thead th {
-  color: var(--shade-140);
-  font-size: 12px;
-}
-.connection-list tbody tr:last-child th,
-.connection-list tbody tr:last-child td {
-  border-bottom: 0;
-}
-
 .settings-group fieldset {
   border: 0;
   margin: 0;

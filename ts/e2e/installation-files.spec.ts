@@ -16,11 +16,29 @@ test("installation files edit in Monaco and apply only to the active host", asyn
     data: { token: "a".repeat(32) },
   });
   expect(auth.ok()).toBe(true);
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "cxz.connections",
+      JSON.stringify([
+        { name: "Other installation", target: "https://cxz.example" },
+      ]),
+    ),
+  );
   await page.goto("/setting/connection");
-  const settings = page.getByRole("region", { name: "Installation files" });
-  await expect(settings).toContainText(baseURL!);
+  const table = page.getByRole("table", { name: "Connections" });
+  const row = table.getByRole("row").filter({
+    has: page.getByRole("cell", { name: baseURL!, exact: true }),
+  });
+  const more = row.getByRole("cell").last().getByRole("button");
+  await expect(
+    table.getByRole("button", { name: "Controls for Other installation" }),
+  ).toBeDisabled();
+  async function edit(name: string) {
+    await more.click();
+    await page.getByRole("menuitem", { name, exact: true }).click();
+  }
   const before = await page.evaluate(() => localStorage.getItem("settings"));
-  await settings.getByRole("button", { name: "Compose override" }).click();
+  await edit("Compose override");
   const compose = page.getByRole("dialog", { name: "Compose override" });
   const editor = compose.locator(".monaco-editor");
   await expect(editor).toBeVisible();
@@ -54,9 +72,7 @@ test("installation files edit in Monaco and apply only to the active host", asyn
     before,
   );
 
-  await settings
-    .getByRole("button", { name: "Default devcontainer template" })
-    .click();
+  await edit("Default devcontainer template");
   const template = page.getByRole("dialog", {
     name: "Default devcontainer template",
   });
