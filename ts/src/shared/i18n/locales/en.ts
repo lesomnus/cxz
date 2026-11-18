@@ -788,6 +788,30 @@ export const messages = {
     "Upload interrupted. Remove this chip and select the file again.",
   Name: "Name",
   Connections: "Connections",
+  "Installation files": "Installation files",
+  "Edit configuration files on the host for {connection}.":
+    "Edit configuration files on the host for {connection}.",
+  "Compose override": "Compose override",
+  "Default devcontainer template": "Default devcontainer template",
+  "Installation file editing requires a host connection.":
+    "Installation file editing requires a host connection.",
+  "This gateway does not support installation file editing.":
+    "This gateway does not support installation file editing.",
+  "Editing a copy of the built-in template.":
+    "Editing a copy of the built-in template.",
+  "Enter a new relative file path.": "Enter a new relative file path.",
+  "New file path": "New file path",
+  "Add file": "Add file",
+  "The built-in template will be restored when you apply changes.":
+    "The built-in template will be restored when you apply changes.",
+  "Files saved on the host. Manager publication failed.":
+    "Files saved on the host. Manager publication failed.",
+  "This binary file will be preserved when you apply changes.":
+    "This binary file will be preserved when you apply changes.",
+  "Changes take effect when project containers are created or recreated.":
+    "Changes take effect when project containers are created or recreated.",
+  "Restore built-in template": "Restore built-in template",
+  "Apply changes": "Apply changes",
   "A connection reaches one installation and every project on it.":
     "A connection reaches one installation and every project on it.",
   Target: "Target",

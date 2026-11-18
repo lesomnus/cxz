@@ -1,5 +1,30 @@
 # Browser settings
 
+## Installation files
+
+**Settings → Connections → Installation files** opens the shared Compose override
+or the default devcontainer template of the active connection in the same Monaco
+editor used for workspace previews. The connection address is displayed in the
+editor. These values live on the installation host.
+
+`cxz web serve` edits the host's files directly. For a containerized gateway,
+refresh it with `cxz web up` after updating cxz, then run
+`cxz web config-editor` on the same host with the same cxz state directory. Keep
+that process running while using the editor. The gateway connects to its private
+Unix socket and uses the existing browser sign-in. Use the host user who owns the
+configuration files. Host configuration editing is unavailable in the WASM sandbox.
+
+The draft lives in the editor until **Apply changes**. Compose preserves its
+original YAML and resolves includes relative to the configured host file. The
+template editor supports adding and removing files and setting executable bits.
+Apply verifies draft size, current source revision, and configuration validity
+before replacing the source. The template is replaced as one directory on Linux
+filesystems that support directory exchange.
+
+If the host save succeeds but Manager publication fails, the editor displays the
+partial result and offers Retry. Saving does not recreate running containers.
+See [Compose override and default templates](docker.md) for scope and application.
+
 **Logs** is a separate settings topic at `/setting/logs` for browser diagnostics,
 filters, JSONL download and deletion. Its rotating OPFS data is separate from
 settings.json; see [browser client logs](web-client-logs.md).

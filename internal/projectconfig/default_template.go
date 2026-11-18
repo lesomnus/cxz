@@ -34,7 +34,17 @@ type DefaultTemplate struct {
 	Files map[string]TemplateFile `json:"files"`
 }
 
-func snapshotTemplate(root string) (*DefaultTemplate, error) {
+func SnapshotTemplate(root string) (*DefaultTemplate, error) {
+	t, err := ReadTemplate(root)
+	if err != nil {
+		return nil, err
+	}
+	return t, t.Validate()
+}
+
+// ReadTemplate captures the files without validating references, so an editor
+// can still open and repair an incomplete template.
+func ReadTemplate(root string) (*DefaultTemplate, error) {
 	dir := filepath.Join(root, TemplateDirectory)
 	info, err := os.Lstat(dir)
 	if os.IsNotExist(err) {
@@ -88,7 +98,7 @@ func snapshotTemplate(root string) (*DefaultTemplate, error) {
 	if err != nil {
 		return nil, err
 	}
-	return t, t.Validate()
+	return t, nil
 }
 
 func (t *DefaultTemplate) Validate() error {

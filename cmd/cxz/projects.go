@@ -131,7 +131,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 			}
 		}
 		if err == nil && p.State == "running" && !changed {
-			if _, err := syncDevcontainer(ctx, client, stateFrom(ctx), settings.From(ctx)); err != nil {
+			if _, err := syncCurrentDevcontainer(ctx, client, stateFrom(ctx)); err != nil {
 				return err
 			}
 			if err = installer.SyncHostConfig(ctx, stateFrom(ctx), c.ErrWriter, p); err != nil {
@@ -221,7 +221,7 @@ func projectCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	// has to follow: there is a project to report and no session. See cxz#263.
 	projectEntry = request.PrepareOnly
 
-	if _, err := syncDevcontainer(ctx, client, stateFrom(ctx), cfg); err != nil {
+	if _, err := syncCurrentDevcontainer(ctx, client, stateFrom(ctx)); err != nil {
 		return err
 	}
 	if command == "recreate" && !yes {

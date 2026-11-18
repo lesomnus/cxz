@@ -40,8 +40,9 @@ func webFixture(t *testing.T) (transport.Installation, webconfig.Config, string)
 }
 
 func TestWebContainerIsolation(t *testing.T) {
-	v, c, _ := webFixture(t)
-	args, err := webArgs(v, c)
+	v, c, root := webFixture(t)
+	editorDir := filepath.Join(root, "configuration-editor")
+	args, err := webArgs(v, c, editorDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,14 +57,18 @@ func TestWebContainerIsolation(t *testing.T) {
 			t.Fatalf("unsafe argument %s", bad)
 		}
 	}
+	if !strings.Contains(joined, "source="+editorDir+",target=/web/configuration-editor,readonly") ||
+		strings.Contains(joined, "source="+root+",") {
+		t.Fatalf("unexpected configuration editor mount: %s", joined)
+	}
 	c.Listen = "[::1]:7443"
-	args, err = webArgs(v, c)
+	args, err = webArgs(v, c, "")
 	if err != nil || !strings.Contains(strings.Join(args, " "), "[::1]:7443:7350") {
 		t.Fatalf("%v %v", args, err)
 	}
 	for _, bad := range []string{":0", ":65536", "localhost:7350", "7350"} {
 		c.Listen = bad
-		if _, err = webArgs(v, c); err == nil {
+		if _, err = webArgs(v, c, ""); err == nil {
 			t.Fatalf("accepted %s", bad)
 		}
 	}
@@ -77,7 +82,7 @@ func TestPlaintextWebPublishesOnlyOnLoopback(t *testing.T) {
 	v, c, _ := webFixture(t)
 	c.Certificate, c.Key = "", ""
 	c.Origin = "http://127.0.0.1:7350"
-	args, err := webArgs(v, c)
+	args, err := webArgs(v, c, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +99,7 @@ func TestPlaintextWebPublishesOnlyOnLoopback(t *testing.T) {
 	}
 	for _, exposed := range []string{"0.0.0.0:7350", "192.0.2.10:7350", ":7350"} {
 		c.Listen = exposed
-		if _, err = webArgs(v, c); err == nil {
+		if _, err = webArgs(v, c, ""); err == nil {
 			t.Fatalf("published plaintext on %s", exposed)
 		}
 	}

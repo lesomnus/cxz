@@ -19,8 +19,10 @@ import (
 
 	"github.com/lesomnus/cxz/internal/assets"
 	"github.com/lesomnus/cxz/internal/attachmenthttp"
+	"github.com/lesomnus/cxz/internal/configeditor"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/editor"
+	"github.com/lesomnus/cxz/internal/projectconfig"
 	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/internal/resourceid"
 	"github.com/lesomnus/cxz/resource"
@@ -59,6 +61,10 @@ func TestBrowserFixture(t *testing.T) {
 	c := Config{Listen: "127.0.0.1:18081", Origin: "https://127.0.0.1:18081", Certificate: "fixture", Key: "fixture", Token: strings.Repeat("a", 32)}
 	if os.Getenv("CXZ_WEB_FIXTURE_PLAINTEXT") == "1" {
 		c = Config{Listen: "127.0.0.1:18082", Origin: "http://127.0.0.1:18082", Token: strings.Repeat("a", 32)}
+	}
+	c.ConfigurationEditor = configeditor.Editor{
+		Root:    t.TempDir(),
+		Publish: func(context.Context, projectconfig.Spec) error { return nil },
 	}
 	assets, err := Assets("../../internal/webui/assets")
 	if err != nil {

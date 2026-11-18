@@ -108,7 +108,15 @@ func (c Config) Snapshot(root string) (Spec, error) {
 	if err != nil {
 		return Spec{}, err
 	}
-	spec.Template, err = snapshotTemplate(root)
+	spec.Template, err = SnapshotTemplate(root)
+	return spec, err
+}
+
+// WithTemplate resolves the host Compose override alongside a prepared
+// template, before either source is committed by an editor.
+func (c Config) WithTemplate(root string, template *DefaultTemplate) (Spec, error) {
+	spec, err := c.snapshotCompose(root)
+	spec.Template = template
 	return spec, err
 }
 

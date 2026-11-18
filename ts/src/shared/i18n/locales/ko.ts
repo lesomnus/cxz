@@ -788,6 +788,30 @@ export const messages = {
     "업로드가 중단됐습니다. 이 칩을 제거하고 파일을 다시 선택하세요.",
   Name: "이름",
   Connections: "연결",
+  "Installation files": "설치 설정 파일",
+  "Edit configuration files on the host for {connection}.":
+    "{connection}에 연결된 호스트의 설정 파일을 편집합니다.",
+  "Compose override": "Compose 오버라이드",
+  "Default devcontainer template": "기본 devcontainer 템플릿",
+  "Installation file editing requires a host connection.":
+    "설치 파일을 편집하려면 호스트에 연결해야 합니다.",
+  "This gateway does not support installation file editing.":
+    "이 게이트웨이는 설치 파일 편집을 지원하지 않습니다.",
+  "Editing a copy of the built-in template.":
+    "내장 템플릿의 복사본을 편집합니다.",
+  "Enter a new relative file path.": "새 파일의 상대 경로를 입력하세요.",
+  "New file path": "새 파일 경로",
+  "Add file": "파일 추가",
+  "The built-in template will be restored when you apply changes.":
+    "변경을 적용하면 내장 템플릿으로 복원됩니다.",
+  "Files saved on the host. Manager publication failed.":
+    "호스트에 저장했지만 Manager에 반영하지 못했습니다.",
+  "This binary file will be preserved when you apply changes.":
+    "변경을 적용해도 이 바이너리 파일은 보존됩니다.",
+  "Changes take effect when project containers are created or recreated.":
+    "변경 사항은 프로젝트 컨테이너를 생성하거나 재생성할 때 적용됩니다.",
+  "Restore built-in template": "내장 템플릿 복원",
+  "Apply changes": "변경 적용",
   "A connection reaches one installation and every project on it.":
     "연결 하나는 설치본 하나와 그 안의 모든 프로젝트에 닿습니다.",
   Target: "대상",

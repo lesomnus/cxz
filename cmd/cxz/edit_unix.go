@@ -32,11 +32,7 @@ func editCommand() *xli.Command {
 		} else {
 			fmt.Fprintln(c.Writer, "No changes:", path)
 		}
-		cfg, err := settings.Load(root)
-		if err != nil {
-			return err
-		}
-		out, err := publishDevcontainer(ctx, root, cfg)
+		out, err := publishDevcontainer(ctx, root)
 		if err != nil {
 			return err
 		}
@@ -70,7 +66,7 @@ func editCommand() *xli.Command {
 			if selectedComposeFileMissing(root, current) {
 				fmt.Fprintln(c.Writer, "Run cxz edit docker-compose to create the selected Compose file.")
 			} else {
-				out, err := publishDevcontainer(ctx, root, current)
+				out, err := publishDevcontainer(ctx, root)
 				if err != nil {
 					return err
 				}

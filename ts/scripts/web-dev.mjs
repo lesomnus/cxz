@@ -12,6 +12,7 @@ const routes = [
   "/terminal/",
   "/login/",
   "/attachments/",
+  "/configuration/",
 ];
 const isGatewayPath = (path) =>
   path.startsWith("/rpc-stream/") ||

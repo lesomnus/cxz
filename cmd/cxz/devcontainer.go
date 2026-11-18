@@ -6,9 +6,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/projectconfig"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/server"
@@ -17,11 +19,28 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+func syncCurrentDevcontainer(ctx context.Context, client api.SessionsClient, root string) (*api.Receipt, error) {
+	lock, err := core.Lock(filepath.Join(root, "settings.lock"))
+	if err != nil {
+		return nil, err
+	}
+	defer lock.Close()
+	cfg, err := settings.Load(root)
+	if err != nil {
+		return nil, err
+	}
+	return syncDevcontainer(ctx, client, root, cfg)
+}
+
 func syncDevcontainer(ctx context.Context, client api.SessionsClient, root string, cfg settings.Config) (*api.Receipt, error) {
 	spec, err := cfg.Devcontainer.Snapshot(root)
 	if err != nil {
 		return nil, err
 	}
+	return publishDevcontainerSpec(ctx, client, spec)
+}
+
+func publishDevcontainerSpec(ctx context.Context, client api.SessionsClient, spec projectconfig.Spec) (*api.Receipt, error) {
 	data, err := json.Marshal(spec)
 	if err != nil {
 		return nil, err
@@ -41,11 +60,13 @@ func syncDevcontainer(ctx context.Context, client api.SessionsClient, root strin
 	return out, err
 }
 
-func publishDevcontainer(ctx context.Context, root string, cfg settings.Config) (*api.Receipt, error) {
+func publishDevcontainer(ctx context.Context, root string) (*api.Receipt, error) {
 	conn, err := server.Dial(root)
 	if err != nil {
 		return nil, fmt.Errorf("settings saved locally; retry cxz up after connecting to the manager: %w", err)
 	}
 	defer conn.Close()
-	return syncDevcontainer(ctx, resourceclient.New(conn), root, cfg)
+	client := resourceclient.New(conn)
+	defer client.Close()
+	return syncCurrentDevcontainer(ctx, client, root)
 }

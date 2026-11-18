@@ -1,5 +1,5 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { Connection } from "#gen/cxz/connection_pb";
 import { Section, TableScrollArea } from "@lesomnus/nox";
@@ -18,8 +18,10 @@ export type SettingsConnections = {
 
 export function ConnectionsSettings({
   connections,
+  children,
 }: {
   connections?: SettingsConnections;
+  children?: ReactNode;
 }) {
   const [items, setItems] = useState<Connection[]>([]);
   const [error, setError] = useState("");
@@ -94,6 +96,7 @@ export function ConnectionsSettings({
             </table>
           </TableScrollArea>
         </Section>
+        {children}
       </div>
     </section>
   );

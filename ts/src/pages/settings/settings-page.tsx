@@ -59,6 +59,7 @@ import {
   ConnectionsSettings,
   type SettingsConnections,
 } from "#src/features/settings/components/connections-settings.tsx";
+import { InstallationFiles } from "#src/features/settings/components/installation-files.tsx";
 
 const fields = {
   fontFamily: {
@@ -662,7 +663,9 @@ export function SettingsPage({
               </header>
               <AuxiliarySettings c={c} sessions={sessions} />
             </section>
-            <ConnectionsSettings connections={connections} />
+            <ConnectionsSettings connections={connections}>
+              <InstallationFiles key={c.clientId} c={c} />
+            </ConnectionsSettings>
           </SettingsContent>
         </PanelScroll>
         <aside

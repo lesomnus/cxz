@@ -12,7 +12,6 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/resourceclient"
-	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
 )
@@ -88,7 +87,7 @@ func recreateAllProjects(ctx context.Context, client api.SessionsClient, c *xli.
 		fmt.Fprintf(c.ErrWriter, "%d projects%s. Sessions are not started.\n", len(targets), suffix(skipped))
 		return fmt.Errorf("review targets with cxz project ls, then pass --yes")
 	}
-	if _, err = syncDevcontainer(ctx, client, stateFrom(ctx), settings.From(ctx)); err != nil {
+	if _, err = syncCurrentDevcontainer(ctx, client, stateFrom(ctx)); err != nil {
 		return err
 	}
 	resources := client.(*resourceclient.Client)
