@@ -24,6 +24,13 @@ import type {
 import type { Project } from "#gen/cxz/project_pb";
 import { Connection } from "#src/shared/api/connection.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
+import {
+  searchHistoryLifetime,
+  type RecentSearch,
+  type SearchFilters,
+  type SearchMatch,
+} from "./recent-searches";
+import { RecentSearchTable } from "./recent-search-table";
 import styles from "./conversation-search.module.css";
 import inputSurface from "#src/shared/components/input-surface.module.css";
 
@@ -45,7 +52,7 @@ export function ConversationSearch({
   projects: Project[];
 }) {
   const [query, setQuery] = useState("");
-  const [match, setMatch] = useState("substring");
+  const [match, setMatch] = useState<SearchMatch>("substring");
   const [project, setProject] = useState("");
   const [ignoreCase, setIgnoreCase] = useState(true);
   const [{ since, until }, setDates] = useState(recentWeek);
@@ -54,16 +61,20 @@ export function ConversationSearch({
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recent, setRecent] = useState(() => c.searchHistory.list());
   const active = useRef<AbortController | undefined>(undefined);
-  const submitted = useRef({
-    query: "",
-    match,
-    ignoreCase,
-    projects: [] as string[],
-    since: undefined as { seconds: bigint; nanos: number } | undefined,
-    until: undefined as { seconds: bigint; nanos: number } | undefined,
-  });
+  const submitted = useRef<RecentSearch | undefined>(undefined);
+  const selectedProject = projects.find((p) => projectId(p) === project);
   useEffect(() => () => active.current?.abort(), []);
+  useEffect(() => {
+    const oldest = recent.at(-1);
+    if (!oldest) return;
+    const timer = setTimeout(
+      () => setRecent(c.searchHistory.list()),
+      Math.max(0, oldest.time + searchHistoryLifetime - Date.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [c, recent]);
   function invalidate() {
     active.current?.abort();
     setLoading(false);
@@ -72,9 +83,30 @@ export function ConversationSearch({
     setProgress("");
     setError("");
   }
-  async function search(more = false) {
-    if (!more && !query.trim()) return;
-    if (!more && since && until && since >= until) {
+  async function search(
+    more = false,
+    filters: SearchFilters = {
+      query,
+      project,
+      projectName: selectedProject?.name || selectedProject?.alias || "",
+      match,
+      ignoreCase,
+      since,
+      until,
+    },
+  ) {
+    const run = more
+      ? submitted.current
+      : {
+          ...filters,
+          id: crypto.randomUUID(),
+          time: Date.now(),
+          hits: 0,
+          hasMore: false,
+          partial: false,
+        };
+    if (!run || !run.query.trim()) return;
+    if (!more && run.since && run.until && run.since >= run.until) {
       setError("Choose an end date after the start date.");
       return;
     }
@@ -84,31 +116,27 @@ export function ConversationSearch({
     if (!more) {
       setVisits([]);
       setSummary(undefined);
-      const stamp = (date: string) =>
-        date
-          ? {
-              seconds: BigInt(
-                Math.floor(Date.parse(date + "T00:00:00Z") / 1000),
-              ),
-              nanos: 0,
-            }
-          : undefined;
-      submitted.current = {
-        query,
-        match,
-        ignoreCase,
-        projects: project ? [project] : [],
-        since: stamp(since),
-        until: stamp(until),
-      };
     }
+    submitted.current = run;
+    const stamp = (date: string) =>
+      date
+        ? {
+            seconds: BigInt(Math.floor(Date.parse(date + "T00:00:00Z") / 1000)),
+            nanos: 0,
+          }
+        : undefined;
     setLoading(true);
     setError("");
     setProgress("");
     try {
       for await (const reply of c.sessions.search(
         {
-          ...submitted.current,
+          query: run.query,
+          match: run.match,
+          ignoreCase: run.ignoreCase,
+          projects: run.project ? [run.project] : [],
+          since: stamp(run.since),
+          until: stamp(run.until),
           cursor: more ? summary?.nextCursor : undefined,
           limit: 100,
           snippet: 240,
@@ -144,13 +172,34 @@ export function ConversationSearch({
           setProgress(
             `${reply.progress.projectName}: ${reply.progress.state} ${reply.progress.message}`,
           );
-        if (reply.summary) setSummary(reply.summary);
+        if (reply.summary) {
+          setSummary(reply.summary);
+          const completed = {
+            ...run,
+            hits: run.hits + reply.summary.hits,
+            hasMore: reply.summary.hasMore,
+            partial:
+              run.partial ||
+              reply.summary.pending > 0 ||
+              reply.summary.unavailable > 0,
+          };
+          submitted.current = completed;
+          setRecent(c.searchHistory.remember(completed, more));
+        }
       }
     } catch (error) {
       if (!controller.signal.aborted) setError(String(error));
     } finally {
       if (active.current === controller) setLoading(false);
     }
+  }
+  function repeat(previous: RecentSearch) {
+    setQuery(previous.query);
+    setMatch(previous.match);
+    setIgnoreCase(previous.ignoreCase);
+    setProject(previous.project);
+    setDates({ since: previous.since, until: previous.until });
+    void search(false, previous);
   }
   return (
     <div className={styles.content}>
@@ -204,7 +253,8 @@ export function ConversationSearch({
               onChange={(id, pressed) => {
                 invalidate();
                 if (id === "matchCase") setIgnoreCase(!pressed);
-                else setMatch(pressed ? id : "substring");
+                else if (id === "regex" || id === "fuzzy")
+                  setMatch(pressed ? id : "substring");
               }}
             />
             {loading ? (
@@ -249,17 +299,16 @@ export function ConversationSearch({
             prefix={
               <ResourceIcon
                 kind="projects"
-                icon={projectIconName(
-                  projects.find((p) => projectId(p) === project),
-                )}
+                icon={projectIconName(selectedProject)}
               />
             }
             label="Search project"
             value={project}
             className={styles.projectPicker}
             display={
-              projects.find((p) => projectId(p) === project)?.name ||
-              projects.find((p) => projectId(p) === project)?.alias ||
+              selectedProject?.name ||
+              selectedProject?.alias ||
+              project ||
               "All projects"
             }
             options={[
@@ -362,6 +411,13 @@ export function ConversationSearch({
       )}
       {!loading && summary && !visits.length && (
         <p className={styles.muted}>No matches in retained history.</p>
+      )}
+      {!loading && !summary && !visits.length && recent.length > 0 && (
+        <RecentSearchTable
+          recent={recent}
+          repeat={repeat}
+          clear={() => setRecent(c.searchHistory.clear())}
+        />
       )}
     </div>
   );

@@ -17,7 +17,7 @@ export function SearchPage({
         contentClassName={styles.content}
         scrollbarLabel="Search page scroll"
       >
-        <ConversationSearch c={c} projects={projects} />
+        <ConversationSearch key={c.clientId} c={c} projects={projects} />
       </PanelScroll>
     </ResourcePage>
   );

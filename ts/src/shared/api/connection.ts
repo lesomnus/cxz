@@ -16,6 +16,7 @@ import { AuthBindingService } from "#gen/cxz/auth_binding_svc_pb";
 import { MemoryService } from "#gen/cxz/memory_svc_pb";
 import { TaskService } from "#gen/cxz/task_svc_pb";
 import { TaskCatalog } from "#src/features/tasks/task-catalog.ts";
+import { createSearchHistory } from "#src/features/search/recent-searches.ts";
 import {
   openTaskCache,
   type TaskCache,
@@ -51,6 +52,7 @@ export class Connection {
   readonly clientId = crypto.randomUUID();
   readonly reads = new ReadCache();
   readonly selection;
+  readonly searchHistory;
   readonly transport: Transport;
   readonly store;
   readonly queries;
@@ -88,6 +90,10 @@ export class Connection {
   ) {
     this.inProcess = !!transport;
     this.selection = createResourceSelection(
+      baseUrl,
+      this.inProcess ? undefined : cacheIdentity,
+    );
+    this.searchHistory = createSearchHistory(
       baseUrl,
       this.inProcess ? undefined : cacheIdentity,
     );

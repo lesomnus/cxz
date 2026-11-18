@@ -725,6 +725,9 @@ test("Search has no resource panel and submits its filters only on search", asyn
   await expect(
     page.getByRole("link", { name: /Earlier response/ }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: "1 matches" }),
+  ).toBeVisible();
   const request = requests.find(
     (r) => r.path === "/cxz.SessionService/Search",
   ).q;
@@ -758,6 +761,52 @@ test("Search has no resource panel and submits its filters only on search", asyn
     requests.filter((r) => r.path === "/cxz.SessionService/Search").at(-1).q
       .projects ?? [],
   ).toEqual([]);
+  await expect(
+    page.getByRole("status").filter({ hasText: "1 matches" }),
+  ).toBeVisible();
+
+  await page.reload();
+  const history = page.getByRole("table", { name: "Recent searches" });
+  const specific = history
+    .getByRole("row")
+    .filter({ hasText: "Docs playground" });
+  await expect(history.getByRole("row")).toHaveCount(3);
+  await expect(specific).toContainText("Regular expression");
+  await expect(specific).toContainText("Match case");
+  await expect(specific).toContainText("2026-11-01 – 2026-11-05 UTC");
+  await expect(
+    specific.getByRole("cell", { name: "1", exact: true }),
+  ).toBeVisible();
+  const saved = await page.evaluate(() =>
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("cxz.recent-searches.v1:"))
+      .map((key) => localStorage.getItem(key)),
+  );
+  expect(saved).toHaveLength(1);
+  expect(saved[0]).not.toContain("Earlier response");
+  await expect(
+    page.getByRole("link", { name: /Earlier response/ }),
+  ).toHaveCount(0);
+  await specific.getByRole("button", { name: "Earlier", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: /Earlier response/ }),
+  ).toBeVisible();
+  const replay = requests
+    .filter((r) => r.path === "/cxz.SessionService/Search")
+    .at(-1).q;
+  expect(replay).toEqual({ ...request, clientId: replay.clientId });
+
+  await page.clock.setFixedTime(new Date("2026-11-12T12:00:00Z"));
+  await page.reload();
+  await expect(input).toBeVisible();
+  await expect(history).toHaveCount(0);
+  expect(
+    await page.evaluate(() =>
+      Object.keys(localStorage).some((key) =>
+        key.startsWith("cxz.recent-searches.v1:"),
+      ),
+    ),
+  ).toBe(false);
 });
 test("search opens the matched response and queue recall preserves its text", async ({
   page,
