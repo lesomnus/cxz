@@ -2,6 +2,10 @@
   overflow-wrap: anywhere;
 }
 
+.error {
+  margin-inline: var(--ui-section-padding);
+}
+
 .nameColumn {
   width: 25%;
 }

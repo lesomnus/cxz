@@ -288,6 +288,21 @@ test("all categories coexist, save without moving panels, and retain deep links"
   await expect(
     topics(page).getByRole("button", { name: "Connections", exact: true }),
   ).toHaveAttribute("aria-current", "location");
+  const table = page.getByRole("table", { name: "Connections", exact: true });
+  await expect(
+    table.getByRole("rowheader", { name: /This server/ }),
+  ).toBeVisible();
+  const insets = await table.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    const section = element.closest('[data-section-layout="section"]')!;
+    const outer = section.getBoundingClientRect();
+    return {
+      left: bounds.left - outer.left,
+      right: outer.right - bounds.right,
+    };
+  });
+  expect(insets.left).toBeCloseTo(0, 1);
+  expect(insets.right).toBeCloseTo(0, 1);
 });
 
 test("Logs remain a separate page accessible from Profile", async ({

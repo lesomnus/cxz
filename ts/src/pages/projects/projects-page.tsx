@@ -51,7 +51,7 @@ import {
   ResourceToolbar,
   ResourceDashboard,
   ResourceDashboardColumn,
-  ResourceSessionSection,
+  ResourceTableSection,
 } from "#src/shared/components/resource-layout.tsx";
 import dashboardStyles from "#src/shared/components/resource-dashboard.module.css";
 import pageStyles from "#src/shared/components/resource-page.module.css";
@@ -351,7 +351,7 @@ function ProjectDashboard({
             <ErrorNotice api className={styles.errors} error={p.status.error} />
           )}
         </Section>
-        <ResourceSessionSection aria-label={t("Project sessions")}>
+        <ResourceTableSection aria-label={t("Project sessions")} fillHeight>
           <SessionTable
             c={c}
             sessions={sessions}
@@ -381,7 +381,7 @@ function ProjectDashboard({
               </Button>
             </div>
           )}
-        </ResourceSessionSection>
+        </ResourceTableSection>
       </ResourceDashboardColumn>
       <ResourceDashboardColumn kind="activity">
         <section className={dashboardStyles.actions} aria-label={t("Actions")}>

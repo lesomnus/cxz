@@ -8,6 +8,18 @@
   --resource-table-control-size: 44px;
 }
 
+.section.section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--ui-section-group-gap) 0;
+}
+
+.section.section[data-fill-height] {
+  height: 100%;
+  padding-block-end: var(--ui-section-padding);
+}
+
 /* Resource lists share row spacing and dividers; surfaces belong to each page. */
 .table {
   --ui-table-row-height: var(--resource-table-control-size);
@@ -22,6 +34,10 @@
 }
 .table tbody tr:not(:last-child) td {
   box-shadow: inset 0 -1px 0 var(--ui-table-row-border);
+}
+
+.section > .table {
+  border-radius: 0;
 }
 
 /* Inactive resource cards keep the same hover and selection feedback. */

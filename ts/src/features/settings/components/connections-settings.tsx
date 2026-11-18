@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { Connection as ConnectionEntry } from "#gen/cxz/connection_pb";
 import {
-  Section,
   Table,
   TableBody,
   TableCell,
@@ -14,6 +13,7 @@ import {
 import type { Connection } from "#src/shared/api/connection.ts";
 import { client } from "#src/shared/api/connections.ts";
 import { InstallationFileMenu } from "./installation-files";
+import { ResourceTableSection } from "#src/shared/components/resource-layout.tsx";
 import resourceTableStyles from "#src/shared/components/resource-table.module.css";
 import styles from "./connections-settings.module.css";
 
@@ -72,8 +72,8 @@ export function ConnectionsSettings({
           </small>
         </div>
       </header>
-      <Section className="settings-group">
-        {error ? <ErrorNotice error={error} /> : null}
+      <ResourceTableSection>
+        {error && <ErrorNotice className={styles.error} error={error} />}
         <Table
           className={`connection-list ${resourceTableStyles.table} ${resourceTableStyles.layout} ${styles.table}`}
           aria-label={t("Connections")}
@@ -117,7 +117,7 @@ export function ConnectionsSettings({
             ))}
           </TableBody>
         </Table>
-      </Section>
+      </ResourceTableSection>
     </section>
   );
 }
