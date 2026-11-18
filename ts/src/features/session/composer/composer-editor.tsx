@@ -714,7 +714,7 @@ export function ComposerEditor({
         data-composing={composition}
         data-decorated={decorated}
         data-word-wrap={wordWrap}
-        data-command-open={hints.open}
+        data-command-open={hints === commandHints && commandHints.open}
         data-path-open={pathHints.open}
         data-file-drag={dragging}
         onDragOver={(event) => {

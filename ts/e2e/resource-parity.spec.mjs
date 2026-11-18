@@ -438,6 +438,18 @@ test("inline session mentions and secret chips preserve the prompt and storage b
     .first()
     .click();
   const input = page.getByRole("textbox", { name: "Message", exact: true });
+  const mentions = page.getByRole("grid", { name: "Session mentions" });
+  const lines = page.locator(".editor-mirror > .editor-line");
+  for (const draft of ["@el", "ask @el", "첫 줄입니다.\nask @el"]) {
+    await input.fill(draft);
+    await expect(mentions).toBeVisible();
+    await expect(input).toHaveValue(draft);
+    await expect(lines.first()).toHaveCSS("visibility", "visible");
+    await expect(lines.last()).toHaveCSS("visibility", "visible");
+    await input.press("Escape");
+    await expect(mentions).toHaveCount(0);
+  }
+  await input.fill("");
   await input.pressSequentially("ask @el");
   await expect(
     page.getByRole("grid", { name: "Session mentions" }),
