@@ -62,6 +62,12 @@ claude의 `control_response` 13.75MiB는 `get_usage`·`list_models` 응답이다
 
 승인에는 호출마다 반복되는 provider 상수가 있다: `approval.params.availableDecisions` 0.67~0.82MiB(선택지 목록), `params.proposedExecpolicyAmendment` 0.52~0.64MiB.
 
+### 서브에이전트의 일
+
+서브에이전트의 답과 도구 호출은 세션 자신의 스트림으로 들어와 세션의 이벤트로 기록된다. 2026-11-19 측정에서 동시에 돈 서브에이전트 3개의 `tool_call` 46건과 `tool_result` 45건이 세션 자신의 것과 구별되지 않았고, 구별 가능한 것은 `assistant` 9건뿐이었다(`response.phase = "subagent"`).
+
+판별자는 provider가 보내준다: `parent_tool_use_id`가 그 서브에이전트를 띄운 `Agent` 호출의 ID이고, `subagent_type`이 종류다. 이것을 이벤트의 `agent`로 기록한다(cxz#368). 분류 계약에서 이 값은 **상세가 아니라 요약에 속한다** — 상세가 만료된 뒤에도 "이 줄은 어느 서브에이전트가 한 일"은 남아야 하므로 `work_summary`와 함께 보존한다. 세션 자신의 일에는 이 값이 없으며, 빈 값으로 채우지 않는다. 이 필드가 없는 기존 기록은 출처 미상이고 상위의 것으로 단정하지 않는다.
+
 ### 그밖에 계약이 설명해야 하는 것
 
 - **빈 raw 껍데기 271,912건.** `Shed`는 payload를 비우고 자리를 남기며, 그 빈 body 자체가 "턴이 raw를 만들었다"는 의미를 담는다. 상위 계획의 "빈 body로 의미를 추측하지 않는다"와 충돌하므로 소급 해석이 필요하다.
