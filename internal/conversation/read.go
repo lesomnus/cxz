@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lesomnus/cxz/internal/projectid"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,6 +18,8 @@ import (
 	"time"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 )
 
 var runtimeID = regexp.MustCompile(`^[a-f0-9]{24}$`)
@@ -59,7 +60,7 @@ func (s *Store) resolve(ctx context.Context, handle string) (Session, error) {
 // not a failure of the read: the record is skipped and named.
 const MaxRecordBytes = 32 << 20
 
-// MaxScanBytes bounds the whole journal a query will walk.
+// MaxScanBytes bounds the stored event bytes a query will walk.
 const MaxScanBytes = 256 << 20
 
 // recordHeadBytes is how much of a skipped record is kept to identify it. seq
@@ -76,17 +77,7 @@ type unreadable struct {
 	Bytes int
 }
 
-// Read committed records only. os.Root prevents a session symlink escaping the
-// project; explicit limits also bound malformed/oversized journals before pruning.
-//
-// A record over MaxRecordBytes is skipped rather than ending the walk. The same
-// defect was fixed once already in internal/supervisor: a bufio.Scanner cannot
-// resume past an over-long token, so one runaway record used to discard every
-// record read before it and answer nothing about the session at all. A committed
-// journal is newline delimited, so the record after the skipped one is intact --
-// which is why this side continues where the supervisor, reading a live stream,
-// has to stop.
-func (s *Store) journal(ctx context.Context, v Session) ([]core.Event, []unreadable, error) {
+func (s *Store) readEvents(ctx context.Context, v Session) ([]core.Event, []unreadable, error) {
 	root, err := os.OpenRoot(s.Root)
 	if err != nil {
 		return nil, nil, err
@@ -101,6 +92,17 @@ func (s *Store) journal(ctx context.Context, v Session) ([]core.Event, []unreada
 	if json.Unmarshal(b, &manifest) != nil || manifest.ID != v.RuntimeID || !projectid.Same(manifest.ProjectID, s.Project) {
 		return nil, nil, fmt.Errorf("session manifest outside project scope")
 	}
+	db := sessionstore.Path(dir)
+	if _, err := root.Lstat(db); err == nil {
+		return s.readDatabase(ctx, root, dir, v.RuntimeID)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return nil, nil, err
+	}
+	return s.readLegacyJournal(ctx, root, dir, v.RuntimeID)
+}
+
+// A legacy journal may end in a partial batch. Only committed lines are read.
+func (s *Store) readLegacyJournal(ctx context.Context, root *os.Root, dir, session string) ([]core.Event, []unreadable, error) {
 	f, err := root.Open(filepath.Join(dir, "events.jsonl"))
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil, nil
@@ -153,7 +155,7 @@ func (s *Store) journal(ctx context.Context, v Session) ([]core.Event, []unreada
 				return nil, nil, fmt.Errorf("invalid committed journal record")
 			}
 			for _, e := range batch {
-				if e.Seq <= last || (e.SessionID != "" && e.SessionID != v.RuntimeID) {
+				if e.Seq <= last || (e.SessionID != "" && e.SessionID != session) {
 					return nil, nil, fmt.Errorf("invalid journal identity or sequence")
 				}
 				last = e.Seq
@@ -232,7 +234,7 @@ func recordSeq(head []byte) uint64 {
 
 var seqPattern = regexp.MustCompile(`"seq"\s*:\s*([0-9]{1,19})`)
 
-func details(v Session, events []core.Event, now time.Time) Reply {
+func details(v Session, events []core.Event, skipped []unreadable, now time.Time) Reply {
 	r := Reply{Session: v, ObservedAt: now}
 	for _, e := range events {
 		r.SnapshotSeq = e.Seq
@@ -248,6 +250,9 @@ func details(v Session, events []core.Event, now time.Time) Reply {
 			r.FirstTime = &t
 		}
 	}
+	for _, record := range skipped {
+		r.SnapshotSeq = max(r.SnapshotSeq, record.Seq)
+	}
 	r.HistoryTruncated = r.TrimmedThrough > 0
 	return r
 }
@@ -256,11 +261,11 @@ func (s *Store) Lookup(ctx context.Context, handle string) (Reply, error) {
 	if err != nil {
 		return Reply{}, err
 	}
-	events, skipped, err := s.journal(ctx, v)
+	events, skipped, err := s.readEvents(ctx, v)
 	if err != nil {
 		return Reply{}, err
 	}
-	r := details(v, events, s.now())
+	r := details(v, events, skipped, s.now())
 	noteUnreadable(&r, skipped)
 	return r, nil
 }
@@ -285,6 +290,9 @@ func normalize(q *Query, now time.Time) error {
 	}
 	if q.Limit < 1 || q.Limit > 500 {
 		return fmt.Errorf("limit must be 1..500")
+	}
+	if q.Tail < 0 || q.Tail > 500 {
+		return fmt.Errorf("tail must be 0..500")
 	}
 	if q.Before < 0 || q.Before > 100 || q.After < 0 || q.After > 100 {
 		return fmt.Errorf("before/after must be 0..100")
@@ -393,7 +401,8 @@ func (s *Store) run(ctx context.Context, q Query, search bool) (Reply, error) {
 		op = "search"
 	}
 	var last uint64
-	if q.Cursor != "" {
+	continued := q.Cursor != ""
+	if continued {
 		if len(q.Cursor) > 32768 {
 			return Reply{}, fmt.Errorf("cursor too large")
 		}
@@ -426,8 +435,8 @@ func (s *Store) run(ctx context.Context, q Query, search bool) (Reply, error) {
 	if search && q.Output != "inline" {
 		return Reply{}, fmt.Errorf("search returns metadata only; use conversation_read for file output")
 	}
-	if search && (q.LineStart > 0 || q.LineEnd > 0 || q.Before > 0 || q.After > 0) {
-		return Reply{}, fmt.Errorf("line/context selection belongs to conversation_read")
+	if search && (q.LineStart > 0 || q.LineEnd > 0 || q.Before > 0 || q.After > 0 || q.Tail > 0) {
+		return Reply{}, fmt.Errorf("line/context/tail selection belongs to conversation_read")
 	}
 	budget := DefaultBytes
 	maximum := MaxInlineBytes
@@ -458,11 +467,11 @@ func (s *Store) run(ctx context.Context, q Query, search bool) (Reply, error) {
 		return Reply{}, err
 	}
 	q.Session = v.ID
-	events, skipped, err := s.journal(ctx, v)
+	events, skipped, err := s.readEvents(ctx, v)
 	if err != nil {
 		return Reply{}, err
 	}
-	r := details(v, events, now)
+	r := details(v, events, skipped, now)
 	r.View = q.View
 	r.Since = q.Since
 	r.Until = q.Until
@@ -470,7 +479,7 @@ func (s *Store) run(ctx context.Context, q Query, search bool) (Reply, error) {
 		q.SnapshotSeq = &r.SnapshotSeq
 	} else {
 		if *q.SnapshotSeq > r.SnapshotSeq {
-			return Reply{}, fmt.Errorf("snapshot is ahead of retained journal")
+			return Reply{}, fmt.Errorf("snapshot is ahead of retained history")
 		}
 		r.SnapshotSeq = *q.SnapshotSeq
 	}
@@ -508,16 +517,17 @@ func (s *Store) run(ctx context.Context, q Query, search bool) (Reply, error) {
 	}
 	lo, _ := time.Parse(time.RFC3339Nano, q.Since)
 	hi, _ := time.Parse(time.RFC3339Nano, q.Until)
-	used := 0
-	count := 0
-	for _, e := range candidates {
-		if err := ctx.Err(); err != nil {
-			return Reply{}, err
+	query := q.Query
+	if q.IgnoreCase {
+		query = strings.ToLower(query)
+	}
+	matches := func(e Event) bool {
+		if (len(q.Seqs) > 0 && !selected[e.Seq]) || (!lo.IsZero() && e.Time.Before(lo)) || (!hi.IsZero() && !e.Time.Before(hi)) {
+			return false
 		}
-		if e.Seq <= last || (len(q.Seqs) > 0 && !selected[e.Seq]) || (!lo.IsZero() && e.Time.Before(lo)) || (!hi.IsZero() && !e.Time.Before(hi)) {
-			continue
+		if query == "" && re == nil {
+			return true
 		}
-		full, _ := json.Marshal(e)
 		target := e.Text
 		if q.View == "raw" {
 			target = string(e.Raw)
@@ -527,18 +537,39 @@ func (s *Store) run(ctx context.Context, q Query, search bool) (Reply, error) {
 		} else if e.Payload != nil {
 			target += "\n" + string(e.Payload)
 		}
-		matched := false
 		if re != nil {
-			matched = re.MatchString(target)
-		} else {
-			query := q.Query
-			if q.IgnoreCase {
-				target = strings.ToLower(target)
-				query = strings.ToLower(query)
-			}
-			matched = strings.Contains(target, query)
+			return re.MatchString(target)
 		}
-		if !matched {
+		if q.IgnoreCase {
+			target = strings.ToLower(target)
+		}
+		return strings.Contains(target, query)
+	}
+	if q.Tail > 0 && !continued {
+		remaining := q.Tail
+		for i := len(candidates) - 1; i >= 0; i-- {
+			if err := ctx.Err(); err != nil {
+				return Reply{}, err
+			}
+			if matches(candidates[i]) {
+				remaining--
+				if remaining == 0 {
+					// The cursor will keep this lower bound even if the
+					// first selected event does not fit the page.
+					last = candidates[i].Seq - 1
+					break
+				}
+			}
+		}
+	}
+	used := 0
+	count := 0
+	start := sort.Search(len(candidates), func(i int) bool { return candidates[i].Seq > last })
+	for _, e := range candidates[start:] {
+		if err := ctx.Err(); err != nil {
+			return Reply{}, err
+		}
+		if !matches(e) {
 			continue
 		}
 		if q.LineStart > 0 || q.LineEnd > 0 {
@@ -572,8 +603,8 @@ func (s *Store) run(ctx context.Context, q Query, search bool) (Reply, error) {
 		count++
 		last = e.Seq
 		if search {
-			r.Hits = append(r.Hits, Hit{e.Seq, e.Time, len(full)})
-			r.ReturnedBytes += len(full)
+			r.Hits = append(r.Hits, Hit{e.Seq, e.Time, len(body)})
+			r.ReturnedBytes += len(body)
 		} else {
 			r.Bodies = append(r.Bodies, e)
 			r.ReturnedBytes += len(body)
@@ -582,7 +613,7 @@ func (s *Store) run(ctx context.Context, q Query, search bool) (Reply, error) {
 	}
 	r.EventCount = count
 	// Last, so it is not overwritten by the body-budget message: both can be
-	// true of one reply, and this one is about the journal rather than the page.
+	// true of one reply and describe different limits.
 	noteUnreadable(&r, skipped)
 	if !search && q.Output == "file" {
 		if err = s.export(ctx, q, &r); err != nil {
@@ -592,7 +623,7 @@ func (s *Store) run(ctx context.Context, q Query, search bool) (Reply, error) {
 	return r, nil
 }
 
-// noteUnreadable names the records the journal would not hand over. It is not
+// noteUnreadable names records that exceeded the storage read limit. It is not
 // OversizedSeqs: that one means an event did not fit this page's byte budget,
 // and its remedies -- output=file, a larger max_bytes, a line range -- do
 // nothing here. A caller told to retry with a file would fail the same way.
@@ -610,14 +641,14 @@ func noteUnreadable(r *Reply, skipped []unreadable) {
 		}
 		r.UnreadableSeqs = append(r.UnreadableSeqs, v.Seq)
 	}
-	note := fmt.Sprintf("%d committed record(s) exceed the %d MiB record limit and were skipped; the largest is %d MiB. Everything else in this journal was read.",
+	note := fmt.Sprintf("%d committed record(s) exceed the %d MiB record limit and were skipped; the largest is %d MiB. The remaining history was scanned.",
 		len(skipped), MaxRecordBytes>>20, largest>>20)
 	if len(skipped) == 1 {
 		where := fmt.Sprintf("seq %d", skipped[0].Seq)
 		if skipped[0].Seq == 0 {
 			where = fmt.Sprintf("the record after seq %d", skipped[0].After)
 		}
-		note = fmt.Sprintf("%s is %d MiB, over the %d MiB record limit, and was skipped. Everything else in this journal was read.",
+		note = fmt.Sprintf("%s is %d MiB, over the %d MiB record limit, and was skipped. The remaining history was scanned.",
 			where, skipped[0].Bytes>>20, MaxRecordBytes>>20)
 	} else if unidentified > 0 {
 		note += fmt.Sprintf(" %d could not be identified.", unidentified)

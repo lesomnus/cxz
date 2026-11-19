@@ -50,7 +50,7 @@ func conversationTools(server *mcp.Server, root string, session core.Session) {
 		r, e := c.Search(ctx, in)
 		return nil, r, e
 	})
-	mcp.AddTool(server, &mcp.Tool{Name: "conversation_read", Description: "Read retained session events by UUID/alias, seqs or time, optionally surrounding messages or message line ranges. Default inline body budget 32 KiB. output=file exports a fixed JSONL snapshot plus metadata inside your container for rg/jq; returns paths only. Up to 32 exports/64 MiB per caller, oldest pruned on export. raw means recorded vendor events, not provider transcript files or current model context. Never opens secret-file references."}, func(ctx context.Context, _ *mcp.CallToolRequest, in conversation.Query) (*mcp.CallToolResult, conversation.Reply, error) {
+	mcp.AddTool(server, &mcp.Tool{Name: "conversation_read", Description: "Read retained session events by UUID/alias, seqs or time, optionally surrounding messages or message line ranges. Set tail to read the last N matching messages in chronological order. Default inline body budget 32 KiB. output=file exports a fixed JSONL snapshot plus metadata inside your container for rg/jq; returns paths only. Up to 32 exports/64 MiB per caller, oldest pruned on export. raw means recorded vendor events, not provider transcript files or current model context. Never opens secret-file references."}, func(ctx context.Context, _ *mcp.CallToolRequest, in conversation.Query) (*mcp.CallToolResult, conversation.Reply, error) {
 		r, e := c.Read(ctx, in)
 		return nil, r, e
 	})

@@ -1,4 +1,4 @@
-// Package conversation exposes bounded, project-scoped reads of cxz journals.
+// Package conversation exposes bounded, project-scoped reads of cxz conversations.
 package conversation
 
 import (
@@ -38,6 +38,7 @@ type Query struct {
 	SnapshotSeq  *uint64  `json:"snapshot_seq,omitempty" jsonschema:"Upper event sequence from a prior search/read"`
 	Cursor       string   `json:"cursor,omitempty" jsonschema:"Opaque continuation from this tool; reuses its UUID, filters and snapshot"`
 	Limit        int      `json:"limit,omitempty" jsonschema:"Event page size; default 50, maximum 500"`
+	Tail         int      `json:"tail,omitempty" jsonschema:"For conversation_read, select the last N matching events in chronological order (1 to 500). Limit still controls page size."`
 	Output       string   `json:"output,omitempty" jsonschema:"inline (default) or file (read only); file is accessible in the calling session's container"`
 	MaxBytes     int      `json:"max_bytes,omitempty" jsonschema:"Body budget: inline default 32768 max 131072; file default/max 16777216"`
 }

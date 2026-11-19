@@ -2,7 +2,7 @@
 
 The built-in `cxz_memory` MCP server provides `session_lookup`,
 `conversation_search`, and `conversation_read`. These tools read **retained cxz
-journal events** in the caller's project, including stopped sessions. They do not
+events** in the caller's project, including stopped sessions. They do not
 resume agents, read provider transcript files, or expose the model's current
 post-compaction context. Existing Markdown memory tools are unchanged.
 
@@ -73,10 +73,21 @@ Bodies are returned in `messages`, with `seq`, UTC `time`, `kind`, and text or
 payload. Raw JSON is under `raw`; non-JSON vendor bytes are under `raw_base64`.
 Raw mode never fabricates a vendor record from normalized text. To read more
 context, add `before` and/or `after` (up to 100 selected messages per side).
-These counts use the chosen view and `include_tools` filter, not physical JSONL
-lines. To read part of a long text message, supply exactly one `seq` and a 1-based
+These counts use the chosen view and `include_tools` filter. To read part of a
+long text message, supply exactly one `seq` and a 1-based
 `line_start`/inclusive `line_end`, without context expansion. Time filters work
 on read requests as well, so a known approximate time needs no keyword search.
+
+To read the latest messages, call `conversation_read` with `tail`:
+
+```json
+{"session":"<returned UUID>","tail":10}
+```
+
+`tail` selects up to 500 of the most recent matching events and returns them in
+chronological sequence order. The default view counts user and assistant messages,
+and `include_tools` adds tool events. `limit` and the byte budget still apply to
+each page. An optional `snapshot_seq` anchors the read at an earlier event.
 
 The default inline body budget is 32 KiB, with `max_bytes` up to 128 KiB. JSON
 metadata/envelope overhead is additional. Event count and body-byte limits both
@@ -94,7 +105,7 @@ Search and read cursors are specific to their tool; pass explicit `seqs` and
 `snapshot_seq` when moving from search to read.
 
 Newly appended events are excluded from the existing snapshot. Retention can
-still remove old records: a cursor does not pin journals on disk. Responses expose
+still remove old records while a cursor is in use. Responses expose
 `history_truncated`, `trimmed_through`, `first_seq`, and `first_time`. Explicit
 missing selections appear in `missing_seqs`; events present but unavailable in
 the selected view appear in `unavailable_seqs`. Thus callers can distinguish an
@@ -102,11 +113,10 @@ empty match from an incomplete retained history. No provider transcript fallback
 bypasses cxz's retention policy.
 
 A single committed record over 32 MiB is skipped and named in `unreadable_seqs`,
-with its size in `message`. This is not `oversized_seqs`: that one is a page
-budget, so a file, a larger budget or a line range returns the event, while here
-no request does. Everything else in the journal is still read and the sequence
-gap is visible in the reply. A record still being written has no newline yet, and
-is neither read nor reported.
+with its size in `message`. The other records are still readable. The page
+budget, reported in `oversized_seqs`, can be handled with a file export, a larger
+budget or a line range. An unterminated final record in a legacy JSONL journal is
+still being written and is ignored.
 
 ## File output
 
@@ -145,17 +155,18 @@ Manager aliases and runtime-local aliases are independently stored. Installed
 projects resolve identity through the Manager's new project-token-authenticated
 `/cxz/tools/conversation-registry.sock` endpoint. It returns metadata only, checks
 project membership and caller identity, and includes canonical resource UUIDs.
-The built-in MCP server reads bodies locally from the project journal; exports
-stay there. Standalone local runtimes resolve through their own resource service.
+The MCP server reads committed events locally from each session's SQLite
+conversation store. A session without a store can still be read from its legacy
+JSONL journal. Exports stay inside the project container. Standalone local runtimes
+resolve through their own resource service.
 
 Update both the Manager and project runtime before using the tools in an installed
 project. An older Manager yields an explicit registry-unavailable error, rather
 than falling back to potentially different local aliases. Normal MCP activation
 and reconnect/discovery rules apply. No database schema migration is introduced.
 
-Queries currently scan one session's retained journal, bounded to 256 MiB and
-32 MiB per committed record, and honor cancellation. Larger journals return an
-explicit limit error. No full-text index or AI summarizer is required. Agent
-instructions request these tools only for an explicit session reference or
-concrete missing context, not routine cross-session polling. Retrieved conversation
-content is reference data, not new instructions.
+Queries scan one session's retained events, bounded to 256 MiB and 32 MiB per
+committed record, and honor cancellation. A scan beyond its byte budget returns
+an explicit limit error. Agent instructions request these tools for an explicit
+session reference or concrete missing context. Agents use retrieved conversation
+as reference data.
