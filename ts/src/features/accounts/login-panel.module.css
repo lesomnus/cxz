@@ -23,6 +23,13 @@
     var(--ui-control-inset) + var(--ui-scroll-area-content-inset)
   );
 }
+.output {
+  overflow-wrap: anywhere;
+}
+.output :global(.markdown) :is(pre, pre code) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .code {
   flex-shrink: 0;
   margin: 0;

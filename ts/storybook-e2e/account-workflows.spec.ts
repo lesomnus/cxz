@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 async function open(page: Page, story: string) {
   await page.goto(
@@ -7,6 +7,28 @@ async function open(page: Page, story: string) {
 }
 const loginPanel = (page: Page) =>
   page.getByRole("region", { name: "Provider login", exact: true });
+async function expectLoginLinkToWrap(panel: Locator) {
+  const link = panel.getByRole("link", {
+    name: /^https:\/\/example\.invalid\/oauth\/authorize/,
+  });
+  await expect(link).toBeVisible();
+  const layout = await link.evaluate((node: HTMLAnchorElement) => {
+    const card = node.closest(".floating-card")!;
+    const body = node.closest(".card-body")!;
+    return {
+      lines: node.getClientRects().length,
+      overflow: Math.max(
+        card.scrollWidth - card.clientWidth,
+        body.scrollWidth - body.clientWidth,
+      ),
+      completeLink: node.href === node.textContent,
+    };
+  });
+  expect(layout.lines).toBeGreaterThan(1);
+  expect(layout.overflow).toBe(0);
+  expect(layout.completeLink).toBe(true);
+}
+
 async function finishLogin(page: Page) {
   const panel = loginPanel(page);
   await expect(panel).toContainText("demo-code");
@@ -708,6 +730,7 @@ test("sending discovers expired OAuth and login resumes without replaying the in
   await page.getByRole("button", { name: "Send", exact: true }).click();
   const login = page.getByRole("button", { name: "Log in again", exact: true });
   await login.click();
+  await expectLoginLinkToWrap(loginPanel(page));
   await finishLogin(page);
   await expect(login).toHaveCount(0);
   await expect(page.locator("article.input")).toHaveCount(1);
@@ -733,6 +756,7 @@ test("an expired session keeps its recovery notice when login is canceled on mob
     exact: true,
   });
   await expect(card).toHaveAttribute("data-entered", "true");
+  await expectLoginLinkToWrap(panel);
   await card.evaluate(async (node) => {
     await Promise.all(
       node
