@@ -1201,6 +1201,7 @@ type Event struct {
 	Payload       []byte                 `protobuf:"bytes,8,opt,name=payload,proto3" json:"payload,omitempty"`
 	Response      *ResponseMetadata      `protobuf:"bytes,9,opt,name=response,proto3" json:"response,omitempty"`
 	ToolSummary   *ToolSummary           `protobuf:"bytes,10,opt,name=tool_summary,json=toolSummary,proto3" json:"tool_summary,omitempty"`
+	Agent         *EventAgent            `protobuf:"bytes,12,opt,name=agent,proto3" json:"agent,omitempty"`
 	Heartbeat     bool                   `protobuf:"varint,11,opt,name=heartbeat,proto3" json:"heartbeat,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1306,11 +1307,70 @@ func (x *Event) GetToolSummary() *ToolSummary {
 	return nil
 }
 
+func (x *Event) GetAgent() *EventAgent {
+	if x != nil {
+		return x.Agent
+	}
+	return nil
+}
+
 func (x *Event) GetHeartbeat() bool {
 	if x != nil {
 		return x.Heartbeat
 	}
 	return false
+}
+
+type EventAgent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EventAgent) Reset() {
+	*x = EventAgent{}
+	mi := &file_cxz_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EventAgent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventAgent) ProtoMessage() {}
+
+func (x *EventAgent) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventAgent.ProtoReflect.Descriptor instead.
+func (*EventAgent) Descriptor() ([]byte, []int) {
+	return file_cxz_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *EventAgent) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *EventAgent) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
 }
 
 type ToolSummary struct {
@@ -1330,7 +1390,7 @@ type ToolSummary struct {
 
 func (x *ToolSummary) Reset() {
 	*x = ToolSummary{}
-	mi := &file_cxz_proto_msgTypes[17]
+	mi := &file_cxz_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1342,7 +1402,7 @@ func (x *ToolSummary) String() string {
 func (*ToolSummary) ProtoMessage() {}
 
 func (x *ToolSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[17]
+	mi := &file_cxz_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1355,7 +1415,7 @@ func (x *ToolSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolSummary.ProtoReflect.Descriptor instead.
 func (*ToolSummary) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{17}
+	return file_cxz_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ToolSummary) GetName() string {
@@ -1437,7 +1497,7 @@ type ToolFileSummary struct {
 
 func (x *ToolFileSummary) Reset() {
 	*x = ToolFileSummary{}
-	mi := &file_cxz_proto_msgTypes[18]
+	mi := &file_cxz_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1449,7 +1509,7 @@ func (x *ToolFileSummary) String() string {
 func (*ToolFileSummary) ProtoMessage() {}
 
 func (x *ToolFileSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[18]
+	mi := &file_cxz_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1462,7 +1522,7 @@ func (x *ToolFileSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolFileSummary.ProtoReflect.Descriptor instead.
 func (*ToolFileSummary) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{18}
+	return file_cxz_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ToolFileSummary) GetPath() string {
@@ -1534,7 +1594,7 @@ type TranscriptRequest struct {
 
 func (x *TranscriptRequest) Reset() {
 	*x = TranscriptRequest{}
-	mi := &file_cxz_proto_msgTypes[19]
+	mi := &file_cxz_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1546,7 +1606,7 @@ func (x *TranscriptRequest) String() string {
 func (*TranscriptRequest) ProtoMessage() {}
 
 func (x *TranscriptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[19]
+	mi := &file_cxz_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1559,7 +1619,7 @@ func (x *TranscriptRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TranscriptRequest.ProtoReflect.Descriptor instead.
 func (*TranscriptRequest) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{19}
+	return file_cxz_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *TranscriptRequest) GetSessionId() string {
@@ -1611,7 +1671,7 @@ type TranscriptReply struct {
 
 func (x *TranscriptReply) Reset() {
 	*x = TranscriptReply{}
-	mi := &file_cxz_proto_msgTypes[20]
+	mi := &file_cxz_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1623,7 +1683,7 @@ func (x *TranscriptReply) String() string {
 func (*TranscriptReply) ProtoMessage() {}
 
 func (x *TranscriptReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[20]
+	mi := &file_cxz_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1636,7 +1696,7 @@ func (x *TranscriptReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TranscriptReply.ProtoReflect.Descriptor instead.
 func (*TranscriptReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{20}
+	return file_cxz_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *TranscriptReply) GetEvents() []*Event {
@@ -1692,7 +1752,7 @@ type RowsRequest struct {
 
 func (x *RowsRequest) Reset() {
 	*x = RowsRequest{}
-	mi := &file_cxz_proto_msgTypes[21]
+	mi := &file_cxz_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1704,7 +1764,7 @@ func (x *RowsRequest) String() string {
 func (*RowsRequest) ProtoMessage() {}
 
 func (x *RowsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[21]
+	mi := &file_cxz_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1717,7 +1777,7 @@ func (x *RowsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RowsRequest.ProtoReflect.Descriptor instead.
 func (*RowsRequest) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{21}
+	return file_cxz_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *RowsRequest) GetSessionId() string {
@@ -1751,7 +1811,7 @@ type Row struct {
 
 func (x *Row) Reset() {
 	*x = Row{}
-	mi := &file_cxz_proto_msgTypes[22]
+	mi := &file_cxz_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1763,7 +1823,7 @@ func (x *Row) String() string {
 func (*Row) ProtoMessage() {}
 
 func (x *Row) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[22]
+	mi := &file_cxz_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1776,7 +1836,7 @@ func (x *Row) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Row.ProtoReflect.Descriptor instead.
 func (*Row) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{22}
+	return file_cxz_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *Row) GetEvent() *Event {
@@ -1803,7 +1863,7 @@ type EventDetailsRequest struct {
 
 func (x *EventDetailsRequest) Reset() {
 	*x = EventDetailsRequest{}
-	mi := &file_cxz_proto_msgTypes[23]
+	mi := &file_cxz_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1815,7 +1875,7 @@ func (x *EventDetailsRequest) String() string {
 func (*EventDetailsRequest) ProtoMessage() {}
 
 func (x *EventDetailsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[23]
+	mi := &file_cxz_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1828,7 +1888,7 @@ func (x *EventDetailsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventDetailsRequest.ProtoReflect.Descriptor instead.
 func (*EventDetailsRequest) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{23}
+	return file_cxz_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *EventDetailsRequest) GetSessionId() string {
@@ -1860,7 +1920,7 @@ type ResponseMetadata struct {
 
 func (x *ResponseMetadata) Reset() {
 	*x = ResponseMetadata{}
-	mi := &file_cxz_proto_msgTypes[24]
+	mi := &file_cxz_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1872,7 +1932,7 @@ func (x *ResponseMetadata) String() string {
 func (*ResponseMetadata) ProtoMessage() {}
 
 func (x *ResponseMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[24]
+	mi := &file_cxz_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1885,7 +1945,7 @@ func (x *ResponseMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResponseMetadata.ProtoReflect.Descriptor instead.
 func (*ResponseMetadata) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{24}
+	return file_cxz_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ResponseMetadata) GetModel() string {
@@ -1946,7 +2006,7 @@ type EventBatch struct {
 
 func (x *EventBatch) Reset() {
 	*x = EventBatch{}
-	mi := &file_cxz_proto_msgTypes[25]
+	mi := &file_cxz_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1958,7 +2018,7 @@ func (x *EventBatch) String() string {
 func (*EventBatch) ProtoMessage() {}
 
 func (x *EventBatch) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[25]
+	mi := &file_cxz_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1971,7 +2031,7 @@ func (x *EventBatch) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventBatch.ProtoReflect.Descriptor instead.
 func (*EventBatch) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{25}
+	return file_cxz_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *EventBatch) GetEvents() []*Event {
@@ -2002,7 +2062,7 @@ type ProjectRequest struct {
 
 func (x *ProjectRequest) Reset() {
 	*x = ProjectRequest{}
-	mi := &file_cxz_proto_msgTypes[26]
+	mi := &file_cxz_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2014,7 +2074,7 @@ func (x *ProjectRequest) String() string {
 func (*ProjectRequest) ProtoMessage() {}
 
 func (x *ProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[26]
+	mi := &file_cxz_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2027,7 +2087,7 @@ func (x *ProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectRequest.ProtoReflect.Descriptor instead.
 func (*ProjectRequest) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{26}
+	return file_cxz_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ProjectRequest) GetWorkspace() string {
@@ -2143,7 +2203,7 @@ type Project struct {
 
 func (x *Project) Reset() {
 	*x = Project{}
-	mi := &file_cxz_proto_msgTypes[27]
+	mi := &file_cxz_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2155,7 +2215,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[27]
+	mi := &file_cxz_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2168,7 +2228,7 @@ func (x *Project) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project.ProtoReflect.Descriptor instead.
 func (*Project) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{27}
+	return file_cxz_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *Project) GetId() string {
@@ -2278,7 +2338,7 @@ type ProjectList struct {
 
 func (x *ProjectList) Reset() {
 	*x = ProjectList{}
-	mi := &file_cxz_proto_msgTypes[28]
+	mi := &file_cxz_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2290,7 +2350,7 @@ func (x *ProjectList) String() string {
 func (*ProjectList) ProtoMessage() {}
 
 func (x *ProjectList) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[28]
+	mi := &file_cxz_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2303,7 +2363,7 @@ func (x *ProjectList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectList.ProtoReflect.Descriptor instead.
 func (*ProjectList) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{28}
+	return file_cxz_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *ProjectList) GetProjects() []*Project {
@@ -2325,7 +2385,7 @@ type PermissionInput struct {
 
 func (x *PermissionInput) Reset() {
 	*x = PermissionInput{}
-	mi := &file_cxz_proto_msgTypes[29]
+	mi := &file_cxz_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2337,7 +2397,7 @@ func (x *PermissionInput) String() string {
 func (*PermissionInput) ProtoMessage() {}
 
 func (x *PermissionInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[29]
+	mi := &file_cxz_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2350,7 +2410,7 @@ func (x *PermissionInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PermissionInput.ProtoReflect.Descriptor instead.
 func (*PermissionInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{29}
+	return file_cxz_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *PermissionInput) GetSessionId() string {
@@ -2391,7 +2451,7 @@ type LogsRequest struct {
 
 func (x *LogsRequest) Reset() {
 	*x = LogsRequest{}
-	mi := &file_cxz_proto_msgTypes[30]
+	mi := &file_cxz_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2403,7 +2463,7 @@ func (x *LogsRequest) String() string {
 func (*LogsRequest) ProtoMessage() {}
 
 func (x *LogsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[30]
+	mi := &file_cxz_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2416,7 +2476,7 @@ func (x *LogsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogsRequest.ProtoReflect.Descriptor instead.
 func (*LogsRequest) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{30}
+	return file_cxz_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *LogsRequest) GetSessionId() string {
@@ -2442,7 +2502,7 @@ type LogsReply struct {
 
 func (x *LogsReply) Reset() {
 	*x = LogsReply{}
-	mi := &file_cxz_proto_msgTypes[31]
+	mi := &file_cxz_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2454,7 +2514,7 @@ func (x *LogsReply) String() string {
 func (*LogsReply) ProtoMessage() {}
 
 func (x *LogsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[31]
+	mi := &file_cxz_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2467,7 +2527,7 @@ func (x *LogsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogsReply.ProtoReflect.Descriptor instead.
 func (*LogsReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{31}
+	return file_cxz_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *LogsReply) GetText() string {
@@ -2486,7 +2546,7 @@ type FileMappingsInput struct {
 
 func (x *FileMappingsInput) Reset() {
 	*x = FileMappingsInput{}
-	mi := &file_cxz_proto_msgTypes[32]
+	mi := &file_cxz_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2498,7 +2558,7 @@ func (x *FileMappingsInput) String() string {
 func (*FileMappingsInput) ProtoMessage() {}
 
 func (x *FileMappingsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[32]
+	mi := &file_cxz_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2511,7 +2571,7 @@ func (x *FileMappingsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileMappingsInput.ProtoReflect.Descriptor instead.
 func (*FileMappingsInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{32}
+	return file_cxz_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *FileMappingsInput) GetBundle() []byte {
@@ -2531,7 +2591,7 @@ type MemoryRequest struct {
 
 func (x *MemoryRequest) Reset() {
 	*x = MemoryRequest{}
-	mi := &file_cxz_proto_msgTypes[33]
+	mi := &file_cxz_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2543,7 +2603,7 @@ func (x *MemoryRequest) String() string {
 func (*MemoryRequest) ProtoMessage() {}
 
 func (x *MemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[33]
+	mi := &file_cxz_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2556,7 +2616,7 @@ func (x *MemoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryRequest.ProtoReflect.Descriptor instead.
 func (*MemoryRequest) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{33}
+	return file_cxz_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *MemoryRequest) GetSessionId() string {
@@ -2582,7 +2642,7 @@ type MemoryReply struct {
 
 func (x *MemoryReply) Reset() {
 	*x = MemoryReply{}
-	mi := &file_cxz_proto_msgTypes[34]
+	mi := &file_cxz_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2594,7 +2654,7 @@ func (x *MemoryReply) String() string {
 func (*MemoryReply) ProtoMessage() {}
 
 func (x *MemoryReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[34]
+	mi := &file_cxz_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2607,7 +2667,7 @@ func (x *MemoryReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryReply.ProtoReflect.Descriptor instead.
 func (*MemoryReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{34}
+	return file_cxz_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *MemoryReply) GetData() []byte {
@@ -2629,7 +2689,7 @@ type CopyMemoryRequest struct {
 
 func (x *CopyMemoryRequest) Reset() {
 	*x = CopyMemoryRequest{}
-	mi := &file_cxz_proto_msgTypes[35]
+	mi := &file_cxz_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2641,7 +2701,7 @@ func (x *CopyMemoryRequest) String() string {
 func (*CopyMemoryRequest) ProtoMessage() {}
 
 func (x *CopyMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[35]
+	mi := &file_cxz_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2654,7 +2714,7 @@ func (x *CopyMemoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CopyMemoryRequest.ProtoReflect.Descriptor instead.
 func (*CopyMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{35}
+	return file_cxz_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *CopyMemoryRequest) GetSessionId() string {
@@ -2695,7 +2755,7 @@ type BackgroundReply struct {
 
 func (x *BackgroundReply) Reset() {
 	*x = BackgroundReply{}
-	mi := &file_cxz_proto_msgTypes[36]
+	mi := &file_cxz_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2707,7 +2767,7 @@ func (x *BackgroundReply) String() string {
 func (*BackgroundReply) ProtoMessage() {}
 
 func (x *BackgroundReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[36]
+	mi := &file_cxz_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2720,7 +2780,7 @@ func (x *BackgroundReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BackgroundReply.ProtoReflect.Descriptor instead.
 func (*BackgroundReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{36}
+	return file_cxz_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *BackgroundReply) GetLastSeq() uint64 {
@@ -2749,7 +2809,7 @@ type ModelsRequest struct {
 
 func (x *ModelsRequest) Reset() {
 	*x = ModelsRequest{}
-	mi := &file_cxz_proto_msgTypes[37]
+	mi := &file_cxz_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2761,7 +2821,7 @@ func (x *ModelsRequest) String() string {
 func (*ModelsRequest) ProtoMessage() {}
 
 func (x *ModelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[37]
+	mi := &file_cxz_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2774,7 +2834,7 @@ func (x *ModelsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ModelsRequest.ProtoReflect.Descriptor instead.
 func (*ModelsRequest) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{37}
+	return file_cxz_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *ModelsRequest) GetSessionId() string {
@@ -2820,7 +2880,7 @@ type ModelsReply struct {
 
 func (x *ModelsReply) Reset() {
 	*x = ModelsReply{}
-	mi := &file_cxz_proto_msgTypes[38]
+	mi := &file_cxz_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2832,7 +2892,7 @@ func (x *ModelsReply) String() string {
 func (*ModelsReply) ProtoMessage() {}
 
 func (x *ModelsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[38]
+	mi := &file_cxz_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2845,7 +2905,7 @@ func (x *ModelsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ModelsReply.ProtoReflect.Descriptor instead.
 func (*ModelsReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{38}
+	return file_cxz_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ModelsReply) GetLastSeq() uint64 {
@@ -2906,7 +2966,7 @@ type DevcontainerInput struct {
 
 func (x *DevcontainerInput) Reset() {
 	*x = DevcontainerInput{}
-	mi := &file_cxz_proto_msgTypes[39]
+	mi := &file_cxz_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2918,7 +2978,7 @@ func (x *DevcontainerInput) String() string {
 func (*DevcontainerInput) ProtoMessage() {}
 
 func (x *DevcontainerInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[39]
+	mi := &file_cxz_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2931,7 +2991,7 @@ func (x *DevcontainerInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevcontainerInput.ProtoReflect.Descriptor instead.
 func (*DevcontainerInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{39}
+	return file_cxz_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *DevcontainerInput) GetSpec() []byte {
@@ -2962,7 +3022,7 @@ type SearchRequest struct {
 
 func (x *SearchRequest) Reset() {
 	*x = SearchRequest{}
-	mi := &file_cxz_proto_msgTypes[40]
+	mi := &file_cxz_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2974,7 +3034,7 @@ func (x *SearchRequest) String() string {
 func (*SearchRequest) ProtoMessage() {}
 
 func (x *SearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[40]
+	mi := &file_cxz_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2987,7 +3047,7 @@ func (x *SearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchRequest.ProtoReflect.Descriptor instead.
 func (*SearchRequest) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{40}
+	return file_cxz_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *SearchRequest) GetQuery() string {
@@ -3100,7 +3160,7 @@ type SearchVisit struct {
 
 func (x *SearchVisit) Reset() {
 	*x = SearchVisit{}
-	mi := &file_cxz_proto_msgTypes[41]
+	mi := &file_cxz_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3112,7 +3172,7 @@ func (x *SearchVisit) String() string {
 func (*SearchVisit) ProtoMessage() {}
 
 func (x *SearchVisit) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[41]
+	mi := &file_cxz_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3125,7 +3185,7 @@ func (x *SearchVisit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchVisit.ProtoReflect.Descriptor instead.
 func (*SearchVisit) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{41}
+	return file_cxz_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *SearchVisit) GetProjectId() string {
@@ -3219,7 +3279,7 @@ type SearchHit struct {
 
 func (x *SearchHit) Reset() {
 	*x = SearchHit{}
-	mi := &file_cxz_proto_msgTypes[42]
+	mi := &file_cxz_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3231,7 +3291,7 @@ func (x *SearchHit) String() string {
 func (*SearchHit) ProtoMessage() {}
 
 func (x *SearchHit) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[42]
+	mi := &file_cxz_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3244,7 +3304,7 @@ func (x *SearchHit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchHit.ProtoReflect.Descriptor instead.
 func (*SearchHit) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{42}
+	return file_cxz_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *SearchHit) GetSeq() uint64 {
@@ -3303,7 +3363,7 @@ type SearchProgress struct {
 
 func (x *SearchProgress) Reset() {
 	*x = SearchProgress{}
-	mi := &file_cxz_proto_msgTypes[43]
+	mi := &file_cxz_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3315,7 +3375,7 @@ func (x *SearchProgress) String() string {
 func (*SearchProgress) ProtoMessage() {}
 
 func (x *SearchProgress) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[43]
+	mi := &file_cxz_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3328,7 +3388,7 @@ func (x *SearchProgress) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchProgress.ProtoReflect.Descriptor instead.
 func (*SearchProgress) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{43}
+	return file_cxz_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *SearchProgress) GetProjectId() string {
@@ -3392,7 +3452,7 @@ type SearchSummary struct {
 
 func (x *SearchSummary) Reset() {
 	*x = SearchSummary{}
-	mi := &file_cxz_proto_msgTypes[44]
+	mi := &file_cxz_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3404,7 +3464,7 @@ func (x *SearchSummary) String() string {
 func (*SearchSummary) ProtoMessage() {}
 
 func (x *SearchSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[44]
+	mi := &file_cxz_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3417,7 +3477,7 @@ func (x *SearchSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchSummary.ProtoReflect.Descriptor instead.
 func (*SearchSummary) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{44}
+	return file_cxz_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *SearchSummary) GetProjects() int32 {
@@ -3508,7 +3568,7 @@ type SearchReply struct {
 
 func (x *SearchReply) Reset() {
 	*x = SearchReply{}
-	mi := &file_cxz_proto_msgTypes[45]
+	mi := &file_cxz_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3520,7 +3580,7 @@ func (x *SearchReply) String() string {
 func (*SearchReply) ProtoMessage() {}
 
 func (x *SearchReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[45]
+	mi := &file_cxz_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3533,7 +3593,7 @@ func (x *SearchReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchReply.ProtoReflect.Descriptor instead.
 func (*SearchReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{45}
+	return file_cxz_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *SearchReply) GetVisit() *SearchVisit {
@@ -3576,7 +3636,7 @@ type Aux struct {
 
 func (x *Aux) Reset() {
 	*x = Aux{}
-	mi := &file_cxz_proto_msgTypes[46]
+	mi := &file_cxz_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3588,7 +3648,7 @@ func (x *Aux) String() string {
 func (*Aux) ProtoMessage() {}
 
 func (x *Aux) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[46]
+	mi := &file_cxz_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3601,7 +3661,7 @@ func (x *Aux) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Aux.ProtoReflect.Descriptor instead.
 func (*Aux) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{46}
+	return file_cxz_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *Aux) GetId() string {
@@ -3692,7 +3752,7 @@ type AuxResult struct {
 
 func (x *AuxResult) Reset() {
 	*x = AuxResult{}
-	mi := &file_cxz_proto_msgTypes[47]
+	mi := &file_cxz_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3704,7 +3764,7 @@ func (x *AuxResult) String() string {
 func (*AuxResult) ProtoMessage() {}
 
 func (x *AuxResult) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[47]
+	mi := &file_cxz_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3717,7 +3777,7 @@ func (x *AuxResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxResult.ProtoReflect.Descriptor instead.
 func (*AuxResult) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{47}
+	return file_cxz_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *AuxResult) GetKind() string {
@@ -3753,7 +3813,7 @@ type AuxUsage struct {
 
 func (x *AuxUsage) Reset() {
 	*x = AuxUsage{}
-	mi := &file_cxz_proto_msgTypes[48]
+	mi := &file_cxz_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3765,7 +3825,7 @@ func (x *AuxUsage) String() string {
 func (*AuxUsage) ProtoMessage() {}
 
 func (x *AuxUsage) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[48]
+	mi := &file_cxz_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3778,7 +3838,7 @@ func (x *AuxUsage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxUsage.ProtoReflect.Descriptor instead.
 func (*AuxUsage) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{48}
+	return file_cxz_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *AuxUsage) GetAccount() string {
@@ -3821,7 +3881,7 @@ type AuxSummary struct {
 
 func (x *AuxSummary) Reset() {
 	*x = AuxSummary{}
-	mi := &file_cxz_proto_msgTypes[49]
+	mi := &file_cxz_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3833,7 +3893,7 @@ func (x *AuxSummary) String() string {
 func (*AuxSummary) ProtoMessage() {}
 
 func (x *AuxSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[49]
+	mi := &file_cxz_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3846,7 +3906,7 @@ func (x *AuxSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxSummary.ProtoReflect.Descriptor instead.
 func (*AuxSummary) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{49}
+	return file_cxz_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *AuxSummary) GetRunId() string {
@@ -3893,7 +3953,7 @@ type AuxProfile struct {
 
 func (x *AuxProfile) Reset() {
 	*x = AuxProfile{}
-	mi := &file_cxz_proto_msgTypes[50]
+	mi := &file_cxz_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3905,7 +3965,7 @@ func (x *AuxProfile) String() string {
 func (*AuxProfile) ProtoMessage() {}
 
 func (x *AuxProfile) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[50]
+	mi := &file_cxz_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3918,7 +3978,7 @@ func (x *AuxProfile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxProfile.ProtoReflect.Descriptor instead.
 func (*AuxProfile) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{50}
+	return file_cxz_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *AuxProfile) GetKind() string {
@@ -3988,7 +4048,7 @@ type AuxPreference struct {
 
 func (x *AuxPreference) Reset() {
 	*x = AuxPreference{}
-	mi := &file_cxz_proto_msgTypes[51]
+	mi := &file_cxz_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4000,7 +4060,7 @@ func (x *AuxPreference) String() string {
 func (*AuxPreference) ProtoMessage() {}
 
 func (x *AuxPreference) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[51]
+	mi := &file_cxz_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4013,7 +4073,7 @@ func (x *AuxPreference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxPreference.ProtoReflect.Descriptor instead.
 func (*AuxPreference) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{51}
+	return file_cxz_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *AuxPreference) GetKind() string {
@@ -4051,7 +4111,7 @@ type AuxModel struct {
 
 func (x *AuxModel) Reset() {
 	*x = AuxModel{}
-	mi := &file_cxz_proto_msgTypes[52]
+	mi := &file_cxz_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4063,7 +4123,7 @@ func (x *AuxModel) String() string {
 func (*AuxModel) ProtoMessage() {}
 
 func (x *AuxModel) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[52]
+	mi := &file_cxz_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4076,7 +4136,7 @@ func (x *AuxModel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxModel.ProtoReflect.Descriptor instead.
 func (*AuxModel) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{52}
+	return file_cxz_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *AuxModel) GetId() string {
@@ -4132,7 +4192,7 @@ type AuxRunInput struct {
 
 func (x *AuxRunInput) Reset() {
 	*x = AuxRunInput{}
-	mi := &file_cxz_proto_msgTypes[53]
+	mi := &file_cxz_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4144,7 +4204,7 @@ func (x *AuxRunInput) String() string {
 func (*AuxRunInput) ProtoMessage() {}
 
 func (x *AuxRunInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[53]
+	mi := &file_cxz_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4157,7 +4217,7 @@ func (x *AuxRunInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxRunInput.ProtoReflect.Descriptor instead.
 func (*AuxRunInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{53}
+	return file_cxz_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *AuxRunInput) GetSessionId() string {
@@ -4191,7 +4251,7 @@ type AuxCancelInput struct {
 
 func (x *AuxCancelInput) Reset() {
 	*x = AuxCancelInput{}
-	mi := &file_cxz_proto_msgTypes[54]
+	mi := &file_cxz_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4203,7 +4263,7 @@ func (x *AuxCancelInput) String() string {
 func (*AuxCancelInput) ProtoMessage() {}
 
 func (x *AuxCancelInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[54]
+	mi := &file_cxz_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4216,7 +4276,7 @@ func (x *AuxCancelInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxCancelInput.ProtoReflect.Descriptor instead.
 func (*AuxCancelInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{54}
+	return file_cxz_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *AuxCancelInput) GetSessionId() string {
@@ -4242,7 +4302,7 @@ type AuxForgetInput struct {
 
 func (x *AuxForgetInput) Reset() {
 	*x = AuxForgetInput{}
-	mi := &file_cxz_proto_msgTypes[55]
+	mi := &file_cxz_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4254,7 +4314,7 @@ func (x *AuxForgetInput) String() string {
 func (*AuxForgetInput) ProtoMessage() {}
 
 func (x *AuxForgetInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[55]
+	mi := &file_cxz_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4267,7 +4327,7 @@ func (x *AuxForgetInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxForgetInput.ProtoReflect.Descriptor instead.
 func (*AuxForgetInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{55}
+	return file_cxz_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *AuxForgetInput) GetSessionId() string {
@@ -4288,7 +4348,7 @@ type AuxStatusInput struct {
 
 func (x *AuxStatusInput) Reset() {
 	*x = AuxStatusInput{}
-	mi := &file_cxz_proto_msgTypes[56]
+	mi := &file_cxz_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4300,7 +4360,7 @@ func (x *AuxStatusInput) String() string {
 func (*AuxStatusInput) ProtoMessage() {}
 
 func (x *AuxStatusInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[56]
+	mi := &file_cxz_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4313,7 +4373,7 @@ func (x *AuxStatusInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxStatusInput.ProtoReflect.Descriptor instead.
 func (*AuxStatusInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{56}
+	return file_cxz_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *AuxStatusInput) GetSessionId() string {
@@ -4351,7 +4411,7 @@ type AuxState struct {
 
 func (x *AuxState) Reset() {
 	*x = AuxState{}
-	mi := &file_cxz_proto_msgTypes[57]
+	mi := &file_cxz_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4363,7 +4423,7 @@ func (x *AuxState) String() string {
 func (*AuxState) ProtoMessage() {}
 
 func (x *AuxState) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[57]
+	mi := &file_cxz_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4376,7 +4436,7 @@ func (x *AuxState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxState.ProtoReflect.Descriptor instead.
 func (*AuxState) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{57}
+	return file_cxz_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *AuxState) GetSummaries() []*AuxSummary {
@@ -4431,7 +4491,7 @@ type AuxPreferInput struct {
 
 func (x *AuxPreferInput) Reset() {
 	*x = AuxPreferInput{}
-	mi := &file_cxz_proto_msgTypes[58]
+	mi := &file_cxz_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4443,7 +4503,7 @@ func (x *AuxPreferInput) String() string {
 func (*AuxPreferInput) ProtoMessage() {}
 
 func (x *AuxPreferInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[58]
+	mi := &file_cxz_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4456,7 +4516,7 @@ func (x *AuxPreferInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxPreferInput.ProtoReflect.Descriptor instead.
 func (*AuxPreferInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{58}
+	return file_cxz_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *AuxPreferInput) GetSessionId() string {
@@ -4485,7 +4545,7 @@ type AuxConfigReply struct {
 
 func (x *AuxConfigReply) Reset() {
 	*x = AuxConfigReply{}
-	mi := &file_cxz_proto_msgTypes[59]
+	mi := &file_cxz_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4497,7 +4557,7 @@ func (x *AuxConfigReply) String() string {
 func (*AuxConfigReply) ProtoMessage() {}
 
 func (x *AuxConfigReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[59]
+	mi := &file_cxz_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4510,7 +4570,7 @@ func (x *AuxConfigReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxConfigReply.ProtoReflect.Descriptor instead.
 func (*AuxConfigReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{59}
+	return file_cxz_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *AuxConfigReply) GetRevision() string {
@@ -4550,7 +4610,7 @@ type AuxSetConfigInput struct {
 
 func (x *AuxSetConfigInput) Reset() {
 	*x = AuxSetConfigInput{}
-	mi := &file_cxz_proto_msgTypes[60]
+	mi := &file_cxz_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4562,7 +4622,7 @@ func (x *AuxSetConfigInput) String() string {
 func (*AuxSetConfigInput) ProtoMessage() {}
 
 func (x *AuxSetConfigInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[60]
+	mi := &file_cxz_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4575,7 +4635,7 @@ func (x *AuxSetConfigInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxSetConfigInput.ProtoReflect.Descriptor instead.
 func (*AuxSetConfigInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{60}
+	return file_cxz_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *AuxSetConfigInput) GetProfiles() []*AuxProfile {
@@ -4596,7 +4656,7 @@ type AuxModelsInput struct {
 
 func (x *AuxModelsInput) Reset() {
 	*x = AuxModelsInput{}
-	mi := &file_cxz_proto_msgTypes[61]
+	mi := &file_cxz_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4608,7 +4668,7 @@ func (x *AuxModelsInput) String() string {
 func (*AuxModelsInput) ProtoMessage() {}
 
 func (x *AuxModelsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[61]
+	mi := &file_cxz_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4621,7 +4681,7 @@ func (x *AuxModelsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxModelsInput.ProtoReflect.Descriptor instead.
 func (*AuxModelsInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{61}
+	return file_cxz_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *AuxModelsInput) GetAccount() string {
@@ -4655,7 +4715,7 @@ type AuxModelsReply struct {
 
 func (x *AuxModelsReply) Reset() {
 	*x = AuxModelsReply{}
-	mi := &file_cxz_proto_msgTypes[62]
+	mi := &file_cxz_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4667,7 +4727,7 @@ func (x *AuxModelsReply) String() string {
 func (*AuxModelsReply) ProtoMessage() {}
 
 func (x *AuxModelsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[62]
+	mi := &file_cxz_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4680,7 +4740,7 @@ func (x *AuxModelsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxModelsReply.ProtoReflect.Descriptor instead.
 func (*AuxModelsReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{62}
+	return file_cxz_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *AuxModelsReply) GetModels() []*AuxModel {
@@ -4708,7 +4768,7 @@ type AuxLoginInfoInput struct {
 
 func (x *AuxLoginInfoInput) Reset() {
 	*x = AuxLoginInfoInput{}
-	mi := &file_cxz_proto_msgTypes[63]
+	mi := &file_cxz_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4720,7 +4780,7 @@ func (x *AuxLoginInfoInput) String() string {
 func (*AuxLoginInfoInput) ProtoMessage() {}
 
 func (x *AuxLoginInfoInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[63]
+	mi := &file_cxz_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4733,7 +4793,7 @@ func (x *AuxLoginInfoInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxLoginInfoInput.ProtoReflect.Descriptor instead.
 func (*AuxLoginInfoInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{63}
+	return file_cxz_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *AuxLoginInfoInput) GetAccount() string {
@@ -4769,7 +4829,7 @@ type AuxLoginInfoReply struct {
 
 func (x *AuxLoginInfoReply) Reset() {
 	*x = AuxLoginInfoReply{}
-	mi := &file_cxz_proto_msgTypes[64]
+	mi := &file_cxz_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4781,7 +4841,7 @@ func (x *AuxLoginInfoReply) String() string {
 func (*AuxLoginInfoReply) ProtoMessage() {}
 
 func (x *AuxLoginInfoReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[64]
+	mi := &file_cxz_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4794,7 +4854,7 @@ func (x *AuxLoginInfoReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuxLoginInfoReply.ProtoReflect.Descriptor instead.
 func (*AuxLoginInfoReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{64}
+	return file_cxz_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *AuxLoginInfoReply) GetOwner() string {
@@ -4836,7 +4896,7 @@ type PutSecretFileInput struct {
 
 func (x *PutSecretFileInput) Reset() {
 	*x = PutSecretFileInput{}
-	mi := &file_cxz_proto_msgTypes[65]
+	mi := &file_cxz_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4848,7 +4908,7 @@ func (x *PutSecretFileInput) String() string {
 func (*PutSecretFileInput) ProtoMessage() {}
 
 func (x *PutSecretFileInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[65]
+	mi := &file_cxz_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4861,7 +4921,7 @@ func (x *PutSecretFileInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutSecretFileInput.ProtoReflect.Descriptor instead.
 func (*PutSecretFileInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{65}
+	return file_cxz_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *PutSecretFileInput) GetProject() string {
@@ -4895,7 +4955,7 @@ type DeleteSecretFileInput struct {
 
 func (x *DeleteSecretFileInput) Reset() {
 	*x = DeleteSecretFileInput{}
-	mi := &file_cxz_proto_msgTypes[66]
+	mi := &file_cxz_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4907,7 +4967,7 @@ func (x *DeleteSecretFileInput) String() string {
 func (*DeleteSecretFileInput) ProtoMessage() {}
 
 func (x *DeleteSecretFileInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[66]
+	mi := &file_cxz_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4920,7 +4980,7 @@ func (x *DeleteSecretFileInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSecretFileInput.ProtoReflect.Descriptor instead.
 func (*DeleteSecretFileInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{66}
+	return file_cxz_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *DeleteSecretFileInput) GetProject() string {
@@ -4946,7 +5006,7 @@ type SecretFileReply struct {
 
 func (x *SecretFileReply) Reset() {
 	*x = SecretFileReply{}
-	mi := &file_cxz_proto_msgTypes[67]
+	mi := &file_cxz_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4958,7 +5018,7 @@ func (x *SecretFileReply) String() string {
 func (*SecretFileReply) ProtoMessage() {}
 
 func (x *SecretFileReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[67]
+	mi := &file_cxz_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4971,7 +5031,7 @@ func (x *SecretFileReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretFileReply.ProtoReflect.Descriptor instead.
 func (*SecretFileReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{67}
+	return file_cxz_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *SecretFileReply) GetPath() string {
@@ -4993,7 +5053,7 @@ type SessionEraseInput struct {
 
 func (x *SessionEraseInput) Reset() {
 	*x = SessionEraseInput{}
-	mi := &file_cxz_proto_msgTypes[68]
+	mi := &file_cxz_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5005,7 +5065,7 @@ func (x *SessionEraseInput) String() string {
 func (*SessionEraseInput) ProtoMessage() {}
 
 func (x *SessionEraseInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[68]
+	mi := &file_cxz_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5018,7 +5078,7 @@ func (x *SessionEraseInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionEraseInput.ProtoReflect.Descriptor instead.
 func (*SessionEraseInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{68}
+	return file_cxz_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *SessionEraseInput) GetSessionId() string {
@@ -5061,7 +5121,7 @@ type SessionEraseTarget struct {
 
 func (x *SessionEraseTarget) Reset() {
 	*x = SessionEraseTarget{}
-	mi := &file_cxz_proto_msgTypes[69]
+	mi := &file_cxz_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5073,7 +5133,7 @@ func (x *SessionEraseTarget) String() string {
 func (*SessionEraseTarget) ProtoMessage() {}
 
 func (x *SessionEraseTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[69]
+	mi := &file_cxz_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5086,7 +5146,7 @@ func (x *SessionEraseTarget) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionEraseTarget.ProtoReflect.Descriptor instead.
 func (*SessionEraseTarget) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{69}
+	return file_cxz_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *SessionEraseTarget) GetKind() string {
@@ -5129,7 +5189,7 @@ type SessionEraseReply struct {
 
 func (x *SessionEraseReply) Reset() {
 	*x = SessionEraseReply{}
-	mi := &file_cxz_proto_msgTypes[70]
+	mi := &file_cxz_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5141,7 +5201,7 @@ func (x *SessionEraseReply) String() string {
 func (*SessionEraseReply) ProtoMessage() {}
 
 func (x *SessionEraseReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[70]
+	mi := &file_cxz_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5154,7 +5214,7 @@ func (x *SessionEraseReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionEraseReply.ProtoReflect.Descriptor instead.
 func (*SessionEraseReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{70}
+	return file_cxz_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *SessionEraseReply) GetSessionId() string {
@@ -5198,7 +5258,7 @@ type HistoryPolicy struct {
 
 func (x *HistoryPolicy) Reset() {
 	*x = HistoryPolicy{}
-	mi := &file_cxz_proto_msgTypes[71]
+	mi := &file_cxz_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5210,7 +5270,7 @@ func (x *HistoryPolicy) String() string {
 func (*HistoryPolicy) ProtoMessage() {}
 
 func (x *HistoryPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[71]
+	mi := &file_cxz_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5223,7 +5283,7 @@ func (x *HistoryPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HistoryPolicy.ProtoReflect.Descriptor instead.
 func (*HistoryPolicy) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{71}
+	return file_cxz_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *HistoryPolicy) GetDisabled() bool {
@@ -5270,7 +5330,7 @@ type HistoryFloorReply struct {
 
 func (x *HistoryFloorReply) Reset() {
 	*x = HistoryFloorReply{}
-	mi := &file_cxz_proto_msgTypes[72]
+	mi := &file_cxz_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5282,7 +5342,7 @@ func (x *HistoryFloorReply) String() string {
 func (*HistoryFloorReply) ProtoMessage() {}
 
 func (x *HistoryFloorReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[72]
+	mi := &file_cxz_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5295,7 +5355,7 @@ func (x *HistoryFloorReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HistoryFloorReply.ProtoReflect.Descriptor instead.
 func (*HistoryFloorReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{72}
+	return file_cxz_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *HistoryFloorReply) GetThrough() uint64 {
@@ -5314,7 +5374,7 @@ type SkillsInput struct {
 
 func (x *SkillsInput) Reset() {
 	*x = SkillsInput{}
-	mi := &file_cxz_proto_msgTypes[73]
+	mi := &file_cxz_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5326,7 +5386,7 @@ func (x *SkillsInput) String() string {
 func (*SkillsInput) ProtoMessage() {}
 
 func (x *SkillsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[73]
+	mi := &file_cxz_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5339,7 +5399,7 @@ func (x *SkillsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SkillsInput.ProtoReflect.Descriptor instead.
 func (*SkillsInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{73}
+	return file_cxz_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *SkillsInput) GetProject() string {
@@ -5359,7 +5419,7 @@ type SkillInput struct {
 
 func (x *SkillInput) Reset() {
 	*x = SkillInput{}
-	mi := &file_cxz_proto_msgTypes[74]
+	mi := &file_cxz_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5371,7 +5431,7 @@ func (x *SkillInput) String() string {
 func (*SkillInput) ProtoMessage() {}
 
 func (x *SkillInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[74]
+	mi := &file_cxz_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5384,7 +5444,7 @@ func (x *SkillInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SkillInput.ProtoReflect.Descriptor instead.
 func (*SkillInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{74}
+	return file_cxz_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *SkillInput) GetProject() string {
@@ -5411,7 +5471,7 @@ type SkillDefaultInput struct {
 
 func (x *SkillDefaultInput) Reset() {
 	*x = SkillDefaultInput{}
-	mi := &file_cxz_proto_msgTypes[75]
+	mi := &file_cxz_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5423,7 +5483,7 @@ func (x *SkillDefaultInput) String() string {
 func (*SkillDefaultInput) ProtoMessage() {}
 
 func (x *SkillDefaultInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[75]
+	mi := &file_cxz_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5436,7 +5496,7 @@ func (x *SkillDefaultInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SkillDefaultInput.ProtoReflect.Descriptor instead.
 func (*SkillDefaultInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{75}
+	return file_cxz_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *SkillDefaultInput) GetName() string {
@@ -5464,7 +5524,7 @@ type ProjectSkillInput struct {
 
 func (x *ProjectSkillInput) Reset() {
 	*x = ProjectSkillInput{}
-	mi := &file_cxz_proto_msgTypes[76]
+	mi := &file_cxz_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5476,7 +5536,7 @@ func (x *ProjectSkillInput) String() string {
 func (*ProjectSkillInput) ProtoMessage() {}
 
 func (x *ProjectSkillInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[76]
+	mi := &file_cxz_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5489,7 +5549,7 @@ func (x *ProjectSkillInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectSkillInput.ProtoReflect.Descriptor instead.
 func (*ProjectSkillInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{76}
+	return file_cxz_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *ProjectSkillInput) GetProject() string {
@@ -5523,7 +5583,7 @@ type ClearProjectSkillInput struct {
 
 func (x *ClearProjectSkillInput) Reset() {
 	*x = ClearProjectSkillInput{}
-	mi := &file_cxz_proto_msgTypes[77]
+	mi := &file_cxz_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5535,7 +5595,7 @@ func (x *ClearProjectSkillInput) String() string {
 func (*ClearProjectSkillInput) ProtoMessage() {}
 
 func (x *ClearProjectSkillInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[77]
+	mi := &file_cxz_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5548,7 +5608,7 @@ func (x *ClearProjectSkillInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClearProjectSkillInput.ProtoReflect.Descriptor instead.
 func (*ClearProjectSkillInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{77}
+	return file_cxz_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *ClearProjectSkillInput) GetProject() string {
@@ -5577,7 +5637,7 @@ type SkillEntry struct {
 
 func (x *SkillEntry) Reset() {
 	*x = SkillEntry{}
-	mi := &file_cxz_proto_msgTypes[78]
+	mi := &file_cxz_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5589,7 +5649,7 @@ func (x *SkillEntry) String() string {
 func (*SkillEntry) ProtoMessage() {}
 
 func (x *SkillEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[78]
+	mi := &file_cxz_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5602,7 +5662,7 @@ func (x *SkillEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SkillEntry.ProtoReflect.Descriptor instead.
 func (*SkillEntry) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{78}
+	return file_cxz_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *SkillEntry) GetName() string {
@@ -5643,7 +5703,7 @@ type SkillsReply struct {
 
 func (x *SkillsReply) Reset() {
 	*x = SkillsReply{}
-	mi := &file_cxz_proto_msgTypes[79]
+	mi := &file_cxz_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5655,7 +5715,7 @@ func (x *SkillsReply) String() string {
 func (*SkillsReply) ProtoMessage() {}
 
 func (x *SkillsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[79]
+	mi := &file_cxz_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5668,7 +5728,7 @@ func (x *SkillsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SkillsReply.ProtoReflect.Descriptor instead.
 func (*SkillsReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{79}
+	return file_cxz_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *SkillsReply) GetEntries() []*SkillEntry {
@@ -5694,7 +5754,7 @@ type SyncSkillsInput struct {
 
 func (x *SyncSkillsInput) Reset() {
 	*x = SyncSkillsInput{}
-	mi := &file_cxz_proto_msgTypes[80]
+	mi := &file_cxz_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5706,7 +5766,7 @@ func (x *SyncSkillsInput) String() string {
 func (*SyncSkillsInput) ProtoMessage() {}
 
 func (x *SyncSkillsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[80]
+	mi := &file_cxz_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5719,7 +5779,7 @@ func (x *SyncSkillsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncSkillsInput.ProtoReflect.Descriptor instead.
 func (*SyncSkillsInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{80}
+	return file_cxz_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *SyncSkillsInput) GetBundle() []byte {
@@ -5738,7 +5798,7 @@ type RenderDevcontainerInput struct {
 
 func (x *RenderDevcontainerInput) Reset() {
 	*x = RenderDevcontainerInput{}
-	mi := &file_cxz_proto_msgTypes[81]
+	mi := &file_cxz_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5750,7 +5810,7 @@ func (x *RenderDevcontainerInput) String() string {
 func (*RenderDevcontainerInput) ProtoMessage() {}
 
 func (x *RenderDevcontainerInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[81]
+	mi := &file_cxz_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5763,7 +5823,7 @@ func (x *RenderDevcontainerInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenderDevcontainerInput.ProtoReflect.Descriptor instead.
 func (*RenderDevcontainerInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{81}
+	return file_cxz_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *RenderDevcontainerInput) GetHandle() string {
@@ -5785,7 +5845,7 @@ type RenderedFile struct {
 
 func (x *RenderedFile) Reset() {
 	*x = RenderedFile{}
-	mi := &file_cxz_proto_msgTypes[82]
+	mi := &file_cxz_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5797,7 +5857,7 @@ func (x *RenderedFile) String() string {
 func (*RenderedFile) ProtoMessage() {}
 
 func (x *RenderedFile) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[82]
+	mi := &file_cxz_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5810,7 +5870,7 @@ func (x *RenderedFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenderedFile.ProtoReflect.Descriptor instead.
 func (*RenderedFile) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{82}
+	return file_cxz_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *RenderedFile) GetName() string {
@@ -5854,7 +5914,7 @@ type RenderDevcontainerReply struct {
 
 func (x *RenderDevcontainerReply) Reset() {
 	*x = RenderDevcontainerReply{}
-	mi := &file_cxz_proto_msgTypes[83]
+	mi := &file_cxz_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5866,7 +5926,7 @@ func (x *RenderDevcontainerReply) String() string {
 func (*RenderDevcontainerReply) ProtoMessage() {}
 
 func (x *RenderDevcontainerReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[83]
+	mi := &file_cxz_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5879,7 +5939,7 @@ func (x *RenderDevcontainerReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenderDevcontainerReply.ProtoReflect.Descriptor instead.
 func (*RenderDevcontainerReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{83}
+	return file_cxz_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *RenderDevcontainerReply) GetProject() string {
@@ -5933,7 +5993,7 @@ type McpServer struct {
 
 func (x *McpServer) Reset() {
 	*x = McpServer{}
-	mi := &file_cxz_proto_msgTypes[84]
+	mi := &file_cxz_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5945,7 +6005,7 @@ func (x *McpServer) String() string {
 func (*McpServer) ProtoMessage() {}
 
 func (x *McpServer) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[84]
+	mi := &file_cxz_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5958,7 +6018,7 @@ func (x *McpServer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpServer.ProtoReflect.Descriptor instead.
 func (*McpServer) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{84}
+	return file_cxz_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *McpServer) GetName() string {
@@ -6029,7 +6089,7 @@ type McpEntry struct {
 
 func (x *McpEntry) Reset() {
 	*x = McpEntry{}
-	mi := &file_cxz_proto_msgTypes[85]
+	mi := &file_cxz_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6041,7 +6101,7 @@ func (x *McpEntry) String() string {
 func (*McpEntry) ProtoMessage() {}
 
 func (x *McpEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[85]
+	mi := &file_cxz_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6054,7 +6114,7 @@ func (x *McpEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpEntry.ProtoReflect.Descriptor instead.
 func (*McpEntry) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{85}
+	return file_cxz_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *McpEntry) GetId() string {
@@ -6095,7 +6155,7 @@ type McpServersReply struct {
 
 func (x *McpServersReply) Reset() {
 	*x = McpServersReply{}
-	mi := &file_cxz_proto_msgTypes[86]
+	mi := &file_cxz_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6107,7 +6167,7 @@ func (x *McpServersReply) String() string {
 func (*McpServersReply) ProtoMessage() {}
 
 func (x *McpServersReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[86]
+	mi := &file_cxz_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6120,7 +6180,7 @@ func (x *McpServersReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpServersReply.ProtoReflect.Descriptor instead.
 func (*McpServersReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{86}
+	return file_cxz_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *McpServersReply) GetEntries() []*McpEntry {
@@ -6146,7 +6206,7 @@ type McpServersInput struct {
 
 func (x *McpServersInput) Reset() {
 	*x = McpServersInput{}
-	mi := &file_cxz_proto_msgTypes[87]
+	mi := &file_cxz_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6158,7 +6218,7 @@ func (x *McpServersInput) String() string {
 func (*McpServersInput) ProtoMessage() {}
 
 func (x *McpServersInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[87]
+	mi := &file_cxz_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6171,7 +6231,7 @@ func (x *McpServersInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpServersInput.ProtoReflect.Descriptor instead.
 func (*McpServersInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{87}
+	return file_cxz_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *McpServersInput) GetProject() string {
@@ -6191,7 +6251,7 @@ type PutMcpServerInput struct {
 
 func (x *PutMcpServerInput) Reset() {
 	*x = PutMcpServerInput{}
-	mi := &file_cxz_proto_msgTypes[88]
+	mi := &file_cxz_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6203,7 +6263,7 @@ func (x *PutMcpServerInput) String() string {
 func (*PutMcpServerInput) ProtoMessage() {}
 
 func (x *PutMcpServerInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[88]
+	mi := &file_cxz_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6216,7 +6276,7 @@ func (x *PutMcpServerInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutMcpServerInput.ProtoReflect.Descriptor instead.
 func (*PutMcpServerInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{88}
+	return file_cxz_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *PutMcpServerInput) GetId() string {
@@ -6242,7 +6302,7 @@ type McpServerInput struct {
 
 func (x *McpServerInput) Reset() {
 	*x = McpServerInput{}
-	mi := &file_cxz_proto_msgTypes[89]
+	mi := &file_cxz_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6254,7 +6314,7 @@ func (x *McpServerInput) String() string {
 func (*McpServerInput) ProtoMessage() {}
 
 func (x *McpServerInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[89]
+	mi := &file_cxz_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6267,7 +6327,7 @@ func (x *McpServerInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpServerInput.ProtoReflect.Descriptor instead.
 func (*McpServerInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{89}
+	return file_cxz_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *McpServerInput) GetId() string {
@@ -6287,7 +6347,7 @@ type McpServerDefaultInput struct {
 
 func (x *McpServerDefaultInput) Reset() {
 	*x = McpServerDefaultInput{}
-	mi := &file_cxz_proto_msgTypes[90]
+	mi := &file_cxz_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6299,7 +6359,7 @@ func (x *McpServerDefaultInput) String() string {
 func (*McpServerDefaultInput) ProtoMessage() {}
 
 func (x *McpServerDefaultInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[90]
+	mi := &file_cxz_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6312,7 +6372,7 @@ func (x *McpServerDefaultInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpServerDefaultInput.ProtoReflect.Descriptor instead.
 func (*McpServerDefaultInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{90}
+	return file_cxz_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *McpServerDefaultInput) GetId() string {
@@ -6340,7 +6400,7 @@ type ProjectMcpServerInput struct {
 
 func (x *ProjectMcpServerInput) Reset() {
 	*x = ProjectMcpServerInput{}
-	mi := &file_cxz_proto_msgTypes[91]
+	mi := &file_cxz_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6352,7 +6412,7 @@ func (x *ProjectMcpServerInput) String() string {
 func (*ProjectMcpServerInput) ProtoMessage() {}
 
 func (x *ProjectMcpServerInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[91]
+	mi := &file_cxz_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6365,7 +6425,7 @@ func (x *ProjectMcpServerInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectMcpServerInput.ProtoReflect.Descriptor instead.
 func (*ProjectMcpServerInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{91}
+	return file_cxz_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *ProjectMcpServerInput) GetProject() string {
@@ -6399,7 +6459,7 @@ type ClearProjectMcpServerInput struct {
 
 func (x *ClearProjectMcpServerInput) Reset() {
 	*x = ClearProjectMcpServerInput{}
-	mi := &file_cxz_proto_msgTypes[92]
+	mi := &file_cxz_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6411,7 +6471,7 @@ func (x *ClearProjectMcpServerInput) String() string {
 func (*ClearProjectMcpServerInput) ProtoMessage() {}
 
 func (x *ClearProjectMcpServerInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[92]
+	mi := &file_cxz_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6424,7 +6484,7 @@ func (x *ClearProjectMcpServerInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClearProjectMcpServerInput.ProtoReflect.Descriptor instead.
 func (*ClearProjectMcpServerInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{92}
+	return file_cxz_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *ClearProjectMcpServerInput) GetProject() string {
@@ -6450,7 +6510,7 @@ type McpSessionsInput struct {
 
 func (x *McpSessionsInput) Reset() {
 	*x = McpSessionsInput{}
-	mi := &file_cxz_proto_msgTypes[93]
+	mi := &file_cxz_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6462,7 +6522,7 @@ func (x *McpSessionsInput) String() string {
 func (*McpSessionsInput) ProtoMessage() {}
 
 func (x *McpSessionsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[93]
+	mi := &file_cxz_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6475,7 +6535,7 @@ func (x *McpSessionsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpSessionsInput.ProtoReflect.Descriptor instead.
 func (*McpSessionsInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{93}
+	return file_cxz_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *McpSessionsInput) GetProject() string {
@@ -6498,7 +6558,7 @@ type McpSessionStatus struct {
 
 func (x *McpSessionStatus) Reset() {
 	*x = McpSessionStatus{}
-	mi := &file_cxz_proto_msgTypes[94]
+	mi := &file_cxz_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6510,7 +6570,7 @@ func (x *McpSessionStatus) String() string {
 func (*McpSessionStatus) ProtoMessage() {}
 
 func (x *McpSessionStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[94]
+	mi := &file_cxz_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6523,7 +6583,7 @@ func (x *McpSessionStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpSessionStatus.ProtoReflect.Descriptor instead.
 func (*McpSessionStatus) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{94}
+	return file_cxz_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *McpSessionStatus) GetSessionId() string {
@@ -6571,7 +6631,7 @@ type McpSessionsReply struct {
 
 func (x *McpSessionsReply) Reset() {
 	*x = McpSessionsReply{}
-	mi := &file_cxz_proto_msgTypes[95]
+	mi := &file_cxz_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6583,7 +6643,7 @@ func (x *McpSessionsReply) String() string {
 func (*McpSessionsReply) ProtoMessage() {}
 
 func (x *McpSessionsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[95]
+	mi := &file_cxz_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6596,7 +6656,7 @@ func (x *McpSessionsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpSessionsReply.ProtoReflect.Descriptor instead.
 func (*McpSessionsReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{95}
+	return file_cxz_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *McpSessionsReply) GetSessions() []*McpSessionStatus {
@@ -6622,7 +6682,7 @@ type SyncMcpServersInput struct {
 
 func (x *SyncMcpServersInput) Reset() {
 	*x = SyncMcpServersInput{}
-	mi := &file_cxz_proto_msgTypes[96]
+	mi := &file_cxz_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6634,7 +6694,7 @@ func (x *SyncMcpServersInput) String() string {
 func (*SyncMcpServersInput) ProtoMessage() {}
 
 func (x *SyncMcpServersInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[96]
+	mi := &file_cxz_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6647,7 +6707,7 @@ func (x *SyncMcpServersInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncMcpServersInput.ProtoReflect.Descriptor instead.
 func (*SyncMcpServersInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{96}
+	return file_cxz_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *SyncMcpServersInput) GetServers() map[string]*McpServer {
@@ -6667,7 +6727,7 @@ type McpLogsInput struct {
 
 func (x *McpLogsInput) Reset() {
 	*x = McpLogsInput{}
-	mi := &file_cxz_proto_msgTypes[97]
+	mi := &file_cxz_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6679,7 +6739,7 @@ func (x *McpLogsInput) String() string {
 func (*McpLogsInput) ProtoMessage() {}
 
 func (x *McpLogsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[97]
+	mi := &file_cxz_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6692,7 +6752,7 @@ func (x *McpLogsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpLogsInput.ProtoReflect.Descriptor instead.
 func (*McpLogsInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{97}
+	return file_cxz_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *McpLogsInput) GetSessionId() string {
@@ -6719,7 +6779,7 @@ type McpLogsReply struct {
 
 func (x *McpLogsReply) Reset() {
 	*x = McpLogsReply{}
-	mi := &file_cxz_proto_msgTypes[98]
+	mi := &file_cxz_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6731,7 +6791,7 @@ func (x *McpLogsReply) String() string {
 func (*McpLogsReply) ProtoMessage() {}
 
 func (x *McpLogsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[98]
+	mi := &file_cxz_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6744,7 +6804,7 @@ func (x *McpLogsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use McpLogsReply.ProtoReflect.Descriptor instead.
 func (*McpLogsReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{98}
+	return file_cxz_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *McpLogsReply) GetText() string {
@@ -6771,7 +6831,7 @@ type RestartMcpInput struct {
 
 func (x *RestartMcpInput) Reset() {
 	*x = RestartMcpInput{}
-	mi := &file_cxz_proto_msgTypes[99]
+	mi := &file_cxz_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6783,7 +6843,7 @@ func (x *RestartMcpInput) String() string {
 func (*RestartMcpInput) ProtoMessage() {}
 
 func (x *RestartMcpInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[99]
+	mi := &file_cxz_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6796,7 +6856,7 @@ func (x *RestartMcpInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestartMcpInput.ProtoReflect.Descriptor instead.
 func (*RestartMcpInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{99}
+	return file_cxz_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *RestartMcpInput) GetSessionId() string {
@@ -6824,7 +6884,7 @@ type EngineSpec struct {
 
 func (x *EngineSpec) Reset() {
 	*x = EngineSpec{}
-	mi := &file_cxz_proto_msgTypes[100]
+	mi := &file_cxz_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6836,7 +6896,7 @@ func (x *EngineSpec) String() string {
 func (*EngineSpec) ProtoMessage() {}
 
 func (x *EngineSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[100]
+	mi := &file_cxz_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6849,7 +6909,7 @@ func (x *EngineSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EngineSpec.ProtoReflect.Descriptor instead.
 func (*EngineSpec) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{100}
+	return file_cxz_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *EngineSpec) GetMode() string {
@@ -6882,7 +6942,7 @@ type SaveEngineInput struct {
 
 func (x *SaveEngineInput) Reset() {
 	*x = SaveEngineInput{}
-	mi := &file_cxz_proto_msgTypes[101]
+	mi := &file_cxz_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6894,7 +6954,7 @@ func (x *SaveEngineInput) String() string {
 func (*SaveEngineInput) ProtoMessage() {}
 
 func (x *SaveEngineInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[101]
+	mi := &file_cxz_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6907,7 +6967,7 @@ func (x *SaveEngineInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveEngineInput.ProtoReflect.Descriptor instead.
 func (*SaveEngineInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{101}
+	return file_cxz_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *SaveEngineInput) GetSpec() *EngineSpec {
@@ -6926,7 +6986,7 @@ type StartEngineInput struct {
 
 func (x *StartEngineInput) Reset() {
 	*x = StartEngineInput{}
-	mi := &file_cxz_proto_msgTypes[102]
+	mi := &file_cxz_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6938,7 +6998,7 @@ func (x *StartEngineInput) String() string {
 func (*StartEngineInput) ProtoMessage() {}
 
 func (x *StartEngineInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[102]
+	mi := &file_cxz_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6951,7 +7011,7 @@ func (x *StartEngineInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartEngineInput.ProtoReflect.Descriptor instead.
 func (*StartEngineInput) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{102}
+	return file_cxz_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *StartEngineInput) GetSpec() *EngineSpec {
@@ -6970,7 +7030,7 @@ type EngineReply struct {
 
 func (x *EngineReply) Reset() {
 	*x = EngineReply{}
-	mi := &file_cxz_proto_msgTypes[103]
+	mi := &file_cxz_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6982,7 +7042,7 @@ func (x *EngineReply) String() string {
 func (*EngineReply) ProtoMessage() {}
 
 func (x *EngineReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[103]
+	mi := &file_cxz_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6995,7 +7055,7 @@ func (x *EngineReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EngineReply.ProtoReflect.Descriptor instead.
 func (*EngineReply) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{103}
+	return file_cxz_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *EngineReply) GetStatus() string {
@@ -7022,7 +7082,7 @@ type EngineInfo struct {
 
 func (x *EngineInfo) Reset() {
 	*x = EngineInfo{}
-	mi := &file_cxz_proto_msgTypes[104]
+	mi := &file_cxz_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7034,7 +7094,7 @@ func (x *EngineInfo) String() string {
 func (*EngineInfo) ProtoMessage() {}
 
 func (x *EngineInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[104]
+	mi := &file_cxz_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7047,7 +7107,7 @@ func (x *EngineInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EngineInfo.ProtoReflect.Descriptor instead.
 func (*EngineInfo) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{104}
+	return file_cxz_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *EngineInfo) GetMode() string {
@@ -7126,7 +7186,7 @@ type InstallationVersion struct {
 
 func (x *InstallationVersion) Reset() {
 	*x = InstallationVersion{}
-	mi := &file_cxz_proto_msgTypes[105]
+	mi := &file_cxz_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7138,7 +7198,7 @@ func (x *InstallationVersion) String() string {
 func (*InstallationVersion) ProtoMessage() {}
 
 func (x *InstallationVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_proto_msgTypes[105]
+	mi := &file_cxz_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7151,7 +7211,7 @@ func (x *InstallationVersion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstallationVersion.ProtoReflect.Descriptor instead.
 func (*InstallationVersion) Descriptor() ([]byte, []int) {
-	return file_cxz_proto_rawDescGZIP(), []int{105}
+	return file_cxz_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *InstallationVersion) GetVersion() string {
@@ -7297,7 +7357,7 @@ const file_cxz_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1b\n" +
 	"\tafter_seq\x18\x02 \x01(\x04R\bafterSeq\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\rR\x05limit\"\xdf\x02\n" +
+	"\x05limit\x18\x04 \x01(\rR\x05limit\"\x8e\x03\n" +
 	"\x05Event\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
@@ -7311,8 +7371,13 @@ const file_cxz_proto_rawDesc = "" +
 	"\apayload\x18\b \x01(\fR\apayload\x129\n" +
 	"\bresponse\x18\t \x01(\v2\x1d.cxz.runtime.ResponseMetadataR\bresponse\x12;\n" +
 	"\ftool_summary\x18\n" +
-	" \x01(\v2\x18.cxz.runtime.ToolSummaryR\vtoolSummary\x12\x1c\n" +
-	"\theartbeat\x18\v \x01(\bR\theartbeat\"\x95\x02\n" +
+	" \x01(\v2\x18.cxz.runtime.ToolSummaryR\vtoolSummary\x12-\n" +
+	"\x05agent\x18\f \x01(\v2\x17.cxz.runtime.EventAgentR\x05agent\x12\x1c\n" +
+	"\theartbeat\x18\v \x01(\bR\theartbeat\"0\n" +
+	"\n" +
+	"EventAgent\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\"\x95\x02\n" +
 	"\vToolSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05shell\x18\x02 \x01(\tR\x05shell\x12\x18\n" +
@@ -7898,7 +7963,7 @@ func file_cxz_proto_rawDescGZIP() []byte {
 	return file_cxz_proto_rawDescData
 }
 
-var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 110)
+var file_cxz_proto_msgTypes = make([]protoimpl.MessageInfo, 111)
 var file_cxz_proto_goTypes = []any{
 	(*Empty)(nil),                      // 0: cxz.runtime.Empty
 	(*CreateRequest)(nil),              // 1: cxz.runtime.CreateRequest
@@ -7917,287 +7982,289 @@ var file_cxz_proto_goTypes = []any{
 	(*Receipt)(nil),                    // 14: cxz.runtime.Receipt
 	(*WatchRequest)(nil),               // 15: cxz.runtime.WatchRequest
 	(*Event)(nil),                      // 16: cxz.runtime.Event
-	(*ToolSummary)(nil),                // 17: cxz.runtime.ToolSummary
-	(*ToolFileSummary)(nil),            // 18: cxz.runtime.ToolFileSummary
-	(*TranscriptRequest)(nil),          // 19: cxz.runtime.TranscriptRequest
-	(*TranscriptReply)(nil),            // 20: cxz.runtime.TranscriptReply
-	(*RowsRequest)(nil),                // 21: cxz.runtime.RowsRequest
-	(*Row)(nil),                        // 22: cxz.runtime.Row
-	(*EventDetailsRequest)(nil),        // 23: cxz.runtime.EventDetailsRequest
-	(*ResponseMetadata)(nil),           // 24: cxz.runtime.ResponseMetadata
-	(*EventBatch)(nil),                 // 25: cxz.runtime.EventBatch
-	(*ProjectRequest)(nil),             // 26: cxz.runtime.ProjectRequest
-	(*Project)(nil),                    // 27: cxz.runtime.Project
-	(*ProjectList)(nil),                // 28: cxz.runtime.ProjectList
-	(*PermissionInput)(nil),            // 29: cxz.runtime.PermissionInput
-	(*LogsRequest)(nil),                // 30: cxz.runtime.LogsRequest
-	(*LogsReply)(nil),                  // 31: cxz.runtime.LogsReply
-	(*FileMappingsInput)(nil),          // 32: cxz.runtime.FileMappingsInput
-	(*MemoryRequest)(nil),              // 33: cxz.runtime.MemoryRequest
-	(*MemoryReply)(nil),                // 34: cxz.runtime.MemoryReply
-	(*CopyMemoryRequest)(nil),          // 35: cxz.runtime.CopyMemoryRequest
-	(*BackgroundReply)(nil),            // 36: cxz.runtime.BackgroundReply
-	(*ModelsRequest)(nil),              // 37: cxz.runtime.ModelsRequest
-	(*ModelsReply)(nil),                // 38: cxz.runtime.ModelsReply
-	(*DevcontainerInput)(nil),          // 39: cxz.runtime.DevcontainerInput
-	(*SearchRequest)(nil),              // 40: cxz.runtime.SearchRequest
-	(*SearchVisit)(nil),                // 41: cxz.runtime.SearchVisit
-	(*SearchHit)(nil),                  // 42: cxz.runtime.SearchHit
-	(*SearchProgress)(nil),             // 43: cxz.runtime.SearchProgress
-	(*SearchSummary)(nil),              // 44: cxz.runtime.SearchSummary
-	(*SearchReply)(nil),                // 45: cxz.runtime.SearchReply
-	(*Aux)(nil),                        // 46: cxz.runtime.Aux
-	(*AuxResult)(nil),                  // 47: cxz.runtime.AuxResult
-	(*AuxUsage)(nil),                   // 48: cxz.runtime.AuxUsage
-	(*AuxSummary)(nil),                 // 49: cxz.runtime.AuxSummary
-	(*AuxProfile)(nil),                 // 50: cxz.runtime.AuxProfile
-	(*AuxPreference)(nil),              // 51: cxz.runtime.AuxPreference
-	(*AuxModel)(nil),                   // 52: cxz.runtime.AuxModel
-	(*AuxRunInput)(nil),                // 53: cxz.runtime.AuxRunInput
-	(*AuxCancelInput)(nil),             // 54: cxz.runtime.AuxCancelInput
-	(*AuxForgetInput)(nil),             // 55: cxz.runtime.AuxForgetInput
-	(*AuxStatusInput)(nil),             // 56: cxz.runtime.AuxStatusInput
-	(*AuxState)(nil),                   // 57: cxz.runtime.AuxState
-	(*AuxPreferInput)(nil),             // 58: cxz.runtime.AuxPreferInput
-	(*AuxConfigReply)(nil),             // 59: cxz.runtime.AuxConfigReply
-	(*AuxSetConfigInput)(nil),          // 60: cxz.runtime.AuxSetConfigInput
-	(*AuxModelsInput)(nil),             // 61: cxz.runtime.AuxModelsInput
-	(*AuxModelsReply)(nil),             // 62: cxz.runtime.AuxModelsReply
-	(*AuxLoginInfoInput)(nil),          // 63: cxz.runtime.AuxLoginInfoInput
-	(*AuxLoginInfoReply)(nil),          // 64: cxz.runtime.AuxLoginInfoReply
-	(*PutSecretFileInput)(nil),         // 65: cxz.runtime.PutSecretFileInput
-	(*DeleteSecretFileInput)(nil),      // 66: cxz.runtime.DeleteSecretFileInput
-	(*SecretFileReply)(nil),            // 67: cxz.runtime.SecretFileReply
-	(*SessionEraseInput)(nil),          // 68: cxz.runtime.SessionEraseInput
-	(*SessionEraseTarget)(nil),         // 69: cxz.runtime.SessionEraseTarget
-	(*SessionEraseReply)(nil),          // 70: cxz.runtime.SessionEraseReply
-	(*HistoryPolicy)(nil),              // 71: cxz.runtime.HistoryPolicy
-	(*HistoryFloorReply)(nil),          // 72: cxz.runtime.HistoryFloorReply
-	(*SkillsInput)(nil),                // 73: cxz.runtime.SkillsInput
-	(*SkillInput)(nil),                 // 74: cxz.runtime.SkillInput
-	(*SkillDefaultInput)(nil),          // 75: cxz.runtime.SkillDefaultInput
-	(*ProjectSkillInput)(nil),          // 76: cxz.runtime.ProjectSkillInput
-	(*ClearProjectSkillInput)(nil),     // 77: cxz.runtime.ClearProjectSkillInput
-	(*SkillEntry)(nil),                 // 78: cxz.runtime.SkillEntry
-	(*SkillsReply)(nil),                // 79: cxz.runtime.SkillsReply
-	(*SyncSkillsInput)(nil),            // 80: cxz.runtime.SyncSkillsInput
-	(*RenderDevcontainerInput)(nil),    // 81: cxz.runtime.RenderDevcontainerInput
-	(*RenderedFile)(nil),               // 82: cxz.runtime.RenderedFile
-	(*RenderDevcontainerReply)(nil),    // 83: cxz.runtime.RenderDevcontainerReply
-	(*McpServer)(nil),                  // 84: cxz.runtime.McpServer
-	(*McpEntry)(nil),                   // 85: cxz.runtime.McpEntry
-	(*McpServersReply)(nil),            // 86: cxz.runtime.McpServersReply
-	(*McpServersInput)(nil),            // 87: cxz.runtime.McpServersInput
-	(*PutMcpServerInput)(nil),          // 88: cxz.runtime.PutMcpServerInput
-	(*McpServerInput)(nil),             // 89: cxz.runtime.McpServerInput
-	(*McpServerDefaultInput)(nil),      // 90: cxz.runtime.McpServerDefaultInput
-	(*ProjectMcpServerInput)(nil),      // 91: cxz.runtime.ProjectMcpServerInput
-	(*ClearProjectMcpServerInput)(nil), // 92: cxz.runtime.ClearProjectMcpServerInput
-	(*McpSessionsInput)(nil),           // 93: cxz.runtime.McpSessionsInput
-	(*McpSessionStatus)(nil),           // 94: cxz.runtime.McpSessionStatus
-	(*McpSessionsReply)(nil),           // 95: cxz.runtime.McpSessionsReply
-	(*SyncMcpServersInput)(nil),        // 96: cxz.runtime.SyncMcpServersInput
-	(*McpLogsInput)(nil),               // 97: cxz.runtime.McpLogsInput
-	(*McpLogsReply)(nil),               // 98: cxz.runtime.McpLogsReply
-	(*RestartMcpInput)(nil),            // 99: cxz.runtime.RestartMcpInput
-	(*EngineSpec)(nil),                 // 100: cxz.runtime.EngineSpec
-	(*SaveEngineInput)(nil),            // 101: cxz.runtime.SaveEngineInput
-	(*StartEngineInput)(nil),           // 102: cxz.runtime.StartEngineInput
-	(*EngineReply)(nil),                // 103: cxz.runtime.EngineReply
-	(*EngineInfo)(nil),                 // 104: cxz.runtime.EngineInfo
-	(*InstallationVersion)(nil),        // 105: cxz.runtime.InstallationVersion
-	nil,                                // 106: cxz.runtime.McpServer.EnvEntry
-	nil,                                // 107: cxz.runtime.McpServer.HeadersEntry
-	nil,                                // 108: cxz.runtime.McpSessionStatus.ServersEntry
-	nil,                                // 109: cxz.runtime.SyncMcpServersInput.ServersEntry
+	(*EventAgent)(nil),                 // 17: cxz.runtime.EventAgent
+	(*ToolSummary)(nil),                // 18: cxz.runtime.ToolSummary
+	(*ToolFileSummary)(nil),            // 19: cxz.runtime.ToolFileSummary
+	(*TranscriptRequest)(nil),          // 20: cxz.runtime.TranscriptRequest
+	(*TranscriptReply)(nil),            // 21: cxz.runtime.TranscriptReply
+	(*RowsRequest)(nil),                // 22: cxz.runtime.RowsRequest
+	(*Row)(nil),                        // 23: cxz.runtime.Row
+	(*EventDetailsRequest)(nil),        // 24: cxz.runtime.EventDetailsRequest
+	(*ResponseMetadata)(nil),           // 25: cxz.runtime.ResponseMetadata
+	(*EventBatch)(nil),                 // 26: cxz.runtime.EventBatch
+	(*ProjectRequest)(nil),             // 27: cxz.runtime.ProjectRequest
+	(*Project)(nil),                    // 28: cxz.runtime.Project
+	(*ProjectList)(nil),                // 29: cxz.runtime.ProjectList
+	(*PermissionInput)(nil),            // 30: cxz.runtime.PermissionInput
+	(*LogsRequest)(nil),                // 31: cxz.runtime.LogsRequest
+	(*LogsReply)(nil),                  // 32: cxz.runtime.LogsReply
+	(*FileMappingsInput)(nil),          // 33: cxz.runtime.FileMappingsInput
+	(*MemoryRequest)(nil),              // 34: cxz.runtime.MemoryRequest
+	(*MemoryReply)(nil),                // 35: cxz.runtime.MemoryReply
+	(*CopyMemoryRequest)(nil),          // 36: cxz.runtime.CopyMemoryRequest
+	(*BackgroundReply)(nil),            // 37: cxz.runtime.BackgroundReply
+	(*ModelsRequest)(nil),              // 38: cxz.runtime.ModelsRequest
+	(*ModelsReply)(nil),                // 39: cxz.runtime.ModelsReply
+	(*DevcontainerInput)(nil),          // 40: cxz.runtime.DevcontainerInput
+	(*SearchRequest)(nil),              // 41: cxz.runtime.SearchRequest
+	(*SearchVisit)(nil),                // 42: cxz.runtime.SearchVisit
+	(*SearchHit)(nil),                  // 43: cxz.runtime.SearchHit
+	(*SearchProgress)(nil),             // 44: cxz.runtime.SearchProgress
+	(*SearchSummary)(nil),              // 45: cxz.runtime.SearchSummary
+	(*SearchReply)(nil),                // 46: cxz.runtime.SearchReply
+	(*Aux)(nil),                        // 47: cxz.runtime.Aux
+	(*AuxResult)(nil),                  // 48: cxz.runtime.AuxResult
+	(*AuxUsage)(nil),                   // 49: cxz.runtime.AuxUsage
+	(*AuxSummary)(nil),                 // 50: cxz.runtime.AuxSummary
+	(*AuxProfile)(nil),                 // 51: cxz.runtime.AuxProfile
+	(*AuxPreference)(nil),              // 52: cxz.runtime.AuxPreference
+	(*AuxModel)(nil),                   // 53: cxz.runtime.AuxModel
+	(*AuxRunInput)(nil),                // 54: cxz.runtime.AuxRunInput
+	(*AuxCancelInput)(nil),             // 55: cxz.runtime.AuxCancelInput
+	(*AuxForgetInput)(nil),             // 56: cxz.runtime.AuxForgetInput
+	(*AuxStatusInput)(nil),             // 57: cxz.runtime.AuxStatusInput
+	(*AuxState)(nil),                   // 58: cxz.runtime.AuxState
+	(*AuxPreferInput)(nil),             // 59: cxz.runtime.AuxPreferInput
+	(*AuxConfigReply)(nil),             // 60: cxz.runtime.AuxConfigReply
+	(*AuxSetConfigInput)(nil),          // 61: cxz.runtime.AuxSetConfigInput
+	(*AuxModelsInput)(nil),             // 62: cxz.runtime.AuxModelsInput
+	(*AuxModelsReply)(nil),             // 63: cxz.runtime.AuxModelsReply
+	(*AuxLoginInfoInput)(nil),          // 64: cxz.runtime.AuxLoginInfoInput
+	(*AuxLoginInfoReply)(nil),          // 65: cxz.runtime.AuxLoginInfoReply
+	(*PutSecretFileInput)(nil),         // 66: cxz.runtime.PutSecretFileInput
+	(*DeleteSecretFileInput)(nil),      // 67: cxz.runtime.DeleteSecretFileInput
+	(*SecretFileReply)(nil),            // 68: cxz.runtime.SecretFileReply
+	(*SessionEraseInput)(nil),          // 69: cxz.runtime.SessionEraseInput
+	(*SessionEraseTarget)(nil),         // 70: cxz.runtime.SessionEraseTarget
+	(*SessionEraseReply)(nil),          // 71: cxz.runtime.SessionEraseReply
+	(*HistoryPolicy)(nil),              // 72: cxz.runtime.HistoryPolicy
+	(*HistoryFloorReply)(nil),          // 73: cxz.runtime.HistoryFloorReply
+	(*SkillsInput)(nil),                // 74: cxz.runtime.SkillsInput
+	(*SkillInput)(nil),                 // 75: cxz.runtime.SkillInput
+	(*SkillDefaultInput)(nil),          // 76: cxz.runtime.SkillDefaultInput
+	(*ProjectSkillInput)(nil),          // 77: cxz.runtime.ProjectSkillInput
+	(*ClearProjectSkillInput)(nil),     // 78: cxz.runtime.ClearProjectSkillInput
+	(*SkillEntry)(nil),                 // 79: cxz.runtime.SkillEntry
+	(*SkillsReply)(nil),                // 80: cxz.runtime.SkillsReply
+	(*SyncSkillsInput)(nil),            // 81: cxz.runtime.SyncSkillsInput
+	(*RenderDevcontainerInput)(nil),    // 82: cxz.runtime.RenderDevcontainerInput
+	(*RenderedFile)(nil),               // 83: cxz.runtime.RenderedFile
+	(*RenderDevcontainerReply)(nil),    // 84: cxz.runtime.RenderDevcontainerReply
+	(*McpServer)(nil),                  // 85: cxz.runtime.McpServer
+	(*McpEntry)(nil),                   // 86: cxz.runtime.McpEntry
+	(*McpServersReply)(nil),            // 87: cxz.runtime.McpServersReply
+	(*McpServersInput)(nil),            // 88: cxz.runtime.McpServersInput
+	(*PutMcpServerInput)(nil),          // 89: cxz.runtime.PutMcpServerInput
+	(*McpServerInput)(nil),             // 90: cxz.runtime.McpServerInput
+	(*McpServerDefaultInput)(nil),      // 91: cxz.runtime.McpServerDefaultInput
+	(*ProjectMcpServerInput)(nil),      // 92: cxz.runtime.ProjectMcpServerInput
+	(*ClearProjectMcpServerInput)(nil), // 93: cxz.runtime.ClearProjectMcpServerInput
+	(*McpSessionsInput)(nil),           // 94: cxz.runtime.McpSessionsInput
+	(*McpSessionStatus)(nil),           // 95: cxz.runtime.McpSessionStatus
+	(*McpSessionsReply)(nil),           // 96: cxz.runtime.McpSessionsReply
+	(*SyncMcpServersInput)(nil),        // 97: cxz.runtime.SyncMcpServersInput
+	(*McpLogsInput)(nil),               // 98: cxz.runtime.McpLogsInput
+	(*McpLogsReply)(nil),               // 99: cxz.runtime.McpLogsReply
+	(*RestartMcpInput)(nil),            // 100: cxz.runtime.RestartMcpInput
+	(*EngineSpec)(nil),                 // 101: cxz.runtime.EngineSpec
+	(*SaveEngineInput)(nil),            // 102: cxz.runtime.SaveEngineInput
+	(*StartEngineInput)(nil),           // 103: cxz.runtime.StartEngineInput
+	(*EngineReply)(nil),                // 104: cxz.runtime.EngineReply
+	(*EngineInfo)(nil),                 // 105: cxz.runtime.EngineInfo
+	(*InstallationVersion)(nil),        // 106: cxz.runtime.InstallationVersion
+	nil,                                // 107: cxz.runtime.McpServer.EnvEntry
+	nil,                                // 108: cxz.runtime.McpServer.HeadersEntry
+	nil,                                // 109: cxz.runtime.McpSessionStatus.ServersEntry
+	nil,                                // 110: cxz.runtime.SyncMcpServersInput.ServersEntry
 }
 var file_cxz_proto_depIdxs = []int32{
 	16,  // 0: cxz.runtime.Session.pending:type_name -> cxz.runtime.Event
 	4,   // 1: cxz.runtime.SessionList.sessions:type_name -> cxz.runtime.Session
-	24,  // 2: cxz.runtime.Event.response:type_name -> cxz.runtime.ResponseMetadata
-	17,  // 3: cxz.runtime.Event.tool_summary:type_name -> cxz.runtime.ToolSummary
-	18,  // 4: cxz.runtime.ToolSummary.files:type_name -> cxz.runtime.ToolFileSummary
-	16,  // 5: cxz.runtime.TranscriptReply.events:type_name -> cxz.runtime.Event
-	16,  // 6: cxz.runtime.TranscriptReply.preceding_input:type_name -> cxz.runtime.Event
-	16,  // 7: cxz.runtime.TranscriptReply.metadata:type_name -> cxz.runtime.Event
-	16,  // 8: cxz.runtime.Row.event:type_name -> cxz.runtime.Event
-	16,  // 9: cxz.runtime.EventBatch.events:type_name -> cxz.runtime.Event
-	27,  // 10: cxz.runtime.ProjectList.projects:type_name -> cxz.runtime.Project
-	42,  // 11: cxz.runtime.SearchVisit.hits:type_name -> cxz.runtime.SearchHit
-	41,  // 12: cxz.runtime.SearchReply.visit:type_name -> cxz.runtime.SearchVisit
-	43,  // 13: cxz.runtime.SearchReply.progress:type_name -> cxz.runtime.SearchProgress
-	44,  // 14: cxz.runtime.SearchReply.summary:type_name -> cxz.runtime.SearchSummary
-	47,  // 15: cxz.runtime.Aux.results:type_name -> cxz.runtime.AuxResult
-	48,  // 16: cxz.runtime.Aux.usage:type_name -> cxz.runtime.AuxUsage
-	49,  // 17: cxz.runtime.AuxState.summaries:type_name -> cxz.runtime.AuxSummary
-	46,  // 18: cxz.runtime.AuxState.current:type_name -> cxz.runtime.Aux
-	46,  // 19: cxz.runtime.AuxState.recent:type_name -> cxz.runtime.Aux
-	51,  // 20: cxz.runtime.AuxState.preferences:type_name -> cxz.runtime.AuxPreference
-	51,  // 21: cxz.runtime.AuxPreferInput.preferences:type_name -> cxz.runtime.AuxPreference
-	50,  // 22: cxz.runtime.AuxConfigReply.profiles:type_name -> cxz.runtime.AuxProfile
-	50,  // 23: cxz.runtime.AuxSetConfigInput.profiles:type_name -> cxz.runtime.AuxProfile
-	52,  // 24: cxz.runtime.AuxModelsReply.models:type_name -> cxz.runtime.AuxModel
-	69,  // 25: cxz.runtime.SessionEraseReply.targets:type_name -> cxz.runtime.SessionEraseTarget
-	78,  // 26: cxz.runtime.SkillsReply.entries:type_name -> cxz.runtime.SkillEntry
-	82,  // 27: cxz.runtime.RenderDevcontainerReply.files:type_name -> cxz.runtime.RenderedFile
-	106, // 28: cxz.runtime.McpServer.env:type_name -> cxz.runtime.McpServer.EnvEntry
-	107, // 29: cxz.runtime.McpServer.headers:type_name -> cxz.runtime.McpServer.HeadersEntry
-	84,  // 30: cxz.runtime.McpEntry.server:type_name -> cxz.runtime.McpServer
-	85,  // 31: cxz.runtime.McpServersReply.entries:type_name -> cxz.runtime.McpEntry
-	84,  // 32: cxz.runtime.PutMcpServerInput.server:type_name -> cxz.runtime.McpServer
-	108, // 33: cxz.runtime.McpSessionStatus.servers:type_name -> cxz.runtime.McpSessionStatus.ServersEntry
-	94,  // 34: cxz.runtime.McpSessionsReply.sessions:type_name -> cxz.runtime.McpSessionStatus
-	109, // 35: cxz.runtime.SyncMcpServersInput.servers:type_name -> cxz.runtime.SyncMcpServersInput.ServersEntry
-	100, // 36: cxz.runtime.SaveEngineInput.spec:type_name -> cxz.runtime.EngineSpec
-	100, // 37: cxz.runtime.StartEngineInput.spec:type_name -> cxz.runtime.EngineSpec
-	84,  // 38: cxz.runtime.SyncMcpServersInput.ServersEntry.value:type_name -> cxz.runtime.McpServer
-	39,  // 39: cxz.runtime.Sessions.Devcontainer:input_type -> cxz.runtime.DevcontainerInput
-	101, // 40: cxz.runtime.Sessions.SaveEngine:input_type -> cxz.runtime.SaveEngineInput
-	102, // 41: cxz.runtime.Sessions.StartEngine:input_type -> cxz.runtime.StartEngineInput
-	0,   // 42: cxz.runtime.Sessions.StopEngine:input_type -> cxz.runtime.Empty
-	0,   // 43: cxz.runtime.Sessions.PruneEngine:input_type -> cxz.runtime.Empty
-	0,   // 44: cxz.runtime.Sessions.EngineStatus:input_type -> cxz.runtime.Empty
-	0,   // 45: cxz.runtime.Sessions.GetEngineInfo:input_type -> cxz.runtime.Empty
-	0,   // 46: cxz.runtime.Sessions.GetInstallationVersion:input_type -> cxz.runtime.Empty
-	32,  // 47: cxz.runtime.Sessions.FileMappings:input_type -> cxz.runtime.FileMappingsInput
-	1,   // 48: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
-	2,   // 49: cxz.runtime.Sessions.ForkSession:input_type -> cxz.runtime.SessionForkInput
-	0,   // 50: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
-	3,   // 51: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
-	35,  // 52: cxz.runtime.Sessions.CopyMemory:input_type -> cxz.runtime.CopyMemoryRequest
-	33,  // 53: cxz.runtime.Sessions.Memory:input_type -> cxz.runtime.MemoryRequest
-	30,  // 54: cxz.runtime.Sessions.Logs:input_type -> cxz.runtime.LogsRequest
-	29,  // 55: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
-	6,   // 56: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
-	7,   // 57: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
-	9,   // 58: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
-	10,  // 59: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
-	12,  // 60: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
-	13,  // 61: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
-	13,  // 62: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
-	13,  // 63: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
-	15,  // 64: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
-	15,  // 65: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
-	19,  // 66: cxz.runtime.Sessions.Transcript:input_type -> cxz.runtime.TranscriptRequest
-	21,  // 67: cxz.runtime.Sessions.Rows:input_type -> cxz.runtime.RowsRequest
-	23,  // 68: cxz.runtime.Sessions.EventDetails:input_type -> cxz.runtime.EventDetailsRequest
-	3,   // 69: cxz.runtime.Sessions.Background:input_type -> cxz.runtime.SessionRef
-	37,  // 70: cxz.runtime.Sessions.Models:input_type -> cxz.runtime.ModelsRequest
-	40,  // 71: cxz.runtime.Sessions.Search:input_type -> cxz.runtime.SearchRequest
-	0,   // 72: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
-	26,  // 73: cxz.runtime.Sessions.StartContainer:input_type -> cxz.runtime.ProjectRequest
-	26,  // 74: cxz.runtime.Sessions.StopContainer:input_type -> cxz.runtime.ProjectRequest
-	26,  // 75: cxz.runtime.Sessions.RemoveContainer:input_type -> cxz.runtime.ProjectRequest
-	53,  // 76: cxz.runtime.Sessions.AuxRun:input_type -> cxz.runtime.AuxRunInput
-	54,  // 77: cxz.runtime.Sessions.AuxCancel:input_type -> cxz.runtime.AuxCancelInput
-	56,  // 78: cxz.runtime.Sessions.AuxStatus:input_type -> cxz.runtime.AuxStatusInput
-	56,  // 79: cxz.runtime.Sessions.AuxEvents:input_type -> cxz.runtime.AuxStatusInput
-	58,  // 80: cxz.runtime.Sessions.AuxPrefer:input_type -> cxz.runtime.AuxPreferInput
-	55,  // 81: cxz.runtime.Sessions.AuxForget:input_type -> cxz.runtime.AuxForgetInput
-	0,   // 82: cxz.runtime.Sessions.AuxConfig:input_type -> cxz.runtime.Empty
-	60,  // 83: cxz.runtime.Sessions.AuxSetConfig:input_type -> cxz.runtime.AuxSetConfigInput
-	61,  // 84: cxz.runtime.Sessions.AuxModels:input_type -> cxz.runtime.AuxModelsInput
-	63,  // 85: cxz.runtime.Sessions.AuxLoginInfo:input_type -> cxz.runtime.AuxLoginInfoInput
-	68,  // 86: cxz.runtime.Sessions.EraseSession:input_type -> cxz.runtime.SessionEraseInput
-	0,   // 87: cxz.runtime.Sessions.GetHistoryPolicy:input_type -> cxz.runtime.Empty
-	71,  // 88: cxz.runtime.Sessions.SetHistoryPolicy:input_type -> cxz.runtime.HistoryPolicy
-	3,   // 89: cxz.runtime.Sessions.GetHistoryFloor:input_type -> cxz.runtime.SessionRef
-	65,  // 90: cxz.runtime.Sessions.PutSecretFile:input_type -> cxz.runtime.PutSecretFileInput
-	66,  // 91: cxz.runtime.Sessions.DeleteSecretFile:input_type -> cxz.runtime.DeleteSecretFileInput
-	73,  // 92: cxz.runtime.Sessions.GetSkills:input_type -> cxz.runtime.SkillsInput
-	74,  // 93: cxz.runtime.Sessions.AddSkill:input_type -> cxz.runtime.SkillInput
-	74,  // 94: cxz.runtime.Sessions.RemoveSkill:input_type -> cxz.runtime.SkillInput
-	75,  // 95: cxz.runtime.Sessions.SetSkillDefault:input_type -> cxz.runtime.SkillDefaultInput
-	76,  // 96: cxz.runtime.Sessions.SetProjectSkill:input_type -> cxz.runtime.ProjectSkillInput
-	77,  // 97: cxz.runtime.Sessions.ClearProjectSkill:input_type -> cxz.runtime.ClearProjectSkillInput
-	80,  // 98: cxz.runtime.Sessions.SyncSkills:input_type -> cxz.runtime.SyncSkillsInput
-	81,  // 99: cxz.runtime.Sessions.RenderDevcontainer:input_type -> cxz.runtime.RenderDevcontainerInput
-	87,  // 100: cxz.runtime.Sessions.GetMcpServers:input_type -> cxz.runtime.McpServersInput
-	88,  // 101: cxz.runtime.Sessions.PutMcpServer:input_type -> cxz.runtime.PutMcpServerInput
-	89,  // 102: cxz.runtime.Sessions.RemoveMcpServer:input_type -> cxz.runtime.McpServerInput
-	90,  // 103: cxz.runtime.Sessions.SetMcpServerDefault:input_type -> cxz.runtime.McpServerDefaultInput
-	91,  // 104: cxz.runtime.Sessions.SetProjectMcpServer:input_type -> cxz.runtime.ProjectMcpServerInput
-	92,  // 105: cxz.runtime.Sessions.ClearProjectMcpServer:input_type -> cxz.runtime.ClearProjectMcpServerInput
-	93,  // 106: cxz.runtime.Sessions.McpSessions:input_type -> cxz.runtime.McpSessionsInput
-	96,  // 107: cxz.runtime.Sessions.SyncMcpServers:input_type -> cxz.runtime.SyncMcpServersInput
-	97,  // 108: cxz.runtime.Sessions.McpLogs:input_type -> cxz.runtime.McpLogsInput
-	99,  // 109: cxz.runtime.Sessions.RestartMcp:input_type -> cxz.runtime.RestartMcpInput
-	14,  // 110: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
-	103, // 111: cxz.runtime.Sessions.SaveEngine:output_type -> cxz.runtime.EngineReply
-	103, // 112: cxz.runtime.Sessions.StartEngine:output_type -> cxz.runtime.EngineReply
-	103, // 113: cxz.runtime.Sessions.StopEngine:output_type -> cxz.runtime.EngineReply
-	103, // 114: cxz.runtime.Sessions.PruneEngine:output_type -> cxz.runtime.EngineReply
-	103, // 115: cxz.runtime.Sessions.EngineStatus:output_type -> cxz.runtime.EngineReply
-	104, // 116: cxz.runtime.Sessions.GetEngineInfo:output_type -> cxz.runtime.EngineInfo
-	105, // 117: cxz.runtime.Sessions.GetInstallationVersion:output_type -> cxz.runtime.InstallationVersion
-	14,  // 118: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
-	4,   // 119: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
-	4,   // 120: cxz.runtime.Sessions.ForkSession:output_type -> cxz.runtime.Session
-	5,   // 121: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
-	4,   // 122: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
-	14,  // 123: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
-	34,  // 124: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
-	31,  // 125: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
-	14,  // 126: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
-	14,  // 127: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
-	8,   // 128: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
-	14,  // 129: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
-	11,  // 130: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
-	14,  // 131: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
-	14,  // 132: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
-	4,   // 133: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
-	14,  // 134: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
-	16,  // 135: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
-	25,  // 136: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
-	20,  // 137: cxz.runtime.Sessions.Transcript:output_type -> cxz.runtime.TranscriptReply
-	22,  // 138: cxz.runtime.Sessions.Rows:output_type -> cxz.runtime.Row
-	25,  // 139: cxz.runtime.Sessions.EventDetails:output_type -> cxz.runtime.EventBatch
-	36,  // 140: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
-	38,  // 141: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
-	45,  // 142: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
-	28,  // 143: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
-	14,  // 144: cxz.runtime.Sessions.StartContainer:output_type -> cxz.runtime.Receipt
-	14,  // 145: cxz.runtime.Sessions.StopContainer:output_type -> cxz.runtime.Receipt
-	14,  // 146: cxz.runtime.Sessions.RemoveContainer:output_type -> cxz.runtime.Receipt
-	57,  // 147: cxz.runtime.Sessions.AuxRun:output_type -> cxz.runtime.AuxState
-	57,  // 148: cxz.runtime.Sessions.AuxCancel:output_type -> cxz.runtime.AuxState
-	57,  // 149: cxz.runtime.Sessions.AuxStatus:output_type -> cxz.runtime.AuxState
-	57,  // 150: cxz.runtime.Sessions.AuxEvents:output_type -> cxz.runtime.AuxState
-	57,  // 151: cxz.runtime.Sessions.AuxPrefer:output_type -> cxz.runtime.AuxState
-	14,  // 152: cxz.runtime.Sessions.AuxForget:output_type -> cxz.runtime.Receipt
-	59,  // 153: cxz.runtime.Sessions.AuxConfig:output_type -> cxz.runtime.AuxConfigReply
-	59,  // 154: cxz.runtime.Sessions.AuxSetConfig:output_type -> cxz.runtime.AuxConfigReply
-	62,  // 155: cxz.runtime.Sessions.AuxModels:output_type -> cxz.runtime.AuxModelsReply
-	64,  // 156: cxz.runtime.Sessions.AuxLoginInfo:output_type -> cxz.runtime.AuxLoginInfoReply
-	70,  // 157: cxz.runtime.Sessions.EraseSession:output_type -> cxz.runtime.SessionEraseReply
-	71,  // 158: cxz.runtime.Sessions.GetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
-	71,  // 159: cxz.runtime.Sessions.SetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
-	72,  // 160: cxz.runtime.Sessions.GetHistoryFloor:output_type -> cxz.runtime.HistoryFloorReply
-	67,  // 161: cxz.runtime.Sessions.PutSecretFile:output_type -> cxz.runtime.SecretFileReply
-	67,  // 162: cxz.runtime.Sessions.DeleteSecretFile:output_type -> cxz.runtime.SecretFileReply
-	79,  // 163: cxz.runtime.Sessions.GetSkills:output_type -> cxz.runtime.SkillsReply
-	79,  // 164: cxz.runtime.Sessions.AddSkill:output_type -> cxz.runtime.SkillsReply
-	79,  // 165: cxz.runtime.Sessions.RemoveSkill:output_type -> cxz.runtime.SkillsReply
-	79,  // 166: cxz.runtime.Sessions.SetSkillDefault:output_type -> cxz.runtime.SkillsReply
-	79,  // 167: cxz.runtime.Sessions.SetProjectSkill:output_type -> cxz.runtime.SkillsReply
-	79,  // 168: cxz.runtime.Sessions.ClearProjectSkill:output_type -> cxz.runtime.SkillsReply
-	14,  // 169: cxz.runtime.Sessions.SyncSkills:output_type -> cxz.runtime.Receipt
-	83,  // 170: cxz.runtime.Sessions.RenderDevcontainer:output_type -> cxz.runtime.RenderDevcontainerReply
-	86,  // 171: cxz.runtime.Sessions.GetMcpServers:output_type -> cxz.runtime.McpServersReply
-	86,  // 172: cxz.runtime.Sessions.PutMcpServer:output_type -> cxz.runtime.McpServersReply
-	86,  // 173: cxz.runtime.Sessions.RemoveMcpServer:output_type -> cxz.runtime.McpServersReply
-	86,  // 174: cxz.runtime.Sessions.SetMcpServerDefault:output_type -> cxz.runtime.McpServersReply
-	86,  // 175: cxz.runtime.Sessions.SetProjectMcpServer:output_type -> cxz.runtime.McpServersReply
-	86,  // 176: cxz.runtime.Sessions.ClearProjectMcpServer:output_type -> cxz.runtime.McpServersReply
-	95,  // 177: cxz.runtime.Sessions.McpSessions:output_type -> cxz.runtime.McpSessionsReply
-	14,  // 178: cxz.runtime.Sessions.SyncMcpServers:output_type -> cxz.runtime.Receipt
-	98,  // 179: cxz.runtime.Sessions.McpLogs:output_type -> cxz.runtime.McpLogsReply
-	14,  // 180: cxz.runtime.Sessions.RestartMcp:output_type -> cxz.runtime.Receipt
-	110, // [110:181] is the sub-list for method output_type
-	39,  // [39:110] is the sub-list for method input_type
-	39,  // [39:39] is the sub-list for extension type_name
-	39,  // [39:39] is the sub-list for extension extendee
-	0,   // [0:39] is the sub-list for field type_name
+	25,  // 2: cxz.runtime.Event.response:type_name -> cxz.runtime.ResponseMetadata
+	18,  // 3: cxz.runtime.Event.tool_summary:type_name -> cxz.runtime.ToolSummary
+	17,  // 4: cxz.runtime.Event.agent:type_name -> cxz.runtime.EventAgent
+	19,  // 5: cxz.runtime.ToolSummary.files:type_name -> cxz.runtime.ToolFileSummary
+	16,  // 6: cxz.runtime.TranscriptReply.events:type_name -> cxz.runtime.Event
+	16,  // 7: cxz.runtime.TranscriptReply.preceding_input:type_name -> cxz.runtime.Event
+	16,  // 8: cxz.runtime.TranscriptReply.metadata:type_name -> cxz.runtime.Event
+	16,  // 9: cxz.runtime.Row.event:type_name -> cxz.runtime.Event
+	16,  // 10: cxz.runtime.EventBatch.events:type_name -> cxz.runtime.Event
+	28,  // 11: cxz.runtime.ProjectList.projects:type_name -> cxz.runtime.Project
+	43,  // 12: cxz.runtime.SearchVisit.hits:type_name -> cxz.runtime.SearchHit
+	42,  // 13: cxz.runtime.SearchReply.visit:type_name -> cxz.runtime.SearchVisit
+	44,  // 14: cxz.runtime.SearchReply.progress:type_name -> cxz.runtime.SearchProgress
+	45,  // 15: cxz.runtime.SearchReply.summary:type_name -> cxz.runtime.SearchSummary
+	48,  // 16: cxz.runtime.Aux.results:type_name -> cxz.runtime.AuxResult
+	49,  // 17: cxz.runtime.Aux.usage:type_name -> cxz.runtime.AuxUsage
+	50,  // 18: cxz.runtime.AuxState.summaries:type_name -> cxz.runtime.AuxSummary
+	47,  // 19: cxz.runtime.AuxState.current:type_name -> cxz.runtime.Aux
+	47,  // 20: cxz.runtime.AuxState.recent:type_name -> cxz.runtime.Aux
+	52,  // 21: cxz.runtime.AuxState.preferences:type_name -> cxz.runtime.AuxPreference
+	52,  // 22: cxz.runtime.AuxPreferInput.preferences:type_name -> cxz.runtime.AuxPreference
+	51,  // 23: cxz.runtime.AuxConfigReply.profiles:type_name -> cxz.runtime.AuxProfile
+	51,  // 24: cxz.runtime.AuxSetConfigInput.profiles:type_name -> cxz.runtime.AuxProfile
+	53,  // 25: cxz.runtime.AuxModelsReply.models:type_name -> cxz.runtime.AuxModel
+	70,  // 26: cxz.runtime.SessionEraseReply.targets:type_name -> cxz.runtime.SessionEraseTarget
+	79,  // 27: cxz.runtime.SkillsReply.entries:type_name -> cxz.runtime.SkillEntry
+	83,  // 28: cxz.runtime.RenderDevcontainerReply.files:type_name -> cxz.runtime.RenderedFile
+	107, // 29: cxz.runtime.McpServer.env:type_name -> cxz.runtime.McpServer.EnvEntry
+	108, // 30: cxz.runtime.McpServer.headers:type_name -> cxz.runtime.McpServer.HeadersEntry
+	85,  // 31: cxz.runtime.McpEntry.server:type_name -> cxz.runtime.McpServer
+	86,  // 32: cxz.runtime.McpServersReply.entries:type_name -> cxz.runtime.McpEntry
+	85,  // 33: cxz.runtime.PutMcpServerInput.server:type_name -> cxz.runtime.McpServer
+	109, // 34: cxz.runtime.McpSessionStatus.servers:type_name -> cxz.runtime.McpSessionStatus.ServersEntry
+	95,  // 35: cxz.runtime.McpSessionsReply.sessions:type_name -> cxz.runtime.McpSessionStatus
+	110, // 36: cxz.runtime.SyncMcpServersInput.servers:type_name -> cxz.runtime.SyncMcpServersInput.ServersEntry
+	101, // 37: cxz.runtime.SaveEngineInput.spec:type_name -> cxz.runtime.EngineSpec
+	101, // 38: cxz.runtime.StartEngineInput.spec:type_name -> cxz.runtime.EngineSpec
+	85,  // 39: cxz.runtime.SyncMcpServersInput.ServersEntry.value:type_name -> cxz.runtime.McpServer
+	40,  // 40: cxz.runtime.Sessions.Devcontainer:input_type -> cxz.runtime.DevcontainerInput
+	102, // 41: cxz.runtime.Sessions.SaveEngine:input_type -> cxz.runtime.SaveEngineInput
+	103, // 42: cxz.runtime.Sessions.StartEngine:input_type -> cxz.runtime.StartEngineInput
+	0,   // 43: cxz.runtime.Sessions.StopEngine:input_type -> cxz.runtime.Empty
+	0,   // 44: cxz.runtime.Sessions.PruneEngine:input_type -> cxz.runtime.Empty
+	0,   // 45: cxz.runtime.Sessions.EngineStatus:input_type -> cxz.runtime.Empty
+	0,   // 46: cxz.runtime.Sessions.GetEngineInfo:input_type -> cxz.runtime.Empty
+	0,   // 47: cxz.runtime.Sessions.GetInstallationVersion:input_type -> cxz.runtime.Empty
+	33,  // 48: cxz.runtime.Sessions.FileMappings:input_type -> cxz.runtime.FileMappingsInput
+	1,   // 49: cxz.runtime.Sessions.Create:input_type -> cxz.runtime.CreateRequest
+	2,   // 50: cxz.runtime.Sessions.ForkSession:input_type -> cxz.runtime.SessionForkInput
+	0,   // 51: cxz.runtime.Sessions.List:input_type -> cxz.runtime.Empty
+	3,   // 52: cxz.runtime.Sessions.Get:input_type -> cxz.runtime.SessionRef
+	36,  // 53: cxz.runtime.Sessions.CopyMemory:input_type -> cxz.runtime.CopyMemoryRequest
+	34,  // 54: cxz.runtime.Sessions.Memory:input_type -> cxz.runtime.MemoryRequest
+	31,  // 55: cxz.runtime.Sessions.Logs:input_type -> cxz.runtime.LogsRequest
+	30,  // 56: cxz.runtime.Sessions.Permission:input_type -> cxz.runtime.PermissionInput
+	6,   // 57: cxz.runtime.Sessions.Send:input_type -> cxz.runtime.Input
+	7,   // 58: cxz.runtime.Sessions.Attach:input_type -> cxz.runtime.AttachmentInput
+	9,   // 59: cxz.runtime.Sessions.Activity:input_type -> cxz.runtime.ActivityInput
+	10,  // 60: cxz.runtime.Sessions.UpdateAgent:input_type -> cxz.runtime.AgentUpdateInput
+	12,  // 61: cxz.runtime.Sessions.Reply:input_type -> cxz.runtime.Answer
+	13,  // 62: cxz.runtime.Sessions.Interrupt:input_type -> cxz.runtime.Control
+	13,  // 63: cxz.runtime.Sessions.Resume:input_type -> cxz.runtime.Control
+	13,  // 64: cxz.runtime.Sessions.Stop:input_type -> cxz.runtime.Control
+	15,  // 65: cxz.runtime.Sessions.Watch:input_type -> cxz.runtime.WatchRequest
+	15,  // 66: cxz.runtime.Sessions.History:input_type -> cxz.runtime.WatchRequest
+	20,  // 67: cxz.runtime.Sessions.Transcript:input_type -> cxz.runtime.TranscriptRequest
+	22,  // 68: cxz.runtime.Sessions.Rows:input_type -> cxz.runtime.RowsRequest
+	24,  // 69: cxz.runtime.Sessions.EventDetails:input_type -> cxz.runtime.EventDetailsRequest
+	3,   // 70: cxz.runtime.Sessions.Background:input_type -> cxz.runtime.SessionRef
+	38,  // 71: cxz.runtime.Sessions.Models:input_type -> cxz.runtime.ModelsRequest
+	41,  // 72: cxz.runtime.Sessions.Search:input_type -> cxz.runtime.SearchRequest
+	0,   // 73: cxz.runtime.Sessions.Projects:input_type -> cxz.runtime.Empty
+	27,  // 74: cxz.runtime.Sessions.StartContainer:input_type -> cxz.runtime.ProjectRequest
+	27,  // 75: cxz.runtime.Sessions.StopContainer:input_type -> cxz.runtime.ProjectRequest
+	27,  // 76: cxz.runtime.Sessions.RemoveContainer:input_type -> cxz.runtime.ProjectRequest
+	54,  // 77: cxz.runtime.Sessions.AuxRun:input_type -> cxz.runtime.AuxRunInput
+	55,  // 78: cxz.runtime.Sessions.AuxCancel:input_type -> cxz.runtime.AuxCancelInput
+	57,  // 79: cxz.runtime.Sessions.AuxStatus:input_type -> cxz.runtime.AuxStatusInput
+	57,  // 80: cxz.runtime.Sessions.AuxEvents:input_type -> cxz.runtime.AuxStatusInput
+	59,  // 81: cxz.runtime.Sessions.AuxPrefer:input_type -> cxz.runtime.AuxPreferInput
+	56,  // 82: cxz.runtime.Sessions.AuxForget:input_type -> cxz.runtime.AuxForgetInput
+	0,   // 83: cxz.runtime.Sessions.AuxConfig:input_type -> cxz.runtime.Empty
+	61,  // 84: cxz.runtime.Sessions.AuxSetConfig:input_type -> cxz.runtime.AuxSetConfigInput
+	62,  // 85: cxz.runtime.Sessions.AuxModels:input_type -> cxz.runtime.AuxModelsInput
+	64,  // 86: cxz.runtime.Sessions.AuxLoginInfo:input_type -> cxz.runtime.AuxLoginInfoInput
+	69,  // 87: cxz.runtime.Sessions.EraseSession:input_type -> cxz.runtime.SessionEraseInput
+	0,   // 88: cxz.runtime.Sessions.GetHistoryPolicy:input_type -> cxz.runtime.Empty
+	72,  // 89: cxz.runtime.Sessions.SetHistoryPolicy:input_type -> cxz.runtime.HistoryPolicy
+	3,   // 90: cxz.runtime.Sessions.GetHistoryFloor:input_type -> cxz.runtime.SessionRef
+	66,  // 91: cxz.runtime.Sessions.PutSecretFile:input_type -> cxz.runtime.PutSecretFileInput
+	67,  // 92: cxz.runtime.Sessions.DeleteSecretFile:input_type -> cxz.runtime.DeleteSecretFileInput
+	74,  // 93: cxz.runtime.Sessions.GetSkills:input_type -> cxz.runtime.SkillsInput
+	75,  // 94: cxz.runtime.Sessions.AddSkill:input_type -> cxz.runtime.SkillInput
+	75,  // 95: cxz.runtime.Sessions.RemoveSkill:input_type -> cxz.runtime.SkillInput
+	76,  // 96: cxz.runtime.Sessions.SetSkillDefault:input_type -> cxz.runtime.SkillDefaultInput
+	77,  // 97: cxz.runtime.Sessions.SetProjectSkill:input_type -> cxz.runtime.ProjectSkillInput
+	78,  // 98: cxz.runtime.Sessions.ClearProjectSkill:input_type -> cxz.runtime.ClearProjectSkillInput
+	81,  // 99: cxz.runtime.Sessions.SyncSkills:input_type -> cxz.runtime.SyncSkillsInput
+	82,  // 100: cxz.runtime.Sessions.RenderDevcontainer:input_type -> cxz.runtime.RenderDevcontainerInput
+	88,  // 101: cxz.runtime.Sessions.GetMcpServers:input_type -> cxz.runtime.McpServersInput
+	89,  // 102: cxz.runtime.Sessions.PutMcpServer:input_type -> cxz.runtime.PutMcpServerInput
+	90,  // 103: cxz.runtime.Sessions.RemoveMcpServer:input_type -> cxz.runtime.McpServerInput
+	91,  // 104: cxz.runtime.Sessions.SetMcpServerDefault:input_type -> cxz.runtime.McpServerDefaultInput
+	92,  // 105: cxz.runtime.Sessions.SetProjectMcpServer:input_type -> cxz.runtime.ProjectMcpServerInput
+	93,  // 106: cxz.runtime.Sessions.ClearProjectMcpServer:input_type -> cxz.runtime.ClearProjectMcpServerInput
+	94,  // 107: cxz.runtime.Sessions.McpSessions:input_type -> cxz.runtime.McpSessionsInput
+	97,  // 108: cxz.runtime.Sessions.SyncMcpServers:input_type -> cxz.runtime.SyncMcpServersInput
+	98,  // 109: cxz.runtime.Sessions.McpLogs:input_type -> cxz.runtime.McpLogsInput
+	100, // 110: cxz.runtime.Sessions.RestartMcp:input_type -> cxz.runtime.RestartMcpInput
+	14,  // 111: cxz.runtime.Sessions.Devcontainer:output_type -> cxz.runtime.Receipt
+	104, // 112: cxz.runtime.Sessions.SaveEngine:output_type -> cxz.runtime.EngineReply
+	104, // 113: cxz.runtime.Sessions.StartEngine:output_type -> cxz.runtime.EngineReply
+	104, // 114: cxz.runtime.Sessions.StopEngine:output_type -> cxz.runtime.EngineReply
+	104, // 115: cxz.runtime.Sessions.PruneEngine:output_type -> cxz.runtime.EngineReply
+	104, // 116: cxz.runtime.Sessions.EngineStatus:output_type -> cxz.runtime.EngineReply
+	105, // 117: cxz.runtime.Sessions.GetEngineInfo:output_type -> cxz.runtime.EngineInfo
+	106, // 118: cxz.runtime.Sessions.GetInstallationVersion:output_type -> cxz.runtime.InstallationVersion
+	14,  // 119: cxz.runtime.Sessions.FileMappings:output_type -> cxz.runtime.Receipt
+	4,   // 120: cxz.runtime.Sessions.Create:output_type -> cxz.runtime.Session
+	4,   // 121: cxz.runtime.Sessions.ForkSession:output_type -> cxz.runtime.Session
+	5,   // 122: cxz.runtime.Sessions.List:output_type -> cxz.runtime.SessionList
+	4,   // 123: cxz.runtime.Sessions.Get:output_type -> cxz.runtime.Session
+	14,  // 124: cxz.runtime.Sessions.CopyMemory:output_type -> cxz.runtime.Receipt
+	35,  // 125: cxz.runtime.Sessions.Memory:output_type -> cxz.runtime.MemoryReply
+	32,  // 126: cxz.runtime.Sessions.Logs:output_type -> cxz.runtime.LogsReply
+	14,  // 127: cxz.runtime.Sessions.Permission:output_type -> cxz.runtime.Receipt
+	14,  // 128: cxz.runtime.Sessions.Send:output_type -> cxz.runtime.Receipt
+	8,   // 129: cxz.runtime.Sessions.Attach:output_type -> cxz.runtime.Attachment
+	14,  // 130: cxz.runtime.Sessions.Activity:output_type -> cxz.runtime.Receipt
+	11,  // 131: cxz.runtime.Sessions.UpdateAgent:output_type -> cxz.runtime.AgentUpdateStatus
+	14,  // 132: cxz.runtime.Sessions.Reply:output_type -> cxz.runtime.Receipt
+	14,  // 133: cxz.runtime.Sessions.Interrupt:output_type -> cxz.runtime.Receipt
+	4,   // 134: cxz.runtime.Sessions.Resume:output_type -> cxz.runtime.Session
+	14,  // 135: cxz.runtime.Sessions.Stop:output_type -> cxz.runtime.Receipt
+	16,  // 136: cxz.runtime.Sessions.Watch:output_type -> cxz.runtime.Event
+	26,  // 137: cxz.runtime.Sessions.History:output_type -> cxz.runtime.EventBatch
+	21,  // 138: cxz.runtime.Sessions.Transcript:output_type -> cxz.runtime.TranscriptReply
+	23,  // 139: cxz.runtime.Sessions.Rows:output_type -> cxz.runtime.Row
+	26,  // 140: cxz.runtime.Sessions.EventDetails:output_type -> cxz.runtime.EventBatch
+	37,  // 141: cxz.runtime.Sessions.Background:output_type -> cxz.runtime.BackgroundReply
+	39,  // 142: cxz.runtime.Sessions.Models:output_type -> cxz.runtime.ModelsReply
+	46,  // 143: cxz.runtime.Sessions.Search:output_type -> cxz.runtime.SearchReply
+	29,  // 144: cxz.runtime.Sessions.Projects:output_type -> cxz.runtime.ProjectList
+	14,  // 145: cxz.runtime.Sessions.StartContainer:output_type -> cxz.runtime.Receipt
+	14,  // 146: cxz.runtime.Sessions.StopContainer:output_type -> cxz.runtime.Receipt
+	14,  // 147: cxz.runtime.Sessions.RemoveContainer:output_type -> cxz.runtime.Receipt
+	58,  // 148: cxz.runtime.Sessions.AuxRun:output_type -> cxz.runtime.AuxState
+	58,  // 149: cxz.runtime.Sessions.AuxCancel:output_type -> cxz.runtime.AuxState
+	58,  // 150: cxz.runtime.Sessions.AuxStatus:output_type -> cxz.runtime.AuxState
+	58,  // 151: cxz.runtime.Sessions.AuxEvents:output_type -> cxz.runtime.AuxState
+	58,  // 152: cxz.runtime.Sessions.AuxPrefer:output_type -> cxz.runtime.AuxState
+	14,  // 153: cxz.runtime.Sessions.AuxForget:output_type -> cxz.runtime.Receipt
+	60,  // 154: cxz.runtime.Sessions.AuxConfig:output_type -> cxz.runtime.AuxConfigReply
+	60,  // 155: cxz.runtime.Sessions.AuxSetConfig:output_type -> cxz.runtime.AuxConfigReply
+	63,  // 156: cxz.runtime.Sessions.AuxModels:output_type -> cxz.runtime.AuxModelsReply
+	65,  // 157: cxz.runtime.Sessions.AuxLoginInfo:output_type -> cxz.runtime.AuxLoginInfoReply
+	71,  // 158: cxz.runtime.Sessions.EraseSession:output_type -> cxz.runtime.SessionEraseReply
+	72,  // 159: cxz.runtime.Sessions.GetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
+	72,  // 160: cxz.runtime.Sessions.SetHistoryPolicy:output_type -> cxz.runtime.HistoryPolicy
+	73,  // 161: cxz.runtime.Sessions.GetHistoryFloor:output_type -> cxz.runtime.HistoryFloorReply
+	68,  // 162: cxz.runtime.Sessions.PutSecretFile:output_type -> cxz.runtime.SecretFileReply
+	68,  // 163: cxz.runtime.Sessions.DeleteSecretFile:output_type -> cxz.runtime.SecretFileReply
+	80,  // 164: cxz.runtime.Sessions.GetSkills:output_type -> cxz.runtime.SkillsReply
+	80,  // 165: cxz.runtime.Sessions.AddSkill:output_type -> cxz.runtime.SkillsReply
+	80,  // 166: cxz.runtime.Sessions.RemoveSkill:output_type -> cxz.runtime.SkillsReply
+	80,  // 167: cxz.runtime.Sessions.SetSkillDefault:output_type -> cxz.runtime.SkillsReply
+	80,  // 168: cxz.runtime.Sessions.SetProjectSkill:output_type -> cxz.runtime.SkillsReply
+	80,  // 169: cxz.runtime.Sessions.ClearProjectSkill:output_type -> cxz.runtime.SkillsReply
+	14,  // 170: cxz.runtime.Sessions.SyncSkills:output_type -> cxz.runtime.Receipt
+	84,  // 171: cxz.runtime.Sessions.RenderDevcontainer:output_type -> cxz.runtime.RenderDevcontainerReply
+	87,  // 172: cxz.runtime.Sessions.GetMcpServers:output_type -> cxz.runtime.McpServersReply
+	87,  // 173: cxz.runtime.Sessions.PutMcpServer:output_type -> cxz.runtime.McpServersReply
+	87,  // 174: cxz.runtime.Sessions.RemoveMcpServer:output_type -> cxz.runtime.McpServersReply
+	87,  // 175: cxz.runtime.Sessions.SetMcpServerDefault:output_type -> cxz.runtime.McpServersReply
+	87,  // 176: cxz.runtime.Sessions.SetProjectMcpServer:output_type -> cxz.runtime.McpServersReply
+	87,  // 177: cxz.runtime.Sessions.ClearProjectMcpServer:output_type -> cxz.runtime.McpServersReply
+	96,  // 178: cxz.runtime.Sessions.McpSessions:output_type -> cxz.runtime.McpSessionsReply
+	14,  // 179: cxz.runtime.Sessions.SyncMcpServers:output_type -> cxz.runtime.Receipt
+	99,  // 180: cxz.runtime.Sessions.McpLogs:output_type -> cxz.runtime.McpLogsReply
+	14,  // 181: cxz.runtime.Sessions.RestartMcp:output_type -> cxz.runtime.Receipt
+	111, // [111:182] is the sub-list for method output_type
+	40,  // [40:111] is the sub-list for method input_type
+	40,  // [40:40] is the sub-list for extension type_name
+	40,  // [40:40] is the sub-list for extension extendee
+	0,   // [0:40] is the sub-list for field type_name
 }
 
 func init() { file_cxz_proto_init() }
@@ -8205,15 +8272,15 @@ func file_cxz_proto_init() {
 	if File_cxz_proto != nil {
 		return
 	}
-	file_cxz_proto_msgTypes[78].OneofWrappers = []any{}
-	file_cxz_proto_msgTypes[85].OneofWrappers = []any{}
+	file_cxz_proto_msgTypes[79].OneofWrappers = []any{}
+	file_cxz_proto_msgTypes[86].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_proto_rawDesc), len(file_cxz_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   110,
+			NumMessages:   111,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

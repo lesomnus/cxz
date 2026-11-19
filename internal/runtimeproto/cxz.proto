@@ -175,11 +175,17 @@ message Event {
   string kind = 5; string text = 6; string request_id = 7; bytes payload = 8;
   ResponseMetadata response = 9;
   ToolSummary tool_summary = 10;
+  // The subagent whose work this is, absent when the session did it itself.
+  // See proto/cxz/session.proto.
+  EventAgent agent = 12;
   // A frame that is not a record: the stream saying it is alive with nothing
   // to send. Nothing else on it is set, and a reader that advances its cursor
   // by what it receives must skip it. See proto/cxz/session.proto.
   bool heartbeat = 11;
 }
+// id is the id of the `Agent` call that started the subagent, which is what
+// ties its work back to that call and keeps two subagents in one turn apart.
+message EventAgent { string id = 1; string type = 2; }
 message ToolSummary {
   string name = 1; string shell = 2; string command = 3; string state = 4;
   repeated ToolFileSummary files = 5;

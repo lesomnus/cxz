@@ -41,6 +41,8 @@ import {
   type WorkTaskSource,
 } from "#src/features/session/model/work-tasks.ts";
 import { createdTasksByWorkGroup } from "#src/features/session/model/created-work-tasks.ts";
+import { subagentGroups } from "#src/features/session/model/subagent-groups.ts";
+import { SubagentWork } from "./subagent-work";
 import type { Task } from "#gen/cxz/task_pb";
 import { ScrollMarkers, type ScrollTick } from "./scroll-markers";
 import { useScrollThumb } from "./use-scroll-thumb";
@@ -147,7 +149,17 @@ export function Transcript({
 }) {
   const events = source();
   useLocale();
-  const work = React.useMemo(() => workGroups(events), [events]);
+  // Before the session's own work is grouped: a subagent shares the session's
+  // run, so its tool calls would otherwise land in whatever the session was
+  // doing. See cxz#368.
+  const subagents = React.useMemo(() => subagentGroups(events), [events]);
+  const [openAgents, setOpenAgents] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const work = React.useMemo(
+    () => workGroups(subagents.events),
+    [subagents.events],
+  );
   const catalogSource = React.useMemo(
     () =>
       [...work.groups.values()].some((group) => group.services.cxz_tasks > 0)
@@ -189,6 +201,22 @@ export function Transcript({
   }, []);
   const renderRow = React.useCallback(
     (event: SessionEvent) => {
+      const agent = subagents.summaries.get(event.seq);
+      if (agent)
+        return (
+          <SubagentWork
+            group={agent}
+            expanded={openAgents.has(agent.id)}
+            toggle={() =>
+              setOpenAgents((open) => {
+                const next = new Set(open);
+                if (!next.delete(agent.id)) next.add(agent.id);
+                return next;
+              })
+            }
+            render={render}
+          />
+        );
       const group = work.summaries.get(event.seq);
       return group ? (
         <WorkSummary
@@ -215,6 +243,8 @@ export function Transcript({
       );
     },
     [
+      subagents,
+      openAgents,
       work,
       activeWork,
       workClosing,

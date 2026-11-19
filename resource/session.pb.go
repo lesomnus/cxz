@@ -514,6 +514,7 @@ type SessionEvent struct {
 	xxx_hidden_Response    *ResponseMetadata      `protobuf:"bytes,8,opt,name=response"`
 	xxx_hidden_ToolSummary *ToolSummary           `protobuf:"bytes,9,opt,name=tool_summary,json=toolSummary"`
 	xxx_hidden_Heartbeat   bool                   `protobuf:"varint,10,opt,name=heartbeat"`
+	xxx_hidden_Agent       *EventAgent            `protobuf:"bytes,11,opt,name=agent"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -613,6 +614,13 @@ func (x *SessionEvent) GetHeartbeat() bool {
 	return false
 }
 
+func (x *SessionEvent) GetAgent() *EventAgent {
+	if x != nil {
+		return x.xxx_hidden_Agent
+	}
+	return nil
+}
+
 func (x *SessionEvent) SetRunId(v string) {
 	x.xxx_hidden_RunId = v
 }
@@ -656,6 +664,10 @@ func (x *SessionEvent) SetHeartbeat(v bool) {
 	x.xxx_hidden_Heartbeat = v
 }
 
+func (x *SessionEvent) SetAgent(v *EventAgent) {
+	x.xxx_hidden_Agent = v
+}
+
 func (x *SessionEvent) HasResponse() bool {
 	if x == nil {
 		return false
@@ -670,12 +682,23 @@ func (x *SessionEvent) HasToolSummary() bool {
 	return x.xxx_hidden_ToolSummary != nil
 }
 
+func (x *SessionEvent) HasAgent() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Agent != nil
+}
+
 func (x *SessionEvent) ClearResponse() {
 	x.xxx_hidden_Response = nil
 }
 
 func (x *SessionEvent) ClearToolSummary() {
 	x.xxx_hidden_ToolSummary = nil
+}
+
+func (x *SessionEvent) ClearAgent() {
+	x.xxx_hidden_Agent = nil
 }
 
 type SessionEvent_builder struct {
@@ -701,6 +724,16 @@ type SessionEvent_builder struct {
 	// field of its own. A record stream's frame *is* the record, so saying it
 	// here is the only place it can be said. See cxz#191.
 	Heartbeat bool
+	// The subagent whose work this is, absent when the session did it itself.
+	//
+	// A subagent's replies and tool calls arrive on the session's own stream and
+	// are recorded there, so without this nothing says which of several
+	// concurrent subagents a record came from -- or that it came from one at
+	// all. The session's own records carry no agent rather than an empty one,
+	// because an empty one is a claim that some subagent did it. Records made
+	// before this field existed carry nothing and are not the session's by
+	// default: they are unattributed. See cxz#368.
+	Agent *EventAgent
 }
 
 func (b0 SessionEvent_builder) Build() *SessionEvent {
@@ -717,6 +750,83 @@ func (b0 SessionEvent_builder) Build() *SessionEvent {
 	x.xxx_hidden_Response = b.Response
 	x.xxx_hidden_ToolSummary = b.ToolSummary
 	x.xxx_hidden_Heartbeat = b.Heartbeat
+	x.xxx_hidden_Agent = b.Agent
+	return m0
+}
+
+// id is the id of the `Agent` call that started this subagent. It is the id
+// rather than a flag because a flag cannot say *which* subagent: several share
+// the session's run, and the call that started each one is what tells them
+// apart and what ties the work back to the call a reader can see.
+type EventAgent struct {
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id   string                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Type string                 `protobuf:"bytes,2,opt,name=type"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *EventAgent) Reset() {
+	*x = EventAgent{}
+	mi := &file_cxz_session_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EventAgent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventAgent) ProtoMessage() {}
+
+func (x *EventAgent) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *EventAgent) GetId() string {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return ""
+}
+
+func (x *EventAgent) GetType() string {
+	if x != nil {
+		return x.xxx_hidden_Type
+	}
+	return ""
+}
+
+func (x *EventAgent) SetId(v string) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *EventAgent) SetType(v string) {
+	x.xxx_hidden_Type = v
+}
+
+type EventAgent_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id string
+	// What kind of subagent the provider said it was, when it said anything.
+	Type string
+}
+
+func (b0 EventAgent_builder) Build() *EventAgent {
+	m0 := &EventAgent{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Type = b.Type
 	return m0
 }
 
@@ -737,7 +847,7 @@ type ToolSummary struct {
 
 func (x *ToolSummary) Reset() {
 	*x = ToolSummary{}
-	mi := &file_cxz_session_proto_msgTypes[3]
+	mi := &file_cxz_session_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -749,7 +859,7 @@ func (x *ToolSummary) String() string {
 func (*ToolSummary) ProtoMessage() {}
 
 func (x *ToolSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_proto_msgTypes[3]
+	mi := &file_cxz_session_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -917,7 +1027,7 @@ type ToolFileSummary struct {
 
 func (x *ToolFileSummary) Reset() {
 	*x = ToolFileSummary{}
-	mi := &file_cxz_session_proto_msgTypes[4]
+	mi := &file_cxz_session_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -929,7 +1039,7 @@ func (x *ToolFileSummary) String() string {
 func (*ToolFileSummary) ProtoMessage() {}
 
 func (x *ToolFileSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_proto_msgTypes[4]
+	mi := &file_cxz_session_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1073,7 +1183,7 @@ type ResponseMetadata struct {
 
 func (x *ResponseMetadata) Reset() {
 	*x = ResponseMetadata{}
-	mi := &file_cxz_session_proto_msgTypes[5]
+	mi := &file_cxz_session_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1085,7 +1195,7 @@ func (x *ResponseMetadata) String() string {
 func (*ResponseMetadata) ProtoMessage() {}
 
 func (x *ResponseMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_proto_msgTypes[5]
+	mi := &file_cxz_session_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1245,7 +1355,7 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\blast_seq\x18\x04 \x01(\x04R\alastSeq\x12+\n" +
 	"\apending\x18\x05 \x03(\v2\x11.cxz.SessionEventR\apending\x12'\n" +
 	"\x0fpermission_mode\x18\x06 \x01(\tR\x0epermissionMode\x12\x16\n" +
-	"\x06queued\x18\a \x01(\tR\x06queued\"\xb7\x02\n" +
+	"\x06queued\x18\a \x01(\tR\x06queued\"\xde\x02\n" +
 	"\fSessionEvent\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x10\n" +
 	"\x03seq\x18\x02 \x01(\x04R\x03seq\x12\x17\n" +
@@ -1258,7 +1368,12 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\bresponse\x18\b \x01(\v2\x15.cxz.ResponseMetadataR\bresponse\x123\n" +
 	"\ftool_summary\x18\t \x01(\v2\x10.cxz.ToolSummaryR\vtoolSummary\x12\x1c\n" +
 	"\theartbeat\x18\n" +
-	" \x01(\bR\theartbeat\"\x8d\x02\n" +
+	" \x01(\bR\theartbeat\x12%\n" +
+	"\x05agent\x18\v \x01(\v2\x0f.cxz.EventAgentR\x05agent\"0\n" +
+	"\n" +
+	"EventAgent\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\"\x8d\x02\n" +
 	"\vToolSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05shell\x18\x02 \x01(\tR\x05shell\x12\x18\n" +
@@ -1288,36 +1403,38 @@ const file_cxz_session_proto_rawDesc = "" +
 	"\x05phase\x18\x06 \x01(\tR\x05phase\x12'\n" +
 	"\x0fcompletion_json\x18\a \x01(\fR\x0ecompletionJsonB'Z github.com/lesomnus/cxz/resource\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_cxz_session_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_cxz_session_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_cxz_session_proto_goTypes = []any{
 	(*Session)(nil),               // 0: cxz.Session
 	(*SessionStatus)(nil),         // 1: cxz.SessionStatus
 	(*SessionEvent)(nil),          // 2: cxz.SessionEvent
-	(*ToolSummary)(nil),           // 3: cxz.ToolSummary
-	(*ToolFileSummary)(nil),       // 4: cxz.ToolFileSummary
-	(*ResponseMetadata)(nil),      // 5: cxz.ResponseMetadata
-	(*Project)(nil),               // 6: cxz.Project
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
-	(*Account)(nil),               // 8: cxz.Account
-	(*AuthBinding)(nil),           // 9: cxz.AuthBinding
+	(*EventAgent)(nil),            // 3: cxz.EventAgent
+	(*ToolSummary)(nil),           // 4: cxz.ToolSummary
+	(*ToolFileSummary)(nil),       // 5: cxz.ToolFileSummary
+	(*ResponseMetadata)(nil),      // 6: cxz.ResponseMetadata
+	(*Project)(nil),               // 7: cxz.Project
+	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	(*Account)(nil),               // 9: cxz.Account
+	(*AuthBinding)(nil),           // 10: cxz.AuthBinding
 }
 var file_cxz_session_proto_depIdxs = []int32{
-	6,  // 0: cxz.Session.project:type_name -> cxz.Project
-	7,  // 1: cxz.Session.date_updated:type_name -> google.protobuf.Timestamp
-	7,  // 2: cxz.Session.date_erased:type_name -> google.protobuf.Timestamp
-	7,  // 3: cxz.Session.date_created:type_name -> google.protobuf.Timestamp
+	7,  // 0: cxz.Session.project:type_name -> cxz.Project
+	8,  // 1: cxz.Session.date_updated:type_name -> google.protobuf.Timestamp
+	8,  // 2: cxz.Session.date_erased:type_name -> google.protobuf.Timestamp
+	8,  // 3: cxz.Session.date_created:type_name -> google.protobuf.Timestamp
 	1,  // 4: cxz.Session.status:type_name -> cxz.SessionStatus
-	8,  // 5: cxz.Session.account:type_name -> cxz.Account
-	9,  // 6: cxz.Session.auth_binding:type_name -> cxz.AuthBinding
+	9,  // 5: cxz.Session.account:type_name -> cxz.Account
+	10, // 6: cxz.Session.auth_binding:type_name -> cxz.AuthBinding
 	2,  // 7: cxz.SessionStatus.pending:type_name -> cxz.SessionEvent
-	5,  // 8: cxz.SessionEvent.response:type_name -> cxz.ResponseMetadata
-	3,  // 9: cxz.SessionEvent.tool_summary:type_name -> cxz.ToolSummary
-	4,  // 10: cxz.ToolSummary.files:type_name -> cxz.ToolFileSummary
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	6,  // 8: cxz.SessionEvent.response:type_name -> cxz.ResponseMetadata
+	4,  // 9: cxz.SessionEvent.tool_summary:type_name -> cxz.ToolSummary
+	3,  // 10: cxz.SessionEvent.agent:type_name -> cxz.EventAgent
+	5,  // 11: cxz.ToolSummary.files:type_name -> cxz.ToolFileSummary
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_cxz_session_proto_init() }
@@ -1334,7 +1451,7 @@ func file_cxz_session_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_proto_rawDesc), len(file_cxz_session_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

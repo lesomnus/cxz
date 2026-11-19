@@ -490,3 +490,58 @@ export function complexConversationEvents(turns = 120) {
     return event;
   });
 }
+
+// Three subagents started in one turn, their replies and tool calls arriving on
+// the session's own stream the way the provider sends them: interleaved, and
+// each line carrying the id of the `Agent` call that produced it. See cxz#368.
+export function subagentEvents() {
+  const agents = [
+    {
+      id: "toolu_alpha",
+      lines: ["Checking the retention policy first.", "Found three callers."],
+    },
+    {
+      id: "toolu_bravo",
+      lines: [
+        "Reading the projection schema.",
+        "The floor is stored per session.",
+        "Done.",
+      ],
+    },
+    { id: "toolu_charlie", lines: ["Looking for the search index."] },
+  ];
+  const events = [
+    storyEvent(1, "input", "Investigate the three retention paths."),
+    storyEvent(2, "tool_call", "Agent"),
+  ];
+  let seq = 3;
+  for (let round = 0; round < 3; round++)
+    for (const agent of agents) {
+      const line = agent.lines[round];
+      if (line === undefined) continue;
+      const reply = storyEvent(seq++, "assistant", line);
+      reply.agent = {
+        $typeName: "cxz.EventAgent",
+        id: agent.id,
+        type: "general-purpose",
+      };
+      events.push(reply);
+      const call = storyEvent(seq++, "tool_call", "Bash", {
+        command: "rg retention",
+      });
+      call.agent = {
+        $typeName: "cxz.EventAgent",
+        id: agent.id,
+        type: "general-purpose",
+      };
+      events.push(call);
+    }
+  events.push(
+    storyEvent(
+      seq++,
+      "assistant",
+      "All three agents agree the floor is per session.",
+    ),
+  );
+  return events;
+}

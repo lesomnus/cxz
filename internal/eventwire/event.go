@@ -10,6 +10,9 @@ func ToResource(e *api.Event) *resource.SessionEvent {
 	if r := e.Response; r != nil {
 		v.SetResponse(resource.ResponseMetadata_builder{Model: r.Model, Effort: r.Effort, ModelSource: r.ModelSource, EffortSource: r.EffortSource, TurnId: r.TurnId, Phase: r.Phase, CompletionJson: r.CompletionJson}.Build())
 	}
+	if a := e.Agent; a != nil {
+		v.SetAgent(resource.EventAgent_builder{Id: a.Id, Type: a.Type}.Build())
+	}
 	if t := e.ToolSummary; t != nil {
 		var files []*resource.ToolFileSummary
 		for _, f := range t.Files {
@@ -23,6 +26,9 @@ func FromResource(id string, e *resource.SessionEvent) *api.Event {
 	v := &api.Event{SessionId: id, RunId: e.GetRunId(), Seq: e.GetSeq(), TimeMs: e.GetTimeMs(), Kind: e.GetKind(), Text: e.GetText(), RequestId: e.GetRequestId(), Payload: e.GetPayload()}
 	if r := e.GetResponse(); r != nil {
 		v.Response = &api.ResponseMetadata{Model: r.GetModel(), Effort: r.GetEffort(), ModelSource: r.GetModelSource(), EffortSource: r.GetEffortSource(), TurnId: r.GetTurnId(), Phase: r.GetPhase(), CompletionJson: r.GetCompletionJson()}
+	}
+	if a := e.GetAgent(); a != nil {
+		v.Agent = &api.EventAgent{Id: a.GetId(), Type: a.GetType()}
 	}
 	if t := e.GetToolSummary(); t != nil {
 		var files []*api.ToolFileSummary

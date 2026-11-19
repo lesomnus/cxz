@@ -73,6 +73,26 @@ message SessionEvent {
   // field of its own. A record stream's frame *is* the record, so saying it
   // here is the only place it can be said. See cxz#191.
   bool heartbeat = 10;
+  // The subagent whose work this is, absent when the session did it itself.
+  //
+  // A subagent's replies and tool calls arrive on the session's own stream and
+  // are recorded there, so without this nothing says which of several
+  // concurrent subagents a record came from -- or that it came from one at
+  // all. The session's own records carry no agent rather than an empty one,
+  // because an empty one is a claim that some subagent did it. Records made
+  // before this field existed carry nothing and are not the session's by
+  // default: they are unattributed. See cxz#368.
+  EventAgent agent = 11;
+}
+
+// id is the id of the `Agent` call that started this subagent. It is the id
+// rather than a flag because a flag cannot say *which* subagent: several share
+// the session's run, and the call that started each one is what tells them
+// apart and what ties the work back to the call a reader can see.
+message EventAgent {
+  string id = 1;
+  // What kind of subagent the provider said it was, when it said anything.
+  string type = 2;
 }
 
 message ToolSummary {
