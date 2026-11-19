@@ -35,5 +35,8 @@ func FromCore(e core.Event) *api.Event {
 	if r := e.Response; r != nil {
 		v.Response = &api.ResponseMetadata{Model: r.Model, Effort: r.Effort, ModelSource: r.ModelSource, EffortSource: r.EffortSource, TurnId: r.TurnID, Phase: r.Phase, CompletionJson: []byte(r.CompletionJSON)}
 	}
+	if a := e.Agent; a != nil {
+		v.Agent = &api.EventAgent{Id: a.ID, Type: a.Type}
+	}
 	return v
 }

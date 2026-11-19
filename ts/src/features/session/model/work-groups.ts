@@ -58,6 +58,10 @@ const conversationKinds = new Set([
 ]);
 export const isWorkEvent = (event: SessionEvent) =>
   isTranscriptEvent(event) &&
+  // A subagent's tool calls are its work, not the session's. Work groups are
+  // keyed by run and a subagent shares the session's run, so without this its
+  // calls land in whatever the session happened to be doing. See cxz#368.
+  !event.agent?.id &&
   (!conversationKinds.has(event.kind) || !!resolvedMcpService(event)) &&
   !isDiagnosticEvent(event) &&
   !(
