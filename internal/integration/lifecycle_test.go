@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/internal/server"
 	"github.com/lesomnus/cxz/internal/sessionstore"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"os"
 	"os/exec"
@@ -338,31 +339,18 @@ func TestLifecycle(t *testing.T) {
 	t.Run("fork conversation", func(t *testing.T) {
 		source := get()
 		request := &api.SessionForkInput{SessionId: source.Id, RunId: source.RunId, ClientId: core.ID()}
-		if _, err := client.ForkSession(ctx, request); err == nil {
-			t.Fatal("fork copied the parent's login")
-		} else {
-			details := status.Convert(err).Details()
-			if len(details) != 1 {
-				t.Fatal("fork lost login challenge", err)
-			}
-			info, ok := details[0].(*errdetails.ErrorInfo)
-			if !ok || info.Reason != "PROJECT_LOGIN_REQUIRED" || info.Metadata["session_key"] != request.ClientId {
-				t.Fatal("fork login challenge used the wrong creation key", err)
-			}
-		}
-		if err := accounts.Install(accounts.SessionRoot(state, request.ClientId), source.Account, source.Agent, []byte(`{"claudeAiOauth":{"accessToken":"synthetic-independent-child"}}`)); err != nil {
-			t.Fatal(err)
-		}
 		child, err := client.ForkSession(ctx, request)
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer client.Stop(context.Background(), &api.Control{SessionId: child.Id, RunId: child.RunId, ClientId: "cleanup-fork"})
+		if child.State != "stopped" || child.RunId != "" || child.VendorId != "" || child.CreateId != request.ClientId {
+			t.Fatal("fork started a run or inherited its parent's identity", child)
+		}
 		if child.Id == source.Id || child.Alias == source.Alias || child.ProjectId != source.ProjectId || child.Workspace != source.Workspace || child.Account != source.Account || child.AuthBinding != source.AuthBinding || child.Agent != source.Agent || child.Model != source.Model || child.Title != source.Title {
 			t.Fatal("fork did not preserve settings with a new identity", child, source)
 		}
 		repeated, err := client.ForkSession(ctx, request)
-		if err != nil || repeated.Id != child.Id {
+		if err != nil || repeated.Id != child.Id || repeated.State != "stopped" || repeated.RunId != "" {
 			t.Fatal("fork retry created another session", repeated, err)
 		}
 		history, err := client.History(ctx, &api.WatchRequest{SessionId: child.Id, Limit: 1000})
@@ -377,6 +365,33 @@ func TestLifecycle(t *testing.T) {
 		}
 		if !inherited {
 			t.Fatal("child lost the conversation history")
+		}
+		start := &api.Control{SessionId: child.Id, ClientId: core.ID()}
+		if _, err = client.Resume(ctx, start); status.Code(err) != codes.FailedPrecondition {
+			t.Fatal("starting the child must require its own login", err)
+		}
+		details := status.Convert(err).Details()
+		if len(details) != 1 {
+			t.Fatal("start lost the login challenge", err)
+		}
+		info, ok := details[0].(*errdetails.ErrorInfo)
+		if !ok || info.Reason != "PROJECT_LOGIN_REQUIRED" || info.Metadata["session_key"] != child.CreateId {
+			t.Fatal("start login challenge used the wrong creation key", err)
+		}
+		if err := accounts.Install(accounts.SessionRoot(state, child.CreateId), child.Account, child.Agent, []byte(`{"claudeAiOauth":{"accessToken":"synthetic-independent-child"}}`)); err != nil {
+			t.Fatal(err)
+		}
+		child, err = client.Resume(ctx, start)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer client.Stop(context.Background(), &api.Control{SessionId: child.Id, RunId: child.RunId, ClientId: "cleanup-fork"})
+		if child.RunId == "" || child.RunId == source.RunId || child.Id != start.SessionId {
+			t.Fatal("start did not launch the saved child", child)
+		}
+		repeated, err = client.ForkSession(ctx, request)
+		if err != nil || repeated.Id != child.Id || repeated.RunId != child.RunId {
+			t.Fatal("fork retry replaced the started child", repeated, err)
 		}
 		if _, err := client.Send(ctx, &api.Input{SessionId: child.Id, RunId: child.RunId, ClientId: "child-input", Text: "fork-context"}); err != nil {
 			t.Fatal(err)

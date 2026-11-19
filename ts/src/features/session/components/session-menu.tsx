@@ -92,10 +92,10 @@ export function SessionMenu({
             layout: "row",
             items: [
               {
-                label: resume ? t("Resume") : t("Stop"),
+                label: resume ? (run ? t("Resume") : t("Start")) : t("Stop"),
                 className: resume ? actionStyles.start : undefined,
                 icon: <SessionActionIcon action={resume ? "resume" : "stop"} />,
-                disabled: unavailable,
+                disabled: resume ? busy : unavailable,
                 run: () =>
                   resume ? void manage("resume", run) : confirm("stop"),
               },

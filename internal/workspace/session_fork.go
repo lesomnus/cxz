@@ -23,16 +23,6 @@ func (m *Manager) ForkSession(ctx context.Context, r *api.SessionForkInput) (*ap
 		return nil, err
 	}
 	defer conn.Close()
-	source, err := client.Get(ctx, &api.SessionRef{Id: r.SessionId})
-	if err != nil {
-		return nil, err
-	}
-	if err = m.connectAccount(ctx, p, source.Account, source.AuthBackend); err != nil {
-		return nil, err
-	}
-	if err = m.syncRuntimePreferences(ctx, client, p.ID); err != nil {
-		return nil, err
-	}
 	child, err := client.ForkSession(ctx, r)
 	if err != nil {
 		return nil, err
@@ -41,7 +31,7 @@ func (m *Manager) ForkSession(ctx context.Context, r *api.SessionForkInput) (*ap
 	if err != nil {
 		return nil, err
 	}
-	if err = auxiliary.InheritSession(source.Id, child.Id); err != nil {
+	if err = auxiliary.InheritSession(r.SessionId, child.Id); err != nil {
 		return nil, err
 	}
 	if title, err := auxiliary.Title(child.Id); err != nil {

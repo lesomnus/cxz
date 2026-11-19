@@ -776,68 +776,26 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     s?.agent === "claude" &&
     authenticationRequired(metadata, s.status?.runId ?? "");
   const forkRequest = useRef<ForkRequest | undefined>(undefined);
-  async function forkConversation(afterLogin?: ForkRequest) {
+  async function forkConversation() {
     return action(async (session) => {
       const run = session.status?.runId ?? "";
       const previous = forkRequest.current;
       const attempt =
-        afterLogin ??
-        (previous?.source === id && previous.run === run
+        previous?.source === id && previous.run === run
           ? previous
-          : { source: id, run, clientId: crypto.randomUUID() });
+          : { source: id, run, clientId: crypto.randomUUID() };
       forkRequest.current = attempt;
-      try {
-        const child = await c.sessions.fork(
-          {
-            ref: ref(attempt.source),
-            runId: attempt.run,
-            clientId: attempt.clientId,
-          },
-          { timeoutMs: 120000 },
-        );
-        c.store.apply("cxz.Session", [{ id: child.id, value: child }]);
-        await navigate({
-          ...sessionLocation(child),
-        });
-        forkRequest.current = undefined;
-      } catch (error) {
-        const account = session.account?.alias || undefined;
-        const project = session.project?.id.length
-          ? projectUUID(session.project)
-          : projectId;
-        const login = requiredSessionLogin(error, account, attempt.clientId);
-        if (afterLogin || session.agent !== "claude" || !project || !login)
-          throw error;
-        if (!mounted.current) return;
-        let canceled = false;
-        openCard({
-          title: () => t("Claude account login"),
-          onClose: () => {
-            canceled = true;
-          },
-          content: (close) => (
-            <LoginPanel
-              c={c}
-              target={{ ...login, project }}
-              complete={() => {
-                if (
-                  canceled ||
-                  !mounted.current ||
-                  forkRequest.current !== attempt
-                )
-                  return;
-                canceled = true;
-                close();
-                void forkConversation(attempt);
-              }}
-              cancel={() => {
-                canceled = true;
-                close();
-              }}
-            />
-          ),
-        });
-      }
+      const child = await c.sessions.fork(
+        {
+          ref: ref(attempt.source),
+          runId: attempt.run,
+          clientId: attempt.clientId,
+        },
+        { timeoutMs: 120000 },
+      );
+      c.store.apply("cxz.Session", [{ id: child.id, value: child }]);
+      await navigate(sessionLocation(child));
+      forkRequest.current = undefined;
     }, forkFailure);
   }
   function control(s: Session) {
@@ -912,7 +870,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   }
   async function send(e: React.FormEvent) {
     e.preventDefault();
-    if (!draft.trim()) return;
+    if (!draft.trim() || !s?.status?.runId) return;
     if (!attachmentsReady(draft, c.pastes)) {
       setError(t("Wait for uploads to finish, or remove the failed chip."));
       return;
@@ -1235,7 +1193,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         commands={sessionCommands(s?.agent ?? "", catalog)}
         lookupPaths={projectId ? lookupPaths : undefined}
         workspace={sessionProject?.status?.remoteWorkspace}
-        canSend={!busy && !!s && !!draft.trim()}
+        canSend={!busy && !!s?.status?.runId && !!draft.trim()}
         queued={
           <QueuedMessage
             text={queued}

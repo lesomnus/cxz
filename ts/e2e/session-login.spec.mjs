@@ -46,12 +46,7 @@ function loginDetail(sessionKey = "original-creation") {
 }
 async function fixture(
   page,
-  {
-    state = "idle",
-    authFailure = true,
-    projectInInventory = true,
-    forkError,
-  } = {},
+  { state = "idle", authFailure = true, forkError } = {},
 ) {
   const id = (v) => Buffer.from(v.padEnd(16, "0")).toString("base64");
   const project = {
@@ -70,6 +65,7 @@ async function fixture(
   };
   let run = "original-run";
   let authenticated = false;
+  let child;
   const requests = [];
   const sockets = [];
   const session = () => ({
@@ -145,21 +141,38 @@ async function fixture(
         contentType: "application/connect+json",
         body: stream(rows),
       });
-    if (!projectInInventory) {
-      if (path === "/cxz.ProjectService/List") return send({ items: [] });
-      if (path === "/cxz.ProjectService/Watch")
-        return frames([{ snapshotComplete: true }]);
-    }
+    const needsLogin = (key) =>
+      route.fulfill({
+        status: 400,
+        json: {
+          code: "failed_precondition",
+          message: "account work1 needs Claude subscription login",
+          details: [loginDetail(key)],
+        },
+      });
     for (const [service, value] of [
       ["Project", project],
       ["Account", account],
       ["Session", session()],
     ]) {
-      if (path === `/cxz.${service}Service/Get`) return send(value);
-      if (path === `/cxz.${service}Service/List`)
-        return send({ items: [value] });
+      const isSession = service === "Session";
+      const items = isSession && child ? [value, child] : [value];
+      if (path === `/cxz.${service}Service/Get`)
+        return send(
+          (isSession &&
+            child &&
+            items.find((s) =>
+              [s.id, s.alias, s.runtimeId].some((key) =>
+                Object.values(q.ref ?? {}).includes(key),
+              ),
+            )) ||
+            value,
+        );
+      if (path === `/cxz.${service}Service/List`) return send({ items });
       if (path === `/cxz.${service}Service/Watch`)
-        return frames([{ items: [{ id: value.id, value }] }]);
+        return frames([
+          { items: items.map((value) => ({ id: value.id, value })) },
+        ]);
     }
     if (path === "/cxz.SessionService/Transcript")
       return send({ events, metadata, snapshotSeq: "3" });
@@ -177,36 +190,27 @@ async function fixture(
       return send(session());
     }
     if (path === "/cxz.SessionService/Resume") {
-      if (!authenticated)
-        return route.fulfill({
-          status: 400,
-          json: {
-            code: "failed_precondition",
-            message: "account work1 needs Claude subscription login",
-            details: [loginDetail()],
-          },
-        });
+      if (!authenticated) return needsLogin();
       run = "resumed-run";
       state = "idle";
       return send(session());
     }
     if (path === "/cxz.SessionService/Fork") {
       if (forkError) return route.fulfill({ status: 400, json: forkError });
-      if (!authenticated)
-        return route.fulfill({
-          status: 400,
-          json: {
-            code: "failed_precondition",
-            message: "account work1 needs login; run cxz account login work1",
-            details: [loginDetail(q.clientId)],
-          },
-        });
-      return send({
+      child ??= {
         ...session(),
         id: id("child"),
         runtimeId: "child",
         alias: "forked-seal",
-      });
+        clientId: q.clientId,
+        status: { state: "stopped", runId: "", lastSeq: "3", pending: [] },
+      };
+      return send(child);
+    }
+    if (path === "/cxz.SessionService/Start" && q.ref?.runtimeId === "child") {
+      if (!authenticated) return needsLogin(child.clientId);
+      child.status = { ...child.status, state: "idle", runId: "child-run" };
+      return send(child);
     }
     return send({});
   });
@@ -224,12 +228,11 @@ async function fixture(
     headers: { Origin: "https://127.0.0.1:18081" },
     data: { token: "a".repeat(32) },
   });
-  await page.goto(projectInInventory ? "/" : "/c/_/session/seal");
-  if (projectInInventory)
-    await page
-      .getByRole("link", { name: /Claude session seal/ })
-      .first()
-      .click();
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: /Claude session seal/ })
+    .first()
+    .click();
   return {
     requests,
     sockets,
@@ -291,28 +294,51 @@ test("Resume's structured credential failure opens Claude login automatically", 
   await expect(panel).toBeHidden();
 });
 
-test("Fork opens Claude login with incomplete cached resources and retries with the original key", async ({
+test("Fork saves the conversation before OAuth and only starts the child after login", async ({
   page,
 }) => {
-  const f = await fixture(page, {
-    authFailure: false,
-    projectInInventory: false,
-  });
-  await page.getByRole("button", { name: "Session menu" }).click();
-  await page.getByRole("menuitem", { name: "Fork", exact: true }).click();
+  const f = await fixture(page, { authFailure: false });
+  const choose = async (name) => {
+    await page.getByRole("button", { name: "Session menu" }).click();
+    await page.getByRole("menuitem", { name, exact: true }).click();
+  };
+  await choose("Fork");
+  await expect(page).toHaveURL(/\/c\/_\/session\/forked-seal$/);
+  await expect(page.locator("article.input .message-body").last()).toHaveText(
+    "Please continue",
+  );
   const panel = page.getByRole("region", { name: "Provider login" });
-  await expect(panel).toBeVisible();
   const forks = () => f.requests.filter((r) => r.path.endsWith("/Fork"));
+  const starts = () => f.requests.filter((r) => r.path.endsWith("/Start"));
   expect(forks()).toHaveLength(1);
+  expect(starts()).toHaveLength(0);
+  expect(f.sockets).toHaveLength(0);
+  const composer = page.getByRole("textbox", { name: "Message", exact: true });
+  await composer.fill("Continue in the fork");
+  const send = page.getByRole("button", { name: "Send", exact: true });
+  await expect(send).toBeDisabled();
+  await choose("Start");
+  await expect(panel).toBeVisible();
   await expect.poll(() => f.sockets.length).toBe(1);
   expect(f.sockets[0].url.searchParams.get("account")).toBe("work1");
   expect(f.sockets[0].url.searchParams.get("project")).toBe(
     projectFixture().uuid,
   );
   expect(f.sockets[0].url.searchParams.get("key")).toBe(forks()[0].q.clientId);
+  await panel.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(panel).toBeHidden();
+  await expect(page).toHaveURL(/\/c\/_\/session\/forked-seal$/);
+  expect(starts()).toHaveLength(1);
+  await expect(send).toBeDisabled();
+  await choose("Start");
+  await expect(panel).toBeVisible();
+  await expect.poll(() => f.sockets.length).toBe(2);
   f.complete();
-  await expect.poll(() => forks().length).toBe(2);
-  expect(forks()[1].q).toEqual(forks()[0].q);
+  await expect(panel).toBeHidden();
+  await expect(send).toBeEnabled();
+  expect(forks()).toHaveLength(1);
+  expect(starts()).toHaveLength(3);
+  for (const { q } of starts()) expect(q.ref).toEqual({ runtimeId: "child" });
   expect(f.requests.some((r) => r.path.endsWith("/Stop"))).toBe(false);
 });
 

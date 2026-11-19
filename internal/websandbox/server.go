@@ -702,6 +702,9 @@ func (x *Sessions) Resume(_ context.Context, r *resource.SessionControl) (*resou
 		}
 		st.generation++
 		st.value.GetStatus().SetRunId(fmt.Sprintf("%s-run-%d", st.value.GetRuntimeId(), st.generation+1))
+		if st.forkSource != "" && st.value.GetStatus().GetVendorId() == "" {
+			st.value.GetStatus().SetVendorId(st.value.GetRuntimeId() + "-vendor")
+		}
 		s.state(st, "idle")
 	}
 	return proto.Clone(st.value).(*resource.Session), nil

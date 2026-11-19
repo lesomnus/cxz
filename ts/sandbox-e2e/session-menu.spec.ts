@@ -125,7 +125,10 @@ test("Fork preserves the conversation and new input stays in the child session",
   await expect(messages).toHaveText(previous);
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("Explore the second direction in this fork.");
-  await page.getByRole("button", { name: "Send", exact: true }).click();
+  const send = page.getByRole("button", { name: "Send", exact: true });
+  await expect(send).toBeDisabled();
+  await choose(page, "Start");
+  await send.click();
   await expect(messages.last()).toHaveText(
     "Explore the second direction in this fork.",
   );

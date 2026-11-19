@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/lesomnus/cxz/api"
-	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/sessionfork"
 	"github.com/lesomnus/cxz/internal/sessionstore"
@@ -65,17 +64,6 @@ func (s *Server) ForkSession(ctx context.Context, r *api.SessionForkInput) (*api
 	} else if !os.IsNotExist(err) {
 		return nil, err
 	} else {
-		// Local OAuth belongs to the new session. Reuse the normal session-login
-		// challenge and creation key; never duplicate a rotating refresh token.
-		target := source
-		target.CreateID = r.ClientId
-		backend, err := accounts.ResolveBinding(target.Kind, target.AuthBackend, target.AuthProjectID(), target.Account, target.AuthBinding)
-		if err != nil {
-			return nil, status.Error(codes.FailedPrecondition, err.Error())
-		}
-		if err = backend.Check(accounts.AuthRoot(s.root, target), target.Account); err != nil {
-			return nil, authCheckError(err, target.AuthBackend, r.ClientId)
-		}
 		request := sessionfork.Request{ID: id, ClientID: r.ClientId, RunID: r.RunId}
 		var live core.Snapshot
 		if supervisor.Call(ctx, s.root, source.ID, "status", nil, &live) == nil {
@@ -127,7 +115,5 @@ func (s *Server) ForkSession(ctx context.Context, r *api.SessionForkInput) (*api
 	if _, err = s.db.ExecContext(ctx, "INSERT INTO sessions VALUES(?,?,?)", child.ID, raw, child.CreateID); err != nil {
 		return nil, err
 	}
-	// Persist before starting: a disconnected caller can find this child and must
-	// never blindly repeat an operation that may already have created a thread.
-	return s.launch(ctx, child)
+	return s.snapshot(ctx, child)
 }
